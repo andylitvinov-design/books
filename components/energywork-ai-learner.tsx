@@ -7,6 +7,8 @@ import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, C
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { useOceanPracticeAudio } from "./ocean-practice-audio";
+import OceanSoundToggle from "./ocean-sound-toggle";
 import {
   ENERGYWORK_COURSE_ID, ENERGYWORK_COURSE_VERSION,
   energyworkPhases, energyworkLessons, energyworkInitiationRequirements,
@@ -380,39 +382,67 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
   const [remaining, setRemaining] = useState(durationSeconds);
   const [running, setRunning] = useState(false);
   const deadline = useRef(0);
+  const ocean = useOceanPracticeAudio();
+
   useEffect(() => {
     if (!running) return;
     const timer = window.setInterval(() => {
       const time = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
       setRemaining(time);
-      if (time === 0) setRunning(false);
+      if (time === 0) {
+        setRunning(false);
+        ocean.pause();
+      }
     }, 500);
     return () => window.clearInterval(timer);
-  }, [running]);
+  }, [running, ocean.pause]);
+
+  // Suspend both timer and audio on hidden mobile tabs or an interrupted session.
+  // It never resumes audibly without another explicit user tap.
+  useEffect(() => {
+    const hide = () => {
+      if (document.hidden && running) {
+        setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+        setRunning(false);
+        ocean.pause();
+      }
+    };
+    document.addEventListener("visibilitychange", hide);
+    return () => document.removeEventListener("visibilitychange", hide);
+  }, [running, ocean.pause]);
+
   function toggle() {
     if (running) {
       setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
       setRunning(false);
+      ocean.pause();
     } else {
       deadline.current = Date.now() + (remaining || durationSeconds) * 1000;
       if (remaining === 0) setRemaining(durationSeconds);
+      ocean.play();
       setRunning(true);
     }
   }
+
+  function reset() {
+    ocean.pause();
+    setRunning(false);
+    setRemaining(durationSeconds);
+  }
+
   return <div className={styles.practiceTimer} role="group" aria-label={locale === "ru" ? "Таймер необязательной практики" : "Optional practice timer"}>
-    <span><Clock3 size={17} aria-hidden="true" />{locale === "ru" ? "Мягкая практика · по желанию" : "Gentle practice · optional"}</span>
+    <span><Clock3 size={17} aria-hidden="true" />{locale === "ru" ? "Мягкая практика · по желанию" : "Gentle practice · optional"}
+      <OceanSoundToggle locale={locale} timerRunning={running} audio={ocean} />
+    </span>
     <strong aria-label={locale === "ru" ? "Осталось секунд" : "Seconds remaining"}>
       {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
     </strong>
     <button type="button" onClick={toggle}>{running ? (locale === "ru" ? "Пауза" : "Pause") :
       (remaining < durationSeconds && remaining > 0 ? (locale === "ru" ? "Продолжить" : "Resume") :
         (locale === "ru" ? (durationSeconds === 60 ? "Начать 1 минуту" : "Начать 2 минуты") : (durationSeconds === 60 ? "Start 1 minute" : "Start 2 minutes")))}</button>
-    <button type="button" onClick={() => { setRunning(false); setRemaining(durationSeconds); }}>
-      {locale === "ru" ? "Сбросить" : "Reset"}
-    </button>
+    <button type="button" onClick={reset}>{locale === "ru" ? "Сбросить" : "Reset"}</button>
   </div>;
 }
-
 
 /** Review buttons only change the quote, never the current course slide. */
 /** Compact, accessible carousel: review arrows never advance the lesson. */
