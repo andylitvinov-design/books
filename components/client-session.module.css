@@ -2022,3 +2022,42 @@
     background-position:center,75% center;
   }
 }
+
+
+/* Owner report video import: compact on an iPhone, always accessible above
+   the empty shared-library picker instead of hidden behind a zero count. */
+.ownerMediaImport{margin:16px 0 18px;padding:clamp(13px,2vw,20px);border-radius:16px;
+  border:1px solid #bcdad8;background:linear-gradient(135deg,#f0faf8,#fbfcff 85%);
+  color:#234b5d;line-height:1.45}
+.ownerMediaImport h3{font:750 18px/1.3 system-ui,sans-serif;margin:0 0 6px;color:#173957}
+.ownerMediaImportNote{font:400 14px/1.55 system-ui,sans-serif;margin:6px 0 11px;color:#546d77}
+.ownerMediaImportSources{margin:12px 0 14px;display:grid;gap:9px}
+.ownerMediaImportSources>strong{font-size:14px}
+.ownerMediaImportRow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:10px;padding:10px 12px;background:#fff;border:1px solid #d2e4e4;border-radius:12px}
+.ownerMediaImportRow span{font-size:14px;font-weight:700;min-width:0;overflow-wrap:anywhere;flex:1}
+.ownerMediaImportRow small{display:block;font-size:12px;color:#59757d;font-weight:500;margin-top:3px}
+.ownerMediaImport button{display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 14px;min-height:44px;border-radius:11px;border:1px solid #347f87;
+  background:#227783;color:white;font:700 14px/1.3 system-ui,sans-serif;cursor:pointer}
+.ownerMediaImport button:disabled{opacity:.55;cursor:default}
+.ownerMediaImportForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+  align-items:end;margin:13px 0}
+.ownerMediaImportForm label,.ownerMediaImportFile label{display:grid;gap:5px;color:#355b66;
+  font:700 13px/1.35 system-ui,sans-serif;min-width:0}
+.ownerMediaImportForm input,.ownerMediaImportFile input[type=file]{width:100%;min-width:0;
+  min-height:44px;padding:10px;border-radius:10px;background:white;
+  border:1px solid #bed4da;color:#193e52;font:400 15px system-ui,sans-serif}
+.ownerMediaImportForm button{grid-column:1/-1;justify-self:start}
+.ownerMediaImportFile{margin:13px 0 0;padding:10px 12px;border:1px solid #d3e1e3;
+  border-radius:12px;background:#fff}
+.ownerMediaImportFile summary{font:700 14px/1.4 system-ui,sans-serif;cursor:pointer;
+  color:#1e5360;min-height:38px;display:list-item}
+.ownerMediaImportFile label{margin:11px 0 8px}
+.ownerMediaImportFile .ownerMediaImportNote{margin-bottom:2px}
+@media(max-width:620px){
+  .ownerMediaImport{padding:12px;border-radius:14px}
+  .ownerMediaImportForm{grid-template-columns:minmax(0,1fr)}
+  .ownerMediaImportForm button,.ownerMediaImportRow button,.ownerMediaImportFile button{width:100%;justify-self:stretch}
+  .ownerMediaImportRow{display:grid;grid-template-columns:minmax(0,1fr)}
+}

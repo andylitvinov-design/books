@@ -19,7 +19,7 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
     return ()=>window.removeEventListener('hh-materials-changed',refresh)
   },[])
   useEffect(()=>{
-    if(!open)return
+    // Keep the available count current even when the picker is collapsed.
     let mounted=true
     setLoading(true);setError('')
     fetch('/api/admin/materials',{credentials:'same-origin',cache:'no-store'})
@@ -45,11 +45,11 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
     }
   }}>
     <summary><FolderOpen size={20}/>{ru?'Выбрать из библиотеки':'Select from library'}
-      <span className={styles.count}>{selectedIds.length}</span>
+      <span className={styles.count}>{loading?'…':materials.length} {ru?'доступно':'available'}</span>
     </summary>
     <div className={styles.contents}>
-      <p className={styles.help}>{ru?'Отметьте галочками ранее загруженные общие фото, видео и ссылки YouTube. Здесь материалы не загружаются; они добавляются отдельно в меню «Материалы» кабинета мастера. После публикации выбранное появится в конце отчёта.':
-        'Select existing general photos, videos and YouTube links. No uploads are made here; add new resources from Practitioner Cabinet → Materials. Selected items appear at the end of the published report.'}</p>
+      <p className={styles.help}>{ru?'Отметьте материалы, которые нужно приложить к этому отчёту. Новое видео можно сохранить выше. Клиент увидит выбор после публикации отчёта.':
+        'Choose materials for this report. Save a new video above. Clients see selected items after you publish.'}</p>
       <div className={styles.tools}>
         <input className={styles.search} value={search} onChange={e=>setSearch(e.target.value)}
           placeholder={ru?'Поиск по материалам…':'Search materials…'} aria-label={ru?'Поиск материалов':'Search materials'}/>
@@ -63,7 +63,7 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
       {error&&<p role="alert" className={styles.alert}>{error}</p>}
       <div className={styles.items}>
         {loading?<p className={styles.empty}>{ru?'Загрузка…':'Loading…'}</p>:
-        filtered.length===0?<p className={styles.empty}>{ru?'В библиотеке пока нет подходящих материалов. Откройте меню «Материалы» в кабинете мастера.':'No matching materials yet. Use the practitioner Materials menu to populate the library.'}</p>:
+        filtered.length===0?<p className={styles.empty}>{ru?'Пока нет подходящих материалов. Сохраните видео выше — оно сразу появится здесь.':'No matching materials yet. Save a video above to see it here.'}</p>:
         filtered.map(item=><label className={styles.item} key={item.id}>
           <input type="checkbox" checked={selectedIds.includes(item.id)} disabled={disabled||(!selectedIds.includes(item.id)&&selectedIds.length>=24)}
             onChange={event=>toggle(item.id,event.target.checked)}/>
