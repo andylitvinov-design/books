@@ -70,6 +70,11 @@ const WORDS={
       completeLead:'Ваши наблюдения сохранены в карте курса.',
       completeNote:'Итоговые тесты можно повторить, когда откроется опрос.',
     },seeProgram:'Посмотреть, что дальше',
+    habitTitle:'ОПОРА всегда под рукой',habitKicker:'ПО ЖЕЛАНИЮ · ПОСЛЕ УРОКА',
+    habitLead:'Хотите, чтобы уроки были рядом, когда вы открываете YouTube?',
+    habitBenefit:'Курс на главном экране и мягкая пауза перед YouTube — только с вашего согласия.',
+    habitConfigure:'Настроить',habitLater:'Не сейчас',
+    habitFallback:'Настроить можно также на странице курса в Holistic House.',
   },
   en:{
     day:'Day',of:'of',pause:'Pause',close:'End lesson',back:'Back',next:'Continue',
@@ -126,6 +131,11 @@ const WORDS={
       completeLead:'Your observations are saved in the course map.',
       completeNote:'Optional retesting opens when the final check-in is available.',
     },seeProgram:"See what's next",
+    habitTitle:'Keep OPORA close',habitKicker:'OPTIONAL · AFTER YOUR LESSON',
+    habitLead:'Would you like a gentle reminder of your lesson before YouTube?',
+    habitBenefit:'Add OPORA to your Home Screen and set up the YouTube pause only if you choose.',
+    habitConfigure:'Set it up',habitLater:'Not now',
+    habitFallback:'You can also set this up from your Holistic House course page.',
   },
 }
 WORDS.es = {
@@ -178,6 +188,11 @@ WORDS.es = {
     completeLead:'Tus observaciones siguen guardadas en el mapa.',
     completeNote:'Puedes repetir las pruebas cuando se abra el control final.',
   },seeProgram:'Ver qué viene después',
+  habitTitle:'OPORA siempre contigo',habitKicker:'OPCIONAL · DESPUÉS DE LA LECCIÓN',
+  habitLead:'¿Quieres recordar tu lección antes de abrir YouTube?',
+  habitBenefit:'Añade OPORA a la pantalla de inicio y configura la pausa solo si lo deseas.',
+  habitConfigure:'Configurar',habitLater:'Ahora no',
+  habitFallback:'También puedes configurarlo en la página del curso de Holistic House.',
   ideaTitle:'Una idea amable',reminderTitle:'Un recordatorio',feelTitle:'¿Cómo estás ahora?',
 }
 // The five original lesson-one opening screens stay separate, and precede action.
@@ -249,13 +264,14 @@ function OpeningRating({label,value,onChange,disabled,low,high}){
   </>
 }
 
-export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onFinish,onSession}){
+export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onFinish,onSession,habitSetupContent=null}){
   const lang=locale==='ru'?'ru':locale==='es'?'es':'en',t=WORDS[lang]
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
   const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
   const [step,setStep]=useState(hasSaved?scenes.length:0)
   const [previewIndex,setPreviewIndex]=useState(-1)
+  const [habitSetup,setHabitSetup]=useState(false)
   const [saved,setSaved]=useState(hasSaved)
   const [outroOpen,setOutroOpen]=useState(false)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
@@ -278,7 +294,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const heading=useRef(null),safetyTrigger=useRef(null),safetyPrimary=useRef(null)
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
   const locked=Boolean(busy||saving),receipt=step>=scenes.length
-  const previewScreens=cycle.day===1?['weekOne','weekTwo','nextStep']:['nextStep']
+  // Offered only after the Day 1 save receipt; never a practice gate.
+  const previewScreens=cycle.day===1?['weekOne','weekTwo','nextStep','habit']:['nextStep']
   const inPreview=receipt&&previewIndex>=0
   const moment=inPreview?previewScreens[previewIndex]:outroOpen?'ocean':receipt?'receipt':scenes[step]
   const nextDay=cycle.day<14?oporaExperienceDay(cycle.day+1,lang):null
@@ -402,7 +419,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     }catch{setError(t.noSave)}
     finally{setSaving(false)}
   }
-  const title=moment==='weekOne'?t.preview.weekOneTitle:
+  const title=moment==='habit'?t.habitTitle:moment==='weekOne'?t.preview.weekOneTitle:
     moment==='weekTwo'?t.preview.weekTwoTitle:
     moment==='nextStep'?(nextDay?t.preview.nextTitle:t.preview.completeTitle):
     outroOpen?t.audioTitle:receipt?t.saved:
@@ -461,7 +478,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')} aria-live="off">
           {inPreview&&<span className={styles.eyebrow}>
             {moment==='weekOne'?t.preview.weekOneKicker:
-              moment==='weekTwo'?t.preview.weekTwoKicker:t.preview.nextKicker}
+              moment==='weekTwo'?t.preview.weekTwoKicker:moment==='habit'?t.habitKicker:t.preview.nextKicker}
             {' · '}{previewIndex+1}/{previewScreens.length}
           </span>}
           {(!receipt||outroOpen)&&<span className={styles.eyebrow}>
@@ -607,6 +624,14 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <p className={styles.soft}>{t.preview.completeNote}</p>
             </>}
           </>}
+          {moment==='habit'&&<>
+            <p className={styles.lead}>{t.habitLead}</p>
+            {!habitSetup
+              ?<p className={styles.habitBenefit} data-opora-first-lesson-habit-invitation>{t.habitBenefit}</p>
+              :<div className={styles.habitSetup} data-opora-first-lesson-habit-setup>
+                {habitSetupContent||<p className={styles.soft}>{t.habitFallback}</p>}
+              </div>}
+          </>}
           {moment==='receipt'&&<>
             <p className={styles.lead}>{t.savedText}</p>
             <div className={styles.receiptNote}>
@@ -639,14 +664,21 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.footer}>
         {receipt?<button type="button" className={styles.back} disabled={locked}
-          onClick={inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
-          <ArrowLeft size={17}/>{inPreview||outroOpen?t.back:t.finish}
+          onClick={moment==='habit'
+            ?(habitSetup?()=>setHabitSetup(false):(onFinish||onClose))
+            :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
+          <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview||outroOpen?t.back:t.finish}
         </button>:step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={inPreview?advancePreview:receipt?openPreview:step===scenes.length-1?submit:next}>
-          {inPreview?(previewIndex===previewScreens.length-1?t.finish:t.next):receipt?t.seeProgram:step===scenes.length-1?(saving?t.saving:t.save):t.next}
-          {(inPreview&&previewIndex===previewScreens.length-1)||(!receipt&&step===scenes.length-1)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
+          onClick={moment==='habit'
+            ?(habitSetup?(onFinish||onClose):()=>setHabitSetup(true))
+            :inPreview?advancePreview:receipt?openPreview:step===scenes.length-1?submit:next}>
+          {moment==='habit'?(habitSetup?t.finish:t.habitConfigure)
+            :inPreview?(previewIndex===previewScreens.length-1?t.finish:t.next)
+            :receipt?t.seeProgram:step===scenes.length-1?(saving?t.saving:t.save):t.next}
+          {(moment==='habit'&&habitSetup)||(inPreview&&previewIndex===previewScreens.length-1)||(!receipt&&step===scenes.length-1)
+            ?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
     </div>
