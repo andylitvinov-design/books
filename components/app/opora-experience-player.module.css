@@ -36,8 +36,8 @@
 .affirmation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .save{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .frame.receipt{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
-.header,.stage,.footer,/* Opening: a complete, locally hosted photo above the question, not a
-   magnified low-resolution bird behind instructional copy. */
+.header,.stage,.footer{position:relative;z-index:1}
+/* Opening: blur only the photograph, never the lesson text or controls. */
 .welcome::before, .arrive::before{
   filter:blur(14px) brightness(1.04) saturate(.84);
   transform:scale(1.08);
