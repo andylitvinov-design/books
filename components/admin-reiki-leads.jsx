@@ -20,7 +20,9 @@ const TEXT = {
     status:'Статус', updated:'Обновлено', source:'Курс', noLetter:'Письмо ещё не отправлено',
     startDate:'Начало', requestDate:'Заявка', step:'Шаг', total:'Лидов', students:'Учеников',
     use:'Ответы показаны на языке курса; слова ученика не редактируются преподавателем.',
-    emptySearch:'Ничего не найдено', progress:'Прогресс', note:'Материалы не публикуются.',
+    emptySearch:'Ничего не найдено', progress:'Прогресс', note:'Личные материалы не публикуются автоматически.',
+    moderation:'Отзывы для лендинга', moderationHint:'Только после отдельного согласия ученика. Проверьте, нет ли в тексте контактов или частной информации.',
+    pending:'Ожидает проверки', approved:'Опубликован', rejected:'Отклонён', approve:'Опубликовать', reject:'Отклонить',unpublish:'Снять с публикации',reviewEmpty:'Пока нет заявок на публикацию.',
   },
   en: {
     title:'Reiki Practitioner · CRM',
@@ -36,7 +38,9 @@ const TEXT = {
     status:'Status', updated:'Updated', source:'Course', noLetter:'No initiation letter submitted',
     startDate:'Started', requestDate:'Applied', step:'Slide', total:'Leads', students:'Learners',
     use:'Answers are shown in the course language; student text cannot be edited here.',
-    emptySearch:'No matches', progress:'Progress', note:'Materials are not published.',
+    emptySearch:'No matches', progress:'Progress', note:'Private course materials are never auto-published.',
+    moderation:'Course landing reviews', moderationHint:'Learners opt in separately. Check that a review contains no contact details or private information before approving.',
+    pending:'Pending approval', approved:'Published', rejected:'Rejected', approve:'Publish', reject:'Reject',unpublish:'Unpublish',reviewEmpty:'No public review submissions yet.',
   },
 }
 const SENTENCE = /^Feeling:(10|[0-9])\/10\n([\s\S]*)$/
@@ -88,6 +92,7 @@ function LeadStatus({ lead, label, copy, busy, update }) {
 export default function AdminReikiLeads() {
   const [locale,setLocale] = useState('ru')
   const [leads,setLeads] = useState([])
+  const [publicReviews,setPublicReviews] = useState([])
   const [filter,setFilter] = useState('all')
   const [search,setSearch] = useState('')
   const [loading,setLoading] = useState(true)
@@ -102,8 +107,10 @@ export default function AdminReikiLeads() {
       if(!response.ok) throw new Error('LOAD_FAILED')
       const data=await response.json()
       setLeads(Array.isArray(data.leads)?data.leads:[])
+      setPublicReviews(Array.isArray(data.reviews)?data.reviews:[])
     } catch {
       setLeads([])
+      setPublicReviews([])
       setError('fetch')
     } finally {setLoading(false)}
   },[])
@@ -138,6 +145,20 @@ export default function AdminReikiLeads() {
       await load()
     }catch{setError('update')}finally{setBusy(false)}
   }
+  async function moderateReview(review,status){
+    if(busy)return
+    setBusy(true);setError('')
+    try{
+      const response=await fetch('/admin/reiki-leads/data',{
+        method:'POST',cache:'no-store',credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'moderate-review',id:review.id,status,
+          expectedRevision:review.revision}),
+      })
+      if(!response.ok)throw new Error('REVIEW_CHANGED')
+      await load()
+    }catch{setError('review')}finally{setBusy(false)}
+  }
   return <main className={styles.page}>
     <nav className={styles.nav}>
       <a href="/admin"><ArrowLeft size={17} aria-hidden="true"/>{locale==='ru'?'Кабинет практика':'Practitioner cabinet'}</a>
@@ -162,6 +183,25 @@ export default function AdminReikiLeads() {
       <label className={styles.search}>{copy.filter}<input value={search} onChange={e=>setSearch(e.target.value)} maxLength={120} type="search"/></label>
       <button className={styles.refresh} onClick={()=>void load()} disabled={loading||busy}><RefreshCw size={16} aria-hidden="true"/>{copy.reload}</button>
     </div>
+    <section className={styles.publicReviewSection} aria-labelledby="reiki-public-queue-title" data-reiki-review-moderation>
+      <h2 id="reiki-public-queue-title">{copy.moderation} ({publicReviews.filter(item=>item.status==='pending').length})</h2>
+      <p>{copy.moderationHint}</p>
+      {!loading && (publicReviews.length ? <div className={styles.publicReviewGrid}>
+        {publicReviews.map(review=><article className={styles.publicReviewCard} key={review.id}>
+          <div className={styles.publicReviewHead}>
+            <strong>{titles.get(review.slideId)?.[locale] || review.slideId}</strong>
+            <small>{copy[review.status] || review.status} · {review.locale?.toUpperCase()}</small>
+          </div>
+          <p className={styles.publicReviewText}>{review.review}</p>
+          {review.status==='pending' ? <div className={styles.publicReviewActions}>
+            <button type="button" disabled={busy}
+              onClick={()=>void moderateReview(review,'approved')}>{copy.approve}</button>
+            <button type="button" disabled={busy} onClick={()=>void moderateReview(review,'rejected')}>{copy.reject}</button>
+          </div> : review.status==='approved' ? <button type="button" disabled={busy}
+            className={styles.unpublishButton} onClick={()=>void moderateReview(review,'rejected')}>{copy.unpublish}</button> : null}
+        </article>)}
+      </div> : <p>{copy.reviewEmpty}</p>)}
+    </section>
     {error&&<p className={styles.alert} role="alert">{copy.error}</p>}
     {loading?<p className={styles.muted}>{locale==='ru'?'Загрузка…':'Loading…'}</p>:
       visible.length?visible.map(group=>{
