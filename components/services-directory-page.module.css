@@ -1,0 +1,12 @@
+.header{box-sizing:border-box;width:min(1188px,calc(100% - 30px));margin:22px auto;padding:23px 26px 26px;border:1px solid #cde7e8;border-radius:21px;background:linear-gradient(135deg,#effafb,#f8fcfa);color:#1e4959}
+.back{display:inline-flex;align-items:center;gap:8px;min-height:42px;color:#146875;font:800 12px/1.35 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.eyebrow{margin:13px 0 7px;color:#197781;font:800 11px/1.45 Arial,Helvetica,sans-serif;letter-spacing:.12em}
+.header h1{margin:0;color:#153e51;font:400 clamp(32px,4vw,47px)/1.12 Georgia,"Times New Roman",serif}
+.header>p:last-child{max-width:770px;margin:10px 0 0;color:#4c6873;font:14px/1.6 Arial,Helvetica,sans-serif}
+.marketplace{box-sizing:border-box;width:min(1188px,calc(100% - 30px));margin:24px auto 34px;color:#183d4b}
+.marketplace h2{margin:0;color:#204c59;font:400 clamp(27px,3vw,38px)/1.15 Georgia,"Times New Roman",serif}
+.marketplace>p{color:#536c73;font:13px/1.55 Arial,Helvetica,sans-serif}
+.marketplace :global(.services-marketplace-heading){display:none}
+.all{display:inline-flex;align-items:center;gap:7px;min-height:45px;margin:13px 0;color:#106977;font:800 13px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.marketplace a:focus-visible,.header a:focus-visible{outline:3px solid #dea867;outline-offset:3px}
+@media(max-width:680px){.header,.marketplace{width:calc(100% - 20px)}.header{margin:12px auto 16px;padding:16px;border-radius:16px}.header h1{font-size:30px}.header>p:last-child{font-size:12px}.marketplace{margin-top:17px}.marketplace h2{font-size:27px}}
