@@ -195,13 +195,31 @@ async function verifyShortViewport(page,locale) {
 
   async function expectFits(id) {
     await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id",id);
-    const dimensions = await page.locator("[data-energywork-slide-id] [class*='slideMain']").evaluate(node=>({
-      used:node.scrollHeight,
-      space:node.clientHeight,
-      width:innerWidth,
-      height:innerHeight,
-      justify:getComputedStyle(node).justifyContent,
-    }));
+    const dimensions = await page.locator("[data-energywork-slide-id] [class*='slideMain']").evaluate(node=>{
+      // Inspect the initial (unscrolled) view, not Playwright's auto-scrolled
+      // radio-button state. A choice may technically exist yet be cut off.
+      node.scrollTop = 0;
+      const panel = node.getBoundingClientRect();
+      const within = selector => {
+        const item = node.querySelector(selector);
+        if (!item) return null;
+        const rect = item.getBoundingClientRect();
+        return {top:rect.top, bottom:rect.bottom, height:rect.height};
+      };
+      return {
+        used:node.scrollHeight,
+        space:node.clientHeight,
+        width:innerWidth,
+        height:innerHeight,
+        justify:getComputedStyle(node).justifyContent,
+        panelTop:panel.top,
+        panelBottom:panel.bottom,
+        benefit:within('[class*="benefits"]'),
+        lastChoice:within('[class*="experienceChoice"]:last-child'),
+        selectedGuidance:within('[class*="experienceGuidance"]'),
+        reviewPortrait:within('[class*="art"]'),
+      };
+    });
     // Welcome and introductory photo/video slides should fit by design.
     // Dense translated answers or timer+reflection may scroll naturally:
     // never make the type tiny or hide the five course stage names to force fit.
@@ -210,20 +228,43 @@ async function verifyShortViewport(page,locale) {
       locale+" "+id+" must not require excessive inner scrolling on 375×625: "+JSON.stringify(dimensions));
     assert.ok(dimensions.justify.includes("center"),
       locale+" "+id+" should balance short teaching content vertically");
+    const bottomMargin = 3;
+    if (id === "welcome-01") {
+      assert.ok(dimensions.benefit, locale+" welcome benefits are present");
+      assert.ok(dimensions.benefit.bottom <= dimensions.panelBottom + bottomMargin,
+        locale+" welcome benefit card must not be cut off: "+JSON.stringify(dimensions));
+    }
+    if (id === "welcome-02") {
+      assert.ok(dimensions.lastChoice, locale+" fourth radio is present");
+      assert.ok(dimensions.lastChoice.bottom <= dimensions.panelBottom + bottomMargin,
+        locale+" fourth Reiki-experience option must be visible without scrolling: "+JSON.stringify(dimensions));
+      if (dimensions.selectedGuidance) {
+        assert.ok(dimensions.selectedGuidance.bottom <= dimensions.panelBottom + bottomMargin,
+          locale+" selected experience guidance must fit after fourth option: "+JSON.stringify(dimensions));
+      }
+    }
+    if (id === "flight-voices") {
+      assert.ok(dimensions.reviewPortrait && dimensions.reviewPortrait.height >= 98,
+        locale+" review portrait must be a real recognizable photograph, not a tiny strip: "+JSON.stringify(dimensions));
+    }
   }
 
   await expectFits("welcome-01");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("welcome-02");
+  await page.locator('input[name="welcome-02"][value="master"]').check();
+  await expectFits("welcome-02"); // inspect the longest end-of-list selection
   await page.locator('input[name="welcome-02"][value="beginner"]').check();
-  await expectFits("welcome-02"); // guidance appears after an answer
+  await expectFits("welcome-02"); // and the normal intro choice
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-01");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-02"); // video poster remains visible without autoplay
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-03");
-  console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:5}));
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-voices");
+  console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:6}));
 }
 
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
