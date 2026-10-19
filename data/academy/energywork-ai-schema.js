@@ -24,14 +24,15 @@ export const ENERGYWORK_LESSON_STARTS = Object.freeze(['flight-01','tan-01','kun
 export const ENERGYWORK_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04','end-01'])
 // These four reviews gate the next teaching screen; the final journal remains optional during learning.
 export const ENERGYWORK_MEDITATION_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04'])
+export const ENERGYWORK_REVIEW_MIN_CHARS = 15
 export function energyworkMeditationFeedbackComplete(answer) {
   if (typeof answer !== 'string' || answer.length > 1600) return false
   // Keep old encrypted journal responses readable without requiring scores in new reviews.
   if (answer.startsWith('Feeling:')) {
     const legacy = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/.exec(answer)
-    return Boolean(legacy && legacy[1].trim().length > 0)
+    return Boolean(legacy && Array.from(legacy[1].trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS)
   }
-  return answer.trim().length > 0
+  return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
 export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-06','kun-06','ygg-06','init-01'])
 export const ENERGYWORK_QUESTIONS = Object.freeze({
