@@ -44,6 +44,7 @@ async function handle(request) {
             overview:await store.overview(),
             followups:await store.listFollowups(),
             activity:await store.listRecentActivity(),
+            recentExports:await store.listOwnerExportAudit(),
             drafts:await store.listDrafts(),
             emailMessages:await store.listEmailMessages(),
             subscribers:await store.listSubscribers(),
