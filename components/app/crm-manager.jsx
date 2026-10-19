@@ -70,7 +70,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   }, [c.error, accountId])
   useEffect(()=>{
     const q=search.trim()
-    if(activeSection!=='contacts'||!accountId||!data||q.length<2) {
+    if(!['contacts','sms'].includes(activeSection)||!accountId||!data||q.length<2) {
       setServerResults(null);setServerSearchStatus('idle')
       return
     }
@@ -203,6 +203,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
       {[
         ['overview',language==='ru'?'Обзор':language==='es'?'Resumen':'Overview'],
         ['messages',language==='ru'?'Сообщения':language==='es'?'Mensajes':'Messages'],
+        ['sms','SMS'],
         ['contacts',language==='ru'?'Контакты':language==='es'?'Contactos':'Contacts'],
       ].map(([id,label])=><button key={id} type="button" aria-pressed={activeSection===id}
         className={activeSection===id?styles.sectionTabActive:styles.sectionTab}
@@ -217,6 +218,30 @@ export default function CrmManager({ locale = 'en', accountId }) {
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
     {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />}
+    {activeSection==='sms'&&data&&<div className={styles.formCard}>
+      <h3>SMS · {language==='ru'?'сообщения клиентам':language==='es'?'mensajes a clientes':'client messages'}</h3>
+      <p className={styles.fine}>{language==='ru'?'Выберите контакт, подтвердите согласие на SMS и отправляйте сообщения вручную. Групповых рассылок нет.':language==='es'?'Selecciona un contacto con consentimiento SMS. Los envíos requieren confirmación individual.':'Select a contact with recorded SMS consent. Every send is manual and individually confirmed.'}</p>
+      <p className={styles.fine}>{data.smsEnabled?
+        (data.smsLive?(language==='ru'?'SMS-канал активен.':'SMS sending is available.'):(language==='ru'?'Тестовый режим: только проверенный номер.':'Test mode: approved phone number only.')):
+        (language==='ru'?'Провайдер пока не подключён. Для платных сообщений нужен проверенный Twilio-номер.':'Twilio SMS sender is not yet connected. Real paid SMS delivery remains disabled.')}</p>
+      <input type="search" aria-label={language==='ru'?'Найти контакт для SMS':language==='es'?'Buscar contacto para SMS':'Find contact for SMS'}
+        placeholder={language==='ru'?'Поиск по имени или телефону…':'Search name or phone…'}
+        value={search} onChange={e=>setSearch(e.target.value)} />
+      {globalSearch&&serverSearchStatus==='loading'&&<p role="status">{language==='ru'?'Ищу…':'Searching…'}</p>}
+      {globalSearch&&serverSearchStatus==='error'&&<p role="alert">{language==='ru'?'Ошибка поиска':'Search unavailable'}</p>}
+      <ul className={styles.list}>
+        {contacts.filter(contact=>contact.phone).map(contact=><li key={contact.id} className={styles.emailContactRow}>
+          <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
+          <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{contact.phone}</small></span>
+          <CrmSmsTools contact={contact} locale={language} enabled={data.smsEnabled}
+            live={data.smsLive} busy={busy} onAction={save} messages={data.smsMessages||[]} />
+        </li>)}
+        {!contacts.some(contact=>contact.phone)&&<li className={styles.empty}>{language==='ru'?'Нет контактов с телефоном. Добавьте их в разделе «Контакты».':'No contacts with a saved mobile number. Add a contact first.'}</li>}
+      </ul>
+      {!globalSearch&&data.contactsNextCursor&&<button type="button" className={styles.loadMore}
+        disabled={busy||pageBusy} onClick={loadMoreContacts}>{language==='ru'?'Загрузить ещё':'Load more contacts'}</button>}
+      {notice&&<p role="status" className={styles.notice}>{notice}</p>}
+    </div>}
     {data&&<>
       {activeSection==='overview'&&<>
       <p><a href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
