@@ -36,6 +36,8 @@ jobs:
         run: |
           node --test \
             tests/client-report-coastal-v2.test.mjs \
+            tests/client-report-final-actions.test.mjs \
+            tests/client-session-report-block-order.test.mjs \
             tests/client-session-html-report.test.mjs \
             tests/client-report-design.test.mjs \
             tests/client-report-premium-v3.test.mjs \
