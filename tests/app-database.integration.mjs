@@ -27,6 +27,7 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
+import { createArticleRepository } from '../lib/practitioners/article-repository.js'
 import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
 import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/legacy-document-flow.js'
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
@@ -639,6 +640,40 @@ test('master network approval, publication and practitioner isolation use the ex
   second = await practiceRepo.submitProfile(b, { expectedRevision: second.revision })
   await practiceRepo.moderateProfile(second.id, { action: 'approve' })
   assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
+})
+
+test('article folders: real database ownership, search metadata, archival safety and public draft privacy',async()=>{
+ const articleRepo=createArticleRepository(config)
+ const folder=await articleRepo.createFolder(a,{name:'Synthetic QA Remedy Cards'})
+ assert.equal(folder.name,'Synthetic QA Remedy Cards')
+ await assert.rejects(()=>articleRepo.createFolder(a,{name:' synthetic qa remedy cards '}),{code:'FOLDER_EXISTS'})
+ const article=await articleRepo.save(a,null,{
+  draft:{
+   locale:'ru',title:'Synthetic QA article',
+   excerpt:'Synthetic article for checking owner-only folders and private publication.',
+   body:'## Описание\n\n'+('Тестовый безопасный материал для проверки структуры. ').repeat(7),
+   coverPath:'',sourceUrls:[],linkedServiceIds:[],tags:['Тест','Test'],
+  },
+  folderId:folder.id,
+ })
+ assert.equal(article.folderId,folder.id)
+ assert.deepEqual(article.draft.tags,['Тест','Test'])
+ const mine=await articleRepo.library(a)
+ assert.ok(mine.folders.some(x=>x.id===folder.id))
+ assert.ok(mine.items.some(x=>x.id===article.id))
+ const others=await articleRepo.library(b)
+ assert.equal(others.items.some(x=>x.id===article.id),false)
+ assert.equal(others.folders.some(x=>x.id===folder.id),false)
+ await assert.rejects(()=>articleRepo.renameFolder(b,folder.id,{name:'Not yours',expectedRevision:0}),
+   e=>['REVISION_CONFLICT','PRACTITIONER_REQUIRED'].includes(e.code))
+ const renamed=await articleRepo.renameFolder(a,folder.id,{name:'Renamed QA folder',expectedRevision:folder.revision})
+ assert.equal(renamed.name,'Renamed QA folder')
+ assert.equal(renamed.revision,1)
+ assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
+ await articleRepo.removeFolder(a,renamed.id)
+ const after=(await articleRepo.library(a)).items.find(x=>x.id===article.id)
+ assert.equal(after.folderId,null,'folder deletion must keep its linked article in Unfiled')
+ assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
 })
 
 test('public service funnel stores daily clicks and keeps practitioner report private', async () => {
