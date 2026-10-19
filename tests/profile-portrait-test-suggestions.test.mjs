@@ -74,7 +74,7 @@ test('development tab places a distinct profile module before course recommendat
   assert.ok(profilePos>0&&coursesPos>profilePos)
   assert.match(view,/displayedTests\.slice\(0, 2\)/)
   assert.match(view,/displayedTests\.slice\(2\)/)
-  assert.match(view,/<details className=\{styles\.profileTestMore\}>/)
+  assert.match(view,/<details key=\{activeDomain\} className=\{styles\.profileTestMore\}>/)
   assert.match(view,/\/app\/monitoring\//)
   assert.match(view,/aria-labelledby="hh-profile-invitation-title"/)
   assert.match(view,/buildPsychPortrait\(results\)/)
