@@ -38,7 +38,7 @@ try {
     await expect(heroCta).toBeVisible();
     await expect(footerCta).toHaveCount(1);
     const targetLocale = locale === "es" ? "en" : locale;
-    const expectedHref = "/" + targetLocale + "/academy/principles-of-energywork/learn?start=1";
+    const expectedHref = "/" + targetLocale + "/academy/principles-of-energywork/learn";
     await expect(heroCta).toHaveAttribute("href", expectedHref);
     await expect(footerCta).toHaveAttribute("href", expectedHref);
     const photo = root.locator('img[src*="reiki-practitioner-sunrise.webp"]');
@@ -80,11 +80,11 @@ try {
     if ((locale === "en" && width === 320) || (locale === "ru" && width === 390) ||
         (locale === "es" && width === 390)) {
       await heroCta.click();
-      await page.waitForURL(new RegExp("/" + targetLocale + "/academy/principles-of-energywork/learn\\?start=1"), { timeout: 35000 });
-      await expect(page.locator('[data-energywork-slide-id="welcome-02"]')).toBeVisible({ timeout: 30000 });
-      await expect(page.locator('[data-energywork-slide-kind="reflection"]')).toBeVisible();
+      await page.waitForURL(new RegExp("/" + targetLocale + "/academy/principles-of-energywork/learn$"), { timeout: 35000 });
+      await expect(page.locator('[data-energywork-slide-id="welcome-01"]')).toBeVisible({ timeout: 30000 });
+      await expect(page.locator('[data-energywork-slide-kind="welcome"]')).toBeVisible();
       await expect(page.locator('button[data-energywork-next]')).toHaveCount(1);
-      await page.screenshot({ path: output + "/" + engine + "-" + locale + "-" + width + "-first-question.png", fullPage: true });
+      await page.screenshot({ path: output + "/" + engine + "-" + locale + "-" + width + "-welcome.png", fullPage: true });
     }
     assert.deepEqual(errors, [], locale + "/" + width + ": no unhandled JS errors");
     console.log(JSON.stringify({ engine, locale, width, status: "passed", geometry }));
