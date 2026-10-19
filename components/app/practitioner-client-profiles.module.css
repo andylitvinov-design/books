@@ -32,3 +32,7 @@
 .metrics .refresh{min-height:40px;border:1px solid #aad1bd;border-radius:10px;background:#fff;color:#266659;padding:8px 12px;font:750 12px/1.35 system-ui,sans-serif;cursor:pointer}
 .metrics .refresh:disabled{opacity:.45;cursor:wait}
 .metrics .refresh:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+
+/* Distinct from "awaiting reply": only actual unviewed in-app messages. */
+.newCount{background:#fff0d0!important;border-color:#e9d19f!important;color:#78571c!important}
+.unseen{display:inline-flex;align-self:flex-start;max-width:100%;padding:3px 8px;border-radius:99px;background:#fff1d4;color:#805d1f;font:750 11px/1.4 system-ui,sans-serif}
