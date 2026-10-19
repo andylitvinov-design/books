@@ -148,7 +148,10 @@ test('only the original remedy-description appendix collapses, with complete pri
     'canonical-remedy-group','canonical-guidance','canonical-follow-up-appointment',
     'DocumentSignature']) assert.ok(jsx.includes(marker),
       'non-appendix report content remains visible: ' + marker)
-  assert.match(css, /@media screen \{[\s\S]*?canonical-remedy-appendix-description \{\s*display:none/)
+  // The current appendix keeps its brief tap instruction visible on screen;
+  // only the full remedy content collapses (and print expands all originals).
+  assert.match(css, /@media screen \{[\s\S]*?canonical-remedy-appendix-description \{\s*display:block/)
+  assert.match(css, /@media print \{[\s\S]*?canonical-remedy-appendix-hint \{display:none;/)
   assert.match(css, /details\.canonical-remedy-profile-disclosure > summary:focus-visible/)
   assert.match(css, /@media print \{[\s\S]*?details\.canonical-remedy-profile-disclosure/)
   assert.match(printHandler, /addEventListener\('beforeprint', expandForPrint\)/)
