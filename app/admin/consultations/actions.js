@@ -6,6 +6,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { consultationSavingAvailable } from '@/lib/consultations/availability'
 import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/consultations/lifecycle'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
+import { parseDaoResourceScore } from '@/lib/consultations/dao-resource-stage'
 import { parseReportMaterialIds, stageReportMaterials } from '@/lib/consultations/report-material-staging'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { getAppConfig } from '@/lib/app/config'
@@ -25,12 +26,14 @@ function input(formData) {
   const testsJson = String(formData.get('recommendedTestsJson') ?? '[]')
   if (testsJson.length > 4000) throw new Error('Invalid recommended tests')
   data.recommendedTestKeys = JSON.parse(testsJson)
+  data.daoResourceScore = parseDaoResourceScore(formData.get('daoResourceScore'))
   return data
 }
 
 function safeConsultationError(error) {
   const message = error instanceof Error ? error.message : ''
   if (/Select at least one document/i.test(message)) return 'Select a prescription, an invoice, or both.'
+  if (/INVALID_DAO_RESOURCE_SCORE/.test(message)) return 'Enter a Wu Xing resource score from 0 to 10 with at most one decimal place.'
   if (/amount/i.test(message)) return 'Enter an invoice amount greater than zero (up to two decimal places).'
   if (/service/i.test(message)) return 'Enter the service name for the invoice.'
   if (/date/i.test(message)) return 'Choose a valid consultation date.'
