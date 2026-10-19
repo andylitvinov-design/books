@@ -1,0 +1,5 @@
+.navCart{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:38px;min-width:39px;padding:6px 8px;color:#236f78;background:#f2f8f5;border:1px solid #cde2d9;border-radius:11px;text-decoration:none;font:750 12px Arial,Helvetica,sans-serif}
+.navCart b{display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:10px;background:#176f83;color:white;font:800 10px Arial,Helvetica,sans-serif}
+.navCart:hover{background:#e3f5ec}
+.navCart:focus-visible{outline:3px solid #bb8051;outline-offset:3px}
+@media(max-width:700px){.navCart{padding:7px;min-height:38px}.navCart span{display:none}}
