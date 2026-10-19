@@ -13,11 +13,20 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
-import { energyworkLessonRanges } from "@/data/academy/energywork-ai-schema";
+import { energyworkLessonRanges, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
 type AnswerMap = Record<string, string>;
+const TANTRA_STUDY_HINT_ANCHORS: Record<string, string> = {
+  "tan-06": "#tantra-original-author-research",
+  "tan-study-02": "#tantra-original-author-research",
+  "tan-study-03": "#tantra-full-source",
+  "tan-study-04": "#tantra-full-source",
+  "tan-study-05": "#tantra-levels",
+  "tan-study-06": "#tantra-original-master-programme",
+  "tan-study-07": "#tantra-original-master-programme",
+};
 type StoredProgress = {
   accountId: string; enrolled: boolean; courseVersion: string;
   slideId?: string; pathId?: EnergyworkPath | null; answers?: AnswerMap;
@@ -102,6 +111,7 @@ const copy = {
     meditationReport: "Meditation report",
     lessonQuestion: "Course question",
     optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
+    tantraAnswerRequired: "Answer required to continue.", tantraStudyHint: "Need a hint? Read the guide", tantraAnswerPlaceholder: "Write a short answer…", required: "Required",
     feedbackBadge: "Your review",
     saveReview: "Save review",
     reviewMissing: "Write at least 15 characters to save your review.",
@@ -220,6 +230,7 @@ const copy = {
     meditationReport: "Отчёт после медитации",
     lessonQuestion: "Вопрос по уроку",
     optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
+    tantraAnswerRequired: "Ответ обязателен для продолжения.", tantraStudyHint: "Подсказка: читать материал", tantraAnswerPlaceholder: "Ваш краткий ответ…", required: "Обязательно",
     feedbackBadge: "Ваш отзыв",
     saveReview: "Сохранить отзыв",
     reviewMissing: "Напишите хотя бы 15 символов, чтобы сохранить отзыв.",
@@ -593,6 +604,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
   const feedbackLength = Array.from(meditationReview.trim()).length;
   const feedbackMissing = isMeditationFeedback && feedbackLength < 15;
+  const isTantraStudyQuestion = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.includes(slide.id);
+  const tantraStudyMissing = isTantraStudyQuestion && !energyworkTantraStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -647,7 +660,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     setIndex(target);
   }
   async function next() {
-    if (busy || experienceMissing || feedbackMissing) return;
+    if (busy || experienceMissing || feedbackMissing || tantraStudyMissing) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -848,7 +861,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
                      isMeditationFeedback ? t.feedbackBadge :
                      initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
-                     initiationItems.some((item) => item.questionIds.includes(slide.id)) ? t.lessonQuestion : t.optional}</span>
+                     initiationItems.some((item) => item.questionIds.includes(slide.id)) ? (isTantraStudyQuestion ? t.lessonQuestion + ' · ' + t.required : t.lessonQuestion) : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
@@ -857,7 +870,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
                       maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
-                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : t.placeholder} autoComplete="off" />
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isTantraStudyQuestion ? t.tantraAnswerPlaceholder : t.placeholder}
+                      required={isTantraStudyQuestion}
+                      aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : undefined}
+                      autoComplete="off" />
                   ) : null}
                   {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{feedbackLength} {t.feedbackCharacters} · {t.feedbackMinimum}</p> : null}
                   {slide.question.type === "scale" ? (
@@ -888,11 +904,22 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
                   ) : null}
-                  <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
-                    role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
-                    isMeditationFeedback ? (feedbackMissing ? t.reviewMissing : t.feedbackPrivacy) :
-                    initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id))
-                    ? t.optionalForLearning : t.blank}</p>
+                  {isTantraStudyQuestion ? (
+                    <div className={styles.tantraStudyHelp} id={"tantra-study-help-" + slide.id} data-tantra-study-required>
+                      <span className={styles.tantraStudyRequired}>{t.tantraAnswerRequired}</span>
+                      <Link className={styles.tantraStudyLink}
+                        href={"/" + locale + "/academy/reiki/tantra-reiki" + TANTRA_STUDY_HINT_ANCHORS[slide.id]}
+                        target="_blank" rel="noopener noreferrer" data-tantra-study-hint>
+                        <BookOpen size={15} aria-hidden="true" />{t.tantraStudyHint}<ExternalLink size={13} aria-hidden="true" />
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
+                      role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
+                      isMeditationFeedback ? (feedbackMissing ? t.reviewMissing : t.feedbackPrivacy) :
+                      initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id))
+                      ? t.optionalForLearning : t.blank}</p>
+                  )}
                   {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id)) ?
                     <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
                       disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
@@ -1122,7 +1149,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               )}
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing}
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing}
                 className={styles.next} data-energywork-next>
                 {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
                   slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continuePath) : t.continue}
