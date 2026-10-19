@@ -58,8 +58,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       slideJustify: getComputedStyle(scroller).justifyContent,
       slideHeight: slideRect.height,
       titleHeaderCount: element.querySelectorAll("header").length,
-      previewUnderProgramme: Boolean(element.querySelector("aside")?.closest("details[class*='programme']")),
-      programmeOpen: Boolean(element.querySelector("details[class*='programme']")?.open),
+      privateSaveManagerPresent: Boolean(element.querySelector('details[class*="saveManager"] aside[class*="preview"]')),
+      programmeOpen: element.querySelector('button[aria-controls="reiki-journey-help"]')?.getAttribute("aria-expanded") === "true",
+      programmeHeight: element.querySelector("section[data-expanded]")?.getBoundingClientRect().height ?? 0,
       slideHorizontalOverflow: scroller.scrollWidth-scroller.clientWidth,
       rootHorizontalOverflow: element.scrollWidth-element.clientWidth,
       ctaTop: rect?.top ?? null,
@@ -90,8 +91,10 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   }
   assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
-  assert.ok(data.previewUnderProgramme, where + ": private saving is accessible inside programme disclosure");
-  assert.equal(data.programmeOpen, false, where + ": programme details closed until requested");
+  assert.ok(data.privateSaveManagerPresent, where + ": private saving is accessible from the separate progress icon");
+  assert.equal(data.programmeOpen, false, where + ": journey hint is collapsed unless requested");
+  assert.ok(data.programmeHeight > 25 && data.programmeHeight < 48,
+    where + ": collapsed hint keeps a single compact bottom row");
   assert.equal(data.titleHeaderCount, data.kind === "welcome" ? 1 : 0,
     where + ": redundant top buttons hidden on inner slides");
   assert.ok(data.slideHorizontalOverflow <= 2, where + ": no slide horizontal overflow");
@@ -158,6 +161,36 @@ async function exerciseJourney(page, locale, width) {
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
   await expect(root).toHaveAttribute("data-course-version","2026-10-19.p2");
+
+  // Opening the bottom hint should consume height in the flex column,
+  // shrinking the slide instead of overlaying its contents.
+  const journeyToggle = root.locator('button[aria-controls="reiki-journey-help"]');
+  const journeyInfo = root.locator("#reiki-journey-help");
+  const slideArea = root.locator("[data-energywork-slide-id]");
+  const closedRect = await slideArea.boundingBox();
+  assert.ok(closedRect?.height, "Initial lesson must be visible before opening the hint");
+  await journeyToggle.click();
+  await expect(journeyToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(journeyInfo).toBeVisible();
+  await expect(root.locator('section[data-expanded]')).toHaveAttribute("data-expanded", "true");
+  const openRect = await slideArea.boundingBox();
+  assert.ok(openRect && openRect.height < closedRect.height - 30,
+    "Journey hint must push the lesson slide upward instead of floating above it");
+  const infoRect = await journeyInfo.boundingBox();
+  const toggleRect = await journeyToggle.boundingBox();
+  assert.ok(infoRect && toggleRect && infoRect.bottom <= toggleRect.top + 2,
+    "Explanations appear above the bottom-row toggle");
+  for (const path of ["reiki/tantra-reiki", "reiki/kundalini-reiki", "reiki/yggdrasil"]) {
+    const link = journeyInfo.locator('a[href="/' + locale + '/academy/' + path + '"]');
+    await expect(link).toHaveCount(1);
+    await expect(link).toHaveAttribute("target", "_blank");
+  }
+  await journeyToggle.click();
+  await expect(journeyToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(journeyInfo).toBeHidden();
+  const restoredRect = await slideArea.boundingBox();
+  assert.ok(restoredRect && restoredRect.height >= closedRect.height - 4,
+    "Collapsing the hint restores the lesson space");
   const journey = [];
   for (let n=0;n<expectedSequence.length;n++) {
     const index = n+1;
