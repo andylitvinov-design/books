@@ -111,6 +111,7 @@ export function PractitionerMaterialsCabinet(){
         VIDEO_STORAGE_NOT_CONFIGURED:ru?'Для видео требуется включить защищённый R2/S3 или отдельно согласованный Supabase.':
           'Enable private R2/S3 video storage or the explicitly approved Supabase option.',
         MEDIA_SIZE_NOT_ALLOWED:ru?'Файл превышает допустимый размер.':'File exceeds storage size limit.',
+        MATERIAL_VIDEO_STORAGE_LIMIT:ru?'Превышен лимит 160 МБ для видео в закрытой библиотеке.':'The private library has reached its 160 MB video storage limit.',
       }
       setError(messages[e.message]||e.message)
     }finally{setBusy(false)}
