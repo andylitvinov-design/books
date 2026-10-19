@@ -49,3 +49,15 @@
 7. Тесты `node --test tests/crm-messenger.test.mjs`, целевой ESLint / Next.js build, Vercel Production READY по точному SHA и проверка alias.
 
 **Состояние:** это исполняемый план и спецификация. Отмечать каждый пункт выполненным только после отдельной проверенной реализации.
+## Implementation evidence · v3 source (18 Oct 2026)
+
+This PR implements P0/P1 scope in the existing live-capable codebase, not a new CRM:
+- `lib/crm/messenger-store.js`: owner-resolved linked contact, revision readback, encrypted internal `note` messages, exact replay protection, existing follow-ups by contact, needs-reply source signal.
+- `app/api/app/crm/messenger/route.js`: strict owner-only POST actions `note`, `set_stage`, `create_followup`, `complete_followup`; no additional provider-sending route.
+- `components/app/crm-messenger.jsx`: safe async A/B thread switching and owner-action race guards, stage dropdown, open and completed tasks, internal notes, neutral human-selected quick replies, accurate EN/RU/ES status/errors.
+- `components/app/crm-manager.jsx`: refresh existing Contacts/Overview after messenger stage/task action.
+- `tests/crm-messenger.test.mjs`: pure fail-closed policy and source contract checks covering message secrets, owner controls, task/notes UI, race isolation, and provider-off behavior.
+
+**DB verified before merge:** PostgreSQL owner-restricted `crm_msg_items` supports `direction='note'` and `hh_crm_backend` INSERT; `crm_followups` supports the same role with no anonymous SELECT. A synthetic `BEGIN...ROLLBACK` validated note and task linkage; all test records reverted. No new DDL or schema migrations, and no provider sends.
+
+**Open external gates:** no `HH_CRM_MSG_*` secrets in Production; separate owner-controlled Telegram/Meta accounts and valid permissions are required for any live E2E verification. Never state that customers were messaged until provider receipts are confirmed.
