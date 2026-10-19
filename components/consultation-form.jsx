@@ -16,6 +16,8 @@ import { ReportLanguagePicker } from './report-language-picker'
 import { ConsultationRecommendedTests } from './consultation-recommended-tests'
 import { DaoResourceStageField } from './dao-resource-stage'
 import { parseDaoResourceScore } from '@/lib/consultations/dao-resource-stage'
+import { extractReportProgress, parseReportProgressScore } from '@/lib/documents/report-progress'
+import './report-progress-editor.css'
 import { readUiLocale } from '@/lib/ui-locale'
 
 const copy = {
@@ -49,6 +51,11 @@ const copy = {
     notePlaceholder: 'Общие указания для клиента…',
     analysis: 'Анализ',
     analysisHint: 'Замеры состояния, динамика симптомов и наблюдения',
+    progressHeading: 'Круговые диаграммы «Было / Стало»',
+    progressHint: 'Оцените состояние клиента по шкале от 0 до 10. Когда заполнены оба поля, в HTML- и PDF-отчёте появятся две диаграммы.',
+    progressBefore: 'Было · до сессии',
+    progressAfter: 'Стало · после сессии',
+    progressError: 'Оценки «Было» и «Стало» должны быть от 0 до 10 с точностью до 0,1.',
     analysisPlaceholder: 'Например: дата наблюдения, показатели и изменения состояния…',
     clientRecommendations: 'Рекомендации',
     clientRecommendationsHint: 'Индивидуальные рекомендации клиенту по результатам анализа',
@@ -128,6 +135,11 @@ const copy = {
     notePlaceholder: 'General client instructions…',
     analysis: 'Analysis',
     analysisHint: 'State measurements, symptom changes and observations',
+    progressHeading: 'Before / After circular charts',
+    progressHint: 'Rate the client’s state from 0 to 10. When both scores are entered, two circles appear in the HTML and PDF report.',
+    progressBefore: 'Before · start of session',
+    progressAfter: 'After · end of session',
+    progressError: 'Before and after scores must be between 0 and 10, with at most one decimal place.',
     analysisPlaceholder: 'For example: observation date, measured scores and changes…',
     clientRecommendations: 'Recommendations',
     clientRecommendationsHint: 'Your personalized recommendations based on the analysis',
@@ -192,6 +204,14 @@ function detectedType(items) {
   return 'homeopathy'
 }
 
+function initialReportScore(consultation, key) {
+  if (!consultation) return ''
+  const legacy = consultation.progressBefore === undefined && consultation.progressAfter === undefined
+    ? extractReportProgress(consultation.analysis) : null
+  const score = consultation[key] === undefined ? legacy?.[key === 'progressBefore' ? 'before' : 'after'] : consultation[key]
+  return score == null ? '' : String(score)
+}
+
 export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId, recommendedTestOptions = { en: [], ru: [] }, saveFooterTargetId = null }) {
   const selectedClientLocale = clients.find((client) => client.id === selectedClientId)?.preferredLocale
   const initialReportLocale = consultation?.languagePreference === 'ru' || consultation?.languagePreference === 'en'
@@ -209,6 +229,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
   const [analysis, setAnalysis] = useState(() => consultation?.analysis ?? getOwnerReportTextTemplate(initialReportLocale).analysis)
+  const [progressBefore, setProgressBefore] = useState(() => initialReportScore(consultation, 'progressBefore'))
+  const [progressAfter, setProgressAfter] = useState(() => initialReportScore(consultation, 'progressAfter'))
   const [recommendationsText, setRecommendationsText] = useState(consultation?.recommendationsText ?? '')
   const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
   const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale).additionalNotes)
@@ -233,6 +255,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const reportType = useMemo(() => detectedType(items), [items])
   const reportLabel = reportType === 'mixed' ? labels.reportMixed : reportType === 'bach' ? labels.reportBach : labels.reportHomeopathy
   const daoScoreInvalid = (() => { try { parseDaoResourceScore(daoResourceScore); return false } catch { return true } })()
+  const progressScoresInvalid = (() => { try { parseReportProgressScore(progressBefore); parseReportProgressScore(progressAfter); return false } catch { return true } })()
 
   function changeReportLocale(nextLocale) {
     const next = nextLocale === 'ru' ? 'ru' : 'en'
@@ -372,6 +395,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     } else if (includeRecommendation && !validateConsultationRows(items)) {
       event.preventDefault()
       setError(labels.chooseError)
+    } else if (includeRecommendation && progressScoresInvalid) {
+      event.preventDefault()
+      setError(labels.progressError)
     } else if (includeRecommendation && daoScoreInvalid) {
       event.preventDefault()
       setError(uiLocale === 'ru' ? 'Укажите балл У-син от 0 до 10 с одним знаком после запятой.' : 'Enter a Wu Xing score from 0 to 10 with at most one decimal place.')
@@ -543,6 +569,22 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       {!consultation && <button type="button" className="consultation-reload-template" onClick={restoreReportTemplate}>
         {labels.reloadTemplate} {reportLocale === 'ru' ? 'русском' : 'English'}
       </button>}
+      <div className="consultation-progress-editor" role="group" aria-label={labels.progressHeading}>
+        <div className="consultation-progress-editor-intro">
+          <strong>{labels.progressHeading}</strong>
+          <p>{labels.progressHint}</p>
+        </div>
+        <div className="consultation-progress-inputs">
+          <label><span>{labels.progressBefore}</span>
+            <div className="consultation-progress-input"><input name="progressBefore" type="number" inputMode="decimal" min="0" max="10" step="0.1"
+              value={progressBefore} onChange={event => setProgressBefore(event.target.value)} placeholder="0–10" /><span>/ 10</span></div>
+          </label>
+          <label><span>{labels.progressAfter}</span>
+            <div className="consultation-progress-input"><input name="progressAfter" type="number" inputMode="decimal" min="0" max="10" step="0.1"
+              value={progressAfter} onChange={event => setProgressAfter(event.target.value)} placeholder="0–10" /><span>/ 10</span></div>
+          </label>
+        </div>
+      </div>
       <div className="consultation-report-note-grid">
         <label className="consultation-report-note">
           <span>{labels.analysis}</span>
