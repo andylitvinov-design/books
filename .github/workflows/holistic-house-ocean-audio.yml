@@ -9,8 +9,6 @@ on:
       - 'components/energywork-ai-learner.tsx'
       - 'public/audio/**'
       - 'tests/ocean-practice-audio*.test.mjs'
-      - 'tests/opora-ocean-outro.test.mjs'
-      - 'tests/opora-post-save-course-program.test.mjs'
       - '.github/workflows/holistic-house-ocean-audio.yml'
   push:
     branches: ['codex/public-book-library']
@@ -21,8 +19,6 @@ on:
       - 'components/energywork-ai-learner.tsx'
       - 'public/audio/**'
       - 'tests/ocean-practice-audio*.test.mjs'
-      - 'tests/opora-ocean-outro.test.mjs'
-      - 'tests/opora-post-save-course-program.test.mjs'
       - '.github/workflows/holistic-house-ocean-audio.yml'
   workflow_dispatch:
 
@@ -44,5 +40,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Verify audio file, playback, and EN/RU/ES anti-stress flows
-        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs tests/opora-ocean-outro.test.mjs tests/opora-post-save-course-program.test.mjs
+      # Course-navigation/receipt tests have a separate 17-slide migration lifecycle.
+      # Here only the shared sound engine and the three audio consumers are gated.
+      - name: Verify audible WAV and native media lifecycle across practice timers
+        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs
