@@ -182,7 +182,7 @@ export function PersonalTestimonials({
       </div>
 
       {isHome && (
-        <details className={styles.moreVideoDisclosure} data-home-testimonial-disclosure>
+        <details className={styles.moreVideoDisclosure} data-home-testimonial-disclosure="true">
           <summary>
             <span>{current.moreToggle}</span>
             <span className={styles.moreCount}>
