@@ -99,8 +99,6 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
       </section>}
 
-      <DaoStageDisclosure score={document.daoResourceScore} locale={locale} />
-
       {groups.map((group) => <section className="canonical-remedy-group" key={group.type}>
         <div className="canonical-remedy-section-heading">
           <h2 className="canonical-remedy-group-title">{group.title || (locale === 'ru' ? 'НАЗНАЧЕНИЯ' : 'PRESCRIPTIONS')}</h2>
@@ -189,6 +187,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </section>}
 
       {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
+      <DaoStageDisclosure score={document.daoResourceScore} locale={locale}
+        published={document.daoResourcePublished !== false} />
       <DocumentSignature date={document.dateIssued} locale={locale} compact />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
       {!embedded && recommendedTests.length > 0 && <section className="canonical-recommended-tests" aria-label={locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}>
