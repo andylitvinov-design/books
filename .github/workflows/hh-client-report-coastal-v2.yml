@@ -8,6 +8,8 @@ on:
       - 'components/prescription-document.jsx'
       - 'public/images/holistic-house/report-lighthouse-coast.svg'
       - 'tests/client-report-coastal-v2.test.mjs'
+      - 'scripts/helpers/client-report-coastal-fixture.mjs'
+      - 'scripts/verify-client-report-coastal-browser.mjs'
       - '.github/workflows/hh-client-report-coastal-v2.yml'
   workflow_dispatch:
 permissions:
@@ -46,3 +48,40 @@ jobs:
         run: npx --no-install tsc --noEmit
       - name: Production Next.js build
         run: npm run build
+
+  coastal-visual:
+    name: client report visual (${{ matrix.browser }})
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      CI: 'true'
+      HH_REPORT_QA_ISOLATED: 'true'
+      HH_TEST_BROWSER: ${{ matrix.browser }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install isolated browser binary
+        run: |
+          mkdir -p /tmp/hh-report-coastal-browser
+          npm install --prefix /tmp/hh-report-coastal-browser --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-report-coastal-browser/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-report-coastal-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Verify actual signed JSX plus responsive production CSS (synthetic only)
+        run: node scripts/verify-client-report-coastal-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: client-report-coastal-visual-${{ matrix.browser }}
+          path: artifacts/client-report-coastal-v2/${{ matrix.browser }}/
+          retention-days: 7

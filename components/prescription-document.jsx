@@ -105,7 +105,12 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
               <span className="canonical-remedy-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
               <div className="canonical-remedy-title">
                 <h3>{item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}</h3>
-                {schedule && <p className="canonical-remedy-schedule">{schedule}</p>}
+                {schedule && <p className="canonical-remedy-schedule" aria-label={schedule}>
+                  {schedule.split(' · ').map((part, index) => <span className="canonical-remedy-schedule-part" key={index}>
+                    {index > 0 && <span className="canonical-remedy-schedule-dot" aria-hidden="true"> · </span>}
+                    <span className="canonical-remedy-schedule-chip">{part}</span>
+                  </span>)}
+                </p>}
               </div>
             </div>
             {item.remedyPath && <Link className="canonical-remedy-profile-action" href={item.remedyPath}
