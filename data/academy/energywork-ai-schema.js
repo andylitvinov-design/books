@@ -226,9 +226,12 @@ export function energyworkP2ResumeId(slideId, answers = {}) {
 }
 // P3 lesson-one positions preceded the p4 swap. P4 quiz positions preceded p5.
 const P3_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
+// Preserve the historical p3→p9 ordinal migration independently of new display order.
+// The lesson-end practice move must not silently rewrite old cursor migrations.
+const P9_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
 export function energyworkP3ResumeId(slideId, answers = {}) {
   const flightStep = P3_FLIGHT.indexOf(slideId)
-  if (flightStep >= 0) return energyworkSequence()[2 + flightStep]
+  if (flightStep >= 0) return P9_FLIGHT[flightStep]
   return energyworkP4ResumeId(slideId, answers)
 }
 export function energyworkInitiationReady(answers) {
