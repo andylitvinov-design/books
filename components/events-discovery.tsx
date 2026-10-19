@@ -178,7 +178,7 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
                         </a>
                       ))}
                     </div>
-                    {expanded && <div id={detailsId} className={styles.eventExpanded}>
+                    <div id={detailsId} className={styles.eventExpanded} hidden={!expanded}>
                       <p>{event.description[locale]}</p>
                       {event.highlights?.[locale]?.length ? (
                         <>
@@ -187,7 +187,7 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
                         </>
                       ) : null}
                       {past && <small>{t.pastNote}</small>}
-                    </div>}
+                    </div>
                   </div>
                 </article>
               );
