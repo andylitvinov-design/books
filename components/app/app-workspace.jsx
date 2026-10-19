@@ -203,6 +203,8 @@ export default function AppWorkspace({ locale, path = [] }) {
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
+        ...(page === 'consultations' && searchParams.get('request')
+          ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
       })
       window.location.assign(result.redirectUrl)
     } catch (e) {
@@ -631,7 +633,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             )
           )}
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} requestedMessageId={searchParams.get('request') || ''} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
@@ -3537,7 +3539,7 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload, initialServiceId = '', source = '' }) {
+function Consultations({ data, locale, reload, initialServiceId = '', source = '', requestedMessageId = '' }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
@@ -3600,7 +3602,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
         <h2>{c.requests}</h2>
         {!data.requests.length && <p>{c.emptyRequests}</p>}
         {data.requests.map((request) => (
-          <article className="hh-panel" key={request.id}>
+          <article className="hh-panel" key={request.id} id={'hh-consultation-' + request.id}>
             <span className="hh-badge">{c[request.status]}</span>
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
@@ -3611,6 +3613,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             </p>
             {request.message && <p>{request.message}</p>}
             <PracticeRequestConversation key={request.id} requestId={request.id}
+              autoOpen={requestedMessageId === request.id}
               accountId={data.account.id} locale={locale}
               initialMessage={typeof request.message==='string'?request.message:''}
               createdAt={request.createdAt}/>
