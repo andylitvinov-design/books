@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('signed-in Profile shows one free introduction request at the BOTTOM of the secure reports card', () => {
+test('signed-in Profile keeps one optional free introduction request inside the expanded empty report archive', () => {
   const profile = source('components/app/profile-domains.jsx')
   const workspace = source('components/app/app-workspace.jsx')
   const archive = profile.indexOf('id="personal-reports"')
@@ -15,7 +15,9 @@ test('signed-in Profile shows one free introduction request at the BOTTOM of the
 
   assert.ok(archive >= 0 && reportRenderer > archive && offer > reportRenderer &&
     offer < archiveEnd && categories > archiveEnd)
-  assert.match(profile, /!external && savedReports\.filter\(report => report\.available !== false\)\.length === 0/)
+  assert.match(profile, /archiveOpen && availableReports\.length === 0/)
+  assert.match(profile, /hidden=\{!archiveOpen\}/)
+  assert.match(profile, /latestReceivedReport\(savedReports\)/)
   assert.match(profile, /data-profile-mode=\{mode\}/)
   assert.match(profile, /className="hh-domain-appointment-button"/)
   assert.match(profile, /\{t\.consultation\}/)
