@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
   ENERGYWORK_MEDITATION_REPORT_IDS, ENERGYWORK_REVIEW_MIN_CHARS,
-  energyworkMeditationFeedbackComplete,
+  energyworkMeditationFeedbackComplete, energyworkAnswerValid,
 } from '../data/academy/energywork-ai-schema.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -27,7 +27,22 @@ test('15 meaningful characters, no slider, positive EN/RU encouragement',()=>{
     assert.equal(energyworkMeditationFeedbackComplete(value),true)
   for(const value of ['12345678901234','   ','Feeling:3/10\\nShort'])
     assert.equal(energyworkMeditationFeedbackComplete(value),false)
-  assert.match(learner,/Array\.from\(meditationReview\.trim\(\)\)\.length < 15/)
+  assert.match(learner,/feedbackMissing = isMeditationFeedback && feedbackLength < 15/)
+  // 15 is a minimum, not a cap; long reflections survive client, API and moderation.
+  const extended='Свет и спокойствие. '.repeat(300)
+  for(const id of ENERGYWORK_MEDITATION_REPORT_IDS) {
+    assert.equal(energyworkMeditationFeedbackComplete(extended),true)
+    assert.equal(energyworkAnswerValid(id,extended),true)
+  }
+  assert.equal(energyworkAnswerValid('flight-05',extended),false)
+  assert.match(learner,/maxLength=\{isMeditationFeedback \? undefined : 1600\}/)
+  assert.match(learner,/feedbackLength\} \{t\.feedbackCharacters\} · \{t\.feedbackMinimum\}/)
+  assert.doesNotMatch(learner,/Math\.min\(15, Array\.from\(meditationReview/)
+  assert.doesNotMatch(my,/maxLength=\{1600\}|Math\.min\(15,Array\.from\(draft/)
+  assert.match(my,/\{Array\.from\(draft\.trim\(\)\)\.length\} \{t\.chars\} · \{t\.min\}/)
+  assert.match(repo,/!ENERGYWORK_MEDITATION_REPORT_IDS\.includes\(body\.slideId\) && body\.answer\.length > 1600/)
+  assert.doesNotMatch(pub,/value\.length > 1600/)
+  assert.doesNotMatch(listing,/review\.length<=1600/)
   assert.match(learner,/Save review/)
   assert.match(learner,/Сохранить отзыв/)
   assert.match(learner,/what did you feel, notice or discover/)

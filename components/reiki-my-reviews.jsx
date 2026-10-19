@@ -21,7 +21,7 @@ const COPY = {
     title:'Мои отзывы о Reiki-курсе',description:'Здесь хранятся ваши отзывы о четырёх медитациях. Вы можете их дополнять и редактировать.',
     loading:'Загружаем ваши отзывы…',start:'Начните Reiki Practitioner, чтобы записать первые впечатления.',
     open:'Открыть курс',notSaved:'Отзыв пока не написан.',saved:'Сохранено',private:'Личный отзыв',
-    edit:'Редактировать',save:'Сохранить изменения',saving:'Сохраняем…',min:'От 15 символов',
+    edit:'Редактировать',save:'Сохранить изменения',saving:'Сохраняем…',min:'минимум 15',chars:'символов',
     editHint:'Расскажите подробнее: что вы заметили, почувствовали или осознали?',
     share:'Разрешаю передать мои отзывы и учебные ответы Андрею в его закрытую CRM.',
     shareButton:'Передать в CRM',shared:'Отзывы доступны Андрею в закрытой CRM.',
@@ -38,7 +38,7 @@ const COPY = {
     title:'My Reiki course reviews',description:'Your reflections on four meditations are saved here. You can return to edit or expand them.',
     loading:'Loading your reviews…',start:'Begin Reiki Practitioner to write your first review.',
     open:'Open course',notSaved:'No review saved yet.',saved:'Saved',private:'Private review',
-    edit:'Edit review',save:'Save changes',saving:'Saving…',min:'At least 15 characters',
+    edit:'Edit review',save:'Save changes',saving:'Saving…',min:'minimum 15',chars:'characters',
     editHint:'Tell us more about what you noticed, felt or discovered.',
     share:'I agree to share my reviews and course answers with Andrey in his private CRM.',
     shareButton:'Share with teacher',shared:'Andrey can read your reviews in his private CRM.',
@@ -126,11 +126,11 @@ export function ReikiMyReviews({locale='en',accountId}) {
               </div>
               {isEditing ? <>
                 <label className={styles.visuallyHidden} htmlFor={'my-reiki-review-'+item.id}>{t.edit}</label>
-                <textarea id={'my-reiki-review-'+item.id} rows={4} maxLength={1600}
+                <textarea id={'my-reiki-review-'+item.id} rows={4}
                   placeholder={t.editHint} value={draft} disabled={busy}
                   onChange={e=>setDrafts(current=>({...current,[item.id]:e.target.value}))}/>
                 <div className={styles.editFooter}>
-                  <span>{Math.min(15,Array.from(draft.trim()).length)} / 15</span>
+                  <span>{Array.from(draft.trim()).length} {t.chars} · {t.min}</span>
                   <button type="button" disabled={busy||!enough(draft)||!changed}
                     onClick={()=>void command({action:'save',slideId:item.id,nextSlideId:item.id,answer:draft},{id:item.id})}>
                     {busy?t.saving:t.save}

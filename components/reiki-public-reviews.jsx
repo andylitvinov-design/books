@@ -35,7 +35,7 @@ export function ReikiPublicReviews({locale='en'}) {
     }).then(payload=>{
       if(!alive)return
       setReviews(Array.isArray(payload?.reviews)?payload.reviews.filter(item=>
-        item&&IDS.has(item.slideId)&&typeof item.review==='string'&&item.review.trim()&&item.review.length<=1600
+        item&&IDS.has(item.slideId)&&typeof item.review==='string'&&item.review.trim()
       ).slice(0,12):[])
     }).catch(()=>{if(alive)setReviews([])}).finally(()=>{if(alive)setLoaded(true)})
     return()=>{alive=false;abort.abort()}
