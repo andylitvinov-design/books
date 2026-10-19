@@ -29,14 +29,14 @@ const questions = [
 const quizOrder = ["tan-study-04", "tan-06", "tan-study-05",
   "tan-study-06", "tan-study-07", "tan-study-02"]
 
-test("The five-lesson course keeps its flight practice and has 68 total slides", () => {
+test("The five-lesson course keeps its flight practice and has 70 total slides", () => {
   const sequence = energyworkSequence()
-  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p6")
+  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p7")
   assert.deepEqual(sequence.slice(2, 9), [
     "flight-01", "flight-02", "flight-03", "flight-voices",
     "flight-05", "flight-04", "flight-done",
   ])
-  assert.equal(sequence.length, 68)
+  assert.equal(sequence.length, 70)
 })
 
 test("Tantra study slides are 4, 1, 5, 6, 7 and finally 2+3 on one screen", () => {
