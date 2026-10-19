@@ -34,3 +34,21 @@ test('voluntary YouTube guide is visible without pretending that web apps can in
   assert.match(landing, /<CourseHomeScreenHabit locale=\{locale\}/)
   assert.match(myCourse, /<CourseHomeScreenHabit locale=\{locale\}/)
 })
+
+test('a verified first lesson offers device setup, while skipping leaves progress untouched', () => {
+  const player = readFileSync('components/app/opora-experience-player.jsx', 'utf8')
+  const today = readFileSync('components/app/course-today.jsx', 'utf8')
+  const older = readFileSync('components/app/opora-v6-slide-player.jsx', 'utf8')
+  const habit = readFileSync('components/pwa/course-home-screen-habit.jsx', 'utf8')
+
+  assert.match(player, /cycle\.day===1\?\['weekOne','weekTwo','nextStep','habit'\]/)
+  assert.match(player, /data-opora-first-lesson-habit-invitation/)
+  assert.match(player, /data-opora-first-lesson-habit-setup/)
+  assert.match(player, /habitSetup\?t\.finish:t\.habitConfigure/)
+  assert.match(player, /habitSetup\?t\.back:t\.habitLater/)
+  assert.match(today, /habitSetupContent=\{<CourseHomeScreenHabit locale=\{locale\} embedded \/>\}/)
+  assert.match(older, /cycle\.day===1&&<section className=\{styles\.habitOffer\}/)
+  assert.match(older, /afterSave\?<\>/)
+  assert.match(habit, /embedded = false/)
+  assert.doesNotMatch(habit, /navigator\.getInstalledRelatedApps|queryPermission\('notifications'\)/)
+})
