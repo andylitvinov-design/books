@@ -77,7 +77,7 @@ test('report editor, preview and HTML client document use explicit Before/After 
   assert.match(editor, /extractReportProgress\(consultation\.analysis\)/)
   assert.match(actions, /'progressBefore', 'progressAfter'/)
   assert.match(preview, /'progressBefore', 'progressAfter'/)
-  assert.match(html, /resolveReportProgress\\(document\\)/)
+  assert.match(html, /resolveReportProgress\(document\)/)
   const sessionSource=readFileSync('lib/clients/session-delivery-service.js', 'utf8')
   const ownerStudio=readFileSync('components/admin-session-studio.jsx', 'utf8')
   assert.match(sessionSource, /'progressBefore','progressAfter'/, 'both numeric fields must enter the immutable published snapshot')
