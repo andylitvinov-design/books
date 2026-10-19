@@ -74,7 +74,7 @@ test("Dedicated directory retains all discovery, practitioners and localized rou
   assert.match(directory, /<MarketplaceServiceFinder/);
   assert.match(directory, /createPractitionerRepository/);
   assert.match(directory, /coreServiceOffers\(locale\)/);
-  assert.match(invitation, /href=\{ "\/" \+ locale \+ "\/services\/catalog" \}/);
+  assert.match(invitation, /href=\{"\/" \+ locale \+ "\/services\/catalog"\}/);
   assert.match(invitation, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
   assert.match(invitation, /<ServiceVideoShowcase locale="es" topic="overview"/);
   assert.match(invitation, /id="method-videos"/);
