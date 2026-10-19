@@ -88,6 +88,7 @@ const copy = {
     reviewMissing: "Write at least 15 characters to save your review.",
     feelingPlaceholder: "Share your meditation experience: what did you feel, notice or discover?",
     feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
+    feedbackCharacters: "characters", feedbackMinimum: "minimum 15",
     voicesLabel: "Learner experiences",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
     voicesSource: "Original review",
@@ -203,6 +204,7 @@ const copy = {
     reviewMissing: "Напишите хотя бы 15 символов, чтобы сохранить отзыв.",
     feelingPlaceholder: "Расскажите о медитации: какие ощущения, мысли или открытия вы заметили?",
     feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
+    feedbackCharacters: "символов", feedbackMinimum: "минимум 15",
     voicesLabel: "Отзывы участников",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
     voicesSource: "Источник отзыва",
@@ -568,7 +570,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
-  const feedbackMissing = isMeditationFeedback && Array.from(meditationReview.trim()).length < 15;
+  const feedbackLength = Array.from(meditationReview.trim()).length;
+  const feedbackMissing = isMeditationFeedback && feedbackLength < 15;
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -838,12 +841,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
                   {slide.question.type === "text" ? (
                     <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (answers[slide.id] ?? "")}
-                      onChange={(e) => setAnswer(e.target.value.slice(0, 1600))}
+                      onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
-                      maxLength={1600} rows={4}
+                      maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
                       placeholder={isMeditationFeedback ? t.feelingPlaceholder : t.placeholder} autoComplete="off" />
                   ) : null}
-                  {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{Math.min(15, Array.from(meditationReview.trim()).length)} / 15</p> : null}
+                  {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{feedbackLength} {t.feedbackCharacters} · {t.feedbackMinimum}</p> : null}
                   {slide.question.type === "scale" ? (
                     <div className={styles.scaleWrap}>
                       <input id={"answer-" + slide.id} className={styles.scale} type="range" min="0" max="10" step="1"

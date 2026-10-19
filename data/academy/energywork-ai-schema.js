@@ -26,7 +26,7 @@ export const ENERGYWORK_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04
 export const ENERGYWORK_MEDITATION_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04'])
 export const ENERGYWORK_REVIEW_MIN_CHARS = 15
 export function energyworkMeditationFeedbackComplete(answer) {
-  if (typeof answer !== 'string' || answer.length > 1600) return false
+  if (typeof answer !== 'string') return false
   // Keep old encrypted journal responses readable without requiring scores in new reviews.
   if (answer.startsWith('Feeling:')) {
     const legacy = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/.exec(answer)
@@ -99,7 +99,8 @@ export function energyworkInitiationReady(answers) {
 export function energyworkAnswerValid(id, answer) {
   const kind = ENERGYWORK_QUESTIONS[id]
   if (!kind || typeof answer !== 'string') return false
-  if (kind === 'text') return answer.length <= 1600 && !answer.includes('\\u0000')
+  if (kind === 'text') return !answer.includes('\\u0000') &&
+    (ENERGYWORK_MEDITATION_REPORT_IDS.includes(id) || answer.length <= 1600)
   if (kind === 'scale') return /^(?:[0-9]|10)$/.test(answer)
   if (kind === 'choice') return id === 'welcome-02'
     ? ENERGYWORK_EXPERIENCE_VALUES.includes(answer)

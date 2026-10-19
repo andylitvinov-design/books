@@ -178,6 +178,12 @@ async function exerciseJourney(page, locale, width) {
       await expect(reviewButton).toBeDisabled();
       await field.fill('123456789012345');
       await expect(reviewButton).toBeEnabled();
+      // A long, detailed review must remain fully editable; 15 is only a minimum.
+      const longReview='x'.repeat(2500);
+      await field.fill(longReview);
+      await expect(field).toHaveValue(longReview);
+      await expect(reviewButton).toBeEnabled();
+      await expect(page.locator('[class*="feedbackCount"]')).toContainText('2500');
       await field.fill(locale==="ru"
         ? "Я заметил(а) своё спокойное дыхание." : "I noticed a quiet moment.");
       await expect(reviewButton).toBeEnabled();
