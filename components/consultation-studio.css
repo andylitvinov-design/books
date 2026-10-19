@@ -1187,3 +1187,12 @@
   color: #335f68; font-size: 13px; line-height: 1.55;
 }
 .consultation-new-materials .consultation-new-materials-link { color: #246976; font-weight: 700; }
+
+/* Submit actions are portaled after the material and access sections, at the true page end. */
+.consultation-report-save-slot {
+  max-width: 920px;
+  margin: 22px auto 0;
+}
+.consultation-report-save-slot .consultation-studio-submit {
+  margin: 0;
+}

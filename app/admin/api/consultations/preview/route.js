@@ -22,7 +22,7 @@ const inputKeys = [
   'patientName', 'clientMode', 'clientId', 'consultationId', 'dateIssued',
   'languagePreference', 'amount', 'currency', 'service', 'paymentStatus',
   'paymentMethod', 'documentNumber', 'recommendationNumber',
-  'generalInstructions', 'analysis', 'additionalNotes', 'followUp', 'followUpDate', 'patientDob', 'internalNotes', 'daoResourceScore',
+  'generalInstructions', 'analysis', 'recommendationsText', 'additionalNotes', 'followUp', 'followUpDate', 'patientDob', 'internalNotes', 'daoResourceScore',
 ]
 
 function errorMessage(error, locale) {

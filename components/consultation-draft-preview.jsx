@@ -29,7 +29,7 @@ const translations = {
   },
 }
 
-export function ConsultationDraftPreview({ locale = 'en', includeRecommendation, includeInvoice, disabled = false }) {
+export function ConsultationDraftPreview({ locale = 'en', includeRecommendation, includeInvoice, disabled = false, formId }) {
   const labels = translations[locale === 'ru' ? 'ru' : 'en']
   const [loading, setLoading] = useState('')
   const [error, setError] = useState('')
@@ -93,12 +93,12 @@ export function ConsultationDraftPreview({ locale = 'en', includeRecommendation,
 
   return <>
     <div className="consultation-preview-actions">
-      {includeRecommendation && <button type="button" className="consultation-preview-button" disabled={disabled || Boolean(loading)}
+      {includeRecommendation && <button type="button" className="consultation-preview-button" form={formId} disabled={disabled || Boolean(loading)}
         onClick={event => handlePreview(event, 'recommendation')}>
         {loading === 'recommendation' ? <Loader2 size={19} aria-hidden="true" className="animate-spin" /> : <Eye size={19} aria-hidden="true" />}
         {loading === 'recommendation' ? labels.viewing : labels.report}
       </button>}
-      {includeInvoice && <button type="button" className="consultation-preview-button consultation-preview-button-secondary" disabled={disabled || Boolean(loading)}
+      {includeInvoice && <button type="button" className="consultation-preview-button consultation-preview-button-secondary" form={formId} disabled={disabled || Boolean(loading)}
         onClick={event => handlePreview(event, 'payment')}>
         {loading === 'payment' ? <Loader2 size={17} aria-hidden="true" className="animate-spin" /> : <FileText size={17} aria-hidden="true" />}
         {loading === 'payment' ? labels.viewing : labels.invoice}

@@ -117,6 +117,9 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     finally{setLoading(false)}
   }
   return <>
+  {(placement==='video'||placement==='all')&&!loading&&<SessionAudioRecorder clientId={clientId} sessionId={sessionId||null}
+    documentId={documentId} locale={locale} videoOnly
+    onSaved={savedId=>{void readSession(savedId).catch(e=>setError(e.message||'SESSION_UNAVAILABLE'))}}/>}
   {(placement==='audio'||placement==='all')&&!loading&&<SessionAudioRecorder clientId={clientId} sessionId={sessionId||null}
     documentId={documentId} locale={locale} audioOnly
     onSaved={savedId=>{void readSession(savedId).catch(e=>setError(e.message||'SESSION_UNAVAILABLE'))}}/>}

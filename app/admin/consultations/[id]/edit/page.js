@@ -55,6 +55,9 @@ export default async function EditConsultation({ params }) {
     <div className="consultation-edit-return">
       <Link href={`/admin/consultations/${id}`} prefetch={false}>← Назад к документам / Back to documents</Link>
     </div>
+    {mediaEditorProps && <section className="consultation-edit-video" aria-label={ru?'Видеоприветствие':'Video welcome'}>
+      <ReportVideoMaterialsEditor {...mediaEditorProps} placement="video" />
+    </section>}
     {mediaEditorProps && <section className="consultation-edit-voice" aria-label={ru?'Голосовое сообщение':'Voice message'}>
       <ReportVideoMaterialsEditor {...mediaEditorProps} placement="audio" />
     </section>}
@@ -64,6 +67,7 @@ export default async function EditConsultation({ params }) {
         remedies={getConsultationRemedyOptions()}
         consultation={consultation}
         payment={payment}
+        saveFooterTargetId="consultation-report-save"
         recommendedTestOptions={{ en: getRecommendedTestOptions('en'), ru: getRecommendedTestOptions('ru') }}
       />
     </section>
@@ -76,5 +80,6 @@ export default async function EditConsultation({ params }) {
       <summary>Документы и доступ клиента / Documents and client access</summary>
       <AdminDocumentPanels prescription={consultation} payment={payment} />
     </details>
+    <div id="consultation-report-save" className="consultation-report-save-slot" />
   </main>
 }
