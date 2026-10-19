@@ -42,6 +42,7 @@ type SaveCommand = {
   action: "save";
   version: string; slideId: string; nextSlideId: string;
   answer?: string;
+  secondaryAnswer?: string;
 };
 
 const programmeSystemDescriptions: Record<EnergyworkLocale, Record<EnergyworkPath, string>> = {
@@ -345,9 +346,15 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
     "",
     ...slides.flatMap((slide) => {
       const answer = answers[slide.id];
-      if (!answer?.trim()) return [];
+      const secondary = slide.secondaryQuestion ? answers[slide.secondaryQuestion.id] : undefined;
+      if (!answer?.trim() && !secondary?.trim()) return [];
       const choice = slide.question?.options?.find((option) => option.id === answer);
-      return [slide.title[locale], slide.question?.prompt[locale] || "", choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""];
+      return [slide.title[locale],
+        ...(answer?.trim() ? [slide.question?.prompt[locale] || "",
+          choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""] : []),
+        ...(secondary?.trim() && slide.secondaryQuestion
+          ? [slide.secondaryQuestion.prompt[locale], secondary, ""] : []),
+      ];
     }),
   ];
   return lines.filter((value) => value !== undefined).join("\n").trim();
@@ -443,6 +450,7 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
     <button type="button" onClick={reset}>{locale === "ru" ? "Сбросить" : "Reset"}</button>
   </div>;
 }
+
 
 /** Review buttons only change the quote, never the current course slide. */
 /** Compact, accessible carousel: review arrows never advance the lesson. */
@@ -659,7 +667,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const feedbackLength = Array.from(meditationReview.trim()).length;
   const feedbackMissing = isMeditationFeedback && feedbackLength < ENERGYWORK_REVIEW_MIN_CHARS;
   const isTantraStudyQuestion = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.includes(slide.id);
-  const tantraStudyMissing = isTantraStudyQuestion && !energyworkTantraStudyAnswerComplete(answers[slide.id]);
+  const tantraStudyMissing = isTantraStudyQuestion &&
+    (!energyworkTantraStudyAnswerComplete(answers[slide.id]) ||
+      Boolean(slide.secondaryQuestion && !energyworkTantraStudyAnswerComplete(answers[slide.secondaryQuestion.id])));
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -680,30 +690,38 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const savedInitiationReady = initiationReady && sync === "ready" &&
     !busy && !saveError && dirtyRef.current.size === 0;
 
-  function setAnswer(value: string) {
-    const updated = { ...answersRef.current, [slide.id]: value };
+  function setAnswer(value: string, answerId: string = slide.id) {
+    const updated = { ...answersRef.current, [answerId]: value };
     answersRef.current = updated;
     setAnswers(updated);
-    dirtyRef.current.add(slide.id);
+    dirtyRef.current.add(answerId);
     setCopyState("idle");
   }
   async function store(nextSlideId: string) {
     if (sync !== "ready") return;
+    const current = answersRef.current;
+    const primary = current[slide.id] || "";
+    const secondaryId = slide.secondaryQuestion?.id;
+    const secondary = secondaryId ? current[secondaryId] || "" : undefined;
     const response = await request({
-      action: "save",
-      version: ENERGYWORK_COURSE_VERSION,
+      action: "save", version: ENERGYWORK_COURSE_VERSION,
       slideId: slide.id, nextSlideId,
-      ...(slide.question ? { answer: answers[slide.id] || "" } : {}),
+      ...(slide.question ? { answer: primary } : {}),
+      ...(secondaryId ? { secondaryAnswer: secondary } : {}),
     });
-    dirtyRef.current.delete(slide.id);
+    if ((answersRef.current[slide.id] || "") === primary) dirtyRef.current.delete(slide.id);
+    if (secondaryId && (answersRef.current[secondaryId] || "") === secondary)
+      dirtyRef.current.delete(secondaryId);
     return response;
   }
   // A learner can revisit a report/question without discarding other lesson answers.
   async function jumpToSlide(id: string) {
     if (busy) return;
-    const target = slides.findIndex((item) => item.id === id);
+    const target = slides.findIndex((item) => item.id === (id === "tan-study-03" ? "tan-study-02" : id));
     if (target < 0) return;
-    if (sync === "ready" && slide.question && dirtyRef.current.has(slide.id)) {
+    if (sync === "ready" && slide.question &&
+      (dirtyRef.current.has(slide.id) ||
+        Boolean(slide.secondaryQuestion && dirtyRef.current.has(slide.secondaryQuestion.id)))) {
       setBusy(true);
       try { await store(slide.id); }
       catch { setSaveError(t.saveFailed); setBusy(false); return; }
@@ -730,7 +748,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
   async function previous() {
     if (index === 0 || busy) return;
-    if (sync === "ready" && slide.question && dirtyRef.current.has(slide.id)) {
+    if (sync === "ready" && slide.question &&
+      (dirtyRef.current.has(slide.id) ||
+        Boolean(slide.secondaryQuestion && dirtyRef.current.has(slide.secondaryQuestion.id)))) {
       setBusy(true);
       try { await store(slide.id); } catch {
         setSaveError(t.saveFailed); setBusy(false); return;
@@ -759,18 +779,24 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   // A brief debounce preserves reflections while users type; queued writes and
   // revision checks prevent racing a Next button or concurrent browser tab.
   useEffect(() => {
-    if (sync !== "ready" || !slide.question || !dirtyRef.current.has(slide.id)) return;
+    const secondaryId = slide.secondaryQuestion?.id;
+    if (sync !== "ready" || !slide.question ||
+      (!dirtyRef.current.has(slide.id) && !(secondaryId && dirtyRef.current.has(secondaryId)))) return;
     const id = slide.id, value = answers[id] ?? "";
+    const secondary = secondaryId ? answers[secondaryId] ?? "" : undefined;
     const timer = window.setTimeout(() => {
       void request({action:"save",version:ENERGYWORK_COURSE_VERSION,
-        slideId:id,nextSlideId:id,answer:value})
+        slideId:id,nextSlideId:id,answer:value,
+        ...(secondaryId ? { secondaryAnswer: secondary } : {})})
         .then(() => {
           if (value === (answersRef.current[id] ?? "")) dirtyRef.current.delete(id);
+          if (secondaryId && secondary === (answersRef.current[secondaryId] ?? ""))
+            dirtyRef.current.delete(secondaryId);
         })
         .catch(() => { setSaveError(t.saveFailed); });
     }, 950);
     return () => window.clearTimeout(timer);
-  }, [sync, slide.id, slide.question, answers, request, t.saveFailed]);
+  }, [sync, slide.id, slide.question, slide.secondaryQuestion, answers, request, t.saveFailed]);
   // Warn before losing a not-yet-confirmed private answer.
   useEffect(() => {
     if (!dirtyRef.current.size) return;
@@ -937,6 +963,19 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       required={isTantraStudyQuestion}
                       aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : undefined}
                       autoComplete="off" />
+                  ) : null}
+                  {slide.secondaryQuestion ? (
+                    <div className={styles.tantraSecondQuestion} data-tantra-study-combined>
+                      <label className={styles.tantraSecondPrompt} htmlFor={"answer-" + slide.secondaryQuestion.id}>
+                        {slide.secondaryQuestion.prompt[locale]}
+                      </label>
+                      <textarea id={"answer-" + slide.secondaryQuestion.id}
+                        value={answers[slide.secondaryQuestion.id] ?? ""}
+                        onChange={(e) => setAnswer(e.target.value.slice(0, 1600), slide.secondaryQuestion!.id)}
+                        className={styles.textarea} maxLength={1600} rows={2}
+                        placeholder={t.tantraAnswerPlaceholder} required
+                        aria-describedby={"tantra-study-help-" + slide.id} autoComplete="off" />
+                    </div>
                   ) : null}
                   {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{feedbackLength} {t.feedbackCharacters} · {t.feedbackMinimum}</p> : null}
                   {slide.question.type === "scale" ? (

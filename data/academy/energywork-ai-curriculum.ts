@@ -5,7 +5,7 @@ import type { EnglishGuidedMeditation } from "./english-guided-meditations";
 import { yggdrasilTextTestimonials } from "./yggdrasil-testimonials";
 
 export const ENERGYWORK_COURSE_ID = "academy-energywork-principles";
-export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p4";
+export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p5";
 
 export type EnergyworkLocale = "en" | "ru";
 export type Localized = { en: string; ru: string };
@@ -36,6 +36,8 @@ export type EnergyworkSlide = {
   image?: string;
   videoKey?: EnglishGuidedMeditation["key"];
   question?: EnergyworkQuestion;
+  // A second independently saved answer can share one visual slide.
+  secondaryQuestion?: { id: string; prompt: Localized };
 };
 const l = (en: string, ru: string): Localized => ({ en, ru });
 const image = {
@@ -115,7 +117,7 @@ export const energyworkInitiationRequirements: ReadonlyArray<{
   questionIds: readonly string[];
 }> = [
   { lesson: "flight", reportId: "flight-04", questionId: "flight-05", questionIds: ["flight-05"] },
-  { lesson: "tantra", reportId: "tan-04", questionId: "tan-06", questionIds: ["tan-06", "tan-study-02", "tan-study-03", "tan-study-04", "tan-study-05", "tan-study-06", "tan-study-07"] },
+  { lesson: "tantra", reportId: "tan-04", questionId: "tan-06", questionIds: ["tan-study-04", "tan-06", "tan-study-05", "tan-study-06", "tan-study-07", "tan-study-02", "tan-study-03"] },
   { lesson: "kundalini", reportId: "kun-04", questionId: "kun-06", questionIds: ["kun-06"] },
   { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-06", questionIds: ["ygg-06"] },
   { lesson: "initiation", reportId: "end-01", questionId: "init-01", questionIds: ["init-01"] },
@@ -320,22 +322,14 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "tan-05", phase: "tantra", kind: "lesson", image: image.tantra,
       title: l("Discover Tantra Reiki", "Познакомьтесь с Тантра Рейки"),
       body: l("Read Andrey's guide to the tradition, its nine levels and practices. Seven short study questions follow.", "Прочитайте описание Тантра Рейки, девяти ступеней и практик Андрея. Затем ответьте на семь коротких вопросов.") },
-    { id: "tan-06", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Question 1 of 7 · Origins of Tantra Reiki", "Вопрос 1 из 7 · Происхождение Тантра Рейки"),
-      body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
-      question: { type: "text", prompt: l("Who created the Tantra Reiki system, and what is the source of its energy?", "Кто создал систему Тантра Рейки и каков источник её энергии?") } },
-    { id: "tan-study-02", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Question 2 of 7 · Purpose of the flow", "Вопрос 2 из 7 · Назначение потока"),
-      body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
-      question: { type: "text", prompt: l("What is the main purpose of the Tantra Reiki flow? Why is it needed, and what does it offer a person?", "Какова главная цель потока Тантра Рейки? Для чего он нужен и что даёт человеку?") } },
-    { id: "tan-study-03", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Question 3 of 7 · How Tantra Reiki is used", "Вопрос 3 из 7 · Применение Тантра Рейки"),
-      body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
-      question: { type: "text", prompt: l("For what purposes can Tantra Reiki be used?", "Для каких целей можно использовать Тантра Рейки?") } },
     { id: "tan-study-04", phase: "tantra", kind: "reflection", image: image.tantra,
       title: l("Question 4 of 7 · Tradition and foundations", "Вопрос 4 из 7 · Традиция и основы"),
       body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
       question: { type: "text", prompt: l("Which culture and tradition form the foundation of Tantra Reiki?", "Какая культура и традиция лежат в основе Тантра Рейки?") } },
+    { id: "tan-06", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Question 1 of 7 · Origins of Tantra Reiki", "Вопрос 1 из 7 · Происхождение Тантра Рейки"),
+      body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
+      question: { type: "text", prompt: l("Who created the Tantra Reiki system, and what is the source of its energy?", "Кто создал систему Тантра Рейки и каков источник её энергии?") } },
     { id: "tan-study-05", phase: "tantra", kind: "reflection", image: image.tantra,
       title: l("Question 5 of 7 · The nine levels", "Вопрос 5 из 7 · Девять ступеней"),
       body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
@@ -348,6 +342,11 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("Question 7 of 7 · The master level", "Вопрос 7 из 7 · Ступень мастера"),
       body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
       question: { type: "text", prompt: l("After which level can someone become a Tantra Reiki Master and teach and initiate others?", "После какой ступени можно стать мастером Тантра Рейки, обучать и инициировать других?") } },
+    { id: "tan-study-02", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Questions 2 & 3 of 7 · Purpose and use", "Вопросы 2 и 3 из 7 · Цель и применение"),
+      body: l("Answer both short questions below.", "Ответьте на оба коротких вопроса."),
+      question: { type: "text", prompt: l("What is the main purpose of the Tantra Reiki flow? Why is it needed, and what does it offer a person?", "Какова главная цель потока Тантра Рейки? Для чего он нужен и что даёт человеку?") },
+      secondaryQuestion: { id: "tan-study-03", prompt: l("For what purposes can Tantra Reiki be used?", "Для каких целей можно использовать Тантра Рейки?") } },
     { id: "tan-03", phase: "tantra", kind: "practice", question: tantraPracticeQuestion,
       title: l("Notice connection and space", "Заметьте связь и пространство"),
       body: l("For one minute, notice your sense of connection and space, without touch.", "Одну минуту замечайте связь с собой и пространством без прикосновений.") },

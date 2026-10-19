@@ -3910,3 +3910,22 @@
     overflow: hidden;
   }
 }
+
+/* Tantra Reiki: the last of six study screens has two separately stored answers. */
+.tantraSecondQuestion { display: grid; gap: 7px; margin-top: 11px; }
+.tantraSecondPrompt { color: #234f59; font-size: 14px; font-weight: 700; line-height: 1.35; }
+.page[data-course-portrait="v3"] [data-energywork-slide-id="tan-study-02"] .textarea {
+  min-height: 66px; height: clamp(66px, 11dvh, 94px);
+}
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="tan-study-02"] .art { display: none; }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="tan-study-02"] .question {
+    margin-top: 6px; padding: 9px 11px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="tan-study-02"] .textarea {
+    min-height: 56px; height: 60px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="tan-study-02"] .tantraSecondQuestion {
+    margin-top: 7px; gap: 4px;
+  }
+}
