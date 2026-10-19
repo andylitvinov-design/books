@@ -63,12 +63,23 @@ export default function PractitionerArticles({locale,services=[]}){
   tags:'Search keywords (comma-separated)',discard:'You have unsaved edits. Close without saving?',filterStatus:'Status',allStatuses:'Any status',
  }
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
- const [query,setQuery]=useState(''),[limit,setLimit]=useState(24)
+ const [query,setQuery]=useState(''),[limit,setLimit]=useState(24),[statusFilter,setStatusFilter]=useState('all')
  const [editing,setEditing]=useState(null),[editorOpen,setEditorOpen]=useState(false)
  const [draft,setDraft]=useState(()=>initial(locale)),[folderId,setFolderId]=useState('')
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
  const [addingFolder,setAddingFolder]=useState(false),[folderName,setFolderName]=useState('')
  const [preview,setPreview]=useState(false),bodyRef=useRef(null),editorRef=useRef(null)
+ const [tagInput,setTagInput]=useState('')
+ const tags=[...new Set(tagInput.split(/[,;\n]+/).map(value=>value.trim()).filter(Boolean))].slice(0,12)
+ const preparedDraft={...draft,tags}
+ const isUnchanged=!!editing&&JSON.stringify({...initial(editing.draft?.locale),...editing.draft})===JSON.stringify(preparedDraft)&&
+  (editing.folderId||'')===folderId
+ const hasUnsaved=editorOpen&&(editing?!isUnchanged:Boolean(draft.title.trim()||draft.body.trim()||draft.excerpt.trim()||tags.length||draft.coverPath||draft.sourceUrls?.length))
+ function closeEditor(){
+  if(busy)return
+  if(hasUnsaved&&!window.confirm(t.discard))return
+  setEditorOpen(false)
+ }
  async function reload(){
   const response=await fetch('/api/app/practice/articles',{credentials:'same-origin',cache:'no-store'})
   const json=await response.json().catch(()=>({}))
@@ -77,10 +88,18 @@ export default function PractitionerArticles({locale,services=[]}){
  }
  useEffect(()=>{reload().catch(e=>setError(e.message))},[])
  useEffect(()=>{if(editorOpen)editorRef.current?.scrollIntoView({behavior:'smooth',block:'start'})},[editorOpen,editing?.id])
+ useEffect(()=>{
+  if(!hasUnsaved)return undefined
+  const guard=event=>{event.preventDefault();event.returnValue=''}
+  window.addEventListener('beforeunload',guard)
+  return ()=>window.removeEventListener('beforeunload',guard)
+ },[hasUnsaved])
  function choose(item){
+  if(busy||(hasUnsaved&&!window.confirm(t.discard)))return
   setEditing(item||null)
   setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale))
-  setFolderId(item?.folderId||(selectedFolder==='all'?'':selectedFolder))
+  setTagInput((item?.draft?.tags||[]).join(', '))
+  setFolderId(item?.folderId||(folders.some(f=>f.id===selectedFolder)?selectedFolder:''))
   setEditorOpen(true);setPreview(false);setError('');setNotice('')
  }
  async function request(path,body){
@@ -98,9 +117,9 @@ export default function PractitionerArticles({locale,services=[]}){
  }
  async function save(){
   await perform(async()=>{
-   const saved=await request(editing?'/'+editing.id:'',{draft,folderId:folderId||null,expectedRevision:editing?.revision})
+   const saved=await request(editing?'/'+editing.id:'',{draft:preparedDraft,folderId:folderId||null,expectedRevision:editing?.revision})
    await reload();setEditing(saved);setDraft({...initial(saved.draft?.locale),...saved.draft})
-   setFolderId(saved.folderId||'');setNotice(t.saved)
+   setFolderId(saved.folderId||'');setTagInput((saved.draft?.tags||[]).join(', '));setNotice(t.saved)
   })
  }
  async function command(action){
@@ -109,14 +128,14 @@ export default function PractitionerArticles({locale,services=[]}){
    const result=await request('/'+editing.id,{action,expectedRevision:editing.revision})
    await reload()
    if(action==='archive'){setEditorOpen(false);setEditing(null)}
-   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setNotice(ru?'Статус обновлён.':'Status updated.')}
+   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setTagInput((result.draft?.tags||[]).join(', '));setNotice(ru?'Статус обновлён.':'Status updated.')}
   })
  }
  async function createFolder(e){
   e.preventDefault();if(!folderName.trim()){setError(t.emptyInput);return}
   await perform(async()=>{
    const folder=await request('/folders',{name:folderName})
-   await reload();setSelectedFolder(folder.id);setFolderName('');setAddingFolder(false);setLimit(24);setNotice(t.folderSaved)
+   await reload();setSelectedFolder(folder.id);if(editorOpen)setFolderId(folder.id);setFolderName('');setAddingFolder(false);setLimit(24);setNotice(t.folderSaved)
   })
  }
  async function renameFolder(){
@@ -155,8 +174,6 @@ export default function PractitionerArticles({locale,services=[]}){
   })
  },[items,query,selectedFolder])
  const selected=folders.find(x=>x.id===selectedFolder)
- const isUnchanged=!!editing&&JSON.stringify({...initial(editing.draft?.locale),...editing.draft})===JSON.stringify(draft)&&
-  (editing.folderId||'')===folderId
  const complete=draft.title.trim()&&draft.excerpt.trim().length>=30&&draft.body.trim().length>=200
  return <div className={styles.shell}>
   <div className={styles.top}>
