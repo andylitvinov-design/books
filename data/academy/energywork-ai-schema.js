@@ -139,6 +139,8 @@ export function energyworkP4ResumeId(slideId, answers = {}) {
       !energyworkTantraStudyAnswerComplete(answers[id]))
     return missing === 'tan-study-03' ? 'tan-study-02' : missing ?? 'tan-study-02'
   }
+  if (['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07'].includes(slideId))
+    return 'kun-study-v2-01'
   return energyworkSequence().includes(slideId) ? slideId : 'flight-01'
 }
 // p6 saved quiz positions pointed to different questions: restart only the new
