@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -194,7 +195,8 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
             {heroHighlights[locale].map((highlight) => <li key={highlight}>{highlight}</li>)}
           </ul>
           <div className="yggdrasil-program-actions">
-            <Link className="yggdrasil-primary-action" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{text.free} <span aria-hidden="true">→</span></Link>
+            <Link className="yggdrasil-primary-action" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"} <span aria-hidden="true">→</span></Link>
+            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{text.free} <span aria-hidden="true">→</span></Link>
             <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
             <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
           </div>

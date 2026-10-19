@@ -11,7 +11,8 @@ test("Approved Tantra Reiki ad landing is trilingual and metadata-complete",()=>
 test("Real free course/video options and an honest initiation path",()=>{
   assert.match(page,/reiki-approved-sunrise-v3\.webp/);
   assert.match(page,/free-initiation#tantra-practice-video/);
-  assert.match(page,/principles-of-energywork\/learn/);
+  assert.match(page,/const freeCourse=REIKI_FREE_COURSE_PATH/);
+  assert.match(read("lib/academy/reiki-free-course.ts"), /principles-of-energywork\/learn/);
   assert.match(page,/free-initiation#initiation-choices/);
   assert.match(page,/does not confer an initiation/);
 });
