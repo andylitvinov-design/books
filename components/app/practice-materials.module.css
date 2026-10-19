@@ -52,3 +52,80 @@
 .tabs button{overflow-wrap:anywhere}
 .external{display:inline-block;color:#185b72;font-weight:700}
 @media(max-width:640px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Compact material library shared by the Practice report and public tabs.
+   A still is rendered only for authenticated private media, never a public URL. */
+.tabs{display:flex;grid-template-columns:none;gap:4px;padding:4px;margin:0 0 13px;border-radius:13px}
+.tabs button{display:inline-flex;flex:1 1 0;min-width:0;min-height:42px;align-items:center;justify-content:center;gap:5px;
+  padding:7px 6px;border-radius:10px;white-space:nowrap;font-size:12px;line-height:1.2}
+.tabs button svg{flex:none}
+.tabs button span{overflow:hidden;text-overflow:ellipsis}
+.tabs button small{font:750 10px/1.2 system-ui,sans-serif;padding:3px 6px;border-radius:999px;
+  background:#dbe9eb;color:#28586a;min-width:19px;text-align:center}
+.tabs button[aria-pressed="true"] small{background:#ffffff30;color:#fff}
+.sectionHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:2px 0 12px}
+.sectionHeadText{min-width:0;flex:1}
+.sectionHead h3{font:650 clamp(17px,3vw,21px)/1.2 Georgia,serif;color:#203a4a;margin:0 0 5px}
+.sectionHead h3 small{font:600 12px system-ui,sans-serif;color:#74818a}
+.privacyNote{display:flex;align-items:flex-start;gap:6px;margin:0;color:#6a7980;font-size:12px;line-height:1.4}
+.privacyNote svg{flex:none;margin-top:1px;color:#4b806b}
+.refreshControl{display:grid;place-items:center;flex:none;width:37px;height:37px;border:1px solid #cedfe2;
+  border-radius:11px;color:#235268;background:#fff;cursor:pointer}
+.refreshControl:disabled{opacity:.55;cursor:wait}
+.resourceList{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;margin:0 0 9px}
+.resourceRow{min-width:0;border:1px solid #dfe7e4;background:#fffdf9;border-radius:13px;
+  padding:10px;box-shadow:0 2px 8px #233f3d08}
+.resourceMain{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.resourceCopy{flex:1;min-width:0;overflow-wrap:anywhere}
+.resourceCopy .cardTop{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px}
+.resourceCopy .tag{font-size:10px;line-height:1.35;padding:2px 7px}
+.resourceCopy h4{color:#203d4b;margin:0 0 5px;font-size:14px;font-weight:750;line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.resourceCopy .description,.descriptionDetails summary{color:#677a80;font-size:12px;line-height:1.42;margin:0;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.descriptionDetails{margin:0}
+.descriptionDetails summary{cursor:pointer;list-style:inside;color:#4e7480}
+.descriptionDetails[open] summary{display:block;-webkit-line-clamp:unset;overflow:visible}
+.descriptionDetails p{margin:5px 0 0;color:#526873;font-size:12px;line-height:1.5}
+.resourceCopy .cardActions{gap:6px;margin-top:7px}
+.materialThumbnail{position:relative;isolation:isolate;display:block;flex:0 0 116px;width:116px;
+  aspect-ratio:16/10;min-height:0;padding:0;overflow:hidden;border:0;border-radius:10px;
+  background:linear-gradient(130deg,#23495c,#628c90);color:#fff;cursor:pointer;text-decoration:none}
+.materialThumbnail:disabled{cursor:default}
+.thumbnailImage{display:block;width:100%;height:100%;object-fit:cover}
+.thumbnailFallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;background:linear-gradient(135deg,#204757,#639496);color:#eaf6f3}
+.thumbnailFallback small{font:650 10px system-ui,sans-serif}
+.playMark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;
+  display:grid;place-items:center;width:32px;height:32px;border-radius:50%;
+  background:#123748d9;color:#fff;box-shadow:0 1px 5px #13343d33}
+.expandedVideo{margin-top:10px;border-radius:10px;background:#142a38;overflow:hidden}
+.expandedVideo video{display:block;max-height:370px;max-width:100%;width:100%;height:auto}
+.libraryFooter{border-top:1px solid #e5ebe8;margin-top:12px;padding-top:6px}
+.manageLink{display:inline-flex;align-items:center;gap:7px;background:transparent;color:#185568;
+  border:0;border-radius:9px;padding:7px 2px;min-height:39px;font:750 12px/1.35 system-ui,sans-serif;cursor:pointer}
+.manageLink svg:last-child{margin-left:3px}
+:global(.hh-app) .shell .materialThumbnail{min-height:0;padding:0;border:0;border-radius:10px;background:#21495a;color:#fff}
+:global(.hh-app) .shell .refreshControl{min-height:37px;padding:0;background:#fff;color:#235268;border:1px solid #cedfe2}
+:global(.hh-app) .shell .manageLink{min-height:39px;padding:7px 2px;background:transparent;color:#185568;border:0}
+:global(.hh-app) .shell .cardActions button{min-height:33px;padding:5px 9px;font-size:12px;border-radius:8px}
+:global(.hh-app) .shell :is(.materialThumbnail,.refreshControl,.manageLink,.tabs button):focus-visible{
+ outline:3px solid #3d8b87;outline-offset:2px}
+@media(min-width:800px){.resourceList{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){
+ .tabs{display:flex;grid-template-columns:none;gap:3px}
+ .tabs button{font-size:12px;padding:7px 4px;gap:4px}
+ .materialThumbnail{flex-basis:102px;width:102px}
+ .resourceRow{padding:9px}
+ .resourceMain{gap:10px}
+ .heading{align-items:center}
+ .heading button{width:auto;min-height:39px}
+}
+@media(max-width:360px){
+ .tabs button svg{display:none}
+ .tabs button{font-size:11px}
+ .materialThumbnail{flex-basis:88px;width:88px}
+ .resourceMain{gap:8px}
+ .resourceCopy h4{font-size:13px}
+}

@@ -1,5 +1,7 @@
 'use client'
 import {useEffect,useState} from 'react'
+import {BookOpen,FileText,Globe2} from 'lucide-react'
+import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
 import PracticeReportMaterials from './practice-report-materials'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract.js'
@@ -113,11 +115,20 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  }
  return <div className={styles.shell}>
   <div className={styles.tabs} role="group" aria-label={ru?'Тип материалов':'Material type'}>
-   {reportMode!=='not-owner'&&<button type="button" aria-pressed={tab==='reports'} onClick={()=>setTab('reports')}>
-     {ru?'Для отчётов':es?'Para informes':'For client reports'} ({reportMode==='ready'?reportItems.length:'…'})</button>}
-   <button type="button" aria-pressed={tab==='videos'} onClick={()=>setTab('videos')}>
-     {ru?'Публичный профиль':es?'Perfil público':'Public profile'} ({videos.length})</button>
-   <button type="button" aria-pressed={tab==='articles'} onClick={()=>setTab('articles')}>{t.articles}</button>
+   {reportMode!=='not-owner'&&<button type="button" aria-pressed={tab==='reports'}
+     aria-label={ru?'Для клиентских отчётов':es?'Para informes de clientes':'For client reports'}
+     onClick={()=>setTab('reports')}>
+     <FileText size={16} aria-hidden="true"/><span>{ru?'Отчёты':es?'Informes':'Reports'}</span>
+     <small>{reportMode==='ready'?reportItems.length:'…'}</small>
+    </button>}
+   <button type="button" aria-pressed={tab==='videos'}
+     aria-label={ru?'Публичный профиль':es?'Perfil público':'Public profile'} onClick={()=>setTab('videos')}>
+     <Globe2 size={16} aria-hidden="true"/><span>{ru?'Профиль':es?'Perfil':'Public'}</span>
+     <small>{videos.length}</small>
+   </button>
+   <button type="button" aria-pressed={tab==='articles'} onClick={()=>setTab('articles')}>
+     <BookOpen size={16} aria-hidden="true"/><span>{t.articles}</span>
+   </button>
   </div>
   {tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
    tab==='reports'?<PracticeReportMaterials items={reportItems} locale={locale}
@@ -129,15 +140,23 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     <h3>{t.videos}</h3>
     <button type="button" className={styles.primary} onClick={()=>open()} disabled={locked||editing!==null||videos.length>=12}>{t.add}</button>
    </div>
-   {videos.length?<div className={styles.list}>{videos.map((video,index)=>{
+   {videos.length?<div className={styles.resourceList}>{videos.map((video,index)=>{
     const live=published.some(p=>p.url===video.url&&p.title===video.title&&p.locale===video.locale&&p.description===video.description)
-    return <article className={styles.card} key={index}>
-     <div className={styles.cardTop}><span className={styles.tag}>{video.locale.toUpperCase()}</span><span className={styles.tag+' '+(live?styles.published:'')}>{live?t.published:t.pending}</span></div>
-     <h4>{video.title}</h4>
-     {video.description&&<p>{video.description}</p>}
-     <div className={styles.cardActions}>
-      <button type="button" disabled={locked} onClick={()=>open(index)}>{t.editBtn}</button>
-      <button type="button" disabled={locked} onClick={()=>void remove(index)}>{t.deleteBtn}</button>
+    return <article className={styles.resourceRow} key={video.url+'-'+index}>
+     <div className={styles.resourceMain}>
+      <PracticeMaterialPreview kind="youtube" url={video.url} title={video.title} locale={locale}/>
+      <div className={styles.resourceCopy}>
+       <div className={styles.cardTop}>
+        <span className={styles.tag}>{video.locale.toUpperCase()}</span>
+        <span className={styles.tag+' '+(live?styles.published:'')}>{live?t.published:t.pending}</span>
+       </div>
+       <h4>{video.title}</h4>
+       {video.description&&<p className={styles.description} title={video.description}>{video.description}</p>}
+       <div className={styles.cardActions}>
+        <button type="button" disabled={locked} onClick={()=>open(index)}>{t.editBtn}</button>
+        <button type="button" disabled={locked} onClick={()=>void remove(index)}>{t.deleteBtn}</button>
+       </div>
+      </div>
      </div>
     </article>
    })}</div>:<p className={styles.empty}>{t.empty}</p>}
