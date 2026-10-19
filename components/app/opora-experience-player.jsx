@@ -313,7 +313,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
-    data-opora-experience-first="as-5.6" data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}>
+    data-opora-experience-first="as-5.6" data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
+    data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}>
     <div className={styles.frame+' '+(styles[moment]||styles.arrive)}
       inert={safety} aria-hidden={safety?'true':undefined}>
       <header className={styles.header}>
@@ -321,9 +322,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           disabled={locked} aria-label={t.close}><X size={21}/></button>
         <div className={styles.progress}>
           <div className={styles.progressCopy}><span>{t.day} {cycle.day}/14</span>
-            <span>{Math.min(step+1,6)} / 6</span></div>
+            <span>{Math.min(step+1,scenes.length+1)} / {scenes.length+1}</span></div>
           <div className={styles.track}><div className={styles.fill}
-            style={{width:((step+1)/6*100)+'%'}}/></div>
+            style={{width:((step+1)/(scenes.length+1)*100)+'%'}}/></div>
         </div>
         <button type="button" className={styles.pause} ref={safetyTrigger}
           onClick={()=>setSafety(true)} disabled={locked}><Pause size={16}/>{t.pause}</button>
@@ -331,14 +332,51 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
       <main className={styles.stage}>
         <section className={styles.panel} aria-live="off">
           {!receipt&&<span className={styles.eyebrow}>
-            {moment==='arrive'?t.minute:moment==='practice'?t.stepLabel:
-            moment==='feel'?t.feel:moment==='affirmation'?t.quote:t.keep}
+            {moment==='welcome'?opening.welcomeKicker:
+            moment==='baseline'?opening.baselineKicker:
+            moment==='checkin'?opening.checkinKicker:
+            moment==='recall'?opening.recallKicker:
+            moment==='arrive'?t.minute:moment==='practice'?t.stepLabel:
+            moment==='feel'?t.feel:moment==='affirmation'?(cycle.day===1?opening.thoughtKicker:t.quote):t.keep}
           </span>}
           <h2 ref={heading} tabIndex={-1} className={styles.title}>{title}</h2>
           {neutralSupport&&<div data-opora-neutral-anchor="true">
             <p className={styles.lead}>{t.neutralAnchor}</p>
             <p className={styles.soft}>{t.neutralSafety}</p>
           </div>}
+          {moment==='welcome'&&<>
+            <p className={styles.lead}>{opening.welcomeLead}</p>
+            <div className={styles.chips} role="group" aria-label={opening.welcome}>
+              {welcomeFeelingChoices(cycle.activeGoal||cycle.primaryGoal,lang).map(({id,label})=>
+                <button key={id} type="button" disabled={locked}
+                  aria-pressed={welcomeFeeling===id} onClick={()=>setWelcomeFeeling(id)}>{label}</button>)}
+            </div>
+            {welcomeFeeling&&<p className={styles.soft} role="status">{welcomeFeelingSupport(welcomeFeeling,lang)}</p>}
+            {!welcomeFeeling&&<p className={styles.soft}>{opening.welcomeNote}</p>}
+          </>}
+          {moment==='baseline'&&<>
+            <p className={styles.lead}>{opening.baselineLead}</p>
+            <OpeningRating label={opening.baseline} value={openingResource}
+              onChange={setOpeningResource} disabled={locked}
+              low={opening.baselineLow} high={opening.baselineHigh}/>
+            <p className={styles.soft}>{opening.scaleNote}</p>
+          </>}
+          {moment==='checkin'&&<>
+            <p className={styles.lead}>{opening.checkinLead}</p>
+            <OpeningRating label={opening.checkin} value={openingDifficulty}
+              onChange={setOpeningDifficulty} disabled={locked}
+              low={opening.checkinLow} high={opening.checkinHigh}/>
+            <p className={styles.soft}>{opening.scaleNote}</p>
+          </>}
+          {moment==='recall'&&<>
+            <p className={styles.lead}>{opening.recallLead}</p>
+            <div className={styles.chips} role="group" aria-label={opening.recall}>
+              {opening.supportOptions.map(([value,label])=><button type="button" key={value}
+                disabled={locked} aria-pressed={familiarSupport===value}
+                onClick={()=>setFamiliarSupport(value)}>{label}</button>)}
+            </div>
+            {familiarSupport&&<p className={styles.soft} role="status">{opening.recallReply}</p>}
+          </>}
           {moment==='arrive'&&!neutralSupport&&<>
             <p className={styles.lead}>{t.arriveText}</p>
           </>}
@@ -366,13 +404,14 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </div>
           </>}
           {moment==='affirmation'&&<>
-            <blockquote className={styles.quotation}>{originalQuote}</blockquote>
-            <p className={styles.subtle}>{t.quoteText}</p>
+            <blockquote className={styles.quotation}>{quote}</blockquote>
+            <p className={styles.subtle}>{cycle.day===1?opening.thoughtLead:t.quoteText}</p>
             <div className={styles.chips} role="group" aria-label={t.quote}>
               {[[t.agree,'agree'],[t.unsure,'unsure'],[t.disagree,'disagree']].map(([label,value])=>
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={vote===value} onClick={()=>setAnswers(a=>({...a,aphorism:value}))}>{label}</button>)}
             </div>
+            {vote&&cycle.day===1&&<p className={styles.soft} role="status">{opening.response}</p>}
           </>}
           {moment==='save'&&<>
             <p className={styles.lead}>{t.keepText}</p>
@@ -394,7 +433,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
-          {(moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
+          {(moment==='welcome'||moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
         </section>
       </main>
       {error&&<p className={styles.error} role="alert">{error}</p>}
@@ -402,9 +441,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         {!receipt&&step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={receipt?(onFinish||onClose):step===OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1?submit:next}>
-          {receipt?t.finish:step===OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1?(saving?t.saving:t.save):t.next}
-          {receipt||step===OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
+          onClick={receipt?(onFinish||onClose):step===scenes.length-1?submit:next}>
+          {receipt?t.finish:step===scenes.length-1?(saving?t.saving:t.save):t.next}
+          {receipt||step===scenes.length-1?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
     </div>
