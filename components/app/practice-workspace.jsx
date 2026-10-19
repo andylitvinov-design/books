@@ -162,7 +162,7 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0)
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[showSignup,setShowSignup]=useState(false)
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
@@ -230,8 +230,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   </section>
 
   const p=data.practitioner
-  const onboardingService=(data.services||[]).find(item=>item.pricingMode==='free'||item.draftCopy?.pricingMode==='free')||null
-  const needsOnboarding=!p||(!Object.keys(p.profile||{}).length&&['draft','submitted','changes_requested'].includes(p.status))
+  const onboardingService=(data.services||[]).find(item=>item.status==='draft'||item.status==='changes_requested')||null
+  const needsOnboarding=!data.practiceActivated
   const requests=data.requests||[]
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
@@ -334,8 +334,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <ChevronRight aria-hidden="true" />
         <strong>{d.breadcrumb}</strong>
       </nav>
-      <h1>{needsOnboarding?t.becomeTitle:t.title}</h1>
-      <p className="hh-practice-intro">{needsOnboarding?t.noProfile:d.subtitle}</p>
+      <h1>{needsOnboarding?(ru?'Практика':locale==='es'?'Práctica':'Practice'):t.title}</h1>
+      <p className="hh-practice-intro">{needsOnboarding?(ru?'Посмотрите новые услуги сообщества и начните свою практику, когда будете готовы.':locale==='es'?'Explora los servicios de la comunidad y empieza tu práctica cuando quieras.':'Explore new community services and start your own practice when you are ready.'):d.subtitle}</p>
       {p&&<div className="hh-practice-status">
         <span className={'hh-practice-status-chip'+(p.status==='approved'?' is-approved':'')}>
           <span className="hh-practice-status-dot" aria-hidden="true" />
@@ -344,7 +344,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
-    {!needsOnboarding&&<section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
+    <section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
       <div className="hh-practice-marketplace-heading">
         <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
         <div>
@@ -353,7 +353,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
         </div>
       </div>
-      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
+      {!needsOnboarding&&<div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
         <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
           aria-pressed={activePanel==='services'} onClick={addService}>
           <Plus aria-hidden="true" />
@@ -365,7 +365,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <span aria-hidden="true">·</span>
           <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
         </p>
-      </div>
+      </div>}
       <div className="hh-practice-marketplace-latest">
         <div className="hh-practice-marketplace-latest-heading">
           <h3>{marketplaceCopy.latest}</h3>
@@ -392,14 +392,29 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
         </p>}
       </div>
-    </section>}
-    <PracticeRequestsOverview requests={requests} services={services} locale={locale}
+      {needsOnboarding&&<div className="hh-practice-join">
+        <h3>{ru?'Готовы предложить свою услугу?':locale==='es'?'¿Listo para ofrecer tu servicio?':'Ready to share your work?'}</h3>
+        <p>{ru?'Короткая регистрация: имя, контакты и первая услуга. Публикация появится после проверки.':locale==='es'?'Un registro breve: tu nombre, contactos y primer servicio. La publicación necesita revisión.':'A short setup with your name, contact details and first service. Listings are reviewed before publication.'}</p>
+        <button type="button" className="hh-practice-start-button" aria-controls="hh-practice-onboarding" aria-expanded={showSignup}
+          onClick={()=>{setShowSignup(current=>!current);setError('')}}>
+          <Plus aria-hidden="true" />
+          {p?(ru?'Продолжить регистрацию мастера':locale==='es'?'Continuar registro':'Continue practitioner registration'):(ru?'Начать свою практику':locale==='es'?'Empezar mi práctica':'Start my practice')}
+          <ChevronRight aria-hidden="true" />
+        </button>
+      </div>}
+    </section>
+    {needsOnboarding&&showSignup&&<div id="hh-practice-onboarding" className="hh-practice-signup">
+      <MasterOnboarding key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
+        data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
+        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload),{rethrow:true})} />
+    </div>}
+    {!needsOnboarding&&<PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
       onAddService={needsOnboarding
         ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
         : addService}
-      onViewAll={()=>{setActivePanel('requests');setError('')}} />
-    {readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
+      onViewAll={()=>{setActivePanel('requests');setError('')}} />}
+    {!needsOnboarding&&readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
       <div className="hh-practice-setup-head">
         <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
         <span>{readySteps}/3</span>
@@ -469,11 +484,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         </button>
       </section>
     </>}
-    {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
-        key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
-        data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
-        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
-      activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
+    {!needsOnboarding&&activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
         <div className="hh-practice-form-heading">
           <h2>{activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
@@ -514,11 +525,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
       </section>}
-    {ownerTools && <details className="hh-practice-more-tools">
+    {!needsOnboarding&&(ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
       <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button></div>
-    </details>}
+    </details>)}
     {shareNotice&&<p role="status" className="hh-practice-share-notice">{shareNotice}</p>}
     {error&&<p role="alert" className="hh-practice-error">{error==='SERVICE_LIMIT_REACHED'?(ru?'На бесплатном тарифе Hobby можно сохранить до 10 услуг. Редактирование существующих услуг доступно.':'The free Hobby plan allows up to 10 saved services. You can still edit existing services.'):error}</p>}
   </section>
