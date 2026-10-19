@@ -62,6 +62,7 @@ export default async function NewClientReport({ searchParams }) {
   return <main className="prescription-admin-shell master-clients-shell">
     <PrescriptionAdminHeader title={{ en: COPY.en.title, ru: COPY.ru.title }}
       description={{ en: COPY.en.intro, ru: COPY.ru.intro }} />
+    <p><Link prefetch={false} className="library-back-link" href="/admin/reports">← {locale === 'ru' ? 'Все отчёты клиентов' : 'All client reports'}</Link></p>
     <p><Link prefetch={false} className="library-back-link" href={`/${locale}/app/practice`}>← {t.back}</Link></p>
     <section className="master-client-directory" aria-labelledby="new-practice-report-clients">
       <div className="master-client-directory-heading"><h2 id="new-practice-report-clients">{t.choose}</h2><span>{clients.length}</span></div>
