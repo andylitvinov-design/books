@@ -28,7 +28,7 @@ export async function GET(request,{params}) {
     const pdf=payment?buildPaymentPdf(projection,reportLocale,metadataBaseFor().origin):
       buildPrescriptionPdf(projection,reportLocale,metadataBaseFor().origin)
     return new NextResponse(pdf,{headers:{...privateHeaders,'Content-Type':'application/pdf',
-      'Content-Disposition':'attachment; filename="holistic-house-session.pdf"'}})
+      'Content-Disposition':(new URL(request.url).searchParams.get('preview')==='1'?'inline':'attachment')+'; filename="holistic-house-session.pdf"'}})
   })
 }
 
