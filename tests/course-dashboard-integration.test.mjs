@@ -10,10 +10,6 @@ const freeStatus = (enabledPlans = ['start', 'advanced', 'premium']) => normaliz
   available: true, enabled: true, enabledPlans, provider: 'stripe', plans: SUBSCRIPTION_PLANS, plan: SUBSCRIPTION_PLANS.free,
   entitlement: { active: false, tier: 'free', ...SUBSCRIPTION_PLANS.free },
 })
-const checkConsent = async h => {
-  nodes(h.tree).find(node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({ target: { checked: true } })
-  await h.settle()
-}
 const tiles = tree => nodes(tree).filter(node => typeof node.type === 'function' && node.type.name === 'CourseTile').map(node => node.type(node.props))
 
 test('Cabinet Courses tab always shows started courses before the chosen lesson', async () => {
@@ -81,38 +77,34 @@ test('My courses opens the authored dashboard and explicitly selected cards reta
   h.unmount()
 })
 
-test('preset cards and personal selection never save before explicit checked consent, including cancellation', async () => {
+test('preset cards and personal selection save only after one deliberate signed-in click', async () => {
   for (const presetId of [...COURSE_PRESETS.map(preset => preset.id), null]) {
-    const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: (_path, _options, body) => body
+    const h = mount('my-course', { enterCourse: true, props: { data: account('owner-a') }, fetcher: (_path, _options, body) => body
       ? courseView({ ...course(body.courseId, presetId ? 2 : 1), presetId })
       : { course: null, courses: [], access: { ...access, activeCourseCount: 0 }, assessments: {} } })
     await h.settle()
     const catalog = findPart(h.tree, 'CoursePresetCatalog')
+    assert.ok(catalog)
+    assert.equal(h.calls.filter(call => call.body).length, 0, 'opening the course list must not save anything')
     const choose = () => presetId ? catalog.props.onPreset(presetId) : catalog.props.onPersonal()
-    choose(); await h.settle()
-    assert.equal(findButton(h.tree, 'Agree & start').props.disabled, true)
-    findButton(h.tree, 'Agree & start').props.onClick(); await h.settle()
-    assert.equal(h.calls.filter(call => call.body).length, 0)
-    await checkConsent(h)
-    findButton(h.tree, 'Not now').props.onClick(); await h.settle()
-    assert.equal(h.calls.filter(call => call.body).length, 0)
-    choose(); await h.settle()
-    assert.equal(findButton(h.tree, 'Agree & start').props.disabled, true)
-    await checkConsent(h)
-    const confirm = findButton(h.tree, 'Agree & start')
-    confirm.props.onClick(); confirm.props.onClick(); await h.settle()
+    choose()
+    choose() // Double-tapping the same CTA must still submit only once.
+    await h.settle()
+    assert.equal(findButton(h.tree, 'Agree & start'), undefined, 'no duplicate consent modal for signed-in learners')
     const writes = h.calls.filter(call => call.body)
     assert.equal(writes.length, 1)
+    assert.equal(writes[0].body.action, 'start')
     assert.equal(writes[0].body.presetId || null, presetId)
     assert.equal(writes[0].body.consent, true)
     assert.equal(writes[0].body.newCourse, true)
+    assert.equal(writes[0].options.headers['X-HH-Account-ID'], 'owner-a')
     assert.match(writes[0].body.courseId, /^[a-f\d-]{36}$/)
     assert.equal(findPart(h.tree, 'CourseR3Steps').props.state.course.id, writes[0].body.courseId)
     h.unmount()
   }
 })
 
-test('switching preset requires fresh consent and invalidates callbacks from the dismissed personal setup', async () => {
+test('switching preset uses one explicit click and invalidates callbacks from the dismissed personal setup', async () => {
   const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => courseView(body ? { ...courseA, stage: 2, revision: 2, presetId: body.presetId } : courseA) })
   await h.settle()
   const oldSteps = findPart(h.tree, 'CourseR3Steps')
@@ -121,7 +113,7 @@ test('switching preset requires fresh consent and invalidates callbacks from the
   await assert.rejects(oldSteps.props.onCourseCommand('intake', { concerns: 'outdated' }), /COURSE_SELECTION_CHANGED/)
   assert.equal(h.calls.length, count)
   findPart(h.tree, 'CoursePresetCatalog').props.onPreset('confidence'); await h.settle()
-  await checkConsent(h); findButton(h.tree, 'Agree & start').props.onClick(); await h.settle()
+  assert.equal(findButton(h.tree, 'Agree & start'), undefined)
   const write = h.calls.find(call => call.body)
   assert.equal(write.body.action, 'select-preset')
   assert.equal(write.body.courseId, 'course-a')

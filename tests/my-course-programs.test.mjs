@@ -59,7 +59,8 @@ test('the new UI uses one consented start and private existing test/lesson endpo
   assert.match(shell, /data-course-program-selection/)
   assert.match(shell, /data-course-program-id=\{program.id\}/)
   assert.match(shell, /data-course-personal-program/)
-  assert.match(shell, /async function confirmStart\(\)/)
+  assert.match(shell, /function startSelectedCourse\(presetId = null, programId = null\)/)
+  assert.match(shell, /const values = \{ consent: true,/)
   assert.match(shell, /request\(accountId, \{ action: 'start', consent: true, courseId: requestedCourseId,/)
   assert.match(shell, /newCourse: access\?\.multiCourseEnabled === true/)
   assert.match(shell, /action: 'intake'/)
@@ -109,24 +110,26 @@ const view=current=>({course:current,courses:current?[current]:[],assessments:{}
 const chooseProgram=async(h,id='stress')=>{
  nodes(h.tree).find(node=>node.props['data-course-program-id']===id).props.onClick();await h.settle()
 }
-const consent=async h=>{
- nodes(h.tree).find(node=>node.type==='input'&&node.props.type==='checkbox').props.onChange({target:{checked:true}})
- await h.settle();return findButton(h.tree,'Agree & start').props.onClick
-}
 const writes=h=>h.calls.filter(call=>call.body)
 
-test('flagship consent is required, cancellation consumes intent and repeated confirmation starts exactly once',async()=>{
+test('flagship starts on one deliberate signed-in click, while double-taps and stale callbacks never duplicate enrolment',async()=>{
  const slow=deferred();let started
  const h=mount('my-course', { enterCourse: true, props:{data:account('owner-a')},fetcher:(_path,_options,body)=>{
   if(!body)return view(null)
   if(body.action==='start'){started={...course(body.courseId),revision:7};return slow.promise}
   return view({...started,stage:2,revision:8,focusTags:body.focusTags})
  }})
- await h.settle();await chooseProgram(h)
- findButton(h.tree,'Agree & start').props.onClick();await h.settle();assert.equal(writes(h).length,0)
- const canceled=await consent(h);findButton(h.tree,'Not now').props.onClick();canceled();await h.settle();assert.equal(writes(h).length,0)
- await chooseProgram(h);const confirm=await consent(h);confirm();confirm();await h.settle()
- assert.equal(writes(h).length,1);assert.equal(writes(h)[0].body.newCourse,true)
+ await h.settle()
+ const card=nodes(h.tree).find(node=>node.props['data-course-program-id']==='stress')
+ assert.ok(card)
+ assert.equal(writes(h).length,0, 'viewing the programme alone does not create an enrolment')
+ card.props.onClick()
+ card.props.onClick()
+ await h.settle()
+ assert.equal(findButton(h.tree,'Agree & start'),undefined)
+ assert.equal(writes(h).length,1,'two rapid clicks send one owner-bound start request')
+ assert.equal(writes(h)[0].body.newCourse,true)
+ assert.equal(writes(h)[0].body.consent,true)
  slow.resolve(view(started));await h.settle()
  assert.equal(writes(h).length,2)
  const intake=writes(h)[1]
@@ -134,7 +137,7 @@ test('flagship consent is required, cancellation consumes intent and repeated co
  assert.deepEqual(intake.body.focusTags,[...getCourseProgram('stress').focusTags])
  assert.ok(writes(h).every(call=>call.options.headers['X-HH-Account-ID']==='owner-a'&&call.path.includes(encodeURIComponent(started.id))))
  assert.equal(findPart(h.tree,'CourseR3Steps').props.stage,2)
- confirm();await h.settle();assert.equal(writes(h).length,2,'a retained confirmed callback cannot allocate another course')
+ card.props.onClick();await h.settle();assert.equal(writes(h).length,2,'an old start callback cannot allocate another course')
  h.unmount()
 })
 
@@ -146,9 +149,9 @@ test('first-request quota/unknown failure never submits intake and retry retains
    if(body.action==='start'){attempt++;if(attempt===1)return {error:failure};created=course(body.courseId);return view(created)}
    return view({...created,stage:2,focusTags:body.focusTags})
   }})
-  await h.settle();await chooseProgram(h);(await consent(h))();await h.settle()
+  await h.settle();await chooseProgram(h);await h.settle()
   assert.equal(writes(h).length,1);assert.equal(findPart(h.tree,'CourseR3Steps'),undefined)
-  await chooseProgram(h);(await consent(h))();await h.settle()
+  await chooseProgram(h);await h.settle()
   assert.equal(writes(h).filter(call=>call.body.action==='start').length,2)
   assert.equal(writes(h)[0].body.courseId,writes(h)[1].body.courseId)
   assert.equal(writes(h).filter(call=>call.body.action==='intake').length,1);h.unmount()
@@ -165,7 +168,7 @@ test('failed or uncertain intake remains on the created course and explicit retr
    if(attempt===1){if(committed)current={...current,stage:2,revision:4,focusTags:body.focusTags};return {error:'SERVICE_UNAVAILABLE'}}
    current={...current,stage:2,revision:current.revision+1,focusTags:body.focusTags};return view(current)
   }})
-  await h.settle();await chooseProgram(h,'stress');(await consent(h))();await h.settle()
+  await h.settle();await chooseProgram(h,'stress');await h.settle()
   const createdId=writes(h)[0].body.courseId
   assert.equal(findPart(h.tree,'CourseR3Steps').props.state.course.id,createdId)
   assert.equal(findPart(h.tree,'CourseR3Steps').props.stage,1)
@@ -189,7 +192,7 @@ test('account or selected-course changes during start prevent the second request
    if(body){pendingId=body.courseId;return slow.promise}
    return path.includes('course-other')?view(course('course-other')):view(null)
   }})
-  await h.settle();await chooseProgram(h);(await consent(h))();await h.settle()
+  await h.settle();await chooseProgram(h);await h.settle()
   if(change==='owner')h.render({data:account('owner-b')})
   else if(change==='course')await h.backTo('?courseId=course-other')
   else h.unmount()
@@ -207,7 +210,7 @@ test('selection changes during intake and before a retained retry cannot mutate 
   if(body.action==='start'){created=course(body.courseId);return view(created)}
   return slow.promise
  }})
- await h.settle();await chooseProgram(h);(await consent(h))();await h.settle()
+ await h.settle();await chooseProgram(h);await h.settle()
  assert.equal(writes(h).length,2)
  await h.backTo('?courseId=course-other');slow.resolve(view({...created,stage:2,focusTags:getCourseProgram('stress').focusTags}));await h.settle()
  assert.equal(findPart(h.tree,'CourseR3Steps').props.state.course.id,'course-other')
@@ -228,7 +231,7 @@ test('a delayed billing refresh cannot roll an accepted programme intake back to
   if(body.action==='start'){current=course(body.courseId);return view(current)}
   return intake.promise
  }})
- await h.settle();await chooseProgram(h);(await consent(h))();await h.settle()
+ await h.settle();await chooseProgram(h);await h.settle()
  background=true;billing={phase:'ready',status:{entitlement:{tier:'advanced'}}};h.render(props);await h.settle()
  const stageOne=view(current)
  intake.resolve(view({...current,stage:2,focusTags:[...getCourseProgram('stress').focusTags]}));await h.settle()
@@ -245,7 +248,7 @@ test('switching an existing course keeps preset/personal actions and never start
   assert.equal(nodes(h.tree).filter(node=>node.props['data-course-program-id']).length,0)
   const catalog=findPart(h.tree,'CoursePresetCatalog')
   if(presetId)catalog.props.onPreset(presetId);else catalog.props.onPersonal()
-  await h.settle();(await consent(h))();await h.settle()
+  await h.settle();await h.settle()
   assert.equal(writes(h).length,1);assert.equal(writes(h)[0].body.action,presetId?'select-preset':'select-personal')
   assert.equal(writes(h)[0].body.courseId,'existing');assert.equal(writes(h)[0].body.newCourse,undefined)
   h.unmount()
@@ -280,10 +283,10 @@ test('unknown fixed-preset start cannot be reinterpreted as a flagship even when
   if(attempt===1){stored={...course(body.courseId,2),presetId:'confidence',focusTags:[...COURSE_PRESETS.find(p=>p.id==='confidence').focusTags]};return {error:'SERVICE_UNAVAILABLE'}}
   return view(stored)
  }})
- await h.settle();findPart(h.tree,'CoursePresetCatalog').props.onPreset('confidence');await h.settle();(await consent(h))();await h.settle()
+ await h.settle();findPart(h.tree,'CoursePresetCatalog').props.onPreset('confidence');await h.settle();await h.settle()
  await chooseProgram(h,'confidence');await h.settle()
  assert.equal(writes(h).length,1,'coming-soon programme cannot reinterpret an uncertain fixed-preset start')
- await chooseProgram(h,'stress');(await consent(h))();await h.settle()
+ await chooseProgram(h,'stress');await h.settle()
  assert.equal(writes(h).length,2);assert.equal(writes(h)[0].body.courseId,writes(h)[1].body.courseId)
  assert.equal(findPart(h.tree,'CourseR3Steps').props.state.course.presetId,'confidence')
  assert.deepEqual(findPart(h.tree,'CourseR3Steps').props.state.course.focusTags,stored.focusTags)
@@ -303,7 +306,7 @@ test('successful explicit intake retry invalidates a concurrent pre-intake billi
   if(body.action==='start'){current=course(body.courseId);return view(current)}
   return ++attempt===1?{error:'SERVICE_UNAVAILABLE'}:intake.promise
  }})
- await h.settle();await chooseProgram(h);(await consent(h))();await h.settle()
+ await h.settle();await chooseProgram(h);await h.settle()
  findButton(h.tree,'Retry programme setup').props.onClick();await h.settle()
  background=true;billing={phase:'ready',status:{entitlement:{tier:'advanced'}}};h.render(props);await h.settle()
  const stageOne=view(current)
@@ -322,8 +325,8 @@ test('Personal retry reports an already-created fixed preset as a changed contra
   if(++attempt===1){stored={...course(body.courseId,2),presetId:'calm_balance',focusTags:['stress','energy']};return {error:'SERVICE_UNAVAILABLE'}}
   return view(stored)
  }})
- await h.settle();findPart(h.tree,'CoursePresetCatalog').props.onPreset('calm_balance');await h.settle();(await consent(h))();await h.settle()
- findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await h.settle();(await consent(h))();await h.settle()
+ await h.settle();findPart(h.tree,'CoursePresetCatalog').props.onPreset('calm_balance');await h.settle();await h.settle()
+ findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await h.settle();await h.settle()
  assert.equal(writes(h).length,2);assert.equal(writes(h)[0].body.courseId,writes(h)[1].body.courseId)
  assert.equal(findPart(h.tree,'CourseR3Steps').props.state.course.presetId,'calm_balance')
  assert.ok(nodes(h.tree).some(node=>node.props.role==='alert'&&JSON.stringify(node.props.children).includes('COURSE_START_SELECTION_CHANGED')))
@@ -340,12 +343,12 @@ test('an explicit successful direction change clears an obsolete programme retry
    if(body.action==='intake')return {error:'SERVICE_UNAVAILABLE'}
    current={...current,stage:presetId?2:1,presetId,revision:2};return view(current)
   }})
-  await h.settle();await chooseProgram(h);(await consent(h))();await h.settle();assert.ok(findButton(h.tree,'Retry programme setup'))
+  await h.settle();await chooseProgram(h);await h.settle();assert.ok(findButton(h.tree,'Retry programme setup'))
   const staleRetry=findButton(h.tree,'Retry programme setup').props.onClick
   findButton(h.tree,'Change course direction').props.onClick();await h.settle()
   const catalog=findPart(h.tree,'CoursePresetCatalog')
   if(presetId)catalog.props.onPreset(presetId);else catalog.props.onPersonal()
-  await h.settle();(await consent(h))();await h.settle()
+  await h.settle();await h.settle()
   assert.equal(findButton(h.tree,'Retry programme setup'),undefined)
   const count=h.calls.length;staleRetry();await h.settle();assert.equal(h.calls.length,count)
   assert.equal(writes(h).filter(call=>call.body.action==='start').length,1)
@@ -361,7 +364,7 @@ test('manual intake clears the live programme intent so a retained retry cannot 
   if(body.action==='intake'&&++intakes===1)return {error:'SERVICE_UNAVAILABLE'}
   current={...current,stage:2,revision:2,focusTags:body.focusTags};return view(current)
  }})
- await h.settle();await chooseProgram(h);(await consent(h))();await h.settle()
+ await h.settle();await chooseProgram(h);await h.settle()
  const retry=findButton(h.tree,'Retry programme setup').props.onClick
  await findPart(h.tree,'CourseR3Steps').props.onAct('intake',{concerns:'My different focus',focusTags:['sleep']});await h.settle()
  const count=h.calls.length;retry();await h.settle();assert.equal(h.calls.length,count)
@@ -386,7 +389,7 @@ test('plain hero defaults to Anti-Stress while guided concerns survive failed in
    if(++attempt===1)return {error:'SERVICE_UNAVAILABLE'}
    current={...current,stage:2,revision:2,focusTags:body.focusTags};return view(current)
   }})
-  await h.settle();findButton(h.tree,'Start course for free').props.onClick();await h.settle();(await consent(h))();await h.settle()
+  await h.settle();findButton(h.tree,'Start course for free').props.onClick();await h.settle();await h.settle()
   assert.equal(writes(h).filter(x=>x.body.action==='start').length,1)
   assert.ok(findButton(h.tree,'Retry programme setup'))
   findButton(h.tree,'Retry programme setup').props.onClick();await h.settle()
@@ -407,7 +410,7 @@ test('captured guided programme concerns cannot dispatch after owner or course c
    if(body.action==='start'){current=course(body.courseId);return view(current)}
    return {error:'SERVICE_UNAVAILABLE'}
   }})
-  await h.settle();await chooseProgram(h);(await consent(h))();await h.settle();retrying=true
+  await h.settle();await chooseProgram(h);await h.settle();retrying=true
   findButton(h.tree,'Retry programme setup').props.onClick();await h.settle()
   if(change==='owner')h.render({data:account('owner-b')});else await h.backTo('?courseId=other')
   slow.resolve(view(current));await h.settle()
