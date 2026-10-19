@@ -147,6 +147,8 @@ export function energyworkP4ResumeId(slideId, answers = {}) {
 // p6 saved quiz positions pointed to different questions: restart only the new
 // quiz, without deleting the encrypted original written responses.
 export function energyworkP6ResumeId(slideId) {
+  // p5/p6/p7 learners at the retired nine-levels slide keep their place.
+  if (slideId === 'tan-study-05') return 'tan-study-06'
   if (['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07'].includes(slideId)) return 'kun-study-v2-01'
   return energyworkSequence().includes(slideId) ? slideId : 'flight-01'
 }
