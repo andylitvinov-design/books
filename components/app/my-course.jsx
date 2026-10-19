@@ -191,6 +191,7 @@ export function MyCourse({ data, locale = 'en' }) {
   const selectedCourse = useRef(null), currentAccount = useRef(accountId), mounted = useRef(false)
   const generation = useRef(0), readVersion = useRef(0), readController = useRef(null), actionLock = useRef(null)
   const newCourseId = useRef(null)
+  const acceptedStartSerial = useRef(0)
   currentAccount.current = accountId
   const [courseEntry, setCourseEntry] = useState(null)
   const [personalEntryDismissed, setPersonalEntryDismissed] = useState(false)
@@ -330,6 +331,7 @@ export function MyCourse({ data, locale = 'en' }) {
       try {
         const response=await courseCommand(action,values)
         if (!isSelected() || response.course?.id!==state?.course?.id) return
+        if (['select-preset', 'select-personal'].includes(action)) acceptedStartSerial.current += 1
         acceptState(response)
         if (['select-preset','select-personal','intake'].includes(action)) clearPendingProgram(response.course.id)
       } catch (e) { acceptError(e.message) }
@@ -355,6 +357,8 @@ export function MyCourse({ data, locale = 'en' }) {
       })
       if (!isSelected(targetCourseId,epoch)) return
       if (started.course?.id !== requestedCourseId) throw new Error('COURSE_SELECTION_CHANGED')
+      // Invalidate an old start button even if a closed legacy course reuses the same ID.
+      acceptedStartSerial.current += 1
       readVersion.current += 1; readController.current?.abort()
       selectedCourse.current = targetCourseId = started.course.id
       setSnapshot({ accountId, value: started }); replaceCourseUrl(started.course.id)
@@ -402,10 +406,11 @@ export function MyCourse({ data, locale = 'en' }) {
     }
   }
 
-  // The explicit course CTA is the only start action for a signed-in learner.
-  // No redundant modal or checkbox: the server still validates the owner,
-  // capacity and the consent flag sent with this deliberate click.
+  // Every rendered CTA is bound to its account, selected course, and last
+  // accepted start; a retained callback cannot start another course later.
+  const renderedStartSerial = acceptedStartSerial.current
   function startSelectedCourse(presetId = null, programId = null) {
+    if (!isSelected(state?.course?.id || null, viewGeneration) || renderedStartSerial !== acceptedStartSerial.current) return
     if (programId !== null && programId !== ACTIVE_COURSE_PROGRAM_ID) return
     if (busy || actionLock.current || (presetId !== null && !getCoursePreset(presetId)) ||
         (programId !== null && !getCourseProgram(programId)) ||
