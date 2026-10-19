@@ -35,7 +35,7 @@ export default async function EventsPage({ params }: Props) {
   const { locale } = await params;
   if (!validLocale(locale)) notFound();
   return (
-    <main className="services-shell services-shell--studio" lang={locale}>
+    <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <EventsDiscovery locale={locale} events={PUBLIC_EVENTS} />
     </main>
