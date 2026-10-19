@@ -5,7 +5,7 @@ const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
     select:'Select a conversation',reply:'Your reply',send:'Send reply',refresh:'Refresh',loading:'Loading conversations…',
-    pending:'Connection requires official provider credentials.',connect:'Connect',connected:'Connected',none:'Not configured',
+    pending:'Connection requires official provider credentials.',connect:'Connect',connected:'Registered in CRM · test delivery',none:'Not configured',
     manual:'Manual customer replies only. Do not enter medical details, reports or secret client links.',
     failed:'Messages are temporarily unavailable.',unknown:'Delivery not confirmed. Do not resend automatically.',
     accepted:'Message accepted by the provider.',blocked:'This reply is unavailable.',read:'Mark read',
@@ -14,7 +14,7 @@ const copy={
   ru:{title:'Сообщения',sub:'Telegram, WhatsApp, Instagram и Messenger — единый защищённый inbox',all:'Все',
     empty:'Переписок пока нет. Входящие появятся после подключения канала и первого сообщения от клиента.',
     select:'Выберите переписку',reply:'Ваш ответ',send:'Отправить ответ',refresh:'Обновить',loading:'Загружаю переписки…',
-    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',connected:'Подключён',none:'Не настроен',
+    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',connected:'Зарегистрирован в CRM · проверьте доставку',none:'Не настроен',
     manual:'Только ответы на обращения клиентов. Не отправляйте медицинские сведения, отчёты или секретные ссылки.',
     failed:'Переписки временно недоступны.',unknown:'Доставка не подтверждена. Не повторяйте отправку автоматически.',
     accepted:'Сообщение принято провайдером.',blocked:'Сейчас ответ недоступен.',read:'Отметить прочитанным',
@@ -23,7 +23,7 @@ const copy={
   es:{title:'Mensajes',sub:'Telegram, WhatsApp, Instagram y Messenger — bandeja privada',all:'Todos',
     empty:'Aún no hay conversaciones. Aparecerán cuando el canal esté conectado y un cliente escriba.',
     select:'Selecciona una conversación',reply:'Tu respuesta',send:'Enviar respuesta',refresh:'Actualizar',loading:'Cargando conversaciones…',
-    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',connected:'Conectado',none:'Sin configurar',
+    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',connected:'Registrado en CRM · comprobar entrega',none:'Sin configurar',
     manual:'Solo respuestas a clientes. No incluyas datos médicos, informes ni enlaces privados.',
     failed:'Los mensajes no están disponibles temporalmente.',unknown:'Entrega no confirmada. No reenviar automáticamente.',
     accepted:'Mensaje aceptado por el proveedor.',blocked:'Esta respuesta no está disponible.',read:'Marcar leído',
@@ -425,8 +425,8 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           const ok=registered?.connected===true
           const missing=channel.missingKeys||[]
           const isPilot=channel.channel==='telegram'&&channel.pilot
-          const statusLabel=ok?t.connected:isPilot?guide.pilot:
-            missing.length?guide.missing:!channel.enabled?guide.disabled:
+          const statusLabel=ok?t.connected:missing.length?guide.missing:isPilot?guide.pilot:
+            !channel.enabled?guide.disabled:
             !channel.liveApproved?guide.approval:guide.configured
           return <div className={styles.channel} key={channel.channel}>
             <strong>{names[channel.channel]}</strong>
