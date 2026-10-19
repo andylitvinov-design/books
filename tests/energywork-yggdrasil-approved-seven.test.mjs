@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { writeReikiInitiationRequest } from '../data/academy/reiki-initiation-request.js'
 import {
   ENERGYWORK_VERSION, ENERGYWORK_P7_VERSION, ENERGYWORK_P8_VERSION,
   ENERGYWORK_QUESTIONS, ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
@@ -76,5 +77,6 @@ test('Historic private Yggdrasil answers survive but cannot pass the new initiat
   for(const id of ENERGYWORK_PREVIOUS_YGGDRASIL_STUDY_QUESTION_IDS) previous[id]='Prior question answer'
   assert.equal(energyworkInitiationReady(previous),false)
   for(const id of ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS) previous[id]='Corrected question answer'
+  previous['end-01'] = writeReikiInitiationRequest({firstName:'Elena',lastName:'Petrova',location:'Toronto, Canada',timezone:'America/Toronto',preferredTime:'Evenings after 7',freeInitiation:'tantra',donationInitiations:['yggdrasil'],motivation:'I want to learn Reiki with intention and receive a personal initiation.'})
   assert.equal(energyworkInitiationReady(previous),true)
 })
