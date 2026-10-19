@@ -189,8 +189,8 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("There is no right feeling to achieve. Describe the difference between a symbolic image and a required physical result.", "Здесь не требуется определённое ощущение. Расскажите, чем символический образ отличается от обязательного физического результата."),
     question: { type: "text", prompt: l("My answer to the lesson question…", "Мой ответ на вопрос урока…") } },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
-    title: l("First lesson completed!", "Первый урок пройден!"),
-    body: l("A lovely start! Next: Tantra Reiki.", "Отличное начало! Следующий шаг — Тантра Рейки.") },
+    title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
+    body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
 
   { id: "presence-01", phase: "tantra", kind: "lesson", image: image.world,
     title: l("After Tantra Reiki: the foundation of presence", "После Тантра Рейки: основа присутствия"),
