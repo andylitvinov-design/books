@@ -24,10 +24,10 @@ async function press(h,label){
 }
 const words={
   en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
-    start:"See what's next",week1:'Week 1: Find your supports',week2:'Week 2: Make it your own',
+    audio:'Relax with waves',start:"See what's next",week1:'Week 1: Find your supports',week2:'Week 2: Make it your own',
     nextTitle:'Your next small step',map:'My course map',finished:'Your 14 days are complete'},
   ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
-    start:'Посмотреть, что дальше',week1:'Первая неделя: найти опору',
+    audio:'Послушать волны',start:'Посмотреть, что дальше',week1:'Первая неделя: найти опору',
     week2:'Вторая неделя: свой опыт',nextTitle:'Следующий маленький шаг',
     map:'К карте курса',finished:'Ваши 14 дней позади'},
 }
@@ -40,6 +40,7 @@ test('confirmed Day 1 save leads to three programme slides with real 14-day titl
     assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
     assert.match(textOf(f.h.tree),new RegExp(w.receipt))
     assert.equal(f.finishCount,0)
+    await press(f.h,w.audio)
     await press(f.h,w.start)
     assert.match(textOf(f.h.tree),new RegExp(w.week1))
     for(let day=1;day<=7;day++)assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
@@ -64,6 +65,7 @@ test('Days 2-13 show the real next lesson after saving; Day 14 shows completion,
     await press(f.h,w.save)
     assert.equal(f.saved.length,1)
     assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+    await press(f.h,w.audio)
     await press(f.h,w.start)
     const rendered=textOf(f.h.tree)
     if(day===14){
