@@ -4292,3 +4292,223 @@
     margin: 3px 0 5px;
   }
 }
+
+
+/* REIKI LESSON 5 — personal initiation application, 2026-10-19.
+   The long opt-in form scrolls inside the existing lesson card, while the
+   programme steps and Continue/Back controls remain reachable on iPhone. */
+.page[data-course-portrait="v3"] [data-energywork-slide-id="end-01"] .slideMain {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  justify-content: flex-start;
+}
+.page[data-course-portrait="v3"] [data-energywork-slide-id="end-01"] .content {
+  width: 100%;
+  max-width: 850px;
+  margin-inline: auto;
+}
+.page[data-course-portrait="v3"] .initiationForm {
+  display: grid;
+  gap: 15px;
+  margin-top: 13px;
+  padding: clamp(12px, 2.3vw, 20px);
+  border: 1px solid #b0d9d7;
+  border-radius: 18px;
+  background: rgba(248, 255, 254, .93);
+  box-shadow: 0 9px 26px rgba(12, 91, 103, .09);
+  color: #184758;
+}
+.page[data-course-portrait="v3"] .initiationGiftIntro {
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: linear-gradient(115deg, rgba(214, 250, 242, .96), rgba(250, 254, 251, .99));
+  border: 1px solid rgba(126, 207, 190, .48);
+}
+.page[data-course-portrait="v3"] .initiationGiftIntro > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #087e82;
+  font-weight: 850;
+  font-size: 16px;
+}
+.page[data-course-portrait="v3"] .initiationGiftIntro p {
+  margin: 6px 0 0;
+  color: #315d69;
+  line-height: 1.45;
+  font-size: 13px;
+}
+.page[data-course-portrait="v3"] .initiationChoiceGroup {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.page[data-course-portrait="v3"] .initiationChoiceGroup legend,
+.page[data-course-portrait="v3"] .initiationSectionTitle,
+.page[data-course-portrait="v3"] .initiationMotivation > span {
+  display: block;
+  margin: 0 0 8px;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.35;
+  color: #155766;
+}
+.page[data-course-portrait="v3"] .initiationChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 9px;
+}
+.page[data-course-portrait="v3"] .initiationChoice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  min-width: 0;
+  min-height: 50px;
+  padding: 9px 11px;
+  border: 1px solid #accfd2;
+  border-radius: 13px;
+  background: #fff;
+  cursor: pointer;
+  color: #285d6c;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.page[data-course-portrait="v3"] .initiationChoiceSelected {
+  background: #e0f9f2;
+  border-color: #0f9c98;
+  box-shadow: inset 0 0 0 1px rgba(17, 157, 151, .2);
+}
+.page[data-course-portrait="v3"] .initiationChoice input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  accent-color: #087e87;
+}
+.page[data-course-portrait="v3"] .initiationChoice span {
+  flex: 1 1 115px;
+  min-width: 0;
+  font-weight: 750;
+}
+.page[data-course-portrait="v3"] .initiationChoice small {
+  color: #147878;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.page[data-course-portrait="v3"] .initiationHelper {
+  margin: 0;
+  color: #466f78;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.page[data-course-portrait="v3"] .initiationDetails {
+  display: grid;
+  gap: 9px;
+  padding-top: 4px;
+  border-top: 1px solid #d4e9e8;
+}
+.page[data-course-portrait="v3"] .initiationFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.page[data-course-portrait="v3"] .initiationField,
+.page[data-course-portrait="v3"] .initiationMotivation {
+  display: grid;
+  gap: 6px;
+  color: #285767;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 0;
+}
+.page[data-course-portrait="v3"] .initiationFieldWide {
+  grid-column: 1 / -1;
+}
+.page[data-course-portrait="v3"] .initiationField input,
+.page[data-course-portrait="v3"] .initiationMotivation textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #a9d2d3;
+  border-radius: 10px;
+  color: #133e50;
+  background: #fff;
+  font: 500 16px/1.4 system-ui, sans-serif;
+}
+.page[data-course-portrait="v3"] .initiationMotivation textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.page[data-course-portrait="v3"] .initiationMotivation small {
+  color: #53737c;
+  font-size: 12px;
+  font-weight: 500;
+}
+.page[data-course-portrait="v3"] .initiationChoice:focus-within,
+.page[data-course-portrait="v3"] .initiationField input:focus-visible,
+.page[data-course-portrait="v3"] .initiationMotivation textarea:focus-visible {
+  outline: 3px solid rgba(15, 161, 154, .45);
+  outline-offset: 2px;
+}
+.page[data-course-portrait="v3"] .initiationFormStatus {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  border-radius: 12px;
+  margin: 0;
+  padding: 10px 12px;
+  background: #eaf8f6;
+  color: #235c67;
+  font-size: 13px;
+  line-height: 1.42;
+}
+.page[data-course-portrait="v3"] .initiationFormStatus svg {
+  flex: none;
+  color: #0c9593;
+  margin-top: 1px;
+}
+@media (max-width: 620px) {
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="end-01"] .slideMain {
+    padding: 9px 10px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="end-01"] .description {
+    font-size: 13px;
+    line-height: 1.34;
+  }
+  .page[data-course-portrait="v3"] .initiationForm {
+    gap: 11px;
+    margin-top: 9px;
+    padding: 10px;
+  }
+  .page[data-course-portrait="v3"] .initiationChoiceGrid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .page[data-course-portrait="v3"] .initiationChoice {
+    min-height: 44px;
+    padding: 7px 10px;
+  }
+  .page[data-course-portrait="v3"] .initiationChoice span {
+    flex-basis: 125px;
+  }
+  .page[data-course-portrait="v3"] .initiationFields {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+@media print {
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="end-01"] .slideMain {
+    height: auto;
+    overflow: visible;
+  }
+  .page[data-course-portrait="v3"] .initiationForm {
+    background: white;
+    box-shadow: none;
+  }
+}
