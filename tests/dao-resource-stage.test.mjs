@@ -8,7 +8,7 @@ import { createPrescription, updatePrescription, getClientPrescription } from '.
 
 const sample = {
   patientName:'Test client', practitionerName:'Test practitioner',
-  dateIssued:'2026-10-18', languagePreference:'ru',
+  dateIssued:'2026-10-18', languagePreference:'ru', status:'active',
   recommendationType:'bach',
   items:[{itemType:'bach',displayNameOverride:'Test flower'}],
   daoResourceScore:'3,8',
