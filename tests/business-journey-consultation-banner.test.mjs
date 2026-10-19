@@ -46,3 +46,21 @@ test('compact navy-gold styling and approved portrait are consistent on homepage
   assert.ok(topicSelector.includes(portrait) && tile.includes(portrait))
   assert.ok(existsSync(new URL('../public' + portrait, import.meta.url)))
 })
+
+
+test('business discovery matches Academy hero and preserves independently chosen topic tests', () => {
+  const selector = read('components/topic-journey-selector.tsx')
+  const tabs = read('components/discovery-section-tabs.tsx')
+  const css = read('components/topic-journey-selector.module.css')
+  assert.match(selector, /<DiscoverySectionTabs locale=\{locale\} active="business"/)
+  assert.match(selector, /businessSearchForm/)
+  assert.match(selector, /businessQuickPaths/)
+  assert.match(selector, /visibleTopics\.map/)
+  assert.match(selector, /journey\.id !== 'business' \|\| !businessFilter/)
+  assert.match(selector, /setBusinessFilter\(businessQuery\.trim\(\)\.toLocaleLowerCase\(\)\)/)
+  assert.match(css, /#203450 0%, #283d5c 58%, #483a52 100%/)
+  assert.match(tabs, /"tests", "services", "business", "courses"/)
+  assert.match(tabs, /\/explore\/business/)
+  assert.match(selector, /<section className=\{styles\.suggestions\}/)
+  assert.match(selector, /data-business-consultation-banner/)
+})
