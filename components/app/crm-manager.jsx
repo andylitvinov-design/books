@@ -169,6 +169,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   if (!accountId) return null
   const globalSearch=search.trim().length>=2
   const contacts=(globalSearch?(serverSearchStatus==='done'?serverResults?.contacts||[]:[]):data?.contacts||[]).filter(contact=>{
+    if(globalSearch)return filter==='all'||contact.lifecycle===filter
     const text=[contact.displayName,contact.email,contact.phone].join(' ').toLowerCase()
     return text.includes(search.trim().toLowerCase()) && (filter === 'all' || contact.lifecycle === filter)
   })
