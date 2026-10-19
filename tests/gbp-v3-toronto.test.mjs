@@ -34,7 +34,7 @@ test('Google Maps is owner-confirmed and distinct from search/paid Google', () =
 test('source options, source-specific counters and SQL whitelist retain owner-only boundary', () => {
   const ui = source('components/app/crm-marketing.jsx')
   const lib = source('lib/crm/marketing-repository.js')
-  const migration = source('supabase/migrations/20261018224600_hh_crm_google_maps_source.sql')
+  const migration = source('supabase/migrations/20261018230048_hh_crm_google_maps_source_20261018.sql')
   assert.match(ui, /\['google_maps','Google Maps'\]/)
   assert.match(ui, /mapsGroup.*google_maps/)
   assert.match(ui, /if\(e\.target\.value==='google_maps'\)setMedium\('organic_search'\)/)

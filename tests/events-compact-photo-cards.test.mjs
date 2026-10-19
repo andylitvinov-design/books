@@ -97,7 +97,7 @@ test("Events matches the Academy page shell, hero and catalogue rhythm", () => {
 test("Public Eventbrite artwork loads from its CDN with strictly route-scoped CSP", () => {
   assert.match(eventData, /posterUrl: "https:\/\/img\.evbuc\.com\//);
   assert.doesNotMatch(eventData, /www\.eventbrite\.ca\/e\/_next\/image/);
-  assert.ok(middleware.includes("const eventsPosterImageOrigin = /^\\/(en|ru|es)\\/events\\/?$/"));
+  assert.ok(middleware.includes("const eventsPosterImageOrigin = /^\\/(en|ru|es)\\/events(?:\\/[^/]+)?\\/?$/"));
   assert.ok(middleware.includes("+ listingImageOrigin + eventsPosterImageOrigin"));
   assert.match(middleware, /eventsPosterImageOrigin[^;]*https:\/\/img\.evbuc\.com/);
   assert.match(source, /FALLBACK_EVENT_ART\[event\.category\]/);
