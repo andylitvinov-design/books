@@ -110,13 +110,18 @@ export const energyworkLessons: Array<{ phase: EnergyworkPhase; firstSlideId: st
 // A written meditation reflection follows each practice. Seven short study
 // questions in Tantra Reiki are optional while learning, but required for
 // an optional personal-initiation review alongside the other lesson answers.
-export const energyworkInitiationRequirements = [
+export const energyworkInitiationRequirements: ReadonlyArray<{
+  lesson: EnergyworkPhase;
+  reportId: string;
+  questionId: string;
+  questionIds: readonly string[];
+}> = [
   { lesson: "flight", reportId: "flight-04", questionId: "flight-05", questionIds: ["flight-05"] },
   { lesson: "tantra", reportId: "tan-04", questionId: "tan-06", questionIds: ["tan-06", "tan-study-02", "tan-study-03", "tan-study-04", "tan-study-05", "tan-study-06", "tan-study-07"] },
   { lesson: "kundalini", reportId: "kun-04", questionId: "kun-06", questionIds: ["kun-06"] },
   { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-06", questionIds: ["ygg-06"] },
   { lesson: "initiation", reportId: "end-01", questionId: "init-01", questionIds: ["init-01"] },
-] as const;
+];
 
 export const energyworkPathChoices: Array<{
   id: EnergyworkPath;
