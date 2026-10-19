@@ -102,7 +102,7 @@ test('Guest answers stay unsaved; consented Google learners use private versione
   assert.match(learner, /const \[answers, setAnswers\] = useState<AnswerMap>\(\{\}\)/)
   assert.match(learner, /navigator\.clipboard\.writeText\(notes\)/)
   assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
-  assert.match(learner, /maxLength=\{1600\}/)
+  assert.match(learner, /maxLength=\{isMeditationFeedback \? undefined : 1600\}/)
   assert.doesNotMatch(learner, /aria-pressed=\{path === choice\.id\}|choosePath\(/)
   assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing\}/)
 })

@@ -54,7 +54,7 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
     assert.equal(energyworkMeditationFeedbackComplete(feedback),false)
   assert.equal(energyworkMeditationFeedbackComplete('123456789012345'),true)
   assert.equal(energyworkMeditationFeedbackComplete('12345678901234'),false)
-  assert.match(learner,/Array\.from\(meditationReview\.trim\(\)\)\.length < 15/)
+  assert.match(learner,/feedbackMissing = isMeditationFeedback && feedbackLength < 15/)
   assert.match(learner,/saveReview: "Save review"/)
   assert.match(learner,/saveReview: "Сохранить отзыв"/)
   assert.doesNotMatch(learner,/data-meditation-feeling|joinMeditationFeedback|splitMeditationFeedback/)
@@ -76,11 +76,13 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
   assert.match(learner,/initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
 })
 
-test('Private answers use checked types, bounded lengths and only approved answer keys', () => {
+test('Private answers retain normal limits but allow longer meditation reviews', () => {
   assert.ok(Object.keys(ENERGYWORK_QUESTIONS).length <= 32)
   for(const id of Object.keys(ENERGYWORK_QUESTIONS))
     assert.equal(energyworkAnswerValid(id,'a'.repeat(1600)),ENERGYWORK_QUESTIONS[id]==='text')
-  assert.equal(energyworkAnswerValid('flight-04','a'.repeat(1601)),false)
+  for(const id of ENERGYWORK_MEDITATION_REPORT_IDS)
+    assert.equal(energyworkAnswerValid(id,'a'.repeat(5000)),true)
+  assert.equal(energyworkAnswerValid('flight-05','a'.repeat(1601)),false)
   assert.equal(energyworkAnswerValid('flight-04',null),false)
   assert.equal(energyworkAnswerValid('flight-02','notes'),false)
   for(const val of ['0','5','10'])assert.equal(energyworkAnswerValid('presence-03',val),true)
