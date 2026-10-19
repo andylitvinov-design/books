@@ -5,7 +5,7 @@ import {
   ENERGYWORK_VERSION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_ANSWER_IDS,
   ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete,
   energyworkSequence, energyworkLessonRanges, energyworkPreviousResumeId,
-  energyworkP2ResumeId, energyworkP3ResumeId, energyworkP4ResumeId, energyworkP7ResumeId,
+  energyworkP2ResumeId, energyworkP3ResumeId, energyworkP4ResumeId, energyworkP6ResumeId, energyworkP7ResumeId,
 } from "../data/academy/energywork-ai-schema.js"
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8")
@@ -124,6 +124,7 @@ test("Deleted questions never erase old encrypted answers or reset earlier progr
   assert.match(repository, /row\.course_version === ENERGYWORK_P7_VERSION/)
   assert.match(cabinet, /data-energywork-resume-last/)
   assert.match(cabinet, /encodeURIComponent\(academyProgress\.slideId\)/)
+  assert.equal(energyworkP6ResumeId("tan-study-05"), "tan-study-06")
   assert.equal(energyworkP7ResumeId("tan-study-05"), "tan-study-06")
   assert.equal(energyworkP7ResumeId("tan-study-07"), "tan-study-07")
   assert.equal(energyworkP7ResumeId("tan-study-02"), "tan-study-02")
