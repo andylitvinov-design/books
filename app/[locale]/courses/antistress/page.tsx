@@ -39,6 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         "x-default": "/en/courses/antistress",
       }
     },
+    manifest: "/opora-antistress-" + locale + ".webmanifest",
     openGraph: {
       type: "website",
       title: t.title,

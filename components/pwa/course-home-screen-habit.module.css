@@ -1,0 +1,51 @@
+.root {
+  --ink: #19475c;
+  margin: 14px 0 25px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 12px 20px;
+  align-items: center;
+  padding: clamp(14px,2.2vw,22px);
+  border: 1px solid #c4e6e7;
+  border-radius: 20px;
+  background: linear-gradient(115deg,#f0fcfc 0%,#fffefa 75%);
+  color: var(--ink);
+  box-shadow: 0 7px 23px #0a4b6110;
+  max-width: 100%;
+}
+.root * { box-sizing: border-box; }
+.lead { min-width: 0; display: flex; align-items: center; gap: 12px; }
+.mark { width: 44px; height: 44px; display: grid; flex: none; place-items: center; border-radius: 14px; background: #d9f2f0; color: #087b87; }
+.eyebrow { display: block; color: #21818b; font: 750 10px/1.3 system-ui,sans-serif; letter-spacing: .08em; }
+.lead h2 { margin: 3px 0 4px; font: 600 clamp(19px,2.1vw,23px)/1.2 Georgia,serif; color: #144258; }
+.lead p { margin: 0; color: #567382; font: 400 13px/1.48 system-ui,sans-serif; }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.root button, .installed { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 43px; padding: 9px 13px; border-radius: 12px; font: 700 12.5px/1.3 system-ui,sans-serif; cursor: pointer; white-space: normal; text-align: center; }
+.root button:focus-visible, .root input:focus-visible { outline: 3px solid #8c4d6d; outline-offset: 2px; }
+.primary { border: 1px solid #0b7383; background: #087f91; color: white; }
+.secondary { border: 1px solid #b6d6da; background: white; color: #226577; }
+.installed { border: 1px solid #a6d4c9; background: #eaf8f2; color: #24684f; cursor: default; }
+.installHelp { margin: 0; grid-column: 1 / -1; padding: 10px 12px; color: #315c67; background: #e4f5f5; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.guide { grid-column: 1 / -1; min-width: 0; border-top: 1px solid #c8e3e5; padding-top: 13px; display: grid; gap: 10px; }
+.guide strong { font-size: 15px; }
+.guide p { margin: 0; color: #4d6c79; font-size: 13px; line-height: 1.6; }
+.guide ol { margin: 0; padding-left: 22px; font-size: 13px; line-height: 1.65; color: #365e6c; }
+.guide li + li { margin-top: 4px; }
+.alertText { margin: 0; border-left: 3px solid #2791a0; background: #e8f8f7; border-radius: 0 10px 10px 0; padding: 11px 14px; font-size: 15px; font-weight: 650; color: #174c58; }
+.urlLabel { font-size: 12px; font-weight: 700; color: #406775; }
+.copyRow { display: flex; gap: 8px; min-width: 0; }
+.copyRow input { min-width: 0; flex: 1; border: 1px solid #b8d6d8; background: white; border-radius: 10px; padding: 9px; color: #2c5663; font: 12px/1.3 system-ui,sans-serif; }
+.copyRow button { border: 1px solid #a8ccd2; background: #e7f5f5; color: #245b6a; flex: none; }
+.guide small { color: #667d85; font-size: 11.5px; line-height: 1.6; }
+.copyStatus { color: #276a59 !important; }
+@media (max-width: 760px) {
+  .root { grid-template-columns: 1fr; }
+  .actions { justify-content: stretch; }
+  .actions > * { flex: 1 1 148px; }
+}
+@media (max-width: 410px) {
+  .mark { width: 36px; height: 36px; }
+  .copyRow { flex-wrap: wrap; }
+  .copyRow input, .copyRow button { flex: 1 1 100%; }
+  .root button { font-size: 12px; }
+}

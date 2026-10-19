@@ -1,0 +1,26 @@
+{
+  "id": "/opora-antistress",
+  "name": "OPORA — Antiestrés",
+  "short_name": "OPORA",
+  "description": "Lecciones breves de antiestrés",
+  "start_url": "/en/app/course?program=stress",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ecfafa",
+  "theme_color": "#123e53",
+  "icons": [
+    {
+      "src": "/course-icon/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/course-icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ import { useSubscription } from './subscription-access'
 import { courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
 import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseToday from './course-today'
+import CourseHomeScreenHabit from '@/components/pwa/course-home-screen-habit'
 import CourseEntrySelector from './course-entry-selector'
 import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
@@ -560,6 +561,7 @@ export function MyCourse({ data, locale = 'en' }) {
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
     />}
+    {showDashboard && <CourseHomeScreenHabit locale={locale} />}
     {compactBaselineNav && <nav className={styles.compactBaselineNav} aria-label={ru ? 'Навигация курса' : locale === 'es' ? 'Navegación del curso' : 'Course navigation'} data-opora-baseline-compact-nav>
       <button type="button" disabled={busy} onClick={() => changeView('list')}>
         <ArrowLeft size={15} aria-hidden="true"/>{ru ? 'Мои курсы' : locale === 'es' ? 'Mis cursos' : 'My courses'}
