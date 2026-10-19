@@ -50,12 +50,14 @@ const copy = {
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Explore the programme",
+    programmeIntro: "Your five-step journey is just beginning. Discover the Reiki paths that inspire you.",
+    systemDetails: "Learn more",
     backCourse: "Course details",
     step: "Slide",
     of: "of",
     continue: "Continue",
     back: "Back",
-    stop: "You can skip or stop any practice. No medical advice or certification is provided here.",
+    stop: "Enjoy learning at your own pace. You can take a break and return to any lesson whenever you like.",
     optional: "Optional reflection",
     experienceBadge: "Your starting point",
     experienceNote: "Choose one answer to continue. You can change it later.",
@@ -67,7 +69,7 @@ const copy = {
     unavailable: "This recording is not available. You can continue using the written teaching.",
     welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
     welcomeRequirement: "Study all five lessons in order.",
-    welcomeTeacher: "A personal initiation is arranged separately with Andrey. Course completion alone does not grant any initiation.",
+    welcomeTeacher: "Want to go further? You can explore personal Reiki initiation with Andrey when you feel ready.",
     pathway: "All lessons are part of your course",
     picked: "Completed",
     fiveLessons: "Five sequential lessons",
@@ -157,12 +159,14 @@ const copy = {
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Посмотреть программу",
+    programmeIntro: "Ваш путь из пяти шагов только начинается. Знакомьтесь с системами Рейки и находите то, что вдохновляет.",
+    systemDetails: "Подробнее",
     backCourse: "Описание курса",
     step: "Слайд",
     of: "из",
     continue: "Продолжить",
     back: "Назад",
-    stop: "Любую практику можно пропустить или остановить. Здесь нет медицинских назначений или автоматической сертификации.",
+    stop: "Учитесь в своём ритме: делайте паузы и возвращайтесь к любимым урокам, когда захотите.",
     optional: "Необязательная рефлексия",
     experienceBadge: "Ваш уровень знакомства",
     experienceNote: "Выберите один вариант, чтобы продолжить. Позже его можно изменить.",
@@ -174,7 +178,7 @@ const copy = {
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
     welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
     welcomeRequirement: "Проходите все пять уроков по очереди.",
-    welcomeTeacher: "Личная инициация проводится отдельно, по договорённости с Андреем. Завершение курса не является инициацией.",
+    welcomeTeacher: "Захочется пойти дальше? Когда будете готовы, можно обсудить с Андреем личную Рейки-инициацию.",
     pathway: "Все уроки входят в одну программу",
     picked: "Завершено",
     fiveLessons: "Пять последовательных уроков",
@@ -947,9 +951,25 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
         <details className={styles.programme}>
           <summary>{t.program}</summary>
-          <ol>{energyworkLessons.map((lesson) => (
-            <li key={lesson.phase} aria-current={lesson.phase === slide.phase ? "step" : undefined}>{lesson.title[locale]}</li>
-          ))}</ol>
+          <p className={styles.programmeIntro}>{t.programmeIntro}</p>
+          <ol>{energyworkLessons.map((lesson) => {
+            const system = energyworkPathChoices.find((choice) => choice.id === lesson.phase);
+            return (
+              <li key={lesson.phase} aria-current={lesson.phase === slide.phase ? "step" : undefined}>
+                <span className={styles.programmeRow}>
+                  <span className={styles.programmeLesson}>{lesson.title[locale]}</span>
+                  {system ? (
+                    <Link className={styles.programmeLink}
+                      href={"/" + locale + "/academy/" + system.studyPath}
+                      target="_blank" rel="noopener noreferrer"
+                      aria-label={lesson.title[locale] + " — " + t.systemDetails}>
+                      {t.systemDetails}<ExternalLink size={13} aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                </span>
+              </li>
+            );
+          })}</ol>
           {slide.kind === "welcome" ? <p className={styles.programmeNote}>{t.welcomeTeacher}</p> : null}
           <p className={styles.disclaimer}>{t.stop}</p>
           <aside className={styles.preview} aria-live="polite">
