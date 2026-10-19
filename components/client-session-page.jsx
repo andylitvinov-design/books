@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
+import { DaoStageDisclosure } from './dao-resource-stage'
 import { PublicSiteHeader } from './public-site-header'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/shared-education-model'
@@ -221,6 +222,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     {!hasFullReport&&hasRecommendation&&<>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="summary"/>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="remedies"/>
+      <DaoStageDisclosure score={recommendation?.daoResourceScore} locale={locale}/>
     </>}
 
     {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
