@@ -6,6 +6,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { EnergyworkReikiCapture } from "@/components/energywork-reiki-capture";
 import { EnergyworkVideoArchive } from "@/components/energywork-video-archive";
+import { ReikiPublicReviews } from "@/components/reiki-public-reviews";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
@@ -465,6 +466,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
           <div><p className={styles.eyebrow}>{t.subtitle}</p><h2>{t.footerTitle}</h2><p>{t.footerLead}</p></div>
           <Link href={"/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn"} className={styles.primaryButton}>{t.interactiveStart}<ArrowRight size={18} aria-hidden="true" /></Link>
         </section>
+        <ReikiPublicReviews locale={locale} />
         <p className={styles.disclaimer}>{t.notice}</p>
       </div>
     </main>
