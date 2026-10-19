@@ -18,3 +18,14 @@ Owner direction: remove the Maya disk/calendar from **all Tantra Reiki advertisi
 
 ## QA
 Check desktop/mobile layouts, clipped graphics, correct source images in the academy card/video poster/Reiki Practitioner Tantra steps, open graph preview, and production SHA/alias before saying LIVE.
+
+## Completed website placements (2026-10-18)
+- Academy featured Tantra Reiki course and Academy English video-program poster (`components/academy-hub.tsx`, `components/academy-video-courses.tsx`).
+- Free course cards and capture/selection widget (`components/academy-free-course-banner.tsx`, `components/academy-course-capture.tsx`).
+- English guided Tantra Reiki meditation catalog and any reusers of that metadata (`data/academy/english-guided-meditations.ts`).
+- Reiki Practitioner Tantra slides, milestones and choice cards (`data/academy/energywork-ai-curriculum.ts`).
+- Tantra Reiki discover advertising landing keeps its approved sunrise photograph with a visible yin–yang overlay (`app/[locale]/academy/reiki/tantra-reiki/discover/page.tsx`).
+- Original Tantra Reiki Level 1 already uses a yin–yang seal (`components/academy-record-page.tsx`).
+- Maya Mysteries, Maya/Aztec education and historical source archives intentionally retain their authentic imagery.
+
+External advertising dashboards, editable Canva creatives, and pre-existing Google Drive historical files are **not** automatically modified by a website release. Verify those separately before claiming full paid-ad coverage.
