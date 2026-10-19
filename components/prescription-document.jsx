@@ -34,8 +34,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   const mixed = document.recommendationType === 'mixed'
   const groups = mixed
     ? [
-        { type: 'homeopathy', title: locale === 'ru' ? 'ГОМЕОПАТИЯ' : 'HOMEOPATHY', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'homeopathy') },
-        { type: 'bach', title: locale === 'ru' ? 'ЭССЕНЦИИ БАХА' : 'BACH ESSENCES', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'bach') },
+        { type: 'homeopathy', title: locale === 'ru' ? 'ГОМЕОПАТИЧЕСКИЕ НАЗНАЧЕНИЯ' : 'HOMEOPATHIC PRESCRIPTIONS', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'homeopathy') },
+        { type: 'bach', title: locale === 'ru' ? 'НАЗНАЧЕНИЯ · ЭССЕНЦИИ БАХА' : 'BACH ESSENCE PRESCRIPTIONS', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'bach') },
       ].filter((group) => group.items.length)
     : [{ type: document.recommendationType, items: document.items }]
 
@@ -102,11 +102,15 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <DaoStageDisclosure score={document.daoResourceScore} locale={locale} />
 
       {groups.map((group) => <section className="canonical-remedy-group" key={group.type}>
-        <h2 className="canonical-remedy-group-title">{group.title || (locale === 'ru' ? 'РЕКОМЕНДАЦИИ' : 'RECOMMENDATIONS')}</h2>
+        <div className="canonical-remedy-section-heading">
+          <h2 className="canonical-remedy-group-title">{group.title || (locale === 'ru' ? 'НАЗНАЧЕНИЯ' : 'PRESCRIPTIONS')}</h2>
+          <p className="canonical-remedy-group-caption">{locale === 'ru' ? 'Индивидуальная схема приёма' : 'Individual regimen'}</p>
+        </div>
         {group.items.map((item) => {
           itemNumber += 1
           const number = itemNumber
           const schedule = remedySchedule(item, locale, document.recommendationType)
+          const detailKeys = ['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key])
           return <section className="canonical-remedy" key={number}>
             <div className="canonical-remedy-heading">
               <span className="canonical-remedy-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
@@ -114,7 +118,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
                 <h3>{item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}</h3>
                 {schedule && <p className="canonical-remedy-schedule" aria-label={schedule}>
                   {schedule.split(' · ').map((part, index) => <span className="canonical-remedy-schedule-part" key={index}>
-                    {index > 0 && <span className="canonical-remedy-schedule-dot" aria-hidden="true"> · </span>}
+                    {index > 0 && <span className="canonical-remedy-schedule-dot" aria-hidden="true">·</span>}
                     <span className="canonical-remedy-schedule-chip">{part}</span>
                   </span>)}
                 </p>}
@@ -123,9 +127,11 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
             {item.remedyPath && <Link className="canonical-remedy-profile-action" href={item.remedyPath}
               aria-label={locale === 'ru' ? `Прочитать описание препарата ${item.displayName}` : `Read the profile for ${item.displayName}`}>
               <span>{locale === 'ru' ? 'Описание препарата' : 'Remedy description'}</span>
-              <span aria-hidden="true">↗</span>
+              <span aria-hidden="true">→</span>
             </Link>}
-            <dl className="canonical-remedy-fields">{['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key]).map((key) => <div key={key}><dt>{labels[key]}</dt><dd>{item[key]}</dd></div>)}</dl>
+            {detailKeys.length > 0 && <dl className="canonical-remedy-fields">
+              {detailKeys.map((key) => <div key={key}><dt>{labels[key]}</dt><dd>{item[key]}</dd></div>)}
+            </dl>}
           </section>
         })}
       </section>)}
