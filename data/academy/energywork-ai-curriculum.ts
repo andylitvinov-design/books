@@ -3,9 +3,10 @@
 // private storage, consent, and migrations are separately implemented and verified.
 import type { EnglishGuidedMeditation } from "./english-guided-meditations";
 import { yggdrasilTextTestimonials } from "./yggdrasil-testimonials";
+import { yggdrasilPreparationQuestions } from "./yggdrasil-preparation-questions";
 
 export const ENERGYWORK_COURSE_ID = "academy-energywork-principles";
-export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p7";
+export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p8";
 
 export type EnergyworkLocale = "en" | "ru";
 export type Localized = { en: string; ru: string };
@@ -119,7 +120,7 @@ export const energyworkInitiationRequirements: ReadonlyArray<{
   { lesson: "flight", reportId: "flight-04", questionId: "flight-05", questionIds: ["flight-05"] },
   { lesson: "tantra", reportId: "tan-04", questionId: "tan-06", questionIds: ["tan-study-04", "tan-06", "tan-study-05", "tan-study-06", "tan-study-07", "tan-study-02", "tan-study-03"] },
   { lesson: "kundalini", reportId: "kun-04", questionId: "kun-study-v2-01", questionIds: ["kun-study-v2-01", "kun-study-v2-02", "kun-study-v2-03", "kun-study-v2-04", "kun-study-v2-05", "kun-study-v2-06", "kun-study-v2-07", "kun-study-v2-08", "kun-study-v2-09"] },
-  { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-06", questionIds: ["ygg-06", "ygg-study-02", "ygg-study-03", "ygg-study-04", "ygg-study-05", "ygg-study-06", "ygg-study-07"] },
+  { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-study-v2-01", questionIds: ["ygg-study-v2-01", "ygg-study-v2-02", "ygg-study-v2-03", "ygg-study-v2-04", "ygg-study-v2-05", "ygg-study-v2-06", "ygg-study-v2-07"] },
   { lesson: "initiation", reportId: "end-01", questionId: "init-01", questionIds: ["init-01"] },
 ];
 
@@ -296,34 +297,34 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "ygg-05", phase: "yggdrasil", kind: "lesson",
       title: l("Explore the Reiki Yggdrasil guide", "Изучите материалы Рейки Иггдрасиль"),
       body: l("Read the World Tree story and the five-level Basic Course guide. Seven short study questions follow.", "Прочитайте историю Мирового Древа и описание пяти ступеней курса. Затем ответьте на семь коротких вопросов.") },
-    { id: "ygg-06", phase: "yggdrasil", kind: "reflection",
-      title: l("Question 1 of 7 · The World Tree", "Вопрос 1 из 7 · Мировое Древо"),
-      body: l("Describe the World Tree as a personal symbol.", "Кратко опишите Мировое Древо как символ."),
-      question: { type: "text", prompt: l("How can the World Tree support reflection without promising a medical result?", "Как образ Мирового Древа помогает размышлять без обещаний лечебного результата?") } },
-    { id: "ygg-study-02", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 2 of 7 · World Tree origins","Вопрос 2 из 7 · Происхождение Древа"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("Which mythology features Yggdrasil, and what does the World Tree connect in its stories?","К какой мифологии относится Иггдрасиль и что соединяет Мировое Древо в преданиях?") } },
-    { id: "ygg-study-03", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 3 of 7 · System origin","Вопрос 3 из 7 · Происхождение системы"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("Who is named as the founder of Reiki Yggdrasil in the original materials?","Кто назван создателем системы Рейки Иггдрасиль в исходных материалах?") } },
-    { id: "ygg-study-04", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 4 of 7 · Basic programme","Вопрос 4 из 7 · Базовая программа"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("How many levels make up the Basic Reiki Yggdrasil programme?","Сколько ступеней входит в базовую программу Рейки Иггдрасиль?") } },
-    { id: "ygg-study-05", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 5 of 7 · First-level themes","Вопрос 5 из 7 · Темы первой ступени"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("Name two themes taught in the first level of Reiki Yggdrasil.","Назовите две темы первой ступени Рейки Иггдрасиль.") } },
-    { id: "ygg-study-06", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 6 of 7 · Runes and symbols","Вопрос 6 из 7 · Руны и символы"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("What role do runes and the World Tree image play in this spiritual tradition?","Какую роль играют руны и образ Мирового Древа в этой духовной традиции?") } },
-    { id: "ygg-study-07", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 7 of 7 · Learning and initiation","Вопрос 7 из 7 · Обучение и инициация"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("Why does reading the lessons not automatically mean you have received a personal initiation?","Почему изучение уроков само по себе не означает получения личной инициации?") } },
+    { id: "ygg-study-v2-01", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 1 of 7 · Reiki and Runes", "Вопрос 1 из 7 · Рейки и руны"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[0], yggdrasilPreparationQuestions.ru[0]) } },
+    { id: "ygg-study-v2-02", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 2 of 7 · Tradition and Usui Reiki", "Вопрос 2 из 7 · Традиция и Усуи Рейки"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[1], yggdrasilPreparationQuestions.ru[1]) } },
+    { id: "ygg-study-v2-03", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 3 of 7 · The World Tree", "Вопрос 3 из 7 · Мировое Древо"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[2], yggdrasilPreparationQuestions.ru[2]) } },
+    { id: "ygg-study-v2-04", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 4 of 7 · Healing Stream", "Вопрос 4 из 7 · Поток «Целительство»"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[3], yggdrasilPreparationQuestions.ru[3]) } },
+    { id: "ygg-study-v2-05", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 5 of 7 · Protection Stream", "Вопрос 5 из 7 · Поток «Защита»"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[4], yggdrasilPreparationQuestions.ru[4]) } },
+    { id: "ygg-study-v2-06", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 6 of 7 · Money Stream Activation", "Вопрос 6 из 7 · Активация денежного потока"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[5], yggdrasilPreparationQuestions.ru[5]) } },
+    { id: "ygg-study-v2-07", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 7 of 7 · Pantheons and Deities", "Вопрос 7 из 7 · Пантеоны и божества"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[6], yggdrasilPreparationQuestions.ru[6]) } },
     { id: "ygg-done", phase: "yggdrasil", kind: "milestone", image: image.tree,
       title: l("Fourth lesson completed!", "Четвёртый урок пройден!"),
       body: l("One lesson remains. Complete it to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Остался один урок! Завершите его, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки.") },
