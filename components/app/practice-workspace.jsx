@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2 } from 'lucide-react'
 import CrmManager from './crm-manager'
+import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeMaterials from './practice-materials'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
@@ -472,9 +473,12 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
 
-        {activePanel==='clients'&&(isOwner&&accountId
-          ?<CrmManager key={accountId} locale={locale} accountId={accountId} />
-          :<ClientLeads items={requests} locale={locale} onOpenRequests={()=>choosePanel('requests')} />)}
+        {activePanel==='clients'&&<>
+          <PractitionerClientProfiles items={requests} services={services}
+            locale={locale} accountId={accountId} busy={busy}
+            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}/>
+          {isOwner&&accountId&&<CrmManager key={accountId} locale={locale} accountId={accountId}/>}
+        </>}
         {activePanel==='profile'&&<>
           <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy}
             onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))}
