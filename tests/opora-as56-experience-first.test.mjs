@@ -63,7 +63,8 @@ test('day one restores five opening screens while days 2–14 keep their existin
       await click(h,d.vote)
       await click(h,d.next)
     }
-    assert.match(textOf(h.tree),lang==='ru'?/Можно просто побыть здесь/:/You can arrive just as you are/)
+    assert.match(textOf(h.tree),lang==='ru'?(day===1?/Можно просто побыть здесь/:/Как вы сейчас себя чувствуете/):
+      (day===1?/You can arrive just as you are/:/How are you feeling right now/))
     await click(h,d.next)
     // Day 1 action occurs only after the original supportive opening.
     assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
@@ -119,6 +120,22 @@ test('the restored five opening screens remain fully optional, with no false pra
   assert.equal(f.payload.opora54.answers.transfer,undefined)
   assert.match(textOf(h.tree),/Explored the idea only/)
   assert.doesNotMatch(textOf(h.tree),/100%|trauma healed|clinically cured/)
+  h.unmount()
+})
+
+test('photo-first feelings and optional feedback work in ES without changing validated scores',async()=>{
+  const f=fixture('es',1),h=f.h
+  assert.match(textOf(h.tree),/¿Cómo te sientes hoy\?/)
+  assert.ok(findButton(h.tree,'Me siento tenso/a'))
+  await click(h,'Me siento tenso/a')
+  assert.match(textOf(h.tree),/No necesitas cambiar nada de inmediato/)
+  const selection=nodes(h.tree).find(node=>node.type==='button'&&textOf(node).includes('Me siento tenso/a'))
+  assert.equal(selection?.props['aria-pressed'],true)
+  assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-start-mood']==='true').length,1)
+  for(let i=0;i<8;i++)await click(h,'Continuar')
+  await click(h,'Guardar mi práctica')
+  assert.equal(f.payload.welcomeFeeling,'tense')
+  assert.deepEqual(f.payload.visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
   h.unmount()
 })
 
