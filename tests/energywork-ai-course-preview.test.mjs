@@ -138,7 +138,7 @@ test('Reiki opening explains a single sequential course and separate teacher ini
   assert.match(opening, /Один курс из пяти последовательных уроков/)
   assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
   assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
-  assert.match(learner, /Course completion alone does not grant any initiation/)
+  assert.match(learner, /Want to go further\? You can explore personal Reiki initiation/)
   assert.match(curriculum, /does not grant Level 1 initiation or certification/)
   assert.match(css, /welcomeSlide \.art/)
 })
