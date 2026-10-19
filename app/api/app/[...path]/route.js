@@ -594,10 +594,7 @@ async function handle(request, { params }) {
       }
       return json({ ...workspace, newServices })
     }
-    if (joined === 'practice/articles' && method === 'GET') {
-      const [items,folders]=await Promise.all([articleRepo.mine(actor),articleRepo.folders(actor)])
-      return json({items,folders})
-    }
+    if (joined === 'practice/articles' && method === 'GET') return json(await articleRepo.library(actor))
     if (joined === 'practice/events' && method === 'GET') return json({items:await eventsRepo.mine(actor)})
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
