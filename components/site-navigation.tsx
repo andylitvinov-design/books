@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { BookOpen, Menu } from 'lucide-react';
+import { CartNavLink } from '@/components/commerce/cart-nav-link';
 import { compactNavigationIcons } from './compact-navigation-icons';
 import type { Locale } from '@/data/remedies';
 import { localePath, saveUiLocale } from '@/lib/ui-locale';
@@ -119,6 +120,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       <span className="site-library-entry__full">{library.full}</span>
       <span className="site-library-entry__compact">{library.compact}</span>
     </Link>
+    <CartNavLink locale={activeLocale} />
     <span className="site-language-switch"><details className="site-language-menu" ref={languageRef}>
       <summary className="site-language-menu-trigger" aria-label={text.language}>{activeLocale.toUpperCase()}</summary>
       <span className="site-language-menu-list">{languages.map(next => localizedPath || next === 'es' || !onLocaleChange
@@ -149,6 +151,9 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
         </div>
         <p className="site-main-menu-group-label site-main-menu-group-label--more">{siteMenu.more}</p>
         <div className="site-main-menu-more">
+          <Link href={`/${activeLocale}/cart`} prefetch={false} data-nav-item="cart" onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
+            {activeLocale === 'ru' ? 'Корзина' : activeLocale === 'es' ? 'Carrito' : 'Cart'}
+          </Link>
           {extraMenuItems.map(item => (
             <Link
               key={item.id}
