@@ -16,6 +16,32 @@ const checkConsent = async h => {
 }
 const tiles = tree => nodes(tree).filter(node => typeof node.type === 'function' && node.type.name === 'CourseTile').map(node => node.type(node.props))
 
+test('Cabinet Courses tab always shows started courses before the chosen lesson', async () => {
+  const workspace = readFileSync(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
+  assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course\?view=courses'/)
+  const active = course('course-a', 4)
+  const h = mount('my-course', {
+    search: '?view=courses',
+    props: { data: account('owner-a'), locale: 'en' },
+    fetcher: () => courseView(active, {
+      courses: [active],
+      access: { ...access, tier: 'free', activeCourseLimit: 1, activeCourseCount: 1, multiCourseEnabled: false },
+    }),
+  })
+  await h.settle()
+  const dashboard = findPart(h.tree, 'MyCoursesDashboard')
+  assert.ok(dashboard, 'the navigation destination is the owned-courses overview')
+  assert.deepEqual(dashboard.props.courses.map(item => item.id), ['course-a'])
+  assert.equal(findPart(h.tree, 'CourseToday'), undefined, 'the lesson must not open without choosing a course')
+  assert.equal(h.navigations.length, 0, 'opening Courses must not manufacture a courseId URL')
+  dashboard.props.onOpen(active)
+  await h.settle()
+  assert.equal(findPart(h.tree, 'CourseToday')?.props.courseId, 'course-a')
+  assert.match(h.navigations.at(-1), /courseId=course-a/)
+  assert.doesNotMatch(h.navigations.at(-1), /view=courses/)
+  h.unmount()
+})
+
 test('My courses opens the authored dashboard and explicitly selected cards retain the course URL and account', async () => {
   const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: path => courseView(path.includes('course-b') ? courseB : courseA) })
   await h.settle()
