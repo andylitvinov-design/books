@@ -9,7 +9,7 @@ const CORE_EN_TITLES = [
   "Bach Flower Emotional Profile",
   "Current State Check",
   "Personality Baseline",
-  "Weekly Psychic Health",
+  "Weekly Wellbeing Check-in",
   "Mood & Anxiety — 1 Minute",
   "Mental Load",
   "Mood Deep Dive",
@@ -37,7 +37,7 @@ test('Spanish descriptions distinguish original EN questionnaires and unvalidate
     assert.match(byTitle.get(name)?.description?.es || '', /inglés/i, name)
   }
   assert.match(byTitle.get('Anxiety Deep Dive')?.description?.es || '', /sin validación psicométrica independiente/i)
-  assert.match(byTitle.get('Weekly Psychic Health')?.description?.es || '', /No es una evaluación clínica validada/i)
+  assert.match(byTitle.get('Weekly Wellbeing Check-in')?.description?.es || '', /No es una evaluación clínica validada/i)
 })
 
 test('Spanish explorer resolves translated summary rather than EN fallback', () => {
@@ -46,7 +46,7 @@ test('Spanish explorer resolves translated summary rather than EN fallback', () 
     assert.equal(explained.summary, entry.description.es, entry.key)
     assert.ok(explained.originAndEvidence, `Missing methodology provenance: ${entry.key}`)
   }
-  const weekly = MONITORING_CATALOG.find(item => item.title?.en === 'Weekly Psychic Health')
+  const weekly = MONITORING_CATALOG.find(item => item.title?.en === 'Weekly Wellbeing Check-in')
   assert.match(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'es' }).summary, /Registro semanal original/i)
   assert.equal(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'en' }).summary, weekly.description.en)
   assert.equal(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'ru' }).summary, weekly.description.ru)
@@ -59,13 +59,13 @@ test('actual TestExplorer passes Spanish locale to discovery without falling bac
   const spanish = buildExplorerEntries({ locale: 'es', audience: 'guest' })
   const english = buildExplorerEntries({ locale: 'en', audience: 'guest' })
   const russian = buildExplorerEntries({ locale: 'ru', audience: 'guest' })
-  const week = spanish.find(entry => entry.title === 'Estado psicológico de la semana')
+  const week = spanish.find(entry => entry.title === 'Bienestar de la semana')
   assert.ok(week, 'Expected Spanish weekly test title')
   assert.match(week.description, /Registro semanal original/)
   assert.ok(week.definition, 'Spanish public UI must preserve the available verified-language source definition')
   assert.equal(week.definition.instrumentLocale, 'en', 'The Spanish display must not fabricate Spanish test questions')
-  assert.equal(english.find(entry => entry.key === week.key)?.title, 'Weekly Psychic Health')
-  assert.equal(russian.find(entry => entry.key === week.key)?.title, 'Психическое состояние за неделю')
+  assert.equal(english.find(entry => entry.key === week.key)?.title, 'Weekly Wellbeing Check-in')
+  assert.equal(russian.find(entry => entry.key === week.key)?.title, 'Самочувствие за неделю')
   assert.equal(english.find(entry => entry.key === week.key)?.description, week.catalog.description.en)
   assert.equal(russian.find(entry => entry.key === week.key)?.description, week.catalog.description.ru)
 })
