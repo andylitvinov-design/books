@@ -290,9 +290,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <div className={styles.moodChoices} role="group" aria-label={t.arriveTitle}
               data-opora-start-mood="true">
               {t.moods.map(item=><button key={item.value} type="button" disabled={locked}
-                aria-pressed={welcomeFeeling===item.value}
+                data-symbol={item.symbol} aria-pressed={welcomeFeeling===item.value}
                 onClick={()=>setWelcomeFeeling(item.value)}>
-                <span aria-hidden="true">{item.symbol}</span><span>{item.label}</span>
+                <span>{item.label}</span>
               </button>)}
             </div>
             {chosenFeeling
