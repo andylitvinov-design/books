@@ -27,6 +27,7 @@ function input(formData) {
   if (testsJson.length > 4000) throw new Error('Invalid recommended tests')
   data.recommendedTestKeys = JSON.parse(testsJson)
   data.daoResourceScore = parseDaoResourceScore(formData.get('daoResourceScore'))
+  data.daoResourcePublished = formData.get('daoResourcePublished') === 'on'
   return data
 }
 
