@@ -120,20 +120,20 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
       <div>
         <span className={styles.eyebrow}>{ru?'РЕДАКТОР ОТЧЁТА':'REPORT EDITOR'}</span>
         <h2 id="report-materials-editor-title">{ru?'Материалы из библиотеки':'Materials from library'}</h2>
-        <p>{ru?'Здесь можно только выбрать уже загруженные общие фото, видео и YouTube-ссылки. Новые материалы добавляются отдельно в кабинете мастера → Материалы.':
-          'Select previously uploaded general photos, videos and YouTube links only. New uploads belong in Practitioner Cabinet → Materials.'}</p>
+        <p>{ru?'Сохраните общее видео из отчёта или телефона, затем выбирайте его для других клиентов.':
+          'Save a general video from this report or phone, then reuse it in other reports.'}</p>
       </div>
-      <span className={styles.ownerMaterialsCount}>{ru?'Выбрано':'Selected'}: {selectedIds.length}</span>
+      <span className={styles.ownerMaterialsCount}>{ru?'К отчёту':'In this report'}: {selectedIds.length}</span>
     </div>
     <div className={styles.ownerMaterialsNotice}>
       <ShieldCheck size={18} aria-hidden="true"/>
-      {ru?'Материалы доступны из общей библиотеки; выбор сохраняется только в черновике и не публикуется автоматически.':
-        'Resources come from the shared owner library; selection saves to the draft without automatic publication.'}
+      {ru?'Новое видео сначала сохраняется в ваши Материалы. Другим клиентам оно не отправляется автоматически.':
+        'New videos stay in your private Materials until you choose them for a report.'}
     </div>
+    <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
     {loading?<p role="status">{ru?'Загружаем выбор материалов…':'Loading selected materials…'}</p>:
       <SessionMaterialPicker locale={locale} selectedIds={selectedIds}
         disabled={busy} onChange={ids=>void saveSelectedMaterials(ids)}/>}
-    {sessionId&&<SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>}
     {legacyCount>0&&<p className={styles.ownerMaterialsMuted}>{ru?
       'Уже добавленные к этой консультации личные записи и старые ссылки сохранены. Они не становятся общими материалами.':
       'Existing personal recordings and legacy links remain in this consultation. They are not part of the shared library.'}</p>}
