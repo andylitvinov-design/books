@@ -32,6 +32,20 @@ test('validate a localized complete public event and preserve its schedule', () 
   assert.equal(published.status,'published')
 })
 
+test('prices with two decimal places survive floating point conversion', () => {
+  assert.equal(validatePractitionerEvent({...event,priceAmount:'0.29'}).priceAmount,0.29)
+  assert.throws(()=>validatePractitionerEvent({...event,priceAmount:'0.299'}),errorCode('INVALID_EVENT_PRICE'))
+})
+
+test('event cover upload must finish before draft is saved', () => {
+  const editor=readFileSync(new URL('../components/app/practice-events.jsx',import.meta.url),'utf8')
+  const uploader=readFileSync(new URL('../components/app/practice-photo-upload.jsx',import.meta.url),'utf8')
+  assert.match(editor,/onBusyChange=\{setPhotoBusy\}/)
+  assert.match(editor,/if\(busy\|\|photoBusy\)return/)
+  assert.match(uploader,/onBusyChange\(true\)/)
+  assert.match(uploader,/onBusyChange\(false\)/)
+})
+
 test('missing registration, venue, or content prevents publishing', () => {
   assert.throws(()=>validatePractitionerEvent({...event,registrationHref:''},{complete:true}),errorCode('EVENT_REGISTRATION_REQUIRED'))
   assert.throws(()=>validatePractitionerEvent({...event,location:''},{complete:true}),errorCode('EVENT_LOCATION_REQUIRED'))
