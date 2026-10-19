@@ -14,6 +14,7 @@ test('mobile bottom bar and menu use the same six ordered destinations in EN, RU
     assert.equal(items[0].href, locale === 'en' ? '/' : `/${locale}`)
     assert.equal(items[1].href, `/${locale}/client/tests`)
     assert.equal(items[4].href, `/${locale}/explore/business`)
+    assert.equal(getSiteNavigation(locale).some(item => item.id === 'business'), false, 'Do not duplicate the Business mobile shortcut in the original primary navigation list')
     assert.equal(items[5].href, `/${locale === 'es' ? 'en' : locale}/app`)
     assert.equal(items[5].label, { en: 'Cabinet', ru: 'Кабинет', es: 'Gabinete' }[locale])
     for (const item of items) {
@@ -21,7 +22,7 @@ test('mobile bottom bar and menu use the same six ordered destinations in EN, RU
       assert.equal(item.ariaLabel, item.label)
       assert.equal(item.external, false)
     }
-    for (const item of items.filter(item => ['home', 'services', 'academy', 'business'].includes(item.id))) {
+    for (const item of items.filter(item => ['home', 'services', 'academy'].includes(item.id))) {
       assert.deepEqual(item, getSiteNavigation(locale).find(link => link.id === item.id))
     }
     assert.equal(activeCompactNavigationId(`/${locale}/client/tests`), 'tests')
