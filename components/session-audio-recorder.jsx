@@ -9,6 +9,7 @@ import { normalizePhoneVideoFile,isQuickTimeVideo } from '../lib/clients/phone-v
 import { normalizePhoneAudioFile } from '../lib/clients/phone-audio-file'
 import { SessionPhotoUploader } from './session-photo-uploader'
 import { SessionYouTubeQuickAdd } from './session-youtube-quick-add'
+import { SessionRecordingReview } from './session-recording-review'
 import styles from './client-session.module.css'
 
 const recordingTypes=['audio/mp4','audio/webm;codecs=opus','audio/webm']
@@ -57,6 +58,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   const [message,setMessage]=useState('')
   const [playback,setPlayback]=useState('')
   const [playbackKind,setPlaybackKind]=useState('audio')
+  const [localPlaybackError,setLocalPlaybackError]=useState(false)
+  const [takesRefreshKey,setTakesRefreshKey]=useState(0)
   const [selectedMov,setSelectedMov]=useState(false)
   const [recordingKind,setRecordingKind]=useState('audio')
   useEffect(()=>{setSessionId(providedSessionId)},[providedSessionId])
@@ -89,7 +92,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       })
     return ()=>{active=false}
   },[clientId])
-  useEffect(()=>()=>{if(playback) URL.revokeObjectURL(playback)},[playback])
+  useEffect(()=>()=>{if(playback.startsWith('blob:')) URL.revokeObjectURL(playback)},[playback])
   async function checkReady() {
     try{
       const data=await getRecorderReadiness(clientId)
@@ -185,8 +188,15 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       jobRef.current=null
       if(!mountedRef.current)return
       setRetryFile(null);setStage('saved')
-      setMessage(ru?'Материал сохранён в этой сессии. Клиент увидит его после публикации.':
-        'Material saved to this session. Your client sees it after you publish.')
+      // The local blob may be unplayable on Safari even after the private upload
+      // succeeded. Review a fresh authorized server stream in the takes list.
+      setPlayback('');setLocalPlaybackError(false)
+      setTakesRefreshKey(value=>value+1)
+      setMessage(job.reviewFirst?
+        (ru?'Дубль сохранён. Прослушайте его ниже и выберите «Прикрепить клиенту».':
+          'Take stored. Listen below and enable Attach to client for the chosen recordings.'):
+        (ru?'Файл сохранён в черновике сессии. Публикация отдельно.':
+          'File saved to this session draft. Publish separately.'))
       onSaved?.(job.sessionId)
     } catch(e) {
       if(e?.message==='ADMIN_SIGN_IN_REQUIRED')setSignInRequired(true)
@@ -199,6 +209,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     failedRef.current=false
     setError('')
     setMessage('')
+    setPlayback('');setLocalPlaybackError(false)
     setUploadProgress(null)
     if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       setError(ru?'Браузер не поддерживает запись. Используйте загрузку файла.':'This browser cannot record audio. Upload a file instead.')
@@ -233,9 +244,10 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         const file=new File([blob],'voice-message.'+extension,{type})
         if(file.size<128) {busyRef.current=false;setStage('error');setError('Recording was empty');return}
         setPlaybackKind(kind)
-        setPlayback(URL.createObjectURL(file))
+        setPlayback(URL.createObjectURL(file));setLocalPlaybackError(false)
         setRetryFile(file)
-        const job=recordingUpload({file,clientId,sessionId:sid,scope,durationSeconds:durationRef.current})
+        const job=recordingUpload({file,clientId,sessionId:sid,scope,durationSeconds:durationRef.current,
+          reviewFirst:scope==='client'&&(kind==='audio'||kind==='video')})
         jobRef.current=job
         await upload(job)
       }
@@ -291,9 +303,10 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       if(video||file.type.startsWith('audio/')){
         setPlaybackKind(video?'video':'audio')
         setSelectedMov(video&&isQuickTimeVideo(file))
-        setPlayback(URL.createObjectURL(file))
+        setPlayback(URL.createObjectURL(file));setLocalPlaybackError(false)
       }
-      const job=recordingUpload({file,clientId,sessionId:sid,scope})
+      const job=recordingUpload({file,clientId,sessionId:sid,scope,
+        reviewFirst:scope==='client'&&(video||file.type.startsWith('audio/'))})
       jobRef.current=job;setRetryFile(file)
       await upload(job)
     } catch(e) {busyRef.current=false;setStage('error');setError(recordingError(e,ru))}
@@ -306,8 +319,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       <span className={styles.eyebrow}>{ru?'ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ':'VOICE MESSAGE'}</span>
       <h3>{audioOnly?(ru?'Записать аудиосообщение':'Record a voice message'):
         (ru?'Записать аудио или видео для сессии':'Record audio or video for this session')}</h3>
-      <p>{ru?'Прямо с телефона. Файл сам прикрепится к этой консультации.':
-        'Record on your phone. The file will attach to this consultation automatically.'}</p>
+      <p>{ru?'Запишите несколько дублей или загрузите готовые файлы. Сначала прослушайте, затем выберите записи для клиента.':
+        'Record multiple takes or import files. Listen first, then choose what to attach to the client.'}</p>
     </div>
     <div className={styles.scopeRow}>
       <label><input type="radio" name={'scope-'+(documentId||sessionId||'new')} value="client"
@@ -368,7 +381,12 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       </a>
     </p>}
     </>}
-    {playback&&(playbackKind==='video'?<video controls playsInline preload="metadata" src={playback} className={styles.video}/>:<audio controls preload="metadata" src={playback} className={styles.audio}/>)}
+    {playback&&(playbackKind==='video'?<video controls playsInline preload="metadata" src={playback} className={styles.video}
+      onError={()=>setLocalPlaybackError(true)} onCanPlay={()=>setLocalPlaybackError(false)}/>:<audio controls preload="metadata" src={playback} className={styles.audio}
+      onError={()=>setLocalPlaybackError(true)} onCanPlay={()=>setLocalPlaybackError(false)}/>)}
+    {localPlaybackError&&<p role="alert" className={styles.error}>{ru?
+      'Этот локальный дубль не воспроизводится на iPhone. Проверьте версию, сохранённую на сервере, ниже; не прикрепляйте неисправную запись.':
+      'This local preview failed to play. Check the securely stored take below; do not attach an unplayable recording.'}</p>
     {playback&&selectedMov&&<p className={styles.photoHint}>{ru?'MOV сохранится без изменения кодека. Видео HEVC может не воспроизводиться на некоторых Android/Windows — при необходимости используйте оригинал MOV или отдельную MP4-версию.':'MOV is kept unchanged. HEVC may not play on some Android/Windows browsers; keep the original or prepare a separate MP4 version for wider playback.'}</p>}
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
     {error&&<div className={styles.error} role="alert"><p>{error}</p>{retryFile&&sessionId&&
@@ -378,6 +396,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     {sessionId&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
       {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
   </section>
+  {sessionId&&<SessionRecordingReview clientId={clientId} sessionId={sessionId}
+    locale={locale} refreshKey={takesRefreshKey} onChanged={onSaved}/>}
   {!audioOnly&&<SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
     assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>}
   </>
