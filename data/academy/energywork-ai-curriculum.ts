@@ -42,7 +42,7 @@ const image = {
   world: "/academy/reiki-yggdrasil/source/program-overview.jpg",
   sun: "/academy/reiki-yggdrasil/source/toltec-tradition.jpg",
   tree: "/academy/reiki-yggdrasil/source/basic-program.jpg",
-  tantra: "/library/maya-mysteries/media/post-217-1.jpg",
+  tantra: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
   kundalini: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
 };
 

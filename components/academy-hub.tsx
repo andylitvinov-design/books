@@ -182,7 +182,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Programa independiente de Tantra Reiki en nueve niveles, organizado como una ruta formativa coherente."
               : "A separate nine-level Tantra Reiki program, organized as one coherent study path.",
           href: "/" + locale + "/academy/reiki/tantra-reiki",
-          image: "/library/maya-mysteries/media/post-217-1.jpg",
+          image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
           actionLabel: action.program,
         },
         {
