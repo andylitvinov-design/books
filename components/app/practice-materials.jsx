@@ -7,6 +7,7 @@ import styles from './practice-materials.module.css'
 
 const fresh=locale=>({locale:['en','ru','es'].includes(locale)?locale:'en',title:'',description:'',url:''})
 const supportedUrl=value=>{
+ try{normalizeVideoPresentation({kind:'external',url:value})}catch{return false}
  try{
   const url=new URL(value)
   if(url.protocol!=='https:'||url.username||url.password||url.hash)return false
