@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {ArrowLeft,Languages,PencilLine} from 'lucide-react'
 import {notFound,redirect} from 'next/navigation'
+import {resolveSavedReportLocale} from '@/lib/documents/report-locale'
 import {getPrescriptionStore} from '@/lib/prescriptions/store'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {getClientPaymentDocument} from '@/lib/documents/payment'
@@ -67,11 +68,12 @@ async function linkedSession(store,record) {
 export default async function FullClientSessionPreview({params,searchParams}) {
   if(!await requireAdminRequest())redirect('/admin/login')
   const {id}=await params,query=await searchParams
-  const locale=query.locale??'en'
-  if(!['en','ru'].includes(locale))notFound()
+  const requestedLocale=query.locale
+  if(requestedLocale!==undefined&&!['en','ru'].includes(requestedLocale))notFound()
   const store=getPrescriptionStore()
   const record=store?await store.findById(id):null
   if(!record)notFound()
+  const locale=requestedLocale??resolveSavedReportLocale(record,'en')
   const payment=record.kind==='payment'
   const document=payment?getClientPaymentDocument({...record,status:'active'},locale):
     getClientPrescription({...record,status:'active'},locale)

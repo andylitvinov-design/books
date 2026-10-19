@@ -64,6 +64,12 @@ export async function updateConsultationAction(id, previous, formData) {
   let values
   try {
     values=input(formData)
+    // A routine re-save must never silently replace the language stored on the document.
+    if (['ru', 'en'].includes(recommendation.languagePreference) &&
+      values.languagePreference !== recommendation.languagePreference &&
+      formData.get('languageChangeConfirmed') !== 'yes') {
+      return { error: 'Report language changed unexpectedly. Reopen the editor and select the language explicitly.' }
+    }
     await updateConsultation(recommendation,payment,values,{store})
   }
   catch (error) { return { error:safeConsultationError(error) } }
