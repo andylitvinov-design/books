@@ -16,7 +16,8 @@ test('original remedy cover paths are allowed without accepting external private
 })
 
 test('owner-scoped folder migration keeps articles when a folder is deleted',()=>{
- const sql=read('sql/practitioner-article-folders-20261019.sql')
+ const sql=read('supabase/migrations/20261019172000_hh_practitioner_article_folders.sql')
+ assert.match(read('tests/helpers/app-db-setup.mjs'),/20261019172000_hh_practitioner_article_folders\.sql/)
  assert.match(sql,/UNIQUE \(id, practitioner_id\)/)
  assert.match(sql,/FOREIGN KEY \(folder_id, practitioner_id\)/)
  assert.match(sql,/ON DELETE SET NULL \(folder_id\)/)
