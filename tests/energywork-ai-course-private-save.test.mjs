@@ -156,7 +156,7 @@ test('Existing p0 learner keeps private answers and is resumed at first unskippe
   assert.equal(energyworkPreviousResumeId('presence-03'),'tan-study-04')
   assert.equal(energyworkPreviousResumeId('flight-03'),'flight-03')
   assert.equal(energyworkPreviousResumeId('flight-05'),'flight-04')
-  assert.equal(energyworkP2ResumeId('flight-03'),'flight-04')
+  assert.equal(energyworkP2ResumeId('flight-03'),'flight-05')
   assert.equal(energyworkP2ResumeId('flight-05'),'flight-03')
   assert.equal(energyworkP2ResumeId('tan-03'),'presence-01')
   assert.equal(energyworkP2ResumeId('presence-01'),'tan-03')
