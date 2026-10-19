@@ -185,6 +185,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [view, setView] = useState('list')
+  // One-shot navigation after a successful post-assessment module choice.
+  const [directLaunchCourseId, setDirectLaunchCourseId] = useState(null)
   const [pendingPrograms,setPendingPrograms]=useState({})
   const pendingProgramIntent=useRef({}),pendingProgramConcerns=useRef({})
   const selectorId = useId()
@@ -229,7 +231,7 @@ export function MyCourse({ data, locale = 'en' }) {
   useEffect(() => {
     mounted.current = true; generation.current += 1
     actionLock.current = null; newCourseId.current = null
-    setShowCourse(coursesIndexEntry || Boolean(selectedCourseFromUrl())); setBusy(false); setPendingPrograms({}); pendingProgramIntent.current={}; pendingProgramConcerns.current={}
+    setShowCourse(coursesIndexEntry || Boolean(selectedCourseFromUrl())); setBusy(false); setDirectLaunchCourseId(null); setPendingPrograms({}); pendingProgramIntent.current={}; pendingProgramConcerns.current={}
     selectedCourse.current = selectedCourseFromUrl()
     setView(coursesIndexEntry ? 'list' : selectedCourse.current ? 'detail' : 'list')
     void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) && !coursesIndexEntry, openPrimaryToday: !coursesIndexEntry })
@@ -442,6 +444,7 @@ export function MyCourse({ data, locale = 'en' }) {
     generation.current += 1; readVersion.current += 1
     readController.current?.abort(); actionLock.current = null; setBusy(false)
     setView(next)
+    if (next !== 'detail') setDirectLaunchCourseId(null)
     if (next === 'list') {
       replaceCourseUrl(null)
       void refresh(selectedCourse.current, { background: true, updateUrl: false })
@@ -658,7 +661,8 @@ export function MyCourse({ data, locale = 'en' }) {
       stage={stage} locale={locale} data={data} state={state} busy={busy}
       key={accountId + ':' + state.course.id + ':' + (state.course.presetId || 'personal')}
       onAct={act} onCourseCommand={courseCommand} onCourseRead={readSelectedCourse} isCourseCurrent={isSelected}
-      onState={acceptState} onError={acceptError} root={root} quickEntry={fastAntistressEntry}
+      onState={acceptState} onLaunchReady={id=>{if(isSelected(id,viewGeneration))setDirectLaunchCourseId(id)}}
+      onError={acceptError} root={root} quickEntry={fastAntistressEntry}
     />}
 
     {!showDashboard && view === 'detail' && isHistory && stage < 4 && <section className={'hh-panel ' + styles.details} data-course-history-readonly>
@@ -667,7 +671,9 @@ export function MyCourse({ data, locale = 'en' }) {
       <p>{t.selected}: {state.course.testKeys?.length || 0}</p>
     </section>}
 
-    {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} onCourseChange={courseChanged} onExit={() => { if (isSelected(state.course.id,viewGeneration)) { changeView('list'); setShowCourse(false) } }} />}
+    {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} launchDirectly={directLaunchCourseId===state.course.id}
+      onLaunchConsumed={()=>setDirectLaunchCourseId(null)}
+      onCourseChange={courseChanged} onExit={() => { if (isSelected(state.course.id,viewGeneration)) { changeView('list'); setShowCourse(false) } }} />}
 
     {stage !== 4 && !stressWelcome && !compactBaselineNav && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>
