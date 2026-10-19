@@ -195,7 +195,7 @@ test('Kundalini slide includes all three screenshot-supplied reflections in Engl
   for (const name of ['Breanna', 'Ritu', 'Aesthesia']) {
     assert.ok(examples.includes(name), 'Keep the facilitator reference ' + name)
   }
-  for (const phrase of ['Бреанной', 'Риту', 'во время практики с Aesthesia']) {
+  for (const phrase of ['Бреанной', 'Риту', 'Во время практики с Aesthesia']) {
     assert.ok(examples.includes(phrase), 'Missing Russian translation detail: ' + phrase)
   }
   assert.ok(examples.includes('felt like healing'), 'Keep reported experiences subjective')
