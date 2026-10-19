@@ -16,8 +16,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 56, "One consecutive course must have 56 screens");
-const milestones = new Set([1,2,4,5,6,8,11,12,14,15,16,19,21,24,25,26,34,41,49,56]);
+assert.equal(expectedSequence.length, 68, "One consecutive course must have 68 screens");
+const milestones = new Set([1,2,4,5,6,8,11,12,14,15,16,19,21,24,25,26,34,41,49,56,62,68]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -170,7 +170,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p5");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p6");
 
   // Opening the bottom hint should consume height in the flex column,
   // shrinking the slide instead of overlaying its contents.
@@ -246,6 +246,20 @@ async function exerciseJourney(page, locale, width) {
         ? "Я заметил(а), что дыхание стало спокойнее и появилось тепло." : "I noticed my breathing became calmer and I felt warmth and ease.");
       await expect(reviewButton).toBeEnabled();
     }
+    if (id === "kun-06" || id.startsWith("kun-study-") || id === "ygg-06" || id.startsWith("ygg-study-")) {
+      const nextButton = page.locator("button[data-energywork-next]");
+      const hint = page.locator("[data-reiki-study-hint]");
+      const source = id.startsWith("kun") ? "kundalini-reiki" : "yggdrasil";
+      await expect(hint).toHaveAttribute("href", "/" + locale + "/academy/reiki/" + source);
+      await expect(hint).toHaveAttribute("target", "_blank");
+      const answer = page.locator('textarea[id="answer-' + id + '"]');
+      await expect(answer).toHaveAttribute("required", "");
+      await expect(nextButton).toBeDisabled();
+      await answer.fill("   ");
+      await expect(nextButton).toBeDisabled();
+      await answer.fill(locale === "ru" ? "Краткий ответ по материалам курса." : "My answer from the original course guide.");
+      await expect(nextButton).toBeEnabled();
+    }
     if (id === "tan-06" || id.startsWith("tan-study-")) {
       const nextButton = page.locator("button[data-energywork-next]");
       const hint = page.locator("[data-tantra-study-hint]");
@@ -273,7 +287,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 56 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 68 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
@@ -405,7 +419,7 @@ try {
   }
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
-  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:56,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
+  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:68,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
   await browser.close();
 }

@@ -15,7 +15,7 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
-import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
+import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -131,7 +131,7 @@ const copy = {
     firstMilestoneLabel: "Your Reiki journey is underway",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
-    reviewNeeded: "To request personal initiation, add five meditation reports and answer all study questions, including the seven Tantra Reiki questions.",
+    reviewNeeded: "To request personal initiation, add five meditation reports and answer all study questions in Tantra, Kundalini and Yggdrasil Reiki.",
     reviewDone: "Your meditation reports and study answers are ready for review.",
     reviewSaveNeeded: "Your answers are complete in this preview. Sign in and consent to private saving before requesting a personal initiation. Guest entries cannot be transferred automatically; copy your notes first.",
     reviewPrivate: "Saved responses are private. Nothing is sent to the teacher automatically; you decide what to share.",
@@ -252,7 +252,7 @@ const copy = {
     firstMilestoneLabel: "Ваш путь в Рейки начался",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
-    reviewNeeded: "Для заявки заполните пять отчётов и ответы на вопросы, включая семь вопросов по Тантра Рейки. Учёбу можно продолжать без них.",
+    reviewNeeded: "Для заявки заполните пять отчётов и ответы на вопросы, по Тантра, Кундалини и Иггдрасиль Рейки. Учёбу можно продолжать без них.",
     reviewDone: "Ваши отчёты и ответы на вопросы готовы к просмотру.",
     reviewSaveNeeded: "Ответы заполнены в предварительном просмотре. Для заявки на личную инициацию войдите в кабинет и согласитесь на приватное сохранение. Гостевые записи автоматически не переносятся — сначала скопируйте их.",
     reviewPrivate: "Ответы сохраняются приватно. Преподавателю они автоматически не отправляются; вы сами решаете, чем поделиться.",
@@ -670,6 +670,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const tantraStudyMissing = isTantraStudyQuestion &&
     (!energyworkTantraStudyAnswerComplete(answers[slide.id]) ||
       Boolean(slide.secondaryQuestion && !energyworkTantraStudyAnswerComplete(answers[slide.secondaryQuestion.id])));
+  const isKundaliniStudyQuestion = ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS.includes(slide.id);
+  const isYggdrasilStudyQuestion = ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS.includes(slide.id);
+  const isReikiStudyQuestion = isTantraStudyQuestion || isKundaliniStudyQuestion || isYggdrasilStudyQuestion;
+  const otherStudyMissing = (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) &&
+    !energyworkReikiStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -732,7 +737,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     setIndex(target);
   }
   async function next() {
-    if (busy || experienceMissing || feedbackMissing || tantraStudyMissing) return;
+    if (busy || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -887,6 +892,15 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <ExternalLink size={16} aria-hidden="true" />
                 </Link>
               ) : null}
+              {slide.id === "ygg-05" ? (
+                <Link href={"/" + locale + "/academy/reiki/yggdrasil"}
+                  target="_blank" rel="noopener noreferrer"
+                  className={styles.studyButton} data-yggdrasil-study-link>
+                  <BookOpen size={18} aria-hidden="true" />
+                  {locale === "ru" ? "Открыть материалы Рейки Иггдрасиль" : "Read the Reiki Yggdrasil guide"}
+                  <ExternalLink size={16} aria-hidden="true" />
+                </Link>
+              ) : null}
               {slide.kind === "welcome" ? (
                 <div className={styles.welcomeReward} aria-label={t.welcomeOffer}>
                   <p className={styles.welcomeRewardTitle}><Sparkles size={17} aria-hidden="true" />{t.welcomeOffer}</p>
@@ -916,7 +930,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </div>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
-              {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={slide.id === "flight-03" || slide.id === "tan-03" ? 60 : 120} /> : null}
+              {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
 
               {slide.id === "paths-04" ? (
                 <div className={styles.reviewChecklist} data-initiation-readiness>
@@ -925,7 +939,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <div className={styles.reviewRows}>
                     {initiationItems.map((item) => (
                       <div className={styles.reviewRow} key={item.lesson}>
-                        <strong>{item.title}{item.lesson === "tantra" ? ` · ${item.questionCount}/7` : ""}</strong>
+                        <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
                         <div>
                           <button type="button" onClick={() => jumpToSlide(item.reportId)}
                             className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
@@ -950,7 +964,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
                      isMeditationFeedback ? t.feedbackBadge :
                      initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
-                     initiationItems.some((item) => item.questionIds.includes(slide.id)) ? (isTantraStudyQuestion ? t.lessonQuestion + ' · ' + t.required : t.lessonQuestion) : t.optional}</span>
+                     initiationItems.some((item) => item.questionIds.includes(slide.id)) ? (isReikiStudyQuestion ? t.lessonQuestion + ' · ' + t.required : t.lessonQuestion) : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
@@ -959,9 +973,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
                       maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
-                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isTantraStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
-                      required={isTantraStudyQuestion}
-                      aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : undefined}
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isReikiStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
+                      required={isReikiStudyQuestion}
+                      aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) ? "reiki-study-help-" + slide.id : undefined}
                       autoComplete="off" />
                   ) : null}
                   {slide.secondaryQuestion ? (
@@ -1012,6 +1026,15 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       <Link className={styles.tantraStudyLink}
                         href={"/" + locale + "/academy/reiki/tantra-reiki" + TANTRA_STUDY_HINT_ANCHORS[slide.id]}
                         target="_blank" rel="noopener noreferrer" data-tantra-study-hint>
+                        <BookOpen size={15} aria-hidden="true" />{t.tantraStudyHint}<ExternalLink size={13} aria-hidden="true" />
+                      </Link>
+                    </div>
+                  ) : isKundaliniStudyQuestion || isYggdrasilStudyQuestion ? (
+                    <div className={styles.tantraStudyHelp} id={"reiki-study-help-" + slide.id} data-reiki-study-required>
+                      <span className={styles.tantraStudyRequired}>{t.tantraAnswerRequired}</span>
+                      <Link className={styles.tantraStudyLink}
+                        href={"/" + locale + "/academy/reiki/" + (isKundaliniStudyQuestion ? "kundalini-reiki" : "yggdrasil")}
+                        target="_blank" rel="noopener noreferrer" data-reiki-study-hint>
                         <BookOpen size={15} aria-hidden="true" />{t.tantraStudyHint}<ExternalLink size={13} aria-hidden="true" />
                       </Link>
                     </div>
@@ -1075,7 +1098,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <div className={styles.reviewRows}>
                       {initiationItems.map((item) => (
                         <div className={styles.reviewRow} key={item.lesson}>
-                          <strong>{item.title}{item.lesson === "tantra" ? ` · ${item.questionCount}/7` : ""}</strong>
+                          <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
                           <div>
                             {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
                             {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
@@ -1236,7 +1259,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               )}
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing}
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
                 className={styles.next} data-energywork-next>
                 {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
                   slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continuePath) : t.continue}

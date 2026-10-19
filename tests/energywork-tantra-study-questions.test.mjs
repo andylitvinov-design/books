@@ -29,20 +29,20 @@ const questions = [
 const quizOrder = ["tan-study-04", "tan-06", "tan-study-05",
   "tan-study-06", "tan-study-07", "tan-study-02"]
 
-test("The five-lesson course keeps its flight practice and has 56 total slides", () => {
+test("The five-lesson course keeps its flight practice and has 68 total slides", () => {
   const sequence = energyworkSequence()
-  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p5")
+  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p6")
   assert.deepEqual(sequence.slice(2, 9), [
     "flight-01", "flight-02", "flight-03", "flight-voices",
     "flight-05", "flight-04", "flight-done",
   ])
-  assert.equal(sequence.length, 56)
+  assert.equal(sequence.length, 68)
 })
 
 test("Tantra study slides are 4, 1, 5, 6, 7 and finally 2+3 on one screen", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
-  assert.deepEqual(ranges.map((range) => range.count), [7, 15, 8, 16, 8])
+  assert.deepEqual(ranges.map((range) => range.count), [7, 15, 14, 22, 8])
   assert.deepEqual(sequence.slice(ranges[1].start, ranges[1].end), [
     "tan-01", "tan-02", "tan-03", "tan-voices", "tan-04", "tan-05",
     ...quizOrder, "presence-01", "presence-04", "tan-done",
@@ -88,7 +88,7 @@ test("The reading precedes the reordered quiz, and both final answers are mandat
   assert.match(learner, /secondaryQuestion && !energyworkTantraStudyAnswerComplete/)
   assert.match(learner, /data-tantra-study-combined/)
   assert.match(learner, /secondaryAnswer: secondary/)
-  assert.match(learner, /required=\{isTantraStudyQuestion\}/)
+  assert.match(learner, /required=\{isReikiStudyQuestion\}/)
   assert.match(learner, /t\.tantraAnswerRequired/)
   assert.match(learner, /data-tantra-study-hint/)
   assert.match(learner, /data-tantra-study-link/)
