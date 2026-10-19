@@ -24,7 +24,7 @@ const COPY={
     source:'Public landing URL',campaign:'Campaign code (optional)',schedule:'Planned time',scheduleNote:'Input uses your device timezone; calendar is shown in Toronto time.',
     sourceHint:'Use public site URLs only; never include client information in these posts or links.',
     captionHint:'Write platform-specific copy. AI drafting and translation will be added after approvals and account setup.',
-    preview:'Post preview',tracking:'Tracked public link',copy:'Copy',save:'Save draft',approve:'Approve saved draft',
+    preview:'Post preview',tracking:'Tracked public link',copy:'Copy link',copyPost:'Copy post',copyPostOk:'Post text copied.',save:'Save draft',approve:'Approve saved draft',
     plan:'Add to manual calendar',edit:'Edit',archive:'Archive',reopen:'Reopen draft',
     sourceLabel:'Source',noPosts:'No posts here yet. Create your first draft.',
     notes:'Planning does not publish. Post manually or use the verified YouTube/Metricool workflow.',
@@ -57,7 +57,7 @@ const COPY={
     source:'Публичная ссылка',campaign:'Код кампании (необязательно)',schedule:'Планируемое время',scheduleNote:'Ввод времени по часовому поясу устройства; календарь — по Торонто.',
     sourceHint:'Только открытые страницы сайта. Никаких личных данных клиентов в публикации и ссылке.',
     captionHint:'Пишите текст для конкретной соцсети. AI-генерацию и переводы добавим после настройки аккаунтов.',
-    preview:'Предпросмотр',tracking:'Ссылка с UTM',copy:'Копировать',save:'Сохранить черновик',approve:'Одобрить сохранённый',
+    preview:'Предпросмотр',tracking:'Ссылка с UTM',copy:'Копировать ссылку',copyPost:'Копировать пост',copyPostOk:'Текст публикации скопирован.',save:'Сохранить черновик',approve:'Одобрить сохранённый',
     plan:'В ручной календарь',edit:'Редактировать',archive:'В архив',reopen:'Вернуть в черновики',
     sourceLabel:'Источник',noPosts:'Публикаций пока нет. Создайте первый черновик.',
     notes:'Календарь не публикует посты. Размещайте вручную или через подтверждённую интеграцию YouTube/Metricool.',
@@ -202,6 +202,13 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     } catch {setNotice(t.tryAgain)}
     finally {setBusy(false)}
   }
+  async function copyPost(post){
+    try {
+      const link=publicCampaignLink(post)
+      await navigator.clipboard.writeText([post.caption,link].filter(Boolean).join('\n\n'))
+      setNotice(t.copyPostOk)
+    } catch {setNotice(t.copyFail)}
+  }
   async function copyLink(post){
     try {
       const url=publicCampaignLink(post)
@@ -343,6 +350,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           {post.status==='approved'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
           {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
           {post.status!=='archived'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
+          <button type="button" onClick={()=>copyPost(post)}><Copy size={15}/>{t.copyPost}</button>
           {post.sourceUrl&&<button type="button" onClick={()=>copyLink(post)}><Copy size={15}/>{t.copy}</button>}
           <button type="button" onClick={()=>duplicate(post)}><Plus size={15}/>{t.duplicate}</button>
         </div>
