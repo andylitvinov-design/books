@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {useEffect, useMemo, useState} from 'react'
 import {CalendarDays, Check, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
 import {listGrowthStudioPostsAction,updateGrowthStudioPostAction} from '@/app/admin/growth-studio/actions'
+import GrowthStudioBulk from './growth-studio-bulk'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import styles from './growth-studio.module.css'
 
@@ -19,7 +20,7 @@ const COPY={
     draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',
     pending:'For review',planned:'Planned for manual posting',noAuto:'No automatic posts will be sent from this version.',
     unavailable:'Durable storage is not available. Editing is disabled to prevent losing your work.',
-    reload:'Refresh',new:'New post',compose:'Editor',calendar:'Calendar',library:'Media',export:'Export CSV',
+    reload:'Refresh',new:'New post',compose:'Editor',calendar:'Calendar',library:'Media',bulk:'Bulk / CSV',export:'Export CSV',
     brand:'Brand',channel:'Channel',language:'Post language',title:'Internal title',caption:'Caption / post text',media:'Public photo/video URL',mediaAlt:'Image description (alt text)',mediaHint:'Use a public JPG, PNG, WEBP, GIF or MP4 file on the selected brand website. Never use private client files.',
     source:'Public landing URL',campaign:'Campaign code (optional)',schedule:'Planned time',scheduleNote:'Input uses your device timezone; calendar is shown in Toronto time.',
     sourceHint:'Use public site URLs only; never include client information in these posts or links.',
@@ -52,7 +53,7 @@ const COPY={
     draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',
     pending:'На согласование',planned:'Запланировано вручную',noAuto:'Эта версия не отправляет публикации автоматически.',
     unavailable:'Серверное хранилище недоступно. Редактор отключён, чтобы не потерять изменения.',
-    reload:'Обновить',new:'Новая публикация',compose:'Редактор',calendar:'Календарь',library:'Медиа',export:'Экспорт CSV',
+    reload:'Обновить',new:'Новая публикация',compose:'Редактор',calendar:'Календарь',library:'Медиа',bulk:'Массово / CSV',export:'Экспорт CSV',
     brand:'Проект',channel:'Площадка',language:'Язык публикации',title:'Внутреннее название',caption:'Текст публикации',media:'Публичная ссылка на фото/видео',mediaAlt:'Описание изображения (alt)',mediaHint:'Публичный JPG, PNG, WEBP, GIF или MP4 на сайте выбранного проекта. Не используйте личные файлы клиентов.',
     source:'Публичная ссылка',campaign:'Код кампании (необязательно)',schedule:'Планируемое время',scheduleNote:'Ввод времени по часовому поясу устройства; календарь — по Торонто.',
     sourceHint:'Только открытые страницы сайта. Никаких личных данных клиентов в публикации и ссылке.',
@@ -148,6 +149,16 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     return filter==='all'||(filter==='active'?post.status!=='archived':post.status===filter)
   }),[sorted,filter,brandFilter])
   const scheduled=useMemo(()=>visible.filter(post=>post.status==='planned_manual'),[visible])
+  const library=useMemo(()=>{
+    const byUrl=new Map()
+    for(const post of records)if(post.mediaUrl && !byUrl.has(post.brand+':'+post.mediaUrl))
+      byUrl.set(post.brand+':'+post.mediaUrl,{brand:post.brand,url:post.mediaUrl,alt:post.mediaAlt||post.title})
+    return [...byUrl.values()]
+  },[records])
+  const onCreated=items=>{
+    const added=new Set(items.map(item=>item.id))
+    setRecords(previous=>orderGrowthPosts([...previous.filter(item=>!added.has(item.id)),...items]))
+  }
   const counts=useMemo(()=>({
     draft:records.filter(x=>x.status==='draft').length,
     approved:records.filter(x=>x.status==='approved').length,
@@ -250,8 +261,10 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     <div className={styles.toolbar}>
       <div className={styles.tabs} role="group" aria-label={t.filter}>
         <button type="button" aria-pressed={tab==='compose'} onClick={()=>setTab('compose')}><Edit3 size={17}/>{t.compose}</button>
+        <button type="button" aria-pressed={tab==='bulk'} onClick={()=>setTab('bulk')}><Plus size={17}/>{t.bulk}</button>
         <button type="button" aria-pressed={tab==='calendar'} onClick={()=>setTab('calendar')}><CalendarDays size={17}/>{t.calendar}</button>
         <button type="button" aria-pressed={tab==='posts'} onClick={()=>setTab('posts')}><FileText size={17}/>{t.pending}</button>
+        <button type="button" aria-pressed={tab==='library'} onClick={()=>setTab('library')}><FileText size={17}/>{t.library}</button>
       </div>
       <div className={styles.actions}>
         <button type="button" disabled={busy} onClick={refresh} title={t.reload}><RefreshCcw size={16}/>{t.reload}</button>
@@ -319,6 +332,21 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         </div>
       </div>
     </div>}
+    {tab==='bulk'&&<GrowthStudioBulk locale={locale} base={form} ready={ready} onCreated={onCreated}/>}
+    {tab==='library'&&<section className={styles.library}>
+      <h3>{t.library} · {library.length}</h3>
+      <p className={styles.hint}>{t.mediaHint} <Link href="/admin/materials">{t.materials}</Link></p>
+      {!library.length&&<p className={styles.empty}>{t.noPosts}</p>}
+      <div className={styles.libraryGrid}>{library.map(item=><article key={item.brand+item.url} className={styles.libraryItem}>
+        {/\.(?:jpe?g|png|webp|gif)$/i.test(item.url)
+          ?<img src={item.url} alt={item.alt} loading="lazy" referrerPolicy="no-referrer"/>
+          :<div className={styles.previewVideo}>Video: {item.url.split('/').pop()}</div>}
+        <p>{BRANDS[item.brand]} · {item.alt}</p>
+        <button type="button" onClick={()=>{
+          setForm(old=>({...old,brand:item.brand,sourceUrl:old.brand===item.brand?old.sourceUrl:'',mediaUrl:item.url,mediaAlt:item.alt}))
+          setEditing(null);setTab('compose');setNotice('')
+        }}>{t.edit}</button></article>)}</div>
+    </section>}
     {(tab==='posts'||tab==='calendar')&&<div className={styles.filters}>
       <label>{t.brand}<select value={brandFilter} onChange={event=>setBrandFilter(event.target.value)}>
         <option value="all">{t.allBrands}</option>{Object.keys(BRANDS).map(key=><option key={key} value={key}>{BRANDS[key]}</option>)}</select></label>
