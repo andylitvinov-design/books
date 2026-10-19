@@ -4,24 +4,28 @@ import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("EN/RU/ES services give visitors a direct free or paid path before searching", () => {
-  const quick = read("components/services-quick-start.tsx");
-  const css = read("components/services-quick-start.module.css");
-  const enRu = read("app/[locale]/services/page.tsx");
-  const es = read("app/es/services/page.tsx");
-  assert.match(quick, /import type \{ PublicLocale \}/);
-  for (const lang of ["en: {", "ru: {", "es: {"]) assert.ok(quick.includes(lang), lang);
-  assert.match(quick, /data-services-quick-start/);
-  assert.match(quick, /data-services-quick-action": "free-written-review"/);
-  assert.match(quick, /data-services-quick-action": "personal-session"/);
-  assert.match(quick, /services\/free-situation-review/);
-  assert.match(quick, /services\/alchemy-of-soul/);
-  assert.match(quick, /Links only: never sends a message/);
-  assert.match(css, /min-height:48px/);
-  assert.match(css, /@media\(max-width:780px\)/);
+test("EN/RU/ES services give three free and five personal offers before the optional finder", () => {
+  const studio = read("components/services-studio-offers.tsx");
+  const css = read("components/services-studio-offers.module.css");
+  const pages = [read("app/[locale]/services/page.tsx"), read("app/es/services/page.tsx")];
+  for (const page of pages) {
+    assert.ok(page.indexOf("<ServicesStudioOffers") > page.indexOf("<ServicesConversionHero"));
+    assert.ok(page.indexOf("<ServicesStudioOffers") < page.indexOf("<PublicConsultationCta"));
+    assert.ok(!page.includes("<ServicesSmartDiscovery"));
+  }
+  assert.match(studio, /data-services-studio-free/);
+  assert.match(studio, /data-services-studio-paid/);
+  assert.match(studio, /id: "tests"/);
+  assert.match(studio, /id: "remote-energy-support"/);
+  assert.match(studio, /<ContactChannelChooser/);
+  assert.match(css, /min-height:44px/);
+  assert.match(css, /@media\(max-width:680px\)/);
   assert.match(css, /:focus-visible/);
-  assert.ok(enRu.indexOf("<ServicesQuickStart") < enRu.indexOf("<ServicesSmartDiscovery"), "EN/RU direct actions must be first");
-  assert.ok(es.indexOf("<ServicesQuickStart") < es.indexOf("<ServicesSmartDiscovery"), "ES direct actions must be first");
+  const directory = read("components/services-directory-page.tsx");
+  assert.match(directory, /<ServicesSmartDiscovery/);
+  assert.match(directory, /<MarketplaceServiceFinder/);
+  const quick = read("components/services-quick-start.tsx");
+  assert.doesNotMatch(quick, /fetch\(|sendBeacon\(|localStorage|sessionStorage|\bgtag\(/);
 });
 
 test("personal pages keep three price and free alternatives without suggesting automatic booking", () => {

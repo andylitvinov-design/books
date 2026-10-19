@@ -75,7 +75,7 @@ type LocalizedCourse = {
 const translations: Record<PublicLocale, LocalizedCourse> = {
   en: {
     eyebrow: "HOLISTIC HOUSE ACADEMY · FREE BEGINNER COURSE",
-    title: "Principles of Energywork",
+    title: "Free Course Reiki Practitioner: Study & Initiation",
     subtitle: "Free online course · 5 steps · 3 Reiki systems",
     intro: "Begin with Flight to the Sun, explore Tantra, Kundalini and Yggdrasil Reiki, then choose your personal initiation.",
     start: "Explore the 3 systems",
@@ -148,7 +148,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
   },
   ru: {
     eyebrow: "HOLISTIC HOUSE ACADEMY · БЕСПЛАТНЫЙ ВВОДНЫЙ КУРС",
-    title: "Принципы энергетической работы",
+    title: "Бесплатный курс «Практик Рейки»: обучение и инициация",
     subtitle: "Бесплатный онлайн-курс · 5 шагов · 3 системы Рейки",
     intro: "Сначала «Полёт к Солнцу», затем Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и личная инициация.",
     start: "Посмотреть 3 системы",
@@ -221,7 +221,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
   },
   es: {
     eyebrow: "ACADEMIA HOLISTIC HOUSE · CURSO INTRODUCTORIO GRATUITO",
-    title: "Principios del trabajo energético",
+    title: "Curso gratis Reiki Practitioner: estudio e iniciación",
     subtitle: "Curso online gratis · 5 pasos · 3 sistemas Reiki",
     intro: "Comienza con Vuelo hacia el Sol, sigue con Tantra, Kundalini y Reiki Yggdrasil, y termina con la iniciación personal.",
     start: "Explorar los 3 sistemas",

@@ -77,6 +77,35 @@ test("Course cards have photo-left media, a high-contrast FREE label and separat
   assert.match(css, /:focus-visible/);
 });
 
+test("Every Academy course expands a distinct EN/RU/ES explanation and the Reiki Practitioner name is consistent", () => {
+  const hub = read("components/academy-hub.tsx");
+  const landing = read("components/principles-of-energywork.tsx");
+  const metadata = read("app/[locale]/academy/[[...slug]]/page.tsx");
+  const discovery = read("components/academy-discovery.tsx");
+  const keys = ["opora", "practitioner", "tantraIntro", "yggdrasilIntro", "yggdrasilFull", "tantraFull", "kundaliniFull", "temple"];
+  assert.equal((hub.match(/detailsHint: hints\.[A-Za-z]+/g) || []).length, 8, "Every course needs its own hint");
+  for (const key of keys) assert.ok(hub.includes("detailsHint: hints." + key), "Missing course-specific help: " + key);
+  for (const example of [
+    "Fourteen gentle daily practices", "14 дней коротких практик", "Catorce prácticas breves",
+    "Flight to the Sun", "Полёт к Солнцу", "Vuelo hacia el Sol",
+    "Spring of Life", "Родник жизни", "Manantial de Vida",
+    "original Paul Crick", "оригинальные материалы Пола Крика", "materiales originales de Paul Crick",
+    "runes, Tarot", "руны, Таро", "runas, Tarot",
+  ]) assert.ok(hub.includes(example), "Missing localized explanatory detail: " + example);
+  for (const name of [
+    "Free Course Reiki Practitioner: Study & Initiation",
+    "Бесплатный курс «Практик Рейки»: обучение и инициация",
+    "Curso gratis Reiki Practitioner: estudio e iniciación",
+  ]) {
+    assert.ok(hub.includes(name), "Missing course card name: " + name);
+    assert.ok(landing.includes(name), "Missing course landing name: " + name);
+    assert.ok(metadata.includes(name), "Missing page metadata title: " + name);
+  }
+  assert.match(discovery, /reiki practitioner study initiation/);
+  assert.match(hub, /initiation is arranged separately with Andrey/);
+  assert.match(hub, /инициация согласуется с Андреем отдельно/);
+});
+
 test("Academy still offers original source programmes, archives and consultations", () => {
   const hub = read("components/academy-hub.tsx");
   assert.match(hub, /<AcademyCourseCapture locale=\{locale\}/);

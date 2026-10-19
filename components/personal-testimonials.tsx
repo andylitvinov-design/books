@@ -112,7 +112,7 @@ export function PersonalTestimonials({
 }) {
   const current = copy[locale];
   const isHome = variant === "home";
-  const videos = isHome ? testimonialVideos[locale].slice(0, 4) : testimonialVideos[locale].slice(0, 3);
+  const videos = isHome ? testimonialVideos[locale].slice(0, 4) : testimonialVideos[locale].slice(0, 4);
   // Full consultation landing: show all 12 provenance-checked videos, not the compact home/services subset.
   const presentedVideos = variant === "all"
     ? [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]]
@@ -194,6 +194,18 @@ export function PersonalTestimonials({
             <div className={styles.videoGrid}>{renderVideoCards(remainingHomeVideos)}</div>
             <h4 className={styles.moreSectionTitle}>{current.otherLanguageMore}</h4>
             <div className={styles.videoGrid}>{renderVideoCards(otherLanguageVideos, true)}</div>
+          </div>
+        </details>
+      )}
+
+      {variant === "services" && (
+        <details className={styles.moreVideos} data-more-services-testimonials>
+          <summary>{current.moreToggle}
+            <span>+{testimonialVideos[locale].length - videos.length}</span>
+          </summary>
+          <div className={styles.videoGrid} role="region"
+            aria-label={locale === "ru" ? "Дополнительные видеоотзывы" : "Additional video testimonials"} tabIndex={0}>
+            {renderVideoCards(testimonialVideos[locale].slice(4))}
           </div>
         </details>
       )}

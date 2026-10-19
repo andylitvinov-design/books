@@ -38,10 +38,12 @@ test("three languages preserve a genuinely free written report and transparent l
 });
 
 test("home and services offer direct and clear free and paid landing actions", () => {
-  for (const source of [homepage, services]) assert.match(source, /services\/free-situation-review/);
+  assert.match(homepage, /services\/free-situation-review/);
+  assert.match(read("data/core-service-offers.ts"), /free-situation-review/);
+  assert.match(read("components/services-studio-offers.tsx"), /situation.href/);
   assert.match(homepage, /className="service-home-button service-home-button--primary"\s*href=\{`\/\$\{locale\}\/services#consultation`\}/);
   assert.match(homepage, /\{text\.heroBook\}/);
-  assert.match(services, /className=\{styles\.cta\} href="#consultation" data-service-hero-cta="paid"/);
+  assert.match(services, /className=\{styles\.paidLink\} href="#consultation" data-service-hero-cta="paid"/);
   assert.match(homepage, /service-home-button--primary/);
   assert.match(services, /paidCta:/);
   assert.match(styles, /\.heroActions\{/);
