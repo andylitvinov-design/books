@@ -209,7 +209,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
-  const quote=cycle.day===1?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
+  const quote=cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
   const rating=answers.reflection
   const vote=answers.aphorism
   const ratingText=rating==='useful'?t.feelingBetter:rating==='partly'?t.feelingPartial:
