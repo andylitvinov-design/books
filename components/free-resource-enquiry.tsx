@@ -16,6 +16,7 @@ const text = {
     question: "A little about your question (optional)",
     questionPlaceholder: "One or two sentences are enough.",
     action: "Continue with a free request",
+    copyDetails: "Copy my details", copied: "Copied. Paste these details in your chat.", copyError: "Copy unavailable: select and copy the note below.",
     note: "Choose WhatsApp or Telegram to review the prepared message. Nothing is stored on this page or sent before you confirm it in the messenger.",
     situation: {
       title: "Your free written review",
@@ -39,6 +40,7 @@ const text = {
     question: "Пара слов о запросе (необязательно)",
     questionPlaceholder: "Достаточно одного-двух предложений.",
     action: "Продолжить бесплатный запрос",
+    copyDetails: "Скопировать мой запрос", copied: "Скопировано. Вставьте эти детали в чат.", copyError: "Копирование недоступно: выделите текст ниже и скопируйте.",
     note: "Выберите WhatsApp или Telegram, проверьте текст и сами подтвердите отправку. Сайт не сохраняет ответы и не отправляет их автоматически.",
     situation: {
       title: "Ваш бесплатный письменный разбор",
@@ -62,6 +64,7 @@ const text = {
     question: "Unas palabras sobre tu pregunta (opcional)",
     questionPlaceholder: "Una o dos frases son suficientes.",
     action: "Continuar con la solicitud gratuita",
+    copyDetails: "Copiar mis detalles", copied: "Copiado. Pega estos detalles en el chat.", copyError: "No se pudo copiar: selecciona el texto siguiente.",
     note: "Elige WhatsApp o Telegram, revisa el mensaje y confirma el envío tú mismo. Esta página no almacena ni envía tus respuestas automáticamente.",
     situation: {
       title: "Tu revisión gratuita por escrito",
@@ -86,7 +89,8 @@ export function FreeResourceEnquiry({ locale, kind }: { locale: PublicLocale; ki
   const [topic, setTopic] = useState(0);
   const [name, setName] = useState("");
   const [question, setQuestion] = useState("");
-  const context = [
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
+  const privateContext = [
     name.trim() ? t.name + ": " + name.trim().slice(0, 80) : "",
     question.trim() ? t.question + ": " + question.trim().slice(0, 350) : "",
   ].filter(Boolean).join(" | ");
@@ -95,9 +99,20 @@ export function FreeResourceEnquiry({ locale, kind }: { locale: PublicLocale; ki
     service: offer.service,
     request: offer.request,
     topic: offer.topics[topic],
-    context,
+    // Only the editorially approved broad topic is placed in either messenger URL.
+    // Visitor-specific name/question stay in the page until intentionally copied.
     pagePath: "/" + locale + "/services/" + (kind === "dao" ? "dao-health-profile" : "free-situation-review"),
   });
+  async function copyPrivateContext() {
+    if (!privateContext) return;
+    try {
+      await navigator.clipboard.writeText(privateContext);
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("error");
+    }
+  }
+
   return (
     <section className={styles.form} data-free-resource-enquiry={kind} aria-label={offer.title}>
       <p className={styles.eyebrow}><MessageCircle size={16} aria-hidden="true" />{offer.title}</p>
@@ -109,12 +124,17 @@ export function FreeResourceEnquiry({ locale, kind }: { locale: PublicLocale; ki
           </select>
         </label>
         <label>{t.name}
-          <input value={name} onChange={(event) => setName(event.target.value)} type="text" maxLength={80} autoComplete="name" placeholder={t.namePlaceholder} />
+          <input value={name} onChange={(event) => { setName(event.target.value); setCopyStatus("idle"); }} type="text" maxLength={80} autoComplete="name" placeholder={t.namePlaceholder} />
         </label>
         <label>{t.question}
-          <textarea rows={3} maxLength={350} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={t.questionPlaceholder} />
+          <textarea rows={3} maxLength={350} value={question} onChange={(event) => { setQuestion(event.target.value); setCopyStatus("idle"); }} placeholder={t.questionPlaceholder} />
         </label>
       </div>
+      {privateContext ? <div className={styles.copyRegion}>
+        <button type="button" className={styles.copyButton} onClick={() => { void copyPrivateContext(); }}>{t.copyDetails}</button>
+        <p className={styles.copyStatus} role="status">{copyStatus === "copied" ? t.copied : copyStatus === "error" ? t.copyError : null}</p>
+        {copyStatus === "error" ? <textarea readOnly value={privateContext} rows={3} aria-label={t.copyDetails} onFocus={(event) => event.currentTarget.select()} /> : null}
+      </div> : null}
       <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
         className={styles.action} event="service_request_start" attributes={{ "data-free-enquiry-kind": kind }} />
       <p className={styles.note}><ShieldCheck size={16} aria-hidden="true" />{t.note}</p>
