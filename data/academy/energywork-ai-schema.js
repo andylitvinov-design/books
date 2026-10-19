@@ -2,14 +2,15 @@
 // The bilingual editorial content lives in data/academy/energywork-ai-curriculum.ts.
 // Keep this registry aligned with that file; tests enforce exact ID parity.
 export const ENERGYWORK_KEY = 'academy-energywork-principles'
-export const ENERGYWORK_VERSION = '2026-10-19.p3'
+export const ENERGYWORK_VERSION = '2026-10-19.p4'
+export const ENERGYWORK_P3_VERSION = '2026-10-19.p3'
 export const ENERGYWORK_P2_VERSION = '2026-10-19.p2'
 export const ENERGYWORK_PREVIOUS_VERSION = '2026-10-18.p1'
 export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-01','welcome-02',
-  'flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done',
+  'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
   'presence-01','presence-04','tan-done',
   'intention-01','intention-02','intention-03','intention-04',
   'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
@@ -74,7 +75,7 @@ export const energyworkPathValid = (id) => ENERGYWORK_PATHS.includes(id)
 export function energyworkSequence(_legacyPath = null) {
   return [
     'welcome-01','welcome-02',
-    'flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done',
+    'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
     ...ENERGYWORK_BRANCH.tantra,
     'presence-01','presence-04','tan-done',
     ...ENERGYWORK_BRANCH.kundalini,
@@ -134,6 +135,15 @@ export function energyworkP2ResumeId(slideId) {
   if (flightStep >= 0) return sequence[2 + flightStep]
   const tantraStep = P2_TANTRA.indexOf(slideId)
   if (tantraStep >= 0) return sequence[9 + tantraStep]
+  return sequence.includes(slideId) ? slideId : 'flight-01'
+}
+// p3 -> p4: restore the reached ordinal in lesson 1 after slides 5 and 6 swap.
+// Answers remain attached to their original stable slide IDs, never rewritten.
+const P3_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
+export function energyworkP3ResumeId(slideId) {
+  const sequence = energyworkSequence()
+  const flightStep = P3_FLIGHT.indexOf(slideId)
+  if (flightStep >= 0) return sequence[2 + flightStep]
   return sequence.includes(slideId) ? slideId : 'flight-01'
 }
 export function energyworkInitiationReady(answers) {
