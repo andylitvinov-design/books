@@ -97,7 +97,8 @@ test('day one restores five opening screens while days 2–14 keep their existin
         {resource:4,lastDayDifficulty:5,familiarSupport:'pause'})
     }else{
       assert.equal(f.payload.oporaOpening,undefined)
-      assert.equal(f.payload.welcomeFeeling,undefined)
+      // Skipping the optional mood choice is represented as null, never a fabricated feeling.
+      assert.equal(f.payload.welcomeFeeling,null)
     }
     assert.match(textOf(h.tree),new RegExp(d.saved))
     h.unmount()
