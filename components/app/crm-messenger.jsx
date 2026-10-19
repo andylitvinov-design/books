@@ -5,7 +5,7 @@ const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
     select:'Select a conversation',reply:'Your reply',send:'Send reply',refresh:'Refresh',loading:'Loading conversations…',
-    pending:'Connection requires official provider credentials.',connect:'Connect',connected:'Connected',none:'Not configured',
+    pending:'Connection requires official provider credentials.',connect:'Connect',connected:'Registered in CRM · test delivery',none:'Not configured',
     manual:'Manual customer replies only. Do not enter medical details, reports or secret client links.',
     failed:'Messages are temporarily unavailable.',unknown:'Delivery not confirmed. Do not resend automatically.',
     accepted:'Message accepted by the provider.',blocked:'This reply is unavailable.',read:'Mark read',
@@ -14,7 +14,7 @@ const copy={
   ru:{title:'Сообщения',sub:'Telegram, WhatsApp, Instagram и Messenger — единый защищённый inbox',all:'Все',
     empty:'Переписок пока нет. Входящие появятся после подключения канала и первого сообщения от клиента.',
     select:'Выберите переписку',reply:'Ваш ответ',send:'Отправить ответ',refresh:'Обновить',loading:'Загружаю переписки…',
-    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',connected:'Подключён',none:'Не настроен',
+    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',connected:'Зарегистрирован в CRM · проверьте доставку',none:'Не настроен',
     manual:'Только ответы на обращения клиентов. Не отправляйте медицинские сведения, отчёты или секретные ссылки.',
     failed:'Переписки временно недоступны.',unknown:'Доставка не подтверждена. Не повторяйте отправку автоматически.',
     accepted:'Сообщение принято провайдером.',blocked:'Сейчас ответ недоступен.',read:'Отметить прочитанным',
@@ -23,7 +23,7 @@ const copy={
   es:{title:'Mensajes',sub:'Telegram, WhatsApp, Instagram y Messenger — bandeja privada',all:'Todos',
     empty:'Aún no hay conversaciones. Aparecerán cuando el canal esté conectado y un cliente escriba.',
     select:'Selecciona una conversación',reply:'Tu respuesta',send:'Enviar respuesta',refresh:'Actualizar',loading:'Cargando conversaciones…',
-    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',connected:'Conectado',none:'Sin configurar',
+    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',connected:'Registrado en CRM · comprobar entrega',none:'Sin configurar',
     manual:'Solo respuestas a clientes. No incluyas datos médicos, informes ni enlaces privados.',
     failed:'Los mensajes no están disponibles temporalmente.',unknown:'Entrega no confirmada. No reenviar automáticamente.',
     accepted:'Mensaje aceptado por el proveedor.',blocked:'Esta respuesta no está disponible.',read:'Marcar leído',
@@ -31,6 +31,57 @@ const copy={
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
 const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Facebook Messenger'}
+const setupText={
+  en:{
+    intro:'No channels are connected yet. You can prepare them here without sending a message.',
+    instructions:'Connect an account',missing:'Missing server settings',configured:'Credentials present — verify the provider first',
+    disabled:'Channel activation is off',approval:'Public sending is off until the test is approved',
+    pilot:'Pilot mode: only the allowlisted Telegram chat can send or receive messages',
+    testHint:'Do one controlled test conversation before enabling live client replies.',
+    channelKeys:'Server settings in Vercel Production',copyUrl:'Copy webhook URL',
+    copied:'Webhook URL copied',copyError:'Copy failed; use the URL shown below.',
+    openPortal:'Open official provider setup',notVerified:'Never paste tokens into ChatGPT or GitHub. Use Vercel encrypted Environment Variables.',
+    telegramCaution:'Use a dedicated BotFather bot, not an existing diagnostics bot.',
+    pilotKeys:'For a safe Telegram pilot also set',
+    globalKeys:'For real-client sending after testing, explicitly review',
+    connectReady:'After setup, select Connect to verify your account.',
+  },
+  ru:{
+    intro:'Пока нет подключённых каналов. Подготовьте их здесь — сообщения клиентам не отправляются.',
+    instructions:'Как подключить',missing:'Не хватает настроек сервера',configured:'Ключи добавлены — проверьте доступ провайдера',
+    disabled:'Активация канала выключена',approval:'Отправка клиентам отключена до подтверждённого теста',
+    pilot:'Пилот: Telegram доступен только одному разрешённому тестовому аккаунту',
+    testHint:'Сначала проведите одну тестовую переписку и проверьте получение ответа.',
+    channelKeys:'Переменные в Vercel Production',copyUrl:'Копировать адрес webhook',
+    copied:'Адрес webhook скопирован',copyError:'Не удалось скопировать. Адрес указан ниже.',
+    openPortal:'Открыть официальный кабинет',notVerified:'Не передавайте токены в чат или GitHub. Добавляйте их только в секретные Environment Variables Vercel.',
+    telegramCaution:'Создайте отдельного бота через BotFather. Не используйте существующего диагностического бота.',
+    pilotKeys:'Для безопасного Telegram-теста дополнительно задайте',
+    globalKeys:'Для отправки клиентам после теста отдельно согласуйте',
+    connectReady:'После настройки нажмите «Подключить» для проверки аккаунта.',
+  },
+  es:{
+    intro:'Aún no hay canales conectados. Prepáralos aquí sin enviar mensajes a clientes.',
+    instructions:'Cómo conectar',missing:'Falta configuración del servidor',configured:'Credenciales cargadas; verifica el proveedor',
+    disabled:'La activación del canal está deshabilitada',approval:'El envío público está desactivado hasta completar la prueba',
+    pilot:'Piloto: solo una cuenta de prueba autorizada puede usar Telegram',
+    testHint:'Realiza una conversación de prueba controlada antes de activar respuestas reales.',
+    channelKeys:'Variables del servidor en Vercel Production',copyUrl:'Copiar URL del webhook',
+    copied:'URL copiada',copyError:'No se pudo copiar. Usa la URL mostrada.',
+    openPortal:'Abrir configuración oficial',notVerified:'No compartas tokens en el chat ni en GitHub. Usa Environment Variables cifradas en Vercel.',
+    telegramCaution:'Crea un bot dedicado de BotFather; no reutilices un bot de diagnóstico.',
+    pilotKeys:'Para un piloto seguro en Telegram configura también',
+    globalKeys:'Para clientes reales, revisa por separado',
+    connectReady:'Después de configurar, pulsa Conectar para verificar la cuenta.',
+  },
+}
+const officialPortal={
+  telegram:'https://t.me/BotFather',
+  whatsapp:'https://developers.facebook.com/apps/',
+  instagram:'https://developers.facebook.com/apps/',
+  messenger:'https://developers.facebook.com/apps/',
+}
+
 const messageStatuses={
   received:{en:'Received',ru:'Получено',es:'Recibido'},
   draft:{en:'Draft',ru:'Черновик',es:'Borrador'},
@@ -143,6 +194,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const [copiedChannel,setCopiedChannel]=useState('')
   const pendingRequest=useRef(null)
   const pendingNote=useRef(null)
   const pendingFollowup=useRef(null)
@@ -175,7 +227,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     pendingNote.current=null
     pendingFollowup.current=null
     activeRef.current=''
-    setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('')
+    setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('');setCopiedChannel('')
     setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false)
     setThreadsBusy(false);setMessagesBusy(false)
     load('',ctrl.signal).then(result=>{
@@ -183,6 +235,15 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     }).catch(e=>{if(e.name!=='AbortError'&&!activeRef.current)setError('unavailable')})
     return ()=>ctrl.abort()
   },[accountId,load])
+  async function copyWebhook(channel){
+    const url=data?.channels?.find(item=>item.channel===channel)?.callbackUrl
+    if(!url)return
+    try{
+      if(!navigator.clipboard?.writeText)throw new Error('clipboard unavailable')
+      await navigator.clipboard.writeText(url)
+      setCopiedChannel(channel)
+    }catch{setStatus(setupText[lang].copyError)}
+  }
   async function refresh(id=activeRef.current){
     try {
       const result=await load(id)
@@ -353,17 +414,49 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
       <div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>
       <button type="button" className={styles.plainButton} disabled={busy} onClick={()=>refresh()}>{t.refresh}</button>
     </header>
+    {data&&data.accounts?.length===0&&
+      <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
     <details className={styles.channels}>
-      <summary>{t.channels} · {data?.accounts?.length||0}/4</summary>
+      <summary>{t.channels} · {data?.accounts?.filter(item=>item.connected).length||0}/4 · {setupText[lang].instructions}</summary>
       <div className={styles.channelGrid}>
-        {(data?.channels||['telegram','whatsapp','instagram','messenger'].map(channel=>({channel,providerConfigured:false}))).map(channel=>{
+        {(data?.channels||['telegram','whatsapp','instagram','messenger'].map(channel=>({channel,providerConfigured:false,missingKeys:[]}))).map(channel=>{
+          const guide=setupText[lang]
           const registered=data?.accounts?.find(a=>a.channel===channel.channel)
           const ok=registered?.connected===true
+          const missing=channel.missingKeys||[]
+          const isPilot=channel.channel==='telegram'&&channel.pilot
+          const statusLabel=ok?t.connected:missing.length?guide.missing:isPilot?guide.pilot:
+            !channel.enabled?guide.disabled:
+            !channel.liveApproved?guide.approval:guide.configured
           return <div className={styles.channel} key={channel.channel}>
             <strong>{names[channel.channel]}</strong>
-            <span>{ok?t.connected:channel.providerConfigured?t.pending:t.none}</span>
+            <span>{statusLabel}</span>
             {!ok&&<button type="button" disabled={busy||!channel.providerConfigured}
               onClick={()=>action('connect',{channel:channel.channel})}>{t.connect}</button>}
+            <details className={styles.channelGuide}>
+              <summary>{guide.instructions}</summary>
+              <div className={styles.guideBody}>
+                <a href={officialPortal[channel.channel]} target="_blank" rel="noopener noreferrer">{guide.openPortal}</a>
+                {channel.channel==='telegram'&&<p>{guide.telegramCaution}</p>}
+                <p>{guide.notVerified}</p>
+                <strong>{guide.channelKeys}</strong>
+                {missing.length?<ul>{missing.map(key=><li key={key}><code>{key}</code></li>)}</ul>:
+                  <p>{guide.configured}</p>}
+                {!channel.enabled&&<code className={styles.settingKey}>{'HH_CRM_MSG_'+channel.channel.toUpperCase()+'_ENABLED=true'}</code>}
+                {channel.channel==='telegram'&&<div className={styles.pilotKeys}>
+                  <strong>{guide.pilotKeys}</strong>
+                  <code>HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=true</code>
+                  <code>HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID</code>
+                </div>}
+                {!channel.liveApproved&&<p>{guide.globalKeys} <code>HH_CRM_MSG_PRODUCTION_APPROVED=true</code>.</p>}
+                <span>{guide.testHint}</span>
+                <code className={styles.callbackUrl}>{channel.callbackUrl||'https://holistichouse.vercel.app/api/app/crm/messenger/webhook/'+channel.channel}</code>
+                <button type="button" className={styles.copyButton} onClick={()=>copyWebhook(channel.channel)}>
+                  {copiedChannel===channel.channel?guide.copied:guide.copyUrl}
+                </button>
+                <p>{guide.connectReady}</p>
+              </div>
+            </details>
           </div>
         })}
       </div>

@@ -93,3 +93,19 @@ This release adds bounded server-side keyset pagination for both **conversations
 - PostgreSQL read-only EXPLAIN checks confirmed the owner-filtered 30-conversation / 50-message keyset queries parse and use existing `crm_msg_threads_owner_last` and `crm_msg_items_thread_date` indexes. Source/pure tests live in `tests/crm-messenger.test.mjs`. Check GitHub CI and the exact Production SHA after merging.
 
 **Provider activation remains separate:** no official Telegram/WhatsApp/Instagram/Messenger account credentials have been verified in Vercel Production, so external real-client delivery is not enabled or claimed.
+
+## 11. Provider connection diagnostics + one-chat Telegram pilot
+
+**Simple handoff:** [Owner/Codex steps (Russian)](./MESSENGER_FINISH_SIMPLE_STEPS_2026-10-18.md).
+
+- CRM Messages → Channels now shows **only** server-side names of missing environment variables, status of the per-channel and production approval flags, the official BotFather/Meta application portal, correct HTTPS webhook URLs, and a user-triggered button to copy the URL. **Secret values are never returned to the browser**. The owner-only GET endpoint is still authenticated and restricted by `X-HH-Account-Id` and verified practitioner access.
+- Normal live messaging still requires each official provider's signed credentials plus `HH_CRM_MSG_{PROVIDER}_ENABLED=true` and explicit `HH_CRM_MSG_PRODUCTION_APPROVED=true`. Absence means no inbound recording/outbound messaging.
+- **New safer pilot before Production Approval:** Telegram alone can be enabled in *single recipient pilot mode*, with normal Telegram bot keys plus `HH_CRM_MSG_TELEGRAM_ENABLED=true`, `HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=true` and `HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID=<numeric owned private chat id>`, while leaving `HH_CRM_MSG_PRODUCTION_APPROVED` OFF.
+- In this state, verified Telegram webhook updates from all chats other than the exact allowlisted test chat return without DB access or lead creation. The Telegram send adapter throws `TEST_RECIPIENT_ONLY` before any provider request when a non-allowlisted chat is addressed. None of the three Meta channels gets pilot privileges. This lets the owner verify **a single synthetic private chat** without opening live messages to real clients.
+- The owner presses Connect after secure Vercel credential setup; the server uses `getMe` to verify the exact bot and `getWebhookInfo` to avoid taking over an existing bot. `setWebhook` uses a separate secret token, preserves pending updates, and is verified again.
+- No `HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID` or BotFather token should be copied into GitHub issues, ChatGPT messages, browser logs, screenshots or client-side source. Vercel Production env changes require redeploy and new active SHA verification.
+- **Pilot success does not authorize a public launch.** Confirm owner opt-in, privacy policy, recipient rules, signed inbound, 1 manual reply and actual provider acceptance, negative non-allowlisted chat test, duplicate-event suppression and STOP command. Only after explicit approval may the owner authorize `HH_CRM_MSG_PRODUCTION_APPROVED=true` and disable pilot flags.
+- Phone number registration, Meta Business/Instagram app permissions, Meta review, actual WhatsApp messaging cost/eligibility and production templates remain a separate external gate; do not infer capability from a Metricool social publishing connection.
+- **Kill switch:** set `HH_CRM_MSG_TELEGRAM_ENABLED=false` or `HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=false` while global Production Approval is OFF, then redeploy. Cross-check that webhook requests fail closed and no outbound provider calls occur.
+
+Release verification: run pure policy tests plus CRM source checks, Vercel production build, owner-only API GET and test-chat synthetic round-trip. A successful source build alone cannot prove official account connection.
