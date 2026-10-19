@@ -15,6 +15,13 @@ variable name, or a mock test alone is not enough.
 - Vercel is configured to deploy only that branch. Preview builds are skipped
   and documentation-only changes are ignored by
   `scripts/vercel-ignore-build.mjs`; runtime changes continue to build.
+- Vercel Usage for the current billing cycle (Oct 14–Nov 14, values may lag
+  one hour) attributes the largest visible charge to **Build CPU Minutes**:
+  134 hours / $14.66. Other visible charges were substantially smaller:
+  observability events 533.32K / $0.33, function storage $0.83, deployment
+  storage $0.74 and image transformation/cache writes $0.12 combined. This
+  confirms build frequency, not Workers KV reads, as the immediate Vercel
+  cost focus.
 - Vercel showed several distinct recent production SHAs, rather than retries
   of one SHA. This is release fragmentation, not evidence of a build loop.
 - Supabase dashboard read-back showed applied migration
@@ -53,6 +60,9 @@ variable name, or a mock test alone is not enough.
    only, with a single daily housekeeping cron. No client polling loop was
    found in the KV/video paths. Public editorial-video reads use a 60-second
    cache and a 1.2-second bounded storage read.
+   The remaining high-cost pattern is separate production commits; batch
+   verified runtime changes behind green CI rather than disabling the guard
+   or performing repeated redeploys.
 2. No Cloudflare Workers/KV runtime dependency or namespace is present in the
    production source or Vercel environment metadata. Therefore the reported
    100,000 reads/day cannot safely be attributed to this deployment. It must
