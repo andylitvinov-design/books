@@ -658,3 +658,308 @@
 @media(prefers-reduced-motion:reduce){
   .compactTests .fastTestButton{transition:none}
 }
+
+
+/* OPORA free pre-course check-ins · approved compact mobile design (2026-10-19).
+   Structural/test state is unchanged; all three appear selected by default
+   through CourseR3Steps, while completed tests remain server-authoritative. */
+.compactTests[data-course-baseline-one-screen]{
+  gap:9px;
+  border-color:#dbe8e9;
+  background:linear-gradient(180deg,#fffcf6 0%,#ffffff 78%);
+}
+.compactTests .baselineHero{
+  position:relative;
+  z-index:0;
+  overflow:hidden;
+  isolation:isolate;
+  gap:6px;
+  padding:17px 17px 13px;
+  border-radius:19px;
+  border:1px solid #0b8492;
+  background:
+    radial-gradient(ellipse 85% 100% at 105% 10%,rgba(102,222,189,.55),transparent 65%),
+    radial-gradient(ellipse 56% 72% at 88% 98%,rgba(0,190,184,.38),transparent 74%),
+    linear-gradient(115deg,#0b3755 0%,#0e516d 64%,#07899b 100%);
+}
+.compactTests .baselineHero::after{
+  content:"";
+  z-index:-1;
+  position:absolute;
+  right:-31px;
+  top:26%;
+  width:136px;
+  height:173px;
+  border-radius:76% 18% 78% 22%;
+  transform:rotate(-37deg);
+  background:linear-gradient(55deg,rgba(39,184,168,.12),rgba(126,234,194,.24) 45%,rgba(203,246,205,.06));
+  border:1px solid rgba(160,232,204,.15);
+  pointer-events:none;
+}
+.compactTests .baselineDecoration{
+  position:absolute;
+  pointer-events:none;
+  right:6px;
+  top:26px;
+  display:grid;
+  place-items:center;
+  width:105px;
+  height:105px;
+  border:1px solid rgba(194,242,224,.28);
+  border-radius:50%;
+  color:rgba(197,248,227,.65);
+  background:radial-gradient(circle,rgba(21,165,151,.18),transparent 73%);
+}
+.compactTests .baselineHero .compactEyebrow{
+  max-width:calc(100% - 45px);
+  color:#a6edf0!important;
+  font-size:10px!important;
+  line-height:1.3;
+  font-weight:900;
+  letter-spacing:.13em;
+}
+.compactTests .baselineHero h2{
+  position:relative;
+  max-width:100%;
+  color:#fff!important;
+  font:600 clamp(23px,4vw,29px)/1.08 Georgia,serif;
+  letter-spacing:-.025em;
+  text-wrap:balance;
+  text-shadow:0 1px 1px rgba(0,0,0,.06);
+}
+.compactTests .baselineHero .compactLead{
+  position:relative;
+  max-width:89%;
+  color:#e9f7f9!important;
+  font-size:12.5px;
+  line-height:1.4;
+  font-weight:500;
+}
+.compactTests .baselineHighlights{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:2px 0 0;
+}
+.compactTests .baselineHighlights>span{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 8px;
+  min-height:27px;
+  border-radius:999px;
+  border:1px solid rgba(231,251,255,.75);
+  background:#dff9fb;
+  color:#12516b;
+  font-size:10.2px;
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+  letter-spacing:.01em;
+}
+.compactTests .baselineHighlights>span:first-child{
+  background:#d9fae6;
+  color:#0a654d;
+  border-color:#abefd5;
+}
+.compactTests .baselineHighlights svg{flex:none}
+.compactTests .baselineTimeline{
+  gap:5px;
+  margin:1px 0 0;
+}
+.compactTests .baselineTimeline>span,
+.compactTests .baselineTimeline>span:first-child{
+  border:1px solid rgba(198,230,238,.36);
+  background:rgba(255,255,255,.1);
+  color:#e6f9fc;
+  border-radius:7px;
+  font-size:9px;
+  padding:3px 6px;
+}
+.compactTests .baselineTimeline>span:first-child{
+  background:#e2faef;
+  border-color:#c3eedc;
+  color:#176573;
+}
+.compactTests .baselineHero .baselineContext{
+  margin-top:2px;
+  padding-top:7px;
+  border-top:1px solid rgba(215,244,244,.26);
+  color:#cee9f0!important;
+  font-size:10px;
+  line-height:1.28;
+}
+.compactTests .baselineListIntro{
+  padding:1px 2px 0;
+  gap:4px;
+}
+.compactTests .baselineListIntro h3{
+  margin:0;
+  color:#143b59;
+  font:600 clamp(19px,3.7vw,24px)/1.18 Georgia,serif;
+  letter-spacing:-.015em;
+}
+.compactTests .baselineListIntro p{
+  color:#587b89;
+  font-size:11px;
+  line-height:1.35;
+  font-weight:550;
+}
+.compactTests .shortTestList{
+  gap:6px;
+  max-height:clamp(158px,31dvh,245px);
+}
+.compactTests .shortTestRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:51px;
+  padding:9px 11px;
+  border:1px solid #d4e5e9;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 1px 4px rgba(32,67,88,.035);
+}
+.compactTests .shortTestRow[data-checked=true]{
+  background:#f0fbfb;
+  border-color:#a6d9de;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true]{
+  border:1px solid #78cbd3;
+  border-left:4px solid #11adba;
+  background:linear-gradient(105deg,#e9f9fa,#f5fdfc);
+  padding-left:7px;
+}
+.compactTests .shortTestIcon{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  flex:none;
+  display:grid;
+  place-items:center;
+  background:#e7f2f8;
+  color:#2c7696;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true] .shortTestIcon{
+  background:#cceff1;
+  color:#048b9d;
+}
+.compactTests .shortTestBody{gap:3px}
+.compactTests .shortTestBody strong{
+  font-size:12.8px;
+  line-height:1.2;
+  color:#113d5a;
+}
+.compactTests .shortTestBody small{
+  font-size:10.6px;
+  line-height:1.25;
+  color:#658294;
+}
+.compactTests .shortTestRow>input{
+  flex:none;
+  position:relative;
+  appearance:none;
+  -webkit-appearance:none;
+  width:23px;
+  height:23px;
+  margin:0;
+  border:2px solid #9aaeb9;
+  background:#fff;
+  border-radius:50%;
+  cursor:pointer;
+}
+.compactTests .shortTestRow>input:checked{
+  border-color:#0795a6;
+  background:#0795a6;
+}
+.compactTests .shortTestRow>input:checked::after{
+  content:"";
+  position:absolute;
+  top:3px;
+  left:6px;
+  width:6px;
+  height:10px;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  transform:rotate(45deg);
+}
+.compactTests .shortTestRow>input:disabled{
+  opacity:1;
+  cursor:default;
+}
+.compactTests .shortTestRow:focus-within{outline:3px solid #e6bf75;outline-offset:2px}
+.compactTests .shortTestRow .baselineSaved,
+.compactTests .shortTestSaved{
+  display:inline-flex;
+  align-items:center;
+  justify-self:start;
+  align-self:start;
+  width:fit-content;
+  max-width:100%;
+  gap:4px;
+  margin:1px 0 0;
+  padding:3px 7px;
+  border-radius:999px;
+  border:1px solid #bce7d4;
+  background:#ddf7e8;
+  color:#147359;
+  font-size:9.8px;
+  font-weight:780;
+  line-height:1.23;
+}
+.compactTests .shortTestSaved{
+  background:#eefaf6;
+  color:#3a7d71;
+  border-color:#d6ece2;
+  padding:2px 6px;
+}
+.compactTests .shortTestRow .baselineSaved svg,
+.compactTests .shortTestSaved svg{flex:none;color:#128265}
+.compactTests .fastTestButton{
+  min-height:48px;
+  font-size:14px;
+  margin-top:2px;
+  box-shadow:0 6px 13px rgba(0,136,153,.20);
+}
+.compactTests .shortTestExtras{
+  justify-content:space-between;
+  gap:4px 8px;
+}
+.compactTests .shortTestExtras button{
+  min-height:28px;
+  padding:2px 4px;
+  color:#267c92;
+  font-size:11px;
+  font-weight:770;
+}
+@media(max-width:530px){
+  .compactTests[data-course-baseline-one-screen]{gap:8px}
+  .compactTests .baselineHero{padding:13px 13px 10px;gap:5px;border-radius:17px}
+  .compactTests .baselineDecoration{right:0;top:24px;width:79px;height:79px;opacity:.66}
+  .compactTests .baselineDecoration svg{width:58px;height:58px}
+  .compactTests .baselineHero .compactEyebrow{font-size:9.6px!important}
+  .compactTests .baselineHero h2{font-size:clamp(22px,5.8vw,26px)}
+  .compactTests .baselineHero .compactLead{max-width:96%;font-size:11.7px}
+  .compactTests .baselineHighlights>span{padding:4px 7px;min-height:25px;font-size:9.6px}
+  .compactTests .baselineListIntro h3{font-size:21px}
+  .compactTests .baselineListIntro p{font-size:10.6px}
+  .compactTests .shortTestRow{padding:7px 8px;gap:8px;min-height:48px}
+  .compactTests .shortTestRow[data-course-required-baseline=true]{padding-left:5px}
+  .compactTests .shortTestIcon{width:33px;height:33px;border-radius:9px}
+  .compactTests .shortTestIcon svg{width:20px;height:20px}
+  .compactTests .shortTestBody strong{font-size:12.4px}
+  .compactTests .shortTestBody small{font-size:10.2px}
+  .compactTests .shortTestRow>input{width:21px;height:21px}
+  .compactTests .shortTestRow>input:checked::after{top:2px;left:5px}
+  .compactTests .shortTestRow .baselineSaved{font-size:9.3px;padding:2px 6px}
+}
+@media(max-width:360px){
+  .compactTests .baselineHero .compactEyebrow{letter-spacing:.075em}
+  .compactTests .baselineHighlights{gap:4px}
+  .compactTests .baselineHighlights>span{font-size:8.6px;padding:4px 6px}
+  .compactTests .baselineListIntro h3{font-size:19px}
+  .compactTests .shortTestIcon{width:30px;height:30px}
+  .compactTests .shortTestBody strong{font-size:11.5px}
+  .compactTests .shortTestRow .baselineSaved{font-size:8.9px}
+}

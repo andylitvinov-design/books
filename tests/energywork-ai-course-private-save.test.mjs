@@ -89,7 +89,13 @@ test('Private answers retain normal limits but allow longer meditation reviews',
   assert.equal(energyworkAnswerValid('flight-02','notes'),false)
   for(const val of ['pause','adapt','ask'])assert.equal(energyworkAnswerValid('boundaries-02',val),true)
   assert.equal(energyworkAnswerValid('boundaries-02','force'),false)
-  for(const id of ['flight-03','intention-04','boundaries-03','ygg-03','tan-03','kun-03']){
+  assert.equal(ENERGYWORK_QUESTIONS['flight-03'],'text')
+  assert.equal(energyworkAnswerValid('flight-03','I felt sunlight around me.'),true)
+  assert.equal(energyworkAnswerValid('flight-03','a'.repeat(1601)),false)
+  // Preserve previously encrypted radio answers, now displayed as readable text.
+  for (const oldAnswer of ['tried','skipped'])
+    assert.equal(energyworkAnswerValid('flight-03',oldAnswer),true)
+  for(const id of ['intention-04','boundaries-03','ygg-03','tan-03','kun-03']){
     assert.equal(energyworkAnswerValid(id,'tried'),true)
     assert.equal(energyworkAnswerValid(id,'skipped'),true)
     assert.equal(energyworkAnswerValid(id,'pause'),false)

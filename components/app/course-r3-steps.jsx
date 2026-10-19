@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { appFetch } from '@/lib/app/client-fetch'
 import { startCourseWithRecovery } from '@/lib/inner-growth/course-start-recovery'
 import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
-import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
+import { ArrowRight, Brain, Check, ClipboardList, Clock3, Flower2, Gift, Heart, ListChecks, Plus, Sprout } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
 import { getCoursePreset, coursePresetSuggestedScales } from '@/lib/inner-growth/course-presets'
@@ -152,55 +152,58 @@ const UI = {
 
 const BASELINE_COPY = {
   en: {
-    eyebrow: 'OPORA · YOUR STARTING POINT',
-    title: 'Your starting point',
-    lead: 'A short check-in now helps you compare your answers after 14 lessons.',
+    eyebrow: 'OPORA · FREE PRE-COURSE CHECK-IN',
+    title: 'Understand your state before the course',
+    lead: 'We offer 3 free short tests. Just a few minutes to notice how you feel before lesson 1.',
     beforeTag: 'BEFORE LESSON 1', beforeTitle: 'My starting point', beforeDetail: 'Record how I feel now',
     afterTag: 'AFTER LESSON 14', afterTitle: 'My progress', afterDetail: 'Compare the same scales',
-    context: 'For reflection only — not a diagnosis or proof that the course caused changes.',
-    listTitle: 'Your check-ins',
-    listIntro: 'Weekly Pulse: required · 8 questions. Other check-ins: optional.',
+    context: 'For self-reflection only — not a diagnosis or proof that the course caused changes.',
+    listTitle: 'Your free starting check-ins',
+    listIntro: 'All 3 are selected to start. Take any missing tests in order; recent saved results count.',
+    freeBadge: 'FREE', testsBadge: '3 TESTS', durationBadge: 'MIN',
     alreadySaved: 'Weekly Pulse saved — you do not need to repeat it.',
     required: 'Required · 8 questions', anxiety: 'Optional · 7 questions', resources: 'Optional · 6 questions',
     optional: 'Optional', saved: 'Result saved', repeat: 'Needs a newer starting result',
     duration: 'min', preparing: 'Preparing…',
-    start: 'Start my starting check-in', continueTests: 'Continue my check-ins',
+    start: 'Start my 3 free check-ins', continueTests: 'Continue my check-ins',
     reuse: 'Use saved results & continue',
     next: 'Continue to my course',
     privacy: 'About these tests and privacy',
   },
   ru: {
-    eyebrow: 'ОПОРА · ИСХОДНОЕ СОСТОЯНИЕ',
-    title: 'Ваша точка отсчёта',
-    lead: 'Короткий опрос сейчас поможет сравнить ответы после 14 уроков.',
+    eyebrow: 'ОПОРА · БЕСПЛАТНЫЕ ТЕСТЫ ПЕРЕД КУРСОМ',
+    title: 'Узнайте своё состояние перед курсом',
+    lead: 'Предлагаем бесплатно пройти 3 коротких теста — всего несколько минут, чтобы понять, как вы себя чувствуете до первого урока.',
     beforeTag: 'ДО ПЕРВОГО УРОКА', beforeTitle: 'Точка отсчёта', beforeDetail: 'Зафиксировать своё состояние',
     afterTag: 'ПОСЛЕ 14 УРОКОВ', afterTitle: 'Мои изменения', afterDetail: 'Сравнить те же шкалы',
-    context: 'Для самонаблюдения: не является диагнозом и не доказывает влияние курса.',
-    listTitle: 'Ваши стартовые тесты',
-    listIntro: 'Weekly Pulse: обязателен · 8 вопросов. Остальные — по желанию.',
-    alreadySaved: 'Weekly Pulse сохранён — повторять не нужно.',
+    context: 'Только для самонаблюдения: не является диагнозом и не доказывает влияние курса.',
+    listTitle: 'Ваши 3 бесплатных теста',
+    listIntro: 'Все 3 отмечены заранее. Непройденные откроются по очереди; свежие результаты сохраним без повтора.',
+    freeBadge: 'БЕСПЛАТНО', testsBadge: '3 ТЕСТА', durationBadge: 'МИН',
+    alreadySaved: 'Weekly Pulse сохранён — повторять его не нужно.',
     required: 'Обязательный · 8 вопросов', anxiety: 'По желанию · 7 вопросов', resources: 'По желанию · 6 вопросов',
     optional: 'По желанию', saved: 'Результат сохранён', repeat: 'Нужен более свежий замер',
     duration: 'мин', preparing: 'Подготавливаем…',
-    start: 'Пройти стартовый тест', continueTests: 'Продолжить тестирование',
+    start: 'Начать 3 бесплатных теста', continueTests: 'Продолжить тестирование',
     reuse: 'Использовать сохранённые результаты',
     next: 'Продолжить курс',
     privacy: 'О тестах и конфиденциальности',
   },
   es: {
-    eyebrow: 'OPORA · TU PUNTO DE PARTIDA',
-    title: 'Tu punto de partida',
-    lead: 'Un breve chequeo ahora permite comparar tus respuestas después de 14 lecciones.',
+    eyebrow: 'OPORA · EVALUACIÓN GRATUITA INICIAL',
+    title: 'Conoce tu estado antes del curso',
+    lead: 'Te ofrecemos 3 pruebas breves y gratuitas: solo unos minutos para saber cómo te sientes antes de la primera lección.',
     beforeTag: 'ANTES DE LA LECCIÓN 1', beforeTitle: 'Punto de partida', beforeDetail: 'Registrar mi estado actual',
     afterTag: 'DESPUÉS DE 14 LECCIONES', afterTitle: 'Mi evolución', afterDetail: 'Comparar las mismas escalas',
-    context: 'Para reflexionar: no es un diagnóstico ni demuestra un efecto causado por el curso.',
-    listTitle: 'Tus evaluaciones',
-    listIntro: 'Weekly Pulse: obligatorio · 8 preguntas. Los demás son opcionales.',
+    context: 'Solo para reflexionar: no es un diagnóstico ni demuestra un efecto causado por el curso.',
+    listTitle: 'Tus 3 pruebas gratuitas',
+    listIntro: 'Las 3 están seleccionadas. Completa las pendientes por orden; reutilizamos los resultados recientes.',
+    freeBadge: 'GRATIS', testsBadge: '3 PRUEBAS', durationBadge: 'MIN',
     alreadySaved: 'Weekly Pulse guardado — no hace falta repetirlo.',
     required: 'Obligatorio · 8 preguntas', anxiety: 'Opcional · 7 preguntas', resources: 'Opcional · 6 preguntas',
     optional: 'Opcional', saved: 'Resultado guardado', repeat: 'Se necesita un resultado más reciente',
     duration: 'min', preparing: 'Preparando…',
-    start: 'Empezar mi evaluación inicial', continueTests: 'Continuar las evaluaciones',
+    start: 'Empezar mis 3 pruebas gratis', continueTests: 'Continuar las evaluaciones',
     reuse: 'Usar mis resultados y continuar',
     next: 'Continuar con mi curso',
     privacy: 'Sobre las pruebas y la privacidad',
@@ -398,11 +401,17 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       preferred = intent.testKeys.filter(key=>available.has(key))
     }
     const starter=programme?.id==='stress'
-      ? ['hh-weekly-pulse'].filter(key=>ranked.some(item=>item.key===key))
+      ? getCourseProgram('stress').starterKeys.filter(key=>ranked.some(item=>item.key===key))
       : ranked.slice(0,5).map(item=>item.key)
-    // Weekly Pulse is the only compulsory existing questionnaire.
-    // The short skill finder follows; GAD-7/Resource remain opt-in.
-    setChosenTests(preset ? [...preset.testKeys] : withAntistressRequiredBaseline(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter,programme?.id))
+    // OPORA begins with all three short, free check-ins preselected. This is
+    // only a client-side proposal until the learner explicitly continues.
+    // Retain any previously chosen extras without changing a server-owned plan.
+    const preferredKeys=confirmedKeys.length ? confirmedKeys : preferred
+    const initial=programme?.id==='stress'
+      ? confirmedKeys.length>=2 ? [...confirmedKeys]
+        : [...new Set([...starter,...preferredKeys])].slice(0,12)
+      : preferredKeys.length ? preferredKeys : starter
+    setChosenTests(preset ? [...preset.testKeys] : withAntistressRequiredBaseline(initial,programme?.id))
   },[stage,testsTouched,confirmedKeys,ranked,preset,programme?.id])
   function toggleTest(key) {
     if (preset) return
@@ -453,8 +462,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
 
-  // The short course CTA owns the starter battery: one mandatory HH Weekly
-  // Pulse, two genuinely optional questionnaires. One button performs the
+  // The short course CTA proposes all 3 starter check-ins (Weekly Pulse is
+  // mandatory; GAD-7/Resource Pulse can be unchecked). One button performs the
   // existing plan-save + course confirmation and opens the first *missing*
   // owner-scoped run. Never use a query parameter as proof of completion.
   async function startCompactTests() {
@@ -579,11 +588,25 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const item=optionByKey.get(key)
       return Boolean(item&&isFreshlyCompleted(item))
     })
+    const starterDuration=ranked.filter(item=>defaultKeys.has(item.key))
+      .reduce((total,item)=>total+(item.durationMinutes||2),0)
+    const reusedCount=chosenTests.filter(key=>{
+      const item=optionByKey.get(key)
+      return item&&isFreshlyCompleted(item)
+    }).length
+    const actionLabel=allSelectedReady ? (confirmed?c.next:c.reuse)
+      : reusedCount>0 ? c.reuse : c.start
     return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-course-tests data-antistress-compact-picker data-course-baseline-one-screen>
       <header className={styles.baselineHero} data-course-baseline-explanation>
+        <span className={styles.baselineDecoration} aria-hidden="true"><Flower2 size={78} strokeWidth={1.05}/></span>
         <p className={styles.compactEyebrow}>{c.eyebrow}</p>
         <h2>{c.title}</h2>
         <p className={styles.compactLead}>{c.lead}</p>
+        <div className={styles.baselineHighlights}>
+          <span><Gift size={15} aria-hidden="true"/>{c.freeBadge}</span>
+          <span><ListChecks size={15} aria-hidden="true"/>{c.testsBadge}</span>
+          <span><Clock3 size={15} aria-hidden="true"/>{'~'+starterDuration+' '+c.durationBadge}</span>
+        </div>
         <div className={styles.baselineTimeline}>
           <span>{c.beforeTag}</span>
           <ArrowRight className={styles.baselineArrow} size={14} aria-hidden="true"/>
@@ -592,11 +615,9 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         <p className={styles.baselineContext}>{c.context}</p>
       </header>
       <div className={styles.baselineListIntro}>
+        <h3>{c.listTitle}</h3>
         <p>{c.listIntro}</p>
       </div>
-      {baselineSaved&&<p className={styles.baselineSaved} data-course-baseline-reused role="status">
-        <Check size={17} aria-hidden="true"/>{c.alreadySaved}
-      </p>}
       <div className={styles.shortTestList} data-course-antistress-pretests aria-label={t.stressTestsTitle}>
         {visible.map(item=>{
           const required=item.key===ANTISTRESS_REQUIRED_BASELINE_KEY
@@ -604,29 +625,34 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           const outdated=Boolean(item.completed&&!completed)
           const testLabel=required?c.required:item.key==='gad-7'?c.anxiety:
             item.key==='hh-resource-pulse'?c.resources:c.optional
+          const TestIcon=required?Heart:item.key==='gad-7'?Brain:Sprout
           return <label key={item.key} className={styles.shortTestRow}
             data-checked={chosenTests.includes(item.key)}
             data-completed={completed?'true':'false'}
             data-course-required-baseline={required?'true':undefined}>
-            <input type="checkbox" checked={chosenTests.includes(item.key)}
-              disabled={busy||localBusy||required||(!chosenTests.includes(item.key)&&chosenTests.length>=12)}
-              onChange={()=>toggleTest(item.key)}/>
+            <span className={styles.shortTestIcon} aria-hidden="true"><TestIcon size={22} strokeWidth={1.8}/></span>
             <span className={styles.shortTestBody}>
               <strong>{item.title}</strong>
               <small>{testLabel}{' · '}
-                {outdated?c.repeat:completed?c.saved:('~'+(item.durationMinutes||2)+' '+c.duration)}
+                {outdated?c.repeat:('~'+(item.durationMinutes||2)+' '+c.duration)}
               </small>
+              {required&&baselineSaved&&<span className={styles.baselineSaved} data-course-baseline-reused role="status">
+                <Check size={13} aria-hidden="true"/>{c.alreadySaved}
+              </span>}
+              {!required&&completed&&<span className={styles.shortTestSaved}>
+                <Check size={12} aria-hidden="true"/>{c.saved}
+              </span>}
             </span>
-            {completed&&<Check size={18} className={styles.shortTestCheck} aria-label={c.saved}/>}
+            <input type="checkbox" checked={chosenTests.includes(item.key)}
+              disabled={busy||localBusy||required||(!chosenTests.includes(item.key)&&chosenTests.length>=12)}
+              onChange={()=>toggleTest(item.key)} aria-label={item.title}/>
           </label>
         })}
       </div>
       <button type="button" className={'hh-primary '+styles.fastTestButton}
         disabled={busy||localBusy||openingTest||!chosenTests.length} onClick={startCompactTests}
         data-antistress-start-first-test>
-        {localBusy||openingTest?c.preparing:
-          allSelectedReady?(confirmed?c.next:c.reuse):
-            confirmed?c.continueTests:c.start}
+        {localBusy||openingTest?c.preparing:actionLabel}
         <ArrowRight size={19} aria-hidden="true"/>
       </button>
       <div className={styles.shortTestExtras}>

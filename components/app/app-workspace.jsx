@@ -9,6 +9,7 @@ import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
+import PracticeRequestConversation from './practice-request-conversation'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
@@ -301,7 +302,12 @@ export default function AppWorkspace({ locale, path = [] }) {
           })
           await refreshCourseOwner()
           if (!isCurrent()) return
-          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=guided&course=1' + courseQuery)
+          // The approved OPORA starter battery stays in quick mode between
+          // all three check-ins. Other course batteries keep guided mode.
+          const oporaStarter=['hh-weekly-pulse','gad-7','hh-resource-pulse']
+          const isOporaStarter=oporaStarter.every(key=>courseState.course?.testKeys?.includes(key))
+          const nextMode=isOporaStarter&&oporaStarter.includes(nextKey)?'quick':'guided'
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=' + nextMode + '&course=1' + courseQuery)
         } else {
           await refreshCourseOwner()
           if (!isCurrent()) return
@@ -3563,6 +3569,10 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
               {dateLabel(request.createdAt, locale)} · {request.contact}
             </p>
             {request.message && <p>{request.message}</p>}
+            <PracticeRequestConversation key={request.id} requestId={request.id}
+              accountId={data.account.id} locale={locale}
+              initialMessage={typeof request.message==='string'?request.message:''}
+              createdAt={request.createdAt}/>
             {request.sharedExcerpt && (
               <>
                 <p>{c.sharingNote}</p>

@@ -99,6 +99,7 @@ const copy = {
     blank: "You can leave this unanswered.",
     notes: "My reflection",
     placeholder: "Write here (optional)…",
+    sunReflectionPlaceholder: "What did you notice? (optional)…",
     value: "Your choice",
     audio: "Original English audio",
     unavailable: "This recording is not available. You can continue using the written teaching.",
@@ -218,6 +219,7 @@ const copy = {
     blank: "Можно оставить без ответа.",
     notes: "Моё наблюдение",
     placeholder: "Напишите здесь (необязательно)…",
+    sunReflectionPlaceholder: "Что вы почувствовали? (необязательно)…",
     value: "Ваш выбор",
     audio: "Оригинальное видео на английском",
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
@@ -309,6 +311,18 @@ function meditationReviewText(value: string) {
   return legacy ? legacy[1] : value;
 }
 
+// Older encrypted progress may still contain one of the previous radio options.
+// Show its original meaning without turning it into a claimed Sun sensation.
+function flightPracticeResponse(value: string, locale: EnergyworkLocale) {
+  if (value === "tried") return locale === "ru"
+    ? "Я попробовал(а) в комфортном варианте"
+    : "I tried it in a way that suited me";
+  if (value === "skipped") return locale === "ru"
+    ? "Сегодня я решил(а) пропустить"
+    : "I chose to skip it today";
+  return value;
+}
+
 const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
   en: {
     beginner: "Welcome! No Reiki experience is needed.",
@@ -333,7 +347,7 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
       const answer = answers[slide.id];
       if (!answer?.trim()) return [];
       const choice = slide.question?.options?.find((option) => option.id === answer);
-      return [slide.title[locale], slide.question?.prompt[locale] || "", choice?.label[locale] ?? answer, ""];
+      return [slide.title[locale], slide.question?.prompt[locale] || "", choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""];
     }),
   ];
   return lines.filter((value) => value !== undefined).join("\n").trim();
@@ -866,11 +880,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
                   {slide.question.type === "text" ? (
-                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (answers[slide.id] ?? "")}
+                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (slide.id === "flight-03" ? flightPracticeResponse(answers[slide.id] ?? "", locale) : (answers[slide.id] ?? ""))}
                       onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
                       maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
-                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isTantraStudyQuestion ? t.tantraAnswerPlaceholder : t.placeholder}
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isTantraStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
                       required={isTantraStudyQuestion}
                       aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : undefined}
                       autoComplete="off" />
