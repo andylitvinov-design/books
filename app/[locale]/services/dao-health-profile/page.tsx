@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     openGraph: { type: "website", siteName: "Holistic House", title: t.title, description: t.description,
       url: "/" + locale + "/services/dao-health-profile", images: [{ url: "/academy/reiki-yggdrasil/source/eastern-tradition.png", alt: "Wu Xing resource profile" }] },
+    twitter: { card: "summary_large_image", title: t.title, description: t.description, images: ["/academy/reiki-yggdrasil/source/eastern-tradition.png"] },
   };
 }
 
