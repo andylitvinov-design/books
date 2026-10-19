@@ -102,8 +102,8 @@ test("Featured programme buttons open their own landings; only real AI lessons s
     assert.ok(block.includes('href: "/" + locale + "' + landing + '"'), id + " must open its programme landing");
     assert.doesNotMatch(block, /courseHref:/, id + " must not masquerade as an AI lesson");
   }
-  assert.match(cards, /href=\\{item\\.courseHref \\?\\? item\\.href\\}/);
-  assert.match(cards, /item\\.courseHref \\? t\\.start : t\\.open/);
+  assert.ok(cards.includes("href={item.courseHref ?? item.href}"));
+  assert.ok(cards.includes("item.courseHref ? t.start : t.open"));
   for (const id of ["academy-free-opora", "academy-featured-principles-energywork", "academy-free-tantra-introduction", "academy-free-yggdrasil-introduction"]) {
     const start = hub.indexOf('id: "' + id + '"');
     const end = hub.indexOf("actionLabel:", start);
