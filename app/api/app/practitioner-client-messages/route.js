@@ -32,8 +32,13 @@ async function handler(request){
       data=await store.list(actor,params.get('requestId'),params.get('before'))
     }else{
       const body=await readBody(request,2048)
-      onlyKeys(body,['requestId','operationId','text','visibility'])
-      data=await store.send(actor,body)
+      if(body?.action==='mark_seen'){
+        onlyKeys(body,['action','requestId','messageId'])
+        data=await store.markSeen(actor,body)
+      }else{
+        onlyKeys(body,['requestId','operationId','text','visibility'])
+        data=await store.send(actor,body)
+      }
     }
     // A saved reply remains saved even if its optional Web Push delivery fails.
     // Never return an internal notification flag to the browser.
