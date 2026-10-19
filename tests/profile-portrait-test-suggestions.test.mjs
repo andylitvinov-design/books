@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { recommendUnmeasuredPortraitTests } from '../lib/profile/portrait-test-suggestions.js'
+import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
+import { PORTRAIT_AXIS_ORDER } from '../lib/assessments/portrait-sectors.js'
 
 const entry = (key, axes, options = {}) => ({
   key, title:key, selectable:true, startable:true, rightsStatus:'cleared',
@@ -50,6 +52,18 @@ test('respects completed keys, missing-axis bounds, limit and empty-state safety
   assert.deepEqual(recommendUnmeasuredPortraitTests({entries,missingAxes:['invented']}),[])
   assert.deepEqual(recommendUnmeasuredPortraitTests({entries,missingAxes:['focus'],results:[{definitionKey:'one'}]}),[])
   assert.equal(recommendUnmeasuredPortraitTests({entries,missingAxes:['mood','focus'],limit:1}).length,1)
+})
+
+test('the real cleared free catalog provides at least two quick profile suggestions', () => {
+  const options=buildExplorerEntries({locale:'en',audience:'account'})
+  const ranked=recommendUnmeasuredPortraitTests({
+    entries:options, results:[], missingAxes:PORTRAIT_AXIS_ORDER,
+  })
+  assert.ok(ranked.length >= 2, 'Expected at least two free audited questionnaires')
+  for (const item of ranked.slice(0,2)) {
+    assert.ok(options.find(entry=>entry.key===item.key)?.free)
+    assert.ok(item.covers.length > 0)
+  }
 })
 
 test('development tab places a distinct profile module before course recommendations', () => {
