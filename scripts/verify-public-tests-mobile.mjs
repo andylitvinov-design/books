@@ -73,8 +73,8 @@ try {
         check(snapshot.description.length >= 80 && snapshot.description.length <= 170,
           "Description missing or too long: " + snapshot.description.length);
         check(snapshot.canonical === origin + path, "Canonical not self-referencing");
-        check(!/\\bnoindex\\b/i.test(snapshot.robots) &&
-          !/\\bnoindex\\b/i.test(response?.headers()["x-robots-tag"] || ""),
+        check(!/\bnoindex\b/i.test(snapshot.robots) &&
+          !/\bnoindex\b/i.test(response?.headers()["x-robots-tag"] || ""),
           "Public landing unexpectedly noindex");
         for (const language of [...locales, "x-default"]) {
           const expected = origin + "/" + (language === "x-default" ? "en" : language) + "/tests";
