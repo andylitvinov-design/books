@@ -155,8 +155,11 @@ test('mockup-aligned first-page composition uses two measured gauges, split clie
     assert.match(pdf,/\/RemedyPhoto1 Do Q/,'original remedy source photo remains')
     assert.match(pdf,/\/Signature Do Q/,'signed white closing remains')
     assert.doesNotMatch(pdf,/\(TARGET\)/,'a future goal is never a third score')
-    if(locale==='en')assert.match(pdf,/\(A small step forward\)/,
-      'editorial quote is only a neutral caption, not a treatment claim')
+    if(locale==='en'){
+      assert.match(pdf,/\(Your ratings\)/,
+        'the sidebar only describes the two actual recorded ratings')
+      assert.match(pdf,/\(before and after\.\)/)
+    }
   }
   const single=buildPrescriptionPdf({
     patientName:'SYNTHETIC NON-MEASURED CLIENT',
@@ -165,6 +168,6 @@ test('mockup-aligned first-page composition uses two measured gauges, split clie
     analysis:'Only a future target: 7/10',
     items:[],
   },'en',origin).toString('latin1')
-  assert.doesNotMatch(single,/A small step forward/,
+  assert.doesNotMatch(single,/\(Your ratings\)/,
     'no measurement graphic or caption when the client provided no paired observations')
 })
