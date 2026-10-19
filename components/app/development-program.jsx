@@ -162,7 +162,7 @@ function TargetSlider({ title, value, onChange, compact = false }) {
   </label>
 }
 
-export default function DevelopmentProgram({ results = [], accountId, locale = 'en' }) {
+export default function DevelopmentProgram({ results = [], accountId, locale = 'en', hideBottomNotes = false }) {
   const lang = locale === 'ru' ? 'ru' : 'en'
   const t = words[lang]
   const [expanded, setExpanded] = useState(true)
@@ -454,12 +454,14 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           </div> : <p className={styles.empty}>{t.missingCourse}</p>}
           <Link className={styles.catalogLink} href={'/' + lang + '/academy'} prefetch={false}>{t.catalog}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
+      {!hideBottomNotes && <>
       <details className={styles.method}>
         <summary><CircleHelp size={16} aria-hidden="true" />{t.methodology}<ChevronDown size={15} aria-hidden="true" /></summary>
         <p>{t.methodText}</p>
       </details>
       <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.private}</p>
       <p className={styles.privacy}>{t.scoreNote}</p>
+      </>}
         </>}
       </div>}
     </div>}
