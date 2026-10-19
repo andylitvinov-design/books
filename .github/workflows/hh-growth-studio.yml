@@ -36,6 +36,7 @@ jobs:
         run: |
           node --check lib/growth-studio/model.mjs
           node --check lib/growth-studio/bulk.mjs
+          node --check lib/growth-studio/telegram.mjs
           node --check lib/growth-studio/store.js
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
