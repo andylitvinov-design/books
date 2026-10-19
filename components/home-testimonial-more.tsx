@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./personal-testimonials.module.css";
@@ -67,9 +68,9 @@ export function HomeTestimonialMore({
         </div>
       ) : (
         <div className={styles.moreVideoContent}>
-          <a href={"/" + locale + "/about#testimonials-title"}>
+          <Link prefetch={false} href={"/" + locale + "/about#testimonials-title"}>
             {locale === "ru" ? "Отзывы и видео об Андрее" : locale === "es" ? "Testimonios y vídeos de Andrey" : "More testimonials about Andrey"}
-          </a>
+          </Link>
         </div>
       )}
     </details>
