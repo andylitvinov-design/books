@@ -78,8 +78,9 @@ export function ServicesIntroMedia({ locale }: { locale: PublicLocale }) {
 
 export function ServicesMethodVideos({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  // Keep the two method posters visible; the third-party player still loads only after Play.
   return (
-    <details className={styles.methods} id="method-videos" data-services-methods lang={locale}>
+    <details className={styles.methods} id="method-videos" data-services-methods lang={locale} open>
       <summary>
         <span><strong>{t.methodsTitle}</strong><small>{t.methodsLead}</small></span>
         <ChevronDown size={22} aria-hidden="true" />

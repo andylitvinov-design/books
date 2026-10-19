@@ -72,7 +72,7 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
   assert.match(mobile, /compactNavigationIcons/)
   assert.match(icons, /house: LayoutDashboard/)
   assert.match(icons, /tests: ClipboardList/)
-  assert.match(icons, /events: CalendarDays/)
+  assert.match(icons, /business: BriefcaseBusiness/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
   assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)

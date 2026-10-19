@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Quote } from "lucide-react";
 
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { HomeTestimonialMore } from "@/components/home-testimonial-more";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./personal-testimonials.module.css";
 
@@ -182,20 +183,24 @@ export function PersonalTestimonials({
       </div>
 
       {isHome && (
-        <details className={styles.moreVideoDisclosure} data-home-testimonial-disclosure="true">
-          <summary>
-            <span>{current.moreToggle}</span>
-            <span className={styles.moreCount}>
-              {remainingHomeVideos.length + otherLanguageVideos.length} {locale === "ru" ? "видео" : locale === "es" ? "vídeos" : "videos"}
-            </span>
-          </summary>
-          <div className={styles.moreVideoContent}>
-            <h4 className={styles.moreSectionTitle}>{current.sameLanguageMore}</h4>
-            <div className={styles.videoGrid}>{renderVideoCards(remainingHomeVideos)}</div>
-            <h4 className={styles.moreSectionTitle}>{current.otherLanguageMore}</h4>
-            <div className={styles.videoGrid}>{renderVideoCards(otherLanguageVideos, true)}</div>
-          </div>
-        </details>
+        <HomeTestimonialMore
+          locale={locale}
+          title={current.moreToggle}
+          sameLanguageTitle={current.sameLanguageMore}
+          otherLanguageTitle={current.otherLanguageMore}
+          remainingVideos={remainingHomeVideos.map((item) => ({
+            ...item,
+            fallbackPoster: locallyArchivedVideoPosterIds.has(item.id)
+              ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
+              : undefined,
+          }))}
+          otherLanguageVideos={otherLanguageVideos.map((item) => ({
+            ...item,
+            fallbackPoster: locallyArchivedVideoPosterIds.has(item.id)
+              ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
+              : undefined,
+          }))}
+        />
       )}
 
       {variant === "services" && (
