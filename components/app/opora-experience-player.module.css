@@ -421,6 +421,11 @@
 .frame.weekOne{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
 .frame.weekTwo{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .frame.nextStep{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.frame.habit{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.habitBenefit{margin:0;padding:14px;border-radius:15px;border:1px solid #b0ded9;color:#235a66;
+  background:rgba(222,249,243,.9);font-size:clamp(15px,3.8vw,17px);line-height:1.48;font-weight:600}
+.habitSetup{min-width:0;display:grid;gap:8px}
+.frame.habit .panel{gap:clamp(9px,1.3vh,13px)}
 .weekList{display:grid;gap:6px;list-style:none;margin:0;padding:0}
 .weekList li{display:grid;grid-template-columns:65px minmax(0,1fr);align-items:center;gap:9px;padding:7px 11px;border:1px solid #b9dddc;border-radius:12px;background:#ffffffc4}
 .weekDay{color:#247b83;font-size:13px;font-weight:850;white-space:nowrap}

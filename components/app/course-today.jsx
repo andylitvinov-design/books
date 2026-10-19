@@ -10,6 +10,7 @@ import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
 import OporaV6SlidePlayer from './opora-v6-slide-player'
 import OporaExperiencePlayer from './opora-experience-player'
+import CourseHomeScreenHabit from '@/components/pwa/course-home-screen-habit'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '@/lib/inner-growth/anti-stress-skills-v7'
 import {COURSE_ANTISTRESS_SKILLS_V6,OPORA54_SLIDE_MODEL} from '@/lib/inner-growth/anti-stress-skills-v6'
 import CourseFocusEntry from './course-focus-entry'
@@ -629,10 +630,12 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       ?<OporaExperiencePlayer key={cycle.id+':'+cycle.day} locale={locale}
         data={data} busy={busy} onClose={()=>setQuestOpen(false)}
         onFinish={()=>{setQuestOpen(false);setView('path')}}
+        habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
         onSession={body=>submit('session',body,undefined,'inline')}/>
       :<OporaV6SlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
         data={data} busy={busy} onClose={()=>setQuestOpen(false)}
         onFinish={()=>{setQuestOpen(false);setView('path')}}
+        habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
         onSession={body=>submit('session',body,undefined,'inline')}/>)
     :<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
     data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}

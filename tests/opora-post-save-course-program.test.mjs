@@ -25,13 +25,13 @@ async function press(h,label){
 const words={
   en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
     audio:'Relax with waves',start:"See what's next",week1:'Week 1: Find your supports',week2:'Week 2: Make it your own',
-    nextTitle:'Your next small step',map:'My course map',finished:'Your 14 days are complete'},
+    nextTitle:'Your next small step',map:'My course map',finished:'Your 14 days are complete',habit:'Keep OPORA close',configure:'Set it up',later:'Not now'},
   ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
     audio:'Послушать волны',start:'Посмотреть, что дальше',week1:'Первая неделя: найти опору',
     week2:'Вторая неделя: свой опыт',nextTitle:'Следующий маленький шаг',
-    map:'К карте курса',finished:'Ваши 14 дней позади'},
+    map:'К карте курса',finished:'Ваши 14 дней позади',habit:'ОПОРА всегда под рукой',configure:'Настроить',later:'Не сейчас'},
 }
-test('confirmed Day 1 save leads to three programme slides with real 14-day titles and one map exit',async()=>{
+test('confirmed Day 1 save leads to programme, commitment, optional phone setup, then tomorrow',async()=>{
   for(const locale of ['en','ru']){
     const f=fixture(locale,1),w=words[locale]
     for(let i=0;i<9;i++)await press(f.h,w.next)
@@ -54,6 +54,14 @@ test('confirmed Day 1 save leads to three programme slides with real 14-day titl
     assert.match(textOf(f.h.tree),new RegExp(w.nextTitle))
     assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(2,locale).practice))
     await press(f.h,"I'm committed")
+    assert.match(textOf(f.h.tree),new RegExp(w.habit))
+    assert.ok(findButton(f.h.tree,w.configure),'Setup must require explicit opt in')
+    assert.ok(findButton(f.h.tree,w.later),'Not now must always remain available')
+    assert.equal(f.finishCount,0)
+    await press(f.h,w.configure)
+    assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-setup']),
+      'Settings become visible only after opting in')
+    await press(f.h,w.next)
     assert.match(textOf(f.h.tree),locale==='ru'?/Увидимся завтра/:/See you tomorrow/)
     assert.deepEqual(nodes(f.h.tree).filter(node=>node.type==='a').map(node=>node.props.href),[
       '/'+locale+'/tests','/'+locale+'/academy/principles-of-energywork/learn',
@@ -89,4 +97,23 @@ test('Days 2-13 show the real next lesson after saving; Day 14 shows completion,
     assert.equal(f.saved.length,1)
     f.h.unmount()
   }
+})
+
+test('declining the first lesson phone reminder keeps the lesson saved and still shows tomorrow', async () => {
+  const f=fixture('en',1),w=words.en
+  for(let i=0;i<9;i++)await press(f.h,w.next)
+  await press(f.h,'I managed a little')
+  await press(f.h,w.save)
+  await press(f.h,w.audio)
+  await press(f.h,w.start)
+  await press(f.h,w.next)
+  await press(f.h,w.next)
+  await press(f.h,"I'm committed")
+  assert.match(textOf(f.h.tree),/Keep OPORA close/)
+  await press(f.h,w.later)
+  assert.match(textOf(f.h.tree),/See you tomorrow!/)
+  assert.equal(f.saved.length,1)
+  await press(f.h,w.map)
+  assert.equal(f.finishCount,1)
+  f.h.unmount()
 })
