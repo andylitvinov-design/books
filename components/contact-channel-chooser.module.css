@@ -48,3 +48,35 @@
 /* The Holistic House mobile tab bar overlays the visual viewport. Aligning the
    opened panel with this safety margin keeps both messenger buttons tappable. */
 .panel { scroll-margin-block: 100px 118px; }
+
+
+.enquiryForm { display:grid; gap:9px; }
+.enquiryForm label { color:#294763; font:750 12px/1.3 Arial,Helvetica,sans-serif; }
+.enquiryForm textarea {
+  box-sizing:border-box; display:block; resize:vertical; width:100%; min-height:91px;
+  border:1px solid #bacbd9; border-radius:10px; background:#fff;
+  color:#213c55; padding:12px; font:400 14px/1.5 Arial,Helvetica,sans-serif;
+}
+.enquiryForm textarea:focus-visible, .submit:focus-visible, .again:focus-visible {
+  outline:3px solid #80abc7; outline-offset:2px;
+}
+.privateNote { color:#6a7885; font:11px/1.5 Arial,Helvetica,sans-serif; }
+.submit {
+  cursor:pointer; width:100%; min-height:49px; display:flex; gap:9px;
+  align-items:center; justify-content:center; border:0; border-radius:11px;
+  color:#fff; background:#147b79; padding:11px 14px;
+  font:750 14px/1.3 Arial,Helvetica,sans-serif;
+}
+.submit:not(:disabled):hover { background:#106965; }
+.submit:disabled { opacity:.55; cursor:not-allowed; }
+.error { margin:0; color:#9e3140; font:650 12px/1.45 Arial,Helvetica,sans-serif; }
+.saved {
+  margin:0 0 7px; padding:9px 11px; border-radius:9px; background:#e3f1e9;
+  color:#23624c; font:750 12px/1.4 Arial,Helvetica,sans-serif;
+}
+.next { margin:0 0 12px; color:#3c596e; font:500 12px/1.45 Arial,Helvetica,sans-serif; }
+.again {
+  margin-top:8px; min-height:35px; padding:5px 3px; color:#346b8a;
+  background:transparent; border:0; cursor:pointer;
+  text-decoration:underline; font:650 11px/1.4 Arial,Helvetica,sans-serif;
+}
