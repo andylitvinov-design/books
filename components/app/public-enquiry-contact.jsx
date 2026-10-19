@@ -39,7 +39,7 @@ export default function PublicEnquiryContact({request,locale='en',busy=false,onS
       </label>
       <button type="submit" disabled={busy||!address.trim()}>{t.save}</button>
     </form>
-    <style jsx>{String.raw`
+    <style jsx>{`
       .hh-public-lead-contact{margin-top:11px;padding:12px;border:1px solid #bbd3d4;border-radius:12px;background:#f3f9f8;color:#24464e;font-size:12px;line-height:1.5}
       .hh-public-lead-contact p{margin:0 0 6px}
       .hh-public-lead-contact form{display:flex;flex-wrap:wrap;align-items:end;gap:8px}
