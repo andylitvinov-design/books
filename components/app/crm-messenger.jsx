@@ -284,25 +284,89 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
       </div>
       <div className={styles.conversation}>
         {!selected?<p className={styles.empty}>{t.select}</p>:<>
-          <div className={styles.chatHeader}><strong>{selected.name}</strong>
-            <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
+          <div className={styles.chatHeader}>
+            <div className={styles.chatIdentity}>
+              <strong>{selected.name}</strong>
+              <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
+            </div>
             {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
               onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
           </div>
-          <div className={styles.messages} role="log" aria-live="polite">
-            {(data?.messages||[]).map(m=><div key={m.id} className={m.direction==='out'?styles.outbound:styles.inbound}>
-              <p>{m.text}</p><small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))} · {statusLabel(m.status,lang)}</small>
+          <div className={styles.contactActions}>
+            <label>{w.stage}
+              <select value={selected.lifecycle} disabled={busy||threadLoading}
+                onChange={event=>changeStage(event.target.value)}>
+                <option value="lead">{w.lead}</option>
+                <option value="client">{w.client}</option>
+                <option value="archived">{w.archived}</option>
+              </select>
+            </label>
+            <span className={styles.smallHint}>{selected.suppressed?
+              (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
+              w.overview}</span>
+          </div>
+          <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
+            {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
+            {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
+              className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
+              {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
+              <p>{m.text}</p>
+              <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
+                {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
             </div>)}
+          </div>
+          <div className={styles.workflowActions}>
+            <details className={styles.actionDetails}>
+              <summary>{w.followups} · {(data?.followups||[]).length}</summary>
+              <div className={styles.actionBody}>
+                {(data?.followups||[]).length===0&&<p className={styles.smallHint}>{w.noFollowups}</p>}
+                {(data?.followups||[]).map(item=><div className={styles.followupRow} key={item.id}>
+                  <span>{({
+                    reply:w.reply,call:w.call,booking:w.booking,check_in:w.checkIn,
+                  })[item.kind]||item.kind} · {item.dueOn}</span>
+                  <button type="button" disabled={busy} onClick={()=>completeFollowup(item)}>{w.complete}</button>
+                </div>)}
+                <div className={styles.taskForm}>
+                  <label>{w.followups}
+                    <select value={followupKind} disabled={busy}
+                      onChange={event=>{setFollowupKind(event.target.value);pendingFollowup.current=null}}>
+                      <option value="reply">{w.reply}</option>
+                      <option value="call">{w.call}</option>
+                      <option value="booking">{w.booking}</option>
+                      <option value="check_in">{w.checkIn}</option>
+                    </select>
+                  </label>
+                  <label>{w.due}
+                    <input type="date" value={dueOn} disabled={busy}
+                      onChange={event=>{setDueOn(event.target.value);pendingFollowup.current=null}}/>
+                  </label>
+                  <button type="button" disabled={busy||!dueOn} onClick={createFollowup}>{w.schedule}</button>
+                </div>
+              </div>
+            </details>
+            <details className={styles.actionDetails}>
+              <summary>{w.note}</summary>
+              <div className={styles.actionBody}>
+                <p className={styles.smallHint}>{w.noteHint}</p>
+                <textarea value={noteText} maxLength={800} rows={2} disabled={busy}
+                  placeholder={w.notePlaceholder} aria-label={w.note}
+                  onChange={event=>{
+                    if(pendingNote.current&&pendingNote.current.text!==event.target.value.trim())pendingNote.current=null
+                    setNoteText(event.target.value)
+                  }}/>
+                <button type="button" disabled={busy||!noteText.trim()} onClick={saveNote}>{w.saveNote}</button>
+              </div>
+            </details>
           </div>
           <div className={styles.compose}>
             <label htmlFor="crm-messenger-compose">{t.reply}</label>
-            <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy}
+            <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy||threadLoading}
               maxLength={1200} rows={3} onChange={e=>{
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
               }} placeholder={t.manual}/>
-            <button disabled={busy||!selected.reply.ok||!text.trim()} type="button" onClick={send}>{t.send}</button>
+            <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()} type="button" onClick={send}>{t.send}</button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
           </div>
         </>}
