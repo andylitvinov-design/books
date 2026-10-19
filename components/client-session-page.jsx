@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
+import { FileDown,Headphones,LockKeyhole,PlayCircle,Play,AudioLines,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { DaoStageDisclosure } from './dao-resource-stage'
 import { PublicSiteHeader } from './public-site-header'
@@ -11,8 +11,10 @@ import { SessionExitSaveGuard } from './session-exit-save-guard'
 import { SessionYouTubePlayer } from './session-youtube-player'
 import { SessionPrivateVideoPoster } from './session-private-video-poster'
 import styles from './client-session.module.css'
+import voiceStyles from './client-session-voice-card.module.css'
+import { StaticPortrait } from './static-portrait'
 
-function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
+function PrivatePlayer({item,session,mode,selector,locale,savedId,showPractitionerPortrait=false}) {
   const [source,setSource]=useState('')
   const [expiry,setExpiry]=useState(0)
   const [error,setError]=useState('')
@@ -20,6 +22,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
   const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education',library=item.role==='library'
   const isMov=isVideo&&item.mime==='video/quicktime'
+  const portraitEnabled=showPractitionerPortrait&&!isVideo
   const route=mode==='owner'?'/api/admin/clients/'+selector+'/sessions/'+session.id+'/media/'+item.assetId:
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/'+item.assetId:
@@ -62,28 +65,49 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
       (ru?'Этот MOV/HEVC может не поддерживаться вашим браузером. Попробуйте открыть оригинальный файл.':'This MOV/HEVC may not play in your browser. Try opening the original file.'):
       (ru?'Откройте запись повторно':'Please reopen the recording'))}
   }
-  return <article className={styles.clientMediaCard}>
-    <div className={styles.mediaHeading}>{isVideo?<Video size={20}/>:<Headphones size={20}/>}
-      <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
-        <small>{library?(ru?'Дополнительное видео':'Supplementary video'):educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
-          isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
-    </div>
-    {!source?(isVideo?
-      <div className={styles.privateVideoPreview}>
-        <SessionPrivateVideoPoster src={route}/>
-        <button className={styles.privateVideoPreviewButton} type="button"
-          disabled={loading} onClick={()=>load(false)}>
-          <PlayCircle size={44} aria-hidden="true"/>
-          <span>{loading?(ru?'Подключаем видео…':'Loading video…'):(ru?'Смотреть видео':'Play video')}</span>
-        </button>
-      </div>:
-      <button className={styles.playButton} type="button" disabled={loading} onClick={()=>load(false)}>
-        <PlayCircle size={26}/>{loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')}
-      </button>)
-      :isVideo?<video ref={player} className={styles.video} controls playsInline preload="metadata" src={source}
-        onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>:
-        <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
-          onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>}
+  // Keep the original secured media transport and controls; the portrait is only
+  // an optional visual layout for the personal voice card after the report cover.
+  const heading=<div className={[styles.mediaHeading,portraitEnabled&&voiceStyles.voiceHeading].filter(Boolean).join(' ')}>
+    {!portraitEnabled&&(isVideo?<Video size={20}/>:<Headphones size={20}/>)}
+    <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
+      <small>{library?(ru?'Дополнительное видео':'Supplementary video'):educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
+        isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
+    {portraitEnabled&&<AudioLines className={voiceStyles.soundWaves} size={29} aria-hidden="true"/>}
+  </div>
+  const buttonLabel=loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')
+  const control=!source?(isVideo?
+    <div className={styles.privateVideoPreview}>
+      <SessionPrivateVideoPoster src={route}/>
+      <button className={styles.privateVideoPreviewButton} type="button"
+        disabled={loading} onClick={()=>load(false)}>
+        <PlayCircle size={44} aria-hidden="true"/>
+        <span>{loading?(ru?'Подключаем видео…':'Loading video…'):(ru?'Смотреть видео':'Play video')}</span>
+      </button>
+    </div>:
+    <button className={[styles.playButton,portraitEnabled&&voiceStyles.voicePlayButton].filter(Boolean).join(' ')}
+      type="button" disabled={loading} onClick={()=>load(false)}
+      aria-label={portraitEnabled?buttonLabel:undefined}>
+      {portraitEnabled?<><span className={voiceStyles.voicePlayIcon}><Play size={18} fill="currentColor" aria-hidden="true"/></span>
+        <span className={voiceStyles.buttonTextWide}>{buttonLabel}</span>
+        <span className={voiceStyles.buttonTextNarrow} aria-hidden="true">{loading?(ru?'Загрузка…':'Loading…'):(ru?'Слушать':'Play')}</span>
+      </>:<><PlayCircle size={26}/>{buttonLabel}</>}
+    </button>)
+    :isVideo?<video ref={player} className={styles.video} controls playsInline preload="metadata" src={source}
+      onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>:
+      <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
+        onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>
+  return <article className={[styles.clientMediaCard,portraitEnabled&&voiceStyles.voiceCard].filter(Boolean).join(' ')}>
+    {portraitEnabled?<>
+      <div className={voiceStyles.voiceLayout}>
+        <span className={voiceStyles.portraitFrame}>
+          <StaticPortrait src="/images/holistic-house/andy-about.png"
+            alt={ru?'Андрей Литвинов':'Andrey Litvinov'}
+            width={192} height={188} sizes="(max-width: 355px) 70px, (max-width: 580px) 86px, 124px" loading="lazy"/>
+        </span>
+        <div className={voiceStyles.voiceBody}>{heading}{!source&&control}</div>
+      </div>
+      {source&&<div className={voiceStyles.activePlayer}>{control}</div>}
+    </>:<>{heading}{control}</>}
     {item.transcript&&<details className={styles.transcript}><summary>{ru?'Текст записи':'Transcript'}</summary>
       <p lang={educational?'ru':undefined}>{item.transcript}</p></details>}
     {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button>{isMov&&<> <a href={route} download="consultation-video.mov">{ru?'Открыть оригинал MOV':'Open original MOV'}</a></>}</p>}
@@ -95,16 +119,16 @@ export function ClientSessionVoiceMessage({session,selector,locale='en',mode='gu
   const audio=(session?.media||[]).filter(item=>item.kind==='audio'&&item.role!=='hidden'&&
     (!item.role||item.role==='personal'))
   if(!audio.length)return null
-  return <section id="session-message" className={styles.clientSection+' '+styles.reportVoiceSection}
+  return <section id="session-message" className={[styles.clientSection,styles.reportVoiceSection,voiceStyles.voiceSection].join(' ')}
     aria-label={ru?'Голосовое обращение':'Voice message'}>
-    <header className={styles.sectionHeader}>
+    <header className={[styles.sectionHeader,voiceStyles.voiceSectionHeader].join(' ')}>
       <span className={styles.sectionIcon}><Headphones size={21}/></span>
       <div><span className={styles.sectionKicker}>{ru?'ГОЛОСОВОЕ ОБРАЩЕНИЕ':'VOICE MESSAGE'}</span>
-        <h2>{ru?'Аудиосообщение для вас':'An audio message for you'}</h2></div>
+        <h2 className={voiceStyles.voiceTitle}>{ru?'Аудиосообщение для вас':'An audio message for you'}</h2></div>
     </header>
-    <div className={styles.mediaList}>
+    <div className={[styles.mediaList,voiceStyles.voiceList].join(' ')}>
       {audio.map(item=><PrivatePlayer key={item.assetId} item={item}
-        session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
+        session={session} mode={mode} selector={selector} locale={locale} savedId={savedId} showPractitionerPortrait/>)}
     </div>
   </section>
 }
