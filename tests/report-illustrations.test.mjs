@@ -19,12 +19,12 @@ const sample=(locale, extra={})=>({
   ...extra,
 })
 
-test('PDF prints approved lighthouse twice plus ocean and botanical vector graphics in both languages',()=>{
+test('PDF keeps one clean lighthouse masthead plus vector sea and botanical artwork in both languages',()=>{
   for(const locale of ['ru','en']){
     const pdf=buildPrescriptionPdf(sample(locale),locale,origin).toString('latin1')
     assert.match(pdf,/^%PDF-1\.7/)
-    assert.ok((pdf.match(/\/Lighthouse Do Q/g)??[]).length>=2,
-      'cover includes brand lighthouse and a second illustrated ocean lighthouse')
+    assert.equal((pdf.match(/\/Lighthouse Do Q/g)??[]).length,1,
+      'brand masthead keeps the approved photograph without a second white-backed hero copy')
     assert.match(pdf,/0\.85 0\.91 0\.90 rg/,'soft coastal mountains replace rectangular photo fill')
     assert.match(pdf,/0\.51 0\.72 0\.72 RG/,'editorial coastal wave paths are rendered')
     assert.match(pdf,/0\.75 0\.85 0\.78 rg/,'botanical leaf vector art is rendered')
@@ -91,8 +91,10 @@ test('editorial A4 cover enlarges the identity art and keeps exactly two actual 
     'running identity includes the brand motto')
   assert.match(pdf,/A GENTLER PATH TO INNER BALANCE/,'approved editorial subtitle is printed')
   const lighthousePlacements=[...pdf.matchAll(/q (\d+(?:\.\d+)?) 0 0 [\d.]+ [\d.]+ [\d.]+ cm \/Lighthouse Do Q/g)]
-  assert.ok(lighthousePlacements.length>=2 && Number(lighthousePlacements[1][1])>=96,
-    'hero lighthouse occupies a larger integrated illustration area')
+  assert.equal(lighthousePlacements.length,1,
+    'the graphic hero is scalable vector art rather than a second raster lighthouse')
+  assert.equal(Number(lighthousePlacements[0][1]),82,
+    'approved lighthouse stays in the letterhead')
   assert.match(pdf,/\(START\)/)
   assert.match(pdf,/\(END\)/)
   assert.doesNotMatch(pdf,/\(TARGET\)/,'a future goal must not become a third reading')
