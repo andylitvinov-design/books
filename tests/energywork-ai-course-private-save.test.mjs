@@ -2,13 +2,13 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
-  ENERGYWORK_KEY, ENERGYWORK_VERSION, ENERGYWORK_LEGACY_VERSION,
+  ENERGYWORK_KEY, ENERGYWORK_VERSION, ENERGYWORK_LEGACY_VERSION, ENERGYWORK_PREVIOUS_VERSION,
   ENERGYWORK_COMMON, ENERGYWORK_BRANCH, ENERGYWORK_FINISH,
   ENERGYWORK_INITIATION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_STARTS,
   ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
   ENERGYWORK_MEDITATION_REPORT_IDS, energyworkMeditationFeedbackComplete,
   energyworkSequence, energyworkAnswerValid, energyworkInitiationReady,
-  energyworkLegacyResumeId,
+  energyworkLegacyResumeId, energyworkPreviousResumeId,
 } from '../data/academy/energywork-ai-schema.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -19,18 +19,19 @@ const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
-test('Server registry includes exactly 53 editorial IDs in one fixed five-lesson order', () => {
+test('Server registry includes exactly 57 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
-  assert.equal(ENERGYWORK_VERSION, '2026-10-18.p1')
+  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p2')
+  assert.equal(ENERGYWORK_PREVIOUS_VERSION, '2026-10-18.p1')
   assert.equal(ENERGYWORK_LEGACY_VERSION, '2026-10-17.p0')
   const editorial = [...source.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match=>match[0].slice(5,-1))
   const registered = [...ENERGYWORK_COMMON,...Object.values(ENERGYWORK_BRANCH).flat(),...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH]
-  assert.equal(editorial.length, 53)
-  assert.equal(new Set(registered).size,53)
+  assert.equal(editorial.length, 57)
+  assert.equal(new Set(registered).size,57)
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
-  assert.equal(sequence.length,53)
+  assert.equal(sequence.length,57)
   assert.equal(sequence[0],'welcome-01')
   assert.equal(sequence.at(-1),'end-02')
   assert.deepEqual(ENERGYWORK_LESSON_STARTS,['flight-01','tan-01','kun-01','ygg-01','paths-01'])
@@ -62,7 +63,7 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
   assert.match(repository,/MEDITATION_FEEDBACK_REQUIRED/)
   assert.match(learner,/feedbackMissing = isMeditationFeedback/)
   assert.match(learner,/experienceMissing \|\| feedbackMissing/)
-  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-06','kun-06','ygg-06','init-01'])
+  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07','kun-06','ygg-06','init-01'])
   assert.equal(energyworkInitiationReady(null),false)
   assert.equal(energyworkInitiationReady({}),false)
   const complete = Object.fromEntries([...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS].map(id=>[id,'My own note']))
@@ -85,11 +86,9 @@ test('Private answers retain normal limits but allow longer meditation reviews',
   assert.equal(energyworkAnswerValid('flight-05','a'.repeat(1601)),false)
   assert.equal(energyworkAnswerValid('flight-04',null),false)
   assert.equal(energyworkAnswerValid('flight-02','notes'),false)
-  for(const val of ['0','5','10'])assert.equal(energyworkAnswerValid('presence-03',val),true)
-  for(const val of ['-1','11','05','no','999'])assert.equal(energyworkAnswerValid('presence-03',val),false)
   for(const val of ['pause','adapt','ask'])assert.equal(energyworkAnswerValid('boundaries-02',val),true)
   assert.equal(energyworkAnswerValid('boundaries-02','force'),false)
-  for(const id of ['flight-03','presence-02','intention-04','boundaries-03','ygg-03','tan-03','kun-03']){
+  for(const id of ['flight-03','intention-04','boundaries-03','ygg-03','tan-03','kun-03']){
     assert.equal(energyworkAnswerValid(id,'tried'),true)
     assert.equal(energyworkAnswerValid(id,'skipped'),true)
     assert.equal(energyworkAnswerValid(id,'pause'),false)
@@ -109,6 +108,7 @@ test('Existing encrypted owner-only RLS is retained and version upgrade is addit
   assert.ok(migration.match(/account_id=\(select auth\.uid\(\)\)/g).length>=4)
   assert.match(upgrade,/check \(course_version in \('2026-10-17\.p0', '2026-10-18\.p1'\)\)/)
   assert.match(upgrade,/grant update \(course_version\) on app_private\.academy_course_progress to hh_app_backend/)
+  assert.match(latest,/check \(course_version in \('2026-10-17\.p0', '2026-10-18\.p1', '2026-10-19\.p2'\)\)/)
   assert.doesNotMatch(upgrade,/drop table|delete from|drop policy|drop column/i)
 })
 
@@ -122,6 +122,10 @@ test('Existing p0 learner keeps private answers and is resumed at first unskippe
   assert.match(repository,/energyworkLegacyResumeId\(row\.slide_id\)/)
   assert.match(repository,/const answers=answersFrom\(row,config\)/)
   assert.match(repository,/MAX_RESPONSES = 32/)
+  assert.equal(energyworkPreviousResumeId('presence-02'),'tan-study-05')
+  assert.equal(energyworkPreviousResumeId('presence-03'),'tan-study-06')
+  assert.equal(energyworkPreviousResumeId('flight-03'),'flight-05')
+  assert.equal(energyworkPreviousResumeId('flight-05'),'flight-03')
 })
 
 test('Server requires owner, consent, optimistic revision and per-owner encrypted writes', () => {
