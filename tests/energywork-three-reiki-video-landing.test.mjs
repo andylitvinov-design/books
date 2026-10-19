@@ -137,6 +137,7 @@ test("Reiki promo matches all five course steps in EN/RU/ES, with gift, donation
   assert.ok(page.indexOf('id="energywork-flight-to-sun"') < page.indexOf('id="energywork-systems"'));
   assert.ok(page.indexOf('id="energywork-systems"') < page.indexOf('id="energywork-how"'));
   assert.ok(page.indexOf('id="energywork-how"') < page.indexOf('className={styles.finalCta}'));
+  assert.ok(page.indexOf("<ReikiPublicReviews locale={locale} />") < page.indexOf("className={styles.finalCta}"), "Reviews must appear before the final two-choice CTA");
   assert.match(form, /pay-what-you-wish donation/);
   assert.match(form, /добровольное пожертвование/);
   assert.match(form, /donación voluntaria/);
