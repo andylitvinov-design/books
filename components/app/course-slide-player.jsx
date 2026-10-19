@@ -42,9 +42,9 @@ const WORDS = {
     next: 'Continue', back: 'Back', skip: 'Skip this step', saveNext: 'Save & continue',
     save: 'Save today’s practice', saveError: 'Saving did not work. Nothing was marked complete. Please try again.',
     saved: 'Your observation was saved privately.', retry: 'Try again',
-    checkin: 'Notice your day', checkinQuestion: 'How difficult was this concern during the last 24 hours?',
+    checkin: 'Choose your practice pace', checkinDifficultyTitle: 'How strong was your concern?', checkinQuestion: 'Over the last 24 hours, how strongly did this concern bother you?',
     ratingHint: 'There is no correct number. This voluntary self-rating is not a clinical test.',
-    low: '0 · Not difficult', high: '10 · Very difficult', skipRating: 'Skip this check-in',
+    low: '0 · No concern', high: '10 · Very strong concern', skipRating: 'Skip this check-in',
     idea: 'A thought to take with you', ideaLabel: 'Today’s thought',
     recall: 'Remember a familiar skill', recallHint: 'Try recalling it without pressure, or simply continue.',
     phrase: 'A more flexible thought', phraseHint: 'This is a possible phrase, not something you must believe.',
@@ -134,9 +134,9 @@ const WORDS = {
     next: 'Продолжить', back: 'Назад', skip: 'Пропустить шаг', saveNext: 'Сохранить и продолжить',
     save: 'Сохранить практику дня', saveError: 'Не получилось сохранить. Ничего не отмечено выполненным. Попробуйте ещё раз.',
     saved: 'Наблюдение сохранено приватно.', retry: 'Повторить',
-    checkin: 'Заметьте свой день', checkinQuestion: 'Насколько эта трудность ощущалась за последние 24 часа?',
+    checkin: 'Выберите темп практики', checkinDifficultyTitle: 'Насколько сильным было беспокойство?', checkinQuestion: 'Оцените силу беспокойства за последние 24 часа.',
     ratingHint: 'Правильных чисел нет. Это добровольная самооценка, не клинический тест.',
-    low: '0 · Не беспокоила', high: '10 · Очень сильно', skipRating: 'Пропустить замер',
+    low: '0 · Не беспокоило', high: '10 · Очень сильно', skipRating: 'Пропустить замер',
     idea: 'Мысль, которую можно взять с собой', ideaLabel: 'Мысль дня',
     recall: 'Вспомните знакомый навык', recallHint: 'Попробуйте вспомнить без напряжения — или просто продолжайте.',
     phrase: 'Более гибкая мысль', phraseHint: 'Это возможная формулировка. Не обязательно верить в неё.',
@@ -611,6 +611,7 @@ export default function CourseSlidePlayer({
     :slide?.kind==='course-offer'?words.promoTitle
     :isDayOne&&dayOneTitles[slide.kind]?dayOneTitles[slide.kind]
     :slide.kind==='guided'?(slide.section.kind==='arrive'?words.arrivalTitle:slide.section.title||words.guided)
+    :slide.kind==='checkin' && !(lesson.antiStress||isOporaModule)?words.checkinDifficultyTitle
     :words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)

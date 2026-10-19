@@ -150,10 +150,10 @@ const OPENING={
   en:{
     welcome:'How are you feeling today?',welcomeLead:'What feels closest to you right now?',
     welcomeNote:'There is no right answer. You can simply continue.',
-    baseline:'How much support do you feel?',baselineLead:'If you wish, choose a number for right now.',
-    baselineLow:'0 · Not at all',baselineHigh:'10 · Very much',
-    checkin:'How was the last day?',checkinLead:'How difficult has today’s concern felt in the past 24 hours?',
-    checkinLow:'0 · Not difficult',checkinHigh:'10 · Very difficult',
+    baseline:'How much inner support do you feel?',baselineLead:'If you wish, rate the support you feel right now.',
+    baselineLow:'0 · No support',baselineHigh:'10 · Strong support',
+    checkin:'How strong was your concern?',checkinLead:'Over the past 24 hours, how strongly did this concern bother you?',
+    checkinLow:'0 · No concern',checkinHigh:'10 · Very strong concern',
     scaleNote:'Optional. This is your observation, not a test.',
     recall:'Remember what helps',recallLead:'What has helped you feel a little steadier before?',
     recallReply:'A familiar source of support can be enough for today.',
@@ -168,10 +168,10 @@ const OPENING={
   ru:{
     welcome:'Как вы себя чувствуете сегодня?',welcomeLead:'Какое состояние вам сейчас ближе?',
     welcomeNote:'Правильного ответа нет. Можно просто продолжить.',
-    baseline:'Сколько сейчас внутренней опоры?',baselineLead:'Если хотите, выберите число для этого момента.',
-    baselineLow:'0 · Совсем нет',baselineHigh:'10 · Очень много',
-    checkin:'Как прошли последние сутки?',checkinLead:'Насколько трудной была ваша тема за последние 24 часа?',
-    checkinLow:'0 · Не беспокоила',checkinHigh:'10 · Очень сильно',
+    baseline:'Насколько вы сейчас чувствуете внутреннюю опору?',baselineLead:'Если хотите, оцените силу внутренней опоры сейчас.',
+    baselineLow:'0 · Нет опоры',baselineHigh:'10 · Сильная опора',
+    checkin:'Насколько сильным было беспокойство?',checkinLead:'Оцените силу беспокойства за последние 24 часа.',
+    checkinLow:'0 · Не беспокоило',checkinHigh:'10 · Очень сильно',
     scaleNote:'Это необязательное наблюдение, не тест.',
     recall:'Вспомним знакомую опору',recallLead:'Что раньше помогало вам почувствовать себя немного устойчивее?',
     recallReply:'Можно опереться на то, что вам уже знакомо.',
@@ -186,10 +186,10 @@ const OPENING={
   es:{
     welcome:'¿Cómo te sientes hoy?',welcomeLead:'¿Qué sensación se acerca más a la tuya?',
     welcomeNote:'No hay respuesta correcta. Puedes continuar sin responder.',
-    baseline:'¿Cuánto apoyo interior sientes?',baselineLead:'Si quieres, elige un número para este momento.',
-    baselineLow:'0 · Nada',baselineHigh:'10 · Mucho',
-    checkin:'¿Cómo fue el último día?',checkinLead:'¿Qué tan difícil ha sido esta preocupación en las últimas 24 horas?',
-    checkinLow:'0 · Nada difícil',checkinHigh:'10 · Muy difícil',
+    baseline:'¿Cuánto apoyo interior sientes?',baselineLead:'Si quieres, valora el apoyo que sientes ahora.',
+    baselineLow:'0 · Sin apoyo',baselineHigh:'10 · Mucho apoyo',
+    checkin:'¿Qué tan intensa fue tu preocupación?',checkinLead:'En las últimas 24 horas, ¿cuánto te preocupó?',
+    checkinLow:'0 · Sin preocupación',checkinHigh:'10 · Muy intensa',
     scaleNote:'Es una observación opcional, no un examen.',
     recall:'Recuerda lo que te ayuda',recallLead:'¿Qué te ha ayudado a sentirte un poco más estable?',
     recallReply:'Puedes apoyarte en algo que ya conoces.',
@@ -224,6 +224,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [welcomeFeeling,setWelcomeFeeling]=useState(data?.currentSession?.signals?.welcomeFeeling||null)
   const [openingResource,setOpeningResource]=useState(data?.currentSession?.signals?.oporaOpening?.resource??null)
+  // Keep the stored lastDayDifficulty key and 0→10 severity direction for existing records.
   const [openingDifficulty,setOpeningDifficulty]=useState(data?.currentSession?.signals?.oporaOpening?.lastDayDifficulty??null)
   const [familiarSupport,setFamiliarSupport]=useState(data?.currentSession?.signals?.oporaOpening?.familiarSupport||null)
   const [familiarSupportText,setFamiliarSupportText]=useState(data?.currentSession?.signals?.oporaOpening?.familiarSupportText||'')
