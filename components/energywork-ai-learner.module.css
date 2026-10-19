@@ -3429,7 +3429,11 @@
     min-height: 0;
   }
   .page[data-course-one-screen] [data-energywork-slide-id^="tan-study-"] .content h1,
-  .page[data-course-one-screen] [data-energywork-slide-id="tan-06"] .content h1 {
+  .page[data-course-one-screen] [data-energywork-slide-id^="kun-study-"] .content h1,
+  .page[data-course-one-screen] [data-energywork-slide-id^="ygg-study-"] .content h1,
+  .page[data-course-one-screen] [data-energywork-slide-id="tan-06"] .content h1,
+  .page[data-course-one-screen] [data-energywork-slide-id="kun-06"] .content h1,
+  .page[data-course-one-screen] [data-energywork-slide-id="ygg-06"] .content h1 {
     font-size: clamp(22px, 5.7vw, 29px);
   }
 }
@@ -3477,7 +3481,7 @@
   }
 }
 
-/* All seven Tantra study questions: readable mandatory note, genuine source
+/* All Reiki study questions: readable mandatory note, genuine source
    links and a usable answer field within one mobile viewport. */
 .tantraStudyHelp {
   display: flex;
@@ -3502,7 +3506,11 @@
 .tantraStudyLink:focus-visible { outline: 3px solid #dfac4a; outline-offset: 3px; border-radius: 4px; }
 @media (max-width: 760px) {
   .page[data-course-one-screen] [data-energywork-slide-id="tan-06"] .textarea,
-  .page[data-course-one-screen] [data-energywork-slide-id^="tan-study-"] .textarea {
+  .page[data-course-one-screen] [data-energywork-slide-id^="tan-study-"] .textarea,
+  .page[data-course-one-screen] [data-energywork-slide-id="kun-06"] .textarea,
+  .page[data-course-one-screen] [data-energywork-slide-id^="kun-study-"] .textarea,
+  .page[data-course-one-screen] [data-energywork-slide-id="ygg-06"] .textarea,
+  .page[data-course-one-screen] [data-energywork-slide-id^="ygg-study-"] .textarea {
     min-height: 90px;
     height: clamp(90px, 13dvh, 124px);
     resize: vertical;
