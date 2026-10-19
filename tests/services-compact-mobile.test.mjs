@@ -4,54 +4,38 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("services starts with personal offers and booking, retaining free tests and all EN/RU routes", () => {
+test("Services landing has free-first cards and preserves original personal paths", () => {
   const page = read("app/[locale]/services/page.tsx");
-  const ui = read("components/services-solutions.tsx");
+  const ui = read("components/services-studio-offers.tsx");
+  const css = read("components/services-studio-offers.module.css");
   const offers = read("data/core-service-offers.ts");
-  const css = read("components/services-solutions.module.css");
   const hero = read("components/services-conversion-hero.tsx");
-  assert.match(page, /<ServicesSolutions locale=/);
-  assert.match(ui, /allOffers\.filter/);
-  assert.match(ui, /visibleOffers\.map/);
-  assert.match(page, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
-  assert.doesNotMatch(page, /<FreeInsightsPaths/);
-  assert.match(page, /<ServicesConversionHero locale=\{locale as Locale\} \/>/);
-  assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesTestsIntro"), "Green hero precedes blue tests and course");
-  assert.match(read("components/services-tests-intro.tsx"), /data-services-course-action/);
-  assert.ok(page.indexOf("<ServicesTestsIntro locale={locale as Locale} />") > page.indexOf("<ServicesSolutions locale={locale as Locale} />"), "Owner #996 puts personal service photos before optional tests");
-  assert.ok(page.indexOf("<ServicesSolutions locale={locale as Locale} />") < page.indexOf("<ServicesAboutEntry locale={locale as Locale} />"), "Service photos must remain above the practitioner section");
-  assert.doesNotMatch(page, /ServiceCart|service-cart/);
-  assert.match(ui, /: allOffers;/);
-  assert.match(ui, /styles\.home, !isHome \? styles\.servicesPage/);
-  assert.match(read("components/services-tests-intro.tsx"), /href: "\/en\/client\/tests"/);
-  assert.match(read("components/services-tests-intro.tsx"), /href: "\/ru\/client\/tests"/);
-  assert.match(read("components/services-tests-intro.tsx"), /href: "\/es\/client"/);
-  for (const key of ["situation","dao","alchemy","hypnotherapy"])
-    assert.ok(offers.includes('id: "' + key + '"'), key);
-  for (const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
+  assert.match(page, /<ServicesStudioOffers locale=/);
+  assert.match(page, /<ServicesConversionHero locale=/);
+  assert.match(page, /<ServicesIntroMedia locale=/);
+  assert.match(page, /<PersonalTestimonials locale=/);
+  assert.match(page, /<ServicesDirectoryInvitation locale=/);
+  assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesStudioOffers"));
+  assert.ok(page.indexOf("<ServicesStudioOffers") < page.indexOf("<ServicesIntroMedia"));
+  assert.ok(page.indexOf("<ServicesIntroMedia") < page.indexOf("<PersonalTestimonials"));
+  assert.ok(page.indexOf("<PersonalTestimonials") < page.indexOf("<PublicConsultationCta"));
+  assert.doesNotMatch(page, /<ServicesSmartDiscovery|<ServiceCart|<FreeInsightsPaths/);
+  for (const id of ["tests", "situation", "dao", "alchemy", "hypnotherapy", "business", "constellations", "remote-energy-support"])
+    assert.ok(ui.includes('id: "' + id + '"') || ui.includes('session("' + id + '")'), id);
+  for (const route of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + route + '"'), route);
-  assert.match(offers, /Free Wu Xing Resource Profile/);
-  assert.match(offers, /Бесплатный профиль ресурсов У-Син/);
-  assert.match(offers, /Alchemy of the Soul/);
-  assert.match(offers, /Курс гипнотерапии/);
-  assert.match(ui, /id="methods"/);
-  assert.match(ui, /data-alchemy-service-actions/);
+  assert.match(ui, /locale === "es" \? "\/es\/client"/);
+  assert.match(ui, /"\/client\/tests"/);
   assert.match(ui, /ContactChannelChooser/);
-  assert.match(ui, /styles\.cardDetails/);
-  assert.match(ui, /styles\.cardDirectOrder/);
-  assert.match(ui, /"data-alchemy-booking": "services-card"/);
-  assert.doesNotMatch(hero, /ME, GOAL|draw by hand|€100/i);
-  const editorialStart = page.indexOf("const editorialOffers =");
-  const renderStart = page.indexOf("  return (");
-  assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
-  assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
-  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Editorial prices are metadata; visible cards render separately scoped paid session prices");
-  assertBusinessPriceScope(offers);
+  assert.match(ui, /<details className=\{styles.details\}>/);
+  assert.match(ui, /data-services-studio-free/);
+  assert.match(ui, /data-services-studio-paid/);
   assert.match(hero, /paidCta: "Ask about a personal session · from €50"/);
-  assert.match(hero, /href="#consultation" data-service-hero-cta="paid"/);
+  assert.match(hero, /href="#free-insights" data-service-hero-cta="free"/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(css, /@media\(max-width:760px\)/);
+  assert.match(css, /@media\(max-width:680px\)/);
   assert.match(css, /min-height:44px/);
+  assertBusinessPriceScope(offers);
 });
 
 test("homepage restores photo-left four services while keeping tests and Academy", () => {
