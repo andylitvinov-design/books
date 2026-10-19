@@ -3257,7 +3257,7 @@
   opacity: 1;
   cursor: default;
 }
-.page[data-course-visual] .programme .programmeNote {
+.page[data-course-visual] .programme .disclaimer {
   margin: 12px 3px 4px;
   color: #3b6d77;
   font-size: 12px;
