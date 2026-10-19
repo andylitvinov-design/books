@@ -450,7 +450,7 @@ async function handle(request, { params }) {
         throw new AppError('ACCOUNT_CHANGED',409)
       const energywork=createEnergyworkCourseRepository(config)
       if (method === 'GET') return json({ accountId:actor.id, ...await energywork.read(actor) })
-      if (method === 'POST') return json({ accountId:actor.id, ...await energywork.command(actor,await readBody(request,8192)) })
+      if (method === 'POST') return json({ accountId:actor.id, ...await energywork.command(actor,await readBody(request,32768)) })
       throw new AppError('NOT_FOUND',404)
     }
     if (path[0] === 'course' && request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)

@@ -17,8 +17,8 @@ const COURSES = [
     id: 'energywork',
     path: 'principles-of-energywork/learn',
     image: '/academy/reiki-yggdrasil/source/program-overview.jpg',
-    en: { offer: 'INTERACTIVE COURSE · PREVIEW', title: 'Energywork Basics', description: 'Slides, original videos and private save after sign-in' },
-    ru: { offer: 'ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ', title: 'Основы энергетики', description: 'Слайды, видео и сохранение после входа в аккаунт' },
+    en: { offer: 'INTERACTIVE COURSE · PREVIEW', title: 'Reiki Practitioner', description: 'Slides, original videos and private save after sign-in' },
+    ru: { offer: 'ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ', title: 'Практик Рейки', description: 'Слайды, видео и сохранение после входа в аккаунт' },
   },
   {
     id: 'tantra-reiki',
@@ -44,14 +44,14 @@ const COPY = {
     eyebrow: 'HOLISTIC HOUSE ACADEMY',
     title: 'Free courses',
     note: 'Explore for free. Teacher-led initiations require personal confirmation.',
-    action: 'Open course', started: 'CONTINUE LEARNING', energywork: 'Energywork Basics', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume from last slide', completed: 'Completed', slide: 'Slide',
+    action: 'Open course', started: 'CONTINUE LEARNING', energywork: 'Reiki Practitioner', continueTitle: 'Continue Reiki Practitioner', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume from last slide', completed: 'Completed', slide: 'Slide',
     lesson: 'Lesson', intro: 'Introduction', of: 'of', slides: 'slides', chooseLesson: 'Go to a lesson', locked: 'Reach this lesson to unlock it',
   },
   ru: {
     eyebrow: 'АКАДЕМИЯ HOLISTIC HOUSE',
     title: 'Бесплатные курсы',
     note: 'Начальные материалы бесплатны. Инициация проводится по согласованию.',
-    action: 'Открыть курс', started: 'ПРОДОЛЖИТЬ ОБУЧЕНИЕ', energywork: 'Основы энергетики', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить с последнего слайда', completed: 'Завершён', slide: 'Слайд',
+    action: 'Открыть курс', started: 'ПРОДОЛЖИТЬ ОБУЧЕНИЕ', energywork: 'Практик Рейки', continueTitle: 'Продолжить «Практик Рейки»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить с последнего слайда', completed: 'Завершён', slide: 'Слайд',
     lesson: 'Урок', intro: 'Введение', of: 'из', slides: 'слайдов', chooseLesson: 'Перейти к уроку', locked: 'Урок ещё не открыт',
   },
 }

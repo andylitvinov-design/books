@@ -202,5 +202,10 @@ test('Client writes before navigation, retries conflict and can print protected 
   assert.match(learner,/window\.setInterval/)
   assert.match(learner,/setRunning\(false\)/)
   assert.match(learner,/jumpToSlide/)
-  assert.doesNotMatch(learner,/(?:localStorage|sessionStorage)\s*[.\[]/)
+  // Guest answers are not silently persisted. Lesson 1 now supports a
+  // separate, explicit save consent and a 15-minute, same-tab OAuth handoff.
+  assert.doesNotMatch(learner,/localStorage\s*[.\[]/)
+  assert.match(learner,/if \(busy \|\| !firstLessonConsent/)
+  assert.match(learner,/window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
+  assert.match(learner,/window\.sessionStorage\.removeItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
 })
