@@ -1,6 +1,7 @@
 'use client'
-import {useState} from 'react'
+import {useEffect,useState} from 'react'
 import PractitionerArticles from './practitioner-articles'
+import PracticeReportMaterials from './practice-report-materials'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract.js'
 import styles from './practice-materials.module.css'
 
@@ -42,6 +43,10 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   invalid:'Enter a valid YouTube or Vimeo URL.',duplicate:'This video is already in your materials.',saving:'Saving…',saved:'Video saved to your materials as a draft.',removed:'Video removed from your materials.',saveFailed:'Could not save the video. Please try again.',conflict:'Your profile changed in another tab. Refresh the page and try again.',confirmRemove:'Remove this video from your materials?',autoSaved:'Videos save immediately. Submit for review to publish them on your profile.',
  }
  const [tab,setTab]=useState('videos')
+ const [reportItems,setReportItems]=useState([])
+ const [reportMode,setReportMode]=useState('loading')
+ const [reportError,setReportError]=useState('')
+ const [reportRefresh,setReportRefresh]=useState(0)
  const original=practitioner?.draftProfile?.videoMaterials||[]
  const [videos,setVideos]=useState(()=>original)
  const [editing,setEditing]=useState(null)
