@@ -53,6 +53,9 @@ export function SessionSaveFooterVideo({clientId,session,locale='en'}){
     if(code==='SESSION_VIDEO_NOT_REUSABLE')return ru?
       'Это видео нельзя перенести автоматически: оно не отмечено как общий материал в сохранённой сессии.':
       'This video is not marked as reusable education in the saved session.'
+    if(code==='MEDIA_SIZE_NOT_ALLOWED'||code==='MATERIAL_VIDEO_STORAGE_LIMIT')return ru?
+      'Видео слишком большое для защищённого хранилища. Для обычной загрузки максимум 40 МБ, общий лимит библиотеки — 160 МБ.':
+      'Video exceeds private storage limits: 40 MB per upload, 160 MB total library capacity.'
     if(code==='MATERIAL_UNAVAILABLE')return ru?'Не удалось сохранить. Обновите вход в кабинет мастера и повторите.':
       'Could not save. Sign in to the practitioner cabinet again.'
     return code||'MATERIAL_UNAVAILABLE'
