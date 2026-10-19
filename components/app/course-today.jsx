@@ -620,10 +620,12 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       ?<OporaExperiencePlayer key={cycle.id+':'+cycle.day} locale={locale}
         data={data} busy={busy} onClose={()=>setQuestOpen(false)}
         onFinish={()=>{setQuestOpen(false);setView('path')}}
+        habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
         onSession={body=>submit('session',body,undefined,'inline')}/>
       :<OporaV6SlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
         data={data} busy={busy} onClose={()=>setQuestOpen(false)}
         onFinish={()=>{setQuestOpen(false);setView('path')}}
+        habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
         onSession={body=>submit('session',body,undefined,'inline')}/>)
     :<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
     data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
