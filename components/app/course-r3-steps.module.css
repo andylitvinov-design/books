@@ -505,3 +505,156 @@
   .compactTests .shortTestExtras button{font-size:10.5px;padding-inline:3px}
 }
 @media(prefers-reduced-motion:reduce){.compactTests .shortTestRow{transition:none}}
+
+
+/* 2026-10-19 · OPORA baseline visual hierarchy.
+   Keep the short, single-screen flow and all original assessment controls:
+   one primary "continue" action, quieter optional test choices, and a
+   distinct saved-state acknowledgement. No clinical score colors. */
+.compactTests[data-course-baseline-one-screen]{
+  --baseline-navy:#123e58;
+  --baseline-teal:#058fa3;
+  border-color:#dde8e8;
+  box-shadow:0 8px 28px rgba(18,62,88,.055);
+}
+.compactTests .baselineHero{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  border-color:#10566b;
+  background:
+    radial-gradient(circle at 95% 0%,rgba(111,228,216,.22),transparent 44%),
+    linear-gradient(118deg,#123c58 0%,#104c65 59%,#087a89 100%);
+  box-shadow:0 4px 13px rgba(18,69,87,.12);
+}
+.compactTests .baselineHero::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:3px;
+  background:linear-gradient(90deg,#a4e8db,#e8cc92 54%,transparent);
+  pointer-events:none;
+}
+.compactTests .baselineHero .compactEyebrow{
+  color:#9fe7e4!important;
+  letter-spacing:.14em;
+}
+.compactTests .baselineHero h2{
+  color:#fff!important;
+  font-weight:600;
+  letter-spacing:-.023em;
+}
+.compactTests .baselineHero .compactLead{
+  color:#e1f2f5!important;
+}
+.compactTests .baselineHero .baselineContext{
+  color:#d4e5ec!important;
+}
+.compactTests .baselineTimeline>span{
+  border-color:rgba(213,244,244,.38);
+  background:rgba(255,255,255,.095);
+  color:#eefcfd;
+}
+.compactTests .baselineTimeline>span:first-child{
+  border-color:#d3e9d9;
+  background:#e4f8ef;
+  color:#165b6a;
+}
+.compactTests .baselineArrow{color:#a7eee4}
+.compactTests .baselineListIntro p{
+  color:#577585;
+  font-weight:600;
+}
+.compactTests .baselineSaved{
+  width:fit-content;
+  max-width:100%;
+  border-color:#b9e5d3;
+  border-radius:999px;
+  background:#eaf8f1;
+  color:#216d57;
+  padding:5px 11px;
+  font-weight:750;
+  font-size:11px;
+}
+.compactTests .baselineSaved svg{color:#148368}
+.compactTests .shortTestRow{
+  border-color:#dae6e8;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(26,67,83,.035);
+}
+.compactTests .shortTestRow[data-checked=true]{
+  border-color:#b2dfe1;
+  background:#f3fbfc;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true]{
+  border:1px solid #8cd2db;
+  border-left:4px solid #06a3b5;
+  padding-left:5px;
+  background:#eaf8fb;
+}
+.compactTests .shortTestRow>input{accent-color:#078fa6}
+.compactTests .shortTestRow[data-course-required-baseline=true]>input:disabled{
+  opacity:1;
+}
+.compactTests .shortTestBody strong{
+  color:#173f59;
+  font-weight:800;
+}
+.compactTests .shortTestBody small{color:#637f8b}
+.compactTests .shortTestCheck{color:#158b77;opacity:.75}
+.compactTests .shortTestRow[data-checked=false] .shortTestCheck{
+  display:none; /* An unselected optional test may still have a saved result. */
+}
+.compactTests .fastTestButton{
+  position:relative;
+  min-height:50px;
+  padding:10px 39px 10px 13px;
+  border:1px solid #0a879e!important;
+  border-bottom:4px solid #0b6579!important;
+  border-radius:13px;
+  background:linear-gradient(108deg,#17b9c5 0%,#0795aa 55%,#08778f 100%)!important;
+  box-shadow:0 6px 14px rgba(5,125,148,.22);
+  color:#fff!important;
+  font-weight:850;
+  letter-spacing:.005em;
+}
+.compactTests .fastTestButton>svg{
+  position:absolute;
+  right:11px;
+  top:50%;
+  box-sizing:content-box;
+  width:17px;
+  height:17px;
+  padding:5px;
+  border-radius:50%;
+  background:rgba(255,255,255,.18);
+  transform:translateY(-50%);
+}
+.compactTests .fastTestButton:not(:disabled):hover{
+  filter:brightness(1.055);
+  box-shadow:0 8px 17px rgba(5,125,148,.28);
+}
+.compactTests .fastTestButton:not(:disabled):active{
+  box-shadow:0 2px 6px rgba(5,125,148,.18);
+}
+.compactTests .shortTestExtras button{
+  font-weight:700;
+  color:#34778a;
+}
+.compactTests .shortTestDetails{
+  border-top-color:#e3ebee;
+}
+@media(max-width:530px){
+  .compactTests .baselineHero{padding:11px 12px}
+  .compactTests .baselineHero h2{font-size:clamp(23px,5.7vw,26px)}
+  .compactTests .baselineSaved{font-size:10.5px;padding:4px 9px}
+  .compactTests .fastTestButton{min-height:48px;font-size:14px}
+}
+@media(max-width:360px){
+  .compactTests .fastTestButton{font-size:12.5px;padding-left:7px;padding-right:34px}
+  .compactTests .fastTestButton>svg{right:5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .compactTests .fastTestButton{transition:none}
+}
