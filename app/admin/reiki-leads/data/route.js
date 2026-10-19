@@ -3,6 +3,7 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getAppConfig, requestOrigin, requireSameOrigin } from '@/lib/app/config'
 import { consumeRate } from '@/lib/app/database'
 import { createReikiLeadInbox } from '@/lib/academy/reiki-course-leads'
+import { createReikiReviewModeration } from '@/lib/academy/reiki-public-reviews'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 
@@ -18,10 +19,15 @@ async function handle(request) {
     if (request.method !== 'GET') requireSameOrigin(request, config)
     await consumeRate(config, { op: 'reiki-leads-inbox' }, 60, 60)
     const inbox = createReikiLeadInbox(config)
+    const reviews = createReikiReviewModeration(config)
     if (request.method === 'GET') {
-      return NextResponse.json({ leads: await inbox.list() }, { headers: PRIVATE_HEADERS })
+      return NextResponse.json({ leads: await inbox.list(), reviews: await reviews.list() }, { headers: PRIVATE_HEADERS })
     }
     const body = await readBody(request, 4096)
+    if (body.action === 'moderate-review') {
+      onlyKeys(body,['action','id','status','expectedRevision'])
+      return NextResponse.json(await reviews.moderate(body),{headers:PRIVATE_HEADERS})
+    }
     onlyKeys(body, ['id','status','expectedRevision'])
     return NextResponse.json(await inbox.update(body), { headers: PRIVATE_HEADERS })
   } catch (error) {
