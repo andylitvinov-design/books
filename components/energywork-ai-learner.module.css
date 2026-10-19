@@ -2503,8 +2503,8 @@
   .page[data-course-portrait="v3"] .welcomeSlide .art {
     display: block;
     position: absolute;
-    inset: 9% -3% auto auto;
-    top: 9%; right: -3%; width: 63%; height: 83%;
+    inset: 9% 0 auto auto;
+    top: 9%; right: 0; width: 63%; height: 83%;
     min-height: 0; max-height: none;
     pointer-events: none;
   }
