@@ -5,7 +5,7 @@ WITH source AS (
 ), patched AS (
  UPDATE app.practitioner_articles a
  SET draft=jsonb_set(a.draft,'{tags}',s.tags,true),
-     revision=revision+1,updated_at=now()
+     revision=a.revision+1,updated_at=now()
  FROM source s, app.practitioners p, app.practitioner_article_folders f
  WHERE a.practitioner_id=p.id AND a.folder_id=f.id AND f.practitioner_id=p.id
    AND p.slug='andy-litvinov' AND f.slug='remedy-cards' AND a.status='draft'
