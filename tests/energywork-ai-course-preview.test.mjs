@@ -14,7 +14,7 @@ const videos = read('data/academy/english-guided-meditations.ts')
 
 test('Unified Reiki Practitioner course has 57 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p2"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p3"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0])
   assert.equal(ids.length, 57)
