@@ -455,7 +455,9 @@
 .situations,.outcomes,.details { width: min(1160px,calc(100% - 32px)); }
 .situations h2,.outcomes h2 { max-width: 900px; font-size: clamp(33px,3.9vw,50px); }
 .situationsLead,.outcomeIntro { max-width: 760px; font-size: 16px; }
-.situationScenes { display: grid; gap: clamp(18px,2.4vw,30px); margin-top: 28px; }
+.situationGrid { display: grid; grid-template-columns:minmax(0,1fr); gap: clamp(18px,2.4vw,30px); margin-top: 28px; }
+.situationGrid .situationScene { padding:0; background:#eaf5f1; border:1px solid #d3e5df; box-shadow:0 13px 34px rgba(10,68,76,.07); }
+.situationGrid .situationScene:nth-child(even) .sceneImage { order:2; }
 .situationScene {
   display: grid; grid-template-columns: minmax(0,1.08fr) minmax(0,.92fr);
   min-height: clamp(405px,62svh,610px);
@@ -508,7 +510,7 @@
   .situations,.outcomes,.details { width: calc(100% - 22px); margin-top: 39px; }
   .situations h2,.outcomes h2 { font-size: clamp(28px,7.3vw,35px); }
   .situationsLead,.outcomeIntro { font-size: 14px; line-height: 1.53; }
-  .situationScenes { gap: 18px; margin-top: 20px; }
+  .situationGrid { gap: 18px; margin-top: 20px; }
   .situationScene { grid-template-columns: minmax(0,1fr); min-height: 0; border-radius: 20px; }
   .situationScene:nth-child(even) .sceneImage { order: 0; }
   .sceneImage { min-height: clamp(224px,33svh,322px); }
