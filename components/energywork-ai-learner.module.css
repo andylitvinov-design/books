@@ -3888,3 +3888,25 @@
   .page[data-course-portrait="v3"] :is([data-energywork-slide-id="flight-03"], [data-energywork-slide-id="tan-03"]) .content h1 { font-size: clamp(24px, 7vw, 29px); }
   .page[data-course-portrait="v3"] :is([data-energywork-slide-id="flight-03"], [data-energywork-slide-id="tan-03"]) .practiceTimer { margin-top: 5px; padding: 6px 8px; }
 }
+
+
+/* iOS Safari: anchor every Reiki lesson (including the bottom journey hint)
+   to the dynamic viewport, while keeping long slide contents scrollable. */
+@media screen and (max-width: 760px) {
+  .page[data-course-portrait="v3"][data-course-one-screen] {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .page[data-course-portrait="v3"][data-course-one-screen] .shell {
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+  }
+}
