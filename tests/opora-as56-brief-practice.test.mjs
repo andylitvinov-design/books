@@ -22,9 +22,9 @@ const words={
 // Reviewed AS5.7 owner actions. Words inside a quoted self-statement are not
 // additional instructions; quoted ellipses are a thought prefix, not new steps.
 const actions={
-  en:['let','rest','notice','name','add','practise','repeat','notice','rest','let','name','say','practise','repeat'],
-  ru:['переводите','остановите','заметьте','назовите','добавьте','произнесите','повторите','заметьте','остановите','расслабьте','назовите','скажите','произнесите','повторите'],
-  es:['mueve','detén','nota','nombra','añade','practica','repite','observa','detén','relaja','nombra','di','practica','repite'],
+  en:['look','rest','notice','name','add','practise','repeat','notice','rest','let','name','say','practise','repeat'],
+  ru:['посмотрите','остановите','заметьте','назовите','добавьте','произнесите','повторите','заметьте','остановите','расслабьте','назовите','скажите','произнесите','повторите'],
+  es:['mira','detén','nota','nombra','añade','practica','repite','observa','detén','relaja','nombra','di','practica','repite'],
 }
 function fixture(locale,day=5,currentSession=null){
   const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
