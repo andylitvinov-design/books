@@ -822,6 +822,15 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <ExternalLink size={16} aria-hidden="true" />
                 </Link>
               ) : null}
+              {slide.id === "kun-05" ? (
+                <Link href={"/" + locale + "/academy/reiki/kundalini-reiki"}
+                  target="_blank" rel="noopener noreferrer"
+                  className={styles.studyButton} data-kundalini-study-link>
+                  <BookOpen size={18} aria-hidden="true" />
+                  {locale === "ru" ? "Открыть курс Кундалини Рейки" : "Open Kundalini Reiki Course"}
+                  <ExternalLink size={16} aria-hidden="true" />
+                </Link>
+              ) : null}
               {slide.kind === "welcome" ? (
                 <div className={styles.welcomeReward} aria-label={t.welcomeOffer}>
                   <p className={styles.welcomeRewardTitle}><Sparkles size={17} aria-hidden="true" />{t.welcomeOffer}</p>
