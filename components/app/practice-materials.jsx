@@ -97,7 +97,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   setForm(index===null?fresh(locale):{...videos[index]})
   setError('')
  }
- function apply(e){
+ async function apply(e){
   e.preventDefault()
   if(!supportedUrl(form.url)){setError(t.invalid);return}
   const normalized={title:form.title.trim(),description:form.description.trim(),url:form.url.trim(),locale:form.locale}
