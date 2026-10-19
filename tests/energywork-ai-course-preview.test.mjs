@@ -115,7 +115,9 @@ test('Guest answers stay unsaved; consented Google learners use private versione
   assert.match(learner, /950\)/)
   assert.match(learner, /const \[answers, setAnswers\] = useState<AnswerMap>\(\{\}\)/)
   assert.match(learner, /navigator\.clipboard\.writeText\(notes\)/)
-  assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
+  // Explicit, time-limited OAuth handoff is permitted; no client-side persistent answer store.
+  assert.doesNotMatch(learner, /localStorage\s*[.\[]|(?<!app)fetch\(|XMLHttpRequest|sendBeacon/)
+  assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
   assert.match(learner, /maxLength=\{isMeditationFeedback \? undefined : 1600\}/)
   assert.doesNotMatch(learner, /aria-pressed=\{path === choice\.id\}|choosePath\(/)
   assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing \|\| otherStudyMissing\}/)
