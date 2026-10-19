@@ -1180,14 +1180,21 @@ try {
    // creates or publishes a report before explicit Save/Share in the editor.
    const reportPickerPage=await admin.newPage();
    await reportPickerPage.goto(origin+'/admin/reports/new');
-   await expect(reportPickerPage.getByRole('heading',{name:'Create client report',exact:true})).toBeVisible();
-   const syntheticReportChoice=reportPickerPage.getByRole('link',{name:/Synthetic Handoff Client/});
-   await expect(syntheticReportChoice).toBeVisible();
-   await expect(syntheticReportChoice).toHaveAttribute('href','/admin/consultations/new?clientId='+ownerClientId);
+   await expect(reportPickerPage).toHaveURL(origin+'/admin/consultations/new');
+   await expect(reportPickerPage.locator('input[name="clientId"]')).toHaveValue('');
+   await expect(reportPickerPage.locator('input[name="clientMode"]')).toHaveValue('existing');
+   await expect(reportPickerPage.locator('.consultation-client-selected-row')).toHaveCount(0);
+   await reportPickerPage.locator('.consultation-client-search input').fill('Synthetic Handoff Client');
+   const syntheticReportChoice=reportPickerPage.locator('.consultation-client-results button').filter({hasText:'Synthetic Handoff Client'});
+   await expect(syntheticReportChoice).toHaveCount(1);
+   await expect(syntheticReportChoice.locator('strong')).toHaveText('Synthetic Handoff Client');
+   await expect(syntheticReportChoice).toHaveAttribute('type','button');
    await syntheticReportChoice.click();
-   await expect(reportPickerPage).toHaveURL(origin+'/admin/consultations/new?clientId='+ownerClientId);
    await expect(reportPickerPage.locator('.consultation-form input[name="clientId"]')).toHaveValue(ownerClientId);
+   await expect(reportPickerPage.locator('input[name="patientName"]')).toHaveValue('Synthetic Handoff Client');
    await expect(reportPickerPage.locator('.consultation-client-selected-row')).toContainText('Synthetic Handoff Client');
+   await expect(reportPickerPage.locator('input[name="includeRecommendation"]')).toBeChecked();
+   await expect(reportPickerPage.locator('input[name="includeInvoice"]')).not.toBeChecked();
    await expect(reportPickerPage.locator('textarea[name="analysis"]')).toBeVisible();
    await expect(reportPickerPage.locator('textarea[name="additionalNotes"]')).toBeVisible();
    await expect(reportPickerPage.locator('select[name="kind"]')).toHaveCount(0);

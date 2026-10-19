@@ -2782,6 +2782,15 @@
     line-height: 1.16;
   }
 
+  /* All four Russian video lessons keep the same poster width and type size.
+     Trim only vertical card padding and the gap on short phones. */
+  .page[lang="ru"][data-course-portrait="v3"] [data-energywork-slide-kind="video"] .video {
+    padding: 3px 9px;
+  }
+  .page[lang="ru"][data-course-portrait="v3"] [data-energywork-slide-kind="video"] .slideMain {
+    gap: 6px;
+  }
+
   /* Russian welcome copy needs room below the five-name progress rail.
      Reduce only empty space on short phones; retain every label and type size. */
   .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .slideMain {
