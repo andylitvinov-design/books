@@ -588,7 +588,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
             <strong className="tantra-journey__level-number">{n === 1 ? focus.eyebrow : c.level + " " + String(n).padStart(2, "0")}{n === 1 ? null : <small> / 09</small>}</strong>
             <span>{c.phases[phase]}</span>
           </div>
-          <h3 id={"tantra-heading-" + n}>{n === 1 ? focus.title : copy.title}</h3>
+          {n === 1 ? <h2 id={"tantra-heading-" + n}>{focus.title}</h2> : <h3 id={"tantra-heading-" + n}>{copy.title}</h3>}
           <p className="tantra-journey__subtitle">{copy.subtitle}</p>
         </div>
         <div className="tantra-journey__details">
