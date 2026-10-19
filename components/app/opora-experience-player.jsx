@@ -621,7 +621,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {outroOpen&&<button type="button" className={styles.linkHint} disabled={locked}
             onClick={onFinish||onClose}>{t.finish}</button>}
           {moment==='receipt'&&<button type="button" className={styles.linkHint} disabled={locked}
-            onClick={()=>setOutroOpen(true)}>{t.audioNext}</button>
+            onClick={()=>setOutroOpen(true)}>{t.audioNext}</button>}
           {guidanceForMoment&&<div className={styles.guidanceGroup} data-gentle-guidance={moment}>
             <div className={styles.guidanceRow}>
               <img className={styles.guidanceAnimal} src="/images/holistic-house/gentle-owl.svg"
