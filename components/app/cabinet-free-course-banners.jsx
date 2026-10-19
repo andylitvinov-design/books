@@ -44,14 +44,14 @@ const COPY = {
     eyebrow: 'HOLISTIC HOUSE ACADEMY',
     title: 'Free courses',
     note: 'Explore for free. Teacher-led initiations require personal confirmation.',
-    action: 'Open course', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume from last slide', completed: 'Completed', slide: 'Slide',
+    action: 'Open course', started: 'CONTINUE LEARNING', energywork: 'Energywork Basics', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume from last slide', completed: 'Completed', slide: 'Slide',
     lesson: 'Lesson', intro: 'Introduction', of: 'of', slides: 'slides', chooseLesson: 'Go to a lesson', locked: 'Reach this lesson to unlock it',
   },
   ru: {
     eyebrow: 'АКАДЕМИЯ HOLISTIC HOUSE',
     title: 'Бесплатные курсы',
     note: 'Начальные материалы бесплатны. Инициация проводится по согласованию.',
-    action: 'Открыть курс', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить с последнего слайда', completed: 'Завершён', slide: 'Слайд',
+    action: 'Открыть курс', started: 'ПРОДОЛЖИТЬ ОБУЧЕНИЕ', energywork: 'Основы энергетики', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить с последнего слайда', completed: 'Завершён', slide: 'Слайд',
     lesson: 'Урок', intro: 'Введение', of: 'из', slides: 'слайдов', chooseLesson: 'Перейти к уроку', locked: 'Урок ещё не открыт',
   },
 }
@@ -75,7 +75,42 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
     ? `${t.lesson} ${currentLesson.lesson} · ${t.slide} ${savedIndex - currentLesson.start + 1} ${t.of} ${currentLesson.count}`
     : `${t.intro} · ${t.slide} ${savedIndex + 1} ${t.of} ${ENERGYWORK_LESSON_RANGES[0].start}`
 
-  return <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
+  return <>
+    {academyProgress ? <section className={styles.savedSection} aria-label={t.started}>
+      <article className={styles.savedCourse} data-energywork-course-resume>
+        <span className={styles.savedPhoto} aria-hidden="true">
+          <Image src={cardArtworkUrl(COURSES[0].image)} unoptimized={hasCardArtwork(COURSES[0].image)}
+            alt="" fill sizes="(max-width: 540px) 100px, 140px" />
+        </span>
+        <div className={styles.savedOverview}>
+          <span className={styles.savedEyebrow}>{academyProgress.status === 'completed' ? t.completed : t.started}</span>
+          <strong className={styles.savedLabel}>{t.energywork}</strong>
+          <p>{resumeLabel}</p>
+          <Link className={styles.savedAction} href={courseHref + "?slide=" + encodeURIComponent(academyProgress.slideId)} prefetch={false} data-energywork-resume-last>
+            {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
+        <details className={styles.lessonDisclosure}>
+          <summary>{t.chooseLesson}</summary>
+          <div className={styles.lessonPicker} data-energywork-cabinet-lessons>
+            <ol className={styles.lessonGrid}>
+              {ENERGYWORK_LESSON_RANGES.map((range, number) => {
+                const unlocked = savedIndex >= range.start
+                const finished = academyProgress.status === 'completed' || savedIndex >= range.end
+                const label = <><span>{t.lesson} {range.lesson} · {energyworkLessons[number].title[language]}</span>
+                  <small>{finished ? <Check size={13} aria-hidden="true" /> : null}{range.count} {t.slides}</small></>
+                return <li key={range.firstSlideId}>
+                  {unlocked
+                    ? <Link className={styles.lessonLink} href={courseHref + '?slide=' + encodeURIComponent(range.firstSlideId)} prefetch={false} aria-current={currentLesson?.lesson === range.lesson ? 'step' : undefined}>{label}</Link>
+                    : <span className={styles.lessonLocked} title={t.locked} aria-disabled="true"><LockKeyhole size={13} aria-hidden="true" />{label}</span>}
+                </li>
+              })}
+            </ol>
+          </div>
+        </details>
+      </article>
+    </section> : null}
+    <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
     <div className={styles.heading}>
       <div>
         <span className={styles.eyebrow}><Sparkles size={13} aria-hidden="true" />{t.eyebrow}</span>
@@ -83,34 +118,8 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
       </div>
       <p className={styles.note}>{t.note}</p>
     </div>
-    {academyProgress ? <div className={styles.savedCourse} data-energywork-course-resume>
-      <div className={styles.savedOverview}>
-        <span className={styles.savedLabel}>{academyProgress.status === 'completed' ? t.completed : t.continueTitle}</span>
-        <p>{t.continueText}</p>
-        <small>{resumeLabel}</small>
-      </div>
-      <Link className={styles.savedAction} href={courseHref + '?slide=' + encodeURIComponent(academyProgress.slideId)} prefetch={false} data-energywork-resume-last>
-        {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
-      </Link>
-      <div className={styles.lessonPicker} data-energywork-cabinet-lessons>
-        <strong>{t.chooseLesson}</strong>
-        <ol className={styles.lessonGrid}>
-          {ENERGYWORK_LESSON_RANGES.map((range, number) => {
-            const unlocked = savedIndex >= range.start
-            const finished = academyProgress.status === 'completed' || savedIndex >= range.end
-            const label = <><span>{t.lesson} {range.lesson} · {energyworkLessons[number].title[language]}</span>
-              <small>{finished ? <Check size={13} aria-hidden="true" /> : null}{range.count} {t.slides}</small></>
-            return <li key={range.firstSlideId}>
-              {unlocked
-                ? <Link className={styles.lessonLink} href={courseHref + '?slide=' + encodeURIComponent(range.firstSlideId)} prefetch={false} aria-current={currentLesson?.lesson === range.lesson ? 'step' : undefined}>{label}</Link>
-                : <span className={styles.lessonLocked} title={t.locked} aria-disabled="true"><LockKeyhole size={13} aria-hidden="true" />{label}</span>}
-            </li>
-          })}
-        </ol>
-      </div>
-    </div> : null}
     <div className={styles.grid}>
-      {COURSES.map(course => {
+      {COURSES.filter(course => !(academyProgress && course.id === 'energywork')).map(course => {
         const content = course[language]
         return <Link
           key={course.id}
@@ -131,4 +140,5 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
       })}
     </div>
   </section>
+  </>
 }
