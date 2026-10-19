@@ -76,8 +76,8 @@ const copy = {
     optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
     feedbackBadge: "Your review",
     saveReview: "Save review",
-    reviewMissing: "Write a short review to continue.",
-    feelingPlaceholder: "Write about your experience here…",
+    reviewMissing: "Write at least 15 characters to save your review.",
+    feelingPlaceholder: "Share your meditation experience: what did you feel, notice or discover?",
     feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
     voicesLabel: "Learner experiences",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
@@ -183,8 +183,8 @@ const copy = {
     optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
     feedbackBadge: "Ваш отзыв",
     saveReview: "Сохранить отзыв",
-    reviewMissing: "Напишите короткий отзыв, чтобы продолжить.",
-    feelingPlaceholder: "Напишите о своём опыте…",
+    reviewMissing: "Напишите хотя бы 15 символов, чтобы сохранить отзыв.",
+    feelingPlaceholder: "Расскажите о медитации: какие ощущения, мысли или открытия вы заметили?",
     feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
     voicesLabel: "Отзывы участников",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
@@ -538,7 +538,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
-  const feedbackMissing = isMeditationFeedback && !meditationReview.trim();
+  const feedbackMissing = isMeditationFeedback && Array.from(meditationReview.trim()).length < 15;
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -792,6 +792,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       maxLength={1600} rows={4}
                       placeholder={isMeditationFeedback ? t.feelingPlaceholder : t.placeholder} autoComplete="off" />
                   ) : null}
+                  {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{Math.min(15, Array.from(meditationReview.trim()).length)} / 15</p> : null}
                   {slide.question.type === "scale" ? (
                     <div className={styles.scaleWrap}>
                       <input id={"answer-" + slide.id} className={styles.scale} type="range" min="0" max="10" step="1"
