@@ -404,8 +404,6 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-02"); // video poster remains visible without autoplay
   await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-03"); // one-minute light and warmth practice on slide 3
-  await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-voices");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-05"); // slide 5: optional Sun symbolism thought
@@ -417,6 +415,8 @@ async function verifyShortViewport(page,locale) {
     ? "Я заметил(а), что дыхание стало спокойнее и появилось тепло."
     : "I noticed my breathing became calmer and I felt warmth and ease.");
   await expect(page.locator("button[data-energywork-next]")).toBeEnabled();
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-03"); // one-minute music-assisted practice before congratulations
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
