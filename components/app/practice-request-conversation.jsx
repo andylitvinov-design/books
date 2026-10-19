@@ -60,7 +60,7 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       const result=await response.json().catch(()=>({}))
       if(!response.ok)throw new Error(result.error||'REQUEST_FAILED')
       if(!controller.signal.aborted&&requestRef.current===requestId)setView(result)
-    }).catch(err=>{
+    }).catch(()=>{
       if(!controller.signal.aborted&&requestRef.current===requestId)setError(t.error)
     })
     return ()=>controller.abort()
