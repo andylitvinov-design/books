@@ -41,3 +41,21 @@ test("public /tests sitemap entries are absolute, reciprocal and never expose cl
     assert.ok(!entry.url.includes("/client/"));
   }
 });
+
+test("public SEO descriptions, topic explanations and FAQs are localized and non-diagnostic", () => {
+  const descriptions = [...pageSource.matchAll(/description: "([^"]+)"/g)].map(match => match[1]);
+  assert.equal(descriptions.length, 3);
+  for (const description of descriptions) {
+    assert.ok(description.length >= 100 && description.length <= 160,
+      "Public test description must be human-readable and concise: " + description.length);
+  }
+  for (const snippet of [
+    "What can I explore?", "Что можно исследовать?", "¿Qué puedes explorar?",
+    "Common questions", "Частые вопросы", "Preguntas frecuentes",
+    "without registration", "без регистрации", "sin registrarte",
+  ]) assert.ok(pageSource.includes(snippet), "Missing localized guidance: " + snippet);
+  assert.match(pageSource, /<details className=\{styles\.question\}/);
+  assert.match(pageSource, /className=\{styles\.endCta\}/);
+  assert.match(pageSource, /\/\$\{locale\}\/client\/tests/);
+  assert.doesNotMatch(pageSource, /medical diagnosis guaranteed|certified diagnosis|cure your/i);
+});
