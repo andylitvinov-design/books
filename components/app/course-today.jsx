@@ -197,8 +197,10 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  // Today data is ready. Keep the intent only in this mounted React flow.
  const firstLessonIntent=useRef(false),firstLessonConsumed=useRef(false)
  const launchConsumedCallback=useRef(onLaunchConsumed)
- launchConsumedCallback.current=onLaunchConsumed
- if(launchDirectly && !firstLessonConsumed.current) firstLessonIntent.current=true
+ useEffect(()=>{launchConsumedCallback.current=onLaunchConsumed},[onLaunchConsumed])
+ useEffect(()=>{
+   if(launchDirectly && !firstLessonConsumed.current) firstLessonIntent.current=true
+ },[launchDirectly])
  const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
  const [moduleFollowUpAnswers,setModuleFollowUpAnswers]=useState({})
  const [modulePrimarySkipped,setModulePrimarySkipped]=useState(false)
