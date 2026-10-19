@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, Check, ChevronDown, LockKeyhole, MessageSquareText, ShieldCheck } from 'lucide-react'
+import { Check, ChevronDown, LockKeyhole, MessageSquareText, ShieldCheck } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './reiki-my-reviews.module.css'
 
