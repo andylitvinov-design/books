@@ -25,7 +25,8 @@ export type EnergyworkTestimonial = {
   id: string;
   quote: Localized;
   attribution: Localized;
-  sourcePath: string;
+  // Only verified public reviews have a source page. Screenshot-only examples do not.
+  sourcePath?: string;
 };
 export type EnergyworkSlide = {
   id: string;
@@ -49,6 +50,32 @@ const image = {
   kundalini: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
 };
 
+
+// Four anonymized reflections transcribed from the course author's screenshots.
+// These are supplied examples, not independently verified YouTube comments.
+// Keep each complete reflection available in the existing scrollable review carousel.
+export const sunVoices: EnergyworkTestimonial[] = [
+  {
+    id: "sun-example-01",
+    quote: l("Yes, I managed to play with the Sun, as an energy flow and a song. I connected with an inner spark, called to the Sun, rode the light and danced with it. There was a pulse and flow until I was surrounded by the Sun. Then it became play — energy shifting in the cells and opening. I used sexual energy as a grounding point in the physical world, in resonance with the frequency of light codes. For me, it felt more like an ignition switch for something already within all of us: to ground and rise at the same time.", "Да, мне удалось поиграть с Солнцем — словно с потоком энергии и песней. Я почувствовал(а) связь с внутренней искрой, позвал(а) Солнце, словно оседлал(а) свет и танцевал(а) с ним. Были пульсация и поток, пока Солнце не окружило меня. Затем всё превратилось в игру: словно энергия двигалась в клетках и что-то раскрывалось. Сексуальная энергия стала для меня точкой заземления в физическом мире, в резонансе с частотой световых кодов. Это было похоже на включение того, что уже есть в каждом из нас: одновременно заземляться и подниматься."),
+    attribution: l("Anonymous reflection · supplied example", "Анонимный отзыв · предоставленный пример"),
+  },
+  {
+    id: "sun-example-02",
+    quote: l("Yes, I was able to fly out. First it was bright, then it turned dark like night, but I could still see the light — almost like an eclipse.", "Да, мне удалось взлететь. Сначала было светло, потом стало темно, словно ночью, но свет всё ещё был виден — почти как во время затмения."),
+    attribution: l("Anonymous reflection · supplied example", "Анонимный отзыв · предоставленный пример"),
+  },
+  {
+    id: "sun-example-03",
+    quote: l("I did. The Sun’s energy seemed to flow directly into a glowing sun in my chest. It felt as though it nourished a wound I imagined or sensed in my chest.", "Да. Казалось, что солнечный поток направляется прямо к светящемуся Солнцу в моей груди. Было ощущение, будто он питает рану, которую я представлял(а) или чувствовал(а) внутри груди."),
+    attribution: l("Anonymous reflection · supplied example", "Анонимный отзыв · предоставленный пример"),
+  },
+  {
+    id: "sun-example-04",
+    quote: l("Every time I come into contact with the energy of the Sun, the first wave brings goosebumps. The energy seems to roll along my body as if awakening it, followed by a wave of emotions depending on how my body feels. I was tired, and aggression arose, but I chose to use this energy for myself. It felt as if I had drunk many cups of coffee — my body was shaking. When I accepted this state, the energy calmed down.", "Каждый раз, когда я соприкасаюсь с энергией Солнца, первая волна вызывает мурашки. Кажется, энергия проходит по телу, пробуждая его, а затем, в зависимости от физического состояния, приходит волна эмоций. Я устал(а), поэтому появилась агрессия, но я решил(а) использовать эту энергию для себя. Было ощущение, будто я выпил(а) много чашек кофе: тело дрожало. Когда я принял(а) это состояние, энергия успокоилась."),
+    attribution: l("Anonymous reflection · supplied example", "Анонимный отзыв · предоставленный пример"),
+  },
+];
 
 /** Published Reiki Yggdrasil feedback reused from the original testimonial archive. */
 const yggdrasilVoices: EnergyworkTestimonial[] = yggdrasilTextTestimonials.map((entry) => ({
@@ -203,8 +230,9 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("For one minute, notice the Sun’s light and warmth within and around you.",
       "Одну минуту замечайте свет и тепло Солнца внутри себя и вокруг.") },
   { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
-    title: l("What do other viewers say?", "Что пишут другие?"),
-    body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
+    title: l("How others described their journey to the Sun", "Как другие описывают свой полёт к Солнцу"),
+    body: l("Four anonymous examples of personal reflections. Your own experience may be different.", "Четыре анонимных примера личных впечатлений. Ваш опыт может быть другим."),
+    testimonials: sunVoices },
   { id: "flight-05", phase: "flight", kind: "reflection",
     title: l("What did the Sun mean to you?", "Что для вас означает Солнце?"),
     body: l("Write one thought about the Sun as a symbol.", "Запишите одну мысль об образе Солнца."),
