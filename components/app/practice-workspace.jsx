@@ -255,7 +255,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   // Prefer examples from other masters, but never invent one if only our own are live.
   const recentPublicServices=[
     ...publicServiceExamples.filter(item=>item.practitionerSlug!==p?.slug),
-    ...publicServiceExamples.filter(item=>item.practitionerSlug===p?.slug),
+    ...(!needsOnboarding?publicServiceExamples.filter(item=>item.practitionerSlug===p?.slug):[]),
   ].slice(0,4)
   const marketplaceCopy=ru?{
     kicker:'HOLISTIC HOUSE · СООБЩЕСТВО',
