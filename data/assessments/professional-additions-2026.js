@@ -222,6 +222,12 @@ const ONS_QUESTIONS = [
   'Overall, how happy did you feel yesterday?',
   'On a scale where 0 is "not at all anxious" and 10 is "completely anxious", overall, how anxious did you feel yesterday?',
 ]
+const ONS_ENDPOINTS = [
+  ['Not at all satisfied', 'Completely satisfied'],
+  ['Not at all worthwhile', 'Completely worthwhile'],
+  ['Not at all happy', 'Completely happy'],
+  ['Not at all anxious', 'Completely anxious'],
+]
 const ONS_DIMENSIONS = [
   ['resources.ons4.life_satisfaction', 'Life satisfaction', 'resources'],
   ['resources.ons4.worthwhile', 'Feeling life is worthwhile', 'resources'],
@@ -249,7 +255,11 @@ const ONS_DEFINITION = {
     min: 0, max: 10, dimensionClass, sourceConstruct,
     direction: i === 3 ? 'lower-reported-difficulty' : 'higher-reported-resource',
   }))},
-  questions: ONS_QUESTIONS.map((text, i) => ({id: 'ons4.' + String(i + 1).padStart(2, '0'), text, required: true})),
+  questions: ONS_QUESTIONS.map((text, i) => ({
+    id: 'ons4.' + String(i + 1).padStart(2, '0'), text, required: true,
+    inputType: 'scale-select',
+    responseAnchors: Array.from({length: 11}, (_, n) => n === 0 ? ONS_ENDPOINTS[i][0] : n === 10 ? ONS_ENDPOINTS[i][1] : null),
+  })),
   optionalContext: [], suggestedRepeatDays: 30,
   contentHash: 'sha256:8597bc30247ea6505a7521df9f0dd4d51c13cb86776a5abc6d493fc170df6689',
 }
