@@ -128,13 +128,18 @@ export default function AppWorkspace({ locale, path = [] }) {
     return () => { lifetime.mounted = false; lifetime.epoch += 1 }
   }, [])
   const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
+  // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
+  const loadEpoch = useRef(0)
   const load = useCallback(async () => {
+    const epoch = ++loadEpoch.current
     setError(null)
     try {
-      const fresh = await appFetch('bootstrap')
+      const fresh = await appFetch(page === 'portrait' ? 'bootstrap?view=portrait' : 'bootstrap')
+      if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
     } catch (e) {
+      if (epoch !== loadEpoch.current) return
       setData(null)
       setError(e)
       setState(
@@ -147,9 +152,11 @@ export default function AppWorkspace({ locale, path = [] }) {
               : 'error',
       )
     }
-  }, [])
+  }, [page])
   useEffect(() => {
-    load()
+    setState('loading')
+    void load()
+    return () => { loadEpoch.current += 1 }
   }, [load])
   useEffect(() => {
     let channel
