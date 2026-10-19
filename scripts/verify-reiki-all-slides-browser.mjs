@@ -170,7 +170,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p8");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p9");
 
   // Opening the bottom hint should consume height in the flex column,
   // shrinking the slide instead of overlaying its contents.
@@ -246,7 +246,7 @@ async function exerciseJourney(page, locale, width) {
         ? "Я заметил(а), что дыхание стало спокойнее и появилось тепло." : "I noticed my breathing became calmer and I felt warmth and ease.");
       await expect(reviewButton).toBeEnabled();
     }
-    if (id === "kun-study-v2-01" || id.startsWith("kun-study-") || id === "ygg-06" || id.startsWith("ygg-study-")) {
+    if (id === "kun-study-v2-01" || id.startsWith("kun-study-") || id === "ygg-study-v2-01" || id.startsWith("ygg-study-")) {
       const nextButton = page.locator("button[data-energywork-next]");
       const hint = page.locator("[data-reiki-study-hint]");
       const source = id.startsWith("kun") ? "kundalini-reiki" : "yggdrasil";
