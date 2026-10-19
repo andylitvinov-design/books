@@ -187,7 +187,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     becomeTitle:'Become a Master',stepAbout:'1 · About you',stepService:'2 · Free service',continueFree:'Continue: add free service',freeTitle:'Your first free service',freeLead:'Offer a simple free introduction so people can discover your work before choosing another service.',includeFree:'Add a free introductory service',submitTogether:'Submit profile + free service for review',submitProfile:'Submit profile for review',saveDraft:'Save draft',back:'Back',skipFree:'You can skip the free service and add it later.',submittedTogether:'Your profile has been submitted. The service is reviewed separately and appears only after publication.',freePricing:'Free',offeringType:'Service type',
     moderation:'Changes publish only after moderation.',verified:'Verified',partner:'Holistic House Partner',
   },[ru])
-  async function act(fn){setBusy(true);setError('');try{await fn();await load()}catch(e){setError(e.code||e.message)}finally{setBusy(false)}}
+  async function act(fn,{rethrow=false}={}){setBusy(true);setError('');try{await fn();await load()}catch(e){setError(e.code||e.message);if(rethrow)throw e}finally{setBusy(false)}}
   const d=DASHBOARD_COPY[ru?'ru':'en']
   const isOwner=Boolean(ownerTools)
   async function openOwner(destination) {
@@ -467,9 +467,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <h2>{activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
-        {activePanel==='materials'&&<PracticeMaterials key={p?.revision||'materials'} locale={locale} practitioner={p} services={services} busy={busy}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
-             profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}))}
+             profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
 
         {activePanel==='clients'&&(isOwner&&accountId
