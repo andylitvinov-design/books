@@ -88,5 +88,5 @@ test("Long reviews scroll inside a clearly labelled region on mobile", () => {
   assert.match(css, /\.voiceQuote p::-webkit-scrollbar/);
   assert.match(css, /white-space:pre-line/);
   assert.match(css, /max-height:min\(23dvh,210px\)/);
-  assert.match(browser, /scrollHeight > element.clientHeight/);
+  assert.match(browser, /scrollSize\.scrollHeight > scrollSize\.clientHeight/);
 });
