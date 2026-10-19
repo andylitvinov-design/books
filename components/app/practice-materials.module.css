@@ -45,3 +45,5 @@
 :global(.hh-app) .shell button:disabled{opacity:.55;cursor:not-allowed}
 .saveNote{flex:1 1 220px;color:#566f7d;font-size:.9rem;line-height:1.45}
 .success{padding:11px 13px;border-radius:11px;background:#e9f5ef;border:1px solid #b9decf;color:#21614c;font-weight:700}
+
+.privatePreview{width:100%;max-height:240px;border-radius:12px}
