@@ -125,3 +125,18 @@ test('new items do not silently become Russian questionnaire translations', () =
     assert.match(item.title, /EN|IPIP/, key)
   }
 })
+
+
+test('new source-backed tests present truthful methodology in EN/RU rather than false unavailable text', () => {
+  for (const locale of ['en', 'ru']) {
+    const entries = buildExplorerEntries({locale, audience: 'guest'})
+    for (const key of NEW_KEYS) {
+      const entry = entries.find(value => value.key === key)
+      assert.equal(entry?.selectable, true, key + '/' + locale)
+      assert.ok(['traits', 'research'].includes(entry.methodologyStatus), key + '/' + locale)
+      assert.equal(entry.methodologySourceUrl, entry.definition.source.url, key + '/' + locale)
+      assert.match(entry.methodology, /IPIP|ONS4/, key + '/' + locale)
+      assert.doesNotMatch(entry.methodology, /not yet cleared|not startable|not available|пока недоступн|ещё не проверен/i, key + '/' + locale)
+    }
+  }
+})
