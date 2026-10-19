@@ -44,7 +44,7 @@ export default function PractitionerArticles({locale,services=[]}){
   confirmDelete:'Удалить папку? Статьи останутся в разделе «Без папки».',
   confirmArchive:'Архивировать статью?',saveFirst:'Сначала сохраните правки — затем отправляйте на проверку.',
   editTitle:'Редактор статьи',draftTitle:'Новая статья',close:'Закрыть редактор',emptyInput:'Введите название папки.',
-  tags:'Ключевые слова через запятую',discard:'Есть несохранённые изменения. Закрыть без сохранения?',filterStatus:'Статус',allStatuses:'Любой статус',
+  tags:'Ключевые слова (по одному на строку)',discard:'Есть несохранённые изменения. Закрыть без сохранения?',filterStatus:'Статус',allStatuses:'Любой статус',
   duplicateFolder:'Такая папка уже существует.',revisionError:'Материал изменился в другой вкладке. Обновите страницу и повторите.',
  }:{
   heading:'My articles',intro:'Your personal article library. Drafts stay private until publication is approved.',
@@ -61,7 +61,7 @@ export default function PractitionerArticles({locale,services=[]}){
   confirmDelete:'Delete this folder? Articles will remain in Unfiled.',
   confirmArchive:'Archive this article?',saveFirst:'Save your changes before submitting for review.',
   editTitle:'Edit article',draftTitle:'New article',close:'Close editor',emptyInput:'Enter a folder name.',
-  tags:'Search keywords (comma-separated)',discard:'You have unsaved edits. Close without saving?',filterStatus:'Status',allStatuses:'Any status',
+  tags:'Search keywords (one per line)',discard:'You have unsaved edits. Close without saving?',filterStatus:'Status',allStatuses:'Any status',
   duplicateFolder:'This folder already exists.',revisionError:'This item changed in another tab. Refresh and try again.',
  }
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
@@ -72,7 +72,7 @@ export default function PractitionerArticles({locale,services=[]}){
  const [addingFolder,setAddingFolder]=useState(false),[folderName,setFolderName]=useState('')
  const [preview,setPreview]=useState(false),bodyRef=useRef(null),editorRef=useRef(null)
  const [tagInput,setTagInput]=useState('')
- const tags=[...new Set(tagInput.split(/[,;\n]+/).map(value=>value.trim()).filter(Boolean))].slice(0,12)
+ const tags=[...new Set(tagInput.split(/\r?\n/).map(value=>value.trim()).filter(Boolean))].slice(0,12)
  const preparedDraft={...draft,tags}
  const isUnchanged=!!editing&&JSON.stringify({...initial(editing.draft?.locale),...editing.draft})===JSON.stringify(preparedDraft)&&
   (editing.folderId||'')===folderId
@@ -100,7 +100,7 @@ export default function PractitionerArticles({locale,services=[]}){
   if(busy||(hasUnsaved&&!window.confirm(t.discard)))return
   setEditing(item||null)
   setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale))
-  setTagInput((item?.draft?.tags||[]).join(', '))
+  setTagInput((item?.draft?.tags||[]).join('\n'))
   setFolderId(item?.folderId||(folders.some(f=>f.id===selectedFolder)?selectedFolder:''))
   setEditorOpen(true);setPreview(false);setError('');setNotice('')
  }
@@ -121,7 +121,7 @@ export default function PractitionerArticles({locale,services=[]}){
   await perform(async()=>{
    const saved=await request(editing?'/'+editing.id:'',{draft:preparedDraft,folderId:folderId||null,expectedRevision:editing?.revision})
    await reload();setEditing(saved);setDraft({...initial(saved.draft?.locale),...saved.draft})
-   setFolderId(saved.folderId||'');setTagInput((saved.draft?.tags||[]).join(', '));setNotice(t.saved)
+   setFolderId(saved.folderId||'');setTagInput((saved.draft?.tags||[]).join('\n'));setNotice(t.saved)
   })
  }
  async function command(action){
@@ -130,7 +130,7 @@ export default function PractitionerArticles({locale,services=[]}){
    const result=await request('/'+editing.id,{action,expectedRevision:editing.revision})
    await reload()
    if(action==='archive'){setEditorOpen(false);setEditing(null)}
-   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setTagInput((result.draft?.tags||[]).join(', '));setNotice(ru?'Статус обновлён.':'Status updated.')}
+   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setTagInput((result.draft?.tags||[]).join('\n'));setNotice(ru?'Статус обновлён.':'Status updated.')}
   })
  }
  async function createFolder(e){
@@ -229,7 +229,7 @@ export default function PractitionerArticles({locale,services=[]}){
    </div>
    <label>{t.title}<input required maxLength={160} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
    <label>{t.excerpt}<textarea value={draft.excerpt} maxLength={500} rows={2} onChange={e=>setDraft({...draft,excerpt:e.target.value})}/></label>
-   <label>{t.tags}<input value={tagInput} maxLength={600} onChange={e=>setTagInput(e.target.value)} placeholder={ru?'Например: Arsenicum, мышьяк, тревога':'E.g. Arsenicum, arsenic, anxiety'}/></label>
+   <label>{t.tags}<textarea rows={2} value={tagInput} maxLength={950} onChange={e=>setTagInput(e.target.value)} placeholder={ru?'Arsenicum\nмышьяк\nтревога':'Arsenicum\narsenic\nanxiety'}/></label>
    <div className={styles.bodyField}><span>{t.body}</span><div className={styles.tools}>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('\n\n## ')}>H2</button>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('\n- ')}>•</button>
