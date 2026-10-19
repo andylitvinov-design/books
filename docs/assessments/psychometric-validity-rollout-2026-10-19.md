@@ -1,7 +1,7 @@
 # Holistic House — psychometric validity & rights rollout, 19 October 2026
 
 ## What this draft changes
-- Adds 2,925 **source and edition metadata records** from the canonical Google Sheets \`10_Research_Master\` to a read-only, paginated Full database reference catalogue. These are studies, forms, translations and cohorts — **not 2,925 independent runnable tests**.
+- Adds 2,973 **source and edition metadata records** from the canonical Google Sheets \`10_Research_Master\` to a read-only, paginated Full database reference catalogue. These are studies, forms, translations and cohorts — **not 2,973 independent runnable tests**.
 - Keeps the legacy research registry and existing runnable catalogue intact; links source references by stable keys, suppressing duplicates in the supplementary display. Pages are 12 records, no question wording, answers, clinical cutoffs, or scoring.
 - Adds cautious original-author download/landing-page links for an explicit whitelist (UCSF MAIA-2 PDF, WHO WHO-5 landing page, NYU ASRS-6 download page). **No third-party PDFs are copied to our server, embedded, proxied or rebranded**. Other links are strictly publications, NOT buttons labelled "Download questionnaire". Public accessibility of material does not transfer copyrights or permit commercial electronic administration.
 - Adds a structured **edition-language-population** evidence readiness check to every existing product catalogue record. A source reference is *documented*; it is not itself an independent validation. Holistic House originals are flagged \`development\`. An A–D grade requires manually reviewed evidence for all rating domains and may remain ungraded/pending.
