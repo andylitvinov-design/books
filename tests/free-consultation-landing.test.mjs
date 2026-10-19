@@ -29,7 +29,7 @@ test('all three verified free paths lead to existing pages, not a new clinical o
   assert.match(landing, /\/services\/dao-health-profile/)
   assert.match(landing, /\/client\/tests/)
   assert.match(landing, /<Link className=\{styles\.offerAction\} href=\{destination\(lang, offer\.id\)\}/)
-  assert.match(landing, /"en"/)
+  for (const locale of ["en", "ru", "es"]) assert.ok(landing.includes(locale + ": {"), "missing locale: " + locale)
   assert.match(publicLocales, /free-situation-review\|free-consultation\|imagery-therapy/)
   for (const phrase of [
     'Free situation review',
