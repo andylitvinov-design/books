@@ -155,16 +155,23 @@ test("Tantra videos use canonical originals and posters match first-party hashes
   assert.match(middleware, /tantraReikiPage \? "media-src 'self' https:\/\/psitrends\.com" : "media-src 'self'"/);
 });
 
-test("English Tantra testimonials prioritize Litten and Margaret and disclose Russian video audio", async () => {
+test("Full Tantra learner reports appear ahead of the clearly labeled original Russian videos", async () => {
   const component = await source("components/tantra-reiki-testimonials.tsx");
-  assert.match(component, /id="tantra-original-english-testimonials" open=\{locale === "en"\}/);
+  const cards = await source("components/tantra-learner-review-cards.tsx");
+  const curriculum = await source("data/academy/energywork-ai-curriculum.ts");
+  assert.match(component, /<TantraLearnerReviewCards locale=\{locale\} headingId="tantra-testimonials-heading" \/>/);
+  assert.match(cards, /tantraVoices\.map\(\(review, index\) =>/);
+  assert.match(curriculum, /export const tantraVoices: EnergyworkTestimonial\[\] = \[/);
+  for (const name of ['margaret', 'olga', 'litten', 'tantra-level-1']) {
+    assert.ok(curriculum.includes('id: "' + name + '"'));
+  }
   assert.match(component, /initiallyOpen=\{locale !== "en"\}/);
   const disclosure = await source("components/tantra-video-testimonials.tsx");
   assert.match(disclosure, /id="tantra-russian-video-testimonials"/);
-  assert.match(component, /summary=\{`\$\{l.video\} · \$\{l.language\}`\}/);
+  assert.match(component, /summary=\{v\.title\}/);
   assert.match(component, /Alena · Tantra Reiki testimonial · Russian audio/);
   assert.match(component, /locale === "en" \? " · Russian audio" : ""/);
-  assert.ok(component.indexOf('id="tantra-original-english-testimonials"') < component.indexOf('<TantraVideoTestimonials'));
+  assert.ok(component.indexOf("<TantraLearnerReviewCards") < component.indexOf("<TantraVideoTestimonials"));
 });
 
 
