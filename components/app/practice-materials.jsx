@@ -42,7 +42,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   moderation:'Your videos appear on the public profile after editorial approval. Previously published materials remain visible until changes are approved.',
   invalid:'Enter a valid YouTube or Vimeo URL.',duplicate:'This video is already in your materials.',saving:'Saving…',saved:'Video saved to your materials as a draft.',removed:'Video removed from your materials.',saveFailed:'Could not save the video. Please try again.',conflict:'Your profile changed in another tab. Refresh the page and try again.',confirmRemove:'Remove this video from your materials?',autoSaved:'Videos save immediately. Submit for review to publish them on your profile.',
  }
- const [tab,setTab]=useState('videos')
+ const [tab,setTab]=useState('reports')
  const [reportItems,setReportItems]=useState([])
  const [reportMode,setReportMode]=useState('loading')
  const [reportError,setReportError]=useState('')
@@ -60,10 +60,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    .then(async r=>r.status===404?null:(r.ok?await r.json():Promise.reject()))
    .then(data=>{
     if(!alive)return
-    if(data===null){setReportMode('not-owner');return}
+    if(data===null){setReportMode('not-owner');setTab('videos');return}
     setReportItems(Array.isArray(data.items)?data.items:[])
     setReportMode('ready')
-    if(reportRefresh===0)setTab(v=>v==='videos'?'reports':v)
    }).catch(()=>{if(alive){setReportMode('error');setReportError('Unable to load the private library')}})
   return ()=>{alive=false}
  },[reportRefresh])
