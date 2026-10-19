@@ -674,6 +674,29 @@ test('article folders: real database ownership, search metadata, archival safety
  const after=(await articleRepo.library(a)).items.find(x=>x.id===article.id)
  assert.equal(after.folderId,null,'folder deletion must keep its linked article in Unfiled')
  assert.equal((await articleRepo.publicList('ru')).some(x=>x.id===article.id),false)
+ const submitted=await articleRepo.submit(a,article.id,{expectedRevision:after.revision})
+ assert.equal(submitted.status,'submitted')
+ const approved=await articleRepo.moderate(article.id,{action:'approve'})
+ assert.equal(approved.status,'published')
+ const publicArticle=await articleRepo.publicArticle('ru',article.slug)
+ assert.equal(publicArticle.published.title,'Synthetic QA article')
+ assert.equal(Object.hasOwn(publicArticle,'draft'),false)
+ assert.equal(Object.hasOwn(publicArticle,'folderId'),false)
+ assert.equal(Object.hasOwn(publicArticle,'reviewNote'),false)
+ const publicList=(await articleRepo.publicList('ru')).find(x=>x.id===article.id)
+ assert.ok(publicList)
+ assert.equal(Object.hasOwn(publicList,'draft'),false)
+ const changed=await articleRepo.save(a,article.id,{
+  expectedRevision:approved.revision,
+  folderId:null,
+  draft:{...approved.draft,body:approved.draft.body+'\n\nPRIVATE_PENDING_CHANGES'},
+ })
+ assert.notEqual(changed.draft.body,approved.published.body)
+ const publishedAgain=await articleRepo.publicArticle('ru',article.slug)
+ assert.equal(publishedAgain.published.body,approved.published.body)
+ assert.equal(Object.hasOwn(publishedAgain,'draft'),false)
+ await articleRepo.archive(a,article.id,{expectedRevision:changed.revision})
+ await assert.rejects(()=>articleRepo.publicArticle('ru',article.slug),{code:'NOT_FOUND'})
 })
 
 test('public service funnel stores daily clicks and keeps practitioner report private', async () => {
