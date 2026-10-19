@@ -4,7 +4,7 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {GrowthStudioError, nextGrowthPost} from '@/lib/growth-studio/model.mjs'
 import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
-import {telegramConfig,telegramPayload,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
+import {telegramConfig,telegramPayload,verifyTelegramChannel,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
   ['invalid_post','invalid_action','invalid_transition','not_found','conflict','capacity_reached'].includes(error.code)
@@ -86,6 +86,7 @@ export async function publishGrowthTelegramNowAction(input){
     if(source.revision!==input.expectedRevision)return {ok:false,error:'conflict'}
     // Validate full exact content/target before taking the non-repeatable claim.
     telegramPayload(source,config.chatId)
+    await verifyTelegramChannel()
     claimed={...source,status:'sending',revision:source.revision+1,attemptId:randomUUID(),updatedAt:new Date().toISOString()}
     await store.save(claimed,source.revision)
   }catch(e){return {ok:false,error:e instanceof GrowthStudioError?e.code:'storage_unavailable'}}
