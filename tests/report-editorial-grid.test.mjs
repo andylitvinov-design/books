@@ -21,8 +21,8 @@ test('premium report uses distinct hero/artwork columns, aligned sections, origi
   for(const locale of ['en','ru']){
     const source=textOf(buildPrescriptionPdf({...base,patientName:'Sample Subject'},locale,origin))
     assert.match(source,/^%PDF-1\.7/)
-    assert.equal((source.match(/\/Lighthouse Do Q/g)??[]).length,2,
-      'approved mark and larger illustrated lighthouse occur only on first cover')
+    assert.equal((source.match(/\/Lighthouse Do Q/g)??[]).length,1,
+      'approved masthead mark stays, duplicated white-backed hero JPEG is removed')
     assert.match(source,/0\.85 0\.91 0\.90 rg/,'unboxed watercolor-style coast on ivory paper')
     assert.match(source,/0\.51 0\.72 0\.72 RG/,'coastal scenery integrates with the lighthouse')
     assert.match(source,/0\.965 0\.980 0\.969 rg/,'balanced two-ring progress dashboard')
