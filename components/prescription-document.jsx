@@ -74,11 +74,11 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         {!document.analysis && <p className="canonical-intro">{labels.intro}</p>}
         {progress && <section className="canonical-progress" aria-label={locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}>
           <h2>{locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}</h2>
-          <p className="canonical-progress-subtitle">{locale === 'ru' ? 'Оценка клиента до и после консультации' : 'Client-recorded ratings before and after the consultation'}</p>
+          <p className="canonical-progress-subtitle">{locale === 'ru' ? 'Оценки до и после консультации' : 'Before and after consultation scores'}</p>
           <div className="canonical-progress-grid">
             {[
-              { key: 'before', label: locale === 'ru' ? 'Начало' : 'Start', value: progress.before },
-              { key: 'after', label: locale === 'ru' ? 'Конец' : 'End', value: progress.after },
+              { key: 'before', label: locale === 'ru' ? 'Было' : 'Before', value: progress.before },
+              { key: 'after', label: locale === 'ru' ? 'Стало' : 'After', value: progress.after },
             ].map(({ key, label, value }) => <div className={`canonical-progress-item canonical-progress-item--${key}`} key={key}>
               <div className="canonical-progress-dial" aria-hidden="true" style={{ '--progress': `${value * 10}%` }}>
                 <strong>{value}<small>/10</small></strong>

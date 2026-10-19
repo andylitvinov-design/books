@@ -177,13 +177,48 @@ test('wrong client/session, archived session and unavailable source still fail c
   }
 })
 
-test('source edit after the verified read cannot make the newer report visible',async()=>{
+test('an edit after publication never hides the reviewed text or shows the newer private draft',async()=>{
   const f=fixture({afterPublishSeal:change=>change({updatedAt:'later-version',analysis:'Later private draft'})})
   const intent=f.review()
   await f.publish(intent)
   assert.equal(f.row.published_payload.reportFingerprint,intent.expectedReportFingerprint)
+  assert.equal(f.row.published_payload.reportSnapshot.analysis,'Reviewed report')
+  assert.equal(f.row.published_payload.reportSnapshot.internalNotes,undefined)
+  assert.equal((await f.published()).report.id,DOC)
+  const approved=await f.publishedReport()
+  assert.equal(approved.analysis,'Reviewed report')
+  assert.equal(approved.internalNotes,undefined)
+  assert.notEqual(approved.analysis,'Later private draft')
+})
+
+test('a later edit replaces the published text only after an explicit reviewed republish',async()=>{
+  const f=fixture()
+  await f.publish(f.review())
+  f.changeSource({updatedAt:'later-version',analysis:'Pending owner changes'})
+  assert.equal((await f.publishedReport()).analysis,'Reviewed report')
+  assert.equal((await f.published()).report.id,DOC)
+  await f.publish(f.review())
+  assert.equal((await f.publishedReport()).analysis,'Pending owner changes')
+})
+
+test('revoking the source removes its sealed snapshot from client and guest views',async()=>{
+  const f=fixture()
+  await f.publish(f.review())
+  f.changeSource({status:'revoked'})
   assert.equal((await f.published()).report,null)
   await assert.rejects(f.publishedReport(),{code:'SESSION_UNAVAILABLE'})
+})
+
+test('tampered or cross-client report snapshots fail closed',async()=>{
+  for(const patch of [
+    {clientId:OTHER},{id:OTHER},{analysis:'Unreviewed edit'},
+  ]) {
+    const f=fixture()
+    await f.publish(f.review())
+    Object.assign(f.row.published_payload.reportSnapshot,patch)
+    assert.equal((await f.published()).report,null)
+    await assert.rejects(f.publishedReport(),{code:'SESSION_UNAVAILABLE'})
+  }
 })
 
 function studioFixture({changeReference=false}={}) {
