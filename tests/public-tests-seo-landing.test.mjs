@@ -18,6 +18,9 @@ test("public tests have own crawleable locale page, distinct from private test e
   assert.match(pageSource, /languages/);
   assert.match(pageSource, /canonical/);
   assert.match(pageSource, /<h1/);
+  assert.match(pageSource, /images: \[\{ url: image, alt:/);
+  assert.match(pageSource, /twitter: \{ card: "summary_large_image".*images: \[image\]/);
+
   assert.match(pageSource, /\/client\/tests/);
   assert.match(pageSource, /not medical or psychiatric diagnoses/);
   assert.doesNotMatch(config, /source:\s*["']\/\:locale\(en\|ru\|es\)\/tests["'],\s*destination:\s*["']\/\:locale\/client\/tests/);
@@ -40,4 +43,33 @@ test("public /tests sitemap entries are absolute, reciprocal and never expose cl
     assert.ok(entry.priority > 0);
     assert.ok(!entry.url.includes("/client/"));
   }
+});
+
+test("public SEO descriptions, topic explanations and FAQs are localized and non-diagnostic", () => {
+  const descriptions = [...pageSource.matchAll(/description: "([^"]+)"/g)].map(match => match[1]);
+  assert.equal(descriptions.length, 3);
+  for (const description of descriptions) {
+    assert.ok(description.length >= 100 && description.length <= 160,
+      "Public test description must be human-readable and concise: " + description.length);
+  }
+  for (const snippet of [
+    "What can I explore?", "Что можно исследовать?", "¿Qué puedes explorar?",
+    "Common questions", "Частые вопросы", "Preguntas frecuentes",
+    "without registration", "без регистрации", "sin registrarte",
+  ]) assert.ok(pageSource.includes(snippet), "Missing localized guidance: " + snippet);
+  assert.match(pageSource, /<details className=\{styles\.question\}/);
+  assert.match(pageSource, /className=\{styles\.endCta\}/);
+  assert.match(pageSource, /\/\$\{locale\}\/client\/tests/);
+  assert.doesNotMatch(pageSource, /medical diagnosis guaranteed|certified diagnosis|cure your/i);
+});
+
+test("search crawlers can discover the public guide from EN/RU/ES homes without slowing the direct test entry", () => {
+  const sharedHome = readFileSync(new URL("../components/holistic-house-home.tsx", import.meta.url), "utf8");
+  const spanishHome = readFileSync(new URL("../app/es/page.tsx", import.meta.url), "utf8");
+  assert.ok(sharedHome.includes("How free self-checks work"));
+  assert.ok(sharedHome.includes("Как работают бесплатные тесты"));
+  assert.ok(sharedHome.includes("href={`/${locale}/tests`}"));
+  assert.ok(sharedHome.includes("href={`/${locale}/client/tests`}"));
+  assert.ok(spanishHome.includes('href="/es/tests"'));
+  assert.ok(spanishHome.includes('href="/es/client/tests"'));
 });
