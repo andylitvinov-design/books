@@ -33,7 +33,7 @@ export default async function ClientSessionSharePage({params}) {
         reportLocale=resolveSavedReportLocale(record,locale)
         const projected=payment?getClientPaymentDocument(record,reportLocale):getClientPrescription(record,reportLocale)
         if(projected){if(payment)reportContent=<PaymentDocument document={projected} locale={reportLocale} embedded/>
-          else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={reportLocale} embedded/>}}
+          else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={reportLocale} embedded narration={{scope:'guest-session',selector:shareSelector}}/>}}
       }
     }
     const client=await store.findClientById(session.clientId)

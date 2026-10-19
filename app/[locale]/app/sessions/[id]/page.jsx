@@ -64,7 +64,7 @@ export default async function SavedSessionPage({params}){
       session={saved.session} clientName={doc?.patientName||clientName}
       recommendation={!payment?doc:null}
       reportContent={doc?(payment?<PaymentDocument locale={locale} document={doc} embedded/>:
-        <PrescriptionDocument locale={locale} document={doc} embedded/>):null}
+        <PrescriptionDocument locale={locale} document={doc} embedded narration={{scope:'saved-session',id}}/>):null}
       sharedGuideReady={sharedGranulesGuideReady()}/>
     <SavedSessionManagement locale={locale} savedId={id} savedAt={saved.savedAt}/>
   </>
