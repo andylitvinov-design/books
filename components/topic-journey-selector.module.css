@@ -72,3 +72,117 @@
 @media(max-width:390px){.hero{grid-template-columns:104px minmax(0,1fr);gap:10px}.heroArt{min-height:145px}.hero h1{font-size:1.65rem}.introduction{font-size:.74rem}.heroCopy .eyebrow{font-size:.55rem}.testSummary strong{font-size:.89rem}.primaryAction{font-size:.9rem}}
 @media(max-width:340px){.hero{grid-template-columns:85px minmax(0,1fr)}.hero h1{font-size:1.39rem}.introduction{font-size:.69rem}.testNumber{width:32px;flex-basis:32px}.testDetail{padding-left:55px}}
 @media(prefers-reduced-motion:reduce){.topic,.primaryAction,.testChevron{transition:none}.primaryAction:hover:not(:disabled){transform:none}}
+
+
+/* Business & Money: restrained navy/teal + champagne accents, consistent with Holistic House. */
+.root[data-topic-journey="business"] .hero{
+  background:linear-gradient(113deg,#e9f1f1 0%,#f4f4ef 55%,#e8ece8 100%);
+  border-color:#b8d1d2;
+}
+.root[data-topic-journey="business"] .heroArt{
+  background:#d2dedb;
+}
+.root[data-topic-journey="business"] .heroArt img{
+  object-position:center 24%;
+}
+.root[data-topic-journey="business"] .hero::after{
+  border-color:rgba(167,128,73,.25);
+}
+.root[data-topic-journey="business"] .hero h1{
+  color:#173945;
+}
+.businessPromo{
+  position:relative;
+  display:grid;
+  grid-template-columns:45px minmax(0,1fr) auto;
+  align-items:center;
+  gap:18px;
+  min-width:0;
+  margin:-6px 0 23px;
+  padding:20px 22px;
+  border:1px solid #42717a;
+  border-left:4px solid #d7b780;
+  border-radius:18px;
+  background:radial-gradient(circle at 94% 6%,rgba(199,172,119,.16),transparent 35%),
+    linear-gradient(113deg,#102e3e 0%,#174656 65%,#1e4b58 100%);
+  color:#f8f6f0;
+  box-shadow:0 13px 28px rgba(17,60,72,.12);
+}
+.businessPromoIcon{
+  display:grid;
+  place-items:center;
+  width:45px;
+  height:45px;
+  border:1px solid rgba(229,205,163,.4);
+  border-radius:13px;
+  color:#e6c995;
+  background:rgba(245,226,190,.09);
+}
+.businessPromoCopy{
+  min-width:0;
+}
+.businessPromoKicker{
+  color:#e3c48f!important;
+  font:800 10px/1.35 Arial,Helvetica,sans-serif;
+  letter-spacing:.13em;
+  margin:0 0 6px!important;
+}
+.businessPromoCopy h2{
+  color:#fffaf2;
+  font:500 clamp(20px,2.2vw,27px)/1.15 Georgia,"Times New Roman",serif;
+  letter-spacing:-.02em;
+  margin:0 0 6px;
+  text-wrap:balance;
+}
+.businessPromoCopy>p:last-child{
+  color:#d6e7e7;
+  font:12px/1.5 Arial,Helvetica,sans-serif;
+  margin:0;
+  max-width:560px;
+}
+.businessPromoSide{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  gap:10px;
+  min-width:225px;
+  max-width:265px;
+}
+.businessPromoPrice{
+  color:#edd8b0;
+  font:750 11px/1.4 Arial,Helvetica,sans-serif;
+  text-align:center;
+}
+.businessPromoLink{
+  display:inline-flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  min-height:44px;
+  padding:10px 14px;
+  border-radius:11px;
+  background:#e2c493;
+  color:#183845!important;
+  text-decoration:none;
+  font:800 12px/1.35 Arial,Helvetica,sans-serif;
+}
+.businessPromoLink:hover{background:#f4d6a3}
+.businessPromoLink:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media(max-width:850px){
+  .businessPromo{grid-template-columns:43px minmax(0,1fr);gap:10px 14px}
+  .businessPromoSide{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;max-width:none}
+  .businessPromoPrice{text-align:left}
+  .businessPromoLink{min-width:210px}
+}
+@media(max-width:600px){
+  .businessPromo{grid-template-columns:36px minmax(0,1fr);gap:9px 12px;padding:15px;margin:-5px 0 20px;border-radius:15px}
+  .businessPromoIcon{width:36px;height:36px;border-radius:10px}
+  .businessPromoIcon svg{width:21px;height:21px}
+  .businessPromoKicker{font-size:9px;letter-spacing:.07em}
+  .businessPromoCopy h2{font-size:20px;line-height:1.16}
+  .businessPromoCopy>p:last-child{font-size:11px;line-height:1.42}
+  .businessPromoSide{grid-column:1/-1;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+  .businessPromoPrice{text-align:left;font-size:10px;margin-left:1px}
+  .businessPromoLink{width:100%;min-width:0;padding:9px 12px;font-size:12px}
+}
