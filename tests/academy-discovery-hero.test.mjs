@@ -6,7 +6,7 @@ import test from "node:test";
 const root = process.cwd();
 const read = (file) => readFileSync(path.join(root, file), "utf8");
 
-test("Academy home has a single course catalogue directly under the search hero, without the old three-way switch", () => {
+test("Academy home groups free courses, study programs and verified live events directly under the finder", () => {
   const hub = read("components/academy-hub.tsx");
   const discovery = read("components/academy-discovery.tsx");
   const css = read("components/academy-discovery.module.css");
@@ -15,8 +15,15 @@ test("Academy home has a single course catalogue directly under the search hero,
   assert.match(hub, /<AcademyDiscovery locale=\{locale\} view=\{view\} items=\{items\}/);
   assert.match(discovery, /<h1 id="academy-discovery-title">/);
   assert.match(discovery, /<DiscoverySectionTabs locale=\{locale\} active="courses"/);
-  assert.match(discovery, /<AcademyCourseCardList locale=\{locale\} items=\{matchedItems\}/);
-  assert.doesNotMatch(discovery, /programTabs|browseTools|<CatalogShowcase|Refine courses|aiShort|<nav/);
+  assert.match(discovery, /<AcademyCourseCardList locale=\{locale\} items=\{freeItems\}/);
+  assert.match(discovery, /<AcademyCourseCardList locale=\{locale\} items=\{studyItems\}/);
+  assert.doesNotMatch(discovery, /programTabs|browseTools|<CatalogShowcase|Refine courses|aiShort/);
+  for (const anchor of ["academy-free-courses", "academy-study-programs", "academy-live-events"]) {
+    assert.ok(discovery.includes('href="#' + anchor + '"'), anchor);
+    assert.ok(discovery.includes('id="' + anchor + '"'), anchor);
+  }
+  assert.match(discovery, /className=\{styles\.quickPaths\}/);
+  assert.match(discovery, /<AcademyLiveEventList locale=\{locale\} events=\{matchedEvents\}/);
   assert.doesNotMatch(hub, /<AcademyFreeCourseBanner/);
   assert.match(css, /linear-gradient\(121deg, #203450 0%, #283d5c 58%, #483a52 100%\)/);
   assert.ok(services.includes("linear-gradient(121deg,#203450 0%,#283d5c 58%,#483a52 100%)"));
@@ -138,4 +145,39 @@ test("Featured programme buttons open their own landings; only real AI lessons s
     const end = hub.indexOf("actionLabel:", start);
     assert.ok(start >= 0 && end > start && hub.slice(start, end).includes("courseHref:"), id + " should retain an actual AI lesson link");
   }
+});
+
+
+test("Academy quick path pills and three headings remain mobile-friendly in English, Russian and Spanish", () => {
+  const source = read("components/academy-discovery.tsx");
+  const styles = read("components/academy-discovery.module.css");
+  const hub = read("components/academy-hub.tsx");
+  for (const words of ["Free Courses", "Study Programs", "Live Events", "Бесплатные курсы", "Программы обучения", "Живые встречи", "Cursos gratis", "Programas de estudio", "Eventos en vivo"]) {
+    assert.ok(source.includes(words), words);
+  }
+  assert.match(source, /<nav className=\{styles\.quickPaths\}/);
+  assert.match(source, /<BookOpen size=\{16\}/);
+  assert.match(source, /<GraduationCap size=\{16\}/);
+  assert.match(source, /<CalendarDays size=\{16\}/);
+  assert.match(styles, /\.quickPaths\s*\{/);
+  assert.match(styles, /grid-template-columns:\s*repeat\(3,\s*minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@media \(max-width: 620px\)/);
+  assert.match(styles, /\.eventUpper\s*\{/);
+  assert.match(hub, /import \{ PUBLIC_EVENTS \} from "@\/data\/public-events"/);
+  assert.match(hub, /events=\{PUBLIC_EVENTS\}/);
+});
+
+test("Live academy cards show only confirmed future events with real registration links", () => {
+  const source = read("components/academy-discovery.tsx");
+  assert.match(source, /event\.status === "published"/);
+  assert.match(source, /Number\.isFinite\(Date\.parse\(event\.startsAt\)\)/);
+  assert.match(source, /Date\.parse\(event\.startsAt\) >= now/);
+  assert.match(source, /event\.registrationHref\.startsWith\("https:\/\/"\)/);
+  assert.match(source, /eventSchedule\(event, locale\)/);
+  assert.match(source, /event\.highlights\?\.\[locale\]/);
+  assert.match(source, /event\.registrationHref/);
+  assert.match(source, /href=\{event\.registrationHref\}/);
+  assert.match(source, /setExpandedEvent\(expanded \? null : event\.id\)/);
+  assert.match(source, /href=\{"/" \+ locale \+ "\/events"\}/);
+  assert.doesNotMatch(source, /fetch\(|localStorage\.|sessionStorage\./);
 });
