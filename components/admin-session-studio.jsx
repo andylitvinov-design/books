@@ -53,6 +53,13 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     (plan.practices||[]).some(item=>item.title?.trim()||item.instructions?.trim())
   )
   const changed=JSON.stringify(draft)!==JSON.stringify(session.draft)
+  const sourceDocument=documents.find(doc=>doc.id===draft.reportDocumentId)
+  const sourceHasProgressScores=sourceDocument?.progressBefore!=null&&sourceDocument?.progressAfter!=null
+  const publishedHasProgressScores=session.published?.reportSnapshot?.progressBefore!=null&&session.published?.reportSnapshot?.progressAfter!=null
+  const reportUpdatePending=session.status==='published'&&Boolean(
+    (sourceHasProgressScores&&!publishedHasProgressScores)||
+    (draft.reportDocumentId&&session.published?.reportFingerprint!==session.publicationSource?.reportFingerprint)
+  )
   async function load() {
     const result=await api(base)
     const next=result.session
