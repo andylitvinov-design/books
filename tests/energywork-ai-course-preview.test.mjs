@@ -118,7 +118,7 @@ test('Guest answers stay unsaved; consented Google learners use private versione
   assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
   assert.match(learner, /maxLength=\{isMeditationFeedback \? undefined : 1600\}/)
   assert.doesNotMatch(learner, /aria-pressed=\{path === choice\.id\}|choosePath\(/)
-  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing\}/)
+  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing\}/)
 })
 
 test('Course remains available in Academy, guest cabinet and course page routes', () => {
@@ -132,7 +132,8 @@ test('Course remains available in Academy, guest cabinet and course page routes'
 })
 
 test('Mobile course uses teal five-step rail and remains accessible', () => {
-  assert.match(learner, /<details className=\{styles\.programme\} ref=\{programmeRef\}>/)
+  assert.match(learner, /<details className=\{styles\.programme\}>/)
+  assert.match(learner, /<details className=\{styles\.saveManager\}>/)
   assert.match(learner, /energyworkLessons\.map/)
   assert.match(learner, /role="progressbar"/)
   assert.match(learner, /aria-labelledby="energywork-slide-title"/)

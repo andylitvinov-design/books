@@ -1269,23 +1269,6 @@ function RunnerAnswerChoices({ definition, question, selected, onChoose, locale,
   const min = question.min ?? definition.answerScale?.min
   const max = question.max ?? definition.answerScale?.max
   const anchors = question.responseAnchors || definition.responseAnchors
-  // Eleven-point ONS rating choices need a compact, accessible mobile selector;
-  // do not force eleven cramped button cards onto a narrow iPhone screen.
-  if (question.inputType === 'scale-select') return (
-    <label className="hh-day-count-select">
-      <span>{locale === 'ru' ? 'Оценка по шкале (0–10)' : 'Rating on a 0–10 scale'}</span>
-      <select aria-label={locale === 'ru' ? 'Оценка от 0 до 10' : 'Rating from 0 to 10'}
-        value={selected ?? ''} disabled={disabled}
-        onChange={event => { if (event.target.value !== '') void onChoose(Number(event.target.value)) }}>
-        <option value="" disabled>{locale === 'ru' ? 'Выберите оценку' : 'Select a rating'}</option>
-        {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(value => (
-          <option value={value} key={value}>
-            {value}{anchors?.[value - min] ? ' — ' + anchors[value - min] : ''}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
   if (question.inputType === 'day-count') return (
     <label className="hh-day-count-select">
       <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>

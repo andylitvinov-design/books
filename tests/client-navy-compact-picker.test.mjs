@@ -215,12 +215,12 @@ test('the first mobile step follows the hero immediately, without redundant prom
 })
 
 test('problems search and optional skip use the existing topic-derived concerns', () => {
-  assert.match(picker, /const allProblems = problemsForTopics\(focus\)/)
+  assert.match(picker, /const allProblems = problemsForTopics\(concernFocus\)/)
   assert.match(picker, /problemQuery, setProblemQuery/)
   assert.match(picker, /const matchingProblems = queryText/)
   assert.match(picker, /onToggleProblem\(problem\.key\)/)
   assert.match(picker, /className=\{styles\.problemSearch\}/)
-  assert.match(picker, /disabled=\{!focus\.length\}/)
+  assert.match(picker, /disabled=\{!concernFocus\.length\}/)
   assert.match(picker, /className=\{styles\.skipProblems\}/)
   assert.match(picker, /getElementById\('hh-simple-recommendations'\)/)
 })

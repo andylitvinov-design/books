@@ -205,12 +205,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     initialPreferences?.problems ?? [], initialPreferences?.focus ?? [],
   ))
   useEffect(() => {
-    // Never retain hidden concerns once their parent topics are deselected.
+    // Concerns can be suggested by either explicitly selected topics or a chosen collection.
+    // Remove only concerns that neither choice supports.
     setProblems((previous) => {
-      const next = normalizeProblemsForTopics(previous, focus)
+      const next = normalizeProblemsForTopics(previous, selectionFocus)
       return next.length === previous.length ? previous : next
     })
-  }, [focus])
+  }, [selectionFocus])
   const [stylesFilter, setStylesFilter] = useState(() => initialPreferences?.styles ?? [])
   const [kinds, setKinds] = useState(() => initialPreferences?.kinds ?? [])
   const [lengths, setLengths] = useState(() => initialPreferences?.lengths ?? [])
@@ -314,26 +315,27 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   // Public browsing uses its own match-based order, unaffected by checkbox toggles.
   // Explicitly selected tests stay available across filter changes; discovery
   // ordering itself is not driven by checkbox state or saved health results.
+  // One combined preference model: the visitor's topics, optional collection and
+  // selected concerns determine relevance. Test kind, time and other explicit
+  // filters restrict the eligible pool, independently of topic/concern relevance.
+  // A collection is a soft ranking preference, never a replacement for choices.
+  const simpleRecommendationPool = useMemo(() => filterExplorerEntries(entries, {
+    availability: 'available', styles: stylesFilter, kinds, lengths, areas, details,
+    axes, maxMinutes, language, tracking, freeOnly,
+  }).filter((entry) => entry.selectable), [
+    entries, stylesFilter, kinds, lengths, areas, details, axes,
+    maxMinutes, language, tracking, freeOnly,
+  ])
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
-    // Collections change recommendation weights, not the entire card format.
-    // Remove only the topic/concern hard filter so non-collection tests remain
-    // available further down; respect explicit time, kind and other facets.
-    (activeCollection ? filterExplorerEntries(entries, {
-      availability, styles: stylesFilter, kinds, lengths, areas, details, axes,
-      maxMinutes, language, tracking, freeOnly, search: query, selectedKeys,
-    }) : filtered).filter((entry) => entry.selectable),
+    simpleRecommendationPool,
     { focus: selectionFocus, problems,
       collectionId: activeCollectionId, collectionFocus: activeCollection?.focus || [],
-      details, axes, depth, styles: stylesFilter, lengths },
-  ), [entries, filtered, activeCollection, activeCollectionId, selectionFocus, problems, details, axes, areas,
-      availability, kinds, maxMinutes, language, tracking, freeOnly, query, depth, stylesFilter, lengths, selectedKeys])
-  // Only explicit duration/type options restrict catalog search.
-  // Topic and concern selections still drive recommendations, not searches.
-  const searchRecommendations = useMemo(() => rankPublicTestMatches(
-    filterExplorerEntries(entries, { availability: 'available', kinds, maxMinutes }),
-    { depth, focus: activeCollection?.focus || [], collectionId: activeCollectionId,
-      collectionFocus: activeCollection?.focus || [] },
-  ), [entries, kinds, maxMinutes, depth, activeCollection, activeCollectionId])
+      details, axes, depth, styles: stylesFilter, lengths, kinds },
+  ), [simpleRecommendationPool, selectionFocus, problems, activeCollectionId,
+      activeCollection, details, axes, depth, stylesFilter, lengths, kinds])
+  // Text searches use the same pool and relevance order as the visible cards.
+  // Typing a query does not silently discard any earlier preference.
+  const searchRecommendations = simpleRecommendations
   const simpleAuto = useMemo(() => buildPublicStarterBattery(simpleRecommendations), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
@@ -428,10 +430,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       locale={locale} authenticated={authenticated}
       initialMode={initialMode}
       focus={focus}
-      onToggleFocus={(key) => { setActiveCollectionId(null); setFocus((current) => toggle(current, key)); setAvailability('available') }}
+      onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
       problems={problems}
       onToggleProblem={(key) => {
-        const allowed = normalizeProblemsForTopics([key], focus)
+        const allowed = normalizeProblemsForTopics([key], selectionFocus)
         if (!allowed.length) return
         setProblems((current) => current.includes(key)
           ? current.filter((problem) => problem !== key)

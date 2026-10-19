@@ -13,11 +13,20 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
-import { energyworkLessonRanges } from "@/data/academy/energywork-ai-schema";
+import { energyworkLessonRanges, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
 type AnswerMap = Record<string, string>;
+const TANTRA_STUDY_HINT_ANCHORS: Record<string, string> = {
+  "tan-06": "#tantra-original-author-research",
+  "tan-study-02": "#tantra-original-author-research",
+  "tan-study-03": "#tantra-full-source",
+  "tan-study-04": "#tantra-full-source",
+  "tan-study-05": "#tantra-levels",
+  "tan-study-06": "#tantra-original-master-programme",
+  "tan-study-07": "#tantra-original-master-programme",
+};
 type StoredProgress = {
   accountId: string; enrolled: boolean; courseVersion: string;
   slideId?: string; pathId?: EnergyworkPath | null; answers?: AnswerMap;
@@ -31,23 +40,6 @@ type SaveCommand = {
   action: "save";
   version: string; slideId: string; nextSlideId: string;
   answer?: string;
-};
-
-const programmeBenefits: Record<EnergyworkLocale, Record<string, string>> = {
-  en: {
-    flight: "Begin with a guided meditation and your first reflection.",
-    tantra: "Explore presence, connection and gentle energywork.",
-    kundalini: "Discover grounding and the Kundalini Reiki approach.",
-    yggdrasil: "Meet the World Tree, runes and Reiki Yggdrasil.",
-    initiation: "See how personal learning and initiation with Andrey work.",
-  },
-  ru: {
-    flight: "Начните с медитации и первого личного впечатления.",
-    tantra: "Познакомьтесь с практикой присутствия и контакта.",
-    kundalini: "Откройте для себя опору и подход Кундалини Рейки.",
-    yggdrasil: "Познакомьтесь с Мировым Древом, рунами и Рейки Иггдрасиль.",
-    initiation: "Узнайте, как проходят личное обучение и инициация у Андрея.",
-  },
 };
 
 const copy = {
@@ -68,8 +60,7 @@ const copy = {
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Discover your Reiki journey",
-    programmeTeaser: "5 lessons · 3 Reiki traditions · guided practices",
-    programmeIntro: "Start with a guided meditation, discover three Reiki traditions and explore how to continue with Andrey.",
+    programmeIntro: "Five short lessons: a guided meditation and three Reiki traditions.",
     systemDetails: "About this practice",
     openLesson: "Open lesson",
     lessonLocked: "Opens as you progress",
@@ -103,6 +94,7 @@ const copy = {
     meditationReport: "Meditation report",
     lessonQuestion: "Course question",
     optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
+    tantraAnswerRequired: "Answer required to continue.", tantraStudyHint: "Need a hint? Read the guide", tantraAnswerPlaceholder: "Write a short answer…", required: "Required",
     feedbackBadge: "Your review",
     saveReview: "Save review",
     reviewMissing: "Write at least 15 characters to save your review.",
@@ -110,6 +102,7 @@ const copy = {
     feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
     feedbackCharacters: "characters", feedbackMinimum: "minimum 15",
     voicesLabel: "Learner experiences",
+    voicesFullText: "Full learner review",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
     voicesSource: "Original review",
     voicesComments: "Video comments",
@@ -187,8 +180,7 @@ const copy = {
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Откройте свой путь в Рейки",
-    programmeTeaser: "5 уроков · 3 системы Рейки · медитации",
-    programmeIntro: "Начните с медитации, познакомьтесь с тремя системами Рейки и узнайте, как продолжить обучение с Андреем.",
+    programmeIntro: "Пять коротких уроков: медитация и знакомство с тремя системами Рейки.",
     systemDetails: "Об этой практике",
     openLesson: "Открыть урок",
     lessonLocked: "Откроется по мере прохождения",
@@ -222,6 +214,7 @@ const copy = {
     meditationReport: "Отчёт после медитации",
     lessonQuestion: "Вопрос по уроку",
     optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
+    tantraAnswerRequired: "Ответ обязателен для продолжения.", tantraStudyHint: "Подсказка: читать материал", tantraAnswerPlaceholder: "Ваш краткий ответ…", required: "Обязательно",
     feedbackBadge: "Ваш отзыв",
     saveReview: "Сохранить отзыв",
     reviewMissing: "Напишите хотя бы 15 символов, чтобы сохранить отзыв.",
@@ -229,6 +222,7 @@ const copy = {
     feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
     feedbackCharacters: "символов", feedbackMinimum: "минимум 15",
     voicesLabel: "Отзывы участников",
+    voicesFullText: "Полный текст отзыва",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
     voicesSource: "Источник отзыва",
     voicesComments: "Комментарии к видео",
@@ -430,7 +424,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
         <div data-meditation-review-carousel data-review-count={entries.length}>
           <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
             <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
-            <p>{currentReview.quote[locale]}</p>
+            <p data-review-fulltext role="region" tabIndex={0} aria-label={t.voicesFullText}>{currentReview.quote[locale]}</p>
             <cite>{currentReview.attribution[locale]}</cite>
           </blockquote>
           {entries.length > 1 ? (
@@ -494,7 +488,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const accountIdRef = useRef<string | null>(null);
   const revisionRef = useRef(0);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
-  const programmeRef = useRef<HTMLDetailsElement>(null);
   const dirtyRef = useRef(new Set<string>());
   const progressRef = useRef("welcome-01");
   const request = useCallback((body: SaveCommand) => {
@@ -607,6 +600,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
   const feedbackLength = Array.from(meditationReview.trim()).length;
   const feedbackMissing = isMeditationFeedback && feedbackLength < 15;
+  const isTantraStudyQuestion = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.includes(slide.id);
+  const tantraStudyMissing = isTantraStudyQuestion && !energyworkTantraStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -661,7 +656,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     setIndex(target);
   }
   async function next() {
-    if (busy || experienceMissing || feedbackMissing) return;
+    if (busy || experienceMissing || feedbackMissing || tantraStudyMissing) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -756,7 +751,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>
@@ -862,7 +857,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
                      isMeditationFeedback ? t.feedbackBadge :
                      initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
-                     initiationItems.some((item) => item.questionIds.includes(slide.id)) ? t.lessonQuestion : t.optional}</span>
+                     initiationItems.some((item) => item.questionIds.includes(slide.id)) ? (isTantraStudyQuestion ? t.lessonQuestion + ' · ' + t.required : t.lessonQuestion) : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
@@ -871,7 +866,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
                       maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
-                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder} autoComplete="off" />
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isTantraStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
+                      required={isTantraStudyQuestion}
+                      aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : undefined}
+                      autoComplete="off" />
                   ) : null}
                   {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{feedbackLength} {t.feedbackCharacters} · {t.feedbackMinimum}</p> : null}
                   {slide.question.type === "scale" ? (
@@ -902,11 +900,22 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
                   ) : null}
-                  <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
-                    role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
-                    isMeditationFeedback ? (feedbackMissing ? t.reviewMissing : t.feedbackPrivacy) :
-                    initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id))
-                    ? t.optionalForLearning : t.blank}</p>
+                  {isTantraStudyQuestion ? (
+                    <div className={styles.tantraStudyHelp} id={"tantra-study-help-" + slide.id} data-tantra-study-required>
+                      <span className={styles.tantraStudyRequired}>{t.tantraAnswerRequired}</span>
+                      <Link className={styles.tantraStudyLink}
+                        href={"/" + locale + "/academy/reiki/tantra-reiki" + TANTRA_STUDY_HINT_ANCHORS[slide.id]}
+                        target="_blank" rel="noopener noreferrer" data-tantra-study-hint>
+                        <BookOpen size={15} aria-hidden="true" />{t.tantraStudyHint}<ExternalLink size={13} aria-hidden="true" />
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
+                      role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
+                      isMeditationFeedback ? (feedbackMissing ? t.reviewMissing : t.feedbackPrivacy) :
+                      initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id))
+                      ? t.optionalForLearning : t.blank}</p>
+                  )}
                   {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id)) ?
                     <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
                       disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
@@ -1017,8 +1026,65 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
         <div className={styles.progressFooter}>
           <div className={styles.progressHeader}>
-            <span>{lessonProgressLabel}</span>
-            <span>{progressPercent}% {t.completedLabel}</span>
+            <span className={styles.progressStep}>{lessonProgressLabel}</span>
+            <div className={styles.progressStatus}>
+              <span>{progressPercent}% {t.completedLabel}</span>
+              <details className={styles.saveManager}>
+                <summary aria-label={t.consentTitle} title={t.consentTitle}>
+                  {sync === "ready" ? <Check size={16} aria-hidden="true" /> : <LockKeyhole size={16} aria-hidden="true" />}
+                </summary>
+                <aside className={styles.preview} aria-live="polite">
+                <LockKeyhole size={19} aria-hidden="true" />
+                <div className={styles.syncContent}>
+                  {sync === "checking" ? <strong>{t.checking}</strong> : null}
+                  {sync === "guest" ? <>
+                    <strong>{t.preview}</strong>
+                    <details className={styles.saveDetails}>
+                      <summary>{t.consentTitle}</summary>
+                      <p>{t.previewHelp}</p>
+                      <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
+                      <p>{t.guestHint}</p>
+                    </details>
+                  </> : null}
+                  {sync === "consent" ? <>
+                    <details className={styles.saveDetails}>
+                      <summary>{t.consentTitle}</summary>
+                      <label className={styles.consentLabel}>
+                        <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
+                        <span>{t.consentText}</span>
+                      </label>
+                      <label className={styles.consentLabel}>
+                        <input type="checkbox" checked={shareConsented} onChange={(event) => setShareConsented(event.target.checked)} />
+                        <span>{t.teacherShareConsent}</span>
+                      </label>
+                      <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
+                      <p>{t.guestHint}</p>
+                    </details>
+                  </> : null}
+                  {sync === "ready" ? <>
+                    <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
+                    {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
+                    <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
+                    {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
+                      <details className={styles.saveDetails}>
+                        <summary>{t.teacherShareTitle}</summary>
+                        <p>{t.teacherShareHint}</p>
+                        <label className={styles.consentLabel}>
+                          <input type="checkbox" checked={shareConsented}
+                            onChange={event => setShareConsented(event.target.checked)} />
+                          <span>{t.teacherShareConsent}</span>
+                        </label>
+                        <button type="button" onClick={shareWithTeacher}
+                          disabled={!shareConsented || busy} className={styles.syncButton}>{t.teacherShareAction}</button>
+                      </details>}
+                  </> : null}
+                  {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
+                  {saveError ? <p role="alert" className={styles.saveError}>{saveError}
+                    <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
+                </div>
+                </aside>
+              </details>
+            </div>
           </div>
           <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
             aria-valuenow={reachedIndex + 1} aria-label={t.lesson}>
@@ -1026,102 +1092,14 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </div>
         </div>
 
-        <details className={styles.programme} ref={programmeRef}>
+        <details className={styles.programme}>
           <summary className={styles.programmeSummary}>
-            <span className={styles.programmeSummaryIcon}><BookOpen size={20} aria-hidden="true" /></span>
-            <span className={styles.programmeSummaryCopy}>
-              <strong>{t.program}</strong>
-              <small>{t.programmeTeaser}</small>
-            </span>
-            <ChevronDown className={styles.programmeChevron} size={20} aria-hidden="true" />
+            <span className={styles.programmeSummaryIcon}><BookOpen size={17} aria-hidden="true" /></span>
+            <span className={styles.programmeSummaryCopy}><strong>{t.program}</strong></span>
+            <ChevronDown className={styles.programmeChevron} size={18} aria-hidden="true" />
           </summary>
           <div className={styles.programmeBody}>
             <p className={styles.programmeIntro}>{t.programmeIntro}</p>
-            <ol className={styles.programmeList}>{energyworkLessons.map((lesson, number) => {
-              const range = lessonRanges[number]!;
-              const unlocked = range.start <= reachedIndex;
-              const system = energyworkPathChoices.find((choice) => choice.id === lesson.phase);
-              return (
-                <li key={lesson.phase} className={styles.programmeCard}
-                  data-lesson-open={unlocked ? "true" : "false"}
-                  aria-current={currentLessonRange?.lesson === number + 1 ? "step" : undefined}>
-                  <span className={styles.programmeNumber} aria-hidden="true">{number + 1}</span>
-                  <div className={styles.programmeCardCopy}>
-                    <span className={styles.programmeLesson}>{lesson.title[locale]}</span>
-                    <small className={styles.programmeBenefit}>{programmeBenefits[locale][lesson.phase]}</small>
-                    <span className={styles.programmeMeta}>
-                      <span className={styles.programmeCount}>{range.count} {t.slidesWord}</span>
-                      {system ? (
-                        <Link className={styles.programmeLink}
-                          href={"/" + locale + "/academy/" + system.studyPath}
-                          target="_blank" rel="noopener noreferrer"
-                          aria-label={lesson.title[locale] + " — " + t.systemDetails}>
-                          {t.systemDetails}<ExternalLink size={13} aria-hidden="true" />
-                        </Link>
-                      ) : null}
-                    </span>
-                  </div>
-                  <button type="button" className={styles.programmeJump}
-                    disabled={busy || sync === "checking" || !unlocked}
-                    onClick={() => void jumpToSlide(lesson.firstSlideId)}
-                    aria-label={(unlocked ? t.openLesson : t.lessonLocked) + ": " + lesson.title[locale]}
-                    title={unlocked ? t.openLesson : t.lessonLocked}>
-                    <ArrowRight size={19} aria-hidden="true" />
-                  </button>
-                </li>
-              );
-            })}</ol>
-            <p className={styles.disclaimer}>{sync === "ready" ? t.stopSaved : t.stop}</p>
-          <aside className={styles.preview} aria-live="polite">
-          <LockKeyhole size={19} aria-hidden="true" />
-          <div className={styles.syncContent}>
-            {sync === "checking" ? <strong>{t.checking}</strong> : null}
-            {sync === "guest" ? <>
-              <strong>{t.preview}</strong>
-              <details className={styles.saveDetails}>
-                <summary>{t.consentTitle}</summary>
-                <p>{t.previewHelp}</p>
-                <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
-                <p>{t.guestHint}</p>
-              </details>
-            </> : null}
-            {sync === "consent" ? <>
-              <details className={styles.saveDetails}>
-                <summary>{t.consentTitle}</summary>
-                <label className={styles.consentLabel}>
-                  <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
-                  <span>{t.consentText}</span>
-                </label>
-                <label className={styles.consentLabel}>
-                  <input type="checkbox" checked={shareConsented} onChange={(event) => setShareConsented(event.target.checked)} />
-                  <span>{t.teacherShareConsent}</span>
-                </label>
-                <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
-                <p>{t.guestHint}</p>
-              </details>
-            </> : null}
-            {sync === "ready" ? <>
-              <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
-              {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
-              <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
-              {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
-                <details className={styles.saveDetails}>
-                  <summary>{t.teacherShareTitle}</summary>
-                  <p>{t.teacherShareHint}</p>
-                  <label className={styles.consentLabel}>
-                    <input type="checkbox" checked={shareConsented}
-                      onChange={event => setShareConsented(event.target.checked)} />
-                    <span>{t.teacherShareConsent}</span>
-                  </label>
-                  <button type="button" onClick={shareWithTeacher}
-                    disabled={!shareConsented || busy} className={styles.syncButton}>{t.teacherShareAction}</button>
-                </details>}
-            </> : null}
-            {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
-            {saveError ? <p role="alert" className={styles.saveError}>{saveError}
-              <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
-          </div>
-          </aside>
           </div>
         </details>
         <footer className={styles.footer}>
@@ -1136,7 +1114,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               )}
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing}
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing}
                 className={styles.next} data-energywork-next>
                 {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
                   slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continuePath) : t.continue}

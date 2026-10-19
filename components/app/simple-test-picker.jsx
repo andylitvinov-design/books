@@ -34,9 +34,9 @@ const TEXT = {
     deep:'Longer tests', deepNote:'Prioritize longer questionnaires',
     time:'Time per test', anyTime:'Any duration', shortTime:'Up to 5 min', mediumTime:'Up to 10 min',
     professional:'Professional tests only', clear:'Clear optional filters',
-    recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
+    recommended:'Recommended for you', recommendedHelp:'Based on your topics, optional collection, concerns and test-type filters.',
     courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
-    why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Selecting a collection raises relevance for its tagged tests without hiding the others. Without choices this reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
+    why:'Why these tests?', whyText:'The approximate match considers your selected topics, the optional collection, specific concerns and measured scales. Test-type and time filters limit which tests are shown; depth changes their order. Unrelated tests stay available when permitted by those filters. This is not a clinical probability, diagnosis or health score.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', details:'Details', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'No registration required to start',
@@ -62,9 +62,9 @@ const TEXT = {
     deep:'Длинные', deepNote:'Сначала более длинные анкеты',
     time:'Время на один тест', anyTime:'Любое', shortTime:'До 5 мин', mediumTime:'До 10 мин',
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
-    recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
+    recommended:'Рекомендуем для вас', recommendedHelp:'С учётом ваших тем, подборки, проблем и выбранных типов тестов.',
     courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
-    why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Выбор подборки добавляет баллы тестам её темы, не скрывая остальные. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
+    why:'Почему эти тесты?', whyText:'Процент учитывает выбранные темы, необязательную подборку, конкретные проблемы и измеряемые шкалы. Тип и время ограничивают список тестов, глубина влияет на порядок. Это не диагноз, клиническая вероятность или процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', details:'Подробнее', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Для прохождения регистрация не нужна',
@@ -90,9 +90,9 @@ const TEXT = {
     deep:'Largas', deepNote:'Priorizar cuestionarios más largos',
     time:'Tiempo por prueba', anyTime:'Sin límite', shortTime:'Hasta 5 min', mediumTime:'Hasta 10 min',
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
-    recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
+    recommended:'Recomendados para ti', recommendedHelp:'Según tus temas, colección opcional, dificultades y tipos de prueba.',
     courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
-    why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Seleccionar una colección aumenta la relevancia de sus pruebas sin ocultar otras. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
+    why:'¿Por qué estas pruebas?', whyText:'La coincidencia estimada combina los temas, la colección opcional, las dificultades y las escalas medidas. Los filtros de tipo y tiempo limitan los resultados; la profundidad ajusta el orden. No es una probabilidad clínica ni un diagnóstico.',
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', details:'Detalles', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Sin registro para comenzar',
@@ -127,17 +127,17 @@ const COLLECTION_ICONS = {
   attention: Target, body: Activity, meaning: Sun, wellbeing: CirclePlus,
 }
 const COLLECTION_COPY = {
-  en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
+  en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic (optional)',
     intro: 'Explore available tests in each collection. Select the tests you want below.',
     test: 'test', tests: 'tests', more: 'Show all collections', less: 'Show fewer collections',
     open: 'Prioritize collection', personalized: 'Prioritized from your selected topics and concerns. Counts reflect available tests and your time/type filters.',
     badge: 'Collection', prioritized: 'Higher priority from collection:', clear: 'Remove priority', tip: 'Included in collections:' },
-  ru: { eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ', title: 'Подборки тестов по темам',
+  ru: { eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ', title: 'Подборки тестов по темам (необязательно)',
     intro: 'Посмотрите доступные тесты по каждой теме. Ниже можно выбрать нужные.',
     test: 'тест', tests: 'тестов', more: 'Показать все подборки', less: 'Свернуть подборки',
     open: 'Повысить приоритет подборки', personalized: 'Подборки упорядочены по вашим темам и запросам. Количество учитывает доступные тесты, время и тип.',
     badge: 'Подборка', prioritized: 'Приоритет подборки:', clear: 'Снять приоритет', tip: 'Входит в подборки:' },
-  es: { eyebrow: 'EXPLORA POR TEMA', title: 'Colecciones de pruebas por tema',
+  es: { eyebrow: 'EXPLORA POR TEMA', title: 'Colecciones de pruebas por tema (opcional)',
     intro: 'Descubre las pruebas disponibles para cada tema. Elige las que quieras más abajo.',
     test: 'prueba', tests: 'pruebas', more: 'Mostrar todas las colecciones', less: 'Mostrar menos',
     open: 'Priorizar colección', personalized: 'Ordenadas por tus temas e inquietudes. Los totales reflejan pruebas disponibles y los filtros de tiempo y tipo.',
@@ -197,6 +197,11 @@ export function SimpleTestPicker({
   const collections = availableTestCollections(catalogEntries, { focus, problems, kinds: testKinds, maxMinutes, depth })
   const collectionCopy = COLLECTION_COPY[locale] || COLLECTION_COPY.en
   const activeCollection = TEST_TOPIC_COLLECTIONS.find((collection) => collection.id === activeCollectionId)
+  // Keep a previously chosen collection visible in the two-card collapsed row.
+  const orderedCollections = activeCollectionId
+    ? [...collections.filter((item) => item.id === activeCollectionId), ...collections.filter((item) => item.id !== activeCollectionId)]
+    : collections
+  const concernFocus = activeCollection ? [...new Set([...focus, ...activeCollection.focus])] : focus
   const [expandedTests, setExpandedTests] = useState(new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
@@ -208,7 +213,7 @@ export function SimpleTestPicker({
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
   const testKindsKey = [...testKinds].sort().join('|')
-  const allProblems = problemsForTopics(focus)
+  const allProblems = problemsForTopics(concernFocus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
     ...allProblems.filter((item) => !problems.includes(item.key))]
   const queryText = problemQuery.trim().toLocaleLowerCase(locale)
@@ -218,7 +223,7 @@ export function SimpleTestPicker({
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
     setShowAllProblems(false)
-  }, [focusKey, depth, maxMinutes, testKindsKey, problemKey])
+  }, [focusKey, activeCollectionId, depth, maxMinutes, testKindsKey, problemKey])
   const selectedKeys = new Set(activeBattery.map((item) => item.key))
   const via = groupViaRecommendations(recommendations, selectedKeys, showIndividualVia)
   const fullVia = resolveViaProfile(via, viaProfileEntry, selectedKeys, { maxMinutes, testKinds })
@@ -337,9 +342,9 @@ export function SimpleTestPicker({
       <label className={styles.problemSearch}>
         <Search size={19} aria-hidden="true" />
         <input type="search" value={problemQuery} onChange={(event) => setProblemQuery(event.target.value)}
-          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!focus.length}/>
+          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!concernFocus.length}/>
       </label>
-      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
+      {concernFocus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
         {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
         <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
           {visibleProblems.map((problem) => {
@@ -352,7 +357,7 @@ export function SimpleTestPicker({
           })}
         </div>
         {queryText && matchingProblems.length === 0 && <p className={styles.noMatches} role="status">{c.noProblemMatches}</p>}</>}
-      {focus.length > 0 && <div className={styles.problemActions}>
+      {concernFocus.length > 0 && <div className={styles.problemActions}>
         {allProblems.length > 8 && !queryText && <button type="button" className={styles.problemMore}
           aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
           {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
@@ -418,7 +423,7 @@ export function SimpleTestPicker({
         <p>{focus.length || problems.length ? collectionCopy.personalized : collectionCopy.intro}</p>
       </header>
       <div className={styles.curatedGrid} id="hh-test-curated-grid">
-        {collections.map((collection) => {
+        {orderedCollections.map((collection) => {
           const Icon = COLLECTION_ICONS[collection.id]
           const active = activeCollectionId === collection.id
           const title = collection.title[locale] || collection.title.en
@@ -449,7 +454,7 @@ export function SimpleTestPicker({
           </button>
         })}
       </div>
-      {collections.length > 4 && <button type="button" className={styles.curatedMore}
+      {collections.length > 2 && <button type="button" className={styles.curatedMore}
         aria-expanded={collectionsOpen} aria-controls="hh-test-curated-grid"
         onClick={() => setCollectionsOpen((value) => !value)}>
         {collectionsOpen ? collectionCopy.less : collectionCopy.more}

@@ -191,6 +191,19 @@ async function exerciseJourney(page, locale, width) {
         ? "Я заметил(а) своё спокойное дыхание." : "I noticed a quiet moment.");
       await expect(reviewButton).toBeEnabled();
     }
+    if (id === "tan-06" || id.startsWith("tan-study-")) {
+      const nextButton = page.locator("button[data-energywork-next]");
+      const hint = page.locator("[data-tantra-study-hint]");
+      await expect(hint).toHaveAttribute("href", new RegExp("^/" + locale + "/academy/reiki/tantra-reiki#tantra-"));
+      await expect(hint).toHaveAttribute("target", "_blank");
+      const answer = page.locator('textarea[id="answer-' + id + '"]');
+      await expect(answer).toHaveAttribute("required", "");
+      await expect(nextButton).toBeDisabled();
+      await answer.fill("   ");
+      await expect(nextButton).toBeDisabled();
+      await answer.fill(locale === "ru" ? "Мой короткий ответ по материалу." : "My short answer from the guide.");
+      await expect(nextButton).toBeEnabled();
+    }
     if (index===expectedSequence.length) break;
     const next = page.locator("button[data-energywork-next]");
     await expect(next).toBeEnabled({timeout:30000});
