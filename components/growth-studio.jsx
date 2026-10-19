@@ -224,16 +224,13 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   async function sendTelegram(post){
     if(!telegram.ready||busy)return
     const destination=telegram.channel||'the configured channel'
-    if(!window.confirm(t.telegramConfirm+'\n'+destination+'\n\n'+post.title))return
+    if(!window.confirm(t.telegramConfirm+'\n'+destination+'\n\n'+post.title+'\n\n'+post.caption.slice(0,700)))return
     setBusy(true);setNotice('')
     try{
       const result=await publishGrowthTelegramNowAction({id:post.id,expectedRevision:post.revision,confirmed:true})
       if(result.record)onCreated([result.record])
       if(result.ok)setNotice(t.telegramSent)
-      else{
-        setNotice(t[result.error]||t.tryAgain)
-        if(!result.record)await refresh()
-      }
+      else setNotice(t[result.error]||t.tryAgain)
     }catch{setNotice(t.telegram_delivery_unknown)}
     finally{setBusy(false)}
   }
