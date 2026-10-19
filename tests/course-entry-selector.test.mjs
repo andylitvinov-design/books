@@ -307,7 +307,7 @@ test('iPhone My Courses layout puts scales below both columns and keeps Plan ful
 test('course page brand, Account menu and both tabs share the Courses destination', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const theme = read('components/app/my-course-theme.css')
-  assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course'/)
+  assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course\?view=courses'/)
   assert.match(workspace, /nav\.find\(item => navIsActive\(item\.id\)\)\?\.label/)
   assert.equal((workspace.match(/nav\.map\(/g) || []).length, 3)
   assert.match(workspace, /page === 'course'/)
