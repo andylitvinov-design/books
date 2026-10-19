@@ -2,6 +2,7 @@
 import {randomUUID} from 'node:crypto'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {GrowthStudioError, nextGrowthPost} from '@/lib/growth-studio/model.mjs'
+import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 
 const safeError = error => error instanceof GrowthStudioError &&
@@ -38,4 +39,24 @@ export async function updateGrowthStudioPostAction(input) {
     await store.save(post,input.expectedRevision)
     return {ok:true,record:post}
   } catch (error) {return {ok:false,error:safeError(error)}}
+}
+
+
+// Atomic, replay-safe, owner-only bulk draft import. Does NOT send or schedule externally.
+export async function createGrowthStudioBulkAction(input) {
+  if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
+  try {
+    const store = getGrowthStudioStore()
+    if (!store) return {ok:false,error:'storage_unavailable'}
+    const drafts = prepareGrowthBulk(input)
+    const current = await Promise.all(drafts.map(item=>store.get(item.id)))
+    if (current.every(Boolean)) {
+      if (!current.every((saved,index)=>sameGrowthDraft(saved,drafts[index])))
+        return {ok:false,error:'conflict'}
+      return {ok:true,records:current,reused:true}
+    }
+    if (current.some(Boolean)) return {ok:false,error:'conflict'}
+    await store.batchCreate(drafts)
+    return {ok:true,records:drafts,reused:false}
+  } catch(error) {return {ok:false,error:safeError(error)}}
 }
