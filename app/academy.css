@@ -4141,6 +4141,28 @@
 .academy-reading-shell--tantra .tantra-mobile-guide__toc[open] summary span {
   transform: rotate(180deg);
 }
+.academy-reading-shell--tantra .tantra-course-hero__more > a.tantra-course-hero__tests-cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: calc(100% - 18px);
+  min-height: 34px;
+  margin: 8px 9px 0;
+  padding: 7px 11px;
+  border: 1px solid rgba(227,246,236,.45);
+  border-radius: 8px;
+  background: rgba(18,103,111,.42);
+  color: #fff9e7;
+  text-align: center;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.32;
+}
+.academy-reading-shell--tantra .tantra-course-hero__more > a.tantra-course-hero__tests-cta:focus-visible {
+  outline: 3px solid #d7a95f;
+  outline-offset: 2px;
+}
 .academy-reading-shell--tantra .tantra-course-hero__more .tantra-course-hero__secondary-links {
   display: grid;
   grid-template-columns: repeat(2,minmax(0,1fr));
