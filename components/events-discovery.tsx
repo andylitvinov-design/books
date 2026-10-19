@@ -32,7 +32,7 @@ const copy = {
     filters: "Event format", all: "All", somatic: "Body & safety", connection: "Heart & connection", reiki: "Energy & Reiki", temple: "Temple studies",
     noDates: "No confirmed upcoming dates are published yet.", noDatesHelp: "New dates and registration links appear here as soon as the organizer confirms them.",
     noMatches: "No events match these filters.", noMatchesHelp: "Try another topic or show the full calendar.",
-    reset: "Clear filters", view: "Register", details: "Details", program: "Workshop program", onlineLocation: "Online", pastNote: "Past events are shown for reference, not for booking.",
+    reset: "Clear filters", view: "Register", details: "Details", eventPage: "Full event page", program: "Workshop program", onlineLocation: "Online", pastNote: "Past events are shown for reference, not for booking.",
   },
   ru: {
     kicker: "HOLISTIC HOUSE · СОБЫТИЯ",
@@ -47,7 +47,7 @@ const copy = {
     filters: "Формат мероприятий", all: "Все", somatic: "Тело и безопасность", connection: "Сердце и общение", reiki: "Энергия и Рейки", temple: "Храмовые практики",
     noDates: "Пока нет опубликованных подтверждённых дат.", noDatesHelp: "Новые даты и ссылки на регистрацию появятся здесь после подтверждения организатором.",
     noMatches: "По этим фильтрам событий нет.", noMatchesHelp: "Попробуйте другую тему или очистите фильтры.",
-    reset: "Сбросить фильтры", view: "Записаться", details: "Подробнее", program: "Программа семинара", onlineLocation: "Онлайн", pastNote: "Прошедшие встречи показаны для информации, не для записи.",
+    reset: "Сбросить фильтры", view: "Записаться", details: "Подробнее", eventPage: "Страница мероприятия", program: "Программа семинара", onlineLocation: "Онлайн", pastNote: "Прошедшие встречи показаны для информации, не для записи.",
   },
   es: {
     kicker: "HOLISTIC HOUSE · EVENTOS",
@@ -62,7 +62,7 @@ const copy = {
     filters: "Formato del evento", all: "Todos", somatic: "Cuerpo y seguridad", connection: "Corazón y conexión", reiki: "Energía y Reiki", temple: "Estudios del templo",
     noDates: "Todavía no hay fechas próximas confirmadas.", noDatesHelp: "Publicaremos las fechas y los enlaces de inscripción cuando el organizador los confirme.",
     noMatches: "No hay eventos con estos filtros.", noMatchesHelp: "Prueba otro tema o restablece los filtros.",
-    reset: "Borrar filtros", view: "Inscribirse", details: "Detalles", program: "Programa del taller", onlineLocation: "En línea", pastNote: "Los eventos anteriores son informativos; no están disponibles para reservar.",
+    reset: "Borrar filtros", view: "Inscribirse", details: "Detalles", eventPage: "Página del evento", program: "Programa del taller", onlineLocation: "En línea", pastNote: "Los eventos anteriores son informativos; no están disponibles para reservar.",
   },
 } as const;
 
@@ -195,7 +195,7 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
                       <span className={styles.eventTheme}>{t[event.category]}</span>
                       <span className={styles.eventFormat}>{event.format === "online" ? t.online : t.inPerson}</span>
                     </div>
-                    <h3>{event.title[locale]}</h3>
+                    <h3><Link className={styles.eventTitleLink} href={"/" + locale + "/events/" + encodeURIComponent(event.id)}>{event.title[locale]}</Link></h3>
                     <div className={styles.eventMeta}>
                       <time dateTime={event.startsAt}><CalendarDays size={15} aria-hidden="true" />{renderSchedule(event, locale)}</time>
                       {where && <span className={styles.eventLocation}><MapPin size={15} aria-hidden="true" />{where}</span>}
@@ -231,6 +231,7 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
                         </>
                       ) : null}
                       {past && <small>{t.pastNote}</small>}
+                      <Link className={styles.eventPageLink} href={"/" + locale + "/events/" + encodeURIComponent(event.id)}>{t.eventPage} <ArrowRight size={14} aria-hidden="true" /></Link>
                     </div>
                   </div>
                 </article>
