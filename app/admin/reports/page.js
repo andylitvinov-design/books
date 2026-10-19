@@ -15,9 +15,9 @@ export const metadata = { title: 'Client reports · Holistic House', robots: { i
 
 const COPY = {
   en: {
-    title: 'Client reports', intro: 'Browse saved client reports, preview and edit them in the same report constructor.',
-    back: 'Back to My Practice', create: '+ Create a report', search: 'Search by client', placeholder: 'Client name',
-    submit: 'Search', clear: 'Clear', list: 'Saved reports', found: 'reports on this page', clients: 'matching clients',
+    title: 'Client reports', intro: 'Review and edit saved client reports.',
+    back: 'My Practice', create: '+ New report', search: 'Search by client', placeholder: 'Client name',
+    submit: 'Search', clear: 'Clear', list: 'Saved reports', found: 'Reports on page', clients: 'Clients found',
     unavailable: 'Private report storage is temporarily unavailable.',
     empty: 'No saved reports for these clients yet.', emptyHint: 'Search for another client or create a report.',
     date: 'Report date', active: 'Saved', inactive: 'Access paused', view: 'View', edit: 'Edit',
@@ -25,9 +25,9 @@ const COPY = {
     legacy: 'Older unassigned documents',
   },
   ru: {
-    title: 'Отчёты клиентов', intro: 'Просмотр ранее созданных отчётов и редактирование в том же конструкторе.',
-    back: 'Назад к Моей практике', create: '+ Создать отчёт', search: 'Поиск по клиенту', placeholder: 'Имя клиента',
-    submit: 'Найти', clear: 'Очистить', list: 'Сохранённые отчёты', found: 'отчётов на странице', clients: 'клиентов в поиске',
+    title: 'Отчёты клиентов', intro: 'Просмотр и редактирование сохранённых отчётов.',
+    back: 'Моя практика', create: '+ Новый отчёт', search: 'Поиск по клиенту', placeholder: 'Имя клиента',
+    submit: 'Найти', clear: 'Очистить', list: 'Сохранённые отчёты', found: 'Отчётов на странице', clients: 'Найдено клиентов',
     unavailable: 'Хранилище приватных отчётов временно недоступно.',
     empty: 'У этих клиентов пока нет сохранённых отчётов.', emptyHint: 'Найдите другого клиента или создайте отчёт.',
     date: 'Дата отчёта', active: 'Сохранён', inactive: 'Доступ закрыт', view: 'Просмотреть', edit: 'Редактировать',
@@ -51,22 +51,22 @@ export default async function ClientReports({ searchParams }) {
   return <main className={'prescription-admin-shell ' + styles.shell}>
     <PrescriptionAdminHeader title={{ en: COPY.en.title, ru: COPY.ru.title }} description={{ en: COPY.en.intro, ru: COPY.ru.intro }} />
     <div className={styles.top}>
-      <Link href={'/' + locale + '/app/practice'} prefetch={false}>← {t.back}</Link>
+      <Link href={'/' + locale + '/app/practice'} className={styles.back} prefetch={false}>← {t.back}</Link>
       <Link href="/admin/reports/new" className={styles.primary} prefetch={false}>{t.create}</Link>
     </div>
     <section className={styles.sheet} aria-label={t.list}>
+      <div className={styles.heading}>
+        <h2>{t.list}</h2>
+        <span>{t.found}: {data.rows.length} · {t.clients}: {data.totalClients}</span>
+      </div>
       <form action="/admin/reports" role="search" method="get" className={styles.search}>
-        <label htmlFor="saved-report-client">{t.search}</label>
+        <label htmlFor="saved-report-client" className={styles.visuallyHidden}>{t.search}</label>
         <div>
           <input id="saved-report-client" type="search" name="q" autoComplete="off" maxLength={120} defaultValue={query} placeholder={t.placeholder} />
           <button type="submit">{t.submit}</button>
           {query && <Link href="/admin/reports" prefetch={false}>{t.clear}</Link>}
         </div>
       </form>
-      <div className={styles.heading}>
-        <h2>{t.list}</h2>
-        <span>{data.rows.length} {t.found} · {data.totalClients} {t.clients}</span>
-      </div>
       {!store && <p role="alert" className={styles.empty}>{t.unavailable}</p>}
       {store && !data.rows.length && <div className={styles.empty}><strong>{t.empty}</strong><p>{t.emptyHint}</p></div>}
       {store && data.rows.length > 0 && <div className={styles.list}>
@@ -76,9 +76,9 @@ export default async function ClientReports({ searchParams }) {
             <div className={styles.details}>
               <strong>{row.clientName}</strong>
               <div className={styles.meta}>
-                <span>{t.date}: {dateLabel(row.dateIssued, locale)}</span>
-                <span aria-label={row.reportLocale === 'ru' ? 'Russian report' : 'English report'}>{row.reportLocale.toUpperCase()}</span>
-                <span className={styles.status} data-active={row.status === 'active' ? 'true' : 'false'}>{row.status === 'active' ? t.active : t.inactive}</span>
+                <time dateTime={row.dateIssued || undefined} title={t.date}>{dateLabel(row.dateIssued, locale)}</time>
+                <span className={styles.localeTag} aria-label={row.reportLocale === 'ru' ? 'Russian report' : 'English report'}>{row.reportLocale.toUpperCase()}</span>
+                {row.status !== 'active' && <span className={styles.status}>{t.inactive}</span>}
               </div>
               <Link href={'/admin/clients/' + encodeURIComponent(row.clientId)} prefetch={false}>{t.file} ↗</Link>
             </div>
