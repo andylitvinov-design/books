@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ChevronDown, ExternalLink, ClipboardList, Radio } from 'lucide-react'
-import { remedySchedule, recommendationCopy } from '@/lib/documents/recommendation'
+import { remedySchedule, recommendationCopy, recommendationItemType } from '@/lib/documents/recommendation'
 import styles from './client-session.module.css'
 
 // Only format an approved date; never silently change the practitioner's data.
@@ -62,6 +62,9 @@ export function SessionPrescriptionOverview({recommendation,locale='en',part='su
     <div className={styles.remedyAccordions}>
       {items.map((item,index)=>{
         const schedule=remedySchedule(item,locale,recommendation.recommendationType)
+        const potency=recommendationItemType(item,recommendation.recommendationType)==='homeopathy'
+          ? String(item.potency ?? '').trim() : ''
+        const administration=potency ? schedule.split(' · ').slice(1).join(' · ') : schedule
         const fields=[
           ['purpose',labels.purpose],['dosage',labels.dosage],['frequency',labels.frequency],
           ['duration',labels.duration],['sequence',labels.sequence],['instructions',labels.instructions]
@@ -70,8 +73,8 @@ export function SessionPrescriptionOverview({recommendation,locale='en',part='su
           <summary>
             <span className={styles.remedyIndex}>{String(index+1).padStart(2,'0')}</span>
             <span className={styles.remedyAccordionText}>
-              <strong>{item.displayName}</strong>
-              {schedule&&<small>{schedule}</small>}
+              <strong>{item.displayName}{potency ? ` ${potency}` : ''}</strong>
+              {administration&&<small>{administration}</small>}
             </span>
             <ChevronDown size={21} className={styles.remedyChevron} aria-hidden="true"/>
           </summary>
