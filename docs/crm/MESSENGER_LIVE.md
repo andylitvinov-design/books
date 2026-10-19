@@ -67,3 +67,15 @@ Provider activation is a separate operational gate, not part of a normal code me
 - UI changes and anti-duplicate behavior are covered by `tests/crm-messenger.test.mjs`. No real delivery is implied by a passing synthetic/source test or successful Vercel deployment.
 
 **Release gate remains:** Owned Telegram bot and verified Meta WhatsApp / Instagram / Facebook messaging connections must be configured securely, then one approved synthetic end-to-end exchange must pass. Never enable `HH_CRM_MSG_*` based on a third-party social publishing connector, a website visitor, or a saved phone number alone.
+
+## 9. Inbox customer workflow v3 — integration in CRM
+
+- Source plan: [Messenger v3 roadmap](./MESSENGER_IMPROVEMENTS_V3_2026-10-18.md). This iteration reuses **existing schema**, requiring **no additional production migration**.
+- Owner-only thread header now contains **lead / client / archived** stage selection. The POST `set_stage` action resolves the CRM contact from the owner-verified thread and delegates to existing revision-guarded `store.setLifecycle` — never trusts a contact ID sent by the browser.
+- **Follow-up tasks** use existing `crm_followups`. Actions `create_followup` and `complete_followup` are owner-scoped. The latter validates the exact follow-up/thread association before calling the revision-guarded CRM operation. The thread lists 20 upcoming open tasks; the global overview refreshes after changes.
+- **Private business notes** are explicit `direction='note'` entries in the pre-existing encrypted `crm_msg_items` table. They use identical AAD-based `seal` encryption, an exact-payload idempotency key, a limit of 800 chars and 50 notes/day. Notes have **no provider ID** and cannot trigger Send/Meta/Telegram; medical material and bearer links remain out of scope. Their appearance is visually distinct from customer messages, and they do not reorder the thread inbox.
+- **Needs reply** is computed from the most recent **incoming** event or provider-accepted outbound event; internal notes and failed/blocked/unknown outgoing attempts cannot falsely mark a conversation answered.
+- **Race protection:** out-of-order GET responses cannot replace the selected thread; stale POST responses do not erase a different client's note/reply drafts. A message composer remains manual and explicitly approved; EN/RU/ES neutral quick-reply chips **only populate** the draft textarea.
+- UI mobile layout includes 44 px touch targets, compact stage/tasks/note panels, filter for “Needs reply”, and no automatic polling/paid messaging calls. Sensitive message bodies never appear in URL strings or telemetry.
+- Server reads/writes remain authenticated, same-origin, `X-HH-Account-Id` matched and `hh_crm_backend` owner-restricted; the new POST actions have explicit payload whitelists.
+- **Release:** merge only after source checks and Next.js Production build. Since provider credentials `HH_CRM_MSG_*` remain missing, all real Telegram/WhatsApp/Instagram/Messenger sending stays disabled by design. No client messages or paid provider operations are part of this v3 work.

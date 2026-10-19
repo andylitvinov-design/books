@@ -8,3 +8,38 @@
 .inboxFilters input[type=checkbox]{width:19px;height:19px;accent-color:#187b7a;cursor:pointer;flex:none}
 .inboxFilters :focus-visible{outline:3px solid #185ac9;outline-offset:2px}
 @media(min-width:860px){.inboxFilters{grid-template-columns:minmax(0,1fr) minmax(105px,.7fr)}.inboxFilters label{grid-column:1/-1}}
+
+/* v3: customer workflow in the conversation, without medical/marketing UI. */
+.chatIdentity{display:flex;flex:1;min-width:0;gap:4px;flex-direction:column}
+.chatIdentity strong{font-size:15px;overflow-wrap:anywhere}
+.chatIdentity span{font:500 12px/1.4 system-ui,sans-serif;color:#607579}
+.contactActions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f4f9f7;border-bottom:1px solid #dfebe9}
+.contactActions label{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:#355f65;font:700 12px/1.4 system-ui,sans-serif}
+.contactActions select{font:600 13px/1.3 system-ui,sans-serif;min-height:42px;max-width:200px;padding:8px 26px 8px 10px;color:#264e55;background:#fff;border:1px solid #b8d3cc;border-radius:10px}
+.smallHint{font:400 12px/1.5 system-ui,sans-serif;color:#587174;margin:0}
+.internalNote{max-width:95%;padding:10px 12px;border-radius:14px;background:#fffae9;border:1px solid #eadab6;align-self:center;overflow-wrap:anywhere}
+.noteBadge{display:block;color:#88601e;font:750 11px/1.5 system-ui,sans-serif;margin-bottom:5px}
+.workflowActions{display:grid;gap:8px;padding:9px 11px;background:#fbfcfa;border-top:1px solid #e0ecea}
+.actionDetails{border-radius:12px;border:1px solid #e1e8e0;background:#fffdf9;min-width:0}
+.actionDetails summary{cursor:pointer;list-style:revert;color:#225b61;padding:10px 12px;font:750 13px/1.5 system-ui,sans-serif;min-height:44px;box-sizing:border-box}
+.actionDetails summary:focus-visible{outline:3px solid #185ac9;outline-offset:1px;border-radius:9px}
+.actionBody{border-top:1px solid #edf1eb;display:grid;gap:9px;padding:11px}
+.actionBody textarea{width:100%;min-height:66px;box-sizing:border-box;border:1px solid #bed4cc;border-radius:10px;padding:9px 11px;font:500 13px/1.45 system-ui,sans-serif;background:#fff;color:#17373d;resize:vertical}
+.actionBody textarea:focus-visible,.actionBody input:focus-visible,.actionBody select:focus-visible,.actionBody button:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+.actionBody button{border:0;background:#1b696f;color:#fff;font:700 12px/1.35 system-ui,sans-serif;cursor:pointer;min-height:44px;border-radius:10px;padding:10px 12px}
+.actionBody button:disabled{opacity:.48;cursor:not-allowed}
+.actionBody>.smallHint{color:#78694d}
+.taskForm{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.72fr);gap:9px;align-items:end}
+.taskForm label{display:flex;flex-direction:column;gap:5px;min-width:0;color:#48686c;font:650 12px/1.4 system-ui,sans-serif}
+.taskForm select,.taskForm input{box-sizing:border-box;min-width:0;width:100%;max-width:100%;min-height:44px;border:1px solid #b8d3cc;border-radius:10px;padding:8px 9px;background:#fff;color:#17373d;font:500 13px/1.35 system-ui,sans-serif}
+.taskForm button{grid-column:1/-1}
+.followupRow{display:flex;align-items:center;justify-content:space-between;gap:9px;border-bottom:1px solid #eaf0e8;padding:3px 0 10px;font:600 12px/1.4 system-ui,sans-serif;color:#365e63;overflow-wrap:anywhere}
+.followupRow button{flex:none;background:#e1efec;color:#205e63}
+@media(max-width:400px){.taskForm{grid-template-columns:minmax(0,1fr)}.taskForm button{grid-column:1}.contactActions select{max-width:100%}}
+
+.replyIndicator{width:max-content;max-width:100%;color:#13736d!important;background:#dff4ea;border-radius:99px;padding:2px 7px;font:750 11px/1.4 system-ui,sans-serif}
+
+.quickReplies{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.quickReplies button{flex:0 1 auto;min-height:37px;max-width:100%;padding:7px 11px!important;border:1px solid #b5d1c9!important;border-radius:999px!important;background:#f5fbf8!important;color:#276a66!important;font:650 12px/1.25 system-ui,sans-serif!important;white-space:normal;cursor:pointer}
+.quickReplies button:hover:not(:disabled){background:#e2f2eb!important}
+.quickReplies button:disabled{opacity:.4}
