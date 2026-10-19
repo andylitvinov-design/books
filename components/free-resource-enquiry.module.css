@@ -12,3 +12,9 @@
 .note{display:flex;gap:9px;align-items:flex-start;margin:14px 0 0;color:#587577;font-size:11px;line-height:1.55}
 .note svg{flex:none}
 @media(max-width:600px){.form{padding:17px 14px;border-radius:15px}.eyebrow{font-size:12px}.lead{font-size:12px;line-height:1.45;margin-bottom:12px}.fields{gap:9px}.fields input,.fields select,.fields textarea{min-height:44px;padding:9px 11px;font-size:13px}.fields textarea{min-height:62px}.action{margin-top:12px;min-height:47px;font-size:12px!important}}
+
+.copyRegion{margin:11px 0 0}
+.copyButton{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 13px;border:1px solid #9ebfb6;border-radius:10px;background:#fff;color:#23666b;font-size:12px;font-weight:750;cursor:pointer}
+.copyButton:hover{background:#e7f5ef}
+.copyStatus{margin:6px 0 0;font-size:11px;color:#226c64;line-height:1.5}
+.copyRegion textarea{width:100%;margin-top:7px;padding:10px;border:1px solid #bdd9d0;border-radius:10px;font:12px/1.5 Arial,sans-serif;color:#1f4a50;background:#fff}
