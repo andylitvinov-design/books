@@ -59,3 +59,14 @@ test("public SEO descriptions, topic explanations and FAQs are localized and non
   assert.match(pageSource, /\/\$\{locale\}\/client\/tests/);
   assert.doesNotMatch(pageSource, /medical diagnosis guaranteed|certified diagnosis|cure your/i);
 });
+
+test("search crawlers can discover the public guide from EN/RU/ES homes without slowing the direct test entry", () => {
+  const sharedHome = readFileSync(new URL("../components/holistic-house-home.tsx", import.meta.url), "utf8");
+  const spanishHome = readFileSync(new URL("../app/es/page.tsx", import.meta.url), "utf8");
+  assert.ok(sharedHome.includes("How free self-checks work"));
+  assert.ok(sharedHome.includes("Как работают бесплатные тесты"));
+  assert.ok(sharedHome.includes("href={`/${locale}/tests`}"));
+  assert.ok(sharedHome.includes("href={`/${locale}/client/tests`}"));
+  assert.ok(spanishHome.includes('href="/es/tests"'));
+  assert.ok(spanishHome.includes('href="/es/client/tests"'));
+});
