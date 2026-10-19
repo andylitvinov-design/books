@@ -70,9 +70,11 @@ export default async function NewConsultation({ searchParams }) {
       remedies={getConsultationRemedyOptions()}
       recommendedTestOptions={{ en: getRecommendedTestOptions('en'), ru: getRecommendedTestOptions('ru') }}
       requestId={randomUUID()}
+      saveFooterTargetId="consultation-report-save"
     />
     {deliveryEnabled() && <section className="consultation-edit-materials" aria-label={ru ? 'Материалы отчёта' : 'Report materials'}>
       <NewReportMaterials locale={ru ? 'ru' : 'en'} />
     </section>}
+    <div id="consultation-report-save" className="consultation-report-save-slot" />
   </main>
 }
