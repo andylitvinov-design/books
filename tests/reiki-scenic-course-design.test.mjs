@@ -64,11 +64,11 @@ test('Welcome keeps the free course scenic illustration and three benefits while
 test('Course has teacher initiation readiness checklist with five private reports + eleven answers', () => {
   assert.equal(ENERGYWORK_REPORT_IDS.length,5)
   assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,11)
-  assert.match(learner, /const initiationReady = readyCount === initiationItems\.length \* 2/)
+  assert.match(learner, /const initiationReady = readyCount === readyTargetCount/)
   assert.match(learner, /data-initiation-readiness/)
   assert.match(css, /\.page\[data-course-theme\] \.reviewChecklist/)
   assert.match(learner, /jumpToSlide\(item\.reportId\)/)
-  assert.match(learner, /jumpToSlide\(item\.questionId\)/)
+  assert.match(learner, /jumpToSlide\(item\.nextQuestionId\)/)
   assert.match(learner, /initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
 })
 
