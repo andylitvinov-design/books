@@ -183,3 +183,29 @@ test('Initial interactive screen asks four prior Reiki experience options in EN/
   assert.match(learner, /role="status">\{experienceGuidance\[locale\]/)
   assert.match(css, /\.experienceChoice:has\(input:focus-visible\)/)
 })
+
+test('Kundalini slide includes all three screenshot-supplied reflections in English and Russian', () => {
+  const examples = curriculum.split('export const kundaliniVoices: EnergyworkTestimonial[] = [')[1]?.split('\n];')[0] ?? ''
+  assert.ok(examples, 'The Kundalini review collection must exist')
+  for (const id of ['kundalini-example-01', 'kundalini-example-02', 'kundalini-example-03']) {
+    assert.ok(examples.includes('id: "' + id + '"'), id)
+  }
+  assert.equal((examples.match(/quote: l\(/g) || []).length, 3)
+  assert.equal((examples.match(/attribution: l\(/g) || []).length, 3)
+  for (const name of ['Breanna', 'Ritu', 'Aesthesia']) {
+    assert.ok(examples.includes(name), 'Keep the facilitator reference ' + name)
+  }
+  for (const phrase of ['Бреанной', 'Риту', 'во время практики с Aesthesia']) {
+    assert.ok(examples.includes(phrase), 'Missing Russian translation detail: ' + phrase)
+  }
+  assert.ok(examples.includes('felt like healing'), 'Keep reported experiences subjective')
+  assert.doesNotMatch(examples, /sourcePath:/, 'Screenshots are not verified source URLs')
+  const slide = curriculum.split('id: "kun-voices"')[1]?.split('id: "kun-04"')[0] ?? ''
+  assert.match(slide, /testimonials: kundaliniVoices/)
+  assert.match(slide, /not reviews of this exact video/)
+  assert.match(slide, /а не отзывы об этом конкретном видео/)
+  assert.match(learner, /currentReview\?\.sourcePath/)
+  assert.match(learner, /data-review-next/)
+  assert.match(learner, /data-review-prev/)
+  assert.match(css, /\.voiceQuote p \{[\s\S]*?overflow-y:auto;[\s\S]*?max-height:175px;/)
+})
