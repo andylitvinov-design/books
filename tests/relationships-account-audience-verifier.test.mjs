@@ -194,11 +194,39 @@ test('the real Cabinet single-definition branch starts a run directly and clears
  assert.ok(start>0&&end>start)
  const calls=[]
  const invoke=new Function('definitions','setActivePlan','begin',cabinet.slice(start,end))
- const result=invoke([{key:'hh-love-affection'}],value=>calls.push(['plan',value]),(...args)=>{calls.push(['begin',...args]);return 'direct-run'})
+ const result=invoke([{key:'hh-love-affection'}],value=>calls.push(['plan',value]),(key,pinnedDefinition=null)=>{calls.push(['begin',key,pinnedDefinition]);return 'direct-run'})
+ assert.match(cabinet,/async function begin\(id, pinnedDefinition = null\)/)
  assert.equal(result,'direct-run')
  assert.deepEqual(calls,[['plan',null],['begin','hh-love-affection',null]])
  assert.doesNotMatch(cabinet,/pendingGuestDefinitions|phase === 'consent'/)
  const multiple=cabinet.slice(end,cabinet.indexOf('  async function saveGuestRun(',end))
  assert.match(multiple,/const plan = await guestFetch\('guest\/test-plans'/)
  assert.match(multiple,/items: definitions\.map/)
+})
+
+
+test('actual unpinned single start clears stale plan results and never links the new run to the old plan',async()=>{
+ const cabinet=readFileSync(new URL('../components/app/cabinet-landing.jsx',import.meta.url),'utf8')
+ const start=cabinet.indexOf('  async function begin('),end=cabinet.indexOf('  async function beginGuestBattery(',start)
+ assert.ok(start>0&&end>start)
+ const definition={id:'love-en',key:'hh-love-affection',questions:[{id:'q1'}]}
+ for(const existing of [null,{id:'existing-run',definitionId:definition.id,answers:{q1:0},progress:0}]){
+  const calls=[],state={}
+  const dependencies={locale:'en',c:{error:'failed'},runLifetime:{current:0},saving:{current:true},submitting:{current:true},saveOperation:{current:{old:true}},completion:{current:{old:true}},
+   // State setters intentionally do not mutate this captured previous render.
+   activePlan:{id:'stale-plan',status:'active',currentIndex:0,definitionIds:[definition.id]},
+   definitionFor:(key,locale)=>{assert.equal(key,definition.key);assert.equal(locale,'en');return definition},
+   bootstrapForStartedTest:async()=>({expiresAt:'later',runs:existing?[existing]:[]}),
+   startRun:async(def,planId)=>{assert.equal(def,definition);calls.push(['start',planId])},
+   replaceGuestRoute:route=>calls.push(['route',route]),
+  }
+  for(const name of ['ActivePlan','PlanResults','Run','Active','GuestResult','Error','SaveState','Busy','SessionExpires','Answers','Context','Index','Mode','Phase'])
+   dependencies['set'+name]=value=>{state[name]=value}
+  await load(cabinet.slice(start,end),'begin',dependencies)(definition.key)
+  assert.equal(state.ActivePlan,null);assert.deepEqual(state.PlanResults,[])
+  assert.equal(state.Active,definition.key);assert.equal(state.Busy,false);assert.equal(state.Error,'')
+  assert.equal(dependencies.runLifetime.current,1);assert.equal(dependencies.saveOperation.current,null);assert.equal(dependencies.completion.current,null)
+  assert.deepEqual(calls,existing?[['route',{planId:undefined,runId:existing.id}]]:[['start',undefined]])
+  if(existing){assert.equal(state.Run,existing);assert.equal(state.Answers.q1,0);assert.equal(state.Phase,'questions');assert.equal(state.Mode,'quick')}
+ }
 })

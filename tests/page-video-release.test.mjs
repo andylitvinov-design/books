@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import ts from 'typescript';
 import { builtInSiteVideoRecords } from '../lib/site-videos/defaults.js';
 
 const player = readFileSync(new URL('../components/site-video-player.tsx', import.meta.url), 'utf8');
@@ -32,12 +33,122 @@ for (const [key, id, poster, hash] of cases) {
     assert.equal(createHash('sha256').update(bytes).digest('hex'), hash);
   });
 }
+function parsePlayer(source) {
+  const ast = ts.createSourceFile('site-video-player.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const find = predicate => {
+    const found = [];
+    function visit(node) { if (predicate(node)) found.push(node); ts.forEachChild(node, visit); }
+    visit(ast);
+    return found;
+  };
+  const initializer = name => {
+    const found = find(node => ts.isVariableDeclaration(node) && node.name.getText(ast) === name);
+    assert.equal(found.length, 1, `Unique player variable: ${name}`);
+    assert.ok(found[0].initializer, `Missing initializer: ${name}`);
+    return found[0].initializer.getText(ast);
+  };
+  return { ast, find, initializer };
+}
+function assertClickGate(source) {
+  assert.match(source, /const \[playing, setPlaying\] = useState\(false\)/);
+  assert.match(source, /const \[interactive, setInteractive\] = useState\(false\)/);
+  assert.match(source, /useEffect\(\(\) => \{ setInteractive\(true\); \}, \[\]\)/);
+  const { ast, find } = parsePlayer(source);
+  const branches = find(node => ts.isConditionalExpression(node) && node.condition.getText(ast) === 'playing');
+  assert.equal(branches.length, 1);
+  const unwrap = node => ts.isParenthesizedExpression(node) ? node.expression : node;
+  const frame = unwrap(branches[0].whenTrue);
+  const button = unwrap(branches[0].whenFalse);
+  assert.ok(ts.isJsxSelfClosingElement(frame) && frame.tagName.getText(ast) === 'iframe');
+  assert.ok(ts.isJsxElement(button) && button.openingElement.tagName.getText(ast) === 'button');
+  const attribute = (element, name) => {
+    const props = element.attributes.properties;
+    assert.ok(props.every(node => ts.isJsxAttribute(node)), 'No unchecked spread overrides');
+    const found = props.filter(node => node.name.getText(ast) === name);
+    assert.equal(found.length, 1, `Unique attribute: ${name}`);
+    return found[0].initializer;
+  };
+  const expression = (element, name) => {
+    const value = attribute(element, name);
+    assert.ok(value && ts.isJsxExpression(value) && value.expression);
+    return value.expression.getText(ast);
+  };
+  assert.equal(attribute(frame, 'loading').text, 'lazy');
+  assert.equal(attribute(frame, 'referrerPolicy').text, 'strict-origin-when-cross-origin');
+  assert.equal(expression(frame, 'src'), 'embedUrl');
+  assert.equal(attribute(button.openingElement, 'className').text, 'site-video-play');
+  assert.equal(expression(button.openingElement, 'disabled'), '!interactive');
+  assert.equal(expression(button.openingElement, 'aria-busy'), '!interactive');
+  const calls = [];
+  const click = new Function('setShowRecovery', 'setPlaying', `return (${expression(button.openingElement, 'onClick')});`)(
+    value => calls.push(['recovery', value]), value => calls.push(['playing', value]));
+  assert.deepEqual(calls, [], 'No playback during handler creation');
+  click();
+  assert.deepEqual(calls, [['recovery', false], ['playing', true]], 'Reset recovery before explicit playback');
+}
 test('a cold SSR play control cannot accept a click before its handler is mounted', () => {
-  assert.match(player, /const \[interactive, setInteractive\] = useState\(false\)/);
-  assert.match(player, /useEffect\(\(\) => \{ setInteractive\(true\); \}, \[\]\)/);
-  assert.match(player, /disabled=\{!interactive\}/);
-  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
+  assertClickGate(player);
   assert.doesNotMatch(player, /Expires=|Signature=|\.mp4\?/);
+});
+const approvedMirrors = {
+  ed202847a43a96b918308aa972177b34: 'Y4K4piEwwA8',
+  '48105a2f2228e7cb3a67391e97acaf8b': 's30Y42IwPcg',
+  '34df311e461509433b45929908a9097a': 'ILyRWyHtJoE',
+  '388a04b39ebf215ae656bcd22d0d0847': 'AE8Pelpo424',
+  '79c2845577865979cd95ac40a08fc01a': 'Cz6SxXJNZbw',
+  '0f984780d06948b1e78166e6e553e4e9': 'Q9NvYECKWuc',
+};
+function assertPlaybackIdentity(source) {
+  const { initializer } = parsePlayer(source);
+  const mirrors = new Function(`return (${initializer('existingYouTubeMirrors')});`)();
+  assert.deepEqual(mirrors, approvedMirrors, 'Only the six approved exact-source mirrors');
+  const choose = new Function('existingYouTubeMirrors', 'video', 'locale', `
+    const mirrorId = ${initializer('mirrorId')};
+    const playbackYouTubeId = ${initializer('playbackYouTubeId')};
+    const playerParams = ${initializer('playerParams')};
+    return ${initializer('embedUrl')};
+  `);
+  const youtube = (id, locale, audio) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&hl=${locale}&cc_lang_pref=${audio}`;
+  for (const [key, id] of cases) {
+    const audio = key.split(':')[1];
+    for (const locale of [audio, 'es']) {
+      assert.equal(choose(mirrors, { heygenId: id, language: audio }, locale),
+        approvedMirrors[id] ? youtube(approvedMirrors[id], locale, audio) : `https://app.heygen.com/embeds/${id}`, key);
+    }
+  }
+  for (const [id, audio] of [['Dk0LBmOivQo', 'en'], ['MIVLm1GUTtM', 'ru']]) {
+    assert.equal(choose(mirrors, { youtubeId: id, language: audio }, audio), youtube(id, audio, audio));
+  }
+  const aboutId = 'fd5fcead9b067f9a0649862675a38771';
+  assert.equal(choose(mirrors, { heygenId: aboutId, language: 'en' }, 'en'), `https://app.heygen.com/embeds/${aboutId}`);
+}
+test('actual playback expressions preserve six mirrors, both HeyGen-only methods and testimonial identities', () => {
+  assertPlaybackIdentity(player);
+});
+for (const [name, from, to] of [
+  ['missing recovery reset', 'setShowRecovery(false); setPlaying(true);', 'setPlaying(true);'],
+  ['missing Play action', 'setShowRecovery(false); setPlaying(true);', 'setShowRecovery(false);'],
+  ['wrong action order', 'setShowRecovery(false); setPlaying(true);', 'setPlaying(true); setShowRecovery(false);'],
+  ['pre-hydration interaction', 'disabled={!interactive}', 'disabled={false}'],
+  ['eager playback', '[playing, setPlaying] = useState(false)', '[playing, setPlaying] = useState(true)'],
+  ['eager iframe', 'allowFullScreen loading="lazy"', 'allowFullScreen loading="eager"'],
+  ['wrong frame source', 'src={embedUrl}', 'src={watchUrl}'],
+]) test(`click-gate contract rejects ${name}`, () => {
+  assert.ok(player.includes(from));
+  assert.throws(() => assertClickGate(player.replace(from, to)));
+});
+for (const [name, from, to] of [
+  ['wrong mirror', '"Y4K4piEwwA8"', '"AE8Pelpo424"'],
+  ['missing mirror', 'ed202847a43a96b918308aa972177b34: "Y4K4piEwwA8",', ''],
+  ['unapproved method mirror', 'const existingYouTubeMirrors: Readonly<Record<string, string>> = {', 'const existingYouTubeMirrors: Readonly<Record<string, string>> = { "8c1634ce904434a91931429b6a7eefe1": "Y4K4piEwwA8",'],
+  ['lost ordinary YouTube source', 'mirrorId || video.youtubeId', 'mirrorId'],
+  ['wrong interface locale', 'hl: locale', 'hl: "en"'],
+  ['wrong audio language', 'cc_lang_pref: video.language', 'cc_lang_pref: "en"'],
+  ['wrong original method', '${video.heygenId}', '${"ed202847a43a96b918308aa972177b34"}'],
+  ['lost inline playback', 'playsinline: "1"', 'playsinline: "0"'],
+]) test(`playback-identity contract rejects ${name}`, () => {
+  assert.ok(player.includes(from));
+  assert.throws(() => assertPlaybackIdentity(player.replace(from, to)));
 });
 test('posters keep the video title visible over the shared warm treatment', () => {
   assert.match(player, /site-video-poster-title" aria-hidden="true" data-title=\{video\.title\}/);

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
+import ts from 'typescript'
+import * as enquiries from '../lib/whatsapp-enquiry.js'
 
 const read = (name) => readFileSync(new URL('../' + name, import.meta.url), 'utf8')
 test('public Client Cabinet includes the same interactive Test Explorer before account login', () => {
@@ -10,7 +13,7 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   const styles = read('components/app/test-explorer.module.css')
   assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded onGuestStart=\{beginGuestBattery\} \/>/)
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('className="cabinet-signin-strip'), 'one-click start must precede secondary account entry')
-  assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('<MoodCheckIn'), 'mood check-in is optional and must not block test start')
+  assert.doesNotMatch(cabinet, /MoodCheckIn|handleGuestMoodChange|latestGuestMood/, 'public guest start has no mood gate')
   assert.match(cabinet, /Take available tests without registering\./, 'guest tests must be accessible before Google sign-in')
   assert.match(cabinet, /See your scores and gauges first; free explanations and advice are available in your Cabinet\./,
     'pre-login copy must explain the score-first result and where the full analysis is available')
@@ -28,7 +31,9 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   assert.match(explorer, /if \(aSelected !== bSelected\) return aSelected \? -1 : 1/)
   assert.match(explorer, /selectedKeys\.includes\(a\.key\)/)
   assert.match(explorer, /selectedKeys\.includes\(b\.key\)/)
-  assert.match(cabinet, /<MoodCheckIn/)
+  const workspace = read('components/app/app-workspace.jsx')
+  assert.equal((workspace.match(/<MoodCheckIn\b/g) || []).length, 1, 'mood check-in remains available once in the signed-in workspace')
+  assert.match(workspace, /<details className="hh-tests-mood-disclosure" data-cabinet-mood-checkin>/)
 })
 
 test('public Client entry shows the photo portrait immediately with Booking-style quick filters', () => {
@@ -149,9 +154,16 @@ test('Client lead block offers local choice and pre-fills existing reviewed enqu
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/)
   assert.match(intake, /new URLSearchParams\(window.location.search\).get\("topic"\)/)
   assert.match(intake, /setTopic\(requested as Topic\)/)
-  assert.match(invite, /Nothing is sent until you confirm it in WhatsApp/)
-  assert.match(css, /background:radial-gradient/)
-  assert.match(css, /@media\(max-width:600px\)/)
+  const chooser = read('components/contact-channel-chooser.tsx')
+  assert.match(invite, /<ContactChannelChooser[\s\S]*?whatsappUrl=\{whatsappUrl\}/)
+  assert.match(chooser, /Your selected request is prepared in the chat\. You review it and press Send yourself\./)
+  assert.match(chooser, /<small className=\{styles\.note\}>\{c\.note\}<\/small>/)
+  for (const channel of ['whatsapp', 'telegram']) assert.ok(chooser.includes('"data-contact-channel": "' + channel + '"'))
+  assert.doesNotMatch(invite + chooser, /fetch\(|sendBeacon|autoSubmit|assessmentAnswers|testResults|sessionStorage|localStorage/)
+  assert.match(css, /background:linear-gradient\(120deg,#edf9ff 0%,#e2f3f7 55%,#e1f7ed 100%\)/)
+  assert.match(css, /@media\(max-width:720px\)/)
+  assert.match(css, /\.options\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:7px\}/)
+  assert.match(css, /\.order\{width:100%\}/)
 })
 
 test('signed-in and full database test selector use the same monitoring CTA as the easy pre-login picker', () => {
@@ -179,4 +191,69 @@ test('signed-in and full database test selector use the same monitoring CTA as t
  assert.deepEqual(filter(rows,false,'curiosity',[],standalone),rows)
  assert.deepEqual(filter(rows,true,'',[],standalone),rows)
  assert.match(explorer,/aria-expanded=\{showStandaloneVia\} onClick=\{\(\) => setShowStandaloneVia\(\(value\) => !value\)\}/)
+})
+
+
+const jsx = (type, props) => ({ type, props: props || {} })
+const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props.children)]
+function compile(source, modules, globals = {}) {
+ const exports = {}
+ const output = ts.transpileModule(source, { fileName:'component.tsx', compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022} }).outputText
+ runInNewContext(output,{exports,...globals,require:name=>{assert.ok(Object.hasOwn(modules,name),name);return modules[name]}})
+ return exports
+}
+
+test('actual public catalog render offers one guest picker before secondary Google entry',()=>{
+ const cabinet=read('components/app/cabinet-landing.jsx')
+ const start=cabinet.indexOf('  return (\n    <>',cabinet.indexOf('  async function continuePlan()'))
+ assert.ok(start>0)
+ const scope={phase:'catalog',locale:'en',busy:false,error:'',legacySelector:null,c:{},beginGuestBattery:()=>{},signIn:()=>{},PublicTestExplorer:'public-picker',ChevronRight:'chevron',ClientCabinetEntry:'legacy-entry'}
+ const {render}=compile('export function render(){'+cabinet.slice(start),{'react/jsx-runtime':{jsx,jsxs:jsx}},scope)
+ const rendered=nodes(render())
+ const picker=rendered.filter(node=>node.type==='public-picker')
+ const signin=rendered.filter(node=>node.props.className==='cabinet-signin-strip cabinet-signin-hero')
+ assert.equal(picker.length,1);assert.equal(signin.length,1)
+ assert.ok(rendered.indexOf(picker[0])<rendered.indexOf(signin[0]))
+ assert.equal(picker[0].props.onGuestStart,scope.beginGuestBattery)
+ assert.equal(picker[0].props.embedded,true);assert.equal(picker[0].props.locale,'en')
+ assert.equal(nodes(signin[0]).filter(node=>node.type==='button').length,1)
+ assert.equal(rendered.filter(node=>node.props.role==='dialog'||node.props['aria-modal']).length,0,'no pre-test consent or mood modal')
+})
+
+test('actual gift invitation keeps each topic local and prepares matching EN/RU/ES messenger drafts',()=>{
+ for(const locale of ['en','ru','es']){
+  let topic
+  const modules={
+   'react/jsx-runtime':{jsx,jsxs:jsx},
+   react:{useId:()=> 'invite-title',useState:initial=>[topic??initial,value=>{topic=value}]},
+   'next/link':{default:'details-link'},'lucide-react':{ArrowUpRight:'arrow',Check:'check',HeartHandshake:'heart'},
+   '@/components/contact-channel-chooser':{ContactChannelChooser:'contact-chooser'},
+   '@/lib/whatsapp-enquiry':enquiries,'./client-assessment-invite.module.css':{default:{}},
+  }
+  const {ClientAssessmentInvite}=compile(read('components/client-assessment-invite.tsx'),modules)
+  const render=()=>nodes(ClientAssessmentInvite({locale}))
+  assert.equal(render().filter(node=>node.type==='button'&&node.props['aria-pressed']).length,1)
+  for(const key of ['personal','goal','business','wellbeing']){
+   const choices=render().filter(node=>node.type==='button')
+   assert.equal(choices.length,4)
+   const button=choices[['personal','goal','business','wellbeing'].indexOf(key)]
+   assert.equal(button.props.type,'button');button.props.onClick()
+   const current=render(),selected=current.filter(node=>node.type==='button'&&node.props['aria-pressed'])
+   assert.equal(selected.length,1)
+   const chooser=current.filter(node=>node.type==='contact-chooser')
+   const details=current.filter(node=>node.type==='details-link')
+   assert.equal(chooser.length,1);assert.equal(details.length,1)
+   assert.equal(chooser[0].props.locale,locale)
+   assert.equal(chooser[0].props.attributes['data-gift-assessment-topic'],key)
+   assert.equal(chooser[0].props.event,'service_request_start')
+   assert.equal(details[0].props.href,'/'+locale+'/services/free-situation-review?topic='+key)
+   const whatsapp=new URL(chooser[0].props.whatsappUrl),telegram=new URL(enquiries.telegramEnquiryUrlFromWhatsApp(whatsapp.href))
+   assert.equal(whatsapp.origin,'https://wa.me');assert.equal(telegram.origin,'https://t.me')
+   assert.equal(telegram.searchParams.get('text'),whatsapp.searchParams.get('text'))
+   assert.ok(whatsapp.searchParams.get('text').includes(selected[0].props.children.at(-1)))
+   assert.ok(whatsapp.searchParams.get('text').includes('/'+locale+'/services/free-situation-review'))
+   assert.doesNotMatch(whatsapp.searchParams.get('text'),/\?topic=|[?&](?:run|plan|token|private)=/)
+   assert.equal(current.filter(node=>node.type==='form'||node.type==='input'||node.type==='textarea').length,0,'choosing a topic must not submit personal answers')
+  }
+ }
 })

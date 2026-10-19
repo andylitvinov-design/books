@@ -1,12 +1,29 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { extractReportProgress } from '../lib/documents/report-progress.js'
+import { extractReportProgress, resolveReportProgress } from '../lib/documents/report-progress.js'
+import { createRequire } from 'node:module'
 import { reportPdfFilename } from '../lib/documents/report-filename.js'
 import { getOwnerReportTextTemplate } from '../lib/consultations/owner-report-template.js'
 import { remedyDescriptionBlocks } from '../lib/documents/report-appendices.js'
 import { getRemedy } from '../data/remedies.js'
 import { buildPrescriptionPdf, buildPaymentPdf } from '../lib/prescriptions/pdf.js'
+
+const { parse } = createRequire(import.meta.url)('next/dist/compiled/babel/parser')
+function reportProgressBinding(source) {
+  const tree = parse(source, { sourceType: 'module', plugins: ['jsx'] })
+  const imported = tree.program.body.find(node => node.type === 'ImportDeclaration' && node.source.value === '@/lib/documents/report-progress')
+  assert.ok(imported?.specifiers.some(node => node.imported?.name === 'resolveReportProgress' && node.local.name === 'resolveReportProgress'), 'use the shared structured-first resolver')
+  const component = tree.program.body.find(node => node.type === 'ExportNamedDeclaration' && node.declaration?.id?.name === 'PrescriptionDocument')?.declaration
+  assert.ok(component?.body?.body, 'the actual document component must exist')
+  const bindings = component.body.body.flatMap(node => node.type === 'VariableDeclaration' ? node.declarations : []).filter(node => node.id.name === 'progress')
+  assert.equal(bindings.length, 1, 'one actual document progress binding')
+  const expression = bindings[0].init
+  assert.equal(expression?.type, 'CallExpression')
+  assert.equal(expression.callee.name, 'resolveReportProgress')
+  assert.deepEqual(expression.arguments.map(node => node.type === 'Identifier' ? node.name : null), ['document'], 'preserve structured scores, clear state and legacy narrative together')
+  return new Function('document', 'resolveReportProgress', `return (${source.slice(expression.start, expression.end)})`)
+}
 
 test('only explicit start/end self-ratings create two measured values', () => {
   for (const locale of ['en', 'ru']) {
@@ -79,11 +96,41 @@ test('mobile HTML shares explicit progress data and print-safe visual hierarchy'
   const document = readFileSync('components/prescription-document.jsx', 'utf8')
   const css = readFileSync('components/consultation-report.css', 'utf8')
   const preview = readFileSync('components/consultation-draft-preview.jsx', 'utf8')
-  assert.match(document, /extractReportProgress\(document\.analysis\)/)
+  const progress = reportProgressBinding(document)
+  const legacy = { analysis: 'Before: 2/10\nAfter session: 3/10' }
+  for (const [record, expected] of [
+    [legacy, { before: 2, after: 3 }],
+    [{ ...legacy, progressBefore: '0', progressAfter: '8.5' }, { before: 0, after: 8.5 }],
+    [{ ...legacy, progressBefore: '9', progressAfter: '1' }, { before: 9, after: 1 }],
+    [{ ...legacy, progressBefore: '', progressAfter: '' }, null],
+    [{ ...legacy, progressBefore: 2, progressAfter: undefined }, null],
+    [{ ...legacy, progressBefore: '-1', progressAfter: '3' }, null],
+    [{ ...legacy, progressBefore: '3', progressAfter: '10.1' }, null],
+    [{ analysis: 'Only a future target: 7/10' }, null],
+  ]) {
+    const original = JSON.stringify(record)
+    assert.deepEqual(progress(record, resolveReportProgress), expected)
+    assert.equal(JSON.stringify(record), original, 'reading progress cannot rewrite supplied observations')
+  }
   assert.match(document, /canonical-progress-grid/)
   assert.match(document, /<DocumentSignature date=\{document\.dateIssued\} locale=\{locale\} compact/)
   assert.match(css, /\.canonical-progress-grid/)
   assert.match(css, /break-inside: avoid/)
   assert.match(preview, /new File\(\[blob\], filename/)
   assert.match(preview, /download=\{previewFilename\}/)
+})
+
+test('HTML progress binding rejects narrative-only, wrong-record and fabricated-score regressions', () => {
+  const source = readFileSync('components/prescription-document.jsx', 'utf8')
+  for (const replacement of [
+    'extractReportProgress(document.analysis)',
+    'resolveReportProgress(document.analysis)',
+    'resolveReportProgress(otherDocument)',
+    'resolveReportProgress({ ...document, progressAfter: 10 })',
+    'resolveReportProgress(document) || { before: 0, after: 10 }',
+  ]) {
+    const changed = source.replace('resolveReportProgress(document)', replacement)
+    assert.notEqual(changed, source)
+    assert.throws(() => reportProgressBinding(changed), assert.AssertionError)
+  }
 })

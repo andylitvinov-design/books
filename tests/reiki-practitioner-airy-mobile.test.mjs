@@ -9,6 +9,38 @@ const styles = read("components/energywork-ai-learner.module.css")
 const curriculum = read("data/academy/energywork-ai-curriculum.ts")
 const sky = read("public/images/holistic-house/reiki-heaven-sky.svg")
 
+function assertSavedGuidance(code) {
+  const start=code.indexOf('<details className={styles.programme} ref={programmeRef}>')
+  const end=code.indexOf('<aside className={styles.preview}',start)
+  assert.ok(start>=0 && end>start)
+  const programme=code.slice(start,end)
+  assert.equal((programme.match(/className=\{styles\.disclaimer\}/g)||[]).length,1)
+  const binding=programme.match(/<p className=\{styles\.disclaimer\}>\{(sync === "ready" \? t\.stopSaved : t\.stop)\}<\/p>/)
+  assert.ok(binding,'saved guidance distinguishes authenticated persistence from guest/consent/checking')
+  for(const sync of ['ready','guest','consent','checking']) {
+    const result=new Function('sync','t','return '+binding[1])(sync,{stopSaved:'saved',stop:'sign-in'})
+    assert.equal(result,sync==='ready'?'saved':'sign-in')
+  }
+  assert.doesNotMatch(programme,/className=\{styles\.programmeNote\}/,'removed duplicate teacher invitation stays absent')
+  for(const text of [
+    'Your progress is saved in My Courses. Revisit any step you have reached.',
+    'Ваш прогресс сохранён в разделе «Мои курсы». Возвращайтесь к пройденным урокам.',
+    'Explore all five steps now. Sign in to save your place as you learn.',
+    'Изучайте все пять этапов. Войдите в кабинет, чтобы сохранять свой прогресс.',
+  ]) assert.ok(code.includes(text),text)
+}
+
+test('saved-guidance rejects lost, reversed or falsely ready persistence states',()=>{
+  assertSavedGuidance(ui)
+  const binding='sync === "ready" ? t.stopSaved : t.stop'
+  for(const replacement of ['t.stop','t.stopSaved','sync === "guest" ? t.stopSaved : t.stop','sync === "ready" ? t.stop : t.stopSaved']) {
+    assert.notEqual(ui.replace(binding,replacement),ui)
+    assert.throws(()=>assertSavedGuidance(ui.replace(binding,replacement)))
+  }
+  assert.throws(()=>assertSavedGuidance(ui.replace('className={styles.disclaimer}','className={styles.removed}')))
+  assert.throws(()=>assertSavedGuidance(ui.replace('Your progress is saved in My Courses. Revisit any step you have reached.','Your progress is always saved.')))
+})
+
 test("Reiki airy v2 removes welcome duplications but preserves one unified course", () => {
   assert.equal(energyworkSequence().length,53)
   assert.match(ui,/data-course-visual="reiki-airy-v2"/)
@@ -41,8 +73,7 @@ test("Save-private function is retained in expanded programme, not an always-vis
   assert.match(ui,/onClick=\{signIn\}/)
   assert.match(ui,/className=\{styles\.consentLabel\}/)
   assert.match(ui,/const savedInitiationReady = initiationReady && sync === "ready"/)
-  assert.match(ui,/<p className=\{styles\.programmeNote\}>\{t\.welcomeTeacher\}<\/p>/)
-  assert.match(ui,/className=\{styles\.disclaimer\}>\{t\.stop\}/)
+  assertSavedGuidance(ui)
   assert.doesNotMatch(styles,/\.page\[data-course-visual\] \.preview \{[^}]*display:none/s)
 })
 

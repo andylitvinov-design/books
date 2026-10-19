@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Check, ChevronDown, LockKeyhole, MessageSquareText, ShieldCheck } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
@@ -65,12 +65,32 @@ export function ReikiMyReviews({locale='en',accountId}) {
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const [notice,setNotice]=useState('')
+  const lifetime=useRef({accountId,lang,epoch:0,active:false})
+  const pendingCommand=useRef(null)
+  // Hide stale journals during render; only a committed owner change may
+  // invalidate the active request, so abandoned renders cannot strand it.
+  const renderEpoch=lifetime.current.epoch
+  const ownedProgress=progress?.accountId===accountId?progress:null
 
-  useEffect(()=>{
+  useLayoutEffect(()=>{
     let active=true
+    lifetime.current.accountId=accountId
+    lifetime.current.lang=lang
+    const epoch=++lifetime.current.epoch
+    lifetime.current.active=true
+    pendingCommand.current=null
+    const cleanup=()=>{
+      active=false
+      if(lifetime.current.epoch===epoch){
+        lifetime.current.active=false
+        lifetime.current.epoch+=1
+        pendingCommand.current=null
+      }
+    }
+    setBusy(false)
     setProgress(null);setDrafts({});setChecked({});setEditing({})
     setLoading(true);setError('');setNotice('');setTeacherChecked(false)
-    if(!accountId){setLoading(false);return}
+    if(!accountId){setLoading(false);return cleanup}
     appFetch('academy-energywork',undefined,'GET',{accountId}).then(data=>{
       if(!active || data.accountId!==accountId)return
       setProgress(data)
@@ -78,17 +98,23 @@ export function ReikiMyReviews({locale='en',accountId}) {
     }).catch(()=>{
       if(active)setError(t.failed)
     }).finally(()=>{if(active)setLoading(false)})
-    return()=>{active=false}
+    return cleanup
   },[accountId,lang,t.failed])
 
-  const saved=LESSONS.filter(item=>Boolean(textOnly(progress?.answers?.[item.id]).trim()))
+  const saved=LESSONS.filter(item=>Boolean(textOnly(ownedProgress?.answers?.[item.id]).trim()))
   const courseUrl='/'+lang+'/academy/principles-of-energywork/learn'
   async function command(body,{id,completedNotice}={}){
-    if(!progress?.enrolled||busy)return
+    if(!ownedProgress?.enrolled||busy||pendingCommand.current||!lifetime.current.active||renderEpoch!==lifetime.current.epoch||
+      lifetime.current.accountId!==accountId||lifetime.current.lang!==lang)return
+    const operation={epoch:renderEpoch,accountId,lang}
+    pendingCommand.current=operation
+    const isCurrent=()=>lifetime.current.active&&lifetime.current.epoch===operation.epoch&&
+      lifetime.current.accountId===accountId&&lifetime.current.lang===lang&&pendingCommand.current===operation
     setBusy(true);setError('');setNotice('')
     try{
       const data=await appFetch('academy-energywork',
-        {version:VERSION,expectedRevision:progress.revision,...body},'POST',{accountId})
+        {version:VERSION,expectedRevision:ownedProgress.revision,...body},'POST',{accountId})
+      if(!isCurrent())return
       if(data.accountId!==accountId||!data.enrolled)throw new Error('ACCOUNT_CHANGED')
       setProgress(data)
       if(id&&body.action==='save'){
@@ -99,26 +125,28 @@ export function ReikiMyReviews({locale='en',accountId}) {
       if(body.action==='share')setTeacherChecked(false)
       setNotice(completedNotice||t.done)
     }catch(e){
-      setError(e?.status===409?t.conflict:t.failed)
-    }finally{setBusy(false)}
+      if(isCurrent())setError(e?.status===409?t.conflict:t.failed)
+    }finally{
+      if(isCurrent()){pendingCommand.current=null;setBusy(false)}
+    }
   }
 
   return <section className={styles.shell} data-reiki-my-reviews>
     <details className={styles.details}>
       <summary className={styles.summary}>
         <span className={styles.icon}><MessageSquareText size={19} aria-hidden="true"/></span>
-        <span><strong>{t.title}</strong><small>{progress?.enrolled?saved.length+' / 4':t.private}</small></span>
+        <span><strong>{t.title}</strong><small>{ownedProgress?.enrolled?saved.length+' / 4':t.private}</small></span>
         <ChevronDown className={styles.chevron} size={18} aria-hidden="true"/>
       </summary>
       <div className={styles.inner}>
         <p className={styles.description}>{t.description}</p>
-        {loading?<p role="status">{t.loading}</p> : progress?.enrolled ? <>
+        {loading?<p role="status">{t.loading}</p> : ownedProgress?.enrolled ? <>
           {LESSONS.map(item=>{
-            const serverText=textOnly(progress.answers?.[item.id])
+            const serverText=textOnly(ownedProgress.answers?.[item.id])
             const draft=drafts[item.id]??serverText
             const isEditing=Boolean(editing[item.id])
             const changed=draft!==serverText
-            const status=progress.publicReviews?.find(review=>review.slideId===item.id)?.status
+            const status=ownedProgress.publicReviews?.find(review=>review.slideId===item.id)?.status
             return <article className={styles.card} key={item.id} data-reiki-review-id={item.id}>
               <div className={styles.head}>
                 <h3>{item[lang]}</h3>
@@ -162,7 +190,7 @@ export function ReikiMyReviews({locale='en',accountId}) {
           <div className={styles.teacher}>
             <ShieldCheck size={17} aria-hidden="true"/>
             <div>
-              {progress.sharingWithTeacher ? <p>{t.shared}</p> : <>
+              {ownedProgress.sharingWithTeacher ? <p>{t.shared}</p> : <>
                 <label className={styles.consent}>
                   <input type="checkbox" checked={teacherChecked} disabled={busy}
                     onChange={e=>setTeacherChecked(e.target.checked)}/>
@@ -175,8 +203,8 @@ export function ReikiMyReviews({locale='en',accountId}) {
           </div>
           <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true"/>{t.privacy}</p>
         </> : <p>{t.start} <Link href={courseUrl}>{t.open}</Link></p>}
-        {error?<p role="alert" className={styles.error}>{error}</p>:null}
-        {notice?<p role="status" className={styles.notice}><Check size={16} aria-hidden="true"/>{notice}</p>:null}
+        {error&&(!progress||ownedProgress)?<p role="alert" className={styles.error}>{error}</p>:null}
+        {notice&&ownedProgress?<p role="status" className={styles.notice}><Check size={16} aria-hidden="true"/>{notice}</p>:null}
       </div>
     </details>
   </section>

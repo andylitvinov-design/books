@@ -1,3 +1,4 @@
+import { readFreeReviewPanelGeometry, assertFreeReviewPanelGeometry } from './helpers/free-review-panel-geometry.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
@@ -465,26 +466,8 @@ try {
       await assertNoDevIssueOverlay(page, locale + "/free-situation-review/" + width);
       await assertViewport(page, locale + "/free-situation-review/" + width);
       if (width <= 390) {
-        const panelHeights = await page.evaluate(() => {
-          const sections = {
-            hero: 'section[aria-labelledby="review-hero-title"]',
-            situations: '#situations',
-            outcomes: 'section[aria-labelledby="review-outcomes-title"]',
-            testimonials: '[data-personal-testimonials="all"]',
-            alchemy: 'section[aria-labelledby="review-alchemy-title"]',
-            about: 'section[aria-labelledby="review-about-title"]',
-            faq: 'section[aria-labelledby="review-faq-title"]',
-            steps: '#how-it-works',
-            final: 'section[aria-labelledby="review-final-title"]',
-          };
-          const max = window.innerHeight - 90; // reserve bottom menu and a little breathing room
-          return Object.entries(sections).map(([name, selector]) => {
-            const node = document.querySelector(selector);
-            return { name, height: Math.ceil(node?.getBoundingClientRect().height ?? 9999), max };
-          });
-        });
-        assert.deepEqual(panelHeights.filter(item => item.height > item.max), [],
-          "Each collapsed mobile landing panel should fit within one viewport: " + JSON.stringify(panelHeights));
+        const panelGeometry = await page.evaluate(readFreeReviewPanelGeometry);
+        assertFreeReviewPanelGeometry(panelGeometry);
         const archive = page.locator('[data-personal-testimonials="all"]');
         const gallery = archive.locator('[role="region"]');
         assert.equal(await archive.locator('[data-testimonial-video-id]').count(), 12);

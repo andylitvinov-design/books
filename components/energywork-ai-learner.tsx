@@ -118,6 +118,7 @@ const copy = {
     voicesPrevious: "Previous review",
     voicesNext: "Next review",
     voicesNavigation: "Browse learner reviews",
+    voicesScrollLabel: "Learner review",
     milestoneLabel: "Lovely progress",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
@@ -237,6 +238,7 @@ const copy = {
     voicesPrevious: "Предыдущий отзыв",
     voicesNext: "Следующий отзыв",
     voicesNavigation: "Переключение отзывов",
+    voicesScrollLabel: "Отзыв участника",
     milestoneLabel: "Прекрасный прогресс",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
@@ -418,7 +420,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
         <div data-meditation-review-carousel data-review-count={entries.length}>
           <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
             <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
-            <p>{currentReview.quote[locale]}</p>
+            <p data-review-scroll role="region" tabIndex={0} aria-label={t.voicesScrollLabel}>{currentReview.quote[locale]}</p>
             <cite>{currentReview.attribution[locale]}</cite>
           </blockquote>
           {entries.length > 1 ? (

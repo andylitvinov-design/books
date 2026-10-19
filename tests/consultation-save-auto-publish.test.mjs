@@ -1,4 +1,6 @@
 import test from 'node:test'
+import {parseReportMaterialIds} from '../lib/consultations/report-material-staging.js'
+import {parseDaoResourceScore} from '../lib/consultations/dao-resource-stage.js'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 const src = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
@@ -8,7 +10,7 @@ function actions(path, bindings, names) {
   return new Function(...Object.keys(bindings), source + '\nreturn {'+names.join(',')+'}')(...Object.values(bindings))
 }
 function fixture() {
-  const state = { published:{ media:['approved'], summary:'approved' }, draft:{ media:['approved','unpublished'], summary:'unpublished' }, saves:0 }
+  const state = { published:{ media:['approved'], summary:'approved' }, draft:{ media:['approved','unpublished'], summary:'unpublished' }, saves:0, materialLookups:0, materialStages:0 }
   const store = { findById:async()=>record, save:async()=>{state.saves++} }
   const bindings = {
     redirect:url=>{throw Object.assign(new Error('redirect'),{url})}, requireAdminRequest:async()=>true,
@@ -17,6 +19,9 @@ function fixture() {
     updateConsultation:async()=>{state.saves++;return {recommendation:record}},
     createPrescription:()=>record, updatePrescription:()=>record,
     changeDocumentStatus:async()=>{},
+    parseReportMaterialIds, parseDaoResourceScore,
+    transaction:async()=>{state.materialLookups++;throw new Error('UNEXPECTED_MATERIAL_LOOKUP')},
+    stageReportMaterials:async()=>{state.materialStages++;throw new Error('UNEXPECTED_MATERIAL_STAGING')},
     // Any reintroduced publication is a hard failure, including whole pending draft publication.
     autoPublishSavedClientReport:async()=>{throw new Error('UNAPPROVED_PUBLICATION')},
   }
@@ -26,12 +31,12 @@ function fixture() {
 for (const name of ['createConsultationAction','updateConsultationAction']) test(`${name} saves source without publishing pending media/materials`,async()=>{
   const f=fixture();const before=structuredClone(f.state);const a=actions('app/admin/consultations/actions.js',f.bindings,[name]);
   await assert.rejects(name.startsWith('create')?a[name](null,f.data):a[name](record.id,null,f.data),e=>e.url===`/admin/consultations/${record.id}`)
-  assert.equal(f.state.saves,1);assert.deepEqual(f.state.published,before.published);assert.deepEqual(f.state.draft,before.draft)
+  assert.equal(f.state.saves,1);assert.equal(f.state.materialLookups,0);assert.equal(f.state.materialStages,0);assert.deepEqual(f.state.published,before.published);assert.deepEqual(f.state.draft,before.draft)
 })
 for (const name of ['createPrescriptionAction','updatePrescriptionAction']) test(`${name} keeps published projection unchanged`,async()=>{
   const f=fixture();const before=structuredClone(f.state);const a=actions('app/admin/prescriptions/actions.js',f.bindings,[name]);
   await assert.rejects(name.startsWith('create')?a[name](f.data):a[name](record.id,f.data),e=>e.url===`/admin/prescriptions/${record.id}`)
-  assert.equal(f.state.saves,1);assert.deepEqual(f.state.published,before.published);assert.deepEqual(f.state.draft,before.draft)
+  assert.equal(f.state.saves,1);assert.equal(f.state.materialLookups,0);assert.equal(f.state.materialStages,0);assert.deepEqual(f.state.published,before.published);assert.deepEqual(f.state.draft,before.draft)
 })
 test('ordinary save actions retain authorization and stale consultation protection',async()=>{
   const f=fixture();f.bindings.requireAdminRequest=async()=>false
@@ -58,6 +63,7 @@ test('materials editor retains a draft-only entry while report preview offers di
   assert.equal(url,`/admin/clients/client-1/sessions/${session}`)
   assert.equal(calls.length,1);assert.equal(calls[0].path,'/api/admin/clients/client-1/sessions')
   assert.deepEqual(JSON.parse(calls[0].body),{documentId:'report-1'})
+  assert.equal(calls[0].credentials,'same-origin');assert.equal(calls[0].method,'POST')
   const action=src('components/consultation-document-actions.jsx')
   assert.match(action,/await publishSavedClientReport\(clientId,recordId\)/)
   assert.match(action,/\{kind!=='payment'&&active&&clientId&&\s*<button[^>]*className="consultation-prepare-session"/)
@@ -124,4 +130,26 @@ test('concurrent report edit blocks publication and surfaces its version conflic
   await assert.rejects(publishSavedClientReport('client-1','report-1',f.fetcher),
     e=>e.code==='REPORT_VERSION_CHANGED'&&e.status===409)
   assert.deepEqual(f.calls.map(x=>x.method),['POST','GET','POST'])
+})
+
+for(const name of ['createConsultationAction','updateConsultationAction']) test(`${name} validates the actual optional Dao parser before saving`,async()=>{
+  for(const invalid of ['-1','10.1','4.55','not-a-score']){
+    const f=fixture(),before=structuredClone(f.state)
+    f.data.set('daoResourceScore',invalid)
+    const a=actions('app/admin/consultations/actions.js',f.bindings,[name])
+    const result=await (name.startsWith('create')?a[name](null,f.data):a[name](record.id,null,f.data))
+    assert.equal(result.error,'Enter a Wu Xing resource score from 0 to 10 with at most one decimal place.')
+    assert.deepEqual(f.state,before,'invalid input must neither save nor publish')
+  }
+})
+
+test('new consultation rejects malformed material IDs before saving or invoking delivery services',async()=>{
+  for(const invalid of ['not-json','["not-a-uuid"]','{}']){
+    const f=fixture(),before=structuredClone(f.state)
+    f.data.set('materialIdsJson',invalid)
+    const a=actions('app/admin/consultations/actions.js',f.bindings,['createConsultationAction'])
+    const result=await a.createConsultationAction(null,f.data)
+    assert.equal(result.error,'The selected materials are unavailable. Refresh the library selection and try again.')
+    assert.deepEqual(f.state,before)
+  }
 })

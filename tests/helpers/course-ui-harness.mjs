@@ -28,6 +28,7 @@ import * as oporaV7 from '../../lib/inner-growth/anti-stress-skills-v7.js'
 
 const sources = Object.fromEntries(['course-completion-review', 'antistress-module-finder', 'course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-immersive-start', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
   readFileSync(new URL('../../components/app/' + name + '.jsx', import.meta.url), 'utf8')]))
+sources['reiki-my-reviews'] = readFileSync(new URL('../../components/reiki-my-reviews.jsx', import.meta.url), 'utf8')
 export const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
 export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
 export const findButton = (tree, label) => nodes(tree).find(node => node.type === 'button' && textOf(node).includes(label))
@@ -55,6 +56,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     useId() { return hooks.useRef('id-' + serial++).current },
     useMemo(fn, deps) { const i = index++; if (!same(slots[i]?.deps, deps)) slots[i] = { value: fn(), deps }; return slots[i].value },
     useCallback(fn, deps) { return hooks.useMemo(() => fn, deps) },
+    useLayoutEffect(fn, deps) { return hooks.useEffect(fn, deps) },
     useEffect(fn, deps) { const i = index++; if (!same(slots[i]?.deps, deps)) pending.push(() => { slots[i]?.cleanup?.(); const cleanup = fn(); slots[i] = { deps, cleanup }; if (!effects.includes(i)) effects.push(i) }) },
   }
   const stub = name => Object.assign(() => null, { testName: name })
@@ -74,6 +76,9 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     './manual-billing-request': moduleFor('ManualBillingRequest'),
     './course-entry-selector': moduleFor('CourseEntrySelector'), './my-courses-dashboard': moduleFor('MyCoursesDashboard'), './course-preset-catalog': moduleFor('CoursePresetCatalog'),
     './cabinet-free-course-banners': moduleFor('CabinetFreeCourseBanners'),
+    // Keep selector capacity tests shallow; mount this named child directly for
+    // its real owner/read/consent lifecycle tests in course-entry-selector.
+    '@/components/reiki-my-reviews': { ReikiMyReviews: stub('ReikiMyReviews') },
     './course-focus-entry': moduleFor('CourseFocusEntry'),
     './course-today': moduleFor('CourseToday'), './course-14-day-overview': moduleFor('Course14DayOverview'), './course-r3-steps': moduleFor('CourseR3Steps'),
     '@/lib/inner-growth/course-moment-trends': momentTrends, '@/lib/inner-growth/course-adaptation': adaptation,'@/lib/inner-growth/course-welcome':welcome, '@/lib/inner-growth/anti-stress-day-one':dayOne,
@@ -130,7 +135,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     renderedChildren.add(modules['./course-immersive-start'].default)
   }
   const exported = loadComponent(name)
-  const component = exported.default || exported.AccountTestBattery
+  const component = exported.default || exported.AccountTestBattery || exported.ReikiMyReviews
   const render = (nextProps = props) => {
     props = nextProps; index = 0; pending = []; dirty = false
     tree = component(props)
@@ -139,6 +144,13 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     }
     pending.forEach(fn => fn())
     return tree
+  }
+  // Render without committing effects or replacing the visible instance.
+  const speculate = nextProps => {
+    const previous = { index, pending, dirty }
+    index = 0; pending = []; dirty = false
+    try { return component(nextProps) }
+    finally { index = previous.index; pending = previous.pending; dirty = previous.dirty }
   }
   let enteredCourse = false
   const settle = async () => {
@@ -153,7 +165,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     return tree
   }
   render()
-  return { render, settle, calls, navigations, notified, get tree() { return tree },
+  return { render, speculate, settle, calls, navigations, notified, get tree() { return tree },
     async backTo(query) { url = new URL(query, url); listeners.get('popstate')?.(); await settle() },
     unmount() { effects.forEach(i => slots[i]?.cleanup?.()) },
   }

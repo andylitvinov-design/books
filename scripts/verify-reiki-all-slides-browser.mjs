@@ -8,6 +8,8 @@ import { mkdir } from "node:fs/promises";
 import { chromium, webkit, expect } from "@playwright/test";
 import { energyworkLessonRanges, energyworkSequence } from "../data/academy/energywork-ai-schema.js";
 
+import { assertReviewKeyboardAccess } from "./helpers/reiki-review-keyboard-verifier.mjs";
+
 const origin = process.env.HH_TEST_APP_ORIGIN || "http://127.0.0.1:3100";
 assert.match(origin, /^http:\/\/(?:127\.0\.0\.1|localhost):[0-9]+$/, "Never browse a real account or production site");
 const engineName = process.env.HH_TEST_BROWSER === "webkit" ? "webkit" : "chromium";
@@ -122,6 +124,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
       await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(2);
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
+      const keyboardProof = await assertReviewKeyboardAccess(carousel.locator("blockquote p"), locale, expect, page.keyboard);
+      console.log("REIKI_REVIEW_KEYBOARD_PASS", JSON.stringify({ locale, width, id, ...keyboardProof }));
       const first = await carousel.locator("blockquote p").innerText();
       await page.locator("button[data-review-next]").click();
       await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
@@ -148,6 +152,32 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   console.log("REIKI_SCREEN_QA", JSON.stringify({engine:engineName, locale, width, index, id, kind:data.kind, phase:data.phase}));
 }
 
+// Audit every source video at the same short-phone size, not just Flight to the Sun.
+// Restore the journey width before continuing its existing full-course checks.
+async function inspectShortVideo(page, locale, id, width) {
+  if (!["flight-02", "tan-02", "kun-02", "ygg-02"].includes(id)) return;
+  await page.setViewportSize({width:375,height:625});
+  await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id",id);
+  const video = page.locator('[data-energywork-slide-kind="video"]');
+  await expect(video.locator(".academy-video-poster")).toBeVisible();
+  await expect(video.locator("iframe")).toHaveCount(0);
+  const dimensions = await video.locator("[class*='slideMain']").evaluate(node => {
+    node.scrollTop = 0;
+    const poster = node.querySelector(".academy-video-poster").getBoundingClientRect();
+    return { used:node.scrollHeight, space:node.clientHeight, justify:getComputedStyle(node).justifyContent,
+      posterWidth:poster.width, posterHeight:poster.height, width:innerWidth, height:innerHeight };
+  });
+  assert.ok(dimensions.used <= dimensions.space + 35,
+    locale+" "+id+" must not require excessive inner scrolling on 375×625: "+JSON.stringify(dimensions));
+  assert.ok(dimensions.justify.includes("center"), locale+" "+id+": retain balanced video content");
+  assert.ok(dimensions.posterWidth >= 200 && dimensions.posterHeight >= 100,
+    locale+" "+id+": a visible usable video poster must remain");
+  assert.ok(Math.abs(dimensions.posterWidth / dimensions.posterHeight - 16 / 9) <= 0.02,
+    locale+" "+id+": preserve the source poster aspect ratio");
+  console.log("REIKI_SHORT_VIDEO_PASS",JSON.stringify({engine:engineName,locale,id,...dimensions}));
+  await page.setViewportSize({width,height:844});
+}
+
 async function exerciseJourney(page, locale, width) {
   await page.setViewportSize({width, height:844});
   await page.goto(origin+"/"+locale+"/academy/principles-of-energywork/learn", { waitUntil:"domcontentloaded",timeout:90000 });
@@ -163,6 +193,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(current).toHaveAttribute("data-energywork-slide-id",id,{timeout:30000});
     const capture = milestones.has(index);
     await inspect(page,{locale,width,index,id,screenshot:capture});
+    await inspectShortVideo(page,locale,id,width);
     journey.push(id);
     if (id==="welcome-02") {
       await page.locator('input[name="welcome-02"][value="beginner"]').check();

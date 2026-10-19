@@ -90,7 +90,8 @@ test("mobile video testimonials keep real YouTube thumbnail images with a same-o
   assert.match(player, /<Image key=\{poster\}[^>]*\bunoptimized\b/);
   assert.match(player, /current === "hq" \? "direct"/);
   assert.match(player, /i\.ytimg\.com\/vi\/\$\{video\.youtubeId\}/);
-  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
+  assert.match(player, /const playbackYouTubeId = mirrorId \|\| video\.youtubeId/);
+  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
 });
 
 test("the real practitioner photo stays full-width on mobile", () => {
@@ -123,8 +124,9 @@ test("the testimonial gallery uses real ID-matched archived frames instead of de
   assert.doesNotMatch(component, /homepage-constellations\.svg|homepage-guided-imagery\.svg/);
   assert.match(component, /data-testimonial-video-id=\{item\.id\}/);
   assert.match(player, /fallbackPoster\?: string/);
-  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
-  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
+  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  assert.match(player, /const playbackYouTubeId = mirrorId \|\| video\.youtubeId/);
+  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /href=\{watchUrl\}/);
   // Two older RU About clips remain in the catalog without a wrong-person thumbnail.
   for (const id of ["m9RfDgK76PU", "5oj0BIbLT4w"]) {

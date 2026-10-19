@@ -1,8 +1,26 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import postcss from 'postcss'
 
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+function assertCoastalScreenScope(styles) {
+  let themedRules = 0
+  postcss.parse(styles).walkRules(rule => {
+    if (!rule.selector.includes('[data-hh-report-theme="coastal-v2"]')) return
+    themedRules += 1
+    const media = []
+    for (let parent = rule.parent; parent; parent = parent.parent) {
+      if (parent.type === 'atrule' && parent.name === 'media') media.push(parent.params)
+    }
+    assert.ok(media.some(query => query.split(',').every(part => /^screen(?:\s+and\b|$)/.test(part.trim()))),
+      'coastal theme rules must be restricted to screen media')
+    assert.ok(media.every(query => !/\bprint\b/.test(query)),
+      'coastal theme must not restyle the signed print document')
+  })
+  assert.ok(themedRules > 0, 'the coastal theme must still be present')
+}
 
 test('approved coastal report option 2 is scoped to authorized consultation viewers', () => {
   const page = source('components/client-session-page.jsx')
@@ -33,7 +51,21 @@ test('approved coastal report option 2 is scoped to authorized consultation view
   assert.match(styles, /@media screen \{/)
   assert.match(styles, /sessionBottomPrimary/)
   assert.match(styles, /sessionBottomSecondary/)
-  assert.doesNotMatch(styles.slice(styles.indexOf('Client report coastal v2')), /\@media print\s*\{/)
+  assertCoastalScreenScope(styles)
+})
+
+test('coastal scope rejects print leakage while allowing unrelated voice print controls', () => {
+  const styles = source('components/client-session.module.css')
+  assertCoastalScreenScope(styles + '\n@media print {.reportVoiceSection {display:none!important}}')
+  assert.throws(() => assertCoastalScreenScope(styles +
+    '\n@media print {.sessionSiteShell[data-hh-report-theme="coastal-v2"] {color:red}}'),
+  /restricted to screen/)
+  assert.throws(() => assertCoastalScreenScope(styles +
+    '\n.sessionSiteShell[data-hh-report-theme="coastal-v2"] {color:red}'),
+  /restricted to screen/)
+  assert.throws(() => assertCoastalScreenScope(styles +
+    '\n@media screen, all {.sessionSiteShell[data-hh-report-theme="coastal-v2"] {color:red}}'),
+  /restricted to screen/)
 })
 
 test('coastal hero is lightweight, same-origin and free of client data', () => {

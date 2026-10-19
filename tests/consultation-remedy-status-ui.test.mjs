@@ -1,4 +1,5 @@
 import test from 'node:test'
+import {assertOptionalClinicalFields} from './helpers/report-editor-contracts.mjs'
 import assert from 'node:assert/strict'
 import * as search from '../lib/consultations/remedy-search.js'
 import * as editor from '../lib/consultations/editor.js'
@@ -119,13 +120,13 @@ test('mixed rows serialize explicit Homeopathy and Bach item types without dose 
 })
 
 
-test('consultation entry restores compact auto-parser and open Note field while removing redundant Additional details UI', async () => {
+test('compact consultation entry preserves parser and Note with optional saved remedy details', async () => {
   const source = await readFile('components/consultation-form.jsx', 'utf8')
   assert.match(source, /ConsultationTextImport/)
   assert.match(source, /className="consultation-note consultation-legacy-instructions"/)
   assert.match(source, /name="generalInstructions"/)
   assert.doesNotMatch(source, /labels\.additional/)
-  assert.doesNotMatch(source, /consultationClinicalFields/)
+  assertOptionalClinicalFields(source)
 })
 
 test('compact consultation screen targets remedies on the first mobile viewport', async () => {
@@ -134,4 +135,17 @@ test('compact consultation screen targets remedies on the first mobile viewport'
   assert.match(css, /\.consultation-new-shell \.prescription-admin-description\s*\{\s*display: none/)
   assert.match(css, /\.consultation-form--compact[\s\S]*gap: 11px/)
   assert.match(css, /\.consultation-text-import textarea[\s\S]*min-height: 50px/)
+})
+
+test('optional clinical fields preserve author text and remain blank when historical values are absent',()=>{
+  const keys=['dosage','frequency','duration','purpose','sequence','instructions','notes']
+  assert.deepEqual(editor.consultationClinicalFields.map(([key])=>key),keys.slice(0,-1))
+  const savedItem={remedySlug:'aconitum',sourceStatus:'canonical',
+    ...Object.fromEntries(keys.map(key=>[key,`Synthetic saved ${key}: first line\nsecond line`]))}
+  const snapshot=structuredClone(savedItem)
+  const [roundTrip]=editor.serializeConsultationRows(editor.initialConsultationRows({items:[savedItem]},remedies))
+  for(const key of keys)assert.equal(roundTrip[key],savedItem[key],key)
+  assert.deepEqual(savedItem,snapshot,'opening and saving details must not mutate the original record')
+  const [historical]=editor.serializeConsultationRows(editor.initialConsultationRows({items:[{remedySlug:'aconitum',sourceStatus:'canonical'}]},remedies))
+  for(const key of keys)assert.equal(historical[key],'',key+' must not acquire a default')
 })

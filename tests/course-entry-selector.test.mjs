@@ -307,7 +307,7 @@ test('iPhone My Courses layout puts scales below both columns and keeps Plan ful
 test('course page brand, Account menu and both tabs share the Courses destination', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const theme = read('components/app/my-course-theme.css')
-  assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course'/)
+  assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course\?view=courses'/)
   assert.match(workspace, /nav\.find\(item => navIsActive\(item\.id\)\)\?\.label/)
   assert.equal((workspace.match(/nav\.map\(/g) || []).length, 3)
   assert.match(workspace, /page === 'course'/)
@@ -358,4 +358,62 @@ test('closing is owner-scoped, revision-checked, and archives past cycles withou
   assert.match(daily, /if\(\['archived','closed'\]\.includes\(course.status\)\)notAllowed\('COURSE_NOT_ACTIVE',409\)/)
   assert.match(migration, /status in \('active','paused','completed','archived','closed'\)/)
   assert.doesNotMatch(server, /delete from app_private\.growth_(?:cycles|sessions|courses)/i)
+})
+
+
+test('course selector passes the current owner and locale to the separate Reiki review boundary', async () => {
+  const h = mount('course-entry-selector', { props: { accountId: 'owner-a', locale: 'en', course: course('course-a'), onOpen() {} }, fetcher() { assert.fail('stage one selector must not fetch') } })
+  for (const [accountId, locale] of [['owner-a', 'en'], ['owner-b', 'ru']]) {
+    h.render({ accountId, locale, course: course('course-a'), onOpen() {} }); await h.settle()
+    const reviews = nodes(h.tree).filter(node => node.type?.testName === 'ReikiMyReviews')
+    assert.equal(reviews.length, 1); assert.equal(reviews[0].props.accountId, accountId); assert.equal(reviews[0].props.locale, locale)
+    assert.equal(h.calls.length, 0)
+  }
+  h.unmount()
+})
+
+const reviewProgress = (accountId, text = 'Synthetic private review') => ({ accountId, enrolled: true, revision: 3, sharingWithTeacher: false, answers: { 'flight-04': text }, publicReviews: [] })
+test('actual Reiki review child rejects wrong-owner and late-owner reads without publishing or sharing', async () => {
+  const slow = deferred()
+  const h = mount('reiki-my-reviews', { props: { accountId: 'owner-a', locale: 'en' },
+    fetcher: (path, options, body) => { assert.equal(path, 'academy-energywork'); assert.equal(body, undefined); return options.accountId === 'owner-a' ? slow.promise : reviewProgress('owner-b', 'Owner B private reflection') } })
+  await h.settle(); h.render({ accountId: 'owner-b', locale: 'en' }); await h.settle()
+  slow.resolve(reviewProgress('owner-a', 'Owner A stale private reflection')); await h.settle()
+  assert.ok(textOf(h.tree).includes('Owner B private reflection')); assert.ok(!textOf(h.tree).includes('Owner A stale private reflection'))
+  assert.deepEqual(h.calls.map(call => [call.method, call.options.accountId]), [['GET', 'owner-a'], ['GET', 'owner-b']])
+  h.unmount()
+  for (const accountId of [null, 'owner-b']) {
+    const scoped = mount('reiki-my-reviews', { props: { accountId, locale: 'en' }, fetcher: () => reviewProgress('other-owner', 'Foreign private review') })
+    await scoped.settle(); assert.ok(!textOf(scoped.tree).includes('Foreign private review'))
+    assert.equal(scoped.calls.length, accountId ? 1 : 0); assert.equal(scoped.calls.filter(call => call.body).length, 0)
+    scoped.unmount()
+  }
+})
+
+test('actual Reiki reviews require independent public and teacher opt-ins before an owner-scoped publication request', async () => {
+  for (const locale of ['en', 'ru']) {
+    const saved = reviewProgress('owner-a')
+    const h = mount('reiki-my-reviews', { props: { accountId: 'owner-a', locale },
+      fetcher: (_path, _options, body) => body ? { ...saved, revision: 4, publicReviews: [{ slideId: 'flight-04', status: 'pending' }] } : saved })
+    await h.settle()
+    const publish = () => findButton(h.tree, locale === 'en' ? 'Submit for publication' : 'Предложить к публикации')
+    const share = () => findButton(h.tree, locale === 'en' ? 'Share with teacher' : 'Передать в CRM')
+    const checkboxes = () => nodes(h.tree).filter(node => node.type === 'input' && node.props.type === 'checkbox')
+    assert.equal(checkboxes().length, 2); assert.ok(checkboxes().every(node => !node.props.checked))
+    assert.equal(publish().props.disabled, true); assert.equal(share().props.disabled, true)
+    checkboxes()[1].props.onChange({ target: { checked: true } }); await h.settle()
+    assert.equal(publish().props.disabled, true); assert.equal(share().props.disabled, false)
+    checkboxes()[1].props.onChange({ target: { checked: false } })
+    checkboxes()[0].props.onChange({ target: { checked: true } }); await h.settle()
+    assert.equal(publish().props.disabled, false); assert.equal(share().props.disabled, true)
+    assert.equal(h.calls.filter(call => call.body).length, 0, 'neither read nor checkbox selection sends a request')
+    publish().props.onClick(); await h.settle()
+    const writes = h.calls.filter(call => call.body)
+    assert.equal(writes.length, 1); assert.equal(writes[0].path, 'academy-energywork'); assert.equal(writes[0].method, 'POST')
+    assert.deepEqual({ ...writes[0].options }, { accountId: 'owner-a' })
+    assert.deepEqual({ ...writes[0].body }, { version: '2026-10-18.p1', expectedRevision: 3, action: 'submit-review', slideId: 'flight-04', locale, consent: true })
+    assert.ok(textOf(h.tree).includes(locale === 'en' ? 'Awaiting approval' : 'На проверке'))
+    assert.equal(share().props.disabled, true, 'public consent cannot grant teacher sharing')
+    h.unmount()
+  }
 })

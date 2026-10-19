@@ -1,9 +1,29 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import postcss from 'postcss'
 import { buildPaymentPdf, buildPrescriptionPdf } from '../lib/prescriptions/pdf.js'
 
 const origin = 'https://example.test'
+
+function assertAppendixHints(styles) {
+  const css = postcss.parse(styles)
+  for (const [selector, media, display] of [
+    ['.canonical-remedy-appendix-description', 'screen', 'block'],
+    ['.canonical-remedy-appendix-print-hint', 'screen', 'none'],
+    ['.canonical-remedy-appendix-hint', 'print', 'none'],
+    ['.canonical-remedy-appendix-print-hint', 'print', 'inline'],
+  ]) {
+    let found = false
+    css.walkRules(rule => {
+      if (!rule.selector.endsWith(selector) || rule.parent.type !== 'atrule' ||
+        rule.parent.name !== 'media' || rule.parent.params !== media) return
+      rule.walkDecls('display', declaration => { if (declaration.value === display) found = true })
+    })
+    assert.ok(found, selector + ' must use display:' + display + ' for ' + media)
+  }
+}
+
 const example = {
   patientName: 'Synthetic Client',
   dateIssued: '2026-10-13',
@@ -118,7 +138,7 @@ test('remedy appendix is concise and the original PDF photo floats at top right'
 })
 
 
-test('only the original remedy-description appendix collapses, with complete print and PDF preserved', async () => {
+test('original remedy-description appendix starts collapsed, with complete print and PDF preserved', async () => {
   const [jsx, css, printHandler] = await Promise.all([
     readFile('components/prescription-document.jsx', 'utf8'),
     readFile('components/consultation-report.css', 'utf8'),
@@ -129,7 +149,13 @@ test('only the original remedy-description appendix collapses, with complete pri
     jsx.indexOf('{document.includeDistanceHomeopathy &&'),
   )
   assert.match(appendix, /<details className="canonical-remedy-profile canonical-remedy-profile-disclosure"/)
-  assert.match(appendix, /<summary className="canonical-remedy-profile-summary">\s*<h3>\{remedy\.canonical_latin_name\}<\/h3>/)
+  // The approved illustrated summary includes the original photo before its
+  // heading (#1036). Bound the check to that summary, not any later heading.
+  const summary = appendix.match(/<summary className="canonical-remedy-profile-summary">([\s\S]*?)<\/summary>/)?.[1]
+  assert.ok(summary, 'the appendix keeps an accessible disclosure summary')
+  assert.match(summary, /<span className="canonical-remedy-profile-thumb" aria-hidden="true">/)
+  assert.match(summary, /<img src=\{remedy\.primary_image\} alt=""/)
+  assert.match(summary, /<h3>\{remedy\.canonical_latin_name\}<\/h3>/)
   assert.doesNotMatch(appendix, /<details[^>]*\sopen(?:\s|=|>)/,
     'library descriptions are closed initially on mobile/desktop')
   assert.match(appendix, /<div className="canonical-remedy-profile-content">/)
@@ -145,7 +171,9 @@ test('only the original remedy-description appendix collapses, with complete pri
     'canonical-remedy-group','canonical-guidance','canonical-follow-up-appointment',
     'DocumentSignature']) assert.ok(jsx.includes(marker),
       'non-appendix report content remains visible: ' + marker)
-  assert.match(css, /@media screen \{[\s\S]*?canonical-remedy-appendix-description \{\s*display:none/)
+  // #1036 shows the opening instruction on screen and substitutes the full
+  // source-text description for print; the whole description is no longer hidden.
+  assertAppendixHints(css)
   assert.match(css, /details\.canonical-remedy-profile-disclosure > summary:focus-visible/)
   assert.match(css, /@media print \{[\s\S]*?details\.canonical-remedy-profile-disclosure/)
   assert.match(printHandler, /addEventListener\('beforeprint', expandForPrint\)/)
@@ -163,4 +191,14 @@ test('only the original remedy-description appendix collapses, with complete pri
   assert.match(pdfSource, /APPENDIX/)
   assert.match(pdfSource, /SYNTHETIC-ANALYSIS-VISIBILITY/)
   assert.doesNotMatch(pdfSource, /PRIVATE-PRACTITIONER-ONLY/)
+})
+
+test('appendix hint contract rejects a hidden screen instruction or a missing print description', async () => {
+  const styles = await readFile('components/consultation-report.css', 'utf8')
+  for (const selector of ['canonical-remedy-appendix-description', 'canonical-remedy-appendix-print-hint']) {
+    const removed = styles.replaceAll(selector, 'missing-' + selector)
+    // Removing the exact selector must not be masked by another media query.
+    assert.notEqual(removed, styles)
+    assert.throws(() => assertAppendixHints(removed), /must use display:/)
+  }
 })

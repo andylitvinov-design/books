@@ -85,7 +85,7 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     ['portrait', 'Profile', '/portrait'],
     ['tests', 'Tests', '/tests'],
     ['portfolio', 'Reports', '/portfolio'],
-    ['course', 'Courses', '/course'],
+    ['course', 'Courses', '/course?view=courses'],
     ['practice', 'Practice', '/practice'],
   ]) {
     assert.match(navModel, new RegExp("id: '" + id + "'"))
@@ -110,7 +110,7 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
     {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
     {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
-    {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
+    {id:'course',ru:'Курсы',en:'Courses',path:'/course?view=courses'},
     {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
   ])
   assert.doesNotMatch(mobile, />Analysis</)

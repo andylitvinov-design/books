@@ -8,6 +8,8 @@ import { runInNewContext } from 'node:vm'
 import React from 'react'
 import * as jsxRuntime from 'react/jsx-runtime'
 import { renderToStaticMarkup } from 'react-dom/server'
+import * as ReactDOM from 'react-dom'
+import { getImageProps } from 'next/image.js'
 import ts from 'typescript'
 import postcss from 'postcss'
 import tailwindcss from 'tailwindcss'
@@ -18,7 +20,7 @@ export const origin = 'http://127.0.0.1:3100'
 export const widths = Object.freeze([320, 375, 390, 430, 1280])
 export const scope = 'ACTUAL_PRIVATE_REPORT_JSX_SYNTHETIC_SSR_AND_PRODUCTION_CSS_NO_CLIENT_AUTH_OR_API'
 const root = new URL('../../', import.meta.url)
-const read = path => readFile(new URL(path, root), 'utf8')
+const read = (path, encoding = 'utf8') => readFile(new URL(path, root), encoding)
 const paths = Object.freeze({
   page: 'components/client-session-page.jsx',
   signed: 'components/prescription-document.jsx',
@@ -39,9 +41,9 @@ const specimen = Object.freeze({
   primary_source_url: '#synthetic-source',
 })
 
-function scopeModules(css) {
+function scopeModules(css, path = paths.module, prefix = cssPrefix) {
   const styles = Object.create(null)
-  const ast = postcss.parse(css, { from: paths.module })
+  const ast = postcss.parse(css, { from: path })
   ast.walkRules(rule => {
     rule.selector = selectorParser(selectors => {
       // Only local CSS Module classes are renamed; classes nested in :global
@@ -55,7 +57,7 @@ function scopeModules(css) {
           }
           ancestor = ancestor.parent
         }
-        if (!isGlobal) node.value = styles[node.value] = cssPrefix + node.value
+        if (!isGlobal) node.value = styles[node.value] = prefix + node.value
       })
       selectors.walkPseudos(node => {
         if (node.value !== ':global') return
@@ -66,7 +68,7 @@ function scopeModules(css) {
   })
   return { css: ast.toString(), styles: new Proxy(styles, {
     get: (map, key) => key === '__esModule' ? false :
-      (typeof key === 'string' ? (map[key] || cssPrefix + key) : undefined),
+      (typeof key === 'string' ? (map[key] || prefix + key) : undefined),
   }) }
 }
 
@@ -120,13 +122,13 @@ export function syntheticCases() {
 
 export async function buildCoastalFixture() {
   const proofs = []
-  const source = async path => {
-    const bytes = await read(path)
+  const source = async (path, encoding = 'utf8') => {
+    const bytes = await read(path, encoding)
     proofs.push({ path, sha256: createHash('sha256').update(bytes).digest('hex') })
     return bytes
   }
   const [pageSource, signedSource, moduleSource, reportCss, art, botanical] =
-    await Promise.all(Object.values(paths).map(source))
+    await Promise.all(Object.values(paths).map(path => source(path)))
   assert.match(pageSource, /data-hh-report-theme="coastal-v2"/)
   assert.match(signedSource, /canonical-report-cover/)
   assert.match(moduleSource, /Coastal v2 continuity/)
@@ -139,6 +141,49 @@ export async function buildCoastalFixture() {
   ]).process(appStyles,{from:fileURLToPath(new URL('app/globals.css',root))})
   assert.deepEqual(compiledGlobal.warnings().map(w=>w.toString()),[])
   const scoped = scopeModules(moduleSource)
+  // Compile the explicit current reader graph. Unknown imports still fail closed;
+  // the server-only narration service is never loaded by this offline fixture.
+  const extraCss = []
+  const moduleStyles = async (path, prefix) => {
+    const scoped = scopeModules(await source(path), path, prefix)
+    extraCss.push(scoped.css)
+    return scoped.styles
+  }
+  const actual = async (path, deps = {}) => transpile(path, await source(path), {
+    'react/jsx-runtime': jsxRuntime, ...deps,
+  })
+  const progress = await actual('lib/documents/report-progress.js')
+  const dao = await actual('components/dao-resource-stage.jsx', {
+    '@/lib/consultations/dao-resource-stage': await actual('lib/consultations/dao-resource-stage.js'),
+    '@/lib/consultations/dao-stage-author-content': await actual('lib/consultations/dao-stage-author-content.js'),
+    './dao-resource-stage.module.css': await moduleStyles('components/dao-resource-stage.module.css', 'coastal_dao_'),
+  })
+  const narration = await actual('components/report-narration-player.jsx', {
+    react: React, 'lucide-react': icons,
+    './report-narration-player.module.css': await moduleStyles('components/report-narration-player.module.css', 'coastal_narration_'),
+  })
+  const portrait = JSON.parse(await source('data/static-portrait.json'))
+  const staticPortrait = await actual('components/static-portrait.tsx', {
+    'react-dom': ReactDOM, 'next/image': { getImageProps },
+    '@/data/static-portrait.json': portrait,
+  })
+  const voiceStyles = await moduleStyles('components/client-session-voice-card.module.css', 'coastal_voice_')
+  const publicAssets = new Map()
+  // Production coastal CSS layers these two exact images above its SVG fallback.
+  for (const [path, contentType] of [
+    ['/images/holistic-house/report-lighthouse-coast.avif', 'image/avif'],
+    ['/images/holistic-house/report-lighthouse-coast.webp', 'image/webp'],
+  ]) {
+    assert.ok(moduleSource.includes("url('" + path + "')"), 'Coastal asset must come from production CSS: ' + path)
+    publicAssets.set(origin + path, { contentType, body: await source('public' + path, null) })
+  }
+  for (const variant of portrait.variants) {
+    assert.match(variant.path, /^\/images\/holistic-house\/portrait-static\/andy-\d+-[a-f0-9]+\.webp$/)
+    const body = await source('public' + variant.path, null)
+    assert.equal(body.length, variant.bytes)
+    assert.equal(createHash('sha256').update(body).digest('hex'), variant.sha256)
+    publicAssets.set(origin + variant.path, { contentType: 'image/webp', body })
+  }
   const deps = {
     'react/jsx-runtime': jsxRuntime,
     'next/link': { __esModule: true, default: Link },
@@ -154,6 +199,9 @@ export async function buildCoastalFixture() {
     './document-auto-print': { DocumentAutoPrint: () => null },
     './report-appendix-print-expander': { ReportAppendixPrintExpander: () => null },
     './prescription-actions': { PrescriptionActions: () => null },
+    './report-narration-player': narration,
+    './dao-resource-stage': dao,
+    '@/lib/clients/report-narration-service': { narrationEnabled: () => false },
     './document-letterhead': {
       DocumentLetterhead: () => React.createElement('div', { className: 'canonical-letterhead canonical-letterhead--compact' },
         React.createElement('div', null,
@@ -161,9 +209,7 @@ export async function buildCoastalFixture() {
           React.createElement('p', { className: 'canonical-credentials' }, 'Illustrative report · no client data'))),
       DocumentSignature: () => React.createElement('div', { className: 'canonical-signature canonical-signature--wide' }, 'Sample signature placeholder'),
     },
-    '@/lib/documents/report-progress': {
-      extractReportProgress: analysis => analysis?.includes('3/10') ? { before: 3, after: 6 } : null,
-    },
+    '@/lib/documents/report-progress': progress,
     '@/lib/consultations/recommended-tests': { resolveRecommendedTests: () => [] },
     '@/lib/documents/report-heading': {
       clientReportHeading: locale => locale === 'ru' ? 'Гомеопатическая рекомендация' : 'Personal recommendation',
@@ -189,12 +235,16 @@ export async function buildCoastalFixture() {
         React.createElement('div', {className: scoped.styles.youtubeLessonFrame}, 'Synthetic material preview')) },
     './session-private-video-poster': { SessionPrivateVideoPoster: () => null },
     './client-session.module.css': scoped.styles,
+    './client-session-voice-card.module.css': voiceStyles,
+    './dao-resource-stage': dao,
+    './static-portrait': staticPortrait,
   }
   const Viewer = transpile(paths.page, pageSource, clientDeps).ClientSessionPage
   assert.equal(typeof Viewer, 'function')
-  const css = (compiledGlobal.css + '\n' + reportCss + '\n' + scoped.css).replace(/<\/style/gi, '<\\/style')
+  const css = (compiledGlobal.css + '\n' + reportCss + '\n' + scoped.css + '\n' + extraCss.join('\n')).replace(/<\/style/gi, '<\\/style')
   return {
     sourceProof:proofs,
+    publicAssets,
     styleData: css,
     imageBytes: art,
     botanicalBytes: botanical,

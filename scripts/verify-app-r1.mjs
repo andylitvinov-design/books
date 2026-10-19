@@ -1,3 +1,4 @@
+import { installRatingsRequestDiagnostics } from './helpers/ratings-request-diagnostics.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
@@ -42,9 +43,10 @@ await context.addInitScript(installBillingStatusLifecycleDiagnostics)
 await context.addInitScript(() => {
   window.addEventListener('popstate', () => console.log('HH_HOME_PROBE '+JSON.stringify({kind:'early-popstate',path:location.pathname,pendingPath:window.__hhCspHardDestination ? new URL(window.__hhCspHardDestination).pathname : null})), {capture:true,passive:true})
 })
+await installRatingsRequestDiagnostics(context,origin,event=>console.log('SYNTHETIC_RATINGS_DIAGNOSTIC',JSON.stringify(event)))
 let page=await context.newPage()
-const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
-page.on('pageerror',capturePageError)
+const capturePageError=sourcePage=>error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);let sourcePath='[unavailable]';try{sourcePath=new URL(sourcePage.url()).pathname}catch{};console.log('SYNTHETIC_PAGE_ERROR',sourcePath,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
+page.on('pageerror',capturePageError(page))
 const testPlanDiagnostics=await installTestPlanNavigationDiagnostics(page,origin,event=>console.log('SYNTHETIC_TEST_PLAN_NAVIGATION',JSON.stringify(event)))
 const checks=[]
 let historyDiagnosticStage=null, historyDiagnosticStartedAt=null, primaryFailure=false, historyNavigationDiagnostics=null
@@ -1032,8 +1034,9 @@ try {
  historyNavigationDiagnostics=observeHistoryNavigation(page,browser,{origin,log:(name,evidence)=>console.log(name,JSON.stringify(evidence))})
  historyNavigationDiagnostics.mark('recovery-start')
  const recoveryContext=await browser.newContext({storageState:await context.storageState(),serviceWorkers:'block',viewport:{width:390,height:844}})
+ await installRatingsRequestDiagnostics(recoveryContext,origin,event=>console.log('SYNTHETIC_RECOVERY_RATINGS_DIAGNOSTIC',JSON.stringify(event)))
  const recoveryPage=await recoveryContext.newPage()
- recoveryPage.on('pageerror',capturePageError)
+ recoveryPage.on('pageerror',capturePageError(recoveryPage))
  try {
   for (const body of ['{"account":', '{"error":"SERVICE_UNAVAILABLE"}', '{"account":null}']) {
    let intercepted=0
@@ -1084,7 +1087,7 @@ try {
  await screenshotEvidence(page,{path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));if(i<19)await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save results and get recommendations'}).click();await openCompletedPlanResult();data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);passed('Mini-IPIP scoring is preserved alongside completed plan summaries')
- await enterTest('Weekly Psychic Health','Quick')
+ await enterTest('Weekly Wellbeing Check-in','Quick')
  await expect(page.getByText('Over the past 7 days',{exact:false})).toBeVisible()
  await expect(page.locator('.hh-quick-question')).toHaveCount(8)
  await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible()
@@ -1099,7 +1102,7 @@ try {
  await ready()
  // My Tests now renders the selected list immediately without a separate Start testing gate.
  await expect(page.locator('#my-tests-list')).toBeVisible()
- const weeklyResumeRow=page.locator('#my-tests-list article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})})
+ const weeklyResumeRow=page.locator('#my-tests-list article').filter({has:page.getByRole('heading',{name:'Weekly Wellbeing Check-in',exact:true})})
  await expect(weeklyResumeRow).toBeVisible()
  await weeklyResumeRow.getByRole('button',{name:'Continue test'}).click()
  await expect(page).toHaveURL(/\/runs\//)
@@ -1129,7 +1132,7 @@ try {
  await ready()
  await openInsightsProfileTools()
  await page.locator('[data-profile-extra-tools] > summary').click()
- await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'Finish: Weekly Wellbeing Check-in',exact:true})).toBeVisible()
  await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible()
  passed('Quick draft resumes with its saved answers and can switch to one-question Guided mode')
  await page.goto(origin+'/ru/app/portrait');await ready();await assertCabinetPortrait(page,expect,{origin,locale:'ru'});await screenshotEvidence(page,{path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
@@ -1177,14 +1180,21 @@ try {
    // creates or publishes a report before explicit Save/Share in the editor.
    const reportPickerPage=await admin.newPage();
    await reportPickerPage.goto(origin+'/admin/reports/new');
-   await expect(reportPickerPage.getByRole('heading',{name:'Create client report',exact:true})).toBeVisible();
-   const syntheticReportChoice=reportPickerPage.getByRole('link',{name:/Synthetic Handoff Client/});
-   await expect(syntheticReportChoice).toBeVisible();
-   await expect(syntheticReportChoice).toHaveAttribute('href','/admin/consultations/new?clientId='+ownerClientId);
+   await expect(reportPickerPage).toHaveURL(origin+'/admin/consultations/new');
+   await expect(reportPickerPage.locator('input[name="clientId"]')).toHaveValue('');
+   await expect(reportPickerPage.locator('input[name="clientMode"]')).toHaveValue('existing');
+   await expect(reportPickerPage.locator('.consultation-client-selected-row')).toHaveCount(0);
+   await reportPickerPage.locator('.consultation-client-search input').fill('Synthetic Handoff Client');
+   const syntheticReportChoice=reportPickerPage.locator('.consultation-client-results button').filter({hasText:'Synthetic Handoff Client'});
+   await expect(syntheticReportChoice).toHaveCount(1);
+   await expect(syntheticReportChoice.locator('strong')).toHaveText('Synthetic Handoff Client');
+   await expect(syntheticReportChoice).toHaveAttribute('type','button');
    await syntheticReportChoice.click();
-   await expect(reportPickerPage).toHaveURL(origin+'/admin/consultations/new?clientId='+ownerClientId);
    await expect(reportPickerPage.locator('.consultation-form input[name="clientId"]')).toHaveValue(ownerClientId);
+   await expect(reportPickerPage.locator('input[name="patientName"]')).toHaveValue('Synthetic Handoff Client');
    await expect(reportPickerPage.locator('.consultation-client-selected-row')).toContainText('Synthetic Handoff Client');
+   await expect(reportPickerPage.locator('input[name="includeRecommendation"]')).toBeChecked();
+   await expect(reportPickerPage.locator('input[name="includeInvoice"]')).not.toBeChecked();
    await expect(reportPickerPage.locator('textarea[name="analysis"]')).toBeVisible();
    await expect(reportPickerPage.locator('textarea[name="additionalNotes"]')).toBeVisible();
    await expect(reportPickerPage.locator('select[name="kind"]')).toHaveCount(0);
@@ -1368,7 +1378,7 @@ try {
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
  await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
- await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
+ await page.close();page=await context.newPage();page.on('pageerror',capturePageError(page))
 
  await page.goto(origin+'/en/client')
  await assertPublicPickerEntrance(page,'en')

@@ -4,6 +4,37 @@ import { readFileSync } from 'node:fs'
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 
+function componentSource(source, name) {
+  const start = source.indexOf('export function ' + name + '(')
+  const end = source.indexOf('\n}', start)
+  assert.ok(start >= 0 && end > start, name + ' must have a bounded component body')
+  return source.slice(start, end + 2)
+}
+
+function assertVoicePlacement(report, document) {
+  const canonical = componentSource(document, 'PrescriptionDocument')
+  const cover = canonical.indexOf('className="canonical-report-cover"')
+  const coverEnd = canonical.indexOf('</header>\n      </div>', cover)
+  const audio = canonical.indexOf('{afterCover}')
+  const analysis = canonical.indexOf('className="canonical-general canonical-report-analysis"')
+  assert.ok(cover >= 0 && coverEnd > cover && audio > coverEnd && analysis > audio,
+    'embedded voice belongs after the closed cover and before analysis')
+  assert.equal(canonical.split('{afterCover}').length - 1, 1)
+  const voice = componentSource(report, 'ClientSessionVoiceMessage')
+  assert.equal((voice.match(/id="session-message"/g) || []).length, 1)
+  assert.match(voice, /item\.kind==='audio'&&item\.role!=='hidden'/)
+  assert.match(voice, /!item\.role\|\|item\.role==='personal'/)
+  assert.match(voice, /if\(!audio\.length\)return null/)
+  assert.equal((voice.match(/audio\.map\(item=><PrivatePlayer/g) || []).length, 1)
+  const page = componentSource(report, 'ClientSessionPage')
+  assert.equal((page.match(/<ClientSessionVoiceMessage\b/g) || []).length, 2,
+    'only the mutually exclusive full-report and fallback voice slots remain')
+  assert.match(page, /!audioEmbedded&&!hasFullReport&&<ClientSessionVoiceMessage/)
+  assert.match(page, /!audioEmbedded&&hasFullReport&&<ClientSessionVoiceMessage/)
+  assert.doesNotMatch(page, /id="session-message"|personalAudio\.map\(/,
+    'the session shell must not independently render a second voice player')
+}
+
 test('Cabinet save precedes recommended test cards and the final PDF module', () => {
   const page = read('components/client-session-page.jsx')
   const materials = page.indexOf('id="session-materials-title"')
@@ -45,16 +76,13 @@ test('existing guest, cabinet, saved and preview routes keep their shared docume
   assert.ok(read('lib/prescriptions/pdf.js').includes('recommendedTests'))
 })
 
-test('private voice message appears once after the signed cover in all four client views',()=>{
+test('private voice message appears once after the cover and before analysis in all four client views',()=>{
   const report=read('components/client-session-page.jsx')
   const document=read('components/prescription-document.jsx')
-  const cover=document.indexOf('className="canonical-report-cover"')
-  const audio=document.indexOf('{afterCover}')
-  const analysis=document.indexOf('className="canonical-report-analysis"')
-  assert.ok(cover>=0&&audio>cover&&analysis>audio)
-  assert.equal((report.match(/id="session-message"/g)||[]).length,1)
-  assert.match(report,/export function ClientSessionVoiceMessage/)
-  assert.match(report,/audioEmbedded/)
+  assertVoicePlacement(report, document)
+  assert.match(read('components/client-session.module.css'),
+    /@media print\s*\{\s*\.reportVoiceSection\s*\{display:none!important/,
+    'private voice controls remain absent from printed reports')
   for(const path of [
     'app/[locale]/client/session/[shareSelector]/page.js',
     'app/[locale]/client/[selector]/sessions/[sessionId]/page.js',
@@ -65,6 +93,21 @@ test('private voice message appears once after the signed cover in all four clie
     assert.match(source,/afterCover=\{<ClientSessionVoiceMessage/,path)
     assert.match(source,/audioEmbedded=/,path)
   }
+})
+
+test('voice-placement contract rejects moved audio, duplicate fallback playback and hidden assets',()=>{
+  const report=read('components/client-session-page.jsx')
+  const document=read('components/prescription-document.jsx')
+  const moved=document.replace('{afterCover}','').replace('{groups.map((group)', '{afterCover}\n      {groups.map((group)')
+  assert.notEqual(moved,document)
+  assert.throws(()=>assertVoicePlacement(report,moved), /after the closed cover and before analysis/)
+  const duplicate=report.replace('!audioEmbedded&&hasFullReport&&<ClientSessionVoiceMessage',
+    'hasFullReport&&<ClientSessionVoiceMessage')
+  assert.notEqual(duplicate,report)
+  assert.throws(()=>assertVoicePlacement(duplicate,document), /!audioEmbedded/)
+  const hidden=report.replace("item.kind==='audio'&&item.role!=='hidden'", "item.kind==='audio'")
+  assert.notEqual(hidden,report)
+  assert.throws(()=>assertVoicePlacement(hidden,document), /hidden/)
 })
 test('practitioner report editor places audio before analysis and library at the bottom',()=>{
   const edit=read('app/admin/consultations/[id]/edit/page.js')

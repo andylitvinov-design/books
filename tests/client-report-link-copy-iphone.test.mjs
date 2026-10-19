@@ -6,6 +6,20 @@ import {
 } from '../lib/consultations/owner-report-sharing.js'
 
 const src = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+function assertOwnerEntryPoints(action,issuer){
+  // #1074 publishes explicitly from the saved-report action; the separate
+  // link issuer still opens an owner-only draft for review.
+  assert.match(action,/await publishSavedClientReport\(clientId,recordId\)/)
+  assert.match(action,/if\(!clientId\|\|!recordId\|\|publishing\)return/)
+  assert.match(action,/onClick=\{publish\}/)
+  assert.doesNotMatch(action,/prepareReportSession|window\.location\.assign/)
+  assert.match(issuer,/const editor=await prepareReportSession\(clientId,recordId\)/)
+  assert.match(issuer,/window\.location\.assign\(editor\)/)
+  assert.match(issuer,/onClick=\{prepare\}/)
+  assert.doesNotMatch(issuer,/publishSavedClientReport|publishClientSession/)
+}
+
 const CLIENT = '95f4d6cd-dde8-4577-a089-4a74665f3d5a'
 const DOCUMENT = '12a2f7a6-4bfa-4574-b431-e6d0b33255be'
 const SESSION = '1c5dfd6b-a4d2-4b6c-a775-3783669394ae'
@@ -65,7 +79,7 @@ test('preparing a client report uses existing idempotent draft creation, never p
   assert.equal(calls.length,1,'no extra creation after a missing client')
 })
 
-test('Documents Ready and saved Document editor both expose manual copy and draft preparation',()=>{
+test('saved report publishes explicitly while the separate link issuer keeps draft review and manual copy',()=>{
   const action=src('components/consultation-document-actions.jsx')
   const issuer=src('components/session-link-issuer.jsx')
   const result=src('components/consultation-result.jsx')
@@ -75,14 +89,13 @@ test('Documents Ready and saved Document editor both expose manual copy and draf
   for(const component of [action,issuer]){
     assert.match(component,/requestOwnerDocumentLink/)
     assert.match(component,/tryCopyOwnerLink/)
-    assert.match(component,/prepareReportSession/)
-    assert.match(component,/window\.location\.assign\(editor\)/)
     assert.match(component,/onFocus=\{event=>event\.target\.select\(\)\}/)
     assert.match(component,/readOnly/)
     assert.match(component,/Копировать ещё раз/)
     assert.match(component,/SESSION_NOT_PUBLISHED/)
     assert.match(component,/SESSION_UNAVAILABLE/)
   }
+  assertOwnerEntryPoints(action,issuer)
   assert.match(result,/clientId=\{clientId\}/)
   assert.match(saved,/clientId=\{record\.clientId\}/)
   assert.match(admin,/clientId=\{record\.clientId\}/)
@@ -161,4 +174,26 @@ test('published session editor keeps the copy-again control and private link vis
  assert.match(css,/\.sessionShareLinkReady\{/)
  assert.match(css,/@media\(max-width:540px\)/)
  assert.doesNotMatch(studio,/tryCopyOwnerLink[\s\S]*?case ['"]publish['"]/, 'copy retry does not publish')
+})
+
+
+test('owner entry contracts reject reversed publication/draft routes and wrong report identity',()=>{
+  const action=src('components/consultation-document-actions.jsx')
+  const issuer=src('components/session-link-issuer.jsx')
+  for(const [before,after] of [
+    ['await publishSavedClientReport(clientId,recordId)','await prepareReportSession(clientId,recordId)'],
+    ['await publishSavedClientReport(clientId,recordId)','await publishSavedClientReport(recordId,clientId)'],
+    ['onClick={publish}','onClick={copy}'],
+  ]){
+    assert.ok(action.includes(before),'action mutation target exists')
+    assert.throws(()=>assertOwnerEntryPoints(action.replace(before,after),issuer),{name:'AssertionError'})
+  }
+  for(const [before,after] of [
+    ['await prepareReportSession(clientId,recordId)','await publishSavedClientReport(clientId,recordId)'],
+    ['window.location.assign(editor)','void editor'],
+    ['onClick={prepare}','onClick={copy}'],
+  ]){
+    assert.ok(issuer.includes(before),'issuer mutation target exists')
+    assert.throws(()=>assertOwnerEntryPoints(action,issuer.replace(before,after)),{name:'AssertionError'})
+  }
 })

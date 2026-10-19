@@ -75,5 +75,5 @@ test('Academy: immersive mobile viewport still scrolls dense lessons and keeps r
   assert.match(academyCss, /\.page\[data-course-one-screen\] \.next\{/);
   assert.match(academyCss, /\.page\[data-course-one-screen\] \.art\{/);
   assert.match(academy, /<AcademyVideoPlayer key=\{slide\.id\}/);
-  assert.match(academy, /\{t\.stop\}/);
+  assert.match(academy, /className=\{styles\.disclaimer\}>\{sync === "ready" \? t\.stopSaved : t\.stop\}/);
 });

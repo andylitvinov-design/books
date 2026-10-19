@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import {assertSavedLocaleAssignment} from './helpers/report-editor-contracts.mjs'
 import { resolveSavedReportLocale } from '../lib/documents/report-locale.js'
 
 const source = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -17,10 +18,10 @@ test('shared HTML, private PDF, sharing links and admin previews use the saved r
   const pdf = source('app/api/client-session-viewer/[selector]/pdf/route.js')
   const editor = source('components/admin-session-studio.jsx')
   const owner = source('app/admin/clients/[id]/sessions/[sessionId]/page.js')
-  assert.match(page, /resolveSavedReportLocale\(record, locale\)/)
+  assertSavedLocaleAssignment(page,'locale')
   assert.match(page, /locale=\{reportLocale\} embedded/)
   assert.match(page, /ClientSessionPage locale=\{reportLocale\}/)
-  assert.match(pdf, /resolveSavedReportLocale\(record, requestedLocale\)/)
+  assertSavedLocaleAssignment(pdf,'requestedLocale')
   assert.match(pdf, /buildPrescriptionPdf\(projection,reportLocale,/)
   assert.match(editor, /resolveSavedReportLocale\(.*reportDocumentId/)
   assert.match(editor, /\/client\/session\/.*result.selector/)
