@@ -60,7 +60,7 @@ const copy = {
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Discover your Reiki journey",
-    programmeIntro: "Five short lessons: a guided meditation and three Reiki traditions."
+    programmeIntro: "Five short lessons: a guided meditation and three Reiki traditions.",
     systemDetails: "About this practice",
     openLesson: "Open lesson",
     lessonLocked: "Opens as you progress",
@@ -179,7 +179,7 @@ const copy = {
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Откройте свой путь в Рейки",
-    programmeIntro: "Пять коротких уроков: медитация и знакомство с тремя системами Рейки."
+    programmeIntro: "Пять коротких уроков: медитация и знакомство с тремя системами Рейки.",
     systemDetails: "Об этой практике",
     openLesson: "Открыть урок",
     lessonLocked: "Откроется по мере прохождения",
