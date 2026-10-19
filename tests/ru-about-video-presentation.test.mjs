@@ -28,7 +28,7 @@ test('the lightweight mode is opt-in for Russian About, not testimonials or Engl
 test('minimal mode keeps accessible title and collapsed transcript without a large caption panel', () => {
   const minimal = player.split('{minimal ? (')[1].split(') : (')[0];
   assert.match(minimal, /styles.accessibleTitle/);
-  assert.match(minimal, /<details className="site-video-transcript">/);
+  assert.match(minimal, /<details ref=\{transcriptRef\} className="site-video-transcript">/);
   assert.match(minimal, /text.transcriptShort/);
   assert.match(minimal, /site-video-ai-badge/);
   assert.doesNotMatch(minimal, /site-video-title|site-video-description|site-video-duration-text|<details[^>]*\bopen/);
@@ -38,7 +38,7 @@ test('minimal mode keeps accessible title and collapsed transcript without a lar
 
 test('playback remains click-gated and uses the unchanged stable provider embed', () => {
   assert.match(player, /useState\(false\)/);
-  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
+  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
   assert.doesNotMatch(player, /<video|setInterval|fetch\(/);
 });

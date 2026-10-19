@@ -253,8 +253,11 @@ async function exercise(engine, browserType, width) {
       transport.assertHealthy();
       await expect(next.locator('iframe')).toHaveCount(0);
       await next.locator('.site-video-play').click();
-      const expectedId = to === 'en' ? 'ed202847a43a96b918308aa972177b34' : '388a04b39ebf215ae656bcd22d0d0847';
-      await expect(next.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${expectedId}`);
+      // PR1019 keeps the original masters and plays these exact approved mirrors.
+      const expectedId = to === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      const expectedParams = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0', hl: to, cc_lang_pref: to });
+      await expect(next.locator('iframe')).toHaveAttribute('src', `https://www.youtube-nocookie.com/embed/${expectedId}?${expectedParams}`);
+      await expect(next.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube');
       const frame = await next.locator('iframe').elementHandle();
       await pause(2200);
       assert.ok(await frame.evaluate(element => element.isConnected), 'First-click iframe was discarded after navigation');

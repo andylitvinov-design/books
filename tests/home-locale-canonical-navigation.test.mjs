@@ -98,7 +98,9 @@ for (const locale of [null, 'en', 'ru']) test(`unrelated RSC requests continue w
 });
 
 const switchSource = extract('      const countBefore = heldRequests;', '      await verifyFreeOffers(');
-async function switchScenario(from, to, { noRsc = false, optimistic = false, discarded = false, wrongVideo = false, wrongDestination = false } = {}) {
+async function switchScenario(from, to, { noRsc = false, optimistic = false, discarded = false, wrongVideo = false, wrongDestination = false,
+  wrongVideoLocale = false, legacyProvider = false, wrongPlayback = false, wrongUiLocale = false, wrongAudioLocale = false,
+  missingInline = false, extraQuery = false } = {}) {
   const state = { committed: false, played: false, url: origin + homePath(from) };
   const iframe = { kind: 'iframe', async elementHandle() { return { async evaluate() { return !discarded; } }; } };
   const next = { kind: 'next', locator(selector) {
@@ -115,7 +117,20 @@ async function switchScenario(from, to, { noRsc = false, optimistic = false, dis
   const expect = target => ({
     async toHaveAttribute(name, expected) {
       if (target === main) { assert.equal(name, 'lang'); assert.equal(optimistic ? to : from, expected); assert.equal(state.committed, false); }
-      else { assert.equal(target, iframe); assert.equal(name, 'src'); assert.equal(state.played, true); assert.equal(wrongVideo ? 'wrong-video' : `https://app.heygen.com/embeds/${to === 'en' ? 'ed202847a43a96b918308aa972177b34' : '388a04b39ebf215ae656bcd22d0d0847'}`, expected); }
+      else {
+        assert.equal(target, iframe);
+        assert.equal(state.played, true);
+        if (name === 'data-video-playback') { assert.equal(wrongPlayback ? 'heygen' : 'youtube', expected); return; }
+        assert.equal(name, 'src');
+        const mirrors = { en: 'Y4K4piEwwA8', ru: 'AE8Pelpo424' };
+        const audio = wrongVideoLocale ? (to === 'en' ? 'ru' : 'en') : to;
+        const params = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0', hl: wrongUiLocale ? 'es' : to, cc_lang_pref: wrongAudioLocale ? 'es' : to });
+        if (missingInline) params.delete('playsinline');
+        if (extraQuery) params.set('unexpected', '1');
+        const actual = legacyProvider ? `https://app.heygen.com/embeds/${to === 'en' ? 'ed202847a43a96b918308aa972177b34' : '388a04b39ebf215ae656bcd22d0d0847'}`
+          : `https://www.youtube-nocookie.com/embed/${wrongVideo ? 'wrong-video' : mirrors[audio]}?${params}`;
+        assert.equal(actual, expected);
+      }
     },
     async toHaveCount(expected) { await Promise.resolve(); assert.equal(target === next ? Number(state.committed || optimistic) : Number(state.played), expected); },
     async toHaveURL(expected) { assert.equal(target, page); assert.equal(state.url, expected); },
@@ -140,7 +155,8 @@ async function switchScenario(from, to, { noRsc = false, optimistic = false, dis
 }
 for (const [from, to] of [['en', 'ru'], ['ru', 'en']]) {
   test(`${from} to ${to} proves held old locale, first-click identity and retained iframe`, () => switchScenario(from, to));
-  for (const name of ['noRsc', 'optimistic', 'discarded', 'wrongVideo', 'wrongDestination']) {
+  for (const name of ['noRsc', 'optimistic', 'discarded', 'wrongVideo', 'wrongDestination',
+    'wrongVideoLocale', 'legacyProvider', 'wrongPlayback', 'wrongUiLocale', 'wrongAudioLocale', 'missingInline', 'extraQuery']) {
     test(`${from} to ${to} rejects ${name}`, () => assert.rejects(switchScenario(from, to, { [name]: true })));
   }
 }

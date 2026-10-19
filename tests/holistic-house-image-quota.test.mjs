@@ -9,7 +9,8 @@ test("YouTube video stills bypass Vercel image transforms but keep the source fa
   assert.match(player, /src=\{\x60https:\/\/i\.ytimg\.com\/vi\//);
   assert.match(player, /<Image key=\{poster\}[^>]*\bunoptimized\b/);
   assert.match(player, /current === "maxres" \? "hq" : current === "hq" \? "direct" : null/);
-  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
+  assert.match(player, /const playbackYouTubeId = mirrorId \|\| video\.youtubeId/);
+  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /onError=\{showFallbackPoster\}/);
 });
 
