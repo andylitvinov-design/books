@@ -358,6 +358,34 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         {ru?'Дополнительные материалы пока не выбраны.':'No additional materials have been selected yet.'}</p>}
     </section>}
 
+    {recommendedTests.length>0&&<section id="session-recommended-tests"
+      className={styles.clientSection+' '+styles.reportRecommendedTestsSection}
+      aria-labelledby="session-recommended-tests-title">
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><BookOpen size={20} aria-hidden="true"/></span>
+        <div>
+          <span className={styles.sectionKicker}>{ru?'ДЛЯ САМОСТОЯТЕЛЬНОЙ РАБОТЫ':'FOR YOUR NEXT STEP'}</span>
+          <h2 id="session-recommended-tests-title">{ru?'Рекомендуемые тесты':'Recommended tests'}</h2>
+        </div>
+      </header>
+      <p className={styles.reportRecommendedTestsIntro}>{ru
+        ? 'Выберите тест, чтобы начать.'
+        : 'Choose a test to begin.'}</p>
+      <div className={styles.reportRecommendedTestList}>
+        {recommendedTests.map(test=><a key={test.key} className={styles.reportRecommendedTestCard}
+          href={test.href}>
+          <span className={styles.reportRecommendedTestIcon}><BookOpen size={22} aria-hidden="true"/></span>
+          <span className={styles.reportRecommendedTestText}>
+            <strong>{test.title}</strong>
+            <small>{test.startLocale!==locale
+              ?(ru?'Откроется на доступном языке':'Opens in the available language')
+              :(ru?'Пройти тест':'Take the test')}</small>
+          </span>
+          <ExternalLink size={18} className={styles.reportRecommendedTestArrow} aria-hidden="true"/>
+        </a>)}
+      </div>
+    </section>}
+
     <nav className={styles.sessionBottomActions} data-hh-report-next-actions
       aria-label={ru?'Дальнейшие действия после отчёта':'After your report'}>
       <div className={styles.sessionBottomHeading}>
@@ -388,22 +416,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           'Google saving is temporarily unavailable. This report remains accessible through its protected link.'}
       </p>}
     </nav>
-
-    {recommendedTests.length>0&&<section id="session-recommended-tests"
-      className={styles.clientSection} aria-label={ru?'Рекомендуемые тесты':'Recommended tests'}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><ListChecks size={20}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ПОСЛЕ КОНСУЛЬТАЦИИ':'AFTER YOUR CONSULTATION'}</span>
-          <h2>{ru?'Рекомендуемые тесты':'Recommended tests'}</h2></div>
-      </header>
-      <p className={styles.sectionIntro}>{ru?'Специалист выбрал тесты для вашего следующего шага.':'Your practitioner selected these tests as a next step.'}</p>
-      {recommendedTests.map(test=><a key={test.key} className={styles.attachmentCard}
-        href={test.href}>
-        <BookOpen size={20} aria-hidden="true"/><div><strong>{test.title}</strong>
-          <small>{ru?'Пройти тест':'Take the test'}</small></div>
-        <ExternalLink size={17} aria-hidden="true"/>
-      </a>)}
-    </section>}
 
     <footer className={styles.clientFooter}>
       <p><LockKeyhole size={14}/>{mode==='owner'?(ru?'Закрытый предпросмотр специалиста. Для клиента используйте отдельную ссылку на опубликованную сессию.':'Practitioner-only preview. Send clients only an approved session invitation.'):

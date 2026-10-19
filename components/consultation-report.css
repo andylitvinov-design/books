@@ -3162,7 +3162,27 @@
    source recommendations, practitioner notes and signature remain fully visible. */
 @media screen {
   .canonical-document--editorial .canonical-remedy-appendix-description {
-    display:none;
+    display:block;
+    margin:4px 0 16px;
+    color:#567176;
+    font:500 clamp(14px,2vw,16px)/1.5 system-ui,-apple-system,sans-serif;
+  }
+  .canonical-document--editorial .canonical-remedy-appendix-print-hint {display:none;}
+  .canonical-document--editorial .canonical-remedy-profile-thumb {
+    display:block;
+    flex:0 0 78px;
+    width:78px;
+    height:73px;
+    overflow:hidden;
+    border:1px solid #d4e4dd;
+    border-radius:12px;
+    background:#f1f7f3;
+  }
+  .canonical-document--editorial .canonical-remedy-profile-thumb img {
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:contain;
   }
   .canonical-document--editorial details.canonical-remedy-profile-disclosure {
     display:block;
@@ -3237,6 +3257,15 @@
   .canonical-document--editorial details.canonical-remedy-profile-disclosure > .canonical-remedy-profile-content {
     padding:14px;
   }
+  .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex-basis:66px;
+    width:66px;
+    height:65px;
+    border-radius:10px;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    gap:11px;
+  }
 }
 @media (prefers-reduced-motion:reduce) {
   .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
@@ -3244,6 +3273,9 @@
   }
 }
 @media print {
+  .canonical-document--editorial .canonical-remedy-appendix-hint {display:none;}
+  .canonical-document--editorial .canonical-remedy-appendix-print-hint {display:inline;}
+  .canonical-document--editorial .canonical-remedy-profile-thumb {display:none!important;}
   /* The print expander opens all source descriptions before this CSS runs. */
   .canonical-document--editorial details.canonical-remedy-profile-disclosure {
     display:flow-root;
