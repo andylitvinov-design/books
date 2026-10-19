@@ -36,3 +36,5 @@
 .followupRow{display:flex;align-items:center;justify-content:space-between;gap:9px;border-bottom:1px solid #eaf0e8;padding:3px 0 10px;font:600 12px/1.4 system-ui,sans-serif;color:#365e63;overflow-wrap:anywhere}
 .followupRow button{flex:none;background:#e1efec;color:#205e63}
 @media(max-width:400px){.taskForm{grid-template-columns:minmax(0,1fr)}.taskForm button{grid-column:1}.contactActions select{max-width:100%}}
+
+.replyIndicator{width:max-content;max-width:100%;color:#13736d!important;background:#dff4ea;border-radius:99px;padding:2px 7px;font:750 11px/1.4 system-ui,sans-serif}
