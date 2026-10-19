@@ -108,6 +108,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
   const [search,setSearch]=useState('')
   const [channelFilter,setChannelFilter]=useState('all')
   const [unreadOnly,setUnreadOnly]=useState(false)
+  const [needsReplyOnly,setNeedsReplyOnly]=useState(false)
   const load=useCallback(async(threadId='',signal)=>{
     const url='/api/app/crm/messenger'+(threadId?'?thread='+encodeURIComponent(threadId):'')
     const result=await fetch(url,{cache:'no-store',credentials:'same-origin',
@@ -123,7 +124,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     pendingFollowup.current=null
     activeRef.current=''
     setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('')
-    setSearch('');setChannelFilter('all');setUnreadOnly(false)
+    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false)
     load('',ctrl.signal).then(result=>{
       if(!activeRef.current)setData(result)
     }).catch(e=>{if(e.name!=='AbortError'&&!activeRef.current)setError('unavailable')})
@@ -233,9 +234,11 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
   const unread=threads.filter(item=>item.unreadCount>0).length
+  const waitingReply=threads.filter(item=>item.needsReply).length
   const visibleThreads=threads.filter(item=>
     (channelFilter==='all'||item.channel===channelFilter)
     &&(!unreadOnly||item.unreadCount>0)
+    &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
   )
   return <section className={styles.panel} aria-labelledby="crm-messenger-title">
@@ -262,7 +265,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     {error&&<p role="alert" className={styles.notice}>{t.failed}</p>}
     {data&&<div className={styles.layout}>
       <div className={styles.list} aria-label={t.customers}>
-        <div className={styles.listHead}><strong>{t.customers}</strong><small>{threads.length} · {t.waiting}: {unread}</small></div>
+        <div className={styles.listHead}><strong>{t.customers}</strong><small>{threads.length} · {t.waiting}: {unread} · {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Awaiting reply'}: {waitingReply}</small></div>
         <div className={styles.inboxFilters}>
           <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
             aria-label={lang==='ru'?'Поиск переписок':lang==='es'?'Buscar conversaciones':'Search conversations'}
@@ -274,13 +277,18 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           </select>
           <label><input type="checkbox" checked={unreadOnly} onChange={event=>setUnreadOnly(event.target.checked)} />
             {lang==='ru'?'Непрочитанные':lang==='es'?'Sin leer':'Unread only'}</label>
+          <label><input type="checkbox" checked={needsReplyOnly} onChange={event=>setNeedsReplyOnly(event.target.checked)} />
+            {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Needs reply'}</label>
         </div>
         {visibleThreads.length===0&&<p className={styles.empty}>{threads.length===0?t.empty:lang==='ru'?'Нет диалогов по выбранному фильтру.':lang==='es'?'Ninguna conversación coincide.':'No conversations match your filters.'}</p>}
         {visibleThreads.map(thread=><button type="button" key={thread.id}
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
-            <small>{names[thread.channel]} · {thread.lifecycle}</small></span>
+            <small>{names[thread.channel]} · {thread.lifecycle}</small>
+            {thread.needsReply&&<small className={styles.replyIndicator}>
+              {lang==='ru'?'Нужно ответить':lang==='es'?'Responder':'Needs reply'}</small>}
+          </span>
           {thread.unreadCount>0&&<span className={styles.count}>{thread.unreadCount}</span>}
         </button>)}
       </div>
