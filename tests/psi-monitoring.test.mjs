@@ -324,3 +324,12 @@ test('an invalid latest retest blocks longitudinal pattern claims until a new va
   assert.deepEqual(deterministicPatterns({ results: [first, second, third, invalid], locale: 'en' }), [])
   assert.equal(compatibleSeries(monitoringCatalogItem('hh-current-state'), [first, second, third, invalid], 'en').length, 0)
 })
+
+test('authored weekly check-in is never marketed as a validated mental-health diagnosis', () => {
+  const entry = monitoringCatalogItem('hh-weekly-pulse')
+  assert.equal(entry.title.en, 'Weekly Wellbeing Check-in')
+  assert.equal(entry.title.ru, 'Самочувствие за неделю')
+  assert.equal(entry.title.es, 'Bienestar de la semana')
+  assert.match(entry.description.en, /Original Holistic House weekly self-monitoring/)
+  assert.doesNotMatch(entry.title.en, /psychic health|clinical|diagnosis/i)
+})
