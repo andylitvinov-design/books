@@ -59,7 +59,7 @@ const yggdrasilVoices: EnergyworkTestimonial[] = yggdrasilTextTestimonials.map((
 // EN: tantra-reiki-full.generated.json + tantra-reiki-ru-en.generated.json;
 // RU: original Russian source where available, faithful translations for Margaret and Litten.
 // These are subjective reports about the course, not the exact meditation recording.
-const tantraVoices: EnergyworkTestimonial[] = [
+export const tantraVoices: EnergyworkTestimonial[] = [
   {
     id: "margaret",
     quote: l("The first time I followed the steps the video, I felt a powerful energy coming in with the Tantric flow. It was immediately noticable when it was invited in. It was also a shift in perception and it felt like flowing energy as I went on my day - I was in the flow. Loving and flowing movements that were in deeper connection with myself. Mundane tasks (like laundry) seemed effortless and that previously seemed irritating. It didn't seem to matter what I was doing because of the soft and loving energy flowing. This distinct continuity of pleasurable energy continued throughout for the rest of the day", "Когда я впервые выполнила шаги из видео, я почувствовала мощный поток энергии Тантра Рейки. Он был заметен сразу, как только я его пригласила. Изменилось и моё восприятие: ощущение потока сопровождало меня весь день — я была в потоке. Движения стали мягкими, любящими, я чувствовала более глубокую связь с собой. Обычные дела (например, стирка), которые раньше раздражали, давались словно без усилий. Казалось, уже не так важно, что именно я делаю: меня сопровождала мягкая, любящая энергия. Это приятное ощущение непрерывного потока сохранялось до конца дня."),
