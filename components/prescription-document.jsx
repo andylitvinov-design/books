@@ -129,7 +129,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
             </div>
             {item.remedyPath && <Link className="canonical-remedy-profile-action" href={item.remedyPath}
               aria-label={locale === 'ru' ? `Прочитать описание препарата ${item.displayName}` : `Read the profile for ${item.displayName}`}>
-              <span>{locale === 'ru' ? 'Описание препарата' : 'Remedy description'}</span>
+              <span className="canonical-remedy-profile-action-full">{locale === 'ru' ? 'Описание препарата' : 'Remedy description'}</span>
+              <span className="canonical-remedy-profile-action-short" aria-hidden="true">{locale === 'ru' ? 'Описание' : 'Details'}</span>
               <span aria-hidden="true">→</span>
             </Link>}
             {detailKeys.length > 0 && <dl className="canonical-remedy-fields">
@@ -139,25 +140,6 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         })}
       </section>)}
 
-      {guidance && <section className="canonical-guidance">
-        <h2>{guidance.takeTitle}</h2>
-        {guidance.sections.map((section) => <div className="canonical-guidance-section" key={section.type}>
-          {section.title && <h3>{section.title}</h3>}
-          <ul>{section.bullets.map((line) => <li key={line}>{line}</li>)}</ul>
-        </div>)}
-        <p>{guidance.course}</p>
-        {guidance.recheck && <p>{guidance.recheck}</p>}
-        {guidance.contact && <p className="canonical-guidance-contact">{guidance.contact}</p>}
-      </section>}
-
-      {document.additionalNotes && <section className="canonical-general canonical-report-notes"><h2>{labels.additionalNotes}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.additionalNotes}</p></section>}
-      {document.generalInstructions && <section className="canonical-general canonical-general-instructions"><h2>{labels.general}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.generalInstructions}</p></section>}
-      {followUpSession && <section className="canonical-follow-up-appointment" aria-label={followUpSession.title}>
-        <h2>{followUpSession.title}</h2>
-        <time dateTime={followUpSession.date}>{followUpSession.displayDate}</time>
-        <p>{followUpSession.description}</p>
-      </section>}
-      {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
       {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
         <h2>{locale === 'ru' ? 'Приложение.' : 'Appendix.'}</h2>
         <p className="canonical-remedy-appendix-description">
@@ -190,6 +172,26 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           </div>
         </details>)}
       </section>}
+
+      {guidance && <section className="canonical-guidance">
+        <h2>{guidance.takeTitle}</h2>
+        {guidance.sections.map((section) => <div className="canonical-guidance-section" key={section.type}>
+          {section.title && <h3>{section.title}</h3>}
+          <ul>{section.bullets.map((line) => <li key={line}>{line}</li>)}</ul>
+        </div>)}
+        <p>{guidance.course}</p>
+        {guidance.recheck && <p>{guidance.recheck}</p>}
+        {guidance.contact && <p className="canonical-guidance-contact">{guidance.contact}</p>}
+      </section>}
+
+      {document.additionalNotes && <section className="canonical-general canonical-report-notes"><h2>{labels.additionalNotes}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.additionalNotes}</p></section>}
+      {document.generalInstructions && <section className="canonical-general canonical-general-instructions"><h2>{labels.general}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.generalInstructions}</p></section>}
+      {followUpSession && <section className="canonical-follow-up-appointment" aria-label={followUpSession.title}>
+        <h2>{followUpSession.title}</h2>
+        <time dateTime={followUpSession.date}>{followUpSession.displayDate}</time>
+        <p>{followUpSession.description}</p>
+      </section>}
+      {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
 
       {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
       <DaoStageDisclosure score={document.daoResourceScore} locale={locale}
