@@ -28,7 +28,7 @@ test("one canonical EN learner destination is shared by all free Reiki COURSE ca
 
 test("main Reiki hero CTAs go to the interactive learner rather than an overview or lead form", () => {
   const hub = read("components/academy-hub.tsx");
-  assert.match(hub, /id: "academy-featured-principles-energywork"[\s\S]*?href: REIKI_FREE_COURSE_PATH,[\s\S]*?actionLabel: /);
+  assert.match(hub, /id: "academy-featured-principles-energywork"[\s\S]*?href: "\/" \+ locale \+ "\/academy\/principles-of-energywork",[\s\S]*?courseHref: REIKI_FREE_COURSE_PATH,[\s\S]*?actionLabel: /);
 
   const core = read("components/principles-of-energywork.tsx");
   assert.match(core, /const learnPath = REIKI_FREE_COURSE_PATH/);

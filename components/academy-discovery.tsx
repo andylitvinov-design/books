@@ -1,18 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { ArrowRight, ChevronDown, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Search, Sparkles } from "lucide-react";
 
-import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
+import { AcademyCourseCardList, type AcademyCourseItem } from "@/components/academy-course-card-list";
+import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
 import type { AcademyView } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-discovery.module.css";
-import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
-
-type Topic = "all" | "reiki" | "temple" | "stress";
-type StartingPoint = "all" | "free" | "full";
 
 const COPY = {
   en: {
@@ -20,143 +17,94 @@ const COPY = {
     title: "Find your learning path",
     description: "Explore Reiki, Temple Studies and stress relief. Start free or choose a full learning program.",
     videoTitle: "Explore video lessons",
-    videoDescription: "Find original lessons and guided practices, organized by program and recording language.",
-    programs: "Programs", videos: "Videos", freeAiCourses: "Free AI Courses", aiShort: "AI Courses",
+    videoDescription: "Original lessons and guided practices organized by program and language.",
+    searchLabel: "Find a learning course",
     placeholder: "Reiki, Tantra or stress relief…",
-    searchLabel: "Search learning programs",
-    searchButton: "Find my course", refine: "Refine courses", refineHint: "Topic and starting point", browseLabel: "Browse learning programs",
-    topic: "Topic", topicAll: "All topics", reiki: "Reiki & energy", temple: "Temple Studies", stress: "Stress relief",
-    start: "Starting point", startAll: "Any", free: "Free introduction", full: "Full program",
-    suggestions: "You could try",
-    picks: ["Free introduction", "Reiki Yggdrasil", "Tantra Reiki", "Temple Studies"],
-    tantra: "Explore Tantra Reiki: free Level 1 initiation",
-    local: "Browse without signing up. Matching happens here in your browser.",
-    noResults: "No matching programs. Try another topic or clear the filters.",
-    reset: "Show all programs", resultCount: "programs found",
-    opora: "OPORA Stress Relief — free 14-day course", oporaAction: "Explore the free course",
-    videoButton: "Browse video lessons",
+    searchButton: "Find my course",
+    browse: "Choose your course",
+    catalogLabel: "ALL LEARNING PROGRAMMES",
+    count: "courses",
+    reset: "Show all",
+    empty: "No courses found. Try a different search.",
+    videoLink: "Browse original video lessons",
+    back: "Back to all courses",
+    note: "Free Reiki introductions offer educational materials; personal initiations require separate confirmation. Stress Relief is not a substitute for professional care.",
   },
   ru: {
     eyebrow: "HOLISTIC HOUSE · АКАДЕМИЯ",
     title: "Найдите свою программу обучения",
     description: "Изучайте Рейки, храмовые практики и антистресс. Начните бесплатно или выберите полную программу.",
     videoTitle: "Выберите видеоуроки",
-    videoDescription: "Уроки и практики по программам с указанием языка оригинальной записи.",
-    programs: "Программы", videos: "Видео", freeAiCourses: "Бесплатные ИИ-курсы", aiShort: "ИИ-курсы",
+    videoDescription: "Авторские уроки и практики, сгруппированные по программам и языкам записи.",
+    searchLabel: "Поиск курсов",
     placeholder: "Рейки, Тантра или антистресс…",
-    searchLabel: "Поиск учебных программ",
-    searchButton: "Подобрать курс", refine: "Уточнить подбор", refineHint: "Тема и начало обучения", browseLabel: "Выбор учебных программ",
-    topic: "Тема", topicAll: "Все темы", reiki: "Рейки и энергия", temple: "Храмовые традиции", stress: "Антистресс",
-    start: "Начало обучения", startAll: "Любое", free: "Бесплатное введение", full: "Полная программа",
-    suggestions: "Можно начать с",
-    picks: ["Бесплатный курс", "Рейки Иггдрасиль", "Тантра Рейки", "Храмовые практики"],
-    tantra: "Тантра Рейки: бесплатная инициация 1-й ступени",
-    local: "Просмотр без регистрации. Подбор выполняется прямо в браузере.",
-    noResults: "Подходящих программ нет. Попробуйте другую тему или сбросьте фильтры.",
-    reset: "Показать все программы", resultCount: "найдено программ",
-    opora: "ОПОРА — бесплатный антистресс-курс на 14 дней", oporaAction: "Открыть курс",
-    videoButton: "Смотреть видеоуроки",
+    searchButton: "Подобрать курс",
+    browse: "Выберите свой курс",
+    catalogLabel: "ВСЕ ПРОГРАММЫ ОБУЧЕНИЯ",
+    count: "курсов",
+    reset: "Показать все",
+    empty: "Курс не найден. Попробуйте другой запрос.",
+    videoLink: "Смотреть авторские видеоуроки",
+    back: "Вернуться ко всем курсам",
+    note: "Вводные материалы Рейки бесплатны; личная инициация проводится по согласованию. Антистресс — образовательная поддержка, не замена профессиональной помощи.",
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · ACADEMIA",
     title: "Encuentra tu ruta de aprendizaje",
-    description: "Explora Reiki, las tradiciones y el antiestrés. Empieza gratis o elige un programa completo.",
+    description: "Explora Reiki, Temple Studies y antiestrés. Empieza gratis o elige un programa completo.",
     videoTitle: "Explora las videolecciones",
-    videoDescription: "Lecciones y prácticas organizadas por programa e idioma de grabación original.",
-    programs: "Programas", videos: "Videos", freeAiCourses: "Cursos de IA gratuitos", aiShort: "Cursos IA",
+    videoDescription: "Lecciones y prácticas organizadas por programa e idioma original.",
+    searchLabel: "Buscar cursos",
     placeholder: "Reiki, Tantra o antiestrés…",
-    searchLabel: "Buscar programas de aprendizaje",
-    searchButton: "Encontrar curso", refine: "Filtrar cursos", refineHint: "Tema y punto de partida", browseLabel: "Explorar programas",
-    topic: "Tema", topicAll: "Todos", reiki: "Reiki y energía", temple: "Temple Studies", stress: "Antiestrés",
-    start: "Punto de partida", startAll: "Cualquiera", free: "Introducción gratuita", full: "Programa completo",
-    suggestions: "Puedes empezar por",
-    picks: ["Introducción gratis", "Reiki Yggdrasil", "Tantra Reiki", "Temple Studies"],
-    tantra: "Tantra Reiki: iniciación gratuita de Nivel 1",
-    local: "Explora sin registrarte. La búsqueda se realiza en tu navegador.",
-    noResults: "No hay programas para estos filtros. Prueba otro tema o restablece la búsqueda.",
-    reset: "Mostrar todos", resultCount: "programas encontrados",
-    opora: "OPORA Antiestrés — curso gratuito de 14 días", oporaAction: "Explorar el curso",
-    videoButton: "Ver las videolecciones",
+    searchButton: "Buscar curso",
+    browse: "Elige tu curso",
+    catalogLabel: "TODOS LOS PROGRAMAS",
+    count: "cursos",
+    reset: "Mostrar todos",
+    empty: "No encontramos cursos. Prueba otra búsqueda.",
+    videoLink: "Ver videolecciones originales",
+    back: "Volver a todos los cursos",
+    note: "Las introducciones de Reiki son gratuitas; la iniciación personal requiere confirmación. OPORA es apoyo educativo, no atención clínica.",
   },
 } as const;
 
-const PROGRAM_META: Record<string, { topic: "reiki" | "temple"; start: "free" | "full"; keywords: string }> = {
-  "academy-featured-principles-energywork": {
-    topic: "reiki", start: "free",
-    keywords: "free introduction level 1 initiation basic principles reikí reiki energywork энергетическая работа бесплатный вводный курс первая ступень инициация energía iniciación",
-  },
-  "academy-featured-yggdrasil": {
-    topic: "reiki", start: "full",
-    keywords: "dao yggdrasil basic course training levels реики рейки иггдрасиль базовый курс reiki yggdrasil curso básico",
-  },
-  "academy-featured-tantra-reiki": {
-    topic: "reiki", start: "full",
-    keywords: "tantra reiki nine levels tantra рейки тантра ступени training iniciación",
-  },
-  "academy-featured-kundalini-reiki": {
-    topic: "reiki", start: "full",
-    keywords: "kundalini reiki master кундалини рейки курсы kundalini",
-  },
-  "academy-featured-temple-studies": {
-    topic: "temple", start: "full",
-    keywords: "temple studies archetypes mysticism rituals tarot runes храмовые традиции мистерии таро руны храмовая практика tradiciones templo misterios",
-  },
+const SEARCH_KEYWORDS: Record<string, string> = {
+  "academy-free-opora": "opora stress anti-stress antistress antiestrés stress relief стресс антистресс тревога опора 14 days 14 дней",
+  "academy-featured-principles-energywork": "free energywork principles basics reiki tantra kundalini yggdrasil энергетическая работа основы рейки курс free initiation",
+  "academy-free-tantra-introduction": "tantra reiki level 1 free initiation тантра рейки первая ступень бесплатная инициация",
+  "academy-free-yggdrasil-introduction": "reiki yggdrasil level 1 free initiation рейки иггдрасиль первая ступень",
+  "academy-featured-yggdrasil": "dao yggdrasil reiki basic course training levels рейки иггдрасиль базовый курс",
+  "academy-featured-tantra-reiki": "tantra reiki nine levels tantra рейки тантра ступени training",
+  "academy-featured-kundalini-reiki": "kundalini reiki master кундалини рейки базовый курс",
+  "academy-featured-temple-studies": "temple studies archetypes mysteries tarot runes храмовые традиции мистерии таро руны",
 };
 
-const STRESS_SEARCH = "stress relief opora antistress antiestrés estrés anti-stress stress-relief стресс антистресс опора тревога estrés cotidiano";
-const searchTerms = (text: string) => text.trim().toLocaleLowerCase().split(/\s+/u).filter(Boolean);
-const matchesTerms = (haystack: string, terms: string[]) =>
-  terms.every((term) => haystack.toLocaleLowerCase().includes(term));
+const searchTerms = (query: string) => query.trim().toLocaleLowerCase().split(/\s+/u).filter(Boolean);
+const matchesTerms = (text: string, terms: string[]) => terms.every((term) => text.toLocaleLowerCase().includes(term));
 
 export function AcademyDiscovery({
   locale,
   view,
   items,
   label,
-  children,
 }: {
   locale: PublicLocale;
   view: AcademyView;
-  items: CatalogShowcaseItem[];
+  items: AcademyCourseItem[];
   label: string;
-  children: ReactNode;
 }) {
   const t = COPY[locale];
   const [query, setQuery] = useState("");
-  const [topic, setTopic] = useState<Topic>("all");
-  const [startingPoint, setStartingPoint] = useState<StartingPoint>("all");
   const terms = useMemo(() => searchTerms(query), [query]);
-  const matchedItems = useMemo(() => items.filter((item) => {
-    const meta = PROGRAM_META[item.id];
-    if (topic === "stress" || (topic !== "all" && meta?.topic !== topic)) return false;
-    if (startingPoint !== "all" && meta?.start !== startingPoint) return false;
-    return matchesTerms([item.title, item.subtitle, item.description, meta?.keywords].filter(Boolean).join(" "), terms);
-  }), [items, topic, startingPoint, terms]);
-  const matchingStress = (topic === "all" || topic === "stress")
-    && (startingPoint === "all" || startingPoint === "free")
-    && (topic === "stress" || terms.length > 0)
-    && matchesTerms(STRESS_SEARCH + " " + t.opora, terms);
-  const hasFilters = Boolean(query.trim()) || topic !== "all" || startingPoint !== "all";
+  const matchedItems = useMemo(() => items.filter((item) =>
+    matchesTerms([item.title, item.subtitle, item.description, SEARCH_KEYWORDS[item.id]].filter(Boolean).join(" "), terms),
+  ), [items, terms]);
+  const isSearching = Boolean(query.trim());
 
   function scrollToResults() {
     const target = document.getElementById("academy-programs");
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    target?.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "start" });
-  }
-
-  function choosePick(index: number) {
-    setQuery("");
-    setTopic(index === 3 ? "temple" : "reiki");
-    setStartingPoint(index === 0 ? "free" : "all");
-    if (index === 1) setQuery("yggdrasil");
-    if (index === 2) setQuery("tantra");
-    scrollToResults();
-  }
-
-  function reset() {
-    setQuery("");
-    setTopic("all");
-    setStartingPoint("all");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
   }
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
@@ -186,75 +134,42 @@ export function AcademyDiscovery({
               placeholder={t.placeholder}
               autoComplete="off"
             />
-            <button className={styles.submit} type="submit">{t.searchButton}<Search aria-hidden="true" size={19} /></button>
+            <button className={styles.submit} type="submit">
+              {t.searchButton}<Search aria-hidden="true" size={19} />
+            </button>
           </form>
         ) : (
-          <Link className={styles.videoLink} href="#academy-video-courses">{t.videoButton}<ArrowRight aria-hidden="true" size={19} /></Link>
+          <Link className={styles.videoButton} href="#academy-video-courses">
+            {t.videoLink}<ArrowRight aria-hidden="true" size={18} />
+          </Link>
         )}
       </section>
-
-      <section className={styles.browseTools} aria-label={t.browseLabel}>
-        <nav className={styles.programTabs} aria-label={locale === "ru" ? "Разделы Академии" : locale === "es" ? "Secciones de la Academia" : "Academy sections"}>
-          <Link aria-current={view === "programs" ? "page" : undefined} href={"/" + locale + "/academy"}>{t.programs}</Link>
-          <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/academy?view=videos"}>{t.videos}</Link>
-          <Link href={"/" + locale + "/academy/free-ai-courses"} aria-label={t.freeAiCourses}><span className={styles.aiLong}>{t.freeAiCourses}</span><span className={styles.aiShort}>{t.aiShort}</span></Link>
-        </nav>
-        {view === "programs" ? (
-          <details className={styles.filterPanel}>
-            <summary>
-              <span><strong>{t.refine}</strong><small>{t.refineHint}</small></span>
-              <ChevronDown aria-hidden="true" size={18} />
-            </summary>
-            <div className={styles.filters}>
-              <label>{t.topic}
-                <select value={topic} onChange={(event) => setTopic(event.target.value as Topic)}>
-                  <option value="all">{t.topicAll}</option>
-                  <option value="reiki">{t.reiki}</option>
-                  <option value="temple">{t.temple}</option>
-                  <option value="stress">{t.stress}</option>
-                </select>
-              </label>
-              <label>{t.start}
-                <select value={startingPoint} onChange={(event) => setStartingPoint(event.target.value as StartingPoint)}>
-                  <option value="all">{t.startAll}</option>
-                  <option value="free">{t.free}</option>
-                  <option value="full">{t.full}</option>
-                </select>
-              </label>
-            </div>
-            <div className={styles.suggestions}>
-              <span>{t.suggestions}:</span>
-              {t.picks.map((pick, index) => (
-                <button type="button" key={pick} onClick={() => choosePick(index)}>{pick}</button>
-              ))}
-            </div>
-            <p className={styles.subnote}>{t.local}</p>
-          </details>
-        ) : null}
-        <Link className={styles.freeLink} href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>
-          {t.tantra} <ArrowRight aria-hidden="true" size={16} />
-        </Link>
-      </section>
-
-      {children}
-
       {view === "programs" ? (
         <section className={styles.results} id="academy-programs" aria-label={label}>
-          {hasFilters ? (
-            <div className={styles.resultsHeading} aria-live="polite">
-              <span>{matchedItems.length + (matchingStress ? 1 : 0)} {t.resultCount}</span>
-              <button type="button" onClick={reset}>{t.reset}</button>
+          <div className={styles.listHeading}>
+            <div>
+              <p className={styles.listKicker}>{t.catalogLabel}</p>
+              <h2>{t.browse}</h2>
             </div>
-          ) : null}
-          {matchingStress ? (
-            <Link className={styles.stressResult} href={"/" + locale + "/courses/antistress"}>
-              <span><strong>{t.opora}</strong><small>{t.oporaAction}</small></span><ArrowRight aria-hidden="true" />
-            </Link>
-          ) : null}
-          {matchedItems.length ? <CatalogShowcase items={matchedItems} label={label} /> : null}
-          {!matchedItems.length && !matchingStress ? <p className={styles.empty}>{t.noResults}</p> : null}
+            {isSearching ? (
+              <button type="button" className={styles.reset} onClick={() => setQuery("")}>{t.reset}</button>
+            ) : (
+              <span className={styles.count}>{items.length} {t.count}</span>
+            )}
+          </div>
+          {matchedItems.length ? (
+            <AcademyCourseCardList locale={locale} items={matchedItems} label={label} />
+          ) : (
+            <p className={styles.empty} role="status">{t.empty}</p>
+          )}
+          <p className={styles.note}>{t.note}</p>
+          <Link className={styles.videoArchive} href={"/" + locale + "/academy?view=videos"}>
+            {t.videoLink}<ArrowRight size={16} aria-hidden="true" />
+          </Link>
         </section>
-      ) : null}
+      ) : (
+        <p className={styles.back}><Link href={"/" + locale + "/academy"}>{t.back}<ArrowRight size={16} aria-hidden="true" /></Link></p>
+      )}
     </>
   );
 }

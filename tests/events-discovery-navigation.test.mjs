@@ -16,7 +16,8 @@ test('Four discovery tabs share one EN/RU/ES public destination model', () => {
   for (const file of ['components/services-smart-discovery.tsx', 'components/app/simple-test-picker.jsx', 'components/academy-discovery.tsx', 'components/events-discovery.tsx']) {
     assert.match(read(file), /<DiscoverySectionTabs locale=\{locale\} active=/, file)
   }
-  assert.match(read('components/academy-discovery.tsx'), /programTabs/)
+  assert.doesNotMatch(read('components/academy-discovery.tsx'), /programTabs/)
+  assert.match(read('components/academy-discovery.tsx'), /<AcademyCourseCardList/)
   assert.match(read('components/public-growth-courses.tsx'), /<DiscoverySectionTabs locale=\{locale\} active="courses"/)
 })
 
