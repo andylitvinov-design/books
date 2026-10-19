@@ -149,6 +149,8 @@ const P3_TANTRA = Object.freeze([
 // Resume on the first unanswered original question in the NEW order.
 // The last shared screen retains both historic answer keys privately.
 export function energyworkP4ResumeId(slideId, answers = {}) {
+  if (ENERGYWORK_PREVIOUS_YGGDRASIL_STUDY_QUESTION_IDS.includes(slideId) || slideId === 'ygg-done')
+    return ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS[0]
   if (['tan-06','tan-study-02','tan-study-03','tan-study-04',
     'tan-study-05','tan-study-06','tan-study-07'].includes(slideId)) {
     const missing = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.find(id =>
