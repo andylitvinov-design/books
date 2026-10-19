@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { FileDown,FileText,Headphones,LockKeyhole,PlayCircle,Play,AudioLines,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
+import { FileDown,FileText,Headphones,LockKeyhole,PlayCircle,Play,AudioLines,Video,Images,BookOpen,ListChecks,Clock3,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { DaoStageDisclosure } from './dao-resource-stage'
 import { PublicSiteHeader } from './public-site-header'
@@ -433,9 +433,25 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           <span className={styles.reportRecommendedTestIcon}><BookOpen size={22} aria-hidden="true"/></span>
           <span className={styles.reportRecommendedTestText}>
             <strong>{test.title}</strong>
-            <small>{test.startLocale!==locale
-              ?(ru?'Откроется на доступном языке':'Opens in the available language')
-              :(ru?'Пройти тест':'Take the test')}</small>
+            <span className={styles.reportRecommendedTestFacts}>
+              {Number.isInteger(test.questionCount)&&test.questionCount>0&&<span className={styles.reportRecommendedTestFact}>
+                <ListChecks size={14} aria-hidden="true"/>
+                {ru?'Вопросы':'Questions'}: {test.questionCount}
+              </span>}
+              {Number.isFinite(test.durationMinutes)&&test.durationMinutes>0&&<span className={styles.reportRecommendedTestFact}>
+                <Clock3 size={14} aria-hidden="true"/>
+                ~{test.durationMinutes} {ru?'мин':'min'}
+              </span>}
+              {['professional','monitoring','hobby'].includes(test.testKind)&&<span className={styles.reportRecommendedTestKind}
+                title={test.testKind==='professional'
+                  ?(ru?'Методика с указанным источником':'Source-backed method')
+                  :(ru?'Опросник':'Questionnaire')}>
+                {test.testKind==='professional'?'Pro':(ru?'Опросник':'Questionnaire')}
+              </span>}
+            </span>
+            {test.startLocale!==locale&&<small>
+              {ru?'Откроется на доступном языке':'Opens in the available language'}
+            </small>}
           </span>
           <ExternalLink size={18} className={styles.reportRecommendedTestArrow} aria-hidden="true"/>
         </a>)}
