@@ -75,7 +75,7 @@ test('Sun meditation is followed by the gentle pause before reflections', () => 
   assert.ok(lesson.indexOf('id: "flight-voices"') < lesson.indexOf('id: "flight-05"'))
   assert.ok(lesson.indexOf('id: "flight-05"') < lesson.indexOf('id: "flight-04"'))
   assert.match(lesson, /Sun’s light and warmth/)
-  assert.match(lesson, /Ваш опыт важен/)
+  assert.match(lesson, /Удалось ли вам подняться к Солнцу во время медитации/)
   assert.match(lesson, /question: \{ type: "text"/)
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
