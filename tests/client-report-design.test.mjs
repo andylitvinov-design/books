@@ -73,7 +73,7 @@ test('HTML and print report share the visible client layout and original remedy 
     readFile('components/consultation-report.css', 'utf8'),
   ])
   for (const selector of [
-    'canonical-report-heading', 'canonical-client', 'canonical-remedy-number',
+    'canonical-report-heading', 'canonical-client', 'canonical-remedy--unified',
     'canonical-remedy-fields', 'canonical-remedy-profile-action',
     'canonical-report-analysis', 'canonical-report-notes', 'canonical-follow-up',
   ]) {
