@@ -16,7 +16,7 @@ const db = read('lib/academy/energywork-course-repository.js')
 const browser = read('scripts/verify-reiki-all-slides-browser.mjs')
 
 test('Nine approved Kundalini questions and seven Yggdrasil questions preserve private answer IDs', () => {
-  assert.equal(ENERGYWORK_VERSION,'2026-10-19.p7')
+  assert.equal(ENERGYWORK_VERSION,'2026-10-19.p8')
   assert.equal(ENERGYWORK_P6_VERSION,'2026-10-19.p6')
   assert.equal(ENERGYWORK_P5_VERSION,'2026-10-19.p5')
   assert.equal(energyworkSequence().length,70)
@@ -50,7 +50,7 @@ test('Source links and Next validation reuse the secure existing question mechan
   assert.match(db,/MAX_RESPONSES = 64/)
   assert.match(db,/ENERGYWORK_P6_VERSION/)
   assert.match(browser,/id === "kun-study-v2-01"/)
-  assert.match(browser,/id === "ygg-06"/)
+  assert.match(browser,/id === "ygg-study-v2-01"/)
 })
 test('Initiation needs all answers, with existing private keys still present', () => {
   const answers=Object.fromEntries(ENERGYWORK_LESSON_ANSWER_IDS.map(id=>[id,'My learning']))
