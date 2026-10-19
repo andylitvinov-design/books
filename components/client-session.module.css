@@ -2085,3 +2085,77 @@
 .takeError{display:flex;gap:8px;align-items:center;color:#963d2a;font-size:14px;font-weight:700;line-height:1.45;margin:10px 0}
 .takeError svg{flex:none}
 @media(max-width:580px){.takeSection{padding:15px}.takeHeader{flex-wrap:wrap}.takeHeader button{margin-left:auto}.takeActions{align-items:stretch}.takeActions button,.takeChoice{flex:1;justify-content:flex-start}.takeCard{padding:13px}.takeHeader h3{font-size:20px}}
+
+
+/* Client report: recommended tests follow Materials, before next actions. */
+.cabinetSessionPage .reportRecommendedTestsSection{
+  margin:20px 0 24px;
+  padding:clamp(16px,3vw,23px);
+  border:1px solid #c7dfe0;
+  border-radius:19px;
+  background:linear-gradient(135deg,#f2faf9 0%,#fffdf9 100%);
+  box-shadow:0 6px 19px rgba(20,67,83,.045);
+}
+.reportRecommendedTestsSection .sectionHeader{margin-bottom:7px}
+.reportRecommendedTestsIntro{
+  margin:0 0 14px;
+  color:#627b80;
+  font:500 14px/1.5 system-ui,-apple-system,sans-serif;
+}
+.reportRecommendedTestList{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.reportRecommendedTestCard{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+  min-height:77px;
+  padding:13px 14px;
+  border:1px solid #d7e7e7;
+  border-radius:14px;
+  background:#fff;
+  color:#173e51;
+  box-shadow:0 3px 12px rgba(18,63,75,.04);
+  text-decoration:none;
+  transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease;
+}
+.reportRecommendedTestCard:hover{
+  border-color:#83bec1;
+  background:#f8fdfc;
+  box-shadow:0 5px 14px rgba(18,63,75,.08);
+}
+.reportRecommendedTestIcon{
+  flex:0 0 44px;
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border:1px solid #cce3df;
+  border-radius:13px;
+  background:#eaf6f2;
+  color:#287d7b;
+}
+.reportRecommendedTestText{display:grid;gap:4px;min-width:0;flex:1}
+.reportRecommendedTestText strong{
+  color:#1b4e60;
+  font:700 clamp(15px,1.7vw,17px)/1.3 system-ui,-apple-system,sans-serif;
+  overflow-wrap:anywhere;
+}
+.reportRecommendedTestText small{color:#567880;font:550 12px/1.35 system-ui,-apple-system,sans-serif}
+.reportRecommendedTestArrow{flex:0 0 auto;color:#317b87}
+.reportRecommendedTestCard:focus-visible{outline:3px solid #258995;outline-offset:3px}
+@media(max-width:700px){
+  .reportRecommendedTestList{grid-template-columns:minmax(0,1fr)}
+  .cabinetSessionPage .reportRecommendedTestsSection{padding:15px 13px}
+  .reportRecommendedTestCard{min-height:68px;padding:11px 12px}
+}
+@media(prefers-reduced-motion:reduce){.reportRecommendedTestCard{transition:none}}
+@media print{
+  /* Print recommendations after the signed report without showing navigation. */
+  .cabinetSessionPage:has(.fullReportSection) > .reportRecommendedTestsSection{display:block!important}
+  .reportRecommendedTestList{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .reportRecommendedTestCard{box-shadow:none;break-inside:avoid}
+}

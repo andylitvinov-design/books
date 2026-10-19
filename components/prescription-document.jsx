@@ -142,14 +142,23 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <p>{followUpSession.description}</p>
       </section>}
       {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
-      <DocumentSignature date={document.dateIssued} locale={locale} compact />
-      <p className="canonical-disclaimer">{labels.disclaimer}</p>
-
       {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
         <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
-        <p className="canonical-remedy-appendix-description">{locale === 'ru' ? 'Полные тексты описаний выбранных препаратов из библиотеки Holistic House' : 'Complete library descriptions of all selected remedies'}</p>
+        <p className="canonical-remedy-appendix-description">
+          <span className="canonical-remedy-appendix-hint">{locale === 'ru'
+            ? 'Нажмите на карточку, чтобы прочесть описание препарата.'
+            : 'Tap a card to read the remedy description.'}</span>
+          <span className="canonical-remedy-appendix-print-hint">{locale === 'ru'
+            ? 'Полные тексты описаний выбранных препаратов из библиотеки Holistic House'
+            : 'Complete library descriptions of all selected remedies'}</span>
+        </p>
         {selectedProfiles.map(({ item, remedy }) => <details className="canonical-remedy-profile canonical-remedy-profile-disclosure" key={item.remedySlug}>
           <summary className="canonical-remedy-profile-summary">
+            {remedy.primary_image && <span className="canonical-remedy-profile-thumb" aria-hidden="true">
+              {/* Use the original library photo, not a substitute. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={remedy.primary_image} alt="" loading="lazy" decoding="async" />
+            </span>}
             <h3>{remedy.canonical_latin_name}</h3>
           </summary>
           <div className="canonical-remedy-profile-content">
@@ -167,6 +176,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </section>}
 
       {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
+      <DocumentSignature date={document.dateIssued} locale={locale} compact />
+      <p className="canonical-disclaimer">{labels.disclaimer}</p>
       {!embedded && recommendedTests.length > 0 && <section className="canonical-recommended-tests" aria-label={locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}>
         <h2>{locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}</h2>
         <p>{locale === 'ru'
