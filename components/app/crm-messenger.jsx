@@ -9,7 +9,8 @@ const copy={
     manual:'Manual customer replies only. Do not enter medical details, reports or secret client links.',
     failed:'Messages are temporarily unavailable.',unknown:'Delivery not confirmed. Do not resend automatically.',
     accepted:'Message accepted by the provider.',blocked:'This reply is unavailable.',read:'Mark read',
-    channels:'Channels',customers:'Customer messages',waiting:'Awaiting reply',sendError:'Message was not sent.'},
+    channels:'Channels',customers:'Customer messages',waiting:'Awaiting reply',sendError:'Message was not sent.',
+    loadThreads:'More conversations',loadMessages:'Earlier messages',historyError:'Could not load older history. Try again.'},
   ru:{title:'Сообщения',sub:'Telegram, WhatsApp, Instagram и Messenger — единый защищённый inbox',all:'Все',
     empty:'Переписок пока нет. Входящие появятся после подключения канала и первого сообщения от клиента.',
     select:'Выберите переписку',reply:'Ваш ответ',send:'Отправить ответ',refresh:'Обновить',loading:'Загружаю переписки…',
@@ -17,7 +18,8 @@ const copy={
     manual:'Только ответы на обращения клиентов. Не отправляйте медицинские сведения, отчёты или секретные ссылки.',
     failed:'Переписки временно недоступны.',unknown:'Доставка не подтверждена. Не повторяйте отправку автоматически.',
     accepted:'Сообщение принято провайдером.',blocked:'Сейчас ответ недоступен.',read:'Отметить прочитанным',
-    channels:'Каналы',customers:'Сообщения клиентов',waiting:'Ждут ответа',sendError:'Сообщение не отправлено.'},
+    channels:'Каналы',customers:'Сообщения клиентов',waiting:'Ждут ответа',sendError:'Сообщение не отправлено.',
+    loadThreads:'Ещё диалоги',loadMessages:'Ранние сообщения',historyError:'Не удалось загрузить историю. Повторите попытку.'},
   es:{title:'Mensajes',sub:'Telegram, WhatsApp, Instagram y Messenger — bandeja privada',all:'Todos',
     empty:'Aún no hay conversaciones. Aparecerán cuando el canal esté conectado y un cliente escriba.',
     select:'Selecciona una conversación',reply:'Tu respuesta',send:'Enviar respuesta',refresh:'Actualizar',loading:'Cargando conversaciones…',
@@ -25,7 +27,8 @@ const copy={
     manual:'Solo respuestas a clientes. No incluyas datos médicos, informes ni enlaces privados.',
     failed:'Los mensajes no están disponibles temporalmente.',unknown:'Entrega no confirmada. No reenviar automáticamente.',
     accepted:'Mensaje aceptado por el proveedor.',blocked:'Esta respuesta no está disponible.',read:'Marcar leído',
-    channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.'},
+    channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.',
+    loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
 const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Facebook Messenger'}
 const messageStatuses={
@@ -40,6 +43,22 @@ const messageStatuses={
   unknown:{en:'Unconfirmed — do not resend',ru:'Не подтверждено — не повторяйте',es:'Sin confirmar — no reenviar'},
 }
 const statusLabel=(status,locale)=>messageStatuses[status]?.[locale]||status
+function mergeThreadPages(older=[],fresh=[]){
+  const index=new Map(older.map(thread=>[thread.id,thread]))
+  for(const thread of fresh)index.set(thread.id,thread)
+  return [...index.values()].sort((a,b)=>{
+    const dates=Date.parse(b.lastMessageAt)-Date.parse(a.lastMessageAt)
+    return dates||b.id.localeCompare(a.id)
+  })
+}
+function mergeMessagePages(older=[],fresh=[]){
+  const index=new Map(older.map(message=>[message.id,message]))
+  for(const message of fresh)index.set(message.id,message)
+  return [...index.values()].sort((a,b)=>{
+    const dates=Date.parse(a.createdAt)-Date.parse(b.createdAt)
+    return dates||a.id.localeCompare(b.id)
+  })
+}
 
 const workflowCopy={
   en:{stage:'Contact stage',lead:'Interested',client:'Client',archived:'Archived',
@@ -135,9 +154,15 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
   const [search,setSearch]=useState('')
   const [channelFilter,setChannelFilter]=useState('all')
   const [unreadOnly,setUnreadOnly]=useState(false)
+  const [threadsBusy,setThreadsBusy]=useState(false)
+  const [messagesBusy,setMessagesBusy]=useState(false)
   const [needsReplyOnly,setNeedsReplyOnly]=useState(false)
-  const load=useCallback(async(threadId='',signal)=>{
-    const url='/api/app/crm/messenger'+(threadId?'?thread='+encodeURIComponent(threadId):'')
+  const load=useCallback(async(threadId='',signal,{threadsBefore=null,messagesBefore=null}={})=>{
+    const params=new URLSearchParams()
+    if(threadId)params.set('thread',threadId)
+    if(threadsBefore)params.set('threadsBefore',threadsBefore)
+    if(messagesBefore)params.set('messagesBefore',messagesBefore)
+    const url='/api/app/crm/messenger'+(params.size?'?'+params.toString():'')
     const result=await fetch(url,{cache:'no-store',credentials:'same-origin',
       headers:{'X-HH-Account-Id':accountId},signal})
     if(!result.ok)throw new Error('UNAVAILABLE')
@@ -152,6 +177,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     activeRef.current=''
     setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('')
     setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false)
+    setThreadsBusy(false);setMessagesBusy(false)
     load('',ctrl.signal).then(result=>{
       if(!activeRef.current)setData(result)
     }).catch(e=>{if(e.name!=='AbortError'&&!activeRef.current)setError('unavailable')})
@@ -160,7 +186,19 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
   async function refresh(id=activeRef.current){
     try {
       const result=await load(id)
-      if(id===activeRef.current){setData(result);setError('')}
+      if(id===activeRef.current){
+        setData(previous=>({
+          ...result,
+          threads:mergeThreadPages(previous?.threads,result.threads),
+          // Retain the pagination position and already-viewed older messages.
+          nextThreadsCursor:previous?.nextThreadsCursor===undefined
+            ?result.nextThreadsCursor:previous.nextThreadsCursor,
+          messages:id?mergeMessagePages(previous?.messages,result.messages):result.messages,
+          nextMessagesCursor:id&&previous?.messages?.length>result.messages.length
+            ?previous.nextMessagesCursor:result.nextMessagesCursor,
+        }))
+        setError('')
+      }
     }catch{if(id===activeRef.current)setError('unavailable')}
   }
   async function selectThread(id){
@@ -171,12 +209,50 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     setActive(id);setText('');setNoteText('');setStatus('');setError('')
     setThreadLoading(true)
     // Never display messages belonging to the previous client while B is loading.
-    setData(previous=>previous?{...previous,messages:[],followups:[]}:previous)
+    setData(previous=>previous?{...previous,messages:[],followups:[],nextMessagesCursor:null}:previous)
     try{
       const result=await load(id)
-      if(activeRef.current===id){setData(result);setError('')}
+      if(activeRef.current===id){
+        setData(previous=>({
+          ...result,
+          threads:mergeThreadPages(previous?.threads,result.threads),
+          nextThreadsCursor:previous?.nextThreadsCursor===undefined
+            ?result.nextThreadsCursor:previous.nextThreadsCursor,
+        }))
+        setError('')
+      }
     }catch{if(activeRef.current===id)setError('unavailable')}
     finally{if(activeRef.current===id)setThreadLoading(false)}
+  }
+  async function loadMoreThreads(){
+    const cursor=data?.nextThreadsCursor,selectedId=activeRef.current
+    if(!cursor||threadsBusy)return
+    setThreadsBusy(true)
+    try{
+      const page=await load('',undefined,{threadsBefore:cursor})
+      if(selectedId!==activeRef.current)return
+      setData(previous=>previous?{
+        ...previous,threads:mergeThreadPages(previous.threads,page.threads),
+        nextThreadsCursor:page.nextThreadsCursor,
+      }:previous)
+    }catch{if(selectedId===activeRef.current)setStatus(t.historyError)}
+    finally{setThreadsBusy(false)}
+  }
+  async function loadOlderMessages(){
+    const threadId=activeRef.current,cursor=data?.nextMessagesCursor
+    if(!threadId||!cursor||messagesBusy)return
+    setMessagesBusy(true)
+    try{
+      const page=await load(threadId,undefined,{messagesBefore:cursor})
+      if(threadId!==activeRef.current)return
+      setData(previous=>previous?{
+        ...previous,
+        threads:mergeThreadPages(previous.threads,page.threads),
+        messages:mergeMessagePages(page.messages,previous.messages),
+        nextMessagesCursor:page.nextMessagesCursor,
+      }:previous)
+    }catch{if(threadId===activeRef.current)setStatus(t.historyError)}
+    finally{setMessagesBusy(false)}
   }
   async function action(name,payload){
     if(busy)return null
@@ -311,7 +387,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           <label><input type="checkbox" checked={needsReplyOnly} onChange={event=>setNeedsReplyOnly(event.target.checked)} />
             {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Needs reply'}</label>
         </div>
-        {visibleThreads.length===0&&<p className={styles.empty}>{threads.length===0?t.empty:lang==='ru'?'Нет диалогов по выбранному фильтру.':lang==='es'?'Ninguna conversación coincide.':'No conversations match your filters.'}</p>}
+        {visibleThreads.length===0&&<p className={styles.empty}>{threads.length===0?t.empty:lang==='ru'?'Нет совпадений среди загруженных диалогов. Можно загрузить ещё.':lang==='es'?'No hay coincidencias entre los diálogos cargados. Puedes cargar más.':'No matching loaded conversations. You can load more.'}</p>}
         {visibleThreads.map(thread=><button type="button" key={thread.id}
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
@@ -322,6 +398,10 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           </span>
           {thread.unreadCount>0&&<span className={styles.count}>{thread.unreadCount}</span>}
         </button>)}
+        {data.nextThreadsCursor&&<button type="button" className={styles.historyButton}
+          disabled={threadsBusy||busy} onClick={loadMoreThreads}>
+          {threadsBusy?t.loading:t.loadThreads}
+        </button>}
       </div>
       <div className={styles.conversation}>
         {!selected?<p className={styles.empty}>{t.select}</p>:<>
@@ -348,6 +428,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           </div>
           <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
             {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
+            {!threadLoading&&data?.nextMessagesCursor&&<button type="button"
+              className={styles.historyButton} disabled={messagesBusy||busy}
+              onClick={loadOlderMessages}>{messagesBusy?t.loading:t.loadMessages}</button>}
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}

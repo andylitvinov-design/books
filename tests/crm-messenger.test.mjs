@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {canReply,channelTransportReady,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
+import {messengerCursor,parseMessengerCursor} from '../lib/crm/messenger-pagination.js'
 const root=new URL('..',import.meta.url)
 const source=path=>readFileSync(new URL(path,root),'utf8')
 test('only supported official messenger channels',()=>{
@@ -297,4 +298,52 @@ test('v3 actionable privacy and quota errors are localized, never expose provide
   assert.match(ui,/CRM_FOLLOWUP_LIMIT:/)
   assert.match(ui,/workflowErrors\[e\.message\]\?\.\[lang\]/)
   assert.doesNotMatch(ui,/HH_CRM_MSG_TELEGRAM_TOKEN|HH_CRM_MSG_META_APP_SECRET/)
+})
+
+test('messenger history cursors retain PG timestamp precision and reject malformed input',()=>{
+  const time='2026-10-18 20:34:59.123456+00'
+  const id='123e4567-e89b-42d3-a456-426614174000'
+  const token=messengerCursor(time,id)
+  assert.deepEqual(parseMessengerCursor(token),{at:time,id})
+  assert.equal(parseMessengerCursor(null),null)
+  for(const invalid of ['', '!!!!!!','A'.repeat(250),
+    Buffer.from(JSON.stringify({at:'2026-13-33 99:33:77+00',id})).toString('base64url'),
+    Buffer.from(JSON.stringify({at:time,id,owner:'abc'})).toString('base64url'),
+    Buffer.from(JSON.stringify({at:time,id:'00000000-0000-0000-0000-000000000000'})).toString('base64url')]){
+    assert.throws(()=>parseMessengerCursor(invalid))
+  }
+  assert.throws(()=>messengerCursor('2026-02-30 10:00:00+00',id))
+})
+test('pagination is owner-isolated, bounded and able to open selected older thread',()=>{
+  const store=source('lib/crm/messenger-store.js')
+  const api=source('app/api/app/crm/messenger/route.js')
+  assert.match(store,/async listMessengerThreads\(selectedThreadId=null,\{threadsBefore=null,messagesBefore=null\}=\{\}\)/)
+  assert.match(store,/and \(\$2::timestamptz is null or \(t\.last_message_at,t\.id\)</)
+  assert.match(store,/t\.owner_id=\$1 and t\.id=\$2 limit 1/)
+  assert.match(store,/order by t\.last_message_at desc,t\.id desc limit 31/)
+  assert.match(store,/order by created_at desc,id desc limit 51/)
+  assert.match(store,/nextThreadsCursor,nextMessagesCursor/)
+  assert.match(api,/allowed=\['thread','threadsBefore','messagesBefore'\]/)
+  assert.match(api,/params\.getAll\(key\)\.length>1/)
+  assert.match(api,/params\.get\('messagesBefore'\)/)
+})
+test('Messenger UI can load older conversations and messages without losing selected state',()=>{
+  const ui=source('components/app/crm-messenger.jsx')
+  const css=source('components/app/crm-messenger.module.css')
+  assert.match(ui,/const load=useCallback\(async\(threadId='',signal,\{threadsBefore=null,messagesBefore=null\}=\{\}\)/)
+  assert.match(ui,/async function loadMoreThreads\(\)/)
+  assert.match(ui,/async function loadOlderMessages\(\)/)
+  assert.match(ui,/setData\(previous=>previous\?\{/)
+  assert.match(ui,/mergeThreadPages\(previous\.threads,page\.threads\)/)
+  assert.match(ui,/mergeMessagePages\(page\.messages,previous\.messages\)/)
+  assert.match(ui,/if\(threadId!==activeRef\.current\)return/)
+  assert.match(ui,/data\.nextThreadsCursor&&<button/)
+  assert.match(ui,/data\?\.nextMessagesCursor&&<button/)
+  assert.match(css,/\.historyButton\{/)
+})
+test('idempotent outgoing reply key is bound to the original encrypted text and thread',()=>{
+  const code=source('lib/crm/messenger-store.js')
+  assert.match(code,/select id,status,thread_id,direction,body_ciphertext from app\.crm_msg_items/)
+  assert.match(code,/existed\.thread_id!==input\.threadId\|\|existed\.direction!=='out'\|\|recorded!==text/)
+  assert.match(code,/openSealed\(existed\.body_ciphertext,messageContext\(actor\.id,existed\.id\),config\)/)
 })
