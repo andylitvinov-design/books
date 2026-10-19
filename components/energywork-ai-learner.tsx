@@ -74,13 +74,11 @@ const copy = {
     meditationReport: "Meditation report",
     lessonQuestion: "Course question",
     optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
-    feedbackBadge: "Your meditation feedback",
-    feelingPrompt: "How strongly did you experience this meditation?",
-    feelingLow: "0 · Not at all",
-    feelingHigh: "10 · Very clearly",
-    feelingMissing: "Choose a feeling level and write one short sentence to continue.",
-    feelingPlaceholder: "What did you notice, even if nothing? One sentence is enough…",
-    feedbackPrivacy: "A personal reflection, not a test. Your notes are never published automatically.",
+    feedbackBadge: "Your review",
+    saveReview: "Save review",
+    reviewMissing: "Write a short review to continue.",
+    feelingPlaceholder: "Write about your experience here…",
+    feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
     voicesLabel: "Learner experiences",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
     voicesSource: "Original review",
@@ -183,13 +181,11 @@ const copy = {
     meditationReport: "Отчёт после медитации",
     lessonQuestion: "Вопрос по уроку",
     optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
-    feedbackBadge: "Ваш отзыв о медитации",
-    feelingPrompt: "Насколько удалось прочувствовать медитацию?",
-    feelingLow: "0 · Ничего",
-    feelingHigh: "10 · Очень ярко",
-    feelingMissing: "Выберите степень ощущений и напишите одно короткое предложение.",
-    feelingPlaceholder: "Что вы заметили, даже если ничего? Достаточно одного предложения…",
-    feedbackPrivacy: "Это личное наблюдение, не экзамен. Ваш отзыв не публикуется автоматически.",
+    feedbackBadge: "Ваш отзыв",
+    saveReview: "Сохранить отзыв",
+    reviewMissing: "Напишите короткий отзыв, чтобы продолжить.",
+    feelingPlaceholder: "Напишите о своём опыте…",
+    feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
     voicesLabel: "Отзывы участников",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
     voicesSource: "Источник отзыва",
@@ -254,13 +250,12 @@ const copy = {
 } as const;
 
 const MEDITATION_REPORT_IDS = new Set(["flight-04", "tan-04", "kun-04", "ygg-04"]);
-const feedbackPattern = /^Feeling:(10|[0-9])\/10\n([\s\S]*)$/;
-function splitMeditationFeedback(value: string) {
-  const match = feedbackPattern.exec(value);
-  return { rating: match?.[1] ?? "", note: match?.[2] ?? value };
-}
-function joinMeditationFeedback(rating: string, note: string) {
-  return (rating ? "Feeling:" + rating + "/10\n" : "") + note;
+// Previously saved reviews may contain the old 0–10 feeling prefix.
+// Display only the written reflection; keep existing private records readable.
+const legacyMeditationPrefix = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/;
+function meditationReviewText(value: string) {
+  const legacy = legacyMeditationPrefix.exec(value);
+  return legacy ? legacy[1] : value;
 }
 
 const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
@@ -542,8 +537,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
-  const meditationFeedback = splitMeditationFeedback(answers[slide.id] ?? "");
-  const feedbackMissing = isMeditationFeedback && (!meditationFeedback.rating || !meditationFeedback.note.trim());
+  const meditationReview = meditationReviewText(answers[slide.id] ?? "");
+  const feedbackMissing = isMeditationFeedback && !meditationReview.trim();
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -790,28 +785,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
-                  {isMeditationFeedback ? (
-                    <div className={styles.meditationFeeling} data-meditation-feeling>
-                      <label htmlFor={"feeling-" + slide.id}>{t.feelingPrompt}</label>
-                      <div className={styles.feelingValue}>
-                        <span>{t.feelingLow}</span>
-                        <strong aria-live="polite">{meditationFeedback.rating ? meditationFeedback.rating + " / 10" : "— / 10"}</strong>
-                        <span>{t.feelingHigh}</span>
-                      </div>
-                      <input id={"feeling-" + slide.id} type="range" min="0" max="10" step="1"
-                        value={meditationFeedback.rating || "5"}
-                        onChange={(event) => setAnswer(joinMeditationFeedback(event.target.value, meditationFeedback.note).slice(0, 1600))}
-                        onClick={(event) => { if (!meditationFeedback.rating) setAnswer(joinMeditationFeedback(event.currentTarget.value, meditationFeedback.note).slice(0, 1600)); }}
-                        aria-label={t.feelingPrompt} />
-                    </div>
-                  ) : null}
                   {slide.question.type === "text" ? (
-                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationFeedback.note : (answers[slide.id] ?? "")}
-                      onChange={(e) => setAnswer((isMeditationFeedback
-                        ? joinMeditationFeedback(meditationFeedback.rating, e.target.value)
-                        : e.target.value).slice(0, 1600))}
+                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (answers[slide.id] ?? "")}
+                      onChange={(e) => setAnswer(e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
-                      maxLength={1600} rows={isMeditationFeedback ? 3 : 4}
+                      maxLength={1600} rows={4}
                       placeholder={isMeditationFeedback ? t.feelingPlaceholder : t.placeholder} autoComplete="off" />
                   ) : null}
                   {slide.question.type === "scale" ? (
@@ -844,7 +822,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   ) : null}
                   <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
                     role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
-                    isMeditationFeedback ? (feedbackMissing ? t.feelingMissing : t.feedbackPrivacy) :
+                    isMeditationFeedback ? (feedbackMissing ? t.reviewMissing : t.feedbackPrivacy) :
                     initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id)
                     ? t.optionalForLearning : t.blank}</p>
                   {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
@@ -1029,7 +1007,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
             <div className={styles.actions}>
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing} className={styles.next} data-energywork-next>
-                {slide.kind === "welcome" ? t.startFree : slide.kind === "milestone" ? t.committed : t.continue}<ArrowRight size={19} aria-hidden="true" />
+                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : slide.kind === "milestone" ? t.committed : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
