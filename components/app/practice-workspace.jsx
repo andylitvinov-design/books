@@ -48,7 +48,7 @@ const DASHBOARD_COPY = {
     "services": "Services",
     "servicesHint": "Manage your services and offerings.",
     "reports": "Reports",
-    "reportsHint": "Create and view client reports.",
+    "reportsHint": "View and edit saved client reports.",
     "invoices": "Invoices",
     "invoicesHint": "Receipts, invoices and payments.",
     "activity": "Practice activity",
@@ -79,7 +79,7 @@ const DASHBOARD_COPY = {
     "services": "Услуги",
     "servicesHint": "Редактирование и публикация услуг.",
     "reports": "Отчёты",
-    "reportsHint": "Создание и просмотр отчётов клиентов.",
+    "reportsHint": "Просмотр и редактирование сохранённых отчётов клиентов.",
     "invoices": "Счета",
     "invoicesHint": "Квитанции, счета и платежи.",
     "activity": "Активность практики",
@@ -441,7 +441,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
             onClick={()=>choosePanel('services')} active={activePanel==='services'} />
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
-            onClick={()=>openOwner('report')} />}
+            onClick={()=>openOwner('reports')} />}
           {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}
             onClick={()=>openOwner('payment')} />:
           <PracticeTile Icon={IdCard} title={d.myData} description={t.profile}
