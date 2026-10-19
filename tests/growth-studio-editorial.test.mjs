@@ -99,6 +99,18 @@ test('closed fields and records reject status spoofing/unknown payloads',() => {
   assert.equal(isSavedGrowthPost({...item,status:'published'}),false)
 })
 
+test('public photo references require description, brand origin and direct media URL',() => {
+  const allowed=normalizePostFields(fields({mediaUrl:'/images/poster.webp',mediaAlt:'An open book on a table'}))
+  assert.equal(allowed.mediaUrl,'https://holistichouse.vercel.app/images/poster.webp')
+  assert.equal(allowed.mediaAlt,'An open book on a table')
+  assert.throws(()=>normalizePostFields(fields({mediaUrl:'/images/poster.jpg',mediaAlt:''})),/invalid_post/)
+  assert.throws(()=>normalizePostFields(fields({mediaUrl:'https://evil.example/private.jpg',mediaAlt:'Poster'})),/invalid_post/)
+  assert.throws(()=>normalizePostFields(fields({mediaUrl:'/en/client/portrait.jpg',mediaAlt:'Private'})),/invalid_post/)
+  assert.throws(()=>normalizePostFields(fields({mediaUrl:'/images/poster.jpg?token=private',mediaAlt:'Poster'})),/invalid_post/)
+  const video=normalizePostFields(fields({mediaUrl:'/assets/intro.mp4'}))
+  assert.match(video.mediaUrl,/\.mp4$/)
+})
+
 test('no server Redis configuration means no persistent studio, without local fallback',() => {
   assert.equal(createGrowthStudioStore({environment:{}}),null)
 })
