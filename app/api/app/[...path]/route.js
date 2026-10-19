@@ -82,7 +82,7 @@ async function handle(request, { params }) {
         continueTo = body.continueTo || null,
         program = body.program || null
       if (continueTo !== null && !['tests', 'course'].includes(continueTo) &&
-        !['cabinet','my-tests','my-courses','reports','energywork'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -119,7 +119,7 @@ async function handle(request, { params }) {
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports','energywork'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
@@ -136,8 +136,10 @@ async function handle(request, { params }) {
                     ? `${origin}/${locale}/app/course`
                     : continueTo === 'reports'
                       ? `${origin}/${locale}/app/portrait#personal-reports`
-                      : continueTo === 'energywork'
-                        ? `${origin}/${locale}/academy/principles-of-energywork/learn`
+                      : continueTo === 'practitioner'
+                        ? `${origin}/admin/login`
+                        : continueTo === 'energywork'
+                          ? `${origin}/${locale}/academy/principles-of-energywork/learn`
                         : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
