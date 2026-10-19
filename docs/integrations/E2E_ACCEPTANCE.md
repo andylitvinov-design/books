@@ -26,6 +26,12 @@ read-back succeeds and the production SHA is recorded.
   affected assertions: 14/14 targeted tests pass locally.
 - Vercel production SHA and Supabase applied migrations were read back from
   their dashboards.
+- Public production read-back returned HTTP 200 for `/`, the verified EN event
+  page, `/sitemap.xml` and `/robots.txt`; the owner CRM API returned 401 when
+  unauthenticated. The event page returned a canonical URL, EN/RU/ES/x-default
+  alternates and Event JSON-LD. The public EN HTML contained neither a GA
+  runtime request nor the scanned secret markers while the analytics hold is
+  enabled.
 - No external provider send, OAuth grant, token creation, billing action,
   media upload, migration replay, or customer-data mutation was performed.
 
