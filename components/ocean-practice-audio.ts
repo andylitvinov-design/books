@@ -3,130 +3,99 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const SOUND_PREFERENCE_KEY = "holistic-house.practice-ocean-sound.v1";
+const OCEAN_LOOP = "/audio/holistic-house-ocean-waves-ambient-20s.wav";
+
+export type OceanPlaybackStatus = "idle" | "loading" | "playing" | "paused" | "blocked" | "unsupported";
 
 type OceanSoundscape = {
-  play: () => void;
+  play: () => Promise<boolean>;
   pause: () => void;
+  reset: () => void;
   dispose: () => void;
 };
 
-// A quiet, royalty-free ocean-and-ambient soundscape synthesized on the device.
-// No CDN, large audio files, network requests, or autoplay. Build only after a tap.
-function createOceanSoundscape(): OceanSoundscape | null {
-  if (typeof window === "undefined") return null;
-  const AudioContextType = window.AudioContext
-    || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioContextType) return null;
+// Use an actual, locally hosted ocean + soft-music recording rather than an
+// AudioContext oscillator. In particular, iPhone silent-mode / embedded Safari
+// can mute WebAudio even while the UI says "Waves on". HTML media playback is
+// more reliable, and play() rejects when the browser blocks it.
+// The 20s original recording loops seamlessly throughout 1–15 minute timers.
+function createOceanSoundscape(onStatus: (next: OceanPlaybackStatus) => void): OceanSoundscape | null {
+  if (typeof window === "undefined" || typeof window.Audio !== "function") return null;
 
-  let context: AudioContext;
+  let audio: HTMLAudioElement;
   try {
-    context = new AudioContextType();
+    audio = new window.Audio(OCEAN_LOOP);
+    audio.loop = true;
+    audio.preload = "auto";
+    audio.muted = false;
+    audio.volume = 1;
   } catch {
     return null;
   }
 
-  const master = context.createGain();
-  master.gain.value = 0;
-  master.connect(context.destination);
-
-  // Continuous rolling surf. Filtered noise and an eleven-second swell sound
-  // more like distant waves than a conspicuous metronome or alert.
-  const length = Math.round(context.sampleRate * 8);
-  const buffer = context.createBuffer(1, length, context.sampleRate);
-  const samples = buffer.getChannelData(0);
-  let softNoise = 0;
-  for (let i = 0; i < length; i += 1) {
-    const white = Math.random() * 2 - 1;
-    softNoise = softNoise * 0.94 + white * 0.06;
-    samples[i] = white * 0.55 + softNoise * 0.95;
-  }
-  // Match both ends of the eight-second bed to avoid audible loop clicks.
-  const crossfade = Math.max(1, Math.round(context.sampleRate * 0.4));
-  const tail = samples.slice(length - crossfade);
-  for (let i = 0; i < crossfade; i += 1) {
-    const blend = (i + 1) / crossfade;
-    samples[length - crossfade + i] = tail[i] * (1 - blend) + samples[i] * blend;
-  }
-
-  const surf = context.createBufferSource();
-  surf.buffer = buffer;
-  surf.loop = true;
-  const lowPass = context.createBiquadFilter();
-  lowPass.type = "lowpass";
-  lowPass.frequency.value = 1050;
-  const surfGain = context.createGain();
-  surfGain.gain.value = 0.14;
-  surf.connect(lowPass).connect(surfGain).connect(master);
-
-  const swell = context.createOscillator();
-  swell.type = "sine";
-  swell.frequency.value = 0.09;
-  const swellDepth = context.createGain();
-  swellDepth.gain.value = 0.095;
-  swell.connect(swellDepth).connect(surfGain.gain);
-
-  // Very soft, consonant ambient tones beneath the sea. No speech or beat.
-  const padFilter = context.createBiquadFilter();
-  padFilter.type = "lowpass";
-  padFilter.frequency.value = 500;
-  padFilter.connect(master);
-  const pad = [130.81, 196.0, 261.63].map((frequency, index) => {
-    const tone = context.createOscillator();
-    tone.type = "sine";
-    tone.frequency.value = frequency;
-    const gain = context.createGain();
-    gain.gain.value = [0.012, 0.008, 0.005][index];
-    tone.connect(gain).connect(padFilter);
-    tone.start();
-    return tone;
-  });
-  surf.start();
-  swell.start();
-
-  let playing = false;
   let disposed = false;
-  let suspendId: ReturnType<typeof setTimeout> | null = null;
-
-  const fadeTo = (level: number, seconds: number) => {
-    const now = context.currentTime;
-    master.gain.cancelScheduledValues(now);
-    master.gain.setValueAtTime(master.gain.value, now);
-    master.gain.linearRampToValueAtTime(level, now + seconds);
+  let wanted = false;
+  let attempt = 0;
+  const onWaiting = () => { if (!disposed && wanted) onStatus("loading"); };
+  const onPlaying = () => { if (!disposed && wanted) onStatus("playing"); };
+  const onError = () => { if (!disposed && wanted) { wanted = false; onStatus("blocked"); } };
+  const onUnexpectedPause = () => {
+    if (!disposed && wanted) { wanted = false; onStatus("blocked"); }
   };
 
+  audio.addEventListener("waiting", onWaiting);
+  audio.addEventListener("playing", onPlaying);
+  audio.addEventListener("error", onError);
+  audio.addEventListener("pause", onUnexpectedPause);
+
   return {
-    play() {
-      if (disposed) return;
-      playing = true;
-      if (suspendId !== null) clearTimeout(suspendId);
-      suspendId = null;
-      // Invoked from the user's Start/Resume or sound-toggle click. Required
-      // by Safari/iOS and Chrome audio gesture policies.
-      void context.resume().then(() => {
-        if (playing && !disposed) fadeTo(0.7, 0.9);
-      }).catch(() => {});
+    async play() {
+      if (disposed) return false;
+      const ticket = ++attempt;
+      wanted = true;
+      onStatus("loading");
+      try {
+        // Called synchronously from a real Start/Resume/Waves tap, not an effect.
+        // Never wait for a fetch before calling play() (iOS gesture permission).
+        await audio.play();
+        if (disposed || !wanted || ticket !== attempt) return false;
+        onStatus("playing");
+        return true;
+      } catch {
+        if (!disposed && ticket === attempt) {
+          wanted = false;
+          onStatus("blocked");
+        }
+        return false;
+      }
     },
     pause() {
       if (disposed) return;
-      playing = false;
-      fadeTo(0, 0.3);
-      if (suspendId !== null) clearTimeout(suspendId);
-      suspendId = setTimeout(() => {
-        suspendId = null;
-        if (!playing && !disposed) void context.suspend().catch(() => {});
-      }, 360);
+      wanted = false;
+      attempt += 1;
+      audio.pause();
+      onStatus("paused");
+    },
+    reset() {
+      if (disposed) return;
+      wanted = false;
+      attempt += 1;
+      audio.pause();
+      try { audio.currentTime = 0; } catch { /* Not seekable until metadata. */ }
+      onStatus("paused");
     },
     dispose() {
       if (disposed) return;
       disposed = true;
-      playing = false;
-      if (suspendId !== null) clearTimeout(suspendId);
-      try {
-        surf.stop();
-        swell.stop();
-        pad.forEach(tone => tone.stop());
-      } catch { /* Nodes may already have stopped on page dismissal. */ }
-      void context.close().catch(() => {});
+      wanted = false;
+      attempt += 1;
+      audio.pause();
+      audio.removeEventListener("waiting", onWaiting);
+      audio.removeEventListener("playing", onPlaying);
+      audio.removeEventListener("error", onError);
+      audio.removeEventListener("pause", onUnexpectedPause);
+      audio.removeAttribute("src");
+      try { audio.load(); } catch { /* Page is closing. */ }
     },
   };
 }
@@ -134,37 +103,57 @@ function createOceanSoundscape(): OceanSoundscape | null {
 export function useOceanPracticeAudio() {
   const [enabled, setEnabled] = useState(true);
   const [supported, setSupported] = useState(true);
+  const [status, setStatus] = useState<OceanPlaybackStatus>("idle");
   const soundRef = useRef<OceanSoundscape | null>(null);
+  const mounted = useRef(false);
 
   useEffect(() => {
-    const available = Boolean(window.AudioContext
-      || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+    mounted.current = true;
+    const test = document.createElement("audio");
+    const available = typeof window.Audio === "function" && Boolean(
+      test.canPlayType("audio/wav") || test.canPlayType("audio/x-wav")
+    );
     setSupported(available);
+    if (!available) setStatus("unsupported");
     try {
       setEnabled(window.localStorage.getItem(SOUND_PREFERENCE_KEY) !== "off");
-    } catch { /* Local storage may be disabled in private browsing. */ }
+    } catch { /* Browser may disable local storage. */ }
+
     const stopWhenHidden = () => {
       if (document.hidden) soundRef.current?.pause();
     };
     document.addEventListener("visibilitychange", stopWhenHidden);
     return () => {
+      mounted.current = false;
       document.removeEventListener("visibilitychange", stopWhenHidden);
       soundRef.current?.dispose();
       soundRef.current = null;
     };
   }, []);
 
-  const play = useCallback(() => {
-    if (!enabled) return;
-    if (!soundRef.current) soundRef.current = createOceanSoundscape();
+  const startSound = useCallback((): Promise<boolean> => {
+    if (!soundRef.current) {
+      soundRef.current = createOceanSoundscape(next => {
+        if (mounted.current) setStatus(next);
+      });
+    }
     if (!soundRef.current) {
       setSupported(false);
-      return;
+      setStatus("unsupported");
+      return Promise.resolve(false);
     }
-    soundRef.current.play();
-  }, [enabled]);
+    return soundRef.current.play();
+  }, []);
+
+  // Returns false when the browser rejected the audio. Callers must not
+  // advance a sound-enabled countdown until play() actually succeeds.
+  const play = useCallback((): Promise<boolean> => {
+    if (!enabled || !supported) return Promise.resolve(true); // Opt-in silent exercise.
+    return startSound();
+  }, [enabled, supported, startSound]);
 
   const pause = useCallback(() => soundRef.current?.pause(), []);
+  const reset = useCallback(() => soundRef.current?.reset(), []);
 
   const toggle = useCallback((timerRunning: boolean) => {
     if (!supported) return;
@@ -172,17 +161,16 @@ export function useOceanPracticeAudio() {
     setEnabled(next);
     try {
       window.localStorage.setItem(SOUND_PREFERENCE_KEY, next ? "on" : "off");
-    } catch { /* Preference remains available for the current page. */ }
+    } catch { /* Preference is still applied during this session. */ }
     if (!next) {
       soundRef.current?.pause();
     } else if (timerRunning) {
-      if (!soundRef.current) soundRef.current = createOceanSoundscape();
-      if (soundRef.current) soundRef.current.play();
-      else setSupported(false);
+      // This is also a direct user click; Safari is allowed to start sound.
+      void startSound();
     }
-  }, [enabled, supported]);
+  }, [enabled, supported, startSound]);
 
-  return { enabled, supported, play, pause, toggle };
+  return { enabled, supported, status, play, pause, reset, toggle };
 }
 
 export type OceanPracticeAudioControls = ReturnType<typeof useOceanPracticeAudio>;
