@@ -2432,3 +2432,10 @@
   }
 }
 
+
+/* Signed report personal audio: after its cover, before analysis; never part of PDF print. */
+.reportVoiceSection{max-width:790px;margin:18px auto 26px;padding:clamp(13px,2.6vw,21px);
+  border:1px solid #cbdfe0;border-radius:19px;background:linear-gradient(145deg,#f3faf9,#fff);
+  box-shadow:0 5px 20px rgba(20,69,80,.06)}
+.reportVoiceSection .mediaList{max-width:720px}
+@media print{.reportVoiceSection{display:none!important}}

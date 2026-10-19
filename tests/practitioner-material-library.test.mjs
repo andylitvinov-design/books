@@ -164,3 +164,15 @@ test('existing legacy report-specific links and recordings are preserved when ch
   assert.match(view,/libraryMaterials\.map/)
   assert.match(view,/id="session-resources"/)
 })
+
+test('general MP4/MOV uploads use the configured library opt-in, not the client recording opt-in',()=>{
+  const library=read('lib/clients/material-library.js')
+  const model=read('lib/clients/delivery-model.js')
+  assert.match(library,/HH_MATERIAL_VIDEO_SUPABASE_UPLOADS_ALLOWED/)
+  assert.doesNotMatch(library,/HH_CLIENT_VIDEO_SUPABASE_UPLOADS_ALLOWED/)
+  assert.match(library,/checkPrivateMediaStorage/)
+  assert.match(library,/createSignedUploadUrl/)
+  assert.match(model,/PRIVATE_MEDIA_BUCKET = 'hh-client-private-media'/)
+  assert.match(model,/'video\/mp4'/)
+  assert.match(model,/'video\/quicktime'/)
+})

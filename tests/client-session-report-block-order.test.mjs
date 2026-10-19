@@ -43,3 +43,36 @@ test('existing guest, cabinet, saved and preview routes keep their shared docume
   for (const route of routes) assert.ok(read(route).includes('<PrescriptionDocument'),route)
   assert.ok(read('lib/prescriptions/pdf.js').includes('recommendedTests'))
 })
+
+test('private voice message appears once after the signed cover in all four client views',()=>{
+  const report=read('components/client-session-page.jsx')
+  const document=read('components/prescription-document.jsx')
+  const cover=document.indexOf('className="canonical-report-cover"')
+  const audio=document.indexOf('{afterCover}')
+  const analysis=document.indexOf('className="canonical-report-analysis"')
+  assert.ok(cover>=0&&audio>cover&&analysis>audio)
+  assert.equal((report.match(/id="session-message"/g)||[]).length,1)
+  assert.match(report,/export function ClientSessionVoiceMessage/)
+  assert.match(report,/audioEmbedded/)
+  for(const path of [
+    'app/[locale]/client/session/[shareSelector]/page.js',
+    'app/[locale]/client/[selector]/sessions/[sessionId]/page.js',
+    'app/[locale]/app/sessions/[id]/page.jsx',
+    'app/admin/documents/[id]/session-preview/page.js',
+  ]){
+    const source=read(path)
+    assert.match(source,/afterCover=\{<ClientSessionVoiceMessage/,path)
+    assert.match(source,/audioEmbedded=/,path)
+  }
+})
+test('practitioner report editor places audio before analysis and library at the bottom',()=>{
+  const edit=read('app/admin/consultations/[id]/edit/page.js')
+  assert.ok(edit.indexOf('placement="audio"')<edit.indexOf('id="edit-recommendation"'))
+  assert.ok(edit.indexOf('placement="materials"')>edit.indexOf('id="edit-recommendation"'))
+  const editor=read('components/report-video-materials-editor.jsx')
+  assert.match(editor,/placement='all'/)
+  assert.ok(editor.indexOf("placement==='audio'")<editor.indexOf('id="report-video-materials-editor"'))
+  const studio=read('components/admin-session-studio.jsx')
+  assert.ok(studio.indexOf('Private session recordings')<studio.indexOf('Shared library materials'))
+  assert.ok(studio.indexOf('Shared library materials')<studio.indexOf('id="session-publication"'))
+})

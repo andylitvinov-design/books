@@ -14,7 +14,7 @@ import { resolveRecommendedTests } from '@/lib/consultations/recommended-tests'
 import { clientReportHeading } from '@/lib/documents/report-heading'
 import './consultation-report.css'
 
-export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false, narration = null }) {
+export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false, narration = null, afterCover = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const progress = extractReportProgress(document.analysis)
@@ -91,6 +91,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         </section>}
       </header>
       </div>
+      {afterCover}
       {document.analysis && <section className="canonical-general canonical-report-analysis">
         <h2>{labels.analysis}</h2>
         {narration && narrationEnabled() && <ReportNarrationPlayer locale={locale} access={narration} />}

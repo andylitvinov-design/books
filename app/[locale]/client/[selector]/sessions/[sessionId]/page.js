@@ -3,7 +3,7 @@ import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { appEnabled, getAppConfig } from '@/lib/app/config'
 import { getPublishedClientSession,getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
-import { ClientSessionPage } from '@/components/client-session-page'
+import { ClientSessionPage,ClientSessionVoiceMessage } from '@/components/client-session-page'
 import { sharedGranulesGuideReady } from '@/lib/clients/shared-education-video'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
@@ -26,10 +26,12 @@ export default async function CabinetSession({params}) {
       const payment=record.kind==='payment'
       const projected=payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale)
       if(projected){if(payment)reportContent=<PaymentDocument document={projected} locale={locale} embedded/>
-        else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={locale} embedded narration={{scope:'cabinet-session',selector,sessionId}}/>}}
+        else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={locale} embedded
+          afterCover={<ClientSessionVoiceMessage session={session} selector={selector} locale={locale} mode="cabinet"/>}
+          narration={{scope:'cabinet-session',selector,sessionId}}/>}}
     }
   }
-  return <ClientSessionPage locale={locale} session={session} selector={selector}
+  return <ClientSessionPage locale={locale} session={session} selector={selector} audioEmbedded={Boolean(recommendation)}
     mode="cabinet" appAvailable={appEnabled()} clientName={recommendation?.patientName||access.client.fullName||''}
     recommendation={recommendation} reportContent={reportContent}
     sharedGuideReady={sharedGranulesGuideReady()}/>

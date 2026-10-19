@@ -10,7 +10,7 @@ import {documentPreviewEditHref} from '@/lib/consultations/document-preview-navi
 import {deliveryEnabled} from '@/lib/clients/delivery-model'
 import {getAppConfig} from '@/lib/app/config'
 import {listClientSessions,getOwnerSession,getPublishedClientSession} from '@/lib/clients/session-delivery-service'
-import {ClientSessionPage} from '@/components/client-session-page'
+import {ClientSessionPage,ClientSessionVoiceMessage} from '@/components/client-session-page'
 import {PrescriptionDocument} from '@/components/prescription-document'
 import {PaymentDocument} from '@/components/payment-document'
 import styles from '../view/viewer.module.css'
@@ -109,12 +109,13 @@ export default async function FullClientSessionPreview({params,searchParams}) {
       <span>{ru?'ЗАЩИЩЁННЫЙ ПРЕДПРОСМОТР КЛИЕНТСКОЙ СТРАНИЦЫ':'PRIVATE CLIENT PAGE PREVIEW'}</span>
       <p>{info}</p>
     </div>
-    <ClientSessionPage mode="owner" selector={record.clientId||''} locale={locale}
+    <ClientSessionPage mode="owner" selector={record.clientId||''} locale={locale} audioEmbedded={!payment}
       session={session} clientName={document.patientName||record.patientName||''}
       recommendation={payment?null:document}
       reportContent={payment?
         <PaymentDocument document={document} locale={locale} admin embedded/>:
-        <PrescriptionDocument document={document} locale={locale} admin embedded/>}
+        <PrescriptionDocument document={document} locale={locale} admin embedded
+          afterCover={<ClientSessionVoiceMessage session={session} selector={record.clientId||''} locale={locale} mode="owner"/>}/>}
       appAvailable={false}/>
   </main>
 }

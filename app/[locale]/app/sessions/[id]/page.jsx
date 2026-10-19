@@ -11,7 +11,7 @@ import {getClientPrescription} from '@/lib/prescriptions/service'
 import {getClientPaymentDocument} from '@/lib/documents/payment'
 import {PaymentDocument} from '@/components/payment-document'
 import {PrescriptionDocument} from '@/components/prescription-document'
-import {ClientSessionPage} from '@/components/client-session-page'
+import {ClientSessionPage,ClientSessionVoiceMessage} from '@/components/client-session-page'
 import {sharedGranulesGuideReady} from '@/lib/clients/shared-education-video'
 import {SavedSessionManagement} from '@/components/app/saved-session-management'
 import '../../[[...path]]/workspace.css'
@@ -60,11 +60,13 @@ export default async function SavedSessionPage({params}){
         {locale==='ru'?'← Мои отчёты':'← My Reports'}
       </Link>
     </nav>
-    <ClientSessionPage mode="saved" locale={locale} selector="" savedId={id}
+    <ClientSessionPage mode="saved" locale={locale} selector="" savedId={id} audioEmbedded={Boolean(doc&&!payment)}
       session={saved.session} clientName={doc?.patientName||clientName}
       recommendation={!payment?doc:null}
       reportContent={doc?(payment?<PaymentDocument locale={locale} document={doc} embedded/>:
-        <PrescriptionDocument locale={locale} document={doc} embedded narration={{scope:'saved-session',id}}/>):null}
+        <PrescriptionDocument locale={locale} document={doc} embedded
+          afterCover={<ClientSessionVoiceMessage session={saved.session} selector="" mode="saved" savedId={id} locale={locale}/>}
+          narration={{scope:'saved-session',id}}/>):null}
       sharedGuideReady={sharedGranulesGuideReady()}/>
     <SavedSessionManagement locale={locale} savedId={id} savedAt={saved.savedAt}/>
   </>
