@@ -91,7 +91,7 @@ const courses = [
   },
   {
     id: "tantra-reiki",
-    image: "/library/maya-mysteries/media/post-217-1.jpg",
+    image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
     path: "reiki/tantra-reiki/free-initiation",
     detailsPath: null,
     en: {
