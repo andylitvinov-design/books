@@ -79,9 +79,10 @@ export default function CrmManager({ locale = 'en', accountId }) {
     setServerSearchStatus('loading')
     setServerResults(null)
     const timer=setTimeout(()=>{
-      const url='/api/app/crm/search?q='+encodeURIComponent(q)+'&stage='+encodeURIComponent(filter)
-      fetch(url,{credentials:'same-origin',cache:'no-store',signal:controller.signal,
-        headers:{'X-HH-Account-Id':session.accountId}})
+      fetch('/api/app/crm/search',{method:'POST',credentials:'same-origin',cache:'no-store',
+        signal:controller.signal,
+        headers:{'Content-Type':'application/json','X-HH-Account-Id':session.accountId},
+        body:JSON.stringify({query:q,stage:filter})})
       .then(async response=>{
         if(!response.ok)throw new Error('SEARCH_UNAVAILABLE')
         return response.json()
