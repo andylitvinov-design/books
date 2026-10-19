@@ -110,7 +110,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
         <span>{items.length} {t.requests}</span><span>{activeCount} {t.pending}</span>
         <span>{awaitingCount} {t.awaiting}</span>
         {newMessagesCount>0&&<span className={styles.newCount} role="status">
-          {newMessagesCount} {t.newMessages}</span>
+          {newMessagesCount} {t.newMessages}</span>}
         {onRefresh&&<button type="button" className={styles.refresh} disabled={busy}
           onClick={()=>onRefresh()}>{t.refresh}</button>}
       </div>
