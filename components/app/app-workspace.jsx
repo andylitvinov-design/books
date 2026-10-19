@@ -114,6 +114,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   const [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false)
   const quickAuthAttempted = useRef(false)
+  const signinAttempted = useRef(false)
   const page = path[0] || 'portrait',
     recordId = path[1],
     root = `/${locale}/app`
@@ -186,6 +187,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     }
   }, [load, router])
   async function signin() {
+    signinAttempted.current = true
     setBusy(true)
     setError(null)
     try {
@@ -416,7 +418,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           unavailable={state === 'unavailable'}
           onRetry={state === 'error' ? load : undefined}
           sessionNotice={state === 'error'}
-          errorMessage={state === 'signed-out' && error ? message(error, c) : undefined}
+          errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
         />
       </main>
     )
