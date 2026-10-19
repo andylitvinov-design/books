@@ -116,3 +116,21 @@ test('private PDF preview is owner-only, inline and distinct from an explicit cl
     assert.match(standaloneAction, new RegExp('formData.get\\(\\x27' + name + '\\x27\\)'))
   }
 })
+
+test('three narrative sections render in the authored order while legacy reports remain readable', async () => {
+  const reader = await readFile('components/prescription-document.jsx', 'utf8')
+  const analysis = reader.indexOf('<h2>{labels.analysis}</h2>')
+  const recommendations = reader.indexOf('<h2>{labels.recommendations}</h2>')
+  const notes = reader.indexOf('<h2>{labels.additionalNotes}</h2>')
+  assert.ok(analysis !== -1 && recommendations > analysis && notes > recommendations)
+
+  const previewRoute = await readFile('app/admin/api/consultations/preview/route.js', 'utf8')
+  assert.match(previewRoute, /'recommendationsText'/)
+  const previousReport = createPrescription({ ...recommendationInput, recommendationsText: undefined })
+  const previousClientReport = getClientPrescription(previousReport, 'ru')
+  assert.equal(previousClientReport.recommendationsText, undefined)
+  assert.equal(previousClientReport.additionalNotes, recommendationInput.additionalNotes)
+  const source = buildPrescriptionPdf(previousClientReport, 'ru', 'https://holistichouse.vercel.app').toString('latin1')
+  assert.doesNotMatch(source, /Synthetic personalized recommendation gamma/)
+  assert.match(source, /Synthetic client guidance beta/)
+})
