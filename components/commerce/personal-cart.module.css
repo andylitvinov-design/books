@@ -1,0 +1,39 @@
+.cart{box-sizing:border-box;width:min(100% - 28px,740px);margin:20px auto 45px;padding:24px;border:1px solid #d4e4db;border-radius:21px;background:#f6faf7;color:#244c51;box-shadow:0 12px 35px rgba(19,84,85,.06)}
+.cart *{box-sizing:border-box}
+.back{display:inline-flex;align-items:center;min-height:34px;color:#356e75;text-decoration:none;font:700 12px Arial,Helvetica,sans-serif}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:5px 0 17px}
+.heading h1{margin:3px 0 6px;color:#1f455b;font:500 clamp(28px,4vw,36px)/1.15 Georgia,"Times New Roman",serif}
+.heading p:not(.eyebrow){margin:0;color:#617b78;font:13px/1.5 Arial,Helvetica,sans-serif}
+.eyebrow{display:flex;align-items:center;gap:6px;margin:0;color:#2c8081;font:800 10px Arial,Helvetica,sans-serif;letter-spacing:.09em}
+.count{display:grid;place-items:center;flex:none;min-width:32px;height:32px;padding:0 7px;border-radius:50%;background:#166d80;color:#fff;font:800 14px Arial,Helvetica,sans-serif}
+.lines{padding:0;margin:0;list-style:none;border-top:1px solid #dbe8e1}
+.lines li{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid #dbe8e1}
+.lines li>div{display:flex;flex:1;flex-direction:column;gap:5px;min-width:0;font:13px Arial,Helvetica,sans-serif}
+.lines li strong{font-size:14px;line-height:1.3}.lines li span{color:#758883;font-size:12px}
+.lines b{white-space:nowrap;color:#1c6170;font:800 16px Arial,Helvetica,sans-serif}
+.lines button{display:grid;place-items:center;flex:none;width:40px;height:40px;border:1px solid #cbded5;border-radius:10px;background:white;color:#446c68;cursor:pointer}
+.total{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:15px 0;color:#225c66;font:700 15px Arial,Helvetica,sans-serif}
+.total strong{font-size:23px}
+.methods{padding:0;margin:6px 0 12px;border:0}
+.methods legend{margin-bottom:9px;color:#315b64;font:800 13px Arial,Helvetica,sans-serif}
+.methodChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.methodChoices label{display:flex;align-items:center;justify-content:center;gap:6px;min-height:45px;padding:9px 7px;border:1px solid #c4d9d1;border-radius:11px;background:#fff;color:#31595a;font:700 13px Arial,Helvetica,sans-serif;cursor:pointer}
+.methodChoices label[data-chosen=true]{background:#e2f3ed;border:2px solid #177589;color:#17566c}
+.methodChoices input{accent-color:#197488}
+.payment{display:flex;flex-direction:column;gap:9px}
+.primary{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;min-height:48px;padding:11px 13px;border-radius:12px;background:#18768a;color:white;text-decoration:none;text-align:center;font:800 14px/1.3 Arial,Helvetica,sans-serif}
+.primary svg:last-child{margin-left:auto;flex-shrink:0}
+.primary svg:first-child{flex-shrink:0}
+.primary:hover{background:#105c72}
+.hint{margin:1px 0 0;color:#597477;font:12px/1.5 Arial,Helvetica,sans-serif}
+.receipt{align-self:center;min-height:30px;color:#236b7c;font:700 12px/1.3 Arial,Helvetica,sans-serif;text-underline-offset:3px}
+.booking{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:12px;padding:10px;color:#236675;border:1px solid #bedad3;border-radius:11px;background:white;text-decoration:none;font:700 12px Arial,Helvetica,sans-serif}
+.fine{display:flex;align-items:flex-start;gap:5px;color:#6e8581;font:11px/1.4 Arial,Helvetica,sans-serif;margin:12px 0 0}
+.fine svg{flex-shrink:0}
+.free{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:19px;padding-top:14px;border-top:1px solid #d6e6de;color:#326f69;font:700 12px/1.45 Arial,Helvetica,sans-serif;text-decoration:none}
+.free svg{flex-shrink:0}
+.empty{padding:30px 5px;text-align:center}.empty p{margin:0 0 18px;color:#587a75}.empty .primary{max-width:280px;margin:auto}
+.loading{min-height:130px}
+.cart :is(button,a,input):focus-visible{outline:3px solid #bf8150;outline-offset:3px}
+@media(max-width:640px){.cart{margin:11px auto 24px;padding:17px 14px;border-radius:16px;width:calc(100% - 22px)}.heading{margin-bottom:12px}.heading h1{font-size:29px}.heading p:not(.eyebrow){font-size:12px}.lines li{padding:10px 0}.methodChoices{gap:6px}.methodChoices label{font-size:11px;min-height:43px;padding:7px 3px}.primary{min-height:47px;font-size:13px}.total strong{font-size:21px}}
+@media(max-width:360px){.methodChoices label{font-size:10px;gap:3px}.methodChoices input{width:12px;height:12px}}
