@@ -309,6 +309,14 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     </section>
     <section className={styles.editorCard} id="session-publication">
       <h2>{ru?'Публикация для клиента':'Client publication'}</h2>
+      {reportUpdatePending&&<p className={styles.previewDisclaimer} role="status">
+        <strong>{ru?'В опубликованном отчёте ещё нет последних изменений.':'The published report does not contain your latest saved changes.'}</strong>{' '}
+        {sourceHasProgressScores&&!publishedHasProgressScores
+          ?(ru?'Оценки «Было / Стало» сохранены, но диаграммы появятся по этой же ссылке только после проверки и повторного нажатия «Опубликовать клиенту».':
+            'Before / After scores are saved, but the two charts appear at the existing client link only after you review and select “Publish to client” again.')
+          :(ru?'Проверьте сохранённый отчёт и повторно нажмите «Опубликовать клиенту», чтобы клиент увидел изменения.':
+            'Review the saved report, then select “Publish to client” again to make the changes visible.')}
+      </p>}
       {draft.reportDocumentId&&<p><a className={styles.secondaryButton}
         href={'/admin/documents/'+encodeURIComponent(draft.reportDocumentId)+'/session-preview?locale='+previewReportLocale}
         target="_blank" rel="noopener noreferrer">
