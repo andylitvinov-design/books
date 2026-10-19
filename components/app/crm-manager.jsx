@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmContactEditor from './crm-contact-editor'
+import CrmExportTools from './crm-export-tools'
 import CrmMessengerPanel from './crm-messenger'
 import CrmBusinessEnquiries from './crm-business-enquiries'
 import CrmMarketingPanel from './crm-marketing'
@@ -43,6 +44,9 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [phone, setPhone] = useState('')
   const [templateId, setTemplate] = useState('course_update')
   const [search, setSearch] = useState('')
+  const [serverResults,setServerResults]=useState(null)
+  const [serverSearchStatus,setServerSearchStatus]=useState('idle')
+  const [searchRefresh,setSearchRefresh]=useState(0)
   const [filter, setFilter] = useState('all')
   const [lifecycle, setLifecycle] = useState('lead')
   const [source, setSource] = useState('manual')
@@ -63,6 +67,38 @@ export default function CrmManager({ locale = 'en', accountId }) {
       .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
     return () => { controller.abort(); if (sessionRef.current === session) sessionRef.current = null }
   }, [c.error, accountId])
+  useEffect(()=>{
+    const q=search.trim()
+    if(activeSection!=='contacts'||!accountId||!data||q.length<2) {
+      setServerResults(null);setServerSearchStatus('idle')
+      return
+    }
+    const session=sessionRef.current
+    if(!session||session.accountId!==accountId)return
+    const controller=new AbortController()
+    setServerSearchStatus('loading')
+    setServerResults(null)
+    const timer=setTimeout(()=>{
+      fetch('/api/app/crm/search',{method:'POST',credentials:'same-origin',cache:'no-store',
+        signal:controller.signal,
+        headers:{'Content-Type':'application/json','X-HH-Account-Id':session.accountId},
+        body:JSON.stringify({query:q,stage:filter})})
+      .then(async response=>{
+        if(!response.ok)throw new Error('SEARCH_UNAVAILABLE')
+        return response.json()
+      })
+      .then(result=>{
+        if(!controller.signal.aborted&&sessionRef.current===session&&Array.isArray(result.contacts)){
+          setServerResults(result);setServerSearchStatus('done')
+        }
+      })
+      .catch(error=>{
+        if(error?.name!=='AbortError'&&!controller.signal.aborted&&sessionRef.current===session)
+          setServerSearchStatus('error')
+      })
+    },320)
+    return ()=>{clearTimeout(timer);controller.abort()}
+  },[search,filter,activeSection,accountId,data,searchRefresh])
   async function save(action, payload) {
     const session = sessionRef.current
     if (busy || !session || session.accountId !== accountId) return
@@ -75,6 +111,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
       setNotice(action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setPhone(''); setLifecycle('lead'); setSource('manual') }
       await load(session).catch(() => {})
+      setSearchRefresh(v=>v+1)
       return result
     } catch (error) {
       if (sessionRef.current === session) {
@@ -131,7 +168,9 @@ export default function CrmManager({ locale = 'en', accountId }) {
     } finally {if(sessionRef.current===session)setPageBusy(false)}
   }
   if (!accountId) return null
-  const contacts=(data?.contacts||[]).filter(contact=>{
+  const globalSearch=search.trim().length>=2
+  const contacts=(globalSearch?(serverSearchStatus==='done'?serverResults?.contacts||[]:[]):data?.contacts||[]).filter(contact=>{
+    if(globalSearch)return filter==='all'||contact.lifecycle===filter
     const text=[contact.displayName,contact.email,contact.phone].join(' ').toLowerCase()
     return text.includes(search.trim().toLowerCase()) && (filter === 'all' || contact.lifecycle === filter)
   })
@@ -206,13 +245,22 @@ export default function CrmManager({ locale = 'en', accountId }) {
       </div>
       <div className={styles.contactsHead}>
         <h3>{language==='ru'?'Ваши контакты':language==='es'?'Tus contactos':'Your contacts'} ({data.contacts?.length||0} / {data.overview?.total??data.contacts?.length??0})</h3>
-        <input aria-label={language==='ru'?'Поиск контактов':'Search contacts'} type="search"
-          placeholder={language==='ru'?'Поиск…':'Search contacts…'} value={search} onChange={(event)=>setSearch(event.target.value)} />
+        <input aria-label={language==='ru'?'Поиск контактов во всей CRM':language==='es'?'Buscar contactos CRM':'Search all CRM contacts'} type="search"
+          placeholder={language==='ru'?'Поиск по всей CRM…':language==='es'?'Buscar en CRM…':'Search the whole CRM…'} value={search} onChange={(event)=>setSearch(event.target.value)} />
       </div>
       <div className={styles.filters} role="group" aria-label={language==='ru'?'Фильтр контактов':language==='es'?'Filtro de contactos':'Contact filter'}>
         {[[ 'all', c.all ], [ 'lead', c.leads ], [ 'client', c.clients ], [ 'archived', c.archived ]].map(([key,label])=><button type="button" key={key} aria-pressed={filter===key} className={filter===key?styles.filterSelected:styles.filterButton} onClick={()=>setFilter(key)}>{label}</button>)}
       </div>
-      <p className={styles.fine}>{c.showing}</p>
+      <p className={styles.fine}>{globalSearch?
+        (language==='ru'?'Поиск по зашифрованным деловым контактам доступен только владельцу.':language==='es'?'Búsqueda privada en contactos cifrados; solo para el propietario.':'Owner-only search across encrypted business contacts.'):
+        c.showing}</p>
+      {globalSearch&&serverSearchStatus==='loading'&&<p role="status" className={styles.searchInfo}>{language==='ru'?'Ищу контакты…':language==='es'?'Buscando contactos…':'Searching contacts…'}</p>}
+      {globalSearch&&serverSearchStatus==='error'&&<p role="alert" className={styles.searchError}>{language==='ru'?'Поиск временно недоступен. Повторите.':language==='es'?'No se pudo buscar. Inténtalo de nuevo.':'Search is unavailable; retry.'}</p>}
+      {globalSearch&&serverSearchStatus==='done'&&serverResults&&<p role="status" className={styles.searchInfo}>
+        {language==='ru'?'Найдено':language==='es'?'Encontrados':'Matches'}: {serverResults.contacts?.length||0}
+        {(serverResults.scanLimited||serverResults.matchesLimited)&&' · '+
+          (language==='ru'?'Показана только часть. Уточните запрос.':language==='es'?'Resultados parciales; ajusta la búsqueda.':'Partial results; refine your search.')}
+      </p>}
       {!data.emailEnabled&&<p className={styles.privacy} role="status">{language==='ru'?'Отправка email пока не подключена: требуется проверенный почтовый домен, Resend и подтверждённые настройки отправителя.':language==='es'?'Para enviar correo debes conectar Resend y un dominio de remitente verificado.':'Connect Resend and a verified sender domain to enable actual email delivery.'}</p>}
       <ul className={styles.list}>
         {contacts.length?contacts.map(contact=><li key={contact.id} className={styles.emailContactRow}>
@@ -230,7 +278,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
           <CrmEmailTools contact={contact} locale={language} enabled={data.emailEnabled} busy={busy} onAction={save} messages={data.emailMessages||[]} />
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
-      {data.contactsNextCursor&&<button className={styles.loadMore} type="button"
+      {!globalSearch&&data.contactsNextCursor&&<button className={styles.loadMore} type="button"
         disabled={busy||pageBusy} onClick={loadMoreContacts}>
         {pageBusy?(language==='ru'?'Загрузка…':language==='es'?'Cargando…':'Loading…'):
           (language==='ru'?'Загрузить ещё контакты':language==='es'?'Cargar más contactos':'Load more contacts')}
@@ -238,6 +286,11 @@ export default function CrmManager({ locale = 'en', accountId }) {
       {pageError&&<p role="alert" className={styles.loadError}>
         {language==='ru'?'Не удалось загрузить следующую страницу. Повторите.':language==='es'?'No se pudo cargar la página. Inténtalo de nuevo.':'Could not load more contacts. Please retry.'}
       </p>}
+      <CrmExportTools accountId={accountId} locale={language}
+        recentExports={data.recentExports||[]} onCompleted={()=>{
+          const session=sessionRef.current
+          if(session)load(session).catch(()=>{})
+        }}/>
       <details className={styles.advanced}>
         <summary>{language==='ru'?'Подписки и подготовка писем':'Subscriptions & prepared updates'}</summary>
         <h3>{billing.title}</h3><p>{data.subscriberRegistryEnabled?billing.note:billing.off}</p>

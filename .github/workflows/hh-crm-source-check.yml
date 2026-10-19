@@ -13,6 +13,7 @@ on:
       - 'tests/business-website-enquiry.test.mjs'
       - 'app/api/app/crm/**'
       - 'components/app/crm-manager.*'
+      - 'components/app/crm-export-tools.*'
       - 'components/app/crm-contact-editor.*'
       - 'components/app/crm-workflow.*'
       - 'supabase/migrations/*crm_*'
@@ -41,6 +42,6 @@ jobs:
       - name: Install pinned packages
         run: npm ci --no-audit --no-fund
       - name: Verify consent, ownership, actions and fail-closed client requests
-        run: node --test tests/crm-consent.test.mjs tests/crm-security-contract.test.mjs tests/crm-client-request.test.mjs tests/crm-email.test.mjs tests/crm-email-source.test.mjs tests/crm-workflow.test.mjs tests/crm-phone.test.mjs tests/crm-contact-maintenance.test.mjs tests/crm-messenger.test.mjs tests/business-website-enquiry.test.mjs
+        run: node --test tests/crm-consent.test.mjs tests/crm-security-contract.test.mjs tests/crm-client-request.test.mjs tests/crm-email.test.mjs tests/crm-email-source.test.mjs tests/crm-workflow.test.mjs tests/crm-phone.test.mjs tests/crm-contact-maintenance.test.mjs tests/crm-owner-ops.test.mjs tests/crm-messenger.test.mjs tests/business-website-enquiry.test.mjs
       - name: Lint changed CRM runtime and UI
-        run: npx eslint lib/crm/repository.js lib/crm/email.js lib/crm/email-store.js lib/crm/email-dispatch.js app/api/app/crm/route.js app/api/app/crm/email-token/route.js app/api/app/crm/webhook/route.js components/app/crm-manager.jsx components/app/crm-contact-editor.jsx lib/crm/contact-edit.js lib/crm/contact-pagination.js components/app/crm-email-tools.jsx components/app/crm-email-preferences.jsx components/app/crm-workflow.jsx lib/crm/workflow.js lib/crm/workflow-store.js lib/crm/messenger-policy.js lib/crm/messenger-provider.js lib/crm/messenger-store.js lib/crm/messenger-webhook.js app/api/app/crm/messenger/route.js 'app/api/app/crm/messenger/webhook/[provider]/route.js' components/app/crm-messenger.jsx lib/business-consulting/intake-policy.js lib/business-consulting/enquiry-store.js app/api/services/business-consulting/route.js components/app/crm-business-enquiries.jsx components/business-website-enquiry.tsx
+        run: npx eslint lib/crm/repository.js lib/crm/email.js lib/crm/email-store.js lib/crm/email-dispatch.js app/api/app/crm/route.js app/api/app/crm/email-token/route.js app/api/app/crm/webhook/route.js components/app/crm-manager.jsx components/app/crm-contact-editor.jsx lib/crm/contact-edit.js lib/crm/contact-pagination.js lib/crm/contact-search.js lib/crm/contact-csv.js lib/crm/contact-operations-store.js app/api/app/crm/search/route.js app/api/app/crm/export/route.js components/app/crm-export-tools.jsx components/app/crm-email-tools.jsx components/app/crm-email-preferences.jsx components/app/crm-workflow.jsx lib/crm/workflow.js lib/crm/workflow-store.js lib/crm/messenger-policy.js lib/crm/messenger-provider.js lib/crm/messenger-store.js lib/crm/messenger-webhook.js app/api/app/crm/messenger/route.js 'app/api/app/crm/messenger/webhook/[provider]/route.js' components/app/crm-messenger.jsx lib/business-consulting/intake-policy.js lib/business-consulting/enquiry-store.js app/api/services/business-consulting/route.js components/app/crm-business-enquiries.jsx components/business-website-enquiry.tsx
