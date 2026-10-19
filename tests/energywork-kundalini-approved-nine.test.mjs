@@ -32,7 +32,7 @@ const ids = Array.from({ length: 9 }, (_, i) => 'kun-study-v2-' + String(i + 1).
 const previousIds = ['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07']
 
 test('Lesson three contains exactly nine approved questions in the requested order', () => {
-  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p7')
+  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p9')
   assert.deepEqual(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ids)
   assert.deepEqual(energyworkLessonRanges().map(({ count }) => count), [7,15,16,22,8])
   assert.equal(energyworkSequence().length, 70)
