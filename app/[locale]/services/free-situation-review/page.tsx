@@ -353,16 +353,10 @@ export default async function FreeSituationReviewPage({ params }: Props) {
             <a className={styles.heroPrimary} href="#request-free-review">{t.request} <ArrowRight size={18} aria-hidden="true" /></a>
             <a className={styles.heroSecondary} href="#situations">{t.paidQuick} <ArrowRight size={17} aria-hidden="true" /></a>
           </div>
-          <div className={styles.introContact}>
-            <div className={styles.photo}>
-              <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="88px" />
-            </div>
-            <div><strong>{t.practitioner}</strong><span>{t.experience}</span></div>
-          </div>
           <p className={styles.safety}>{t.transparency}</p>
         </div>
         <div className={styles.heroScene}>
-          <Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 767px) 100vw, 44vw" />
+          <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 767px) 100vw, 44vw" />
           <div className={styles.heroSceneCaption}><strong>{t.practitioner}</strong><span>{t.experience}</span></div>
         </div>
       </section>
@@ -371,11 +365,11 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         <p className={styles.eyebrow}>{topic.eyebrow}</p>
         <h2 id="review-situations-title">{topic.title}</h2>
         <p className={styles.situationsLead}>{topic.lead}</p>
-        <div className={styles.situationScenes}>
+        <div className={styles.situationGrid}>
           {topic.cards.map((card, index) => (
             <article className={styles.situationScene} key={card.title}>
               <div className={styles.sceneImage}>
-                <Image src={situationImages[index]} alt="" fill sizes="(max-width: 767px) 100vw, 52vw" />
+                <Image unoptimized src={situationImages[index]} alt="" fill sizes="(max-width: 767px) 100vw, 52vw" />
               </div>
               <div className={styles.sceneCopy}>
                 <span className={styles.sceneNumber}>{String(index + 1).padStart(2, "0")} / 04</span>
@@ -394,7 +388,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         <p className={styles.outcomeIntro}>{outcome.intro}</p>
         <div className={styles.outcomeScene}>
           <div className={styles.outcomeImage}>
-            <Image src="/images/holistic-house/course-focus-mountain-boy.webp" alt="" fill sizes="(max-width: 767px) 100vw, 48vw" />
+            <Image unoptimized src="/images/holistic-house/course-focus-mountain-boy.webp" alt="" fill sizes="(max-width: 767px) 100vw, 48vw" />
           </div>
           <div className={styles.outcomeGrid}>
             {outcome.cards.map((card, index) => <article key={card.title}>
@@ -412,7 +406,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         </header>
         <div className={styles.stepsScene}>
           <div className={styles.stepsImage}>
-            <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width: 767px) 100vw, 44vw" />
+            <Image unoptimized src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width: 767px) 100vw, 44vw" />
           </div>
           <ol className={styles.steps}>
             {t.steps.map((step, index) => (
