@@ -26,7 +26,7 @@ export const ENERGYWORK_LESSON_STARTS = Object.freeze(['flight-01','tan-01','kun
 export const ENERGYWORK_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04','end-01'])
 // These four reviews gate the next teaching screen; the final journal remains optional during learning.
 export const ENERGYWORK_MEDITATION_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04'])
-export const ENERGYWORK_REVIEW_MIN_CHARS = 15
+export const ENERGYWORK_REVIEW_MIN_CHARS = 50
 export function energyworkMeditationFeedbackComplete(answer) {
   if (typeof answer !== 'string') return false
   // Keep old encrypted journal responses readable without requiring scores in new reviews.

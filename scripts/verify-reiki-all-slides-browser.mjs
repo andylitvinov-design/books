@@ -225,24 +225,25 @@ async function exerciseJourney(page, locale, width) {
       await page.locator('input[name="welcome-02"][value="beginner"]').check();
     }
     if (["flight-04","tan-04","kun-04","ygg-04"].includes(id)) {
-      // A short written review is enough; no numeric meditation rating.
+      // A written review of at least 50 characters is required; no numeric meditation rating.
       const reviewButton = page.locator("button[data-energywork-next]");
       await expect(reviewButton).toBeDisabled();
       await expect(page.locator('[data-meditation-feeling]')).toHaveCount(0);
       await expect(reviewButton).toContainText(locale==="ru" ? "Сохранить отзыв" : "Save review");
       const field = page.locator('textarea[id="answer-'+id+'"]');
-      await field.fill('12345678901234');
+      await field.fill('x'.repeat(49));
       await expect(reviewButton).toBeDisabled();
-      await field.fill('123456789012345');
+      await expect(page.locator('[class*="feedbackCount"]')).toContainText(locale==='ru' ? 'минимум 50' : 'minimum 50');
+      await field.fill('x'.repeat(50));
       await expect(reviewButton).toBeEnabled();
-      // A long, detailed review must remain fully editable; 15 is only a minimum.
+      // A long, detailed review must remain fully editable; 50 is only a minimum.
       const longReview='x'.repeat(2500);
       await field.fill(longReview);
       await expect(field).toHaveValue(longReview);
       await expect(reviewButton).toBeEnabled();
       await expect(page.locator('[class*="feedbackCount"]')).toContainText('2500');
       await field.fill(locale==="ru"
-        ? "Я заметил(а) своё спокойное дыхание." : "I noticed a quiet moment.");
+        ? "Я заметил(а), что дыхание стало спокойнее и появилось тепло." : "I noticed my breathing became calmer and I felt warmth and ease.");
       await expect(reviewButton).toBeEnabled();
     }
     if (id === "tan-06" || id.startsWith("tan-study-")) {
