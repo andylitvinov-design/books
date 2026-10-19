@@ -18,7 +18,7 @@ export async function deleteSavedReportAction(reportId, revision, location = {})
   const store = getPrescriptionStore()
   if (!store) redirect(destination('unavailable'))
   const record = await store.findById(reportId)
-  if (!record || record.kind === 'payment' || !isClientId(record.clientId) || record.updatedAt !== revision) {
+  if (!record || record.kind === 'payment' || !isClientId(record.clientId) || String(record.updatedAt ?? '') !== revision) {
     redirect(destination('changed'))
   }
   const deleted = await store.deleteClientReportIfUnchanged(record)
