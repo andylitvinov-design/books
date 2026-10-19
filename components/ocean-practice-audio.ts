@@ -35,9 +35,25 @@ function createOceanSoundscape(onStatus: (next: OceanPlaybackStatus) => void): O
 
   let disposed = false;
   let wanted = false;
+  let hasStarted = false;
   let attempt = 0;
-  const onWaiting = () => { if (!disposed && wanted) onStatus("loading"); };
-  const onPlaying = () => { if (!disposed && wanted) onStatus("playing"); };
+  const onWaiting = () => {
+    if (disposed || !wanted) return;
+    if (!hasStarted) {
+      onStatus("loading");
+      return;
+    }
+    // Mid-practice buffering must never leave a paused timer while audio
+    // resumes by itself. Stop playback and ask for an explicit resume tap.
+    wanted = false;
+    audio.pause();
+    onStatus("blocked");
+  };
+  const onPlaying = () => {
+    if (disposed || !wanted) return;
+    hasStarted = true;
+    onStatus("playing");
+  };
   const onError = () => { if (!disposed && wanted) { wanted = false; onStatus("blocked"); } };
   const onUnexpectedPause = () => {
     if (!disposed && wanted) { wanted = false; onStatus("blocked"); }
@@ -53,12 +69,14 @@ function createOceanSoundscape(onStatus: (next: OceanPlaybackStatus) => void): O
       if (disposed) return false;
       const ticket = ++attempt;
       wanted = true;
+      hasStarted = false;
       onStatus("loading");
       try {
         // Called synchronously from a real Start/Resume/Waves tap, not an effect.
         // Never wait for a fetch before calling play() (iOS gesture permission).
         await audio.play();
         if (disposed || !wanted || ticket !== attempt) return false;
+        hasStarted = true;
         onStatus("playing");
         return true;
       } catch {
