@@ -206,7 +206,6 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Sistema completo: mapa de módulos, Curso Básico de 5 niveles y currículo actual detallado."
               : "The complete learning system: all modules, a dedicated 5-level Basic Course and the detailed current curriculum.",
           href: "/" + locale + "/academy/reiki/yggdrasil",
-          courseHref: "/" + locale + "/academy/reiki/yggdrasil/basic-course",
           image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
           actionLabel: action.program,
         },
@@ -220,7 +219,6 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Programa independiente de Tantra Reiki en nueve niveles, organizado como una ruta formativa coherente."
               : "A separate nine-level Tantra Reiki program, organized as one coherent study path.",
           href: "/" + locale + "/academy/reiki/tantra-reiki",
-          courseHref: REIKI_FREE_COURSE_PATH,
           image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
           actionLabel: action.program,
         },
@@ -234,7 +232,6 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Kundalini Reiki — curso básico de tres niveles."
               : "Explore the three-level Kundalini Reiki learning path, its introductory practices and next steps.",
           href: "/" + locale + "/academy/reiki/kundalini-reiki",
-          courseHref: "/" + locale + "/academy/reiki/kundalini-reiki/free-initiation",
           image: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
           actionLabel: action.program,
         },
