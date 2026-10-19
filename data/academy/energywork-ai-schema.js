@@ -36,6 +36,14 @@ export function energyworkMeditationFeedbackComplete(answer) {
   return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
 export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07','kun-06','ygg-06','init-01'])
+// Each of the seven Tantra Reiki study answers is required to move forward.
+// Drafts may still be saved blank, but a whitespace-only answer is not complete.
+export const ENERGYWORK_TANTRA_STUDY_QUESTION_IDS = Object.freeze([
+  'tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07',
+])
+export function energyworkTantraStudyAnswerComplete(answer) {
+  return typeof answer === 'string' && answer.trim().length > 0
+}
 export const ENERGYWORK_QUESTIONS = Object.freeze({
   'welcome-02': 'choice',
   'flight-04': 'text', 'flight-05': 'text',

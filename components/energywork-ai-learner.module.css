@@ -3508,6 +3508,40 @@
   }
 }
 
+/* All seven Tantra study questions: readable mandatory note, genuine source
+   links and a usable answer field within one mobile viewport. */
+.tantraStudyHelp {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  margin-top: 9px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.tantraStudyRequired { color: #446777; font-weight: 650; }
+.tantraStudyLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #087b8b;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tantraStudyLink:hover { color: #05596e; }
+.tantraStudyLink:focus-visible { outline: 3px solid #dfac4a; outline-offset: 3px; border-radius: 4px; }
+@media (max-width: 760px) {
+  .page[data-course-one-screen] [data-energywork-slide-id="tan-06"] .textarea,
+  .page[data-course-one-screen] [data-energywork-slide-id^="tan-study-"] .textarea {
+    min-height: 90px;
+    height: clamp(90px, 13dvh, 124px);
+    resize: vertical;
+  }
+  .page[data-course-one-screen] .tantraStudyHelp { margin-top: 6px; gap: 5px 12px; font-size: 11.5px; }
+  .page[data-course-one-screen] .tantraStudyLink { min-height: 32px; }
+}
+
 /* The Sun practice invites a brief optional note instead of two radio options.
    Keep the input legible and the entire lesson on one mobile screen. */
 .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-03"] .textarea {
