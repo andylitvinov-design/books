@@ -4,6 +4,7 @@ import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import GrowthStudio from '@/components/growth-studio'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
+import {telegramPublicStatus} from '@/lib/growth-studio/telegram.mjs'
 import {uiLocaleCookie} from '@/lib/ui-locale'
 export const dynamic = 'force-dynamic'
 export const metadata = {title:'Growth Studio · Holistic House',robots:{index:false,follow:false}}
@@ -26,6 +27,7 @@ export default async function GrowthStudioPage() {
         ru:'Готовьте публикации разных проектов. Автопубликация пока не подключена.',
       }}
     />
-    <GrowthStudio initialLocale={locale} initialRecords={initialRecords} storageReady={storageReady}/>
+    <GrowthStudio initialLocale={locale} initialRecords={initialRecords} storageReady={storageReady}
+      telegram={telegramPublicStatus()}/>
   </main>
 }
