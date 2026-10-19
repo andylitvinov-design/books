@@ -59,7 +59,7 @@ test("practitioner landing retains moderated service selection and correct Spani
 
 test("services overview leads to paid enquiry and retains a separate free written review", () => {
   const hero = read("components/services-conversion-hero.tsx");
-  assert.match(hero, /services\/free-situation-review/);
+  assert.match(read("components/services-studio-offers.tsx"), /free-situation-review/);
   assert.match(hero, /href="#consultation" data-service-hero-cta="paid"/);
   assert.match(hero, /heading: "Personal guidance for relationships, work and life decisions"/);
   assert.match(hero, /paidCta: "Ask about a personal session · from €50"/);
