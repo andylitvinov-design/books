@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {Film,Images,Link2,FolderOpen} from 'lucide-react'
+import {ownerMaterialApi} from '@/lib/clients/owner-material-api'
 import styles from './session-material-picker.module.css'
 
 function typeLabel(item,ru){return item.kind==='youtube'?'YouTube':item.kind==='image'?(ru?'Фото':'Photo'):(ru?'Видео':'Video')}
@@ -22,12 +23,8 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
     // Keep the available count current even when the picker is collapsed.
     let mounted=true
     setLoading(true);setError('')
-    fetch('/api/admin/materials',{credentials:'same-origin',cache:'no-store'})
-      .then(async res=>{
-        const data=await res.json()
-        if(!res.ok)throw new Error(data.error||'MATERIAL_UNAVAILABLE')
-        return data.materials||[]
-      }).then(items=>{if(mounted)setMaterials(items)})
+    ownerMaterialApi('/api/admin/materials')
+      .then(data=>{if(mounted)setMaterials(data.materials||[])})
       .catch(e=>{if(mounted)setError(e.message)})
       .finally(()=>{if(mounted)setLoading(false)})
     return ()=>{mounted=false}
