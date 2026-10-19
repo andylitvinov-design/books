@@ -7,7 +7,7 @@ import {
 } from '../data/academy/energywork-ai-schema.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const sql=read('supabase/migrations/20261019031800_hh_reiki_course_public_reviews.sql')
+const sql=read('supabase/migrations/20261019030943_hh_reiki_course_public_reviews_20261019.sql')
 const repo=read('lib/academy/energywork-course-repository.js')
 const pub=read('lib/academy/reiki-public-reviews.js')
 const learner=read('components/energywork-ai-learner.tsx')

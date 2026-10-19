@@ -17,7 +17,7 @@ Updated: 2026-10-18. Course: `/{en|ru}/academy/principles-of-energywork/learn`.
 5. The student can withdraw public consent at any time from My Reviews. Editing a saved review **in the same DB transaction** removes any previous public approval; the changed review must be submitted and approved again. Course deletion also removes associated submissions. Account deletion cascades.
 
 ## Deployment gate
-- Additive SQL migration: `supabase/migrations/20261019031800_hh_reiki_course_public_reviews.sql`.
+- Additive SQL migration: `supabase/migrations/20261019030943_hh_reiki_course_public_reviews_20261019.sql`.
 - Live Supabase project: `holistichouse` (Canada), FORCE RLS; `anon`, `authenticated` and `service_role` have zero table grants.
 - No client records have been copied to this new public-review table.
 - Run tests: `node --test tests/reiki-course-reviews-public.test.mjs tests/energywork-ai-course-preview.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/reiki-crm-leads.test.mjs`.
