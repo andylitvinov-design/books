@@ -26,7 +26,7 @@
 - RLS relies on the existing `hh_app_backend` and `hh_app_inbox` roles, not a newly provisioned database or customer-facing Supabase service key.
 
 ## Release and QA
-- Apply additive SQL migration `20261018215000_hh_reiki_course_private_crm_leads.sql` to the **existing** Holistic House Supabase project. Verify FORCE RLS, policies, grants, unique stages, and that no rows were seeded.
+- Apply additive SQL migration `20261018184658_hh_reiki_course_private_crm_leads_20261018.sql` to the **existing** Holistic House Supabase project. Verify FORCE RLS, policies, grants, unique stages, and that no rows were seeded.
 - CI: 53-slide EN/RU Chromium & WebKit guest journeys, source tests, TypeScript, Next build, plus owner-only lead contract and migration checks.
 - Full sign-in/start/share/submit/owner-status QA requires isolated synthetic authenticated users. Do not submit any application on behalf of a real customer.
 - Only mark **LIVE** after Vercel points `holistichouse.vercel.app` to the tested merged source SHA; separately distinguish tested code from an end-to-end real signed-in enrolment.

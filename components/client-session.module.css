@@ -1425,6 +1425,14 @@
 }
 
 
+/* Print-specific test-card adjustments are outside the screen-only coastal theme. */
+@media print{
+  /* Print recommendations after the signed report without showing navigation. */
+  .cabinetSessionPage:has(.fullReportSection) > .reportRecommendedTestsSection{display:block!important}
+  .reportRecommendedTestList{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .reportRecommendedTestCard{box-shadow:none!important;break-inside:avoid}
+}
+
 /* Client report coastal v2 · Approved option 2 (2026-10-18).
    Screen-only and restricted to an authorized ClientSessionPage, never PDFs,
    signed printed documents, invoices, editor forms or public report links. */
@@ -2085,3 +2093,669 @@
 .takeError{display:flex;gap:8px;align-items:center;color:#963d2a;font-size:14px;font-weight:700;line-height:1.45;margin:10px 0}
 .takeError svg{flex:none}
 @media(max-width:580px){.takeSection{padding:15px}.takeHeader{flex-wrap:wrap}.takeHeader button{margin-left:auto}.takeActions{align-items:stretch}.takeActions button,.takeChoice{flex:1;justify-content:flex-start}.takeCard{padding:13px}.takeHeader h3{font-size:20px}}
+
+
+/* Client report: recommended tests follow Cabinet save and precede final PDF actions. */
+.cabinetSessionPage .reportRecommendedTestsSection{
+  margin:20px 0 24px;
+  padding:clamp(16px,3vw,23px);
+  border:1px solid #c7dfe0;
+  border-radius:19px;
+  background:linear-gradient(135deg,#f2faf9 0%,#fffdf9 100%);
+  box-shadow:0 6px 19px rgba(20,67,83,.045);
+}
+.reportRecommendedTestsSection .sectionHeader{margin-bottom:7px}
+.reportRecommendedTestsIntro{
+  margin:0 0 14px;
+  color:#627b80;
+  font:500 14px/1.5 system-ui,-apple-system,sans-serif;
+}
+.reportRecommendedTestList{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.reportRecommendedTestCard{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+  min-height:77px;
+  padding:13px 14px;
+  border:1px solid #d7e7e7;
+  border-radius:14px;
+  background:#fff;
+  color:#173e51;
+  box-shadow:0 3px 12px rgba(18,63,75,.04);
+  text-decoration:none;
+  transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease;
+}
+.reportRecommendedTestCard:hover{
+  border-color:#83bec1;
+  background:#f8fdfc;
+  box-shadow:0 5px 14px rgba(18,63,75,.08);
+}
+.reportRecommendedTestIcon{
+  flex:0 0 44px;
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border:1px solid #cce3df;
+  border-radius:13px;
+  background:#eaf6f2;
+  color:#287d7b;
+}
+.reportRecommendedTestText{display:grid;gap:4px;min-width:0;flex:1}
+.reportRecommendedTestText strong{
+  color:#1b4e60;
+  font:700 clamp(15px,1.7vw,17px)/1.3 system-ui,-apple-system,sans-serif;
+  overflow-wrap:anywhere;
+}
+.reportRecommendedTestText small{color:#567880;font:550 12px/1.35 system-ui,-apple-system,sans-serif}
+.reportRecommendedTestArrow{flex:0 0 auto;color:#317b87}
+.reportRecommendedTestCard:focus-visible{outline:3px solid #258995;outline-offset:3px}
+@media(max-width:700px){
+  .reportRecommendedTestList{grid-template-columns:minmax(0,1fr)}
+  .cabinetSessionPage .reportRecommendedTestsSection{padding:15px 13px}
+  .reportRecommendedTestCard{min-height:68px;padding:11px 12px}
+}
+@media(prefers-reduced-motion:reduce){.reportRecommendedTestCard{transition:none}}
+
+/* Coastal v2 continuity: a private consultation without a published signed
+   document still starts with the same sea/lighthouse identity, never the
+   unrelated legacy cream hero. No data, access or PDF changes. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero {
+    isolation:isolate;
+    position:relative;
+    overflow:hidden;
+    border:1px solid #8cbac4;
+    border-radius:22px;
+    background:linear-gradient(90deg,rgba(9,53,77,.91),rgba(13,67,84,.66)),
+      url('/images/holistic-house/report-lighthouse-coast.svg') 63% center/cover no-repeat;
+    box-shadow:0 14px 30px #173d5319;
+    color:#f5ffff;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero h1 {
+    color:white;
+    text-shadow:0 2px 13px #133c4c87;
+    font-size:clamp(28px,4.2vw,38px);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .sectionKicker {
+    color:#e0f5f4;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .sessionSummary {
+    color:#f4fdfb;
+    text-shadow:0 1px 6px #0c344880;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .sessionIdentity div {
+    border-color:#ffffffb0;
+    background:#ffffffed;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .sessionIdentity :is(dt,dd) {
+    color:#205369;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .nextStepCard {
+    border-color:#b9dfe3;
+    background:#fffffff2;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .nextStepCard .sectionKicker {
+    color:#1d6475;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .practitionerCredit {
+    color:#e1f4f3;
+  }
+}
+@media screen and (max-width:600px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero {
+    padding:20px 16px;
+    border-radius:17px;
+    background-position:70% center;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero h1 {
+    font-size:clamp(26px,7vw,34px);
+    line-height:1.16;
+  }
+}
+
+
+/* Coastal report polish v2.1: strong visual hierarchy, readable material cards,
+   and accessible primary/secondary actions in the signed and fallback reader. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .clientHeader {
+    border-radius:13px;
+    box-shadow:0 3px 12px rgba(13,63,79,.065);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sectionKicker {
+    color:#28788b;
+    font-weight:800;
+    letter-spacing:.085em;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sectionHeader {
+    align-items:center;
+    gap:12px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sectionHeader h2 {
+    line-height:1.23;
+    text-wrap:balance;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis) {
+    border-left:3px solid #2b9b9c;
+    background:linear-gradient(125deg,#fffefd,#f4faf9);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis h2::before),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-notes h2::before) {
+    content:'✧';
+    display:inline-block;
+    margin-right:9px;
+    font-family:Georgia,'Times New Roman',serif;
+    color:#2a9a9a;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis p) {
+    line-height:1.76;
+    letter-spacing:.005em;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy) {
+    background:linear-gradient(132deg,#fffefa,#f0f8f7 85%);
+    border-color:#c9e4e2;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-card-photo) {
+    border:1px solid #d6e7df;
+    box-shadow:0 3px 12px rgba(21,72,68,.07);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-title h3) {
+    letter-spacing:-.018em;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-profile-action) {
+    background:#e3f2f1;
+    color:#135e70;
+    border-color:#abd3d4;
+    text-decoration:none;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-profile-action:hover) {
+    background:#d1eae8;
+    border-color:#79afb2;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests li) {
+    margin:0;
+    padding:10px 12px;
+    border:1px solid #d6e7e8;
+    border-radius:10px;
+    background:#fff;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests ol) {
+    list-style-position:inside;
+    padding:0;
+    margin:0;
+    gap:9px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests a) {
+    display:inline-flex;
+    align-items:center;
+    min-height:32px;
+    padding:2px 0;
+    color:#17677d;
+    font-size:16px;
+    text-underline-offset:3px;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsIntro {
+    color:#52757f;
+    font-size:15px;
+    line-height:1.55;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .videoFirstSection {
+    border-color:#cee4e6;
+    box-shadow:0 7px 21px rgba(18,66,79,.065);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection .youtubeLesson,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection .clientMediaCard {
+    border-radius:15px;
+    box-shadow:0 5px 16px rgba(21,67,78,.065);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .youtubeLessonDescription,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .youtubeLessonPrivacy {
+    line-height:1.5;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportDownloadSection {
+    box-shadow:0 7px 20px rgba(27,92,91,.05);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions {
+    background:linear-gradient(140deg,#e9f8f7,#f8fcfc 85%);
+    border-color:#c2e2e3;
+    box-shadow:0 10px 28px rgba(23,67,80,.085);
+  }
+  /* The legacy V4 secondary CTA forces white text with !important. The
+     lighter approved design therefore must explicitly undo that legacy rule. */
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary:visited {
+    color:#174f64!important;
+    -webkit-text-fill-color:#174f64;
+    background:#fffefa;
+    border:1px solid #88b5bb;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary:hover {
+    background:#ddf2f0;
+    border-color:#5e9fa9;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary svg {
+    color:#247787;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomPrimary {
+    background:#173957;
+    border-color:#173957;
+    color:#fff!important;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :is(a,button,summary):focus-visible {
+    outline:3px solid #258e9d;
+    outline-offset:3px;
+  }
+}
+@media screen and (max-width:700px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sectionHeader h2 {
+    font-size:clamp(21px,6vw,25px);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-remedy-title h3) {
+    font-size:clamp(20px,6vw,25px);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomPrimary,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary {
+    min-height:52px;
+    font-size:15px;
+    line-height:1.42;
+    padding:12px 13px;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests li) {
+    padding:10px;
+  }
+}
+@media screen and (prefers-reduced-motion:reduce) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-profile-action) {
+    transition:none;
+  }
+}
+
+
+/* The only schedule values shown here come from the approved prescription
+   fields. Screen-only chips preserve the original exact signed text for print. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-schedule) {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+    width:fit-content;
+    max-width:100%;
+    margin:9px 0 6px;
+    padding:0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    line-height:1.3;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-remedy-schedule-part) {
+    display:inline-flex;
+    flex:0 1 auto;
+    min-width:0;
+    max-width:100%;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-remedy-schedule-dot) {
+    display:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-remedy-schedule-chip) {
+    display:inline-flex;
+    max-width:100%;
+    padding:6px 10px;
+    align-items:center;
+    border:1px solid #c2dfdf;
+    border-radius:9px;
+    color:#1b5966;
+    background:#edf8f7;
+    box-shadow:0 1px 3px rgba(34,91,86,.035);
+    font:650 clamp(13px,1.7vw,15px)/1.35 system-ui,-apple-system,sans-serif;
+    overflow-wrap:anywhere;
+    white-space:normal;
+  }
+}
+@media screen and (max-width:380px){
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-remedy-schedule-chip) {
+    padding:5px 8px;
+    font-size:13px;
+  }
+}
+
+
+/* Signed report personal audio: after its cover, before analysis; never part of PDF print. */
+.reportVoiceSection{max-width:790px;margin:18px auto 26px;padding:clamp(13px,2.6vw,21px);
+  border:1px solid #cbdfe0;border-radius:19px;background:linear-gradient(145deg,#f3faf9,#fff);
+  box-shadow:0 5px 20px rgba(20,69,80,.06)}
+.reportVoiceSection .mediaList{max-width:720px}
+@media print{.reportVoiceSection{display:none!important}}
+
+/* Report-editor voice messages: compact on phones without shrinking touch targets.
+   The full private-session recording studio intentionally keeps its original layout. */
+.compactRecorder{
+  padding:15px 16px;
+  border-radius:16px;
+  margin-bottom:10px;
+}
+.compactRecorder .sectionHeading{margin:0 0 12px}
+.compactRecorder .sectionHeading .eyebrow{display:none}
+.compactRecorder .sectionHeading h3{
+  margin:0;
+  font-size:18px;
+  line-height:1.3;
+  font-weight:750;
+}
+.compactRecorder .scopeRow{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  margin:0 0 11px;
+}
+.compactRecorder .scopeRow label{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  min-height:44px;
+  padding:8px 10px;
+  border-radius:10px;
+  font-size:13px;
+  line-height:1.25;
+}
+.compactRecorder .scopeRow input{
+  width:17px;
+  height:17px;
+  margin:0;
+  flex:none;
+}
+.compactRecorder .recordControls{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.compactRecorder .recordControls button,
+.compactRecorder .recordControls .filePicker{
+  min-width:0;
+  width:100%;
+  min-height:46px;
+  margin:0;
+  padding:9px 10px;
+  border-radius:11px;
+  font-size:14px;
+  line-height:1.25;
+  text-align:center;
+}
+.compactRecorder .recordControls svg{width:18px;height:18px;flex:none}
+.compactRecorder .liveIndicator{
+  grid-column:1 / -1;
+  font-size:13px;
+}
+.compactRecorder .audioHelp{
+  margin:7px 0 0;
+  color:#54757c;
+  font-size:13px;
+}
+.compactRecorder .audioHelp summary{
+  display:list-item;
+  min-height:40px;
+  padding:10px 0;
+  cursor:pointer;
+  font-weight:650;
+  line-height:1.4;
+  color:#2b7884;
+}
+.compactRecorder .audioHelp p{
+  margin:0 0 7px;
+  font-size:12.5px;
+  line-height:1.5;
+}
+.compactRecorder .audioPublishLink{
+  display:inline-flex;
+  align-items:center;
+  max-width:100%;
+  min-height:36px;
+  margin:5px 0 0;
+  font-size:13px;
+  line-height:1.35;
+  text-decoration:none;
+}
+.compactRecorder .success{margin:9px 0;font-size:13px}
+.compactRecorder .error{margin:9px 0;font-size:13px}
+.compactTakeSection{
+  padding:15px 16px;
+  margin:10px 0 19px;
+  border-radius:16px;
+  box-shadow:0 5px 18px rgba(25,78,88,.04);
+}
+.compactTakeSection .takeHeader{
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+}
+.compactTakeSection .takeHeader h3{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0;
+  font-size:17px;
+  line-height:1.3;
+}
+.compactTakeSection .takeCount{
+  display:inline-grid;
+  place-items:center;
+  min-width:24px;
+  height:24px;
+  padding:0 6px;
+  border-radius:8px;
+  background:#e8f5f3;
+  color:#286876;
+  font:700 12px/1 sans-serif;
+}
+.compactTakeSection .takeHeader p{
+  margin:3px 0 0;
+  color:#648089;
+  font-size:12.5px;
+  line-height:1.35;
+}
+.compactTakeSection .takeHeader button{
+  flex:none;
+  min-width:44px;
+  width:44px;
+  min-height:44px;
+  padding:0;
+  border-radius:11px;
+}
+.compactTakeSection .takeList{gap:8px}
+.compactTakeSection .takeCard{
+  padding:11px 12px;
+  border-radius:12px;
+  background:#f9fcfb;
+}
+.compactTakeSection .takeName{
+  flex-wrap:nowrap;
+  gap:7px;
+  min-width:0;
+}
+.compactTakeSection .takeName svg{width:18px;height:18px;flex:none}
+.compactTakeSection .takeName strong{
+  flex:1;
+  min-width:0;
+  font-size:14px;
+  line-height:1.25;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.compactTakeSection .takeName small{
+  flex:none;
+  font-size:11px;
+  white-space:nowrap;
+}
+.compactTakeSection .takeCard .audio{
+  height:42px;
+  max-width:100%;
+  margin:8px 0 5px;
+}
+.compactTakeSection .takeCard .video{margin:8px 0}
+.compactTakeSection .takeActions{
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:8px;
+}
+.compactTakeSection .takeChoice{
+  flex:1;
+  min-width:0;
+  gap:8px;
+  font-size:13px;
+  line-height:1.25;
+}
+.compactTakeSection .takeChoice input{
+  flex:none;
+  width:20px;
+  height:20px;
+}
+.compactTakeSection .takeActions button{
+  flex:none;
+  min-width:44px;
+  width:44px;
+  min-height:44px;
+  height:44px;
+  padding:0;
+  border-radius:11px;
+}
+.compactTakeSection .takeHint{
+  margin:3px 0 0;
+  font-size:11.5px;
+  line-height:1.4;
+}
+.compactTakeSection .takeError{margin:7px 0;font-size:12px}
+@media(max-width:580px){
+  .compactRecorder{padding:12px;margin-bottom:9px}
+  .compactRecorder .sectionHeading h3{font-size:17px}
+  .compactRecorder .scopeRow label{padding:7px 8px;font-size:12.5px}
+  .compactTakeSection{padding:12px;margin:9px 0 17px}
+  .compactTakeSection .takeHeader{flex-wrap:nowrap}
+  .compactTakeSection .takeActions{align-items:center;flex-wrap:nowrap}
+  .compactTakeSection .takeChoice{flex:1;justify-content:flex-start}
+  .compactTakeSection .takeActions button{flex:none}
+  .compactTakeSection .takeCard{padding:10px}
+}
+
+
+/* Photographic client-report cover: real coastal sunset, readable typography,
+   and a self-hosted SVG fallback. Screen-only: signed PDF print remains intact.
+   Primary image: approved generated Holistic House artwork (AVIF).\n   Backup WebP: Marco Grosso, Unsplash (5zHxWVUaFms), used under Unsplash License.
+   The image has no embedded text or client information. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-report-cover) {
+    background-image:
+      linear-gradient(90deg,rgba(7,45,65,.94) 0%,rgba(8,50,69,.74) 51%,rgba(7,46,62,.18) 100%),
+      url('/images/holistic-house/report-lighthouse-coast.avif'),
+      url('/images/holistic-house/report-lighthouse-coast.webp'),
+      url('/images/holistic-house/report-lighthouse-coast.svg');
+    background-size:cover,cover,cover,cover;
+    background-position:center,57% center,52% center,62% center;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero {
+    background-image:
+      linear-gradient(90deg,rgba(7,45,65,.94) 0%,rgba(8,50,69,.74) 51%,rgba(7,46,62,.18) 100%),
+      url('/images/holistic-house/report-lighthouse-coast.avif'),
+      url('/images/holistic-house/report-lighthouse-coast.webp'),
+      url('/images/holistic-house/report-lighthouse-coast.svg');
+    background-size:cover,cover,cover,cover;
+    background-position:center,57% center,52% center,63% center;
+  }
+}
+@media screen and (max-width:700px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-report-cover),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero {
+    background-image:
+      linear-gradient(90deg,rgba(6,43,63,.95) 0%,rgba(9,50,69,.82) 47%,rgba(7,43,58,.25) 100%),
+      url('/images/holistic-house/report-lighthouse-coast.avif'),
+      url('/images/holistic-house/report-lighthouse-coast.webp'),
+      url('/images/holistic-house/report-lighthouse-coast.svg');
+    background-position:center,57% center,57% center,70% center;
+  }
+}
+
+
+/* The report closes in three steps: save to Cabinet, tests, then PDF. */
+.cabinetSessionPage .sessionBottomActions{
+  grid-template-columns:minmax(0,1fr);
+  margin-bottom:20px;
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary{
+  width:100%;
+}
+.cabinetSessionPage .reportTestCatalogLink{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  width:100%;
+  min-height:48px;
+  margin-top:13px;
+  padding:11px 14px;
+  border:1px solid #91bdc2;
+  border-radius:12px;
+  background:#fffefa;
+  color:#1b6070;
+  font:700 14px/1.4 system-ui,-apple-system,sans-serif;
+  text-align:center;
+  text-decoration:none;
+  overflow-wrap:anywhere;
+}
+.cabinetSessionPage .reportTestCatalogLink:hover{
+  background:#e8f6f4;
+  border-color:#4e95a2;
+  color:#164f60;
+}
+.reportTestCatalogLink svg{flex:0 0 auto}
+.reportPdfActions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:13px;
+}
+.cabinetSessionPage .reportDownloadSection .reportPdfActions>a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  width:100%;
+  min-width:0;
+  min-height:52px;
+  padding:12px 13px;
+  border-radius:12px;
+  font:800 14px/1.35 system-ui,-apple-system,sans-serif;
+  text-align:center;
+  text-decoration:none;
+  overflow-wrap:anywhere;
+}
+.reportPdfActions svg{flex:0 0 auto}
+.cabinetSessionPage .reportDownloadSection .reportPdfPreviewButton{
+  border:1px solid #82b4be;
+  background:#fffefa;
+  color:#18596b;
+  box-shadow:none;
+}
+.cabinetSessionPage .reportDownloadSection .reportPdfPreviewButton:hover{
+  background:#e5f5f3;
+  border-color:#398b9c;
+  color:#164e62;
+}
+@media(max-width:700px){
+  .reportPdfActions{grid-template-columns:minmax(0,1fr);gap:10px}
+  .cabinetSessionPage .reportDownloadSection .reportPdfActions>a{min-height:50px}
+}

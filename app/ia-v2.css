@@ -1958,3 +1958,86 @@ body:has(.client-entry-shell .cabinet-guest-tests) {
 .library-shell .public-consultation-cta{margin-top:20px}
 @media(min-width:700px){.library-heading{display:flex;align-items:baseline;gap:20px}.library-heading > p:last-child{margin:0}}
 @media(max-width:600px){.library-media-switch a{font-size:11.5px}.library-heading{margin-top:9px}.library-shell{padding-bottom:22px}}
+
+/* My Tests: mood belongs in a small optional disclosure, never above a questionnaire. */
+.hh-app .hh-tests-mood-disclosure {
+  margin: 0 0 12px;
+  border: 1px solid #e0d1c0;
+  border-radius: 15px;
+  background: #fffdfa;
+  overflow: hidden;
+}
+.hh-app .hh-tests-mood-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 9px 15px;
+  color: #514034;
+  list-style: none;
+  cursor: pointer;
+}
+.hh-app .hh-tests-mood-disclosure > summary::-webkit-details-marker { display: none; }
+.hh-app .hh-tests-mood-disclosure > summary:focus-visible {
+  outline: 2px solid #8b6a54;
+  outline-offset: -3px;
+  border-radius: 14px;
+}
+.hh-app .hh-tests-mood-disclosure > summary strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+.hh-app .hh-tests-mood-disclosure > summary small {
+  color: #8b7767;
+  font-size: 12px;
+}
+.hh-app .hh-tests-mood-symbol {
+  font-size: 23px;
+  line-height: 1;
+}
+.hh-app .hh-tests-mood-disclosure > summary svg {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: #876d58;
+  transition: transform .18s ease;
+}
+.hh-app .hh-tests-mood-disclosure[open] > summary svg { transform: rotate(180deg); }
+.hh-app .hh-tests-mood-disclosure .hh-mood-checkin--compact {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #eee3d6;
+  border-radius: 0;
+  background: transparent;
+  padding: 17px 18px 20px;
+  box-shadow: none;
+}
+.hh-app .hh-tests-mood-disclosure .hh-mood-checkin--compact .hh-mood-title {
+  font-size: clamp(22px, 3.8vw, 28px);
+  line-height: 1.16;
+}
+.hh-app .hh-tests-mood-disclosure .hh-mood-checkin--compact .hh-mood-row {
+  max-width: 470px;
+  margin-top: 13px;
+}
+.hh-app .hh-tests-mood-disclosure .hh-mood-checkin--compact .hh-mood-button {
+  min-height: 70px;
+  border-radius: 13px;
+  box-shadow: none;
+}
+@media (max-width: 600px) {
+  .hh-app .hh-tests-mood-disclosure { margin-bottom: 9px; }
+  .hh-app .hh-tests-mood-disclosure > summary { min-height: 46px; gap: 8px; padding: 8px 12px; }
+  .hh-app .hh-tests-mood-disclosure > summary strong { font-size: 13px; }
+  .hh-app .hh-tests-mood-disclosure > summary small { font-size: 11px; }
+  .hh-app .hh-tests-mood-disclosure .hh-mood-checkin--compact { padding: 14px 12px; }
+  .hh-app .hh-tests-mood-disclosure .hh-mood-checkin--compact .hh-mood-title { font-size: 22px; }
+  .hh-app .hh-tests-mood-disclosure .hh-mood-checkin--compact .hh-mood-row { gap: 7px; }
+  .hh-app .hh-tests-mood-disclosure .hh-mood-checkin--compact .hh-mood-button {
+    min-height: 65px;
+    font-size: 11px;
+    padding: 9px 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hh-app .hh-tests-mood-disclosure > summary svg { transition: none; }
+}

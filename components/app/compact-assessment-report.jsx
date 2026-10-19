@@ -225,6 +225,10 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <p className={styles.rangeNarrative} data-current-score-position data-range-characterization>
           {rangeReading.narrative}
         </p>
+        {rangeReading.contentBoundary && <p className={styles.rangeContext} data-author-construct-boundary role="note">
+          <strong>{ru ? 'Что измеряют вопросы и чего нельзя заключать:' : 'What these questions cover and cannot establish:'}</strong>
+          {' '}{rangeReading.contentBoundary}
+        </p>}
         {rangeReading.contextual && <p className={styles.rangeContext} data-range-context>
           <strong>{ru ? 'Что можно заметить:' : 'What to look for:'}</strong> {rangeReading.contextual}
         </p>}
@@ -241,7 +245,8 @@ export function CompactAssessmentReport({ result, previous = null, report, local
             aria-current={band.current ? 'true' : undefined}>
             <small className={styles.rangePosition}>{rangeReading.rows.length > 1 ? index + 1 : (ru ? 'Шкала' : 'Scale')}</small>
             <b>{band.displayRange}</b>
-            <span>{band.label}</span>
+            <span>{band.originalAnswerCode !== null && band.originalAnswerCode !== undefined
+              ? (ru ? '≈ вариант ' : '≈ option ') + band.originalAnswerCode + ' · ' : ''}{band.label}</span>
             {band.current && <em>{ru ? 'Ваш' : 'Yours'}</em>}
           </li>)}
         </ol>
@@ -253,6 +258,13 @@ export function CompactAssessmentReport({ result, previous = null, report, local
               data-selected-score-description={band.current || undefined}>
               <strong>{band.displayRange} — {band.label}</strong>
               <p>{band.note}</p>
+              {Array.isArray(band.scorePoints) && <small data-attainable-score-points>
+                {ru ? 'Достижимые баллы: ' : 'Attainable scores: '}
+                {band.scorePoints.length <= 18
+                  ? band.scorePoints.map(point => new Intl.NumberFormat(ru ? 'ru-RU' : 'en-US',
+                      { maximumFractionDigits: 2 }).format(point)).join('; ')
+                  : (ru ? 'всего ' : 'total ') + band.scorePoints.length}
+              </small>}
               {band.current && <small>{ru ? 'Ваш текущий диапазон' : 'Your current range'}</small>}
             </li>)}
           </ol>
@@ -263,6 +275,15 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <summary>{ru ? 'Какие вопросы входят в эту шкалу' : 'Which questions contribute to this scale'}
             {' · '}{rangeReading.sourceQuestions.length}</summary>
           <p data-author-cluster-scoring>{rangeReading.scoringNote}</p>
+          {rangeReading.sourceResponseOptions?.length > 0 && <div data-author-response-codes
+            aria-label={ru ? 'Числа и названия исходных вариантов ответа' : 'Numeric codes and original answer labels'}>
+            <strong>{ru ? 'Как кодируются ответы:' : 'Original answer codes:'}</strong>
+            <ol className={styles.rangeDetailsList}>
+              {rangeReading.sourceResponseOptions.map(option => <li key={option.value}>
+                <strong>{option.value}</strong>{' — '}{option.label}
+              </li>)}
+            </ol>
+          </div>}
           {rangeReading.legacyVersion && <p role="note" data-legacy-version-incompatible>
             {ru ? 'Архивная версия ' : 'Archived version '}{rangeReading.legacyVersion}
             {ru ? ' · новая версия ' : ' · current version '}{rangeReading.newerVersion}

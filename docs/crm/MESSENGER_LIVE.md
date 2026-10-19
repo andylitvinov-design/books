@@ -67,3 +67,45 @@ Provider activation is a separate operational gate, not part of a normal code me
 - UI changes and anti-duplicate behavior are covered by `tests/crm-messenger.test.mjs`. No real delivery is implied by a passing synthetic/source test or successful Vercel deployment.
 
 **Release gate remains:** Owned Telegram bot and verified Meta WhatsApp / Instagram / Facebook messaging connections must be configured securely, then one approved synthetic end-to-end exchange must pass. Never enable `HH_CRM_MSG_*` based on a third-party social publishing connector, a website visitor, or a saved phone number alone.
+
+## 9. Inbox customer workflow v3 — integration in CRM
+
+- Source plan: [Messenger v3 roadmap](./MESSENGER_IMPROVEMENTS_V3_2026-10-18.md). This iteration reuses **existing schema**, requiring **no additional production migration**.
+- Owner-only thread header now contains **lead / client / archived** stage selection. The POST `set_stage` action resolves the CRM contact from the owner-verified thread and delegates to existing revision-guarded `store.setLifecycle` — never trusts a contact ID sent by the browser.
+- **Follow-up tasks** use existing `crm_followups`. Actions `create_followup` and `complete_followup` are owner-scoped. The latter validates the exact follow-up/thread association before calling the revision-guarded CRM operation. The thread lists 20 upcoming open tasks; the global overview refreshes after changes.
+- **Private business notes** are explicit `direction='note'` entries in the pre-existing encrypted `crm_msg_items` table. They use identical AAD-based `seal` encryption, an exact-payload idempotency key, a limit of 800 chars and 50 notes/day. Notes have **no provider ID** and cannot trigger Send/Meta/Telegram; medical material and bearer links remain out of scope. Their appearance is visually distinct from customer messages, and they do not reorder the thread inbox.
+- **Needs reply** is computed from the most recent **incoming** event or provider-accepted outbound event; internal notes and failed/blocked/unknown outgoing attempts cannot falsely mark a conversation answered.
+- **Race protection:** out-of-order GET responses cannot replace the selected thread; stale POST responses do not erase a different client's note/reply drafts. A message composer remains manual and explicitly approved; EN/RU/ES neutral quick-reply chips **only populate** the draft textarea.
+- UI mobile layout includes 44 px touch targets, compact stage/tasks/note panels, filter for “Needs reply”, and no automatic polling/paid messaging calls. Sensitive message bodies never appear in URL strings or telemetry.
+- Server reads/writes remain authenticated, same-origin, `X-HH-Account-Id` matched and `hh_crm_backend` owner-restricted; the new POST actions have explicit payload whitelists.
+- **Release:** merge only after source checks and Next.js Production build. Since provider credentials `HH_CRM_MSG_*` remain missing, all real Telegram/WhatsApp/Instagram/Messenger sending stays disabled by design. No client messages or paid provider operations are part of this v3 work.
+
+## 10. Messenger history paging and immutable send retries (issue #985)
+
+This release adds bounded server-side keyset pagination for both **conversations** and **the encrypted message history** without a schema migration.
+
+- `GET /api/app/crm/messenger` initially returns at most **30 conversations**, plus `nextThreadsCursor` when more pages exist. `?threadsBefore=<opaque>` fetches the next 30; only the authenticated owner receives results. Opening a specific owner thread by `?thread=<uuid>` works **even if it is older than the first 30**.
+- An open conversation loads **50 most recent messages**, plus `nextMessagesCursor`. `?thread=<uuid>&messagesBefore=<opaque>` fetches the next older 50. Existing messages are merged by immutable ID into chronological order; the current selected thread is retained when an older page is appended.
+- Cursors contain only the exact PostgreSQL timestamp text and a UUID; they do **not** contain message text, email, phone or auth credentials. The server rejects malformed, oversized, duplicate/unknown query parameters and incompatible cursor combinations. Exact PG microsecond precision prevents skipped/duplicated same-millisecond messages.
+- The owner UI offers localized `Load more conversations` and `Earlier messages` buttons, controlled loading and useful retry error states. Search and filters apply to loaded pages, and the empty-state text explains that scope.
+- **Immutable request-id contract:** an existing outgoing request UUID must match the same owner-thread, direction `out`, and decrypted original body, or it is rejected with conflict. Reusing a request ID cannot silently report status for a different recipient or content.
+- This change does not alter consent, suppressions, health-data exclusions, existing RLS, outbound provider fees or the **disabled-by-default `HH_CRM_MSG_*`** feature flags. No messages are automatically sent.
+- PostgreSQL read-only EXPLAIN checks confirmed the owner-filtered 30-conversation / 50-message keyset queries parse and use existing `crm_msg_threads_owner_last` and `crm_msg_items_thread_date` indexes. Source/pure tests live in `tests/crm-messenger.test.mjs`. Check GitHub CI and the exact Production SHA after merging.
+
+**Provider activation remains separate:** no official Telegram/WhatsApp/Instagram/Messenger account credentials have been verified in Vercel Production, so external real-client delivery is not enabled or claimed.
+
+## 11. Provider connection diagnostics + one-chat Telegram pilot
+
+**Simple handoff:** [Owner/Codex steps (Russian)](./MESSENGER_FINISH_SIMPLE_STEPS_2026-10-18.md).
+
+- CRM Messages → Channels now shows **only** server-side names of missing environment variables, status of the per-channel and production approval flags, the official BotFather/Meta application portal, correct HTTPS webhook URLs, and a user-triggered button to copy the URL. **Secret values are never returned to the browser**. The owner-only GET endpoint is still authenticated and restricted by `X-HH-Account-Id` and verified practitioner access.
+- Normal live messaging still requires each official provider's signed credentials plus `HH_CRM_MSG_{PROVIDER}_ENABLED=true` and explicit `HH_CRM_MSG_PRODUCTION_APPROVED=true`. Absence means no inbound recording/outbound messaging.
+- **New safer pilot before Production Approval:** Telegram alone can be enabled in *single recipient pilot mode*, with normal Telegram bot keys plus `HH_CRM_MSG_TELEGRAM_ENABLED=true`, `HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=true` and `HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID=<numeric owned private chat id>`, while leaving `HH_CRM_MSG_PRODUCTION_APPROVED` OFF.
+- In this state, verified Telegram webhook updates from all chats other than the exact allowlisted test chat return without DB access or lead creation. The Telegram send adapter throws `TEST_RECIPIENT_ONLY` before any provider request when a non-allowlisted chat is addressed. None of the three Meta channels gets pilot privileges. This lets the owner verify **a single synthetic private chat** without opening live messages to real clients.
+- The owner presses Connect after secure Vercel credential setup; the server uses `getMe` to verify the exact bot and `getWebhookInfo` to avoid taking over an existing bot. `setWebhook` uses a separate secret token, preserves pending updates, and is verified again.
+- No `HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID` or BotFather token should be copied into GitHub issues, ChatGPT messages, browser logs, screenshots or client-side source. Vercel Production env changes require redeploy and new active SHA verification.
+- **Pilot success does not authorize a public launch.** Confirm owner opt-in, privacy policy, recipient rules, signed inbound, 1 manual reply and actual provider acceptance, negative non-allowlisted chat test, duplicate-event suppression and STOP command. Only after explicit approval may the owner authorize `HH_CRM_MSG_PRODUCTION_APPROVED=true` and disable pilot flags.
+- Phone number registration, Meta Business/Instagram app permissions, Meta review, actual WhatsApp messaging cost/eligibility and production templates remain a separate external gate; do not infer capability from a Metricool social publishing connection.
+- **Kill switch:** set `HH_CRM_MSG_TELEGRAM_ENABLED=false` or `HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=false` while global Production Approval is OFF, then redeploy. Cross-check that webhook requests fail closed and no outbound provider calls occur.
+
+Release verification: run pure policy tests plus CRM source checks, Vercel production build, owner-only API GET and test-chat synthetic round-trip. A successful source build alone cannot prove official account connection.

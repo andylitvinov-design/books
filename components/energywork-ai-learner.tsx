@@ -13,6 +13,7 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
+import { energyworkLessonRanges } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -50,12 +51,20 @@ const copy = {
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Explore the programme",
+    programmeIntro: "Your five-step journey is just beginning. Discover the Reiki paths that inspire you.",
+    systemDetails: "Learn more",
+    intro: "Introduction",
+    slidesWord: "slides",
+    saveProgress: "Save progress",
+    saveAndContinue: "Save & continue",
+    signInToSave: "Sign in to save",
+    returnAnytime: "Your place is saved. You can return from My Courses at any time.",
     backCourse: "Course details",
     step: "Slide",
     of: "of",
     continue: "Continue",
     back: "Back",
-    stop: "You can skip or stop any practice. No medical advice or certification is provided here.",
+    stop: "Enjoy learning at your own pace. You can take a break and return to any lesson whenever you like.",
     optional: "Optional reflection",
     experienceBadge: "Your starting point",
     experienceNote: "Choose one answer to continue. You can change it later.",
@@ -67,20 +76,19 @@ const copy = {
     unavailable: "This recording is not available. You can continue using the written teaching.",
     welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
     welcomeRequirement: "Study all five lessons in order.",
-    welcomeTeacher: "A personal initiation is arranged separately with Andrey. Course completion alone does not grant any initiation.",
+    welcomeTeacher: "Want to go further? You can explore personal Reiki initiation with Andrey when you feel ready.",
     pathway: "All lessons are part of your course",
     picked: "Completed",
     fiveLessons: "Five sequential lessons",
     meditationReport: "Meditation report",
     lessonQuestion: "Course question",
     optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
-    feedbackBadge: "Your meditation feedback",
-    feelingPrompt: "How strongly did you experience this meditation?",
-    feelingLow: "0 · Not at all",
-    feelingHigh: "10 · Very clearly",
-    feelingMissing: "Choose a feeling level and write one short sentence to continue.",
-    feelingPlaceholder: "What did you notice, even if nothing? One sentence is enough…",
-    feedbackPrivacy: "A personal reflection, not a test. Your notes are never published automatically.",
+    feedbackBadge: "Your review",
+    saveReview: "Save review",
+    reviewMissing: "Write at least 15 characters to save your review.",
+    feelingPlaceholder: "Share your meditation experience: what did you feel, notice or discover?",
+    feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
+    feedbackCharacters: "characters", feedbackMinimum: "minimum 15",
     voicesLabel: "Learner experiences",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
     voicesSource: "Original review",
@@ -89,6 +97,7 @@ const copy = {
     voicesPrevious: "Previous review",
     voicesNext: "Next review",
     voicesNavigation: "Browse learner reviews",
+    voicesScrollLabel: "Learner review",
     milestoneLabel: "Lovely progress",
     milestoneNote: "Personal initiation and group membership are arranged separately, never granted automatically.",
     committed: "I'm committed!",
@@ -159,12 +168,20 @@ const copy = {
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Посмотреть программу",
+    programmeIntro: "Ваш путь из пяти шагов только начинается. Знакомьтесь с системами Рейки и находите то, что вдохновляет.",
+    systemDetails: "Подробнее",
+    intro: "Введение",
+    slidesWord: "слайдов",
+    saveProgress: "Сохранить прогресс",
+    saveAndContinue: "Сохранить и продолжить",
+    signInToSave: "Войти и сохранить",
+    returnAnytime: "Ваш прогресс сохраняется. Вы сможете вернуться из раздела «Курсы» в любой момент.",
     backCourse: "Описание курса",
     step: "Слайд",
     of: "из",
     continue: "Продолжить",
     back: "Назад",
-    stop: "Любую практику можно пропустить или остановить. Здесь нет медицинских назначений или автоматической сертификации.",
+    stop: "Учитесь в своём ритме: делайте паузы и возвращайтесь к любимым урокам, когда захотите.",
     optional: "Необязательная рефлексия",
     experienceBadge: "Ваш уровень знакомства",
     experienceNote: "Выберите один вариант, чтобы продолжить. Позже его можно изменить.",
@@ -176,20 +193,19 @@ const copy = {
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
     welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
     welcomeRequirement: "Проходите все пять уроков по очереди.",
-    welcomeTeacher: "Личная инициация проводится отдельно, по договорённости с Андреем. Завершение курса не является инициацией.",
+    welcomeTeacher: "Захочется пойти дальше? Когда будете готовы, можно обсудить с Андреем личную Рейки-инициацию.",
     pathway: "Все уроки входят в одну программу",
     picked: "Завершено",
     fiveLessons: "Пять последовательных уроков",
     meditationReport: "Отчёт после медитации",
     lessonQuestion: "Вопрос по уроку",
     optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
-    feedbackBadge: "Ваш отзыв о медитации",
-    feelingPrompt: "Насколько удалось прочувствовать медитацию?",
-    feelingLow: "0 · Ничего",
-    feelingHigh: "10 · Очень ярко",
-    feelingMissing: "Выберите степень ощущений и напишите одно короткое предложение.",
-    feelingPlaceholder: "Что вы заметили, даже если ничего? Достаточно одного предложения…",
-    feedbackPrivacy: "Это личное наблюдение, не экзамен. Ваш отзыв не публикуется автоматически.",
+    feedbackBadge: "Ваш отзыв",
+    saveReview: "Сохранить отзыв",
+    reviewMissing: "Напишите хотя бы 15 символов, чтобы сохранить отзыв.",
+    feelingPlaceholder: "Расскажите о медитации: какие ощущения, мысли или открытия вы заметили?",
+    feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
+    feedbackCharacters: "символов", feedbackMinimum: "минимум 15",
     voicesLabel: "Отзывы участников",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
     voicesSource: "Источник отзыва",
@@ -198,6 +214,7 @@ const copy = {
     voicesPrevious: "Предыдущий отзыв",
     voicesNext: "Следующий отзыв",
     voicesNavigation: "Переключение отзывов",
+    voicesScrollLabel: "Отзыв участника",
     milestoneLabel: "Прекрасный прогресс",
     milestoneNote: "Инициация и вступление в сообщество согласуются отдельно, а не происходят автоматически.",
     committed: "I'm committed!",
@@ -254,27 +271,26 @@ const copy = {
 } as const;
 
 const MEDITATION_REPORT_IDS = new Set(["flight-04", "tan-04", "kun-04", "ygg-04"]);
-const feedbackPattern = /^Feeling:(10|[0-9])\/10\n([\s\S]*)$/;
-function splitMeditationFeedback(value: string) {
-  const match = feedbackPattern.exec(value);
-  return { rating: match?.[1] ?? "", note: match?.[2] ?? value };
-}
-function joinMeditationFeedback(rating: string, note: string) {
-  return (rating ? "Feeling:" + rating + "/10\n" : "") + note;
+// Previously saved reviews may contain the old 0–10 feeling prefix.
+// Display only the written reflection; keep existing private records readable.
+const legacyMeditationPrefix = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/;
+function meditationReviewText(value: string) {
+  const legacy = legacyMeditationPrefix.exec(value);
+  return legacy ? legacy[1] : value;
 }
 
 const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
   en: {
-    beginner: "Welcome! The course introduces the Reiki traditions without assuming previous training.",
-    energywork: "Your existing practice may be a useful reference point. We'll distinguish Reiki traditions as we go.",
-    "reiki-1-2": "You can revisit the foundations and compare the three Reiki traditions at your own pace.",
-    master: "Explore this as a comparison of three traditions, noticing what is familiar and what is new.",
+    beginner: "Welcome! No Reiki experience is needed.",
+    energywork: "Use your experience to compare the three Reiki traditions.",
+    "reiki-1-2": "Review the foundations at your own pace.",
+    master: "Compare the three traditions at your own pace.",
   },
   ru: {
-    beginner: "Добро пожаловать! Курс знакомит с направлениями Рейки без требования предварительной подготовки.",
-    energywork: "Ваш опыт может стать опорой. По ходу курса мы будем пояснять особенности направлений Рейки.",
-    "reiki-1-2": "Можно повторить основы и в своём темпе сравнить три направления Рейки.",
-    master: "Рассматривайте курс как знакомство с тремя традициями: отмечайте знакомое и новое.",
+    beginner: "Добро пожаловать! Опыт Рейки не требуется.",
+    energywork: "Ваш опыт поможет сравнить три традиции Рейки.",
+    "reiki-1-2": "Повторите основы в удобном темпе.",
+    master: "Сравните три традиции Рейки в своём темпе.",
   },
 };
 
@@ -381,7 +397,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
         <div data-meditation-review-carousel data-review-count={entries.length}>
           <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
             <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
-            <p>{currentReview.quote[locale]}</p>
+            <p data-review-scroll role="region" tabIndex={0} aria-label={t.voicesScrollLabel}>{currentReview.quote[locale]}</p>
             <cite>{currentReview.attribution[locale]}</cite>
           </blockquote>
           {entries.length > 1 ? (
@@ -445,6 +461,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const accountIdRef = useRef<string | null>(null);
   const revisionRef = useRef(0);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const programmeRef = useRef<HTMLDetailsElement>(null);
   const dirtyRef = useRef(new Set<string>());
   const progressRef = useRef("welcome-01");
   const request = useCallback((body: SaveCommand) => {
@@ -476,7 +493,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     const restoredAnswers = value.answers ?? {};
     answersRef.current = restoredAnswers;
     setAnswers(restoredAnswers);
-    setIndex(Math.max(0, restored.findIndex((item) => item.id === value.slideId)));
+    const savedIndex = Math.max(0, restored.findIndex((item) => item.id === value.slideId));
+    // Only previously reached slides may be opened via cabinet deep links.
+    const requestedId = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("slide");
+    const requestedIndex = requestedId ? restored.findIndex((item) => item.id === requestedId) : -1;
+    setIndex(requestedIndex >= 0 && requestedIndex <= savedIndex ? requestedIndex : savedIndex);
     setSavedAt(value.savedAt || null);
     setSharingWithTeacher(Boolean(value.sharingWithTeacher));
     setApplicationLead(value.applicationLead || null);
@@ -536,19 +557,27 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const slides = useMemo(() => energyworkSlides(), []);
   const slide = slides[index] ?? slides[0]!;
   const total = slides.length;
+  const lessonRanges = useMemo(() => energyworkLessonRanges(), []);
+  const currentLessonRange = lessonRanges.find((range) => index >= range.start && index < range.end);
+  const savedIndex = sync === "ready" ? Math.max(0, slides.findIndex((item) => item.id === progressRef.current)) : index;
+  const reachedIndex = Math.max(index, savedIndex);
+  const progressPercent = Math.round((reachedIndex + 1) / total * 100);
+  const lessonProgressLabel = currentLessonRange
+    ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
+    : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01";
   const voicesArt = slide.kind === "voices";
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
-  const meditationFeedback = splitMeditationFeedback(answers[slide.id] ?? "");
-  const feedbackMissing = isMeditationFeedback && (!meditationFeedback.rating || !meditationFeedback.note.trim());
+  const meditationReview = meditationReviewText(answers[slide.id] ?? "");
+  const feedbackLength = Array.from(meditationReview.trim()).length;
+  const feedbackMissing = isMeditationFeedback && feedbackLength < 15;
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
-  const lessonNumber = slide.phase === "welcome" ? 1 : slide.phase === "complete" ? 5 :
-    Math.max(1, energyworkLessons.findIndex((item) => item.phase === slide.phase) + 1);
+  const lessonNumber = currentLessonRange?.lesson ?? 1;
   const initiationItems = energyworkInitiationRequirements.map((item) => ({
     ...item,
     title: energyworkLessons.find((lesson) => lesson.phase === item.lesson)?.title[locale] ?? item.lesson,
@@ -609,6 +638,27 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setBusy(false);
     }
     setIndex((current) => Math.min(current + 1, slides.length - 1));
+  }
+  async function saveAndLeave() {
+    if (busy || slide.kind !== "milestone") return;
+    // A guest cannot claim to have saved private progress.
+    if (sync === "guest") { await signIn(); return; }
+    if (sync === "consent") {
+      programmeRef.current?.setAttribute("open", "");
+      programmeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return;
+    }
+    if (sync === "unavailable") { await reloadProgress(); return; }
+    if (sync !== "ready") return;
+    const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
+    setBusy(true);
+    try {
+      await store(nextId);
+      window.location.assign("/" + locale + "/app/course?view=courses");
+    } catch (error) {
+      setSaveError((error as { status?: number })?.status === 409 ? t.conflict : t.saveFailed);
+      setBusy(false);
+    }
   }
   async function previous() {
     if (index === 0 || busy) return;
@@ -749,6 +799,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
                   <strong>{t.milestoneLabel}</strong>
                   <p>{t.milestoneNote}</p>
+                  {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                 </div>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
@@ -790,30 +841,14 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
-                  {isMeditationFeedback ? (
-                    <div className={styles.meditationFeeling} data-meditation-feeling>
-                      <label htmlFor={"feeling-" + slide.id}>{t.feelingPrompt}</label>
-                      <div className={styles.feelingValue}>
-                        <span>{t.feelingLow}</span>
-                        <strong aria-live="polite">{meditationFeedback.rating ? meditationFeedback.rating + " / 10" : "— / 10"}</strong>
-                        <span>{t.feelingHigh}</span>
-                      </div>
-                      <input id={"feeling-" + slide.id} type="range" min="0" max="10" step="1"
-                        value={meditationFeedback.rating || "5"}
-                        onChange={(event) => setAnswer(joinMeditationFeedback(event.target.value, meditationFeedback.note).slice(0, 1600))}
-                        onClick={(event) => { if (!meditationFeedback.rating) setAnswer(joinMeditationFeedback(event.currentTarget.value, meditationFeedback.note).slice(0, 1600)); }}
-                        aria-label={t.feelingPrompt} />
-                    </div>
-                  ) : null}
                   {slide.question.type === "text" ? (
-                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationFeedback.note : (answers[slide.id] ?? "")}
-                      onChange={(e) => setAnswer((isMeditationFeedback
-                        ? joinMeditationFeedback(meditationFeedback.rating, e.target.value)
-                        : e.target.value).slice(0, 1600))}
+                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (answers[slide.id] ?? "")}
+                      onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
-                      maxLength={1600} rows={isMeditationFeedback ? 3 : 4}
+                      maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
                       placeholder={isMeditationFeedback ? t.feelingPlaceholder : t.placeholder} autoComplete="off" />
                   ) : null}
+                  {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{feedbackLength} {t.feedbackCharacters} · {t.feedbackMinimum}</p> : null}
                   {slide.question.type === "scale" ? (
                     <div className={styles.scaleWrap}>
                       <input id={"answer-" + slide.id} className={styles.scale} type="range" min="0" max="10" step="1"
@@ -844,7 +879,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   ) : null}
                   <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
                     role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
-                    isMeditationFeedback ? (feedbackMissing ? t.feelingMissing : t.feedbackPrivacy) :
+                    isMeditationFeedback ? (feedbackMissing ? t.reviewMissing : t.feedbackPrivacy) :
                     initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id)
                     ? t.optionalForLearning : t.blank}</p>
                   {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
@@ -957,20 +992,43 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
         <div className={styles.progressFooter}>
           <div className={styles.progressHeader}>
-            <span>{t.lesson} {index + 1} {t.of} {total}</span>
-            <span>{Math.round((index + 1) / total * 100)}% {t.completedLabel}</span>
+            <span>{lessonProgressLabel}</span>
+            <span>{progressPercent}% {t.completedLabel}</span>
           </div>
           <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
-            aria-valuenow={index + 1} aria-label={t.lesson}>
-            <span style={{ width: ((index + 1) / total * 100) + "%" }} />
+            aria-valuenow={reachedIndex + 1} aria-label={t.lesson}>
+            <span style={{ width: progressPercent + "%" }} />
           </div>
         </div>
 
-        <details className={styles.programme}>
+        <details className={styles.programme} ref={programmeRef}>
           <summary>{t.program}</summary>
-          <ol>{energyworkLessons.map((lesson) => (
-            <li key={lesson.phase} aria-current={lesson.phase === slide.phase ? "step" : undefined}>{lesson.title[locale]}</li>
-          ))}</ol>
+          <p className={styles.programmeIntro}>{t.programmeIntro}</p>
+          <ol>{energyworkLessons.map((lesson, number) => {
+            const range = lessonRanges[number]!;
+            const unlocked = range.start <= reachedIndex;
+            const system = energyworkPathChoices.find((choice) => choice.id === lesson.phase);
+            return (
+              <li key={lesson.phase} aria-current={currentLessonRange?.lesson === number + 1 ? "step" : undefined}>
+                <span className={styles.programmeRow}>
+                  <button type="button" className={styles.programmeJump}
+                    disabled={busy || sync === "checking" || !unlocked}
+                    onClick={() => void jumpToSlide(lesson.firstSlideId)}>
+                    <span className={styles.programmeLesson}>{lesson.title[locale]}</span>
+                    <small>{range.count} {t.slidesWord}</small>
+                  </button>
+                  {system ? (
+                    <Link className={styles.programmeLink}
+                      href={"/" + locale + "/academy/" + system.studyPath}
+                      target="_blank" rel="noopener noreferrer"
+                      aria-label={lesson.title[locale] + " — " + t.systemDetails}>
+                      {t.systemDetails}<ExternalLink size={13} aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                </span>
+              </li>
+            );
+          })}</ol>
           {slide.kind === "welcome" ? <p className={styles.programmeNote}>{t.welcomeTeacher}</p> : null}
           <p className={styles.disclaimer}>{t.stop}</p>
           <aside className={styles.preview} aria-live="polite">
@@ -1004,7 +1062,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
             {sync === "ready" ? <>
               <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
               {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
-              <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
+              <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
               {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
                 <details className={styles.saveDetails}>
                   <summary>{t.teacherShareTitle}</summary>
@@ -1026,13 +1084,29 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         </details>
         <footer className={styles.footer}>
           {!completed ? (
-            <div className={styles.actions}>
-              <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing} className={styles.next} data-energywork-next>
-                {slide.kind === "welcome" ? t.startFree : slide.kind === "milestone" ? t.committed : t.continue}<ArrowRight size={19} aria-hidden="true" />
+            <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
+              {slide.kind === "milestone" ? <>
+                <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
+                  className={styles.milestoneBack} aria-label={t.back} title={t.back}>
+                  <ArrowLeft size={19} aria-hidden="true" />
+                </button>
+                <button type="button" onClick={saveAndLeave} disabled={busy || sync === "checking"}
+                  className={styles.saveProgress} data-energywork-save-progress>
+                  {sync === "guest" ? t.signInToSave : t.saveProgress}
+                </button>
+              </> : (
+                <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
+                  className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
+              )}
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing}
+                className={styles.next} data-energywork-next>
+                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
+                  slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continue) : t.continue}
+                <ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
+          {slide.kind === "milestone" && saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
         </footer>
       </div>
     </main>

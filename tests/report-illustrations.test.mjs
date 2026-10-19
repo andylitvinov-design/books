@@ -19,6 +19,42 @@ const sample=(locale, extra={})=>({
   ...extra,
 })
 
+
+const neutralCaption={
+  en:['Your ratings','before and after.'],
+  ru:['Ваши оценки','до и после сессии.'],
+}
+
+// Read the generated text operators, including Cyrillic through the PDF's own
+// ToUnicode map. Captions occupy two separate runs, not one literal string.
+function pdfTextRuns(pdf){
+  const glyphs=new Map()
+  for(const [,entries] of pdf.matchAll(/\d+ beginbfchar\n([\s\S]*?)\nendbfchar/g)){
+    for(const [,glyph,unicode] of entries.matchAll(/<([0-9A-F]{4})> <([0-9A-F]{4})>/g))
+      glyphs.set(glyph,String.fromCharCode(parseInt(unicode,16)))
+  }
+  return [...pdf.matchAll(/BT \/(F[1-4]) ([\d.]+) Tf 1 0 0 1 [-\d.]+ [-\d.]+ Tm (\((?:\\.|[^\\)])*\)|<[0-9A-F]+>) Tj ET/g)]
+    .map(([,font,size,encoded])=>({
+      size:Number(size),
+      text:encoded.startsWith('(')
+        ? encoded.slice(1,-1).replace(/\\([\\()])/g,'$1')
+        : encoded.slice(1,-1).match(/.{4}/g).map(glyph=>{
+          assert.equal(font,'F2','hexadecimal text uses the embedded Unicode font')
+          assert.ok(glyphs.has(glyph),'PDF ToUnicode defines caption/text glyph '+glyph)
+          return glyphs.get(glyph)
+        }).join(''),
+    }))
+}
+
+function assertNeutralCaption(pdf,locale){
+  const runs=pdfTextRuns(pdf)
+  assert.deepEqual(runs.filter(run=>run.size===9.15).map(run=>run.text),neutralCaption[locale],
+    'caption attributes exactly two observations to the client without implying improvement')
+  assert.doesNotMatch(runs.map(run=>run.text).join('\n'),/A small step forward/,
+    'the removed directional caption must not reappear elsewhere in the PDF')
+  return runs
+}
+
 test('PDF prints approved lighthouse twice plus ocean and botanical vector graphics in both languages',()=>{
   for(const locale of ['ru','en']){
     const pdf=buildPrescriptionPdf(sample(locale),locale,origin).toString('latin1')
@@ -153,8 +189,9 @@ test('mockup-aligned first-page composition uses two measured gauges, split clie
     assert.match(pdf,/\/RemedyPhoto1 Do Q/,'original remedy source photo remains')
     assert.match(pdf,/\/Signature Do Q/,'signed white closing remains')
     assert.doesNotMatch(pdf,/\(TARGET\)/,'a future goal is never a third score')
-    if(locale==='en')assert.match(pdf,/\(A small step forward\)/,
-      'editorial quote is only a neutral caption, not a treatment claim')
+    const runs=assertNeutralCaption(pdf,locale)
+    assert.deepEqual(runs.filter(run=>run.size===13.6).map(run=>run.text),['3/10','6/10'],
+      'only the two actual supplied values appear in the gauges')
   }
   const single=buildPrescriptionPdf({
     patientName:'SYNTHETIC NON-MEASURED CLIENT',
@@ -165,4 +202,60 @@ test('mockup-aligned first-page composition uses two measured gauges, split clie
   },'en',origin).toString('latin1')
   assert.doesNotMatch(single,/A small step forward/,
     'no measurement graphic or caption when the client provided no paired observations')
+})
+
+
+test('paired self-ratings keep neutral captions and exact numbers for increases, ties and decreases',()=>{
+  for(const locale of ['en','ru'])for(const [before,after] of [[3,6],[6,6],[6,3],[0,0],[10,0]]){
+    for(const source of ['structured','legacy']){
+      const document=sample(locale,{
+        items:[],
+        ...(source==='structured'
+          ? {progressBefore:before,progressAfter:after}
+          : {analysis:locale==='ru'
+            ? `Было: ${before}/10\nПосле сессии: ${after}/10\nЦель: 7.3/10`
+            : `Before: ${before}/10\nAfter session: ${after}/10\nTarget: 7.3/10`}),
+      })
+      const pdf=buildPrescriptionPdf(document,locale,origin).toString('latin1')
+      const runs=assertNeutralCaption(pdf,locale)
+      assert.deepEqual(runs.filter(run=>run.size===13.6).map(run=>run.text),
+        [before+'/10',after+'/10'],locale+' '+source+': no invented score, reordered change or third target')
+    }
+  }
+})
+
+test('missing, cleared and invalid score pairs never gain a rating caption or fabricated gauge',()=>{
+  for(const locale of ['en','ru'])for(const extra of [
+    {analysis:'Only a future target: 7/10'},
+    {analysis:'Before: 3/10\nTarget: 7/10'},
+    {analysis:'After session: 6/10'},
+    {progressBefore:null,progressAfter:null},
+    {progressBefore:3,progressAfter:''},
+    {progressBefore:11,progressAfter:6},
+  ]){
+    const pdf=buildPrescriptionPdf(sample(locale,{items:[],...extra}),locale,origin).toString('latin1')
+    const runs=pdfTextRuns(pdf)
+    for(const caption of neutralCaption[locale])
+      assert.ok(!runs.some(run=>run.text===caption),'the new neutral caption is absent without paired observations')
+    assert.deepEqual(runs.filter(run=>run.size===9.15 || run.size===13.6),[],
+      'no caption or score may be manufactured from a missing or invalid observation')
+    assert.ok(!pdf.includes('0.965 0.980 0.969 rg'),'no measurement panel without a complete valid pair')
+    assert.ok(!runs.some(run=>/^(?:SELF-RATED PROGRESS|ДИНАМИКА САМООЦЕНКИ|START|END|НАЧАЛО|КОНЕЦ|A small step forward)$/.test(run.text)),
+      'no progress title, gauge labels or removed improvement caption without a real pair')
+  }
+})
+
+test('caption check rejects fabricated improvement and incomplete before/after wording',()=>{
+  const pdf=buildPrescriptionPdf(sample('en',{items:[]}), 'en',origin).toString('latin1')
+  for(const [original,replacement] of [
+    ['(Your ratings)','(A small step forward)'],
+    ['(Your ratings)','(Your improvement)'],
+    ['(before and after.)','(after treatment improved.)'],
+    ['(before and after.)','(before only.)'],
+  ]){
+    assert.ok(pdf.includes(original),'mutation targets a real PDF caption operator')
+    assert.throws(()=>assertNeutralCaption(pdf.replace(original,replacement),'en'),
+      {code:'ERR_ASSERTION',message:/caption attributes exactly two observations/},
+      'a wrong or directional caption must fail even when genuine scores are still present')
+  }
 })

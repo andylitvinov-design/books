@@ -33,7 +33,7 @@ No such Resend key or verified sender domain was present in Holistic House Verce
 
 ## QA gates and incomplete external configuration
 - Run targeted tests, lint and Next build.
-- Apply the migration 20261018160000_hh_crm_email_delivery.sql only after dry-run and SQL/RLS review.
+- Apply the migration 20261018131448_hh_crm_email_delivery_20261018.sql only after dry-run and SQL/RLS review.
 - Anonymous CRM must remain 401, public unsubscribe must return generic output, and GET must never update consent.
 - Verify with authorized synthetic opt-in accounts: address confirmation, one send, duplicate requestId, withdrawal, unsubscribe, bounce, and no cross-account information.
 - Without a Resend API key, verified custom sender, postal address, webhook secret and test acceptance, leave HH_CRM_EMAIL_ENABLED off. Do NOT claim live delivery.

@@ -69,7 +69,7 @@ export default function SpanishHomePage() {
           </div>
         </article>
       </div>
-      <p className="service-home-start__returning">¿Ya tienes resultados o un perfil? <Link href="/es/client">Abrir mi espacio <span aria-hidden="true">→</span></Link></p>
+      <p className="service-home-start__returning"><Link href="/es/tests">Cómo funcionan las pruebas gratuitas <span aria-hidden="true">→</span></Link><span aria-hidden="true"> · </span>¿Ya tienes resultados o un perfil? <Link href="/es/client">Abrir mi espacio <span aria-hidden="true">→</span></Link></p>
     </section>
     <section className="about-testimonials" aria-labelledby="home-es-testimonials-title">
       <div className="about-section-heading">

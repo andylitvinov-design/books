@@ -70,10 +70,17 @@ test('invoices remain on their approved template, never using recommendation rin
 test('mobile report and print use adaptive layouts without static page counts', () => {
   const view = readFileSync('components/prescription-document.jsx','utf8')
   const styles = readFileSync('components/consultation-report.css','utf8')
-  for (const marker of ['canonical-report-hero','canonical-progress-dial','canonical-remedy-card-photo']) {
+  // The compact prescription plan is image-free; original photos remain in
+  // the illustrated appendix rather than in the former remedy cards (#1071).
+  for (const marker of ['canonical-report-hero','canonical-progress-dial','canonical-remedy-profile-thumb']) {
     assert.ok(view.includes(marker), marker+' is rendered from client data')
     assert.ok(styles.includes(marker), marker+' has responsive styling')
   }
+  const planStart = view.indexOf('{groups.map((group)')
+  const planEnd = view.indexOf('{guidance &&', planStart)
+  assert.ok(planStart >= 0 && planEnd > planStart, 'the compact prescription plan is bounded')
+  assert.doesNotMatch(view.slice(planStart, planEnd), /<img\b|canonical-remedy-card-photo/,
+    'original photographs belong in the appendix, outside the compact dosing plan')
   assert.match(styles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/)
   assert.match(styles, /@media print/)
   assert.match(styles, /break-inside:avoid/)

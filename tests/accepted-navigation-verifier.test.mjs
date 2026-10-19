@@ -102,6 +102,20 @@ for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'tw
   await assert.rejects(assertCabinetPrimaryNavigation(target, expect, { current: 'portrait' }))
 })
 
+// The Courses tab selects the list, while its active ID remains "course".
+for (const locale of ['en', 'ru']) for (const [surface, Renderer] of [['mobile', PrivateNav], ['desktop', DesktopNav]]) {
+  for (const suffix of ['', '?view=lesson', '?view=courses&courseId=other', '?view=courses&view=lesson', '?view=courses#other']) {
+    test(`${locale} ${surface} rejects non-exact Courses query ${suffix || '(missing)'}`, async () => {
+      const tree = Renderer({ locale, page: 'course' })
+      const courseLink = links(tree).find(node => node.props.href === `/${locale}/app/course?view=courses`)
+      assert.ok(courseLink, 'actual owner Courses link exists')
+      courseLink.props.href = `/${locale}/app/course${suffix}`
+      const target = { locator: () => locator([tree]) }
+      await assert.rejects(assertCabinetPrimaryNavigation(target, expect, { locale, current: 'course' }))
+    })
+  }
+}
+
 test('core exercises accepted private labels, five private destinations and mobile Home navigation and compact account picker', () => {
   const core = read('scripts/verify-app-r1.mjs')
   assert.ok(core.includes("toHaveText(locale==='ru'?'Отчёты':'Reports')"))

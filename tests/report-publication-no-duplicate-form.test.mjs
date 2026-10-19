@@ -1,4 +1,5 @@
 import test from 'node:test'
+import {assertStudioDeliveryOrder} from './helpers/report-editor-contracts.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {emptySessionDraft,normalizeDraft,clientPayload} from '../lib/clients/delivery-model.js'
@@ -10,20 +11,13 @@ test('saved consultation report can be delivered without filling a second plan f
   const editor=source('components/admin-session-studio.jsx')
   const report=source('components/prescription-document.jsx')
   const model=source('lib/clients/delivery-model.js')
-  const first=editor.indexOf('id="session-attached-report"')
-  const personal=editor.indexOf("<summary>{ru?'Личное сопроводительное сообщение")
-  const optional=editor.indexOf("<summary>{ru?'Дополнительные заметки и упражнения")
-  const materials=editor.indexOf("aria-label={ru?'Общие материалы из библиотеки'")
-  const recorder=editor.indexOf("aria-label={ru?'Персональные записи консультации'")
-  const publication=editor.indexOf('id="session-publication"')
-  for(const v of [first,personal,optional,materials,recorder,publication])assert.ok(v>0)
-  assert.ok(first<personal&&personal<optional&&optional<materials&&materials<recorder&&recorder<publication)
+  const {first,personal,optional,materials,recorder,publication}=assertStudioDeliveryOrder(editor)
   assert.ok(editor.indexOf('Привязанный отчёт (настоящий PDF)')<personal)
   assert.ok(editor.indexOf('Главный фокус встречи')>optional)
   assert.ok(editor.indexOf('Главный фокус встречи')<materials)
   assert.ok(editor.indexOf('Материалы из библиотеки')>materials)
   assert.ok(editor.indexOf('<SessionMaterialPicker locale={locale}')>materials)
-  assert.ok(editor.indexOf('<SessionMaterialPicker locale={locale}')<recorder)
+  assert.ok(editor.indexOf('<SessionMaterialPicker locale={locale}')<publication)
   assert.match(editor,/id="session-attached-report"/)
   assert.match(editor,/href="#session-publication"/)
   assert.match(editor,/id="session-publication"/)

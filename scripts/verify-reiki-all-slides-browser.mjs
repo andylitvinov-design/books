@@ -6,7 +6,9 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { chromium, webkit, expect } from "@playwright/test";
-import { energyworkSequence } from "../data/academy/energywork-ai-schema.js";
+import { energyworkLessonRanges, energyworkSequence } from "../data/academy/energywork-ai-schema.js";
+
+import { assertReviewKeyboardAccess } from "./helpers/reiki-review-keyboard-verifier.mjs";
 
 const origin = process.env.HH_TEST_APP_ORIGIN || "http://127.0.0.1:3100";
 assert.match(origin, /^http:\/\/(?:127\.0\.0\.1|localhost):[0-9]+$/, "Never browse a real account or production site");
@@ -15,6 +17,7 @@ const browser = await (engineName === "webkit" ? webkit : chromium).launch();
 const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
+const lessonRanges = energyworkLessonRanges(expectedSequence);
 assert.equal(expectedSequence.length, 53, "One consecutive course must have 53 screens");
 const milestones = new Set([1,2,4,6,8,13,20,25,26,33,34,40,44,45,53]);
 const pageErrors = [];
@@ -27,6 +30,14 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     const primary = element.querySelector("button[data-energywork-next]");
     const progress = element.querySelector('[role="progressbar"]');
     const journey = element.querySelector("nav ol");
+    const stageLabels = [...(journey?.querySelectorAll('[class*="journeyLabel"]') || [])].map(label => ({
+      text: label.textContent?.trim() || "",
+      width: label.getBoundingClientRect().width,
+      height: label.getBoundingClientRect().height,
+      scrollHeight: label.scrollHeight,
+      clientHeight: label.clientHeight,
+      clipped: getComputedStyle(label).clipPath,
+    }));
     const title = element.querySelector("#energywork-slide-title");
     const rect = primary ? primary.getBoundingClientRect() : null;
     const slideRect = slide.getBoundingClientRect();
@@ -42,8 +53,11 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       titleColor: getComputedStyle(title).color,
       progressCurrent: Number(progress?.getAttribute("aria-valuenow")),
       progressMax: Number(progress?.getAttribute("aria-valuemax")),
+      progressLabel: element.querySelector('[class*="progressHeader"] span')?.textContent?.trim() || "",
       stageCount: journey?.children.length || 0,
       activeStage: journey?.querySelectorAll('[aria-current="step"]').length || 0,
+      stageLabels,
+      slideJustify: getComputedStyle(scroller).justifyContent,
       slideHeight: slideRect.height,
       titleHeaderCount: element.querySelectorAll("header").length,
       previewUnderProgramme: Boolean(element.querySelector("aside")?.closest("details[class*='programme']")),
@@ -60,8 +74,23 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   assert.ok(data.title.length > 3, where + ": readable title");
   assert.equal(data.progressCurrent, index, where + ": actual slide progress");
   assert.equal(data.progressMax, expectedSequence.length, where + ": total");
+  const range = lessonRanges.find(item => index - 1 >= item.start && index - 1 < item.end);
+  const expectedLabel = range
+    ? (locale === "ru" ? "Урок " : "Lesson ") + range.lesson + " · " + (locale === "ru" ? "Слайд " : "Slide ") +
+      (index - range.start) + " " + (locale === "ru" ? "из" : "of") + " " + range.count
+    : (locale === "ru" ? "Введение · Слайд " : "Introduction · Slide ") + index +
+      " " + (locale === "ru" ? "из " : "of ") + lessonRanges[0].start;
+  assert.equal(data.progressLabel, expectedLabel, where + ": exact within-lesson slide counter");
   assert.equal(data.stageCount, 5, where + ": five true lesson circles");
   assert.equal(data.activeStage, 1, where + ": one highlighted current stage, including course welcome");
+  assert.equal(data.stageLabels.length, 5, where + ": all five lesson names are rendered");
+  for (const label of data.stageLabels) {
+    assert.ok(label.text.length > 4, where + ": a meaningful full stage name");
+    assert.ok(label.width >= 34 && label.height >= 15, where + ": stage name visibly occupies space, not visually hidden: "+JSON.stringify(label));
+    assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
+    assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
+  }
+  assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
   assert.ok(data.previewUnderProgramme, where + ": private saving is accessible inside programme disclosure");
   assert.equal(data.programmeOpen, false, where + ": programme details closed until requested");
@@ -95,6 +124,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
       await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(2);
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
+      const keyboardProof = await assertReviewKeyboardAccess(carousel.locator("blockquote p"), locale, expect, page.keyboard);
+      console.log("REIKI_REVIEW_KEYBOARD_PASS", JSON.stringify({ locale, width, id, ...keyboardProof }));
       const first = await carousel.locator("blockquote p").innerText();
       await page.locator("button[data-review-next]").click();
       await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
@@ -109,7 +140,12 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
     }
   }
-  if (data.kind === "milestone") await expect(page.locator("button[data-energywork-next]")).toHaveText(/I'm committed!/);
+  if (data.kind === "milestone") {
+    await expect(page.locator("button[data-energywork-next]")).toHaveText(locale === "ru" ? "Продолжить" : "Continue");
+    await expect(page.locator("button[data-energywork-save-progress]")).toHaveText(locale === "ru" ? "Войти и сохранить" : "Sign in to save");
+  } else {
+    await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
+  }
   if (screenshot) {
     await page.screenshot({ path: output+"/"+engineName+"-"+locale+"-"+width+"-"+String(index).padStart(2,"0")+"-"+id+".png", animations:"disabled", timeout:30000 });
   }
@@ -136,15 +172,25 @@ async function exerciseJourney(page, locale, width) {
       await page.locator('input[name="welcome-02"][value="beginner"]').check();
     }
     if (["flight-04","tan-04","kun-04","ygg-04"].includes(id)) {
-      // No bypass without a feeling score AND a short written observation.
-      await expect(page.locator("button[data-energywork-next]")).toBeDisabled();
-      const slider = page.locator('[data-meditation-feeling] input[type="range"]');
-      await slider.focus();
-      await slider.press("ArrowRight");
-      await expect(page.locator("button[data-energywork-next]")).toBeDisabled();
-      await page.locator('textarea[id="answer-'+id+'"]').fill(locale==="ru"
+      // A short written review is enough; no numeric meditation rating.
+      const reviewButton = page.locator("button[data-energywork-next]");
+      await expect(reviewButton).toBeDisabled();
+      await expect(page.locator('[data-meditation-feeling]')).toHaveCount(0);
+      await expect(reviewButton).toContainText(locale==="ru" ? "Сохранить отзыв" : "Save review");
+      const field = page.locator('textarea[id="answer-'+id+'"]');
+      await field.fill('12345678901234');
+      await expect(reviewButton).toBeDisabled();
+      await field.fill('123456789012345');
+      await expect(reviewButton).toBeEnabled();
+      // A long, detailed review must remain fully editable; 15 is only a minimum.
+      const longReview='x'.repeat(2500);
+      await field.fill(longReview);
+      await expect(field).toHaveValue(longReview);
+      await expect(reviewButton).toBeEnabled();
+      await expect(page.locator('[class*="feedbackCount"]')).toContainText('2500');
+      await field.fill(locale==="ru"
         ? "Я заметил(а) своё спокойное дыхание." : "I noticed a quiet moment.");
-      await expect(page.locator("button[data-energywork-next]")).toBeEnabled();
+      await expect(reviewButton).toBeEnabled();
     }
     if (index===expectedSequence.length) break;
     const next = page.locator("button[data-energywork-next]");
@@ -155,6 +201,88 @@ async function exerciseJourney(page, locale, width) {
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
+}
+
+/* Screenshot-equivalent short mobile viewport: first-view course instructions should
+   fit without scrolling the inner teaching panel. Videos and extensive lessons
+   remain scrollable, but these introductory controls must fit. */
+async function verifyShortViewport(page,locale) {
+  await page.setViewportSize({width:375,height:625});
+  await page.goto(origin+"/"+locale+"/academy/principles-of-energywork/learn",{waitUntil:"domcontentloaded",timeout:90000});
+  await expect(page.locator("button[data-energywork-next]")).toBeEnabled({timeout:60000});
+
+  async function expectFits(id) {
+    await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id",id);
+    const dimensions = await page.locator("[data-energywork-slide-id] [class*='slideMain']").evaluate(node=>{
+      // Inspect the initial (unscrolled) view, not Playwright's auto-scrolled
+      // radio-button state. A choice may technically exist yet be cut off.
+      node.scrollTop = 0;
+      const panel = node.getBoundingClientRect();
+      const within = selector => {
+        const item = node.querySelector(selector);
+        if (!item) return null;
+        const rect = item.getBoundingClientRect();
+        return {top:rect.top, bottom:rect.bottom, height:rect.height};
+      };
+      return {
+        used:node.scrollHeight,
+        space:node.clientHeight,
+        width:innerWidth,
+        height:innerHeight,
+        justify:getComputedStyle(node).justifyContent,
+        panelTop:panel.top,
+        panelBottom:panel.bottom,
+        benefit:within('[class*="benefits"]'),
+        lastChoice:within('[class*="experienceChoice"]:last-child'),
+        selectedGuidance:within('[class*="experienceGuidance"]'),
+        reviewPortrait:within('[class*="art"]'),
+      };
+    });
+    // Welcome and introductory photo/video slides should fit by design.
+    // Dense translated answers or timer+reflection may scroll naturally:
+    // never make the type tiny or hide the five course stage names to force fit.
+    const allowedExtra = id === "welcome-02" ? 110 : id === "flight-03" ? 125 : 35;
+    assert.ok(dimensions.used <= dimensions.space + allowedExtra,
+      locale+" "+id+" must not require excessive inner scrolling on 375×625: "+JSON.stringify(dimensions));
+    assert.ok(dimensions.justify.includes("center"),
+      locale+" "+id+" should balance short teaching content vertically");
+    const bottomMargin = 3;
+    if (id === "welcome-01") {
+      assert.ok(dimensions.benefit, locale+" welcome benefits are present");
+      assert.ok(dimensions.benefit.bottom <= dimensions.panelBottom + bottomMargin,
+        locale+" welcome benefit card must not be cut off: "+JSON.stringify(dimensions));
+    }
+    if (id === "welcome-02") {
+      assert.ok(dimensions.lastChoice, locale+" fourth radio is present");
+      assert.ok(dimensions.lastChoice.bottom <= dimensions.panelBottom + bottomMargin,
+        locale+" fourth Reiki-experience option must be visible without scrolling: "+JSON.stringify(dimensions));
+      if (dimensions.selectedGuidance) {
+        assert.ok(dimensions.selectedGuidance.bottom <= dimensions.panelBottom + bottomMargin,
+          locale+" selected experience guidance must fit after fourth option: "+JSON.stringify(dimensions));
+      }
+    }
+    if (id === "flight-voices") {
+      assert.ok(dimensions.reviewPortrait && dimensions.reviewPortrait.height >= 98,
+        locale+" review portrait must be a real recognizable photograph, not a tiny strip: "+JSON.stringify(dimensions));
+    }
+  }
+
+  await expectFits("welcome-01");
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("welcome-02");
+  await page.locator('input[name="welcome-02"][value="master"]').check();
+  await expectFits("welcome-02"); // inspect the longest end-of-list selection
+  await page.locator('input[name="welcome-02"][value="beginner"]').check();
+  await expectFits("welcome-02"); // and the normal intro choice
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-01");
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-02"); // video poster remains visible without autoplay
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-03");
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-voices");
+  console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:6}));
 }
 
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
@@ -172,6 +300,7 @@ try {
     await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
     await inspect(page,{locale,width,index:1,id:"welcome-01",screenshot:true});
   }
+  for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:53,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {

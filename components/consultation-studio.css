@@ -1126,3 +1126,73 @@
   .consultation-studio-submit { padding: 13px; gap: 10px; }
   .consultation-studio-submit .consultation-primary-action { font-size: 15px !important; }
 }
+
+/* Both Create and Edit use the same optional report-builder details. */
+.consultation-advanced-remedy,
+.consultation-extra-details {
+  min-width: 0;
+  margin-top: 8px;
+  border-top: 1px solid #e6dcd0;
+  padding-top: 10px;
+}
+.consultation-advanced-remedy summary,
+.consultation-extra-details summary {
+  cursor: pointer;
+  color: #715140;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  padding: 7px 2px;
+}
+.consultation-advanced-remedy summary span { font-size: 11px; color: #277683; }
+.consultation-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 10px 0;
+}
+.consultation-advanced-grid label { min-width: 0; display: grid; gap: 5px; }
+.consultation-advanced-grid label span { font-size: 12px; font-weight: 600; }
+.consultation-advanced-grid input,
+.consultation-advanced-grid textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid #d6c5b5;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  color: #392b22;
+  font-size: 16px;
+}
+.consultation-advanced-grid .consultation-advanced-notes { grid-column: 1 / -1; }
+.consultation-edit-return { margin: 15px 0; }
+.consultation-edit-return a { font-size: 14px; color: #70513c; }
+.consultation-edit-materials { margin: 24px auto; max-width: 920px; }
+.consultation-edit-document-links { margin: 24px auto; max-width: 920px; }
+.consultation-edit-document-links > summary { cursor: pointer; padding: 13px; font-weight: 700; }
+@media (max-width: 600px) {
+  .consultation-advanced-grid { grid-template-columns: minmax(0, 1fr); }
+  .consultation-advanced-grid .consultation-advanced-notes { grid-column: 1; }
+}
+
+/* Create and edit offer the same reusable report-materials panel. */
+.consultation-new-materials .consultation-new-materials-help {
+  margin: 8px 0 14px; color: #55747b; font-size: 14px; line-height: 1.5;
+}
+.consultation-new-materials .consultation-new-materials-pending {
+  display: grid; gap: 7px; margin-top: 14px; border: 1px solid #cfdfdf;
+  border-radius: 13px; background: #f4fbfa; padding: 13px;
+  color: #335f68; font-size: 13px; line-height: 1.55;
+}
+.consultation-new-materials .consultation-new-materials-link { color: #246976; font-weight: 700; }
+
+/* Submit actions are portaled after the material and access sections, at the true page end. */
+.consultation-report-save-slot {
+  max-width: 920px;
+  margin: 22px auto 0;
+}
+.consultation-report-save-slot .consultation-studio-submit {
+  margin: 0;
+}

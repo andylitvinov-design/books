@@ -1,7 +1,8 @@
 'use client'
 import { useState, useRef } from 'react'
-import { FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
+import { FileDown,FileText,Headphones,LockKeyhole,PlayCircle,Play,AudioLines,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
+import { DaoStageDisclosure } from './dao-resource-stage'
 import { PublicSiteHeader } from './public-site-header'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/shared-education-model'
@@ -10,8 +11,10 @@ import { SessionExitSaveGuard } from './session-exit-save-guard'
 import { SessionYouTubePlayer } from './session-youtube-player'
 import { SessionPrivateVideoPoster } from './session-private-video-poster'
 import styles from './client-session.module.css'
+import voiceStyles from './client-session-voice-card.module.css'
+import { StaticPortrait } from './static-portrait'
 
-function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
+function PrivatePlayer({item,session,mode,selector,locale,savedId,showPractitionerPortrait=false}) {
   const [source,setSource]=useState('')
   const [expiry,setExpiry]=useState(0)
   const [error,setError]=useState('')
@@ -19,6 +22,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
   const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education',library=item.role==='library'
   const isMov=isVideo&&item.mime==='video/quicktime'
+  const portraitEnabled=showPractitionerPortrait&&!isVideo
   const route=mode==='owner'?'/api/admin/clients/'+selector+'/sessions/'+session.id+'/media/'+item.assetId:
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/'+item.assetId:
@@ -61,34 +65,74 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
       (ru?'Этот MOV/HEVC может не поддерживаться вашим браузером. Попробуйте открыть оригинальный файл.':'This MOV/HEVC may not play in your browser. Try opening the original file.'):
       (ru?'Откройте запись повторно':'Please reopen the recording'))}
   }
-  return <article className={styles.clientMediaCard}>
-    <div className={styles.mediaHeading}>{isVideo?<Video size={20}/>:<Headphones size={20}/>}
-      <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
-        <small>{library?(ru?'Дополнительное видео':'Supplementary video'):educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
-          isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
-    </div>
-    {!source?(isVideo?
-      <div className={styles.privateVideoPreview}>
-        <SessionPrivateVideoPoster src={route}/>
-        <button className={styles.privateVideoPreviewButton} type="button"
-          disabled={loading} onClick={()=>load(false)}>
-          <PlayCircle size={44} aria-hidden="true"/>
-          <span>{loading?(ru?'Подключаем видео…':'Loading video…'):(ru?'Смотреть видео':'Play video')}</span>
-        </button>
-      </div>:
-      <button className={styles.playButton} type="button" disabled={loading} onClick={()=>load(false)}>
-        <PlayCircle size={26}/>{loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')}
-      </button>)
-      :isVideo?<video ref={player} className={styles.video} controls playsInline preload="metadata" src={source}
-        onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>:
-        <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
-          onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>}
+  // Keep the original secured media transport and controls; the portrait is only
+  // an optional visual layout for the personal voice card after the report cover.
+  const heading=<div className={[styles.mediaHeading,portraitEnabled&&voiceStyles.voiceHeading].filter(Boolean).join(' ')}>
+    {!portraitEnabled&&(isVideo?<Video size={20}/>:<Headphones size={20}/>)}
+    <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
+      <small>{library?(ru?'Дополнительное видео':'Supplementary video'):educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
+        isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
+    {portraitEnabled&&<AudioLines className={voiceStyles.soundWaves} size={29} aria-hidden="true"/>}
+  </div>
+  const buttonLabel=loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')
+  const control=!source?(isVideo?
+    <div className={styles.privateVideoPreview}>
+      <SessionPrivateVideoPoster src={route}/>
+      <button className={styles.privateVideoPreviewButton} type="button"
+        disabled={loading} onClick={()=>load(false)}>
+        <PlayCircle size={44} aria-hidden="true"/>
+        <span>{loading?(ru?'Подключаем видео…':'Loading video…'):(ru?'Смотреть видео':'Play video')}</span>
+      </button>
+    </div>:
+    <button className={[styles.playButton,portraitEnabled&&voiceStyles.voicePlayButton].filter(Boolean).join(' ')}
+      type="button" disabled={loading} onClick={()=>load(false)}
+      aria-label={portraitEnabled?buttonLabel:undefined}>
+      {portraitEnabled?<><span className={voiceStyles.voicePlayIcon}><Play size={18} fill="currentColor" aria-hidden="true"/></span>
+        <span className={voiceStyles.buttonTextWide}>{buttonLabel}</span>
+        <span className={voiceStyles.buttonTextNarrow} aria-hidden="true">{loading?(ru?'Загрузка…':'Loading…'):(ru?'Слушать':'Play')}</span>
+      </>:<><PlayCircle size={26}/>{buttonLabel}</>}
+    </button>)
+    :isVideo?<video ref={player} className={styles.video} controls playsInline preload="metadata" src={source}
+      onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>:
+      <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
+        onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>
+  return <article className={[styles.clientMediaCard,portraitEnabled&&voiceStyles.voiceCard].filter(Boolean).join(' ')}>
+    {portraitEnabled?<>
+      <div className={voiceStyles.voiceLayout}>
+        <span className={voiceStyles.portraitFrame}>
+          <StaticPortrait src="/images/holistic-house/andy-about.png"
+            alt={ru?'Андрей Литвинов':'Andrey Litvinov'}
+            width={192} height={188} sizes="(max-width: 355px) 70px, (max-width: 580px) 86px, 124px" loading="lazy"/>
+        </span>
+        <div className={voiceStyles.voiceBody}>{heading}{!source&&control}</div>
+      </div>
+      {source&&<div className={voiceStyles.activePlayer}>{control}</div>}
+    </>:<>{heading}{control}</>}
     {item.transcript&&<details className={styles.transcript}><summary>{ru?'Текст записи':'Transcript'}</summary>
       <p lang={educational?'ru':undefined}>{item.transcript}</p></details>}
     {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button>{isMov&&<> <a href={route} download="consultation-video.mov">{ru?'Открыть оригинал MOV':'Open original MOV'}</a></>}</p>}
   </article>
 }
-export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false}) {
+// Embed the same private audio player directly after the signed report cover.
+export function ClientSessionVoiceMessage({session,selector,locale='en',mode='guest',savedId=null}) {
+  const ru=locale==='ru'
+  const audio=(session?.media||[]).filter(item=>item.kind==='audio'&&item.role!=='hidden'&&
+    (!item.role||item.role==='personal'))
+  if(!audio.length)return null
+  return <section id="session-message" className={[styles.clientSection,styles.reportVoiceSection,voiceStyles.voiceSection].join(' ')}
+    aria-label={ru?'Голосовое обращение':'Voice message'}>
+    <header className={[styles.sectionHeader,voiceStyles.voiceSectionHeader].join(' ')}>
+      <span className={styles.sectionIcon}><Headphones size={21}/></span>
+      <div><span className={styles.sectionKicker}>{ru?'ГОЛОСОВОЕ ОБРАЩЕНИЕ':'VOICE MESSAGE'}</span>
+        <h2 className={voiceStyles.voiceTitle}>{ru?'Аудиосообщение для вас':'An audio message for you'}</h2></div>
+    </header>
+    <div className={[styles.mediaList,voiceStyles.voiceList].join(' ')}>
+      {audio.map(item=><PrivatePlayer key={item.assetId} item={item}
+        session={session} mode={mode} selector={selector} locale={locale} savedId={savedId} showPractitionerPortrait/>)}
+    </div>
+  </section>
+}
+export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false,audioEmbedded=false}) {
   const ru=locale==='ru'
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
     .format(new Date(session.occurredOn+'T12:00:00Z'))
@@ -105,6 +149,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   // Retain existing introductory videos; only explicitly selected videos
   // and approved study links appear in the final Materials section.
   const videoMedia=media.filter(item=>item.kind==='video'&&!['meditation','additional'].includes(item.role))
+  const hasVideoWelcome=videoMedia.some(item=>!item.role||item.role==='personal')
   const materialsVideos=media.filter(item=>item.kind==='video'&&['meditation','additional'].includes(item.role))
   const personalAudio=media.filter(item=>item.kind==='audio'&&(!item.role||item.role==='personal'))
   const photos=media.filter(item=>item.kind==='image')
@@ -132,7 +177,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   // Keep independently authored session messages visible without repeating report text.
   const authoredMessage=typeof session.summary==='string'?session.summary.trim():''
   const alreadyInReport=Boolean(hasFullReport&&authoredMessage&&[
-    recommendation?.analysis,recommendation?.additionalNotes,recommendation?.generalInstructions,
+    recommendation?.analysis,recommendation?.recommendationsText,recommendation?.additionalNotes,recommendation?.generalInstructions,
   ].some(text=>typeof text==='string'&&text.includes(authoredMessage)))
   const extraSessionMessage=hasFullReport&&!alreadyInReport?authoredMessage:''
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
@@ -152,8 +197,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         aria-label={ru?'Видео к вашей консультации':'Videos for your consultation'}>
         <header className={styles.sectionHeader}>
           <span className={styles.sectionIcon}><Video size={21}/></span>
-          <div><span className={styles.sectionKicker}>{ru?'ВИДЕО К КОНСУЛЬТАЦИИ':'CONSULTATION VIDEOS'}</span>
-            <h2>{ru?'Видео для вас':'Videos for you'}</h2></div>
+          <div><span className={styles.sectionKicker}>{hasVideoWelcome?(ru?'ВИДЕОПРИВЕТСТВИЕ':'VIDEO WELCOME'):(ru?'ВИДЕО К КОНСУЛЬТАЦИИ':'CONSULTATION VIDEOS')}</span>
+            <h2>{hasVideoWelcome?(ru?'Видеоприветствие':'Video welcome'):(ru?'Видео для вас':'Videos for you')}</h2></div>
         </header>
         {videoMedia.length>0&&<div className={styles.mediaList}>
           {videoMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
@@ -184,46 +229,26 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           ru?'Просмотрите назначения и индивидуальные инструкции ниже.':
           'Review the assigned items and your practitioner’s individual instructions below.'
         }</p>}
-        <a href={nextAnchor} className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'Review recommendations ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
+        <a href={nextAnchor} className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'View prescriptions ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
       </div>}
       <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
     </section>}
 
+    {!audioEmbedded&&!hasFullReport&&<ClientSessionVoiceMessage session={session}
+      selector={selector} mode={mode} locale={locale} savedId={savedId}/>}
     {hasFullReport&&<section id="session-report" className={styles.fullReportSection}
       aria-label={ru?'Полный отчёт консультации':'Complete consultation report'}>
       <div className={styles.fullReportContent}>{reportContent}</div>
     </section>}
 
-    {personalAudio.length>0&&<section id="session-message" className={styles.clientSection} aria-label={ru?'Голосовое обращение':'Voice message'}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><Headphones size={21}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ГОЛОСОВОЕ ОБРАЩЕНИЕ':'VOICE MESSAGE'}</span>
-          <h2>{ru?'Аудиосообщение для вас':'An audio message for you'}</h2></div>
-      </header>
-      <div className={styles.mediaList}>
-        {personalAudio.map(item=><PrivatePlayer key={item.assetId} item={item}
-          session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
-      </div>
-    </section>}
+    {!audioEmbedded&&hasFullReport&&<ClientSessionVoiceMessage session={session}
+      selector={selector} mode={mode} locale={locale} savedId={savedId}/>}
 
     {!hasFullReport&&hasRecommendation&&<>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="summary"/>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="remedies"/>
-    </>}
 
-    {session.report&&<section id={hasFullReport?'session-download':'session-report'} className={styles.clientSection+' '+styles.reportDownloadSection}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><FileDown size={20}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
-          <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
-      </header>
-      <div className={styles.reportPanel}>
-        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
-          'Your original PDF contains the complete recommendations and additional details.'}</p>
-        <a href={pdfPath} className={styles.downloadButton} download><FileDown size={20}/>
-          {ru?'Скачать PDF-отчёт':'Download the full PDF'}</a>
-      </div>
-    </section>}
+    </>}
 
     {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
       <header className={styles.sectionHeader}>
@@ -307,8 +332,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           <span className={styles.sectionKicker}>{ru?'К ВАШЕМУ ОТЧЁТУ':'WITH YOUR REPORT'}</span>
           <h2 id="session-materials-title">{ru?'Материалы':'Materials'}</h2>
           <p className={styles.reportMaterialsIntro}>{ru?
-            'Дополнительные видео, записи и материалы, выбранные специалистом для этой консультации.':
-            'Additional videos, recordings and resources selected for this consultation.'}</p>
+            'Подобрано специально для вашей консультации: видео, аудио и полезные материалы.':
+            'Selected for your consultation: video, audio and helpful resources.'}</p>
         </div>
       </header>
       {materialsYoutubeResources.length>0&&<div className={styles.youtubeLessonList}>
@@ -358,8 +383,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         {ru?'Дополнительные материалы пока не выбраны.':'No additional materials have been selected yet.'}</p>}
     </section>}
 
+    {!hasFullReport&&hasRecommendation&&<DaoStageDisclosure
+      score={recommendation?.daoResourceScore} locale={locale}
+      published={recommendation?.daoResourcePublished !== false}/>}
+
     <nav className={styles.sessionBottomActions} data-hh-report-next-actions
-      aria-label={ru?'Дальнейшие действия после отчёта':'After your report'}>
+      aria-label={ru?'Сохранить отчёт в кабинете':'Save the report to your Cabinet'}>
       <div className={styles.sessionBottomHeading}>
         <span className={styles.sectionKicker}>{ru?'СОХРАНИТЕ И ПРОДОЛЖАЙТЕ':'SAVE & CONTINUE'}</span>
         <h2>{ru?'Ваши следующие шаги':'Your next steps'}</h2>
@@ -375,10 +404,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <BookmarkCheck size={20} aria-hidden="true"/>
         {ru?'Открыть мой кабинет — отчёт сохранён':'Open my Cabinet — report saved'}
       </a>}
-      <a href={'/'+locale+'/client'} className={styles.sessionBottomSecondary}>
-        <Gift size={21} aria-hidden="true"/>
-        {ru?'Пройти дополнительное тестирование (бонус)':'Take additional tests (bonus)'}
-      </a>
       {mode==='owner'&&<p className={styles.sessionBottomHint} role="note">
         {ru?'Предпросмотр специалиста: кнопка сохранения становится активной у клиента по защищённой ссылке.':
           'Practitioner preview: the save button is enabled only for the client with an authorized report link.'}
@@ -389,20 +414,60 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </p>}
     </nav>
 
-    {recommendedTests.length>0&&<section id="session-recommended-tests"
-      className={styles.clientSection} aria-label={ru?'Рекомендуемые тесты':'Recommended tests'}>
+    <section id="session-recommended-tests"
+      className={styles.clientSection+' '+styles.reportRecommendedTestsSection}
+      aria-labelledby="session-recommended-tests-title">
       <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><ListChecks size={20}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ПОСЛЕ КОНСУЛЬТАЦИИ':'AFTER YOUR CONSULTATION'}</span>
-          <h2>{ru?'Рекомендуемые тесты':'Recommended tests'}</h2></div>
+        <span className={styles.sectionIcon}><BookOpen size={20} aria-hidden="true"/></span>
+        <div>
+          <span className={styles.sectionKicker}>{ru?'ДЛЯ САМОСТОЯТЕЛЬНОЙ РАБОТЫ':'FOR YOUR NEXT STEP'}</span>
+          <h2 id="session-recommended-tests-title">{ru?'Рекомендуемые тесты':'Recommended tests'}</h2>
+        </div>
       </header>
-      <p className={styles.sectionIntro}>{ru?'Специалист выбрал тесты для вашего следующего шага.':'Your practitioner selected these tests as a next step.'}</p>
-      {recommendedTests.map(test=><a key={test.key} className={styles.attachmentCard}
-        href={test.href}>
-        <BookOpen size={20} aria-hidden="true"/><div><strong>{test.title}</strong>
-          <small>{ru?'Пройти тест':'Take the test'}</small></div>
-        <ExternalLink size={17} aria-hidden="true"/>
-      </a>)}
+      <p className={styles.reportRecommendedTestsIntro}>{recommendedTests.length>0
+        ? (ru?'Выберите тест, чтобы начать.':'Choose a test to begin.')
+        : (ru?'Вы можете выбрать дополнительные бесплатные тесты.':'Explore additional free tests.')}</p>
+      {recommendedTests.length>0&&<div className={styles.reportRecommendedTestList}>
+        {recommendedTests.map(test=><a key={test.key} className={styles.reportRecommendedTestCard}
+          href={test.href}>
+          <span className={styles.reportRecommendedTestIcon}><BookOpen size={22} aria-hidden="true"/></span>
+          <span className={styles.reportRecommendedTestText}>
+            <strong>{test.title}</strong>
+            <small>{test.startLocale!==locale
+              ?(ru?'Откроется на доступном языке':'Opens in the available language')
+              :(ru?'Пройти тест':'Take the test')}</small>
+          </span>
+          <ExternalLink size={18} className={styles.reportRecommendedTestArrow} aria-hidden="true"/>
+        </a>)}
+      </div>}
+      <a href={'/'+locale+'/client'} className={styles.reportTestCatalogLink}>
+        <Gift size={20} aria-hidden="true"/>
+        {ru?'Пройти дополнительное тестирование (бонус)':'Take additional tests (bonus)'}
+      </a>
+    </section>
+
+    {session.report&&<section id={hasFullReport?'session-download':'session-report'}
+      className={styles.clientSection+' '+styles.reportDownloadSection}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><FileDown size={20} aria-hidden="true"/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
+          <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
+      </header>
+      <div className={styles.reportPanel}>
+        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
+          'Your original PDF contains the complete recommendations and additional details.'}</p>
+        <div className={styles.reportPdfActions}>
+          <a href={pdfPath+'&preview=1&layout=a4'} className={styles.reportPdfPreviewButton}
+            target="_blank" rel="noopener noreferrer">
+            <FileText size={20} aria-hidden="true"/>
+            {ru?'Просмотреть PDF-отчёт':'Preview PDF report'}
+          </a>
+          <a href={pdfPath} className={styles.downloadButton} download>
+            <FileDown size={20} aria-hidden="true"/>
+            {ru?'Скачать отчёт':'Download report'}
+          </a>
+        </div>
+      </div>
     </section>}
 
     <footer className={styles.clientFooter}>

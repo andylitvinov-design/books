@@ -1,4 +1,5 @@
 /* Private practitioner notes and document preview · Holistic House */
+/* One full-width card per narrative block: Analysis → Recommendations → Notes. */
 .consultation-studio .consultation-report-note-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3162,7 +3163,27 @@
    source recommendations, practitioner notes and signature remain fully visible. */
 @media screen {
   .canonical-document--editorial .canonical-remedy-appendix-description {
-    display:none;
+    display:block;
+    margin:4px 0 16px;
+    color:#567176;
+    font:500 clamp(14px,2vw,16px)/1.5 system-ui,-apple-system,sans-serif;
+  }
+  .canonical-document--editorial .canonical-remedy-appendix-print-hint {display:none;}
+  .canonical-document--editorial .canonical-remedy-profile-thumb {
+    display:block;
+    flex:0 0 78px;
+    width:78px;
+    height:73px;
+    overflow:hidden;
+    border:1px solid #d4e4dd;
+    border-radius:12px;
+    background:#f1f7f3;
+  }
+  .canonical-document--editorial .canonical-remedy-profile-thumb img {
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:contain;
   }
   .canonical-document--editorial details.canonical-remedy-profile-disclosure {
     display:block;
@@ -3237,6 +3258,15 @@
   .canonical-document--editorial details.canonical-remedy-profile-disclosure > .canonical-remedy-profile-content {
     padding:14px;
   }
+  .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex-basis:66px;
+    width:66px;
+    height:65px;
+    border-radius:10px;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    gap:11px;
+  }
 }
 @media (prefers-reduced-motion:reduce) {
   .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
@@ -3244,6 +3274,9 @@
   }
 }
 @media print {
+  .canonical-document--editorial .canonical-remedy-appendix-hint {display:none;}
+  .canonical-document--editorial .canonical-remedy-appendix-print-hint {display:inline;}
+  .canonical-document--editorial .canonical-remedy-profile-thumb {display:none!important;}
   /* The print expander opens all source descriptions before this CSS runs. */
   .canonical-document--editorial details.canonical-remedy-profile-disclosure {
     display:flow-root;
@@ -3662,4 +3695,257 @@
   .consultation-test-auto { padding: 11px; }
   .consultation-test-suggestions { padding: 10px; }
   .consultation-test-suggestion { padding: 10px; }
+}
+
+/* Compact image-free recommendation cards — owner approved 2026-10-18.
+   Prescription-sheet refinement: calm rows, no photographs, no decorative
+   pill bubbles. Original dosage and extra instructions are always preserved.
+   Photographs belong only in the separate remedy-description appendix. */
+.canonical-shell .canonical-document--editorial .canonical-remedy-group {
+  width: 100%;
+  max-width: 680px;
+  margin: 22px auto 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 14px;
+  margin: 0 0 10px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid #d5e4e3;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-group-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: #205967;
+  font: 750 12px/1.45 Arial, Helvetica, sans-serif;
+  letter-spacing: .105em;
+  text-transform: uppercase;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-group-caption {
+  margin: 0;
+  color: #73888b;
+  font: 500 12px/1.4 Arial, Helvetica, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0 14px;
+  margin: 0 0 9px;
+  padding: 13px 15px;
+  border: 1px solid #d8e6e4;
+  border-left: 3px solid #42948e;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 13px rgba(31, 83, 85, .035);
+  break-inside: avoid;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-heading {
+  display: flex;
+  grid-column: 1;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 0;
+  gap: 9px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-number {
+  flex: 0 0 27px;
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 8px;
+  background: #e9f4f2;
+  color: #246d70;
+  font: 750 11px/1 Arial, Helvetica, sans-serif;
+  letter-spacing: .02em;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-title {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+  margin: 0;
+  color: #1e4d5b;
+  font: 600 clamp(17px, 2.25vw, 19px)/1.3 Georgia, 'Times New Roman', serif;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 5px;
+  max-width: 100%;
+  margin: 5px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #436b71;
+  font: 600 13px/1.5 Arial, Helvetica, sans-serif;
+  text-align: left;
+  white-space: normal;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule-part {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule-dot {
+  color: #a8bec0;
+  font-weight: 400;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule-chip {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+  display: inline-flex;
+  grid-column: 2;
+  grid-row: 1;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 34px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid #d9e8e7;
+  border-radius: 8px;
+  background: #f8fbfb;
+  color: #236b75;
+  font: 650 12px/1.4 Arial, Helvetica, sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action:hover {
+  border-color: #a9d0ce;
+  background: #eff8f7;
+  color: #144f59;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action:focus-visible {
+  outline: 3px solid #4d9398;
+  outline-offset: 2px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0;
+  margin: 9px 0 0 36px;
+  padding: 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields > div {
+  display: grid;
+  grid-template-columns: minmax(85px, 115px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid #e8f0ef;
+  break-inside: avoid;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields dt {
+  color: #6b8285;
+  font: 650 12px/1.45 Arial, Helvetica, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields dd {
+  margin: 0;
+  color: #294e58;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media screen and (max-width: 700px) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-group {
+    width: 100%;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 13px;
+    gap: 0;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size: 18px;
+    line-height: 1.3;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+    grid-column: 1;
+    grid-row: auto;
+    min-height: 34px;
+    margin: 3px 0 0 36px;
+    padding: 3px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields {
+    grid-column: 1;
+    margin: 8px 0 0 36px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields dd {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+}
+@media screen and (max-width: 380px) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-group-caption {
+    font-size: 11px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    font-size: 13.5px;
+  }
+}
+@media print {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-group {
+    width: 100%;
+    max-width: none;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    padding: 9px 11px;
+    border-radius: 5px;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-fields dd {
+    font-size: 11pt;
+  }
+}
+
+
+/* Separate narrative blocks in the consultation editor and the client report. */
+.consultation-studio .consultation-report-notes-panel .consultation-report-note-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.consultation-studio .consultation-report-note--recommendations {
+  border-color: #cedfd4;
+  background: linear-gradient(145deg, #f3faf5, #fffdf9 85%);
+}
+.canonical-document--editorial .canonical-report-recommendations {
+  border-left-color: #789f81;
+  background: linear-gradient(125deg, #fffefa, #f3faf5);
 }

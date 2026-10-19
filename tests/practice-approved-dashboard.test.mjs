@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import {assertPrivateReportRedirect} from './helpers/report-editor-contracts.mjs'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
@@ -44,20 +45,22 @@ test('approved My Practice design presents compact actions, tools and real profi
 })
 
 test('Create report passes through owner-only app-to-admin bridge and never publishes a report silently', async () => {
-  const [destinations, api, selector, editor, store] = await Promise.all([
+  const [destinations, api, selector, studio, editor, store] = await Promise.all([
     source('lib/app/practitioner-access.js'),
     source('app/api/app/[...path]/route.js'),
     source('app/admin/reports/new/page.js'),
+    source('app/admin/consultations/new/page.js'),
     source('app/admin/clients/[id]/assessments/new/page.js'),
     source('lib/clients/assessments.js'),
   ])
   assert.match(destinations, /report: '\/admin\/reports\/new'/)
   assert.match(api, /!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)/)
   assert.match(selector, /if \(!await requireAdminRequest\(\)\) redirect\('\/admin\/login'\)/)
-  assert.match(selector, /getPrescriptionStore\(\)/)
-  assert.match(selector, /client\.status === 'active'/)
+  await assertPrivateReportRedirect(selector)
+  assert.match(studio, /getPrescriptionStore\(\)/)
+  assert.match(studio, /clients\.filter\(c => c\.status === 'active'\)/)
   assert.match(selector, /\/admin\/consultations\/new\?clientId=/)
-  assert.match(selector, /Documents stay private until you explicitly share them/)
+  assert.match(await source('components/consultation-form.jsx'), /Saving does not publish changes/)
   assert.match(selector, /robots: \{ index: false, follow: false \}/)
   assert.match(editor, /AssessmentEditor/)
   assert.match(editor, /searchParams\)\?\.kind === 'research_result'/)

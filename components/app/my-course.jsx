@@ -148,8 +148,11 @@ async function request(accountId, body, { courseId, signal } = {}) {
 const selectedCourseFromUrl = () => new URLSearchParams(window.location.search).get('courseId') || null
 function replaceCourseUrl(courseId) {
   const url = new URL(window.location.href)
-  if (courseId) url.searchParams.set('courseId', courseId)
-  else url.searchParams.delete('courseId')
+  if (courseId) {
+    url.searchParams.set('courseId', courseId)
+    // A chosen lesson has its own URL. The Courses tab remains an index-only entry.
+    if (url.searchParams.get('view') === 'courses') url.searchParams.delete('view')
+  } else url.searchParams.delete('courseId')
   window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
 }
 
@@ -174,6 +177,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const [snapshot, setSnapshot] = useState(undefined)
   const state = snapshot?.accountId === accountId ? snapshot.value : undefined
   const searchParams = useSearchParams()
+  // Cabinet navigation opens the complete course list; explicit courseId links still open lessons.
+  const coursesIndexEntry = searchParams.get('view') === 'courses'
   const router = useRouter()
   const [showCourse, setShowCourse] = useState(false)
   const requestedProgram = searchParams.get('program') === ACTIVE_COURSE_PROGRAM_ID ? getCourseProgram(ACTIVE_COURSE_PROGRAM_ID) : null
@@ -225,17 +230,19 @@ export function MyCourse({ data, locale = 'en' }) {
   useEffect(() => {
     mounted.current = true; generation.current += 1
     actionLock.current = null; newCourseId.current = null
-    setShowCourse(Boolean(selectedCourseFromUrl())); setBusy(false); setOptIn(false); setSelectedPreset(null); setSelectedProgram(null); setPendingPrograms({}); pendingProgramIntent.current={}; pendingProgramConcerns.current={}; startIntent.current=null
+    setShowCourse(coursesIndexEntry || Boolean(selectedCourseFromUrl())); setBusy(false); setOptIn(false); setSelectedPreset(null); setSelectedProgram(null); setPendingPrograms({}); pendingProgramIntent.current={}; pendingProgramConcerns.current={}; startIntent.current=null
     startDialogRef.current?.close()
     selectedCourse.current = selectedCourseFromUrl()
-    setView(selectedCourse.current ? 'detail' : 'list')
-    void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current), openPrimaryToday: true })
+    setView(coursesIndexEntry ? 'list' : selectedCourse.current ? 'detail' : 'list')
+    void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) && !coursesIndexEntry, openPrimaryToday: !coursesIndexEntry })
     const navigate = () => {
       generation.current += 1; actionLock.current = null; setBusy(false)
       selectedCourse.current = selectedCourseFromUrl()
-      setView(selectedCourse.current ? 'detail' : 'list')
+      const returningToIndex = new URLSearchParams(window.location.search).get('view') === 'courses'
+      setShowCourse(returningToIndex || Boolean(selectedCourse.current))
+      setView(returningToIndex ? 'list' : selectedCourse.current ? 'detail' : 'list')
       startDialogRef.current?.close()
-      void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) })
+      void refresh(selectedCourse.current, { updateUrl: Boolean(selectedCourse.current) && !returningToIndex })
     }
     window.addEventListener('popstate', navigate)
     return () => {
@@ -243,7 +250,7 @@ export function MyCourse({ data, locale = 'en' }) {
       readController.current?.abort()
       window.removeEventListener('popstate', navigate)
     }
-  }, [refresh])
+  }, [refresh, coursesIndexEntry])
 
   useEffect(() => {
     if (billingPhase !== 'ready') return

@@ -57,6 +57,7 @@ import {createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeS
 import {deliveryEnabled} from '@/lib/clients/delivery-model'
 import {readSessionViewerCookie,authorizeSessionGuest} from '@/lib/clients/session-delivery-access'
 import {getPublishedClientSession} from '@/lib/clients/session-delivery-service'
+import {listPractitionerMaterials,streamReadyMaterial} from '@/lib/clients/material-library'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -68,7 +69,7 @@ async function handle(request, { params }) {
       path = (await params).path || [],
       method = request.method,
       joined = path.join('/')
-    if (method !== 'GET') requireSameOrigin(request, config)
+    if (method !== 'GET' && method !== 'HEAD') requireSameOrigin(request, config)
     auth = createRequestAuth(request, config)
     const json = (data, status = 200) =>
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
@@ -81,7 +82,7 @@ async function handle(request, { params }) {
         continueTo = body.continueTo || null,
         program = body.program || null
       if (continueTo !== null && !['tests', 'course'].includes(continueTo) &&
-        !['cabinet','my-tests','my-courses','reports','energywork'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -118,7 +119,7 @@ async function handle(request, { params }) {
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports','energywork'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
@@ -135,8 +136,10 @@ async function handle(request, { params }) {
                     ? `${origin}/${locale}/app/course`
                     : continueTo === 'reports'
                       ? `${origin}/${locale}/app/portrait#personal-reports`
-                      : continueTo === 'energywork'
-                        ? `${origin}/${locale}/academy/principles-of-energywork/learn`
+                      : continueTo === 'practitioner'
+                        ? `${origin}/admin/login`
+                        : continueTo === 'energywork'
+                          ? `${origin}/${locale}/academy/principles-of-energywork/learn`
                         : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
@@ -518,6 +521,25 @@ async function handle(request, { params }) {
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       return response
     }
+    // Owner-only PRIVATE report media catalog. This is deliberately distinct
+    // from moderated YouTube/Vimeo links on the public practitioner profile.
+    if(joined === 'practice/report-materials' && method === 'GET'){
+      if(!practitionerEmailAllowed(actor)||!await repo.isPractitioner(actor))
+        throw new AppError('NOT_FOUND',404)
+      return json({items:await listPractitionerMaterials(config)})
+    }
+    if(path[0]==='practice'&&path[1]==='report-materials'&&
+      path.length===4&&path[3]==='media'&&['GET','HEAD'].includes(method)){
+      if(!practitionerEmailAllowed(actor)||!await repo.isPractitioner(actor))
+        throw new AppError('NOT_FOUND',404)
+      requireUUID(path[2])
+      // Byte range and private Storage credentials stay behind the
+      // already-tested first-party owner media streaming adapter.
+      const streamed=await streamReadyMaterial(config,path[2],request)
+      return auth.apply(new NextResponse(streamed.body,{
+        status:streamed.status,headers:streamed.headers,
+      }))
+    }
     if (joined === 'practice' && method === 'GET') {
       const workspace = await practiceRepo.getMyPractice(actor)
       let newServices = null
@@ -699,5 +721,5 @@ async function handle(request, { params }) {
     return auth ? auth.apply(response) : response
   }
 }
-export { handle as GET, handle as POST }
+export { handle as GET, handle as HEAD, handle as POST }
 

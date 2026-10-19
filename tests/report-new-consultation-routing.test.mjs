@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import {assertPrivateReportRedirect} from './helpers/report-editor-contracts.mjs'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
@@ -13,11 +14,12 @@ test('My Practice report handoff selects the client in the current consultation 
   ])
   assert.match(practice, /openOwner\('report'\)/)
   assert.match(destination, /report:\s*'\/admin\/reports\/new'/)
-  assert.ok(picker.includes('href={`/admin/consultations/new?clientId=${encodeURIComponent(client.id)}`}'))
+  await assertPrivateReportRedirect(picker)
   assert.doesNotMatch(picker, /assessments\/new\?kind=research_result/)
   assert.match(studio, /selectedClientId=\{selectedClientId\}/)
   assert.match(studio, /<ConsultationForm/)
-  assert.match(picker, /Preview the PDF before creating documents/)
+  assert.match(studio, /action=\{createConsultationAction\}/)
+  assert.match(studio, /clients=\{options\}/)
 })
 
 test('existing client report actions do not link to the old research editor', async () => {
@@ -34,13 +36,24 @@ test('existing client report actions do not link to the old research editor', as
 
 test('isolated browser acceptance visits current studio and verifies legacy redirect', async () => {
   const script = await read('scripts/verify-ia-v2.mjs')
-  assert.match(script, /clientReportLink\.click\(\)/)
+  assert.ok(script.includes("await go(admin, '/admin/reports/new')"))
+  assert.ok(script.includes("await admin.locator('.consultation-client-search input').fill(a.fullName)"))
+  assert.ok(script.includes("admin.locator('.consultation-client-results button').filter({ hasText: a.fullName })"))
+  assert.ok(script.includes("await expect(clientChoice).toHaveAttribute('type', 'button')"))
+  assert.match(script, /await clientChoice\.click\(\)/)
+  assert.match(script, /await assertStudioClient\(false\)/)
+  assert.match(script, /await assertStudioClient\(true\)/)
+  assert.doesNotMatch(script, /clientReportLink|a\.master-client-row/)
+
   assert.match(script, /consultation-client-selector input\[name="clientId"\]/)
   assert.match(script, /textarea\[name="analysis"\]/)
   assert.match(script, /textarea\[name="additionalNotes"\]/)
   assert.match(script, /input\[name="includeInvoice"\]/)
   assert.match(script, /toHaveCount\(0\)/)
-  assert.match(script, /old research-result redirect to the new consultation studio/)
+  assert.ok(script.includes('await go(admin, `/admin/clients/${a.id}/assessments/new?kind=research_result`)'))
+  assert.ok(script.includes('await expect(admin).toHaveURL(origin + `/admin/consultations/new?clientId=${a.id}`)'))
+  assert.match(script, /unauthenticated denial without submission/)
+
 })
 
 test('old direct research-result URL redirects only after owner/client validation', async () => {

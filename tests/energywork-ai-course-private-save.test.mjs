@@ -46,8 +46,19 @@ test('Server registry includes exactly 53 editorial IDs in one fixed five-lesson
 test('Meditation feedback gates the next screen; five reports and answers gate initiation', () => {
   assert.deepEqual(ENERGYWORK_REPORT_IDS,['flight-04','tan-04','kun-04','ygg-04','end-01'])
   assert.deepEqual(ENERGYWORK_MEDITATION_REPORT_IDS,['flight-04','tan-04','kun-04','ygg-04'])
+  // New course feedback is plain text; older encrypted entries with a score still work.
+  for(const text of ['I felt more relaxed.', 'Nothing special yet.', '  Quiet, but I noticed it.  '])
+    assert.equal(energyworkMeditationFeedbackComplete(text),true)
   for(const rating of [0,2,5,10]) assert.equal(energyworkMeditationFeedbackComplete(`Feeling:${rating}/10\nNothing unusual yet.`),true)
-  for(const feedback of ['', 'Just words','Feeling:5/10\n', 'Feeling:11/10\nNote','Feeling:3/10\n   ']) assert.equal(energyworkMeditationFeedbackComplete(feedback),false)
+  for(const feedback of ['', '   ', 'Just words', '12345678901234', 'Feeling:5/10\n', 'Feeling:11/10\nNote','Feeling:3/10\n   '])
+    assert.equal(energyworkMeditationFeedbackComplete(feedback),false)
+  assert.equal(energyworkMeditationFeedbackComplete('123456789012345'),true)
+  assert.equal(energyworkMeditationFeedbackComplete('12345678901234'),false)
+  assert.match(learner,/feedbackMissing = isMeditationFeedback && feedbackLength < 15/)
+  assert.match(learner,/saveReview: "Save review"/)
+  assert.match(learner,/saveReview: "Сохранить отзыв"/)
+  assert.doesNotMatch(learner,/data-meditation-feeling|joinMeditationFeedback|splitMeditationFeedback/)
+  assert.match(learner,/isMeditationFeedback \? t\.saveReview/)
   assert.match(repository,/MEDITATION_FEEDBACK_REQUIRED/)
   assert.match(learner,/feedbackMissing = isMeditationFeedback/)
   assert.match(learner,/experienceMissing \|\| feedbackMissing/)
@@ -65,11 +76,13 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
   assert.match(learner,/initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
 })
 
-test('Private answers use checked types, bounded lengths and only approved answer keys', () => {
+test('Private answers retain normal limits but allow longer meditation reviews', () => {
   assert.ok(Object.keys(ENERGYWORK_QUESTIONS).length <= 32)
   for(const id of Object.keys(ENERGYWORK_QUESTIONS))
     assert.equal(energyworkAnswerValid(id,'a'.repeat(1600)),ENERGYWORK_QUESTIONS[id]==='text')
-  assert.equal(energyworkAnswerValid('flight-04','a'.repeat(1601)),false)
+  for(const id of ENERGYWORK_MEDITATION_REPORT_IDS)
+    assert.equal(energyworkAnswerValid(id,'a'.repeat(5000)),true)
+  assert.equal(energyworkAnswerValid('flight-05','a'.repeat(1601)),false)
   assert.equal(energyworkAnswerValid('flight-04',null),false)
   assert.equal(energyworkAnswerValid('flight-02','notes'),false)
   for(const val of ['0','5','10'])assert.equal(energyworkAnswerValid('presence-03',val),true)

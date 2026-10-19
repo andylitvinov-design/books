@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import CrmContactActivity from './crm-contact-activity'
 import styles from './crm-workflow.module.css'
 
 const COPY={
@@ -108,7 +109,7 @@ export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=
  </section>
 }
 
-export function CrmContactWorkflow({locale='en',contact,followups=[],activity=[],busy=false,onAction}) {
+export function CrmContactWorkflow({locale='en',contact,accountId,followups=[],busy=false,onAction}) {
  const t=COPY[locale]||COPY.en
  const [kind,setKind]=useState('reply')
  const [dueOn,setDueOn]=useState('')
@@ -116,7 +117,6 @@ export function CrmContactWorkflow({locale='en',contact,followups=[],activity=[]
  const [requestId,setRequestId]=useState('')
  const [logging,setLogging]=useState(false)
  const own=followups.filter(x=>x.contactId===contact.id && x.status==='open')
- const logs=activity.filter(x=>x.contactId===contact.id).slice(0,4)
  const archived=contact.lifecycle==='archived'
  async function create(event) {
    event.preventDefault()
@@ -153,6 +153,6 @@ export function CrmContactWorkflow({locale='en',contact,followups=[],activity=[]
      </select>
      <button type="button" disabled={busy||logging} onClick={log}>{t.record}</button>
    </div>}
-   {!!logs.length&&<ol className={styles.history}>{logs.map(x=><li key={x.id}>{t.events[x.kind]||x.kind}<time dateTime={x.occurredAt}>{new Date(x.occurredAt).toLocaleDateString(locale)}</time></li>)}</ol>}
+   <CrmContactActivity key={contact.id} accountId={accountId} contactId={contact.id} locale={locale} />
  </details>
 }

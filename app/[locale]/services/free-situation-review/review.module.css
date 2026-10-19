@@ -423,3 +423,120 @@
  .directions{border-radius:20px}
  .closing{border-radius:20px}
 }
+
+
+/* Visual-screen redesign 2026-10-19: a single subject and generous media per scene.
+   These rules intentionally override the old four-up miniature cards on narrow screens. */
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, .94fr);
+  align-items: stretch;
+  width: min(1200px, calc(100% - 32px));
+  min-height: clamp(540px, 72svh, 750px);
+  padding: 0;
+  overflow: hidden;
+  border-radius: 26px;
+  background: linear-gradient(120deg,#09394a 0%,#0b5860 100%);
+}
+.contentGrid .heroCopy { min-width: 0; padding: clamp(27px,4.4vw,58px); align-self: center; }
+.contentGrid .heroCopy h1 { max-width: 680px; color: #fff; font-size: clamp(39px,4.1vw,62px); line-height: 1.07; }
+.contentGrid .heroCopy .lead { color: #dff3ef; font-size: clamp(15px,1.3vw,18px); line-height: 1.6; }
+.contentGrid .heroCopy .benefits li { color: #edf8f6; font-size: 14px; }
+.contentGrid .heroCopy .freeLine { color: #d4f0d3; }
+.contentGrid .heroCopy .introContact strong { color: #fff; }
+.contentGrid .heroCopy .introContact span { color: #d1e8e3; }
+.contentGrid .heroCopy .safety { color: #bfd6d2; }
+.heroScene { position: relative; isolation: isolate; min-height: 500px; background: #134752; overflow: hidden; }
+.heroScene img { object-fit: cover; object-position: center 25%; }
+.heroScene::after { content: ""; position: absolute; inset: 35% 0 0; pointer-events: none; background: linear-gradient(0deg,rgba(8,33,47,.82),transparent); }
+.heroSceneCaption { position: absolute; z-index: 1; left: clamp(20px,4vw,50px); right: 20px; bottom: 28px; display: grid; gap: 5px; color: #fff; text-shadow: 0 1px 5px rgba(0,0,0,.28); }
+.heroSceneCaption strong { font: 400 clamp(24px,2.6vw,36px)/1.12 Georgia,serif; }
+.heroSceneCaption span { font: 600 13px/1.45 Arial,Helvetica,sans-serif; color: #dcece7; }
+.situations,.outcomes,.details { width: min(1160px,calc(100% - 32px)); }
+.situations h2,.outcomes h2 { max-width: 900px; font-size: clamp(33px,3.9vw,50px); }
+.situationsLead,.outcomeIntro { max-width: 760px; font-size: 16px; }
+.situationGrid { display: grid; grid-template-columns:minmax(0,1fr); gap: clamp(18px,2.4vw,30px); margin-top: 28px; }
+.situationGrid .situationScene { padding:0; background:#eaf5f1; border:1px solid #d3e5df; box-shadow:0 13px 34px rgba(10,68,76,.07); }
+.situationGrid .situationScene:nth-child(even) .sceneImage { order:2; }
+.situationScene {
+  display: grid; grid-template-columns: minmax(0,1.08fr) minmax(0,.92fr);
+  min-height: clamp(405px,62svh,610px);
+  overflow: hidden; border: 1px solid #d3e5df; border-radius: 25px;
+  background: #eaf5f1; box-shadow: 0 13px 34px rgba(10,68,76,.07);
+}
+.situationScene:nth-child(even) .sceneImage { order: 2; }
+.sceneImage,.outcomeImage,.stepsImage { min-height: 260px; position: relative; overflow: hidden; background: #d5e6e2; }
+.sceneImage img,.outcomeImage img,.stepsImage img { object-fit: cover; object-position: center; transition: transform .5s ease; }
+.situationScene:hover .sceneImage img { transform: scale(1.035); }
+.sceneCopy { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; min-width: 0; padding: clamp(26px,5vw,64px); }
+.sceneNumber { margin-bottom: 22px; color: #078980; font: 800 12px/1 Arial,Helvetica,sans-serif; letter-spacing: .15em; }
+.sceneCopy h3 { margin: 0 0 15px; color: #103d4d; font: 400 clamp(32px,3.3vw,46px)/1.1 Georgia,serif; letter-spacing: -.025em; }
+.sceneCopy p { margin: 0 0 25px; color: #48616b; font: 16px/1.62 Arial,Helvetica,sans-serif; }
+.sceneCopy a { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 11px 18px; border-radius: 13px; background: #077a78; color: #fff; font: 750 14px/1.4 Arial,Helvetica,sans-serif; text-decoration: none; }
+.sceneCopy a:hover { background: #09635f; }
+.outcomeScene,.stepsScene { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0; overflow: hidden; border: 1px solid #d5e8e1; border-radius: 24px; background: #eff8f4; margin-top: 26px; }
+.outcomeImage img { object-position: center 36%; }
+.outcomeScene .outcomeGrid { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; margin: 0; padding: clamp(16px,3vw,33px); align-content: center; }
+.outcomeScene .outcomeGrid article { min-height: 0; padding: 15px 18px; border-radius: 14px; }
+.outcomeScene .outcomeGrid h3 { font-size: 24px; line-height: 1.18; }
+.outcomeScene .outcomeGrid p { font-size: 14px; line-height: 1.52; }
+.stepsScene { grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); margin-top: 24px; }
+.stepsScene .steps { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; margin: 0; padding: clamp(16px,3vw,28px); align-content: center; }
+.stepsScene .steps li { padding: 16px 18px; border-radius: 15px; }
+.stepsScene .steps h3 { font-size: 22px; }
+.stepsScene .steps p { font-size: 13.5px; line-height: 1.5; }
+.alchemy { position: relative; isolation: isolate; background:
+  linear-gradient(90deg,rgba(5,41,57,.98),rgba(6,59,68,.83)),
+  url("/images/holistic-house/report-lighthouse-coast.webp") center / cover; }
+.alchemy > * { position: relative; z-index: 1; }
+
+@media (max-width: 767px) {
+  .contentGrid {
+    grid-template-columns: minmax(0,1fr); min-height: 0;
+    width: calc(100% - 20px); margin-top: 10px; padding: 0;
+    border-radius: 20px;
+  }
+  .contentGrid .heroCopy { padding: 23px 19px 17px; }
+  .contentGrid .heroCopy h1 { color: #fff; font-size: clamp(34px,8.7vw,43px); margin-bottom: 11px; }
+  .contentGrid .heroCopy .lead { color: #e4f4ef; font-size: 14px; line-height: 1.47; margin-bottom: 12px; }
+  .contentGrid .heroCopy .freeLine { font-size: 12px; }
+  .contentGrid .heroCopy .introContact { display: none; }
+  .contentGrid .heroCopy .safety { margin-top: 10px; font-size: 10px; }
+  .heroScene { min-height: clamp(205px,29svh,270px); }
+  .heroScene img { object-position: center 27%; }
+  .heroSceneCaption { left: 19px; bottom: 17px; }
+  .heroSceneCaption strong { font-size: 24px; }
+  .heroSceneCaption span { font-size: 11px; }
+  .situations,.outcomes,.details { width: calc(100% - 22px); margin-top: 39px; }
+  .situations h2,.outcomes h2 { font-size: clamp(28px,7.3vw,35px); }
+  .situationsLead,.outcomeIntro { font-size: 14px; line-height: 1.53; }
+  .situationGrid { gap: 18px; margin-top: 20px; }
+  .situationScene { grid-template-columns: minmax(0,1fr); min-height: 0; border-radius: 20px; }
+  .situationScene:nth-child(even) .sceneImage { order: 0; }
+  .sceneImage { min-height: clamp(224px,33svh,322px); }
+  .sceneCopy { padding: 23px 22px 25px; }
+  .sceneNumber { margin-bottom: 9px; font-size: 11px; }
+  .sceneCopy h3 { margin-bottom: 9px; font-size: clamp(27px,7vw,34px); }
+  .sceneCopy p { margin-bottom: 17px; font-size: 15px; line-height: 1.5; }
+  .sceneCopy a { width: 100%; font-size: 14px; }
+  .outcomeScene,.stepsScene { grid-template-columns: minmax(0,1fr); margin-top: 18px; border-radius: 20px; }
+  .outcomeImage { min-height: 210px; max-height: 30svh; }
+  .outcomeScene .outcomeGrid { gap: 8px; padding: 14px; }
+  .outcomeScene .outcomeGrid article { padding: 13px 15px; }
+  .outcomeScene .outcomeGrid h3 { font-size: 21px; }
+  .outcomeScene .outcomeGrid p { font-size: 13px; }
+  .stepsImage { min-height: 196px; max-height: 27svh; }
+  .stepsScene .steps { gap: 8px; padding: 13px; }
+  .stepsScene .steps li { padding: 13px 14px; }
+  .stepsScene .steps h3 { font-size: 20px; }
+  .stepsScene .steps p { font-size: 12.5px; }
+  .about { grid-template-columns: minmax(0,1fr); padding: 16px; }
+  .aboutPhoto { width: 100%; height: clamp(205px,34svh,300px); max-height: none; aspect-ratio: auto; }
+  .about h2 { font-size: 29px; }
+  .about p:not(.eyebrow) { font-size: 14px; }
+  .alchemy { min-height: 350px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .sceneImage img { transition:none; }
+  .situationScene:hover .sceneImage img { transform:none; }
+}

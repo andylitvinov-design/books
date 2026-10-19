@@ -31,7 +31,7 @@ export async function assertCabinetPrimaryNavigation(page, expect, { locale = 'e
   const paths = ['portrait', 'tests', 'portfolio', 'course', 'practice']
   const links = nav.locator(':scope > a')
   const mobile = (await nav.getAttribute('class')).split(/\s+/).includes('hh-mobile-app-nav')
-  const expected = paths.map((path, index) => ({ href: '/' + locale + '/app/' + path, label: labels[index], current: path === current ? 'page' : null, ariaLabel: null }))
+  const expected = paths.map((path, index) => ({ href: '/' + locale + '/app/' + path + (path === 'course' ? '?view=courses' : ''), label: labels[index], current: path === current ? 'page' : null, ariaLabel: null }))
   if (mobile) expected.push({ href: locale === 'ru' ? '/ru' : '/', label: locale === 'ru' ? 'Главная' : 'Home', current: null, ariaLabel: locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage' })
   await expect(links).toHaveCount(mobile ? 6 : 5)
   assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ href: node.getAttribute('href'), label: node.textContent.trim(), current: node.getAttribute('aria-current'), ariaLabel: node.getAttribute('aria-label') }))), expected)

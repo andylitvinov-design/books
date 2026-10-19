@@ -11,6 +11,7 @@ const copy = {
     title:'Кабинет практика', description:'Клиенты, консультации и документы — в одном рабочем пространстве.', actions:'Основные действия',
     newConsultation:'Новая консультация',newConsultationText:'Выбрать клиента или создать нового и выписать рецепт вместе со счётом.',
     clients:'Клиенты',clientsText:'Открыть историю клиента, документы и доступ к кабинету.',
+     reports:'Отчёты клиентов',reportsText:'Просмотр и редактирование ранее созданных отчётов.',
     legacy:'Старые документы',legacyText:'Разобрать и привязать ранее созданные документы к клиентам.',
     prescription:'Новый рецепт', prescriptionText:'Отдельный документ. Чтобы показать клиенту, привяжите через архив.', invoice:'Новый счёт', manualBilling:'Оплаты подписок', manualBillingText:'Заявки Advanced/Premium, счета и проверка поступлений.', invoiceText:'Отдельный счёт или квитанция. Для передачи привяжите к клиенту.', workflow:'Как передать материалы', step1:'1. Выберите клиента или создайте нового.', step2:'2. Подготовьте рекомендацию и счёт.', step3:'3. Скопируйте приватную ссылку на кабинет клиента.',
     videos:'Видео сайта',videosText:'Добавить видео на страницу, проверить и опубликовать ссылку YouTube.',
@@ -24,6 +25,7 @@ const copy = {
     title:'Practitioner Cabinet',description:'Clients, consultations, and documents in one calm workspace.',actions:'Main actions',
     newConsultation:'New consultation',newConsultationText:'Choose or create a client and issue a recommendation together with an invoice.',
     clients:'Clients',clientsText:'Open client history, documents, and private cabinet access.',
+     reports:'Client reports',reportsText:'Browse, preview and edit saved client reports.',
     legacy:'Legacy documents',legacyText:'Review and assign previously created documents to clients.',
     prescription:'New prescription', prescriptionText:'Standalone document. Assign it to a client through Legacy to share.', invoice:'New invoice', manualBilling:'Membership payments', manualBillingText:'Advanced/Premium requests, invoices and verified receipts.', invoiceText:'Standalone invoice or receipt. Assign it to a client before sharing.', workflow:'Send materials in three steps', step1:'1. Choose an existing client or create one.', step2:'2. Prepare the recommendation and invoice.', step3:'3. Copy the client’s private cabinet link.',
     videos:'Website videos',videosText:'Add a video to a page, preview it, and publish its YouTube link.',
@@ -46,6 +48,7 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
   const actions=[
     {href:'/admin/seo',icon:SearchCheck,title:text.seo,body:text.seoText},
     {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
+     {href:'/admin/reports',icon:FileText,title:text.reports,body:text.reportsText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
     {href:'/admin/reiki-leads',icon:Inbox,title:text.reikiLeads,body:text.reikiLeadsText},
     {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},

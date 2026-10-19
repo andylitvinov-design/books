@@ -57,7 +57,7 @@ test('Svix event signature uses raw bytes and timestamps; forged/expired events 
  assert.throws(()=>verifyResendWebhook(raw,headers,secret,now+700000))
 })
 test('schema enforces owner scoped records, no public grants, signed definer-only tokens',()=>{
- const schema=source('supabase/migrations/20261018160000_hh_crm_email_delivery.sql')
+ const schema=source('supabase/migrations/20261018131448_hh_crm_email_delivery_20261018.sql')
  for(const table of ['crm_email_tokens','crm_email_jobs','crm_email_webhook_events']) assert.match(schema,new RegExp('alter table app\\.'+table+' force row level security'))
  assert.match(schema,/revoke all on app\.crm_email_tokens,app\.crm_email_jobs,app\.crm_email_webhook_events from public,anon,authenticated/)
  assert.match(schema,/create function app_private\.crm_consume_email_token/)

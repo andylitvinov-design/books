@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import test from "node:test";
+import { energyworkSequence } from "../data/academy/energywork-ai-schema.js";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const landing = read("components/reiki-referral-landing.tsx");
@@ -64,7 +65,8 @@ test("campaign entry skips redundant intro only for fresh users; saved learners 
   assert.match(routes, /startAtExperience=\{query\.start === "1"\}/);
   assert.match(course, /startAtExperience\?: boolean/);
   assert.match(course, /useState\(startAtExperience \? 1 : 0\)/);
-  assert.match(course, /setIndex\(Math\.max\(0, restored\.findIndex\(\(item\) => item\.id === value\.slideId\)\)\)/);
+  assert.match(course, /const savedIndex = Math\.max\(0, restored\.findIndex\(\(item\) => item\.id === value\.slideId\)\)/);
+  assert.match(course, /setIndex\(requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex\)/);
   assert.match(course, /startAtExperience = false/);
   assert.ok(read("data/academy/energywork-ai-curriculum.ts").includes('id: "welcome-02"'),
     "first course question remains the approved Reiki experience choice");
@@ -89,4 +91,51 @@ test("after saved course completion the free initiation is named, not confused w
   assert.match(course, /savedInitiationReady/);
   assert.match(course, /!busy && !saveError && dirtyRef\.current\.size === 0/);
   assert.match(course, /t\.reviewPrivate/);
+});
+
+function hydrateProgress(value, search, initialIndex = 1, course = read("components/energywork-ai-learner.tsx")) {
+  const marker = "const hydrate = useCallback((value: StoredProgress) => {";
+  const start = course.indexOf(marker), end = course.indexOf("\n  }, []);", start);
+  assert.ok(start >= 0 && end > start, "execute the actual hydration callback");
+  const state = { index: initialIndex };
+  const dependencies = {
+    energyworkSlides: () => energyworkSequence().map(id => ({ id })),
+    accountIdRef: { current: null }, revisionRef: { current: 0 },
+    progressRef: { current: "welcome-01" }, answersRef: { current: {} },
+    dirtyRef: { current: new Set(["unsaved"]) },
+    window: search === undefined ? undefined : { location: { search } },
+  };
+  for (const name of ["Index", "Answers", "SavedAt", "SharingWithTeacher", "ApplicationLead", "SaveError", "Sync"])
+    dependencies["set" + name] = next => { state[name[0].toLowerCase() + name.slice(1)] = next; };
+  new Function("value", ...Object.keys(dependencies), course.slice(start + marker.length, end))(value, ...Object.values(dependencies));
+  return { state, dependencies };
+}
+
+test("actual saved hydration resumes its checkpoint and permits only reached deep links", () => {
+  const sequence = energyworkSequence(), checkpoint = sequence.indexOf("kun-01");
+  assert.ok(checkpoint > 2);
+  const value = { accountId: "owner", enrolled: true, revision: 7, slideId: "kun-01", answers: { "welcome-02": "new" }, sharingWithTeacher: false };
+  for (const initialIndex of [0, 1]) for (const [search, expected] of [
+    [undefined, checkpoint], ["", checkpoint], ["?start=1", checkpoint],
+    ["?slide=welcome-01", 0], ["?slide=flight-01", 2], ["?slide=kun-01", checkpoint],
+    ["?slide=" + sequence[checkpoint + 1], checkpoint], ["?slide=missing", checkpoint], ["?slide=", checkpoint],
+  ]) {
+    const { state, dependencies } = hydrateProgress(value, search, initialIndex);
+    assert.equal(state.index, expected, String(search));
+    assert.equal(state.sync, "ready");
+    assert.equal(state.answers, value.answers);
+    assert.equal(state.sharingWithTeacher, false);
+    assert.equal(dependencies.accountIdRef.current, "owner");
+    assert.equal(dependencies.revisionRef.current, 7);
+    assert.equal(dependencies.progressRef.current, "kun-01", "a review deep link must not overwrite saved progress");
+    assert.equal(dependencies.dirtyRef.current.size, 0);
+  }
+  for (const slideId of [undefined, "unknown-slide"])
+    assert.equal(hydrateProgress({ ...value, slideId }, "?slide=kun-01").state.index, 0, "an absent checkpoint cannot unlock lessons");
+  for (const initialIndex of [0, 1]) {
+    const { state } = hydrateProgress({ ...value, enrolled: false }, "?slide=end-02", initialIndex);
+    assert.equal(state.index, initialIndex, "fresh campaign entry keeps its initial experience slide");
+    assert.equal(state.sync, "consent");
+    assert.equal(state.answers, undefined, "unenrolled answers are not hydrated");
+  }
 });

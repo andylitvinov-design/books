@@ -55,35 +55,35 @@ const yggdrasilVoices: EnergyworkTestimonial[] = yggdrasilTextTestimonials.map((
   sourcePath: "reiki/yggdrasil",
 }));
 
-// Verbatim brief extracts from archived Tantra Reiki testimonials and their
-// existing EN translation: tantra-reiki-full.generated.json / tantra-reiki-ru-en.generated.json.
+// Complete texts from the archived public Tantra Reiki course (EN/RU).
+// Source: tantra-reiki-full.generated.json (en blocks 84,86–89; ru blocks 56–57,61–64),
+// and tantra-reiki-ru-en.generated.json (translations of ru blocks 56–57).
+// Duplicate archive paragraphs are shown only once. Russian renditions of the
+// English originals are translations, not additional testimonials.
 // Course reviews are NOT presented as reactions to this exact meditation recording.
 const tantraVoices: EnergyworkTestimonial[] = [
   {
     id: "margaret",
-    quote: l("It was also a shift in perception and it felt like flowing energy as I went on my day.",
-      "Я заметила изменение восприятия и ощущение потока, которое сохранялось в течение дня."),
-    attribution: l("Margaret · published Tantra Reiki learner review", "Маргарет · опубликованный отзыв о Тантра Рейки"),
+    quote: l("The first time I followed the steps the video, I felt a powerful energy coming in with the Tantric flow. It was immediately noticable when it was invited in. It was also a shift in perception and it felt like flowing energy as I went on my day - I was in the flow. Loving and flowing movements that were in deeper connection with myself. Mundane tasks (like laundry) seemed effortless and that previously seemed irritating. It didn't seem to matter what I was doing because of the soft and loving energy flowing. This distinct continuity of pleasurable energy continued throughout for the rest of the day", "Когда я впервые выполнила шаги из видео, я почувствовала, как с тантрическим потоком приходит мощная энергия. Это сразу ощущалось, стоило её пригласить. Изменилось и восприятие: в течение дня я чувствовала, будто энергия течёт, и сама была в потоке. Движения стали мягкими, полными любви, я ощущала более глубокую связь с собой. Обычные дела (например, стирка) давались легко, хотя раньше раздражали. Казалось, уже не важно, чем я занята, потому что во всём присутствовал мягкий, любящий поток энергии. Это непрерывное приятное ощущение сохранялось до конца дня."),
+    attribution: l("Margaret · published Tantra Reiki learner review", "Маргарет · отзыв о Тантра Рейки (перевод с английского)"),
     sourcePath: "reiki/tantra-reiki",
   },
   {
     id: "olga",
-    quote: l("A soft and gentle flow that dissolves some tensions and blocks while working with the situation.",
-      "Мягкий и бережный поток который растворяет какие-то напряжения и блоки, в работе с ситуацией."),
+    quote: l("Trans flow. You enter an altered state and you can stick to it. A soft and gentle flow that dissolves some tensions and blocks while working with the situation. Activation of sexual energy - I felt energy pulsations, a gentle awakening of energy in the lower centers. The attraction is not quite understood, the feeling is in upper chakras. Anahata, vishuddha. Like opening, expanding and at the same time blooming.", "Трансовый поток. Входишь в измененное состояние и можно на этом залипать.\n\nМягкий и бережный поток который растворяет какие-то напряжения и блоки, в работе с ситуацией.\n\nАктивизация сексуальной энергии - ощутила энергетические пульсации, мягкое пробуждение энергии в нижних центрах.\n\nПривлекательность не совсем поняла, ощущения вверху. Агахана, вишудха. Как раскрытие, расширение и в то же время"),
     attribution: l("Olga · published Tantra Reiki learner review", "Ольга · опубликованный отзыв о Тантра Рейки"),
     sourcePath: "reiki/tantra-reiki",
   },
   {
     id: "litten",
-    quote: l("I feel the heat in the palms of my hands.", "Я ощущаю тепло в ладонях."),
-    attribution: l("Litten · published Tantra Reiki learner review", "Литтен · опубликованный отзыв о Тантра Рейки"),
+    quote: l("I felt really dizzy I heard the blood flow flushing in my ears like sound of water fall In My two palms pointing up I felt like pillars coming upwards .... they meet in big energy above First they were flames 🔥 A strong light from a night sky 🌌... In thé attunement I couldn’t get through to one of us, It was blocked by a branch with strong cover. On the other hand, during the Tantra flow to Andy the pillars from my hands were like light beams reaching up up up..... After the attunement, I send to my daughter.... I feel the heat in the palms of my hands. The flow meets in a triangle above me .... A space that represents the person I’m sending to. My daughter is a gentle being and truly the flow was adjusted to exactly how much she could take in one time.\n\nWill still practice with attuned partner", "У меня сильно кружилась голова, я слышала шум крови в ушах, похожий на водопад. В обеих ладонях, обращённых вверх, я ощущала поднимающиеся столбы... Они соединялись в большой поток энергии наверху. Сначала они были как пламя 🔥. Яркий свет ночного неба 🌌... Во время настройки я не смогла пробиться к одному из нас: путь преграждала ветка с плотной кроной. Зато во время тантрического потока, направленного к Энди, столбы из моих рук превратились в лучи света, которые поднимались всё выше и выше... После настройки я направила поток дочери... Я чувствую жар в ладонях. Потоки встречаются в треугольнике над головой... В пространстве, которое представляет человека, которому я отправляю поток. Моя дочь — нежное существо, и я действительно чувствовала, что поток был настроен ровно на столько, сколько она могла принять за один раз.\n\nЯ продолжу практику с партнёром, прошедшим настройку."),
+    attribution: l("Litten · published Tantra Reiki learner review", "Литтен · отзыв о Тантра Рейки (перевод с английского)"),
     sourcePath: "reiki/tantra-reiki",
   },
   {
     id: "tantra-level-1",
-    quote: l("Outside, I delight in the wind and the sun. A state of unconditional Love!",
-      "На улице кайфую От ветра) Солнца) Состояние Безусловной Любви!"),
-    attribution: l("Tantra Reiki Level 1 learner · published anonymous review", "Участница Тантра Рейки 1-й ступени · отзыв без подписи"),
+    quote: l("I feel relaxed :) rested :) I look at myself in the mirror and admire myself :) Outside, I delight in the wind and the sun. A state of unconditional Love!\n\nThank you, Andrey! As beautiful as always :)", "Состояние розслабленое) отдохнувшая) смотрю на себя в зеркало и любуюсь )) На улице кайфую От ветра) Солнца) Состояние Безусловной Любви!\n\nБлагодарю Андрей! Как всегда красиво )"),
+    attribution: l("Tantra Reiki Level 1 learner · anonymous review (translated from Russian)", "Участница Тантра Рейки 1-й ступени · отзыв без подписи"),
     sourcePath: "reiki/tantra-reiki",
   },
 ];
@@ -156,11 +156,11 @@ const practiceQuestion: EnergyworkQuestion = {
 const commonSlides: EnergyworkSlide[] = [
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
     title: l("Reiki Practitioner — your first step", "Практик Рейки — начало пути"),
-    body: l("One course, five lessons in sequence: Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and preparing for a personal initiation.", "Один курс из пяти последовательных уроков: Полёт к Солнцу, Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и подготовка к личной инициации.") },
+    body: l("One course, five lessons in sequence: Flight to the Sun and three Reiki systems.", "Один курс из пяти последовательных уроков: «Полёт к Солнцу» и три системы Рейки.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
-    body: l("A quick introduction, not a test. Choose the experience that best describes you.",
-      "Это короткое знакомство, а не тест. Выберите вариант, который лучше всего описывает ваш опыт."),
+    body: l("Not a test — just choose your experience.",
+      "Это не тест — просто выберите свой опыт."),
     question: { type: "choice", prompt: l("My experience so far", "Мой опыт"), options: [
       { id: "beginner", label: l("I'm new to Reiki", "Пока не знаком(а) с Рейки") },
       { id: "energywork", label: l("I have energy-work experience, but not Reiki", "Есть опыт энергетических практик, но не Рейки") },
@@ -176,14 +176,14 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("Original English recording. You may listen, use the text alternative or move on. Never force an uncomfortable experience.", "Оригинальная английская запись. Можно прослушать, прочитать альтернативу или продолжить. Не нужно принуждать себя к неприятным ощущениям.") },
   { id: "flight-03", phase: "flight", kind: "practice", question: practiceQuestion,
     title: l("A gentle pause", "Небольшая пауза"),
-    body: l("After the meditation, pause for a moment. Notice any imagined warmth or light, or simply the contact with your chair. No warmth needs to appear. You may stop at any time.", "После медитации сделайте мягкую паузу. Обратите внимание на образ тепла или света либо просто на опору стула. Тепло не обязательно должно ощущаться. Можно остановиться в любой момент.") },
+    body: l("Pause, notice your chair, or imagine warmth or light.", "Сделайте паузу, ощутите опору стула или представьте тепло и свет.") },
   { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
     title: l("What do other viewers say?", "Что пишут другие?"),
     body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
   { id: "flight-04", phase: "flight", kind: "reflection",
     title: l("Your meditation feedback", "Ваш отзыв о медитации"),
-    body: l("How much did you feel, if anything? Even noticing nothing is a useful response.", "Насколько удалось прочувствовать медитацию? Если ничего не почувствовали — так тоже бывает."),
-    question: { type: "text", prompt: l("What did you notice? One sentence is enough.", "Что вы заметили? Достаточно одного предложения.") } },
+    body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
+    question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
   { id: "flight-05", phase: "flight", kind: "reflection",
     title: l("What did the Sun symbol mean?", "Что означает образ Солнца?"),
     body: l("There is no right feeling to achieve. Describe the difference between a symbolic image and a required physical result.", "Здесь не требуется определённое ощущение. Расскажите, чем символический образ отличается от обязательного физического результата."),
@@ -274,8 +274,8 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       testimonials: yggdrasilVoices },
     { id: "ygg-04", phase: "yggdrasil", kind: "reflection",
       title: l("Your meditation feedback", "Ваш отзыв о медитации"),
-      body: l("How much did you feel, if anything? Not feeling anything is also a valid observation.", "Насколько удалось прочувствовать медитацию? Если ничего не почувствовали — это тоже нормально."),
-      question: { type: "text", prompt: l("What did you notice? One sentence is enough.", "Что вы заметили? Достаточно одного предложения.") } },
+      body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
+      question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
     { id: "ygg-05", phase: "yggdrasil", kind: "lesson",
       title: l("Continue with the first-level materials", "Продолжите изучение первой ступени"),
       body: l("The introductory streams and source materials are on the separate Yggdrasil course page. A teacher-guided initiation must be arranged with Andrey.", "Вводные потоки и источники — на отдельной странице Иггдрасиля. Инициацию с преподавателем необходимо согласовать с Андреем.") },
@@ -303,8 +303,8 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       testimonials: tantraVoices },
     { id: "tan-04", phase: "tantra", kind: "reflection",
       title: l("Your meditation feedback", "Ваш отзыв о медитации"),
-      body: l("How much did you feel, if anything? Even 'nothing yet' is an honest answer.", "Насколько удалось прочувствовать медитацию? «Пока ничего» — тоже честный ответ."),
-      question: { type: "text", prompt: l("What did you notice? One sentence is enough.", "Что вы заметили? Достаточно одного предложения.") } },
+      body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
+      question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
     { id: "tan-05", phase: "tantra", kind: "lesson",
       title: l("Continue with Tantra Reiki Level 1", "Продолжите первую ступень Тантра Рейки"),
       body: l("Read the first-level course materials. Any initiation requires a separate teacher-led arrangement.", "Изучите материалы первой ступени. Любая инициация согласуется с преподавателем отдельно.") },
@@ -328,8 +328,8 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
     { id: "kun-04", phase: "kundalini", kind: "reflection",
       title: l("Your meditation feedback", "Ваш отзыв о медитации"),
-      body: l("How much did you feel, if anything? A quiet or neutral experience is just as valid.", "Насколько удалось прочувствовать медитацию? Спокойное или нейтральное состояние — тоже нормальный результат."),
-      question: { type: "text", prompt: l("What did you notice? One sentence is enough.", "Что вы заметили? Достаточно одного предложения.") } },
+      body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
+      question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
     { id: "kun-05", phase: "kundalini", kind: "lesson",
       title: l("Explore the original manual", "Изучите оригинальную методичку"),
       body: l("The public Kundalini Reiki course offers the source manual and instructions to request teacher-guided Level 1.", "На публичной странице Кундалини Рейки есть исходная методичка и информация о согласовании первой ступени с преподавателем.") },

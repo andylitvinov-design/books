@@ -41,6 +41,7 @@ const copy = {
     tantraAction: "Тантра Рейки · бесплатная инициация 1-й ступени",
     returning: "Уже есть профиль или результаты?",
     cabinetAction: "Открыть кабинет",
+    testGuideAction: "Как работают бесплатные тесты",
     videoKicker: "Короткое знакомство",
     videoTitle: "О Holistic House за полминуты",
     aboutKicker: "Лично об Андрее",
@@ -75,6 +76,7 @@ const copy = {
     tantraAction: "Tantra Reiki · free Level 1 initiation",
     returning: "Already have a profile or previous results?",
     cabinetAction: "Open Cabinet",
+    testGuideAction: "How free self-checks work",
     videoKicker: "A short introduction",
     videoTitle: "Holistic House in half a minute",
     aboutKicker: "Meet your practitioner",
@@ -189,6 +191,8 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         </div>
 
         <p className="service-home-start__returning">
+          <Link href={`/${locale}/tests`} prefetch={false}>{text.testGuideAction}<span aria-hidden="true">→</span></Link>
+          <span aria-hidden="true"> · </span>
           {text.returning} <Link href={`/${locale}/client`} prefetch={false}>{text.cabinetAction}<span aria-hidden="true">→</span></Link>
         </p>
       </section>

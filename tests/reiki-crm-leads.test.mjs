@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url),'utf8')
-const sql=read('supabase/migrations/20261018215000_hh_reiki_course_private_crm_leads.sql')
+const sql=read('supabase/migrations/20261018184658_hh_reiki_course_private_crm_leads_20261018.sql')
 const repo=read('lib/academy/energywork-course-repository.js')
 const leads=read('lib/academy/reiki-course-leads.js')
 const learner=read('components/energywork-ai-learner.tsx')

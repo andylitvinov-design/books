@@ -496,25 +496,52 @@ try {
   await admin.getByRole('button', { name: 'Archive', exact: true }).click()
   await expect(admin.getByText('This record is archived and is not visible to the client.', { exact: true })).toBeVisible()
   assert.equal((await fresh.findClientAssessment(id)).status, 'archived')
-  // Client reports use the new consultation studio, not the retired research-result editor.
+  // Client reports redirect to the studio; select the synthetic client in its actual control.
+  async function assertStudioClient(selected) {
+    await expect(admin.locator('.consultation-client-selector input[name="clientId"]')).toHaveValue(selected ? a.id : '')
+    await expect(admin.locator('.consultation-client-selector input[name="clientMode"]')).toHaveValue('existing')
+    await expect(admin.locator('.consultation-client-selected-row')).toHaveCount(selected ? 1 : 0)
+    if (selected) {
+      await expect(admin.locator('.consultation-client-selected-row strong')).toHaveText(a.fullName)
+      await expect(admin.locator('.consultation-client-selected-row input[name="patientName"]')).toHaveValue(a.fullName)
+    }
+    await expect(admin.locator('textarea[name="analysis"]')).toBeVisible()
+    await expect(admin.locator('textarea[name="additionalNotes"]')).toBeVisible()
+    await expect(admin.locator('input[name="includeRecommendation"]')).toBeChecked()
+    await expect(admin.locator('input[name="includeInvoice"]')).not.toBeChecked()
+    await expect(admin.locator('select[name="kind"]')).toHaveCount(0)
+  }
   await go(admin, '/admin/reports/new')
-  const clientReportLink = admin.locator(`a.master-client-row[href="/admin/consultations/new?clientId=${a.id}"]`)
-  await expect(clientReportLink).toBeVisible()
-  await clientReportLink.click()
-  await expect(admin).toHaveURL(origin + `/admin/consultations/new?clientId=${a.id}`)
-  await expect(admin.locator('.consultation-client-selector input[name="clientId"]')).toHaveValue(a.id)
-  await expect(admin.locator('.consultation-client-selected-row strong')).toHaveText(a.fullName)
-  await expect(admin.locator('textarea[name="analysis"]')).toBeVisible()
-  await expect(admin.locator('textarea[name="additionalNotes"]')).toBeVisible()
-  await expect(admin.locator('input[name="includeRecommendation"]')).toBeChecked()
-  await expect(admin.locator('input[name="includeInvoice"]')).not.toBeChecked()
-  await expect(admin.locator('select[name="kind"]')).toHaveCount(0)
+  await expect(admin).toHaveURL(origin + '/admin/consultations/new')
+  await assertStudioClient(false)
+  await admin.locator('.consultation-client-search input').fill(a.fullName)
+  const clientChoice = admin.locator('.consultation-client-results button').filter({ hasText: a.fullName })
+  await expect(clientChoice).toHaveCount(1)
+  await expect(clientChoice.locator('strong')).toHaveText(a.fullName)
+  await expect(clientChoice).toHaveAttribute('type', 'button')
+  await clientChoice.click()
+  await expect(admin).toHaveURL(origin + '/admin/consultations/new')
+  await assertStudioClient(true)
   await admin.screenshot({ path: `${evidence}/synthetic-practitioner-new-consultation.png`, fullPage: true })
-  // Previously shared bookmarks should reach the same studio after owner/client validation.
+  // Valid bookmarks retain their client; malformed preselection is discarded.
+  await go(admin, `/admin/reports/new?clientId=${a.id}`)
+  await expect(admin).toHaveURL(origin + `/admin/consultations/new?clientId=${a.id}`)
+  await assertStudioClient(true)
+  await go(admin, '/admin/reports/new?clientId=not-a-valid-uuid')
+  await expect(admin).toHaveURL(origin + '/admin/consultations/new')
+  await assertStudioClient(false)
+  // Previously shared bookmarks still validate the owner/client before reaching the studio.
   await go(admin, `/admin/clients/${a.id}/assessments/new?kind=research_result`)
   await expect(admin).toHaveURL(origin + `/admin/consultations/new?clientId=${a.id}`)
-  await expect(admin.locator('.consultation-client-selector input[name="clientId"]')).toHaveValue(a.id)
-  pass('Actual owner Unshare/Edit/Archive, report picker handoff and old research-result redirect to the new consultation studio')
+  await assertStudioClient(true)
+  for (const path of [`/admin/reports/new?clientId=${a.id}`, `/admin/consultations/new?clientId=${a.id}`,
+    `/admin/clients/${a.id}/assessments/new?kind=research_result`]) {
+    await go(page, path)
+    await expect(page).toHaveURL(origin + '/admin/login')
+    await expect(page.locator('.consultation-client-selector')).toHaveCount(0)
+    await expect(page.getByText(a.fullName, { exact: true })).toHaveCount(0)
+  }
+  pass('Actual owner Unshare/Edit/Archive, studio client selection, validated report preselection, legacy redirect and unauthenticated denial without submission')
   await go(pa, '/en/client'); await expect(pa).toHaveURL(origin + '/en/client')
   await expect(pa.locator(`a[href="/en/client/${links.a.selector}"]`)).toBeHidden()
   await pa.getByText('Already have a private link from Andy?', { exact: true }).click()

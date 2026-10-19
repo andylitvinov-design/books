@@ -3,15 +3,19 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('client report editors select shared resources while personal uploads use their dedicated screen',()=>{
-  for(const [path,source] of [
-    ['app/admin/consultations/[id]/edit/page.js','documentId={consultation.id}'],
-    ['app/admin/prescriptions/[id]/page.js','documentId={prescription.id}'],
-    ['app/admin/clients/[id]/assessments/[assessmentId]/edit/page.js','assessmentId={assessmentId}']]){
-    const page=read(path)
-    assert.ok(page.includes('requireAdminRequest()'))
-    assert.ok(page.includes('deliveryEnabled()'))
-    assert.ok(page.includes(source))
-  }
+  const consultation=read('app/admin/consultations/[id]/edit/page.js')
+  assert.match(consultation,/requireAdminRequest\(\)/)
+  assert.match(consultation,/deliveryEnabled\(\)/)
+  assert.match(consultation,/documentId:\s*consultation\.id/)
+  assert.match(consultation,/ReportVideoMaterialsEditor/)
+  const legacy=read('app/admin/prescriptions/[id]/page.js')
+  assert.match(legacy,/requireAdminRequest\(\)/)
+  // Legacy edits now redirect into the one shared consultation report constructor.
+  assert.match(legacy,/redirect\(`\/admin\/consultations\//)
+  const assessment=read('app/admin/clients/[id]/assessments/[assessmentId]/edit/page.js')
+  assert.match(assessment,/requireAdminRequest\(\)/)
+  assert.match(assessment,/deliveryEnabled\(\)/)
+  assert.match(assessment,/assessmentId=\{assessmentId\}/)
   const preview=read('app/admin/documents/[id]/page.js')
   assert.match(preview,/requireAdminRequest/)
   assert.doesNotMatch(preview,/SessionAudioRecorder/)
@@ -27,9 +31,13 @@ test('report editor can record private client audio without using shared Materia
   assert.match(editor,/SessionAudioRecorder clientId=\{clientId\} sessionId=\{sessionId\|\|null\}/)
   assert.match(editor,/documentId=\{documentId\} locale=\{locale\} audioOnly/)
   assert.match(editor,/onSaved=\{savedId=>/)
+  assert.match(editor,/placement==='video'/)
+  assert.match(editor,/videoOnly/)
   assert.match(recorder,/!audioOnly&&<button type="button" onClick=\{\(\)=>startRecording\('video'\)\}/)
-  assert.match(recorder,/!audioOnly&&<SessionPhotoUploader/)
+  assert.match(recorder,/!audioOnly&&!videoOnly&&<SessionPhotoUploader/)
   assert.match(recorder,/if\(audioOnly&&!file\.type\.startsWith\('audio\/'\)\)/)
+  assert.match(recorder,/if\(videoOnly&&!video\)/)
+  assert.match(recorder,/kindFilter=\{videoOnly\?'video':audioOnly\?'audio':'all'\}/)
   assert.match(recorder,/saveRecording\(job/)
   assert.match(recorder,/reviewFirst:scope==='client'/)
   assert.match(recorder,/SessionRecordingReview/)
@@ -87,4 +95,23 @@ test('recording permission is granted only on authenticated practitioner editor 
   assert.ok(global!==-1 && override>global,'scoped policy must override the global denial last')
   const recorder=read('components/session-audio-recorder.jsx')
   assert.ok(recorder.includes('navigator.mediaDevices.getUserMedia'))
+})
+
+
+test('report-only voice UI remains compact while keeping safe publish and deletion controls',()=>{
+  const recorder=read('components/session-audio-recorder.jsx')
+  const takes=read('components/session-recording-review.jsx')
+  const css=read('components/client-session.module.css')
+  assert.match(recorder,/audioOnly\?styles\.compactRecorder/)
+  assert.match(recorder,/audioOnly&&<details className=\{styles\.audioHelp\}>/)
+  assert.match(recorder,/compact=\{audioOnly\|\|videoOnly\}/)
+  assert.match(recorder,/reviewFirst:scope==='client'/)
+  assert.match(takes,/compact=false/)
+  assert.match(takes,/compact\?styles\.compactTakeSection/)
+  assert.match(takes,/type="checkbox"/)
+  assert.match(takes,/disabled=\{Boolean\(busy\)\|\|inPublished\}/)
+  assert.match(takes,/aria-label=\{ru\?'Удалить '\+displayTitle/)
+  assert.match(css,/\.compactRecorder \.recordControls\{\s*display:grid;/)
+  assert.match(css,/\.compactRecorder \.audioHelp summary\{/)
+  assert.match(css,/\.compactTakeSection \.takeActions button\{\s*flex:none;/)
 })

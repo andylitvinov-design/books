@@ -24,10 +24,15 @@ export const ENERGYWORK_LESSON_STARTS = Object.freeze(['flight-01','tan-01','kun
 export const ENERGYWORK_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04','end-01'])
 // These four reviews gate the next teaching screen; the final journal remains optional during learning.
 export const ENERGYWORK_MEDITATION_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04'])
+export const ENERGYWORK_REVIEW_MIN_CHARS = 15
 export function energyworkMeditationFeedbackComplete(answer) {
-  if (typeof answer !== 'string' || answer.length > 1600) return false
-  const match = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/.exec(answer)
-  return Boolean(match && match[1].trim().length > 0)
+  if (typeof answer !== 'string') return false
+  // Keep old encrypted journal responses readable without requiring scores in new reviews.
+  if (answer.startsWith('Feeling:')) {
+    const legacy = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/.exec(answer)
+    return Boolean(legacy && Array.from(legacy[1].trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS)
+  }
+  return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
 export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-06','kun-06','ygg-06','init-01'])
 export const ENERGYWORK_QUESTIONS = Object.freeze({
@@ -69,6 +74,17 @@ export function energyworkSequence(_legacyPath = null) {
     'end-01','paths-04','end-02',
   ]
 }
+// Derive lesson lengths from the canonical sequence, not hard-coded totals.
+// end is exclusive; the two welcome slides are an introduction before lesson 1.
+export function energyworkLessonRanges(sequence = energyworkSequence()) {
+  const starts = ENERGYWORK_LESSON_STARTS.map(id => sequence.indexOf(id))
+  if (starts.some((value, index) => value < 0 || (index > 0 && value <= starts[index - 1])))
+    throw new Error('ENERGYWORK_LESSON_SEQUENCE_INVALID')
+  return starts.map((start, index) => {
+    const end = starts[index + 1] ?? sequence.length
+    return { lesson: index + 1, firstSlideId: ENERGYWORK_LESSON_STARTS[index], start, end, count: end - start }
+  })
+}
 // Keep encrypted private answers. Legacy progress returns to the introductory
 // lesson when the three previously exclusive systems become sequential.
 export function energyworkLegacyResumeId(slideId) {
@@ -83,7 +99,8 @@ export function energyworkInitiationReady(answers) {
 export function energyworkAnswerValid(id, answer) {
   const kind = ENERGYWORK_QUESTIONS[id]
   if (!kind || typeof answer !== 'string') return false
-  if (kind === 'text') return answer.length <= 1600 && !answer.includes('\\u0000')
+  if (kind === 'text') return !answer.includes('\\u0000') &&
+    (ENERGYWORK_MEDITATION_REPORT_IDS.includes(id) || answer.length <= 1600)
   if (kind === 'scale') return /^(?:[0-9]|10)$/.test(answer)
   if (kind === 'choice') return id === 'welcome-02'
     ? ENERGYWORK_EXPERIENCE_VALUES.includes(answer)

@@ -3,6 +3,41 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
+function sessionPageSource(source) {
+  const start=source.indexOf('export function ClientSessionPage(')
+  const end=source.indexOf('\n}',start)
+  assert.ok(start>=0&&end>start,'ClientSessionPage must have a bounded component body')
+  return source.slice(start,end+2)
+}
+
+function assertCanonicalComposition(source) {
+  const page=sessionPageSource(source)
+  const video=page.indexOf('id="session-video"')
+  const report=page.indexOf('className={styles.fullReportContent}>{reportContent}')
+  const fallbackAudio=page.indexOf('!audioEmbedded&&!hasFullReport&&<ClientSessionVoiceMessage')
+  const reportAudio=page.indexOf('!audioEmbedded&&hasFullReport&&<ClientSessionVoiceMessage')
+  assert.ok(video>=0&&fallbackAudio>video&&report>fallbackAudio&&reportAudio>report,
+    'video leads; mutually exclusive nonembedded voice slots surround the full report')
+  const fallback=page.match(/\{!hasFullReport&&hasRecommendation&&<>([\s\S]*?)<\/>\}/)?.[1]
+  assert.ok(fallback,'fallback prescriptions must be guarded from a full report')
+  assert.match(fallback, /<SessionPrescriptionOverview recommendation=\{recommendation\} locale=\{locale\} part="summary"\/>/)
+  assert.match(fallback, /<SessionPrescriptionOverview recommendation=\{recommendation\} locale=\{locale\} part="remedies"\/>/)
+  assert.doesNotMatch(fallback, /DaoStageDisclosure/, 'the optional stage now follows the complete session content')
+  const stage=page.match(/\{!hasFullReport&&hasRecommendation&&<DaoStageDisclosure\s+score=\{recommendation\?\.daoResourceScore\} locale=\{locale\}\s+published=\{recommendation\?\.daoResourcePublished !== false\}\/>\}/)?.[0]
+  assert.ok(stage,'fallback Dao stage must retain its full-report and publication guards')
+  assert.equal((page.match(/<DaoStageDisclosure\b/g)||[]).length,1,'one optional fallback stage')
+  const stagePosition=page.indexOf(stage)
+  const materials=page.indexOf('id="session-materials-title"')
+  const actions=page.indexOf('data-hh-report-next-actions')
+  const tests=page.indexOf('id="session-recommended-tests"')
+  const pdf=page.indexOf("id={hasFullReport?'session-download':'session-report'}")
+  assert.ok(materials>=0&&stagePosition>materials&&stagePosition<actions&&actions<tests&&tests<pdf,
+    'optional fallback stage follows content before Cabinet save → test cards → final PDF')
+  assert.match(page, /!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview recommendation=\{recommendation\} locale=\{locale\} part="extra"\/>/)
+  assert.equal((page.match(/<SessionPrescriptionOverview\b/g)||[]).length,3,
+    'summary, remedies and extra instructions appear only in guarded fallbacks')
+}
+
 function assertUploadPreflight(recorder) {
   const start=recorder.indexOf('async function chooseFile(event) {')
   const end=recorder.indexOf('  const busy=',start)
@@ -50,7 +85,8 @@ test('client and Google-saved session readers include full HTML report and autho
   ]) {
     const text=src(path)
     assert.match(text,/PrescriptionDocument/)
-    assert.match(text,/embedded\/>/)
+    assert.match(text,/<PrescriptionDocument\b[^>]*\bembedded(?:\s|\/>)/,
+      'the shared document stays embedded when afterCover props follow it')
   }
   assert.match(page,/session\.media/)
   assert.match(page,/id="session-photos"/)
@@ -102,7 +138,7 @@ test('mobile recording checks private bucket before camera / microphone permissi
 })
 
 
-test('videos lead the complete canonical HTML report, with audio, attachments and one PDF action',()=>{
+test('videos lead the canonical report with composed voice, guarded fallback, attachments and one PDF action',()=>{
   const page=src('components/client-session-page.jsx')
   const css=src('components/client-session.module.css')
   const owner=src('app/admin/documents/[id]/session-preview/page.js')
@@ -110,19 +146,15 @@ test('videos lead the complete canonical HTML report, with audio, attachments an
   assert.match(page,/const hasFullReport=Boolean\(reportContent\)/)
   assert.match(page,/\{hasFullReport&&<section id="session-report"/)
   assert.match(page,/className=\{styles\.fullReportContent\}>\{reportContent\}/)
-  assert.ok(page.indexOf('id="session-video"') <
-    page.indexOf('className={styles.fullReportContent}>{reportContent}'),
-    'video appears first, before the canonical full report')
-  assert.ok(page.indexOf('className={styles.fullReportContent}>{reportContent}') <
-    page.indexOf('id="session-message"'),'the original report remains before audio')
-  assert.match(page,/!hasFullReport&&hasRecommendation/,'do not duplicate visible recommendation cards')
-  assert.match(page,/!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview/)
+  // Voice now has its own component and is embedded through afterCover by
+  // each authorized route. Declaration order is not render order (#1070).
+  assertCanonicalComposition(page)
   assert.match(page,/id="session-photos"/)
   assert.match(page,/id="session-video"/)
   assert.match(page,/function PrivatePlayer/)
   assert.match(page,/SaveClientSessionToAccount/)
   assert.match(page,/SessionExitSaveGuard/)
-  assert.equal(page.match(/href=\{pdfPath\}/g)?.length,1,'only one PDF action in the client report')
+  assert.equal(page.match(/href=\{pdfPath\}/g)?.length,1,'only one PDF download action; the separate owner-approved preview remains available')
   assert.doesNotMatch(owner,/href=\{pdf[+}]/,'owner toolbar does not add another PDF action')
   assert.match(css,/\.cabinetSessionPage \.fullReportContent :global\(\.prescription-shell\.canonical-shell\)/)
   assert.match(css,/\.cabinetSessionPage \.fullReportSection/)
@@ -130,5 +162,45 @@ test('videos lead the complete canonical HTML report, with audio, attachments an
     'canonical-report-analysis','canonical-remedy-group','canonical-guidance',
     'canonical-follow-up-appointment','DocumentSignature','canonical-remedy-profiles']) {
     assert.ok(canonical.includes(selector),'original signed document keeps '+selector)
+  }
+})
+
+test('full-report composition rejects reordered video and an unguarded prescription fallback',()=>{
+  const source=src('components/client-session-page.jsx')
+  const reversed=source.replace('id="session-video"','id="moved-video"')
+    .replace('className={styles.fullReportContent}>{reportContent}',
+      'className={styles.fullReportContent}>{reportContent}<section id="session-video"/>')
+  assert.notEqual(reversed,source)
+  assert.throws(()=>assertCanonicalComposition(reversed), /video leads/)
+  const duplicated=source.replace('!hasFullReport&&hasRecommendation&&<>','hasRecommendation&&<>')
+  assert.notEqual(duplicated,source)
+  assert.throws(()=>assertCanonicalComposition(duplicated), /fallback prescriptions must be guarded/)
+})
+
+
+test('fallback Dao placement rejects lost publication/full-report guards and an early stage',()=>{
+  const source=src('components/client-session-page.jsx')
+  for(const [before,after] of [
+    ['published={recommendation?.daoResourcePublished !== false}','published={true}'],
+    ['!hasFullReport&&hasRecommendation&&<DaoStageDisclosure','hasRecommendation&&<DaoStageDisclosure'],
+  ]){
+    assert.ok(source.includes(before),'mutation target exists')
+    assert.throws(()=>assertCanonicalComposition(source.replace(before,after)), /publication guards/)
+  }
+  const stage=source.match(/\{!hasFullReport&&hasRecommendation&&<DaoStageDisclosure[\s\S]*?\/>\}/)?.[0]
+  assert.ok(stage)
+  const early=source.replace(stage,'').replace('{!hasFullReport&&<section className={styles.sessionHero}',stage+'\n    {!hasFullReport&&<section className={styles.sessionHero}')
+  assert.notEqual(early,source)
+  assert.throws(()=>assertCanonicalComposition(early), /follows content before Cabinet save/)
+})
+
+test('fallback Dao placement rejects moving the optional stage after Cabinet or test actions',()=>{
+  const source=src('components/client-session-page.jsx')
+  const stage=source.match(/\{!hasFullReport&&hasRecommendation&&<DaoStageDisclosure[\s\S]*?\/>\}/)?.[0]
+  assert.ok(stage)
+  for(const marker of ['    <section id="session-recommended-tests"',"    {session.report&&<section id={hasFullReport?'session-download':'session-report'}"]){
+    assert.ok(source.includes(marker),'late-stage mutation target exists')
+    const moved=source.replace(stage,'').replace(marker,stage+'\n'+marker)
+    assert.throws(()=>assertCanonicalComposition(moved),/follows content before Cabinet save/)
   }
 })

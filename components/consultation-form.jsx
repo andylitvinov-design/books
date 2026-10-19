@@ -7,12 +7,17 @@ import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
 import { ConsultationTextImport } from './consultation-text-import'
 import { ConsultationDraftPreview } from './consultation-draft-preview'
 import { useActionState, useEffect, useMemo, useState } from 'react'
-import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
+import { createPortal } from 'react-dom'
+import { consultationClinicalFields, initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
 import { getOwnerReportTextTemplate } from '@/lib/consultations/owner-report-template'
 import { reportFollowUpCopy } from '@/lib/documents/recommendation'
 import { ReportLanguagePicker } from './report-language-picker'
 import { ConsultationRecommendedTests } from './consultation-recommended-tests'
+import { DaoResourceStageField } from './dao-resource-stage'
+import { parseDaoResourceScore } from '@/lib/consultations/dao-resource-stage'
+import { extractReportProgress, parseReportProgressScore } from '@/lib/documents/report-progress'
+import './report-progress-editor.css'
 import { readUiLocale } from '@/lib/ui-locale'
 
 const copy = {
@@ -46,10 +51,18 @@ const copy = {
     notePlaceholder: 'Общие указания для клиента…',
     analysis: 'Анализ',
     analysisHint: 'Замеры состояния, динамика симптомов и наблюдения',
+    progressHeading: 'Круговые диаграммы «Было / Стало»',
+    progressHint: 'Оцените состояние клиента по шкале от 0 до 10. Когда заполнены оба поля, в HTML- и PDF-отчёте появятся две диаграммы.',
+    progressBefore: 'Было · до сессии',
+    progressAfter: 'Стало · после сессии',
+    progressError: 'Оценки «Было» и «Стало» должны быть от 0 до 10 с точностью до 0,1.',
     analysisPlaceholder: 'Например: дата наблюдения, показатели и изменения состояния…',
+    clientRecommendations: 'Рекомендации',
+    clientRecommendationsHint: 'Индивидуальные рекомендации клиенту по результатам анализа',
+    clientRecommendationsPlaceholder: 'Ваши персональные рекомендации для клиента…',
     clientNotes: 'Примечания',
-    clientNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
-    clientNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
+    clientNotesHint: 'Дополнительные примечания и пояснения клиенту',
+    clientNotesPlaceholder: 'Важные уточнения или наблюдения для клиента…',
     followUpDate: 'Дата повторной сессии',
     followUpDateHint: 'Необязательно. Дата и пояснение появятся в отчёте клиента.',
     reportTextLanguageNotice: 'Язык отчёта:',
@@ -122,10 +135,18 @@ const copy = {
     notePlaceholder: 'General client instructions…',
     analysis: 'Analysis',
     analysisHint: 'State measurements, symptom changes and observations',
+    progressHeading: 'Before / After circular charts',
+    progressHint: 'Rate the client’s state from 0 to 10. When both scores are entered, two circles appear in the HTML and PDF report.',
+    progressBefore: 'Before · start of session',
+    progressAfter: 'After · end of session',
+    progressError: 'Before and after scores must be between 0 and 10, with at most one decimal place.',
     analysisPlaceholder: 'For example: observation date, measured scores and changes…',
+    clientRecommendations: 'Recommendations',
+    clientRecommendationsHint: 'Your personalized recommendations based on the analysis',
+    clientRecommendationsPlaceholder: 'Write your recommendations for this client…',
     clientNotes: 'Notes',
-    clientNotesHint: 'Additional guidance and practical next steps for the client',
-    clientNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
+    clientNotesHint: 'Additional notes and explanations for the client',
+    clientNotesPlaceholder: 'Relevant notes and observations for this client…',
     followUpDate: 'Follow-up session date',
     followUpDateHint: 'Optional. The date and message will appear in the client report.',
     reportTextLanguageNotice: 'Report language:',
@@ -170,6 +191,12 @@ const copy = {
   },
 }
 
+const clinicalLabelsRu = {
+  dosage: 'Дозировка', frequency: 'Частота', duration: 'Продолжительность',
+  purpose: 'Цель', sequence: 'Этап / последовательность', instructions: 'Инструкции',
+  notes: 'Примечание к препарату',
+}
+
 function detectedType(items) {
   const types = new Set(items.filter((item) => item.selected).map((item) => item.itemType === 'bach' ? 'bach' : 'homeopathy'))
   if (types.has('homeopathy') && types.has('bach')) return 'mixed'
@@ -177,7 +204,15 @@ function detectedType(items) {
   return 'homeopathy'
 }
 
-export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId, recommendedTestOptions = { en: [], ru: [] } }) {
+function initialReportScore(consultation, key) {
+  if (!consultation) return ''
+  const legacy = consultation.progressBefore === undefined && consultation.progressAfter === undefined
+    ? extractReportProgress(consultation.analysis) : null
+  const score = consultation[key] === undefined ? legacy?.[key === 'progressBefore' ? 'before' : 'after'] : consultation[key]
+  return score == null ? '' : String(score)
+}
+
+export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId, recommendedTestOptions = { en: [], ru: [] }, saveFooterTargetId = null }) {
   const selectedClientLocale = clients.find((client) => client.id === selectedClientId)?.preferredLocale
   const initialReportLocale = consultation?.languagePreference === 'ru' || consultation?.languagePreference === 'en'
     ? consultation.languagePreference
@@ -194,10 +229,20 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
   const [analysis, setAnalysis] = useState(() => consultation?.analysis ?? getOwnerReportTextTemplate(initialReportLocale).analysis)
+  const [progressBefore, setProgressBefore] = useState(() => initialReportScore(consultation, 'progressBefore'))
+  const [progressAfter, setProgressAfter] = useState(() => initialReportScore(consultation, 'progressAfter'))
+  const [recommendationsText, setRecommendationsText] = useState(consultation?.recommendationsText ?? '')
   const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
   const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale).additionalNotes)
   const [recommendedTestKeys, setRecommendedTestKeys] = useState(() => consultation?.recommendedTestKeys ?? [])
+  const [daoResourceScore, setDaoResourceScore] = useState(() => consultation?.daoResourceScore == null ? '' : String(consultation.daoResourceScore))
+  const [daoResourcePublished, setDaoResourcePublished] = useState(() => consultation?.daoResourcePublished !== false)
   const [uiLocale, setUiLocale] = useState('en')
+  const [saveFooterTarget, setSaveFooterTarget] = useState(null)
+
+  useEffect(() => {
+    setSaveFooterTarget(saveFooterTargetId ? document.getElementById(saveFooterTargetId) : null)
+  }, [saveFooterTargetId])
 
   useEffect(() => {
     setUiLocale(readUiLocale(document.cookie))
@@ -209,10 +254,15 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const labels = copy[uiLocale]
   const reportType = useMemo(() => detectedType(items), [items])
   const reportLabel = reportType === 'mixed' ? labels.reportMixed : reportType === 'bach' ? labels.reportBach : labels.reportHomeopathy
+  const daoScoreInvalid = (() => { try { parseDaoResourceScore(daoResourceScore); return false } catch { return true } })()
+  const progressScoresInvalid = (() => { try { parseReportProgressScore(progressBefore); parseReportProgressScore(progressAfter); return false } catch { return true } })()
 
   function changeReportLocale(nextLocale) {
     const next = nextLocale === 'ru' ? 'ru' : 'en'
     if (next === reportLocale) return
+    if (consultation && next !== consultation.languagePreference && !window.confirm(uiLocale === 'ru'
+      ? 'Изменить язык сохранённого отчёта? Заголовки и приложения переключатся, но ваш текст не будет переведён.'
+      : 'Change the saved report language? Headings and appendices will switch, but your text will not be translated.')) return
     if (!consultation) {
       const previousTemplate = getOwnerReportTextTemplate(reportLocale)
       const nextTemplate = getOwnerReportTextTemplate(next)
@@ -314,25 +364,54 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     if (parsed.generalInstructions) setNote((current) => [current, parsed.generalInstructions].filter(Boolean).join('\n'))
   }
 
-  return <form action={submit} className="prescription-admin-form consultation-form consultation-form--compact consultation-studio" onSubmit={(event) => {
+  const saveFooter = (
+    <div className="consultation-studio-submit">
+      <div className="consultation-studio-submit-copy">
+        <strong>{includeRecommendation
+          ? (uiLocale==='ru'?'Сохранение не публикует изменения для клиента':'Saving does not publish changes to the client')
+          : (consultation ? labels.saveHeading : labels.createHeading)}</strong>
+        <span>{includeRecommendation
+          ? includeInvoice
+            ? paymentStatus === 'received' ? labels.receiptHint : labels.invoiceHint
+            : labels.prescriptionOnlyHint
+          : includeInvoice
+            ? paymentStatus === 'received' ? labels.receiptOnlyHint : labels.invoiceOnlyHint
+            : labels.noDocumentError}</span>
+      </div>
+      {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
+      <div className="consultation-studio-submit-buttons">
+        {includeInvoice && <ConsultationDraftPreview locale={reportLocale} includeRecommendation={false} includeInvoice={includeInvoice} disabled={pending} formId="consultation-report-form" />}
+        <button className="prescription-save consultation-primary-action" type="submit" disabled={pending} form="consultation-report-form">
+          {pending ? labels.saving : consultation ? labels.save : labels.create}
+        </button>
+      </div>
+    </div>
+  )
+
+  return <form action={submit} id="consultation-report-form" className="prescription-admin-form consultation-form consultation-form--compact consultation-studio" onSubmit={(event) => {
     if (!includeRecommendation && !includeInvoice) {
       event.preventDefault()
       setError(labels.noDocumentError)
     } else if (includeRecommendation && !validateConsultationRows(items)) {
       event.preventDefault()
       setError(labels.chooseError)
+    } else if (includeRecommendation && progressScoresInvalid) {
+      event.preventDefault()
+      setError(labels.progressError)
+    } else if (includeRecommendation && daoScoreInvalid) {
+      event.preventDefault()
+      setError(uiLocale === 'ru' ? 'Укажите балл У-син от 0 до 10 с одним знаком после запятой.' : 'Enter a Wu Xing score from 0 to 10 with at most one decimal place.')
     } else {
       setError('')
     }
   }}>
     <input type="hidden" name="consultationId" value={consultation?.id ?? ''} />
     <input type="hidden" name="recommendationRevision" value={consultation?.updatedAt ?? ''} />
+    <input type="hidden" name="languageChangeConfirmed" value={reportLocale !== initialReportLocale ? 'yes' : 'no'} />
     <input type="hidden" name="paymentRevision" value={payment?.updatedAt ?? ''} />
     <input type="hidden" name="requestId" value={requestId ?? ''} />
     <input type="hidden" name="itemsJson" value={JSON.stringify(serializeConsultationRows(items))} />
     <input type="hidden" name="recommendedTestsJson" value={JSON.stringify(recommendedTestKeys)} />
-    <input type="hidden" name="followUp" value={consultation?.followUp ?? ''} />
-    <input type="hidden" name="recommendationNumber" value={consultation?.recommendationNumber ?? ''} />
 
     <ol className="consultation-studio-progress" aria-label={labels.workflow}>
       <li><span>01</span>{labels.client}</li>
@@ -443,6 +522,25 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
               <label className="consultation-remedy-dose"><span>{labels.granules}</span><input aria-label={labels.granules + ' ' + (index + 1)} type="number" inputMode="numeric" min="1" max="99" value={item.granules ?? ''} onChange={(event) => update(index, { granules: event.target.value })} /></label>
               <label className="consultation-remedy-dose"><span>{labels.timesPerDay}</span><input aria-label={labels.timesPerDay + ' ' + (index + 1)} type="number" inputMode="numeric" min="1" max="99" value={item.timesPerDay ?? ''} onChange={(event) => update(index, { timesPerDay: event.target.value })} /></label>
             </div>}
+            <details className="consultation-advanced-remedy">
+              <summary>{uiLocale === 'ru' ? 'Дополнительные параметры препарата' : 'Additional remedy details'}
+                {consultationClinicalFields.some(([field]) => String(item[field] ?? '').trim()) || String(item.notes ?? '').trim()
+                  ? <span> · {uiLocale === 'ru' ? 'есть сохранённые данные' : 'saved details'}</span>
+                  : null}
+              </summary>
+              <div className="consultation-advanced-grid">
+                {consultationClinicalFields.map(([field, label]) => <label key={field}>
+                  <span>{uiLocale === 'ru' ? clinicalLabelsRu[field] : label}</span>
+                  {field === 'instructions'
+                    ? <textarea rows={2} value={item[field] ?? ''} onChange={(event) => update(index, { [field]: event.target.value })} />
+                    : <input value={item[field] ?? ''} onChange={(event) => update(index, { [field]: event.target.value })} />}
+                </label>)}
+                <label className="consultation-advanced-notes">
+                  <span>{uiLocale === 'ru' ? clinicalLabelsRu.notes : 'Remedy notes'}</span>
+                  <textarea rows={2} value={item.notes ?? ''} onChange={(event) => update(index, { notes: event.target.value })} />
+                </label>
+              </div>
+            </details>
           </div>
         })}</div>
 
@@ -456,9 +554,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
     </section>}
 
-    {includeRecommendation && <section className="consultation-studio-card consultation-report-notes-panel" aria-label={labels.analysis + ' & ' + labels.clientNotes}>
+    {includeRecommendation && <section className="consultation-studio-card consultation-report-notes-panel" aria-label={labels.analysis + ', ' + labels.clientRecommendations + ' & ' + labels.clientNotes}>
       <div className="consultation-review-notes-title">
-        <h2>{uiLocale === 'ru' ? 'Анализ и примечания' : 'Analysis & notes'}</h2>
+        <h2>{uiLocale === 'ru' ? 'Анализ, рекомендации и примечания' : 'Analysis, recommendations & notes'}</h2>
         <p>{uiLocale === 'ru' ? 'Добавьте замеры состояния и персональные указания, которые войдут в PDF-отчёт.' : 'Record state measurements and personalized guidance for the client PDF.'}</p>
       </div>
       <p className="consultation-report-language-note" role="note">
@@ -471,11 +569,32 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       {!consultation && <button type="button" className="consultation-reload-template" onClick={restoreReportTemplate}>
         {labels.reloadTemplate} {reportLocale === 'ru' ? 'русском' : 'English'}
       </button>}
+      <div className="consultation-progress-editor" role="group" aria-label={labels.progressHeading}>
+        <div className="consultation-progress-editor-intro">
+          <strong>{labels.progressHeading}</strong>
+          <p>{labels.progressHint}</p>
+        </div>
+        <div className="consultation-progress-inputs">
+          <label><span>{labels.progressBefore}</span>
+            <div className="consultation-progress-input"><input name="progressBefore" type="number" inputMode="decimal" min="0" max="10" step="0.1"
+              value={progressBefore} onChange={event => setProgressBefore(event.target.value)} placeholder="0–10" /><span>/ 10</span></div>
+          </label>
+          <label><span>{labels.progressAfter}</span>
+            <div className="consultation-progress-input"><input name="progressAfter" type="number" inputMode="decimal" min="0" max="10" step="0.1"
+              value={progressAfter} onChange={event => setProgressAfter(event.target.value)} placeholder="0–10" /><span>/ 10</span></div>
+          </label>
+        </div>
+      </div>
       <div className="consultation-report-note-grid">
         <label className="consultation-report-note">
           <span>{labels.analysis}</span>
           <small>{labels.analysisHint}</small>
           <textarea name="analysis" rows={4} maxLength={5000} value={analysis} onChange={(event) => setAnalysis(event.target.value)} placeholder={labels.analysisPlaceholder} />
+        </label>
+        <label className="consultation-report-note consultation-report-note--recommendations">
+          <span>{labels.clientRecommendations}</span>
+          <small>{labels.clientRecommendationsHint}</small>
+          <textarea name="recommendationsText" rows={4} maxLength={5000} value={recommendationsText} onChange={(event) => setRecommendationsText(event.target.value)} placeholder={labels.clientRecommendationsPlaceholder} />
         </label>
         <label className="consultation-report-note">
           <span>{labels.clientNotes}</span>
@@ -510,6 +629,27 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       <label className="consultation-note consultation-legacy-instructions">{labels.note}
         <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
       </label>
+      <details className="consultation-extra-details">
+        <summary>{uiLocale === 'ru' ? 'Дополнительные данные документа' : 'Additional document details'}</summary>
+        <div className="consultation-advanced-grid">
+          <label>
+            <span>{uiLocale === 'ru' ? 'Дата рождения клиента (необязательно)' : 'Client date of birth (optional)'}</span>
+            <input type="date" name="patientDob" defaultValue={consultation?.patientDob ?? ''} />
+          </label>
+          <label>
+            <span>{uiLocale === 'ru' ? 'Номер рекомендации (необязательно)' : 'Recommendation number (optional)'}</span>
+            <input name="recommendationNumber" defaultValue={consultation?.recommendationNumber ?? ''} />
+          </label>
+          <label className="consultation-advanced-notes">
+            <span>{uiLocale === 'ru' ? 'Пояснение к повторной консультации' : 'Follow-up instructions'}</span>
+            <textarea rows={2} name="followUp" defaultValue={consultation?.followUp ?? ''} />
+          </label>
+          <label className="consultation-advanced-notes">
+            <span>{uiLocale === 'ru' ? 'Личные заметки практика (не показываются клиенту)' : 'Private practitioner notes (not shown to client)'}</span>
+            <textarea rows={2} name="internalNotes" defaultValue={consultation?.internalNotes ?? ''} />
+          </label>
+        </div>
+      </details>
       <label className="consultation-studio-document-choice consultation-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
         <input type="checkbox" name="includeDistanceHomeopathy" checked={includeDistanceHomeopathy} onChange={event => setIncludeDistanceHomeopathy(event.target.checked)} />
         <span>
@@ -561,26 +701,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       {!includeInvoice && payment && <p className="consultation-existing-payment-note">{labels.existingPaymentHint}</p>}
     </section>
 
-    <div className="consultation-studio-submit">
-      <div className="consultation-studio-submit-copy">
-        <strong>{includeRecommendation
-          ? (uiLocale==='ru'?'Сохранение не публикует изменения для клиента':'Saving does not publish changes to the client')
-          : (consultation ? labels.saveHeading : labels.createHeading)}</strong>
-        <span>{includeRecommendation
-          ? includeInvoice
-            ? paymentStatus === 'received' ? labels.receiptHint : labels.invoiceHint
-            : labels.prescriptionOnlyHint
-          : includeInvoice
-            ? paymentStatus === 'received' ? labels.receiptOnlyHint : labels.invoiceOnlyHint
-            : labels.noDocumentError}</span>
-      </div>
-      {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
-      <div className="consultation-studio-submit-buttons">
-        <ConsultationDraftPreview locale={reportLocale} includeRecommendation={includeRecommendation} includeInvoice={includeInvoice} disabled={pending} />
-        <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>
-          {pending ? labels.saving : consultation ? labels.save : labels.create}
-        </button>
-      </div>
-    </div>
+    {includeRecommendation && <DaoResourceStageField value={daoResourceScore} onChange={setDaoResourceScore}
+      published={daoResourcePublished} onPublishedChange={setDaoResourcePublished} locale={uiLocale} />}
+
+    {saveFooterTarget ? createPortal(saveFooter, saveFooterTarget) : saveFooter}
   </form>
 }

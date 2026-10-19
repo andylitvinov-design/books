@@ -24,8 +24,14 @@ async function handle(request){
     const repo=createCrmRepository(config)
     let data
     if(request.method==='GET'){
-      const threadId=new URL(request.url).searchParams.get('thread')
-      data=await repo.withOwner(actor,store=>store.listMessengerThreads(threadId))
+      const params=new URL(request.url).searchParams
+      const allowed=['thread','threadsBefore','messagesBefore']
+      if([...params.keys()].some(key=>!allowed.includes(key))||
+         allowed.some(key=>params.getAll(key).length>1))
+        throw new AppError('INVALID_MESSENGER_CURSOR',400)
+      data=await repo.withOwner(actor,store=>store.listMessengerThreads(
+        params.get('thread'),{threadsBefore:params.get('threadsBefore'),messagesBefore:params.get('messagesBefore')}
+      ))
     }else{
       const body=await readBody(request,4096)
       onlyKeys(body,['action','payload'])
@@ -40,6 +46,28 @@ async function handle(request){
       }else if(action==='read'){
         onlyKeys(payload,['threadId'])
         data=await repo.withOwner(actor,store=>store.readMessengerThread(payload.threadId))
+      }else if(action==='note'){
+        onlyKeys(payload,['threadId','noteId','text'])
+        data=await repo.withOwner(actor,store=>store.addMessengerNote(payload))
+      }else if(action==='set_stage'){
+        onlyKeys(payload,['threadId','lifecycle','expectedRevision'])
+        data=await repo.withOwner(actor,async store=>{
+          const id=await store.messengerContactId(payload.threadId)
+          return store.setLifecycle({id,lifecycle:payload.lifecycle,expectedRevision:payload.expectedRevision})
+        })
+      }else if(action==='create_followup'){
+        onlyKeys(payload,['threadId','id','kind','dueOn'])
+        data=await repo.withOwner(actor,async store=>{
+          const contactId=await store.messengerContactId(payload.threadId)
+          return store.createFollowup({id:payload.id,contactId,kind:payload.kind,dueOn:payload.dueOn})
+        })
+      }else if(action==='complete_followup'){
+        onlyKeys(payload,['threadId','id','expectedRevision'])
+        data=await repo.withOwner(actor,async store=>{
+          const belongs=await store.messengerFollowupBelongsToThread(payload.threadId,payload.id)
+          if(!belongs) throw new AppError('NOT_FOUND',404)
+          return store.changeFollowup({id:payload.id,action:'complete',expectedRevision:payload.expectedRevision})
+        })
       }else if(action==='send'){
         onlyKeys(payload,['threadId','requestId','text','purpose'])
         const reservation=await repo.withOwner(actor,store=>store.reserveMessengerReply(payload))

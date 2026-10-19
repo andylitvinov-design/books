@@ -8,7 +8,7 @@
 
 ## 0. Решение от 18.10.2026 — SEO v3.1: качество поиска → подтверждённый лид → запись
 
-**Статус:** обновление стратегического ТЗ; первый технический sprint — [PR в работе, public tests EN/RU/ES](https://github.com/andylitvinov-design/books/tree/seo/public-test-discovery-20261018). Этот документ не доказывает готовность production, Google-индексацию или доставку писем.
+**Статус 18.10.2026:** первый SEO-спринт [PR #992](https://github.com/andylitvinov-design/books/pull/992) **merged и LIVE** (`c834aee16d71c5e83e2ebd049d8aa837ff398ced`, Vercel READY `dpl_DAJ1xJsexeWw3ohP8WdZX3zxRRPF` в проверенном временном окне). Следующий отдельный спринт: исправление старого аудитора, релевантная перелинковка Home → /tests, содержательные объяснения/FAQ и воспроизводимое мобильное QA через GitHub Actions. **Published URL ≠ Google indexed URL**; реальные заявки/оплаты не выдумывать.
 
 ### Пересмотр концепции
 
@@ -51,6 +51,17 @@
 6. **SEO-18-06 Release gate:** от актуальной `codex/public-book-library`, проверка чужих активных PR, source/build/browser/public SEO, merge только с зелёным gate; Vercel READY + canonical alias + exact source SHA + live 200/metadata/privacy. При ошибке — не называть Published/Live.
 
 **Факт на 18.10:** GitHub source подтвердил P0 redirect из `next.config.ts` на `/{locale}/client/tests`; privacy explorer задана `robots: { index:false, follow:false }`. PR branch `seo/public-test-discovery-20261018` содержит начатое исправление и source tests. Сам production не изменён, пока PR не принят и не проверен. Google baseline 601 sitemap URL, Google crawl и 1/19 tracked indexed из 17.10 — исторический датированный snapshot, не текущие результаты.
+
+
+### 18 октября — SEO-18-07: дополнительная техническая приёмка и навигация
+
+**Обнаруженный регресс в собственном SEO-контроле:** `scripts/verify-live-sitemap.mjs` ошибочно продолжал требовать 301/308 для `/en/tests → /en/client/tests`, хотя #992 заменил устаревший redirect на публичную indexable EN-страницу. Исправить контракт и добавить `/en/tests`, `/ru/tests`, `/es/tests` в spotlight: HTTP 200, один H1, точный self-canonical, reciprocal `hreflang` EN/RU/ES/x-default, неблокирующий robots, OG/Twitter, реальные CTA, отсутствие личных ответов. Не обходить ошибки — разрешать только каноническую публичную страницу.
+
+**Пользовательская перелинковка:** Home EN/RU/ES должна иметь отдельную текстовую ссылку на `/{locale}/tests` рядом с блоком бесплатного мониторинга, при этом прямой guest-start `/{locale}/client/tests` остаётся без лишнего шага. Не изменять авторизацию, результаты/баллы и внутреннюю конверсионную логику. Публичная страница тестов объясняет 3 реальные темы, ограничения методик, возможность гостевого старта и приватность; текст без медицинских диагнозов и гарантий.
+
+**Экономное независимое mobile/browser QA:** существующий GitHub workflow `hh-live-seo-audit.yml` после production push запускает public-only Chromium 320/390/430 px × EN/RU/ES (9 сценариев), проверяет горизонтальный скролл, H1 ≥28px, вводный текст ≥15px, CTA ≥44px, title/description/canonical/hreflang/noindex и сохраняет PNG+JSON на 14 дней. Никаких логинов, тестовых ответов, писем или платных браузерных сервисов. **Это имитация мобильного Chromium, не физический iPhone и не данные GSC/CrUX.**
+
+**Гейт:** `node --test tests/seo-nightly-crawl.test.mjs tests/public-tests-seo-landing.test.mjs`, `npm run verify:seo`, `npx tsc --noEmit`, `npm run build`, PR CI, READY exact SHA, фактический live JSON/PNG. Если общий CI падает в других одновременно меняющихся модулях — документировать без ослабления проверок. В GSC Wizard на 18.10 `subscription_required`; не пытаться обойти оплату или пере-верифицировать Google.
 
 ## 1. North star и продуктовые воронки
 

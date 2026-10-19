@@ -6,6 +6,31 @@ import { REPORT_TEST_SUGGESTION_COUNT, suggestReportTests } from '../lib/consult
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
+function assertOrder(source, markers, message) {
+  let previous = -1
+  for (const marker of markers) {
+    const index = source.indexOf(marker)
+    assert.ok(index > previous, message + ': missing or out of order ' + marker)
+    previous = index
+  }
+}
+
+function assertSessionTestOrder(source) {
+  const start = source.indexOf('export function ClientSessionPage(')
+  const end = source.indexOf('\n}', start)
+  assert.ok(start >= 0 && end > start, 'session component must be bounded')
+  const component = source.slice(start, end)
+  const markers = [
+    'id="session-resources"',
+    'data-hh-report-next-actions',
+    'id="session-recommended-tests"',
+    "id={hasFullReport?'session-download':'session-report'}",
+    '<footer className={styles.clientFooter}>',
+  ]
+  for (const marker of markers) assert.equal(component.split(marker).length - 1, 1, 'one session section: ' + marker)
+  assertOrder(component, markers, 'session order is Materials → Cabinet save → test cards → final PDF → footer')
+}
+
 test('five owner-only suggestions respond to real report themes in Russian and English',()=>{
   const report = {
     analysis:'Сильная тревога, напряжение и трудности со сном. Бессонница, усталость, мало энергии.',
@@ -70,22 +95,51 @@ test('matching is private and metadata based with no network, no auto-approval a
   assert.equal(REPORT_TEST_SUGGESTION_COUNT,5)
 })
 
-test('test links are the last report content in standalone HTML and PDF and session page',()=>{
+test('test links close standalone HTML and PDF, while session cards follow Cabinet save before PDF',()=>{
   const html=read('components/prescription-document.jsx')
   const session=read('components/client-session-page.jsx')
   const pdf=read('lib/prescriptions/pdf.js')
-  assert.ok(html.indexOf('canonical-recommended-tests')>html.indexOf('<DistanceHomeopathyGuide'))
+  assertOrder(html, ['<DistanceHomeopathyGuide', '<DocumentSignature',
+    'canonical-recommended-tests', '</article>'], 'standalone test links follow the signed report')
   assert.match(html,/!embedded && recommendedTests\.length > 0/)
-  assert.ok(session.indexOf('id="session-recommended-tests"')>session.indexOf('data-hh-report-next-actions'))
-  assert.ok(session.indexOf('id="session-recommended-tests"')<session.indexOf('<footer className={styles.clientFooter}>'))
+  // Current owner places Cabinet save before the session-only cards and final
+  // PDF. Standalone/PDF placement and validated catalogue links are unchanged.
+  assertSessionTestOrder(session)
   const a4=pdf.indexOf('function buildDocument(')
   const mobile=pdf.indexOf('export function buildPrescriptionMobilePdf(')
+  assert.ok(a4>=0&&mobile>a4,'PDF checks must stay within their own renderers')
   const a4Text=pdf.slice(a4,mobile)
   const mobileText=pdf.slice(mobile)
-  assert.ok(a4Text.indexOf("sectionHeader(locale === 'ru' ? 'Рекомендуемые тесты'")>
-    a4Text.indexOf("for (const entry of distanceHomeopathyAppendixBlocks(locale))"))
-  assert.ok(mobileText.indexOf("heading(ru?'Рекомендуемые тесты'")>
-    mobileText.indexOf("for(const entry of distanceHomeopathyAppendixBlocks(locale))"))
-  assert.ok(a4Text.indexOf("sectionHeader(locale === 'ru' ? 'Рекомендуемые тесты'")<
-    a4Text.indexOf('for (const layout of layouts) {\n      page = layout'))
+  assertOrder(a4Text, ["for (const entry of distanceHomeopathyAppendixBlocks(locale))",
+    "sectionHeader(locale === 'ru' ? 'Рекомендуемые тесты'",
+    'for (const layout of layouts) {\n      page = layout'], 'A4 tests close the report before its page footers')
+  assertOrder(mobileText, ["for(const entry of distanceHomeopathyAppendixBlocks(locale))",
+    "heading(ru?'Рекомендуемые тесты'"], 'mobile PDF tests follow the complete appendix')
+})
+
+test('session test-order contract rejects missing cards and cards before Cabinet save',()=>{
+  const session=read('components/client-session-page.jsx')
+  const missing=session.replace('id="session-recommended-tests"','id="missing-tests"')
+  assert.notEqual(missing,session)
+  assert.throws(()=>assertSessionTestOrder(missing), /one session section/)
+  const moved=session.replace('id="session-recommended-tests"','data-hh-report-next-actions')
+    .replace('data-hh-report-next-actions\n      aria-label', 'id="session-recommended-tests"\n      aria-label')
+  assert.notEqual(moved,session)
+  assert.throws(()=>assertSessionTestOrder(moved), /missing or out of order/)
+})
+
+test('current session order rejects every missing, duplicated or adjacent-swapped section',()=>{
+  const source=read('components/client-session-page.jsx')
+  const markers=['id="session-resources"','data-hh-report-next-actions','id="session-recommended-tests"',
+    "id={hasFullReport?'session-download':'session-report'}",'<footer className={styles.clientFooter}>']
+  for(const marker of markers){
+    assert.equal(source.split(marker).length-1,1,'mutation target is unique')
+    assert.throws(()=>assertSessionTestOrder(source.replace(marker,'missing-section')), /one session section/)
+    assert.throws(()=>assertSessionTestOrder(source.replace(marker,marker+' '+marker)), /one session section/)
+  }
+  for(let index=0;index<markers.length-1;index++){
+    const [first,second]=[markers[index],markers[index+1]]
+    const swapped=source.replace(first,'SWAP_SESSION_MARKER').replace(second,first).replace('SWAP_SESSION_MARKER',second)
+    assert.throws(()=>assertSessionTestOrder(swapped), /missing or out of order/)
+  }
 })
