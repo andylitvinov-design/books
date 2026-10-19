@@ -25,7 +25,7 @@ test('Unified Reiki Practitioner course has 57 stable editorial screens and five
     assert.ok(curriculum.includes('phase: "' + phases[i] + '"'), 'Missing '+phases[i])
     assert.ok(curriculum.includes('firstSlideId: "' + expected[i] + '"'), 'Missing lesson entry '+expected[i])
   }
-  assert.match(curriculum, /\.\.\.pathSlides\.tantra,/)
+  assert.match(curriculum, /\.\.\.pathSlides\.tantra\.slice\(0, 2\),/)
   assert.match(curriculum, /\.\.\.pathSlides\.kundalini,/)
   assert.match(curriculum, /\.\.\.pathSlides\.yggdrasil,/)
   assert.match(curriculum, /_legacyPath: EnergyworkPath \| null = null/)
