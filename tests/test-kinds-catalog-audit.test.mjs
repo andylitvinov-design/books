@@ -200,9 +200,9 @@ test('four public shortcuts sync with the real kind facet and small card badges'
   assert.match(full, /testKindShortLabel\(entry, locale\)/)
   assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\) 36px/)
   const translations = {
-    en: ['Check-in', 'Pro', 'Hobby'],
-    ru: ['Чек-ин', 'Про', 'Хобби'],
-    es: ['Chequeo', 'Pro', 'Hobby'],
+    en: ['Check-in', 'Source', 'Hobby'],
+    ru: ['Чек-ин', 'Источник', 'Хобби'],
+    es: ['Chequeo', 'Fuente', 'Hobby'],
   }
   for (const [locale, labels] of Object.entries(translations)) {
     assert.deepEqual(['monitoring','professional','hobby'].map((testKind) =>
@@ -215,4 +215,16 @@ test('four public shortcuts sync with the real kind facet and small card badges'
     assert.ok(filtered.length > 0, kind)
     assert.ok(filtered.every((entry) => entry.testKind === kind), kind)
   }
+})
+
+test('published-source filter names disclose provenance without claiming a validated diagnosis', () => {
+  const sourced = TEST_KINDS.find(kind => kind.key === 'professional')
+  assert.ok(sourced)
+  for (const locale of ['en','ru','es']) {
+    assert.ok(sourced.label[locale])
+    assert.doesNotMatch(sourced.label[locale], /clinically validated|diagnostic|сертифиц|diagnóstico/i)
+    assert.ok(testKindShortLabel({ testKind: 'professional' }, locale))
+  }
+  assert.equal(sourced.label.ru, 'Методики с источником')
+  assert.equal(testKindShortLabel({ testKind: 'professional' }, 'ru'), 'Источник')
 })
