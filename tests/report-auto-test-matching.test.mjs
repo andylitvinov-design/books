@@ -28,6 +28,20 @@ test('five owner-only suggestions respond to real report themes in Russian and E
   assert.ok(en.every(item=>item.reason.startsWith('Report themes: ')))
 })
 
+
+test('repeated candidates with one matching theme do not crash on the second pick',()=>{
+  const options=Array.from({length:7},(_,i)=>({
+    key:'stress-check-'+i,title:'Stress check '+(i+1),
+    href:'/en/client?startTests=stress-check-'+i,
+    measurementAxes:['stress'],topics:['stress'],analysisAxes:['stress'],
+    durationMinutes:i+2,startLocale:'en',
+  }))
+  const matches=suggestReportTests({analysis:'High stress, constant pressure and tension.',options,locale:'en'})
+  assert.equal(matches.length,5)
+  assert.equal(new Set(matches.map(test=>test.key)).size,5)
+  assert.ok(matches.every(test=>test.reason.includes('stress')))
+})
+
 test('empty or content-free report never invents five arbitrary clinical recommendations',()=>{
   assert.deepEqual(suggestReportTests({options:getRecommendedTestOptions('ru'),locale:'ru'}),[])
   assert.deepEqual(suggestReportTests({analysis:'2026-10-18: 3/10 then 6/10.',options:getRecommendedTestOptions('en')}),[])
