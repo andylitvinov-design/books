@@ -72,7 +72,8 @@ try{
         await expect(page.locator('.canonical-recommended-tests a')).toHaveCount(0)
         await expect(page.locator('.canonical-recommended-tests')).toBeHidden()
         await expect(page.locator('#session-recommended-tests')).toBeVisible()
-        await expect(page.locator('#session-recommended-tests a')).toHaveCount(1)
+        await expect(page.locator('#session-recommended-tests a')).toHaveCount(2)
+        await expect(page.locator('#session-download a')).toHaveCount(2)
         await expect(page.locator('details.canonical-remedy-profile-disclosure')).toHaveCount(1)
         await expect(page.locator('#session-resources')).toBeVisible()
         await expect(page.locator('#session-download')).toBeVisible()
@@ -111,18 +112,24 @@ try{
           titleColor:topHeading?getComputedStyle(topHeading).color:'',
           rects,overflowCandidates,elements}
       })
-      const buttons=await page.locator('[data-hh-report-next-actions]').evaluate(node=>{
-        const primary=node.querySelector('[class*="sessionBottomPrimary"]')
-        const secondary=node.querySelector('[class*="sessionBottomSecondary"]')
+      const buttons=await page.evaluate(()=>{
+        const primary=document.querySelector('[data-hh-report-next-actions] [class*="sessionBottomPrimary"]')
+        const secondary=document.querySelector('#session-recommended-tests [class*="reportTestCatalogLink"]')
         const values=el=>el?{label:el.textContent.trim(),color:getComputedStyle(el).color,
           background:getComputedStyle(el).backgroundColor,contrastText:getComputedStyle(el).webkitTextFillColor}:null
-        return {primary:values(primary),secondary:values(secondary)}
+        const top=sel=>document.querySelector(sel)?.getBoundingClientRect().top ?? null
+        return {primary:values(primary),secondary:values(secondary),
+          sections:[top('[data-hh-report-next-actions]'),top('#session-recommended-tests'),
+            top('#session-download')]}
       })
-      assert.ok(buttons.primary?.label,'Primary continuation action must remain readable')
-      assert.ok(buttons.secondary?.label,'Secondary testing action must remain readable')
-      assert.equal(buttons.primary.color,'rgb(255, 255, 255)','Primary action must retain white text')
-      assert.equal(buttons.secondary.color,'rgb(23, 79, 100)','Secondary action must have dark contrast text')
-      assert.equal(buttons.secondary.background,'rgb(255, 254, 250)','Secondary action must have a light paper background')
+      assert.ok(buttons.primary?.label,'Cabinet save action must remain readable')
+      assert.ok(buttons.secondary?.label,'Bonus tests action must remain readable')
+      assert.equal(buttons.primary.color,'rgb(255, 255, 255)','Cabinet save must retain white text')
+      assert.equal(buttons.secondary.color,'rgb(27, 96, 112)','Bonus tests action must have teal contrast text')
+      assert.equal(buttons.secondary.background,'rgb(255, 254, 250)','Bonus tests button must have a light paper background')
+      if(full)assert.ok(buttons.sections.every(n=>typeof n==='number')&&
+        buttons.sections[0]<buttons.sections[1]&&buttons.sections[1]<buttons.sections[2],
+        'Report must end with Cabinet save, recommended tests, then PDF')
       const findings=[]
       if(geometry.documentWidth>width+2||geometry.bodyWidth>width+2)
         findings.push('document horizontal overflow '+geometry.documentWidth+'/'+width)
