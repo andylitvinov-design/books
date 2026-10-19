@@ -56,6 +56,8 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
       await click(player,t.plan)
+      await click(player,t.next)
+      await click(player,locale==='ru'?'Получилось немного':'I managed a little')
       assert.equal(requests, 0, 'Opening moments and choosing responses never saves')
       await click(player, t.save)
       assert.equal(requests, 1)
@@ -80,6 +82,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.reflection, 'unchanged')
       assert.equal(saved.signals.opora54.answers.aphorism, 'unsure')
       assert.equal(saved.signals.opora54.answers.transfer, 'planned')
+      assert.equal(saved.signals.opora54.answers.lessonConfidence,'some')
       if (day === 14) assert.equal(receipt.cycle.status, 'completed')
       else {
         const writes = owner.writes.length
@@ -99,7 +102,8 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     async onSession(input) { await owner.command(structuredClone(input), locale); return true },
   })
   try {
-    for (let i = 0; i < 8; i++) await click(player, t.next)
+    for (let i = 0; i < 9; i++) await click(player, t.next)
+    await click(player,locale==='ru'?'Пока только знакомлюсь':'I only explored them today')
     await click(player, t.save)
     const saved = owner.sessions.at(-1)
     assert.equal(saved.signals.interactionSchema, 'as-5.8-restored-five-opening-v1')
@@ -108,7 +112,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.signals.practiceAttempt, null)
     assert.equal(saved.signals.aphorismResponse, null)
     assert.equal(saved.signals.transferStage, null)
-    assert.deepEqual(saved.signals.opora54.answers, {})
+    assert.deepEqual(saved.signals.opora54.answers, {lessonConfidence:'explored'})
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
@@ -174,7 +178,8 @@ test('Day 1 optional own resource is mutually exclusive with buttons, encrypted,
       await player.settle()
       const button=findButton(player.tree,quick)
       assert.equal(button.props['aria-pressed'],false,'Typing a custom resource deselects quick choices')
-      for(let i=0;i<5;i++)await click(player,next)
+      for(let i=0;i<6;i++)await click(player,next)
+      await click(player,locale==='ru'?'Пока только знакомлюсь':locale==='es'?'Hoy solo las exploré':'I only explored them today')
       await click(player,save)
       assert.deepEqual(payload.oporaOpening,{
         resource:null,lastDayDifficulty:null,familiarSupport:'other',familiarSupportText:answer,

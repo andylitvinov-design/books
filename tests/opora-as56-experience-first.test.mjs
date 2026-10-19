@@ -5,7 +5,7 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
-import {oporaExperienceGuide,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
@@ -78,6 +78,11 @@ test('day one restores five opening screens while days 2–14 keep their existin
       await click(h,d.next)
     }
     await click(h,d.plan)
+    await click(h,d.next)
+    assert.match(textOf(h.tree),lang==='ru'?/Что вы освоили сегодня/:/What you learned today/)
+    assert.ok(textOf(h.tree).includes(oporaExperienceDay(day,lang).title))
+    await click(h,lang==='ru'?'Получилось немного':'I managed a little')
+    assert.equal(f.requests,0,'No save until the recap is explicitly completed')
     await click(h,d.save)
     assert.equal(f.requests,1,'Exactly one save for '+lang+' day '+day)
     assert.equal(f.payload.lessonId,f.lesson.id)
@@ -90,6 +95,7 @@ test('day one restores five opening screens while days 2–14 keep their existin
     assert.equal(f.payload.opora54.answers.reflection,'unchanged')
     assert.equal(f.payload.opora54.answers.aphorism,'unsure')
     assert.equal(f.payload.opora54.answers.transfer,'planned')
+    assert.equal(f.payload.opora54.answers.lessonConfidence,'some')
     assert.equal(f.payload.practiceAttempt,'tried')
     if(day===1){
       assert.equal(f.payload.welcomeFeeling,'tense')
@@ -101,13 +107,34 @@ test('day one restores five opening screens while days 2–14 keep their existin
       assert.equal(f.payload.welcomeFeeling,null)
     }
     assert.match(textOf(h.tree),new RegExp(d.saved))
+    assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
+    await click(h,lang==='ru'?'Послушать волны':'Relax with waves')
+    assert.match(textOf(h.tree),lang==='ru'?/Две минуты спокойствия/:/Two quiet minutes/)
+    await click(h,lang==='ru'?'Посмотреть, что дальше':"See what's next")
+    if(day===1){
+      assert.match(textOf(h.tree),lang==='ru'?/Первая неделя/:/Week 1/)
+      await click(h,d.next)
+      assert.match(textOf(h.tree),lang==='ru'?/Вторая неделя/:/Week 2/)
+      await click(h,d.next)
+    }
+    if(day<14)assert.ok(textOf(h.tree).includes(oporaExperienceDay(day+1,lang).title))
+    else assert.match(textOf(h.tree),lang==='ru'?/Ваши 14 дней позади/:/Your 14 days are complete/)
+    await click(h,"I'm committed")
+    assert.match(textOf(h.tree),day===14
+      ?(lang==='ru'?/Ваш курс завершён/:/Your course is complete/)
+      :(lang==='ru'?/Увидимся завтра/:/See you tomorrow/))
+    assert.deepEqual(nodes(h.tree).filter(n=>n.type==='a').map(n=>n.props?.href),[
+      '/'+lang+'/tests','/'+lang+'/academy/principles-of-energywork/learn',
+      '/'+lang+'/services/free-consultation'])
+    assert.equal(f.requests,1,'Later screens must not create duplicate save')
     h.unmount()
   }
 })
 
 test('the restored five opening screens remain fully optional, with no false practice claim',async()=>{
   const f=fixture('en',1),h=f.h
-  for(let i=0;i<8;i++)await click(h,t.en.next)
+  for(let i=0;i<9;i++)await click(h,t.en.next)
+  await click(h,'I only explored them today')
   await click(h,t.en.save)
   assert.equal(f.requests,1)
   assert.deepEqual(f.payload.visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
@@ -115,6 +142,7 @@ test('the restored five opening screens remain fully optional, with no false pra
     {resource:null,lastDayDifficulty:null,familiarSupport:null})
   assert.equal(f.payload.welcomeFeeling,null)
   assert.equal(f.payload.practiceAttempt,null)
+  assert.equal(f.payload.opora54.answers.lessonConfidence,'explored')
   assert.equal(f.payload.opora54.answers.act,undefined)
   assert.equal(f.payload.opora54.answers.aphorism,undefined)
   assert.equal(f.payload.opora54.answers.reflection,undefined)
@@ -133,10 +161,28 @@ test('photo-first feelings and optional feedback work in ES without changing val
   const selection=nodes(h.tree).find(node=>node.type==='button'&&textOf(node).includes('Me siento tenso/a'))
   assert.equal(selection?.props['aria-pressed'],true)
   assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-start-mood']==='true').length,1)
-  for(let i=0;i<8;i++)await click(h,'Continuar')
+  for(let i=0;i<9;i++)await click(h,'Continuar')
+  await click(h,'Hoy solo las exploré')
   await click(h,'Guardar mi práctica')
   assert.equal(f.payload.welcomeFeeling,'tense')
+  assert.equal(f.payload.opora54.answers.lessonConfidence,'explored')
   assert.deepEqual(f.payload.visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
+  h.unmount()
+})
+
+test('a missing recap selection never sends a completion receipt or invented action',async()=>{
+  const f=fixture('en',2),h=f.h
+  for(let i=0;i<5;i++)await click(h,t.en.next)
+  assert.match(textOf(h.tree),/What you learned today/)
+  await click(h,t.en.save)
+  assert.equal(f.requests,0)
+  assert.match(textOf(h.tree),/Choose the card closest to your experience/)
+  await click(h,'I need more practice')
+  await click(h,t.en.save)
+  assert.equal(f.requests,1)
+  assert.equal(f.payload.opora54.answers.lessonConfidence,'practice_more')
+  assert.equal(f.payload.practiceAttempt,null)
+  assert.match(textOf(h.tree),/Congratulations! Lesson 2 complete!/)
   h.unmount()
 })
 
