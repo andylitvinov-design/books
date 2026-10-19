@@ -557,6 +557,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     } finally { setBusy(false); }
   }, [hydrate]);
   useEffect(() => { void reloadProgress(); }, [reloadProgress]);
+  // Mobile Safari can restore a scrolled document below our fixed lesson.
+  // Reset only the document; the slide's own scroll and bottom CTA remain intact.
+  useEffect(() => {
+    const keepCourseAtTop = () => {
+      if (window.matchMedia("(max-width: 760px)").matches) {
+        window.scrollTo(0, 0);
+      }
+    };
+    keepCourseAtTop();
+    window.addEventListener("pageshow", keepCourseAtTop);
+    return () => window.removeEventListener("pageshow", keepCourseAtTop);
+  }, [index]);
   async function startSaving() {
     if (!consented || busy) return;
     setBusy(true);
