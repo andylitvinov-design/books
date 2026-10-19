@@ -76,6 +76,24 @@ const workflowCopy={
     loadingThread:'Abriendo conversación…',notesBadge:'Interno · no enviado',
     overview:'Gestión del contacto',stageSaved:'Estado actualizado.'},
 }
+// Neutral replies only; explicit owner send is always required.
+const quickReplies={
+  en:[
+    {label:'Thank you',text:'Thank you for reaching out. I can share available appointment times.'},
+    {label:'Scheduling',text:'Which day would work best for a conversation?'},
+    {label:'Program details',text:'Thank you for your interest. I can share the program details.'},
+  ],
+  ru:[
+    {label:'Благодарность',text:'Спасибо, что написали. Могу предложить свободное время для встречи.'},
+    {label:'Уточнить время',text:'Какой день вам удобен для разговора?'},
+    {label:'О программе',text:'Спасибо за интерес. Могу прислать описание программы.'},
+  ],
+  es:[
+    {label:'Gracias',text:'Gracias por escribirnos. Puedo compartir los horarios disponibles.'},
+    {label:'Horario',text:'¿Qué día te vendría mejor para conversar?'},
+    {label:'Programa',text:'Gracias por tu interés. Puedo compartir los detalles del programa.'},
+  ],
+}
 function torontoTomorrow(now=new Date()){
   const d=new Date(now.getTime()+86400000)
   const parts=new Intl.DateTimeFormat('en-US',{
@@ -370,6 +388,11 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           </div>
           <div className={styles.compose}>
             <label htmlFor="crm-messenger-compose">{t.reply}</label>
+            <div className={styles.quickReplies} role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
+              {quickReplies[lang].map(item=><button type="button" key={item.label}
+                disabled={busy||threadLoading||!selected.reply.ok}
+                onClick={()=>{pendingRequest.current=null;setText(item.text)}}>{item.label}</button>)}
+            </div>
             <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy||threadLoading}
               maxLength={1200} rows={3} onChange={e=>{
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
