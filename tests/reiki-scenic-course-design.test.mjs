@@ -46,7 +46,9 @@ test('Every type of teaching screen uses existing glass typography and safe cont
   assert.match(learner, /onClick=\{copyNotes\}/)
   assert.match(learner, /onClick=\{\(\) => window\.print\(\)\}/)
   assert.doesNotMatch(learner, /autoplay|autoPlay/)
-  assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]/)
+  // Short-lived same-tab OAuth handoff uses sessionStorage; regular answers stay server-encrypted.
+  assert.doesNotMatch(learner, /localStorage\s*[.\[]/)
+  assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
 })
 
 test('Welcome keeps the free course scenic illustration and three benefits while describing all five lessons', () => {
@@ -61,9 +63,9 @@ test('Welcome keeps the free course scenic illustration and three benefits while
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
 })
 
-test('Course has teacher initiation readiness checklist with five private reports + twenty-five answers', () => {
+test('Course has teacher initiation readiness checklist with five private reports + twenty-three answers', () => {
   assert.equal(ENERGYWORK_REPORT_IDS.length,5)
-  assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,25)
+  assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,23)
   assert.match(learner, /const initiationReady = readyCount === readyTargetCount/)
   assert.match(learner, /data-initiation-readiness/)
   assert.match(css, /\.page\[data-course-theme\] \.reviewChecklist/)
