@@ -33,8 +33,10 @@ const gate=validateInterpretationRelease(release,APPROVED_INTERPRETATION_DIGESTS
 // Immutable 2026-10-17 releases cover 230 original source versions. Later
 // registered tests are valid source definitions but do not have old signed
 // registry receipts; their current interpretations must use verified code.
-const {historical:historicalDefinitions,newer:newDefinitions,approvedRowCount}=historicalInterpretationCoverage(
+const historicalCoverage=gate.pending ? null : historicalInterpretationCoverage(
   ASSESSMENT_DEFINITIONS,gate.approvedDigests,release.interpretationVersion)
+const {historical:historicalDefinitions=[],newer:newDefinitions=[],approvedRowCount=0}=
+  historicalCoverage||{}
 const v2Release = gate.pending ? null : await validateNativeV2Release(root, APPROVED_INTERPRETATION_DIGESTS)
 const v3Release = gate.pending ? null : await validateNativeV3Release(root, APPROVED_INTERPRETATION_DIGESTS)
 const digest=bytes=>'sha256:'+crypto.createHash('sha256').update(bytes).digest('hex')
