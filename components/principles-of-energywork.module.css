@@ -762,3 +762,139 @@
 @media (prefers-reduced-motion: reduce) {
   .captureDisclosure > summary svg, .extraVideoDisclosure > summary svg, .archiveDisclosure > summary svg { transition: none; }
 }
+
+/* Five-course-stage overview: the unnumbered foundations are preparation, not lesson 2. */
+.stepRail {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 15px 0 0;
+}
+.stepRail a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px 9px;
+  border: 1px solid #e1dfe8;
+  border-radius: 11px;
+  color: #213f59;
+  background: #fff;
+  text-decoration: none;
+  font-size: 12px;
+  line-height: 1.22;
+  font-weight: 750;
+}
+.stepRail a:hover, .stepRail a:focus-visible { border-color: #b16f87; background: #fbf1f4; }
+.stepRail span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 27px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #204d66;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+}
+.giftOffer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.giftOffer > div {
+  min-width: 0;
+  padding: 17px 20px;
+  border: 1px solid #d7e3e4;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #eff8f6, #fff);
+}
+.giftOffer > div + div {
+  border-color: #e5dae1;
+  background: linear-gradient(120deg, #fbf3f6, #fff);
+}
+.offerKicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #23627b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.giftOffer h3 { margin: 0 0 6px; color: #193951; font-size: clamp(17px, 1.7vw, 21px); line-height: 1.2; }
+.giftOffer p { margin: 0; color: #4d6273; font-size: 13px; line-height: 1.45; }
+.personalRates {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 19px;
+  padding: 18px;
+  border: 1px solid #dce3e8;
+  border-radius: 15px;
+  background: #f4f8f9;
+}
+.personalRatesCopy h3 { margin: 0 0 6px; color: #1b4056; font-size: 19px; }
+.personalRatesCopy p { margin: 0; color: #52697b; font-size: 13px; line-height: 1.4; }
+.rate {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 98px;
+  min-height: 76px;
+  padding: 10px 15px;
+  border: 1px solid #cfdfe3;
+  border-radius: 12px;
+  background: #fff;
+}
+.rate strong { color: #85405c; font-size: 24px; line-height: 1.2; }
+.rate span { color: #526579; font-size: 12px; line-height: 1.35; }
+.finalCtaActions {
+  display: grid;
+  gap: 11px;
+  flex: 0 0 min(100%, 380px);
+  width: min(100%, 380px);
+}
+.finalCtaActions > :global([data-contact-channel-chooser]) { width: 100%; }
+.finalCtaActions .primaryButton,
+.finalCtaActions .personalButton {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.25;
+}
+.finalCtaActions .personalButton { background: #1c516a; color: #fff; }
+.finalCtaActions .personalButton:hover { background: #133f55; color: #fff; }
+@media (max-width: 1020px) {
+  .stepRail { grid-template-columns: repeat(5, minmax(140px, 1fr)); overflow-x: auto; padding-bottom: 3px; }
+  .stepRail a { min-height: 51px; }
+}
+@media (max-width: 780px) {
+  .courseDeck > .stepRail { gap: 6px; margin-top: 10px; }
+  .courseDeck .stepRail a { min-height: 43px; padding: 8px; font-size: 11px; }
+  .courseDeck .stepRail span { flex-basis: 23px; width: 23px; height: 23px; font-size: 10px; }
+  .courseDeck .giftOffer { gap: 8px; margin-bottom: 12px; }
+  .courseDeck .giftOffer > div { padding: 12px; }
+  .courseDeck .giftOffer h3 { font-size: 16px; }
+  .courseDeck .giftOffer p { font-size: 12px; }
+  .courseDeck .personalRates { padding: 12px; margin-top: 12px; }
+  .courseDeck .finalCtaActions { flex-basis: auto; width: 100%; gap: 9px; }
+  .courseDeck .finalCtaActions .personalButton { min-height: 43px; }
+}
+@media (max-width: 560px) {
+  .giftOffer { grid-template-columns: 1fr; }
+  .personalRates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .personalRatesCopy { grid-column: 1 / -1; }
+  .rate { min-width: 0; min-height: 63px; }
+  .rate strong { font-size: 22px; }
+  .finalCtaActions .primaryButton, .finalCtaActions .personalButton { font-size: 12.5px; }
+}
