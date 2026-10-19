@@ -26,7 +26,7 @@ test('blocks malformed IDs and unsafe or lookalike external hosts',()=>{
 })
 
 test('allows only HTTPS YouTube and Vimeo educational source links',()=>{
-  assert.equal(safeMaterialVideoUrl('https://vimeo.com/12345'),'https://vimeo.com/12345')
+  assert.equal(safeMaterialVideoUrl('https://vimeo.com/123456'),'https://vimeo.com/123456')
   assert.equal(safeMaterialVideoUrl('https://www.youtube.com/watch?v=80xZ7jN6o2Y'),'https://www.youtube.com/watch?v=80xZ7jN6o2Y')
-  assert.equal(youtubePreviewId('https://vimeo.com/12345'),'')
+  assert.equal(youtubePreviewId('https://vimeo.com/123456'),'')
 })
