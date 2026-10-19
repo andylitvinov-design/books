@@ -57,6 +57,39 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  const [privateError,setPrivateError]=useState('')
  const [privateRevision,setPrivateRevision]=useState(0)
  const published=practitioner?.profile?.videoMaterials||[]
+ const ptext=ru?{
+  reports:'Для отчётов',public:'Для публичного профиля',
+  intro:'Общие материалы для клиентских отчётов. Закрытые MP4 не публикуются в профиле и не отправляются клиентам автоматически.',
+  empty:'В библиотеке отчётов пока нет материалов.',loading:'Загружаем библиотеку…',error:'Библиотека недоступна. Повторите попытку.',refresh:'Обновить',
+  manage:'Управлять материалами',privateVideo:'Защищённое видео',photo:'Фото',
+  saveVideo:'Сохранить видео в черновик',saving:'Сохраняем…',saveError:'Не удалось сохранить видео. Попробуйте ещё раз.',
+ }:es?{
+  reports:'Para informes',public:'Perfil público',
+  intro:'Materiales para informes privados de clientes. No se publican ni se envían automáticamente.',
+  empty:'Aún no hay materiales.',loading:'Cargando biblioteca…',error:'Biblioteca no disponible.',refresh:'Actualizar',
+  manage:'Gestionar materiales',privateVideo:'Vídeo privado',photo:'Foto',
+  saveVideo:'Guardar vídeo en borrador',saving:'Guardando…',saveError:'No se pudo guardar el vídeo.',
+ }:{
+  reports:'For client reports',public:'Public profile',
+  intro:'Private resources for client reports. Private MP4s never appear on your public profile and nothing is sent to clients automatically.',
+  empty:'No private report materials yet.',loading:'Loading private library…',error:'Could not load this library. Retry.',refresh:'Refresh',
+  manage:'Manage materials',privateVideo:'Private video',photo:'Photo',
+  saveVideo:'Save video draft',saving:'Saving…',saveError:'Could not save the video. Please retry.',
+ }
+ useEffect(()=>{
+  if(!isOwner||tab!=='reports')return
+  let active=true
+  setPrivateLoading(true);setPrivateError('')
+  fetch('/api/app/practice/report-materials',{credentials:'same-origin',cache:'no-store'})
+   .then(async response=>{
+      const data=await response.json().catch(()=>({}))
+      if(!response.ok)throw Error(data.error||'MATERIAL_UNAVAILABLE')
+      return Array.isArray(data.items)?data.items:[]
+   }).then(items=>{if(active)setPrivateItems(items)})
+    .catch(()=>{if(active)setPrivateError(ptext.error)})
+    .finally(()=>{if(active)setPrivateLoading(false)})
+  return ()=>{active=false}
+ },[isOwner,tab,privateRevision])
  const dirty=JSON.stringify(videos)!==JSON.stringify(original)
  function open(index=null){
   setEditing(index===null?'new':index)
