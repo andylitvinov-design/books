@@ -5,24 +5,21 @@ import test from "node:test";
 
 const read = (...segments) => readFileSync(path.join(process.cwd(), ...segments), "utf8");
 
-test("home and services render the same first-party testimonial component", () => {
+test("homepage keeps four matching-audio videos; Services uses four and preserves more in a disclosure", () => {
   const home = read("components", "holistic-house-home.tsx");
   const services = read("app", "[locale]", "services", "page.tsx");
-  const spanish = read("app", "es", "page.tsx");
+  const extra = read("components", "services-studio-extras.tsx");
+  const testimonials = read("components", "personal-testimonials.tsx");
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
   assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
-  assert.match(spanish, /<PersonalTestimonials locale="es" variant="home" \/>/);
-  assert.doesNotMatch(spanish, /<SiteVideoPlayer/);
-  assert.ok(spanish.indexOf("<PersonalTestimonials locale=") < spanish.indexOf('className="service-home-about"'));
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
-  assert.ok(services.indexOf('<PublicConsultationCta locale=') > services.indexOf('<ServicesSolutions'));
-  assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<PublicConsultationCta locale='));
-  assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<ServicesTestsIntro'));
-  const methodDisclosure = services.indexOf('id="method-videos"');
-  assert.ok(methodDisclosure > 0);
-  assert.ok(services.indexOf('<PageVideo slot="consultation"') > methodDisclosure);
-  assert.ok(services.indexOf('<PageVideo slot="consultation"') < services.indexOf('</details>', methodDisclosure));
-  assert.match(services, /id="method-videos"/);
+  assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
+  assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<PublicConsultationCta locale='));
+  assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
+  assert.match(testimonials, /data-home-testimonial-disclosure="true"/);
+  assert.match(testimonials, /data-more-services-testimonials/);
+  assert.match(extra, /<PageVideo slot="consultation" locale=\{locale\} \/>/);
+  assert.match(extra, /id="method-videos"/);
 });
 
 test("homepage previews four sourced videos and preserves all 12 originals behind the disclosure", () => {
@@ -49,8 +46,8 @@ test("homepage previews four sourced videos and preserves all 12 originals behin
     const hidden = [...sources[locale].slice(4), ...sources[locale === "ru" ? "en" : "ru"]];
     assert.equal(hidden.length,8);
     assert.equal(new Set([...home,...hidden].map(item=>item.id)).size,12);
-    assert.equal(services.length,3);
-    assert.deepEqual(services,sources[locale].slice(0,3));
+    assert.equal(services.length,4);
+    assert.deepEqual(services,sources[locale].slice(0,4));
   }
   assert.match(component, /const remainingHomeVideos = isHome \? testimonialVideos\[locale\]\.slice\(4\) : \[\]/);
   assert.match(component, /const otherLanguageVideos = isHome \? testimonialVideos\[locale === "ru" \? "en" : "ru"\] : \[\]/);
