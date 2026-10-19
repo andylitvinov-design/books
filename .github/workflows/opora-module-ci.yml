@@ -25,7 +25,7 @@ jobs:
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
       - name: Verify all 70 lessons × 15 screens, practical interactions and baseline routing
-        run: node --test tests/opora-all-slides-matrix.test.mjs tests/antistress-module-routing.test.mjs tests/my-course-programs.test.mjs tests/course-test-sequence.test.mjs tests/course-entry-selector.test.mjs tests/course-baseline-explainer.test.mjs tests/course-compact-owner-ui.test.mjs
+        run: node --test tests/opora-all-slides-matrix.test.mjs tests/antistress-module-routing.test.mjs tests/my-course-programs.test.mjs tests/course-test-sequence.test.mjs tests/course-entry-selector.test.mjs tests/course-baseline-explainer.test.mjs tests/course-compact-owner-ui.test.mjs tests/opora-post-assessment-screen.test.mjs
       - name: Verify AS2 day-one state-first practice and lesson receipt
         run: node --test tests/opora-day-one-inner-state.test.mjs tests/opora-day-one-interactive.test.mjs tests/opora-antistress-outcomes-v3.test.mjs tests/opora-practice-first-session.test.mjs tests/opora-antistress-jsx-parse.test.mjs
       - name: Verify all remaining OPORA state-to-support screens and receipts

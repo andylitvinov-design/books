@@ -222,7 +222,7 @@ async function saveExistingAccountPlan(items, accountId) {
   return result
 }
 
-export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onCourseRead,isCourseCurrent,onState,onError,root,quickEntry=false}) {
+export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onCourseRead,isCourseCurrent,onState,onLaunchReady,onError,root,quickEntry=false}) {
   const t=UI[locale]||UI.en,ru=locale==='ru'
   const router=useRouter()
   const current=state.course||{}, assessment=state.assessments||{}
@@ -339,6 +339,9 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         return ensureCourseResponse(response)
       },payload)
       ensureCourseResponse(result)
+      // Only after a confirmed server commit may the single welcome CTA open lesson 1.
+      // The parent keeps this navigation intent in React state; never persist client data here.
+      if (moduleSelection && result.course.stage === 4) onLaunchReady?.(courseId)
       onState(result)
     } catch(error) {
       if(isCourseCurrent()) onError(error.message || 'COURSE_GOALS_UNAVAILABLE')
