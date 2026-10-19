@@ -206,6 +206,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale).additionalNotes)
   const [recommendedTestKeys, setRecommendedTestKeys] = useState(() => consultation?.recommendedTestKeys ?? [])
   const [daoResourceScore, setDaoResourceScore] = useState(() => consultation?.daoResourceScore == null ? '' : String(consultation.daoResourceScore))
+  const [daoResourcePublished, setDaoResourcePublished] = useState(() => consultation?.daoResourcePublished !== false)
   const [uiLocale, setUiLocale] = useState('en')
 
   useEffect(() => {
@@ -616,7 +617,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       {!includeInvoice && payment && <p className="consultation-existing-payment-note">{labels.existingPaymentHint}</p>}
     </section>
 
-    {includeRecommendation && <DaoResourceStageField value={daoResourceScore} onChange={setDaoResourceScore} locale={uiLocale} />}
+    {includeRecommendation && <DaoResourceStageField value={daoResourceScore} onChange={setDaoResourceScore}
+      published={daoResourcePublished} onPublishedChange={setDaoResourcePublished} locale={uiLocale} />}
 
     <div className="consultation-studio-submit">
       <div className="consultation-studio-submit-copy">
