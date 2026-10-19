@@ -423,6 +423,11 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
         </section>
 
         <section id="initiation-choices" className={styles.section + " " + styles.choiceSection} aria-labelledby="tantra-choices-title">
+          <div className={styles.choiceStory}>
+            <div className={styles.choiceVisual}>
+              <Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 760px) 100vw, 43vw" />
+            </div>
+            <div className={styles.choiceContent}>
           <header className={styles.sectionHeading + " " + styles.choiceHeading}>
             <div>
               <p className={styles.eyebrow}>{t.choiceEyebrow}</p>
@@ -447,6 +452,9 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
               </div>
               <a className={styles.buttonWine + " " + styles.offerButton} href="#how-to">{t.freeButton}<ArrowRight size={17} aria-hidden="true"/></a>
             </article>
+            <details className={styles.optionalOffers}>
+              <summary>{locale === "ru" ? "Хотите больше личного сопровождения? Посмотрите варианты" : locale === "es" ? "¿Quieres más atención personal? Ver opciones" : "Prefer personal guidance? Explore optional one-to-one formats"}<ChevronDown size={20} aria-hidden="true" /></summary>
+              <div className={styles.optionalOfferGrid}>
             <article className={styles.choicePersonal} data-tantra-offer="personal">
               <div className={styles.offerTop}>
                 <span className={styles.offerIcon}><Video size={23} strokeWidth={1.6} aria-hidden="true" /></span>
@@ -474,6 +482,8 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
               </div>
               <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "session")} className={styles.buttonCopper + " " + styles.offerButton} label={t.combinedButton}/>
             </article>
+              </div>
+            </details>
           </div>
           <div className={styles.choiceBenefits}>
             {t.benefits.map((item, index) => {
@@ -482,6 +492,8 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
             })}
           </div>
           <p className={styles.availability}><ShieldCheck size={16} aria-hidden="true"/>{t.availability}</p>
+            </div>
+          </div>
         </section>
 
         <section id="tantra-apply" className={styles.application} aria-labelledby="tantra-apply-title">
