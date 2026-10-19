@@ -93,7 +93,7 @@ function replyReason(reason,lang){
   }
   return labels[reason]?.[lang]||reason||''
 }
-export default function CrmMessengerPanel({accountId,locale='en'}){
+export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -160,6 +160,8 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
       const value=await response.json().catch(()=>({}))
       if(!response.ok)throw new Error(value.error||'UNAVAILABLE')
       await refresh(activeRef.current)
+      if(['set_stage','create_followup','complete_followup'].includes(name))
+        onCrmChange?.()
       return value
     }catch(e){
       setStatus(e.message==='CONFLICT'?w.conflict:
