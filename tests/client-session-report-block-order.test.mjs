@@ -86,7 +86,7 @@ test('welcome video is a private selection above the signed report; audio remain
   const recorder=read('components/session-audio-recorder.jsx')
   const takes=read('components/session-recording-review.jsx')
   assert.ok(report.indexOf('id="session-video"') < report.indexOf('id="session-report"'))
-  assert.match(report,/videoMedia\.length>0\?\(ru\?'Видеоприветствие':'Video welcome'\)/)
+  assert.match(report,/hasVideoWelcome\?\(ru\?'Видеоприветствие':'Video welcome'\)/)
   assert.match(report,/session\.media/)
   assert.match(recorder,/videoOnly\?'video\/mp4,video\/quicktime,\.mp4,\.mov'/)
   assert.match(recorder,/reviewFirst:scope==='client'/)
