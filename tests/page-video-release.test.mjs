@@ -36,7 +36,7 @@ test('a cold SSR play control cannot accept a click before its handler is mounte
   assert.match(player, /const \[interactive, setInteractive\] = useState\(false\)/);
   assert.match(player, /useEffect\(\(\) => \{ setInteractive\(true\); \}, \[\]\)/);
   assert.match(player, /disabled=\{!interactive\}/);
-  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
+  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
   assert.doesNotMatch(player, /Expires=|Signature=|\.mp4\?/);
 });
 test('posters keep the video title visible over the shared warm treatment', () => {
