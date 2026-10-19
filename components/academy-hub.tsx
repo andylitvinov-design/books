@@ -149,7 +149,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
     {
       id: "academy-free-opora",
       title: locale === "ru" ? "ОПОРА · Антистресс" : locale === "es" ? "OPORA · Antiestrés" : "OPORA · Stress Relief",
-      subtitle: locale === "ru" ? "БЕСПЛАТНО · 14 ЗАНЯТИЙ" : locale === "es" ? "GRATIS · 14 LECCIONES" : "FREE · 14 LESSONS",
+      subtitle: locale === "ru" ? "14 КОРОТКИХ ЗАНЯТИЙ" : locale === "es" ? "14 LECCIONES" : "14 GENTLE LESSONS",
       description: locale === "ru" ? "14 коротких занятий: мягко замечать напряжение и находить свои способы восстановления." : locale === "es" ? "14 lecciones cortas para afrontar el estrés cotidiano con pasos sencillos." : "14 gentle lessons to notice everyday stress and practise small steps towards calm.",
       href: "/" + locale + "/courses/antistress",
       courseHref: "/" + (locale === "es" ? "en" : locale) + "/app/course?program=stress",
@@ -161,7 +161,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         {
           id: "academy-featured-principles-energywork",
           title: locale === "ru" ? "Принципы энергетической работы" : locale === "es" ? "Principios del trabajo energético" : "Principles of Energywork",
-          subtitle: locale === "ru" ? "БЕСПЛАТНО · 3 СИСТЕМЫ РЕЙКИ" : locale === "es" ? "GRATIS · 3 SISTEMAS DE REIKI" : "FREE · 3 REIKI SYSTEMS",
+          subtitle: locale === "ru" ? "3 СИСТЕМЫ РЕЙКИ" : locale === "es" ? "3 SISTEMAS DE REIKI" : "3 REIKI SYSTEMS",
           description: locale === "ru"
             ? "Вводный курс и бесплатная инициация первой ступени в Рейки Иггдрасиль, Тантра Рейки и Кундалини Рейки — изучите и выберите свою систему."
             : locale === "es"
@@ -177,7 +177,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         {
           id: "academy-free-tantra-introduction",
           title: locale === "ru" ? "Тантра Рейки · 1 ступень" : locale === "es" ? "Tantra Reiki · Nivel 1" : "Tantra Reiki · Level 1",
-          subtitle: locale === "ru" ? "БЕСПЛАТНОЕ ВВЕДЕНИЕ" : locale === "es" ? "INTRODUCCIÓN GRATIS" : "FREE INTRODUCTION",
+          subtitle: locale === "ru" ? "ВВЕДЕНИЕ · 1 СТУПЕНЬ" : locale === "es" ? "INTRODUCCIÓN · NIVEL 1" : "INTRODUCTION · LEVEL 1",
           description: locale === "ru" ? "Знакомство с практиками первой ступени. Личная инициация — по согласованию." : locale === "es" ? "Conoce las prácticas del primer nivel. La iniciación personal se confirma aparte." : "Explore the Level 1 practices. Personal initiation is arranged separately.",
           href: "/" + locale + "/academy/reiki/tantra-reiki/free-initiation",
           courseHref: REIKI_FREE_COURSE_PATH,
@@ -188,7 +188,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         {
           id: "academy-free-yggdrasil-introduction",
           title: locale === "ru" ? "Рейки Иггдрасиль · 1 ступень" : locale === "es" ? "Reiki Yggdrasil · Nivel 1" : "Reiki Yggdrasil · Level 1",
-          subtitle: locale === "ru" ? "БЕСПЛАТНОЕ ВВЕДЕНИЕ" : locale === "es" ? "INTRODUCCIÓN GRATIS" : "FREE INTRODUCTION",
+          subtitle: locale === "ru" ? "ВВЕДЕНИЕ · 1 СТУПЕНЬ" : locale === "es" ? "INTRODUCCIÓN · NIVEL 1" : "INTRODUCTION · LEVEL 1",
           description: locale === "ru" ? "Материалы первой ступени и подготовка к практике. Инициация — отдельно." : locale === "es" ? "Primeras lecciones y preparación. Iniciación personal por separado." : "Discover the first lessons and preparation. Initiation is arranged separately.",
           href: "/" + locale + "/academy/reiki/yggdrasil/free-initiation",
           courseHref: REIKI_FREE_COURSE_PATH,
@@ -232,7 +232,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
             ? "Кундалини Рейки — Базовый курс (1–3 ступень)."
             : locale === "es"
               ? "Kundalini Reiki — curso básico de tres niveles."
-              : "When a person receives all 3 Kundalini Reiki ‘attunements’ they then become a Kundalini Reiki Master.",
+              : "Explore the three-level Kundalini Reiki learning path, its introductory practices and next steps.",
           href: "/" + locale + "/academy/reiki/kundalini-reiki",
           courseHref: "/" + locale + "/academy/reiki/kundalini-reiki/free-initiation",
           image: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",

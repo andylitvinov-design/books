@@ -46,7 +46,7 @@ export function AcademyCourseCardList({
             </Link>
             <div className={styles.content}>
               <div className={styles.topline}>
-                <span className={styles.type}>{item.free ? t.freeCourse : t.programme}</span>
+                <span className={styles.type}>{item.subtitle ?? (item.free ? t.freeCourse : t.programme)}</span>
                 {item.free ? <span className={styles.free} aria-label={t.free}>{t.free}</span> : null}
               </div>
               <h3>{item.title}</h3>
