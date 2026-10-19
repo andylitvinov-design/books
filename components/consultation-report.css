@@ -3934,3 +3934,18 @@
     font-size: 11pt;
   }
 }
+
+
+/* Separate narrative blocks in the consultation editor and the client report. */
+.consultation-studio .consultation-report-notes-panel .consultation-report-note-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.consultation-studio .consultation-report-note--recommendations {
+  border-color: #cedfd4;
+  background: linear-gradient(145deg, #f3faf5, #fffdf9 85%);
+}
+.canonical-document--editorial .canonical-report-recommendations {
+  border-left-color: #789f81;
+  background: linear-gradient(125deg, #fffefa, #f3faf5);
+}
