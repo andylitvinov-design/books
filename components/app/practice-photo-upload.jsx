@@ -52,7 +52,7 @@ function messageFor(error,ru){
 }
 
 /** Uploads publicly displayable marketing photos only. Client notes/media never belong here. */
-export default function PracticePhotoUpload({mode='profile',value,onChange,locale='en',disabled=false}){
+export default function PracticePhotoUpload({mode='profile',value,onChange,locale='en',disabled=false,onBusyChange=()=>{}}){
   const ru=locale==='ru',es=locale==='es',gallery=mode==='service',eventCover=mode==='event'
   const photos=gallery?(Array.isArray(value)?value:[]):value?[value]:[]
   const locked=useRef(false)
@@ -68,7 +68,7 @@ export default function PracticePhotoUpload({mode='profile',value,onChange,local
       setError(ru?'Можно добавить не более пяти фотографий услуги.':es?'Se permiten hasta cinco fotos por servicio.':'You can add up to five service photos.')
       return
     }
-    locked.current=true;setBusy(true);setError('');setNotice('')
+    locked.current=true;setBusy(true);onBusyChange(true);setError('');setNotice('')
     const next=[...photos]
     try{
       for(const file of files){
@@ -78,7 +78,7 @@ export default function PracticePhotoUpload({mode='profile',value,onChange,local
       }
       setNotice(ru?'Фотографии загружены. Сохраните форму, чтобы применить изменения.':es?'Fotos subidas. Guarda el formulario para aplicar los cambios.':'Photos uploaded. Save this form to apply the changes.')
     }catch(error){setError(messageFor(error?.message,ru))}
-    finally{locked.current=false;setBusy(false)}
+    finally{locked.current=false;setBusy(false);onBusyChange(false)}
   }
   const change=(next)=>{
     onChange(gallery?next:(next[0]||''))
