@@ -8,6 +8,7 @@ import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeMaterials from './practice-materials'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
+import PublicEnquiryContact from './public-enquiry-contact'
 import MyServicesDashboard from './my-services-dashboard'
 import SimpleServiceEditor from './simple-service-editor'
 import PracticePhotoUpload from './practice-photo-upload'
@@ -477,7 +478,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <PractitionerClientProfiles items={requests} services={services}
             locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
-            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}/>}
+            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
+            onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>
         {activePanel==='crm'&&isOwner&&accountId&&
           <CrmManager key={accountId} locale={locale} accountId={accountId}/>} 
         {activePanel==='profile'&&<>
@@ -496,8 +498,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             <div><strong>{publishedCount}</strong><span>{d.active}</span></div>
             <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
           </div>
-          <Requests items={requests} t={t} busy={busy}
-            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))} />
+          <Requests items={requests} t={t} locale={locale} busy={busy}
+            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
+            onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
       </section>}
     {ownerTools && <details className="hh-practice-more-tools">
@@ -624,7 +627,7 @@ function Services({items,locale,busy,quota,createRequest=0,onSave,onSaveAndSubmi
         onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause}/>} />
   </>
 }
-function Requests({items,t,busy,onStatus}){
+function Requests({items,t,locale,busy,onStatus,onSaveContact}){
   const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted'].includes(item.status))?'open':'all')
   const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted'].includes(item.status):item.status===status))
   const ru=t.requests==='Заявки'
@@ -640,7 +643,7 @@ function Requests({items,t,busy,onStatus}){
     </label>
   </div><p className="hh-fine" role="status">{visible.length} / {items.length}</p>
     {!visible.length&&<p>{t.none}</p>}
-    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{x.message&&<p>{x.message}</p>}{x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}</article>)}
+    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{x.message&&<p>{x.message}</p>}{x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}</article>)}
   </section>
 }
 
