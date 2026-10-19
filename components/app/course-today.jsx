@@ -180,7 +180,7 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
  </section>
 }
 
-export default function CourseToday({locale='en',courseId,accountId,access,onCourseChange,onExit=null}){
+export default function CourseToday({locale='en',courseId,accountId,access,onCourseChange,onExit=null,launchDirectly=false,onLaunchConsumed=null}){
  const notifyLessonSaved=useLessonCompletionOffer()
  const router=useRouter()
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
@@ -193,6 +193,12 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [questOpen,setQuestOpen]=useState(false)
  const [focusOpen,setFocusOpen]=useState(true)
+ // The just-approved post-test CTA launches lesson 1 as soon as owner-scoped
+ // Today data is ready. Keep the intent only in this mounted React flow.
+ const firstLessonIntent=useRef(false),firstLessonConsumed=useRef(false)
+ const launchConsumedCallback=useRef(onLaunchConsumed)
+ launchConsumedCallback.current=onLaunchConsumed
+ if(launchDirectly && !firstLessonConsumed.current) firstLessonIntent.current=true
  const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
  const [moduleFollowUpAnswers,setModuleFollowUpAnswers]=useState({})
  const [modulePrimarySkipped,setModulePrimarySkipped]=useState(false)
@@ -244,6 +250,19 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       setResource(response.currentCheckin.resource)
       setDailyNote(response.currentCheckin.note||'')
     }
+  }
+  // The first screen already gave the learner the programme context and
+  // obtained explicit consent. Do not show a second welcome or scenic CTA.
+  // Never skip required activation, pause, course completion or review gates.
+  if(firstLessonIntent.current&&!firstLessonConsumed.current &&
+    response?.programme?.id==='stress' && response?.cycle?.status==='active' &&
+    !response.readOnly && !response.requiresTarget && !response.currentSession){
+    firstLessonIntent.current=false
+    firstLessonConsumed.current=true
+    setFocusOpen(false)
+    setView('today')
+    setQuestOpen(true)
+    launchConsumedCallback.current?.()
   }
  },[accountId,courseId])
  const reload=useCallback(async()=>{
@@ -406,7 +425,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
  return <section className={styles.shell} data-daily-course data-course-view={view} data-course-immersive={immersiveStart?'true':undefined}>
-  {focusOpen&&!(paused&&resumeBlocked)&&<CourseFocusEntry locale={locale} cycle={cycle} lesson={lesson}
+  {focusOpen&&data.programme?.id!=='stress'&&!(paused&&resumeBlocked)&&<CourseFocusEntry locale={locale} cycle={cycle} lesson={lesson}
     progress={progress} programme={data.programme} completed={completed}
     finished={isFinished} busy={busy||(paused&&resumeBlocked)} onStart={startFocusLesson}
     onExit={()=>onExit?.()}/>}
