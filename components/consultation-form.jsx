@@ -485,6 +485,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       </div>
       <ConsultationRecommendedTests locale={reportLocale}
         options={recommendedTestOptions[reportLocale] || []}
+        analysis={analysis} additionalNotes={additionalNotes} generalInstructions={note}
+        isDraftTemplate={!consultation && analysis === getOwnerReportTextTemplate(reportLocale).analysis}
         selectedKeys={recommendedTestKeys} onChange={setRecommendedTestKeys} />
       {!consultation && <label className="consultation-template-review">
         <input

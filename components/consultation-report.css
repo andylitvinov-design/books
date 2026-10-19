@@ -3559,3 +3559,107 @@
   .consultation-recommended-tests-selection > li { align-items: flex-start; }
   .canonical-document .canonical-recommended-tests { padding: 15px; }
 }
+
+
+/* Five-report-test matching is a suggestion; only checked tests are attached. */
+.consultation-test-auto {
+  display: grid;
+  gap: 9px;
+  margin: 5px 0 21px;
+  padding: 13px 14px;
+  border: 1px solid #a9d2cf;
+  border-radius: 13px;
+  background: #e9f5f2;
+}
+.consultation-test-auto-button {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: #276f74;
+  color: white;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color .15s;
+}
+.consultation-test-auto-button:hover { background: #1c5763; }
+.consultation-test-auto > small,
+.consultation-test-suggestions > small {
+  color: #476b70;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.consultation-test-auto-message,
+.consultation-test-stale {
+  margin: 0;
+  color: #734b2d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.consultation-test-suggestions {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 12px;
+  border: 1px solid #c5ddda;
+  border-radius: 12px;
+  background: #fffdf9;
+}
+.consultation-test-suggestions legend {
+  max-width: 100%;
+  padding: 0 5px;
+  color: #1d5260;
+  font-size: 15px;
+  font-weight: 750;
+}
+.consultation-test-suggestions > p {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5b6c70;
+}
+.consultation-test-suggestion {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid #d5e5e2;
+  background: #f8fbf9;
+  cursor: pointer;
+}
+.consultation-test-suggestion:has(input:checked) {
+  border-color: #65aaa1;
+  background: #eaf8f2;
+}
+.consultation-test-suggestion > input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  width: 21px;
+  height: 21px;
+  accent-color: #287b78;
+}
+.consultation-test-suggestion-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.consultation-test-suggestion-copy > strong {
+  font-size: 15px;
+  line-height: 1.35;
+  color: #194957;
+  overflow-wrap: anywhere;
+}
+.consultation-test-suggestion-copy > small {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #587277;
+}
+@media (max-width: 680px) {
+  .consultation-test-auto { padding: 11px; }
+  .consultation-test-suggestions { padding: 10px; }
+  .consultation-test-suggestion { padding: 10px; }
+}
