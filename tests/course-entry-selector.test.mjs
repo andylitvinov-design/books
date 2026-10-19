@@ -152,7 +152,7 @@ test('entry progress binds owner/course, rejects mismatches and cannot hydrate a
   h.unmount()
 })
 
-test('programme links offer explicit fast consent without creating a course on arrival', async () => {
+test('programme links offer one clear fast-start button without creating a course on arrival', async () => {
   const h = mount('my-course', { props: { data: account('owner-a') }, search: '?program=stress',
     fetcher: () => ({ course: null, courses: [], assessments: {}, access: { ...access, activeCourseCount: 0 } }) })
   await h.settle()
@@ -160,7 +160,7 @@ test('programme links offer explicit fast consent without creating a course on a
   const consent = nodes(h.tree).find(node => node.props['data-opora-fast-consent'] !== undefined)
   assert.ok(consent)
   assert.equal(consent.props.disabled, false)
-  assert.match(textOf(consent), /Agree & continue to the test/)
+  assert.match(textOf(consent), /Continue to the first check-in/)
   assert.equal(h.calls.filter(call => call.body).length, 0)
   h.unmount()
 })
@@ -180,7 +180,7 @@ test('entry plan cards use the existing EUR catalogue and keep checkout unavaila
   h.unmount()
 })
 
-test('public personal choices stay consent-gated, owner-bound and continue into the created wizard', async () => {
+test('public personal choices start with one deliberate click, remain owner-bound and continue into the created wizard', async () => {
   let state={course:null,courses:[],assessments:{},access:{...access,activeCourseCount:0}}
   const entry={focus:['stress'],problems:[],testKeys:['hh-weekly-pulse']}
   const h=mount('my-course',{props:{data:account('owner-a'),locale:'en'},search:'?entry=personal',
@@ -196,9 +196,7 @@ test('public personal choices stay consent-gated, owner-bound and continue into 
   assert.equal(findPart(h.tree,'CourseEntrySelector'),undefined)
   assert.equal(h.calls.filter(x=>x.body).length,0)
   findButton(h.tree,'Start').props.onClick();await h.settle()
-  assert.equal(findButton(h.tree,'Agree & start').props.disabled,true)
-  nodes(h.tree).find(n=>n.type==='input'&&n.props.type==='checkbox').props.onChange({target:{checked:true}})
-  await h.settle();await findButton(h.tree,'Agree & start').props.onClick();await h.settle()
+  assert.equal(findButton(h.tree,'Agree & start'),undefined)
   assert.deepEqual(h.calls.filter(x=>x.body).map(x=>x.body.action),['start','intake'])
   assert.deepEqual([...h.calls.find(x=>x.body?.action==='intake').body.focusTags],['stress','mood','energy']) // Current Anti-Stress enrollment retains the consented programme's topic set.
   assert.ok(findPart(h.tree,'CourseR3Steps'))
@@ -217,7 +215,7 @@ test('back from a public personal entry dismisses the intent and returns to the 
   h.unmount()
 })
 
-test('a consumed personal entry cannot populate a second separately consented course',async()=>{
+test('a consumed personal entry cannot populate a second separately chosen course',async()=>{
   let current=null,entry={focus:['stress'],problems:[],testKeys:['hh-weekly-pulse']},courses=[]
   const h=mount('my-course',{props:{data:account('owner-a'),locale:'en'},search:'?entry=personal',
     extraModules:{'@/lib/inner-growth/course-entry-client':{readCourseEntryIntent:()=>entry}},
@@ -226,17 +224,13 @@ test('a consumed personal entry cannot populate a second separately consented co
       if(body?.action==='intake')current={...current,stage:2,focusTags:body.focusTags,concerns:body.concerns,revision:2}
       return {course:current,courses,assessments:{},access:{...access,activeCourseCount:courses.length}}
     }})
-  async function agree(){
-    await h.settle();nodes(h.tree).find(n=>n.type==='input'&&n.props.type==='checkbox').props.onChange({target:{checked:true}})
-    await h.settle();await findButton(h.tree,'Agree & start').props.onClick();await h.settle()
-  }
-  await h.settle();findButton(h.tree,'Start course for free').props.onClick();await agree()
+  await h.settle();findButton(h.tree,'Start course for free').props.onClick();await h.settle()
   entry=null
   // The sole saved course stays accessible; a second program is selected from
   // the explicit My courses dashboard, never the in-course limit banner.
   findButton(h.tree,'My courses').props.onClick();await h.settle()
   findPart(h.tree,'MyCoursesDashboard').props.onNew();await h.settle()
-  findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await agree()
+  findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await h.settle()
   const starts=h.calls.filter(c=>c.body?.action==='start'),intakes=h.calls.filter(c=>c.body?.action==='intake')
   assert.equal(starts.length,2);assert.equal(intakes.length,1)
   assert.notEqual(starts[0].body.courseId,starts[1].body.courseId)
