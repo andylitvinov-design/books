@@ -15,6 +15,7 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 const source = read('data/academy/energywork-ai-curriculum.ts')
 const migration = read('supabase/migrations/20261017181000_hh_academy_energywork_progress.sql')
 const upgrade = read('supabase/migrations/20261018142000_hh_academy_reiki_unified_five_lessons.sql')
+const latest = read('supabase/migrations/20261019005500_hh_academy_reiki_tantra_study_p2.sql')
 const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
