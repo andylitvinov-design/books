@@ -485,7 +485,12 @@ async function handle(request, { params }) {
       if (method === 'POST') return json(await saveDevelopmentGoals(config, actor, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
     }
-    if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'bootstrap' && method === 'GET') {
+      // A reduced initial payload is safe only after the normal verified session,
+      // account check and private rate limit above. Other tabs stay unchanged.
+      const view = new URL(request.url).searchParams.get('view') === 'portrait' ? 'portrait' : 'full'
+      return json(await repo.bootstrap(actor, { view }))
+    }
     if (joined === 'personal-analysis-reports' && method === 'GET')
       return json(await listPersonalAnalysisReports(config, getPrescriptionStore(), actor))
     if (joined === 'shared-materials' && method === 'GET') {
