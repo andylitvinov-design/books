@@ -14,7 +14,7 @@
 .editorHeader p { margin:6px 0 0; color:#476872; font-size:15px; line-height:1.45; }
 .editorGrid { display:grid; grid-template-columns:minmax(175px, 220px) minmax(0, 1fr); gap:14px; align-items:stretch; margin-top:17px; }
 .scoreLabel { display:flex; flex-direction:column; gap:7px; font-size:15px; font-weight:700; }
-.scoreLabel input { width:100%; min-height:50px; border:1px solid #9fbfc0; border-radius:12px; padding:11px 15px; color:#1a4b5c; background:#fff; font:700 23px/1.2 inherit; font-size:23px; }
+.scoreLabel input { width:100%; min-height:50px; border:1px solid #9fbfc0; border-radius:12px; padding:11px 15px; color:#1a4b5c; background:#fff; font-family:inherit; font-weight:700; font-size:23px; line-height:1.2; }
 .scoreLabel input:focus-visible { outline:3px solid #60aba8; outline-offset:2px; }
 .scoreLabel input[aria-invalid="true"] { border-color:#a54147; }
 .scoreLabel small { font-weight:400; color:#587781; line-height:1.4; }
