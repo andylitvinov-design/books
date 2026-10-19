@@ -27,6 +27,10 @@ export default async function EditConsultation({ params }) {
       (consultation.paymentDocumentId && payment?.kind !== 'payment')) notFound()
   const publication = await inspectSavedClientReportPublication(consultation, store)
   const ru = consultation.languagePreference === 'ru'
+  const mediaEditorProps = deliveryEnabled() && consultation.clientId && consultation.status === 'active'
+    ? { clientId: consultation.clientId, documentId: consultation.id,
+        sourceConsultationId: consultation.consultationId || consultation.id,
+        locale: ru ? 'ru' : 'en' } : null
 
   return <main className="prescription-admin-shell consultation-edit-shell consultation-studio-shell">
     <PrescriptionAdminHeader
@@ -51,6 +55,9 @@ export default async function EditConsultation({ params }) {
     <div className="consultation-edit-return">
       <Link href={`/admin/consultations/${id}`} prefetch={false}>← Назад к документам / Back to documents</Link>
     </div>
+    {mediaEditorProps && <section className="consultation-edit-voice" aria-label={ru?'Голосовое сообщение':'Voice message'}>
+      <ReportVideoMaterialsEditor {...mediaEditorProps} placement="audio" />
+    </section>}
     <section id="edit-recommendation">
       <ConsultationForm
         action={updateConsultationAction.bind(null, id)}
@@ -60,14 +67,11 @@ export default async function EditConsultation({ params }) {
         recommendedTestOptions={{ en: getRecommendedTestOptions('en'), ru: getRecommendedTestOptions('ru') }}
       />
     </section>
-    {deliveryEnabled() && consultation.clientId && consultation.status === 'active' &&
-      <section className="consultation-edit-materials" aria-label="Client report materials">
-        <ReportVideoMaterialsEditor clientId={consultation.clientId} documentId={consultation.id}
-          sourceConsultationId={consultation.consultationId || consultation.id}
-          locale={consultation.languagePreference === 'ru' ? 'ru' : 'en'} />
-        <SessionPhotoUploader clientId={consultation.clientId} documentId={consultation.id}
-          locale={consultation.languagePreference === 'ru' ? 'ru' : 'en'} />
-      </section>}
+    {mediaEditorProps && <section className="consultation-edit-materials" aria-label="Client report materials">
+      <ReportVideoMaterialsEditor {...mediaEditorProps} placement="materials" />
+      <SessionPhotoUploader clientId={consultation.clientId} documentId={consultation.id}
+        locale={ru ? 'ru' : 'en'} />
+    </section>}
     <details className="consultation-edit-document-links">
       <summary>Документы и доступ клиента / Documents and client access</summary>
       <AdminDocumentPanels prescription={consultation} payment={payment} />
