@@ -56,7 +56,7 @@ test('ZEN is only an enquiry alongside existing PayPal; no API charge or receipt
   assert.match(cart, /data-zen-transfer-inquiry/)
   assert.match(read('components/consultation-choice-capture.tsx'), /data-zen-manual-request/)
   assert.match(read('components/alchemy-soul-lead-form.tsx'), /data-zen-manual-request/)
-  assert.match(read('app/[locale]/services/page.tsx'), /PayPal \/ ZEN\.COM/)
+  assert.match(read('components/commerce/personal-cart.tsx'), /data-zen-transfer-inquiry="cart"/)
   assert.match(paymentPage, /data-paypal-personal-link/)
   assert.match(cart, /serviceCommerceRuntime|\/api\/app\/commerce\/checkout/)
   assert.doesNotMatch(library, /fetch\(|post\(|update |deposit|markPaid|paymentIntent|ZEN_TERMINAL|secret|redirectUrl|acceptFunds/i)
