@@ -10,7 +10,7 @@ import { ReportNarrationPlayer } from './report-narration-player'
 import { DaoStageDisclosure } from './dao-resource-stage'
 import { narrationEnabled } from '@/lib/clients/report-narration-service'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
-import { extractReportProgress } from '@/lib/documents/report-progress'
+import { resolveReportProgress } from '@/lib/documents/report-progress'
 import { resolveRecommendedTests } from '@/lib/consultations/recommended-tests'
 import { clientReportHeading } from '@/lib/documents/report-heading'
 import './consultation-report.css'
@@ -18,7 +18,7 @@ import './consultation-report.css'
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false, narration = null, afterCover = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = (document.additionalNotes || document.recommendationsText) ? undefined : recommendationGuidance(document, locale)
-  const progress = extractReportProgress(document.analysis)
+  const progress = resolveReportProgress(document)
   const reportHeading = clientReportHeading(locale, document.recommendationType)
   const followUpSession = reportFollowUpDetails(document.followUpDate, locale)
   const recommendedTests = Array.isArray(document.recommendedTests)
@@ -86,7 +86,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
               <span>{label}</span>
             </div>)}
             <aside className="canonical-progress-note">
-              <span>{locale === 'ru' ? 'Движение вперёд — уже результат.' : 'A small step forward still matters.'}</span>
+              <span>{locale === 'ru' ? 'Ваши оценки в два момента времени.' : 'Your ratings at two moments in time.'}</span>
             </aside>
           </div>
         </section>}
