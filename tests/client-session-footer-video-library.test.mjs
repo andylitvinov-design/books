@@ -134,3 +134,23 @@ test('does not bypass failed owner session repair or access non-catalog paths',a
   await assert.rejects(()=>ownerMaterialApi('/api/admin/materials',{fetcher}),/ADMIN_SIGN_IN_REQUIRED/)
   await assert.rejects(()=>ownerMaterialApi('https://evil.example/api/admin/materials',{fetcher}),/MATERIAL_UNAVAILABLE/)
 })
+
+test('the owner-only Supabase pilot is gated and capped without changing personal-video delivery',()=>{
+  const library=read('lib/clients/material-library.js')
+  const session=read('lib/clients/session-delivery-storage.js')
+  assert.match(library,/HH_MATERIAL_VIDEO_SUPABASE_UPLOADS_ALLOWED/)
+  assert.match(library,/40_000_000/)
+  assert.match(library,/160_000_000/)
+  assert.match(library,/pg_advisory_xact_lock/)
+  assert.match(library,/where kind='video' and storage_provider='supabase'/)
+  assert.match(session,/HH_CLIENT_VIDEO_SUPABASE_UPLOADS_ALLOWED/)
+  assert.doesNotMatch(session,/HH_MATERIAL_VIDEO_SUPABASE_UPLOADS_ALLOWED/)
+})
+test('private-materials list exposes only the source asset identifier to the signed-in practitioner',()=>{
+  const library=read('lib/clients/material-library.js')
+  assert.match(library,/sourceAssetId/)
+  assert.match(library,/client_delivery_assets a on a\.object_key=m\.object_key/)
+  const publicStart=library.indexOf('export async function listPublicLibraryVideos')
+  assert.ok(publicStart>0)
+  assert.doesNotMatch(library.slice(publicStart),/source_asset_id|sourceAssetId/)
+})
