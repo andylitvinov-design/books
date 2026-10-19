@@ -40,7 +40,10 @@ test('New peer voices and celebrations appear between the existing lessons', () 
   assert.match(learner,/data-meditation-voices/)
   assert.match(learner,/t\.committed/)
   assert.match(learner,/t\.voicesComments/)
-  assert.match(learner,/data-meditation-feeling/)
+  // Written review is now the approved feedback form, not a numeric slider.
+  assert.doesNotMatch(learner,/data-meditation-feeling/)
+  assert.match(learner,/const feedbackMissing = isMeditationFeedback && !meditationReview[.]trim[(][)]/)
+  assert.match(learner,/isMeditationFeedback [?] t[.]saveReview/)
   assert.match(css,/flex-direction:row;align-items:stretch;gap:7px/)
 })
 
