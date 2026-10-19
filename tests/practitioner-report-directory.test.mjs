@@ -24,7 +24,9 @@ const store = {
 }
 
 test('query and page are bounded', () => {
-  assert.deepEqual(parseReportDirectoryQuery({ q: '  North  ', page: '2' }), { query: 'North', page: 2 })
+  assert.deepEqual(parseReportDirectoryQuery({ q: '  North  ', page: '2' }), { query: 'North', sort: 'date', page: 2 })
+  assert.equal(parseReportDirectoryQuery({ sort: 'client' }).sort, 'client')
+  assert.equal(parseReportDirectoryQuery({ sort: 'unexpected' }).sort, 'date')
   assert.equal(parseReportDirectoryQuery({ page: '-2' }).page, 1)
   assert.equal(parseReportDirectoryQuery({ page: '9999999' }).page, 1)
   assert.equal(parseReportDirectoryQuery({ q: 'a'.repeat(500) }).query.length, 120)
@@ -70,4 +72,49 @@ test('practice Report opens archive; Create report remains separate; private own
   assert.match(archive, /documentPreviewEditHref\(row\)/)
   assert.match(archive, /\/admin\/documents\//)
   assert.match(header, /href="\/admin\/reports"/)
+})
+
+test('reports are sorted across all clients, and pagination counts reports not clients', async () => {
+  const alternateStore = {
+    async listClients() {
+      return [
+        { id: 'z', fullName: 'Zoe', preferredLocale: 'en' },
+        { id: 'a', fullName: 'Anna', preferredLocale: 'ru' },
+      ]
+    },
+    async listClientDocuments(id) {
+      if (id === 'z') return [
+        { id: 'z-new', clientId: 'z', dateIssued: '2026-10-19', kind: 'report', updatedAt: '2026-10-19T01:00:00Z' },
+        { id: 'z-old', clientId: 'z', dateIssued: '2026-10-01', kind: 'report', updatedAt: '2026-10-01T01:00:00Z' },
+      ]
+      return [{ id: 'a-report', clientId: 'a', dateIssued: '2026-10-12', kind: 'report', updatedAt: '2026-10-12T01:00:00Z' }]
+    },
+  }
+  const byDate = await listClientReportDirectory(alternateStore, { sort: 'date', pageSize: 2 })
+  assert.deepEqual(byDate.rows.map(r => r.id), ['z-new', 'a-report'])
+  assert.equal(byDate.totalReports, 3)
+  assert.equal(byDate.totalClients, 2)
+  assert.equal(byDate.pageCount, 2)
+  assert.deepEqual((await listClientReportDirectory(alternateStore, { sort: 'date', page: 2, pageSize: 2 })).rows.map(r => r.id), ['z-old'])
+  const byClient = await listClientReportDirectory(alternateStore, { sort: 'client', pageSize: 2 })
+  assert.deepEqual(byClient.rows.map(r => r.id), ['a-report', 'z-new'])
+  assert.deepEqual((await listClientReportDirectory(alternateStore, { sort: 'client', page: 2, pageSize: 2 })).rows.map(r => r.id), ['z-old'])
+})
+
+test('owner-only report deletion and client deletion have explicit confirmation gates', () => {
+  const reports = read('app/admin/reports/page.js')
+  const actions = read('app/admin/reports/actions.js')
+  const clients = read('app/admin/clients/[id]/page.js')
+  const clientActions = read('app/admin/clients/actions.js')
+  const ui = read('components/owner-delete-controls.jsx')
+  assert.match(reports, /deleteSavedReportAction/)
+  assert.match(reports, /sortHref\('client'\)/)
+  assert.match(reports, /sortHref\('date'\)/)
+  assert.match(actions, /requireAdminRequest\(\)/)
+  assert.match(actions, /deleteClientReportIfUnchanged/)
+  assert.match(ui, /window\.confirm/)
+  assert.match(ui, /entered !== fullName/)
+  assert.match(clients, /DeleteClientPanel/)
+  assert.match(clientActions, /client_account_bindings/)
+  assert.match(clientActions, /client_delivery_sessions/)
 })

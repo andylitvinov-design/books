@@ -786,3 +786,83 @@
   .master-clients-shell .master-client-create > summary,
   .client-detail-shell .client-detail-work-buttons a { transition: none; }
 }
+/* Destructive client actions stay collapsed, with a typed-name second gate. */
+.client-detail-shell .client-detail-delete-panel {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid #e5bfb7;
+  border-radius: 14px;
+  background: #fff8f5;
+}
+.client-detail-shell .client-detail-delete-panel > summary {
+  cursor: pointer;
+  color: #923f39;
+  font-size: 13px;
+  font-weight: 750;
+}
+.client-detail-shell .client-detail-delete-panel > p {
+  max-width: 620px;
+  margin: 11px 0;
+  color: #704c46;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.client-detail-shell .client-detail-delete-panel form {
+  display: grid;
+  gap: 10px;
+  max-width: 580px;
+}
+.client-detail-shell .client-detail-delete-panel form label {
+  display: grid;
+  gap: 6px;
+  color: #643e38;
+  font-size: 13px;
+  font-weight: 700;
+}
+.client-detail-shell .client-detail-delete-panel form input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cdbab4;
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: #fff;
+  color: #382d2b;
+  font-size: 16px;
+}
+.client-detail-shell .client-detail-delete-panel form button {
+  width: fit-content;
+  min-height: 44px;
+  border: 1px solid #923f39;
+  border-radius: 11px;
+  padding: 9px 14px;
+  background: #923f39;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.client-detail-shell .client-detail-delete-panel form button:disabled {
+  border-color: #d9cac6;
+  background: #efe5e1;
+  color: #8a7b76;
+  cursor: not-allowed;
+}
+.client-detail-shell .client-delete-notice,
+.master-clients-shell .master-clients-success {
+  margin: 12px 0;
+  border: 1px solid #d8b5ac;
+  border-radius: 10px;
+  background: #fff6f2;
+  padding: 10px 13px;
+  color: #774c41;
+  font-size: 13px;
+}
+.master-clients-shell .master-clients-success {
+  border-color: #bcd9d0;
+  background: #ecf8f4;
+  color: #296456;
+}
+@media (max-width: 680px) {
+  .client-detail-shell .client-detail-delete-panel { padding: 12px; }
+  .client-detail-shell .client-detail-delete-panel form button { width: 100%; }
+}
