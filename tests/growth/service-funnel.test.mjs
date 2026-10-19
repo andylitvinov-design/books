@@ -35,25 +35,26 @@ test('Spanish homepage keeps the same paid/free/test priority and public trackin
   assert.match(page, /La revisión gratuita es un informe escrito, no una llamada/)
 })
 
-test('services landing prioritizes core services, a single real enquiry and testimonials above optional directory', () => {
-  const page = source('app/[locale]/services/page.tsx')
-  const order = ['<ServicesConversionHero', '<ServicesSolutions', '<PublicConsultationCta', '<ServicesAboutEntry', '<PersonalTestimonials', '<ServicesTestsIntro', '<ServicesSmartDiscovery']
-  for (let i = 1; i < order.length; i++) {
-    assert.ok(page.indexOf(order[i]) > page.indexOf(order[i - 1]), order[i] + ' must follow ' + order[i - 1])
+test('services landing prioritizes three free paths, personal offers, intro, testimonials and one booking', () => {
+  const order = ['<ServicesConversionHero', '<ServicesStudioOffers', '<ServicesIntroMedia',
+    '<PersonalTestimonials', '<ServicesMethodVideos', '<PublicConsultationCta', '<ServicesDirectoryInvitation']
+  for (const route of ['app/[locale]/services/page.tsx', 'app/es/services/page.tsx']) {
+    const page=source(route)
+    for(let i=1;i<order.length;i++)
+      assert.ok(page.indexOf(order[i])>page.indexOf(order[i-1]),order[i]+' follows '+order[i-1])
+    assert.equal(count(page,'<PublicConsultationCta'),1)
+    assert.equal(count(page,'<PersonalTestimonials'),1)
+    assert.match(page,/id="consultation" serviceBooking/)
+    assert.doesNotMatch(page,/<ServicesSmartDiscovery/)
   }
-  assert.equal(count(page, '<PublicConsultationCta'), 1)
-  assert.equal(count(page, '<PersonalTestimonials'), 1)
-  assert.match(page, /id="consultation" serviceBooking/)
-  const hero = source('components/services-conversion-hero.tsx')
-  assert.match(hero, /href="#consultation" data-service-hero-cta="paid"/)
-  assert.match(hero, /data-service-hero-cta="free-written-review"/)
-  assert.match(hero, /Session time and payment are agreed separately|time and payment are agreed separately/)
-  const es = source('app/es/services/page.tsx')
-  for (let i = 1, blocks = ['<ServicesConversionHero', '<ServicesSolutions', '<PublicConsultationCta', '<ServicesAboutEntry', '<PersonalTestimonials', '<ServicesTestsIntro', '<ServicesSmartDiscovery']; i < blocks.length; i++) {
-    assert.ok(es.indexOf(blocks[i]) > es.indexOf(blocks[i - 1]), 'ES order: ' + blocks[i])
-  }
-  assert.equal(count(es, '<PublicConsultationCta'), 1)
+  const hero=source('components/services-conversion-hero.tsx')
+  assert.match(hero,/href="#consultation" data-service-hero-cta="paid"/)
+  assert.match(hero,/href="#free-insights" data-service-hero-cta="free"/)
+  assert.match(hero,/time and payment are agreed separately/i)
+  const directory=source('components/services-directory-page.tsx')
+  assert.match(directory,/<ServicesSmartDiscovery/)
 })
+
 
 test('topic routes offer safe opt-in personal sessions, not score-based diagnoses or prescriptions', () => {
   const page = source('components/topic-journey-selector.tsx')
