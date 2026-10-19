@@ -94,6 +94,15 @@ const quickReplies={
     {label:'Programa',text:'Gracias por tu interés. Puedo compartir los detalles del programa.'},
   ],
 }
+const workflowErrors={
+  PRIVATE_CONTENT_BLOCKED:{en:'Remove private report links or medical details.',ru:'Уберите приватные ссылки и медицинские сведения.',es:'Elimina enlaces privados o datos médicos.'},
+  NOTE_DAILY_LIMIT:{en:'Daily limit of internal notes reached.',ru:'Достигнут суточный лимит заметок.',es:'Límite diario de notas alcanzado.'},
+  CRM_FOLLOWUP_LIMIT:{en:'This contact has too many open tasks.',ru:'У этого контакта слишком много открытых задач.',es:'Este contacto tiene demasiadas tareas pendientes.'},
+  INVALID_FOLLOWUP:{en:'Check the task type and date.',ru:'Проверьте вид действия и дату.',es:'Comprueba el tipo de tarea y la fecha.'},
+  INVALID_MESSAGE:{en:'Check the text and length.',ru:'Проверьте текст и его длину.',es:'Comprueba el texto y la longitud.'},
+  CRM_CONTACT_ARCHIVED:{en:'This contact is archived.',ru:'Контакт находится в архиве.',es:'Contacto archivado.'},
+  MESSENGER_DAILY_LIMIT:{en:'Daily message limit reached.',ru:'Достигнут суточный лимит сообщений.',es:'Límite diario de mensajes alcanzado.'},
+}
 function torontoTomorrow(now=new Date()){
   const d=new Date(now.getTime()+86400000)
   const parts=new Intl.DateTimeFormat('en-US',{
@@ -186,7 +195,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     }catch(e){
       if(activeRef.current===requestThreadId)
         setStatus(e.message==='CONFLICT'?w.conflict:
-          replyReason(e.message,lang)||w.failure)
+          workflowErrors[e.message]?.[lang]||replyReason(e.message,lang)||w.failure)
       return null
     }
     finally{setBusy(false)}
