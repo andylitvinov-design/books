@@ -279,7 +279,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
               {asset?.kind==='video'&&<option value="instruction">{ru?'Видео: как принимать препараты':'Video: how to follow the recommendations'}</option>}
               <option value="meditation">{ru?'Дополнительная медитация':'Additional meditation'}</option>
               <option value="additional">{asset?.kind==='video'?(ru?'Материалы — в конце отчёта':'Materials — report footer'):(ru?'Другие материалы':'Other materials')}</option>
-              {asset?.kind==='video'&&<option value="hidden">{ru?'Не показывать клиенту':'Do not show to client'}</option>}
+              {['audio','video'].includes(asset?.kind)&&<option value="hidden">{ru?'Не показывать клиенту':'Do not show to client'}</option>}
             </select>
           </label>}
           {asset?.kind!=='image'&&<label className={styles.field}>{ru?'Текст / расшифровка (необязательно)':'Transcript (optional)'}
