@@ -142,16 +142,6 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <p>{followUpSession.description}</p>
       </section>}
       {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
-      {recommendedTests.length > 0 && <section className="canonical-recommended-tests" aria-label={locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}>
-        <h2>{locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}</h2>
-        <p>{locale === 'ru'
-          ? 'Отметил для вас тесты, которые можно пройти после консультации. Нажмите на название, чтобы начать.'
-          : 'Your practitioner selected these tests for your next step. Tap a title to begin.'}</p>
-        <ol>{recommendedTests.map(test => <li key={test.key}>
-          <Link href={test.href} prefetch={false}>{test.title} <span aria-hidden="true">↗</span></Link>
-          {test.startLocale !== locale && <small>{locale === 'ru' ? 'Откроется на доступном языке' : 'Opens in the available language'}</small>}
-        </li>)}</ol>
-      </section>}
       <DocumentSignature date={document.dateIssued} locale={locale} compact />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
 
@@ -177,6 +167,16 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </section>}
 
       {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
+      {!embedded && recommendedTests.length > 0 && <section className="canonical-recommended-tests" aria-label={locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}>
+        <h2>{locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}</h2>
+        <p>{locale === 'ru'
+          ? 'Отметил для вас тесты, которые можно пройти после консультации. Нажмите на название, чтобы начать.'
+          : 'Your practitioner selected these tests for your next step. Tap a title to begin.'}</p>
+        <ol>{recommendedTests.map(test => <li key={test.key}>
+          <Link href={test.href} prefetch={false}>{test.title} <span aria-hidden="true">↗</span></Link>
+          {test.startLocale !== locale && <small>{locale === 'ru' ? 'Откроется на доступном языке' : 'Opens in the available language'}</small>}
+        </li>)}</ol>
+      </section>}
     </article>
   </Root>
 }
