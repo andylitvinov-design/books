@@ -5,10 +5,9 @@ import { AcademyVideoCourses } from "@/components/academy-video-courses";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-import type { CatalogShowcaseItem } from "@/components/catalog-showcase";
+import type { AcademyCourseItem } from "@/components/academy-course-card-list";
 import { AcademyDiscovery } from "@/components/academy-discovery";
 import { AcademyCourseCapture } from "@/components/academy-course-capture";
-import { AcademyFreeCourseBanner } from "@/components/academy-free-course-banner";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import {
   academyCopy,
@@ -146,7 +145,19 @@ export function AcademyBackLink({ locale }: { locale: PublicLocale }) {
 export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale; view?: AcademyView }) {
   const text = academyCopy[locale];
   const action = academyActionCopy[locale];
-  const items: CatalogShowcaseItem[] = [
+  const items: AcademyCourseItem[] = [
+    {
+      id: "academy-free-opora",
+      title: locale === "ru" ? "ОПОРА · Антистресс" : locale === "es" ? "OPORA · Antiestrés" : "OPORA · Stress Relief",
+      subtitle: locale === "ru" ? "БЕСПЛАТНО · 14 ЗАНЯТИЙ" : locale === "es" ? "GRATIS · 14 LECCIONES" : "FREE · 14 LESSONS",
+      description: locale === "ru" ? "14 коротких занятий: мягко замечать напряжение и находить свои способы восстановления." : locale === "es" ? "14 lecciones cortas para afrontar el estrés cotidiano con pasos sencillos." : "14 gentle lessons to notice everyday stress and practise small steps towards calm.",
+      href: "/" + locale + "/courses/antistress",
+      courseHref: "/" + (locale === "es" ? "en" : locale) + "/app/course?program=stress",
+      image: "/images/holistic-house/course-focus-mountain-boy.webp",
+      duration: locale === "ru" ? "14 дней · в своём темпе" : locale === "es" ? "14 días · a tu ritmo" : "14 days · at your pace",
+      free: true,
+      actionLabel: locale === "ru" ? "Пройти курс" : locale === "es" ? "Empezar curso" : "Take course",
+    },
         {
           id: "academy-featured-principles-energywork",
           title: locale === "ru" ? "Принципы энергетической работы" : locale === "es" ? "Principios del trabajo energético" : "Principles of Energywork",
@@ -156,9 +167,34 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
             : locale === "es"
               ? "Introducción al trabajo energético y acceso gratuito al Nivel 1 de Reiki Yggdrasil, Tantra Reiki y Kundalini Reiki."
               : "Meet the principles of energywork and begin a free first-level introduction to Reiki Yggdrasil, Tantra Reiki or Kundalini Reiki.",
-          href: REIKI_FREE_COURSE_PATH,
+          href: "/" + locale + "/academy/principles-of-energywork",
+          courseHref: REIKI_FREE_COURSE_PATH,
+          free: true,
+          duration: locale === "ru" ? "3 системы Рейки · свой темп" : locale === "es" ? "3 sistemas Reiki · a tu ritmo" : "3 Reiki systems · self-paced",
           image: "/academy/reiki-yggdrasil/source/program-overview.jpg",
           actionLabel: locale === "ru" ? "Начать бесплатный курс" : locale === "es" ? "Empezar gratis" : "Start the free course",
+        },
+        {
+          id: "academy-free-tantra-introduction",
+          title: locale === "ru" ? "Тантра Рейки · 1 ступень" : locale === "es" ? "Tantra Reiki · Nivel 1" : "Tantra Reiki · Level 1",
+          subtitle: locale === "ru" ? "БЕСПЛАТНОЕ ВВЕДЕНИЕ" : locale === "es" ? "INTRODUCCIÓN GRATIS" : "FREE INTRODUCTION",
+          description: locale === "ru" ? "Знакомство с практиками первой ступени. Личная инициация — по согласованию." : locale === "es" ? "Conoce las prácticas del primer nivel. La iniciación personal se confirma aparte." : "Explore the Level 1 practices. Personal initiation is arranged separately.",
+          href: "/" + locale + "/academy/reiki/tantra-reiki/free-initiation",
+          courseHref: REIKI_FREE_COURSE_PATH,
+          free: true,
+          image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
+          actionLabel: locale === "ru" ? "Пройти курс" : locale === "es" ? "Empezar curso" : "Take course",
+        },
+        {
+          id: "academy-free-yggdrasil-introduction",
+          title: locale === "ru" ? "Рейки Иггдрасиль · 1 ступень" : locale === "es" ? "Reiki Yggdrasil · Nivel 1" : "Reiki Yggdrasil · Level 1",
+          subtitle: locale === "ru" ? "БЕСПЛАТНОЕ ВВЕДЕНИЕ" : locale === "es" ? "INTRODUCCIÓN GRATIS" : "FREE INTRODUCTION",
+          description: locale === "ru" ? "Материалы первой ступени и подготовка к практике. Инициация — отдельно." : locale === "es" ? "Primeras lecciones y preparación. Iniciación personal por separado." : "Discover the first lessons and preparation. Initiation is arranged separately.",
+          href: "/" + locale + "/academy/reiki/yggdrasil/free-initiation",
+          courseHref: REIKI_FREE_COURSE_PATH,
+          free: true,
+          image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
+          actionLabel: locale === "ru" ? "Пройти курс" : locale === "es" ? "Empezar curso" : "Take course",
         },
         {
           id: "academy-featured-yggdrasil",
@@ -170,6 +206,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Sistema completo: mapa de módulos, Curso Básico de 5 niveles y currículo actual detallado."
               : "The complete learning system: all modules, a dedicated 5-level Basic Course and the detailed current curriculum.",
           href: "/" + locale + "/academy/reiki/yggdrasil",
+          courseHref: "/" + locale + "/academy/reiki/yggdrasil/basic-course",
           image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
           actionLabel: action.program,
         },
@@ -183,6 +220,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Programa independiente de Tantra Reiki en nueve niveles, organizado como una ruta formativa coherente."
               : "A separate nine-level Tantra Reiki program, organized as one coherent study path.",
           href: "/" + locale + "/academy/reiki/tantra-reiki",
+          courseHref: "/" + locale + "/academy/reiki/tantra-reiki/free-initiation",
           image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
           actionLabel: action.program,
         },
@@ -196,6 +234,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               ? "Kundalini Reiki — curso básico de tres niveles."
               : "When a person receives all 3 Kundalini Reiki ‘attunements’ they then become a Kundalini Reiki Master.",
           href: "/" + locale + "/academy/reiki/kundalini-reiki",
+          courseHref: "/" + locale + "/academy/reiki/kundalini-reiki/free-initiation",
           image: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
           actionLabel: action.program,
         },
@@ -217,9 +256,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
-      <AcademyDiscovery locale={locale} view={view} items={items} label={text.allPrograms}>
-        <AcademyFreeCourseBanner locale={locale} />
-      </AcademyDiscovery>
+      <AcademyDiscovery locale={locale} view={view} items={items} label={text.allPrograms} />
       {view === "videos" ? (
         <section id="academy-video-courses">
           <AcademyVideoCourses locale={locale} />
