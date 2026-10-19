@@ -4,15 +4,11 @@ import {parseSessionYouTubeUrl} from '@/lib/clients/youtube-resource'
 import {reportReusableVideoCandidates} from '@/lib/clients/report-video-candidates'
 import {normalizePhoneVideoFile} from '@/lib/clients/phone-video-file'
 import {uploadFile} from './practitioner-materials-cabinet'
+import {ownerMaterialApi} from '@/lib/clients/owner-material-api'
 import styles from './client-session.module.css'
 
-async function materialRequest(path,method='GET',body){
-  const response=await fetch(path,{method,credentials:'same-origin',cache:'no-store',
-    ...(body?{headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{})})
-  const result=await response.json().catch(()=>({}))
-  if(!response.ok)throw new Error(result.error||'MATERIAL_UNAVAILABLE')
-  return result
-}
+const materialRequest=(path,method='GET',body)=>
+  ownerMaterialApi(path,{method,body})
 const videoMime=new Set(['video/mp4','video/quicktime'])
 
 // This is always available in the report editor, including when its session
