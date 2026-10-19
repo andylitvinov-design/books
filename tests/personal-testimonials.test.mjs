@@ -5,20 +5,18 @@ import test from "node:test";
 
 const read = (...segments) => readFileSync(path.join(process.cwd(), ...segments), "utf8");
 
-test("home and services render the same first-party testimonial component", () => {
+test("home and services share verified testimonials; Services presents four before the optional remainder", () => {
   const home = read("components", "holistic-house-home.tsx");
   const services = read("app", "[locale]", "services", "page.tsx");
+  const extra = read("components", "services-studio-extras.tsx");
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
   assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
-  assert.ok(services.indexOf('<PublicConsultationCta locale=') > services.indexOf('<ServicesSolutions'));
-  assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<PublicConsultationCta locale='));
-  assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<ServicesTestsIntro'));
-  const methodDisclosure = services.indexOf('id="method-videos"');
-  assert.ok(methodDisclosure > 0);
-  assert.ok(services.indexOf('<PageVideo slot="consultation"') > methodDisclosure);
-  assert.ok(services.indexOf('<PageVideo slot="consultation"') < services.indexOf('</details>', methodDisclosure));
-  assert.match(services, /id="method-videos"/);
+  assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
+  assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<PublicConsultationCta locale='));
+  assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
+  assert.match(extra, /<PageVideo slot="consultation" locale=\{locale\} \/>/);
+  assert.match(extra, /id="method-videos"/);
 });
 
 test("published compact home shows two sourced videos while preserving all six originals per language", () => {
@@ -42,8 +40,8 @@ test("published compact home shows two sourced videos while preserving all six o
     assert.equal(home.length,2);
     assert.equal(new Set(home.map(item=>item.id)).size,2);
     assert.deepEqual(home,sources[locale].slice(0,2));
-    assert.equal(services.length,3);
-    assert.deepEqual(services,sources[locale].slice(0,3));
+    assert.equal(services.length,4);
+    assert.deepEqual(services,sources[locale].slice(0,4));
   }
   assert.match(component,/storyQuote/);
   assert.match(component,/current\.storyQuote/);
