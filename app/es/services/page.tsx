@@ -1,4 +1,5 @@
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { redirect } from "next/navigation";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
@@ -14,7 +15,8 @@ export const metadata = spanishMetadata(
   "Comienza con pruebas gratuitas, una revisión escrita o Wu Xing. Sesiones personales con Andrey Litvinov en Toronto y en línea desde €50."
 );
 
-export default function SpanishServicesPage() {
+export default async function SpanishServicesPage({ searchParams }: { searchParams: Promise<{catalog?:string}> }) {
+  if ((await searchParams)?.catalog === "1") redirect("/es/services/catalog#service-listings");
   return (
     <main className="services-shell services-shell--studio" lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
