@@ -118,3 +118,15 @@ test('different unit or construct metadata cannot be treated as matching measure
   assert.equal(out.tests[0].verificationRequired,true)
   assert.equal(compareFinalCourseTests(base,altered,8,{requireVerifiedResults:true}),null)
 })
+
+test('signed-in course endpoint verifies owner-scoped dimensions before weekly and final reporting',async()=>{
+  const {readFile}=await import('node:fs/promises')
+  const source=await readFile(new URL('../lib/app/growth-daily.js',import.meta.url),'utf8')
+  assert.match(source,/select id,provenance,dimensions,measurement_at from app\.assessment_results where account_id=\$1/)
+  assert.match(source,/results:weeklyRows\.map\(row=>\(\{/)
+  assert.match(source,/id:row\.id,\.\.\.row\.provenance,dimensions:row\.dimensions/)
+  assert.equal((source.match(/requireVerifiedResults:true/g)||[]).length,2)
+  assert.match(source,/const weeklyLast=usesOporaOutcomeChecks&&newestWeeklyRow&&/)
+  assert.match(source,/verifiedHistoryResult\(\{id:newestWeeklyRow\.id/)
+  assert.match(source,/due:weeklyLast\?nextDue\?\.getTime\(\)<=Date\.now\(\):true/)
+})
