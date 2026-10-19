@@ -36,7 +36,9 @@ test('all runnable compact reports provide semantic summaries rather than numeri
       }
     }
   }
-  assert.equal(checked, 2574)
+  // Four new one-scale IPIP forms and a four-scale ONS form extend the old
+  // 2574 source/language/response-case checks by 8×2×3 without changing them.
+  assert.equal(checked, 2574 + (4 + 4) * 2 * 3)
 })
 
 test('semantic descriptions preserve independent construct detail for decimal means', () => {
