@@ -318,9 +318,8 @@ export function ProfileDomains({
         </div>
       </>}
     </section>}
-    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} />}
-    {!external && footerActions}
-    <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
+    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />
+    {external && <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
         <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{t.browseHint}</small>
           <span className="hh-domain-topic-pills" aria-hidden="true">{DOMAINS.map(key => <span key={key}>{t[key]}</span>)}</span>
@@ -389,8 +388,8 @@ export function ProfileDomains({
       </details>
     </div>
       </div>
-    </details>
-    <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
+    </details>}
+    {external && <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>}
     {external && footerActions}
   </section>
 }
