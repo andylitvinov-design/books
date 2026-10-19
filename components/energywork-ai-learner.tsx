@@ -19,7 +19,7 @@ import {
   ENERGYWORK_FIRST_LESSON_NEXT, ENERGYWORK_FIRST_LESSON_STORAGE_KEY,
   energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
 } from "@/data/academy/energywork-first-lesson";
-import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
+import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -374,11 +374,16 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
       const answer = answers[slide.id];
       const secondary = slide.secondaryQuestion ? answers[slide.secondaryQuestion.id] : undefined;
       if (!answer?.trim() && !secondary?.trim()) return [];
+      const shared = Boolean(slide.secondaryQuestion && answer?.trim() && secondary?.trim() &&
+        answer.trim() === secondary.trim());
+      const prompt = shared && slide.secondaryQuestion
+        ? [slide.question?.prompt[locale] || "", slide.secondaryQuestion.prompt[locale]].join("\n")
+        : slide.question?.prompt[locale] || "";
       const choice = slide.question?.options?.find((option) => option.id === answer);
       return [slide.title[locale],
-        ...(answer?.trim() ? [slide.question?.prompt[locale] || "",
+        ...(answer?.trim() ? [prompt,
           choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""] : []),
-        ...(secondary?.trim() && slide.secondaryQuestion
+        ...(secondary?.trim() && slide.secondaryQuestion && !shared
           ? [slide.secondaryQuestion.prompt[locale], secondary, ""] : []),
       ];
     }),
@@ -799,9 +804,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const feedbackLength = Array.from(meditationReview.trim()).length;
   const feedbackMissing = isMeditationFeedback && feedbackLength < ENERGYWORK_REVIEW_MIN_CHARS;
   const isTantraStudyQuestion = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.includes(slide.id);
+  const unifiedStudyAnswer = slide.secondaryQuestion
+    ? energyworkCombinedTantraAnswer(answers[slide.id], answers[slide.secondaryQuestion.id])
+    : answers[slide.id];
   const tantraStudyMissing = isTantraStudyQuestion &&
-    (!energyworkTantraStudyAnswerComplete(answers[slide.id]) ||
-      Boolean(slide.secondaryQuestion && !energyworkTantraStudyAnswerComplete(answers[slide.secondaryQuestion.id])));
+    !energyworkTantraStudyAnswerComplete(unifiedStudyAnswer);
   const isKundaliniStudyQuestion = ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS.includes(slide.id);
   const isYggdrasilStudyQuestion = ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS.includes(slide.id);
   const isReikiStudyQuestion = isTantraStudyQuestion || isKundaliniStudyQuestion || isYggdrasilStudyQuestion;
@@ -828,24 +835,43 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     !busy && !saveError && dirtyRef.current.size === 0;
 
   function setAnswer(value: string, answerId: string = slide.id) {
-    const updated = { ...answersRef.current, [answerId]: value };
+    // One textarea on the combined slide updates both existing private answer IDs.
+    const mirrorId = answerId === slide.id ? slide.secondaryQuestion?.id : undefined;
+    const updated = { ...answersRef.current, [answerId]: value,
+      ...(mirrorId ? { [mirrorId]: value } : {}) };
     answersRef.current = updated;
     setAnswers(updated);
     dirtyRef.current.add(answerId);
+    if (mirrorId) dirtyRef.current.add(mirrorId);
     setCopyState("idle");
   }
   async function store(nextSlideId: string) {
     if (sync !== "ready") return;
     const current = answersRef.current;
-    const primary = current[slide.id] || "";
     const secondaryId = slide.secondaryQuestion?.id;
-    const secondary = secondaryId ? current[secondaryId] || "" : undefined;
+    const combined = secondaryId
+      ? energyworkCombinedTantraAnswer(current[slide.id], current[secondaryId])
+      : "";
+    // Older course records can have only one of the two answer IDs filled.
+    // Backfill the missing ID when continuing, without overwriting distinct
+    // answers from the original two-field version.
+    const needsBackfill = Boolean(secondaryId && combined.trim() &&
+      (!current[slide.id]?.trim() || !current[secondaryId]?.trim()));
+    const primary = needsBackfill ? combined : current[slide.id] || "";
+    const secondary = secondaryId ? (needsBackfill ? combined : current[secondaryId] || "") : undefined;
     const response = await request({
       action: "save", version: ENERGYWORK_COURSE_VERSION,
       slideId: slide.id, nextSlideId,
       ...(slide.question ? { answer: primary } : {}),
       ...(secondaryId ? { secondaryAnswer: secondary } : {}),
     });
+    if (needsBackfill && secondaryId &&
+        (answersRef.current[slide.id] || "") === (current[slide.id] || "") &&
+        (answersRef.current[secondaryId] || "") === (current[secondaryId] || "")) {
+      const updated = { ...answersRef.current, [slide.id]: primary, [secondaryId]: secondary || "" };
+      answersRef.current = updated;
+      setAnswers(updated);
+    }
     if ((answersRef.current[slide.id] || "") === primary) dirtyRef.current.delete(slide.id);
     if (secondaryId && (answersRef.current[secondaryId] || "") === secondary)
       dirtyRef.current.delete(secondaryId);
@@ -1152,28 +1178,22 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       ))}
                     </div>
                   ) : null}
+                  {slide.secondaryQuestion ? (
+                    <p className={styles.tantraSecondPrompt}
+                      id={"tantra-second-" + slide.secondaryQuestion.id} data-tantra-study-combined>
+                      {slide.secondaryQuestion.prompt[locale]}
+                    </p>
+                  ) : null}
                   {slide.question.type === "text" ? (
-                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (answers[slide.id] ?? "")}
+                    <textarea id={"answer-" + slide.id}
+                      value={isMeditationFeedback ? meditationReview : slide.secondaryQuestion ? unifiedStudyAnswer ?? "" : (answers[slide.id] ?? "")}
                       onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
-                      maxLength={isMeditationFeedback ? undefined : 1600} rows={isKundaliniStudyQuestion ? 2 : 4}
+                      maxLength={isMeditationFeedback ? undefined : 1600} rows={slide.secondaryQuestion ? 5 : isKundaliniStudyQuestion ? 2 : 4}
                       placeholder={isMeditationFeedback ? t.feelingPlaceholder : isKundaliniStudyQuestion ? (locale === "ru" ? "Или напишите свой ответ…" : "Or write your own answer…") : isReikiStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
                       required={isReikiStudyQuestion}
-                      aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) ? "reiki-study-help-" + slide.id : undefined}
+                      aria-describedby={isTantraStudyQuestion ? (slide.secondaryQuestion ? "tantra-second-" + slide.secondaryQuestion.id + " " : "") + "tantra-study-help-" + slide.id : (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) ? "reiki-study-help-" + slide.id : undefined}
                       autoComplete="off" />
-                  ) : null}
-                  {slide.secondaryQuestion ? (
-                    <div className={styles.tantraSecondQuestion} data-tantra-study-combined>
-                      <label className={styles.tantraSecondPrompt} htmlFor={"answer-" + slide.secondaryQuestion.id}>
-                        {slide.secondaryQuestion.prompt[locale]}
-                      </label>
-                      <textarea id={"answer-" + slide.secondaryQuestion.id}
-                        value={answers[slide.secondaryQuestion.id] ?? ""}
-                        onChange={(e) => setAnswer(e.target.value.slice(0, 1600), slide.secondaryQuestion!.id)}
-                        className={styles.textarea} maxLength={1600} rows={2}
-                        placeholder={t.tantraAnswerPlaceholder} required
-                        aria-describedby={"tantra-study-help-" + slide.id} autoComplete="off" />
-                    </div>
                   ) : null}
                   {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{feedbackLength} {t.feedbackCharacters} · {t.feedbackMinimum}</p> : null}
                   {slide.question.type === "scale" ? (
