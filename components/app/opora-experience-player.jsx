@@ -7,6 +7,7 @@ import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '@/lib/
 import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
 import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
 import {oporaExperienceDay,oporaExperienceGuide,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
+import OporaOceanOutro from './opora-ocean-outro'
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
@@ -46,6 +47,7 @@ const WORDS={
     keepText:'Выберите одно напоминание на сегодня.',
     plan:'Хочу запомнить этот вариант',noPlan:'Пока без плана',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
+    audioTitle:'Минута спокойствия',audioKicker:'МЯГКОЕ ЗАВЕРШЕНИЕ',audioNext:'Послушать волны',
     attempted:'Вы попробовали упражнение',readOnly:'Сегодня только ознакомление — выполнение не отмечено',
     takeaway:'Ваш возможный следующий шаг',
     feedback:'Ваше наблюдение',noResult:'Можно закончить без оценок самочувствия.',
@@ -92,6 +94,7 @@ const WORDS={
     keepText:'Choose one gentle reminder for today.',
     plan:'Keep this reminder',noPlan:'No plan today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
+    audioTitle:'One quiet minute',audioKicker:'A GENTLE ENDING',audioNext:'Relax with waves',
     attempted:'You reported trying the exercise',readOnly:'Explored the idea only — no attempt recorded',
     takeaway:'Your possible next step',feedback:'Your observation',noResult:'You can finish without rating yourself.',
     noSave:'Saving was not confirmed. Check the connection and try again.',
@@ -133,6 +136,7 @@ WORDS.es = {
   quoteText:'¿Te resuena esta idea?',agree:'Me resuena',unsure:'Aún no sé',disagree:'No estoy de acuerdo',
   keepText:'Elige un recordatorio amable para hoy.',plan:'Recordar esta idea',noPlan:'Hoy sin plan',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
+  audioTitle:'Un minuto tranquilo',audioKicker:'UN FINAL SUAVE',audioNext:'Escuchar las olas',
   attempted:'Has indicado que probaste la práctica',readOnly:'Solo exploraste la idea; no registraste un intento',
   takeaway:'Tu recordatorio',feedback:'Tu sensación',noResult:'Puedes terminar sin evaluarte.',
   noSave:'No se confirmó el guardado. Revisa la conexión e inténtalo otra vez.',
@@ -221,6 +225,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
   const [step,setStep]=useState(hasSaved?scenes.length:0)
   const [saved,setSaved]=useState(hasSaved)
+  const [outroOpen,setOutroOpen]=useState(false)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [welcomeFeeling,setWelcomeFeeling]=useState(data?.currentSession?.signals?.welcomeFeeling||null)
   const [openingResource,setOpeningResource]=useState(data?.currentSession?.signals?.oporaOpening?.resource??null)
@@ -241,7 +246,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const heading=useRef(null),safetyTrigger=useRef(null),safetyPrimary=useRef(null)
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
   const locked=Boolean(busy||saving),receipt=step>=scenes.length
-  const moment=receipt?'receipt':scenes[step]
+  const moment=outroOpen?'ocean':receipt?'receipt':scenes[step]
+  const progressStep=Math.min(step+1,scenes.length+1)+(outroOpen?1:0)
   const opening=OPENING[lang]
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
@@ -345,7 +351,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     }catch{setError(t.noSave)}
     finally{setSaving(false)}
   }
-  const title=receipt?t.saved:
+  const title=outroOpen?t.audioTitle:receipt?t.saved:
     moment==='welcome'?opening.welcome:
     moment==='baseline'?opening.baseline:
     moment==='checkin'?opening.checkin:
@@ -366,9 +372,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           disabled={locked} aria-label={t.close}><X size={21}/></button>
         <div className={styles.progress}>
           <div className={styles.progressCopy}><span>{t.day} {cycle.day}/14</span>
-            <span>{Math.min(step+1,scenes.length+1)} / {scenes.length+1}</span></div>
+            <span>{progressStep} / {scenes.length+2}</span></div>
           <div className={styles.track}><div className={styles.fill}
-            style={{width:((step+1)/(scenes.length+1)*100)+'%'}}/></div>
+            style={{width:(progressStep/(scenes.length+2)*100)+'%'}}/></div>
         </div>
         <button type="button" className={styles.pause} ref={safetyTrigger}
           onClick={()=>setSafety(true)} disabled={locked}><Pause size={16}/>{t.pause}</button>
@@ -381,8 +387,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         <section className={styles.panel+' '+(
           moment==='welcome'||(moment==='arrive'&&cycle.day!==1)?styles.arrivalPanel:''
         )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')} aria-live="off">
-          {!receipt&&<span className={styles.eyebrow}>
-            {moment==='welcome'?opening.welcomeKicker:
+          {(!receipt||outroOpen)&&<span className={styles.eyebrow}>
+            {moment==='ocean'?t.audioKicker:moment==='welcome'?opening.welcomeKicker:
             moment==='baseline'?opening.baselineKicker:
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
@@ -504,7 +510,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </div>
             <p className={styles.soft}>{reportedAttempt?t.attempted:t.readOnly}</p>
           </>}
-          {receipt&&<>
+          {receipt&&!outroOpen&&<>
             <p className={styles.lead}>{t.savedText}</p>
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
@@ -514,17 +520,21 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
+          {outroOpen&&<OporaOceanOutro locale={lang} paused={safety}/>}
           {(moment==='welcome'||moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
         </section>
       </main>
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.footer}>
-        {!receipt&&step>0&&<button type="button" className={styles.back}
+        {receipt?<button type="button" className={styles.back} disabled={locked}
+          onClick={outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
+          <ArrowLeft size={17}/>{outroOpen?t.back:t.finish}
+        </button>:step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={receipt?(onFinish||onClose):step===scenes.length-1?submit:next}>
-          {receipt?t.finish:step===scenes.length-1?(saving?t.saving:t.save):t.next}
-          {receipt||step===scenes.length-1?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
+          onClick={outroOpen?(onFinish||onClose):receipt?()=>setOutroOpen(true):step===scenes.length-1?submit:next}>
+          {outroOpen?t.finish:receipt?t.audioNext:step===scenes.length-1?(saving?t.saving:t.save):t.next}
+          {outroOpen||step===scenes.length-1?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
     </div>

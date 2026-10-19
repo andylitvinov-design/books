@@ -198,7 +198,7 @@ export function mount(name, props, { exportName = 'default' } = {}) {
   const jsx = (type, props, key) => ({ type, props, key })
   const modules = { ...pureUI, react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     'lucide-react': new Proxy({}, { get: (_, name) => stub(String(name)) }),
-    './opora-v6-slide-player': child('OporaV6SlidePlayer'), './course-guided-timer': child('CourseGuidedTimer'), './course-practice-voice': child('CoursePracticeVoice'),
+    './opora-v6-slide-player': child('OporaV6SlidePlayer'), './opora-ocean-outro': child('OporaOceanOutro'), './course-guided-timer': child('CourseGuidedTimer'), './course-practice-voice': child('CoursePracticeVoice'),
     './anti-stress-method-activity': child('AntiStressMethodActivity'), './anti-stress-practice-lab': child('AntiStressPracticeLab'),
     './course-lesson-result': child('CourseLessonResult'), './anti-stress-day-one': {
       __esModule: true, default: stub('DayOneExercise'), DayOneChoices: stub('DayOneChoices'), DayOneFocusPicker: stub('DayOneFocusPicker'),
