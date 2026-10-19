@@ -2,8 +2,9 @@ import { deepFreeze } from '../../lib/assessments/contracts.js'
 
 // Five additive, source-permitted English questionnaires. Immutable v1 forms:
 // four full IPIP Barchard (2001) component scales and the ONS4 survey standard.
-// The content fingerprints were generated from each original ordered question
-// list plus polarity split; no invented cutoffs or diagnostic interpretations.
+// Fingerprints: SHA-256 of JSON.stringify({key,items,positiveCount}) for IPIP
+// and JSON.stringify({key,items}) for ONS4. Immutable after publication.
+// No invented cutoffs or diagnostic interpretations.
 const IPIP_FORMS = [
   {
     "key": "ipip-emotion-decision-making-9",
@@ -12,7 +13,7 @@ const IPIP_FORMS = [
     "ru": "Решения с опорой на чувства · EN",
     "dimension": "trait.ipip.emotion_based_decision_making",
     "positiveCount": 5,
-    "hash": "7f1a8965d91d64d36ad1d14337f7f0d7add5cc93dc3974adca42b48f52f85b7b",
+    "hash": "85ba815ae4a2a57da10a5fbf0136fc0bbfbe0e5a32fc3011fe8ef0a34003d35b",
     "topics": [
       "personality",
       "mood",
@@ -56,7 +57,7 @@ const IPIP_FORMS = [
     "ru": "Отклик на радость других · EN",
     "dimension": "trait.ipip.responsive_joy",
     "positiveCount": 6,
-    "hash": "79db53472d9d819a8d8f24a5fbd4633d8a7d5f6a75d26079d28e133514f7e67d",
+    "hash": "191b04f9610931d98dab5270fc733c687a8bd05c5cc21cf052ce5e952397538c",
     "topics": [
       "personality",
       "relationships",
@@ -100,7 +101,7 @@ const IPIP_FORMS = [
     "ru": "Отклик на чужие трудности · EN",
     "dimension": "trait.ipip.responsive_distress",
     "positiveCount": 5,
-    "hash": "17b5e80f17a929e7c4a64dc379e8f1081a5ce9d28f162f7d9ae2a0d73de4c814",
+    "hash": "3f6e099c8027c79bc1fe1d8d46910d0f56c63ed08989714e984d04addde8b282",
     "topics": [
       "personality",
       "relationships",
@@ -145,7 +146,7 @@ const IPIP_FORMS = [
     "ru": "Эмпатическая забота · EN",
     "dimension": "trait.ipip.empathic_concern",
     "positiveCount": 5,
-    "hash": "09ba433ea411c7693e1c9d5a063102d27d1fb91c8f9768fd2d8df9fdfefd6827",
+    "hash": "e8661dad68762e77e466943ab40231675c2447a6872176063c3a74165067558f",
     "topics": [
       "personality",
       "relationships",
@@ -250,7 +251,7 @@ const ONS_DEFINITION = {
   }))},
   questions: ONS_QUESTIONS.map((text, i) => ({id: 'ons4.' + String(i + 1).padStart(2, '0'), text, required: true})),
   optionalContext: [], suggestedRepeatDays: 30,
-  contentHash: 'sha256:5bcfb1ccdbc27a2abe0f0ad775bd3ebb8fbfe72501880a2cf887af343ac0deda',
+  contentHash: 'sha256:8597bc30247ea6505a7521df9f0dd4d51c13cb86776a5abc6d493fc170df6689',
 }
 
 export const ADDITIONAL_PROFESSIONAL_DEFINITIONS = deepFreeze([
