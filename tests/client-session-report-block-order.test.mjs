@@ -50,7 +50,7 @@ test('private voice message appears once after the signed cover in all four clie
   const document=read('components/prescription-document.jsx')
   const cover=document.indexOf('className="canonical-report-cover"')
   const audio=document.indexOf('{afterCover}')
-  const analysis=document.indexOf('className="canonical-report-analysis"')
+  const analysis=document.indexOf('className="canonical-general canonical-report-analysis"')
   assert.ok(cover>=0&&audio>cover&&analysis>audio)
   assert.equal((report.match(/id="session-message"/g)||[]).length,1)
   assert.match(report,/export function ClientSessionVoiceMessage/)
