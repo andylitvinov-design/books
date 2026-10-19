@@ -1,0 +1,36 @@
+name: Import report lighthouse photograph
+on:
+  push:
+    branches:
+      - codex/report-lighthouse-photo-20261018
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-photo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/report-lighthouse-photo-20261018
+      - name: Save licensed lighthouse image in the repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="public/images/holistic-house/report-lighthouse-coast.webp"
+          if [[ -s "$target" ]]; then
+            echo "Image is already self-hosted."
+            exit 0
+          fi
+          mkdir -p "$(dirname "$target")"
+          curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 15 --max-time 90 \
+            'https://images.unsplash.com/photo-1764377722576-60611cd1d7b8?fit=crop&w=1600&q=78&fm=webp' \
+            --output "$target"
+          test "$(file --brief --mime-type "$target")" = "image/webp"
+          test "$(wc -c < "$target")" -gt 20000
+          test "$(wc -c < "$target")" -lt 900000
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$target"
+          git commit -m "assets: self-host lighthouse cover photo" || exit 0
+          git push origin HEAD:codex/report-lighthouse-photo-20261018
