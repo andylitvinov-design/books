@@ -280,13 +280,14 @@ async function exerciseJourney(page, locale, width) {
       await expect(nextButton).toBeDisabled();
       await answer.fill(locale === "ru" ? "Мой короткий ответ по материалу." : "My short answer from the guide.");
       if (id === "tan-study-02") {
-        const second = page.locator('textarea[id="answer-tan-study-03"]');
-        await expect(page.locator("[data-tantra-study-combined]")).toHaveCount(1);
-        await expect(second).toHaveAttribute("required", "");
-        await expect(nextButton).toBeDisabled();
-        await second.fill("   ");
-        await expect(nextButton).toBeDisabled();
-        await second.fill(locale === "ru" ? "Применение системы из материала." : "Uses of the system from the guide.");
+        const question = page.locator('[data-energywork-slide-id="tan-study-02"]');
+        await expect(question.locator("textarea")).toHaveCount(1);
+        await expect(question.locator("[data-tantra-study-combined]")).toContainText(
+          locale === "ru" ? "Для каких целей" : "For what purposes"
+        );
+        await expect(page.locator('textarea[id="answer-tan-study-03"]')).toHaveCount(0);
+        // One complete response unlocks Continue for both question IDs.
+        await expect(nextButton).toBeEnabled();
       }
       await expect(nextButton).toBeEnabled();
     }
