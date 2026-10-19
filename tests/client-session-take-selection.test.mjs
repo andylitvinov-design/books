@@ -121,3 +121,43 @@ test('UI presents server-authenticated playback, multiple checkboxes and guarded
  assert.match(route,/case 'delete'/)
  assert.match(route,/reviewFirst:data\.reviewFirst===true/)
 })
+
+test('permanent removal deletes only the owner-scoped private object, never a public link',async()=>{
+ const source=read('lib/clients/session-delivery-storage.js').replace(/^import .*\n/gm,'')
+   .replace(/^export \{.*\}\r?\n/gm,'').replace(/^export /gm,'')
+ const events=[]
+ const run=new Function('AppError','markUnpublishedSessionAssetRemoved','createClient',
+   'PRIVATE_MEDIA_BUCKET','transaction','deletePrivateVideo',
+   source+'\nreturn deleteUnpublishedPrivateMedia')(
+     AppError,async()=>({objectKey:'opaque/synthetic-audio.m4a',provider:'supabase'}),
+     ()=>({storage:{from:bucket=>{
+       assert.equal(bucket,PRIVATE_MEDIA_BUCKET)
+       return {remove:async keys=>{events.push(['remove',...keys]);return {error:null}}}
+     }}}),'hh-client-private-media',
+     async(_c,_a,cb)=>cb({query:async(sql,values)=>{
+       assert.match(sql,/status='removed'/)
+       assert.deepEqual(values,[ASSET,CLIENT,SESSION])
+       events.push(['delete-row'])
+       return {rowCount:1}
+     }}),()=>assert.fail('video provider must not be called'))
+ assert.deepEqual(await run({secretKey:'synthetic',supabaseUrl:'https://synthetic.invalid'},
+   {},CLIENT,SESSION,ASSET),{removed:true})
+ assert.deepEqual(events,[['remove','opaque/synthetic-audio.m4a'],['delete-row']])
+})
+test('when private object deletion fails it retains a removed tombstone for later cleanup',async()=>{
+ const source=read('lib/clients/session-delivery-storage.js').replace(/^import .*\n/gm,'')
+   .replace(/^export \{.*\}\r?\n/gm,'').replace(/^export /gm,'')
+ let calls=0
+ const run=new Function('AppError','markUnpublishedSessionAssetRemoved','createClient',
+   'PRIVATE_MEDIA_BUCKET','transaction','deletePrivateVideo',
+   source+'\nreturn deleteUnpublishedPrivateMedia')(
+     AppError,async()=>({objectKey:'opaque/audio',provider:'supabase'}),
+     ()=>({storage:{from:()=>({remove:async()=>{calls++;return {error:new Error('synthetic outage')}}})}}),
+     'hh-client-private-media',async()=>assert.fail('removed row must stay for housekeeping'),
+     ()=>assert.fail('no external provider'))
+ await assert.rejects(run({secretKey:'synthetic',supabaseUrl:'https://synthetic.invalid'},
+   {},CLIENT,SESSION,ASSET),{code:'MEDIA_CLEANUP_RETRY_REQUIRED'})
+ assert.equal(calls,1)
+ const cleaner=read('lib/clients/session-delivery-storage.js')
+ assert.match(cleaner,/status='removed'\) and created_at/)
+})
