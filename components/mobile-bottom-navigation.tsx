@@ -1,5 +1,5 @@
 "use client";
-import { CalendarDays, House, Sparkles, GraduationCap, ClipboardList, HousePlus } from 'lucide-react';
+import { CalendarDays, House, Sparkles, GraduationCap, ClipboardList, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -7,7 +7,7 @@ import type { PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, getCompactNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
-const icons = { home: House, tests: ClipboardList, services: Sparkles, academy: GraduationCap, events: CalendarDays, house: HousePlus };
+const icons = { home: House, tests: ClipboardList, services: Sparkles, academy: GraduationCap, events: CalendarDays, house: LayoutDashboard };
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();
