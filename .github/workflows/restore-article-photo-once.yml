@@ -1,0 +1,41 @@
+name: One-time archive restoration of original article photograph
+on:
+  push:
+    branches: [fix/article-cover-original]
+    paths: [.github/workflows/restore-article-photo-once.yml]
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover public Telegram post 1070 original attachment
+        env:
+          ORIGINAL_PHOTO_URL: 'https://cdn1.telesco.pe/file/qGs1xCIW2aHgPA1m9bi7bEpGLQGIkcrAQhAYa8co2fhErhc1csl7GbgTbtb6DHqONPjvmb7UOJ07X5Mk9JKLjnbvL5wNVRsvjPYe8y52yvhWRLuLIEpO4IFyUtKG9RKSZDWr2IyIbC3peqMklVn4egnNk2CxCZKOoqmx2bXz1qIs23XFS9NOBzL0q_L72kGJYMUfdnaM66BHj1E24nq7QNZO9UswEgxIf0mFiUWbd5HkuncA57SgVd-DzpvxYgBnzzpv2fW2DojMYsqNZvj8xO6TTb2oghtVcPqFi-MOZ9NyUIReDW0BN-HZQ6Bx0k7_2BZ0rwTGbimPB_K2N74pKA.jpg'
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 90 --user-agent 'Mozilla/5.0' "$ORIGINAL_PHOTO_URL" --output /tmp/nux-original.jpg
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          photo=Path('/tmp/nux-original.jpg').read_bytes()
+          if not (15000 <= len(photo) <= 12000000):
+              raise RuntimeError(f'Refuse too-small or too-large source image: {len(photo)} bytes')
+          if photo[:3]!=bytes.fromhex('ffd8ff') or photo[-2:]!=bytes.fromhex('ffd9'):
+              raise RuntimeError('Original attachment is not complete JPEG')
+          target=Path('public/media/remedies/nux-vomica/message1070-1.jpg')
+          target.parent.mkdir(parents=True,exist_ok=True)
+          target.write_bytes(photo)
+          print('Archived verified public original attachment; bytes:',len(photo))
+          PY
+      - name: Commit image only to temporary repair branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/media/remedies/nux-vomica/message1070-1.jpg
+          git diff --cached --quiet && { echo "No change to image"; exit 1; }
+          git commit -m "fix(media): restore original Nux Vomica Telegram photograph"
+          git push origin HEAD:fix/article-cover-original
