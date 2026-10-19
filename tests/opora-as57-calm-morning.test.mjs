@@ -30,6 +30,29 @@ test('all 14 days provide one readable daily action and a reminder in EN/RU/ES',
   assert.equal(oporaExperienceDay(15,'ru'),null);
 });
 
+test('Day 1 names the foundation, explains its benefit and keeps one simple action in EN/RU/ES',()=>{
+  const patterns={
+    en:{title:/present/i,purpose:/stress.+worries/i,practice:/three things/i},
+    ru:{title:/настоящий момент/i,purpose:/тревожные мысли/i,practice:/три предмета/i},
+    es:{title:/presente/i,purpose:/estrés.+preocupaciones/i,practice:/tres cosas/i},
+  };
+  for(const [lang,check] of Object.entries(patterns)){
+    const first=oporaExperienceDay(1,lang);
+    for(const [key,pattern] of Object.entries(check))assert.match(first[key],pattern);
+    assert.ok(first.purpose.length>=100&&first.purpose.length<=220);
+    assert.equal(oporaExperienceDay(2,lang).purpose,undefined,
+      'Explanatory highlight is specific to the first foundational exercise');
+  }
+  const jsx=read('components/app/opora-experience-player.jsx');
+  const css=read('components/app/opora-experience-player.module.css');
+  assert.match(jsx,/moment==='practice'\?\(cycle\.day===1\?t\.coreKicker:t\.stepLabel\)/);
+  assert.match(jsx,/data-opora-core-purpose="true"/);
+  assert.match(jsx,/!neutralSupport&&cycle\.day===1&&dayCopy\?\.purpose/);
+  assert.match(jsx,/cycle\.day===1\?t\.tryPrompt:t\.tryAfter/);
+  assert.match(css,/\.coreWhy/);
+  assert.match(css,/\.corePractice \.chips button\{min-height:46px/);
+});
+
 test('photographic mobile player uses a bright panel and high-contrast large type',()=>{
   const css=read('components/app/opora-experience-player.module.css');
   const jsx=read('components/app/opora-experience-player.jsx');

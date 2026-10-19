@@ -32,7 +32,8 @@ const WORDS={
     arrivalWarmText:'Найдите взглядом одну приятную или нейтральную деталь вокруг.',
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
-    stepLabel:'Сегодня можно попробовать',
+    stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
+    coreWhy:'ЗАЧЕМ ЭТО НУЖНО',tryPrompt:'Получилось попробовать?',
     start:'Я попробую этот шаг',alternative:'Другой мягкий вариант',tryAfter:'Как прошло?',
     tried:'Я попробовал(а)',partly:'Удалось немного',read:'Сегодня только знакомлюсь',
     gentle:'Если некомфортно, просто посмотрите на нейтральный предмет.',
@@ -77,7 +78,8 @@ const WORDS={
     arrivalWarmText:'Find one calm or pleasant detail around you.',
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
-    stepLabel:'A gentle step for today',
+    stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
+    coreWhy:'WHY IT HELPS',tryPrompt:'Did you try it?',
     start:'I will try this step',alternative:'Another gentle option',tryAfter:'How did that go?',
     tried:'I tried it',partly:'I tried a little',read:'Just reading today',
     gentle:'If uncomfortable, simply look at a neutral object instead.',
@@ -122,7 +124,8 @@ WORDS.es = {
     arrivalWarmTitle:'Puedes llegar tal como estás',
     arrivalWarmText:'Encuentra con la mirada un detalle agradable o neutro.',
     practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
-  stepLabel:'UN PASO AMABLE',tryAfter:'¿Cómo te fue?',
+  stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
+  coreWhy:'POR QUÉ AYUDA',tryPrompt:'¿Lo intentaste?',tryAfter:'¿Cómo te fue?',
   tried:'Lo intenté',partly:'Un poquito',read:'Hoy solo leo',
   gentle:'Si te incomoda, mira un objeto neutro.',
   feelText:'Nota si algo cambió, aunque sea un poco.',
@@ -370,13 +373,13 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
         <section className={styles.panel+' '+(
           moment==='welcome'||(moment==='arrive'&&cycle.day!==1)?styles.arrivalPanel:''
-        )} aria-live="off">
+        )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')} aria-live="off">
           {!receipt&&<span className={styles.eyebrow}>
             {moment==='welcome'?opening.welcomeKicker:
             moment==='baseline'?opening.baselineKicker:
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
-            moment==='arrive'?t.minute:moment==='practice'?t.stepLabel:
+            moment==='arrive'?t.minute:moment==='practice'?(cycle.day===1?t.coreKicker:t.stepLabel):
             moment==='feel'?t.feel:moment==='affirmation'?(cycle.day===1?opening.thoughtKicker:t.quote):t.keep}
           </span>}
           <h2 ref={heading} tabIndex={-1} className={styles.title}>{title}</h2>
@@ -437,9 +440,14 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </>}
           </>}
           {moment==='practice'&&<>
+            {!neutralSupport&&cycle.day===1&&dayCopy?.purpose&&
+              <div className={styles.coreWhy} data-opora-core-purpose="true">
+                <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
+              </div>}
             {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
-            <p className={styles.miniLabel}>{t.tryAfter}</p>
-            <div className={styles.chips} role="group" aria-label={t.tryAfter}>
+            <p className={styles.miniLabel}>{cycle.day===1?t.tryPrompt:t.tryAfter}</p>
+            <div className={styles.chips} role="group"
+              aria-label={cycle.day===1?t.tryPrompt:t.tryAfter}>
               {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
