@@ -66,6 +66,7 @@ export async function POST(request) {
     input.includeRecommendation = form.get('includeRecommendation') === 'on'
     input.includeInvoice = form.get('includeInvoice') === 'on'
     input.includeDistanceHomeopathy = form.get('includeDistanceHomeopathy') === 'on'
+    input.daoResourcePublished = form.get('daoResourcePublished') === 'on'
     const document = await createConsultationDraftPreview(input, {
       kind,
       locale,
