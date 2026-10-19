@@ -12,6 +12,8 @@ on:
       - 'components/practitioner-video-gallery.*'
       - 'components/app/practice-materials.*'
       - 'components/app/practitioner-articles.jsx'
+      - 'components/app/practitioner-articles.module.css'
+      - 'tests/practitioner-articles-folders.test.mjs'
       - 'app/\[locale\]/masters/**'
       - 'app/\[locale\]/services/\[practitionerSlug\]/**'
       - 'app/api/app/\[...path\]/route.js'
