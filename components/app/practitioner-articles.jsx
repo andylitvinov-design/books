@@ -3,8 +3,9 @@ import {useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {BookOpen,FolderPlus,Folder,Search,PenLine,Trash2,Eye,ChevronDown} from 'lucide-react'
 import styles from './practitioner-articles.module.css'
+import {articleBlocks,inlineArticleSegments} from '@/lib/practitioners/article-format'
 
-const initial=(locale='en')=>({locale:['ru','en','es'].includes(locale)?locale:'en',title:'',excerpt:'',body:'',coverPath:'',sourceUrls:[],linkedServiceIds:[]})
+const initial=(locale='en')=>({locale:['ru','en','es'].includes(locale)?locale:'en',title:'',excerpt:'',body:'',coverPath:'',sourceUrls:[],linkedServiceIds:[],tags:[]})
 const clean=value=>String(value||'').normalize('NFKC').toLocaleLowerCase().trim()
 function shortStatus(status,ru){
  const map={draft:ru?'Черновик':'Draft',submitted:ru?'На проверке':'In review',published:ru?'Опубликовано':'Published',
@@ -12,16 +13,18 @@ function shortStatus(status,ru){
  return map[status]||status
 }
 function InlineText({value}){
- return String(value||'').split(/(\*\*[^*\n]+\*\*)/g).map((chunk,i)=>
-  chunk.startsWith('**')&&chunk.endsWith('**')?<strong key={i}>{chunk.slice(2,-2)}</strong>:<span key={i}>{chunk}</span>)
+ return inlineArticleSegments(value).map((part,i)=>
+   part.strong?<strong key={i}>{part.text}</strong>:<span key={i}>{part.text}</span>)
 }
 function ArticlePreview({body}){
  return <div className={styles.preview}>
-  {String(body||'').split(/\n{2,}/).filter(Boolean).map((block,i)=>{
-   if(block.startsWith('## '))return <h5 key={i}>{block.slice(3)}</h5>
-   if(block.trim().startsWith('- '))return <ul key={i}>{block.split(/\n/).filter(Boolean).map((line,j)=><li key={j}><InlineText value={line.replace(/^[-*]\s+/, '')}/></li>)}</ul>
-   return <p key={i}><InlineText value={block}/></p>
-  })}
+  {articleBlocks(body).map((block,i)=>
+   block.type==='h2'?<h5 key={i}><InlineText value={block.text}/></h5>:
+   block.type==='h3'?<h6 key={i}><InlineText value={block.text}/></h6>:
+   block.type==='ul'?<ul key={i}>{block.items.map((line,j)=><li key={j}><InlineText value={line}/></li>)}</ul>:
+   block.type==='ol'?<ol key={i}>{block.items.map((line,j)=><li key={j}><InlineText value={line}/></li>)}</ol>:
+   <p key={i}><InlineText value={block.text}/></p>
+  )}
  </div>
 }
 export default function PractitionerArticles({locale,services=[]}){
@@ -36,11 +39,12 @@ export default function PractitionerArticles({locale,services=[]}){
   body:'Содержание статьи',place:'Сохранить в папке',preview:'Предпросмотр',hidePreview:'Скрыть просмотр',
   sources:'Источники, обложка и связанные услуги',sourceLinks:'Ссылки на источники (по одной на строку)',
   cover:'Путь к изображению',related:'Связанные услуги',save:'Сохранить черновик',
-  submit:'Отправить на публикацию',archive:'В архив',opened:'Открыть опубликованную статью',
+  submit:'Отправить на проверку',archive:'В архив',opened:'Открыть опубликованную статью',
   saved:'Статья сохранена.',folderSaved:'Папка создана.',folderRenamed:'Папка переименована.',folderRemoved:'Папка удалена, статьи сохранены.',
   confirmDelete:'Удалить папку? Статьи останутся в разделе «Без папки».',
   confirmArchive:'Архивировать статью?',saveFirst:'Сначала сохраните правки — затем отправляйте на проверку.',
   editTitle:'Редактор статьи',draftTitle:'Новая статья',close:'Закрыть редактор',emptyInput:'Введите название папки.',
+  tags:'Ключевые слова через запятую',discard:'Есть несохранённые изменения. Закрыть без сохранения?',filterStatus:'Статус',allStatuses:'Любой статус',
  }:{
   heading:'My articles',intro:'Your personal article library. Drafts stay private until publication is approved.',
   newArticle:'New article',newFolder:'New folder',folder:'Folders',all:'All articles',
@@ -51,11 +55,12 @@ export default function PractitionerArticles({locale,services=[]}){
   body:'Article text',place:'Save in folder',preview:'Preview',hidePreview:'Hide preview',
   sources:'Sources, cover and related services',sourceLinks:'Source URLs (one per line)',
   cover:'Cover image path',related:'Related services',save:'Save draft',
-  submit:'Submit for publication',archive:'Archive',opened:'Open published article',
+  submit:'Submit for review',archive:'Archive',opened:'Open published article',
   saved:'Article saved.',folderSaved:'Folder created.',folderRenamed:'Folder renamed.',folderRemoved:'Folder deleted; articles were kept.',
   confirmDelete:'Delete this folder? Articles will remain in Unfiled.',
   confirmArchive:'Archive this article?',saveFirst:'Save your changes before submitting for review.',
   editTitle:'Edit article',draftTitle:'New article',close:'Close editor',emptyInput:'Enter a folder name.',
+  tags:'Search keywords (comma-separated)',discard:'You have unsaved edits. Close without saving?',filterStatus:'Status',allStatuses:'Any status',
  }
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
  const [query,setQuery]=useState(''),[limit,setLimit]=useState(24)
