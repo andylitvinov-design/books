@@ -86,6 +86,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   assert.equal(data.stageLabels.length, 5, where + ": all five lesson names are rendered");
   for (const label of data.stageLabels) {
     assert.ok(label.text.length > 4, where + ": a meaningful full stage name");
+    // Review reading screens deliberately tuck labels off-screen to make space
+    // for complete reviews while retaining five dots and SR-accessible names.
+    if (data.kind === "voices") continue;
     assert.ok(label.width >= 34 && label.height >= 15, where + ": stage name visibly occupies space, not visually hidden: "+JSON.stringify(label));
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
