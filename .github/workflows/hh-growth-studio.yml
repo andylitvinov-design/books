@@ -6,11 +6,13 @@ on:
     paths:
       - 'app/admin/growth-studio/**'
       - 'components/growth-studio.*'
+      - 'components/growth-studio-bulk.jsx'
       - 'components/prescription-admin-header.jsx'
       - 'components/practitioner-cabinet.jsx'
       - 'components/app/practice-workspace.jsx'
       - 'lib/growth-studio/**'
       - 'tests/growth-studio-editorial.test.mjs'
+      - 'tests/growth-studio-bulk.test.mjs'
       - '.github/workflows/hh-growth-studio.yml'
   workflow_dispatch:
 
@@ -30,10 +32,11 @@ jobs:
       - name: Validate JS modules
         run: |
           node --check lib/growth-studio/model.mjs
+          node --check lib/growth-studio/bulk.mjs
           node --check lib/growth-studio/store.js
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
-        run: node --test tests/growth-studio-editorial.test.mjs
+        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-bulk.test.mjs
 
   next-build:
     name: Next.js production build / Growth Studio
