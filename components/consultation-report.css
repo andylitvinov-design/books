@@ -4125,3 +4125,108 @@
     font-size: 11px;
   }
 }
+
+
+/* Client-report polish 2026-10-19: keep the supplied potency next to the
+   remedy name and let the instructions + library appendix remain compact.
+   This only affects the screen presentation; print/source text is retained. */
+@media screen {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 .canonical-remedy-potency {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    white-space: nowrap;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    padding: 9px 12px;
+    border: 1px solid #d7e6e5;
+    border-left: 2px solid #78b8b4;
+    border-radius: 10px;
+    background: #fcfefe;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-number {
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    color: #58747a;
+    font-weight: 500;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles {
+    border-top-color: #d7e5e2;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles > h2 {
+    margin-bottom: 3px;
+    font: 500 19px/1.3 Georgia, 'Times New Roman', serif;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-appendix-description {
+    margin: 0 0 7px;
+    color: #70676b;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure {
+    margin-top: 6px;
+    border-color: #d7e4e3;
+    border-radius: 10px;
+    background: #fefefd;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    min-height: 0;
+    padding: 7px 10px;
+    gap: 10px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
+    flex-basis: 9px;
+    width: 9px;
+    height: 9px;
+  }
+}
+@media screen and (max-width: 700px) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-section-heading {
+    gap: 2px 9px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    padding: 8px 9px;
+    gap: 2px 6px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-heading {
+    gap: 7px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.32;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+    min-height: 44px;
+    padding: 9px 2px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profiles > h2 {
+    font-size: 18px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-thumb {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    font-size: 15.5px;
+  }
+}
