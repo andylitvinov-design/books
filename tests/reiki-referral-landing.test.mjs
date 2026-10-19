@@ -77,7 +77,7 @@ test("short referral flow is discoverable from both legacy Tantra pages without 
   const program = read("components/academy-record-page.tsx");
   assert.match(tantra, /className=\{styles\.freeCourseBridge\}/);
   assert.match(tantra, /freeCourseBridge\} href=\{REIKI_FREE_COURSE_PATH\}/);
-  assert.match(program, /Try the free 5-lesson course/);
+  assert.match(program, /Start the 5 free lessons/);
   assert.match(program, /academy\/reiki\/tantra-reiki\/free-initiation/);
   assert.match(routes, /reiki-approved-sunrise-v3\.webp/);
   assert.match(routes, /Free Reiki course and introductory initiation — Holistic House/);
