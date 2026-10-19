@@ -1,0 +1,11 @@
+key,locale_evidence,question_count,primary_source,commercial_rights,release_status
+"fpes-weeks2008-enus10-original","en-US validated","10 total; 8 scored","https://doi.org/10.1016/j.janxdis.2007.08.002","permission_required","research_only"
+"fpes-fergus2009-enus-clinical133","en-US clinical","10 basis; 8 scored","https://pubmed.ncbi.nlm.nih.gov/19700259/","permission_required","research_only"
+"fpes-weeks2012-enus-clinical226","en-US clinical","10 basis; 8 scored","https://doi.org/10.1037/a0025723","permission_required","research_only"
+"fpes-schwarz2016-dede10","de-DE validated","10 total; 8 scored","https://doi.org/10.1026/0012-1924/a000147","permission_required","research_only"
+"fpes-vagos2016-ptpt-adolescent","pt-PT modified adolescent validated","item count pending","https://doi.org/10.1177/0748175615596781","permission_required","research_only"
+"fpes-maeda2015-jajp10","ja-JP validated","8 scored; 10 original basis","https://doi.org/10.14389/jsad.6.2_113","permission_required","research_only"
+"fpes-korea2010-kokr-validation","ko-KR validated; item map pending","original 10 template; confirm","https://doi.org/10.15842/kjcp.2010.29.1.012","permission_required","research_only"
+"fpes-dogantotan2010-trtr10","tr-TR validated; five-point rating","10 total; 8 scored","https://www.totan.com.tr/yayin/2010-dogan-olumlu-degerlendirilme-korkusu-olceginin-turkce-uyarlamasi.html","permission_required","research_only"
+"fpes-wang2012-zhtw-context","zh-TW review-supported; primary language pending","10 basis; map pending","https://doi.org/10.1016/j.janxdis.2011.11.004","permission_required","research_only"
+"fpes-zhang2025-zhcn-four-samples","zh-CN studied; not original translation validation","10 total; 8 scored; varying response options","https://doi.org/10.1186/s12888-024-06454-z","permission_required","research_only"
