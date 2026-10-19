@@ -17,7 +17,7 @@ const namedTake=(ru,kind,index)=>kind==='video'
 // One place to review multiple takes. All candidate assets are private to
 // this client+session; selecting a take modifies only the DRAFT revision.
 // Clients see a new selection only after the owner's separate Publish action.
-export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKey=0,onChanged}){
+export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKey=0,onChanged,compact=false}){
   const ru=locale==='ru',base=sessionId?
     '/api/admin/clients/'+encodeURIComponent(clientId)+'/sessions/'+encodeURIComponent(sessionId):''
   const [session,setSession]=useState(null)
@@ -120,16 +120,18 @@ export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKe
     }finally{setBusy('')}
   }
   if(!base)return null
-  return <section className={styles.takeSection} aria-label={ru?'Варианты аудио и видео':'Audio and video takes'}>
+  return <section className={`${styles.takeSection} ${compact?styles.compactTakeSection:''}`} aria-label={ru?'Варианты аудио и видео':'Audio and video takes'}>
     <div className={styles.takeHeader}>
       <div>
-        <h3>{ru?'Варианты записи':'Recording takes'}</h3>
-        <p>{ru?'Прослушайте дубли и отметьте любые подходящие записи. Можно выбрать несколько.':
-          'Listen to each take and select as many as you need.'}</p>
+        <h3>{ru?'Варианты записи':'Recording takes'}
+          {compact&&<span className={styles.takeCount} aria-label={ru?'Количество записей':'Recording count'}>{takes.length}</span>}</h3>
+        <p>{compact?(ru?'Прослушайте и выберите нужные дубли.':'Listen and choose the takes to share.'):
+          (ru?'Прослушайте дубли и отметьте любые подходящие записи. Можно выбрать несколько.':
+            'Listen to each take and select as many as you need.')}</p>
       </div>
       <button type="button" onClick={()=>void refresh().catch(e=>setError(e.message))}
         disabled={Boolean(busy)||loading} aria-label={ru?'Обновить записи':'Refresh takes'}>
-        <RefreshCw size={18}/>{ru?'Обновить':'Refresh'}
+        <RefreshCw size={18}/>{!compact&&(ru?'Обновить':'Refresh')}
       </button>
     </div>
     {loading&&<p role="status">{ru?'Загружаем записи…':'Loading takes…'}</p>}
@@ -177,20 +179,29 @@ export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKe
                 {ru?'Личная заметка — клиент не видит':'Practitioner only — hidden from client'}</span>}
             <button type="button" onClick={()=>void remove(asset)}
               disabled={Boolean(busy)||inPublished}
-              title={inPublished?(ru?'Сначала исключите из опубликованного отчёта':'Deselect and republish first'):undefined}>
-              <Trash2 size={17}/>{ru?'Удалить дубль':'Delete take'}
+              title={inPublished?(ru?'Сначала исключите из опубликованного отчёта':'Deselect and republish first'):undefined}
+              aria-label={ru?'Удалить '+displayTitle:'Delete '+displayTitle}>
+              <Trash2 size={17}/>{!compact&&(ru?'Удалить дубль':'Delete take')}
             </button>
           </div>
-          {!selected&&!inPublished&&<p className={styles.takeHint}>{ru?
-            'Черновик: этот дубль не будет отправлен клиенту.':
-            'Draft only: this take will not be sent to the client.'}</p>}
-          {inPublished&&<p className={styles.takeHint}>{ru?
-            'Этот дубль есть в текущей опубликованной версии. Чтобы убрать его у клиента, снимите отметку и опубликуйте отчёт снова.':
-            'Currently published. Deselect and republish to remove it from the client view.'}</p>}
-          {selected&&!inPublished&&<p className={styles.takeHint}>{playable?
-            (ru?'Прослушивание доступно. Опубликуйте отчёт для клиента.':'Playback available. Publish to share with the client.'):
-            (ru?'Выбран в черновике; обязательно проверьте воспроизведение до публикации.':
-              'Selected in draft. Verify playback before publishing.')}</p>}
+          {!selected&&!inPublished&&<p className={styles.takeHint}>{compact?
+            (ru?'Не выбрано · клиент не увидит':'Not selected · hidden from client'):
+            (ru?'Черновик: этот дубль не будет отправлен клиенту.':
+              'Draft only: this take will not be sent to the client.')}</p>}
+          {inPublished&&<p className={styles.takeHint}>{compact?
+            (selected?
+              (ru?'У клиента · для удаления снимите отметку и опубликуйте снова':'Visible to client · deselect and republish before deleting'):
+              (ru?'Снято в черновике · у клиента до повторной публикации':'Deselected in draft · visible until republished')):
+            (ru?'Этот дубль есть в текущей опубликованной версии. Чтобы убрать его у клиента, снимите отметку и опубликуйте отчёт снова.':
+              'Currently published. Deselect and republish to remove it from the client view.')}</p>}
+          {selected&&!inPublished&&<p className={styles.takeHint}>{compact?
+            (playable?
+              (ru?'Выбрано · появится после публикации':'Selected · visible after publishing'):
+              (ru?'Выбрано · проверьте звук перед публикацией':'Selected · check playback before publishing')):
+            (playable?
+              (ru?'Прослушивание доступно. Опубликуйте отчёт для клиента.':'Playback available. Publish to share with the client.'):
+              (ru?'Выбран в черновике; обязательно проверьте воспроизведение до публикации.':
+                'Selected in draft. Verify playback before publishing.'))}</p>}
         </article>
       })}
     </div>

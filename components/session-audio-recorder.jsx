@@ -314,21 +314,21 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   }
   const busy=['preparing','uploading','finalizing'].includes(stage)
   return <>
-  <section className={styles.recorder} aria-label={ru?'Голосовое сопровождение сессии':'Session voice recording'}>
+  <section className={`${styles.recorder} ${audioOnly?styles.compactRecorder:''}`} aria-label={ru?'Голосовое сопровождение сессии':'Session voice recording'}>
     <div className={styles.sectionHeading}>
       <span className={styles.eyebrow}>{ru?'ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ':'VOICE MESSAGE'}</span>
-      <h3>{audioOnly?(ru?'Записать аудиосообщение':'Record a voice message'):
+      <h3>{audioOnly?(ru?'Аудиосообщение':'Voice message'):
         (ru?'Записать аудио или видео для сессии':'Record audio or video for this session')}</h3>
-      <p>{ru?'Запишите несколько дублей или загрузите готовые файлы. Сначала прослушайте, затем выберите записи для клиента.':
-        'Record multiple takes or import files. Listen first, then choose what to attach to the client.'}</p>
+      {!audioOnly&&<p>{ru?'Запишите несколько дублей или загрузите готовые файлы. Сначала прослушайте, затем выберите записи для клиента.':
+        'Record multiple takes or import files. Listen first, then choose what to attach to the client.'}</p>}
     </div>
     <div className={styles.scopeRow}>
       <label><input type="radio" name={'scope-'+(documentId||sessionId||'new')} value="client"
         checked={scope==='client'} onChange={()=>setScope('client')} disabled={stage==='recording'||stage==='paused'||busy||Boolean(retryFile)}/>
-        {ru?'Для клиента':'For client'}</label>
+        {audioOnly?(ru?'Клиенту':'For client'):(ru?'Для клиента':'For client')}</label>
       <label><input type="radio" name={'scope-'+(documentId||sessionId||'new')} value="practitioner"
         checked={scope==='practitioner'} onChange={()=>setScope('practitioner')} disabled={stage==='recording'||stage==='paused'||busy||Boolean(retryFile)}/>
-        {ru?'Личная заметка (только мне)':'Private practitioner note'}</label>
+        {audioOnly?(ru?'Личная заметка':'Private note'):(ru?'Личная заметка (только мне)':'Private practitioner note')}</label>
     </div>
     {signInRequired&&<div className={styles.error} role="alert">
       <p>{ru?'Для записи и загрузки нужно восстановить вход в кабинет специалиста. Откройте вход в новой вкладке, чтобы не потерять незагруженный файл.':'Your practitioner access needs to be restored. Sign in in a new tab so an unsaved recording stays on this page.'}</p>
@@ -346,19 +346,22 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         <button type="button" className={styles.primaryButton} onClick={stopRecording}><Square size={17}/>{ru?'Завершить':'Finish'}</button>
       </> : <>
         <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)}>
-          <Mic size={20}/>{ru?'Записать аудио':'Record audio'}</button>
+          <Mic size={20}/>{audioOnly?(ru?'Записать':'Record'):(ru?'Записать аудио':'Record audio')}</button>
         {!audioOnly&&<button type="button" onClick={()=>startRecording('video')}
           disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)||videoStatus?.ready!==true}>
           <Video size={20}/>{ru?'Записать видео':'Record video'}</button>}
-        <label className={styles.filePicker}><UploadCloud size={18}/>{audioOnly?(ru?'Загрузить аудиофайл':'Import an audio file'):(ru?'Загрузить из телефона':'Choose from phone')}
+        <label className={styles.filePicker}><UploadCloud size={18}/>{audioOnly?(ru?'Загрузить файл':'Upload file'):(ru?'Загрузить из телефона':'Choose from phone')}
           <input type="file" accept={audioOnly?'audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,.m4a,.mp3,.webm':
             'audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.webm,.mp4,.mov,.pdf'}
             onChange={chooseFile} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)} hidden/></label>
       </>}
     </div>
-    {audioOnly&&<p className={styles.photoHint}>{ru?
-      'Готовая запись с iPhone: «Диктофон» → «Поделиться» → «Сохранить в Файлы», затем загрузите M4A (также MP3/WebM, до 20 МБ). Запись будет доступна клиенту только после публикации отчёта.':
-      'Already recorded on your phone? In Voice Memos choose Share → Save to Files, then import M4A (also MP3/WebM, up to 20 MB). Only a published report makes it visible to your client.'}</p>}
+    {audioOnly&&<details className={styles.audioHelp}>
+      <summary>{ru?'Как загрузить с iPhone?':'Import from iPhone Voice Memos'}</summary>
+      <p>{ru?
+        'Диктофон → Поделиться → Сохранить в Файлы. Затем загрузите M4A, MP3 или WebM (до 20 МБ). Клиент увидит запись только после публикации отчёта.':
+        'Voice Memos → Share → Save to Files. Upload M4A, MP3 or WebM (up to 20 MB). Your client sees it only after the report is published.'}</p>
+    </details>}
     {!audioOnly&&showYouTubeQuickAdd&&<SessionYouTubeQuickAdd clientId={clientId}
       ensureSession={ensureSession} locale={locale} onSaved={onSaved}/>}
     {recordingKind==='video'&&['recording','paused'].includes(stage)&&<video autoPlay muted playsInline className={styles.video} aria-label={ru?'Предпросмотр камеры':'Camera preview'} ref={node=>{if(node&&node.srcObject!==streamRef.current)node.srcObject=streamRef.current}}/>}
@@ -393,11 +396,12 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       <button type="button" disabled={busy} onClick={()=>jobRef.current&&upload(jobRef.current)}><RotateCcw size={16}/>{ru?'Повторить загрузку':'Retry upload'}</button>}</div>}
     {retryFile&&stage==='error'&&playback&&<a className={styles.inlineLink} href={playback} download={retryFile.name||'voice-message.m4a'}>{ru?'Скачать резервную копию несохранённой записи ↓':'Save a backup of the unsaved recording ↓'}</a>}
     {retryFile&&stage==='error'&&<><p>{ru?'Держите страницу открытой: запись хранится в памяти до успешной загрузки.':'Keep this page open: the recording stays in memory until upload succeeds.'}</p><button type="button" onClick={()=>{if(window.confirm(ru?'Удалить несохранённую запись с этого устройства?':'Discard this unsaved recording from this device?')){jobRef.current=null;setRetryFile(null);setPlayback('');setError('');setStage('idle')}}}>{ru?'Удалить несохранённую запись':'Discard unsaved recording'}</button></>}
-    {sessionId&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
-      {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
+    {sessionId&&(documentId||assessmentId)&&<a className={`${styles.inlineLink} ${audioOnly?styles.audioPublishLink:''}`} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
+      {audioOnly?(ru?'Проверить и опубликовать →':'Review & publish →'):
+        (ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →')}</a>}
   </section>
   {sessionId&&<SessionRecordingReview clientId={clientId} sessionId={sessionId}
-    locale={locale} refreshKey={takesRefreshKey} onChanged={onSaved}/>}
+    locale={locale} refreshKey={takesRefreshKey} onChanged={onSaved} compact={audioOnly}/>}
   {!audioOnly&&<SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
     assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>}
   </>

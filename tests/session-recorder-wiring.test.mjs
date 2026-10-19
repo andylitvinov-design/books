@@ -88,3 +88,22 @@ test('recording permission is granted only on authenticated practitioner editor 
   const recorder=read('components/session-audio-recorder.jsx')
   assert.ok(recorder.includes('navigator.mediaDevices.getUserMedia'))
 })
+
+
+test('report-only voice UI remains compact while keeping safe publish and deletion controls',()=>{
+  const recorder=read('components/session-audio-recorder.jsx')
+  const takes=read('components/session-recording-review.jsx')
+  const css=read('components/client-session.module.css')
+  assert.match(recorder,/audioOnly\?styles\.compactRecorder/)
+  assert.match(recorder,/audioOnly&&<details className=\{styles\.audioHelp\}>/)
+  assert.match(recorder,/compact=\{audioOnly\}/)
+  assert.match(recorder,/reviewFirst:scope==='client'/)
+  assert.match(takes,/compact=false/)
+  assert.match(takes,/compact\?styles\.compactTakeSection/)
+  assert.match(takes,/type="checkbox"/)
+  assert.match(takes,/disabled=\{Boolean\(busy\)\|\|inPublished\}/)
+  assert.match(takes,/aria-label=\{ru\?'Удалить '\+displayTitle/)
+  assert.match(css,/\.compactRecorder \.recordControls\{\s*display:grid;/)
+  assert.match(css,/\.compactRecorder \.audioHelp summary\{/)
+  assert.match(css,/\.compactTakeSection \.takeActions button\{\s*flex:none;/)
+})
