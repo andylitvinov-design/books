@@ -19,13 +19,14 @@ const latest = read('supabase/migrations/20261019044513_hh_academy_reiki_tantra_
 const p3Migration = read('supabase/migrations/20261019133000_hh_academy_reiki_practice_p3_20261019.sql')
 const p4Migration = read('supabase/migrations/20261019145500_hh_academy_reiki_lesson1_slide_swap_p4_20261019.sql')
 const p5Migration = read('supabase/migrations/20261019160000_hh_academy_reiki_questions_p5_20261019.sql')
+const p6Migration = read('supabase/migrations/20261019170000_hh_academy_reiki_kundalini_ygg_study_p6_20261019.sql')
 const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
-test('Server registry includes exactly 56 editorial IDs in one fixed five-lesson order', () => {
+test('Server registry includes exactly 68 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
-  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p5')
+  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p6')
   assert.equal(ENERGYWORK_P4_VERSION, '2026-10-19.p4')
   assert.equal(ENERGYWORK_P3_VERSION, '2026-10-19.p3')
   assert.equal(ENERGYWORK_P2_VERSION, '2026-10-19.p2')
@@ -34,11 +35,11 @@ test('Server registry includes exactly 56 editorial IDs in one fixed five-lesson
   const editorial = [...source.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match=>match[0].slice(5,-1)).filter(id=>id !== 'tan-study-03')
   const registered = [...ENERGYWORK_COMMON,...Object.values(ENERGYWORK_BRANCH).flat(),...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH]
-  assert.equal(editorial.length, 56)
-  assert.equal(new Set(registered).size,56)
+  assert.equal(editorial.length, 68)
+  assert.equal(new Set(registered).size,68)
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
-  assert.equal(sequence.length,56)
+  assert.equal(sequence.length,68)
   assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
   assert.equal(sequence[0],'welcome-01')
   assert.equal(sequence.at(-1),'end-02')
@@ -71,7 +72,7 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
   assert.match(repository,/MEDITATION_FEEDBACK_REQUIRED/)
   assert.match(learner,/feedbackMissing = isMeditationFeedback/)
   assert.match(learner,/experienceMissing \|\| feedbackMissing/)
-  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03','kun-06','ygg-06','init-01'])
+  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03','kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','init-01'])
   assert.equal(energyworkInitiationReady(null),false)
   assert.equal(energyworkInitiationReady({}),false)
   const complete = Object.fromEntries([...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS].map(id=>[id,'My own note']))
@@ -86,7 +87,7 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
 })
 
 test('Private answers retain normal limits but allow longer meditation reviews', () => {
-  assert.ok(Object.keys(ENERGYWORK_QUESTIONS).length <= 32)
+  assert.ok(Object.keys(ENERGYWORK_QUESTIONS).length <= 64)
   for(const id of Object.keys(ENERGYWORK_QUESTIONS))
     assert.equal(energyworkAnswerValid(id,'a'.repeat(1600)),ENERGYWORK_QUESTIONS[id]==='text')
   for(const id of ENERGYWORK_MEDITATION_REPORT_IDS)
@@ -130,6 +131,8 @@ test('Existing encrypted owner-only RLS is retained and version upgrade is addit
   assert.match(p4Migration, /alter column course_version set default '2026-10-19\.p4'/)
   assert.match(p5Migration, /alter column course_version set default '2026-10-19\.p5'/)
   assert.doesNotMatch(p5Migration, /drop table|delete from|drop policy|drop column/i)
+  assert.match(p6Migration, /alter column course_version set default '2026-10-19\\.p6'/)
+  assert.doesNotMatch(p6Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p4Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p3Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(upgrade,/drop table|delete from|drop policy|drop column/i)
@@ -144,7 +147,7 @@ test('Existing p0 learner keeps private answers and is resumed at first unskippe
   assert.match(repository,/row\.course_version === ENERGYWORK_LEGACY_VERSION/)
   assert.match(repository,/energyworkLegacyResumeId\(row\.slide_id\)/)
   assert.match(repository,/const answers=answersFrom\(row,config\)/)
-  assert.match(repository,/MAX_RESPONSES = 32/)
+  assert.match(repository,/MAX_RESPONSES = 64/)
   assert.equal(energyworkPreviousResumeId('presence-02'),'tan-study-04')
   assert.equal(energyworkPreviousResumeId('presence-03'),'tan-study-04')
   assert.equal(energyworkPreviousResumeId('flight-03'),'flight-03')
