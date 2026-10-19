@@ -17,7 +17,9 @@ test('approved coastal report option 2 is scoped to authorized consultation view
   assert.match(page, /SaveClientSessionToAccount/)
   assert.match(page, /href=\{pdfPath\}/)
   assert.ok(page.indexOf('id="session-materials-title"') < page.indexOf('href={pdfPath}'), 'PDF follows curated materials in approved option 2')
-  assert.ok(page.indexOf('href={pdfPath}') < page.indexOf('data-hh-report-next-actions'), 'PDF precedes save-and-continue actions')
+  assert.ok(page.indexOf('data-hh-report-next-actions') < page.indexOf('id="session-recommended-tests"') &&
+    page.indexOf('id="session-recommended-tests"') < page.indexOf('href={pdfPath}'),
+    'Cabinet save and recommended tests precede final PDF actions')
   assert.match(document, /<div className="canonical-report-cover">/)
   assert.match(document, /<DocumentSignature date=\{document\.dateIssued\}/)
   assert.match(document, /document\.analysis/)
@@ -74,9 +76,9 @@ test('recommended test cards follow materials without changing signed PDF recomm
   const tests=page.indexOf('id="session-recommended-tests"')
   const pdf=page.indexOf("id={hasFullReport?'session-download':'session-report'}")
   const actions=page.indexOf('data-hh-report-next-actions')
-  assert.ok(materials>=0 && tests>materials && pdf>tests && actions>pdf,
-    'expected order: materials → separate recommended test cards → PDF → next steps')
-  assert.match(page, /recommendedTests.length>0&&<section id="session-recommended-tests"/)
+  assert.ok(materials>=0 && actions>materials && tests>actions && pdf>tests,
+    'expected order: materials → Cabinet save → recommended tests → PDF')
+  assert.match(page, /<section id="session-recommended-tests"/)
   assert.match(page, /reportRecommendedTestCard/)
   assert.match(document, /canonical-recommended-tests/, 'source recommendation survives for PDF and print')
   assert.match(document, /!embedded && recommendedTests.length > 0/, 'embedded reader avoids test duplication')

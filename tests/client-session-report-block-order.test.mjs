@@ -4,12 +4,13 @@ import { readFileSync } from 'node:fs'
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 
-test('client tests appear in separate cards after Materials and before the next steps', () => {
+test('Cabinet save precedes recommended test cards and the final PDF module', () => {
   const page = read('components/client-session-page.jsx')
   const materials = page.indexOf('id="session-materials-title"')
   const tests = page.indexOf('id="session-recommended-tests"')
   const actions = page.indexOf('data-hh-report-next-actions')
-  assert.ok(materials > -1 && materials < tests && tests < actions)
+  const pdf = page.indexOf("id={hasFullReport?'session-download':'session-report'}")
+  assert.ok(materials > -1 && materials < actions && actions < tests && tests < pdf)
   assert.equal(page.split('id="session-recommended-tests"').length - 1, 1)
   assert.ok(page.includes('recommendedTests.map(test=><a key={test.key} className={styles.reportRecommendedTestCard}'))
   assert.ok(page.includes('href={test.href}'), 'preserves validated catalogue targets')
