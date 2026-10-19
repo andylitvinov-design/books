@@ -13,7 +13,7 @@ const COPY={
     conflict:'This reply conflicts with an earlier request. Change the text or refresh.',
     private:'Please remove medical information and private links.',
     limit:'Daily message limit reached.',unknown:'Reply status is uncertain. Do not resend automatically.',
-    me:'You',master:'Practitioner',client:'Client'},
+    me:'You',master:'Practitioner',client:'Client',privateNote:'Private master note',writeNote:'Write private note',saveNote:'Save private note',noteSaved:'Private note saved (not visible to client).'},
   ru:{open:'История переписки',close:'Скрыть переписку',initial:'Первоначальная заявка',title:'Защищённая переписка внутри сайта',
     info:'Эту переписку видят только клиент и мастер, которому адресована заявка. Сообщения сохраняются в Holistic House, но не отправляются автоматически в Telegram, WhatsApp или email.',
     loading:'Загружаю переписку…',none:'Дополнительных сообщений пока нет.',reply:'Ваш короткий ответ',
@@ -24,7 +24,7 @@ const COPY={
     conflict:'Этот запрос противоречит ранее сохранённому ответу. Измените текст или обновите историю.',
     private:'Уберите медицинские данные и приватные ссылки.',
     limit:'Достигнут суточный лимит сообщений.',unknown:'Статус ответа неизвестен. Не повторяйте отправку автоматически.',
-    me:'Вы',master:'Мастер',client:'Клиент'},
+    me:'Вы',master:'Мастер',client:'Клиент',privateNote:'Внутренняя заметка мастера',writeNote:'Внутренняя заметка',saveNote:'Сохранить заметку',noteSaved:'Заметка сохранена, клиент её не видит.'},
   es:{open:'Historial de mensajes',close:'Ocultar conversación',initial:'Solicitud inicial',title:'Conversación privada dentro del sitio',
     info:'Solo el cliente y el profesional asignado pueden ver estos mensajes. Permanecen en Holistic House, sin envío automático por Telegram, WhatsApp o correo.',
     loading:'Cargando mensajes…',none:'Aún no hay mensajes adicionales.',reply:'Tu respuesta breve',
@@ -34,7 +34,7 @@ const COPY={
     closed:'Solicitud cerrada; el historial sigue disponible.',
     conflict:'Esta solicitud entra en conflicto con una respuesta anterior.',private:'Elimina datos médicos y enlaces privados.',
     limit:'Límite diario alcanzado.',unknown:'Estado desconocido; no volver a enviar automáticamente.',
-    me:'Tú',master:'Profesional',client:'Cliente'},
+    me:'Tú',master:'Profesional',client:'Cliente',privateNote:'Nota privada del profesional',writeNote:'Nota privada',saveNote:'Guardar nota privada',noteSaved:'Nota privada guardada, invisible para el cliente.'},
 }
 const ordered=(older=[],fresh=[])=>{
   const map=new Map(older.map(message=>[message.id,message]))
@@ -46,11 +46,12 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
   const [view,setView]=useState(null),[error,setError]=useState('')
   const [busy,setBusy]=useState(false),[paging,setPaging]=useState(false)
   const [text,setText]=useState(''),[notice,setNotice]=useState('')
+  const [visibility,setVisibility]=useState('participants')
   const pending=useRef(null),requestRef=useRef(requestId)
   useEffect(()=>{
     requestRef.current=requestId
     pending.current=null
-    setView(null);setText('');setNotice('');setError('')
+    setView(null);setText('');setNotice('');setError('');setVisibility('participants')
     const controller=new AbortController()
     fetch('/api/app/practitioner-client-messages?requestId='+encodeURIComponent(requestId),{
       credentials:'same-origin',cache:'no-store',signal:controller.signal,
@@ -88,10 +89,10 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
   }
   async function send(){
     const body=text.trim(),id=requestId
-    if(!view?.canReply||!body||busy)return
+    if(!(visibility==='practitioner_note'?view?.canNote:view?.canReply)||!body||busy)return
     const old=pending.current
-    const operation=old&&old.requestId===id&&old.text===body
-      ?old:{requestId:id,text:body,operationId:crypto.randomUUID()}
+    const operation=old&&old.requestId===id&&old.text===body&&old.visibility===visibility
+      ?old:{requestId:id,text:body,visibility,operationId:crypto.randomUUID()}
     pending.current=operation
     setBusy(true);setNotice('')
     try{
@@ -104,7 +105,7 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       if(!response.ok)throw new Error(result.error||'REQUEST_FAILED')
       if(requestRef.current!==id)return
       await reload()
-      pending.current=null;setText('');setNotice(t.saved)
+      pending.current=null;setText('');setNotice(visibility==='practitioner_note'?t.noteSaved:t.saved)
     }catch(err){
       if(requestRef.current===id){
         setNotice(err.message==='PRIVATE_CONTENT_BLOCKED'?t.private:
@@ -133,21 +134,39 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
         onClick={()=>reload(view.nextCursor)}>{paging?t.loading:t.loadOlder}</button>}
       {!view.messages.length&&<p className={styles.notice}>{t.none}</p>}
       <div className={styles.timeline} role="log" aria-live="polite">
-        {view.messages.map(item=><article key={item.id} className={item.mine?styles.mine:styles.other}>
-          <strong>{item.mine?t.me:item.role==='practitioner'?t.master:t.client}</strong>
+        {view.messages.map(item=><article key={item.id}
+          className={item.visibility==='practitioner_note'?styles.privateNote:item.mine?styles.mine:styles.other}>
+          <strong>{item.visibility==='practitioner_note'?t.privateNote:
+            item.mine?t.me:item.role==='practitioner'?t.master:t.client}</strong>
           <p>{item.text}</p>
           <time dateTime={item.createdAt}>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(item.createdAt))}</time>
         </article>)}
       </div>
-      {view.canReply?<div className={styles.compose}>
-        <label htmlFor={'practice-chat-'+requestId}>{t.reply}</label>
-        <textarea id={'practice-chat-'+requestId} value={text} maxLength={1200} rows={3}
-          disabled={busy} placeholder={t.hint} onChange={event=>{
+      {(view.canReply||view.canNote)&&<div className={styles.compose}>
+        {view.canNote&&<div className={styles.modes} role="group" aria-label={t.title}>
+          <button type="button" aria-pressed={visibility==='participants'} disabled={busy||!view.canReply}
+            onClick={()=>{setVisibility('participants');setText('');pending.current=null}}>{t.reply}</button>
+          <button type="button" aria-pressed={visibility==='practitioner_note'} disabled={busy}
+            onClick={()=>{setVisibility('practitioner_note');setText('');pending.current=null}}>{t.writeNote}</button>
+        </div>}
+        <label htmlFor={'practice-chat-'+requestId}>
+          {visibility==='practitioner_note'?t.privateNote:t.reply}
+        </label>
+        {visibility==='practitioner_note'&&<p className={styles.privacy}>
+          {lang==='ru'?'Только для мастера; клиент не видит эту запись.':lang==='es'?'Solo para el profesional; el cliente no puede verla.':'Practitioner only — the client cannot see this note.'}
+        </p>}
+        <textarea id={'practice-chat-'+requestId} value={text}
+          maxLength={visibility==='practitioner_note'?800:1200} rows={3}
+          disabled={busy||!(visibility==='practitioner_note'?view.canNote:view.canReply)}
+          placeholder={t.hint} onChange={event=>{
             if(pending.current&&pending.current.text!==event.target.value.trim())pending.current=null
             setText(event.target.value)
           }}/>
-        <button type="button" disabled={busy||!text.trim()} onClick={send}>{t.send}</button>
-      </div>:<p className={styles.notice}>{t.closed}</p>}
+        <button type="button" disabled={busy||!text.trim()} onClick={send}>
+          {visibility==='practitioner_note'?t.saveNote:t.send}
+        </button>
+      </div>}
+      {!view.canReply&&<p className={styles.notice}>{t.closed}</p>}
     </>}
     {notice&&<p className={styles.notice} role="status">{notice}</p>}
   </section>
