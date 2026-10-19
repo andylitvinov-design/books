@@ -274,7 +274,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
           {contact.suppressed&&<small className={styles.tag}>{c.suppressed}</small>}
           {!contact.suppressed&&<button className={styles.suppress} type="button" disabled={busy} onClick={()=>{ if (window.confirm(c.suppressConfirm)) save('suppress_contact',{id:contact.id}) }}>{c.suppress}</button>}
           <CrmContactEditor contact={contact} locale={language} busy={busy||pageBusy} onAction={save} />
-          <CrmContactWorkflow contact={contact} locale={language} busy={busy||pageBusy} onAction={save} followups={data.followups||[]} activity={data.activity||[]} />
+          <CrmContactWorkflow contact={contact} locale={language} accountId={accountId} busy={busy||pageBusy} onAction={save} followups={data.followups||[]} />
           <CrmEmailTools contact={contact} locale={language} enabled={data.emailEnabled} busy={busy} onAction={save} messages={data.emailMessages||[]} />
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
