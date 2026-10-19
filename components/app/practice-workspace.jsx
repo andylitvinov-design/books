@@ -165,6 +165,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0)
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
+  // Trusted cabinet deep link: owner still must authenticate before opening tools.
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search)
+    if(params.get('panel')==='materials')setActivePanel('materials')
+  },[])
   useEffect(()=>{
     if(!activePanel)return undefined
     const targetId=activePanel==='services'?'hh-practice-services-view':'hh-practice-workspace-detail'
