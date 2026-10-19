@@ -54,7 +54,7 @@ test('fixture hashes the actual imported reader graph and keeps CSS module names
 
 test('portrait routes contain only manifest-verified same-origin static image bytes', async () => {
   const portrait = JSON.parse(await readFile(new URL('data/static-portrait.json', root), 'utf8'))
-  assert.equal(fixture.publicAssets.size, portrait.variants.length)
+  assert.equal(fixture.publicAssets.size, portrait.variants.length + 2)
   for (const variant of portrait.variants) {
     const asset = fixture.publicAssets.get(origin + variant.path)
     assert.ok(asset)
@@ -65,6 +65,98 @@ test('portrait routes contain only manifest-verified same-origin static image by
   for (const address of [origin + '/api/report-narration', origin + '/api/client/session', 'https://example.com/image.webp', origin + '/images/holistic-house/portrait-static/unknown.webp']) {
     assert.equal(fixture.publicAssets.has(address), false)
   }
+})
+
+test('the complete generated CSS and HTML image graph uses only explicit local routes', async () => {
+  const coastal = [
+    ['/images/holistic-house/report-lighthouse-coast.avif', 'image/avif'],
+    ['/images/holistic-house/report-lighthouse-coast.webp', 'image/webp'],
+  ]
+  const legacyPaths = ['/document-assets/lighthouse.png',
+    '/images/holistic-house/homepage-botanical.svg', '/images/holistic-house/report-lighthouse-coast.svg']
+  const cssPaths = [...new Set([...fixture.styleData.matchAll(/url\(\s*['"]?([^\s)'";]+)/g)]
+    .map(match => match[1]).filter(path => !path.startsWith('data:')))]
+  assert.deepEqual(cssPaths.sort(), [...legacyPaths, ...coastal.map(([path]) => path)].sort())
+  for (const [path, contentType] of coastal) {
+    const asset = fixture.publicAssets.get(origin + path)
+    const bytes = await readFile(new URL('public' + path, root))
+    assert.ok(asset)
+    assert.equal(asset.contentType, contentType)
+    assert.deepEqual(asset.body, bytes)
+    assert.equal(fixture.sourceProof.find(proof => proof.path === 'public' + path)?.sha256,
+      createHash('sha256').update(bytes).digest('hex'))
+    if (contentType === 'image/avif') assert.equal(bytes.subarray(4, 12).toString(), 'ftypavif')
+    else {
+      assert.equal(bytes.subarray(0, 4).toString(), 'RIFF')
+      assert.equal(bytes.subarray(8, 12).toString(), 'WEBP')
+    }
+    for (const rejected of [origin + path + '?v=1', origin + path + '/extra', 'https://example.com' + path]) {
+      assert.equal(fixture.publicAssets.has(rejected), false)
+    }
+  }
+  const portrait = JSON.parse(await readFile(new URL('data/static-portrait.json', root), 'utf8'))
+  const portraitPaths = portrait.variants.map(variant => variant.path)
+  assert.deepEqual([...fixture.publicAssets.keys()].sort(),
+    [...portraitPaths, ...coastal.map(([path]) => path)].map(path => origin + path).sort())
+  for (const [key, html] of markup) {
+    const body = html.slice(html.indexOf('<body>'))
+    const imagePaths = [...new Set([...body.matchAll(/(?:src|srcSet)="([^"]+)"/g)]
+      .flatMap(match => match[1].split(', ').map(value => value.split(' ')[0]))
+      .filter(path => !path.startsWith('data:')))]
+    assert.deepEqual(imagePaths.sort(), key.endsWith('/full') ? [...portraitPaths].sort() : [])
+    for (const path of imagePaths) assert.ok(fixture.publicAssets.has(origin + path))
+  }
+  const verifier = await readFile(new URL('scripts/verify-client-report-coastal-browser.mjs', root), 'utf8')
+  assert.match(verifier, /const publicAsset=fixture\.publicAssets\.get\(address\)/)
+  assert.match(verifier, /if\(publicAsset && request\.method\(\)==='GET'\)/)
+  assert.match(verifier, /blocked\.push\(\{method:request\.method\(\),url:address\}\)/)
+  assert.match(verifier, /return route\.abort\('blockedbyclient'\)/)
+})
+
+test('the actual browser route callback serves only exact GET assets and rejects request drift', async () => {
+  const verifierUrl = new URL('scripts/verify-client-report-coastal-browser.mjs', root).href
+  const verifier = await readFile(new URL(verifierUrl), 'utf8')
+  const parsed = ts.createSourceFile(verifierUrl, verifier, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const callbacks = []
+  function visit(node) {
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.expression.getText(parsed) === 'context' && node.expression.name.text === 'route' &&
+      node.arguments[0]?.text === '**/*') callbacks.push(node.arguments[1].getText(parsed))
+    ts.forEachChild(node, visit)
+  }
+  visit(parsed)
+  assert.equal(callbacks.length, 1)
+  // Give the extracted callback its original module URL; its routing logic is unchanged.
+  const callbackSource = callbacks[0].replaceAll('import.meta.url', 'verifierUrl')
+  const assets = [], blocked = [], sample = syntheticCases()[0]
+  const callback = compileFunction('return (' + callbackSource + ')',
+    ['fixture', 'origin', 'url', 'assets', 'blocked', 'readFile', 'verifierUrl', 'sample'])(
+    fixture, origin, origin + sample.path, assets, blocked, readFile, verifierUrl, sample)
+  async function request(method, address) {
+    const calls = []
+    await callback({
+      request: () => ({ method: () => method, url: () => address, isNavigationRequest: () => false }),
+      fulfill: options => calls.push({ action: 'fulfill', options }),
+      abort: reason => calls.push({ action: 'abort', reason }),
+    })
+    return calls
+  }
+  for (const extension of ['avif', 'webp']) {
+    const address = origin + '/images/holistic-house/report-lighthouse-coast.' + extension
+    assert.deepEqual(await request('GET', address), [{ action: 'fulfill',
+      options: { status: 200, ...fixture.publicAssets.get(address) } }])
+    assert.equal(assets.at(-1), address)
+    for (const [method, rejected] of [['POST', address], ['HEAD', address],
+      ['GET', address + '?v=1'], ['GET', address + '/extra'],
+      ['GET', address.replace(origin, 'https://example.com')]]) {
+      assert.deepEqual(await request(method, rejected), [{ action: 'abort', reason: 'blockedbyclient' }])
+      assert.deepEqual(blocked.at(-1), { method, url: rejected })
+    }
+  }
+  assert.deepEqual(await request('GET', origin + '/images/holistic-house/unknown.webp'),
+    [{ action: 'abort', reason: 'blockedbyclient' }])
+  assert.equal(assets.length, 2)
+  assert.equal(blocked.length, 11)
 })
 
 test('transpiled fixture dependencies remain an own-property allowlist with no unknown-import fallback', async () => {

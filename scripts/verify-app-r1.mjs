@@ -1102,7 +1102,7 @@ try {
  await ready()
  // My Tests now renders the selected list immediately without a separate Start testing gate.
  await expect(page.locator('#my-tests-list')).toBeVisible()
- const weeklyResumeRow=page.locator('#my-tests-list article').filter({has:page.getByRole('heading',{name:'Weekly Psychic Health',exact:true})})
+ const weeklyResumeRow=page.locator('#my-tests-list article').filter({has:page.getByRole('heading',{name:'Weekly Wellbeing Check-in',exact:true})})
  await expect(weeklyResumeRow).toBeVisible()
  await weeklyResumeRow.getByRole('button',{name:'Continue test'}).click()
  await expect(page).toHaveURL(/\/runs\//)
@@ -1132,7 +1132,7 @@ try {
  await ready()
  await openInsightsProfileTools()
  await page.locator('[data-profile-extra-tools] > summary').click()
- await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'Finish: Weekly Wellbeing Check-in',exact:true})).toBeVisible()
  await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible()
  passed('Quick draft resumes with its saved answers and can switch to one-question Guided mode')
  await page.goto(origin+'/ru/app/portrait');await ready();await assertCabinetPortrait(page,expect,{origin,locale:'ru'});await screenshotEvidence(page,{path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')

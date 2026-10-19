@@ -58,7 +58,7 @@ for (const name of freeReviewPanelNames) test(name + ': missing and oversized pa
 });
 
 test('reported outcomes and steps overflow remains a hard failure', () => {
-  for (const [name, height] of [['outcomes', 836], ['steps', 926]]) {
+  for (const [name, height] of [['outcomes', 836], ['steps', 926], ['outcomes', 803], ['steps', 758]]) {
     const report = geometry();
     report.panels.find(panel => panel.name === name).height = height;
     assert.throws(() => assertFreeReviewPanelGeometry(report), /fit within one viewport/);
@@ -95,16 +95,18 @@ function mobileRules(source) {
 }
 function assertMobileBudget(source) {
   const rules = mobileRules(source);
-  assert.deepEqual(rules['.outcomeImage'], { 'min-height': '128px', 'max-height': '128px' });
+  assert.deepEqual(rules['.outcomeImage'], { 'min-height': '96px', 'max-height': '96px' });
   assert.deepEqual(rules['.stepsImage'], { 'min-height': '96px', 'max-height': '96px' });
-  assert.deepEqual(rules['.outcomeScene .outcomeGrid'], { gap: '6px', padding: '10px' });
-  assert.deepEqual(rules['.outcomeScene .outcomeGrid article'], { padding: '11px 15px' });
+  assert.deepEqual(rules['.outcomeScene .outcomeGrid'], { gap: '6px', padding: '8px' });
+  assert.deepEqual(rules['.outcomeScene .outcomeGrid article'], { padding: '9px 15px' });
   assert.deepEqual(rules['.outcomeScene .outcomeGrid p'], { 'grid-column': '1 / -1', 'font-size': '13px' });
   assert.deepEqual(rules['.outcomeScene .outcomeGrid article span'], { 'grid-row': 'auto' });
   assert.deepEqual(rules['.stepsScene .steps'], { gap: '6px', padding: '8px' });
   assert.deepEqual(rules['.stepsScene .steps li'], { display: 'grid', 'grid-template-columns': '24px minmax(0,1fr)', gap: '5px 8px', padding: '8px 14px' });
   assert.deepEqual(rules['.stepsScene .steps li > div'], { display: 'contents' });
   assert.deepEqual(rules['.stepsScene .steps p'], { 'grid-column': '1 / -1', 'font-size': '12.5px' });
+  assert.equal(rules['.outcomeScene']['margin-top'], '12px');
+  assert.equal(rules['.stepsScene']['margin-top'], '12px');
   assert.equal(rules['.stepsScene .steps h3']['font-size'], '20px');
   assert.equal(rules['.outcomeScene .outcomeGrid h3']['font-size'], '21px');
 }
@@ -116,9 +118,12 @@ test('mobile budget uses spacing, a visible illustration and wider full-text row
 });
 
 for (const [name, from, to] of [
-  ['tall outcome illustration', 'min-height: 128px; max-height: 128px;', 'min-height: 210px; max-height: 30svh;'],
+  ['tall outcome illustration', 'min-height: 96px; max-height: 96px;', 'min-height: 210px; max-height: 30svh;'],
+  ['old scene gap', 'margin-top: 12px; border-radius: 20px;', 'margin-top: 18px; border-radius: 20px;'],
+  ['old outer padding', '.outcomeScene .outcomeGrid { gap: 6px; padding: 8px; }', '.outcomeScene .outcomeGrid { gap: 6px; padding: 10px; }'],
+  ['old card padding', '.outcomeScene .outcomeGrid article { padding: 9px 15px; }', '.outcomeScene .outcomeGrid article { padding: 11px 15px; }'],
   ['restored stacked step number', 'display: grid; grid-template-columns: 24px minmax(0,1fr);', 'display: flex; flex-direction: column;'],
-  ['hidden illustration', 'min-height: 128px; max-height: 128px;', 'min-height: 128px; max-height: 128px; display: none;'],
+  ['hidden illustration', 'min-height: 96px; max-height: 96px;', 'min-height: 96px; max-height: 96px; display: none;'],
   ['clipped copy', 'grid-column: 1 / -1; font-size: 13px;', 'grid-column: 1 / -1; font-size: 13px; max-height: 30px; overflow: hidden;'],
   ['smaller steps type', 'font-size: 12.5px;', 'font-size: 9px;'],
 ]) test('mobile contract rejects ' + name, () => {

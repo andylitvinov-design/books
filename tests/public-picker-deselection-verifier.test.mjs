@@ -7,7 +7,7 @@ for(const name of ['chooseSinglePublicTest','chooseSinglePublicTestAfterCatalog'
  const end=source.indexOf('\nasync function ',start+1)
  const fragment=source.slice(start,end)
  async function scenario(fault){
-  let names=['Weekly Psychic Health','Monthly Life Profile','Resources & Inner Support'],picked=false
+  let names=['Weekly Wellbeing Check-in','Monthly Life Profile','Resources & Inner Support'],picked=false
   const checked={evaluateAll:async()=>[...names]}
   const target={locator:selector=>{assert.equal(selector,'article input[type="checkbox"]:checked');return checked},getByRole(role,{name,exact,checked:onlyChecked}){
    assert.equal(exact,true)

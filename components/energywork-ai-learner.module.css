@@ -2782,6 +2782,26 @@
     line-height: 1.16;
   }
 
+  /* Russian welcome copy needs room below the five-name progress rail.
+     Reduce only empty space on short phones; retain every label and type size. */
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .slideMain {
+    padding: 8px 9px;
+  }
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .content h1 {
+    margin-bottom: 6px;
+  }
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .welcomeReward {
+    margin-top: 4px;
+    padding: 5px 11px;
+  }
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .welcomeSystems {
+    margin: 4px 0 0;
+  }
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .benefits {
+    margin-top: 4px;
+    padding: 5px 4px;
+  }
+
   .page[data-course-portrait="v3"] .experienceSlide .slideMain {
     gap: 8px;
     padding: 10px 12px;

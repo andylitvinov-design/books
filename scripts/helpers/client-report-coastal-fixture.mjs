@@ -169,6 +169,14 @@ export async function buildCoastalFixture() {
   })
   const voiceStyles = await moduleStyles('components/client-session-voice-card.module.css', 'coastal_voice_')
   const publicAssets = new Map()
+  // Production coastal CSS layers these two exact images above its SVG fallback.
+  for (const [path, contentType] of [
+    ['/images/holistic-house/report-lighthouse-coast.avif', 'image/avif'],
+    ['/images/holistic-house/report-lighthouse-coast.webp', 'image/webp'],
+  ]) {
+    assert.ok(moduleSource.includes("url('" + path + "')"), 'Coastal asset must come from production CSS: ' + path)
+    publicAssets.set(origin + path, { contentType, body: await source('public' + path, null) })
+  }
   for (const variant of portrait.variants) {
     assert.match(variant.path, /^\/images\/holistic-house\/portrait-static\/andy-\d+-[a-f0-9]+\.webp$/)
     const body = await source('public' + variant.path, null)
