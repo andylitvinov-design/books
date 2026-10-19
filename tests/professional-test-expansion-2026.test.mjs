@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { ADDITIONAL_PROFESSIONAL_CATALOG, ADDITIONAL_PROFESSIONAL_DEFINITIONS } from '../data/assessments/professional-additions-2026.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
@@ -40,6 +42,13 @@ test('five distinct, source-backed, fully startable professional questionnaires 
     assert.equal(auditTestKey({ catalog: item, definition }).status, 'ready', key)
     assert.match(definition.source.url, /^https:\/\//, key)
     assert.match(definition.contentHash, /^sha256:[a-f0-9]{64}$/, key)
+    const items = definition.questions.map(question => question.text)
+    const first = definition.scoring.dimensions[0]
+    const payload = key.startsWith('ipip-')
+      ? { key, items, positiveCount: items.length - first.reverseItems.length }
+      : { key, items }
+    const actualFingerprint = createHash('sha256').update(JSON.stringify(payload)).digest('hex')
+    assert.equal(definition.contentHash, 'sha256:' + actualFingerprint, key + ': fingerprint must match source items and key polarity')
     assert.equal(definition.scoring.dimensions.length, key === 'ons-personal-wellbeing-4' ? 4 : 1)
     assert.equal(definition.questions.length, new Set(definition.questions.map(question => question.id)).size)
     assert.ok(definition.questions.every(question => question.required === true), key)
@@ -75,6 +84,13 @@ test('each original questionnaire scores its official dimensions without fabrica
   assert.equal(ons.scoring.dimensions.filter(dim => dim.method === 'value').length, 4)
   assert.ok(!ons.scoring.dimensions.some(dim => /total|composite|sum/.test(dim.key)))
   assert.equal(ons.scoring.dimensions[3].direction, 'lower-reported-difficulty')
+  assert.ok(ons.questions.every(question => question.inputType === 'scale-select' && question.responseAnchors.length === 11))
+  assert.equal(ons.questions[0].responseAnchors[0], 'Not at all satisfied')
+  assert.equal(ons.questions[3].responseAnchors[10], 'Completely anxious')
+  const runner = readFileSync(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
+  assert.match(runner, /question\.inputType === 'scale-select'/)
+  assert.match(runner, /<option value=\{value\} key=\{value\}>/)
+
 })
 
 test('small professional ordering bonus is limited to discovery; actual topic relevance remains dominant', () => {
