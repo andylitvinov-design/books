@@ -137,8 +137,11 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     }
   }
   if (data.kind === "milestone") {
-    await expect(page.locator("button[data-energywork-next]")).toHaveText(locale === "ru" ? "Продолжить" : "Continue");
-    await expect(page.locator("button[data-energywork-save-progress]")).toHaveText(locale === "ru" ? "Войти и сохранить" : "Sign in to save");
+    // A guest can continue without falsely claiming that private progress was saved.
+    await expect(page.locator("button[data-energywork-next]")).toHaveText(
+      locale === "ru" ? "Перейти к следующему уроку" : "Continue to the next lesson");
+    await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
+    await expect(page.locator('[data-energywork-slide-kind="milestone"] [class*="milestoneActions"] button')).toHaveCount(2);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }
