@@ -47,6 +47,7 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
+import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import { isNativePsiAlchemy } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
@@ -651,6 +652,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               <Preferences data={data} locale={locale} onDone={load} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+              <InstallHolisticHouse locale={locale} />
               <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
@@ -3573,6 +3575,11 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
       <div className="hh-heading">
         <h1>{c.consultations}</h1>
         <p>{c.consultationsIntro}</p>
+        <p className="hh-fine">{locale === 'ru' ? 'Чтобы получать сообщения на телефон:' : 'To receive phone alerts for replies:'}{' '}
+          <Link href={`/${locale}/app/settings#hh-phone-notifications`} prefetch={false}>
+            {locale === 'ru' ? 'Включить уведомления' : 'Enable notifications'}
+          </Link>
+        </p>
         {source === 'test-results' && <aside className="hh-panel hh-consult-test-source">
           <h2>{locale === 'ru' ? 'Личные рекомендации по вашим тестам' : 'Personal recommendations about your test results'}</h2>
           <p>{locale === 'ru'
@@ -3583,6 +3590,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
           </Link>
         </aside>}
       </div>
+      <InstallHolisticHouse locale={locale} />
       <div className="hh-grid hh-services">
         {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
         {(data.services || []).map((service) => (
