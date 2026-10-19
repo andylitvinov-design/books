@@ -3,15 +3,19 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('client report editors select shared resources while personal uploads use their dedicated screen',()=>{
-  for(const [path,source] of [
-    ['app/admin/consultations/[id]/edit/page.js','documentId={consultation.id}'],
-    ['app/admin/prescriptions/[id]/page.js','documentId={prescription.id}'],
-    ['app/admin/clients/[id]/assessments/[assessmentId]/edit/page.js','assessmentId={assessmentId}']]){
-    const page=read(path)
-    assert.ok(page.includes('requireAdminRequest()'))
-    assert.ok(page.includes('deliveryEnabled()'))
-    assert.ok(page.includes(source))
-  }
+  const consultation=read('app/admin/consultations/[id]/edit/page.js')
+  assert.match(consultation,/requireAdminRequest\(\)/)
+  assert.match(consultation,/deliveryEnabled\(\)/)
+  assert.match(consultation,/documentId:\s*consultation\.id/)
+  assert.match(consultation,/ReportVideoMaterialsEditor/)
+  const legacy=read('app/admin/prescriptions/[id]/page.js')
+  assert.match(legacy,/requireAdminRequest\(\)/)
+  // Legacy edits now redirect into the one shared consultation report constructor.
+  assert.match(legacy,/redirect\(`\/admin\/consultations\//)
+  const assessment=read('app/admin/clients/[id]/assessments/[assessmentId]/edit/page.js')
+  assert.match(assessment,/requireAdminRequest\(\)/)
+  assert.match(assessment,/deliveryEnabled\(\)/)
+  assert.match(assessment,/assessmentId=\{assessmentId\}/)
   const preview=read('app/admin/documents/[id]/page.js')
   assert.match(preview,/requireAdminRequest/)
   assert.doesNotMatch(preview,/SessionAudioRecorder/)
