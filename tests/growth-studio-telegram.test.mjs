@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
 import {nextGrowthPost} from '../lib/growth-studio/model.mjs'
-import {telegramConfig,telegramPayload,telegramPublicStatus,sendTelegramPost} from '../lib/growth-studio/telegram.mjs'
+import {telegramConfig,telegramPayload,telegramPublicStatus,verifyTelegramChannel,sendTelegramPost} from '../lib/growth-studio/telegram.mjs'
 
 const env={
  HH_GROWTH_TELEGRAM_ENABLED:'true',
