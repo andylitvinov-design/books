@@ -74,6 +74,7 @@ test('private URLs, off-brand destinations, query data and encoded private route
   for (const url of [
     'https://evil.example/en','http://holistichouse.vercel.app/','//evil.example',
     '/en/client','/en/app/practice','/api/admin','/en/%63lient/report',
+    '/en/%2563lient/report','/en/%252fadmin','/en/%2fadmin',
     '/en/academy?client=123','https://holistichouse.vercel.app/en/academy#private',
   ]) assert.throws(()=>normalizePublicSource(url,'holistic_house'),/invalid_post/,url)
   assert.equal(normalizePublicSource('/en/services','holistic_house'),'https://holistichouse.vercel.app/en/services')
