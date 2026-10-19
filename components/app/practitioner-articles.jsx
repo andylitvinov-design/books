@@ -63,7 +63,7 @@ export default function PractitionerArticles({locale,services=[]}){
  const [draft,setDraft]=useState(()=>initial(locale)),[folderId,setFolderId]=useState('')
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
  const [addingFolder,setAddingFolder]=useState(false),[folderName,setFolderName]=useState('')
- const [preview,setPreview]=useState(false),bodyRef=useRef(null)
+ const [preview,setPreview]=useState(false),bodyRef=useRef(null),editorRef=useRef(null)
  async function reload(){
   const response=await fetch('/api/app/practice/articles',{credentials:'same-origin',cache:'no-store'})
   const json=await response.json().catch(()=>({}))
@@ -71,6 +71,7 @@ export default function PractitionerArticles({locale,services=[]}){
   setItems(json.items||[]);setFolders(json.folders||[])
  }
  useEffect(()=>{reload().catch(e=>setError(e.message))},[])
+ useEffect(()=>{if(editorOpen)editorRef.current?.scrollIntoView({behavior:'smooth',block:'start'})},[editorOpen,editing?.id])
  function choose(item){
   setEditing(item||null)
   setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale))
@@ -186,7 +187,7 @@ export default function PractitionerArticles({locale,services=[]}){
     </div>
    </article>)}</div>:<p className={styles.empty}>{t.none}</p>}
   {filtered.length>limit&&<div className={styles.actions}><button className={styles.secondary} type="button" onClick={()=>setLimit(x=>x+24)}>{t.more} <ChevronDown size={15} aria-hidden="true"/></button></div>}
-  {editorOpen&&<form className={styles.editor} onSubmit={e=>{e.preventDefault();void save()}}>
+  {editorOpen&&<form ref={editorRef} className={styles.editor} onSubmit={e=>{e.preventDefault();void save()}}>
    <div className={styles.editorHeader}><h4>{editing?t.editTitle:t.draftTitle}</h4><button type="button" className={styles.secondary} onClick={()=>setEditorOpen(false)}>{t.close} ×</button></div>
    {editing?.reviewNote&&<p className={styles.error}>{editing.reviewNote}</p>}
    {editing?.status&&<p className={styles.caption}>{shortStatus(editing.status,ru)}</p>}
