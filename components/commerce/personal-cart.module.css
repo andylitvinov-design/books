@@ -16,7 +16,7 @@
 .total strong{font-size:23px}
 .methods{padding:0;margin:6px 0 12px;border:0}
 .methods legend{margin-bottom:9px;color:#315b64;font:800 13px Arial,Helvetica,sans-serif}
-.methodChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.methodChoices{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
 .methodChoices label{display:flex;align-items:center;justify-content:center;gap:6px;min-height:45px;padding:9px 7px;border:1px solid #c4d9d1;border-radius:11px;background:#fff;color:#31595a;font:700 13px Arial,Helvetica,sans-serif;cursor:pointer}
 .methodChoices label[data-chosen=true]{background:#e2f3ed;border:2px solid #177589;color:#17566c}
 .methodChoices input{accent-color:#197488}
