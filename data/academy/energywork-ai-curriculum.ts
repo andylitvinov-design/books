@@ -77,6 +77,27 @@ export const sunVoices: EnergyworkTestimonial[] = [
   },
 ];
 
+// Three anonymized Kundalini Reiki experiences from screenshots supplied by the course author.
+// The sessions involved Breanna, Ritu and Aesthesia, not Andrey's exact course video.
+// Personal sensations are quoted as experiences, not evidence of medical efficacy.
+export const kundaliniVoices: EnergyworkTestimonial[] = [
+  {
+    id: "kundalini-example-01",
+    quote: l("During Kundalini Reiki work with Breanna, I felt a strong current of energy circulating through my body while tension seemed to release throughout it at the same time.", "Во время практики Кундалини Рейки вместе с Бреанной я почувствовал(а), как сильный поток энергии циркулирует по телу, и одновременно ощутил(а), что напряжение во всём теле ослабевает."),
+    attribution: l("Anonymous Kundalini Reiki experience · supplied example", "Анонимный опыт практики Кундалини Рейки · предоставленный пример"),
+  },
+  {
+    id: "kundalini-example-02",
+    quote: l("Ritu showed me how to feel the two flows more naturally, distinguish between them, and use them when working with the body or a situation. I felt a very strong Kundalini stream that I could direct toward a particular object during the practice. I also sensed what felt like healing from Ritu in areas of my body that had long felt weak.", "Риту показала мне, как естественнее чувствовать два потока, различать их и использовать при работе с телом или ситуацией. Я ощутил(а) очень сильный поток Кундалини, который удалось направить на определённый объект во время практики. Я также почувствовал(а) то, что воспринимал(а) как исцеляющее воздействие Риту, в тех областях тела, где давно ощущалась слабость."),
+    attribution: l("Anonymous Kundalini Reiki experience · supplied example", "Анонимный опыт практики Кундалини Рейки · предоставленный пример"),
+  },
+  {
+    id: "kundalini-example-03",
+    quote: l("With Aesthesia, I experienced what felt like an accurate body scan. I sensed a very precise stream of healing energy moving through the weaker areas of my body. To me, it felt like light moving upward through my chakras to the top of my head.", "Во время практики с Aesthesia у меня было ощущение точного сканирования тела. Я почувствовал(а) очень направленный поток целительной энергии в тех областях, где ощущалась слабость. Для меня это было похоже на свет, который поднимается через чакры к макушке."),
+    attribution: l("Anonymous Kundalini Reiki experience · supplied example", "Анонимный опыт практики Кундалини Рейки · предоставленный пример"),
+  },
+];
+
 /** Published Reiki Yggdrasil feedback reused from the original testimonial archive. */
 const yggdrasilVoices: EnergyworkTestimonial[] = yggdrasilTextTestimonials.map((entry) => ({
   id: entry.id,
@@ -410,8 +431,9 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("A one-minute grounding pause", "Минута ощущения опоры"),
       body: l("For one minute, notice the support of the floor or your chair.", "Одну минуту замечайте опору пола или стула.") },
     { id: "kun-voices", phase: "kundalini", kind: "voices", videoKey: "kundalini-reiki", image: image.kundalini,
-      title: l("What do other viewers say?", "Что пишут другие?"),
-      body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
+      title: l("Kundalini Reiki: experiences from other participants", "Кундалини Рейки: впечатления других участников"),
+      body: l("Three anonymous examples from Kundalini Reiki sessions with other practitioners, not reviews of this exact video. Your experience may be different.", "Три анонимных примера опыта Кундалини Рейки с другими практиками, а не отзывы об этом конкретном видео. Ваши ощущения могут отличаться."),
+      testimonials: kundaliniVoices },
     { id: "kun-04", phase: "kundalini", kind: "reflection",
       title: l("Your meditation feedback", "Ваш отзыв о медитации"),
       body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
