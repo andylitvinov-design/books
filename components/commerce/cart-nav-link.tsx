@@ -24,7 +24,7 @@ export function CartNavLink({ locale }: { locale: ServiceLocale }) {
       window.removeEventListener("pageshow", sync);
     };
   }, []);
-  return <Link href={`/${locale}/cart`} className={styles.navCart} aria-label={`${copy[locale]} (${count})`} data-nav-item="cart">
+  return <Link href={`/${locale}/cart`} className={styles.navCart} aria-label={`${copy[locale]} (${count})`} data-nav-item="cart" data-cart-has-items={count > 0 ? "true" : "false"}>
     <ShoppingBasket size={20} aria-hidden="true" />
     <span>{copy[locale]}</span>
     {count > 0 ? <b aria-live="polite">{count}</b> : null}
