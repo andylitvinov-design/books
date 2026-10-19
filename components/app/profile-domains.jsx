@@ -297,7 +297,7 @@ export function ProfileDomains({
     </header>}
     {reportsContent && <section id="personal-reports" className="hh-domain-report-archive"
       aria-labelledby={external ? 'hh-analysis-reports-title' : 'hh-account-report-title'} data-profile-report-archive>
-      {external ? reportsContent : <>
+      {external ? <>{reportsContent}</> : <>
         <div className="hh-account-report-heading">
           <span className="hh-account-report-icon" aria-hidden="true"><FileText size={23} /></span>
           <div className="hh-account-report-heading-copy">
