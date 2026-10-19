@@ -1,0 +1,84 @@
+import assert from "node:assert/strict"
+import test from "node:test"
+import { readFileSync } from "node:fs"
+import {
+  ENERGYWORK_VERSION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_ANSWER_IDS,
+  energyworkSequence, energyworkLessonRanges, energyworkPreviousResumeId,
+} from "../data/academy/energywork-ai-schema.js"
+
+const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8")
+const curriculum = read("data/academy/energywork-ai-curriculum.ts")
+const learner = read("components/energywork-ai-learner.tsx")
+const cabinet = read("components/app/cabinet-free-course-banners.jsx")
+const repo = read("lib/academy/energywork-course-repository.js")
+
+const questions = [
+  ["tan-06", "Who created the Tantra Reiki system, and what is the source of its energy?"],
+  ["tan-study-02", "What is the main purpose of the Tantra Reiki flow? Why is it needed, and what does it offer a person?"],
+  ["tan-study-03", "For what purposes can Tantra Reiki be used?"],
+  ["tan-study-04", "Which culture and tradition form the foundation of Tantra Reiki?"],
+  ["tan-study-05", "How are Levels 1–3, 4–6 and 7–9 connected?"],
+  ["tan-study-06", "At which levels do students learn to create mandalas and work with artifacts?"],
+  ["tan-study-07", "After which level can someone become a Tantra Reiki Master and teach and initiate others?"],
+]
+
+test("Flight lesson slides 3 and 6 are swapped without dropping IDs", () => {
+  const sequence = energyworkSequence()
+  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p2")
+  assert.deepEqual(sequence.slice(2, 9), [
+    "flight-01", "flight-02", "flight-05", "flight-voices",
+    "flight-04", "flight-03", "flight-done",
+  ])
+})
+
+test("Tantra removes original slides 9–10, swaps original 3 and 8, and adds seven successive questions after the guide", () => {
+  const sequence = energyworkSequence()
+  const ranges = energyworkLessonRanges()
+  assert.deepEqual(ranges.map((range) => range.count), [7, 16, 8, 16, 8])
+  assert.deepEqual(sequence.slice(ranges[1].start, ranges[1].end), [
+    "tan-01", "tan-02", "presence-01", "tan-voices", "tan-04",
+    "tan-05", ...questions.map(([id]) => id),
+    "tan-03", "presence-04", "tan-done",
+  ])
+  assert.equal(sequence.includes("presence-02"), false)
+  assert.equal(sequence.includes("presence-03"), false)
+  assert.equal(sequence.length, 57)
+})
+
+test("One standalone EN/RU text field per original free-initiation question; preserved privately", () => {
+  for (const [id, prompt] of questions) {
+    assert.equal(ENERGYWORK_QUESTIONS[id], "text", id)
+    assert.ok(curriculum.includes('id: "' + id + '"'), id)
+    assert.ok(curriculum.includes(prompt), prompt)
+    assert.ok(ENERGYWORK_LESSON_ANSWER_IDS.includes(id))
+  }
+  assert.equal(questions.length, 7)
+  assert.match(curriculum, /questionIds: \["tan-06", "tan-study-02"/)
+  assert.match(learner, /item\.questionIds\.every/)
+  assert.match(learner, /readyTargetCount/)
+  assert.match(learner, /item\.nextQuestionId/)
+  assert.match(repo, /answers\[body\.slideId\]=body\.answer/)
+})
+
+test("Tantra lesson 6 offers the original reading before the question sequence", () => {
+  const i = curriculum.indexOf('id: "tan-05"')
+  const j = curriculum.indexOf('id: "tan-06"')
+  assert.ok(i > 0 && j > i)
+  assert.match(curriculum.slice(i, j), /Seven short study questions follow/)
+  assert.match(learner, /data-tantra-study-link/)
+  assert.match(learner, /academy\/reiki\/tantra-reiki/)
+  assert.match(learner, /target="_blank" rel="noopener noreferrer"/)
+})
+
+test("My Courses opens the exact last saved slide and the private API maps older removed slides", () => {
+  assert.match(cabinet, /data-energywork-resume-last/)
+  assert.match(cabinet, /encodeURIComponent\(academyProgress\.slideId\)/)
+  assert.match(learner, /requestedIndex >= 0 && requestedIndex <= savedIndex/)
+  assert.match(learner, /setIndex\(requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex\)/)
+  assert.match(repo, /resumeSlideId\(row\)/)
+  assert.match(repo, /row\.course_version === ENERGYWORK_PREVIOUS_VERSION/)
+  assert.equal(energyworkPreviousResumeId("presence-02"), "tan-study-03")
+  assert.equal(energyworkPreviousResumeId("presence-03"), "tan-study-04")
+  assert.equal(energyworkPreviousResumeId("kun-04"), "kun-04")
+  assert.equal(energyworkPreviousResumeId("flight-05"), "flight-03")
+})

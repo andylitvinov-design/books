@@ -2,20 +2,21 @@
 // The bilingual editorial content lives in data/academy/energywork-ai-curriculum.ts.
 // Keep this registry aligned with that file; tests enforce exact ID parity.
 export const ENERGYWORK_KEY = 'academy-energywork-principles'
-export const ENERGYWORK_VERSION = '2026-10-18.p1'
+export const ENERGYWORK_VERSION = '2026-10-19.p2'
+export const ENERGYWORK_PREVIOUS_VERSION = '2026-10-18.p1'
 export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-01','welcome-02',
-  'flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done',
-  'presence-01','presence-02','presence-03','presence-04','tan-done',
+  'flight-01','flight-02','flight-05','flight-voices','flight-04','flight-03','flight-done',
+  'presence-01','presence-04','tan-done',
   'intention-01','intention-02','intention-03','intention-04',
   'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
   'paths-01','paths-02','paths-03','paths-04',
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
   yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-06','ygg-done'],
-  tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06'],
+  tantra: ['tan-01','tan-02','tan-voices','tan-04','tan-05','tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07','tan-03'],
   kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-06','kun-done'],
 })
 export const ENERGYWORK_INITIATION = Object.freeze(['init-01','init-02'])
@@ -34,13 +35,11 @@ export function energyworkMeditationFeedbackComplete(answer) {
   }
   return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
-export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-06','kun-06','ygg-06','init-01'])
+export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07','kun-06','ygg-06','init-01'])
 export const ENERGYWORK_QUESTIONS = Object.freeze({
   'welcome-02': 'choice',
   'flight-04': 'text', 'flight-05': 'text',
   'flight-03': 'choice',
-  'presence-03': 'scale',
-  'presence-02': 'choice',
   'intention-03': 'text',
   'intention-04': 'choice',
   'boundaries-02': 'choice',
@@ -49,6 +48,8 @@ export const ENERGYWORK_QUESTIONS = Object.freeze({
   'ygg-04': 'text', 'ygg-06': 'text',
   'ygg-03': 'choice',
   'tan-04': 'text', 'tan-06': 'text',
+  'tan-study-02': 'text', 'tan-study-03': 'text', 'tan-study-04': 'text',
+  'tan-study-05': 'text', 'tan-study-06': 'text', 'tan-study-07': 'text',
   'tan-03': 'choice',
   'kun-04': 'text', 'kun-06': 'text',
   'kun-03': 'choice',
@@ -62,9 +63,11 @@ export const energyworkPathValid = (id) => ENERGYWORK_PATHS.includes(id)
 export function energyworkSequence(_legacyPath = null) {
   return [
     'welcome-01','welcome-02',
-    'flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done',
-    ...ENERGYWORK_BRANCH.tantra,
-    'presence-01','presence-02','presence-03','presence-04','tan-done',
+    'flight-01','flight-02','flight-05','flight-voices','flight-04','flight-03','flight-done',
+    ...ENERGYWORK_BRANCH.tantra.slice(0,2),
+    'presence-01',
+    ...ENERGYWORK_BRANCH.tantra.slice(2),
+    'presence-04','tan-done',
     ...ENERGYWORK_BRANCH.kundalini,
     ...ENERGYWORK_BRANCH.yggdrasil,
     'intention-01','intention-02','intention-03','intention-04',
@@ -90,6 +93,23 @@ export function energyworkLessonRanges(sequence = energyworkSequence()) {
 export function energyworkLegacyResumeId(slideId) {
   return ['welcome-01','welcome-02','flight-01','flight-02','flight-03','flight-04'].includes(slideId)
     ? slideId : 'flight-01'
+}
+
+// Migrate a saved p1 position by its original step number within the two
+// edited lessons. This also recovers IDs removed from the new course.
+// Later lessons keep their saved ID: their progress is never reset.
+const PREVIOUS_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
+const PREVIOUS_TANTRA = Object.freeze([
+  'tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06',
+  'presence-01','presence-02','presence-03','presence-04','tan-done',
+])
+export function energyworkPreviousResumeId(slideId) {
+  const sequence = energyworkSequence()
+  const flightStep = PREVIOUS_FLIGHT.indexOf(slideId)
+  if (flightStep >= 0) return sequence[2 + flightStep]
+  const tantraStep = PREVIOUS_TANTRA.indexOf(slideId)
+  if (tantraStep >= 0) return sequence[9 + tantraStep]
+  return sequence.includes(slideId) ? slideId : 'flight-01'
 }
 export function energyworkInitiationReady(answers) {
   return Boolean(answers && typeof answers === 'object' && !Array.isArray(answers) &&

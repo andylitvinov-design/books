@@ -16,8 +16,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 53, "One consecutive course must have 53 screens");
-const milestones = new Set([1,2,4,6,8,13,20,25,26,33,34,40,44,45,53]);
+assert.equal(expectedSequence.length, 57, "One consecutive course must have 57 screens");
+const milestones = new Set([1,2,4,6,8,11,14,15,16,19,21,24,25,26,34,41,49,57]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -157,7 +157,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-18.p1");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p2");
   const journey = [];
   for (let n=0;n<expectedSequence.length;n++) {
     const index = n+1;
@@ -196,7 +196,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 53 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 57 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
@@ -286,7 +286,7 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-02"); // video poster remains visible without autoplay
   await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-03");
+  await expectFits("flight-05");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-voices");
   await page.locator("button[data-energywork-next]").click();
@@ -294,7 +294,7 @@ async function verifyShortViewport(page,locale) {
   await page.locator('textarea[id="answer-flight-04"]').fill(locale==="ru"
     ? "Я заметил спокойное состояние и тёплый свет." : "I felt a quiet, peaceful moment.");
   await page.locator("button[data-energywork-next]").click();
-  await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id","flight-05");
+  await expectFits("flight-03");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
@@ -324,7 +324,7 @@ try {
   }
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
-  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:53,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
+  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:57,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
   await browser.close();
 }

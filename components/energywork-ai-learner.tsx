@@ -120,8 +120,8 @@ const copy = {
     firstMilestoneLabel: "Your Reiki journey is underway",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
-    reviewNeeded: "For a personal initiation request, complete the five reports and five course answers. You can continue learning without them.",
-    reviewDone: "Your five lesson reports and answers are ready to review.",
+    reviewNeeded: "To request personal initiation, add five meditation reports and answer all study questions, including the seven Tantra Reiki questions.",
+    reviewDone: "Your meditation reports and study answers are ready for review.",
     reviewSaveNeeded: "Your answers are complete in this preview. Sign in and consent to private saving before requesting a personal initiation. Guest entries cannot be transferred automatically; copy your notes first.",
     reviewPrivate: "Saved responses are private. Nothing is sent to the teacher automatically; you decide what to share.",
     reportMissing: "Add report",
@@ -238,8 +238,8 @@ const copy = {
     firstMilestoneLabel: "Ваш путь в Рейки начался",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
-    reviewNeeded: "Для заявки на личную инициацию заполните пять отчётов и пять ответов. Учёбу можно продолжать без них.",
-    reviewDone: "Отчёты и ответы по пяти урокам готовы к просмотру.",
+    reviewNeeded: "Для заявки заполните пять отчётов и ответы на вопросы, включая семь вопросов по Тантра Рейки. Учёбу можно продолжать без них.",
+    reviewDone: "Ваши отчёты и ответы на вопросы готовы к просмотру.",
     reviewSaveNeeded: "Ответы заполнены в предварительном просмотре. Для заявки на личную инициацию войдите в кабинет и согласитесь на приватное сохранение. Гостевые записи автоматически не переносятся — сначала скопируйте их.",
     reviewPrivate: "Ответы сохраняются приватно. Преподавателю они автоматически не отправляются; вы сами решаете, чем поделиться.",
     reportMissing: "Заполнить отчёт",
@@ -601,10 +601,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     ...item,
     title: energyworkLessons.find((lesson) => lesson.phase === item.lesson)?.title[locale] ?? item.lesson,
     reportDone: Boolean(answers[item.reportId]?.trim()),
-    questionDone: Boolean(answers[item.questionId]?.trim()),
+    questionCount: item.questionIds.filter((id) => Boolean(answers[id]?.trim())).length,
+    questionDone: item.questionIds.every((id) => Boolean(answers[id]?.trim())),
+    nextQuestionId: item.questionIds.find((id) => !answers[id]?.trim()) ?? item.questionId,
   }));
-  const readyCount = initiationItems.reduce((count, item) => count + Number(item.reportDone) + Number(item.questionDone), 0);
-  const initiationReady = readyCount === initiationItems.length * 2;
+  const readyCount = initiationItems.reduce((count, item) => count + Number(item.reportDone) + item.questionCount, 0);
+  const readyTargetCount = initiationItems.reduce((count, item) => count + 1 + item.questionIds.length, 0);
+  const initiationReady = readyCount === readyTargetCount;
   // Only show application links for a consented account with saved reports.
   // Guests may explore the lessons and copy their notes before they sign in.
   const savedInitiationReady = initiationReady && sync === "ready" &&
@@ -773,6 +776,15 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
+              {slide.id === "tan-05" ? (
+                <Link href={"/" + locale + "/academy/reiki/tantra-reiki"}
+                  target="_blank" rel="noopener noreferrer"
+                  className={styles.studyButton} data-tantra-study-link>
+                  <BookOpen size={18} aria-hidden="true" />
+                  {locale === "ru" ? "Читать описание Тантра Рейки" : "Read the Tantra Reiki guide"}
+                  <ExternalLink size={16} aria-hidden="true" />
+                </Link>
+              ) : null}
               {slide.kind === "welcome" ? (
                 <div className={styles.welcomeReward} aria-label={t.welcomeOffer}>
                   <p className={styles.welcomeRewardTitle}><Sparkles size={17} aria-hidden="true" />{t.welcomeOffer}</p>
@@ -806,19 +818,19 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
               {slide.id === "paths-04" ? (
                 <div className={styles.reviewChecklist} data-initiation-readiness>
-                  <h2>{t.reviewTitle} · {readyCount}/10</h2>
+                  <h2>{t.reviewTitle} · {readyCount}/{readyTargetCount}</h2>
                   <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
                   <div className={styles.reviewRows}>
                     {initiationItems.map((item) => (
                       <div className={styles.reviewRow} key={item.lesson}>
-                        <strong>{item.title}</strong>
+                        <strong>{item.title}{item.lesson === "tantra" ? ` · ${item.questionCount}/7` : ""}</strong>
                         <div>
                           <button type="button" onClick={() => jumpToSlide(item.reportId)}
                             className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
                             {item.reportDone ? <Check size={13} aria-hidden="true" /> : null}
                             {item.reportDone ? t.reportReady : t.reportMissing}
                           </button>
-                          <button type="button" onClick={() => jumpToSlide(item.questionId)}
+                          <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)}
                             className={item.questionDone ? styles.reviewRecorded : styles.reviewMissing}>
                             {item.questionDone ? <Check size={13} aria-hidden="true" /> : null}
                             {item.questionDone ? t.questionReady : t.questionMissing}
@@ -836,7 +848,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
                      isMeditationFeedback ? t.feedbackBadge :
                      initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
-                     initiationItems.some((item) => item.questionId === slide.id) ? t.lessonQuestion : t.optional}</span>
+                     initiationItems.some((item) => item.questionIds.includes(slide.id)) ? t.lessonQuestion : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
@@ -879,9 +891,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
                     role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
                     isMeditationFeedback ? (feedbackMissing ? t.reviewMissing : t.feedbackPrivacy) :
-                    initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id)
+                    initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id))
                     ? t.optionalForLearning : t.blank}</p>
-                  {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
+                  {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id)) ?
                     <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
                       disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
                 </div>
@@ -928,16 +940,16 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <button type="button" className={styles.copyButton} onClick={copyNotes}><ClipboardCopy size={17} aria-hidden="true" />{copyState === "success" ? t.copied : t.copy}</button>
                   <button type="button" className={styles.copyButton} onClick={() => window.print()}>{t.print}</button>
                   {copyState === "error" ? <p role="alert">{t.failed}</p> : null}
-                  <h2>{t.reviewTitle} · {readyCount}/10 {t.readyCount}</h2>
+                  <h2>{t.reviewTitle} · {readyCount}/{readyTargetCount} {t.readyCount}</h2>
                   <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
                   {!savedInitiationReady ? (
                     <div className={styles.reviewRows}>
                       {initiationItems.map((item) => (
                         <div className={styles.reviewRow} key={item.lesson}>
-                          <strong>{item.title}</strong>
+                          <strong>{item.title}{item.lesson === "tantra" ? ` · ${item.questionCount}/7` : ""}</strong>
                           <div>
                             {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
-                            {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.questionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
+                            {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
                             {item.reportDone && item.questionDone ? <span className={styles.reviewRecorded}><Check size={13} />{t.picked}</span> : null}
                           </div>
                         </div>

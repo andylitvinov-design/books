@@ -12,12 +12,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 53 stable editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 57 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-18.p1"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p2"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0])
-  assert.equal(ids.length, 53)
+  assert.equal(ids.length, 57)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -25,7 +25,7 @@ test('Unified Reiki Practitioner course has 53 stable editorial screens and five
     assert.ok(curriculum.includes('phase: "' + phases[i] + '"'), 'Missing '+phases[i])
     assert.ok(curriculum.includes('firstSlideId: "' + expected[i] + '"'), 'Missing lesson entry '+expected[i])
   }
-  assert.match(curriculum, /\.\.\.pathSlides\.tantra,/)
+  assert.match(curriculum, /\.\.\.pathSlides\.tantra\.slice\(0, 2\),/)
   assert.match(curriculum, /\.\.\.pathSlides\.kundalini,/)
   assert.match(curriculum, /\.\.\.pathSlides\.yggdrasil,/)
   assert.match(curriculum, /_legacyPath: EnergyworkPath \| null = null/)
@@ -60,10 +60,10 @@ test('Videos reuse the four approved original source recordings; no render or au
 
 test('Sun meditation is followed by gentle warmth-and-light pause, observations, and a lesson question', () => {
   const lesson = curriculum.split('id: "flight-01"')[1].split('id: "presence-01"')[0]
-  assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-03"'))
-  assert.ok(lesson.indexOf('id: "flight-03"') < lesson.indexOf('id: "flight-voices"'))
+  assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-05"'))
+  assert.ok(lesson.indexOf('id: "flight-05"') < lesson.indexOf('id: "flight-voices"'))
   assert.ok(lesson.indexOf('id: "flight-voices"') < lesson.indexOf('id: "flight-04"'))
-  assert.ok(lesson.indexOf('id: "flight-04"') < lesson.indexOf('id: "flight-05"'))
+  assert.ok(lesson.indexOf('id: "flight-04"') < lesson.indexOf('id: "flight-03"'))
   assert.match(lesson, /warmth or light/)
   assert.match(lesson, /Ваш опыт важен/)
   assert.match(lesson, /question: \{ type: "text"/)
@@ -82,11 +82,11 @@ test('Five lessons have separate post-meditation reports and question answers', 
     assert.ok(curriculum.includes('id: "'+question+'"'))
   }
   assert.match(learner, /const initiationItems = energyworkInitiationRequirements\.map/)
-  assert.match(learner, /readyCount === initiationItems\.length \* 2/)
+  assert.match(learner, /readyTargetCount/)
   assert.match(learner, /savedInitiationReady = initiationReady && sync === "ready"/)
   assert.match(learner, /data-initiation-readiness/)
   assert.match(learner, /jumpToSlide\(item\.reportId\)/)
-  assert.match(learner, /jumpToSlide\(item\.questionId\)/)
+  assert.match(learner, /jumpToSlide\(item\.nextQuestionId\)/)
   assert.match(learner, /initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
   assert.match(learner, /Nothing is sent to the teacher automatically/)
 })

@@ -44,14 +44,14 @@ const COPY = {
     eyebrow: 'HOLISTIC HOUSE ACADEMY',
     title: 'Free courses',
     note: 'Explore for free. Teacher-led initiations require personal confirmation.',
-    action: 'Open course', started: 'CONTINUE LEARNING', energywork: 'Energywork Basics', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume saved course', completed: 'Completed', slide: 'Slide',
+    action: 'Open course', started: 'CONTINUE LEARNING', energywork: 'Energywork Basics', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume from last slide', completed: 'Completed', slide: 'Slide',
     lesson: 'Lesson', intro: 'Introduction', of: 'of', slides: 'slides', chooseLesson: 'Go to a lesson', locked: 'Reach this lesson to unlock it',
   },
   ru: {
     eyebrow: 'АКАДЕМИЯ HOLISTIC HOUSE',
     title: 'Бесплатные курсы',
     note: 'Начальные материалы бесплатны. Инициация проводится по согласованию.',
-    action: 'Открыть курс', started: 'ПРОДОЛЖИТЬ ОБУЧЕНИЕ', energywork: 'Основы энергетики', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить сохранённый курс', completed: 'Завершён', slide: 'Слайд',
+    action: 'Открыть курс', started: 'ПРОДОЛЖИТЬ ОБУЧЕНИЕ', energywork: 'Основы энергетики', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить с последнего слайда', completed: 'Завершён', slide: 'Слайд',
     lesson: 'Урок', intro: 'Введение', of: 'из', slides: 'слайдов', chooseLesson: 'Перейти к уроку', locked: 'Урок ещё не открыт',
   },
 }
@@ -86,7 +86,7 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
           <span className={styles.savedEyebrow}>{academyProgress.status === 'completed' ? t.completed : t.started}</span>
           <strong className={styles.savedLabel}>{t.energywork}</strong>
           <p>{resumeLabel}</p>
-          <Link className={styles.savedAction} href={courseHref} prefetch={false}>
+          <Link className={styles.savedAction} href={courseHref + "?slide=" + encodeURIComponent(academyProgress.slideId)} prefetch={false} data-energywork-resume-last>
             {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </div>
