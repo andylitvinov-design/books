@@ -27,7 +27,7 @@ test("Tantra Reiki has one real hero heading and two distinct first-screen learn
 test("First Tantra level is a single scenic reading screen with original text behind disclosure", () => {
   assert.doesNotMatch(journey, /<header className="tantra-journey__focus-heading"/);
   assert.match(journey, /<figure className="tantra-journey__photo"/);
-  assert.match(journey, /<h3 id=\{"tantra-heading-" \+ n\}>\{n === 1 \? focus.title : copy.title\}<\/h3>/);
+  assert.match(journey, /n === 1 \? <h2 id=\{"tantra-heading-" \+ n\}>\{focus.title\}<\/h2> : <h3 id=\{"tantra-heading-" \+ n\}>\{copy.title\}<\/h3>/);
   assert.match(journey, /className="tantra-journey__first-description"/);
   assert.match(journey, /<details className="tantra-journey__source">/);
   assert.match(journey, /<div className="tantra-journey__source-body">/);
