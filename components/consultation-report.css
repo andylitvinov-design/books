@@ -3663,3 +3663,118 @@
   .consultation-test-suggestions { padding: 10px; }
   .consultation-test-suggestion { padding: 10px; }
 }
+
+/* Compact image-free recommendation cards — owner approved 2026-10-18.
+   Keep photographs in the separate full remedy-description appendix. */
+.canonical-shell .canonical-document--editorial .canonical-remedy-group {
+  width: calc(100% - 12px);
+  max-width: 680px;
+  margin: 18px auto 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-group-title {
+  margin: 0 0 9px;
+  padding: 0 0 7px;
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: .09em;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy {
+  display: block;
+  margin: 0 0 9px;
+  padding: 12px 14px;
+  border: 1px solid #cde4e2;
+  border-left: 3px solid #53a39d;
+  border-radius: 12px;
+  background: #f7fbfa;
+  box-shadow: none;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-heading {
+  align-items: flex-start;
+  min-height: 0;
+  gap: 10px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-number {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  border-radius: 50%;
+  background: #247e83;
+  font: 700 12px/1 Arial, Helvetica, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-title h3 {
+  color: #245165;
+  font: 600 20px/1.24 Georgia, 'Times New Roman', serif;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-schedule {
+  display: block;
+  margin: 4px 0 0;
+  padding: 0;
+  max-width: 100%;
+  border-radius: 0;
+  background: transparent;
+  color: #326c73;
+  font: 650 14px/1.4 Arial, Helvetica, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action {
+  display: inline-flex;
+  width: fit-content;
+  max-width: calc(100% - 37px);
+  min-height: 34px;
+  align-items: center;
+  gap: 5px;
+  justify-content: flex-start;
+  clear: none;
+  margin: 5px 0 0 37px;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #176c77;
+  font: 700 13px/1.35 Arial, Helvetica, sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action:hover {
+  border: 0;
+  background: transparent;
+  color: #0e4e5b;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields {
+  margin: 8px 0 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields > div {
+  padding: 7px 0;
+  gap: 10px;
+}
+@media screen and (max-width: 700px) {
+  .prescription-shell .canonical-document--editorial .canonical-remedy-group {
+    width: calc(100% - 8px);
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy {
+    padding: 10px 11px;
+    margin-bottom: 8px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size: 19px;
+    line-height: 1.27;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-schedule {
+    font-size: 14.5px;
+    line-height: 1.44;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-fields dd {
+    font-size: 16px;
+    line-height: 1.45;
+  }
+}
+@media print {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-group {
+    width: 100%;
+    max-width: none;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy {
+    padding: 9px 11px;
+    break-inside: avoid;
+  }
+}
