@@ -17,7 +17,7 @@ import './consultation-report.css'
 
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false, narration = null, afterCover = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
-  const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
+  const guidance = (document.additionalNotes || document.recommendationsText) ? undefined : recommendationGuidance(document, locale)
   const progress = extractReportProgress(document.analysis)
   const reportHeading = clientReportHeading(locale, document.recommendationType)
   const followUpSession = reportFollowUpDetails(document.followUpDate, locale)
