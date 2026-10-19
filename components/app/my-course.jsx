@@ -190,6 +190,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const selectorId = useId()
   const selectedCourse = useRef(null), currentAccount = useRef(accountId), mounted = useRef(false)
   const generation = useRef(0), readVersion = useRef(0), readController = useRef(null), actionLock = useRef(null)
+  // A successful start invalidates old Start buttons, even when a closed course ID is reused.
+  const startVersion = useRef(0)
   const newCourseId = useRef(null)
   currentAccount.current = accountId
   const [courseEntry, setCourseEntry] = useState(null)
@@ -263,6 +265,8 @@ export function MyCourse({ data, locale = 'en' }) {
   }, [accountId, billingPhase, billingStatus?.entitlement?.tier, billingStatus?.entitlement?.paidThrough, refresh])
 
   const viewGeneration = generation.current
+  const viewStartVersion = startVersion.current
+  const viewCourseId = selectedCourse.current
   function isSelected(courseId = state?.course?.id, epoch = viewGeneration) {
     return mounted.current && currentAccount.current === accountId && generation.current === epoch && selectedCourse.current === courseId
   }
@@ -325,7 +329,7 @@ export function MyCourse({ data, locale = 'en' }) {
     setPendingPrograms(previous=>{const next={...previous};delete next[courseId];return next})
   }
   async function act(action, values = {}) {
-    if (actionLock.current) return
+    if (actionLock.current || (action === 'start' && startVersion.current !== viewStartVersion)) return
     if (action !== 'start') {
       try {
         const response=await courseCommand(action,values)
@@ -355,6 +359,9 @@ export function MyCourse({ data, locale = 'en' }) {
       })
       if (!isSelected(targetCourseId,epoch)) return
       if (started.course?.id !== requestedCourseId) throw new Error('COURSE_SELECTION_CHANGED')
+      // The start is durable. Make every button callback from its old screen inert.
+      // Failed/uncertain requests do not consume this version, so the same ID can be retried.
+      startVersion.current += 1
       readVersion.current += 1; readController.current?.abort()
       selectedCourse.current = targetCourseId = started.course.id
       setSnapshot({ accountId, value: started }); replaceCourseUrl(started.course.id)
@@ -406,6 +413,7 @@ export function MyCourse({ data, locale = 'en' }) {
   // No redundant modal or checkbox: the server still validates the owner,
   // capacity and the consent flag sent with this deliberate click.
   function startSelectedCourse(presetId = null, programId = null) {
+    if (startVersion.current !== viewStartVersion || !isSelected(viewCourseId, viewGeneration)) return
     if (programId !== null && programId !== ACTIVE_COURSE_PROGRAM_ID) return
     if (busy || actionLock.current || (presetId !== null && !getCoursePreset(presetId)) ||
         (programId !== null && !getCourseProgram(programId)) ||
