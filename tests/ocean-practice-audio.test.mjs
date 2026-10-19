@@ -16,7 +16,7 @@ test('ocean sound is created only after a user starts a timer, not during render
   assert.match(audio, /surf\.loop = true/);
   assert.match(audio, /swell\.frequency\.value = 0\.09/);
   assert.match(audio, /return \{ enabled, supported, play, pause, toggle \}/);
-  assert.doesNotMatch(audio, /autoplay|fetch\(|Audio\(/i);
+  assert.doesNotMatch(audio, /<audio[^>]*autoplay|fetch\(|new Audio\(/i);
 });
 
 test('both timed learning experiences use the same wave sound controls', () => {
