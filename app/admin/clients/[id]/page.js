@@ -9,6 +9,7 @@ import { ClientAccessDangerActions } from '@/components/client-access-danger-act
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { savedReportLocale } from '@/lib/consultations/report-directory'
 import { uiLocaleCookie } from '@/lib/ui-locale'
 import { appEnabled, getAppConfig } from '@/lib/app/config'
 import { getLegacyClientBinding } from '@/lib/app/client-account-binding'
@@ -125,7 +126,7 @@ export default async function ClientDetail({ params }) {
         {groups.map(([key, records]) => <article key={key}>
           <h3>{records[0].dateIssued}</h3>
           {records.map(document => <p key={document.id}>
-            <Link href={`/admin/documents/${document.id}${document.kind === 'report' ? '' : '/view'}?locale=${client.preferredLocale}`} prefetch={false}>
+            <Link href={`/admin/documents/${document.id}${document.kind === 'report' ? '' : '/view'}?locale=${savedReportLocale(document, client.preferredLocale)}`} prefetch={false}>
               {document.kind === 'payment'
                 ? `${document.paymentStatus === 'received' ? copy.receipt : copy.invoice} ${document.currency} ${(document.amount / 100).toFixed(2)}`
                 : document.kind === 'report' ? copy.report : copy.recommendation}

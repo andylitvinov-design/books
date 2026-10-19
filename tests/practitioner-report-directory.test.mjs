@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { listClientReportDirectory, parseReportDirectoryQuery } from '../lib/consultations/report-directory.js'
+import { listClientReportDirectory, parseReportDirectoryQuery, savedReportLocale } from '../lib/consultations/report-directory.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const clients = [
@@ -13,9 +13,9 @@ const store = {
   async listClients() { return clients },
   async listClientDocuments(id) {
     if (id === 'a') return [
-      { id: 'report-old', clientId: id, dateIssued: '2026-10-17', status: 'active', analysis: 'PRIVATE NOTES' },
+      { id: 'report-old', clientId: id, dateIssued: '2026-10-17', languagePreference: 'ru', status: 'active', analysis: 'PRIVATE NOTES' },
       { id: 'invoice', clientId: id, kind: 'payment', dateIssued: '2026-10-17' },
-      { id: 'report-new', clientId: id, kind: 'report', dateIssued: '2026-10-18', status: 'draft' },
+      { id: 'report-new', clientId: id, kind: 'report', dateIssued: '2026-10-18', languagePreference: 'en', status: 'draft' },
       { id: 'cross-client', clientId: 'b', dateIssued: '2026-10-18' },
       { id: 'report-new', clientId: id, dateIssued: '2026-10-18' },
     ]
@@ -33,9 +33,19 @@ test('query and page are bounded', () => {
 test('archive lists old reports, excludes invoices and duplicate/foreign records, returns no clinical notes', async () => {
   const data = await listClientReportDirectory(store)
   assert.deepEqual(data.rows.map(row => row.id), ['report-new', 'report-old', 'report-c'])
-  assert.equal(data.rows[0].clientLocale, 'ru')
+  assert.equal(data.rows[0].reportLocale, 'en')
+  assert.equal(data.rows[1].reportLocale, 'ru')
   assert.equal(data.rows[0].status, 'inactive')
   assert.doesNotMatch(JSON.stringify(data), /PRIVATE|analysis|invoice|cross-client/)
+})
+
+test('document language overrides client profile language, including in client history', () => {
+  assert.equal(savedReportLocale({ languagePreference: 'ru' }, 'en'), 'ru')
+  assert.equal(savedReportLocale({ languagePreference: 'en' }, 'ru'), 'en')
+  assert.equal(savedReportLocale({ languagePreference: 'bilingual' }, 'ru'), 'ru')
+  assert.equal(savedReportLocale({}, 'en'), 'en')
+  const page = read('app/admin/clients/[id]/page.js')
+  assert.match(page, /savedReportLocale\(document, client\.preferredLocale\)/)
 })
 
 test('client search and pagination preserve existing report history', async () => {

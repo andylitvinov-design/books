@@ -77,13 +77,14 @@ export default async function ClientReports({ searchParams }) {
               <strong>{row.clientName}</strong>
               <div className={styles.meta}>
                 <span>{t.date}: {dateLabel(row.dateIssued, locale)}</span>
+                <span aria-label={row.reportLocale === 'ru' ? 'Russian report' : 'English report'}>{row.reportLocale.toUpperCase()}</span>
                 <span className={styles.status} data-active={row.status === 'active' ? 'true' : 'false'}>{row.status === 'active' ? t.active : t.inactive}</span>
               </div>
               <Link href={'/admin/clients/' + encodeURIComponent(row.clientId)} prefetch={false}>{t.file} ↗</Link>
             </div>
           </div>
           <div className={styles.actions}>
-            <Link className={styles.view} href={'/admin/documents/' + encodeURIComponent(row.id) + '/view?locale=' + row.clientLocale} prefetch={false}>{t.view}</Link>
+            <Link className={styles.view} href={'/admin/documents/' + encodeURIComponent(row.id) + '/view?locale=' + row.reportLocale} prefetch={false}>{t.view}</Link>
             <Link className={styles.primary} href={documentPreviewEditHref(row)} prefetch={false}>{t.edit}</Link>
           </div>
         </article>)}
