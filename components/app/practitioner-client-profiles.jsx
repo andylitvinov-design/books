@@ -13,7 +13,7 @@ const COPY={
     requested:'New request',contacted:'Contacted',closedStatus:'Closed',cancelled:'Withdrawn',
     markContacted:'Mark contacted',markClosed:'Close request',none:'No clients yet.',
     filtered:'No clients match the filters.',noNotes:'No initial text provided.',
-    privacy:'Client profile shows only information the person shared with you through your services. Private tests, other practitioners’ requests and personal medical records are not available.',
+    privacy:'Client profile shows only information the person shared with you through your services. Private tests, other practitioners’ requests and personal medical records are not available.',privacyOwner:'Manually created clinical records are visible only to the owner. Service enquiries remain account-bound and separate; matching names or phone numbers never combines records.',
     noPortal:'Reply inside Holistic House or use the contact details the client shared. Telegram/WhatsApp history is not connected.',
     historySummary:'Original request and secure in-app replies',messageCount:'Conversation entries',
     manual:'Created manually',manualTitle:'My saved clients',manualHint:'Open a card to view its old reports, prescriptions and document history.',manualEmpty:'No saved manual clients match your search.',manualLoading:'Loading saved clients…',manualError:'The old client directory could not be loaded.',retry:'Retry',openDirectory:'Open full client database',
@@ -26,7 +26,7 @@ const COPY={
     requested:'Новая заявка',contacted:'Связались',closedStatus:'Закрыта',cancelled:'Отозвана',
     markContacted:'Отметить связь',markClosed:'Закрыть заявку',none:'Клиентов пока нет.',
     filtered:'По выбранному фильтру клиентов нет.',noNotes:'Первоначальное сообщение не указано.',
-    privacy:'Мастер видит только сведения, которыми клиент поделился при обращении к нему. Чужие заявки, личные тесты и медицинские записи недоступны.',
+    privacy:'Мастер видит только сведения, которыми клиент поделился при обращении к нему. Чужие заявки, личные тесты и медицинские записи недоступны.',privacyOwner:'Созданные вручную медицинские карточки доступны только владельцу практики. Заявки по услугам хранятся отдельно по подтверждённым аккаунтам; совпадения имён и телефонов не объединяют людей.',
     noPortal:'Можно ответить внутри Holistic House или по указанному контакту. История Telegram/WhatsApp пока не подключена.',
     historySummary:'Первое обращение и ответы внутри сайта',messageCount:'Записей переписки',
     manual:'Создан вручную',manualTitle:'Сохранённые клиенты',manualHint:'Откройте карточку, чтобы найти старые отчёты, назначения и историю документов.',manualEmpty:'По поиску ручных карточек нет.',manualLoading:'Загружаем старых клиентов…',manualError:'Не удалось загрузить старую базу клиентов.',retry:'Повторить',openDirectory:'Открыть всю базу клиентов',
@@ -39,7 +39,7 @@ const COPY={
     requested:'Nueva solicitud',contacted:'Contactado',closedStatus:'Cerrado',cancelled:'Retirado',
     markContacted:'Marcar contactado',markClosed:'Cerrar solicitud',none:'Todavía no hay clientes.',
     filtered:'No hay coincidencias.',noNotes:'Sin mensaje inicial.',
-    privacy:'Solo los datos compartidos contigo en las solicitudes. No se muestran pruebas privadas ni expedientes médicos.',
+    privacy:'Solo los datos compartidos contigo en las solicitudes. No se muestran pruebas privadas ni expedientes médicos.',privacyOwner:'Las fichas clínicas manuales son privadas del propietario. Las solicitudes permanecen vinculadas a cuentas verificadas, sin fusionar registros por nombre o teléfono.',
     noPortal:'Puedes responder dentro de Holistic House. El historial de Telegram/WhatsApp no está conectado.',
     historySummary:'Solicitud original y respuestas privadas',messageCount:'Mensajes guardados',
     manual:'Creado manualmente',manualTitle:'Clientes guardados',manualHint:'Abre una ficha para consultar informes y documentos anteriores.',manualEmpty:'No hay contactos manuales que coincidan.',manualLoading:'Cargando clientes guardados…',manualError:'No se pudo cargar la base anterior.',retry:'Reintentar',openDirectory:'Abrir toda la base de clientes',
@@ -95,7 +95,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
         <span>{items.length} {t.requests}</span><span>{activeCount} {t.pending}</span>
       </div>
     </header>
-    <details className={styles.privacy}><summary>{t.privacyTitle}</summary><p>{t.privacy}</p></details>
+    <details className={styles.privacy}><summary>{t.privacyTitle}</summary><p>{isOwner?t.privacyOwner:t.privacy}</p></details>
     <label className={styles.searchLabel}>{t.search}
       <input type="search" value={search} onChange={event=>resetSearch(event.target.value)}
         placeholder={t.search}/>
