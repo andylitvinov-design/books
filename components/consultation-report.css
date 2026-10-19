@@ -4230,3 +4230,292 @@
     font-size: 15.5px;
   }
 }
+
+
+/* Unified prescription + remedy library cards — 2026-10-19.
+   One card per prescribed item; factual instructions stay visible while the
+   author-approved library description unfolds below the same card. */
+.canonical-shell .canonical-document--editorial .canonical-remedy.canonical-remedy--unified {
+  display: block;
+  width: 100%;
+  margin: 0 0 11px;
+  padding: 0;
+  border: 1px solid #d3e3df;
+  border-left: 3px solid #70b4ad;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fffefd;
+  box-shadow: 0 4px 18px rgba(29, 80, 78, .055);
+  break-inside: auto;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+  display: grid;
+  grid-template-columns: 65px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 91px;
+  padding: 12px 15px;
+  margin: 0;
+  border: 0;
+  list-style: none;
+  cursor: pointer;
+  background: transparent;
+  color: #1c4b55;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary::-webkit-details-marker,
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary::marker {
+  display: none;
+  content: '';
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary::after {
+  display: none;
+  content: none;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary:hover {
+  background: #f6faf8;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary:focus-visible {
+  outline: 3px solid #2c8886;
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 65px;
+  height: 65px;
+  overflow: hidden;
+  flex: 0 0 65px;
+  border: 1px solid #d6e5da;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #eff8f0, #e2ede9);
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-photo-fallback {
+  color: #57988a;
+  font: 34px/1 Georgia, serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-index.canonical-remedy-number {
+  position: absolute;
+  bottom: 3px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: #267d7b;
+  color: #fff;
+  font: 700 10px/1 Arial, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title {
+  display: block;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title h3 {
+  margin: 0;
+  padding: 0;
+  color: #1b4e5a;
+  font: 650 clamp(17px, 2.5vw, 21px)/1.24 Georgia, 'Times New Roman', serif;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-potency {
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 5px;
+  max-width: 100%;
+  margin: 5px 0 0;
+  padding: 0;
+  color: #59777b;
+  font: 550 13px/1.42 system-ui, sans-serif;
+  white-space: normal;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-fields.canonical-remedy-unified-instructions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-instruction {
+  display: block;
+  color: #466b6f;
+  font: 500 12px/1.45 system-ui, sans-serif;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-instruction > strong {
+  color: #245c60;
+  font-weight: 650;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 0;
+  margin-left: auto;
+  padding: 7px 0 7px 5px;
+  color: #25737a;
+  font: 650 13px/1.35 system-ui, sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  white-space: nowrap;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-chevron {
+  display: inline-block;
+  color: #397a7e;
+  font-size: 20px;
+  line-height: 1;
+  text-decoration: none;
+  transition: transform .18s ease;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-unified-chevron {
+  transform: rotate(180deg);
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] > summary {
+  background: #f7faf8;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > .canonical-remedy-profile-content {
+  display: flow-root;
+  margin: 0;
+  padding: 18px 19px 22px;
+  border-top: 1px solid #e1ebe6;
+  background: #fffefd;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-profile-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 12px;
+  margin: 0 0 14px;
+  color: #21565c;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-profile-heading > strong {
+  font: 600 21px/1.25 Georgia, serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-profile-heading > small {
+  color: #748787;
+  font: 500 12px/1.5 system-ui, sans-serif;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-full-photo {
+  float: right;
+  max-width: min(36%, 210px);
+  margin: 2px 0 14px 18px;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-unavailable {
+  color: #617b7e;
+  font-size: 15px;
+  line-height: 1.5;
+}
+@media screen and (max-width: 700px) {
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+    grid-template-columns: 53px minmax(0, 1fr) auto;
+    gap: 9px;
+    min-height: 74px;
+    padding: 10px 11px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+    width: 53px;
+    height: 57px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title h3 {
+    font-size: clamp(16px, 4.1vw, 19px);
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule {
+    font-size: 12.5px;
+    line-height: 1.36;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
+    font-size: 12px;
+    padding-inline: 0;
+    gap: 2px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-instruction {
+    font-size: 12px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > .canonical-remedy-profile-content {
+    padding: 14px 12px 17px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-full-photo {
+    float: none;
+    width: min(100%, 230px);
+    max-width: 100%;
+    margin: 2px auto 14px;
+  }
+}
+@media screen and (max-width: 360px) {
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 7px;
+    padding: 9px 8px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+    width: 44px;
+    height: 49px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title h3 {
+    font-size: 15px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
+    font-size: 11px;
+  }
+}
+@media print {
+  .canonical-shell .canonical-document--editorial .canonical-remedy.canonical-remedy--unified {
+    break-inside: auto;
+    box-shadow: none;
+    border-radius: 7px;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    padding: 8px 11px;
+    min-height: 68px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+    width: 56px;
+    height: 56px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-toggle {
+    display: none;
+  }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > .canonical-remedy-profile-content {
+    padding: 9px 11px;
+    break-inside: auto;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-full-photo {
+    max-width: 160px;
+  }
+}
