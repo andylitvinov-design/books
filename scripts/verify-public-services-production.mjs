@@ -129,7 +129,7 @@ try {
       assert.equal(await page.locator("#find-your-service").count(), 0,
         "Detailed practitioner search belongs on the separate directory");
       const testAction = free.locator('[data-services-studio-action="tests"]');
-      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/client/tests");
+      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
       await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
       await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
