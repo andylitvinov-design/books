@@ -6,7 +6,7 @@ import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { COURSE_PLANS } from '@/lib/inner-growth/course-plans'
 import { canStartCheckout, PURCHASABLE_PLAN_KEYS } from '@/lib/billing/public-plan'
 import { useSubscription } from './subscription-access'
-import { getCoursePreset } from '@/lib/inner-growth/course-presets'
+import { COURSE_PRESETS, getCoursePreset } from '@/lib/inner-growth/course-presets'
 import CabinetFreeCourseBanners from './cabinet-free-course-banners'
 import styles from './my-courses-dashboard.module.css'
 
@@ -14,7 +14,7 @@ const copy={
   en:{
     eyebrow:'MY COURSES',heading:'Your growth journey',more:'Build one skill at a time, or explore several paths in parallel.',
     primary:'MAIN COURSE',primaryAction:'Make main',today:'Continue course',setup:'Finish setting up',day:'Day',of:'of',lessons:'lessons complete',
-    axes:'Your development focus',other:'Other courses',add:'Start another course',addNote:'Explore a new learning direction',
+    axes:'Your development focus',other:'Other courses',options:'Other possible courses',explore:'Explore',add:'Start another course',addNote:'Explore a new learning direction',
     full:'Your active-course limit is reached. Pause or close a course to free a place.',fullSingle:'One course at a time. Close the current course to start a new one.',completed:'Completed courses',
     archived:'Course history',viewArchive:'View completed and closed courses',hideArchive:'Hide history',closed:'Closed early',
     completedTitle:'Completed',paused:'Paused',close:'Close course',back:'Not now',
@@ -32,7 +32,7 @@ const copy={
   ru:{
     eyebrow:'МОИ КУРСЫ',heading:'Ваш путь развития',more:'Развивайте один навык или работайте над несколькими темами параллельно.',
     primary:'ГЛАВНЫЙ КУРС',primaryAction:'Сделать главным',today:'Продолжить курс',setup:'Завершить настройку',
-    day:'День',of:'из',lessons:'уроков пройдено',axes:'Направления развития',other:'Другие курсы',
+    day:'День',of:'из',lessons:'уроков пройдено',axes:'Направления развития',other:'Другие курсы',options:'Другие возможные курсы',explore:'Посмотреть',
     add:'Начать новый курс',addNote:'Выберите ещё одно направление развития',
     full:'Достигнут лимит активных курсов. Поставьте курс на паузу или закройте его.',fullSingle:'Одновременно можно проходить один курс. Закройте текущий, чтобы начать новый.',
     completed:'Завершённые курсы',archived:'История курсов',viewArchive:'Открыть историю курсов',hideArchive:'Скрыть историю',
@@ -120,6 +120,7 @@ export default function MyCoursesDashboard({
   const history=courses.filter(c=>['completed','archived','closed'].includes(c.status))
   const main=active.find(c=>c.isPrimary)||active[0]
   const others=active.filter(c=>c.id!==main?.id)
+  const suggested=COURSE_PRESETS.filter(preset=>!active.some(course=>course.presetId===preset.id))
   const limit=membership.maxActiveCourses||1
   const occupied=Number.isInteger(membership.occupiedCount)?membership.occupiedCount:courses.filter(course=>course.status==='active').length
   const full=occupied>=limit
@@ -142,6 +143,17 @@ export default function MyCoursesDashboard({
       <h3>{t.other}</h3>
       <div className={styles.extraGrid}>{others.map(course=><CourseTile key={course.id} course={course} locale={locale} t={t}
         onOpen={onOpen} onClose={setClosing} onMakePrimary={onPrimary} busy={busy} canManageCourses={canManageCourses}/>)}</div>
+    </section>}
+    {suggested.length>0&&<section className={styles.discover} aria-label={t.options} data-course-options>
+      <h3>{t.options}</h3>
+      <div className={styles.discoverList}>{suggested.map(preset=><article key={preset.id}
+        className={styles.discoverCard} data-course-option={preset.id}>
+        <span className={styles.discoverIcon} aria-hidden="true"><Leaf size={19}/></span>
+        <div><h4>{preset.title[locale==='ru'?'ru':'en']}</h4>
+          <p>{preset.subtitle[locale==='ru'?'ru':'en']}</p></div>
+        {canAddCourse&&<button type="button" disabled={busy} onClick={onNew}>
+          {t.explore}<ArrowRight size={15} aria-hidden="true"/></button>}
+      </article>)}</div>
     </section>}
     <button type="button" className={styles.addTile} disabled={busy||!canAddCourse} onClick={onNew}>
       <Plus size={26}/><strong>{t.add}</strong><small>{full?fullMessage:t.addNote}</small>
