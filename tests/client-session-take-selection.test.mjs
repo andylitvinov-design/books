@@ -131,7 +131,7 @@ test('permanent removal deletes only the owner-scoped private object, never a pu
    source+'\nreturn deleteUnpublishedPrivateMedia')(
      AppError,async()=>({objectKey:'opaque/synthetic-audio.m4a',provider:'supabase'}),
      ()=>({storage:{from:bucket=>{
-       assert.equal(bucket,PRIVATE_MEDIA_BUCKET)
+       assert.equal(bucket,'hh-client-private-media')
        return {remove:async keys=>{events.push(['remove',...keys]);return {error:null}}}
      }}}),'hh-client-private-media',
      async(_c,_a,cb)=>cb({query:async(sql,values)=>{
