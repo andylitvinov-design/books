@@ -482,23 +482,52 @@ const endSlides: EnergyworkSlide[] = [
     body: l("You have explored Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and personal initiation preparation. This course does not grant Level 1 initiation or certification.", "Вы прошли «Полёт к Солнцу», Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и подготовку к личной инициации. Учебный курс сам по себе не предоставляет инициацию первой ступени или сертификат.") },
 ];
 
+// Keep the same IDs, questions and audio component while placing each lesson's
+// timed practice immediately before its completion/congratulation screen.
+function withClosingPractices(
+  lesson: EnergyworkSlide[],
+  practiceIds: readonly string[],
+  finaleId: string,
+): EnergyworkSlide[] {
+  const practices = practiceIds.map((id) => {
+    const practice = lesson.find((slide) => slide.id === id);
+    if (!practice || practice.kind !== "practice") throw new Error("MISSING_REIKI_PRACTICE_" + id);
+    return practice;
+  });
+  const finale = lesson.find((slide) => slide.id === finaleId);
+  if (!finale || (finale.kind !== "milestone" && finale.kind !== "finish"))
+    throw new Error("MISSING_REIKI_LESSON_FINALE_" + finaleId);
+  return [
+    ...lesson.filter((slide) => slide.id !== finaleId && !practiceIds.includes(slide.id)),
+    ...practices,
+    finale,
+  ];
+}
+
 // Keep the legacy argument solely for callers restoring an old private progress row.
 // It no longer controls the curriculum. All students study every system in sequence.
 export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): EnergyworkSlide[] {
-  return [
-    ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    ...commonSlides.filter((slide) => slide.phase === "flight"),
-    ...pathSlides.tantra.slice(0, 2),
-    pathSlides.tantra.find((slide) => slide.id === "tan-03")!,
-    ...pathSlides.tantra.slice(2).filter((slide) => slide.id !== "tan-03"),
-    commonSlides.find((slide) => slide.id === "presence-01")!,
-    ...commonSlides.filter((slide) => slide.phase === "tantra" && slide.id !== "presence-01"),
-    ...pathSlides.kundalini,
-    ...pathSlides.yggdrasil,
-    ...commonSlides.filter((slide) => slide.phase === "initiation" && slide.id !== "paths-04"),
+  const finalLesson = [
+    commonSlides.find((slide) => slide.id === "paths-01")!,
+    ...commonSlides.filter((slide) => slide.phase === "initiation" &&
+      slide.id !== "paths-01" && slide.id !== "paths-04"),
     ...initiationSlides,
     endSlides[0]!,
     commonSlides.find((slide) => slide.id === "paths-04")!,
     endSlides[1]!,
+  ];
+
+  return [
+    ...commonSlides.filter((slide) => slide.phase === "welcome"),
+    ...withClosingPractices(commonSlides.filter((slide) => slide.phase === "flight"), ["flight-03"], "flight-done"),
+    ...withClosingPractices([
+      ...pathSlides.tantra,
+      ...commonSlides.filter((slide) => slide.phase === "tantra"),
+    ], ["tan-03"], "tan-done"),
+    ...withClosingPractices(pathSlides.kundalini, ["kun-03"], "kun-done"),
+    ...withClosingPractices(pathSlides.yggdrasil, ["ygg-03"], "ygg-done"),
+    // The fifth lesson starts at paths-01, not in the previous Yggdrasil lesson.
+    // Both existing safety/intention practices remain available before the final congratulations.
+    ...withClosingPractices(finalLesson, ["intention-04", "boundaries-03"], "end-02"),
   ];
 }
