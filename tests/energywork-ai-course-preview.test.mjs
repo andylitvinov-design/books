@@ -58,30 +58,30 @@ test('Videos reuse the four approved original source recordings; no render or au
   assert.match(learner, /t\.unavailable/)
 })
 
-test('Sun meditation is followed by gentle warmth-and-light pause, observations, and a lesson question', () => {
+test('Sun meditation is followed by the gentle pause before reflections', () => {
   const lesson = curriculum.split('id: "flight-01"')[1].split('id: "presence-01"')[0]
-  assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-05"'))
-  assert.ok(lesson.indexOf('id: "flight-05"') < lesson.indexOf('id: "flight-voices"'))
+  assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-03"'))
+  assert.ok(lesson.indexOf('id: "flight-03"') < lesson.indexOf('id: "flight-voices"'))
   assert.ok(lesson.indexOf('id: "flight-voices"') < lesson.indexOf('id: "flight-04"'))
-  assert.ok(lesson.indexOf('id: "flight-04"') < lesson.indexOf('id: "flight-03"'))
-  assert.match(lesson, /Sun’s warmth and light/)
+  assert.ok(lesson.indexOf('id: "flight-04"') < lesson.indexOf('id: "flight-05"'))
+  assert.match(lesson, /Sun’s light and warmth/)
   assert.match(lesson, /Ваш опыт важен/)
   assert.match(lesson, /question: \{ type: "text"/)
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
 
-test('Sun practice uses an optional independent sensory reflection, not yes/no radio choices', () => {
+test('Sun practice uses two optional choices for the one-minute exercise', () => {
   const schema = read('data/academy/energywork-ai-schema.js')
   const slide = curriculum.split('id: "flight-03"')[1].split('id: "flight-done"')[0]
   assert.match(slide, /question: sunPracticeQuestion/)
   assert.doesNotMatch(slide, /question: practiceQuestion/)
-  assert.match(curriculum, /const sunPracticeQuestion: EnergyworkQuestion = \{\s*type: "text"/)
-  assert.match(curriculum, /Without the meditation, could you tune in to the Sun/)
-  assert.match(curriculum, /Удалось ли вам без медитации настроиться на Солнце/)
-  assert.match(schema, /'flight-03': 'text'/)
-  assert.match(learner, /flightPracticeResponse\(answers\[slide\.id\]/)
-  assert.match(learner, /slide\.id === "flight-03" \? t\.sunReflectionPlaceholder/)
-  assert.match(css, /\[data-energywork-slide-id="flight-03"\] \.textarea/)
+  assert.match(curriculum, /const sunPracticeQuestion: EnergyworkQuestion = \{\s*type: "choice"/)
+  assert.match(curriculum, /I could feel the light and warmth/)
+  assert.match(curriculum, /I need more practice/)
+  assert.match(schema, /'flight-03': 'choice'/)
+  assert.match(learner, /flightPracticeResponse\(answer, locale\)/)
+  assert.match(css, /\[data-energywork-slide-id="flight-03"\]/)
+  assert.match(css, /\.choices/)
 })
 
 test('Five lessons have separate post-meditation reports and question answers', () => {

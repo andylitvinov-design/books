@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs"
 import {
   ENERGYWORK_VERSION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_ANSWER_IDS,
   ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete,
-  energyworkSequence, energyworkLessonRanges, energyworkPreviousResumeId,
+  energyworkSequence, energyworkLessonRanges, energyworkPreviousResumeId, energyworkP2ResumeId,
 } from "../data/academy/energywork-ai-schema.js"
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8")
@@ -25,23 +25,23 @@ const questions = [
   ["tan-study-07", "After which level can someone become a Tantra Reiki Master and teach and initiate others?"],
 ]
 
-test("Flight lesson slides 3 and 6 are swapped without dropping IDs", () => {
+test("Flight lesson places the practice on slide 3 without dropping IDs", () => {
   const sequence = energyworkSequence()
-  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p2")
+  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p3")
   assert.deepEqual(sequence.slice(2, 9), [
-    "flight-01", "flight-02", "flight-05", "flight-voices",
-    "flight-04", "flight-03", "flight-done",
+    "flight-01", "flight-02", "flight-03", "flight-voices",
+    "flight-04", "flight-05", "flight-done",
   ])
 })
 
-test("Tantra removes original slides 9–10, swaps original 3 and 8, and adds seven successive questions after the guide", () => {
+test("Tantra lesson places connection practice on slide 3 and presence on slide 14", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
   assert.deepEqual(ranges.map((range) => range.count), [7, 16, 8, 16, 8])
   assert.deepEqual(sequence.slice(ranges[1].start, ranges[1].end), [
-    "tan-01", "tan-02", "presence-01", "tan-voices", "tan-04",
+    "tan-01", "tan-02", "tan-03", "tan-voices", "tan-04",
     "tan-05", ...questions.map(([id]) => id),
-    "tan-03", "presence-04", "tan-done",
+    "presence-01", "presence-04", "tan-done",
   ])
   assert.equal(sequence.includes("presence-02"), false)
   assert.equal(sequence.includes("presence-03"), false)
@@ -80,10 +80,14 @@ test("My Courses opens the exact last saved slide and the private API maps older
   assert.match(learner, /setIndex\(requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex\)/)
   assert.match(repo, /resumeSlideId\(row\)/)
   assert.match(repo, /row\.course_version === ENERGYWORK_PREVIOUS_VERSION/)
-  assert.equal(energyworkPreviousResumeId("presence-02"), "tan-study-03")
-  assert.equal(energyworkPreviousResumeId("presence-03"), "tan-study-04")
+  assert.equal(energyworkPreviousResumeId("presence-02"), "tan-study-02")
+  assert.equal(energyworkPreviousResumeId("presence-03"), "tan-study-03")
   assert.equal(energyworkPreviousResumeId("kun-04"), "kun-04")
-  assert.equal(energyworkPreviousResumeId("flight-05"), "flight-03")
+  assert.equal(energyworkPreviousResumeId("flight-05"), "flight-05")
+  assert.equal(energyworkP2ResumeId("flight-05"), "flight-03")
+  assert.equal(energyworkP2ResumeId("flight-03"), "flight-05")
+  assert.equal(energyworkP2ResumeId("presence-01"), "tan-03")
+  assert.equal(energyworkP2ResumeId("tan-03"), "presence-01")
 })
 
 test("All seven study questions require an answer for Next, with contextual source links in EN/RU", () => {
