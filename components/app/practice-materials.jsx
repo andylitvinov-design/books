@@ -1,6 +1,7 @@
 'use client'
-import {useState} from 'react'
+import {useEffect,useState} from 'react'
 import PractitionerArticles from './practitioner-articles'
+import PracticeReportMaterials from './practice-report-materials'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract.js'
 import styles from './practice-materials.module.css'
 
@@ -41,7 +42,11 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   moderation:'Your videos appear on the public profile after editorial approval. Previously published materials remain visible until changes are approved.',
   invalid:'Enter a valid YouTube or Vimeo URL.',duplicate:'This video is already in your materials.',saving:'Saving…',saved:'Video saved to your materials as a draft.',removed:'Video removed from your materials.',saveFailed:'Could not save the video. Please try again.',conflict:'Your profile changed in another tab. Refresh the page and try again.',confirmRemove:'Remove this video from your materials?',autoSaved:'Videos save immediately. Submit for review to publish them on your profile.',
  }
- const [tab,setTab]=useState('videos')
+ const [tab,setTab]=useState('reports')
+ const [reportItems,setReportItems]=useState([])
+ const [reportMode,setReportMode]=useState('loading')
+ const [reportError,setReportError]=useState('')
+ const [reportRefresh,setReportRefresh]=useState(0)
  const original=practitioner?.draftProfile?.videoMaterials||[]
  const [videos,setVideos]=useState(()=>original)
  const [editing,setEditing]=useState(null)
@@ -49,6 +54,18 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  const [error,setError]=useState('')
  const [saving,setSaving]=useState(false)
  const [feedback,setFeedback]=useState('')
+ useEffect(()=>{
+  let alive=true
+  fetch('/api/app/practice/report-materials',{credentials:'same-origin',cache:'no-store'})
+   .then(async r=>r.status===404?null:(r.ok?await r.json():Promise.reject()))
+   .then(data=>{
+    if(!alive)return
+    if(data===null){setReportMode('not-owner');setTab('videos');return}
+    setReportItems(Array.isArray(data.items)?data.items:[])
+    setReportMode('ready')
+   }).catch(()=>{if(alive){setReportMode('error');setReportError('Unable to load the private library')}})
+  return ()=>{alive=false}
+ },[reportRefresh])
  const published=practitioner?.profile?.videoMaterials||[]
  const dirty=JSON.stringify(videos)!==JSON.stringify(original)
  const locked=busy||saving
@@ -96,10 +113,16 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  }
  return <div className={styles.shell}>
   <div className={styles.tabs} role="group" aria-label={ru?'Тип материалов':'Material type'}>
-   <button type="button" aria-pressed={tab==='videos'} onClick={()=>setTab('videos')}>{t.videos} ({videos.length})</button>
+   {reportMode!=='not-owner'&&<button type="button" aria-pressed={tab==='reports'} onClick={()=>setTab('reports')}>
+     {ru?'Для отчётов':es?'Para informes':'For client reports'} ({reportMode==='ready'?reportItems.length:'…'})</button>}
+   <button type="button" aria-pressed={tab==='videos'} onClick={()=>setTab('videos')}>
+     {ru?'Публичный профиль':es?'Perfil público':'Public profile'} ({videos.length})</button>
    <button type="button" aria-pressed={tab==='articles'} onClick={()=>setTab('articles')}>{t.articles}</button>
   </div>
   {tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
+   tab==='reports'?<PracticeReportMaterials items={reportItems} locale={locale}
+    loading={reportMode==='loading'} error={reportError}
+    onRefresh={()=>setReportRefresh(n=>n+1)}/>:
   <div className={styles.body}>
    <p className={styles.intro}>{t.note}</p>
    <div className={styles.heading}>
