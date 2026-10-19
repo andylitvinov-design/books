@@ -13,6 +13,7 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
+import { energyworkLessonRanges } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -50,6 +51,12 @@ const copy = {
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Explore the programme",
+    intro: "Introduction",
+    slidesWord: "slides",
+    saveProgress: "Save progress",
+    saveAndContinue: "Save & continue",
+    signInToSave: "Sign in to save",
+    returnAnytime: "Your place is saved. You can return from My Courses at any time.",
     backCourse: "Course details",
     step: "Slide",
     of: "of",
@@ -159,6 +166,12 @@ const copy = {
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Посмотреть программу",
+    intro: "Введение",
+    slidesWord: "слайдов",
+    saveProgress: "Сохранить прогресс",
+    saveAndContinue: "Сохранить и продолжить",
+    signInToSave: "Войти и сохранить",
+    returnAnytime: "Ваш прогресс сохраняется. Вы сможете вернуться из раздела «Курсы» в любой момент.",
     backCourse: "Описание курса",
     step: "Слайд",
     of: "из",
@@ -463,6 +476,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const accountIdRef = useRef<string | null>(null);
   const revisionRef = useRef(0);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const programmeRef = useRef<HTMLDetailsElement>(null);
   const dirtyRef = useRef(new Set<string>());
   const progressRef = useRef("welcome-01");
   const request = useCallback((body: SaveCommand) => {
@@ -494,7 +508,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     const restoredAnswers = value.answers ?? {};
     answersRef.current = restoredAnswers;
     setAnswers(restoredAnswers);
-    setIndex(Math.max(0, restored.findIndex((item) => item.id === value.slideId)));
+    const savedIndex = Math.max(0, restored.findIndex((item) => item.id === value.slideId));
+    // Only previously reached slides may be opened via cabinet deep links.
+    const requestedId = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("slide");
+    const requestedIndex = requestedId ? restored.findIndex((item) => item.id === requestedId) : -1;
+    setIndex(requestedIndex >= 0 && requestedIndex <= savedIndex ? requestedIndex : savedIndex);
     setSavedAt(value.savedAt || null);
     setSharingWithTeacher(Boolean(value.sharingWithTeacher));
     setApplicationLead(value.applicationLead || null);
@@ -554,6 +572,14 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const slides = useMemo(() => energyworkSlides(), []);
   const slide = slides[index] ?? slides[0]!;
   const total = slides.length;
+  const lessonRanges = useMemo(() => energyworkLessonRanges(), []);
+  const currentLessonRange = lessonRanges.find((range) => index >= range.start && index < range.end);
+  const savedIndex = sync === "ready" ? Math.max(0, slides.findIndex((item) => item.id === progressRef.current)) : index;
+  const reachedIndex = Math.max(index, savedIndex);
+  const progressPercent = Math.round((reachedIndex + 1) / total * 100);
+  const lessonProgressLabel = currentLessonRange
+    ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
+    : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01";
   const voicesArt = slide.kind === "voices";
@@ -565,8 +591,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
-  const lessonNumber = slide.phase === "welcome" ? 1 : slide.phase === "complete" ? 5 :
-    Math.max(1, energyworkLessons.findIndex((item) => item.phase === slide.phase) + 1);
+  const lessonNumber = currentLessonRange?.lesson ?? 1;
   const initiationItems = energyworkInitiationRequirements.map((item) => ({
     ...item,
     title: energyworkLessons.find((lesson) => lesson.phase === item.lesson)?.title[locale] ?? item.lesson,
@@ -627,6 +652,27 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setBusy(false);
     }
     setIndex((current) => Math.min(current + 1, slides.length - 1));
+  }
+  async function saveAndLeave() {
+    if (busy || slide.kind !== "milestone") return;
+    // A guest cannot claim to have saved private progress.
+    if (sync === "guest") { await signIn(); return; }
+    if (sync === "consent") {
+      programmeRef.current?.setAttribute("open", "");
+      programmeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return;
+    }
+    if (sync === "unavailable") { await reloadProgress(); return; }
+    if (sync !== "ready") return;
+    const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
+    setBusy(true);
+    try {
+      await store(nextId);
+      window.location.assign("/" + locale + "/app/course?view=courses");
+    } catch (error) {
+      setSaveError((error as { status?: number })?.status === 409 ? t.conflict : t.saveFailed);
+      setBusy(false);
+    }
   }
   async function previous() {
     if (index === 0 || busy) return;
