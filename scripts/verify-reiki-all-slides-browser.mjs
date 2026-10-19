@@ -170,7 +170,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p3");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p4");
 
   // Opening the bottom hint should consume height in the flex column,
   // shrinking the slide instead of overlaying its contents.
@@ -357,11 +357,13 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-voices");
   await page.locator("button[data-energywork-next]").click();
-  await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id","flight-04");
+  await expectFits("flight-05"); // slide 5: optional Sun symbolism thought
+  await page.locator('textarea[id="answer-flight-05"]').fill(locale==="ru"
+    ? "Солнце для меня символ ясности." : "The Sun symbolizes clarity for me.");
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-04"); // slide 6: required meditation feedback
   await page.locator('textarea[id="answer-flight-04"]').fill(locale==="ru"
     ? "Я заметил спокойное состояние и тёплый свет." : "I felt a quiet, peaceful moment.");
-  await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-05"); // learning reflection moved to slide 6
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
