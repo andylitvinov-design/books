@@ -176,7 +176,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   // Keep independently authored session messages visible without repeating report text.
   const authoredMessage=typeof session.summary==='string'?session.summary.trim():''
   const alreadyInReport=Boolean(hasFullReport&&authoredMessage&&[
-    recommendation?.analysis,recommendation?.additionalNotes,recommendation?.generalInstructions,
+    recommendation?.analysis,recommendation?.recommendationsText,recommendation?.additionalNotes,recommendation?.generalInstructions,
   ].some(text=>typeof text==='string'&&text.includes(authoredMessage)))
   const extraSessionMessage=hasFullReport&&!alreadyInReport?authoredMessage:''
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
