@@ -96,10 +96,16 @@ function safeCsvEntries(rows,defaults){
   return rows.map(row=>{
     const caption=String(row.caption||row.text||row.content||'').trim()
     const title=String(row.title||caption.slice(0,80)||'Imported draft').trim()
+    const inputBrand=String(row.brand||'').trim()
+    const inputChannel=String(row.channel||'').trim().toLowerCase()
+    const inputLocale=String(row.locale||'').trim().toLowerCase()
+    if ((inputBrand&&!GROWTH_BRANDS[inputBrand]) ||
+        (inputChannel&&!GROWTH_CHANNELS.includes(inputChannel)) ||
+        (inputLocale&&!GROWTH_LANGUAGES.includes(inputLocale)))throw new Error('csv')
     return {
-      brand:GROWTH_BRANDS[row.brand]?row.brand:defaults.brand,
-      channel:GROWTH_CHANNELS.includes(row.channel)?row.channel:defaults.channel,
-      locale:GROWTH_LANGUAGES.includes(row.locale)?row.locale:defaults.locale,
+      brand:inputBrand||defaults.brand,
+      channel:inputChannel||defaults.channel,
+      locale:inputLocale||defaults.locale,
       title,caption,sourceUrl:row.sourceUrl||defaults.sourceUrl||'',
       campaign:row.campaign||defaults.campaign||'',scheduledAt:cleanDate(row.scheduledAt),
       mediaUrl:row.mediaUrl||'',mediaAlt:row.mediaAlt||'',
@@ -135,42 +141,53 @@ export default function GrowthStudioBulk({locale='en',base={},ready=false,onCrea
  const activeLangs=GROWTH_LANGUAGES.filter(l=>copies[l]?.trim())
  const variants=activeLangs.length*selected.length
  function update(){
-   if(pending.current){setNotice(locale==='ru'?'Сначала завершите повтор предыдущего пакета.':'Finish the previous batch retry before making changes.');return false}
+   if(pending.current){setNotice(locale==='ru'?'Сначала завершите или отмените прошлый импорт.':'Finish or discard the pending import first.');return false}
    return true
  }
- async function runBatches(batches){
+ async function runBatches(){
+   const job=pending.current
+   if(!job||busy||!ready)return
    setBusy(true);setNotice('')
    try{
-    for(let i=0;i<batches.length;i++){
-      const result=await createGrowthStudioBulkAction(batches[i])
+    while(job.index<job.batches.length){
+      const result=await createGrowthStudioBulkAction(job.batches[job.index])
       if(!result.ok)throw new Error(result.error||'invalid_post')
       onCreated(result.records)
       setProgress(count=>count+result.records.length)
+      job.index+=1
     }
     pending.current=null
-    setNotice((locale==='ru'?'Сохранено: ':'Saved: ')+batches.reduce((sum,x)=>sum+x.entries.length,0)+' '+t.created)
+    setCsvRows([])
+    setNotice((locale==='ru'?'Сохранено: ':'Saved: ')+job.batches.reduce((sum,x)=>sum+x.entries.length,0)+' '+t.created)
    }catch(e){setNotice(t.failed+' '+(e.message||t.bad))}
    finally{setBusy(false)}
  }
+ function discard(){
+   if(busy)return
+   pending.current=null;setCsvRows([]);setProgress(0);setNotice('')
+ }
  async function create(){
    if(!ready||busy)return
-   if(pending.current){await runBatches(pending.current);return}
+   if(pending.current){if(pending.current.kind==='variants')await runBatches();return}
    if(!variants){setNotice(t.missing);return}
    if(variants>20){setNotice(t.limit);return}
    const entries=selected.flatMap(channel=>activeLangs.map(language=>({
     brand,channel,locale:language,title:title.trim()||copies[language].slice(0,80),
-    caption:copies[language],sourceUrl,campaign,mediaUrl,mediaAlt,scheduledAt:cleanDate(scheduledAt),
+    caption:copies[language],sourceUrl,campaign,mediaUrl,mediaAlt,
+    scheduledAt:scheduledAt?new Date(scheduledAt).toISOString():'',
    })))
-   pending.current=[{batchId:uuid(),entries}]
-   setProgress(0);await runBatches(pending.current)
+   pending.current={kind:'variants',index:0,batches:[{batchId:uuid(),entries}]}
+   setProgress(0);await runBatches()
  }
  async function importCsv(file){
-   if(!file)return
+   if(!file||busy)return
+   if(pending.current){setNotice(locale==='ru'?'Отмените предыдущий импорт.':'Discard the previous import first.');return}
    if(file.size>524288){setNotice(t.size);return}
    try{
     const parsed=parseCsv(await file.text())
     const entries=safeCsvEntries(parsed,{brand,channel:'manual',locale:'en',sourceUrl:'',campaign:''})
-    pending.current=Array.from({length:Math.ceil(entries.length/20)},(_,i)=>({batchId:uuid(),entries:entries.slice(i*20,(i+1)*20)}))
+    pending.current={kind:'csv',index:0,
+      batches:Array.from({length:Math.ceil(entries.length/20)},(_,i)=>({batchId:uuid(),entries:entries.slice(i*20,(i+1)*20)}))}
     setCsvRows(entries);setProgress(0);setNotice('')
    }catch(e){setNotice(e.message==='size'?t.size:t.bad);setCsvRows([]);pending.current=null}
  }
@@ -202,10 +219,13 @@ export default function GrowthStudioBulk({locale='en',base={},ready=false,onCrea
        <label>{t.mediaAlt}<input disabled={!ready||busy} maxLength={240} value={mediaAlt} onChange={e=>{if(update())setMediaAlt(e.target.value)}}/></label>
      </div>
      <label>{t.when}<input disabled={!ready||busy} type="datetime-local" value={scheduledAt}
-       onChange={e=>{if(update())setScheduledAt(e.target.value?new Date(e.target.value).toISOString():'')}}/></label>
+       onChange={e=>{if(update())setScheduledAt(e.target.value)}}/></label>
      <p className={styles.hint}>{t.date}</p>
      <p className={styles.variantCount}>{variants} {t.rows} · {t.notice}</p>
-     <button type="button" className={styles.primary} disabled={!ready||busy||variants<1||variants>20} onClick={create}><Files size={16}/>{pending.current?t.retry:t.create}</button>
+     <button type="button" className={styles.primary}
+       disabled={!ready||busy||variants<1||variants>20||pending.current?.kind==='csv'}
+       onClick={create}><Files size={16}/>{pending.current?.kind==='variants'?t.retry:t.create}</button>
+     {pending.current&&<button type="button" disabled={busy} onClick={discard}>{locale==='ru'?'Отменить несохранённое':'Discard pending'}</button>}
     </div>
     <div className={styles.help}>
      <h3>{t.import}</h3><p>{t.types}</p>
@@ -216,8 +236,8 @@ export default function GrowthStudioBulk({locale='en',base={},ready=false,onCrea
        <strong>{t.preview}</strong>
        {csvRows.slice(0,5).map((row,i)=><p key={i}>{row.channel} · {row.locale} · {row.title.slice(0,80)}</p>)}
        {csvRows.length>5&&<p>+{csvRows.length-5}</p>}
-       <button disabled={!ready||busy||!pending.current} onClick={()=>runBatches(pending.current)} type="button">
-         <UploadCloud size={16}/>{pending.current?.length>1?t.import:t.create}
+       <button disabled={!ready||busy||pending.current?.kind!=='csv'} onClick={runBatches} type="button">
+         <UploadCloud size={16}/>{pending.current?.batches?.length>1?t.import:t.create}
        </button>
      </div>}
      {!!progress&&<p>{t.progress}: {progress}</p>}
