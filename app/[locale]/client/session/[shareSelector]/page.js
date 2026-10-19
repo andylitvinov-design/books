@@ -6,7 +6,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { readSessionViewerCookie,authorizeSessionGuest } from '@/lib/clients/session-delivery-access'
 import { getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
 import { ClientSessionShareGate } from '@/components/client-session-share-gate'
-import { ClientSessionPage } from '@/components/client-session-page'
+import { ClientSessionPage,ClientSessionVoiceMessage } from '@/components/client-session-page'
 import { sharedGranulesGuideReady } from '@/lib/clients/shared-education-video'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
@@ -24,6 +24,7 @@ export default async function ClientSessionSharePage({params}) {
     const config=getAppConfig()
     const credential=readSessionViewerCookie(await cookies(),shareSelector)
     const {session}=await authorizeSessionGuest(config,store,shareSelector,credential)
+    const viewSession=guestSessionProjection(session)
     let reportContent=null, recommendation=null, reportLocale=locale
     if(session.report) {
       const record=await getPublishedSessionReport(config,store,session.clientId,session.id)
@@ -33,11 +34,14 @@ export default async function ClientSessionSharePage({params}) {
         reportLocale=resolveSavedReportLocale(record,locale)
         const projected=payment?getClientPaymentDocument(record,reportLocale):getClientPrescription(record,reportLocale)
         if(projected){if(payment)reportContent=<PaymentDocument document={projected} locale={reportLocale} embedded/>
-          else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={reportLocale} embedded narration={{scope:'guest-session',selector:shareSelector}}/>}}
+          else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={reportLocale} embedded
+            afterCover={<ClientSessionVoiceMessage session={viewSession} selector={shareSelector} locale={reportLocale} mode="guest"/>}
+            narration={{scope:'guest-session',selector:shareSelector}}/>}}
       }
     }
     const client=await store.findClientById(session.clientId)
-    return <ClientSessionPage locale={reportLocale} session={guestSessionProjection(session)} selector={shareSelector}
+    return <ClientSessionPage locale={reportLocale} session={viewSession} selector={shareSelector}
+      audioEmbedded={Boolean(recommendation)}
       mode="guest" appAvailable={appEnabled()} clientName={recommendation?.patientName||client?.fullName||''}
       recommendation={recommendation} reportContent={reportContent}
       sharedGuideReady={sharedGranulesGuideReady()}/>
