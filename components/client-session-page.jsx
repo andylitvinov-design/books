@@ -204,7 +204,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           ru?'Просмотрите назначения и индивидуальные инструкции ниже.':
           'Review the assigned items and your practitioner’s individual instructions below.'
         }</p>}
-        <a href={nextAnchor} className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'Review recommendations ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
+        <a href={nextAnchor} className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'View prescriptions ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
       </div>}
       <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
     </section>}
