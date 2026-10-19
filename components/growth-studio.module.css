@@ -66,6 +66,7 @@
 .previewTop strong{font-size:14px}
 .previewTop small{font-size:12px;color:#6c8187}
 .brandDot{display:grid;place-items:center;width:45px;height:45px;flex:none;border-radius:14px;background:linear-gradient(130deg,#0c737c,#b5b091);color:#fff;font-size:22px;font-weight:800}
+.previewMedia{display:block;width:100%;max-height:320px;object-fit:contain;aspect-ratio:16 / 9;background:#ecf4f1;border-radius:12px;margin:0 0 16px}.previewVideo{padding:12px;border-radius:9px;background:#ecf4f1;font-size:12px;overflow-wrap:anywhere;margin-bottom:14px}
 .preview h3{font-size:19px;overflow-wrap:anywhere}
 .previewCopy{font-size:14px;line-height:1.65;min-height:55px;white-space:pre-wrap;overflow-wrap:anywhere;color:#365159}
 .tracking{padding:11px;margin-top:17px;border:1px solid #d9ebe7;border-radius:10px;background:#f3faf9;min-width:0}
