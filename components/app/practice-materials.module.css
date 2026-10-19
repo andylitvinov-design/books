@@ -28,3 +28,20 @@
 .empty{padding:22px;border:1px dashed #c3d6db;border-radius:12px;color:#59717c}
 .error{color:#9b2744;font-weight:700}
 @media(max-width:640px){.tabs{margin-bottom:12px}.editorActions button,.saveActions button{flex:1 1 170px}.heading{align-items:stretch}.heading button{width:100%}}
+
+/* The cabinet's .hh-app button reset is more specific than a single module class.
+   Keep the actual save action visibly active on iPhone and desktop. */
+:global(.hh-app) .shell .primary{
+  min-height:46px;background:#124658;color:#fff;border:1px solid #124658;
+  border-radius:11px;font-weight:750;padding:10px 16px;
+}
+:global(.hh-app) .shell .primary:hover:not(:disabled){background:#0d3847;border-color:#0d3847}
+:global(.hh-app) .shell .secondary{
+  background:#fff;color:#17485b;border:1px solid #c5d9df;font-weight:700;
+}
+:global(.hh-app) .shell .cardActions button{
+  min-height:42px;background:#fff;color:#17485b;border:1px solid #c5d9df;
+}
+:global(.hh-app) .shell button:disabled{opacity:.55;cursor:not-allowed}
+.saveNote{flex:1 1 220px;color:#566f7d;font-size:.9rem;line-height:1.45}
+.success{padding:11px 13px;border-radius:11px;background:#e9f5ef;border:1px solid #b9decf;color:#21614c;font-weight:700}
