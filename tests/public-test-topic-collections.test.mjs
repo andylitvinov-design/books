@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { availableTestCollections, TEST_TOPIC_COLLECTIONS } from '../lib/assessments/test-collections.js'
 import { testCollectionAffinity, testCollectionIds } from '../lib/assessments/test-collection-membership.js'
+import { problemsForTopics, relevanceForSelectedProblems } from '../lib/assessments/test-problems.js'
 import { buildExplorerEntries, filterExplorerEntries, rankPublicTestMatches, buildPublicStarterBattery } from '../lib/assessments/test-explorer.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -75,16 +76,25 @@ test('collection suggestions appear after detailed filters and before test recom
   const collectionHandler = parent.split('onChooseCollection={(id) => {')[1]?.split('viaProfileEntry=')[0]
   assert.ok(collectionHandler)
   assert.doesNotMatch(collectionHandler, /setKinds\(\[\]\)|setMaxMinutes\(0\)|setDepth\('balanced'\)|setFocus\(/)
-  assert.match(parent, /activeCollection \? filterExplorerEntries\(entries, \{/)
-  assert.match(parent, /maxMinutes, language, tracking, freeOnly, search: query, selectedKeys/)
+  assert.match(parent, /const simpleRecommendationPool = useMemo/)
+  assert.match(parent, /availability: 'available', styles: stylesFilter, kinds, lengths, areas, details,/)
+  assert.match(parent, /focus: selectionFocus, problems,/)
+  assert.match(parent, /normalizeProblemsForTopics\(\[key\], selectionFocus\)/)
+  assert.match(parent, /const searchRecommendations = simpleRecommendations/)
+  assert.doesNotMatch(parent, /onToggleFocus=\{\(key\) => \{ setActiveCollectionId\(null\)/)
+  assert.match(picker, /const concernFocus = activeCollection/)
+  assert.match(picker, /orderedCollections\.map\(\(collection\) =>/)
+  assert.match(picker, /collections\.length > 2/)
   assert.match(picker, /data-test-collection-marker/)
   assert.match(css, /\.collectionMarker/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none;/)
+  assert.match(css, /\.curatedCard:nth-child\(n\+3\)\s*\{\s*display:\s*none;/)
   assert.match(css, /@media\s*\(max-width:\s*760px\)/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none;/)
+  assert.doesNotMatch(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none;/)
   assert.match(css, /\.curated\[data-expanded="true"\] \.curatedCard\s*\{\s*display:\s*flex;/)
   assert.match(picker, /Подборки тестов по темам/)
-  assert.match(picker, /Test collections by topic/)
+  assert.match(picker, /Test collections by topic \(optional\)/)
+  assert.match(picker, /Подборки тестов по темам \(необязательно\)/)
+  assert.match(picker, /Colecciones de pruebas por tema \(opcional\)/)
 })
 
 test('collection counts and ordering reflect prior topic, concern, time and type choices', () => {
@@ -137,4 +147,32 @@ test('collection membership and boosted ranking use real test topics, without ex
   assert.equal(nonMember.matchPercent,
     baseline.find((entry) => entry.key === nonMember.key)?.matchPercent,
     'collection boosts do not alter unrelated results')
+})
+
+test('the combined preference model keeps hard type/time filters and rewards real concern overlap', () => {
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const eligible = filterExplorerEntries(entries, { availability: 'available' })
+  const chosenTopics = ['stress', 'anxiety']
+  const concernAndTest = problemsForTopics(chosenTopics).flatMap((concern) =>
+    eligible.filter((entry) => entry.scaleGuide && relevanceForSelectedProblems(entry, [concern.key]) > 0)
+      .map((entry) => ({ concern: concern.key, entry }))).find(({ entry }) =>
+        rankPublicTestMatches([entry], { focus: chosenTopics })[0]?.matchPercent < 99)
+  assert.ok(concernAndTest, 'at least one actionable stress concern has a measurable, runnable test')
+  const { concern, entry } = concernAndTest
+  const baseline = rankPublicTestMatches([entry], { focus: chosenTopics })[0]
+  const withConcern = rankPublicTestMatches([entry], { focus: chosenTopics, problems: [concern] })[0]
+  assert.ok(withConcern.matchPercent > baseline.matchPercent,
+    'a user-selected relevant concern must materially affect test fit')
+
+  const restricted = filterExplorerEntries(entries, {
+    availability: 'available', kinds: ['professional'], maxMinutes: 5,
+  })
+  assert.ok(restricted.length > 0)
+  const recommendations = rankPublicTestMatches(restricted, {
+    focus: chosenTopics, problems: [concern], collectionId: 'stress',
+    collectionFocus: ['stress', 'anxiety'],
+  })
+  assert.ok(recommendations.length > 0)
+  assert.ok(recommendations.every((item) => item.testKind === 'professional' && item.durationMinutes <= 5))
+  assert.deepEqual(new Set(recommendations.map((item) => item.key)).size, recommendations.length)
 })
