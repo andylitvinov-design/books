@@ -51,3 +51,18 @@ test("business messaging separates evidence and symbolic methods", () => {
   assert.match(layout, /data-business-format/);
   assert.match(layout, /business-offers/);
 });
+
+test("business landing follows the Services photo-card and progressive-details pattern", () => {
+  const landing = read("components/business-consulting-landing.tsx");
+  const styling = read("components/business-consulting-landing.module.css");
+  assert.match(landing, /data-business-quick-start/);
+  assert.match(landing, /data-business-service-cards/);
+  assert.match(landing, /offerImages\[offer\.kind\]/);
+  assert.match(landing, /<details className=\{styles\.offerDetails\}>/);
+  assert.match(landing, /className=\{styles\.offerLink\}/);
+  assert.match(landing, /href="#business-direct-request"/);
+  assert.match(styling, /\.offerCard\.featured/);
+  assert.match(styling, /\.offerPhoto/);
+  assert.match(styling, /@media\(max-width:767px\)/);
+  assert.match(landing, /free-situation-review\?topic=business/);
+});

@@ -100,3 +100,146 @@
 
 .offerDirectLink{margin-top:13px;min-height:43px;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#31576b;font:750 12px/1.45 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
 .requestDirect{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:#315b69;font:800 13px/1.5 Arial,Helvetica,sans-serif;text-underline-offset:4px}
+
+
+/* Business v3: the same warm, compact, photo-left editorial language as Services. */
+.page{background:#faf8f3;color:#382d27}
+.container{width:min(1188px,calc(100% - 32px))}
+.breadcrumb{padding:15px 2px 14px}
+.breadcrumb a{color:#476953;font-size:12px}
+.hero{grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);border:1px solid #e5d9cc;border-radius:24px;background:#f8f3e9;box-shadow:0 12px 36px rgba(70,45,27,.055)}
+.heroCopy{padding:clamp(28px,4.2vw,56px)}
+.eyebrow,.sectionEyebrow{color:#946b4e;font-size:10px;letter-spacing:.12em;margin-bottom:12px}
+.hero h1{font-size:clamp(36px,4vw,56px);color:#382b22;line-height:1.1;margin-bottom:18px}
+.heroLead{font-size:15px;line-height:1.64;color:#675b50}
+.audiences{color:#496e57;margin:17px 0 19px}
+.heroActions{gap:12px}
+.primary,.offerLink,.bottomAction{background:#285947;border-radius:13px;min-height:49px;font-size:13px;padding:11px 15px;transition:background .16s ease}
+.primary:hover,.offerLink:hover,.bottomAction:hover{background:#1c4738;transform:none}
+.secondary{color:#355f49}
+.microcopy{color:#796e65;font-size:11px;line-height:1.5}
+.heroVisual{position:relative;min-height:430px;padding:0;overflow:hidden;background:#d9d8c8;isolation:isolate}
+.heroVisual::before{display:none}
+.heroImage{object-fit:cover;object-position:center 27%}
+.heroCaption{position:absolute;inset:auto 0 0;padding:70px 27px 27px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;background:linear-gradient(0deg,rgba(34,42,33,.88),rgba(34,42,33,.48) 54%,transparent);color:#fff}
+.heroCaption span{font:750 12px/1.5 Arial,Helvetica,sans-serif;color:#f1eee6}
+.heroCaption strong{font:400 clamp(21px,2vw,27px)/1.2 Georgia,"Times New Roman",serif;max-width:30ch}
+.quickStart{margin:14px auto 0;padding:15px 19px;border:1px solid #e3d8c9;border-radius:16px;background:#fffdfa;display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px 20px;align-items:center}
+.quickStartTitle{font:750 13px/1.45 Arial,Helvetica,sans-serif;color:#433b33}
+.quickStartActions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.quickStartFree,.quickStartPaid{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;border-radius:12px;padding:9px 15px;font:750 12px/1.4 Arial,Helvetica,sans-serif;text-decoration:none}
+.quickStartFree{background:#285947;color:#fff!important}
+.quickStartFree:hover{background:#1e493a}
+.quickStartPaid{color:#315e49;background:#eaf2ea;border:1px solid #cedfce}
+.quickStartPaid:hover{background:#dcebdc}
+.quickStart small{grid-column:2;color:#776d63;font:11px/1.5 Arial,Helvetica,sans-serif}
+.offers,.problems,.workflow,.faq{margin-top:clamp(37px,5vw,58px)}
+.problems h2,.offers h2,.workflow h2,.results h2,.mentor h2,.request h2,.faq h2,.bottom h2{color:#392c24;font-size:clamp(29px,3.1vw,41px)}
+.sectionLead{font-size:13px;line-height:1.55;color:#655c52}
+.offerGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:20px}
+.offerCard,.offerCard.featured{display:grid;grid-template-columns:clamp(125px,13.8vw,165px) minmax(0,1fr);gap:14px;align-items:stretch;padding:11px;border:1px solid #e5d9cc;border-radius:19px;background:#fffdfa;box-shadow:0 8px 26px rgba(75,52,39,.045)}
+.offerCard.featured{grid-column:span 2;grid-template-columns:200px minmax(0,1fr);border:1px solid #bdd1be;background:linear-gradient(100deg,#f2f7f0,#fffefa 62%);box-shadow:0 9px 26px rgba(40,85,71,.055)}
+.offerPhoto{position:relative;min-width:0;min-height:230px;overflow:hidden;border-radius:13px;background:#e6e1d7}
+.offerPhoto img{object-fit:cover;object-position:center}
+.offerCard.featured .offerPhoto{min-height:180px}
+.offerContent{min-width:0;display:flex;flex-direction:column;align-items:stretch;padding:7px 6px 5px 0}
+.offerTop{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:7px}
+.offerKicker{font-size:10px;line-height:1.38;color:#866448;letter-spacing:.08em;margin:0}
+.offerBadge{color:#285947;background:#e7f0e4;border:1px solid #ccdcc9;border-radius:100px;padding:4px 9px;font:800 11px/1.4 Arial,Helvetica,sans-serif;white-space:nowrap}
+.offerCard:first-child .offerBadge{color:#fff;background:#36835f;border-color:#36835f}
+.offerCard h3{font:400 clamp(21px,2vw,27px)/1.16 Georgia,"Times New Roman",serif;color:#3a2c24;margin:10px 0 7px;min-height:0}
+.offerTeaser{font:12.5px/1.55 Arial,Helvetica,sans-serif;color:#645a51;margin:0}
+.offerTime{font:750 11px/1.48 Arial,Helvetica,sans-serif;color:#577461;margin:10px 0 0}
+.offerDetails{margin:9px 0 10px;border-top:1px solid #e8dfd3}
+.offerDetails summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;min-height:36px;font:750 12px/1.5 Arial,Helvetica,sans-serif;color:#3e684f}
+.offerDetails summary::-webkit-details-marker{display:none}
+.offerDetails[open] summary svg{transform:rotate(180deg)}
+.offerDetails p{font:12px/1.54 Arial,Helvetica,sans-serif;color:#665b52;margin:4px 0 9px}
+.offerDetails p svg{display:inline;vertical-align:middle;margin-right:7px;color:#4f7b5e}
+.offerActions{display:flex;align-items:center;flex-wrap:wrap;gap:8px 13px;margin-top:auto}
+.offerLink,.contactButton{width:auto!important;flex:1 1 185px;min-width:0;min-height:46px!important;display:flex!important;gap:9px;border-radius:11px!important;padding:10px 14px!important;background:#285947!important;color:#fff!important;font:750 12px/1.4 Arial,Helvetica,sans-serif!important;text-align:left;justify-content:space-between!important}
+.offerLink:hover,.contactButton:hover{background:#1c4939!important}
+.offerDirectLink{margin:0;flex:0 1 auto;min-height:44px;font:750 11px/1.35 Arial,Helvetica,sans-serif;color:#3e694f;gap:5px;text-underline-offset:3px}
+.problemGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:18px}
+.problemCard{display:grid;grid-template-columns:32px 1fr;gap:4px 12px;align-items:start;padding:19px;border:1px solid #e6dcd0;background:#fffdfa}
+.cardNum{grid-row:1/3;color:#a18260;font-size:23px}
+.problemCard h3{font-size:15px;color:#3f372d;margin:0}
+.problemCard p{grid-column:2;color:#6b6258;font-size:12px;line-height:1.55}
+.workflowGrid li{border-top-color:#8bac91;background:#fffdfa}
+.workflowNum{color:#7ca285}
+.workflowGrid h3{color:#39372e}
+.workflowGrid p,.approachGrid p{color:#656057}
+.twoApproaches{background:#edf3e9}
+.twoApproaches h3{color:#345c45}
+.approachGrid svg{color:#5b916f}
+.results{background:#254b3c}
+.results .sectionEyebrow{color:#e6d4b5}
+.results li svg{color:#c9e3bd}
+.mentor{background:#f2ebdf}
+.request{margin-top:47px;border-color:#e5d9cc;background:#fffdfa}
+.request .requestNote{color:#71685f!important}
+.request p:not(.sectionEyebrow){color:#665e55}
+.requestDirect{color:#376449}
+.requestButton,.mentorButton{background:#285947!important}
+.requestButton:hover,.mentorButton:hover{background:#1f4b3b!important}
+.requestButtonAlt{background:#3c6856!important}
+.faq details{border-top-color:#e6d9cb}
+.faq summary{color:#3b342c}
+.faq details p{color:#665b52}
+.disclaimer{background:#f3eee5}
+.disclaimer p{color:#6c6257}
+.bottom{margin-top:50px;background:#e9f0e4}
+.page a:focus-visible,.page button:focus-visible,.page summary:focus-visible{outline:3px solid #a27653;outline-offset:3px}
+@media(max-width:980px){
+  .hero{grid-template-columns:1.06fr .94fr}
+  .heroCopy{padding:30px}
+  .heroVisual{min-height:420px}
+  .offerCard{grid-template-columns:125px minmax(0,1fr)}
+  .offerCard.featured{grid-template-columns:180px 1fr}
+}
+@media(max-width:767px){
+  .container{width:calc(100% - 24px)}
+  .hero{display:flex;flex-direction:column;border-radius:20px}
+  .heroCopy{padding:25px 21px}
+  .hero h1{font-size:clamp(34px,8.5vw,44px)}
+  .heroLead{font-size:13px;line-height:1.55}
+  .heroVisual{height:280px;min-height:280px;max-height:280px}
+  .heroImage{object-position:center 24%}
+  .heroCaption{padding:62px 19px 16px}
+  .heroCaption strong{font-size:19px}
+  .heroCaption span{font-size:10px}
+  .quickStart{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:13px}
+  .quickStartActions{display:grid;grid-template-columns:1fr;gap:7px}
+  .quickStart small{font-size:10px}
+  .offers,.problems,.workflow,.faq{margin-top:31px}
+  .offerGrid{grid-template-columns:1fr;gap:10px;margin-top:15px}
+  .offerCard,.offerCard.featured{grid-column:auto;grid-template-columns:100px minmax(0,1fr);gap:10px;padding:9px;border-radius:16px}
+  .offerPhoto,.offerCard.featured .offerPhoto{min-height:180px;border-radius:11px}
+  .offerContent{padding:3px 1px 2px 0}
+  .offerKicker{font-size:9px}
+  .offerBadge{font-size:10px;padding:3px 7px}
+  .offerCard h3{font-size:clamp(19px,5.4vw,24px);margin:7px 0 5px}
+  .offerTeaser{font-size:11.5px;line-height:1.42}
+  .offerTime{font-size:10px;margin-top:7px}
+  .offerDetails{margin:7px 0 8px}
+  .offerDetails summary{min-height:34px}
+  .offerDetails p{font-size:11.5px}
+  .offerActions{display:grid;grid-template-columns:1fr;gap:3px}
+  .offerLink,.contactButton{width:100%!important;min-height:43px!important;padding:9px 10px!important;font-size:11.3px!important}
+  .offerDirectLink{min-height:37px;font-size:11px}
+  .problemGrid{grid-template-columns:1fr 1fr;gap:8px}
+  .problemCard{grid-template-columns:1fr;gap:6px;padding:15px}
+  .cardNum{grid-row:auto;font-size:19px}
+  .problemCard h3,.problemCard p{grid-column:1}
+  .problemCard h3{font-size:13px}
+  .problemCard p{font-size:11.5px}
+  .request{margin-top:32px}
+  .results{background:#254b3c}
+}
+@media(max-width:390px){
+  .offerCard,.offerCard.featured{grid-template-columns:87px minmax(0,1fr);gap:8px}
+  .offerPhoto,.offerCard.featured .offerPhoto{min-height:155px}
+  .offerCard h3{font-size:19px}
+  .problemGrid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){.offerDetails summary svg{transition:none}}

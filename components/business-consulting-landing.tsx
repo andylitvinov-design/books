@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Check, ClipboardCheck, Compass, Lightbulb, ShieldCheck, Target } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, ChevronDown, ClipboardCheck, Compass, Lightbulb, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -29,6 +29,13 @@ const paidRequests: Record<BusinessLocale, { express: string; full: string; ment
 
 export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }) {
   const t = businessConsultingCopy[locale];
+  const detailLabel = locale === "ru" ? "Детали" : locale === "es" ? "Detalles" : "Details";
+  const siteRequestLabel = locale === "ru" ? "Заявка с сайта" : locale === "es" ? "Solicitud en la web" : "Website request";
+  const offerImages = {
+    free: "/images/holistic-house/report-lighthouse-coast.webp",
+    express: "/images/holistic-house/books-library.webp",
+    full: "/images/holistic-house/andy-about.png",
+  } as const;
   const freeHref = "/" + locale + "/services/free-situation-review?topic=business";
   const contactUrl = (kind: "express" | "full" | "mentoring") =>
     whatsappEnquiryUrl({
@@ -53,29 +60,92 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
             <p className={styles.heroLead}>{t.lead}</p>
             <p className={styles.audiences}><Check size={17} aria-hidden="true" />{t.audiences}</p>
             <div className={styles.heroActions}>
-              <AcquisitionEventLink href="#business-direct-request" event="service_request_start" className={styles.primary} prefetch={false} attributes={{ "data-business-cta": "free-hero" }}>
+              <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.primary} prefetch={false} attributes={{ "data-business-cta": "free-hero" }}>
                 {t.freeCta}<ArrowRight size={19} aria-hidden="true" />
               </AcquisitionEventLink>
               <a href="#business-offers" className={styles.secondary}>{t.paidCta}<ArrowUpRight size={18} aria-hidden="true" /></a>
             </div>
             <p className={styles.microcopy}><ShieldCheck size={15} aria-hidden="true" />{t.noPromise}</p>
           </div>
-          <div className={styles.heroVisual} aria-label={t.boardTitle}>
-            <div className={styles.boardLabel}><Target size={18} aria-hidden="true"/>{t.boardEyebrow}</div>
-            <h2>{t.boardTitle}</h2>
-            <div className={styles.board}>
-              {t.board.map((step, index) => (
-                <div key={step} className={styles.boardStep}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{step}</strong>
-                  {index < t.board.length - 1 ? <ArrowRight size={17} aria-hidden="true" /> : <Check size={17} aria-hidden="true" />}
-                </div>
-              ))}
-            </div>
-            <div className={styles.person}>
-              <Image src="/images/holistic-house/andy-about.png" alt="Andrey Litvinov" width={56} height={56} sizes="56px" />
+          <div className={styles.heroVisual}>
+            <Image
+              src="/images/holistic-house/andy-about.png"
+              alt="Andrey Litvinov"
+              fill
+              priority
+              sizes="(max-width: 767px) 100vw, 43vw"
+              className={styles.heroImage}
+            />
+            <div className={styles.heroCaption}>
               <span>{t.practitioner}</span>
+              <strong>{t.boardTitle}</strong>
             </div>
+          </div>
+        </section>
+
+        <nav className={styles.quickStart} aria-label={t.offersTitle} data-business-quick-start>
+          <span className={styles.quickStartTitle}>{locale === "ru" ? "С чего начать?" : locale === "es" ? "¿Por dónde empezar?" : "Where to begin?"}</span>
+          <div className={styles.quickStartActions}>
+            <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.quickStartFree} prefetch={false}
+              attributes={{ "data-business-quick-action": "free-written-review" }}>
+              {t.offers[0].name}<ArrowRight size={16} aria-hidden="true" />
+            </AcquisitionEventLink>
+            <a href="#business-offers" className={styles.quickStartPaid}>
+              {locale === "ru" ? "Личная сессия · от €50" : locale === "es" ? "Sesión personal · desde €50" : "Personal session · from €50"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </a>
+          </div>
+          <small>{t.replyNote}</small>
+        </nav>
+
+        <section id="business-offers" className={styles.offers} aria-labelledby="business-offers-title">
+          <p className={styles.sectionEyebrow}>{t.offersEyebrow}</p>
+          <h2 id="business-offers-title">{t.offersTitle}</h2>
+          <p className={styles.sectionLead}>{t.offersLead}</p>
+          <div className={styles.offerGrid} data-business-service-cards>
+            {t.offers.map((offer, index) => (
+              <article key={offer.kind}
+                className={[styles.offerCard, offer.kind === "full" ? styles.featured : ""].join(" ")}
+                data-business-offer={offer.kind}>
+                <div className={styles.offerPhoto} aria-hidden="true">
+                  <Image src={offerImages[offer.kind]} alt="" fill
+                    sizes="(max-width: 767px) 110px, (max-width: 1100px) 170px, 180px"
+                    loading={index === 0 ? "eager" : "lazy"} />
+                </div>
+                <div className={styles.offerContent}>
+                  <div className={styles.offerTop}>
+                    <span className={styles.offerKicker}>{offer.kicker}</span>
+                    <span className={styles.offerBadge}>{offer.price}</span>
+                  </div>
+                  <h3>{offer.name}</h3>
+                  <p className={styles.offerTeaser}>{offer.description}</p>
+                  <p className={styles.offerTime}>{offer.time}</p>
+                  <details className={styles.offerDetails}>
+                    <summary>{detailLabel}<ChevronDown size={16} aria-hidden="true" /></summary>
+                    <p><ClipboardCheck size={16} aria-hidden="true" />{offer.takeaway}</p>
+                    {offer.kind === "free" ? <p>{t.replyNote}</p> : null}
+                  </details>
+                  <div className={styles.offerActions}>
+                    {offer.kind === "free" ? (
+                      <AcquisitionEventLink href={freeHref} event="service_request_start"
+                        className={styles.offerLink} prefetch={false}
+                        attributes={{ "data-business-format": "free" }}>
+                        {offer.cta}<ArrowRight size={17} aria-hidden="true" />
+                      </AcquisitionEventLink>
+                    ) : (
+                      <ContactChannelChooser locale={locale} whatsappUrl={contactUrl(offer.kind)} label={offer.cta}
+                        event="service_request_start" className={styles.contactButton}
+                        attributes={{ "data-business-format": offer.kind }} />
+                    )}
+                    <AcquisitionEventLink className={styles.offerDirectLink}
+                      href="#business-direct-request" event="service_request_start" prefetch={false}
+                      attributes={{ "data-business-direct-option": offer.kind }}>
+                      {siteRequestLabel}<ArrowRight size={15} aria-hidden="true" />
+                    </AcquisitionEventLink>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
@@ -87,40 +157,6 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
               <article key={item.title} className={styles.problemCard}>
                 <span className={styles.cardNum}>0{index + 1}</span>
                 <h3>{item.title}</h3><p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="business-offers" className={styles.offers} aria-labelledby="business-offers-title">
-          <p className={styles.sectionEyebrow}>{t.offersEyebrow}</p>
-          <h2 id="business-offers-title">{t.offersTitle}</h2>
-          <p className={styles.sectionLead}>{t.offersLead}</p>
-          <div className={styles.offerGrid}>
-            {t.offers.map((offer) => (
-              <article key={offer.kind} className={[styles.offerCard, offer.kind === "full" ? styles.featured : ""].join(" ")} data-business-offer={offer.kind}>
-                <p className={styles.offerKicker}>{offer.kicker}</p>
-                <h3>{offer.name}</h3>
-                <div className={styles.priceLine}><strong>{offer.price}</strong><span>{offer.time}</span></div>
-                <p className={styles.offerDescription}>{offer.description}</p>
-                <p className={styles.offerTakeaway}><ClipboardCheck size={18} aria-hidden="true"/>{offer.takeaway}</p>
-                <div className={styles.offerAction}>
-                  {offer.kind === "free" ? (
-                    <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.offerLink} prefetch={false}
-                      attributes={{ "data-business-format": "free" }}>{offer.cta}<ArrowRight size={18} aria-hidden="true"/></AcquisitionEventLink>
-                  ) : (
-                    <ContactChannelChooser locale={locale} whatsappUrl={contactUrl(offer.kind)} label={offer.cta}
-                      event="service_request_start" className={styles.contactButton}
-                      attributes={{ "data-business-format": offer.kind }} />
-                  )}
-                </div>
-                <AcquisitionEventLink className={styles.offerDirectLink}
-                  href="#business-direct-request"
-                  event="service_request_start" prefetch={false}
-                  attributes={{"data-business-direct-option":offer.kind}}>
-                  {locale === "ru" ? "Отправить заявку с сайта" : locale === "es" ? "Enviar solicitud desde la web" : "Send a website request"}
-                  <ArrowRight size={15} aria-hidden="true"/>
-                </AcquisitionEventLink>
               </article>
             ))}
           </div>
