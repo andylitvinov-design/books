@@ -2759,3 +2759,104 @@
   .reportPdfActions{grid-template-columns:minmax(0,1fr);gap:10px}
   .cabinetSessionPage .reportDownloadSection .reportPdfActions>a{min-height:50px}
 }
+
+/* Coastal client report: honor the compact prescription and appendix layout.
+   The theme previously overrode the shared compact styles with flow-root,
+   tall schedules and large CTA margins. Keep the same private report data. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-group-title) {
+    margin:0;
+    padding:0;
+    border:0;
+    font-size:12px;
+    line-height:1.4;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy) {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:3px 9px;
+    margin:0 0 7px;
+    padding:10px 12px;
+    border-radius:10px;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-title h3) {
+    font-size:18px;
+    line-height:1.22;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-schedule) {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:2px 5px;
+    margin:3px 0 0;
+    padding:0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    font:600 12px/1.38 system-ui,-apple-system,sans-serif;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action) {
+    display:inline-flex;
+    grid-column:2;
+    grid-row:1;
+    align-self:center;
+    min-height:40px;
+    margin:0;
+    padding:8px 4px;
+    border:0;
+    background:transparent;
+    box-shadow:none;
+    font:650 12px/1.3 system-ui,-apple-system,sans-serif;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-profiles) {
+    break-before:auto;
+    margin:12px auto 0;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial details.canonical-remedy-profile-disclosure) {
+    border-radius:10px;
+    box-shadow:none;
+  }
+}
+@media screen and (max-width:700px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy) {
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:3px 6px;
+    padding:8px 10px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-heading) {
+    grid-column:1;
+    grid-row:1;
+    min-width:0;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-remedy-title h3) {
+    font-size:16px;
+    line-height:1.22;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-remedy-schedule) {
+    display:flex;
+    margin:3px 0 0;
+    padding:0;
+    border:0;
+    background:transparent;
+    font-size:12px;
+    line-height:1.33;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy > a.canonical-remedy-profile-action) {
+    grid-column:2;
+    grid-row:1;
+    justify-self:end;
+    min-height:44px;
+    margin:0;
+    padding:10px 2px;
+    background:transparent;
+    font-size:12px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial details.canonical-remedy-profile-disclosure > summary) {
+    min-height:0;
+    padding:7px 10px;
+  }
+}
