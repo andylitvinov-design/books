@@ -85,6 +85,6 @@ test('Owner CRM can approve/reject and student edits revoke previously approved 
   assert.match(pub,/row\.revision !== expectedRevision/)
   assert.match(repo,/await deleteAllPublicReviews\(db,actor\)/)
   assert.match(repo,/if \(body\.answer !== \(answers\[body\.slideId\] \|\| ''\)\)/)
-  assert.match(repo,/await consentToPublicReview\(db,actor,config,progress,answersFrom\(progress,config\)/)
+  assert.match(repo,/await consentToPublicReview\(db,actor,config,answersFrom\(progress,config\)/)
   assert.doesNotMatch(pub,/console\.(?:log|warn|error)|autoPublish|massMail/)
 })
