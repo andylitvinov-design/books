@@ -18,6 +18,9 @@ test("public tests have own crawleable locale page, distinct from private test e
   assert.match(pageSource, /languages/);
   assert.match(pageSource, /canonical/);
   assert.match(pageSource, /<h1/);
+  assert.match(pageSource, /images: \[\{ url: image, alt:/);
+  assert.match(pageSource, /twitter: \{ card: "summary_large_image".*images: \[image\]/);
+
   assert.match(pageSource, /\/client\/tests/);
   assert.match(pageSource, /not medical or psychiatric diagnoses/);
   assert.doesNotMatch(config, /source:\s*["']\/\:locale\(en\|ru\|es\)\/tests["'],\s*destination:\s*["']\/\:locale\/client\/tests/);
