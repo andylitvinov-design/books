@@ -13,7 +13,13 @@ test("Tantra Reiki cards, video catalog and learner use the dedicated yin-yang a
   assert.ok(tantraCard);
   assert.ok(tantraCard.includes(cover));
   assert.ok(!tantraCard.includes(mayaDisk));
-  for (const path of ["components/academy-video-courses.tsx", "data/academy/energywork-ai-curriculum.ts"]) {
+  for (const path of [
+    "components/academy-video-courses.tsx",
+    "data/academy/energywork-ai-curriculum.ts",
+    "components/academy-free-course-banner.tsx",
+    "components/academy-course-capture.tsx",
+    "data/academy/english-guided-meditations.ts",
+  ]) {
     const source = read(path);
     assert.ok(source.includes(cover), path);
     assert.ok(!source.includes(mayaDisk), path);
