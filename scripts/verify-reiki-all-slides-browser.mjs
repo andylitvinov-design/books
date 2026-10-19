@@ -189,7 +189,7 @@ async function exerciseJourney(page, locale, width) {
       order: getComputedStyle(child).order,
     })),
   }));
-  assert.ok(infoRect && toggleRect && infoRect.bottom <= toggleRect.top + 2,
+  assert.ok(infoRect && toggleRect && infoRect.y + infoRect.height <= toggleRect.y + 2,
     "Explanations appear above the bottom-row toggle: " + JSON.stringify({ infoRect, toggleRect, hintLayout }));
   for (const path of ["reiki/tantra-reiki", "reiki/kundalini-reiki", "reiki/yggdrasil"]) {
     const link = journeyInfo.locator('a[href="/' + locale + '/academy/' + path + '"]');
