@@ -52,7 +52,7 @@ const workflowCopy={
     noteSaved:'Internal note saved.',failure:'Could not save. Refresh and try again.',
     conflict:'This contact changed in another tab. Refresh its data.',
     loadingThread:'Opening conversation…',notesBadge:'Internal · not sent',
-    overview:'Contact workflow'},
+    overview:'Contact workflow',stageSaved:'Contact updated.'},
   ru:{stage:'Статус контакта',lead:'Интересуется',client:'Клиент',archived:'Архив',
     archiveConfirm:'Перенести контакт в архив? Ответы этому контакту будут запрещены.',
     followups:'Следующие действия',schedule:'Создать задачу',complete:'Выполнено',noFollowups:'Открытых задач нет.',
@@ -63,7 +63,7 @@ const workflowCopy={
     noteSaved:'Внутренняя заметка сохранена.',failure:'Не удалось сохранить. Обновите переписку.',
     conflict:'Контакт был изменён в другой вкладке. Обновите данные.',
     loadingThread:'Открываю переписку…',notesBadge:'Внутренняя · не отправлено',
-    overview:'Работа с контактом'},
+    overview:'Работа с контактом',stageSaved:'Статус контакта обновлён.'},
   es:{stage:'Estado del contacto',lead:'Interesado',client:'Cliente',archived:'Archivado',
     archiveConfirm:'¿Archivar este contacto? Se bloquearán las respuestas.',
     followups:'Próximas acciones',schedule:'Crear tarea',complete:'Completar',noFollowups:'No hay tareas pendientes.',
@@ -74,7 +74,7 @@ const workflowCopy={
     noteSaved:'Nota interna guardada.',failure:'No se pudo guardar. Actualiza la conversación.',
     conflict:'El contacto cambió en otra pestaña. Actualiza los datos.',
     loadingThread:'Abriendo conversación…',notesBadge:'Interno · no enviado',
-    overview:'Gestión del contacto'},
+    overview:'Gestión del contacto',stageSaved:'Estado actualizado.'},
 }
 function torontoTomorrow(now=new Date()){
   const d=new Date(now.getTime()+86400000)
@@ -209,7 +209,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
     const result=await action('set_stage',{
       threadId:selected.id,lifecycle:nextValue,expectedRevision:selected.contactRevision,
     })
-    if(result)setStatus(w.completed)
+    if(result)setStatus(w.stageSaved)
   }
   async function createFollowup(){
     if(!selected||!dueOn||busy)return
