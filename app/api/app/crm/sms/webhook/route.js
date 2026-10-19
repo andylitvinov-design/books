@@ -30,7 +30,7 @@ export async function POST(request){
   const sid=payload.get('MessageSid')||payload.get('SmsSid')
   const status=(payload.get('MessageStatus')||payload.get('SmsStatus')||'').toLowerCase()
   const from=payload.get('From')||''
-  const isStop=STOP.test((payload.get('Body')||'').trim())
+  const isStop=payload.get('OptOutType')==='STOP'||STOP.test((payload.get('Body')||'').trim())
   // Never store an inbound message's text, phone or clinical details.
   if(!isStop&&!['queued','sending','sent','delivered','undelivered','failed'].includes(status))
     return new NextResponse('<Response></Response>',{status:200,headers:{...HEADERS,'Content-Type':'text/xml'}})
