@@ -156,7 +156,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'energy', weight: 0.85 }, { key: 'relationships', weight: 0.5 }, { key: 'resource', weight: 0.7 },
       { key: 'functioning', weight: 0.65 }, { key: 'emotional_regulation', weight: 0.55 },
     ],
-    title: { en: 'Weekly Psychic Health', ru: 'Психическое состояние за неделю', es: 'Estado psicológico de la semana' },
+    title: { en: 'Weekly Wellbeing Check-in', ru: 'Самочувствие за неделю', es: 'Bienestar de la semana' },
     description: {
       en: 'Original Holistic House weekly self-monitoring across state, symptoms, function and resources.',
       ru: 'Оригинальный еженедельный Holistic House check-in состояния, симптомов, функционирования и ресурсов.',

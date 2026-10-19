@@ -8,6 +8,7 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import {
   dueState,
+  latestCompatibleChange,
   dailyMoodSeries,
   monitoringPlan,
   recommendMonitoring,
@@ -268,4 +269,67 @@ test('axis overview keeps State, Symptoms, Function, Resources and Baseline sepa
         ({ item }) => item.key === 'hh-weekly-pulse',
       ),
     )
+})
+
+test('tampered latest questionnaire cannot mark monitoring completed or up-to-date', () => {
+  const item = monitoringCatalogItem('hh-current-state')
+  const earlier = result(state, 4, 1)
+  const latest = { ...result(state, 4, 6), contentHash: 'sha256:unverified-result' }
+  const input = [earlier, latest], original = JSON.stringify(input)
+  const status = dueState(item, { results: input, locale: 'en', now: '2026-10-07T12:00:00Z' })
+  assert.equal(status.state, 'not_completed')
+  assert.equal(status.latest, null, 'do not promote an older verified score as current')
+  assert.equal(status.verificationRequired, true)
+  assert.equal(status.daysSince, null)
+  assert.equal(compatibleSeries(item, input, 'en').length, 0, 'no trend from a tampered latest result')
+  assert.equal(deterministicPatterns({ results: input, locale: 'en' }).length, 0)
+  assert.equal(JSON.stringify(input), original, 'monitoring never rewrites stored answers or scores')
+})
+
+test('unattainable or malformed latest values cannot satisfy a monitoring plan', () => {
+  const item = monitoringCatalogItem('hh-current-state')
+  const genuine = result(state, 5, 1)
+  const altered = { ...result(state, 5, 7), dimensions: genuine.dimensions.map((d, i) =>
+    i === 0 ? { ...d, value: 999 } : d) }
+  for (const invalid of [altered, { ...result(state, 5, 7), measurementAt: 'invalid-date' }]) {
+    const plan = dueState(item, { results: [genuine, invalid], locale: 'en', now: '2026-10-08T12:00:00Z' })
+    assert.notEqual(plan.state, 'up_to_date')
+    assert.notEqual(plan.state, 'completed')
+    assert.ok(plan.verificationRequired || plan.state === 'due_now')
+  }
+})
+
+test('an unverified intermediate response never creates a false trend, while valid retests remain comparable', () => {
+  const item = monitoringCatalogItem('hh-current-state')
+  const first = result(state, 4, 1)
+  const corrupted = { ...result(state, 8, 2), contentHash: 'invalid' }
+  const last = result(state, 7, 4)
+  const series = compatibleSeries(item, [last, corrupted, first], 'en')
+  assert.deepEqual(series.map(row => row.id), [first.id, last.id])
+  const delta = latestCompatibleChange(item, [last, corrupted, first], 'en')
+  assert.ok(delta.length > 0)
+  assert.equal(delta[0].current, 7)
+  assert.equal(delta[0].prior, 4)
+  const plan = dueState(item, { results: [first, corrupted, last], now: '2026-10-05T12:00:00Z' })
+  assert.equal(plan.state, 'up_to_date')
+  assert.equal(plan.verificationRequired, false)
+})
+
+test('an invalid latest retest blocks longitudinal pattern claims until a new valid observation arrives', () => {
+  const first = result(state, 3, 1)
+  const second = result(state, 5, 2)
+  const third = result(state, 7, 3)
+  const invalid = { ...result(state, 9, 4), scoringVersion: 'unrecognised' }
+  assert.ok(deterministicPatterns({ results: [first, second, third], locale: 'en' }).length > 0)
+  assert.deepEqual(deterministicPatterns({ results: [first, second, third, invalid], locale: 'en' }), [])
+  assert.equal(compatibleSeries(monitoringCatalogItem('hh-current-state'), [first, second, third, invalid], 'en').length, 0)
+})
+
+test('authored weekly check-in is never marketed as a validated mental-health diagnosis', () => {
+  const entry = monitoringCatalogItem('hh-weekly-pulse')
+  assert.equal(entry.title.en, 'Weekly Wellbeing Check-in')
+  assert.equal(entry.title.ru, 'Самочувствие за неделю')
+  assert.equal(entry.title.es, 'Bienestar de la semana')
+  assert.match(entry.description.en, /Original Holistic House weekly self-monitoring/)
+  assert.doesNotMatch(entry.title.en, /psychic health|clinical|diagnosis/i)
 })
