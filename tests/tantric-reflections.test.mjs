@@ -67,8 +67,8 @@ test('six original EN/RU tantra questionnaires include the full 64-question port
    }
  }
  const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
- assert.equal(coverage.total, 145)
- assert.equal(coverage.registered, 145)
+ assert.equal(coverage.total, 150)
+ assert.equal(coverage.registered, 150)
  assert.deepEqual(coverage.uncovered, [])
  assert.deepEqual(coverage.obsolete, [])
 })

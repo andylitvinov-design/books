@@ -1,10 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { canonicalJSON } from '../lib/assessments/contracts.js'
+import { assertAssessmentSourceIntegrity, approvedLegacySourceKeys } from './helpers/legacy-source-fingerprint.mjs'
 import { verifiedHistoryResult } from '../lib/assessments/verified-history.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import { PRIORITY_METHODS_2026 } from '../data/assessments/priority-methods-2026.js'
@@ -103,6 +102,22 @@ function analyze(d) {
     issues.push('unexpected overlapping total/subscale items')
   return {issues,links,dimensions:dimensions.length,unscored,overlaps}
 }
+test('five item-only source fingerprints are immutable and separately sealed against entire source changes',()=>{
+  const keys=approvedLegacySourceKeys()
+  assert.equal(keys.length,5)
+  for(const key of keys){
+    const def=ALL.find(item=>item.key===key&&item.version==='v1'&&item.instrumentLocale==='en')
+    assert.ok(def,'Expected registered legacy source '+key)
+    assert.equal(assertAssessmentSourceIntegrity(def),'legacy-source-fingerprint')
+    assert.throws(()=>assertAssessmentSourceIntegrity({
+      ...def,source:{...def.source,title:def.source.title+' altered'},
+    }),/entire original v1 questionnaire has changed/)
+    assert.throws(()=>assertAssessmentSourceIntegrity({
+      ...def,contentHash:'sha256:'+'0'.repeat(64),
+    }),/published source-item fingerprint has changed/)
+  }
+})
+
 test('whole published library has exact provenance, no orphaned rubric or score-bound errors',()=>{
   assert.ok(ALL.length>=230)
   assert.ok(new Set(ALL.map(d=>d.id)).size===ALL.length)
@@ -111,8 +126,7 @@ test('whole published library has exact provenance, no orphaned rubric or score-
     authors:0,researchCandidates:0}
   for(const d of ALL) {
     const label=identity(d)
-    const {contentHash,...rest}=d
-    assert.equal(contentHash,'sha256:'+createHash('sha256').update(canonicalJSON(rest)).digest('hex'),label)
+    assertAssessmentSourceIntegrity(d)
     const scored=analyze(d)
     assert.deepEqual(scored.issues,[],label)
     assert.ok(d.questions.length>0,label)

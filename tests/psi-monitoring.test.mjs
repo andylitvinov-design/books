@@ -28,6 +28,7 @@ import { CDC_HEALTHY_DAYS_CATALOG } from '../data/assessments/cdc-healthy-days-2
 import { IPIP_BIG_FIVE_50_CATALOG } from '../data/assessments/ipip-big-five-50-en-v1.js'
 import { PERSONALITY_TYPE_CATALOG } from '../data/assessments/personality-types-original-2026.js'
 import { OPEN_PROFESSIONAL_2026_CATALOG } from '../data/assessments/open-professional-2026.js'
+import { ADDITIONAL_PROFESSIONAL_CATALOG } from '../data/assessments/professional-additions-2026.js'
 import { validateMoodInput } from '../lib/app/mood.js'
 
 const accountId = '10000000-0000-4000-8000-000000000001'
@@ -110,6 +111,7 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
     ...IPIP_THREE_CATALOG.map((item) => item.key),
     ...IPIP_FIVE_CATALOG.map((item) => item.key),
     ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
+    ...ADDITIONAL_PROFESSIONAL_CATALOG.map((item) => item.key),
   ].sort())
   for (const key of ['functioning-review'])
     assert.equal(monitoringCatalogItem(key).startable, false)

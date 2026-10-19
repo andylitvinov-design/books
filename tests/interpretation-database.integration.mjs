@@ -20,6 +20,8 @@ import { withResultInterpretations } from '../lib/app/result-interpretations.js'
 import { storedResultInterpretation, STORED_INTERPRETATION_VERSION } from '../lib/assessments/interpretation-resolution.js'
 import { storedInterpretationForDimension } from '../lib/assessments/interpretation-storage.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
+import { assertAssessmentSourceIntegrity } from './helpers/legacy-source-fingerprint.mjs'
+import { historicalInterpretationCoverage } from './helpers/historical-interpretation-coverage.mjs'
 import { interpretationDatabaseOptions, validateInterpretationRelease, assertFreshInterpretationDatabase, INTERPRETATION_SEED_PATH } from './helpers/interpretation-db-isolation.mjs'
 
 // Fail before constructing any Client/Pool when invocation/transport is unsafe.
@@ -29,6 +31,13 @@ const release=JSON.parse(await readFile(new URL('data/assessments/interpretation
 const seedURL=new URL(INTERPRETATION_SEED_PATH,root)
 const seedExists=await access(seedURL).then(()=>true,()=>false)
 const gate=validateInterpretationRelease(release,APPROVED_INTERPRETATION_DIGESTS,{seedExists})
+// Immutable 2026-10-17 releases cover 230 original source versions. Later
+// registered tests are valid source definitions but do not have old signed
+// registry receipts; their current interpretations must use verified code.
+const historicalCoverage=gate.pending ? null : historicalInterpretationCoverage(
+  ASSESSMENT_DEFINITIONS,gate.approvedDigests,release.interpretationVersion)
+const {historical:historicalDefinitions=[],newer:newDefinitions=[],approvedRowCount=0}=
+  historicalCoverage||{}
 const v2Release = gate.pending ? null : await validateNativeV2Release(root, APPROVED_INTERPRETATION_DIGESTS)
 const v3Release = gate.pending ? null : await validateNativeV3Release(root, APPROVED_INTERPRETATION_DIGESTS)
 const digest=bytes=>'sha256:'+crypto.createHash('sha256').update(bytes).digest('hex')
@@ -51,10 +60,16 @@ async function foundation(db){
    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(auth.jwt()->>'sub','')::uuid $$;
    GRANT USAGE ON SCHEMA auth TO authenticated; GRANT EXECUTE ON FUNCTION auth.jwt(),auth.uid() TO authenticated;`)
  await db.query(await readFile(new URL('supabase/migrations/20261002164037_hh_app_r1_foundation.sql',root),'utf8'))
- assert.equal(ASSESSMENT_DEFINITIONS.length,230)
+ assert.equal(approvedRowCount,release.recordCount,'Historical source receipts match pinned release')
+ assert.equal(historicalDefinitions.length*2,release.recordCount)
+ assert.equal(ASSESSMENT_DEFINITIONS.length,historicalDefinitions.length+newDefinitions.length)
  for(const definition of ASSESSMENT_DEFINITIONS){
-  const {contentHash,...content}=definition
-  assert.equal(digest(canonicalJSON(content)),contentHash,'Technical source definition hash must be exact')
+  // The 230 sealed source releases use canonical SHA; five newer v1 forms
+  // published an item-only fingerprint. Verify *both* the locked fingerprint
+  // and their independently approved complete-definition digest, without
+  // silently changing their historical source identities.
+  assertAssessmentSourceIntegrity(definition)
+  const contentHash=definition.contentHash
   await db.query(`INSERT INTO app.assessment_versions(id,definition_key,definition_version,instrument_locale,translation_version,
     definition,questions,answer_schema,scoring_key,scoring_version,result_schema,timeframe,source_metadata,content_hash)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,[definition.id,definition.key,definition.version,
@@ -109,7 +124,7 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
     assert.equal(row.payload_sha256,APPROVED_INTERPRETATION_DIGESTS[key]);assert.equal(validInterpretationRecord(row,identity),true)
     assert.equal(row.payload_canonical,canonicalJSON(row.payload))
    }
-   for(const definition of ASSESSMENT_DEFINITIONS)for(const locale of ['en','ru'])assert.ok(actual.has(interpretationRecordApprovalKey({definitionId:definition.id,contentHash:definition.contentHash,interpretationVersion:release.interpretationVersion,reportLocale:locale})))
+   for(const definition of historicalDefinitions)for(const locale of ['en','ru'])assert.ok(actual.has(interpretationRecordApprovalKey({definitionId:definition.id,contentHash:definition.contentHash,interpretationVersion:release.interpretationVersion,reportLocale:locale})))
    assert.deepEqual([...actual].sort(),Object.keys(gate.approvedDigests).sort())
   })
   await check('All eight English-questionnaire IPIP rows contain reviewed Russian report prose without categorical bands',async()=>{
@@ -130,7 +145,7 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
   })
   await check('Actual readback SQL reports exact coverage and zero integrity mismatches',async()=>{
    const result=await db.query(await readFile(new URL('docs/assessments/interpretation-registry-readback.sql',root),'utf8'))
-   for(const [key,value]of Object.entries({published_definitions:230,registry_rows:460,referenced_definitions:230,en_report_rows:230,ru_report_rows:230,active_rows:440,historical_rows:20,payload_byte_mismatches:0,payload_hash_mismatches:0,missing_expected_keys:0,unexpected_keys:0}))assert.equal(Number(result[0].rows[0][key]),value,key)
+   for(const [key,value]of Object.entries({published_definitions:ASSESSMENT_DEFINITIONS.length,registry_rows:release.recordCount,referenced_definitions:historicalDefinitions.length,en_report_rows:historicalDefinitions.length,ru_report_rows:historicalDefinitions.length,active_rows:440,historical_rows:20,payload_byte_mismatches:0,payload_hash_mismatches:0,missing_expected_keys:newDefinitions.length*2,unexpected_keys:0}))assert.equal(Number(result[0].rows[0][key]),value,key)
    assert.equal(Number(result[1].rows[0].provenance_mismatches),0)
   })
   await check('Normal server loader reads every approved identity under hh_app_backend',()=>transaction(async()=>{
@@ -139,7 +154,7 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
   },'hh_app_backend'))
   await check('Historical v1 receipts render explicitly; current v3 rejects stale prose and uses verified code for all 230 synthetic results',()=>transaction(async()=>{
    assert.notEqual(STORED_INTERPRETATION_VERSION,release.interpretationVersion,'This seed proves historical v1 integrity, not native v2 parity')
-   for(const definition of ASSESSMENT_DEFINITIONS){
+   for(const definition of historicalDefinitions){
     const answers=Object.fromEntries(definition.questions.map(question=>[question.id,question.min??definition.answerScale.min]))
     const result=scoreAssessment(definition,answers,syntheticTraumaContext(definition))
     const [enriched]=await withResultInterpretations(db,[result])
@@ -159,6 +174,20 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
       assert.equal(current.registrySource,'code')
       assert.equal(current.interpretationVersion,INTERPRETATION_RULES_VERSION)
      }
+    }
+   }
+   for(const definition of newDefinitions){
+    const answers=Object.fromEntries(definition.questions.map(question=>[
+      question.id,question.min??definition.answerScale?.min??0,
+    ]))
+    const result=scoreAssessment(definition,answers,syntheticTraumaContext(definition))
+    const [enriched]=await withResultInterpretations(db,[result])
+    assert.deepEqual(enriched.interpretationRecords,{},
+      'New source forms cannot inherit a dated historical registry payload')
+    for(const locale of ['en','ru'])for(const dimension of result.dimensions){
+      const model=interpretationBandModel(enriched,dimension,locale)
+      assert.equal(model.registrySource,'code')
+      assert.equal(model.interpretationVersion,INTERPRETATION_RULES_VERSION)
     }
    }
   },'hh_app_backend'))

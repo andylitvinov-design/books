@@ -143,7 +143,7 @@ test('author questionnaire cards do not repeat long evidence wording', async () 
     readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8'),
   ])
   assert.doesNotMatch(methodology, /Авторский образовательный опросник Holistic House \(2026\)/)
-  assert.match(methodology, /Авторская шкала для самонаблюдения[^']+не предназначена для постановки диагноза/)
+  assert.match(methodology, /Авторская шкала для самонаблюдения[^']+Независимая психометрическая валидизация этой версии не подтверждена/)
   for (const file of [simple, full]) assert.match(file, /entry\.methodologyStatus !== 'original'/)
 })
 

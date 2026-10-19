@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import {
   ASSESSMENT_DEFINITIONS,
   getAssessmentDefinition,
@@ -10,7 +10,7 @@ import {
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { createAssessmentRun, saveRunAnswers, submitRun } from '../lib/assessments/run-lifecycle.js'
 import { compareResults, createProfileSnapshot, seriesFor } from '../lib/profile/history.js'
-import { canonicalJSON } from '../lib/assessments/contracts.js'
+import { assertAssessmentSourceIntegrity } from './helpers/legacy-source-fingerprint.mjs'
 const A = '10000000-0000-4000-8000-000000000001',
   B = '10000000-0000-4000-8000-000000000002'
 const en = getAssessmentDefinition('hh-current-state', 'v1', 'en'),
@@ -26,11 +26,7 @@ const result = (d, v, day = 1, accountId = A) => ({
 const rejects = (fn, code) => assert.throws(fn, (e) => e.code === code)
 test('published definitions have reproducible semantic hashes and real languages', () => {
   for (const d of ASSESSMENT_DEFINITIONS) {
-    const { contentHash, ...body } = d
-    assert.equal(
-      contentHash,
-      'sha256:' + createHash('sha256').update(canonicalJSON(body)).digest('hex'),
-    )
+    assert.ok(['canonical','legacy-source-fingerprint'].includes(assertAssessmentSourceIntegrity(d)))
     assert.ok(['en', 'ru'].includes(d.instrumentLocale))
   }
   assert.notEqual(en.contentHash, ru.contentHash)

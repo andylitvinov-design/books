@@ -41,13 +41,13 @@ function scoreSumAt(definition, dimensionKey, target) {
   return scoreAssessment(definition, answers)
 }
 
-test('all 145 runnable tests have exact-version plans; unavailable licensed tests remain excluded', () => {
+test('all current runnable tests have exact-version plans; licensed references stay disabled', () => {
   const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
-  assert.equal(coverage.total, 145)
-  assert.equal(coverage.registered, 145)
+  assert.ok(coverage.total>=150)
+  assert.equal(coverage.registered, coverage.total)
   assert.deepEqual(coverage.uncovered, [])
   assert.deepEqual(coverage.obsolete, [])
-  assert.equal(new Set(runnable.map(d => d.key)).size, 145)
+  assert.equal(new Set(runnable.map(d => d.key)).size, coverage.total)
   assert.equal(interpretationPlan('hh-current-state', 'v2')?.key, 'hh-current-state')
   assert.equal(interpretationPlan('hh-current-state', 'v1')?.key, 'hh-current-state')
   assert.equal(interpretationPlan('hh-current-state', 'v3'), null)

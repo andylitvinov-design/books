@@ -277,3 +277,23 @@ test('full report shows original 0–4 response codes, exact attainable points a
   assert.match(source,/sourceResponseOptions: authorClusters\?\.responseOptions/)
   assert.match(source,/contentBoundary: authorClusters\?\.contentBoundary/)
 })
+
+test('a v2 mean of one authored item is explained as one rating, not a multi-item reliable scale',()=>{
+  for(const key of ['hh-overthinking-loop','hh-screen-saturation']){
+    for(const locale of ['en','ru']){
+      const {result}=get(key,'v2',locale,'mid')
+      const dimension=result.dimensions.find(d=>d.key.includes('interruptibility')||d.key.includes('offline_relief'))
+      assert.ok(dimension,key+' has the audited single-item subscale')
+      const reading=gaugeModel(dimension,result,locale)?.rangeReading
+      assert.ok(reading?.clusterBasis,key+':'+locale)
+      assert.equal(reading.sourceQuestions.length,1)
+      assert.match(reading.scoringNote,locale==='ru'
+        ? /Это один ответ.*не среднее нескольких вопросов/
+        : /one direct response.*not a multi-item average/)
+      assert.match(reading.rows.find(row=>row.current).note,locale==='ru'
+        ? /отдельный ответ.*не среднее по нескольким вопросам/
+        : /single rating.*not an average of several items/)
+      assert.doesNotMatch(reading.scoringNote,/validated clinical severity|нормативную надежность/)
+    }
+  }
+})

@@ -13,6 +13,7 @@ import { withResultInterpretations, RESULT_INTERPRETATION_LIMITS } from '../lib/
 import { compactLexicalInsert } from '../scripts/compact-interpretation-v2-sql.mjs'
 import { validateInterpretationRelease, INTERPRETATION_V3_SEED_PATH } from './helpers/interpretation-db-isolation.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
+import { historicalInterpretationCoverage } from './helpers/historical-interpretation-coverage.mjs'
 const digest=bytes=>'sha256:'+crypto.createHash('sha256').update(bytes).digest('hex')
 const code=expected=>error=>error?.code===expected
 const semantic=model=>Object.fromEntries(Object.entries(model).filter(([key])=>!['registrySource','interpretationVersion','interpretationSourceCommit'].includes(key)))
@@ -29,6 +30,12 @@ export async function validateNativeV3Release(root, approvedDigests) {
  return {...release,approvedDigests:gate.approvedDigests}
 }
 export async function verifyNativeV3({t,db,root,transaction,v3Release,sourceSnapshot,sourceBefore,recordColumns}) {
+ // Current library may contain additional immutable source forms that did not
+ // exist when these approved 2026-10-17 v3 receipts were sealed. Do not
+ // synthesize historical database interpretations for those newer definitions.
+ const {historical:historicalDefinitions,newer:newDefinitions,approvedRowCount}=
+   historicalInterpretationCoverage(ASSESSMENT_DEFINITIONS,v3Release.approvedDigests,v3Release.interpretationVersion)
+ assert.equal(approvedRowCount,v3Release.recordCount)
  const proof={status:'running',engine:'native PostgreSQL17',sourceCommit:v3Release.sourceCommit,interpretationVersion:v3Release.interpretationVersion,rulesVersion:INTERPRETATION_RULES_VERSION,recordCount:460,totalHistoricalAndCurrentRecords:1380,checks:[]}
  const check=async(name,fn)=>{await t.test('V3: '+name,async()=>{await fn();proof.checks.push(name)})}
  const legacySnapshot=async()=> (await db.query("SELECT md5(jsonb_agg(to_jsonb(v) ORDER BY assessment_version_id, interpretation_version, report_locale)::text) AS hash FROM app.assessment_interpretation_versions v WHERE interpretation_version<>'2026-10-17.v3'")).rows[0].hash
@@ -77,7 +84,7 @@ export async function verifyNativeV3({t,db,root,transaction,v3Release,sourceSnap
  },'hh_app_backend'))
  await check('real response projection preserves both locales and32-read/512KiB caps for synthetic results and history',()=>transaction(async()=>{
   const low=[];let maxBytes=0
-  for(const definition of ASSESSMENT_DEFINITIONS)for(const endpoint of ['min','max']){
+  for(const definition of historicalDefinitions)for(const endpoint of ['min','max']){
    const result=scoreAssessment(definition,Object.fromEntries(definition.questions.map(q=>[q.id,q[endpoint]??definition.answerScale[endpoint]])),syntheticTraumaContext(definition))
    if(endpoint==='min')low.push(result)
    const [enriched]=await withResultInterpretations(db,[result]);assert.deepEqual(Object.keys(enriched.interpretationRecords).sort(),['en','ru'])
@@ -85,11 +92,25 @@ export async function verifyNativeV3({t,db,root,transaction,v3Release,sourceSnap
    assert.ok(bytes<=RESULT_INTERPRETATION_LIMITS.responseBytes);maxBytes=Math.max(maxBytes,bytes)
    for(const locale of ['en','ru'])for(const dimension of enriched.dimensions){assert.equal(interpretationBandModel(enriched,dimension,locale).registrySource,'database')}
   }
+  // Newer registered tests have valid code-level explanations but **no**
+  // approved historical v3 database receipt. This is an intentional fallback,
+  // not a failed source hash or an invitation to backfill a signed release.
+  for(const definition of newDefinitions){
+   const answers=Object.fromEntries(definition.questions.map(question=>[
+     question.id,question.min??definition.answerScale?.min??0,
+   ]))
+   const result=scoreAssessment(definition,answers,syntheticTraumaContext(definition))
+   const [enriched]=await withResultInterpretations(db,[result])
+   assert.deepEqual(enriched.interpretationRecords,{})
+   for(const locale of ['en','ru'])for(const dimension of enriched.dimensions){
+    assert.equal(interpretationBandModel(enriched,dimension,locale).registrySource,'code')
+   }
+  }
   let reads=0;const tracked={query(sql,params){if(sql.startsWith('SELECT assessment_version_id,'))reads++;return db.query(sql,params)}}
-  const history=await withResultInterpretations(tracked,low);assert.equal(history.length,230)
+  const history=await withResultInterpretations(tracked,low);assert.equal(history.length,historicalDefinitions.length)
   let bytes=0,locales=0;for(let i=0;i<history.length;i++){const {interpretationRecords,...original}=history[i];assert.deepEqual(original,low[i]);for(const payload of Object.values(interpretationRecords)){bytes+=Buffer.byteLength(JSON.stringify(payload));locales++}}
   assert.ok(reads<=32);assert.ok(bytes<=512*1024);assert.ok(locales>0)
-  proof.projection={syntheticResults:460,maxPairBytes:maxBytes,historyReads:reads,historyBytes:bytes}
+  proof.projection={syntheticResults:historicalDefinitions.length*2,codeFallbackDefinitions:newDefinitions.length,maxPairBytes:maxBytes,historyReads:reads,historyBytes:bytes}
  },'hh_app_backend'))
  const rehash=row=>{row.payload_canonical=canonicalJSON(row.payload);row.payload_sha256=digest(row.payload_canonical);return row}
  const candidate=()=>{const row=structuredClone(stored[0]);row.interpretation_version='native-v3-negative.v1';row.payload.interpretationVersion=row.interpretation_version;return rehash(row)}
