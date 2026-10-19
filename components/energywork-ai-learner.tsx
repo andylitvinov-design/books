@@ -939,7 +939,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <div className={styles.reviewRows}>
                     {initiationItems.map((item) => (
                       <div className={styles.reviewRow} key={item.lesson}>
-                        <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
+                        <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
                         <div>
                           <button type="button" onClick={() => jumpToSlide(item.reportId)}
                             className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
@@ -1017,7 +1017,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       ))}
                     </div>
                   ) : null}
-                  {slide.id === "welcome-02" && !experienceMissing ? (
+                  {isKundaliniStudyQuestion && slide.question.help && energyworkReikiStudyAnswerComplete(answers[slide.id]) ? (
+                     <p className={styles.experienceGuidance} role="status" data-kundalini-answer-explanation>
+                       {slide.question.help[locale]}
+                     </p>
+                   ) : null}
+                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
                   ) : null}
                   {isTantraStudyQuestion ? (
@@ -1098,7 +1103,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <div className={styles.reviewRows}>
                       {initiationItems.map((item) => (
                         <div className={styles.reviewRow} key={item.lesson}>
-                          <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
+                          <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
                           <div>
                             {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
                             {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
