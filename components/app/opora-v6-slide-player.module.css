@@ -520,3 +520,12 @@
 
 @media(max-width:370px){.hintOwl{width:36px;height:36px;flex-basis:36px}.animalHintRow{gap:5px}.hintToggle{padding:7px 9px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.hintToggle svg:last-child{transition:none}}
+
+/* An optional Home Screen habit after a verified Day 1 save (legacy lessons). */
+.habitOffer{display:grid;gap:8px;min-width:0;padding:11px;border:1px solid rgba(106,204,197,.65);
+  border-radius:15px;background:rgba(233,250,246,.9)}
+.habitOffer > button{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  min-height:46px;padding:10px 12px;border:1px solid #a4d3cb;border-radius:11px;
+  background:#f8fffd;color:#1c5e69;font-size:14px;font-weight:750;cursor:pointer;text-align:left}
+.habitOffer > button:focus-visible{outline:3px solid #18798a;outline-offset:2px}
+.habitOffer > button[aria-expanded=true] svg{transform:rotate(180deg)}
