@@ -99,6 +99,11 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
       </section>}
 
+      {document.recommendationsText && <section className="canonical-general canonical-report-analysis canonical-report-recommendations">
+        <h2>{labels.recommendations}</h2>
+        <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.recommendationsText}</p>
+      </section>}
+
       <DaoStageDisclosure score={document.daoResourceScore} locale={locale} />
 
       {groups.map((group) => <section className="canonical-remedy-group" key={group.type}>
