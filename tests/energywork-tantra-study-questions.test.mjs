@@ -42,7 +42,7 @@ test("The five-lesson course keeps its flight practice and has 70 total slides",
 test("Tantra study slides are 4, 1, 5, 6, 7 and finally 2+3 on one screen", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
-  assert.deepEqual(ranges.map((range) => range.count), [7, 15, 14, 22, 8])
+  assert.deepEqual(ranges.map((range) => range.count), [7, 15, 16, 22, 8])
   assert.deepEqual(sequence.slice(ranges[1].start, ranges[1].end), [
     "tan-01", "tan-02", "tan-03", "tan-voices", "tan-04", "tan-05",
     ...quizOrder, "presence-01", "presence-04", "tan-done",
@@ -118,7 +118,7 @@ test("Old saves return to the new quiz without removing encrypted answers", () =
   assert.equal(energyworkPreviousResumeId("presence-03"), "tan-study-04")
   assert.equal(energyworkPreviousResumeId("kun-04"), "kun-04")
   assert.equal(energyworkP2ResumeId("flight-05"), "flight-03")
-  assert.equal(energyworkP2ResumeId("flight-03"), "flight-04")
+  assert.equal(energyworkP2ResumeId("flight-03"), "flight-05")
   assert.equal(energyworkP2ResumeId("presence-01"), "tan-03")
   assert.equal(energyworkP2ResumeId("tan-03"), "presence-01")
   assert.match(migration, /2026-10-19\.p5/)
