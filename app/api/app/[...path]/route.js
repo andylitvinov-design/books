@@ -69,7 +69,7 @@ async function handle(request, { params }) {
       path = (await params).path || [],
       method = request.method,
       joined = path.join('/')
-    if (method !== 'GET') requireSameOrigin(request, config)
+    if (method !== 'GET' && method !== 'HEAD') requireSameOrigin(request, config)
     auth = createRequestAuth(request, config)
     const json = (data, status = 200) =>
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
