@@ -37,7 +37,8 @@ try {
     const footerCta = page.locator('[data-reiki-cta="footer"]');
     await expect(heroCta).toBeVisible();
     await expect(footerCta).toHaveCount(1);
-    const targetLocale = locale === "es" ? "en" : locale;
+    // All public Reiki landings deliberately open the single approved EN course URL.
+    const targetLocale = "en";
     const expectedHref = "/" + targetLocale + "/academy/principles-of-energywork/learn";
     await expect(heroCta).toHaveAttribute("href", expectedHref);
     await expect(footerCta).toHaveAttribute("href", expectedHref);
