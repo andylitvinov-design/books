@@ -2022,3 +2022,28 @@
     background-position:center,75% center;
   }
 }
+
+
+/* Session-specific audio/video review: readable, touch-friendly and private. */
+.takeSection{background:#fff;border:1px solid #d2e6e8;border-radius:19px;padding:clamp(16px,3vw,25px);margin:16px 0 22px;box-shadow:0 7px 30px rgba(25,78,88,.055)}
+.takeHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.takeHeader h3{margin:0 0 7px;color:#244d55;font-size:21px;line-height:1.25}
+.takeHeader p{margin:0;color:#5c7880;font-size:15px;line-height:1.45}
+.takeHeader button,.takeActions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:9px 13px;border:1px solid #bdd6d9;border-radius:12px;background:#f5faf9;color:#215865;font:inherit;font-weight:700;cursor:pointer}
+.takeHeader button:disabled,.takeActions button:disabled{opacity:.5;cursor:not-allowed}
+.takeList{display:grid;gap:12px}
+.takeCard{border:1px solid #d6e6e8;border-radius:15px;background:#f7fcfb;padding:15px;min-width:0}
+.takeName{display:flex;gap:9px;align-items:center;flex-wrap:wrap;color:#285562}
+.takeName strong{flex:1;min-width:135px;font-size:16px;line-height:1.35;overflow-wrap:anywhere}
+.takeName small{color:#738e95;font-size:13px}
+.takeCard .audio,.takeCard .video{width:100%;margin:13px 0;max-width:100%}
+.takeCard .video{max-height:320px}
+.takeActions{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.takeChoice{display:flex;align-items:center;gap:10px;min-height:44px;color:#235365;font-weight:750;font-size:15px;cursor:pointer}
+.takeChoice input{width:23px;height:23px;accent-color:#237d87;cursor:pointer;flex:none}
+.takeChoice input:disabled{cursor:not-allowed}
+.takePrivate{display:flex;align-items:center;gap:6px;color:#5b7580;font-size:14px;font-weight:700;max-width:100%}
+.takeHint{font-size:13px;color:#617b7e;line-height:1.45;margin:9px 0 0}
+.takeError{display:flex;gap:8px;align-items:center;color:#963d2a;font-size:14px;font-weight:700;line-height:1.45;margin:10px 0}
+.takeError svg{flex:none}
+@media(max-width:580px){.takeSection{padding:15px}.takeHeader{flex-wrap:wrap}.takeHeader button{margin-left:auto}.takeActions{align-items:stretch}.takeActions button,.takeChoice{flex:1;justify-content:flex-start}.takeCard{padding:13px}.takeHeader h3{font-size:20px}}
