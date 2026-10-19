@@ -22,6 +22,7 @@ function render(expanded, locale = "en") {
   const modules = {
     "react/jsx-runtime": { jsx, jsxs: jsx },
     "react": { useState: () => [expanded, next => { toggled = next; }] },
+    "next/link": { default: props => jsx("a", props) },
     "@/components/site-video-player": { SiteVideoPlayer: props => jsx("video-fixture", props) },
     "./personal-testimonials.module.css": { default: new Proxy({}, { get: (_, name) => String(name) }) },
   };
