@@ -168,7 +168,7 @@ export function ContactChannelChooser({
   return (
     <div className={styles.wrapper} data-contact-channel-chooser>
       <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
-        aria-expanded={open} aria-controls={panelId} onClick={() => setOpen(value => !value)}
+        aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}
         data-contact-order>
         <ShoppingBag size={20} aria-hidden="true" />
         <span>{label || c.order}</span>
