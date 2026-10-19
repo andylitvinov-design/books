@@ -74,3 +74,15 @@ test("linked data represents actual organization/person without invented regulat
   assert.match(read("app/[locale]/services/page.tsx"), /es: "\/es\/services"/);
   assert.doesNotMatch(read("components/holistic-house-home.tsx"), /fake-testimonial|stock-avatar/);
 });
+
+test("EN and RU home meta descriptions match the current paid and free offers within crawler limits", () => {
+  const source = read("lib/home-seo.ts");
+  const descriptions = [...source.matchAll(/description: "([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(descriptions.length, 2);
+  for (const description of descriptions)
+    assert.ok(description.length >= 100 && description.length <= 160, "Invalid home SEO length: " + description.length);
+  assert.match(descriptions[0], /Toronto and online sessions from €50/);
+  assert.match(descriptions[0], /free written review/);
+  assert.match(descriptions[1], /Торонто и онлайн/);
+  assert.match(descriptions[1], /бесплатный письменный разбор/);
+});

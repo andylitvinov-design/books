@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 const homeCopy = {
   en: {
     title: "Personal Sessions in Toronto & Online | Holistic House",
-    description: "Explore one real question with Andrey Litvinov through guided imagery and systemic constellations. Personal consultations in Toronto or online, from €50. Free written review available.",
+    description: "Explore relationships, work and decisions with Andrey Litvinov through systemic constellations. Toronto and online sessions from €50; free written review.",
   },
   ru: {
     title: "Личные консультации в Торонто и онлайн | Holistic House",
-    description: "Личные консультации Андрея Литвинова по вопросам отношений, работы и жизненных решений в Торонто и онлайн, от €50. Можно начать с бесплатного письменного разбора.",
+    description: "Личные сессии Андрея Литвинова в Торонто и онлайн: отношения, работа, важные решения. От €50; бесплатный письменный разбор — по желанию.",
   },
 } as const;
 
