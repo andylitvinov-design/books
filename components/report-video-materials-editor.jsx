@@ -18,7 +18,7 @@ async function ownerApi(path,method='GET',body=null){
   return result
 }
 
-export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultationId,locale='en'}){
+export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultationId,locale='en',placement='all'}){
   const ru=locale==='ru'
   const base='/api/admin/clients/'+encodeURIComponent(clientId)+'/sessions'
   const [sessionId,setSessionId]=useState('')
@@ -68,6 +68,9 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
 
   async function ensureSession(){
     if(sessionId)return sessionId
+    // The top voice editor may have created the linked session in another instance.
+    const existing=await findSession()
+    if(existing?.id)return existing.id
     const created=await ownerApi(base,'POST',{documentId})
     await readSession(created.id)
     return created.id
@@ -113,7 +116,11 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     }catch(e){setError(e.message||'SESSION_UNAVAILABLE')}
     finally{setLoading(false)}
   }
-  return <><section id="report-video-materials-editor" className={styles.ownerReportMaterials}
+  return <>
+  {(placement==='audio'||placement==='all')&&!loading&&<SessionAudioRecorder clientId={clientId} sessionId={sessionId||null}
+    documentId={documentId} locale={locale} audioOnly
+    onSaved={savedId=>{void readSession(savedId).catch(e=>setError(e.message||'SESSION_UNAVAILABLE'))}}/>}
+  {(placement==='materials'||placement==='all')&&<section id="report-video-materials-editor" className={styles.ownerReportMaterials}
     aria-labelledby="report-materials-editor-title">
     <div className={styles.ownerMaterialsHeader}>
       <span className={styles.ownerMaterialsSymbol}><FolderOpen size={23} aria-hidden="true"/></span>
@@ -160,9 +167,6 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     </div>
     {notice&&<p role="status" className={styles.success}>{notice}</p>}
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-  </section>
-  {!loading&&<SessionAudioRecorder clientId={clientId} sessionId={sessionId||null}
-    documentId={documentId} locale={locale} audioOnly
-    onSaved={savedId=>{void readSession(savedId).catch(e=>setError(e.message||'SESSION_UNAVAILABLE'))}}/>}
+  </section>}
   </>
 }
