@@ -127,6 +127,27 @@ test('ordinary course completion binds every ledger, run and refresh request to 
   assert.equal(f.navigations[0], '/en/app/runs/next-run?mode=guided&course=1&courseId=course-a')
 })
 
+test('OPORA completes all three free starter check-ins in order using quick mode and skips saved ones', async () => {
+  const starterKeys=['hh-weekly-pulse','gad-7','hh-resource-pulse']
+  for (const next of ['gad-7','hh-resource-pulse',null]) {
+    const f=continuationFixture()
+    const completed=next==='gad-7' ? ['hh-weekly-pulse'] :
+      next==='hh-resource-pulse' ? ['hh-weekly-pulse','gad-7'] : starterKeys
+    const updated={
+      ...f.respond('course?courseId=course-a'),
+      course:{...selection.course,id:'course-a',stage:2,testKeys:starterKeys},
+      assessments:{selectedTests:starterKeys.map(key=>({key,completed:completed.includes(key)}))},
+    }
+    f.setResponder(path=>path.startsWith('course')?updated:f.respond(path))
+    await f.fn({...f.result,definitionKey:'hh-weekly-pulse'})
+    const target=next ? '/en/app/runs/next-run?mode=quick&course=1&courseId=course-a'
+      : '/en/app/course?tests=complete&courseId=course-a'
+    assert.equal(f.navigations[0],target)
+    assert.equal(f.calls.filter(call=>call[0]==='runs').length,Number(Boolean(next)),
+      'no new run is created when all three already have saved results')
+  }
+})
+
 test('ordinary course completion checks every await before continuing after owner, course, route or lifetime switches', async () => {
   for (let holdAt = 0; holdAt < 7; holdAt++) {
     for (const change of [{ accountId: 'owner-b' }, { courseId: 'course-b' }, { recordId: 'run-b' }, { page: 'tests' }, { courseMode: null }, { epoch: 2 }]) {

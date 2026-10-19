@@ -301,7 +301,12 @@ export default function AppWorkspace({ locale, path = [] }) {
           })
           await refreshCourseOwner()
           if (!isCurrent()) return
-          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=guided&course=1' + courseQuery)
+          // The approved OPORA starter battery stays in quick mode between
+          // all three check-ins. Other course batteries keep guided mode.
+          const oporaStarter=['hh-weekly-pulse','gad-7','hh-resource-pulse']
+          const isOporaStarter=oporaStarter.every(key=>courseState.course?.testKeys?.includes(key))
+          const nextMode=isOporaStarter&&oporaStarter.includes(nextKey)?'quick':'guided'
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=' + nextMode + '&course=1' + courseQuery)
         } else {
           await refreshCourseOwner()
           if (!isCurrent()) return
