@@ -43,7 +43,7 @@ const ruTitles = [
 
 test("Five lesson course retains Sun meditation and has 69 slides", () => {
   const sequence = energyworkSequence()
-  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p8")
+  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p9")
   assert.deepEqual(sequence.slice(2, 9), [
     "flight-01", "flight-02", "flight-03", "flight-voices",
     "flight-05", "flight-04", "flight-done",
