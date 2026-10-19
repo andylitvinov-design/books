@@ -68,7 +68,7 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
   ])
 
   assert.match(mobile, /getCompactNavigation/)
-  assert.match(mobile, /HousePlus/)
+  assert.match(mobile, /LayoutDashboard/)
   assert.match(mobile, /ClipboardList/)
   assert.match(mobile, /CalendarDays/)
   assert.match(mobile, /ia222-bottom-height/)
