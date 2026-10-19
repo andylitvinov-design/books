@@ -5865,3 +5865,19 @@
     pointer-events: none;
   }
 }
+
+
+/* iOS Safari: keep the immersive Reiki lesson anchored to the visible viewport.
+   Never allow browser history/overscroll to move the underlying beige page;
+   other pages and the independently scrollable lesson card are unaffected. */
+@media screen and (max-width: 760px) {
+  html:has(main[data-energywork-ai-learner]),
+  body:has(main[data-energywork-ai-learner]) {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  html:has(main[data-energywork-ai-learner]) {
+    scroll-behavior: auto;
+  }
+}
