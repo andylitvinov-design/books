@@ -274,7 +274,7 @@ const copy = {
       cta: "Empezar tests gratuitos", secondary: "Cómo funcionan",
       photoAlt: "Garza en un paisaje tranquilo", outcomeAlt: "Faro junto al mar", processAlt: "Habitación iluminada por la mañana",
       faq: [
-        ["¿Necesito una cuenta?", "Algunos tests están disponibles como invitado. Para guardar resultados y seguir cambios puede ser necesario acceder con Google."],
+        ["¿Necesito una cuenta?", "Algunos tests están disponibles como invitado, sin iniciar sesión. Para guardar resultados y seguir cambios puede ser necesario acceder con Google."],
         ["¿Son pruebas clínicas?", "Hay instrumentos profesionales y tests educativos. Cada uno tiene sus límites; una puntuación no constituye un diagnóstico."],
         ["¿Puedo elegir varios?", "Sí. El explorador permite seleccionar varios cuestionarios."],
       ],
