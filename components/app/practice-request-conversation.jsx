@@ -175,8 +175,16 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
 }
 export default function PracticeRequestConversation(props){
   const t=COPY[props.locale]||COPY.en
-  const [open,setOpen]=useState(false)
-  return <div className={styles.wrapper}>
+  const [open,setOpen]=useState(Boolean(props.autoOpen))
+  const anchor=useRef(null)
+  useEffect(()=>{
+    if(props.autoOpen){
+      setOpen(true)
+      // Focus the requested conversation, not the first enquiry on this page.
+      anchor.current?.scrollIntoView?.({behavior:'smooth',block:'start'})
+    }
+  },[props.autoOpen,props.requestId])
+  return <div ref={anchor} className={styles.wrapper}>
     <button type="button" className={styles.toggle} aria-expanded={open}
       onClick={()=>setOpen(value=>!value)}>{open?t.close:t.open}</button>
     {open&&<MessageConversation {...props}/>}
