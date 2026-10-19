@@ -17,7 +17,7 @@ const namedTake=(ru,kind,index)=>kind==='video'
 // One place to review multiple takes. All candidate assets are private to
 // this client+session; selecting a take modifies only the DRAFT revision.
 // Clients see a new selection only after the owner's separate Publish action.
-export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKey=0,onChanged,compact=false}){
+export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKey=0,onChanged,compact=false,kindFilter='all'}){
   const ru=locale==='ru',base=sessionId?
     '/api/admin/clients/'+encodeURIComponent(clientId)+'/sessions/'+encodeURIComponent(sessionId):''
   const [session,setSession]=useState(null)
@@ -37,8 +37,9 @@ export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKe
     return ()=>{alive=false}
   },[base,refreshKey])
   const takes=useMemo(()=>(session?.assets||[])
-    .filter(item=>item.status==='ready'&&['audio','video'].includes(item.kind))
-    .slice().reverse(),[session?.assets])
+    .filter(item=>item.status==='ready'&&['audio','video'].includes(item.kind)&&
+      (kindFilter==='all'||item.kind===kindFilter))
+    .slice().reverse(),[session?.assets,kindFilter])
   const draftMap=useMemo(()=>new Map((session?.draft?.media||[]).map(row=>[row.assetId,row])),
     [session?.draft?.media])
   const publishedIds=useMemo(()=>new Set((session?.published?.media||[]).map(row=>row.assetId)),
@@ -65,7 +66,8 @@ export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKe
         if(index===-1){
           if(!visible)break
           media.push({assetId:id,scope:'client',
-            title:asset.kind==='video'?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'),
+            title:asset.kind==='video'?(kindFilter==='video'?(ru?'Видеоприветствие':'Video greeting'):
+              (ru?'Видеообращение':'Video message')):(ru?'Голосовое сообщение':'Voice message'),
             role:'personal',transcript:'',sortOrder:media.length})
         }else media[index]={...media[index],role:visible?'personal':'hidden'}
         try{
@@ -120,12 +122,14 @@ export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKe
     }finally{setBusy('')}
   }
   if(!base)return null
-  return <section className={`${styles.takeSection} ${compact?styles.compactTakeSection:''}`} aria-label={ru?'Варианты аудио и видео':'Audio and video takes'}>
+  return <section className={`${styles.takeSection} ${compact?styles.compactTakeSection:''}`} aria-label={kindFilter==='video'?(ru?'Варианты видеоприветствия':'Video greeting takes'):
+    (ru?'Варианты аудио и видео':'Audio and video takes')}>
     <div className={styles.takeHeader}>
       <div>
-        <h3>{ru?'Варианты записи':'Recording takes'}
+        <h3>{kindFilter==='video'?(ru?'Варианты видео':'Video takes'):(ru?'Варианты записи':'Recording takes')}
           {compact&&<span className={styles.takeCount} aria-label={ru?'Количество записей':'Recording count'}>{takes.length}</span>}</h3>
-        <p>{compact?(ru?'Прослушайте и выберите нужные дубли.':'Listen and choose the takes to share.'):
+        <p>{kindFilter==='video'?(ru?'Просмотрите и выберите видеоприветствие.':'Preview and select a video welcome.'):
+          compact?(ru?'Прослушайте и выберите нужные дубли.':'Listen and choose the takes to share.'):
           (ru?'Прослушайте дубли и отметьте любые подходящие записи. Можно выбрать несколько.':
             'Listen to each take and select as many as you need.')}</p>
       </div>
@@ -135,8 +139,10 @@ export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKe
       </button>
     </div>
     {loading&&<p role="status">{ru?'Загружаем записи…':'Loading takes…'}</p>}
-    {!loading&&takes.length===0&&<p>{ru?'Пока нет сохранённых дублей. Сделайте запись или загрузите файл выше.':
-      'No saved takes yet. Record or import an audio file above.'}</p>}
+    {!loading&&takes.length===0&&<p>{kindFilter==='video'?
+      (ru?'Пока нет видео. Запишите приветствие или загрузите MP4/MOV выше.':'No video yet. Record or upload an MP4/MOV above.'):
+      (ru?'Пока нет сохранённых дублей. Сделайте запись или загрузите файл выше.':
+       'No saved takes yet. Record or import an audio file above.')}</p>}
     <div className={styles.takeList}>
       {takes.map((asset,index)=>{
         const row=draftMap.get(asset.id)
