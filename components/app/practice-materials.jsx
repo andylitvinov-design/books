@@ -114,10 +114,16 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  }
  return <div className={styles.shell}>
   <div className={styles.tabs} role="group" aria-label={ru?'Тип материалов':'Material type'}>
-   <button type="button" aria-pressed={tab==='videos'} onClick={()=>setTab('videos')}>{t.videos} ({videos.length})</button>
+   {reportMode!=='not-owner'&&<button type="button" aria-pressed={tab==='reports'} onClick={()=>setTab('reports')}>
+     {ru?'Для отчётов':es?'Para informes':'For client reports'} ({reportMode==='ready'?reportItems.length:'…'})</button>}
+   <button type="button" aria-pressed={tab==='videos'} onClick={()=>setTab('videos')}>
+     {ru?'Публичный профиль':es?'Perfil público':'Public profile'} ({videos.length})</button>
    <button type="button" aria-pressed={tab==='articles'} onClick={()=>setTab('articles')}>{t.articles}</button>
   </div>
   {tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
+   tab==='reports'?<PracticeReportMaterials items={reportItems} locale={locale}
+    loading={reportMode==='loading'} error={reportError}
+    onRefresh={()=>setReportRefresh(n=>n+1)}/>:
   <div className={styles.body}>
    <p className={styles.intro}>{t.note}</p>
    <div className={styles.heading}>
