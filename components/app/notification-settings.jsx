@@ -5,7 +5,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import LiveActivityControl from './live-activity-control'
 import styles from './notification-settings.module.css'
 const COPY={
- ru:{title:'Уведомления на телефон',intro:'Красивые и спокойные напоминания — только с вашего разрешения.',
+ ru:{title:'Уведомления на телефон',intro:'Напоминания и сообщения мастера — только с вашего разрешения.',
  sample:'Пример оформления',today:'Небольшой шаг на сегодня',course:'МОЙ КУРС · 14 ДНЕЙ',
  mins:'5–12 минут',ready:'Сегодняшнее занятие готово',open:'Открыть мой курс',
  allow:'Включить уведомления',disable:'Отключить на всех устройствах',
@@ -16,11 +16,11 @@ const COPY={
  server:'Отправка push пока не настроена на сервере.',
  native:'Для карточки Live Activity именно как у Duolingo требуется отдельная нативная версия iOS (ActivityKit). Web Push отображается средствами телефона.',
  planned:'Автоматические напоминания по времени пока не активированы. Тестовую отправку можно проверить сейчас.',
- reminder:'Напоминать о ежедневной практике',hour:'Местное время',save:'Сохранить',
+ reminder:'Напоминать о ежедневной практике',messages:'Уведомлять о новых личных сообщениях',messagePrivacy:'Текст переписки не показывается на экране блокировки.',hour:'Местное время',save:'Сохранить',
  done:'Сервис push принял сообщение. Появление зависит от настроек устройства.',
  saved:'Настройки сохранены',error:'Не удалось выполнить действие. Попробуйте ещё раз.',
  loading:'Загружаем настройки…',devices:'Устройств'},
- en:{title:'Phone notifications',intro:'Beautiful, gentle practice reminders — only with your consent.',
+ en:{title:'Phone notifications',intro:'Course reminders and private-message alerts — only with your consent.',
  sample:'Design preview',today:'A small step for today',course:'MY COURSE · 14 DAYS',
  mins:'5–12 minutes',ready:'Today’s practice is ready',open:'Open my course',
  allow:'Enable notifications',disable:'Turn off on all devices',
@@ -31,7 +31,7 @@ const COPY={
  server:'Push delivery is not yet configured on this server.',
  native:'Duolingo-style Live Activities require a separate native iOS app (ActivityKit). Web Push appearance is controlled by your phone.',
  planned:'Scheduled reminders are not active yet. You can send a test notification now.',
- reminder:'Remind me about daily practice',hour:'Local time',save:'Save',
+ reminder:'Remind me about daily practice',messages:'Notify me about new private messages',messagePrivacy:'Message contents stay hidden on the Lock Screen.',hour:'Local time',save:'Save',
  done:'The push service accepted the message; display depends on device settings.',
  saved:'Preferences saved',error:'Could not complete the action. Please try again.',
  loading:'Loading settings…',devices:'Devices'},
@@ -49,7 +49,7 @@ export default function NotificationSettings({locale='en',compact=false,accountI
   const c=COPY[locale]||COPY.en
   const [state,setState]=useState(null),[busy,setBusy]=useState(false),
     [error,setError]=useState(''),[notice,setNotice]=useState(''),
-    [course,setCourse]=useState(true),[hour,setHour]=useState(19)
+    [course,setCourse]=useState(true),[messages,setMessages]=useState(true),[hour,setHour]=useState(19)
   const owner=useRef(null),working=useRef(false)
   const currentAccount=useRef(accountId);currentAccount.current=accountId
   async function api(path,body,session=owner.current){
@@ -63,7 +63,7 @@ export default function NotificationSettings({locale='en',compact=false,accountI
     setState(null);setBusy(false);setError('');setNotice('')
     let mounted=true
     api('notifications',undefined,session).then(value=>{if(mounted){
-      setState(value);setCourse(value.courseReminders);setHour(value.reminderHour)
+      setState(value);setCourse(value.courseReminders);setMessages(value.enabled?Boolean(value.messageAlerts):true);setHour(value.reminderHour)
     }}).catch(()=>{if(mounted)setError(c.error)})
     return ()=>{mounted=false;session.controller.abort();if(owner.current===session)owner.current=null}
   },[accountId,locale,c.error])
@@ -89,8 +89,8 @@ export default function NotificationSettings({locale='en',compact=false,accountI
     if(!subscription)subscription=await worker.pushManager.subscribe({
       userVisibleOnly:true,applicationServerKey:keyBytes(state.publicKey)})
     const next=await api('notifications/subscribe',{
-      subscription:subscription.toJSON(),locale,timeZone:localZone()},session)
-    setState(next);setCourse(next.courseReminders);setHour(next.reminderHour)
+      subscription:subscription.toJSON(),locale,timeZone:localZone(),messageAlerts:messages},session)
+    setState(next);setCourse(next.courseReminders);setMessages(Boolean(next.messageAlerts));setHour(next.reminderHour)
     setNotice(c.on)
   })}
   async function disable(){await run(async(session)=>{
@@ -105,7 +105,7 @@ export default function NotificationSettings({locale='en',compact=false,accountI
   })}
   async function save(){await run(async(session)=>{
     const next=await api('notifications/preferences',{
-      enabled:state.enabled,courseReminders:course,reminderHour:Number(hour),
+      enabled:state.enabled,courseReminders:course,messageAlerts:messages,reminderHour:Number(hour),
       locale,timeZone:localZone()},session)
     setState(next);setNotice(c.saved)
   })}
@@ -130,11 +130,13 @@ export default function NotificationSettings({locale='en',compact=false,accountI
       {needsHomeScreen()&&<p className={styles.subtle}>{c.mobile}</p>}
       {!canPush()&&<p className={styles.subtle}>{c.unsupported}</p>}
       {!state.ready&&<p className={styles.subtle}>{c.server}</p>}
-      {state.enabled&&<div className={styles.prefs}>
-        <label><input type="checkbox" checked={course} onChange={e=>setCourse(e.target.checked)}/>{c.reminder}</label>
-        <label>{c.hour}<select value={hour} onChange={e=>setHour(Number(e.target.value))}>
+      <div className={styles.prefs}>
+        <label><input type="checkbox" checked={messages} disabled={busy} onChange={e=>setMessages(e.target.checked)}/>{c.messages}</label>
+        <p className={styles.subtle}>{c.messagePrivacy}</p>
+        {state.enabled&&<label><input type="checkbox" checked={course} onChange={e=>setCourse(e.target.checked)}/>{c.reminder}</label>}
+        {state.enabled&&<label>{c.hour}<select value={hour} onChange={e=>setHour(Number(e.target.value))}>
           {Array.from({length:14},(_,i)=>i+8).map(n=><option key={n} value={n}>{String(n).padStart(2,'0')}:00</option>)}
-        </select></label></div>}
+        </select></label>}</div>
       <div className={styles.buttons}>{state.enabled?
         <><button onClick={save} disabled={busy}>{c.save}</button>
         <button onClick={testPush} disabled={busy}>{c.send}</button>

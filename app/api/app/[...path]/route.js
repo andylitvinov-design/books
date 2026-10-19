@@ -80,17 +80,20 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId'])
       const locale = body.locale === 'ru' ? 'ru' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
-        program = body.program || null
-      if (continueTo !== null && !['tests', 'course'].includes(continueTo) &&
+        program = body.program || null,
+        requestId = body.requestId || null
+      if (continueTo !== null && !['tests', 'course', 'consultations'].includes(continueTo) &&
         !['cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
+      if (requestId !== null) requireUUID(requestId)
+      if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
       if ((intentId && serviceId) || (continueTo && (intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       await consumeRate(
         config,
@@ -105,7 +108,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -120,15 +123,20 @@ async function handle(request, { params }) {
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
         continueTo = url.searchParams.get('continue'),
-        program = url.searchParams.get('program')
+        program = url.searchParams.get('program'),
+        requestId = url.searchParams.get('request')
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (requestId !== null) requireUUID(requestId)
+      if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
+          : continueTo === 'consultations'
+            ? `${origin}/${locale}/app/consultations?request=${encodeURIComponent(requestId)}`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
