@@ -122,7 +122,7 @@ export async function ServicesDirectoryPage({ locale }: { locale: PublicLocale }
       <ServicesSmartDiscovery locale={locale} services={services} editorialOffers={editorialOffers}
         aiAvailable={process.env.HH_MARKETPLACE_AI_ENABLED === "true"
           && Boolean(process.env.OPENROUTER_API_KEY) && Boolean(process.env.HH_MARKETPLACE_AI_MODEL)} />
-      <section className={styles.marketplace} id="available-services" aria-labelledby="services-directory-list-title">
+      <section className={styles.marketplace} id="service-listings" aria-labelledby="services-directory-list-title">
         <h2 id="services-directory-list-title">{t.listTitle}</h2>
         <p>{t.listLead}</p>
         {services.length ? <MarketplaceServiceFinder services={services} locale={locale} /> : <p>{t.empty}</p>}
