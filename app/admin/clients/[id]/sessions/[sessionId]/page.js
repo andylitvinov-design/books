@@ -20,7 +20,7 @@ export default async function OwnerSessionPage({params}){
   if(!session) notFound()
   const all=await store.listClientDocuments(id)
   const documents=all.filter(doc=>doc.status==='active'&&doc.clientId===id&&doc.kind!=='report')
-    .map(doc=>({id:doc.id,dateIssued:doc.dateIssued,kind:doc.kind}))
+    .map(doc=>({id:doc.id,dateIssued:doc.dateIssued,kind:doc.kind,languagePreference:doc.languagePreference}))
   const locale=(await cookies()).get(uiLocaleCookie)?.value==='ru'?'ru':'en'
   return <main style={{background:'#f7faf9',minHeight:'100vh'}}>
     <div style={{maxWidth:1020,margin:'0 auto',padding:'12px 18px'}}>
