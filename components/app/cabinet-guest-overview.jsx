@@ -36,6 +36,7 @@ const TEXT = {
     privacy: 'Your personal tests and reports stay private. You choose what to submit for public publication.',
     unavailable: 'Google sign-in is temporarily unavailable. You can still explore free tests and return later.',
     retry: 'Try again',
+    sessionNotice: 'We couldn’t check your sign-in status just now. You can still explore free tests, or try connecting again.' ,
     legacyLead: 'Already have an earlier private Cabinet link?',
     legacy: 'Open the previous access page',
   },
@@ -67,6 +68,7 @@ const TEXT = {
     privacy: 'Личные тесты и отчёты остаются приватными. Только вы решаете, какие материалы отправить на публикацию.',
     unavailable: 'Вход через Google временно недоступен. Бесплатные тесты по-прежнему можно посмотреть.',
     retry: 'Повторить',
+    sessionNotice: 'Сейчас не удалось проверить статус входа. Вы можете посмотреть бесплатные тесты или попробовать подключиться ещё раз.',
     legacyLead: 'Уже есть приватная ссылка на прежний кабинет?',
     legacy: 'Открыть прежний способ входа',
   },
@@ -98,6 +100,7 @@ const TEXT = {
     privacy: 'Tus tests e informes son privados. Tú decides qué materiales enviar para su publicación.',
     unavailable: 'El acceso con Google no está disponible temporalmente. Puedes explorar los tests gratuitos.',
     retry: 'Reintentar',
+    sessionNotice: 'No pudimos comprobar el acceso ahora mismo. Puedes explorar los tests gratuitos o volver a intentarlo.',
     legacyLead: '¿Ya tienes un enlace privado de tu gabinete anterior?',
     legacy: 'Abrir el acceso anterior',
   },
@@ -107,7 +110,7 @@ const FEATURE_ICONS = { tests: ClipboardCheck, trends: Activity, plan: ChartNoAx
 const PRACTICE_ICONS = { services: Users, articles: FilePenLine }
 
 export default function CabinetGuestOverview({
-  locale = 'en', busy = false, onSignin, unavailable = false, onRetry, errorMessage,
+  locale = 'en', busy = false, onSignin, unavailable = false, onRetry, errorMessage, sessionNotice = false,
 }) {
   const selectedLocale = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selectedLocale]
@@ -133,6 +136,7 @@ export default function CabinetGuestOverview({
             </Link>
           </div>
           {unavailable && <p className={styles.error} role="status">{t.unavailable}</p>}
+          {sessionNotice && <p className={styles.sessionNotice} role="status">{t.sessionNotice}</p>}
           {errorMessage && <p className={styles.error} role="alert">{errorMessage}</p>}
           {onRetry && <button type="button" className={styles.retry} onClick={onRetry}>{t.retry}</button>}
         </div>
