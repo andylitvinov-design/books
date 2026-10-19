@@ -72,13 +72,14 @@ export default function PractitionerArticles({locale,services=[]}){
  const [addingFolder,setAddingFolder]=useState(false),[folderName,setFolderName]=useState('')
  const [preview,setPreview]=useState(false),bodyRef=useRef(null),editorRef=useRef(null)
  const [tagInput,setTagInput]=useState('')
+ const operationRef=useRef(false)
  const tags=[...new Set(tagInput.split(/\r?\n/).map(value=>value.trim()).filter(Boolean))].slice(0,12)
  const preparedDraft={...draft,tags}
  const isUnchanged=!!editing&&JSON.stringify({...initial(editing.draft?.locale),...editing.draft})===JSON.stringify(preparedDraft)&&
   (editing.folderId||'')===folderId
  const hasUnsaved=editorOpen&&(editing?!isUnchanged:Boolean(draft.title.trim()||draft.body.trim()||draft.excerpt.trim()||tags.length||draft.coverPath||draft.sourceUrls?.length))
  function closeEditor(){
-  if(busy)return
+  if(busy||operationRef.current)return
   if(hasUnsaved&&!window.confirm(t.discard))return
   setEditorOpen(false)
  }
@@ -86,7 +87,8 @@ export default function PractitionerArticles({locale,services=[]}){
   const response=await fetch('/api/app/practice/articles',{credentials:'same-origin',cache:'no-store'})
   const json=await response.json().catch(()=>({}))
   if(!response.ok)throw Error(json.error||'ARTICLE_LOAD_FAILED')
-  setItems(json.items||[]);setFolders(json.folders||[])
+  if(!Array.isArray(json.items)||!Array.isArray(json.folders))throw Error('ARTICLE_LOAD_FAILED')
+  setItems(json.items);setFolders(json.folders)
  }
  useEffect(()=>{reload().catch(e=>setError(e.message))},[])
  useEffect(()=>{if(editorOpen)editorRef.current?.scrollIntoView({behavior:'smooth',block:'start'})},[editorOpen,editing?.id])
@@ -97,7 +99,7 @@ export default function PractitionerArticles({locale,services=[]}){
   return ()=>window.removeEventListener('beforeunload',guard)
  },[hasUnsaved])
  function choose(item){
-  if(busy||(hasUnsaved&&!window.confirm(t.discard)))return
+  if(busy||operationRef.current||(hasUnsaved&&!window.confirm(t.discard)))return
   setEditing(item||null)
   setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale))
   setTagInput((item?.draft?.tags||[]).join('\n'))
@@ -114,23 +116,46 @@ export default function PractitionerArticles({locale,services=[]}){
   return json
  }
  async function perform(fn){
+  if(operationRef.current)return
+  operationRef.current=true
   setBusy(true);setError('');setNotice('')
-  try{await fn()}catch(e){setError(e.message==='FOLDER_EXISTS'?t.duplicateFolder:e.message==='REVISION_CONFLICT'?t.revisionError:e.message||'ERROR')}finally{setBusy(false)}
+  try{await fn()}catch(e){
+   const code=e.code||e.message||''
+   const message=code==='FOLDER_EXISTS'?t.duplicateFolder:
+    code==='REVISION_CONFLICT'?t.revisionError:
+    ['SIGN_IN_REQUIRED','ACCOUNT_REQUIRED','ACCOUNT_CHANGED'].includes(code)?t.signInAgain:
+    ['SERVICE_UNAVAILABLE','DATABASE_CONFIG_CHANGED'].includes(code)?t.serverUnavailable:
+    code==='INVALID_IMAGE'?t.invalidImage:code==='INVALID_URL'?t.invalidUrl:
+    ['INVALID_TEXT','INVALID_TAG'].includes(code)?t.invalidText:
+    code==='FOLDER_NOT_FOUND'?t.invalidFolder:
+    code==='PAYLOAD_TOO_LARGE'?t.tooLarge:
+    code==='RATE_LIMITED'?t.slowDown:
+    t.saveFailed+(code&&/^[A-Z0-9_]{3,45}$/.test(code)?' ('+code+')':'')
+   setError(message)
+  }finally{operationRef.current=false;setBusy(false)}
  }
  async function save(){
   await perform(async()=>{
    const saved=await request(editing?'/'+editing.id:'',{draft:preparedDraft,folderId:folderId||null,expectedRevision:editing?.revision})
-   await reload();setEditing(saved);setDraft({...initial(saved.draft?.locale),...saved.draft})
-   setFolderId(saved.folderId||'');setTagInput((saved.draft?.tags||[]).join('\n'));setNotice(t.saved)
+   // A successful write must not be mistaken for failure when only the follow-up GET fails.
+   if(!saved?.id||!Number.isSafeInteger(saved.revision))throw Error('ARTICLE_SAVE_FAILED')
+   setEditing(saved);setDraft({...initial(saved.draft?.locale),...saved.draft})
+   setFolderId(saved.folderId||'');setTagInput((saved.draft?.tags||[]).join('\n'))
+   setItems(current=>[saved,...current.filter(item=>item.id!==saved.id)])
+   setNotice(t.saved)
+   try{await reload()}catch{setNotice(t.savedButRefreshFailed)}
   })
  }
  async function command(action){
   if(!editing)return
   await perform(async()=>{
    const result=await request('/'+editing.id,{action,expectedRevision:editing.revision})
-   await reload()
+   if(!result?.id||!Number.isSafeInteger(result.revision))throw Error('ARTICLE_SAVE_FAILED')
+   setItems(current=>[result,...current.filter(item=>item.id!==result.id)])
    if(action==='archive'){setEditorOpen(false);setEditing(null)}
-   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setTagInput((result.draft?.tags||[]).join('\n'));setNotice(ru?'Статус обновлён.':'Status updated.')}
+   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setTagInput((result.draft?.tags||[]).join('\n'))}
+   setNotice(t.statusUpdated)
+   try{await reload()}catch{setNotice(t.savedButRefreshFailed)}
   })
  }
  async function createFolder(e){
