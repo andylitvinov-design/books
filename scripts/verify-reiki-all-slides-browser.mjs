@@ -249,7 +249,7 @@ async function exerciseJourney(page, locale, width) {
     if (id === "kun-study-v2-01" || id.startsWith("kun-study-") || id === "ygg-study-v2-01" || id.startsWith("ygg-study-")) {
       const nextButton = page.locator("button[data-energywork-next]");
       const hint = page.locator("[data-reiki-study-hint]");
-      const source = id.startsWith("kun") ? "kundalini-reiki" : "yggdrasil";
+      const source = id.startsWith("kun") ? "kundalini-reiki" : "yggdrasil/free-initiation";
       await expect(hint).toHaveAttribute("href", "/" + locale + "/academy/reiki/" + source);
       await expect(hint).toHaveAttribute("target", "_blank");
       const answer = page.locator('textarea[id="answer-' + id + '"]');
