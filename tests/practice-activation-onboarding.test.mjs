@@ -29,10 +29,11 @@ test('submitted profile + first submitted service immediately unlock private wor
 })
 
 test('practice shows other masters first; short registration is opt-in and gates private tools', async () => {
-  const [view, css, repo] = await Promise.all([
+  const [view, css, repo, route] = await Promise.all([
     source('components/app/practice-workspace.jsx'),
     source('components/app/practice-dashboard.css'),
     source('lib/practitioners/repository.js'),
+    source('app/api/app/[...path]/route.js'),
   ])
   const gallery = view.indexOf('className="hh-practice-marketplace-cards"')
   const join = view.indexOf('className="hh-practice-join"')
@@ -58,6 +59,8 @@ test('practice shows other masters first; short registration is opt-in and gates
   assert.match(repo, /contactEmail:actor\.email\|\|''/)
   assert.match(repo, /async onboarding\(actor,input\)/)
   assert.match(repo, /transaction\(config,actor,async db=>/)
+  assert.match(route, /await practiceRepo\.requireActivated\(actor\)/)
+  assert.match(route, /!\['onboarding','profile','services'\]\.includes\(path\[1\]\)/)
 })
 
 test('first registration service can be free, contact-priced or fixed without implying approval', () => {
