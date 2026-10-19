@@ -207,10 +207,8 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
       <p>{t.intro}</p>
     </header>
 
-    <CabinetFreeCourseBanners locale={locale}/>
-
-    <section className={styles.tiles} aria-label={t.title}>
-      {hasCourse && <article className={styles.current} data-current-course-card>
+    {hasCourse && <section className={styles.startedTiles} aria-label={t.current} data-started-courses>
+      <article className={styles.current} data-current-course-card>
         <div className={styles.courseMenu} ref={menuRef} data-course-actions>
           <button type="button" className={styles.courseMenuTrigger} data-course-menu-trigger
             aria-label={t.courseOptions} aria-expanded={menuOpen} aria-controls="my-course-actions-menu"
@@ -266,8 +264,12 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
             moduleId={course?.moduleChoice?.id||null}
             routerVersion={course?.moduleChoice?.version||null}/>
         </div>}
-      </article>}
+      </article>
+    </section>}
 
+    <CabinetFreeCourseBanners locale={locale}/>
+
+    <section className={styles.tiles} aria-label={t.title}>
       <button type="button" className={styles.addTile} onClick={addCourse} data-add-course>
         <span className={styles.addTileMedia} aria-hidden="true">
           <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
