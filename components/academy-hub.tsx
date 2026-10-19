@@ -1,4 +1,5 @@
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import { PUBLIC_EVENTS } from "@/data/public-events";
 import Image from "next/image";
 import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import { AcademyVideoCourses } from "@/components/academy-video-courses";
@@ -295,7 +296,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
-      <AcademyDiscovery locale={locale} view={view} items={items} label={text.allPrograms} />
+      <AcademyDiscovery locale={locale} view={view} items={items} events={PUBLIC_EVENTS} label={text.allPrograms} />
       {view === "videos" ? (
         <section id="academy-video-courses">
           <AcademyVideoCourses locale={locale} />
