@@ -433,8 +433,8 @@ try {
             const written = page.locator('#tantra-testimonials [data-tantra-full-learner-reviews]');
             const russian = page.locator('#tantra-russian-video-testimonials');
             await expect(written.locator('[data-tantra-review-id]')).toHaveCount(4);
-            await expect(written).toContainText('Litten');
-            await expect(written).toContainText('Margaret');
+            await expect(written).toContainText(locale === 'ru' ? 'Литтен' : 'Litten');
+            await expect(written).toContainText(locale === 'ru' ? 'Маргарет' : 'Margaret');
             await expect(written).toContainText(locale === 'ru' ? 'Ольга' : 'Olga');
             await expect(written.locator('[data-tantra-review-id="litten"]')).toContainText(locale === 'ru' ? 'Я ещё буду практиковать' : 'Will still practice with attuned partner');
             await expect(written.locator('[data-tantra-review-id="tantra-level-1"]')).toContainText(locale === 'ru' ? 'Благодарю Андрей!' : 'Thank you, Andrey! As beautiful as always :)');
