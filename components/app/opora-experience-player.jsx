@@ -3,7 +3,9 @@
 import {useEffect,useRef,useState} from 'react'
 import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Pause,ShieldCheck,X} from 'lucide-react'
 import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
-import {OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '@/lib/inner-growth/course-slide-sequence'
+import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '@/lib/inner-growth/course-slide-sequence'
+import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
+import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
 import {oporaExperienceDay,oporaExperienceGuide,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import styles from './opora-experience-player.module.css'
 
@@ -110,15 +112,84 @@ WORDS.es = {
   learnMore:'Ver una pista suave',noMedical:'Aprendizaje personal, no diagnóstico ni tratamiento.',
   ideaTitle:'Una idea amable',reminderTitle:'Un recordatorio',feelTitle:'¿Cómo estás ahora?',
 }
-const SCENES=['arrive','practice','feel','affirmation','save']
+// The five original lesson-one opening screens stay separate, and precede action.
+const OPENING={
+  en:{
+    welcome:'How are you feeling today?',welcomeLead:'What feels closest to you right now?',
+    welcomeNote:'There is no right answer. You can simply continue.',
+    baseline:'How much support do you feel?',baselineLead:'If you wish, choose a number for right now.',
+    baselineLow:'0 · Not at all',baselineHigh:'10 · Very much',
+    checkin:'How was the last day?',checkinLead:'How difficult has today’s concern felt in the past 24 hours?',
+    checkinLow:'0 · Not difficult',checkinHigh:'10 · Very difficult',
+    scaleNote:'Optional. This is your observation, not a test.',
+    recall:'Remember what helps',recallLead:'What has helped you feel a little steadier before?',
+    recallReply:'A familiar source of support can be enough for today.',
+    supportOptions:[['pause','A short pause'],['rest','A little rest'],['connection','Kind contact'],['orient','Looking around'],['unsure','Not sure yet']],
+    thought:'A thought for today',thoughtLead:'How does this idea feel to you?',
+    response:'Thank you. Your view is welcome; there is no correct answer.',
+    welcomeKicker:'WELCOME · YOUR PACE',baselineKicker:'OPTIONAL · RIGHT NOW',
+    checkinKicker:'OPTIONAL · PAST 24 HOURS',recallKicker:'A FAMILIAR RESOURCE',
+    thoughtKicker:'A GENTLE THOUGHT',
+  },
+  ru:{
+    welcome:'Как вы себя чувствуете сегодня?',welcomeLead:'Какое состояние вам сейчас ближе?',
+    welcomeNote:'Правильного ответа нет. Можно просто продолжить.',
+    baseline:'Сколько сейчас внутренней опоры?',baselineLead:'Если хотите, выберите число для этого момента.',
+    baselineLow:'0 · Совсем нет',baselineHigh:'10 · Очень много',
+    checkin:'Как прошли последние сутки?',checkinLead:'Насколько трудной была ваша тема за последние 24 часа?',
+    checkinLow:'0 · Не беспокоила',checkinHigh:'10 · Очень сильно',
+    scaleNote:'Это необязательное наблюдение, не тест.',
+    recall:'Вспомним знакомую опору',recallLead:'Что раньше помогало вам почувствовать себя немного устойчивее?',
+    recallReply:'Можно опереться на то, что вам уже знакомо.',
+    supportOptions:[['pause','Короткая пауза'],['rest','Немного отдыха'],['connection','Тёплый контакт'],['orient','Осмотреться вокруг'],['unsure','Пока не знаю']],
+    thought:'Мысль сегодняшнего дня',thoughtLead:'Как вам откликается эта мысль?',
+    response:'Спасибо. Любое отношение подходит; правильного ответа нет.',
+    welcomeKicker:'НАЧИНАЕМ · В ВАШЕМ ТЕМПЕ',baselineKicker:'ПО ЖЕЛАНИЮ · СЕЙЧАС',
+    checkinKicker:'ПО ЖЕЛАНИЮ · ЗА СУТКИ',recallKicker:'ЗНАКОМАЯ ОПОРА',
+    thoughtKicker:'МЯГКАЯ МЫСЛЬ',
+  },
+  es:{
+    welcome:'¿Cómo te sientes hoy?',welcomeLead:'¿Qué sensación se acerca más a la tuya?',
+    welcomeNote:'No hay respuesta correcta. Puedes continuar sin responder.',
+    baseline:'¿Cuánto apoyo interior sientes?',baselineLead:'Si quieres, elige un número para este momento.',
+    baselineLow:'0 · Nada',baselineHigh:'10 · Mucho',
+    checkin:'¿Cómo fue el último día?',checkinLead:'¿Qué tan difícil ha sido esta preocupación en las últimas 24 horas?',
+    checkinLow:'0 · Nada difícil',checkinHigh:'10 · Muy difícil',
+    scaleNote:'Es una observación opcional, no un examen.',
+    recall:'Recuerda lo que te ayuda',recallLead:'¿Qué te ha ayudado a sentirte un poco más estable?',
+    recallReply:'Puedes apoyarte en algo que ya conoces.',
+    supportOptions:[['pause','Una pausa'],['rest','Descansar'],['connection','Contacto amable'],['orient','Mirar alrededor'],['unsure','Aún no lo sé']],
+    thought:'Una idea para hoy',thoughtLead:'¿Qué te parece esta idea?',
+    response:'Gracias. No hay una respuesta correcta.',
+    welcomeKicker:'BIENVENIDA · A TU RITMO',baselineKicker:'OPCIONAL · AHORA',
+    checkinKicker:'OPCIONAL · ÚLTIMAS 24 H',recallKicker:'UN RECURSO CONOCIDO',
+    thoughtKicker:'UNA IDEA AMABLE',
+  },
+}
+
+function OpeningRating({label,value,onChange,disabled,low,high}){
+  return <>
+    <div className={styles.ratingGrid} role="group" aria-label={label}>
+      {Array.from({length:11},(_,number)=><button key={number} type="button"
+        disabled={disabled} aria-pressed={value===number}
+        onClick={()=>onChange(number)}>{number}</button>)}
+    </div>
+    <div className={styles.ratingBounds}><span>{low}</span><span>{high}</span></div>
+  </>
+}
 
 export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onFinish,onSession}){
   const lang=locale==='ru'?'ru':locale==='es'?'es':'en',t=WORDS[lang]
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
-  const [step,setStep]=useState(hasSaved?OPORA_EXPERIENCE_PRE_SAVE_KEYS.length:0)
+  const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
+  const [step,setStep]=useState(hasSaved?scenes.length:0)
   const [saved,setSaved]=useState(hasSaved)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
+  const [welcomeFeeling,setWelcomeFeeling]=useState(data?.currentSession?.signals?.welcomeFeeling||null)
+  const [openingResource,setOpeningResource]=useState(data?.currentSession?.signals?.oporaOpening?.resource??null)
+  const [openingDifficulty,setOpeningDifficulty]=useState(data?.currentSession?.signals?.oporaOpening?.lastDayDifficulty??null)
+  const [familiarSupport,setFamiliarSupport]=useState(data?.currentSession?.signals?.oporaOpening?.familiarSupport||null)
   const [practiceReport,setPracticeReport]=useState(
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
@@ -128,21 +199,23 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [error,setError]=useState('')
   const [saving,setSaving]=useState(false)
   const operation=useRef(null)
-  const visited=useRef(new Set([OPORA_EXPERIENCE_PRE_SAVE_KEYS[0]]))
+  const visited=useRef(new Set([scenes[0]]))
   const heading=useRef(null),safetyTrigger=useRef(null),safetyPrimary=useRef(null)
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
-  const locked=Boolean(busy||saving),receipt=step>=OPORA_EXPERIENCE_PRE_SAVE_KEYS.length
-  const moment=receipt?'receipt':SCENES[step]
+  const locked=Boolean(busy||saving),receipt=step>=scenes.length
+  const moment=receipt?'receipt':scenes[step]
+  const opening=OPENING[lang]
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
+  const quote=cycle.day===1?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
   const rating=answers.reflection
   const vote=answers.aphorism
   const ratingText=rating==='useful'?t.feelingBetter:rating==='partly'?t.feelingPartial:
     rating==='unchanged'?t.feelingSame:rating==='uncomfortable'?t.feelingHard:''
   useEffect(()=>{
-    if(!receipt)visited.current.add(OPORA_EXPERIENCE_PRE_SAVE_KEYS[step])
+    if(!receipt)visited.current.add(scenes[step])
     heading.current?.focus?.()
   },[step,receipt])
   useEffect(()=>{
@@ -174,7 +247,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     if(locked)return
     setError('')
     setShowHelp(false)
-    setStep(s=>Math.min(OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1,s+1))
+    setStep(s=>Math.min(scenes.length-1,s+1))
   }
   function back(){
     if(locked)return
@@ -189,8 +262,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   }
   async function submit(){
     if(locked||saved)return
-    if(step!==OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1||
-      OPORA_EXPERIENCE_PRE_SAVE_KEYS.some(key=>!visited.current.has(key))){
+    if(step!==scenes.length-1||
+      scenes.some(key=>!visited.current.has(key))){
       setError(t.incomplete);return
     }
     let safe
@@ -213,18 +286,30 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         practiceAttempt:attempted?(practiceReport==='tried'?'tried':'simplified'):null,
         comfort:rating==='uncomfortable'?'uncomfortable':null,
         transferStage:safe.answers.transfer==='planned'?'plan':null,
-        opora54:safe,visitedSlideKeys:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS],
+        ...(cycle.day===1?{
+          welcomeFeeling,
+          oporaOpening:{
+            resource:openingResource,
+            lastDayDifficulty:openingDifficulty,
+            familiarSupport,
+          },
+        }:{}),
+        opora54:safe,visitedSlideKeys:[...scenes],
       })
-      if(response){setSaved(true);setStep(OPORA_EXPERIENCE_PRE_SAVE_KEYS.length);operation.current=null}
+      if(response){setSaved(true);setStep(scenes.length);operation.current=null}
       else setError(t.noSave)
     }catch{setError(t.noSave)}
     finally{setSaving(false)}
   }
   const title=receipt?t.saved:
+    moment==='welcome'?opening.welcome:
+    moment==='baseline'?opening.baseline:
+    moment==='checkin'?opening.checkin:
+    moment==='recall'?opening.recall:
     moment==='arrive'?t.arriveTitle:
     moment==='practice'?dayCopy?.title||t.learn:
     moment==='feel'?t.feelTitle:
-    moment==='affirmation'?t.ideaTitle:t.reminderTitle
+    moment==='affirmation'?(cycle.day===1?opening.thought:t.ideaTitle):t.reminderTitle
   const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
