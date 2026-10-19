@@ -100,7 +100,9 @@ test("Public Eventbrite artwork loads from its CDN with strictly route-scoped CS
   assert.ok(middleware.includes("const eventsPosterImageOrigin = /^\\/(en|ru|es)\\/events\\/?$/"));
   assert.ok(middleware.includes("+ listingImageOrigin + eventsPosterImageOrigin"));
   assert.match(middleware, /eventsPosterImageOrigin[^;]*https:\/\/img\.evbuc\.com/);
-  assert.match(source, /onError=\{error => \{ error\.currentTarget\.style\.display = "none"; \}\}/);
+  assert.match(source, /FALLBACK_EVENT_ART\[event\.category\]/);
+  assert.match(source, /setFailedPosterIds/);
+  assert.match(source, /onError=\{\(\) => setFailedPosterIds/);
 });
 
 for (const locale of ["en", "ru", "es"]) {
@@ -111,6 +113,14 @@ for (const locale of ["en", "ru", "es"]) {
     assert.ok(card, "Only the confirmed upcoming event is listed");
     assert.equal(nodes(tree).filter(node => node.props?.["data-event-card"]).length, 1);
     assert.ok(nodes(card).some(node => node.type === "img" && node.props.src === "/example-event.jpg"));
+    // An inaccessible remote poster must resolve to an actual first-party photo, not a blank tile.
+    nodes(card).find(node => node.type === "img").props.onError();
+    tree = h.render();
+    card = nodes(tree).find(node => node.props?.["data-event-card"] === "upcoming");
+    assert.equal(
+      nodes(card).find(node => node.type === "img")?.props.src,
+      "/academy/reiki-yggdrasil/source/temple-studies.png",
+    );
     assert.ok(nodes(card).some(node => node.type === "a" && node.props.href === "https://example.org/register"));
     const button = nodes(card).find(node => node.type === "button" && node.props["aria-controls"]);
     assert.equal(button.props["aria-expanded"], false);
