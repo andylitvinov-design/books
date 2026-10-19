@@ -34,6 +34,18 @@ type LocalizedCourse = {
   systemDescriptions: string[];
   journeyEyebrow: string;
   journeyTitle: string;
+  stepRailLabel: string;
+  giftTitle: string;
+  giftLead: string;
+  donationTitle: string;
+  donationLead: string;
+  personalTitle: string;
+  personalLead: string;
+  rateThirty: string;
+  rateSixty: string;
+  finalOnline: string;
+  finalPersonal: string;
+  personalMessage: string;
   steps: Array<{ title: string; description: string }>;
   footerTitle: string;
   footerLead: string;
@@ -62,13 +74,13 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
   en: {
     eyebrow: "HOLISTIC HOUSE ACADEMY · FREE BEGINNER COURSE",
     title: "Principles of Energywork",
-    subtitle: "One Free Course · 3 Reiki Systems · 5 Lessons",
-    intro: "Five short lessons: begin with Flight to the Sun, then explore Tantra, Kundalini and Yggdrasil Reiki in sequence.",
+    subtitle: "Free online course · 5 steps · 3 Reiki systems",
+    intro: "Begin with Flight to the Sun, explore Tantra, Kundalini and Yggdrasil Reiki, then choose your personal initiation.",
     start: "Explore the 3 systems",
-    interactiveStart: "Start interactive course",
+    interactiveStart: "Start the free online course",
     how: "How the free initiation works",
-    heroFacts: ["3 distinct Reiki systems", "Free Level 1 introductions", "No email or account required"],
-    foundationsEyebrow: "STEP 2 · THE FOUNDATIONS",
+    heroFacts: ["One Reiki system as a gift", "Optional donation for each additional system", "Learn online for free"],
+    foundationsEyebrow: "BEFORE THE FIVE STEPS · THE FOUNDATIONS",
     foundationsTitle: "Three simple principles",
     foundationsLead: "These contemplative traditions begin with awareness, a clear intention and respectful boundaries.",
     foundations: [
@@ -76,9 +88,9 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       { title: "Intention", description: "Learn the role of symbols, visualization and a clear purpose in each tradition." },
       { title: "Choice & boundaries", description: "Practise at your own pace, respect consent and choose the path that resonates with you." },
     ],
-    systemsEyebrow: "STEP 3 · LEARN ALL THREE REIKI SYSTEMS",
+    systemsEyebrow: "STEPS 2–4 · TANTRA, KUNDALINI & YGGDRASIL",
     systemsTitle: "Three Reiki paths",
-    systemsLead: "Study Tantra, Kundalini and Yggdrasil in order. Open a card for materials or initiation options.",
+    systemsLead: "Follow the same sequence as the online course. Explore all three, then choose the system you want to receive as a gift.",
     learn: "Explore the system",
     request: "Start free Level 1",
     systemTags: ["Presence · Connection", "Earth · Kundalini", "Runes · World Tree"],
@@ -87,15 +99,27 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       "Three levels with the original Paul Crick study material.",
       "A runic Reiki tradition inspired by the Norse World Tree.",
     ],
-    journeyEyebrow: "STEP 4 · REQUEST YOUR FREE LEVEL 1",
-    journeyTitle: "How to receive an introductory initiation",
+    journeyEyebrow: "STEP 5 · PERSONAL INITIATION",
+    journeyTitle: "Your personal initiation with Andrey",
+    stepRailLabel: "Your five learning steps",
+    giftTitle: "Choose any one Reiki system as a gift",
+    giftLead: "After the free online course, request an introductory Level 1 initiation in the system you prefer. One system is complimentary.",
+    donationTitle: "Want another system?",
+    donationLead: "Each additional Reiki system is offered for a pay-what-you-wish donation, with no fixed amount.",
+    personalTitle: "Personal initiation",
+    personalLead: "You can also book one-to-one teaching and a personal initiation with Andrey. The format and time are confirmed together.",
+    rateThirty: "30 minutes",
+    rateSixty: "60 minutes",
+    finalOnline: "Take the free online course",
+    finalPersonal: "Book a personal session and initiation with Andrey",
+    personalMessage: "Hello Andrey! I would like to book a personal Reiki teaching session and discuss initiation. I see the options of €50 for 30 minutes or €60 for 60 minutes. Please share available times and preparation.",
     steps: [
-      { title: "Complete all five lessons", description: "Study Flight to the Sun, then Tantra, Kundalini, Yggdrasil and the initiation preparation lesson." },
-      { title: "Write the learning reports", description: "Observations may be skipped during study, but five reports and five course answers are needed before personal initiation review." },
-      { title: "Request your free Level 1", description: "Contact Andrey from that course's initiation page to agree on availability and the teacher-guided format." },
+      { title: "Complete the five lessons", description: "Flight to the Sun → Tantra Reiki → Kundalini Reiki → Yggdrasil Reiki → Personal Initiation preparation." },
+      { title: "Choose your Reiki system", description: "One introductory Level 1 is a gift. For each additional system, you may make a donation of any amount." },
+      { title: "Arrange your initiation", description: "Share your five learning reports and five course answers for review, then agree on the format and time with Andrey." },
     ],
-    footerTitle: "Your journey can begin with one small step.",
-    footerLead: "Learn all three systems within one course; choose whether to request a teacher-led initiation only after you have completed your observations and answers. Course completion is not certification.",
+    footerTitle: "Choose how you would like to begin",
+    footerLead: "The complete online course is free. One Reiki system is a gift, further systems are available for a voluntary donation, or choose a personal lesson and initiation with Andrey.",
     notice: "These are spiritual and educational traditions. Their descriptions are not medical claims; Reiki is not a substitute for evidence-based healthcare. A reading, video or message does not itself grant an initiation; Andrey confirms availability and the format personally.",
     returnAcademy: "Back to the Academy",
     kundalini: {
@@ -123,13 +147,13 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
   ru: {
     eyebrow: "HOLISTIC HOUSE ACADEMY · БЕСПЛАТНЫЙ ВВОДНЫЙ КУРС",
     title: "Принципы энергетической работы",
-    subtitle: "Один бесплатный курс · 3 системы Рейки · 5 уроков",
-    intro: "Пять коротких уроков: Полёт к Солнцу, затем Тантра, Кундалини и Иггдрасиль Рейки — по порядку и в своём темпе.",
+    subtitle: "Бесплатный онлайн-курс · 5 шагов · 3 системы Рейки",
+    intro: "Сначала «Полёт к Солнцу», затем Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и личная инициация.",
     start: "Посмотреть 3 системы",
-    interactiveStart: "Начать интерактивный курс",
+    interactiveStart: "Пройти бесплатный онлайн-курс",
     how: "Как получить инициацию бесплатно",
-    heroFacts: ["3 разные системы Рейки", "Бесплатная вводная 1-я ступень", "Без email и регистрации"],
-    foundationsEyebrow: "ШАГ 2 · ОСНОВЫ",
+    heroFacts: ["Любая одна система Рейки в подарок", "За дополнительные — свободный донейшен", "Бесплатный онлайн-курс"],
+    foundationsEyebrow: "ПЕРЕД НАЧАЛОМ · ТРИ ОСНОВЫ",
     foundationsTitle: "Три основы практики",
     foundationsLead: "Внимание, ясное намерение и уважение границ — три основы этих духовных практик.",
     foundations: [
@@ -137,9 +161,9 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       { title: "Намерение", description: "Понять, какую роль в разных традициях играют символы, визуализация и ясная цель." },
       { title: "Свобода и границы", description: "Выбирать комфортный темп, уважать согласие и искать подходящую лично вам систему." },
     ],
-    systemsEyebrow: "ШАГ 3 · ИЗУЧИТЕ ВСЕ ТРИ СИСТЕМЫ РЕЙКИ",
+    systemsEyebrow: "ШАГИ 2–4 · ТАНТРА, КУНДАЛИНИ, ИГГДРАСИЛЬ",
     systemsTitle: "Три пути Рейки",
-    systemsLead: "Начните с Тантра Рейки, затем Кундалини и Иггдрасиль. Материалы и заявки — внутри карточек.",
+    systemsLead: "Идите в той же последовательности, что и в курсе. Познакомьтесь со всеми тремя системами и выберите одну в подарок.",
     learn: "Описание системы",
     request: "Бесплатная 1-я ступень",
     systemTags: ["Присутствие · Связь", "Земля · Кундалини", "Руны · Мировое Древо"],
@@ -148,15 +172,27 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       "Три ступени и оригинальная методичка Пола Крика.",
       "Руническая традиция с образом Иггдрасиля — Мирового Древа.",
     ],
-    journeyEyebrow: "ШАГ 4 · ЗАПРОСИТЕ ПЕРВУЮ СТУПЕНЬ",
-    journeyTitle: "Как подготовиться к инициации",
+    journeyEyebrow: "ШАГ 5 · ЛИЧНАЯ ИНИЦИАЦИЯ",
+    journeyTitle: "Личная инициация с Андреем",
+    stepRailLabel: "Пять шагов обучения",
+    giftTitle: "Любая одна система Рейки — в подарок",
+    giftLead: "После бесплатного курса выберите одну систему для подарочной вводной инициации 1-й ступени.",
+    donationTitle: "Хотите изучить ещё одну систему?",
+    donationLead: "За каждую дополнительную систему — свободное добровольное пожертвование, без фиксированной суммы.",
+    personalTitle: "Личная инициация",
+    personalLead: "Можно выбрать индивидуальное обучение и личную инициацию с Андреем. Формат и время согласуются отдельно.",
+    rateThirty: "30 минут",
+    rateSixty: "60 минут",
+    finalOnline: "Пройти онлайн-курс бесплатно",
+    finalPersonal: "Заказать личную сессию и инициацию у Андрея",
+    personalMessage: "Здравствуйте, Андрей! Хочу заказать личное обучение Рейки и обсудить инициацию. Вижу варианты: 50 евро за 30 минут или 60 евро за 60 минут. Подскажите свободное время и подготовку.",
     steps: [
-      { title: "Пройдите все пять уроков", description: "Полёт к Солнцу, Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и подготовка к личной инициации." },
-      { title: "Заполните отчёты", description: "Во время обучения наблюдения можно пропускать. Для рассмотрения личной инициации нужны пять отчётов и пять ответов по курсу." },
-      { title: "Запросите 1-ю ступень", description: "Свяжитесь с Андреем через страницу инициации и согласуйте наличие мест, время и формат." },
+      { title: "Пройдите пять уроков", description: "Полёт к Солнцу → Тантра Рейки → Кундалини Рейки → Рейки Иггдрасиль → подготовка к инициации." },
+      { title: "Выберите систему", description: "Одна вводная ступень — в подарок. За каждую следующую систему можно внести пожертвование в любой сумме." },
+      { title: "Согласуйте инициацию", description: "Для рассмотрения заявки предоставьте пять отчётов и пять ответов по курсу, затем согласуйте время и формат." },
     ],
-    footerTitle: "Достаточно одного шага, чтобы начать.",
-    footerLead: "Пройдите все три системы в одном курсе. Личная инициация проводится отдельно после отчётов и ответов по урокам; сам курс не выдаёт инициацию или сертификат.",
+    footerTitle: "Выберите, как продолжить обучение",
+    footerLead: "Онлайн-курс бесплатный. Одна система Рейки — в подарок, дополнительные — за свободный донейшен. Или выберите личное обучение и инициацию у Андрея.",
     notice: "Это духовные и образовательные традиции, а не медицинские методы лечения. Рейки не заменяет доказательную медицинскую помощь. Просмотр материалов или отправка заявки сами по себе не означают получения инициации; время и формат подтверждает Андрей.",
     returnAcademy: "Вернуться в Академию",
     kundalini: {
@@ -184,13 +220,13 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
   es: {
     eyebrow: "ACADEMIA HOLISTIC HOUSE · CURSO INTRODUCTORIO GRATUITO",
     title: "Principios del trabajo energético",
-    subtitle: "Un curso gratuito · 3 sistemas de Reiki · 5 lecciones",
-    intro: "Cinco lecciones breves: Vuelo hacia el Sol y después Tantra, Kundalini y Reiki Yggdrasil, paso a paso.",
+    subtitle: "Curso online gratis · 5 pasos · 3 sistemas Reiki",
+    intro: "Comienza con Vuelo hacia el Sol, sigue con Tantra, Kundalini y Reiki Yggdrasil, y termina con la iniciación personal.",
     start: "Explorar los 3 sistemas",
     interactiveStart: "Empezar el curso interactivo (EN)",
     how: "Cómo funciona la iniciación gratis",
-    heroFacts: ["3 sistemas diferentes", "Introducción gratuita al Nivel 1", "Sin correo ni registro"],
-    foundationsEyebrow: "PASO 2 · FUNDAMENTOS",
+    heroFacts: ["Un sistema Reiki de regalo", "Donación voluntaria por cada sistema adicional", "Curso online gratuito"],
+    foundationsEyebrow: "ANTES DE EMPEZAR · FUNDAMENTOS",
     foundationsTitle: "Tres principios sencillos",
     foundationsLead: "Atención, intención y respeto de los límites: tres bases de estas prácticas contemplativas.",
     foundations: [
@@ -198,9 +234,9 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       { title: "Intención", description: "Descubre cómo se utilizan los símbolos, la visualización y el propósito en cada tradición." },
       { title: "Elección y límites", description: "Practica a tu ritmo, respeta el consentimiento y elige la tradición que te atraiga." },
     ],
-    systemsEyebrow: "PASO 3 · APRENDE LOS TRES SISTEMAS REIKI",
+    systemsEyebrow: "PASOS 2–4 · TANTRA, KUNDALINI E YGGDRASIL",
     systemsTitle: "Tres caminos de Reiki",
-    systemsLead: "Empieza por Tantra, sigue con Kundalini y termina con Yggdrasil. Abre cada tarjeta para ver materiales.",
+    systemsLead: "Sigue el orden del curso. Explora los tres sistemas y elige uno como regalo.",
     learn: "Conocer el sistema",
     request: "Nivel 1 gratis",
     systemTags: ["Presencia · Conexión", "Tierra · Kundalini", "Runas · Árbol del Mundo"],
@@ -209,15 +245,27 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       "Tres niveles con el manual original de Paul Crick.",
       "Una tradición rúnica inspirada en Yggdrasil, el Árbol del Mundo.",
     ],
-    journeyEyebrow: "PASO 4 · SOLICITA TU NIVEL 1 GRATIS",
-    journeyTitle: "Cómo prepararte para una iniciación",
+    journeyEyebrow: "PASO 5 · INICIACIÓN PERSONAL",
+    journeyTitle: "Iniciación personal con Andrey",
+    stepRailLabel: "Tus cinco pasos",
+    giftTitle: "Un sistema Reiki de regalo — el que tú elijas",
+    giftLead: "Después del curso gratuito, elige un sistema para recibir una iniciación introductoria al Nivel 1 como regalo.",
+    donationTitle: "¿Quieres otro sistema?",
+    donationLead: "Cada sistema adicional se ofrece a cambio de una donación voluntaria, sin cantidad fija.",
+    personalTitle: "Iniciación personal",
+    personalLead: "También puedes elegir una clase individual e iniciación personal con Andrey, acordando formato y horario.",
+    rateThirty: "30 minutos",
+    rateSixty: "60 minutos",
+    finalOnline: "Hacer el curso online gratis",
+    finalPersonal: "Reservar una sesión e iniciación personal con Andrey",
+    personalMessage: "Hola Andrey. Quiero reservar una clase personal de Reiki y hablar sobre la iniciación. Veo las opciones de 50 € por 30 minutos o 60 € por 60 minutos. ¿Puedes confirmar horarios y preparación?",
     steps: [
-      { title: "Completa las cinco lecciones", description: "Vuelo hacia el Sol, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil y preparación para la iniciación." },
-      { title: "Escribe tus observaciones", description: "Se pueden omitir durante el estudio, pero necesitas cinco informes y cinco respuestas para solicitar una iniciación personal." },
-      { title: "Solicita el Nivel 1", description: "Contacta con Andrey desde la página de iniciación para confirmar disponibilidad y formato." },
+      { title: "Completa cinco lecciones", description: "Vuelo hacia el Sol → Tantra Reiki → Kundalini Reiki → Reiki Yggdrasil → preparación para la iniciación." },
+      { title: "Elige tu sistema", description: "Un Nivel 1 introductorio es un regalo; puedes ofrecer la donación que desees por cada sistema adicional." },
+      { title: "Acuerda la iniciación", description: "Prepara cinco informes y cinco respuestas para la revisión personal; confirma con Andrey el horario y el formato." },
     ],
-    footerTitle: "Tu recorrido puede empezar con un pequeño paso.",
-    footerLead: "Aprende los tres sistemas en un solo curso. La iniciación personal requiere los informes, las respuestas y una confirmación separada del profesor; el curso no la concede automáticamente.",
+    footerTitle: "Elige cómo comenzar",
+    footerLead: "El curso online es gratuito. Un sistema Reiki es un regalo y los adicionales se ofrecen por donación voluntaria. También puedes reservar una sesión individual con Andrey.",
     notice: "Son tradiciones espirituales y educativas, no tratamientos médicos. Reiki no sustituye a la atención médica basada en pruebas. Leer o enviar una solicitud no concede automáticamente una iniciación; Andrey confirma disponibilidad y formato.",
     returnAcademy: "Volver a la Academia",
     kundalini: {
@@ -300,7 +348,7 @@ const paths = [
     image: "/images/holistic-house/andy-about.png",
     study: "reiki/tantra-reiki",
     free: "reiki/tantra-reiki/free-initiation",
-    badge: "01",
+    badge: "02",
   },
   {
     key: "kundalini",
@@ -308,7 +356,7 @@ const paths = [
     image: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
     study: "reiki/kundalini-reiki",
     free: "reiki/kundalini-reiki/free-initiation",
-    badge: "02",
+    badge: "03",
   },
   {
     key: "yggdrasil",
@@ -316,7 +364,7 @@ const paths = [
     image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
     study: "reiki/yggdrasil",
     free: "reiki/yggdrasil/free-initiation",
-    badge: "03",
+    badge: "04",
   },
 ] as const;
 
@@ -331,6 +379,14 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
   const tantraPractice = englishGuidedMeditations.find((item) => item.key === "tantra-reiki");
   const yggdrasilMeditation = englishGuidedMeditations.find((item) => item.key === "reiki-yggdrasil");
   const kundaliniMeditation = englishGuidedMeditations.find((item) => item.key === "kundalini-reiki");
+  const learnPath = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
+  const personalSessionUrl = whatsappEnquiryUrl({
+    locale,
+    service: "Personal Reiki teaching & initiation",
+    request: t.personalMessage,
+    option: t.finalPersonal,
+    pagePath: academyUrl(locale, "principles-of-energywork"),
+  });
   return (
     <main className={styles.page} lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -343,7 +399,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
             <p className={styles.heroSubtitle}>{t.subtitle}</p>
             <p className={styles.heroLead}>{t.intro}</p>
             <div className={styles.heroActions}>
-              <Link href={"/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn"} className={styles.primaryButton} data-energywork-interactive-course>{t.interactiveStart}<ArrowRight size={19} aria-hidden="true" /></Link>
+              <Link href={learnPath} className={styles.primaryButton} data-energywork-interactive-course>{t.interactiveStart}<ArrowRight size={19} aria-hidden="true" /></Link>
               <div className={styles.heroQuickLinks}>
                 <a href="#energywork-flight-to-sun" className={styles.ghostButton}>{v.flightCta}<ArrowDown size={16} aria-hidden="true" /></a>
                 <a href="#energywork-systems" className={styles.ghostButton}>{t.start}<ArrowRight size={16} aria-hidden="true" /></a>
@@ -359,8 +415,23 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
             <span className={styles.orbitCaption}>3 REIKI PATHS · ONE BEGINNING</span>
           </div>
         </section>
+        <nav className={styles.stepRail} aria-label={t.stepRailLabel} data-energywork-five-steps>
+          <a href="#energywork-flight-to-sun"><span>01</span>{v.flightTitle}</a>
+          {paths.map((system, index) => <a key={system.key} href={"#energywork-" + system.key}><span>{String(index + 2).padStart(2, "0")}</span>{system.title}</a>)}
+          <a href="#energywork-how"><span>05</span>{t.personalTitle}</a>
+        </nav>
 
-        <section className={styles.flightSection} id="energywork-flight-to-sun" data-energywork-screen="meditation" aria-labelledby="flight-to-sun-title">
+        <section className={styles.foundations} data-energywork-screen="foundations" aria-labelledby="energywork-foundations">
+          <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.foundationsEyebrow}</p><h2 id="energywork-foundations">{t.foundationsTitle}</h2><p>{t.foundationsLead}</p></div>
+          <div className={styles.foundationGrid}>
+            {t.foundations.map((part, index) => {
+              const Icon = [Compass, Sparkles, HeartHandshake][index];
+              return <article className={styles.foundationCard} key={part.title}><span className={styles.foundationIcon}><Icon size={22} aria-hidden="true" /></span><span className={styles.stepNumber}>0{index + 1}</span><div className={styles.foundationCopy}><h3>{part.title}</h3><p>{part.description}</p></div></article>;
+            })}
+          </div>
+        </section>
+
+        <section className={styles.flightSection} id="energywork-flight-to-sun" data-energywork-screen="meditation" data-energywork-step="1" aria-labelledby="flight-to-sun-title">
           <div className={styles.sectionHeader}>
             <p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{v.introduction}</p>
             <h2 id="flight-to-sun-title">{v.flightTitle}</h2>
@@ -391,21 +462,15 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.foundations} data-energywork-screen="foundations" aria-labelledby="energywork-foundations">
-          <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.foundationsEyebrow}</p><h2 id="energywork-foundations">{t.foundationsTitle}</h2><p>{t.foundationsLead}</p></div>
-          <div className={styles.foundationGrid}>
-            {t.foundations.map((part, index) => {
-              const Icon = [Compass, Sparkles, HeartHandshake][index];
-              return <article className={styles.foundationCard} key={part.title}><span className={styles.foundationIcon}><Icon size={22} aria-hidden="true" /></span><span className={styles.stepNumber}>0{index + 1}</span><div className={styles.foundationCopy}><h3>{part.title}</h3><p>{part.description}</p></div></article>;
-            })}
-          </div>
-        </section>
-
         <section className={styles.systemsSection} id="energywork-systems" aria-labelledby="energywork-systems-title">
           <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.systemsEyebrow}</p><h2 id="energywork-systems-title">{t.systemsTitle}</h2><p>{t.systemsLead}</p></div>
+          <div className={styles.giftOffer} data-energywork-gift-offer>
+            <div><span className={styles.offerKicker}>{locale === "ru" ? "В подарок" : locale === "es" ? "Regalo" : "Complimentary"}</span><h3>{t.giftTitle}</h3><p>{t.giftLead}</p></div>
+            <div><span className={styles.offerKicker}>{locale === "ru" ? "Свободный донейшен" : locale === "es" ? "Donación libre" : "Pay what you wish"}</span><h3>{t.donationTitle}</h3><p>{t.donationLead}</p></div>
+          </div>
           <div className={styles.systemGrid}>
             {paths.map((system, index) => (
-              <article className={styles.systemCard} key={system.key} id={"energywork-" + system.key} data-reiki-path={system.key} data-energywork-screen={system.key}>
+              <article className={styles.systemCard} key={system.key} id={"energywork-" + system.key} data-reiki-path={system.key} data-energywork-screen={system.key} data-energywork-step={String(index + 2)}>
                 <div className={styles.systemMedia} aria-label={system.title}>
                   {system.key === "tantra" && tantraPractice?.youtubeId ? (
                     <div className={styles.systemVideo}>
@@ -435,7 +500,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
                   <small className={styles.originalLanguage}>{v.originalEnglish}</small>
                 </div>
                 <div className={styles.systemBody}>
-                  <p className={styles.systemLabel}>{locale === "ru" ? "Система" : locale === "es" ? "Sistema" : "System"} {system.badge} · {t.systemTags[index]}</p>
+                  <p className={styles.systemLabel}>{locale === "ru" ? "Шаг" : locale === "es" ? "Paso" : "Step"} {system.badge} · {t.systemTags[index]}</p>
                   <h3>{system.title}</h3>
                   <p className={styles.systemDescription}>{t.systemDescriptions[index]}</p>
                   {system.key === "kundalini" && kundaliniMeditation?.youtubeId ? <a className={styles.courseDetailLink} href={"https://www.youtube.com/watch?v=" + kundaliniMeditation.youtubeId} target="_blank" rel="noopener noreferrer">{v.youtubeLink}<ArrowRight size={15} aria-hidden="true" /></a> : null}
@@ -457,13 +522,21 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.howSection} id="energywork-how" data-energywork-screen="initiation" aria-labelledby="energywork-how-title">
+        <section className={styles.howSection} id="energywork-how" data-energywork-screen="initiation" data-energywork-step="5" aria-labelledby="energywork-how-title">
           <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.journeyEyebrow}</p><h2 id="energywork-how-title">{t.journeyTitle}</h2></div>
           <div className={styles.journeyGrid}>{t.steps.map((step, i) => <div className={styles.journeyStep} key={step.title}><strong>0{i + 1}</strong><h3>{step.title}</h3><p>{step.description}</p></div>)}</div>
+          <div className={styles.personalRates} data-energywork-personal-rates>
+            <div className={styles.personalRatesCopy}><h3>{t.personalTitle} · 1:1</h3><p>{t.personalLead}</p></div>
+            <div className={styles.rate}><strong>€50</strong><span>{t.rateThirty}</span></div>
+            <div className={styles.rate}><strong>€60</strong><span>{t.rateSixty}</span></div>
+          </div>
         </section>
         <section className={styles.finalCta}>
           <div><p className={styles.eyebrow}>{t.subtitle}</p><h2>{t.footerTitle}</h2><p>{t.footerLead}</p></div>
-          <Link href={"/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn"} className={styles.primaryButton}>{t.interactiveStart}<ArrowRight size={18} aria-hidden="true" /></Link>
+          <div className={styles.finalCtaActions} data-energywork-final-choices>
+            <Link href={learnPath} className={styles.primaryButton} data-energywork-final-online>{t.finalOnline}<ArrowRight size={18} aria-hidden="true" /></Link>
+            <ContactChannelChooser locale={locale} whatsappUrl={personalSessionUrl} label={t.finalPersonal} className={styles.personalButton} attributes={{ "data-energywork-final-personal": "true" }} />
+          </div>
         </section>
         <p className={styles.disclaimer}>{t.notice}</p>
       </div>
