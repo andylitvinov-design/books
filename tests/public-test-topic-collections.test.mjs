@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { availableTestCollections, TEST_TOPIC_COLLECTIONS } from '../lib/assessments/test-collections.js'
 import { testCollectionAffinity, testCollectionIds } from '../lib/assessments/test-collection-membership.js'
+import { problemsForTopics, relevanceForSelectedProblems } from '../lib/assessments/test-problems.js'
 import { buildExplorerEntries, filterExplorerEntries, rankPublicTestMatches, buildPublicStarterBattery } from '../lib/assessments/test-explorer.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -146,4 +147,32 @@ test('collection membership and boosted ranking use real test topics, without ex
   assert.equal(nonMember.matchPercent,
     baseline.find((entry) => entry.key === nonMember.key)?.matchPercent,
     'collection boosts do not alter unrelated results')
+})
+
+test('the combined preference model keeps hard type/time filters and rewards real concern overlap', () => {
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const eligible = filterExplorerEntries(entries, { availability: 'available' })
+  const chosenTopics = ['stress', 'anxiety']
+  const concernAndTest = problemsForTopics(chosenTopics).flatMap((concern) =>
+    eligible.filter((entry) => entry.scaleGuide && relevanceForSelectedProblems(entry, [concern.key]) > 0)
+      .map((entry) => ({ concern: concern.key, entry }))).find(({ entry }) =>
+        rankPublicTestMatches([entry], { focus: chosenTopics })[0]?.matchPercent < 99)
+  assert.ok(concernAndTest, 'at least one actionable stress concern has a measurable, runnable test')
+  const { concern, entry } = concernAndTest
+  const baseline = rankPublicTestMatches([entry], { focus: chosenTopics })[0]
+  const withConcern = rankPublicTestMatches([entry], { focus: chosenTopics, problems: [concern] })[0]
+  assert.ok(withConcern.matchPercent > baseline.matchPercent,
+    'a user-selected relevant concern must materially affect test fit')
+
+  const restricted = filterExplorerEntries(entries, {
+    availability: 'available', kinds: ['professional'], maxMinutes: 5,
+  })
+  assert.ok(restricted.length > 0)
+  const recommendations = rankPublicTestMatches(restricted, {
+    focus: chosenTopics, problems: [concern], collectionId: 'stress',
+    collectionFocus: ['stress', 'anxiety'],
+  })
+  assert.ok(recommendations.length > 0)
+  assert.ok(recommendations.every((item) => item.testKind === 'professional' && item.durationMinutes <= 5))
+  assert.deepEqual(new Set(recommendations.map((item) => item.key)).size, recommendations.length)
 })
