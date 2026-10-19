@@ -115,6 +115,7 @@ export default function PracticeEvents({locale='en', accountId}) {
   const [form,setForm]=useState(emptyDraft)
   const [language,setLanguage]=useState(languages.includes(locale)?locale:'en')
   const [busy,setBusy]=useState(false)
+  const [photoBusy,setPhotoBusy]=useState(false)
   const [error,setError]=useState('')
   const [message,setMessage]=useState('')
 
@@ -153,7 +154,7 @@ export default function PracticeEvents({locale='en', accountId}) {
     return t.error+' ('+err.message+')'
   }
   async function save(submit=false) {
-    if(busy)return
+    if(busy||photoBusy)return
     setBusy(true);setError('');setMessage('')
     try {
       const draft={
@@ -170,7 +171,7 @@ export default function PracticeEvents({locale='en', accountId}) {
     finally{setBusy(false)}
   }
   async function action(item,kind) {
-    if(busy)return
+    if(busy||photoBusy)return
     if(kind==='archive'&&!window.confirm(t.confirm))return
     setBusy(true);setError('');setMessage('')
     try {
@@ -191,7 +192,7 @@ export default function PracticeEvents({locale='en', accountId}) {
     {error&&<p className={styles.error} role="alert">{error}</p>}
     {editing ? <div className={styles.editor}>
       <div className={styles.editorHead}>
-        <button type="button" onClick={close} className={styles.back} disabled={busy}><ArrowLeft size={15}/>{t.cancel}</button>
+        <button type="button" onClick={close} className={styles.back} disabled={busy||photoBusy}><ArrowLeft size={15}/>{t.cancel}</button>
         <strong>{editing==='new'?t.new:titleOf(editing)}</strong>
       </div>
       <div className={styles.languageTabs} role="group" aria-label="Event language">
@@ -215,7 +216,7 @@ export default function PracticeEvents({locale='en', accountId}) {
         <label>{t.city}<input value={form.city} maxLength={150} onChange={e=>change('city',e.target.value)}/></label>
         {form.format==='in_person'&&<label className={styles.full}>{t.venue}<input value={form.location} maxLength={250} onChange={e=>change('location',e.target.value)}/><small>{t.locationHelp}</small></label>}
         <div className={styles.full}>
-          <PracticePhotoUpload mode="event" value={form.posterUrl} onChange={url=>change('posterUrl',url)} locale={locale} disabled={busy} />
+          <PracticePhotoUpload mode="event" value={form.posterUrl} onChange={url=>change('posterUrl',url)} locale={locale} disabled={busy} onBusyChange={setPhotoBusy} />
         </div>
         <label className={styles.full}>{t.registration}<input type="url" value={form.registrationHref} onChange={e=>change('registrationHref',e.target.value)} placeholder="https://..." /><small>{t.registrationHelp}</small></label>
         <label>{t.pricing}<select value={form.pricingMode} onChange={e=>change('pricingMode',e.target.value)}>
@@ -227,8 +228,8 @@ export default function PracticeEvents({locale='en', accountId}) {
         </label>}
       </div>
       <div className={styles.actions}>
-        <button type="button" className={styles.secondary} disabled={busy} onClick={()=>save(false)}><Save size={15}/>{t.save}</button>
-        <button type="button" className={styles.primary} disabled={busy} onClick={()=>save(true)}><Send size={15}/>{t.review}</button>
+        <button type="button" className={styles.secondary} disabled={busy||photoBusy} onClick={()=>save(false)}><Save size={15}/>{t.save}</button>
+        <button type="button" className={styles.primary} disabled={busy||photoBusy} onClick={()=>save(true)}><Send size={15}/>{t.review}</button>
       </div>
     </div>:<>
       <div className={styles.listHead}><span>{t.overview}</span><button type="button" onClick={()=>open(null)} className={styles.primary}><Plus size={16}/>{t.new}</button></div>
