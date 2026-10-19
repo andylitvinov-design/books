@@ -37,3 +37,34 @@ The 18 October 2026 read-only inventory (`full-library-technical-quality-audit-2
 - **Shipping:** register approved future versions additively; pin source hashes, scorer and interpretation; preserve old history; reset baseline whenever a changed construct/version is incomparable; test EN/RU, accessibility, iPhone/browser, PDF, account/My Tests, and all verification workflows. Confirm exact production SHA, Vercel READY, and real public/signed-in readback before calling live.
 
 References: [COSMIN 2024 guidelines](https://pmc.ncbi.nlm.nih.gov/articles/PMC11541334/), [ITC Test Adaptation Guidelines](https://www.intestcom.org/page/14).
+
+## Concrete next-form drafts (NOT active, NOT validated)
+
+The following candidate questions show how a new **immutable** version could remove construct ambiguity. They are **not** substitutes for respondent interviews or exact-form validation and must not be deployed through an in-place edit of v1/v2.
+
+### `hh-current-state` candidate v3
+
+Question frame: **“How is it for you right now?” / «Как это ощущается прямо сейчас?»**. Each independent 0–10 slider uses source-exact anchors, **0 = none/not at all**, **10 = strongest possible for me**. Use “not applicable” where the described opportunity is absent; do not score it as zero.
+
+| Independent axis | Candidate English question | Кандидат на русском | What NOT to infer |
+| --- | --- | --- | --- |
+| Main difficulty | “How strong is the main difficulty you want to focus on right now?” | «Насколько сильна главная трудность, на которой вы хотите сосредоточиться сейчас?» | Not a diagnostic symptom category |
+| Inner tension | “How strong is your inner tension right now?” | «Насколько сильное внутреннее напряжение вы сейчас ощущаете?» | Not proof of an anxiety disorder |
+| Body tiredness | “How tired does your body feel right now?” | «Насколько ваше тело сейчас утомлено?» | Not the cause of fatigue |
+| Available energy | “How much energy is available for your next small task?” | «Сколько сил сейчас есть для одного небольшого дела?» | Not internal support or self-esteem |
+| Felt support | “How supported do you feel right now?” | «Насколько вы сейчас ощущаете поддержку?» | Not a social-network count |
+| Everyday interference | “How much is this difficulty limiting what you planned to do today?” | «Насколько эта трудность мешает вашим планам на сегодня?» | Not the cause of lost function; allow non-applicability |
+
+The current v1/v2 **resource** item combines “energy and inner support”, so candidate v3 separates them into two single constructs. **No v2 resource score can be compared directly** with either new axis. Other similarly worded items still require version/translation review before a comparison bridge could be justified.
+
+### `hh-weekly-pulse` candidate v2
+
+Use one consistent **“During the past seven days” / «За последние семь дней»** lead-in for *each* independently reported dimension. Keep mood, tension, stress burden, restorative sleep/rest, energy, mental clarity, connection and functioning distinct. Avoid “overall psychic health”, “burnout score”, or a health percentage. A 0–10 rating is a **single response**, not a validated multi-item clinical measurement. Instruct the respondent to consider the *typical week* rather than letting a single exceptional day dominate; test in interviews whether “typical” is understood. Provide optional context (what helped, important stressor, whether the week was unusual), with privacy controls and no automatic diagnosis from free text.
+
+### Analysis contract for every check-in
+
+- Display an **individual dimension** with its anchor meaning, period, actual reported value and optional situation. Do not sum incomparable constructs or average opposing valences.
+- Follow-ups ask about **one concrete example and one exception**, not a psychological label. Separate symptom difficulty from available resources and function.
+- Present trends only for **identical verified versions/translation/scorer/timeframe**. Two values yield a numeric difference, not confirmed improvement; three or more values may reveal a *descriptive* pattern, still without causal proof or measurement-error-based significance.
+- For check-ins administered before/after a lesson, explicitly disclose that the comparison is **self-reported momentary experience**, not independent proof that the practice worked.
+- Use the published scale's exact cutoffs only for the exact allowed instrument version; leave authored tools non-diagnostic. Show appropriate human help language for concerning symptoms without classifying a single score as danger or normality.
