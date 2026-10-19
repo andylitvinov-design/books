@@ -4140,3 +4140,155 @@
     height: clamp(74px, 12dvh, 96px);
   }
 }
+
+/* REIKI DECORATIVE ART AS BACKDROP · 2026-10-19
+   Keep *all* editorial slide artwork inside the card, behind readable copy.
+   Never reserve a cropped photo strip or displace answers / completion notes.
+   Video posters/players remain regular media; welcome and testimonial layouts
+   already render their pictures as separate full-panel backdrops. */
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"] .slideMain {
+  position: relative;
+  isolation: isolate;
+  grid-template-columns: minmax(0, 1fr);
+}
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"] .slideMain > .art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  order: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: auto;
+  flex: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  opacity: 1;
+  pointer-events: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"] .slideMain > .art img {
+  object-fit: cover;
+  object-position: center 43%;
+  opacity: .26;
+}
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"] .slideMain > .art[data-reiki-diagram="true"] img {
+  object-fit: contain;
+  object-position: center;
+  opacity: .26;
+}
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"] .slideMain > .art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(252,255,254,.78), rgba(249,253,254,.58) 68%, rgba(247,252,253,.47));
+}
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"] .slideMain > .content {
+  position: relative;
+  z-index: 1;
+  order: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.page[data-course-portrait="v3"] .personalInitiationNote {
+  margin-top: 12px;
+  padding: 12px 15px;
+  border: 1px solid rgba(98,182,182,.4);
+  border-radius: 16px;
+  color: #245d68;
+  background: linear-gradient(125deg, rgba(235,251,248,.92), rgba(248,253,255,.94));
+  box-shadow: 0 7px 18px rgba(21,96,107,.06);
+}
+.page[data-course-portrait="v3"] .personalInitiationNoteTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #137787;
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.26;
+}
+.page[data-course-portrait="v3"] .personalInitiationNoteTitle svg {
+  flex: none;
+  color: #12a69d;
+}
+.page[data-course-portrait="v3"] .personalInitiationNote p {
+  margin: 6px 0 0;
+  color: #355f6b;
+  font-size: 13px;
+  line-height: 1.46;
+}
+@media screen and (max-width: 760px) {
+  .page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"] .slideMain {
+    /* The background is out of flow; full text and controls keep the viewport. */
+    justify-content: safe center;
+  }
+  .page[data-course-portrait="v3"] .personalInitiationNote {
+    margin-top: 8px;
+    padding: 9px 11px;
+    border-radius: 13px;
+  }
+  .page[data-course-portrait="v3"] .personalInitiationNoteTitle {
+    gap: 6px;
+    font-size: 12.5px;
+  }
+  .page[data-course-portrait="v3"] .personalInitiationNote p {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.34;
+  }
+}
+@media print {
+  .page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"] .slideMain > .art { display: none; }
+  .page[data-course-portrait="v3"] .personalInitiationNote {
+    color: #164654;
+    background: #fff;
+    box-shadow: none;
+    border-color: #b6d9dd;
+  }
+}
+
+
+/* FIRST LESSON SAVE ON SHORT IPHONE VIEWPORTS
+   Keep consent, privacy link and Google-save action visible; the short screen
+   does not need repeated encouragement and a second explanatory paragraph. */
+@media screen and (max-width: 760px) and (max-height: 700px) {
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .slideMain {
+    gap: 4px;
+    padding: 6px 9px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .eyebrow {
+    margin-bottom: 3px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .content h1 {
+    font-size: clamp(22px, 6.7vw, 26px);
+    line-height: 1.05;
+    margin-bottom: 3px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .description,
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .firstLessonSaveHeading p,
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .firstLessonGuestNote {
+    display: none;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .milestoneCard {
+    margin-top: 4px;
+    padding: 6px 8px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .firstLessonSave {
+    margin-top: 5px;
+    padding: 7px 9px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .firstLessonSave .consentLabel {
+    margin-top: 5px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .firstLessonPrivacy {
+    margin: 3px 0 5px;
+  }
+}

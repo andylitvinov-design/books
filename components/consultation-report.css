@@ -4383,27 +4383,71 @@
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
+  justify-content: center;
+  box-sizing: border-box;
+  gap: 7px;
+  width: max-content;
+  max-width: 100%;
   min-width: 0;
-  margin-left: auto;
-  padding: 7px 0 7px 5px;
-  color: #25737a;
-  font: 650 13px/1.35 system-ui, sans-serif;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  min-height: 32px;
+  margin: 0 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid #c5dfda;
+  border-radius: 999px;
+  background: #f1f8f6;
+  box-shadow: none;
+  color: #246d71;
+  font: 600 12px/1.2 system-ui, -apple-system, sans-serif;
+  text-decoration: none;
+  letter-spacing: 0;
   white-space: nowrap;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease;
 }
 .canonical-shell .canonical-document--editorial .canonical-remedy-unified-chevron {
   display: inline-block;
-  color: #397a7e;
-  font-size: 20px;
-  line-height: 1;
-  text-decoration: none;
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+  border: 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  color: inherit;
+  transform: rotate(45deg);
   transition: transform .18s ease;
 }
 .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-unified-chevron {
-  transform: rotate(180deg);
+  transform: rotate(225deg);
+}
+/* A compact disclosure control, not an oversized underlined link. */
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-toggle > span {
+  text-decoration: none;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-toggle-label-open {
+  display: none;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-toggle-label-closed {
+  display: none;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-toggle-label-open {
+  display: inline;
+}
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary:hover .canonical-remedy-unified-toggle,
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-summary:focus-visible .canonical-remedy-unified-toggle {
+  border-color: #9dcac3;
+  background: #e4f3ef;
+  color: #175f66;
+}
+.canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] .canonical-remedy-unified-toggle {
+  border-color: #abcfc8;
+  background: #e7f3f0;
+  color: #1c6268;
+}
+@media (prefers-reduced-motion: reduce) {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-toggle,
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-chevron {
+    transition: none;
+  }
 }
 .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure[open] > summary {
   background: #f7faf8;
@@ -4459,9 +4503,10 @@
     line-height: 1.36;
   }
   .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
-    font-size: 12px;
-    padding-inline: 0;
-    gap: 2px;
+    min-height: 32px;
+    padding: 6px 8px;
+    gap: 5px;
+    font-size: 11.5px;
   }
   .canonical-shell .canonical-document--editorial .canonical-remedy-unified-instruction {
     font-size: 12px;
@@ -4489,7 +4534,18 @@
   .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title .canonical-remedy-unified-name {
     font-size: 15px;
   }
+  .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 6px 8px;
+  }
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-thumb {
+    grid-row: 1 / 3;
+  }
   .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    margin-left: 0;
     font-size: 11px;
   }
 }
@@ -4508,7 +4564,7 @@
     width: 56px;
     height: 56px;
   }
-  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-toggle {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
     display: none;
   }
   .canonical-shell .canonical-document--editorial details.canonical-remedy-unified-disclosure > .canonical-remedy-profile-content {
