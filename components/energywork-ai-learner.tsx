@@ -1053,7 +1053,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </Link>
               ) : null}
               {slide.id === "ygg-05" ? (
-                <Link href={"/" + locale + "/academy/reiki/yggdrasil"}
+                <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}
                   target="_blank" rel="noopener noreferrer"
                   className={styles.studyButton} data-yggdrasil-study-link>
                   <BookOpen size={18} aria-hidden="true" />
@@ -1239,7 +1239,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <div className={styles.tantraStudyHelp} id={"reiki-study-help-" + slide.id} data-reiki-study-required>
                       <span className={styles.tantraStudyRequired}>{t.tantraAnswerRequired}</span>
                       <Link className={styles.tantraStudyLink}
-                        href={"/" + locale + "/academy/reiki/" + (isKundaliniStudyQuestion ? "kundalini-reiki" : "yggdrasil")}
+                        href={"/" + locale + "/academy/reiki/" + (isKundaliniStudyQuestion ? "kundalini-reiki" : "yggdrasil/free-initiation")}
                         target="_blank" rel="noopener noreferrer" data-reiki-study-hint>
                         <BookOpen size={15} aria-hidden="true" />{t.tantraStudyHint}<ExternalLink size={13} aria-hidden="true" />
                       </Link>
