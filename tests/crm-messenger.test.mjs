@@ -266,3 +266,16 @@ test('v3 awaiting-reply queue is distinct from unread and ignores internal notes
   assert.match(ui,/needsReplyOnly\|\|item\.needsReply/)
   assert.match(ui,/thread\.needsReply/)
 })
+
+test('v3 quick replies are neutral owner-selected drafts, not scheduled or auto-sent',()=>{
+  const ui=source('components/app/crm-messenger.jsx')
+  const api=source('app/api/app/crm/messenger/route.js')
+  assert.match(ui,/const quickReplies=\{/)
+  assert.match(ui,/ru:\[/)
+  assert.match(ui,/es:\[/)
+  assert.match(ui,/role="group" aria-label=\{lang==='ru'\?'Быстрые ответы'/)
+  assert.match(ui,/onClick=\{\(\)=>\{pendingRequest\.current=null;setText\(item\.text\)\}\}/)
+  assert.match(ui,/disabled=\{busy\|\|threadLoading\|\|!selected\.reply\.ok\}/)
+  assert.doesNotMatch(ui,/setInterval\(|sendOneMessengerMessage\(/)
+  assert.match(api,/action==='send'/)
+})
