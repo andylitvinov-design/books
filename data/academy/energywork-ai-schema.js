@@ -2,7 +2,8 @@
 // The bilingual editorial content lives in data/academy/energywork-ai-curriculum.ts.
 // Keep this registry aligned with that file; tests enforce exact ID parity.
 export const ENERGYWORK_KEY = 'academy-energywork-principles'
-export const ENERGYWORK_VERSION = '2026-10-19.p7'
+export const ENERGYWORK_VERSION = '2026-10-19.p8'
+export const ENERGYWORK_P7_VERSION = '2026-10-19.p7'
 export const ENERGYWORK_P6_VERSION = '2026-10-19.p6'
 export const ENERGYWORK_P5_VERSION = '2026-10-19.p5'
 export const ENERGYWORK_P4_VERSION = '2026-10-19.p4'
@@ -20,7 +21,7 @@ export const ENERGYWORK_COMMON = Object.freeze([
   'paths-01','paths-02','paths-03','paths-04',
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
-  yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','ygg-done'],
+  yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
   tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02'],
   kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
 })
@@ -40,14 +41,17 @@ export function energyworkMeditationFeedbackComplete(answer) {
   }
   return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
-export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','init-01'])
+export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','init-01'])
 // Each of the seven Tantra Reiki study answers is required to move forward.
 // Drafts may still be saved blank, but a whitespace-only answer is not complete.
 export const ENERGYWORK_TANTRA_STUDY_QUESTION_IDS = Object.freeze([
   'tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03',
 ])
 export const ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS = Object.freeze(['kun-study-v2-01', 'kun-study-v2-02', 'kun-study-v2-03', 'kun-study-v2-04', 'kun-study-v2-05', 'kun-study-v2-06', 'kun-study-v2-07', 'kun-study-v2-08', 'kun-study-v2-09'])
-export const ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS = Object.freeze(['ygg-06', 'ygg-study-02', 'ygg-study-03', 'ygg-study-04', 'ygg-study-05', 'ygg-study-06', 'ygg-study-07'])
+export const ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS = Object.freeze(['ygg-study-v2-01', 'ygg-study-v2-02', 'ygg-study-v2-03', 'ygg-study-v2-04', 'ygg-study-v2-05', 'ygg-study-v2-06', 'ygg-study-v2-07'])
+// Preserve historic p6/p7 encrypted answers under their original IDs; they must
+// not satisfy the corrected questions on the Level 1 preparation page.
+export const ENERGYWORK_PREVIOUS_YGGDRASIL_STUDY_QUESTION_IDS = Object.freeze(['ygg-06', 'ygg-study-02', 'ygg-study-03', 'ygg-study-04', 'ygg-study-05', 'ygg-study-06', 'ygg-study-07'])
 export function energyworkReikiStudyAnswerComplete(answer) {
   return typeof answer === 'string' && answer.trim().length > 0
 }
@@ -74,7 +78,8 @@ export const ENERGYWORK_QUESTIONS = Object.freeze({
   'boundaries-03': 'choice',
   'boundaries-04': 'text',
   'ygg-04': 'text', 'ygg-06': 'text',
-  'ygg-study-02': 'text', 'ygg-study-03': 'text', 'ygg-study-04': 'text', 'ygg-study-05': 'text', 'ygg-study-06': 'text', 'ygg-study-07': 'text',
+  'ygg-study-02': 'text', 'ygg-study-03': 'text', 'ygg-study-04': 'text', 'ygg-study-05': 'text', 'ygg-study-06': 'text', 'ygg-study-07': 'text', // historic Yggdrasil p6/p7 questions remain readable
+  'ygg-study-v2-01': 'text', 'ygg-study-v2-02': 'text', 'ygg-study-v2-03': 'text', 'ygg-study-v2-04': 'text', 'ygg-study-v2-05': 'text', 'ygg-study-v2-06': 'text', 'ygg-study-v2-07': 'text',
   'ygg-03': 'choice',
   'tan-04': 'text', 'tan-06': 'text',
   'tan-study-02': 'text', 'tan-study-03': 'text', 'tan-study-04': 'text',
@@ -151,12 +156,19 @@ export function energyworkP4ResumeId(slideId, answers = {}) {
   }
   if (['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07'].includes(slideId))
     return 'kun-study-v2-01'
-  return energyworkSequence().includes(slideId) ? slideId : 'flight-01'
+  return energyworkP7ResumeId(slideId)
 }
 // p6 saved quiz positions pointed to different questions: restart only the new
 // quiz, without deleting the encrypted original written responses.
 export function energyworkP6ResumeId(slideId) {
   if (['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07'].includes(slideId)) return 'kun-study-v2-01'
+  return energyworkP7ResumeId(slideId)
+}
+// p7 and older positions used different Yggdrasil questions. Restart ONLY
+// the updated seven-question section, retaining all old answers in the journal.
+export function energyworkP7ResumeId(slideId) {
+  if (ENERGYWORK_PREVIOUS_YGGDRASIL_STUDY_QUESTION_IDS.includes(slideId) || slideId === 'ygg-done')
+    return ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS[0]
   return energyworkSequence().includes(slideId) ? slideId : 'flight-01'
 }
 export function energyworkPreviousResumeId(slideId, answers = {}) {
