@@ -5,7 +5,7 @@ import type { EnglishGuidedMeditation } from "./english-guided-meditations";
 import { yggdrasilTextTestimonials } from "./yggdrasil-testimonials";
 
 export const ENERGYWORK_COURSE_ID = "academy-energywork-principles";
-export const ENERGYWORK_COURSE_VERSION = "2026-10-18.p1";
+export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p2";
 
 export type EnergyworkLocale = "en" | "ru";
 export type Localized = { en: string; ru: string };
@@ -107,15 +107,15 @@ export const energyworkLessons: Array<{ phase: EnergyworkPhase; firstSlideId: st
   { phase: "initiation", firstSlideId: "paths-01", title: energyworkPhases.initiation },
 ];
 
-// A short written response and a 0–10 feeling check-in follow each meditation.
-// Lesson questions and the fifth final report remain optional during study,
-// but all five reports and five answers are required for personal-initiation review.
+// A written meditation reflection follows each practice. Seven short study
+// questions in Tantra Reiki are optional while learning, but required for
+// an optional personal-initiation review alongside the other lesson answers.
 export const energyworkInitiationRequirements = [
-  { lesson: "flight", reportId: "flight-04", questionId: "flight-05" },
-  { lesson: "tantra", reportId: "tan-04", questionId: "tan-06" },
-  { lesson: "kundalini", reportId: "kun-04", questionId: "kun-06" },
-  { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-06" },
-  { lesson: "initiation", reportId: "end-01", questionId: "init-01" },
+  { lesson: "flight", reportId: "flight-04", questionId: "flight-05", questionIds: ["flight-05"] },
+  { lesson: "tantra", reportId: "tan-04", questionId: "tan-06", questionIds: ["tan-06", "tan-study-02", "tan-study-03", "tan-study-04", "tan-study-05", "tan-study-06", "tan-study-07"] },
+  { lesson: "kundalini", reportId: "kun-04", questionId: "kun-06", questionIds: ["kun-06"] },
+  { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-06", questionIds: ["ygg-06"] },
+  { lesson: "initiation", reportId: "end-01", questionId: "init-01", questionIds: ["init-01"] },
 ] as const;
 
 export const energyworkPathChoices: Array<{
@@ -174,9 +174,10 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
     title: l("Watch Flight to the Sun", "Посмотрите «Полёт к Солнцу»"),
     body: l("Original English recording. You may listen, use the text alternative or move on. Never force an uncomfortable experience.", "Оригинальная английская запись. Можно прослушать, прочитать альтернативу или продолжить. Не нужно принуждать себя к неприятным ощущениям.") },
-  { id: "flight-03", phase: "flight", kind: "practice", question: practiceQuestion,
-    title: l("A gentle pause", "Небольшая пауза"),
-    body: l("Pause, notice your chair, or imagine warmth or light.", "Сделайте паузу, ощутите опору стула или представьте тепло и свет.") },
+  { id: "flight-05", phase: "flight", kind: "reflection",
+    title: l("What did the Sun symbol mean?", "Что означает образ Солнца?"),
+    body: l("There is no right feeling to achieve. Describe the difference between a symbolic image and a required physical result.", "Здесь не требуется определённое ощущение. Расскажите, чем символический образ отличается от обязательного физического результата."),
+    question: { type: "text", prompt: l("My answer to the lesson question…", "Мой ответ на вопрос урока…") } },
   { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
     title: l("What do other viewers say?", "Что пишут другие?"),
     body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
@@ -184,10 +185,9 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Your meditation feedback", "Ваш отзыв о медитации"),
     body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
     question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
-  { id: "flight-05", phase: "flight", kind: "reflection",
-    title: l("What did the Sun symbol mean?", "Что означает образ Солнца?"),
-    body: l("There is no right feeling to achieve. Describe the difference between a symbolic image and a required physical result.", "Здесь не требуется определённое ощущение. Расскажите, чем символический образ отличается от обязательного физического результата."),
-    question: { type: "text", prompt: l("My answer to the lesson question…", "Мой ответ на вопрос урока…") } },
+  { id: "flight-03", phase: "flight", kind: "practice", question: practiceQuestion,
+    title: l("A gentle pause", "Небольшая пауза"),
+    body: l("Pause, notice your chair, or imagine warmth or light.", "Сделайте паузу, ощутите опору стула или представьте тепло и свет.") },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
     title: l("First lesson completed!", "Первый урок пройден!"),
     body: l("A lovely start! Next: Tantra Reiki.", "Отличное начало! Следующий шаг — Тантра Рейки.") },
@@ -195,13 +195,6 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "presence-01", phase: "tantra", kind: "lesson", image: image.world,
     title: l("After Tantra Reiki: the foundation of presence", "После Тантра Рейки: основа присутствия"),
     body: l("After exploring Tantra Reiki, practise simple presence: return attention to the room without trying to create a particular state.", "После знакомства с Тантра Рейки попробуйте простое присутствие: мягко верните внимание к окружающему, не пытаясь вызвать особое состояние.") },
-  { id: "presence-02", phase: "tantra", kind: "practice", question: practiceQuestion,
-    title: l("Notice three ordinary things", "Заметьте три обычные вещи"),
-    body: l("Without changing your breathing, notice three sounds, colours or points of contact in your surroundings. Choose whichever feels easy.", "Не меняя дыхание, заметьте три звука, цвета или точки опоры вокруг. Выберите то, что вам комфортно.") },
-  { id: "presence-03", phase: "tantra", kind: "reflection",
-    title: l("Your comfort today", "Ваш комфорт сегодня"),
-    body: l("A voluntary personal check-in, not a health score or diagnosis. You can skip it.", "Добровольная самооценка, не показатель здоровья и не диагноз. Можно пропустить."),
-    question: { type: "scale", prompt: l("How comfortable did this pause feel? 0 = not comfortable, 10 = very comfortable", "Насколько комфортной была пауза? 0 — совсем нет, 10 — очень комфортно") } },
   { id: "presence-04", phase: "tantra", kind: "lesson",
     title: l("Presence is a choice", "Присутствие — это выбор"),
     body: l("There is no need to reproduce someone else's sensations. You can return to simple awareness at your own pace.", "Не нужно воспроизводить чужие ощущения. К простому наблюдению можно возвращаться в своём темпе.") },
@@ -294,9 +287,6 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "tan-02", phase: "tantra", kind: "video", videoKey: "tantra-reiki",
       title: l("Original Tantra Reiki practice", "Оригинальная практика Тантра Рейки"),
       body: l("Watch Andrey's original English practice at your chosen pace.", "Посмотрите оригинальную английскую практику Андрея в комфортном темпе.") },
-    { id: "tan-03", phase: "tantra", kind: "practice", question: practiceQuestion,
-      title: l("Notice connection and space", "Заметьте связь и пространство"),
-      body: l("Notice where you feel comfortable sitting or standing. You can practise simple awareness without any touch or physical contact.", "Заметьте, где вам удобно сидеть или стоять. Можно просто наблюдать ощущения без прикосновений и физического контакта.") },
     { id: "tan-voices", phase: "tantra", kind: "voices", videoKey: "tantra-reiki", image: image.tantra,
       title: l("Voices from Tantra Reiki", "Отзывы о Тантра Рейки"),
       body: l("Published learner experiences from the course, not this exact recording.", "Отзывы учеников о курсе, а не об этой конкретной записи."),
@@ -305,13 +295,40 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("Your meditation feedback", "Ваш отзыв о медитации"),
       body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
       question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
-    { id: "tan-05", phase: "tantra", kind: "lesson",
-      title: l("Continue with Tantra Reiki Level 1", "Продолжите первую ступень Тантра Рейки"),
-      body: l("Read the first-level course materials. Any initiation requires a separate teacher-led arrangement.", "Изучите материалы первой ступени. Любая инициация согласуется с преподавателем отдельно.") },
-    { id: "tan-06", phase: "tantra", kind: "reflection",
-      title: l("A question about Tantra Reiki", "Вопрос по Тантра Рейки"),
-      body: l("What does the Spring of Life symbolize for you? There is no single correct interpretation.", "Что лично для вас символизирует «Источник жизни»? Единственно правильной трактовки нет."),
-      question: { type: "text", prompt: l("My answer about Tantra Reiki…", "Мой ответ о Тантра Рейки…") } },
+    { id: "tan-05", phase: "tantra", kind: "lesson", image: image.tantra,
+      title: l("Discover Tantra Reiki", "Познакомьтесь с Тантра Рейки"),
+      body: l("Read Andrey's guide to the tradition, its nine levels and practices. Seven short study questions follow.", "Прочитайте описание Тантра Рейки, девяти ступеней и практик Андрея. Затем ответьте на семь коротких вопросов.") },
+    { id: "tan-06", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Question 1 of 7 · Origins of Tantra Reiki", "Вопрос 1 из 7 · Происхождение Тантра Рейки"),
+      body: l("Use the Tantra Reiki guide and answer briefly in your own words.", "Ответьте своими словами, опираясь на описание Тантра Рейки."),
+      question: { type: "text", prompt: l("Who created the Tantra Reiki system, and what is the source of its energy?", "Кто создал систему Тантра Рейки и каков источник её энергии?") } },
+    { id: "tan-study-02", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Question 2 of 7 · Purpose of the flow", "Вопрос 2 из 7 · Назначение потока"),
+      body: l("Use the Tantra Reiki guide and answer briefly in your own words.", "Ответьте своими словами, опираясь на описание Тантра Рейки."),
+      question: { type: "text", prompt: l("What is the main purpose of the Tantra Reiki flow? Why is it needed, and what does it offer a person?", "Какова главная цель потока Тантра Рейки? Для чего он нужен и что даёт человеку?") } },
+    { id: "tan-study-03", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Question 3 of 7 · How Tantra Reiki is used", "Вопрос 3 из 7 · Применение Тантра Рейки"),
+      body: l("Use the Tantra Reiki guide and answer briefly in your own words.", "Ответьте своими словами, опираясь на описание Тантра Рейки."),
+      question: { type: "text", prompt: l("For what purposes can Tantra Reiki be used?", "Для каких целей можно использовать Тантра Рейки?") } },
+    { id: "tan-study-04", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Question 4 of 7 · Tradition and foundations", "Вопрос 4 из 7 · Традиция и основы"),
+      body: l("Use the Tantra Reiki guide and answer briefly in your own words.", "Ответьте своими словами, опираясь на описание Тантра Рейки."),
+      question: { type: "text", prompt: l("Which culture and tradition form the foundation of Tantra Reiki?", "Какая культура и традиция лежат в основе Тантра Рейки?") } },
+    { id: "tan-study-05", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Question 5 of 7 · The nine levels", "Вопрос 5 из 7 · Девять ступеней"),
+      body: l("Use the Tantra Reiki guide and answer briefly in your own words.", "Ответьте своими словами, опираясь на описание Тантра Рейки."),
+      question: { type: "text", prompt: l("How are Levels 1–3, 4–6 and 7–9 connected?", "Как связаны ступени 1–3, 4–6 и 7–9?") } },
+    { id: "tan-study-06", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Question 6 of 7 · Mandalas and artifacts", "Вопрос 6 из 7 · Мандалы и артефакты"),
+      body: l("Use the Tantra Reiki guide and answer briefly in your own words.", "Ответьте своими словами, опираясь на описание Тантра Рейки."),
+      question: { type: "text", prompt: l("At which levels do students learn to create mandalas and work with artifacts?", "На каких ступенях ученики учатся создавать мандалы и работать с артефактами?") } },
+    { id: "tan-study-07", phase: "tantra", kind: "reflection", image: image.tantra,
+      title: l("Question 7 of 7 · The master level", "Вопрос 7 из 7 · Ступень мастера"),
+      body: l("Use the Tantra Reiki guide and answer briefly in your own words.", "Ответьте своими словами, опираясь на описание Тантра Рейки."),
+      question: { type: "text", prompt: l("After which level can someone become a Tantra Reiki Master and teach and initiate others?", "После какой ступени можно стать мастером Тантра Рейки, обучать и инициировать других?") } },
+    { id: "tan-03", phase: "tantra", kind: "practice", question: practiceQuestion,
+      title: l("Notice connection and space", "Заметьте связь и пространство"),
+      body: l("Notice where you feel comfortable sitting or standing. You can practise simple awareness without any touch or physical contact.", "Заметьте, где вам удобно сидеть или стоять. Можно просто наблюдать ощущения без прикосновений и физического контакта.") },
   ],
   kundalini: [
     { id: "kun-01", phase: "kundalini", kind: "lesson", image: image.kundalini,
@@ -370,8 +387,10 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
     ...commonSlides.filter((slide) => slide.phase === "flight"),
-    ...pathSlides.tantra,
-    ...commonSlides.filter((slide) => slide.phase === "tantra"),
+    ...pathSlides.tantra.slice(0, 2),
+    commonSlides.find((slide) => slide.id === "presence-01")!,
+    ...pathSlides.tantra.slice(2),
+    ...commonSlides.filter((slide) => slide.phase === "tantra" && slide.id !== "presence-01"),
     ...pathSlides.kundalini,
     ...pathSlides.yggdrasil,
     ...commonSlides.filter((slide) => slide.phase === "initiation" && slide.id !== "paths-04"),
