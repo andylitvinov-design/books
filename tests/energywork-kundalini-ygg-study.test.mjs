@@ -63,7 +63,7 @@ test('Multiple-choice questions have validated choices; personal body question r
     }
   }
   assert.match(ui,/data-kundalini-answer-explanation/)
-  assert.match(ui,/item.questionCount}\/\u0024\{item.questionIds.length}/)
+  assert.ok(ui.includes('item.questionCount}/${item.questionIds.length}'))
   assert.match(ui,/data-reiki-study-hint/)
   assert.match(browser,/id\.startsWith\("kun-question-"\)/)
 })
