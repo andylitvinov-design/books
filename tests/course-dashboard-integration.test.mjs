@@ -42,6 +42,29 @@ test('Cabinet Courses tab always shows started courses before the chosen lesson'
   h.unmount()
 })
 
+test('other possible course directions stay visible at the free active-course limit', async () => {
+  const current = { ...course('course-a', 4), presetId: 'calm_balance' }
+  let newCourseRequests = 0
+  const props = {
+    courses: [current], locale: 'en',
+    membership: { tier: 'free', maxActiveCourses: 1, occupiedCount: 1 },
+    canAddCourse: false, canManageCourses: true, multiCourseEnabled: false,
+    onOpen() {}, onNew() { newCourseRequests++ }, onClose() {}, onPrimary() {},
+  }
+  const h = mount('my-courses-dashboard', { props })
+  await h.settle()
+  const options = nodes(h.tree).filter(node => node.props?.['data-course-option'])
+  assert.deepEqual(options.map(option => option.props['data-course-option']), ['business_focus', 'confidence'])
+  assert.ok(textOf(h.tree).includes('Focus & Productivity'))
+  assert.ok(textOf(h.tree).includes('Confidence & Inner Strength'))
+  assert.equal(options.flatMap(nodes).filter(node => node.type === 'button').length, 0,
+    'a full account can see other directions but cannot bypass the active-course quota')
+  h.render({ ...props, canAddCourse: true }); await h.settle()
+  nodes(h.tree).filter(node => node.props?.['data-course-option'])[0].props.children[2].props.onClick()
+  assert.equal(newCourseRequests, 1, 'an available option opens the existing catalog flow')
+  h.unmount()
+})
+
 test('My courses opens the authored dashboard and explicitly selected cards retain the course URL and account', async () => {
   const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: path => courseView(path.includes('course-b') ? courseB : courseA) })
   await h.settle()
