@@ -648,29 +648,3 @@ function safeLeadContact(value){
   if(!value||typeof value!=='object')return ''
   return [value.displayName||value.name,value.email,value.phone].filter(part=>typeof part==='string'&&part.trim()).join(' · ')
 }
-function ClientLeads({items,locale,onOpenRequests}){
-  const ru=locale==='ru'
-  const [search,setSearch]=useState('')
-  const seen=new Set()
-  const contacts=items.filter(item=>{
-    const contact=safeLeadContact(item.contact).trim()
-    if(!contact)return false
-    const key=contact.toLowerCase()
-    if(seen.has(key))return false
-    seen.add(key)
-    return true
-  })
-  const filtered=contacts.filter(item=>safeLeadContact(item.contact).toLowerCase().includes(search.trim().toLowerCase()))
-  return <div className="hh-practice-clients">
-    <p className="hh-practice-clients-notice">{ru?'Здесь только контакты из заявок на ваши услуги. Личные тесты и медицинские данные недоступны.':'Only contacts from enquiries about your services appear here. Private tests and health records are not shared.'}</p>
-    <div className="hh-practice-clients-head"><h3>{ru?'Клиентские обращения':'Client enquiries'} ({contacts.length})</h3>
-      <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
-        aria-label={ru?'Поиск контакта':'Search contacts'} placeholder={ru?'Поиск контакта…':'Search contacts…'} />
-    </div>
-    {filtered.length?<ul className="hh-practice-leads-list">{filtered.map(item=><li key={item.id}>
-      <span className="hh-practice-lead-icon"><UsersRound aria-hidden="true" /></span>
-      <span><strong>{safeLeadContact(item.contact)}</strong><small>{item.status==='requested'?(ru?'Новая заявка':'New enquiry'):item.status==='contacted'?(ru?'Связались':'Contacted'):(ru?'Обращение':'Enquiry')}</small></span>
-    </li>)}</ul>:<div className="hh-practice-empty-state"><p>{search?(ru?'Совпадений нет.':'No matching contacts.'):(ru?'Когда появятся заявки, контакты будут здесь.':'Contact details will appear when someone enquires.')}</p></div>}
-    <button type="button" className="hh-practice-client-open" onClick={onOpenRequests}>{ru?'Открыть заявки':'Open enquiries'} <ChevronRight aria-hidden="true" /></button>
-  </div>
-}
