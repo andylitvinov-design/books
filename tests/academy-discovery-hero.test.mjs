@@ -58,7 +58,12 @@ test("Course cards have photo-left media, a high-contrast FREE label and separat
   }
   assert.match(cards, /<Image[\s\S]+?src=\{cardArtworkUrl\(item\.image\)\}/);
   assert.match(cards, /item\.free \? <span className=\{styles\.free\}/);
-  assert.match(cards, /className=\{styles\.details\} href=\{item\.href\}/);
+  assert.match(cards, /className=\{styles\.details\}/);
+  assert.match(cards, /aria-expanded=\{showDetails\}/);
+  assert.match(cards, /aria-controls=\{hintId\}/);
+  assert.match(cards, /onClick=\{\(\) => setShowDetails\(!showDetails\)\}/);
+  assert.match(cards, /className=\{styles\.hint\} id=\{hintId\} hidden=\{!showDetails\}/);
+  assert.match(cards, /className=\{styles\.landing\} href=\{item\.href\}/);
   assert.match(cards, /className=\{styles\.take\} href=\{item\.courseHref \?\? item\.href\}/);
   assert.match(cards, /prefetch=\{false\}/);
   assert.match(cards, /data-academy-course-card=\{item\.id\}/);
@@ -66,7 +71,9 @@ test("Course cards have photo-left media, a high-contrast FREE label and separat
   assert.match(css, /background: linear-gradient\(115deg, #a23762, #db527c\)/);
   assert.match(css, /@media \(max-width: 560px\)/);
   assert.match(css, /grid-template-columns: minmax\(98px, 30%\) minmax\(0, 1fr\)/);
-  assert.match(css, /min-height: 46px/);
+  assert.match(css, /\.actions \{/);
+  assert.match(css, /\.hint\[hidden\] \{ display: none; \}/);
+  assert.match(css, /min-height: 36px/);
   assert.match(css, /:focus-visible/);
 });
 
