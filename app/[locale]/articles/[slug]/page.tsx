@@ -19,6 +19,11 @@ export async function generateMetadata({params}:Props):Promise<Metadata>{
  if(!article)return{title:'Not found',robots:{index:false,follow:false}}
  return {metadataBase:metadataBaseFor(),title:article.published.title+' | Holistic House',description:article.published.excerpt,alternates:{canonical:'/'+locale+'/articles/'+slug},openGraph:{type:'article',title:article.published.title,description:article.published.excerpt}}
 }
+// Keep authored article formatting safe: React escapes text; no raw HTML is inserted.
+function inlineArticleText(value:string){
+ return value.split(/(\*\*[^*\n]+\*\*)/g).map((part,i)=>
+   part.startsWith('**')&&part.endsWith('**')?<strong key={i}>{part.slice(2,-2)}</strong>:part)
+}
 export default async function ArticleDetail({params}:Props){
  const {locale,slug}=await params;if(!isPublicLocale(locale))notFound()
  const article=await load(locale,slug);if(!article)notFound()
@@ -32,7 +37,7 @@ export default async function ArticleDetail({params}:Props){
    <p className={styles.lead}>{published.excerpt}</p>
    <p className={styles.meta}><Link href={'/'+locale+'/masters/'+article.practitionerSlug}>{article.practitionerName}</Link> · {article.publishedAt?new Date(article.publishedAt).toLocaleDateString(locale):''}</p>
    {published.coverPath?<img className={styles.heroCover} src={published.coverPath} alt="" loading="lazy"/>:null}
-   <div className={styles.body}>{sections.map((block,i)=>block.startsWith('## ')?<h2 key={i}>{block.slice(3)}</h2>:<p key={i}>{block}</p>)}</div>
+   <div className={styles.body}>{sections.map((block,i)=>block.startsWith('## ')?<h2 key={i}>{block.slice(3)}</h2>:block.trim().startsWith('- ')?<ul key={i}>{block.split(/\n/).filter(Boolean).map((line,j)=><li key={j}>{inlineArticleText(line.replace(/^[-*]\s+/,''))}</li>)}</ul>:<p key={i}>{inlineArticleText(block)}</p>)}</div>
    {(published.sourceUrls||[]).length>0&&<aside className={styles.sources}><h2>{ru?'Источники':es?'Fuentes':'Sources'}</h2><ul>{published.sourceUrls.map((url:string,i:number)=><li key={i}><a href={url} rel="noopener noreferrer nofollow" target="_blank">{new URL(url).hostname}</a></li>)}</ul></aside>}
    {article.services?.length>0&&<aside className={styles.related}><h2>{ru?'Услуги автора':es?'Servicios del autor':'Work with this practitioner'}</h2><div className={styles.grid}>
     {article.services.map((service:{id:string;slug:string;title:string;pricingMode:string;price:number|null;currency:string})=><section key={service.id} className={styles.card}>
