@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { repositoryHarness, mount, findButton, textOf } from './helpers/route-pipeline-harness.mjs'
+import { repositoryHarness, mount, findButton, nodes, textOf } from './helpers/route-pipeline-harness.mjs'
 import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner-growth/anti-stress-skills-v6.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
@@ -136,5 +136,84 @@ test('the owner repository rejects five-moment shortcuts for V6 and missing/reor
     assert.equal(owner.writes.length, writes)
     assert.equal(owner.sessions.length, 0)
     assert.equal(owner.cycle.content_version, version)
+  }
+})
+
+test('Day 1 optional own resource is mutually exclusive with buttons, encrypted, and restored in EN/RU/ES',async()=>{
+  for(const [locale,answer,next,back,quick,save] of [
+    ['en','Quiet music','Continue','Back','A little rest','Save my practice'],
+    ['ru','Тихая музыка','Продолжить','Назад','Немного отдыха','Сохранить мою практику'],
+    ['es','Música suave','Continuar','Atrás','Descansar','Guardar mi práctica'],
+  ]){
+    const owner=repositoryHarness({freshPhase:true})
+    await owner.create('AS2')
+    owner.seedDay(1)
+    const data=await owner.read(locale)
+    let payload=null
+    const player=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},
+      async onSession(input){
+        payload=structuredClone(input)
+        await owner.command(payload,locale)
+        return true
+      },
+    })
+    const getField=()=>nodes(player.tree).find(n=>n.type==='input'&&n.props?.['data-opora-own-resource']==='true')
+    try{
+      for(let i=0;i<3;i++)await click(player,next)
+      assert.ok(getField(),'Day 1 must offer a text input below the quick choices')
+      assert.equal(getField().props.maxLength,160)
+      getField().props.onChange({target:{value:'  '+answer+'  '}})
+      await player.settle()
+      assert.equal(getField().props.value,'  '+answer+'  ')
+      await click(player,back)
+      await click(player,next)
+      assert.equal(getField().props.value,'  '+answer+'  ','Back and Continue must retain the draft')
+      await click(player,quick)
+      assert.equal(getField().props.value,'','A quick choice clears the custom answer')
+      getField().props.onChange({target:{value:'  '+answer+'  '}})
+      await player.settle()
+      const button=findButton(player.tree,quick)
+      assert.equal(button.props['aria-pressed'],false,'Typing a custom resource deselects quick choices')
+      for(let i=0;i<5;i++)await click(player,next)
+      await click(player,save)
+      assert.deepEqual(payload.oporaOpening,{
+        resource:null,lastDayDifficulty:null,familiarSupport:'other',familiarSupportText:answer,
+      })
+      const stored=owner.sessions.at(-1).signals.oporaOpening
+      assert.equal(stored.familiarSupport,'other')
+      assert.equal(typeof stored.familiarSupportTextCiphertext,'string')
+      assert.ok(stored.familiarSupportTextCiphertext.length>30)
+      assert.equal(stored.familiarSupportText,undefined,'Free text must not be stored in plaintext JSON signals')
+      assert.equal(JSON.stringify(owner.sessions.at(-1).signals).includes(answer),false)
+      const readBack=await owner.read(locale)
+      assert.equal(readBack.currentSession?.signals?.oporaOpening?.familiarSupportText,answer,
+        'The signed-in learner can read the decrypted answer after saving')
+    }finally{player.unmount()}
+  }
+})
+
+test('Day 1 rejects malformed, oversize or mismatched custom answers before writing',async()=>{
+  for(const invalid of [
+    {familiarSupport:'other',familiarSupportText:''},
+    {familiarSupport:'other',familiarSupportText:'x'.repeat(161)},
+    {familiarSupport:'other',familiarSupportText:5},
+    {familiarSupport:'pause',familiarSupportText:'Quiet music'},
+    {familiarSupport:null,familiarSupportText:'Quiet music'},
+    {familiarSupport:'other',familiarSupportText:'Line\\nBreak'},
+  ]){
+    const owner=repositoryHarness({freshPhase:true})
+    await owner.create('AS2')
+    owner.seedDay(1)
+    const data=await owner.read('en')
+    const before=owner.writes.length
+    await assert.rejects(owner.command({
+      day:1,lessonId:data.lesson.id,operationId:'00000000-0000-4000-8000-000000001079',
+      feedback:'skip',practiceWindow:'practice_v6',
+      visitedSlideKeys:[...OPORA_DAY_ONE_RESTORED_KEYS],
+      opora54:{answers:{},hints:[],ease:null},
+      oporaOpening:{resource:null,lastDayDifficulty:null,...invalid},
+    }),'INVALID_OPORA_OPENING')
+    assert.equal(owner.sessions.length,0)
+    assert.equal(owner.writes.length,before)
   }
 })
