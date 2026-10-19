@@ -1,3 +1,5 @@
+import { reikiInitiationRequestValid } from './reiki-initiation-request.js'
+
 // A small, server-readable registry of approved slide IDs and answer contracts.
 // The bilingual editorial content lives in data/academy/energywork-ai-curriculum.ts.
 // Keep this registry aligned with that file; tests enforce exact ID parity.
@@ -215,7 +217,8 @@ export function energyworkP3ResumeId(slideId, answers = {}) {
 export function energyworkInitiationReady(answers) {
   return Boolean(answers && typeof answers === 'object' && !Array.isArray(answers) &&
     [...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS]
-      .every((id) => typeof answers[id] === 'string' && answers[id].trim().length > 0))
+      .every((id) => typeof answers[id] === 'string' && answers[id].trim().length > 0) &&
+    reikiInitiationRequestValid(answers['end-01']))
 }
 export function energyworkAnswerValid(id, answer) {
   const kind = ENERGYWORK_QUESTIONS[id]
