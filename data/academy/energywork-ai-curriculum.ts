@@ -178,7 +178,7 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("Flight to the Sun is Andrey's guided imagery practice. The sun is used as a symbol for attention and imagination, not as a physical or medical claim.", "«Полёт к Солнцу» — авторская практика с образами. Солнце здесь — символ внимания и воображения, не медицинское утверждение.") },
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
     title: l("Watch Flight to the Sun", "Посмотрите «Полёт к Солнцу»"),
-    body: l("Original English recording. You may listen, use the text alternative or move on. Never force an uncomfortable experience.", "Оригинальная английская запись. Можно прослушать, прочитать альтернативу или продолжить. Не нужно принуждать себя к неприятным ощущениям.") },
+    body: l("Listen to Andrey’s recording, or skip it if you prefer.", "Послушайте запись Андрея или пропустите её, если хотите.") },
   { id: "flight-05", phase: "flight", kind: "reflection",
     title: l("What did the Sun mean to you?", "Что для вас означает Солнце?"),
     body: l("Write one thought about the Sun as a symbol.", "Запишите одну мысль об образе Солнца."),
