@@ -26,8 +26,12 @@ export const ENERGYWORK_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04
 export const ENERGYWORK_MEDITATION_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04'])
 export function energyworkMeditationFeedbackComplete(answer) {
   if (typeof answer !== 'string' || answer.length > 1600) return false
-  const match = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/.exec(answer)
-  return Boolean(match && match[1].trim().length > 0)
+  // Keep old encrypted journal responses readable without requiring scores in new reviews.
+  if (answer.startsWith('Feeling:')) {
+    const legacy = /^Feeling:(?:10|[0-9])\/10\n([\s\S]*)$/.exec(answer)
+    return Boolean(legacy && legacy[1].trim().length > 0)
+  }
+  return answer.trim().length > 0
 }
 export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-06','kun-06','ygg-06','init-01'])
 export const ENERGYWORK_QUESTIONS = Object.freeze({
