@@ -202,3 +202,59 @@
   .section[data-personal-testimonials="all"] .intro>p:last-child{line-height:1.38;margin-top:5px}
   .section[data-personal-testimonials="all"] .storyDisclosure{margin:9px 0 12px}
 }
+
+
+/* Services: four provenance-checked videos in one browsable row; the other
+   two remain available through an explicit disclosure. Home and About
+   retain their independent presentation contracts. */
+.section[data-personal-testimonials="services"]{
+  background:linear-gradient(135deg,#f5fbfa,#fdf9f3);
+  border-color:#d2e6e3;
+}
+.section[data-personal-testimonials="services"] .eyebrow{color:#167a83}
+.section[data-personal-testimonials="services"] .videoGrid{
+  display:flex;
+  grid-template-columns:none;
+  gap:13px;
+  padding:3px 2px 13px;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:thin;
+}
+.section[data-personal-testimonials="services"] .videoItem{
+  flex:0 0 clamp(224px,23.2%,300px);
+  scroll-snap-align:start;
+}
+.section[data-personal-testimonials="services"] .videoGrid:focus-visible{
+  outline:3px solid #e0b17b;
+  outline-offset:2px;
+}
+.moreVideos{
+  margin-top:14px;
+  padding:0 13px;
+  border:1px solid #d5e5e4;
+  border-radius:13px;
+  background:#fff;
+}
+.moreVideos>summary{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:49px;cursor:pointer;list-style:none;
+  font:800 13px/1.4 Arial,Helvetica,sans-serif;color:#206876;
+}
+.moreVideos>summary::-webkit-details-marker{display:none}
+.moreVideos>summary span{
+  display:grid;place-items:center;min-width:30px;min-height:27px;border-radius:50%;
+  background:#e2f2f0;color:#14676f;font:800 12px/1 Arial,Helvetica,sans-serif;
+}
+.moreVideos[open]{padding-bottom:10px}
+.moreVideos>summary:focus-visible{outline:3px solid #dfa968;outline-offset:2px}
+@media(max-width:767px){
+  .section[data-personal-testimonials="services"] .videoGrid{display:flex;grid-template-columns:none}
+  .section[data-personal-testimonials="services"] .videoItem{flex:0 0 83%;max-width:295px}
+  .section[data-personal-testimonials="services"] .videoItem :global(.site-video-title){font-size:16px}
+  .section[data-personal-testimonials="services"] .videoItem :global(.site-video-caption){padding:9px 11px}
+  .section[data-personal-testimonials="services"] .quoteText{font-size:20px}
+  .moreVideos{padding:0 10px}
+  .moreVideos>summary{font-size:12px}
+}
