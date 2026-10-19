@@ -211,20 +211,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="remedies"/>
     </>}
 
-    {session.report&&<section id={hasFullReport?'session-download':'session-report'} className={styles.clientSection+' '+styles.reportDownloadSection}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><FileDown size={20}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
-          <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
-      </header>
-      <div className={styles.reportPanel}>
-        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
-          'Your original PDF contains the complete recommendations and additional details.'}</p>
-        <a href={pdfPath} className={styles.downloadButton} download><FileDown size={20}/>
-          {ru?'Скачать PDF-отчёт':'Download the full PDF'}</a>
-      </div>
-    </section>}
-
     {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
       <header className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><Images size={21}/></span>
@@ -307,8 +293,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           <span className={styles.sectionKicker}>{ru?'К ВАШЕМУ ОТЧЁТУ':'WITH YOUR REPORT'}</span>
           <h2 id="session-materials-title">{ru?'Материалы':'Materials'}</h2>
           <p className={styles.reportMaterialsIntro}>{ru?
-            'Дополнительные видео, записи и материалы, выбранные специалистом для этой консультации.':
-            'Additional videos, recordings and resources selected for this consultation.'}</p>
+            'Подобрано специально для вашей консультации: видео, аудио и полезные материалы.':
+            'Selected for your consultation: video, audio and helpful resources.'}</p>
         </div>
       </header>
       {materialsYoutubeResources.length>0&&<div className={styles.youtubeLessonList}>
@@ -383,6 +369,20 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           </span>
           <ExternalLink size={18} className={styles.reportRecommendedTestArrow} aria-hidden="true"/>
         </a>)}
+      </div>
+    </section>}
+
+    {session.report&&<section id={hasFullReport?'session-download':'session-report'} className={styles.clientSection+' '+styles.reportDownloadSection}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><FileDown size={20}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
+          <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
+      </header>
+      <div className={styles.reportPanel}>
+        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
+          'Your original PDF contains the complete recommendations and additional details.'}</p>
+        <a href={pdfPath} className={styles.downloadButton} download><FileDown size={20}/>
+          {ru?'Скачать PDF-отчёт':'Download the full PDF'}</a>
       </div>
     </section>}
 

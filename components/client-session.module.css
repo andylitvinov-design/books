@@ -2161,3 +2161,274 @@
   .reportRecommendedTestCard{min-height:68px;padding:11px 12px}
 }
 @media(prefers-reduced-motion:reduce){.reportRecommendedTestCard{transition:none}}
+
+/* Coastal v2 continuity: a private consultation without a published signed
+   document still starts with the same sea/lighthouse identity, never the
+   unrelated legacy cream hero. No data, access or PDF changes. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero {
+    isolation:isolate;
+    position:relative;
+    overflow:hidden;
+    border:1px solid #8cbac4;
+    border-radius:22px;
+    background:linear-gradient(90deg,rgba(9,53,77,.91),rgba(13,67,84,.66)),
+      url('/images/holistic-house/report-lighthouse-coast.svg') 63% center/cover no-repeat;
+    box-shadow:0 14px 30px #173d5319;
+    color:#f5ffff;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero h1 {
+    color:white;
+    text-shadow:0 2px 13px #133c4c87;
+    font-size:clamp(28px,4.2vw,38px);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .sectionKicker {
+    color:#e0f5f4;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .sessionSummary {
+    color:#f4fdfb;
+    text-shadow:0 1px 6px #0c344880;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .sessionIdentity div {
+    border-color:#ffffffb0;
+    background:#ffffffed;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .sessionIdentity :is(dt,dd) {
+    color:#205369;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .nextStepCard {
+    border-color:#b9dfe3;
+    background:#fffffff2;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .nextStepCard .sectionKicker {
+    color:#1d6475;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero .practitionerCredit {
+    color:#e1f4f3;
+  }
+}
+@media screen and (max-width:600px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero {
+    padding:20px 16px;
+    border-radius:17px;
+    background-position:70% center;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero h1 {
+    font-size:clamp(26px,7vw,34px);
+    line-height:1.16;
+  }
+}
+
+
+/* Coastal report polish v2.1: strong visual hierarchy, readable material cards,
+   and accessible primary/secondary actions in the signed and fallback reader. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .clientHeader {
+    border-radius:13px;
+    box-shadow:0 3px 12px rgba(13,63,79,.065);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sectionKicker {
+    color:#28788b;
+    font-weight:800;
+    letter-spacing:.085em;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sectionHeader {
+    align-items:center;
+    gap:12px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sectionHeader h2 {
+    line-height:1.23;
+    text-wrap:balance;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis) {
+    border-left:3px solid #2b9b9c;
+    background:linear-gradient(125deg,#fffefd,#f4faf9);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis h2::before),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-notes h2::before) {
+    content:'✧';
+    display:inline-block;
+    margin-right:9px;
+    font-family:Georgia,'Times New Roman',serif;
+    color:#2a9a9a;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis p) {
+    line-height:1.76;
+    letter-spacing:.005em;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy) {
+    background:linear-gradient(132deg,#fffefa,#f0f8f7 85%);
+    border-color:#c9e4e2;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-card-photo) {
+    border:1px solid #d6e7df;
+    box-shadow:0 3px 12px rgba(21,72,68,.07);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-title h3) {
+    letter-spacing:-.018em;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-profile-action) {
+    background:#e3f2f1;
+    color:#135e70;
+    border-color:#abd3d4;
+    text-decoration:none;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-profile-action:hover) {
+    background:#d1eae8;
+    border-color:#79afb2;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests li) {
+    margin:0;
+    padding:10px 12px;
+    border:1px solid #d6e7e8;
+    border-radius:10px;
+    background:#fff;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests ol) {
+    list-style-position:inside;
+    padding:0;
+    margin:0;
+    gap:9px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests a) {
+    display:inline-flex;
+    align-items:center;
+    min-height:32px;
+    padding:2px 0;
+    color:#17677d;
+    font-size:16px;
+    text-underline-offset:3px;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsIntro {
+    color:#52757f;
+    font-size:15px;
+    line-height:1.55;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .videoFirstSection {
+    border-color:#cee4e6;
+    box-shadow:0 7px 21px rgba(18,66,79,.065);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection .youtubeLesson,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection .clientMediaCard {
+    border-radius:15px;
+    box-shadow:0 5px 16px rgba(21,67,78,.065);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .youtubeLessonDescription,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .youtubeLessonPrivacy {
+    line-height:1.5;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportDownloadSection {
+    box-shadow:0 7px 20px rgba(27,92,91,.05);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions {
+    background:linear-gradient(140deg,#e9f8f7,#f8fcfc 85%);
+    border-color:#c2e2e3;
+    box-shadow:0 10px 28px rgba(23,67,80,.085);
+  }
+  /* The legacy V4 secondary CTA forces white text with !important. The
+     lighter approved design therefore must explicitly undo that legacy rule. */
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary:visited {
+    color:#174f64!important;
+    -webkit-text-fill-color:#174f64;
+    background:#fffefa;
+    border:1px solid #88b5bb;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary:hover {
+    background:#ddf2f0;
+    border-color:#5e9fa9;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary svg {
+    color:#247787;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomPrimary {
+    background:#173957;
+    border-color:#173957;
+    color:#fff!important;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :is(a,button,summary):focus-visible {
+    outline:3px solid #258e9d;
+    outline-offset:3px;
+  }
+}
+@media screen and (max-width:700px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sectionHeader h2 {
+    font-size:clamp(21px,6vw,25px);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-remedy-title h3) {
+    font-size:clamp(20px,6vw,25px);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomPrimary,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary {
+    min-height:52px;
+    font-size:15px;
+    line-height:1.42;
+    padding:12px 13px;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests li) {
+    padding:10px;
+  }
+}
+@media screen and (prefers-reduced-motion:reduce) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-profile-action) {
+    transition:none;
+  }
+}
+
+
+/* The only schedule values shown here come from the approved prescription
+   fields. Screen-only chips preserve the original exact signed text for print. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-schedule) {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+    width:fit-content;
+    max-width:100%;
+    margin:9px 0 6px;
+    padding:0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    line-height:1.3;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-remedy-schedule-part) {
+    display:inline-flex;
+    flex:0 1 auto;
+    min-width:0;
+    max-width:100%;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-remedy-schedule-dot) {
+    display:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-remedy-schedule-chip) {
+    display:inline-flex;
+    max-width:100%;
+    padding:6px 10px;
+    align-items:center;
+    border:1px solid #c2dfdf;
+    border-radius:9px;
+    color:#1b5966;
+    background:#edf8f7;
+    box-shadow:0 1px 3px rgba(34,91,86,.035);
+    font:650 clamp(13px,1.7vw,15px)/1.35 system-ui,-apple-system,sans-serif;
+    overflow-wrap:anywhere;
+    white-space:normal;
+  }
+}
+@media screen and (max-width:380px){
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-remedy-schedule-chip) {
+    padding:5px 8px;
+    font-size:13px;
+  }
+}
+
