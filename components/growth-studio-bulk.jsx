@@ -2,6 +2,7 @@
 import {useRef,useState} from 'react'
 import {Download,Files,UploadCloud,Layers,AlertCircle} from 'lucide-react'
 import {createGrowthStudioBulkAction} from '@/app/admin/growth-studio/actions'
+import {parseGrowthCsv} from '@/lib/growth-studio/csv.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES} from '@/lib/growth-studio/model.mjs'
 import styles from './growth-studio.module.css'
 
@@ -27,7 +28,7 @@ const COPY={
   bad:'CSV data could not be imported. Check brand, channel, public URLs, field lengths and dates.',
   unsafe:'Import only your own public promotional copy, never private client notes or test results.',
   types:'Recognized columns: brand, channel, locale, title, caption, sourceUrl, campaign, scheduledAt, mediaUrl, mediaAlt.',
-  progress:'Saved',date:'Use ISO UTC dates in CSV (e.g. 2026-11-01T17:00:00.000Z); invalid dates become unscheduled drafts.',
+  progress:'Saved',date:'CSV dates require ISO timestamps with Z or an explicit UTC offset; invalid dates block the import instead of being silently changed.',
   read:'Could not read the file.',size:'CSV must be 512 KB or smaller and contain no more than 500 rows.',
  },
  ru:{
@@ -46,72 +47,11 @@ const COPY={
   bad:'Не удалось импортировать CSV. Проверьте проект, площадку, ссылки, размер текста и даты.',
   unsafe:'Импортируйте только публичные материалы, не добавляйте записи клиентов или результаты тестов.',
   types:'Колонки: brand, channel, locale, title, caption, sourceUrl, campaign, scheduledAt, mediaUrl, mediaAlt.',
-  progress:'Сохранено',date:'В CSV дата в UTC ISO (например, 2026-11-01T17:00:00.000Z); ошибочные даты остаются без расписания.',
+  progress:'Сохранено',date:'В CSV даты — ISO с Z или часовым поясом UTC±. Если дата некорректна, импорт остановится без изменений.',
   read:'Не удалось прочитать файл.',size:'CSV не более 512 КБ, до 500 строк.',
  }
 }
 const CSV_COLUMNS=['brand','channel','locale','title','caption','sourceUrl','campaign','scheduledAt','mediaUrl','mediaAlt']
-function parseCsv(text) {
-  if (text.length>524288) throw new Error('size')
-  let row=[],rows=[],cell='',quoted=false
-  for(let i=0;i<text.length;i++){
-    const char=text[i]
-    if(quoted){
-      if(char==='"'&&text[i+1]==='"'){cell+='"';i++}
-      else if(char==='"')quoted=false
-      else cell+=char
-    }else if(char==='"'){
-      if(cell!=='')throw new Error('csv')
-      quoted=true
-    }else if(char===','){row.push(cell);cell=''}
-    else if(char==='\r'||char==='\n'){
-      if(char==='\r'&&text[i+1]==='\n')i++
-      row.push(cell);cell=''
-      if(row.some(x=>x.trim()))rows.push(row)
-      row=[]
-      if(rows.length>502)throw new Error('size')
-    }else cell+=char
-  }
-  if(quoted)throw new Error('csv')
-  row.push(cell)
-  if(row.some(x=>x.trim()))rows.push(row)
-  if(rows.length<2)throw new Error('csv')
-  const header=rows.shift().map(x=>x.replace(/^\ufeff/,'').trim())
-  if(new Set(header).size!==header.length)throw new Error('csv')
-  if(!header.includes('caption')&&!header.includes('text')&&!header.includes('content'))throw new Error('csv')
-  if(rows.length>500)throw new Error('size')
-  return rows.map(line=>{
-    const obj={}
-    for(let i=0;i<header.length;i++)obj[header[i]]=line[i]??''
-    return obj
-  })
-}
-function cleanDate(value){
-  if (!value) return ''
-  const s=String(value).trim()
-  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(s)&&
-    !Number.isNaN(Date.parse(s))&&new Date(s).toISOString()===s?s:''
-}
-function safeCsvEntries(rows,defaults){
-  return rows.map(row=>{
-    const caption=String(row.caption||row.text||row.content||'').trim()
-    const title=String(row.title||caption.slice(0,80)||'Imported draft').trim()
-    const inputBrand=String(row.brand||'').trim()
-    const inputChannel=String(row.channel||'').trim().toLowerCase()
-    const inputLocale=String(row.locale||'').trim().toLowerCase()
-    if ((inputBrand&&!GROWTH_BRANDS[inputBrand]) ||
-        (inputChannel&&!GROWTH_CHANNELS.includes(inputChannel)) ||
-        (inputLocale&&!GROWTH_LANGUAGES.includes(inputLocale)))throw new Error('csv')
-    return {
-      brand:inputBrand||defaults.brand,
-      channel:inputChannel||defaults.channel,
-      locale:inputLocale||defaults.locale,
-      title,caption,sourceUrl:row.sourceUrl||defaults.sourceUrl||'',
-      campaign:row.campaign||defaults.campaign||'',scheduledAt:cleanDate(row.scheduledAt),
-      mediaUrl:row.mediaUrl||'',mediaAlt:row.mediaAlt||'',
-    }
-  })
-}
 function downloadTemplate(){
   const data=CSV_COLUMNS.join(',')+'\r\n'+
    ['holistic_house','telegram','en','Sample invitation','Read our free course','/en/academy','academy_intro','','',''].map(x=>'"'+String(x).replaceAll('"','""')+'"').join(',')+'\r\n'
@@ -184,8 +124,9 @@ export default function GrowthStudioBulk({locale='en',base={},ready=false,onCrea
    if(pending.current){setNotice(locale==='ru'?'Отмените предыдущий импорт.':'Discard the previous import first.');return}
    if(file.size>524288){setNotice(t.size);return}
    try{
-    const parsed=parseCsv(await file.text())
-    const entries=safeCsvEntries(parsed,{brand,channel:'manual',locale:'en',sourceUrl:'',campaign:''})
+    const parsed=parseGrowthCsv(await file.text(),{brand,channel:'manual',locale:'en'})
+    if(parsed.errors.length)throw new Error('invalid_csv_rows')
+    const entries=parsed.items
     pending.current={kind:'csv',index:0,
       batches:Array.from({length:Math.ceil(entries.length/20)},(_,i)=>({batchId:uuid(),entries:entries.slice(i*20,(i+1)*20)}))}
     setCsvRows(entries);setProgress(0);setNotice('')
