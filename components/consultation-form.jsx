@@ -337,8 +337,6 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     <input type="hidden" name="requestId" value={requestId ?? ''} />
     <input type="hidden" name="itemsJson" value={JSON.stringify(serializeConsultationRows(items))} />
     <input type="hidden" name="recommendedTestsJson" value={JSON.stringify(recommendedTestKeys)} />
-    <input type="hidden" name="followUp" value={consultation?.followUp ?? ''} />
-    <input type="hidden" name="recommendationNumber" value={consultation?.recommendationNumber ?? ''} />
 
     <ol className="consultation-studio-progress" aria-label={labels.workflow}>
       <li><span>01</span>{labels.client}</li>
@@ -541,6 +539,14 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <label>
             <span>{uiLocale === 'ru' ? 'Дата рождения клиента (необязательно)' : 'Client date of birth (optional)'}</span>
             <input type="date" name="patientDob" defaultValue={consultation?.patientDob ?? ''} />
+          </label>
+          <label>
+            <span>{uiLocale === 'ru' ? 'Номер рекомендации (необязательно)' : 'Recommendation number (optional)'}</span>
+            <input name="recommendationNumber" defaultValue={consultation?.recommendationNumber ?? ''} />
+          </label>
+          <label className="consultation-advanced-notes">
+            <span>{uiLocale === 'ru' ? 'Пояснение к повторной консультации' : 'Follow-up instructions'}</span>
+            <textarea rows={2} name="followUp" defaultValue={consultation?.followUp ?? ''} />
           </label>
           <label className="consultation-advanced-notes">
             <span>{uiLocale === 'ru' ? 'Личные заметки практика (не показываются клиенту)' : 'Private practitioner notes (not shown to client)'}</span>

@@ -15,6 +15,10 @@ test('new and edit routes render the same consultation report form', () => {
   assert.match(fresh, /getRecommendedTestOptions\('ru'\)/)
   assert.match(edit, /getRecommendedTestOptions\('ru'\)/)
   assert.match(edit, /ReportVideoMaterialsEditor/)
+  assert.match(edit, /inspectSavedClientReportPublication/)
+  const form = read('components/consultation-form.jsx')
+  for (const field of ['patientDob', 'internalNotes', 'recommendationNumber', 'followUp'])
+    assert.match(form, new RegExp('name="' + field + '"'))
 })
 
 test('all legacy edit and new-entry links converge on the report editor', () => {

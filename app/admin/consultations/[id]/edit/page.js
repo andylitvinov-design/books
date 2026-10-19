@@ -9,6 +9,7 @@ import { getRecommendedTestOptions } from '@/lib/consultations/recommended-tests
 import { ReportVideoMaterialsEditor } from '@/components/report-video-materials-editor'
 import { AdminDocumentPanels } from '@/components/admin-document-panels'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
+import { inspectSavedClientReportPublication } from '@/lib/clients/report-auto-publish'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { updateConsultationAction } from '../../actions'
 
@@ -23,6 +24,8 @@ export default async function EditConsultation({ params }) {
   const payment = consultation?.paymentDocumentId ? await store.findById(consultation.paymentDocumentId) : undefined
   if (!consultation || consultation.kind === 'payment' ||
       (consultation.paymentDocumentId && payment?.kind !== 'payment')) notFound()
+  const publication = await inspectSavedClientReportPublication(consultation, store)
+  const ru = consultation.languagePreference === 'ru'
 
   return <main className="prescription-admin-shell consultation-edit-shell consultation-studio-shell">
     <PrescriptionAdminHeader
@@ -32,6 +35,18 @@ export default async function EditConsultation({ params }) {
         en: 'The same report builder used for a new report. Changes update the existing document.',
       }}
     />
+    {publication !== 'skipped' &&
+      <section className={'report-save-publication-state ' +
+        (publication === 'published' ? 'report-save-publication-state--success' : '')} role="status">
+        <strong>{publication === 'published'
+          ? (ru ? 'Отчёт опубликован для клиента' : 'Report published privately')
+          : publication === 'unlinked'
+            ? (ru ? 'Отчёт ещё не привязан к клиенту' : 'Report is not linked to a client')
+            : (ru ? 'Публикация отчёта пока не подтверждена' : 'Report publication not yet confirmed')}</strong>
+        <p>{ru
+          ? 'Изменения редактора требуют сохранения и отдельной проверки публикации для клиента.'
+          : 'Edits must be saved and their private client publication verified separately.'}</p>
+      </section>}
     <div className="consultation-edit-return">
       <Link href={`/admin/consultations/${id}`} prefetch={false}>← Назад к документам / Back to documents</Link>
     </div>
