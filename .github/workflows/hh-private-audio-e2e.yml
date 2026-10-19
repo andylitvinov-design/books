@@ -8,6 +8,8 @@ on:
       - 'components/report-video-materials-editor.jsx'
       - 'lib/clients/phone-audio-file.js'
       - 'lib/clients/recording-upload.js'
+      - 'components/session-recording-review.jsx'
+      - 'tests/client-session-take-selection.test.mjs'
       - 'lib/clients/owner-audio-upload.js'
       - 'lib/clients/owner-photo-upload.js'
       - 'lib/clients/session-delivery-*.js'
@@ -26,6 +28,8 @@ on:
       - 'components/report-video-materials-editor.jsx'
       - 'lib/clients/phone-audio-file.js'
       - 'lib/clients/recording-upload.js'
+      - 'components/session-recording-review.jsx'
+      - 'tests/client-session-take-selection.test.mjs'
       - 'lib/clients/owner-audio-upload.js'
       - 'lib/clients/owner-photo-upload.js'
       - 'lib/clients/session-delivery-*.js'
@@ -52,7 +56,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Actual synthetic AAC bytes through owner intent/upload/finalization/guest Range playback and privacy
         run: |
-          node --test tests/client-session-audio-synthetic-e2e.test.mjs \
+          node --test tests/client-session-take-selection.test.mjs \
+            tests/client-session-audio-synthetic-e2e.test.mjs \
             tests/client-session-owner-photo-upload.test.mjs \
             tests/client-session-photos.test.mjs \
             tests/client-session-owner-audio-upload.test.mjs \
