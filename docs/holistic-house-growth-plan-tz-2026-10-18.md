@@ -178,3 +178,12 @@ Production: [holistichouse.vercel.app](https://holistichouse.vercel.app), Vercel
 - Визуальная приёмка 320/390/430px/desktop; фото и кнопка регистрации не должны обрезаться, отсутствие hydration/scroll ошибок.
 - Node regression test + TypeScript + Next build + Vercel Preview/production deployment SHA, после merge независимый HTTP readback реальной страницы.
 - Внешний provider URL, OAuth ID, marketplace billing, реальные органические/платные публикации и реальные CRM конверсии подтверждаются отдельно; не отмечать DONE на основании документа или CI.
+
+
+### CRM attribution for additional event platforms (implementation 19 October 2026)
+
+The existing first-party organic-event referral allowlist already accepts Eventbrite, Meetup, Luma, AllEvents, Humanitix, Ticket Tailor and permitted partners. The owner-only marketing CRM previously exposed Eventbrite/Meetup but grouped the other channels as Other. The follow-up PR adds explicit source identifiers in the existing frontend, backend validator and an additive PostgreSQL CHECK constraint migration. For Eventbrite, Meetup, Luma, AllEvents, Humanitix and Ticket Tailor the owner form defaults medium to organic_event; a partner referral remains an explicit owner choice.
+
+No visits, provider RSVPs or platform-side tickets are imported or counted as received leads. Recording a marketing opportunity still requires an existing owner CRM contact and a checked confirmation that an enquiry was actually received. Only source/medium/public-safe campaign/creative/offer/stage are stored; no medical, test, email or attendee content in URL tracking.
+
+The migration must be applied to the verified Supabase **holistichouse** project before the new options can be used. Confirm the source CHECK and forced RLS afterward. This is a code/DB attribution extension, **not** a provider OAuth connection, marketing campaign, event publication, GA4 activation, or client-data sharing.

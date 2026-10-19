@@ -1,0 +1,40 @@
+name: Holistic House event-source CRM contract
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'lib/crm/marketing.js'
+      - 'components/app/crm-marketing.jsx'
+      - 'lib/organic-event-referrals.js'
+      - 'supabase/migrations/*hh_crm_event_channel_sources*.sql'
+      - 'tests/crm-event-channel-attribution.test.mjs'
+      - '.github/workflows/hh-crm-event-channels.yml'
+  push:
+    branches: [codex/public-book-library]
+    paths:
+      - 'lib/crm/marketing.js'
+      - 'components/app/crm-marketing.jsx'
+      - 'lib/organic-event-referrals.js'
+      - 'supabase/migrations/*hh_crm_event_channel_sources*.sql'
+      - 'tests/crm-event-channel-attribution.test.mjs'
+      - '.github/workflows/hh-crm-event-channels.yml'
+permissions:
+  contents: read
+jobs:
+  event-attribution:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked app dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Event source, safe attribution and owner CRM regression
+        run: node --test tests/crm-event-channel-attribution.test.mjs tests/crm-marketing.test.mjs tests/organic-event-referrals.test.mjs tests/gbp-v3-toronto.test.mjs
+      - name: TypeScript
+        run: npx --no-install tsc --noEmit
