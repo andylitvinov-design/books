@@ -21,7 +21,7 @@ test("home and services render the same first-party testimonial component", () =
   assert.match(services, /id="method-videos"/);
 });
 
-test("published compact home shows two sourced videos while preserving all six originals per language", () => {
+test("homepage previews four sourced videos and preserves all 12 originals behind the disclosure", () => {
   const component = read("components", "personal-testimonials.tsx");
   const ru = component.match(/  ru: \[([\s\S]*?)\],\n  en: \[/)?.[1] ?? "";
   const en = component.match(/  en: \[([\s\S]*?)\],\n  es: \[/)?.[1] ?? "";
@@ -31,7 +31,7 @@ test("published compact home shows two sourced videos while preserving all six o
   assert.equal(enIds.length, 6);
   assert.equal(new Set(ruIds).size, 6);
   assert.equal(new Set(enIds).size, 6);
-  // PR637 changed the published home from six visible videos to two; keep every source.
+  // PR637 had reduced the homepage to two; the first four now stay visible.
   assert.deepEqual(ruIds, ["m9RfDgK76PU", "MIVLm1GUTtM", "ttQxUHopaUM", "VABgpmn4ZYA", "muOnIHllI7E", "5oj0BIbLT4w"]);
   assert.deepEqual(enIds, ["Dk0LBmOivQo", "aUJde6A-9p0", "fE6sD1zr1Js", "itjo2_z2NGk", "4NrryHcEF1A", "hYwRNMxIMjc"]);
   const expression=component.match(/const videos = (.*);/)[1];
@@ -39,12 +39,21 @@ test("published compact home shows two sourced videos while preserving all six o
   const sources={ru:ruIds.map(id=>({id})),en:enIds.map(id=>({id}))};
   for(const locale of ["ru","en"]){
     const home=choose(true,sources,locale),services=choose(false,sources,locale);
-    assert.equal(home.length,2);
-    assert.equal(new Set(home.map(item=>item.id)).size,2);
-    assert.deepEqual(home,sources[locale].slice(0,2));
+    assert.equal(home.length,4);
+    assert.equal(new Set(home.map(item=>item.id)).size,4);
+    assert.deepEqual(home,sources[locale].slice(0,4));
+    const hidden = [...sources[locale].slice(4), ...sources[locale === "ru" ? "en" : "ru"]];
+    assert.equal(hidden.length,8);
+    assert.equal(new Set([...home,...hidden].map(item=>item.id)).size,12);
     assert.equal(services.length,3);
     assert.deepEqual(services,sources[locale].slice(0,3));
   }
+  assert.match(component, /const remainingHomeVideos = isHome \? testimonialVideos\[locale\]\.slice\(4\) : \[\]/);
+  assert.match(component, /const otherLanguageVideos = isHome \? testimonialVideos\[locale === "ru" \? "en" : "ru"\] : \[\]/);
+  assert.match(component, /<details className=\{styles\.moreVideoDisclosure\} data-home-testimonial-disclosure>/);
+  assert.match(component, /renderVideoCards\(remainingHomeVideos\)/);
+  assert.match(component, /renderVideoCards\(otherLanguageVideos, true\)/);
+  assert.match(component, /remainingHomeVideos\.length \+ otherLanguageVideos\.length/);
   assert.match(component,/storyQuote/);
   assert.match(component,/current\.storyQuote/);
   assert.match(component, /video=\{\{ youtubeId: item\.id, language: item\.language, title: item\.title \}\}/);
@@ -74,6 +83,12 @@ test("videos use existing lazy click-to-play player and mobile layout; links are
   assert.match(css, /grid-template-columns: 1fr/);
   assert.match(css, /min-height: 44px/);
   assert.match(css, /:focus-visible/);
+  assert.match(css, /\.moreVideoDisclosure > summary/);
+  assert.match(css, /\.moreVideoDisclosure\[open\] > summary/);
+  assert.match(css, /\.moreVideoDisclosure > summary:focus-visible/);
+  assert.match(component, /moreToggle: "Смотреть больше отзывов"/);
+  assert.match(component, /moreToggle: "Watch more testimonials"/);
+  assert.match(component, /moreToggle: "Ver más testimonios"/);
 });
 
 test("video browser verification selects the managed intro even when testimonials add other play buttons", () => {
