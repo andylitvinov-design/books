@@ -87,6 +87,8 @@ const copy = {
     voicesPrevious: "Previous review",
     voicesNext: "Next review",
     voicesNavigation: "Browse learner reviews",
+    voicesScrollHint: "Scroll down to read the full review",
+    voicesScrollLabel: "Full learner review — scroll inside this area to read it all",
     milestoneLabel: "Lovely progress",
     milestoneNote: "Personal initiation and group membership are arranged separately, never granted automatically.",
     committed: "I'm committed!",
@@ -194,6 +196,8 @@ const copy = {
     voicesPrevious: "Предыдущий отзыв",
     voicesNext: "Следующий отзыв",
     voicesNavigation: "Переключение отзывов",
+    voicesScrollHint: "Листайте вниз — здесь полный отзыв",
+    voicesScrollLabel: "Полный отзыв участника — прокручивайте внутри текста",
     milestoneLabel: "Прекрасный прогресс",
     milestoneNote: "Инициация и вступление в сообщество согласуются отдельно, а не происходят автоматически.",
     committed: "I'm committed!",
@@ -362,6 +366,23 @@ function MeditationVoices({ slide, locale, youtubeId }: {
   const entries = slide.testimonials ?? [];
   const [active, setActive] = useState(0);
   const currentReview = entries[active];
+  const reviewScrollRef = useRef<HTMLParagraphElement>(null);
+  const [canScrollReview, setCanScrollReview] = useState(false);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const updateReviewScroll = useCallback(() => {
+    const element = reviewScrollRef.current;
+    const scrollable = !!element && element.scrollHeight > element.clientHeight + 3;
+    setCanScrollReview(scrollable);
+    setShowScrollHint(scrollable && !!element && element.scrollTop + element.clientHeight < element.scrollHeight - 3);
+  }, []);
+  useEffect(() => {
+    updateReviewScroll();
+    const element = reviewScrollRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateReviewScroll);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [active, locale, slide.id, updateReviewScroll]);
   return (
     <div className={styles.voicesCard} data-meditation-voices>
       <div className={styles.voicesHeading}>
@@ -376,7 +397,9 @@ function MeditationVoices({ slide, locale, youtubeId }: {
         <div data-meditation-review-carousel data-review-count={entries.length}>
           <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
             <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
-            <p>{currentReview.quote[locale]}</p>
+            <p data-review-scroll ref={reviewScrollRef} role="region" tabIndex={canScrollReview ? 0 : -1}
+              aria-label={t.voicesScrollLabel} onScroll={updateReviewScroll}>{currentReview.quote[locale]}</p>
+            {showScrollHint ? <span className={styles.voicesScrollHint} aria-hidden="true">↓ {t.voicesScrollHint}</span> : null}
             <cite>{currentReview.attribution[locale]}</cite>
           </blockquote>
           {entries.length > 1 ? (
