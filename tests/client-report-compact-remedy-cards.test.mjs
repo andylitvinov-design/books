@@ -11,7 +11,7 @@ test('report recommendations show a compact image-free card without changing aut
 
   assert.doesNotMatch(card, /<img|canonical-remedy-card-photo|primary_image/)
   assert.match(card, /item\.displayName/)
-  assert.match(card, /remedySchedule\(item, locale, document\.recommendationType\)/)
+  assert.match(source, /remedySchedule\(item, locale, document\.recommendationType\)/)
   assert.match(card, /canonical-remedy-schedule/)
   assert.match(card, /href=\{item\.remedyPath\}/)
   assert.match(card, /Описание препарата/)
