@@ -7,6 +7,7 @@ import { DocumentAutoPrint } from './document-auto-print'
 import { ReportAppendixPrintExpander } from './report-appendix-print-expander'
 import { PrescriptionActions } from './prescription-actions'
 import { ReportNarrationPlayer } from './report-narration-player'
+import { DaoStageDisclosure } from './dao-resource-stage'
 import { narrationEnabled } from '@/lib/clients/report-narration-service'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 import { extractReportProgress } from '@/lib/documents/report-progress'
@@ -97,6 +98,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         {narration && narrationEnabled() && <ReportNarrationPlayer locale={locale} access={narration} />}
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
       </section>}
+
+      <DaoStageDisclosure score={document.daoResourceScore} locale={locale} />
 
       {groups.map((group) => <section className="canonical-remedy-group" key={group.type}>
         <h2 className="canonical-remedy-group-title">{group.title || (locale === 'ru' ? 'РЕКОМЕНДАЦИИ' : 'RECOMMENDATIONS')}</h2>
