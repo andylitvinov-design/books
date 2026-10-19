@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { repositoryHarness, mount, findButton, textOf } from './helpers/route-pipeline-harness.mjs'
 import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner-growth/anti-stress-skills-v6.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { OPORA_EXPERIENCE_PRE_SAVE_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
+import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 
 const labels = {
   en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Not sure yet', plan: 'Keep this reminder', save: 'Save my practice', receipt: 'Your moment is saved' },
@@ -34,18 +34,28 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       },
     })
     try {
-      // Real reply first; no clinical rating or forced change of mood.
-      await click(player, locale==='ru'?'Напряжённо':'Tense')
-      assert.match(textOf(player.tree),locale==='ru'
-        ?/не нужно заставлять себя расслабиться/:/do not have to make yourself relax/)
-      await click(player, t.next)
-      await click(player, t.tried)
-      await click(player, t.next)
-      await click(player, t.same)
-      await click(player, t.next)
-      await click(player, t.vote)
-      await click(player, t.next)
-      await click(player, t.plan)
+      if(day===1){
+        // Five original gentle opening screens precede even the first activity.
+        await click(player, locale==='ru'?'Чувствую напряжение':'I feel tense')
+        assert.match(textOf(player.tree),locale==='ru'
+          ?/Не нужно сразу менять своё состояние/:/Nothing needs to change right away/)
+        for(let i=0;i<4;i++)await click(player,t.next)
+        await click(player,t.vote)
+        await click(player,t.next)
+        await click(player,t.next)
+      }else{
+        // Preserve the existing warm first screen and feedback on Days 2–14.
+        await click(player, locale==='ru'?'Напряжённо':'Tense')
+        assert.match(textOf(player.tree),locale==='ru'
+          ?/не нужно заставлять себя расслабиться/:/do not have to make yourself relax/)
+        await click(player,t.next)
+      }
+      await click(player,t.tried)
+      await click(player,t.next)
+      await click(player,t.same)
+      await click(player,t.next)
+      if(day!==1){await click(player,t.vote);await click(player,t.next)}
+      await click(player,t.plan)
       assert.equal(requests, 0, 'Opening moments and choosing responses never saves')
       await click(player, t.save)
       assert.equal(requests, 1)
@@ -56,10 +66,14 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.content_version, COURSE_ANTISTRESS_SKILLS_V7)
       assert.equal(owner.cycle.content_version, COURSE_ANTISTRESS_SKILLS_V7)
       assert.equal(saved.signals.window, 'practice_v6')
+      assert.equal(saved.signals.interactionSchema,
+        day===1?'as-5.8-restored-five-opening-v1':'as-5.6-five-moments-v1')
       assert.equal(payload.welcomeFeeling,'tense')
-      assert.equal(saved.signals.welcomeFeeling,'tense','Mood belongs to this authenticated lesson session')
-      assert.equal(saved.signals.interactionSchema, 'as-5.6-five-moments-v1')
-      assert.deepEqual(payload.visitedSlideKeys, [...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+      assert.equal(saved.signals.welcomeFeeling,'tense')
+      assert.deepEqual(payload.visitedSlideKeys,
+        day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+      if(day===1)assert.deepEqual(saved.signals.oporaOpening,
+        {resource:null,lastDayDifficulty:null,familiarSupport:null})
       assert.equal(saved.signals.practiceAttempt, 'tried')
       assert.equal(saved.signals.opora54.answers.act, undefined, 'The guided moment is not an old multiple-choice exercise')
       assert.equal(saved.signals.opora54.answers.actChoice, undefined)
@@ -85,10 +99,12 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     async onSession(input) { await owner.command(structuredClone(input), locale); return true },
   })
   try {
-    for (let i = 0; i < 4; i++) await click(player, t.next)
+    for (let i = 0; i < 8; i++) await click(player, t.next)
     await click(player, t.save)
     const saved = owner.sessions.at(-1)
-    assert.equal(saved.signals.interactionSchema, 'as-5.6-five-moments-v1')
+    assert.equal(saved.signals.interactionSchema, 'as-5.8-restored-five-opening-v1')
+    assert.deepEqual(saved.signals.oporaOpening,
+      {resource:null,lastDayDifficulty:null,familiarSupport:null})
     assert.equal(saved.signals.practiceAttempt, null)
     assert.equal(saved.signals.aphorismResponse, null)
     assert.equal(saved.signals.transferStage, null)

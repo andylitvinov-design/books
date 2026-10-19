@@ -3,7 +3,9 @@
 import {useEffect,useRef,useState} from 'react'
 import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Pause,ShieldCheck,X} from 'lucide-react'
 import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
-import {OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '@/lib/inner-growth/course-slide-sequence'
+import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '@/lib/inner-growth/course-slide-sequence'
+import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
+import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
 import {oporaExperienceDay,oporaExperienceGuide,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import styles from './opora-experience-player.module.css'
 
@@ -26,6 +28,8 @@ const WORDS={
       {value:'low',symbol:'🌙',label:'Мало сил',reply:'Спасибо, что заметили. Можно идти совсем маленькими шагами.'},
       {value:'unsure',symbol:'💭',label:'Не знаю',reply:'Это тоже подходит. Необязательно сразу понимать свои чувства.'},
     ],
+    arrivalWarmTitle:'Можно просто побыть здесь',
+    arrivalWarmText:'Найдите взглядом одну приятную или нейтральную деталь вокруг.',
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
     stepLabel:'Сегодня можно попробовать',
@@ -69,6 +73,8 @@ const WORDS={
       {value:'low',symbol:'🌙',label:'Tired',reply:'Thank you for noticing. We can go one small step at a time.'},
       {value:'unsure',symbol:'💭',label:'Not sure',reply:'That is okay, too. You do not have to name a feeling to begin.'},
     ],
+    arrivalWarmTitle:'You can arrive just as you are',
+    arrivalWarmText:'Find one calm or pleasant detail around you.',
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
     stepLabel:'A gentle step for today',
@@ -113,7 +119,9 @@ WORDS.es = {
     {value:'low',symbol:'🌙',label:'Sin energía',reply:'Gracias por notarlo. Podemos ir poco a poco.'},
     {value:'unsure',symbol:'💭',label:'No lo sé',reply:'También está bien. No necesitas definir lo que sientes para empezar.'},
   ],
-  practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
+    arrivalWarmTitle:'Puedes llegar tal como estás',
+    arrivalWarmText:'Encuentra con la mirada un detalle agradable o neutro.',
+    practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
   stepLabel:'UN PASO AMABLE',tryAfter:'¿Cómo te fue?',
   tried:'Lo intenté',partly:'Un poquito',read:'Hoy solo leo',
   gentle:'Si te incomoda, mira un objeto neutro.',
@@ -134,17 +142,84 @@ WORDS.es = {
   learnMore:'Ver una pista suave',noMedical:'Aprendizaje personal, no diagnóstico ni tratamiento.',
   ideaTitle:'Una idea amable',reminderTitle:'Un recordatorio',feelTitle:'¿Cómo estás ahora?',
 }
-const SCENES=['arrive','practice','feel','affirmation','save']
+// The five original lesson-one opening screens stay separate, and precede action.
+const OPENING={
+  en:{
+    welcome:'How are you feeling today?',welcomeLead:'What feels closest to you right now?',
+    welcomeNote:'There is no right answer. You can simply continue.',
+    baseline:'How much support do you feel?',baselineLead:'If you wish, choose a number for right now.',
+    baselineLow:'0 · Not at all',baselineHigh:'10 · Very much',
+    checkin:'How was the last day?',checkinLead:'How difficult has today’s concern felt in the past 24 hours?',
+    checkinLow:'0 · Not difficult',checkinHigh:'10 · Very difficult',
+    scaleNote:'Optional. This is your observation, not a test.',
+    recall:'Remember what helps',recallLead:'What has helped you feel a little steadier before?',
+    recallReply:'A familiar source of support can be enough for today.',
+    supportOptions:[['pause','A short pause'],['rest','A little rest'],['connection','Kind contact'],['orient','Looking around'],['unsure','Not sure yet']],
+    thought:'A thought for today',thoughtLead:'How does this idea feel to you?',
+    response:'Thank you. Your view is welcome; there is no correct answer.',
+    welcomeKicker:'WELCOME · YOUR PACE',baselineKicker:'OPTIONAL · RIGHT NOW',
+    checkinKicker:'OPTIONAL · PAST 24 HOURS',recallKicker:'A FAMILIAR RESOURCE',
+    thoughtKicker:'A GENTLE THOUGHT',
+  },
+  ru:{
+    welcome:'Как вы себя чувствуете сегодня?',welcomeLead:'Какое состояние вам сейчас ближе?',
+    welcomeNote:'Правильного ответа нет. Можно просто продолжить.',
+    baseline:'Сколько сейчас внутренней опоры?',baselineLead:'Если хотите, выберите число для этого момента.',
+    baselineLow:'0 · Совсем нет',baselineHigh:'10 · Очень много',
+    checkin:'Как прошли последние сутки?',checkinLead:'Насколько трудной была ваша тема за последние 24 часа?',
+    checkinLow:'0 · Не беспокоила',checkinHigh:'10 · Очень сильно',
+    scaleNote:'Это необязательное наблюдение, не тест.',
+    recall:'Вспомним знакомую опору',recallLead:'Что раньше помогало вам почувствовать себя немного устойчивее?',
+    recallReply:'Можно опереться на то, что вам уже знакомо.',
+    supportOptions:[['pause','Короткая пауза'],['rest','Немного отдыха'],['connection','Тёплый контакт'],['orient','Осмотреться вокруг'],['unsure','Пока не знаю']],
+    thought:'Мысль сегодняшнего дня',thoughtLead:'Как вам откликается эта мысль?',
+    response:'Спасибо. Любое отношение подходит; правильного ответа нет.',
+    welcomeKicker:'НАЧИНАЕМ · В ВАШЕМ ТЕМПЕ',baselineKicker:'ПО ЖЕЛАНИЮ · СЕЙЧАС',
+    checkinKicker:'ПО ЖЕЛАНИЮ · ЗА СУТКИ',recallKicker:'ЗНАКОМАЯ ОПОРА',
+    thoughtKicker:'МЯГКАЯ МЫСЛЬ',
+  },
+  es:{
+    welcome:'¿Cómo te sientes hoy?',welcomeLead:'¿Qué sensación se acerca más a la tuya?',
+    welcomeNote:'No hay respuesta correcta. Puedes continuar sin responder.',
+    baseline:'¿Cuánto apoyo interior sientes?',baselineLead:'Si quieres, elige un número para este momento.',
+    baselineLow:'0 · Nada',baselineHigh:'10 · Mucho',
+    checkin:'¿Cómo fue el último día?',checkinLead:'¿Qué tan difícil ha sido esta preocupación en las últimas 24 horas?',
+    checkinLow:'0 · Nada difícil',checkinHigh:'10 · Muy difícil',
+    scaleNote:'Es una observación opcional, no un examen.',
+    recall:'Recuerda lo que te ayuda',recallLead:'¿Qué te ha ayudado a sentirte un poco más estable?',
+    recallReply:'Puedes apoyarte en algo que ya conoces.',
+    supportOptions:[['pause','Una pausa'],['rest','Descansar'],['connection','Contacto amable'],['orient','Mirar alrededor'],['unsure','Aún no lo sé']],
+    thought:'Una idea para hoy',thoughtLead:'¿Qué te parece esta idea?',
+    response:'Gracias. No hay una respuesta correcta.',
+    welcomeKicker:'BIENVENIDA · A TU RITMO',baselineKicker:'OPCIONAL · AHORA',
+    checkinKicker:'OPCIONAL · ÚLTIMAS 24 H',recallKicker:'UN RECURSO CONOCIDO',
+    thoughtKicker:'UNA IDEA AMABLE',
+  },
+}
+
+function OpeningRating({label,value,onChange,disabled,low,high}){
+  return <>
+    <div className={styles.ratingGrid} role="group" aria-label={label}>
+      {Array.from({length:11},(_,number)=><button key={number} type="button"
+        disabled={disabled} aria-pressed={value===number}
+        onClick={()=>onChange(number)}>{number}</button>)}
+    </div>
+    <div className={styles.ratingBounds}><span>{low}</span><span>{high}</span></div>
+  </>
+}
 
 export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onFinish,onSession}){
   const lang=locale==='ru'?'ru':locale==='es'?'es':'en',t=WORDS[lang]
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
-  const [step,setStep]=useState(hasSaved?OPORA_EXPERIENCE_PRE_SAVE_KEYS.length:0)
+  const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
+  const [step,setStep]=useState(hasSaved?scenes.length:0)
   const [saved,setSaved]=useState(hasSaved)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
-  // Reuse the authenticated course-session feeling signal; do not invent a parallel store.
   const [welcomeFeeling,setWelcomeFeeling]=useState(data?.currentSession?.signals?.welcomeFeeling||null)
+  const [openingResource,setOpeningResource]=useState(data?.currentSession?.signals?.oporaOpening?.resource??null)
+  const [openingDifficulty,setOpeningDifficulty]=useState(data?.currentSession?.signals?.oporaOpening?.lastDayDifficulty??null)
+  const [familiarSupport,setFamiliarSupport]=useState(data?.currentSession?.signals?.oporaOpening?.familiarSupport||null)
   const [practiceReport,setPracticeReport]=useState(
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
@@ -154,22 +229,27 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [error,setError]=useState('')
   const [saving,setSaving]=useState(false)
   const operation=useRef(null)
-  const visited=useRef(new Set([OPORA_EXPERIENCE_PRE_SAVE_KEYS[0]]))
+  const visited=useRef(new Set([scenes[0]]))
   const heading=useRef(null),safetyTrigger=useRef(null),safetyPrimary=useRef(null)
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
-  const locked=Boolean(busy||saving),receipt=step>=OPORA_EXPERIENCE_PRE_SAVE_KEYS.length
-  const moment=receipt?'receipt':SCENES[step]
+  const locked=Boolean(busy||saving),receipt=step>=scenes.length
+  const moment=receipt?'receipt':scenes[step]
+  const opening=OPENING[lang]
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
+  const quote=cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
   const rating=answers.reflection
   const vote=answers.aphorism
   const chosenFeeling=t.moods.find(item=>item.value===welcomeFeeling)
+  const chosenFeelingLabel=cycle.day===1
+    ?welcomeFeelingChoices(cycle.activeGoal||cycle.primaryGoal,lang).find(item=>item.id===welcomeFeeling)?.label
+    :chosenFeeling?.label
   const ratingText=rating==='useful'?t.feelingBetter:rating==='partly'?t.feelingPartial:
     rating==='unchanged'?t.feelingSame:rating==='uncomfortable'?t.feelingHard:''
   useEffect(()=>{
-    if(!receipt)visited.current.add(OPORA_EXPERIENCE_PRE_SAVE_KEYS[step])
+    if(!receipt)visited.current.add(scenes[step])
     heading.current?.focus?.()
   },[step,receipt])
   useEffect(()=>{
@@ -201,7 +281,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     if(locked)return
     setError('')
     setShowHelp(false)
-    setStep(s=>Math.min(OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1,s+1))
+    setStep(s=>Math.min(scenes.length-1,s+1))
   }
   function back(){
     if(locked)return
@@ -216,8 +296,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   }
   async function submit(){
     if(locked||saved)return
-    if(step!==OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1||
-      OPORA_EXPERIENCE_PRE_SAVE_KEYS.some(key=>!visited.current.has(key))){
+    if(step!==scenes.length-1||
+      scenes.some(key=>!visited.current.has(key))){
       setError(t.incomplete);return
     }
     let safe
@@ -238,25 +318,37 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         beforeNow:null,afterNow:null,practiceWindow:'practice_v6',
         aphorismResponse:safe.answers.aphorism||null,
         practiceAttempt:attempted?(practiceReport==='tried'?'tried':'simplified'):null,
-        welcomeFeeling:welcomeFeeling||null,
         comfort:rating==='uncomfortable'?'uncomfortable':null,
         transferStage:safe.answers.transfer==='planned'?'plan':null,
-        opora54:safe,visitedSlideKeys:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS],
+        welcomeFeeling:welcomeFeeling||null,
+        ...(cycle.day===1?{
+          oporaOpening:{
+            resource:openingResource,
+            lastDayDifficulty:openingDifficulty,
+            familiarSupport,
+          },
+        }:{}),
+        opora54:safe,visitedSlideKeys:[...scenes],
       })
-      if(response){setSaved(true);setStep(OPORA_EXPERIENCE_PRE_SAVE_KEYS.length);operation.current=null}
+      if(response){setSaved(true);setStep(scenes.length);operation.current=null}
       else setError(t.noSave)
     }catch{setError(t.noSave)}
     finally{setSaving(false)}
   }
   const title=receipt?t.saved:
-    moment==='arrive'?t.arriveTitle:
+    moment==='welcome'?opening.welcome:
+    moment==='baseline'?opening.baseline:
+    moment==='checkin'?opening.checkin:
+    moment==='recall'?opening.recall:
+    moment==='arrive'?(cycle.day===1?t.arrivalWarmTitle:t.arriveTitle):
     moment==='practice'?dayCopy?.title||t.learn:
     moment==='feel'?t.feelTitle:
-    moment==='affirmation'?t.ideaTitle:t.reminderTitle
+    moment==='affirmation'?(cycle.day===1?opening.thought:t.ideaTitle):t.reminderTitle
   const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
-    data-opora-experience-first="as-5.6" data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}>
+    data-opora-experience-first="as-5.6" data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
+    data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}>
     <div className={styles.frame+' '+(styles[moment]||styles.arrive)}
       inert={safety} aria-hidden={safety?'true':undefined}>
       <header className={styles.header}>
@@ -264,40 +356,85 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           disabled={locked} aria-label={t.close}><X size={21}/></button>
         <div className={styles.progress}>
           <div className={styles.progressCopy}><span>{t.day} {cycle.day}/14</span>
-            <span>{Math.min(step+1,6)} / 6</span></div>
+            <span>{Math.min(step+1,scenes.length+1)} / {scenes.length+1}</span></div>
           <div className={styles.track}><div className={styles.fill}
-            style={{width:((step+1)/6*100)+'%'}}/></div>
+            style={{width:((step+1)/(scenes.length+1)*100)+'%'}}/></div>
         </div>
         <button type="button" className={styles.pause} ref={safetyTrigger}
           onClick={()=>setSafety(true)} disabled={locked}><Pause size={16}/>{t.pause}</button>
       </header>
       <main className={styles.stage}>
-        {moment==='arrive'&&<div className={styles.arrivalPhoto} aria-hidden="true">
-          <img src="/images/holistic-house/report-lighthouse-coast.webp" alt="" loading="eager" />
-        </div>}
-        <section className={styles.panel+' '+(moment==='arrive'?styles.arrivalPanel:'')} aria-live="off">
+        {(moment==='welcome'||(moment==='arrive'&&cycle.day!==1))&&
+          <div className={styles.arrivalPhoto} aria-hidden="true">
+            <img src="/images/holistic-house/report-lighthouse-coast.webp" alt="" loading="eager"/>
+          </div>}
+        <section className={styles.panel+' '+(
+          moment==='welcome'||(moment==='arrive'&&cycle.day!==1)?styles.arrivalPanel:''
+        )} aria-live="off">
           {!receipt&&<span className={styles.eyebrow}>
-            {moment==='arrive'?t.minute:moment==='practice'?t.stepLabel:
-            moment==='feel'?t.feel:moment==='affirmation'?t.quote:t.keep}
+            {moment==='welcome'?opening.welcomeKicker:
+            moment==='baseline'?opening.baselineKicker:
+            moment==='checkin'?opening.checkinKicker:
+            moment==='recall'?opening.recallKicker:
+            moment==='arrive'?t.minute:moment==='practice'?t.stepLabel:
+            moment==='feel'?t.feel:moment==='affirmation'?(cycle.day===1?opening.thoughtKicker:t.quote):t.keep}
           </span>}
           <h2 ref={heading} tabIndex={-1} className={styles.title}>{title}</h2>
           {neutralSupport&&<div data-opora-neutral-anchor="true">
             <p className={styles.lead}>{t.neutralAnchor}</p>
             <p className={styles.soft}>{t.neutralSafety}</p>
           </div>}
-          {moment==='arrive'&&!neutralSupport&&<>
-            <p className={styles.lead}>{t.arriveText}</p>
-            <div className={styles.moodChoices} role="group" aria-label={t.arriveTitle}
+          {moment==='welcome'&&<>
+            <p className={styles.lead}>{opening.welcomeLead}</p>
+            <div className={styles.moodChoices} role="group" aria-label={opening.welcome}
               data-opora-start-mood="true">
-              {t.moods.map(item=><button key={item.value} type="button" disabled={locked}
-                data-symbol={item.symbol} aria-pressed={welcomeFeeling===item.value}
-                onClick={()=>setWelcomeFeeling(item.value)}>
-                <span>{item.label}</span>
-              </button>)}
+              {welcomeFeelingChoices(cycle.activeGoal||cycle.primaryGoal,lang).map(({id,label})=>
+                <button key={id} type="button" disabled={locked}
+                  data-symbol={t.moods.find(item=>item.value===id)?.symbol}
+                  aria-pressed={welcomeFeeling===id} onClick={()=>setWelcomeFeeling(id)}>
+                  <span>{label}</span>
+                </button>)}
             </div>
-            {chosenFeeling
-              ?<p className={styles.moodReply} role="status" aria-live="polite">{chosenFeeling.reply}</p>
-              :<p className={styles.moodOptional}>{t.arriveSkip}</p>}
+            {welcomeFeeling
+              ?<p className={styles.moodReply} role="status" aria-live="polite">{welcomeFeelingSupport(welcomeFeeling,lang)}</p>
+              :<p className={styles.moodOptional}>{opening.welcomeNote}</p>}
+          </>}
+          {moment==='baseline'&&<>
+            <p className={styles.lead}>{opening.baselineLead}</p>
+            <OpeningRating label={opening.baseline} value={openingResource}
+              onChange={setOpeningResource} disabled={locked}
+              low={opening.baselineLow} high={opening.baselineHigh}/>
+            <p className={styles.soft}>{opening.scaleNote}</p>
+          </>}
+          {moment==='checkin'&&<>
+            <p className={styles.lead}>{opening.checkinLead}</p>
+            <OpeningRating label={opening.checkin} value={openingDifficulty}
+              onChange={setOpeningDifficulty} disabled={locked}
+              low={opening.checkinLow} high={opening.checkinHigh}/>
+            <p className={styles.soft}>{opening.scaleNote}</p>
+          </>}
+          {moment==='recall'&&<>
+            <p className={styles.lead}>{opening.recallLead}</p>
+            <div className={styles.chips} role="group" aria-label={opening.recall}>
+              {opening.supportOptions.map(([value,label])=><button type="button" key={value}
+                disabled={locked} aria-pressed={familiarSupport===value}
+                onClick={()=>setFamiliarSupport(value)}>{label}</button>)}
+            </div>
+            {familiarSupport&&<p className={styles.soft} role="status">{opening.recallReply}</p>}
+          </>}
+          {moment==='arrive'&&!neutralSupport&&<>
+            <p className={styles.lead}>{cycle.day===1?t.arrivalWarmText:t.arriveText}</p>
+            {cycle.day!==1&&<>
+              <div className={styles.moodChoices} role="group" aria-label={t.arriveTitle}
+                data-opora-start-mood="true">
+                {t.moods.map(item=><button key={item.value} type="button" disabled={locked}
+                  data-symbol={item.symbol} aria-pressed={welcomeFeeling===item.value}
+                  onClick={()=>setWelcomeFeeling(item.value)}><span>{item.label}</span></button>)}
+              </div>
+              {chosenFeeling
+                ?<p className={styles.moodReply} role="status" aria-live="polite">{chosenFeeling.reply}</p>
+                :<p className={styles.moodOptional}>{t.arriveSkip}</p>}
+            </>}
           </>}
           {moment==='practice'&&<>
             {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
@@ -323,13 +460,14 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </div>
           </>}
           {moment==='affirmation'&&<>
-            <blockquote className={styles.quotation}>{originalQuote}</blockquote>
-            <p className={styles.subtle}>{t.quoteText}</p>
+            <blockquote className={styles.quotation}>{quote}</blockquote>
+            <p className={styles.subtle}>{cycle.day===1?opening.thoughtLead:t.quoteText}</p>
             <div className={styles.chips} role="group" aria-label={t.quote}>
               {[[t.agree,'agree'],[t.unsure,'unsure'],[t.disagree,'disagree']].map(([label,value])=>
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={vote===value} onClick={()=>setAnswers(a=>({...a,aphorism:value}))}>{label}</button>)}
             </div>
+            {vote&&cycle.day===1&&<p className={styles.soft} role="status">{opening.response}</p>}
           </>}
           {moment==='save'&&<>
             <p className={styles.lead}>{t.keepText}</p>
@@ -347,12 +485,12 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
             </div>
-            {chosenFeeling&&<p className={styles.soft}><strong>{t.startFeeling}:</strong> {chosenFeeling.label}</p>}
+            {chosenFeeling&&<p className={styles.soft}><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
             {answers.transfer==='planned'&&<p className={styles.soft}><strong>{t.takeaway}:</strong> {plan}</p>}
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
-          {receipt&&<small className={styles.disclaimer}>{t.noMedical}</small>}
+          {(moment==='welcome'||moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
         </section>
       </main>
       {error&&<p className={styles.error} role="alert">{error}</p>}
@@ -360,9 +498,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         {!receipt&&step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={receipt?(onFinish||onClose):step===OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1?submit:next}>
-          {receipt?t.finish:step===OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1?(saving?t.saving:t.save):t.next}
-          {receipt||step===OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
+          onClick={receipt?(onFinish||onClose):step===scenes.length-1?submit:next}>
+          {receipt?t.finish:step===scenes.length-1?(saving?t.saving:t.save):t.next}
+          {receipt||step===scenes.length-1?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
     </div>

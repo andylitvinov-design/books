@@ -45,8 +45,8 @@ test('photographic mobile player uses a bright panel and high-contrast large typ
   assert.match(jsx,/data-course-visual-theme=\{OPORA_EXPERIENCE_DESIGN_VERSION\}/);
   assert.match(jsx,/locale==='es'/);
   assert.match(jsx,/practiceAttempt:attempted/);
-  assert.match(jsx,/visitedSlideKeys:\[\.\.\.OPORA_EXPERIENCE_PRE_SAVE_KEYS\]/);
-  assert.match(jsx,/\{receipt&&<small className=\{styles\.disclaimer\}/);
+  assert.match(jsx,/visitedSlideKeys:\[\.\.\.scenes\]/);
+  assert.match(jsx,/moment==='welcome'\|\|moment==='arrive'\|\|receipt/);
   assert.match(jsx,/data-opora-start-mood="true"/);
   assert.match(jsx,/welcomeFeeling:welcomeFeeling\|\|null/);
   assert.match(css,/\.arrivalPhoto img\{[\s\S]*?object-fit:contain/);

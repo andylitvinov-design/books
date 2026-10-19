@@ -6,7 +6,7 @@ import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
 import {oporaExperienceGuide,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
+import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
@@ -36,86 +36,106 @@ async function click(h,label){
   await h.settle()
 }
 
-test('five lived moments replace quizzes; 28 RU/EN lessons save a truthful result',async()=>{
+test('day one restores five opening screens while days 2–14 keep their existing short route',async()=>{
   assert.deepEqual([...OPORA_EXPERIENCE_PRE_SAVE_KEYS],['arrive','practice','feel','affirmation','save'])
+  assert.deepEqual([...OPORA_DAY_ONE_RESTORED_KEYS],
+    ['welcome','baseline','checkin','recall','affirmation','arrive','practice','feel','save'])
   assert.equal(oporaExperienceGuidesValid(),true)
   for(const lang of ['ru','en'])for(let day=1;day<=14;day++){
     const f=fixture(lang,day),h=f.h,d=t[lang]
-    assert.match(textOf(h.tree),lang==='ru'?/Как вы сейчас себя чувствуете\?/:/How are you feeling right now\?/)
-    assert.doesNotMatch(textOf(h.tree),/Choose your pace|Today's focus|A simple example|Prepare gently/)
+    if(day===1){
+      assert.match(textOf(h.tree),lang==='ru'?/Как вы себя чувствуете сегодня/:/How are you feeling today/)
+      // Reuse the original four personal responses and their tailored support.
+      const choice=lang==='ru'?'Чувствую напряжение':'I feel tense'
+      await click(h,choice)
+      assert.match(textOf(h.tree),lang==='ru'?/Не нужно сразу менять своё состояние/:/Nothing needs to change right away/)
+      await click(h,d.next)
+      assert.match(textOf(h.tree),lang==='ru'?/Сколько сейчас внутренней опоры/:/How much support do you feel/)
+      await click(h,'4')
+      await click(h,d.next)
+      assert.match(textOf(h.tree),lang==='ru'?/Как прошли последние сутки/:/How was the last day/)
+      await click(h,'5')
+      await click(h,d.next)
+      assert.match(textOf(h.tree),lang==='ru'?/Вспомним знакомую опору/:/Remember what helps/)
+      await click(h,lang==='ru'?'Короткая пауза':'A short pause')
+      await click(h,d.next)
+      assert.match(textOf(h.tree),lang==='ru'?/Мысль сегодняшнего дня/:/A thought for today/)
+      await click(h,d.vote)
+      await click(h,d.next)
+    }
+    assert.match(textOf(h.tree),lang==='ru'?(day===1?/Можно просто побыть здесь/:/Как вы сейчас себя чувствуете/):
+      (day===1?/You can arrive just as you are/:/How are you feeling right now/))
     await click(h,d.next)
-    // The participant sees concrete day-specific ACTION guidance, not a quiz
-    // about correctly interpreting hypothetical answers.
+    // Day 1 action occurs only after the original supportive opening.
     assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
     await click(h,d.try)
     await click(h,d.next)
     await click(h,d.unchanged)
     await click(h,d.next)
-    assert.ok(textOf(h.tree).includes(f.lesson.aphorism))
-    await click(h,d.vote)
-    await click(h,d.next)
+    if(day!==1){
+      assert.ok(textOf(h.tree).includes(f.lesson.aphorism))
+      await click(h,d.vote)
+      await click(h,d.next)
+    }
     await click(h,d.plan)
     await click(h,d.save)
     assert.equal(f.requests,1,'Exactly one save for '+lang+' day '+day)
     assert.equal(f.payload.lessonId,f.lesson.id)
     assert.equal(f.payload.practiceWindow,'practice_v6')
-    assert.deepEqual(f.payload.visitedSlideKeys,[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+    assert.deepEqual(f.payload.visitedSlideKeys,
+      day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
     assert.deepEqual(validateOpora54Signals(f.payload.opora54).answers,f.payload.opora54.answers)
-    assert.equal(f.payload.opora54.answers.act,undefined) // AS-5.5 action was not necessarily done
-    assert.equal(f.payload.opora54.answers.actChoice,undefined) // guided moment is recorded separately
+    assert.equal(f.payload.opora54.answers.act,undefined)
+    assert.equal(f.payload.opora54.answers.actChoice,undefined)
     assert.equal(f.payload.opora54.answers.reflection,'unchanged')
     assert.equal(f.payload.opora54.answers.aphorism,'unsure')
     assert.equal(f.payload.opora54.answers.transfer,'planned')
     assert.equal(f.payload.practiceAttempt,'tried')
+    if(day===1){
+      assert.equal(f.payload.welcomeFeeling,'tense')
+      assert.deepEqual(f.payload.oporaOpening,
+        {resource:4,lastDayDifficulty:5,familiarSupport:'pause'})
+    }else{
+      assert.equal(f.payload.oporaOpening,undefined)
+      assert.equal(f.payload.welcomeFeeling,undefined)
+    }
     assert.match(textOf(h.tree),new RegExp(d.saved))
     h.unmount()
   }
 })
 
-test('opening asks about feelings before any task and answers with genuine feedback (EN/RU/ES)',async()=>{
-  const variants=[
-    {lang:'en',question:/How are you feeling right now/,label:'Tense',
-      response:/do not have to make yourself relax/},
-    {lang:'ru',question:/Как вы сейчас себя чувствуете/,label:'Напряжённо',
-      response:/не нужно заставлять себя расслабиться/},
-    {lang:'es',question:/Cómo te sientes ahora/,label:'Con tensión',
-      response:/No tienes que obligarte a relajarte/},
-  ]
-  for(const item of variants){
-    const f=fixture(item.lang),h=f.h
-    assert.match(textOf(h.tree),item.question)
-    assert.ok(findButton(h.tree,item.label),'Feeling must be an actual choice')
-    assert.ok(!textOf(h.tree).includes('Find one calm or pleasant detail around you.'))
-    await click(h,item.label)
-    assert.match(textOf(h.tree),item.response,'Feedback must appear on the SAME slide')
-    const selection=nodes(h.tree).find(node=>node.type==='button'&&
-      textOf(node).includes(item.label))
-    assert.equal(selection?.props['aria-pressed'],true)
-    for(let i=0;i<4;i++)await click(h,item.lang==='ru'?'Продолжить':
-      item.lang==='es'?'Continuar':'Continue')
-    await click(h,item.lang==='ru'?'Сохранить мою практику':
-      item.lang==='es'?'Guardar mi práctica':'Save my practice')
-    assert.equal(f.payload.welcomeFeeling,'tense','Authenticated session must receive chosen feeling')
-    assert.match(textOf(h.tree),item.lang==='ru'?/В начале занятия/:
-      item.lang==='es'?/Al empezar/:/At the start/)
-    h.unmount()
-  }
-})
-
-test('no action, vote, future plan or better feeling is required to finish',async()=>{
+test('the restored five opening screens remain fully optional, with no false practice claim',async()=>{
   const f=fixture('en',1),h=f.h
-  // View the concrete step without claiming to perform it.
-  for(let i=0;i<4;i++)await click(h,t.en.next)
+  for(let i=0;i<8;i++)await click(h,t.en.next)
   await click(h,t.en.save)
   assert.equal(f.requests,1)
+  assert.deepEqual(f.payload.visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
+  assert.deepEqual(f.payload.oporaOpening,
+    {resource:null,lastDayDifficulty:null,familiarSupport:null})
+  assert.equal(f.payload.welcomeFeeling,null)
   assert.equal(f.payload.practiceAttempt,null)
-  assert.equal(f.payload.welcomeFeeling,null,'Unanswered welcome cannot be recorded as a feeling')
   assert.equal(f.payload.opora54.answers.act,undefined)
   assert.equal(f.payload.opora54.answers.aphorism,undefined)
   assert.equal(f.payload.opora54.answers.reflection,undefined)
   assert.equal(f.payload.opora54.answers.transfer,undefined)
   assert.match(textOf(h.tree),/Explored the idea only/)
   assert.doesNotMatch(textOf(h.tree),/100%|trauma healed|clinically cured/)
+  h.unmount()
+})
+
+test('photo-first feelings and optional feedback work in ES without changing validated scores',async()=>{
+  const f=fixture('es',1),h=f.h
+  assert.match(textOf(h.tree),/¿Cómo te sientes hoy\?/)
+  assert.ok(findButton(h.tree,'Me siento tenso/a'))
+  await click(h,'Me siento tenso/a')
+  assert.match(textOf(h.tree),/No necesitas cambiar nada de inmediato/)
+  const selection=nodes(h.tree).find(node=>node.type==='button'&&textOf(node).includes('Me siento tenso/a'))
+  assert.equal(selection?.props['aria-pressed'],true)
+  assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-start-mood']==='true').length,1)
+  for(let i=0;i<8;i++)await click(h,'Continuar')
+  await click(h,'Guardar mi práctica')
+  assert.equal(f.payload.welcomeFeeling,'tense')
+  assert.deepEqual(f.payload.visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
   h.unmount()
 })
 
@@ -146,13 +166,15 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
   const css=read('components/app/opora-experience-player.module.css')
   assert.match(server,/practiceWindow==='practice_v6'&&version!==COURSE_ANTISTRESS_SKILLS_V7/)
   assert.match(server,/OPORA_EXPERIENCE_PRE_SAVE_KEYS\.map/)
+  assert.match(server,/OPORA_DAY_ONE_RESTORED_KEYS\.map/)
+  assert.match(server,/oporaOpening/)
   assert.match(server,/as-5\.6-five-moments-v1/)
   assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input\.visitedSlideKeys\)/)
   assert.match(today,/data\?\.lesson\?\.version===COURSE_ANTISTRESS_SKILLS_V7/)
   assert.match(today,/<OporaExperiencePlayer/)
   assert.match(today,/<OporaV6SlidePlayer/)
   assert.match(css,/100dvh/)
-  assert.match(css,/report-lighthouse-coast\.webp/)
+  assert.match(css,/course-start-heron\.webp/)
   assert.match(css,/course-focus-mountain-boy\.webp/)
   assert.match(css,/reiki-practitioner-sunrise\.webp/)
   assert.match(css,/prefers-reduced-motion/)
