@@ -8,7 +8,7 @@ const COPY={
     loading:'Loading conversation…',none:'No follow-up messages yet.',reply:'Write a short reply',
     hint:'Business contact only. Do not enter diagnoses, reports, test results or private session links.',
     send:'Save reply in conversation',saved:'Reply saved to the private conversation.',
-    loadOlder:'Earlier messages',refresh:'Refresh',retry:'Try again',error:'Could not load this conversation.',
+    loadOlder:'Earlier messages',refresh:'Refresh',newMessages:'New for you',markViewed:'Mark as viewed',viewed:'Messages marked as viewed.',retry:'Try again',error:'Could not load this conversation.',
     closed:'This enquiry is closed; the history remains readable.',
     conflict:'This reply conflicts with an earlier request. Change the text or refresh.',
     private:'Please remove medical information and private links.',
@@ -19,7 +19,7 @@ const COPY={
     loading:'Загружаю переписку…',none:'Дополнительных сообщений пока нет.',reply:'Ваш короткий ответ',
     hint:'Только деловая переписка. Не указывайте диагнозы, отчёты, результаты тестов и приватные ссылки.',
     send:'Сохранить ответ в переписке',saved:'Ответ сохранён в защищённой переписке.',
-    loadOlder:'Ранние сообщения',refresh:'Обновить',retry:'Повторить',error:'Не удалось загрузить переписку.',
+    loadOlder:'Ранние сообщения',refresh:'Обновить',newMessages:'Новые для вас',markViewed:'Отметить просмотренными',viewed:'Сообщения отмечены просмотренными.',retry:'Повторить',error:'Не удалось загрузить переписку.',
     closed:'Заявка закрыта; история доступна для просмотра.',
     conflict:'Этот запрос противоречит ранее сохранённому ответу. Измените текст или обновите историю.',
     private:'Уберите медицинские данные и приватные ссылки.',
@@ -30,7 +30,7 @@ const COPY={
     loading:'Cargando mensajes…',none:'Aún no hay mensajes adicionales.',reply:'Tu respuesta breve',
     hint:'Solo comunicaciones profesionales. No incluyas diagnósticos, pruebas ni enlaces privados.',
     send:'Guardar respuesta',saved:'Respuesta guardada en la conversación privada.',
-    loadOlder:'Mensajes anteriores',refresh:'Actualizar',retry:'Intentar de nuevo',error:'No se pudo cargar la conversación.',
+    loadOlder:'Mensajes anteriores',refresh:'Actualizar',newMessages:'Nuevos para ti',markViewed:'Marcar como vistos',viewed:'Mensajes marcados como vistos.',retry:'Intentar de nuevo',error:'No se pudo cargar la conversación.',
     closed:'Solicitud cerrada; el historial sigue disponible.',
     conflict:'Esta solicitud entra en conflicto con una respuesta anterior.',private:'Elimina datos médicos y enlaces privados.',
     limit:'Límite diario alcanzado.',unknown:'Estado desconocido; no volver a enviar automáticamente.',
@@ -41,10 +41,11 @@ const ordered=(older=[],fresh=[])=>{
   for(const message of fresh)map.set(message.id,message)
   return [...map.values()].sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id))
 }
-function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null,onSaved}){
+function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null,onSaved,onViewed}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang]
   const [view,setView]=useState(null),[error,setError]=useState('')
   const [busy,setBusy]=useState(false),[paging,setPaging]=useState(false)
+  const [markingViewed,setMarkingViewed]=useState(false)
   const [text,setText]=useState(''),[notice,setNotice]=useState('')
   const [visibility,setVisibility]=useState('participants')
   const pending=useRef(null),requestRef=useRef(requestId)
@@ -86,6 +87,29 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       setError('')
     }catch{if(requestRef.current===id)setError(t.error)}
     finally{if(requestRef.current===id)setPaging(false)}
+  }
+  async function markViewed(){
+    const id=requestId
+    // Only acknowledge the most recent OTHER participant message actually
+    // loaded in this visible history; never an internal master-only note.
+    const latest=[...(view?.messages||[])].reverse().find(
+      item=>item.visibility==='participants'&&!item.mine)
+    if(!latest||!view?.unseenCount||markingViewed||busy)return
+    setMarkingViewed(true)
+    try{
+      const response=await fetch('/api/app/practitioner-client-messages',{
+        method:'POST',credentials:'same-origin',
+        headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},
+        body:JSON.stringify({action:'mark_seen',requestId:id,messageId:latest.id}),
+      })
+      if(!response.ok)throw new Error('VIEW_UNAVAILABLE')
+      if(requestRef.current!==id)return
+      await reload()
+      onViewed?.()
+      setNotice(t.viewed)
+    }catch{
+      if(requestRef.current===id)setNotice(t.error)
+    }finally{if(requestRef.current===id)setMarkingViewed(false)}
   }
   async function send(){
     const body=text.trim(),id=requestId
@@ -130,8 +154,14 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
     </div>}
     {view&&<><div className={styles.tools}>
       <strong>{t.title}</strong>
-      <button type="button" disabled={busy||paging} onClick={()=>reload()}>{t.refresh}</button>
+      <button type="button" disabled={busy||paging||markingViewed} onClick={()=>reload()}>{t.refresh}</button>
     </div>
+      {view.unseenCount>0&&<div className={styles.unseenBanner} role="status">
+        <strong>{t.newMessages}: {view.unseenCount}</strong>
+        <button type="button" disabled={busy||markingViewed||
+          !(view.messages||[]).some(item=>item.visibility==='participants'&&!item.mine)}
+          onClick={markViewed}>{t.markViewed}</button>
+      </div>}
       {view.nextCursor&&<button type="button" className={styles.more} disabled={paging||busy}
         onClick={()=>reload(view.nextCursor)}>{paging?t.loading:t.loadOlder}</button>}
       {!view.messages.length&&<p className={styles.notice}>{t.none}</p>}
