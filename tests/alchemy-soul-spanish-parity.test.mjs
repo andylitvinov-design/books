@@ -45,17 +45,20 @@ test("Spanish Alchemy booking formats, safe handoff and navigation mirror EN/RU"
   assert.doesNotMatch(review, /locale === "es" \? "\/en\/services\/alchemy-of-soul"/);
 });
 
-test("Spanish Services shares core EN layout, source videos and published testimonials", () => {
+test("Spanish Services shares the concise personal studio with EN/RU and original videos", () => {
   const es = read("app/es/services/page.tsx");
-  const cards = read("components/services-solutions.tsx");
+  const studio = read("components/services-studio-offers.tsx");
+  const videos = read("components/services-studio-extras.tsx");
   const offers = read("data/core-service-offers.ts");
   const reviews = read("components/personal-testimonials.tsx");
-  assert.match(es, /<ServicesSolutions locale="es" \/>/);
+  assert.match(es, /<ServicesStudioOffers locale="es" \/>/);
+  assert.match(es, /<ServicesIntroMedia locale="es" \/>/);
   assert.match(es, /<PersonalTestimonials locale="es" variant="services" \/>/);
-  assert.match(es, /<ServiceVideoShowcase locale="es" topic="overview"/);
-  assert.match(es, /id="available-services"/);
-  assert.match(cards, /type \{ PublicLocale \}/);
-  assert.match(cards, /¿Quieres conocer los métodos\?/);
+  assert.match(es, /<ServicesMethodVideos locale="es" \/>/);
+  assert.match(videos, /<ServiceVideoShowcase locale="es" topic="overview"/);
+  assert.match(videos, /id="method-videos"/);
+  assert.match(studio, /type \{ PublicLocale \}/);
+  assert.match(studio, /€50 \/ 30 min · €100 \/ 60 min/);
   assert.match(offers, /Perfil gratuito de recursos Wu Xing/);
   assert.match(offers, /route: "alchemy-of-soul"/);
   assert.match(reviews, /Audio original en inglés/);
