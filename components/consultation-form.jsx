@@ -7,7 +7,7 @@ import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
 import { ConsultationTextImport } from './consultation-text-import'
 import { ConsultationDraftPreview } from './consultation-draft-preview'
 import { useActionState, useEffect, useMemo, useState } from 'react'
-import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
+import { consultationClinicalFields, initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
 import { getOwnerReportTextTemplate } from '@/lib/consultations/owner-report-template'
 import { reportFollowUpCopy } from '@/lib/documents/recommendation'
@@ -168,6 +168,12 @@ const copy = {
     invoiceHint: 'A recommendation and invoice will be prepared. Client links are shared separately.',
     receiptHint: 'A recommendation and receipt will be prepared. Client links are shared separately.',
   },
+}
+
+const clinicalLabelsRu = {
+  dosage: 'Дозировка', frequency: 'Частота', duration: 'Продолжительность',
+  purpose: 'Цель', sequence: 'Этап / последовательность', instructions: 'Инструкции',
+  notes: 'Примечание к препарату',
 }
 
 function detectedType(items) {
@@ -331,8 +337,6 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     <input type="hidden" name="requestId" value={requestId ?? ''} />
     <input type="hidden" name="itemsJson" value={JSON.stringify(serializeConsultationRows(items))} />
     <input type="hidden" name="recommendedTestsJson" value={JSON.stringify(recommendedTestKeys)} />
-    <input type="hidden" name="followUp" value={consultation?.followUp ?? ''} />
-    <input type="hidden" name="recommendationNumber" value={consultation?.recommendationNumber ?? ''} />
 
     <ol className="consultation-studio-progress" aria-label={labels.workflow}>
       <li><span>01</span>{labels.client}</li>
@@ -443,6 +447,25 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
               <label className="consultation-remedy-dose"><span>{labels.granules}</span><input aria-label={labels.granules + ' ' + (index + 1)} type="number" inputMode="numeric" min="1" max="99" value={item.granules ?? ''} onChange={(event) => update(index, { granules: event.target.value })} /></label>
               <label className="consultation-remedy-dose"><span>{labels.timesPerDay}</span><input aria-label={labels.timesPerDay + ' ' + (index + 1)} type="number" inputMode="numeric" min="1" max="99" value={item.timesPerDay ?? ''} onChange={(event) => update(index, { timesPerDay: event.target.value })} /></label>
             </div>}
+            <details className="consultation-advanced-remedy">
+              <summary>{uiLocale === 'ru' ? 'Дополнительные параметры препарата' : 'Additional remedy details'}
+                {consultationClinicalFields.some(([field]) => String(item[field] ?? '').trim()) || String(item.notes ?? '').trim()
+                  ? <span> · {uiLocale === 'ru' ? 'есть сохранённые данные' : 'saved details'}</span>
+                  : null}
+              </summary>
+              <div className="consultation-advanced-grid">
+                {consultationClinicalFields.map(([field, label]) => <label key={field}>
+                  <span>{uiLocale === 'ru' ? clinicalLabelsRu[field] : label}</span>
+                  {field === 'instructions'
+                    ? <textarea rows={2} value={item[field] ?? ''} onChange={(event) => update(index, { [field]: event.target.value })} />
+                    : <input value={item[field] ?? ''} onChange={(event) => update(index, { [field]: event.target.value })} />}
+                </label>)}
+                <label className="consultation-advanced-notes">
+                  <span>{uiLocale === 'ru' ? clinicalLabelsRu.notes : 'Remedy notes'}</span>
+                  <textarea rows={2} value={item.notes ?? ''} onChange={(event) => update(index, { notes: event.target.value })} />
+                </label>
+              </div>
+            </details>
           </div>
         })}</div>
 
@@ -510,6 +533,27 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       <label className="consultation-note consultation-legacy-instructions">{labels.note}
         <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
       </label>
+      <details className="consultation-extra-details">
+        <summary>{uiLocale === 'ru' ? 'Дополнительные данные документа' : 'Additional document details'}</summary>
+        <div className="consultation-advanced-grid">
+          <label>
+            <span>{uiLocale === 'ru' ? 'Дата рождения клиента (необязательно)' : 'Client date of birth (optional)'}</span>
+            <input type="date" name="patientDob" defaultValue={consultation?.patientDob ?? ''} />
+          </label>
+          <label>
+            <span>{uiLocale === 'ru' ? 'Номер рекомендации (необязательно)' : 'Recommendation number (optional)'}</span>
+            <input name="recommendationNumber" defaultValue={consultation?.recommendationNumber ?? ''} />
+          </label>
+          <label className="consultation-advanced-notes">
+            <span>{uiLocale === 'ru' ? 'Пояснение к повторной консультации' : 'Follow-up instructions'}</span>
+            <textarea rows={2} name="followUp" defaultValue={consultation?.followUp ?? ''} />
+          </label>
+          <label className="consultation-advanced-notes">
+            <span>{uiLocale === 'ru' ? 'Личные заметки практика (не показываются клиенту)' : 'Private practitioner notes (not shown to client)'}</span>
+            <textarea rows={2} name="internalNotes" defaultValue={consultation?.internalNotes ?? ''} />
+          </label>
+        </div>
+      </details>
       <label className="consultation-studio-document-choice consultation-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
         <input type="checkbox" name="includeDistanceHomeopathy" checked={includeDistanceHomeopathy} onChange={event => setIncludeDistanceHomeopathy(event.target.checked)} />
         <span>

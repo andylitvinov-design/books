@@ -8,7 +8,7 @@ import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 
 function input(formData) {
-  const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'additionalNotes', 'followUp', 'followUpDate']
+  const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'additionalNotes', 'followUp', 'followUpDate', 'patientDob', 'internalNotes']
   const data = Object.fromEntries(fields.map((key) => [key, formData.get(key) ?? undefined]))
   if (!['ru', 'en'].includes(data.languagePreference)) throw new Error('Choose report language')
   data.includeRecommendation = formData.get('includeRecommendation') === 'on'
