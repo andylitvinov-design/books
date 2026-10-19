@@ -37,7 +37,7 @@ My Practice → CRM → SMS (or Contacts → SMS) → record documented SMS opt-
 
 - The SMS webhook verifies Twilio signed form payload and account SID before any DB write; accepts only the configured Messaging Service SID when present.
 - Webhook stores no raw inbound phone, body or health data. STOP fingerprints the sending number and blocks future SMS, even if outbound kill switch is OFF.
-- The database migration supabase/migrations/20261019180000_hh_crm_sms_delivery.sql extends the existing consent scope and adds encrypted owner SMS history, RLS and private signed event reconciliation.
+- The database migration supabase/migrations/20261019162351_hh_crm_sms_delivery_20261019.sql extends the existing consent scope and adds encrypted owner SMS history, RLS and private signed event reconciliation.
 - Tests: node --test tests/crm-sms.test.mjs; check Next production build and GitHub PR CI.
 - **Kill switch:** unset HH_CRM_SMS_ENABLED or set it to false. Keep incoming callback credentials available for opt-out and late delivery receipts.
 - Never report "live" until the confirmed production deploy SHA, configured sender, one real test delivery and signed provider receipt are all verified.
