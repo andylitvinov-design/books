@@ -2597,3 +2597,6 @@
     min-height: 34px;
   }
 }
+
+/* Small progress hint; full reviews may be longer than the minimum. */
+.page[data-course-visual] .feedbackCount{margin:-4px 0 3px;text-align:right;color:#477e88;font-size:12px;font-weight:700;line-height:1.1;}
