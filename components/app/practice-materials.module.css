@@ -47,3 +47,8 @@
 .success{padding:11px 13px;border-radius:11px;background:#e9f5ef;border:1px solid #b9decf;color:#21614c;font-weight:700}
 
 .privatePreview{width:100%;max-height:240px;border-radius:12px}
+
+.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tabs button{overflow-wrap:anywhere}
+.external{display:inline-block;color:#185b72;font-weight:700}
+@media(max-width:640px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
