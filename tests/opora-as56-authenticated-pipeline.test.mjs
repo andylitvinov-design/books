@@ -199,7 +199,7 @@ test('Day 1 rejects malformed, oversize or mismatched custom answers before writ
     {familiarSupport:'other',familiarSupportText:5},
     {familiarSupport:'pause',familiarSupportText:'Quiet music'},
     {familiarSupport:null,familiarSupportText:'Quiet music'},
-    {familiarSupport:'other',familiarSupportText:'Line\\nBreak'},
+    {familiarSupport:'other',familiarSupportText:'Line\nBreak'},
   ]){
     const owner=repositoryHarness({freshPhase:true})
     await owner.create('AS2')
@@ -212,7 +212,7 @@ test('Day 1 rejects malformed, oversize or mismatched custom answers before writ
       visitedSlideKeys:[...OPORA_DAY_ONE_RESTORED_KEYS],
       opora54:{answers:{},hints:[],ease:null},
       oporaOpening:{resource:null,lastDayDifficulty:null,...invalid},
-    }),'INVALID_OPORA_OPENING')
+    }),/INVALID_OPORA_OPENING/
     assert.equal(owner.sessions.length,0)
     assert.equal(owner.writes.length,before)
   }
