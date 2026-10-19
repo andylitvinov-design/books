@@ -23,6 +23,7 @@ const WORDS={
   example2:'Which day works best for a short call?',template:'Quick message',
   custom:'Write your own',availability:'Appointment times',followup:'Follow-up',
   submitted:'Request submitted. Check its status before composing another.',
+  checkStatus:'Check delivery',checkingStatus:'Checking…',checkHint:'Read-only verification with Twilio; no new SMS is sent.',
  },
  ru:{
   title:'SMS · сообщения',evidence:'Подтверждение согласия на SMS (источник и дата)',
@@ -44,6 +45,7 @@ const WORDS={
   example2:'Какой день вам подходит для короткого звонка?',template:'Быстрый шаблон',
   custom:'Свой текст',availability:'Свободное время',followup:'Уточнить время',
   submitted:'Запрос обработан. Проверьте статус перед следующей отправкой.',
+  checkStatus:'Проверить доставку',checkingStatus:'Проверяю…',checkHint:'Только чтение статуса Twilio, без новой SMS.',
  },
  es:{
   title:'SMS · mensajes',evidence:'Evidencia de consentimiento para SMS (origen y fecha)',
@@ -65,6 +67,7 @@ const WORDS={
   example2:'¿Qué día te viene mejor para hablar?',template:'Respuesta rápida',
   custom:'Escribir',availability:'Horarios',followup:'Seguimiento',
   submitted:'Solicitud procesada. Verifica el estado antes de enviar otra.',
+  checkStatus:'Comprobar entrega',checkingStatus:'Verificando…',checkHint:'Solo consulta de Twilio; no se envía otro SMS.',
  },
 }
 
@@ -74,7 +77,7 @@ const LABELS={
  unknown:'unknown',blocked:'blockedStatus',failed:'failed',undelivered:'failed',
 }
 export default function CrmSmsTools({
- contact,locale='en',enabled=false,live=false,busy=false,onAction,messages=[],
+ contact,locale='en',enabled=false,live=false,busy=false,statusCheckEnabled=false,onAction,messages=[],
 }){
  const c=WORDS[locale]||WORDS.en
  const [proof,setProof]=useState('')
@@ -82,6 +85,7 @@ export default function CrmSmsTools({
  const [text,setText]=useState(c.example1)
  const [requestId,setRequestId]=useState('')
  const [attempted,setAttempted]=useState(false)
+ const [statusChecking,setStatusChecking]=useState('')
  const estimate=smsMessageEstimate(text)
  const blocked=contact.suppressed||contact.lifecycle==='archived'
  const eligibility=contact.smsEligibility
@@ -102,6 +106,12 @@ export default function CrmSmsTools({
      decision:'granted',occurredAt:new Date().toISOString(),
      source:proof.trim().replace(/\s+/g,' '),textVersion:'crm-sms-v1',
    })
+ }
+ async function checkStatus(id){
+   if(!statusCheckEnabled||busy||statusChecking)return
+   setStatusChecking(id)
+   try{await onAction('check_sms_status',{requestId:id})}
+   finally{setStatusChecking('')}
  }
  async function send(event){
    event.preventDefault()
@@ -152,6 +162,12 @@ export default function CrmSmsTools({
   {history.length?<ul className={styles.history}>{history.map(message=><li key={message.id}>
    <time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleDateString(locale)}</time>
    {' · '}{c[LABELS[message.status]]||c.unknown}{' · '}{message.segments} SMS
+   {message.canCheckStatus&&<div>
+    <button type="button" disabled={busy||!!statusChecking||!statusCheckEnabled}
+      title={c.checkHint} onClick={()=>checkStatus(message.id)}>
+      {statusChecking===message.id?c.checkingStatus:c.checkStatus}
+    </button>
+   </div>}
   </li>)}</ul>:<p>{c.noMessages}</p>}
  </details>
 }
