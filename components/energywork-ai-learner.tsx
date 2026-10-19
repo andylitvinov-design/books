@@ -471,7 +471,7 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
   }
 
   useEffect(() => {
-    if (!running || !ocean.enabled || !["loading", "blocked", "paused"].includes(ocean.status)) return;
+    if (!running || !ocean.enabled || !["blocked", "paused"].includes(ocean.status)) return;
     setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
     setRunning(false);
   }, [running, ocean.enabled, ocean.status]);
