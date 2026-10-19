@@ -103,7 +103,7 @@ export function PersonalTestimonials({
 }) {
   const current = copy[locale];
   const isHome = variant === "home";
-  const videos = isHome ? testimonialVideos[locale].slice(0, 2) : testimonialVideos[locale].slice(0, 3);
+  const videos = isHome ? testimonialVideos[locale].slice(0, 2) : testimonialVideos[locale].slice(0, 4);
   // Full consultation landing: show all 12 provenance-checked videos, not the compact home/services subset.
   const presentedVideos = variant === "all"
     ? [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]]
@@ -163,6 +163,28 @@ export function PersonalTestimonials({
           </div>
         ))}
       </div>
+
+      {variant === "services" ? (
+        <details className={styles.moreVideos} data-more-services-testimonials>
+          <summary>
+            {locale === "ru" ? "Смотреть больше видеоотзывов" : locale === "es" ? "Ver más testimonios en vídeo" : "Watch more video testimonials"}
+            <span>+{testimonialVideos[locale].length - videos.length}</span>
+          </summary>
+          <div className={styles.videoGrid} role="region"
+            aria-label={locale === "ru" ? "Дополнительные видеоотзывы" : "Additional video testimonials"} tabIndex={0}>
+            {testimonialVideos[locale].slice(4).map((item) => (
+              <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
+                <SiteVideoPlayer
+                  video={{ youtubeId: item.id, language: item.language, title: item.title }}
+                  locale={locale}
+                  compact
+                  fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp" : undefined}
+                />
+              </div>
+            ))}
+          </div>
+        </details>
+      ) : null}
 
       <p className={styles.disclaimer}>{current.disclaimer}</p>
       <div className={styles.actions}>
