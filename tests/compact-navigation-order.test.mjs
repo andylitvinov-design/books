@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { activeCompactNavigationId, compactNavigationIds, getCompactNavigation, getSiteNavigation, navigationCopy } from '../lib/site-navigation-model.js'
 
-const order = ['home', 'tests', 'services', 'academy', 'events', 'house']
+const order = ['home', 'tests', 'services', 'academy', 'business', 'house']
 
 test('mobile bottom bar and menu use the same six ordered destinations in EN, RU and ES', () => {
   assert.deepEqual(compactNavigationIds, order)
@@ -13,7 +13,7 @@ test('mobile bottom bar and menu use the same six ordered destinations in EN, RU
     assert.equal(new Set(items.map(item => item.id)).size, 6)
     assert.equal(items[0].href, locale === 'en' ? '/' : `/${locale}`)
     assert.equal(items[1].href, `/${locale}/client/tests`)
-    assert.equal(items[4].href, `/${locale}/events`)
+    assert.equal(items[4].href, `/${locale}/explore/business`)
     assert.equal(items[5].href, `/${locale === 'es' ? 'en' : locale}/app`)
     assert.equal(items[5].label, { en: 'Cabinet', ru: 'Кабинет', es: 'Gabinete' }[locale])
     for (const item of items) {
@@ -21,12 +21,13 @@ test('mobile bottom bar and menu use the same six ordered destinations in EN, RU
       assert.equal(item.ariaLabel, item.label)
       assert.equal(item.external, false)
     }
-    for (const item of items.filter(item => ['home', 'services', 'academy', 'events'].includes(item.id))) {
+    for (const item of items.filter(item => ['home', 'services', 'academy', 'business'].includes(item.id))) {
       assert.deepEqual(item, getSiteNavigation(locale).find(link => link.id === item.id))
     }
     assert.equal(activeCompactNavigationId(`/${locale}/client/tests`), 'tests')
     assert.equal(activeCompactNavigationId(`/${locale}/services`), 'services')
     assert.equal(activeCompactNavigationId(`/${locale}/events`), 'events')
+    assert.equal(activeCompactNavigationId(`/${locale}/explore/business`), 'business')
     assert.equal(activeCompactNavigationId(`/${locale}/library`), 'library')
     assert.equal(activeCompactNavigationId(`/${locale}/about`), 'about')
   }
@@ -38,7 +39,7 @@ test('both navigation surfaces render from the canonical six-item model', () => 
   const header = readFileSync(new URL('../components/site-navigation.tsx', import.meta.url), 'utf8')
   assert.match(bottom, /const mobileItems = getCompactNavigation\(locale\)/)
   const icons = readFileSync(new URL('../components/compact-navigation-icons.ts', import.meta.url), 'utf8')
-  assert.match(icons, /events: CalendarDays/)
+  assert.match(icons, /business: BriefcaseBusiness/)
   assert.match(icons, /house: LayoutDashboard/)
   assert.match(bottom, /compactNavigationIcons\[item.id as keyof typeof compactNavigationIcons\]/)
   assert.match(header, /compactNavigationIcons\[item.id as keyof typeof compactNavigationIcons\]/)
