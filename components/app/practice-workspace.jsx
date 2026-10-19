@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays } from 'lucide-react'
+import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeMaterials from './practice-materials'
@@ -440,6 +440,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <div className="hh-practice-tool-grid">
           <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
             onClick={()=>choosePanel('clients')} active={activePanel==='clients'} />
+          {isOwner&&<PracticeTile Icon={Megaphone}
+            title={locale==='ru'?'Продвижение · Growth Studio':locale==='es'?'Promoción · Growth Studio':'Marketing · Growth Studio'}
+            description={locale==='ru'?'Контент, черновики и календарь публикаций.':locale==='es'?'Calendario y borradores de publicaciones.':'Create and plan posts for your channels.'}
+            onClick={()=>window.location.assign('/admin/growth-studio')} />}
           {isOwner&&<PracticeTile Icon={UsersRound}
             title={locale==='ru'?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
             description={locale==='ru'?'Контакты, статусы и подписчики.':locale==='es'?'Contactos, estados y suscriptores.':'Contacts, stages and subscribers.'}
