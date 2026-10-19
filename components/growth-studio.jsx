@@ -412,7 +412,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <div className={styles.postButtons}>
           {post.status==='draft'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
           {post.status==='approved'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
-          {post.channel==='telegram'&&['approved','planned_manual'].includes(post.status)&&
+          {post.channel==='telegram'&&post.brand==='holistic_house'&&['approved','planned_manual'].includes(post.status)&&
             <button type="button" disabled={busy||!ready||!telegram.ready}
               title={telegram.ready?t.telegramSend:t.telegramDisabled} onClick={()=>sendTelegram(post)}>
               <Send size={15}/>{t.telegramSend}</button>}
