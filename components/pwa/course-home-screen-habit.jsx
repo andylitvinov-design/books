@@ -11,6 +11,7 @@ const WORDS = {
     eyebrow: 'A SMALL DAILY HABIT',
     title: 'Keep OPORA close',
     intro: 'Add your Anti-Stress course to your Home Screen. If you like, set up a gentle pause before YouTube.',
+    lessonIntro: 'Choose what you would like to set up. Both are optional.',
     add: 'Add course to Home Screen',
     installed: 'Course is open as an app',
     installHelp: 'How to add the course',
@@ -39,6 +40,7 @@ const WORDS = {
     eyebrow: 'МАЛЕНЬКАЯ ЕЖЕДНЕВНАЯ ПРИВЫЧКА',
     title: 'ОПОРА всегда под рукой',
     intro: 'Добавьте Антистресс на главный экран. А при желании настройте мягкое напоминание перед YouTube.',
+    lessonIntro: 'Выберите, что хотите настроить. Всё только по желанию.',
     add: 'Добавить курс на главный экран',
     installed: 'Курс открыт как приложение',
     installHelp: 'Как добавить курс',
@@ -67,6 +69,7 @@ const WORDS = {
     eyebrow: 'UN PEQUEÑO HÁBITO DIARIO',
     title: 'OPORA siempre contigo',
     intro: 'Añade tu curso de Antiestrés a la pantalla de inicio. Si lo deseas, configura una pausa amable antes de YouTube.',
+    lessonIntro: 'Elige qué quieres configurar. Todo es opcional.',
     add: 'Añadir curso a inicio',
     installed: 'El curso está abierto como app',
     installHelp: 'Cómo añadir el curso',
@@ -93,7 +96,7 @@ const WORDS = {
   },
 }
 
-export default function CourseHomeScreenHabit({ locale = 'en' }) {
+export default function CourseHomeScreenHabit({ locale = 'en', embedded = false }) {
   const words = WORDS[locale] || WORDS.en
   const courseLocale = locale === 'ru' ? 'ru' : 'en'
   const courseUrl = COURSE_URL + courseLocale + '/app/course?program=stress'
@@ -140,15 +143,18 @@ export default function CourseHomeScreenHabit({ locale = 'en' }) {
   }
 
   return (
-    <section className={styles.root} data-opora-habit-install lang={locale}>
-      <div className={styles.lead}>
-        <span className={styles.mark} aria-hidden="true"><Smartphone size={23} /></span>
-        <div>
-          <span className={styles.eyebrow}>{words.eyebrow}</span>
-          <h2>{words.title}</h2>
-          <p>{words.intro}</p>
-        </div>
-      </div>
+    <section className={styles.root + (embedded ? ' ' + styles.embedded : '')}
+      data-opora-habit-install lang={locale} aria-label={embedded ? words.title : undefined}>
+      {embedded
+        ?<p className={styles.embeddedIntro}>{words.lessonIntro}</p>
+        :<div className={styles.lead}>
+          <span className={styles.mark} aria-hidden="true"><Smartphone size={23} /></span>
+          <div>
+            <span className={styles.eyebrow}>{words.eyebrow}</span>
+            <h2>{words.title}</h2>
+            <p>{words.intro}</p>
+          </div>
+        </div>}
       <div className={styles.actions}>
         {installed ? <span className={styles.installed}><Check size={17} aria-hidden="true" />{words.installed}</span> :
           <button type="button" className={styles.primary} onClick={install} aria-expanded={installHelp}>
