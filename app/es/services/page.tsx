@@ -23,8 +23,7 @@ export default function SpanishServicesPage() {
       <ServicesIntroMedia locale="es" />
       <PersonalTestimonials locale="es" variant="services" />
       <ServicesMethodVideos locale="es" />
-      <PublicConsultationCta locale="es" id="consultation"
-        serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+      <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
       <ServicesDirectoryInvitation locale="es" />
       <p className="remedy-disclaimer services-disclaimer">
         La homeopatía no tiene evidencia fiable para tratar problemas de salud. Los métodos simbólicos no sustituyen la atención médica o de salud mental, incluidos los servicios urgentes. Los resultados individuales no están garantizados.
