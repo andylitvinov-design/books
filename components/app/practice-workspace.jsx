@@ -359,8 +359,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
         <div>
           <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
-          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
-          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
+          <h2 id="hh-practice-marketplace-title">{needsOnboarding?(ru?'Новые услуги других мастеров':locale==='es'?'Nuevos servicios de otros profesionales':'New services from other practitioners'):marketplaceCopy.title}</h2>
+          <p className="hh-practice-marketplace-intro">{needsOnboarding?(ru?'Посмотрите, что предлагают мастера Holistic House.':locale==='es'?'Descubre los servicios de la comunidad Holistic House.':'See what Holistic House practitioners are offering.'):marketplaceCopy.subtitle}</p>
         </div>
       </div>
       {!needsOnboarding&&<div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
