@@ -5,12 +5,14 @@ import { readFileSync } from 'node:fs'
 import { getSmsConfig,smsSetupStatus,smsSegments,validateSmsBody,
   smsRecipientFingerprint,sendTwilioSms,verifyTwilioWebhook,SMS_WEBHOOK_URL } from '../lib/crm/sms.js'
 import { CRM_CHANNELS,marketingEligibility } from '../lib/crm/consent.js'
+import { smsMessageEstimate,formatSmsText } from '../lib/crm/sms-text.js'
+import { probeTwilioSmsConnection } from '../lib/crm/sms-setup.js'
 
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const sid='AC'+'a'.repeat(32), service='MG'+'b'.repeat(32), token='c'.repeat(32)
 const env={VERCEL_ENV:'production',HH_CRM_SMS_ENABLED:'true',
  HH_CRM_SMS_PRODUCTION_APPROVED:'true',HH_CRM_SMS_SENDER_VERIFIED:'true',
- HH_CRM_SMS_CONTACT_DETAILS_VERIFIED:'true',
+ HH_CRM_SMS_CONTACT_DETAILS_VERIFIED:'true',HH_CRM_SMS_ADVANCED_OPTOUT_VERIFIED:'true',
  HH_CRM_SMS_PILOT_APPROVED:'true',HH_CRM_SMS_TEST_PHONE:'+14165550123',
  HH_CRM_TWILIO_ACCOUNT_SID:sid,HH_CRM_TWILIO_MESSAGING_SERVICE_SID:service,
  HH_CRM_TWILIO_AUTH_TOKEN:token}
@@ -18,7 +20,7 @@ const env={VERCEL_ENV:'production',HH_CRM_SMS_ENABLED:'true',
 test('SMS disabled by default; credential and explicit pilot gates',()=>{
  assert.equal(getSmsConfig({}).enabled,false)
  for(const key of ['HH_CRM_SMS_ENABLED','HH_CRM_SMS_PRODUCTION_APPROVED',
- 'HH_CRM_SMS_SENDER_VERIFIED','HH_CRM_SMS_CONTACT_DETAILS_VERIFIED','HH_CRM_TWILIO_ACCOUNT_SID',
+ 'HH_CRM_SMS_SENDER_VERIFIED','HH_CRM_SMS_CONTACT_DETAILS_VERIFIED','HH_CRM_SMS_ADVANCED_OPTOUT_VERIFIED','HH_CRM_TWILIO_ACCOUNT_SID',
  'HH_CRM_TWILIO_AUTH_TOKEN','HH_CRM_TWILIO_MESSAGING_SERVICE_SID',
  'HH_CRM_SMS_PILOT_APPROVED','HH_CRM_SMS_TEST_PHONE']){
   assert.equal(getSmsConfig({...env,[key]:''}).enabled,false,key)
@@ -41,7 +43,9 @@ test('SMS identifies sender, includes STOP and rejects private/oversized content
  const hello=validateSmsBody({body:'Hello, which day works for a call?'})
  assert.match(hello.formatted,/^Holistic House: /)
  assert.match(hello.formatted,/Reply STOP to unsubscribe\.$/)
- assert.match(hello.formatted,/holistichouse\.vercel\.app/)
+ assert.match(hello.formatted,/https:\/\/holistichouse\.vercel\.app/)
+ assert.equal(smsMessageEstimate('Hello, which day works for a call?').segments,hello.segments)
+ assert.equal(formatSmsText('Hello, which day works for a call?'),hello.formatted)
  assert.ok(hello.segments>=1&&hello.segments<=4)
  assert.throws(()=>validateSmsBody({body:'My diagnosis is here'}),/PRIVATE_CONTENT_BLOCKED/)
  assert.throws(()=>validateSmsBody({body:'See https://holistichouse.vercel.app/en/client/session/secret#token1234567890'}),/PRIVATE_CONTENT_BLOCKED/)
@@ -66,6 +70,7 @@ test('Twilio request is one-to-one and pilot-only; provider errors do not retry'
  assert.equal(form.get('To'),env.HH_CRM_SMS_TEST_PHONE)
  assert.equal(form.get('MessagingServiceSid'),service)
  assert.equal(form.get('StatusCallback'),SMS_WEBHOOK_URL)
+ assert.equal(form.get('ValidityPeriod'),'3600')
  assert.equal(form.get('Body').includes('STOP'),true)
  assert.equal(seen.options.headers.Authorization,
   'Basic '+Buffer.from(sid+':'+token).toString('base64'))
@@ -139,4 +144,61 @@ test('SQL schema isolates owner records, STOP and provider callbacks',()=>{
  assert.match(schema,/foreign key\(consent_event_id,owner_id,contact_id\)/)
  assert.match(schema,/crm_sms_status_receipt/)
  assert.doesNotMatch(schema,/grant.*(select|insert|update).*authenticated/i)
+})
+
+
+test('read-only Twilio readiness probe never dispatches and checks service, webhook and sender',async()=>{
+ const called=[]
+ const sender={
+  sid:service,account_sid:sid,
+  inbound_request_url:SMS_WEBHOOK_URL,inbound_method:'POST',
+  use_inbound_webhook_on_number:false,status_callback:SMS_WEBHOOK_URL,
+ }
+ const getter=async(url,options)=>{
+  called.push({url,method:options.method,hasAuth:options.headers.Authorization.startsWith('Basic ')})
+  return{status:200,ok:true,json:async()=>url.endsWith('/PhoneNumbers?PageSize=1')
+    ?{phone_numbers:[{sid:'PN'+'1'.repeat(32)}]}:sender}
+ }
+ const probe=await probeTwilioSmsConnection(env,getter)
+ assert.equal(probe.status,'connected')
+ assert.equal(probe.providerVerified,true)
+ assert.equal(probe.senderAttached,true)
+ assert.equal(probe.inboundWebhookVerified,true)
+ assert.equal(probe.statusCallbackVerified,true)
+ assert.equal(probe.optOutManuallyVerified,true)
+ assert.equal(called.length,2)
+ assert.ok(called.every(x=>x.method==='GET'&&x.hasAuth))
+ assert.ok(called.every(x=>x.url.startsWith('https://messaging.twilio.com/v1/Services/'+service)))
+ assert.equal(JSON.stringify(probe).includes(token),false)
+ let hits=0
+ const noKey=await probeTwilioSmsConnection({},async()=>{hits++;throw Error('must not call')})
+ assert.equal(noKey.status,'missing_credentials')
+ assert.equal(hits,0)
+ const badAuth=await probeTwilioSmsConnection(env,async()=>({status:401,ok:false,json:async()=>({})}))
+ assert.equal(badAuth.status,'invalid_credentials')
+ const wrongAccount=await probeTwilioSmsConnection(env,async()=>({status:200,ok:true,
+   json:async()=>({...sender,account_sid:'AC'+'f'.repeat(32)})}))
+ assert.equal(wrongAccount.status,'account_mismatch')
+ const wrongWebhook=await probeTwilioSmsConnection(env,async url=>({status:200,ok:true,json:async()=>url.includes('PhoneNumbers')
+  ?{phone_numbers:[]}:({...sender,inbound_request_url:'https://wrong.example'})}))
+ assert.equal(wrongWebhook.status,'needs_configuration')
+ assert.equal(wrongWebhook.inboundWebhookVerified,false)
+ assert.equal(wrongWebhook.senderAttached,false)
+})
+
+test('SMS onboarding is owner-only, never exposes Twilio tokens or sends on page load',()=>{
+ const route=source('app/api/app/crm/route.js')
+ assert.match(route,/smsSetup:smsSetupStatus\(\)/)
+ assert.match(route,/check_sms_connection/)
+ assert.match(route,/probeTwilioSmsConnection/)
+ assert.match(route,/requireSameOrigin/)
+ assert.match(route,/practitionerEmailAllowed/)
+ const ui=source('components/app/crm-sms-setup.jsx')
+ assert.match(ui,/onAction\('check_sms_connection',\{\}\)/)
+ assert.doesNotMatch(ui,/NEXT_PUBLIC_|HH_CRM_TWILIO_AUTH_TOKEN/)
+ const manager=source('components/app/crm-manager.jsx')
+ assert.match(manager,/<CrmSmsSetup/)
+ assert.match(source('components/app/crm-sms-tools.jsx'),/smsMessageEstimate/)
+ assert.match(source('lib/crm/sms-store.js'),/:sms:owner_quota/)
+ assert.doesNotMatch(source('lib/crm/sms-store.js'),/:sms:quota/)
 })
