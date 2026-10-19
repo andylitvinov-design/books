@@ -1,41 +1,204 @@
-.shell { max-width:1060px; padding-bottom:calc(64px + env(safe-area-inset-bottom)); }
-.top { display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center; gap:12px; margin:18px 0 20px; }
-.top > a:first-child, .legacy a { color:#76513b; font-weight:690; text-underline-offset:3px; }
-.primary, .search button { display:inline-flex; min-height:46px; align-items:center; justify-content:center; padding:10px 18px; border:1px solid #78513d; border-radius:13px; background:#78513d; color:#fffaf5; font-size:15px; font-weight:760; text-decoration:none; white-space:nowrap; }
-.sheet { padding:clamp(16px,3vw,28px); border:1px solid #e5d8cb; border-radius:24px; background:#fffdf9; box-shadow:0 8px 30px rgb(68 45 29 / 5%); }
-.search { display:grid; gap:9px; margin-bottom:24px; }
-.search label { color:#51443b; font-size:15px; font-weight:760; }
-.search > div { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
-.search input { flex:1 1 260px; min-width:0; min-height:48px; padding:10px 14px; border:1px solid #d9c5b1; border-radius:12px; background:#fff; color:#352e2a; font-size:16px; }
-.search button { cursor:pointer; }
-.search a { color:#76513b; padding:10px; min-height:44px; font-weight:700; }
-.heading { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px 12px; margin-bottom:13px; }
-.heading h2 { margin:0; font:600 clamp(24px,4vw,32px)/1.16 Georgia,serif; color:#334f55; }
-.heading span { font-size:13px; color:#796e65; }
-.list { display:grid; gap:11px; }
-.record { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:16px; border:1px solid #e6d9cb; border-radius:17px; background:#fff; }
-.identity { display:flex; align-items:flex-start; gap:12px; min-width:0; }
-.avatar { display:grid; flex:none; place-items:center; width:48px; height:48px; border-radius:15px; background:#efe3d5; color:#795039; font:600 26px Georgia,serif; }
-.details { min-width:0; display:grid; gap:6px; }
-.details strong { color:#3f332d; font-size:17px; line-height:1.25; overflow-wrap:anywhere; }
-.details > a { width:fit-content; font-size:13px; font-weight:690; color:#577077; }
-.meta { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; color:#786a60; font-size:13px; }
-.status { padding:4px 9px; border-radius:20px; background:#edf5f1; color:#32655b; font-size:12px; font-weight:700; }
-.status[data-active="false"] { background:#f7ece8; color:#8a4d49; }
-.actions { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
-.view { display:inline-flex; min-height:44px; align-items:center; justify-content:center; padding:9px 15px; border:1px solid #c9dcdd; border-radius:12px; background:#f2f9f8; color:#285d68; font-size:14px; font-weight:760; text-decoration:none; }
-.actions .primary { min-height:44px; font-size:14px; padding:9px 15px; }
-.empty { padding:32px 18px; border:1px dashed #d5c7b9; border-radius:16px; background:#faf6f0; color:#51473f; text-align:center; }
-.empty p { margin:8px 0 0; font-size:14px; }
-.pager { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:20px; color:#78665b; font-size:14px; }
-.pager a { display:inline-flex; min-height:44px; align-items:center; padding:9px 12px; border:1px solid #dccabb; border-radius:10px; color:#78513d; font-weight:700; }
-.legacy { margin-top:20px; padding-top:18px; border-top:1px solid #eee3d8; font-size:13px; }
-.shell a:focus-visible, .shell button:focus-visible, .shell input:focus-visible { outline:3px solid #469da0; outline-offset:3px; }
-@media(max-width:680px) {
-  .top { align-items:stretch; }
-  .sheet { border-radius:18px; padding:15px; }
-  .record { flex-direction:column; align-items:stretch; padding:14px; }
-  .actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .actions a { width:100%; }
-  .search input { flex-basis:calc(100% - 112px); width:0; }
+/* Compact, owner-only client report directory. Other cabinet pages are unchanged. */
+.shell {
+  max-width: 1060px;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+.shell :global(.prescription-admin-topbar) { padding-bottom: 17px; }
+.shell :global(.prescription-admin-titleblock) { padding: 22px 0 15px; }
+.shell :global(.prescription-admin-titleblock) h1 {
+  font-size: clamp(34px, 4.5vw, 52px) !important;
+  line-height: 1.06;
+}
+.shell :global(.prescription-admin-titleblock) :global(.prescription-admin-description) {
+  margin-top: 7px !important;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.shell :global(.prescription-admin-navigation--tabs) {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  width: 100%;
+  max-width: 100%;
+  gap: 7px !important;
+  margin-bottom: 12px !important;
+  padding: 0 0 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.shell :global(.prescription-admin-navigation--tabs) a {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.shell :global(.prescription-admin-navigation--tabs) a[href="/admin/reports"] {
+  border-color: #afcece;
+  background: #e9f3f1;
+  color: #275c64 !important;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0 15px;
+}
+.back, .legacy a { color: #76513b; font-weight: 700; text-underline-offset: 3px; }
+.back { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; text-decoration: none; }
+.primary, .search button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #78513d;
+  border-radius: 12px;
+  background: #78513d;
+  padding: 9px 15px;
+  color: #fffaf5;
+  font-size: 13px;
+  font-weight: 760;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.sheet {
+  padding: clamp(14px, 2.4vw, 24px);
+  border: 1px solid #e6dacc;
+  border-radius: 20px;
+  background: #fffdf9;
+  box-shadow: 0 7px 22px rgb(68 45 29 / 4%);
+}
+.heading { display: grid; gap: 4px; margin-bottom: 13px; }
+.heading h2 { margin: 0; font: 600 clamp(25px, 3.3vw, 30px)/1.14 Georgia, serif; color: #334f55; }
+.heading span { color: #796e65; font-size: 12px; line-height: 1.4; }
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.search { margin: 0 0 16px; }
+.search > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #d9c5b1;
+  border-radius: 12px;
+  background: #fff;
+  padding: 9px 13px;
+  color: #352e2a;
+  font-size: 16px;
+}
+.search button { cursor: pointer; }
+.search a { grid-column: 1 / -1; width: fit-content; min-height: 36px; padding: 7px 4px; color: #76513b; font-size: 12px; font-weight: 700; }
+.list { display: grid; gap: 10px; }
+.record {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 13px 15px;
+  border: 1px solid #e6d9cb;
+  border-radius: 16px;
+  background: #fff;
+}
+.identity { display: flex; align-items: flex-start; flex: 1 1 auto; min-width: 0; gap: 11px; }
+.avatar {
+  display: grid;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  background: #efe3d5;
+  color: #795039;
+  font: 600 24px Georgia, serif;
+}
+.details { display: grid; min-width: 0; gap: 5px; }
+.details strong { color: #3f332d; font-size: 16px; line-height: 1.25; overflow-wrap: anywhere; }
+.details > a { width: fit-content; color: #52747a; font-size: 12px; font-weight: 700; text-decoration: none; }
+.details > a:hover, .back:hover, .legacy a:hover { text-decoration: underline; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; color: #786a60; font-size: 12px; line-height: 1.35; }
+.meta time { white-space: nowrap; }
+.localeTag {
+  border: 1px solid #e1ded9;
+  border-radius: 6px;
+  background: #f6f5f2;
+  padding: 2px 5px;
+  color: #6c6259;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .035em;
+}
+.status { border-radius: 999px; background: #f7ece8; padding: 3px 7px; color: #8a4d49; font-size: 11px; font-weight: 700; }
+.actions { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: 8px; }
+.view {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c3dadb;
+  border-radius: 12px;
+  background: #f2f9f8;
+  padding: 9px 15px;
+  color: #285d68;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.actions .primary { min-height: 44px; font-size: 13px; }
+.empty { padding: 26px 16px; border: 1px dashed #d5c7b9; border-radius: 14px; background: #faf6f0; color: #51473f; text-align: center; }
+.empty p { margin: 8px 0 0; font-size: 14px; }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 18px; color: #78665b; font-size: 13px; }
+.pager a { display: inline-flex; min-height: 44px; align-items: center; padding: 9px 12px; border: 1px solid #dccabb; border-radius: 10px; color: #78513d; font-weight: 700; }
+.legacy { margin-top: 17px; border-top: 1px solid #eee3d8; padding-top: 15px; font-size: 12px; }
+.shell a:focus-visible, .shell button:focus-visible, .shell input:focus-visible { outline: 3px solid #469da0; outline-offset: 3px; }
+
+@media (max-width: 680px) {
+  .shell:global(.prescription-admin-shell) { padding: 13px 12px calc(62px + env(safe-area-inset-bottom)) !important; }
+  .shell :global(.prescription-admin-topbar) { align-items: center; gap: 8px; padding-bottom: 12px; }
+  .shell :global(.prescription-admin-wordmark) strong { font-size: clamp(18px, 5.3vw, 23px) !important; }
+  .shell :global(.prescription-admin-wordmark) span { font-size: 8px; }
+  .shell :global(.prescription-admin-header-actions) { gap: 5px !important; }
+  .shell :global(.prescription-admin-header-actions .site-language-switch) { min-height: 32px; padding: 2px !important; }
+  .shell :global(.prescription-admin-header-actions .site-language-switch button) { min-height: 26px !important; padding: 0 6px !important; }
+  .shell :global(.prescription-admin-logout) { min-height: 32px !important; padding-inline: 9px !important; }
+  .shell :global(.prescription-admin-titleblock) { padding: 15px 0 12px; }
+  .shell :global(.prescription-admin-titleblock) h1 { font-size: clamp(30px, 8vw, 36px) !important; letter-spacing: -.035em; }
+  .shell :global(.prescription-admin-titleblock) :global(.prescription-admin-description) { display: none; }
+  .shell :global(.prescription-admin-navigation--tabs) { gap: 6px !important; margin-bottom: 8px !important; padding-bottom: 5px; }
+  .shell :global(.prescription-admin-navigation--tabs) a { min-height: 38px; padding: 8px 11px; font-size: 11px; }
+  .top { flex-wrap: nowrap; gap: 8px; margin: 8px 0 12px; }
+  .top .primary { padding-inline: 12px; font-size: 12px; }
+  .sheet { border-radius: 17px; padding: 12px; }
+  .heading h2 { font-size: 25px; }
+  .heading span { font-size: 11px; }
+  .search { margin-bottom: 14px; }
+  .search > div { gap: 7px; }
+  .search button { padding-inline: 13px; font-size: 12px; }
+  .list { gap: 9px; }
+  .record { display: grid; gap: 11px; border-radius: 14px; padding: 12px; }
+  .identity { gap: 10px; }
+  .avatar { flex-basis: 38px; width: 38px; height: 38px; border-radius: 11px; font-size: 22px; }
+  .details strong { font-size: 15px; }
+  .meta { font-size: 11px; gap: 5px 7px; }
+  .actions { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .actions a { width: 100%; min-width: 0; }
+  .actions .primary, .view { min-height: 44px; padding: 8px 10px; font-size: 12px; }
+}
+@media (max-width: 350px) {
+  .shell :global(.prescription-admin-wordmark) strong { font-size: 17px !important; }
+  .shell :global(.prescription-admin-header-actions .site-language-switch button) { padding-inline: 5px !important; }
+  .top .primary, .back { font-size: 11px; }
 }
