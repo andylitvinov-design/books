@@ -1,33 +1,33 @@
 'use client'
 
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {Headphones,Pause,Play,RotateCcw,Volume2,VolumeX,Waves} from 'lucide-react'
 import {useOceanPracticeAudio} from '../ocean-practice-audio'
 import styles from './opora-ocean-outro.module.css'
 
-const DURATION=60
+const DURATION=120
 
 const COPY={
   en:{
-    instruction:'Listen to the gentle waves for one quiet minute.',
+    instruction:'Listen to the gentle waves and rest for two quiet minutes.',
     optional:'You can also rest quietly without audio.',
-    play:'Play one minute',resume:'Resume',pause:'Pause',restart:'Restart',
+    play:'Start 2 minutes',resume:'Resume',pause:'Pause',restart:'Restart',
     wavesOn:'Waves on',wavesOff:'Waves off',unavailable:'Sound is unavailable here; the quiet practice still works.',
-    complete:'Your quiet minute is complete.',ready:'No rush. Start when you feel ready.',
+    complete:'Your two quiet minutes are complete.',ready:'No rush. Start when you feel ready.',
   },
   ru:{
-    instruction:'Послушайте мягкий шум волн в течение одной минуты.',
+    instruction:'Послушайте мягкий шум волн и отдохните две минуты.',
     optional:'Можно просто спокойно отдохнуть без звука.',
-    play:'Включить на минуту',resume:'Продолжить',pause:'Пауза',restart:'Сначала',
+    play:'Включить на 2 минуты',resume:'Продолжить',pause:'Пауза',restart:'Сначала',
     wavesOn:'Волны включены',wavesOff:'Волны выключены',unavailable:'Звук недоступен, но можно выполнить практику в тишине.',
-    complete:'Минута спокойствия завершена.',ready:'Не торопитесь. Начните, когда будете готовы.',
+    complete:'Две минуты спокойствия завершены.',ready:'Не торопитесь. Начните, когда будете готовы.',
   },
   es:{
-    instruction:'Escucha las suaves olas durante un minuto tranquilo.',
+    instruction:'Escucha las suaves olas y descansa dos minutos.',
     optional:'También puedes descansar en silencio.',
-    play:'Escuchar un minuto',resume:'Continuar',pause:'Pausar',restart:'Reiniciar',
+    play:'Escuchar 2 minutos',resume:'Continuar',pause:'Pausar',restart:'Reiniciar',
     wavesOn:'Olas activadas',wavesOff:'Olas desactivadas',unavailable:'El sonido no está disponible; puedes descansar en silencio.',
-    complete:'Terminó tu minuto tranquilo.',ready:'Sin prisa. Empieza cuando quieras.',
+    complete:'Terminaron tus dos minutos de calma.',ready:'Sin prisa. Empieza cuando quieras.',
   },
 }
 
@@ -38,28 +38,33 @@ export default function OporaOceanOutro({locale='en',paused=false}){
   const [remaining,setRemaining]=useState(DURATION)
   const [running,setRunning]=useState(false)
   const [started,setStarted]=useState(false)
+  const deadline=useRef(0)
 
-  // The soundscape and timer must stop on an accessible safety pause.
+  // A safety pause preserves the actual time left, including on slower phones.
   useEffect(()=>{
-    if(!paused)return
+    if(!paused||!running)return
+    setRemaining(Math.max(0,Math.ceil((deadline.current-Date.now())/1000)))
     setRunning(false)
     audio.pause()
-  },[paused,audio.pause])
+  },[paused,running,audio.pause])
 
-  // Backgrounding the browser must not leave a silent timer apparently playing.
+  // Backgrounding Safari stops both sound and timer without losing progress.
   useEffect(()=>{
     const stop=()=>{
       if(!document.hidden)return
+      if(running)setRemaining(Math.max(0,Math.ceil((deadline.current-Date.now())/1000)))
       setRunning(false)
       audio.pause()
     }
     document.addEventListener('visibilitychange',stop)
     return ()=>document.removeEventListener('visibilitychange',stop)
-  },[audio.pause])
+  },[running,audio.pause])
 
+  // Wall-clock seconds prevent browser timer throttling from extending the rest.
   useEffect(()=>{
     if(!running||paused)return
-    const interval=window.setInterval(()=>setRemaining(value=>Math.max(0,value-1)),1000)
+    const tick=()=>setRemaining(Math.max(0,Math.ceil((deadline.current-Date.now())/1000)))
+    const interval=window.setInterval(tick,250)
     return ()=>window.clearInterval(interval)
   },[running,paused])
 
@@ -71,19 +76,23 @@ export default function OporaOceanOutro({locale='en',paused=false}){
 
   function play(){
     if(paused)return
+    const seconds=remaining===0?DURATION:remaining
     if(remaining===0)setRemaining(DURATION)
+    deadline.current=Date.now()+seconds*1000
     // Direct click → AudioContext.resume() keeps Safari/iOS user-gesture permission.
     audio.play()
     setRunning(true)
     setStarted(true)
   }
   function pause(){
+    setRemaining(Math.max(0,Math.ceil((deadline.current-Date.now())/1000)))
     setRunning(false)
     audio.pause()
   }
   function restart(){
     setRunning(false)
     audio.pause()
+    deadline.current=0
     setRemaining(DURATION)
     setStarted(false)
   }
@@ -115,7 +124,7 @@ export default function OporaOceanOutro({locale='en',paused=false}){
       <button type="button" className={styles.soundToggle} disabled={!audio.supported}
         aria-pressed={audio.supported&&audio.enabled} onClick={()=>audio.toggle(running)}>
         {audio.supported&&audio.enabled?<Volume2 size={16}/>:<VolumeX size={16}/>}
-        {audio.enabled?t.wavesOn:t.wavesOff}
+        {audio.supported&&audio.enabled?t.wavesOn:t.wavesOff}
       </button>
       <span className={styles.optional}><Headphones size={15} aria-hidden="true"/>{t.optional}</span>
     </div>
