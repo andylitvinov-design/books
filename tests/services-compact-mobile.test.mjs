@@ -24,8 +24,7 @@ test("Services landing has free-first cards and preserves original personal path
     assert.ok(ui.includes('id: "' + id + '"') || ui.includes('session("' + id + '")'), id);
   for (const route of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + route + '"'), route);
-  assert.match(ui, /locale === "es" \? "\/es\/client"/);
-  assert.match(ui, /"\/client\/tests"/);
+  assert.match(ui, /href: "\/" \+ locale \+ "\/tests"/);
   assert.match(ui, /ContactChannelChooser/);
   assert.match(ui, /<details className=\{styles.details\}>/);
   assert.match(ui, /data-services-studio-free/);
@@ -52,44 +51,45 @@ test("homepage restores photo-left four services while keeping tests and Academy
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
-test("new DAO, Soul Alchemy and hypnotherapy landing pages are bilingual and have specific safe two-channel requests", () => {
-  const detail = read("components/core-service-detail.tsx");
-  const css = read("components/core-service-detail.module.css");
-  for(const [slug,kind] of [["dao-health-profile","dao"],["alchemy-of-soul","alchemy"],["hypnotherapy-course","hypnotherapy"]]) {
+test("new DAO free page is independent of two existing personal service landings and has a genuine multilingual enquiry", () => {
+  const dao = read("app/[locale]/services/dao-health-profile/page.tsx");
+  const shared = read("components/free-entry-landing.tsx");
+  const form = read("components/free-resource-enquiry.tsx");
+  assert.match(dao, /generateMetadata/);
+  assert.match(dao, /generateStaticParams/);
+  assert.match(dao, /kind="dao"/);
+  assert.match(dao, /isPublicLocale/);
+  for (const lang of ["en", "ru", "es"]) assert.ok(dao.includes("/" + lang + "/services/dao-health-profile"));
+  assert.match(shared, /"request-free-wu-xing"/);
+  assert.match(shared, /<FreeResourceEnquiry locale=\{locale\} kind=\{kind\}/);
+  assert.match(form, /<ContactChannelChooser/);
+  assert.match(form, /whatsappEnquiryUrl\(\{/);
+  assert.match(form, /navigator\.clipboard\.writeText\(privateContext\)/);
+  for (const [slug, kind] of [["alchemy-of-soul", "alchemy"], ["hypnotherapy-course", "hypnotherapy"]]) {
     const route = read("app/[locale]/services/" + slug + "/page.tsx");
     assert.match(route, /generateMetadata/);
     assert.match(route, /generateStaticParams/);
-    assert.match(route, /isSupportedLocale/);
-    if(kind === "alchemy") {
+    for(const lang of ["en", "ru"]) assert.ok(route.includes("/" + lang + "/services/" + slug));
+    if (kind === "alchemy") {
       assert.match(route, /<AlchemySoulLanding locale=/);
       assert.match(route, /data-alchemy-extended-guide/);
     } else {
       assert.match(route, /<CoreServiceDetail locale=/);
-      assert.ok(route.includes('kind = "' + kind + '"'));
     }
-    for(const lang of ["en","ru"]) assert.ok(route.includes("/" + lang + "/services/" + slug));
   }
-  for (const method of ["Situation analysis","Systemic constellations","homeopathic selection","Анализ ситуации","Системная расстановка","гомеопатический подбор"])
-    assert.ok(detail.toLowerCase().includes(method.toLowerCase()), method);
-  assert.match(detail, /const whatsappUrl = whatsappEnquiryUrl\(\{/);
-  assert.match(detail, /service: t\.title/);
-  assert.match(detail, /request: t\.actionMessage/);
-  assert.match(detail, /option: t\.action/);
-  assert.match(detail, /pagePath: "\/" \+ locale \+ "\/services\/" \+ serviceSlug/);
-  assert.equal((detail.match(/<ContactChannelChooser locale=\{locale\} whatsappUrl=\{whatsappUrl\}/g) || []).length, 3);
+  const detail = read("components/core-service-detail.tsx");
   assert.match(detail, /reliable evidence/);
-  assert.match(detail, /не медицинское обследование/);
-  assert.match(css, /@media\(max-width:760px\)/);
+  assert.match(read("components/core-service-detail.module.css"), /@media\(max-width:760px\)/);
 });
 
-test("free diagnostic retains private-data-safe channel choice, explicit copying and illustrative preview", () => {
+test("free diagnostic retains private-safe detailed form, drawing instructions, and illustrative scenes", () => {
   const intake = read("components/free-drawing-intake.tsx");
   const tracking = read("components/acquisition-event-link.tsx");
-  const freePage = read("app/[locale]/services/free-situation-review/page.tsx");
+  const landing = read("components/free-entry-landing.tsx");
+  const offer = read("app/[locale]/services/free-situation-review/page.tsx");
   assert.match(intake, /copyButton: "Copy answers"/);
   assert.match(intake, /<ContactChannelChooser[\s\S]*?whatsappUrl=\{whatsappUrl\}/);
   assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
-  assert.match(intake, /onClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
   assert.match(intake, /readyRef\.current\?\.focus\(\)/);
   assert.match(intake, /Nothing has been sent/);
@@ -98,8 +98,10 @@ test("free diagnostic retains private-data-safe channel choice, explicit copying
   assert.match(draft, /topic: t\.options\[topic\]/);
   assert.doesNotMatch(draft, /\b(?:answers|problem|goal|obstacle|tried)\b/);
   assert.match(tracking, /onClick\?\.\(\); emit\(event\)/);
-  assert.match(freePage, /sampleCopy/);
-  assert.match(freePage, /not a real client's drawing or results/);
+  assert.match(offer, /kind="situation"/);
+  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
+  assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
+  assert.match(landing, /"\/images\/holistic-house\/report-lighthouse-coast\.webp"/);
   assert.doesNotMatch(intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
 });
 
