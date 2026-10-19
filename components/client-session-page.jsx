@@ -172,8 +172,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         aria-label={ru?'Видео к вашей консультации':'Videos for your consultation'}>
         <header className={styles.sectionHeader}>
           <span className={styles.sectionIcon}><Video size={21}/></span>
-          <div><span className={styles.sectionKicker}>{ru?'ВИДЕО К КОНСУЛЬТАЦИИ':'CONSULTATION VIDEOS'}</span>
-            <h2>{ru?'Видео для вас':'Videos for you'}</h2></div>
+          <div><span className={styles.sectionKicker}>{videoMedia.length>0?(ru?'ВИДЕОПРИВЕТСТВИЕ':'VIDEO WELCOME'):(ru?'ВИДЕО К КОНСУЛЬТАЦИИ':'CONSULTATION VIDEOS')}</span>
+            <h2>{videoMedia.length>0?(ru?'Видеоприветствие':'Video welcome'):(ru?'Видео для вас':'Videos for you')}</h2></div>
         </header>
         {videoMedia.length>0&&<div className={styles.mediaList}>
           {videoMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
