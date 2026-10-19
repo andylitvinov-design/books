@@ -25,7 +25,7 @@ export function energyworkFirstLessonAnswers(value) {
   for (const id of IDS) {
     const answer = input[id]
     if (answer === undefined) continue
-    if (typeof answer !== 'string' || answer.includes('\\u0000') ||
+    if (typeof answer !== 'string' || answer.includes(String.fromCharCode(0)) ||
         answer.length > (id === 'flight-04' ? 5000 : 1600) ||
         !energyworkAnswerValid(id, answer)) throw new Error('INVALID_FIRST_LESSON')
     if (answer) answers[id] = answer
