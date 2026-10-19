@@ -2095,7 +2095,7 @@
 @media(max-width:580px){.takeSection{padding:15px}.takeHeader{flex-wrap:wrap}.takeHeader button{margin-left:auto}.takeActions{align-items:stretch}.takeActions button,.takeChoice{flex:1;justify-content:flex-start}.takeCard{padding:13px}.takeHeader h3{font-size:20px}}
 
 
-/* Client report: recommended tests follow Materials, before next actions. */
+/* Client report: recommended tests follow Cabinet save and precede final PDF actions. */
 .cabinetSessionPage .reportRecommendedTestsSection{
   margin:20px 0 24px;
   padding:clamp(16px,3vw,23px);
@@ -2687,4 +2687,75 @@
       url('/images/holistic-house/report-lighthouse-coast.svg');
     background-position:center,57% center,57% center,70% center;
   }
+}
+
+
+/* The report closes in three steps: save to Cabinet, tests, then PDF. */
+.cabinetSessionPage .sessionBottomActions{
+  grid-template-columns:minmax(0,1fr);
+  margin-bottom:20px;
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary{
+  width:100%;
+}
+.reportTestCatalogLink{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  width:100%;
+  min-height:48px;
+  margin-top:13px;
+  padding:11px 14px;
+  border:1px solid #91bdc2;
+  border-radius:12px;
+  background:#fffefa;
+  color:#1b6070;
+  font:700 14px/1.4 system-ui,-apple-system,sans-serif;
+  text-align:center;
+  text-decoration:none;
+  overflow-wrap:anywhere;
+}
+.reportTestCatalogLink:hover{
+  background:#e8f6f4;
+  border-color:#4e95a2;
+  color:#164f60;
+}
+.reportTestCatalogLink svg{flex:0 0 auto}
+.reportPdfActions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:13px;
+}
+.cabinetSessionPage .reportDownloadSection .reportPdfActions>a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  width:100%;
+  min-width:0;
+  min-height:52px;
+  padding:12px 13px;
+  border-radius:12px;
+  font:800 14px/1.35 system-ui,-apple-system,sans-serif;
+  text-align:center;
+  text-decoration:none;
+  overflow-wrap:anywhere;
+}
+.reportPdfActions svg{flex:0 0 auto}
+.cabinetSessionPage .reportDownloadSection .reportPdfPreviewButton{
+  border:1px solid #82b4be;
+  background:#fffefa;
+  color:#18596b;
+  box-shadow:none;
+}
+.cabinetSessionPage .reportDownloadSection .reportPdfPreviewButton:hover{
+  background:#e5f5f3;
+  border-color:#398b9c;
+  color:#164e62;
+}
+@media(max-width:700px){
+  .reportPdfActions{grid-template-columns:minmax(0,1fr);gap:10px}
+  .cabinetSessionPage .reportDownloadSection .reportPdfActions>a{min-height:50px}
 }
