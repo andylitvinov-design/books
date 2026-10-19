@@ -7,8 +7,9 @@ const source = read('components/academy-free-course-banner.tsx')
 const styles = read('components/academy-free-course-banner.module.css')
 const hub = read('components/academy-hub.tsx')
 
-test('Academy replaces the oversized promotional banner with a native, keyboard-accessible dropdown', () => {
-  assert.match(hub, /<AcademyFreeCourseBanner locale=\{locale\} \/>/)
+test('Legacy free-course dropdown stays accessible in isolation; Academy now displays its courses directly', () => {
+  assert.doesNotMatch(hub, /<AcademyFreeCourseBanner/)
+  assert.match(hub, /<AcademyDiscovery locale=\{locale\}/)
   assert.match(source, /<details className=\{styles\.disclosure\}>/)
   assert.match(source, /<summary className=\{styles\.summary\}>/)
   assert.match(source, /aria-labelledby="academy-free-course-title"/)
