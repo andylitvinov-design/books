@@ -380,19 +380,19 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-02"); // video poster remains visible without autoplay
   await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-03"); // one-minute light and warmth practice on slide 3
-  await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-voices");
   await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-05"); // slide 5: optional Sun symbolism thought
+  await expectFits("flight-05"); // optional Sun symbolism thought
   await page.locator('textarea[id="answer-flight-05"]').fill(locale==="ru"
     ? "Солнце для меня символ ясности." : "The Sun symbolizes clarity for me.");
   await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-04"); // slide 6: required meditation feedback
+  await expectFits("flight-04"); // required meditation feedback
   await page.locator('textarea[id="answer-flight-04"]').fill(locale==="ru"
     ? "Я заметил(а), что дыхание стало спокойнее и появилось тепло."
     : "I noticed my breathing became calmer and I felt warmth and ease.");
   await expect(page.locator("button[data-energywork-next]")).toBeEnabled();
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-03"); // final one-minute audio practice before congratulations
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
