@@ -2698,7 +2698,7 @@
 .cabinetSessionPage .sessionBottomActions .sessionBottomPrimary{
   width:100%;
 }
-.reportTestCatalogLink{
+.cabinetSessionPage .reportTestCatalogLink{
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -2716,7 +2716,7 @@
   text-decoration:none;
   overflow-wrap:anywhere;
 }
-.reportTestCatalogLink:hover{
+.cabinetSessionPage .reportTestCatalogLink:hover{
   background:#e8f6f4;
   border-color:#4e95a2;
   color:#164f60;
