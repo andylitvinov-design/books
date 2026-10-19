@@ -105,6 +105,8 @@ test('requester and master UI expose private replies without opening other cabin
   const profile=src('components/app/practitioner-client-profiles.jsx')
   const chat=src('components/app/practice-request-conversation.jsx')
   assert.match(master,/<PractitionerClientProfiles items=\{requests\}/)
+  assert.match(master,/activePanel==='crm'&&isOwner&&accountId/)
+  assert.match(master,/onClick=\{\(\)=>choosePanel\('clients'\)\}/)
   assert.match(master,/onStatus=\{\(item,status\)=>act/)
   assert.match(cabinet,/<PracticeRequestConversation key=\{request\.id\}/)
   assert.match(profile,/groupVerifiedPractitionerClients/)
@@ -118,4 +120,14 @@ test('sensitive private report links and clinical details are rejected by shared
   assert.throws(()=>validateMessageText('Your prescription is ready'))
   assert.throws(()=>validateMessageText('https://holistichouse.vercel.app/en/client/a#private-session-token-123456789'))
   assert.equal(validateMessageText('Please confirm a suitable appointment day.'),'Please confirm a suitable appointment day.')
+})
+
+test('master client profile displays genuine conversation activity counts for each scoped request',()=>{
+  const repo=src('lib/practitioners/repository.js')
+  const ui=src('components/app/practitioner-client-profiles.jsx')
+  assert.match(repo,/select request_id,count\(\*\)::int as message_count,max\(created_at\) as last_message_at/)
+  assert.match(repo,/where request_id=any\(\$1::uuid\[\]\)/)
+  assert.match(repo,/messageCount:byRequest\.get\(row\.id\)\?\.message_count\|\|0/)
+  assert.match(ui,/request\.messageCount>0/)
+  assert.match(ui,/localizedCopy\?\.\[lang\]\?\.title/)
 })
