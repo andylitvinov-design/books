@@ -57,6 +57,7 @@ import {createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeS
 import {deliveryEnabled} from '@/lib/clients/delivery-model'
 import {readSessionViewerCookie,authorizeSessionGuest} from '@/lib/clients/session-delivery-access'
 import {getPublishedClientSession} from '@/lib/clients/session-delivery-service'
+import {listPractitionerMaterials,streamReadyMaterial} from '@/lib/clients/material-library'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -518,6 +519,25 @@ async function handle(request, { params }) {
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       return response
     }
+    // Owner-only PRIVATE report media catalog. This is deliberately distinct
+    // from moderated YouTube/Vimeo links on the public practitioner profile.
+    if(joined === 'practice/report-materials' && method === 'GET'){
+      if(!practitionerEmailAllowed(actor)||!await repo.isPractitioner(actor))
+        throw new AppError('NOT_FOUND',404)
+      return json({items:await listPractitionerMaterials(config)})
+    }
+    if(path[0]==='practice'&&path[1]==='report-materials'&&
+      path.length===4&&path[3]==='media'&&['GET','HEAD'].includes(method)){
+      if(!practitionerEmailAllowed(actor)||!await repo.isPractitioner(actor))
+        throw new AppError('NOT_FOUND',404)
+      requireUUID(path[2])
+      // Byte range and private Storage credentials stay behind the
+      // already-tested first-party owner media streaming adapter.
+      const streamed=await streamReadyMaterial(config,path[2],request)
+      return auth.apply(new NextResponse(streamed.body,{
+        status:streamed.status,headers:streamed.headers,
+      }))
+    }
     if (joined === 'practice' && method === 'GET') {
       const workspace = await practiceRepo.getMyPractice(actor)
       let newServices = null
@@ -699,5 +719,5 @@ async function handle(request, { params }) {
     return auth ? auth.apply(response) : response
   }
 }
-export { handle as GET, handle as POST }
+export { handle as GET, handle as HEAD, handle as POST }
 
