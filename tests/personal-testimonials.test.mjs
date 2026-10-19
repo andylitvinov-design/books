@@ -8,8 +8,12 @@ const read = (...segments) => readFileSync(path.join(process.cwd(), ...segments)
 test("home and services render the same first-party testimonial component", () => {
   const home = read("components", "holistic-house-home.tsx");
   const services = read("app", "[locale]", "services", "page.tsx");
+  const spanish = read("app", "es", "page.tsx");
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
   assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
+  assert.match(spanish, /<PersonalTestimonials locale="es" variant="home" \/>/);
+  assert.doesNotMatch(spanish, /<SiteVideoPlayer/);
+  assert.ok(spanish.indexOf("<PersonalTestimonials locale=") < spanish.indexOf('className="service-home-about"'));
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
   assert.ok(services.indexOf('<PublicConsultationCta locale=') > services.indexOf('<ServicesSolutions'));
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<PublicConsultationCta locale='));
