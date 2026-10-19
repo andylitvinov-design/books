@@ -71,7 +71,7 @@ test('missing baseline offers a check-in without claiming the course has measure
     const h = render('en')
     await h.settle()
     assert.equal(find(h.tree, 'data-course-baseline-reused'), undefined)
-    assert.match(textOf(find(h.tree, 'data-antistress-start-first-test')), /Start my 3 free check-ins/)
+    assert.match(textOf(find(h.tree, 'data-antistress-start-first-test')), /Use saved results & continue/)
     assert.match(textOf(find(h.tree, 'data-course-baseline-explanation')), /not a diagnosis or proof/i)
     h.unmount()
   } finally {
@@ -109,6 +109,20 @@ test('one-screen starting check-in keeps the real choices and CTA visible withou
   assert.ok(parentCss.includes('.compactBaselineNav{display:flex'))
 })
 
+
+test('when no starter check-in is saved, one primary action offers all three free tests', async () => {
+  const original = tests.slice()
+  try {
+    tests.splice(0, tests.length, ...original.map(item => ({...item, completed:false, completedAt:null})))
+    const h = render('en')
+    await h.settle()
+    assert.equal(find(h.tree, 'data-course-baseline-reused'), undefined)
+    assert.match(textOf(find(h.tree, 'data-antistress-start-first-test')), /Start my 3 free check-ins/)
+    h.unmount()
+  } finally {
+    tests.splice(0, tests.length, ...original)
+  }
+})
 
 test('three free check-ins are preselected yet both optional choices remain removable', async () => {
   const h = render('en')
