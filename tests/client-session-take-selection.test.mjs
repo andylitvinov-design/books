@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {normalizeDraft,clientPayload} from '../lib/clients/delivery-model.js'
+import {normalizeDraft,clientPayload,PRIVATE_MEDIA_BUCKET} from '../lib/clients/delivery-model.js'
 import {recordingUpload,saveRecording} from '../lib/clients/recording-upload.js'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 class AppError extends Error{constructor(code,status){super(code);this.name='AppError';this.code=code;this.status=status}}
@@ -105,7 +105,7 @@ test('selected copies preserve review-first state and existing session through l
 })
 test('UI presents server-authenticated playback, multiple checkboxes and guarded delete',()=>{
  const component=read('components/session-recording-review.jsx')
- assert.match(component,/session\.assets/)
+ assert.match(component,/session\?\.assets/)
  assert.match(component,/onCanPlay=/)
  assert.match(component,/onError=/)
  assert.match(component,/type="checkbox"/)
