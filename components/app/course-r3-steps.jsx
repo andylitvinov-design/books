@@ -408,7 +408,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     // Retain any previously chosen extras without changing a server-owned plan.
     const preferredKeys=confirmedKeys.length ? confirmedKeys : preferred
     const initial=programme?.id==='stress'
-      ? [...new Set([...starter,...preferredKeys])].slice(0,12)
+      ? confirmedKeys.length>=2 ? [...confirmedKeys]
+        : [...new Set([...starter,...preferredKeys])].slice(0,12)
       : preferredKeys.length ? preferredKeys : starter
     setChosenTests(preset ? [...preset.testKeys] : withAntistressRequiredBaseline(initial,programme?.id))
   },[stage,testsTouched,confirmedKeys,ranked,preset,programme?.id])
