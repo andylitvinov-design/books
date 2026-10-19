@@ -62,10 +62,11 @@ export function ConsultationCartEntry({ locale, id }: { locale: ServiceLocale; i
     const updated = restoreServiceCart(JSON.stringify(
       selected.includes(productId) ? selected.filter(id => id !== productId) : [...selected, productId],
     ));
-    try { window.sessionStorage.setItem(SERVICE_CART_STORAGE_KEY, JSON.stringify(updated)); }
-    catch { /* Session-only cart. The checkout also validates any query fallback. */ }
+    let stored = false;
+    try { window.sessionStorage.setItem(SERVICE_CART_STORAGE_KEY, JSON.stringify(updated)); stored = true; }
+    catch { /* Keep the selection in component state and pass validated SKUs via URL. */ }
     setSelected(updated);
-    window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));
+    if (stored) window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));
   }
 
   return (
