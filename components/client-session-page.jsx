@@ -216,7 +216,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     </section>}
 
     {!audioEmbedded&&hasFullReport&&<ClientSessionVoiceMessage session={session}
-      selector={selector} mode={mode} locale={locale} savedId={savedId}/>}}
+      selector={selector} mode={mode} locale={locale} savedId={savedId}/>}
 
     {!hasFullReport&&hasRecommendation&&<>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="summary"/>
