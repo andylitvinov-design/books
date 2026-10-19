@@ -12,6 +12,9 @@ import { createPractitionerRepository } from '@/lib/practitioners/repository';
 import { createArticleRepository } from '@/lib/practitioners/article-repository';
 const academyDirectoryPaths = ["", "/free-ai-courses", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties", "/reiki/tantra-reiki/free-initiation", "/reiki/free-practitioner-course", "/principles-of-energywork", "/reiki/kundalini-reiki/free-initiation"];
 
+// Recompute upcoming event URLs as confirmed dates pass.
+export const revalidate = 300;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = metadataBaseFor().toString().replace(/\/$/, '');
   const existing = getSitemapEntries(base);
