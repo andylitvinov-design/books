@@ -147,3 +147,6 @@
   .eventContent { padding: 10px 9px; }
 }
 @media (prefers-reduced-motion: reduce) { .detailsButton svg { transition: none; } }
+
+.eventByline{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 5px;color:#356c78;font-size:12px;font-weight:650;line-height:1.45}
+.eventByline a{color:#167c85;text-decoration:underline;text-underline-offset:2px}

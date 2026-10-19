@@ -11,6 +11,7 @@ import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-cours
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createPresentationUploadIntent, completePresentationUpload } from '@/lib/practitioners/presentation-storage'
 import { createArticleRepository } from '@/lib/practitioners/article-repository'
+import { createPractitionerEventsRepository } from '@/lib/practitioners/events-repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import { readAccountTestRating, saveAccountTestRating, readGuestTestRating, saveGuestTestRating } from '@/lib/app/test-catalog-social-proof'
 import {
@@ -366,7 +367,8 @@ async function handle(request, { params }) {
     const actor = await auth.verified(),
       repo = createAppRepository(config),
       practiceRepo = createPractitionerRepository(config),
-      articleRepo = createArticleRepository(config)
+      articleRepo = createArticleRepository(config),
+      eventsRepo = createPractitionerEventsRepository(config)
     const expectedAccount = request.headers.get('x-hh-account-id')
     if (expectedAccount && expectedAccount !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
     await consumeRate(
@@ -593,6 +595,7 @@ async function handle(request, { params }) {
       return json({ ...workspace, newServices })
     }
     if (joined === 'practice/articles' && method === 'GET') return json({items:await articleRepo.mine(actor)})
+    if (joined === 'practice/events' && method === 'GET') return json({items:await eventsRepo.mine(actor)})
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
       const store = getPrescriptionStore()
@@ -719,6 +722,15 @@ async function handle(request, { params }) {
         if(body.action === 'submit') return json(await articleRepo.submit(actor,path[2],body))
         if(body.action === 'archive') return json(await articleRepo.archive(actor,path[2],body))
         return json(await articleRepo.save(actor,path[2],body))
+      }
+    }
+    if (path[0] === 'practice' && path[1] === 'events') {
+      if (path.length === 2) return json(await eventsRepo.save(actor, null, body), 201)
+      if (path.length === 3) {
+        if (body.action === 'submit') return json(await eventsRepo.submit(actor, path[2], { expectedRevision: body.expectedRevision }))
+        if (body.action === 'pause' || body.action === 'archive')
+          return json(await eventsRepo.changeVisibility(actor, path[2], body))
+        return json(await eventsRepo.save(actor, path[2], body))
       }
     }
     if (path[0] === 'practice' && path[1] === 'services') {

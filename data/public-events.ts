@@ -17,6 +17,9 @@ export type PublicEvent = {
   title: Record<PublicLocale, string>;
   description: Record<PublicLocale, string>;
   registrationHref: string; // Approved, publicly accessible booking page.
+  organizerName?: string;
+  organizerHref?: string;
+  priceLabel?: string;
   status: "published";
 };
 
