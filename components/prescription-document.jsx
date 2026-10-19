@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getRemedy } from '@/data/remedies'
 import { RemedyContent } from './remedy-content'
+import { RemedyReportThumbnail } from './remedy-report-thumbnail'
 import { DistanceHomeopathyGuide } from './distance-homeopathy-guide'
 import { recommendationCopy, recommendationGuidance, recommendationItemType, remedySchedule, reportFollowUpDetails } from '@/lib/documents/recommendation'
 import { DocumentAutoPrint } from './document-auto-print'
@@ -121,67 +122,59 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
             ? String(item.potency ?? '').trim() : ''
           const administration = potency ? schedule.split(' · ').slice(1).join(' · ') : schedule
           const detailKeys = ['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key])
-          return <section className="canonical-remedy" key={number}>
-            <div className="canonical-remedy-heading">
-              <span className="canonical-remedy-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
-              <div className="canonical-remedy-title">
-                <h3>{item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}{potency && <span
-                  className="canonical-remedy-potency"
-                  aria-label={locale === 'ru' ? `Потенция ${potency}` : `Potency ${potency}`}
-                >{' '}{potency}</span>}</h3>
-                {administration && <p className="canonical-remedy-schedule" aria-label={administration}>
-                  {administration.split(' · ').map((part, index) => <span className="canonical-remedy-schedule-part" key={index}>
-                    {index > 0 && <span className="canonical-remedy-schedule-dot" aria-hidden="true">·</span>}
-                    <span className="canonical-remedy-schedule-chip">{part}</span>
-                  </span>)}
+          const remedy = item.remedySlug ? getRemedy(locale, item.remedySlug) : null
+          return <section className="canonical-remedy canonical-remedy--unified" key={number}>
+            <details className="canonical-remedy-profile-disclosure canonical-remedy-unified-disclosure">
+              <summary className="canonical-remedy-unified-summary">
+                <RemedyReportThumbnail src={remedy?.primary_image} number={number} />
+                <span className="canonical-remedy-unified-main">
+                  <span className="canonical-remedy-title">
+                    <strong className="canonical-remedy-unified-name">{item.displayName}{potency && <span
+                      className="canonical-remedy-potency"
+                      aria-label={locale === 'ru' ? `Потенция ${potency}` : `Potency ${potency}`}
+                    >{' '}{potency}</span>}</strong>
+                  </span>
+                  {administration && <span className="canonical-remedy-schedule" aria-label={administration}>
+                    {administration.split(' · ').map((part, index) => <span className="canonical-remedy-schedule-part" key={index}>
+                      {index > 0 && <span className="canonical-remedy-schedule-dot" aria-hidden="true">·</span>}
+                      <span className="canonical-remedy-schedule-chip">{part}</span>
+                    </span>)}
+                  </span>}
+                  {detailKeys.length > 0 && <span className="canonical-remedy-fields canonical-remedy-unified-instructions">
+                    {detailKeys.map((key) => <span className="canonical-remedy-unified-instruction" key={key}>
+                      <strong>{labels[key]}:</strong> {item[key]}
+                    </span>)}
+                  </span>}
+                </span>
+                <span className="canonical-remedy-profile-action canonical-remedy-unified-toggle">
+                  <span>{locale === 'ru' ? 'Описание' : 'Details'}</span>
+                  <span className="canonical-remedy-unified-chevron" aria-hidden="true">⌄</span>
+                </span>
+              </summary>
+              <div className="canonical-remedy-profile-content">
+                {remedy ? <>
+                  <div className="canonical-remedy-unified-profile-heading">
+                    <strong>{remedy.canonical_latin_name}</strong>
+                    <small>{locale === 'ru' ? 'Описание из библиотеки Holistic House' : 'From the Holistic House remedy library'}</small>
+                  </div>
+                  {remedy.primary_image && <figure className="canonical-remedy-profile-photo canonical-remedy-unified-full-photo">
+                    {/* Retain the actual approved library photo, not a generated substitute. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
+                  </figure>}
+                  <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url}
+                    variant="book" showEssence={false} expandSupplementary fullSource />
+                </> : <p className="canonical-remedy-unified-unavailable">
+                  {locale === 'ru' ? 'Описание этого препарата пока не добавлено в библиотеку.' : 'This remedy description is not yet available in the library.'}
                 </p>}
+                {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
+                  {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open the full remedy profile →'}
+                </Link></p>}
               </div>
-            </div>
-            {item.remedyPath && <Link className="canonical-remedy-profile-action" href={item.remedyPath}
-              aria-label={locale === 'ru' ? `Прочитать описание препарата ${item.displayName}` : `Read the profile for ${item.displayName}`}>
-              <span className="canonical-remedy-profile-action-full">{locale === 'ru' ? 'Описание препарата' : 'Remedy description'}</span>
-              <span className="canonical-remedy-profile-action-short" aria-hidden="true">{locale === 'ru' ? 'Описание' : 'Details'}</span>
-              <span aria-hidden="true">→</span>
-            </Link>}
-            {detailKeys.length > 0 && <dl className="canonical-remedy-fields">
-              {detailKeys.map((key) => <div key={key}><dt>{labels[key]}</dt><dd>{item[key]}</dd></div>)}
-            </dl>}
+            </details>
           </section>
         })}
       </section>)}
-
-      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
-        <h2>{locale === 'ru' ? 'Приложение.' : 'Appendix.'}</h2>
-        <p className="canonical-remedy-appendix-description">
-          <span className="canonical-remedy-appendix-hint">{locale === 'ru'
-            ? 'Нажмите на карточку, чтобы прочесть описание препарата.'
-            : 'Tap a card to read the remedy description.'}</span>
-          <span className="canonical-remedy-appendix-print-hint">{locale === 'ru'
-            ? 'Полные тексты описаний выбранных препаратов из библиотеки Holistic House'
-            : 'Complete library descriptions of all selected remedies'}</span>
-        </p>
-        {selectedProfiles.map(({ item, remedy }) => <details className="canonical-remedy-profile canonical-remedy-profile-disclosure" key={item.remedySlug}>
-          <summary className="canonical-remedy-profile-summary">
-            {remedy.primary_image && <span className="canonical-remedy-profile-thumb" aria-hidden="true">
-              {/* Use the original library photo, not a substitute. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={remedy.primary_image} alt="" loading="lazy" decoding="async" />
-            </span>}
-            <h3>{remedy.canonical_latin_name}</h3>
-          </summary>
-          <div className="canonical-remedy-profile-content">
-          {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">
-            {/* The published original image is retained rather than substituted or generated. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
-          </figure> : <p className="canonical-remedy-photo-unavailable">{locale === 'ru' ? 'Исходная фотография отсутствует в базе.' : 'No source photograph is available in the library.'}</p>}
-          <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url} variant="book" showEssence={false} expandSupplementary fullSource />
-          {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
-            {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open full remedy profile →'}
-          </Link></p>}
-          </div>
-        </details>)}
-      </section>}
 
       {guidance && <section className="canonical-guidance">
         <h2>{guidance.takeTitle}</h2>

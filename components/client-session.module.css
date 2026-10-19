@@ -2952,3 +2952,59 @@
     font-size: 15.5px;
   }
 }
+
+
+/* Coastal report unified remedy accordions — 2026-10-19.
+   The legacy high-specificity 2-column prescription row must not impose its
+   layout on a full-width nested disclosure. Keep patient instructions visible. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy.canonical-remedy--unified) {
+    display: block;
+    width: 100%;
+    margin-bottom: 11px;
+    padding: 0;
+    border: 1px solid #d3e3df;
+    border-left: 3px solid #70b4ad;
+    border-radius: 14px;
+    background: #fffefd;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(29,80,78,.055);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary) {
+    display: grid;
+    grid-template-columns: 65px minmax(0,1fr) auto;
+    align-items: center;
+    gap: 14px;
+    min-height: 91px;
+    margin: 0;
+    padding: 12px 15px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule) {
+    margin-top: 5px;
+    font: 550 13px/1.42 system-ui,-apple-system,sans-serif;
+  }
+}
+@media screen and (max-width: 700px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy.canonical-remedy--unified) {
+    padding: 0;
+    border-radius: 12px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary) {
+    grid-template-columns: 53px minmax(0,1fr) auto;
+    gap: 9px;
+    min-height: 74px;
+    padding: 10px 11px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule) {
+    margin-top: 4px;
+    font-size: 12.5px;
+    line-height: 1.36;
+  }
+}
+@media screen and (max-width: 360px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary) {
+    grid-template-columns: 44px minmax(0,1fr) auto;
+    gap: 7px;
+    padding: 9px 8px;
+  }
+}

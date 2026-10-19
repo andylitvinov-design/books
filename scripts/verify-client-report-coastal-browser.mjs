@@ -84,9 +84,12 @@ try{
         await expect(page.locator('#session-recommended-tests a')).toHaveCount(2)
         await expect(page.locator('#session-download a')).toHaveCount(2)
         await expect(page.locator('details.canonical-remedy-profile-disclosure')).toHaveCount(1)
+        await expect(page.locator('.canonical-remedy--unified')).toHaveCount(1)
+        await expect(page.locator('.canonical-remedy-unified-thumb img')).toHaveCount(1)
+        await expect(page.locator('.canonical-remedy-profiles')).toHaveCount(0)
         // Render the real signed JSX: the synthetic potency belongs next to the
         // remedy title, with identical typography and no duplicate regimen label.
-        const prescriptionTitle=page.locator('.canonical-remedy-title h3')
+        const prescriptionTitle=page.locator('.canonical-remedy-title .canonical-remedy-unified-name')
         await expect(prescriptionTitle.locator('.canonical-remedy-potency')).toHaveText('30')
         const titleTypography=await prescriptionTitle.evaluate(node=>{
           const label=node.querySelector('.canonical-remedy-potency')

@@ -139,11 +139,20 @@ export async function buildCoastalFixture() {
   ]).process(appStyles,{from:fileURLToPath(new URL('app/globals.css',root))})
   assert.deepEqual(compiledGlobal.warnings().map(w=>w.toString()),[])
   const scoped = scopeModules(moduleSource)
+  // Render the actual decorative thumbnail component with synthetic artwork.
+  // React hooks run through the server renderer and no private records load.
+  const thumbnailSource = await source('components/remedy-report-thumbnail.jsx')
+  const Thumbnail = transpile('components/remedy-report-thumbnail.jsx', thumbnailSource, {
+    'react': React,
+    'react/jsx-runtime': jsxRuntime,
+  }).RemedyReportThumbnail
+  assert.equal(typeof Thumbnail, 'function')
   const deps = {
     'react/jsx-runtime': jsxRuntime,
     'next/link': { __esModule: true, default: Link },
     '@/data/remedies': { getRemedy: () => specimen },
     './remedy-content': { RemedyContent: () => React.createElement('p', null, 'Synthetic appendix description. No private source material.') },
+    './remedy-report-thumbnail': { RemedyReportThumbnail: Thumbnail },
     './distance-homeopathy-guide': { DistanceHomeopathyGuide: () => null },
     '@/lib/documents/recommendation': {
       recommendationCopy: copy, recommendationGuidance: () => undefined,
