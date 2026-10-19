@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {parseSessionYouTubeUrl} from '@/lib/clients/youtube-resource'
+import {reportReusableVideoCandidates} from '@/lib/clients/report-video-candidates'
 import {normalizePhoneVideoFile} from '@/lib/clients/phone-video-file'
 import {uploadFile} from './practitioner-materials-cabinet'
 import styles from './client-session.module.css'
@@ -12,32 +13,7 @@ async function materialRequest(path,method='GET',body){
   if(!response.ok)throw new Error(result.error||'MATERIAL_UNAVAILABLE')
   return result
 }
-const VIDEO_ROLES=new Set(['additional','meditation'])
 const videoMime=new Set(['video/mp4','video/quicktime'])
-
-export function reportReusableVideoCandidates(session){
-  const resources=[...(session?.published?.plan?.resources||[]),...(session?.draft?.plan?.resources||[])]
-  const seen=new Set(),links=[]
-  for(const resource of resources){
-    // Earlier reports sometimes stored a YouTube link as a generic resource,
-    // or showed it at the TOP rather than explicitly in the "materials" slot.
-    const parsed=parseSessionYouTubeUrl(resource?.url)
-    if(!parsed||seen.has(parsed.id))continue
-    seen.add(parsed.id)
-    links.push({id:parsed.id,url:parsed.url,title:resource?.title||'YouTube',kind:'youtube'})
-  }
-  const assets=new Map((session?.assets||[])
-    .filter(asset=>asset.kind==='video'&&asset.status==='ready'&&asset.scope==='client'&&
-      videoMime.has(asset.mime)).map(asset=>[asset.id,asset]))
-  const videos=[],used=new Set()
-  for(const item of [...(session?.published?.media||[]),...(session?.draft?.media||[])]){
-    if(!item||item.scope!=='client'||!VIDEO_ROLES.has(item.role)||
-      !assets.has(item.assetId)||used.has(item.assetId))continue
-    used.add(item.assetId)
-    videos.push({id:item.assetId,title:item.title||'Video',kind:'session'})
-  }
-  return {links,videos}
-}
 
 // This is always available in the report editor, including when its session
 // has no imported materials yet. Never expose source media URLs or client data.
