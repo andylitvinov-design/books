@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -14,6 +15,14 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "./review.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
+
+/* Existing approved public assets, displayed as full-bleed scenes rather than small cards. */
+const situationImages = [
+  "/images/holistic-house/hero-olive-incense.webp",
+  "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  "/images/holistic-house/report-lighthouse-coast.webp",
+] as const;
 
 const copy = {
   ru: {
@@ -352,15 +361,29 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           </div>
           <p className={styles.safety}>{t.transparency}</p>
         </div>
+        <div className={styles.heroScene}>
+          <Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 767px) 100vw, 44vw" />
+          <div className={styles.heroSceneCaption}><strong>{t.practitioner}</strong><span>{t.experience}</span></div>
+        </div>
       </section>
 
       <section className={styles.situations} id="situations" aria-labelledby="review-situations-title">
         <p className={styles.eyebrow}>{topic.eyebrow}</p>
         <h2 id="review-situations-title">{topic.title}</h2>
         <p className={styles.situationsLead}>{topic.lead}</p>
-        <div className={styles.situationGrid}>
-          {topic.cards.map((card) => (
-            <article key={card.title}><h3>{card.title}</h3><p>{card.text}</p></article>
+        <div className={styles.situationScenes}>
+          {topic.cards.map((card, index) => (
+            <article className={styles.situationScene} key={card.title}>
+              <div className={styles.sceneImage}>
+                <Image src={situationImages[index]} alt="" fill sizes="(max-width: 767px) 100vw, 52vw" />
+              </div>
+              <div className={styles.sceneCopy}>
+                <span className={styles.sceneNumber}>{String(index + 1).padStart(2, "0")} / 04</span>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+                <a href="#request-free-review">{t.request}<ArrowRight size={18} aria-hidden="true" /></a>
+              </div>
+            </article>
           ))}
         </div>
       </section>
@@ -369,10 +392,15 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         <p className={styles.eyebrow}>{outcome.eyebrow}</p>
         <h2 id="review-outcomes-title">{outcome.title}</h2>
         <p className={styles.outcomeIntro}>{outcome.intro}</p>
-        <div className={styles.outcomeGrid}>
-          {outcome.cards.map((card, index) => <article key={card.title}>
-            <span>0{index + 1}</span><h3>{card.title}</h3><p>{card.text}</p>
-          </article>)}
+        <div className={styles.outcomeScene}>
+          <div className={styles.outcomeImage}>
+            <Image src="/images/holistic-house/course-focus-mountain-boy.webp" alt="" fill sizes="(max-width: 767px) 100vw, 48vw" />
+          </div>
+          <div className={styles.outcomeGrid}>
+            {outcome.cards.map((card, index) => <article key={card.title}>
+              <span>0{index + 1}</span><h3>{card.title}</h3><p>{card.text}</p>
+            </article>)}
+          </div>
         </div>
       </section>
 
@@ -382,14 +410,19 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           <h2 id="review-steps-title">{t.stepsHeading}</h2>
           <p>{t.stepsLead}</p>
         </header>
-        <ol className={styles.steps}>
-          {t.steps.map((step, index) => (
-            <li key={step.title}>
-              <span className={styles.stepNumber}>0{index + 1}</span>
-              <div><h3>{step.title}</h3><p>{step.text}</p></div>
-            </li>
-          ))}
-        </ol>
+        <div className={styles.stepsScene}>
+          <div className={styles.stepsImage}>
+            <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width: 767px) 100vw, 44vw" />
+          </div>
+          <ol className={styles.steps}>
+            {t.steps.map((step, index) => (
+              <li key={step.title}>
+                <span className={styles.stepNumber}>0{index + 1}</span>
+                <div><h3>{step.title}</h3><p>{step.text}</p></div>
+              </li>
+            ))}
+          </ol>
+        </div>
         <details className={styles.advancedIntake}>
           <summary>{outcome.advanced}</summary>
           <FreeSituationReviewForm locale={locale} />
