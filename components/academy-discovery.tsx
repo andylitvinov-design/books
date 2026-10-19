@@ -211,10 +211,10 @@ export function AcademyDiscovery({
     const now = Date.now();
     return events.filter((event) => (
       event.status === "published"
-      && /(?:Z|[+-]\\d\\d:\\d\\d)$/.test(event.startsAt)
+      && /(?:Z|[+-]\d{2}:\d{2})$/.test(event.startsAt)
       && Number.isFinite(Date.parse(event.startsAt))
       && Date.parse(event.startsAt) >= now
-      && /^(?:\\/(?!\\/)|https:\\/\\/[^\\s]+$)/.test(event.registrationHref.trim())
+      && (event.registrationHref.startsWith("https://") || (event.registrationHref.startsWith("/") && !event.registrationHref.startsWith("//")))
     )).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
   }, [events]);
   const matchedEvents = useMemo(() => upcomingEvents.filter((event) =>
