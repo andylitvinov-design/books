@@ -42,7 +42,7 @@ test('Nine owner-approved Kundalini slides appear in exact order, with their exa
     assert.equal(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS[i],id)
     assert.ok(extract.includes('id: "'+id+'"'),id)
     assert.ok(extract.includes(questions[i]),id)
-    assert.ok(extract.indexOf('id: "'+id+'"')<extract.indexOf('id: "'+next+'"'),id+' order')
+    assert.ok(curriculum.indexOf('id: "'+id+'"')<curriculum.indexOf('id: "'+next+'"'),id+' order')
     assert.ok(ENERGYWORK_LESSON_ANSWER_IDS.includes(id),id)
     assert.equal(ENERGYWORK_QUESTIONS[id],i===5?'text':'choice')
   }
