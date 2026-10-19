@@ -20,7 +20,7 @@ test("Tantra Reiki has one real hero heading and two distinct first-screen learn
   assert.match(page, /className="tantra-course-hero__tests-cta"/);
   assert.match(page, /reiki-guide\?course=tantra&locale=/);
   for (const phrase of [
-    "Personal initiation requires Andrey", "согласования с Андреем", "requiere confirmación de Andrey",
+    "subject to Andrey's confirmation", "согласованию с Андреем", "confirmación de Andrey",
   ]) assert.ok(page.includes(phrase), phrase);
 });
 
