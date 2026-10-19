@@ -34,6 +34,10 @@
 .practice{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .feel{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
 .affirmation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.ocean{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.ocean::after{background:linear-gradient(180deg,rgba(236,251,249,.30),rgba(217,242,244,.54))}
+.ocean .stage{align-items:center}
+.ocean .panel{margin:auto}
 .save{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .frame.receipt{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
 .header,.stage,.footer{position:relative;z-index:1}
