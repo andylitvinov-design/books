@@ -7,7 +7,6 @@ on:
       - 'app/admin/growth-studio/**'
       - 'components/growth-studio.*'
       - 'components/growth-studio-bulk.jsx'
-      - 'components/growth-studio-bulk.jsx'
       - 'components/prescription-admin-header.jsx'
       - 'components/practitioner-cabinet.jsx'
       - 'components/app/practice-workspace.jsx'
@@ -40,7 +39,7 @@ jobs:
           node --check lib/growth-studio/store.js
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
-        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs
+        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs
 
   next-build:
     name: Next.js production build / Growth Studio
