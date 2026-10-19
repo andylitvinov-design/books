@@ -1,8 +1,7 @@
 import { searchResearchCatalogue } from '@/lib/assessments/research-directory-2026'
 
 export const runtime='nodejs'
-export const dynamic='force-static'
-export const revalidate=600
+export const dynamic='force-dynamic'
 
 // Public metadata-only route; never exports protected questionnaire items,
 // scoring keys, normative scores, raw PDFs or user-sensitive information.
