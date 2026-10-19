@@ -532,6 +532,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
             <div className={styles.rate}><strong>€60</strong><span>{t.rateSixty}</span></div>
           </div>
         </section>
+        <ReikiPublicReviews locale={locale} />
         <section className={styles.finalCta}>
           <div><p className={styles.eyebrow}>{t.subtitle}</p><h2>{t.footerTitle}</h2><p>{t.footerLead}</p></div>
           <div className={styles.finalCtaActions} data-energywork-final-choices>
@@ -539,7 +540,6 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
             <ContactChannelChooser locale={locale} whatsappUrl={personalSessionUrl} label={t.finalPersonal} className={styles.personalButton} attributes={{ "data-energywork-final-personal": "true" }} />
           </div>
         </section>
-        <ReikiPublicReviews locale={locale} />
         <p className={styles.disclaimer}>{t.notice}</p>
       </div>
     </main>
