@@ -387,7 +387,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           <label><input type="checkbox" checked={needsReplyOnly} onChange={event=>setNeedsReplyOnly(event.target.checked)} />
             {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Needs reply'}</label>
         </div>
-        {visibleThreads.length===0&&<p className={styles.empty}>{threads.length===0?t.empty:lang==='ru'?'Нет диалогов по выбранному фильтру.':lang==='es'?'Ninguna conversación coincide.':'No conversations match your filters.'}</p>}
+        {visibleThreads.length===0&&<p className={styles.empty}>{threads.length===0?t.empty:lang==='ru'?'Нет совпадений среди загруженных диалогов. Можно загрузить ещё.':lang==='es'?'No hay coincidencias entre los diálogos cargados. Puedes cargar más.':'No matching loaded conversations. You can load more.'}</p>}
         {visibleThreads.map(thread=><button type="button" key={thread.id}
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
