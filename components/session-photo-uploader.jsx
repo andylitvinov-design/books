@@ -15,6 +15,7 @@ const MAX_PHOTOS_PER_SELECTION=12
 function sourcePhotoMime(file) {
   const provided=(file?.type||'').split(';')[0].toLowerCase()
   if(INPUT_TYPES.has(provided))return provided
+  if(provided==='image/jpg'||provided==='image/pjpeg')return 'image/jpeg'
   if(provided&&provided!=='application/octet-stream')return provided
   const extension=/\.([a-z0-9]+)$/i.exec(file?.name||'')?.[1]?.toLowerCase()
   return ({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',
@@ -162,7 +163,7 @@ export function SessionPhotoUploader({clientId,sessionId:providedSessionId=null,
     if(code==='MEDIA_STORAGE_UNAVAILABLE'||code==='MEDIA_STORAGE_NOT_CONFIGURED')
       return ru?'Приватное хранилище временно недоступно. Попробуйте позже.':'Private storage is temporarily unavailable. Please try again.'
     if(code==='MEDIA_TYPE_NOT_ALLOWED'||code==='PHOTO_FORMAT_NOT_ALLOWED')return ru?'Выберите JPEG, PNG или WebP. HEIC преобразуется, если браузер его поддерживает.':'Use JPEG, PNG or WebP. HEIC is converted if supported by your browser.'
-    if(code==='PHOTO_SIZE_NOT_ALLOWED'||code==='MEDIA_SIZE_NOT_ALLOWED')return ru?'Фото слишком большое (максимум 5 МБ после обработки).':'Photo exceeds the 5 MB processed-file limit.'
+    if(code==='PHOTO_SIZE_NOT_ALLOWED'||code==='MEDIA_SIZE_NOT_ALLOWED')return ru?'Фото слишком большое (максимум 3 МБ после обработки).':'Photo exceeds the 3 MB processed-file limit.'
     if(code==='SESSION_PHOTO_LIMIT')return ru?'В одной сессии допускается до 12 фото. Уберите лишние в редакторе.':'Up to 12 photos per session. Remove extras in the session editor.'
     if(code==='ORIGIN_DENIED')return ru?'Откройте редактор на основном сайте и повторите.':'Open the editor on the primary site and retry.'
     return ru?'Не удалось загрузить фото. Можно повторить.':'Could not upload this photo. You can retry.'
