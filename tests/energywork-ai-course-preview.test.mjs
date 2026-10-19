@@ -86,7 +86,7 @@ test('Sun practice uses two optional choices for the one-minute exercise', () =>
 
 test('Five lessons have separate post-meditation reports and question answers', () => {
   const assignments = [
-    ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-06'],
+    ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-study-04'],
     ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-06'],
     ['initiation','end-01','init-01'],
   ]
