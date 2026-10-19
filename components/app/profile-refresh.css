@@ -557,3 +557,173 @@
 .hh-profile-domains[data-profile-mode="account"] > .hh-domain-footer-actions {
   margin: 0 0 12px;
 }
+
+/* Profile 2026-10-19: latest private report first; the full archive opens on request.
+   Keep the development programme immediately after this compact report card. */
+.hh-profile-domains[data-profile-mode="account"] > .hh-domain-report-archive {
+  margin: 0 0 12px;
+  padding: clamp(14px, 2.2vw, 22px);
+  border: 1px solid #cbe5dc;
+  border-radius: 21px;
+  background: #fffdfa;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin-bottom: 14px;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 14px;
+  background: #e5f3ed;
+  color: #087c70;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading-copy { min-width: 0; flex: 1; }
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading-copy h1 {
+  margin: 0 0 3px!important;
+  font: 400 clamp(26px, 3vw, 34px)/1.1 Georgia,serif!important;
+  letter-spacing: -.025em;
+  color: #174e48;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading-copy p {
+  margin: 0!important;
+  font: 400 12.5px/1.4 system-ui,sans-serif!important;
+  color: #7a7269;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-private {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 7px 9px;
+  border-radius: 999px;
+  border: 1px solid #c2e2d3;
+  background: #e9f6ee;
+  color: #286f5e;
+  font: 750 10px/1 system-ui,sans-serif;
+  letter-spacing: .055em;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-latest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid #d8ebe3;
+  border-radius: 16px;
+  background: linear-gradient(115deg, #f2f8f3, #f8faf6);
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-latest-copy { display: grid; gap: 4px; min-width: 0; }
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-eyebrow {
+  color: #23776e;
+  font: 750 10px/1.3 system-ui,sans-serif;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-latest-copy strong {
+  color: #183f48;
+  font: 600 17px/1.24 system-ui,sans-serif;
+  overflow-wrap: anywhere;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-latest-copy time {
+  color: #737e79;
+  font: 450 12px/1.35 system-ui,sans-serif;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 42px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  background: #087483;
+  color: #fff!important;
+  font: 700 13px/1.2 system-ui,sans-serif;
+  text-decoration: none!important;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-open:hover { background: #085e6b; }
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-empty {
+  margin: 0 0 12px!important;
+  padding: 11px 12px;
+  border-radius: 13px;
+  background: #f7f8f3;
+  color: #737c77;
+  font: 400 13px/1.5 system-ui,sans-serif!important;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-top: 11px;
+  border: 1px solid #c9e7e6;
+  border-radius: 12px;
+  background: #eaf8f7;
+  color: #086d77;
+  text-align: left;
+  font: 700 13px/1.25 system-ui,sans-serif;
+  cursor: pointer;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-toggle > span:first-child { flex: 1; }
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-number {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: #d1efec;
+  font: 700 11px/1 system-ui,sans-serif;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-toggle > svg {
+  flex-shrink: 0;
+  transition: transform .18s ease;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-toggle > svg.is-open { transform: rotate(180deg); }
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-open:focus-visible,
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-toggle:focus-visible {
+  outline: 3px solid #0a9ca6;
+  outline-offset: 3px;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-full {
+  padding-top: 15px;
+  margin-top: 15px;
+  border-top: 1px solid #deece5;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-full[hidden] { display: none!important; }
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-full .hh-analysis-reports-head { display: none; }
+.hh-profile-domains[data-profile-mode="account"] .hh-account-report-full .hh-analysis-reports { margin: 0; }
+
+@media (max-width:560px) {
+  .hh-profile-domains[data-profile-mode="account"] > .hh-domain-report-archive {
+    padding: 13px 12px;
+    margin-bottom: 9px;
+    border-radius: 17px;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading { gap: 9px; margin-bottom: 11px; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-icon {
+    width: 40px; height: 40px; flex-basis: 40px; border-radius: 12px;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading-copy h1 { font-size: 25px!important; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading-copy p { font-size: 11px!important; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-private {
+    padding: 6px 7px; font-size: 9px;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-private svg { display: none; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-latest {
+    align-items: stretch; flex-direction: column; gap: 10px; padding: 12px;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-latest-copy strong { font-size: 16px; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-open { width: 100%; min-height: 42px; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-account-report-toggle { margin-top: 9px; }
+}
