@@ -415,6 +415,7 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
   const [remaining, setRemaining] = useState(durationSeconds);
   const [running, setRunning] = useState(false);
   const deadline = useRef(0);
+  const pendingStart = useRef(0);
   const ocean = useOceanPracticeAudio();
 
   useEffect(() => {
@@ -434,8 +435,9 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
   // It never resumes audibly without another explicit user tap.
   useEffect(() => {
     const hide = () => {
-      if (document.hidden && running) {
-        setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+      if (document.hidden) {
+        pendingStart.current += 1;
+        if (running) setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
         setRunning(false);
         ocean.pause();
       }
@@ -444,24 +446,35 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
     return () => document.removeEventListener("visibilitychange", hide);
   }, [running, ocean.pause]);
 
-  function toggle() {
+  // Browser media must begin before a sound-enabled practice clock starts.
+  async function toggle() {
     if (running) {
+      pendingStart.current += 1;
       setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
       setRunning(false);
       ocean.pause();
     } else {
+      const ticket = ++pendingStart.current;
+      const soundStarted = await ocean.play();
+      if (ticket !== pendingStart.current || !soundStarted || document.hidden) return;
       deadline.current = Date.now() + (remaining || durationSeconds) * 1000;
       if (remaining === 0) setRemaining(durationSeconds);
-      ocean.play();
       setRunning(true);
     }
   }
 
   function reset() {
-    ocean.pause();
+    pendingStart.current += 1;
+    ocean.reset();
     setRunning(false);
     setRemaining(durationSeconds);
   }
+
+  useEffect(() => {
+    if (!running || !ocean.enabled || !["loading", "blocked", "paused"].includes(ocean.status)) return;
+    setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+    setRunning(false);
+  }, [running, ocean.enabled, ocean.status]);
 
   return <div className={styles.practiceTimer} role="group" aria-label={locale === "ru" ? "Таймер необязательной практики" : "Optional practice timer"}>
     <span><Clock3 size={17} aria-hidden="true" />{locale === "ru" ? "Мягкая практика · по желанию" : "Gentle practice · optional"}
@@ -470,10 +483,12 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
     <strong aria-label={locale === "ru" ? "Осталось секунд" : "Seconds remaining"}>
       {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
     </strong>
-    <button type="button" onClick={toggle}>{running ? (locale === "ru" ? "Пауза" : "Pause") :
+    <button type="button" onClick={toggle} disabled={ocean.enabled && ocean.status === "loading"}>{running ? (locale === "ru" ? "Пауза" : "Pause") :
       (remaining < durationSeconds && remaining > 0 ? (locale === "ru" ? "Продолжить" : "Resume") :
         (locale === "ru" ? (durationSeconds === 60 ? "Начать 1 минуту" : "Начать 2 минуты") : (durationSeconds === 60 ? "Start 1 minute" : "Start 2 minutes")))}</button>
     <button type="button" onClick={reset}>{locale === "ru" ? "Сбросить" : "Reset"}</button>
+    {ocean.enabled && ocean.status === "blocked" ? <small role="alert">{locale === "ru" ? "Звук не запустился. Проверьте громкость и попробуйте снова или выключите волны." : "Sound did not start. Check volume and try again, or turn Waves off."}</small> : null}
+    {ocean.enabled && ocean.status === "loading" ? <small role="status">{locale === "ru" ? "Загружается аудио…" : "Loading waves and soft music…"}</small> : null}
   </div>;
 }
 
