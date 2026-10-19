@@ -22,7 +22,7 @@ const TEXT = {
     use:'Ответы показаны на языке курса; слова ученика не редактируются преподавателем.',
     emptySearch:'Ничего не найдено', progress:'Прогресс', note:'Личные материалы не публикуются автоматически.',
     moderation:'Отзывы для лендинга', moderationHint:'Только после отдельного согласия ученика. Проверьте, нет ли в тексте контактов или частной информации.',
-    pending:'Ожидает проверки', approved:'Опубликован', rejected:'Отклонён', approve:'Опубликовать', reject:'Отклонить',reviewEmpty:'Пока нет заявок на публикацию.',
+    pending:'Ожидает проверки', approved:'Опубликован', rejected:'Отклонён', approve:'Опубликовать', reject:'Отклонить',unpublish:'Снять с публикации',reviewEmpty:'Пока нет заявок на публикацию.',
   },
   en: {
     title:'Reiki Practitioner · CRM',
@@ -40,7 +40,7 @@ const TEXT = {
     use:'Answers are shown in the course language; student text cannot be edited here.',
     emptySearch:'No matches', progress:'Progress', note:'Private course materials are never auto-published.',
     moderation:'Course landing reviews', moderationHint:'Learners opt in separately. Check that a review contains no contact details or private information before approving.',
-    pending:'Pending approval', approved:'Published', rejected:'Rejected', approve:'Publish', reject:'Reject',reviewEmpty:'No public review submissions yet.',
+    pending:'Pending approval', approved:'Published', rejected:'Rejected', approve:'Publish', reject:'Reject',unpublish:'Unpublish',reviewEmpty:'No public review submissions yet.',
   },
 }
 const SENTENCE = /^Feeling:(10|[0-9])\/10\n([\s\S]*)$/
@@ -197,7 +197,8 @@ export default function AdminReikiLeads() {
             <button type="button" disabled={busy}
               onClick={()=>void moderateReview(review,'approved')}>{copy.approve}</button>
             <button type="button" disabled={busy} onClick={()=>void moderateReview(review,'rejected')}>{copy.reject}</button>
-          </div> : null}
+          </div> : review.status==='approved' ? <button type="button" disabled={busy}
+            className={styles.unpublishButton} onClick={()=>void moderateReview(review,'rejected')}>{copy.unpublish}</button> : null}
         </article>)}
       </div> : <p>{copy.reviewEmpty}</p>)}
     </section>
