@@ -113,7 +113,7 @@ export default function NotificationSettings({locale='en',compact=false,accountI
     await api('notifications/test',{},session)
     setNotice(c.done)
   })}
-  return <section className={styles.root} aria-label={c.title}>
+  return <section id="hh-phone-notifications" className={styles.root} aria-label={c.title}>
     <div className={styles.heading}><span className={styles.kicker}><Bell size={15}/> HOLISTIC HOUSE</span>
       <h2>{c.title}</h2><p>{c.intro}</p></div>
     <div className={styles.preview} aria-label={c.sample}>
