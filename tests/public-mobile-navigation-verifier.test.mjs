@@ -39,7 +39,7 @@ async function scenario(locale, surface, fault, visible = true) {
   if (fault === 'wrong events destination') anchors[4].props.href = '/' + locale + '/client';
   if (fault === 'wrong house destination') anchors[5].props.href = '/es/app';
   if (fault === 'wrong events label') anchors[4].props.children = 'My tests';
-  if (fault === 'wrong house label') anchors[5].props.children = 'Cabinet';
+  if (fault === 'wrong house label') anchors[5].props.children = 'My House';
   if (fault === 'wrong accessible name') anchors[4].props['aria-label'] = 'Wrong';
   if (fault === 'missing link') anchors.pop();
   if (fault === 'extra link') anchors.push({ type: 'a', props: { href: '/extra', 'data-nav-item': 'extra' } });
