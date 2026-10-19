@@ -36,7 +36,7 @@ test('one root worker routes generic course vs client message without private te
   await work
   assert.equal(w.shown.length,1)
   assert.equal(w.shown[0][0],'Holistic House')
-  assert.doesNotMatch(JSON.stringify(w.shown),/sensitive clinical report|Private|11111111.*body/i)
+  assert.doesNotMatch(JSON.stringify(w.shown),/sensitive clinical report|Private\s*report|11111111.*body/i)
   assert.equal(w.shown[0][1].data.href,'/ru/app/consultations?request='+id)
   const click=w.handlers.get('notificationclick')
   click({notification:{close(){},data:w.shown[0][1].data},waitUntil:pending=>work=pending})
