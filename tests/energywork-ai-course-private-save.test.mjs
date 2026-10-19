@@ -124,8 +124,8 @@ test('Existing encrypted owner-only RLS is retained and version upgrade is addit
   assert.match(upgrade,/grant update \(course_version\) on app_private\.academy_course_progress to hh_app_backend/)
   assert.match(latest,/check \(course_version in \('2026-10-17\.p0', '2026-10-18\.p1', '2026-10-19\.p2'\)\)/)
   assert.match(p3Migration, /2026-10-19\.p3/)
-  assert.match(p4Migration, /2026-10-19\\.p4/)
-  assert.match(p4Migration, /alter column course_version set default '2026-10-19\\.p4'/)
+  assert.match(p4Migration, /2026-10-19\.p4/)
+  assert.match(p4Migration, /alter column course_version set default '2026-10-19\.p4'/)
   assert.doesNotMatch(p4Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p3Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(upgrade,/drop table|delete from|drop policy|drop column/i)
@@ -155,7 +155,7 @@ test('Existing p0 learner keeps private answers and is resumed at first unskippe
   assert.equal(energyworkP3ResumeId('tan-04'),'tan-04')
   assert.match(repository,/ENERGYWORK_P2_VERSION/)
   assert.match(repository,/energyworkP2ResumeId\(row\.slide_id\)/)
-  assert.match(repository, /energyworkP3ResumeId\\(row\\.slide_id\\)/)
+  assert.match(repository, /energyworkP3ResumeId\(row\.slide_id\)/)
 })
 
 test('Server requires owner, consent, optimistic revision and per-owner encrypted writes', () => {
