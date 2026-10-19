@@ -68,3 +68,19 @@ Use one consistent **“During the past seven days” / «За последни�
 - Present trends only for **identical verified versions/translation/scorer/timeframe**. Two values yield a numeric difference, not confirmed improvement; three or more values may reveal a *descriptive* pattern, still without causal proof or measurement-error-based significance.
 - For check-ins administered before/after a lesson, explicitly disclose that the comparison is **self-reported momentary experience**, not independent proof that the practice worked.
 - Use the published scale's exact cutoffs only for the exact allowed instrument version; leave authored tools non-diagnostic. Show appropriate human help language for concerning symptoms without classifying a single score as danger or normality.
+
+
+## Full original-questionnaire editorial review ledger (19 October 2026)
+
+Two **non-patient-data, source-derived** CSV registers have been added:
+
+- [73 current original HH questionnaire families](hh-original-family-review-2026-10-19.csv): one row per original key, latest registered source version, source-language availability, registered question and dimension counts, singleton notes and a preliminary **review queue** (P0/P1/P2).
+- [137 EN configured dimensions](hh-original-dimension-review-2026-10-19.csv): version-specific construct labels, calculation methods, exact question ID links, direct/reverse item links and follow-up reviewers' tasks.
+
+These are **technical review queues, NOT a content-validity score or clinical ranking**. All 73 rows are explicitly marked as needing expert item review, respondent comprehension interviews and independently collected psychometric evidence. P0 means priority for *human review* because of possible sensitive interpretation, mixed source constructs or high everyday prominence. It is not a claim that the test is unsafe, invalid or diagnosable.
+
+The 137-dimensional second ledger covers the latest-version EN **explicit configured scorers** only; the 0–10 direct `hh-current-state`, eight `hh-weekly-pulse` ratings and dedicated scorer families are shown in the 73-family ledger but do not have a configured-scale row. The pinned 18 October complete source inventory remains the authority for all historical versions and specialised scorers. "Latest registered" is not automatically "clinically qualified" or an indicator of current deployment.
+
+**Specific content alert:** `hh-overthinking-loop` and `hh-screen-saturation` v2 each have a one-item domain implemented mathematically as a mean of one response. The number is correct, but **internal consistency cannot be estimated for one item**. The report explanation now identifies it as one standalone rating, without changing its immutable scorer. The multi-domain `hh-resource-pulse` likewise has individual direct responses; these cannot be treated as a single validated latent factor merely because they share a heading.
+
+**Evidence and release status:** the ledgers and the scorer/report guard are software work. They do **not** replace an independent per-item COSMIN content validity study, consented respondent interviews in each language, and a separately planned pilot study of reliability/measurement error and meaningful change.
