@@ -16,8 +16,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 70, "One consecutive course must have 70 screens");
-const milestones = new Set([1,2,4,5,6,8,11,12,14,15,16,19,21,24,25,26,34,41,49,56,64,70]);
+assert.equal(expectedSequence.length, 69, "One consecutive course must have 70 screens");
+const milestones = new Set([1,2,4,5,6,8,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,69]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -170,7 +170,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p7");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p8");
 
   // Opening the bottom hint should consume height in the flex column,
   // shrinking the slide instead of overlaying its contents.
@@ -280,14 +280,8 @@ async function exerciseJourney(page, locale, width) {
       await expect(nextButton).toBeDisabled();
       await answer.fill(locale === "ru" ? "Мой короткий ответ по материалу." : "My short answer from the guide.");
       if (id === "tan-study-02") {
-        const question = page.locator('[data-energywork-slide-id="tan-study-02"]');
-        await expect(question.locator("textarea")).toHaveCount(1);
-        await expect(question.locator("[data-tantra-study-combined]")).toContainText(
-          locale === "ru" ? "Для каких целей" : "For what purposes"
-        );
+        await expect(page.locator("[data-tantra-study-combined]")).toHaveCount(0);
         await expect(page.locator('textarea[id="answer-tan-study-03"]')).toHaveCount(0);
-        // One complete response unlocks Continue for both question IDs.
-        await expect(nextButton).toBeEnabled();
       }
       await expect(nextButton).toBeEnabled();
     }
@@ -296,7 +290,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 70 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 69 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));

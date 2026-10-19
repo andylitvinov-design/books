@@ -29,7 +29,6 @@ const TANTRA_STUDY_HINT_ANCHORS: Record<string, string> = {
   "tan-study-02": "#tantra-original-author-research",
   "tan-study-03": "#tantra-full-source",
   "tan-study-04": "#tantra-full-source",
-  "tan-study-05": "#tantra-levels",
   "tan-study-06": "#tantra-original-master-programme",
   "tan-study-07": "#tantra-original-master-programme",
 };
@@ -1136,7 +1135,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <div className={styles.reviewRows}>
                     {initiationItems.map((item) => (
                       <div className={styles.reviewRow} key={item.lesson}>
-                        <strong>{item.title}{item.lesson === "kundalini" ? ` · ${item.questionCount}/9` : ["tantra", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
+                        <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
                         <div>
                           <button type="button" onClick={() => jumpToSlide(item.reportId)}
                             className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
@@ -1305,7 +1304,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <div className={styles.reviewRows}>
                       {initiationItems.map((item) => (
                         <div className={styles.reviewRow} key={item.lesson}>
-                          <strong>{item.title}{item.lesson === "kundalini" ? ` · ${item.questionCount}/9` : ["tantra", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
+                          <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
                           <div>
                             {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
                             {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}

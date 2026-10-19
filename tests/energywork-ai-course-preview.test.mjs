@@ -12,12 +12,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 70 stable editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 69 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p7"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p8"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 70)
+  assert.equal(ids.length, 69)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -86,7 +86,7 @@ test('Sun practice uses two optional choices for the one-minute exercise', () =>
 
 test('Five lessons have separate post-meditation reports and question answers', () => {
   const assignments = [
-    ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-06'],
+    ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-study-04'],
     ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-06'],
     ['initiation','end-01','init-01'],
   ]
@@ -115,7 +115,9 @@ test('Guest answers stay unsaved; consented Google learners use private versione
   assert.match(learner, /950\)/)
   assert.match(learner, /const \[answers, setAnswers\] = useState<AnswerMap>\(\{\}\)/)
   assert.match(learner, /navigator\.clipboard\.writeText\(notes\)/)
-  assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
+  // Explicit, time-limited OAuth handoff is permitted; no client-side persistent answer store.
+  assert.doesNotMatch(learner, /localStorage\s*[.\[]|(?<!app)fetch\(|XMLHttpRequest|sendBeacon/)
+  assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
   assert.match(learner, /maxLength=\{isMeditationFeedback \? undefined : 1600\}/)
   assert.doesNotMatch(learner, /aria-pressed=\{path === choice\.id\}|choosePath\(/)
   assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing \|\| otherStudyMissing\}/)

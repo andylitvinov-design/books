@@ -19,9 +19,9 @@ test('Approved scenic design is preserved across new unified five-lesson course'
   assert.match(css, /\.page\[data-course-theme="reiki-scenic-v1"\]/)
   assert.match(css, /course-focus-mountain-boy\.webp/)
   assert.match(design, /Owner approval:.*18 October 2026/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p7"/)
-  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p7')
-  assert.equal(energyworkSequence().length,70)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p8"/)
+  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p8')
+  assert.equal(energyworkSequence().length,69)
   for(const legacyPath of ['yggdrasil','tantra','kundalini'])
     assert.deepEqual(energyworkSequence(legacyPath),energyworkSequence())
 })
@@ -46,7 +46,9 @@ test('Every type of teaching screen uses existing glass typography and safe cont
   assert.match(learner, /onClick=\{copyNotes\}/)
   assert.match(learner, /onClick=\{\(\) => window\.print\(\)\}/)
   assert.doesNotMatch(learner, /autoplay|autoPlay/)
-  assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]/)
+  // Short-lived same-tab OAuth handoff uses sessionStorage; regular answers stay server-encrypted.
+  assert.doesNotMatch(learner, /localStorage\s*[.\[]/)
+  assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
 })
 
 test('Welcome keeps the free course scenic illustration and three benefits while describing all five lessons', () => {
@@ -61,9 +63,9 @@ test('Welcome keeps the free course scenic illustration and three benefits while
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
 })
 
-test('Course has teacher initiation readiness checklist with five private reports + twenty-five answers', () => {
+test('Course has teacher initiation readiness checklist with five private reports + twenty-three answers', () => {
   assert.equal(ENERGYWORK_REPORT_IDS.length,5)
-  assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,25)
+  assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,23)
   assert.match(learner, /const initiationReady = readyCount === readyTargetCount/)
   assert.match(learner, /data-initiation-readiness/)
   assert.match(css, /\.page\[data-course-theme\] \.reviewChecklist/)
