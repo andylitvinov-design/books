@@ -10,7 +10,7 @@ const eventChannels = ["eventbrite", "meetup", "luma", "allevents", "humanitix",
 
 test("all organic event handoff channels have an owner-confirmed CRM source", () => {
   const ui = read("components/app/crm-marketing.jsx");
-  const migration = read("supabase/migrations/20261019190000_hh_crm_event_channel_sources_20261019.sql");
+  const migration = read("supabase/migrations/20261019174844_hh_crm_event_channel_sources_20261019.sql");
   const referrals = read("lib/organic-event-referrals.js");
   for (const source of eventChannels) {
     assert.ok(MARKETING_SOURCES.includes(source), source + " server missing");
