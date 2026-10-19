@@ -193,7 +193,7 @@
   .avatar { flex-basis: 38px; width: 38px; height: 38px; border-radius: 11px; font-size: 22px; }
   .details strong { font-size: 15px; }
   .meta { font-size: 11px; gap: 5px 7px; }
-  .actions { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .actions { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; gap: 7px; }
   .actions a { width: 100%; min-width: 0; }
   .actions .primary, .view { min-height: 44px; padding: 8px 10px; font-size: 12px; }
 }
@@ -201,4 +201,71 @@
   .shell :global(.prescription-admin-wordmark) strong { font-size: 17px !important; }
   .shell :global(.prescription-admin-header-actions .site-language-switch button) { padding-inline: 5px !important; }
   .top .primary, .back { font-size: 11px; }
+}
+
+/* Report-wide sorting; one row on compact phones instead of an oversized form. */
+.sortToggle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -2px 0 16px;
+}
+.sortToggle span {
+  margin-right: 5px;
+  color: #70675e;
+  font-size: 12px;
+}
+.sortToggle a {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c7d8d8;
+  border-radius: 10px;
+  padding: 7px 12px;
+  background: #f6faf9;
+  color: #45676b;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sortToggle a[aria-current="true"] {
+  background: #e1f1ef;
+  color: #215b62;
+  border-color: #76a7a9;
+  box-shadow: inset 0 0 0 1px #76a7a9;
+}
+.notice {
+  margin: 0 0 12px;
+  border: 1px solid #bad8d4;
+  border-radius: 10px;
+  background: #eff8f5;
+  padding: 10px 12px;
+  color: #295e5b;
+  font-size: 13px;
+}
+.actions :global(.owner-report-delete-form) { display: inline-flex; margin: 0; flex: 0 0 auto; }
+.actions :global(.owner-report-delete-button) {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #e3c6c2;
+  border-radius: 12px;
+  background: #fff8f6;
+  color: #95524a;
+  cursor: pointer;
+}
+.actions :global(.owner-report-delete-button:hover) { background: #fbe7e3; }
+.actions :global(.owner-report-delete-button:focus-visible),
+.sortToggle a:focus-visible { outline: 3px solid #469da0; outline-offset: 3px; }
+
+@media (max-width: 680px) {
+  .sortToggle { gap: 6px; margin-bottom: 13px; }
+  .sortToggle span { flex-basis: 100%; font-size: 11px; }
+  .sortToggle a { flex: 1 1 auto; padding-inline: 6px; font-size: 11px; }
+  .actions :global(.owner-report-delete-form) { width: 44px; }
 }
