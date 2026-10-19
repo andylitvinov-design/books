@@ -288,3 +288,13 @@ test('v3 stale replies and notes never clear another chat draft or display old s
   assert.match(ui,/if\(result&&activeRef\.current===args\.threadId\)/)
   assert.match(ui,/if\(result&&activeRef\.current===threadId\)setStatus/)
 })
+
+test('v3 actionable privacy and quota errors are localized, never expose provider secrets',()=>{
+  const ui=source('components/app/crm-messenger.jsx')
+  assert.match(ui,/const workflowErrors=\{/)
+  assert.match(ui,/PRIVATE_CONTENT_BLOCKED:/)
+  assert.match(ui,/NOTE_DAILY_LIMIT:/)
+  assert.match(ui,/CRM_FOLLOWUP_LIMIT:/)
+  assert.match(ui,/workflowErrors\[e\.message\]\?\.\[lang\]/)
+  assert.doesNotMatch(ui,/HH_CRM_MSG_TELEGRAM_TOKEN|HH_CRM_MSG_META_APP_SECRET/)
+})
