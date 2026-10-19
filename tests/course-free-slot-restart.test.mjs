@@ -40,7 +40,10 @@ test('closing the only free course frees its slot and starts another without par
   assert.equal(dashboard.props.multiCourseEnabled, false, 'free accounts do not need parallel-course entitlement')
   dashboard.props.onNew()
   await h.settle()
+  const staleStart = findPart(h.tree, 'CoursePresetCatalog').props.onPersonal
   await approveStart(h)
+  staleStart() // Even reusing the same course ID must invalidate a retained start callback.
+  await h.settle()
   const writes = h.calls.filter(call => call.body)
   assert.equal(writes.length, 1)
   assert.deepEqual(JSON.parse(JSON.stringify(writes[0].body)), {
