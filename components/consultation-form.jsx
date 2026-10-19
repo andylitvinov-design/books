@@ -49,9 +49,12 @@ const copy = {
     analysis: 'Анализ',
     analysisHint: 'Замеры состояния, динамика симптомов и наблюдения',
     analysisPlaceholder: 'Например: дата наблюдения, показатели и изменения состояния…',
+    clientRecommendations: 'Рекомендации',
+    clientRecommendationsHint: 'Индивидуальные рекомендации клиенту по результатам анализа',
+    clientRecommendationsPlaceholder: 'Ваши персональные рекомендации для клиента…',
     clientNotes: 'Примечания',
-    clientNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
-    clientNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
+    clientNotesHint: 'Дополнительные примечания и пояснения клиенту',
+    clientNotesPlaceholder: 'Важные уточнения или наблюдения для клиента…',
     followUpDate: 'Дата повторной сессии',
     followUpDateHint: 'Необязательно. Дата и пояснение появятся в отчёте клиента.',
     reportTextLanguageNotice: 'Язык отчёта:',
@@ -125,9 +128,12 @@ const copy = {
     analysis: 'Analysis',
     analysisHint: 'State measurements, symptom changes and observations',
     analysisPlaceholder: 'For example: observation date, measured scores and changes…',
+    clientRecommendations: 'Recommendations',
+    clientRecommendationsHint: 'Your personalized recommendations based on the analysis',
+    clientRecommendationsPlaceholder: 'Write your recommendations for this client…',
     clientNotes: 'Notes',
-    clientNotesHint: 'Additional guidance and practical next steps for the client',
-    clientNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
+    clientNotesHint: 'Additional notes and explanations for the client',
+    clientNotesPlaceholder: 'Relevant notes and observations for this client…',
     followUpDate: 'Follow-up session date',
     followUpDateHint: 'Optional. The date and message will appear in the client report.',
     reportTextLanguageNotice: 'Report language:',
@@ -202,6 +208,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
   const [analysis, setAnalysis] = useState(() => consultation?.analysis ?? getOwnerReportTextTemplate(initialReportLocale).analysis)
+  const [recommendationsText, setRecommendationsText] = useState(consultation?.recommendationsText ?? '')
   const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
   const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale).additionalNotes)
   const [recommendedTestKeys, setRecommendedTestKeys] = useState(() => consultation?.recommendedTestKeys ?? [])
@@ -490,9 +497,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
     </section>}
 
-    {includeRecommendation && <section className="consultation-studio-card consultation-report-notes-panel" aria-label={labels.analysis + ' & ' + labels.clientNotes}>
+    {includeRecommendation && <section className="consultation-studio-card consultation-report-notes-panel" aria-label={labels.analysis + ', ' + labels.clientRecommendations + ' & ' + labels.clientNotes}>
       <div className="consultation-review-notes-title">
-        <h2>{uiLocale === 'ru' ? 'Анализ и примечания' : 'Analysis & notes'}</h2>
+        <h2>{uiLocale === 'ru' ? 'Анализ, рекомендации и примечания' : 'Analysis, recommendations & notes'}</h2>
         <p>{uiLocale === 'ru' ? 'Добавьте замеры состояния и персональные указания, которые войдут в PDF-отчёт.' : 'Record state measurements and personalized guidance for the client PDF.'}</p>
       </div>
       <p className="consultation-report-language-note" role="note">
@@ -510,6 +517,11 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <span>{labels.analysis}</span>
           <small>{labels.analysisHint}</small>
           <textarea name="analysis" rows={4} maxLength={5000} value={analysis} onChange={(event) => setAnalysis(event.target.value)} placeholder={labels.analysisPlaceholder} />
+        </label>
+        <label className="consultation-report-note consultation-report-note--recommendations">
+          <span>{labels.clientRecommendations}</span>
+          <small>{labels.clientRecommendationsHint}</small>
+          <textarea name="recommendationsText" rows={4} maxLength={5000} value={recommendationsText} onChange={(event) => setRecommendationsText(event.target.value)} placeholder={labels.clientRecommendationsPlaceholder} />
         </label>
         <label className="consultation-report-note">
           <span>{labels.clientNotes}</span>

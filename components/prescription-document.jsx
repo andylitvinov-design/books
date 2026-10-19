@@ -17,7 +17,7 @@ import './consultation-report.css'
 
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false, narration = null, afterCover = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
-  const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
+  const guidance = (document.additionalNotes || document.recommendationsText) ? undefined : recommendationGuidance(document, locale)
   const progress = extractReportProgress(document.analysis)
   const reportHeading = clientReportHeading(locale, document.recommendationType)
   const followUpSession = reportFollowUpDetails(document.followUpDate, locale)
@@ -97,6 +97,11 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <h2>{labels.analysis}</h2>
         {narration && narrationEnabled() && <ReportNarrationPlayer locale={locale} access={narration} />}
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
+      </section>}
+
+      {document.recommendationsText && <section className="canonical-general canonical-report-analysis canonical-report-recommendations">
+        <h2>{labels.recommendations}</h2>
+        <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.recommendationsText}</p>
       </section>}
 
       <DaoStageDisclosure score={document.daoResourceScore} locale={locale} />
