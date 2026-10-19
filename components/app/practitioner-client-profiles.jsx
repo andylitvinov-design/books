@@ -1,11 +1,12 @@
 'use client'
 import {useMemo,useState} from 'react'
 import PracticeRequestConversation from './practice-request-conversation'
+import PublicEnquiryContact from './public-enquiry-contact'
 import {groupVerifiedPractitionerClients} from '@/lib/practitioners/client-profile-groups'
 import styles from './practitioner-client-profiles.module.css'
 
 const COPY={
-  en:{title:'My clients',intro:'Only people who sent enquiries to your own services. Requests are grouped by a verified account, not by matching names or phone numbers.',
+  en:{title:'My clients',intro:'Requests to your services. Verified account requests are grouped together; anonymous enquiries stay separate until their contact is established.',
     count:'Clients',requests:'Enquiries',pending:'Need attention',latest:'Last enquiry',
     search:'Search clients',all:'All',open:'Need attention',closed:'Closed',
     openProfile:'View client profile',closeProfile:'Close profile',history:'Request and conversation history',
@@ -16,7 +17,7 @@ const COPY={
     privacy:'Client profile shows only information the person shared with you through your services. Private tests, other practitioners’ requests and personal medical records are not available.',
     noPortal:'Reply inside Holistic House or use the contact details the client shared. Telegram/WhatsApp history is not connected.',
     historySummary:'Original request and secure in-app replies',messageCount:'Conversation entries'},
-  ru:{title:'Мои клиенты',intro:'Только люди, которые обращались к вам за вашими услугами. Обращения объединяются по подтверждённому аккаунту, а не по совпадению имён или телефонов.',
+  ru:{title:'Мои клиенты',intro:'Обращения по вашим услугам. Заявки из авторизованного кабинета объединяются по аккаунту, а анонимные обращения остаются отдельно до подтверждения контакта.',
     count:'Клиентов',requests:'Обращений',pending:'Требуют внимания',latest:'Последнее обращение',
     search:'Поиск клиентов',all:'Все',open:'Требуют внимания',closed:'Закрытые',
     openProfile:'Открыть профиль клиента',closeProfile:'Закрыть профиль',history:'История заявок и переписки',
@@ -27,7 +28,7 @@ const COPY={
     privacy:'Мастер видит только сведения, которыми клиент поделился при обращении к нему. Чужие заявки, личные тесты и медицинские записи недоступны.',
     noPortal:'Можно ответить внутри Holistic House или по указанному контакту. История Telegram/WhatsApp пока не подключена.',
     historySummary:'Первое обращение и ответы внутри сайта',messageCount:'Записей переписки'},
-  es:{title:'Mis clientes',intro:'Solo personas que solicitaron tus servicios. Las solicitudes se agrupan por cuenta verificada, no por nombres.',
+  es:{title:'Mis clientes',intro:'Solicitudes a tus servicios. Las cuentas verificadas se agrupan; las consultas anónimas quedan separadas hasta establecer el contacto.',
     count:'Clientes',requests:'Solicitudes',pending:'Requieren atención',latest:'Última solicitud',
     search:'Buscar clientes',all:'Todos',open:'Pendientes',closed:'Cerrados',
     openProfile:'Ver perfil del cliente',closeProfile:'Cerrar perfil',history:'Solicitudes y mensajes',
@@ -42,7 +43,7 @@ const COPY={
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
 }).format(new Date(value)):''
-export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus}){
+export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onSaveContact}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
@@ -97,7 +98,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
           <div className={styles.history}>
             {selected.items.map(request=>{
               const service=services.find(item=>item.id===request.serviceId)
-              const name=service?.localizedCopy?.[lang]?.title||service?.copy?.title||t.service
+              const name=service?.localizedCopy?.[lang]?.title||service?.copy?.title||request.serviceTitle||t.service
               return <article className={styles.request} key={request.id}>
                 <div className={styles.requestHead}>
                   <strong>{name}</strong>
@@ -113,9 +114,11 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                     onClick={()=>onStatus?.(request,'contacted')}>{t.markContacted}</button>}
                   <button type="button" disabled={busy} onClick={()=>onStatus?.(request,'closed')}>{t.markClosed}</button>
                 </div>}
-                <PracticeRequestConversation key={request.id} requestId={request.id}
-                  accountId={accountId} locale={lang} initialMessage={typeof request.message==='string'?request.message:''}
-                  createdAt={request.createdAt}/>
+                {request.requestKind==='public'
+                  ? <PublicEnquiryContact request={request} locale={lang} busy={busy} onSave={onSaveContact}/>
+                  : <PracticeRequestConversation key={request.id} requestId={request.id}
+                      accountId={accountId} locale={lang} initialMessage={typeof request.message==='string'?request.message:''}
+                      createdAt={request.createdAt}/>}
               </article>
             })}
           </div>
