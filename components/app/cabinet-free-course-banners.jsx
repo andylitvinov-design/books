@@ -23,7 +23,7 @@ const COURSES = [
   {
     id: 'tantra-reiki',
     path: 'reiki/tantra-reiki/free-initiation',
-    image: '/library/maya-mysteries/media/post-217-1.jpg',
+    image: '/images/holistic-house/tantra-reiki-yin-yang-cover.svg',
     en: { offer: 'FREE LEVEL 1 INTRODUCTION', title: 'Tantra Reiki', description: 'Practice, materials and first steps' },
     ru: { offer: 'БЕСПЛАТНОЕ ЗНАКОМСТВО С 1 СТУПЕНЬЮ', title: 'Тантра Рейки', description: 'Практика и материалы первой ступени' },
   },
@@ -44,14 +44,14 @@ const COPY = {
     eyebrow: 'HOLISTIC HOUSE ACADEMY',
     title: 'Free courses',
     note: 'Explore for free. Teacher-led initiations require personal confirmation.',
-    action: 'Open course', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume saved course', completed: 'Completed', slide: 'Slide',
+    action: 'Open course', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume from last slide', completed: 'Completed', slide: 'Slide',
     lesson: 'Lesson', intro: 'Introduction', of: 'of', slides: 'slides', chooseLesson: 'Go to a lesson', locked: 'Reach this lesson to unlock it',
   },
   ru: {
     eyebrow: 'АКАДЕМИЯ HOLISTIC HOUSE',
     title: 'Бесплатные курсы',
     note: 'Начальные материалы бесплатны. Инициация проводится по согласованию.',
-    action: 'Открыть курс', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить сохранённый курс', completed: 'Завершён', slide: 'Слайд',
+    action: 'Открыть курс', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить с последнего слайда', completed: 'Завершён', slide: 'Слайд',
     lesson: 'Урок', intro: 'Введение', of: 'из', slides: 'слайдов', chooseLesson: 'Перейти к уроку', locked: 'Урок ещё не открыт',
   },
 }
@@ -89,7 +89,7 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
         <p>{t.continueText}</p>
         <small>{resumeLabel}</small>
       </div>
-      <Link className={styles.savedAction} href={courseHref} prefetch={false}>
+      <Link className={styles.savedAction} href={courseHref + '?slide=' + encodeURIComponent(academyProgress.slideId)} prefetch={false} data-energywork-resume-last>
         {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
       </Link>
       <div className={styles.lessonPicker} data-energywork-cabinet-lessons>
