@@ -8,7 +8,8 @@ import { createCrmRepository, crmEnabled } from '@/lib/crm/repository'
 import { billingRegistryEnabled } from '@/lib/crm/billing-registry'
 import { getCrmEmailConfig } from '@/lib/crm/email'
 import { sendCrmMessage, sendCrmVerification } from '@/lib/crm/email-dispatch'
-import { getSmsConfig } from '@/lib/crm/sms'
+import { getSmsConfig, smsSetupStatus } from '@/lib/crm/sms'
+import { probeTwilioSmsConnection } from '@/lib/crm/sms-setup'
 import { sendCrmSms } from '@/lib/crm/sms-dispatch'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -58,16 +59,22 @@ async function handle(request) {
             smsEnabled:getSmsConfig().enabled,
             smsStatus:getSmsConfig().reason||'ready',
             smsLive:getSmsConfig().live||false,
+            smsSetup:smsSetupStatus(),
           }
         })
       }
     } else {
       const body = await readBody(request, 8192)
       onlyKeys(body, ['action', 'payload'])
-      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'send_sms', 'create_followup', 'change_followup', 'log_activity', 'update_business_enquiry', 'edit_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
+      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'send_sms', 'check_sms_connection', 'create_followup', 'change_followup', 'log_activity', 'update_business_enquiry', 'edit_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
       if (body.action === 'send_verification') data = await sendCrmVerification({repo,actor,payload:body.payload})
       else if (body.action === 'send_email') data = await sendCrmMessage({repo,actor,payload:body.payload})
       else if (body.action === 'send_sms') data = await sendCrmSms({repo,actor,payload:body.payload})
+      else if (body.action === 'check_sms_connection') {
+        if (!body.payload || typeof body.payload !== 'object' || Array.isArray(body.payload) || Object.keys(body.payload).length)
+          throw new AppError('INVALID_SMS_SETUP_REQUEST',400)
+        data=await probeTwilioSmsConnection()
+      }
       else data = await repo.withOwner(actor, (store) => {
         if (body.action === 'update_business_enquiry') return store.updateBusinessEnquiry(body.payload)
         if (body.action === 'create_followup') return store.createFollowup(body.payload)
