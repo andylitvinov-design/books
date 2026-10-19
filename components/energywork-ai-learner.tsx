@@ -13,7 +13,7 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
-import { energyworkLessonRanges, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
+import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -111,10 +111,10 @@ const copy = {
     tantraAnswerRequired: "Answer required to continue.", tantraStudyHint: "Need a hint? Read the guide", tantraAnswerPlaceholder: "Write a short answer…", required: "Required",
     feedbackBadge: "Your review",
     saveReview: "Save review",
-    reviewMissing: "Write at least 15 characters to save your review.",
+    reviewMissing: "Write at least 50 characters to save your review.",
     feelingPlaceholder: "Share your meditation experience: what did you feel, notice or discover?",
     feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
-    feedbackCharacters: "characters", feedbackMinimum: "minimum 15",
+    feedbackCharacters: "characters", feedbackMinimum: "minimum 50",
     voicesLabel: "Learner experiences",
     voicesFullText: "Full learner review",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
@@ -232,10 +232,10 @@ const copy = {
     tantraAnswerRequired: "Ответ обязателен для продолжения.", tantraStudyHint: "Подсказка: читать материал", tantraAnswerPlaceholder: "Ваш краткий ответ…", required: "Обязательно",
     feedbackBadge: "Ваш отзыв",
     saveReview: "Сохранить отзыв",
-    reviewMissing: "Напишите хотя бы 15 символов, чтобы сохранить отзыв.",
+    reviewMissing: "Напишите хотя бы 50 символов, чтобы сохранить отзыв.",
     feelingPlaceholder: "Расскажите о медитации: какие ощущения, мысли или открытия вы заметили?",
     feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
-    feedbackCharacters: "символов", feedbackMinimum: "минимум 15",
+    feedbackCharacters: "символов", feedbackMinimum: "минимум 50",
     voicesLabel: "Отзывы участников",
     voicesFullText: "Полный текст отзыва",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
@@ -615,7 +615,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
   const feedbackLength = Array.from(meditationReview.trim()).length;
-  const feedbackMissing = isMeditationFeedback && feedbackLength < 15;
+  const feedbackMissing = isMeditationFeedback && feedbackLength < ENERGYWORK_REVIEW_MIN_CHARS;
   const isTantraStudyQuestion = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.includes(slide.id);
   const tantraStudyMissing = isTantraStudyQuestion && !energyworkTantraStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;

@@ -20,15 +20,15 @@ const owner=read('components/admin-reiki-leads.jsx')
 const landing=read('components/principles-of-energywork.tsx')
 const browser=read('scripts/verify-reiki-all-slides-browser.mjs')
 
-test('15 meaningful characters, no slider, positive EN/RU encouragement',()=>{
-  assert.equal(ENERGYWORK_REVIEW_MIN_CHARS,15)
+test('50 meaningful characters, no slider, positive EN/RU encouragement',()=>{
+  assert.equal(ENERGYWORK_REVIEW_MIN_CHARS,50)
   assert.deepEqual([...ENERGYWORK_MEDITATION_REPORT_IDS],['flight-04','tan-04','kun-04','ygg-04'])
-  for(const value of ['123456789012345','Я почувствовал спокойствие'])
+  for(const value of ['x'.repeat(50),'Я почувствовал настоящее спокойствие и тепло после медитации.'])
     assert.equal(energyworkMeditationFeedbackComplete(value),true)
-  for(const value of ['12345678901234','   ','Feeling:3/10\\nShort'])
+  for(const value of ['x'.repeat(49),'   ','Feeling:3/10\\nShort'])
     assert.equal(energyworkMeditationFeedbackComplete(value),false)
-  assert.match(learner,/feedbackMissing = isMeditationFeedback && feedbackLength < 15/)
-  // 15 is a minimum, not a cap; long reflections survive client, API and moderation.
+  assert.match(learner,/feedbackMissing = isMeditationFeedback && feedbackLength < ENERGYWORK_REVIEW_MIN_CHARS/)
+  // 50 is a minimum, not a cap; long reflections survive client, API and moderation.
   const extended='Свет и спокойствие. '.repeat(300)
   for(const id of ENERGYWORK_MEDITATION_REPORT_IDS) {
     assert.equal(energyworkMeditationFeedbackComplete(extended),true)
@@ -37,8 +37,10 @@ test('15 meaningful characters, no slider, positive EN/RU encouragement',()=>{
   assert.equal(energyworkAnswerValid('flight-05',extended),false)
   assert.match(learner,/maxLength=\{isMeditationFeedback \? undefined : 1600\}/)
   assert.match(learner,/feedbackLength\} \{t\.feedbackCharacters\} · \{t\.feedbackMinimum\}/)
-  assert.doesNotMatch(learner,/Math\.min\(15, Array\.from\(meditationReview/)
-  assert.doesNotMatch(my,/maxLength=\{1600\}|Math\.min\(15,Array\.from\(draft/)
+  assert.match(learner,/minimum 50/)
+  assert.match(my,/minimum 50/)
+  assert.doesNotMatch(learner,/Math\.min\(50, Array\.from\(meditationReview/)
+  assert.doesNotMatch(my,/maxLength=\{1600\}|Math\.min\(50,Array\.from\(draft/)
   assert.match(my,/\{Array\.from\(draft\.trim\(\)\)\.length\} \{t\.chars\} · \{t\.min\}/)
   assert.match(repo,/!ENERGYWORK_MEDITATION_REPORT_IDS\.includes\(body\.slideId\) && body\.answer\.length > 1600/)
   assert.doesNotMatch(pub,/value\.length > 1600/)
@@ -48,8 +50,8 @@ test('15 meaningful characters, no slider, positive EN/RU encouragement',()=>{
   assert.match(learner,/what did you feel, notice or discover/)
   assert.match(learner,/какие ощущения, мысли или открытия/)
   assert.doesNotMatch(learner,/even if nothing|data-meditation-feeling|splitMeditationFeedback/)
-  assert.match(browser,/await field\.fill\('12345678901234'\)/)
-  assert.match(browser,/await field\.fill\('123456789012345'\)/)
+  assert.match(browser,/await field\.fill\('x'\.repeat\(49\)\)/)
+  assert.match(browser,/await field\.fill\('x'\.repeat\(50\)\)/)
 })
 
 test('Private encrypted student journal can be revisited and edited in My Courses',()=>{
