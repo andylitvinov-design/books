@@ -60,7 +60,7 @@ test('iPhone photographs are re-encoded into a first-party request well below Ve
   assert.match(source,/new File\(\[blob\],'consultation-photo\.jpg'/)
   assert.match(source,/for\(const side of \[2048,1792,1536,1280,1024\]\)/)
   assert.match(source,/sourcePhotoMime\(original\)/)
-  assert.match(source,/jpeg:'image\\/jpeg'/)
+  assert.match(source,/jpeg:'image\/jpeg'/)
   assert.match(source,/canProxyOwnerPhoto\(blob\)/)
   assert.match(source,/credentials:'same-origin'/)
   assert.match(source,/body:blob/)
