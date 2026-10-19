@@ -82,6 +82,7 @@ test('development tab places a distinct profile module before course recommendat
   assert.match(css,/@media\(max-width:620px\)/)
   assert.match(css,/\.profileTestCard\{/)
   assert.match(view,/data-profile-test-tabs/)
+  assert.match(view,/allTopicTests\.filter\(/)
   assert.match(view,/aria-pressed=\{activeDomain === domain.key\}/)
   assert.match(view,/className=\{styles.profileTestAction\}/)
   assert.match(css,/\.profileTestCard\{grid-template-columns:25px minmax\(0,1fr\) auto/)
@@ -113,7 +114,8 @@ test('seven browse tabs route to matching vetted questionnaire topics', () => {
   ]) {
     assert.ok(recommendProfileTopicTests({ entries, category }).some(row => row.key === expectedKey), category)
   }
-  assert.deepEqual(recommendProfileTopicTests({ entries, category: 'all' }), [])
+  assert.deepEqual(new Set(recommendProfileTopicTests({ entries, category: 'all' }).map(row => row.key)),
+    new Set(entries.map(row => row.key)))
   assert.deepEqual(recommendProfileTopicTests({ entries, category: 'unknown' }), [])
 })
 
