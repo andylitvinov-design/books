@@ -38,9 +38,9 @@ test('New peer voices and celebrations appear between the existing lessons', () 
   for(const id of ['flight-voices','tan-voices','kun-voices','ygg-voices','flight-done','tan-done','kun-done','ygg-done'])
     assert.ok(curriculum.includes('id: "'+id+'"'),id)
   assert.match(learner,/data-meditation-voices/)
-  assert.match(learner,/t\.committed/)
+  assert.match(learner,/t\.saveAndContinue/)
   assert.match(learner,/t\.voicesComments/)
-  assert.match(learner,/data-meditation-feeling/)
+  assert.doesNotMatch(learner,/data-meditation-feeling/)
   assert.match(css,/flex-direction:row;align-items:stretch;gap:7px/)
 })
 
@@ -117,7 +117,7 @@ test('Course remains available in Academy, guest cabinet and course page routes'
 })
 
 test('Mobile course uses teal five-step rail and remains accessible', () => {
-  assert.match(learner, /<details className=\{styles\.programme\}>/)
+  assert.match(learner, /<details className=\{styles\.programme\} ref=\{programmeRef\}>/)
   assert.match(learner, /energyworkLessons\.map/)
   assert.match(learner, /role="progressbar"/)
   assert.match(learner, /aria-labelledby="energywork-slide-title"/)
