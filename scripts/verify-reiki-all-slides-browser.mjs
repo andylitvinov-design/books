@@ -113,6 +113,17 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
       await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(2);
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
+      if (id === "tan-voices") {
+        const fullReview = carousel.locator("[data-review-scroll]");
+        const scrollSize = await fullReview.evaluate(element => ({
+          clientHeight: element.clientHeight, scrollHeight: element.scrollHeight,
+        }));
+        assert.ok(scrollSize.scrollHeight > scrollSize.clientHeight + 5,
+          where + ": complete Tantra review is scrollable instead of cut off");
+        await fullReview.evaluate(element => { element.scrollTop = element.scrollHeight; });
+        await expect(page.locator('[data-meditation-voices] [class*="voicesScrollHint"]')).toHaveCount(0);
+        await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
+      }
       const first = await carousel.locator("blockquote p").innerText();
       await page.locator("button[data-review-next]").click();
       await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
