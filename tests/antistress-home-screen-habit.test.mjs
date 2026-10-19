@@ -44,7 +44,7 @@ test('a verified first lesson offers device setup, while skipping leaves progres
   assert.match(player, /cycle\.day===1\?\['weekOne','weekTwo','nextStep','habit'\]/)
   assert.match(player, /data-opora-first-lesson-habit-invitation/)
   assert.match(player, /data-opora-first-lesson-habit-setup/)
-  assert.match(player, /habitSetup\?t\.finish:t\.habitConfigure/)
+  assert.match(player, /habitSetup\?t\.next:t\.habitConfigure/)
   assert.match(player, /habitSetup\?t\.back:t\.habitLater/)
   assert.match(today, /habitSetupContent=\{<CourseHomeScreenHabit locale=\{locale\} embedded \/>\}/)
   assert.match(older, /cycle\.day===1&&<section className=\{styles\.habitOffer\}/)
