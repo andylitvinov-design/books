@@ -813,6 +813,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
                   <strong>{t.milestoneLabel}</strong>
                   <p>{t.milestoneNote}</p>
+                  {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                 </div>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
@@ -1004,20 +1005,29 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
         <div className={styles.progressFooter}>
           <div className={styles.progressHeader}>
-            <span>{t.lesson} {index + 1} {t.of} {total}</span>
-            <span>{Math.round((index + 1) / total * 100)}% {t.completedLabel}</span>
+            <span>{lessonProgressLabel}</span>
+            <span>{progressPercent}% {t.completedLabel}</span>
           </div>
           <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
-            aria-valuenow={index + 1} aria-label={t.lesson}>
-            <span style={{ width: ((index + 1) / total * 100) + "%" }} />
+            aria-valuenow={reachedIndex + 1} aria-label={t.lesson}>
+            <span style={{ width: progressPercent + "%" }} />
           </div>
         </div>
 
-        <details className={styles.programme}>
+        <details className={styles.programme} ref={programmeRef}>
           <summary>{t.program}</summary>
-          <ol>{energyworkLessons.map((lesson) => (
-            <li key={lesson.phase} aria-current={lesson.phase === slide.phase ? "step" : undefined}>{lesson.title[locale]}</li>
-          ))}</ol>
+          <ol>{energyworkLessons.map((lesson, number) => {
+            const range = lessonRanges[number]!;
+            const unlocked = range.start <= reachedIndex;
+            return <li key={lesson.phase} aria-current={currentLessonRange?.lesson === number + 1 ? "step" : undefined}>
+              <button type="button" className={styles.programmeLesson}
+                disabled={busy || sync === "checking" || !unlocked}
+                onClick={() => void jumpToSlide(lesson.firstSlideId)}>
+                <span>{t.lesson} {number + 1} · {lesson.title[locale]}</span>
+                <small>{range.count} {t.slidesWord}</small>
+              </button>
+            </li>;
+          })}</ol>
           {slide.kind === "welcome" ? <p className={styles.programmeNote}>{t.welcomeTeacher}</p> : null}
           <p className={styles.disclaimer}>{t.stop}</p>
           <aside className={styles.preview} aria-live="polite">
@@ -1051,7 +1061,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
             {sync === "ready" ? <>
               <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
               {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
-              <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
+              <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
               {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
                 <details className={styles.saveDetails}>
                   <summary>{t.teacherShareTitle}</summary>
@@ -1073,13 +1083,29 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         </details>
         <footer className={styles.footer}>
           {!completed ? (
-            <div className={styles.actions}>
-              <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing} className={styles.next} data-energywork-next>
-                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : slide.kind === "milestone" ? t.committed : t.continue}<ArrowRight size={19} aria-hidden="true" />
+            <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
+              {slide.kind === "milestone" ? <>
+                <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
+                  className={styles.milestoneBack} aria-label={t.back} title={t.back}>
+                  <ArrowLeft size={19} aria-hidden="true" />
+                </button>
+                <button type="button" onClick={saveAndLeave} disabled={busy || sync === "checking"}
+                  className={styles.saveProgress} data-energywork-save-progress>
+                  {sync === "guest" ? t.signInToSave : t.saveProgress}
+                </button>
+              </> : (
+                <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
+                  className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
+              )}
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing}
+                className={styles.next} data-energywork-next>
+                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
+                  slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continue) : t.continue}
+                <ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
+          {slide.kind === "milestone" && saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
         </footer>
       </div>
     </main>
