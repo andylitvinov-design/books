@@ -1,0 +1,13 @@
+.section{margin:32px 0 26px;padding:clamp(18px,3vw,33px);background:linear-gradient(145deg,#eaf7f6,#f9fcfd);border:1px solid #d1e7e9;border-radius:26px;color:#16495b}
+.heading{margin-bottom:18px}
+.label{display:flex;align-items:center;gap:7px;color:#098b99;font-size:11px;letter-spacing:.11em;font-weight:800}
+.heading h2{font-size:clamp(24px,3vw,33px);margin:8px 0 5px;letter-spacing:-.02em}
+.heading p{font-size:14px;color:#426c7b;line-height:1.5;margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.card{padding:17px;background:#fff;border:1px solid #d0e8e7;border-radius:17px;min-width:0;box-shadow:0 8px 18px #4b9ca512}
+.lesson{font-size:12px;color:#058596;font-weight:800;margin:0 0 10px}
+.card blockquote{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.55;margin:0 0 16px;color:#215165;font-style:normal}
+.card footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:7px;color:#5a7984;font-size:11px}
+.card footer span:last-child{display:inline-flex;gap:4px;align-items:center}
+.empty{font-size:14px;color:#527b83;margin:4px 0}
+@media(max-width:620px){.section{padding:17px 13px;border-radius:19px}.grid{grid-template-columns:1fr}.card{padding:14px}.card blockquote{font-size:14px}}
