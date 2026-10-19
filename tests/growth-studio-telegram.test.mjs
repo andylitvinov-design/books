@@ -40,6 +40,7 @@ test('raw drafts, wrong platform, malformed channel and unsafe private links can
   const approvedPost=approved()
   assert.throws(()=>telegramPayload({...approvedPost,status:'draft'},env.HH_GROWTH_TELEGRAM_CHAT_ID),/telegram_invalid_post/)
   assert.throws(()=>telegramPayload({...approvedPost,channel:'instagram'},env.HH_GROWTH_TELEGRAM_CHAT_ID),/telegram_invalid_post/)
+  assert.throws(()=>telegramPayload({...approvedPost,brand:'toronto_tantra'},env.HH_GROWTH_TELEGRAM_CHAT_ID),/telegram_invalid_post/)
   assert.throws(()=>telegramPayload(approvedPost,'@x'),/telegram_invalid_post/)
   assert.throws(()=>approved({sourceUrl:'/en/client/private'}),/invalid_post/)
 })
