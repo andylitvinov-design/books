@@ -94,8 +94,10 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </div>
       {afterCover}
       {document.analysis && <section className="canonical-general canonical-report-analysis">
-        <h2>{labels.analysis}</h2>
-        {narration && narrationEnabled() && <ReportNarrationPlayer locale={locale} access={narration} />}
+        <div className="canonical-analysis-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 9, marginBottom: 11 }}>
+          <h2 style={{ margin: 0 }}>{labels.analysis}</h2>
+          {narration && <ReportNarrationPlayer locale={locale} access={narration} available={narrationEnabled()} />}
+        </div>
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
       </section>}
 

@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Headphones, Pause, Play, RotateCcw, Square } from 'lucide-react'
+import { Volume2, LoaderCircle, Pause, RotateCcw, Square } from 'lucide-react'
 import styles from './report-narration-player.module.css'
 
-export function ReportNarrationPlayer({ locale = 'en', access }) {
+export function ReportNarrationPlayer({ locale = 'en', access, available = true }) {
   const ru = locale === 'ru'
   const audio = useRef(null)
   const request = useRef(null)
@@ -81,6 +81,11 @@ export function ReportNarrationPlayer({ locale = 'en', access }) {
   }
 
   function toggle() {
+    if (!available) {
+      setState('unavailable')
+      setError(ru ? 'Озвучка голосом Андрея пока не подключена. Отчёт можно прочитать ниже.' : 'Andrey’s voice narration is not connected yet. You can read the report below.')
+      return
+    }
     const player = audio.current
     if (state === 'loading') return
     if (state === 'done') { void playSegment(0); return }
@@ -106,47 +111,45 @@ export function ReportNarrationPlayer({ locale = 'en', access }) {
     else setState('done')
   }
 
-  return <aside className={styles.box} aria-label={ru ? 'Озвучка анализа Андреем' : 'Andrey voice narration'}>
-    <div className={styles.heading}>
-      <span className={styles.icon}><Headphones size={20} aria-hidden="true" /></span>
-      <div>
-        <strong>{ru ? 'Анализ голосом Андрея' : 'Your analysis in Andrey’s voice'}</strong>
-        <span>{ru ? 'Андрей Литвинов · AI-копия голоса' : 'Andrey Litvinov · AI-cloned voice'}</span>
-      </div>
-    </div>
-    <div className={styles.controls}>
-      <button className={styles.primary} type="button" onClick={toggle}
-        disabled={state === 'loading'} aria-label={state === 'playing'
-          ? (ru ? 'Пауза' : 'Pause') : (ru ? 'Прослушать анализ' : 'Play analysis')}>
-        {state === 'playing' ? <Pause size={20} aria-hidden="true" />
-          : state === 'done' ? <RotateCcw size={20} aria-hidden="true" />
-            : <Play size={20} aria-hidden="true" />}
-        {state === 'loading' ? (ru ? 'Готовим аудио…' : 'Preparing audio…')
-          : state === 'playing' ? (ru ? 'Пауза' : 'Pause')
-            : state === 'paused' || state === 'ready' ? (ru ? 'Продолжить' : 'Resume')
-              : state === 'done' ? (ru ? 'Слушать снова' : 'Listen again')
-                : (ru ? '▶ Слушать анализ' : '▶ Play analysis')}
-      </button>
-      {state !== 'idle' && <button className={styles.stop} type="button" onClick={stop}
-        aria-label={ru ? 'Остановить озвучку' : 'Stop narration'}>
-        <Square size={17} aria-hidden="true" />
-        {ru ? 'Стоп' : 'Stop'}
+  return <div className={styles.root} aria-label={ru ? 'Прослушать отчёт голосом Андрея' : 'Listen to this report in Andrey’s voice'}>
+    <button className={styles.primary} type="button" onClick={toggle}
+      disabled={state === 'loading'}
+      aria-label={state === 'playing' ? (ru ? 'Пауза' : 'Pause') : (ru ? 'Прослушать анализ голосом Андрея' : 'Play the analysis in Andrey’s voice')}
+      title={ru ? 'По нажатию текст анализа передаётся в HeyGen для озвучки AI-копией голоса Андрея.' : 'When pressed, the analysis is sent to HeyGen to synthesize Andrey’s AI-cloned voice.'}>
+      {state === 'loading' ? <LoaderCircle className={styles.spinner} size={18} aria-hidden="true" />
+        : state === 'playing' ? <Pause size={18} aria-hidden="true" />
+          : state === 'done' ? <RotateCcw size={18} aria-hidden="true" />
+            : <Volume2 size={18} aria-hidden="true" />}
+      <span className={styles.label}>{state === 'loading' ? (ru ? 'Готовим…' : 'Preparing…')
+        : state === 'playing' ? (ru ? 'Пауза' : 'Pause')
+          : state === 'paused' || state === 'ready' ? (ru ? 'Продолжить' : 'Resume')
+            : state === 'done' ? (ru ? 'Сначала' : 'Restart')
+              : (ru ? 'Прослушать' : 'Listen')}</span>
+    </button>
+    {state !== 'idle' && <div className={styles.panel} role="region"
+      aria-label={ru ? 'Управление аудиоотчётом' : 'Report audio controls'}>
+      {state === 'loading' && <span className={styles.help} role="status">{ru
+        ? 'Создаём аудио с вашим личным голосом…'
+        : 'Preparing audio in Andrey’s voice…'}</span>}
+      <audio ref={audio} className={styles.audio} controls preload="none"
+        onPlay={() => setState('playing')}
+        onPause={() => setState(current => current === 'playing' ? 'paused' : current)}
+        onEnded={ended} aria-label={ru ? 'Аудиоплеер анализа' : 'Analysis audio player'}
+        hidden={!['playing', 'paused', 'ready', 'done'].includes(state)} />
+      {total > 1 && !['loading', 'unavailable', 'error'].includes(state) && <small className={styles.part}>
+        {ru ? 'Часть' : 'Part'} {Math.min(part + 1, total)} / {total}
+      </small>}
+      {state === 'ready' && <small className={styles.help}>{ru
+        ? 'Если iPhone не запустил звук, нажмите Play на аудиоплеере.'
+        : 'If iPhone did not start the sound, tap Play in the audio controls.'}</small>}
+      {state !== 'unavailable' && state !== 'error' && <small className={styles.privacy}>{ru
+        ? 'AI-копия голоса Андрея. Только по нажатию текст анализа передаётся в HeyGen; аудио не публикуется.'
+        : 'Andrey’s AI-cloned voice. Text is sent to HeyGen only after Play; audio is not published.'}</small>}
+      {error && <span className={styles.error} role="alert">{error}</span>}
+      {['playing', 'paused', 'ready', 'done', 'loading'].includes(state) && <button className={styles.stop}
+        type="button" onClick={stop} aria-label={ru ? 'Остановить озвучку' : 'Stop narration'}>
+        <Square size={14} aria-hidden="true" />{ru ? 'Стоп' : 'Stop'}
       </button>}
-    </div>
-    <audio ref={audio} className={styles.audio} controls preload="none"
-      onPlay={() => setState('playing')}
-      onPause={() => setState(current => current === 'playing' ? 'paused' : current)}
-      onEnded={ended} aria-label={ru ? 'Аудиоплеер анализа' : 'Analysis audio player'}
-      hidden={!['playing', 'paused', 'ready', 'done'].includes(state)} />
-    {total > 1 && state !== 'idle' && <small className={styles.part}>
-      {ru ? 'Часть' : 'Part'} {Math.min(part + 1, total)} / {total}
-    </small>}
-    {state === 'ready' && <small className={styles.help}>{ru
-      ? 'Если iPhone не запустил звук, нажмите Play в плеере.'
-      : 'If playback did not start on your phone, tap Play in the audio controls.'}</small>}
-    {error && <span className={styles.error} role="alert">{error}</span>}
-    <small className={styles.privacy}>{ru
-      ? 'Только по вашему нажатию Play текст этого анализа передаётся в HeyGen для озвучки. Запись не публикуется.'
-      : 'Only when you press Play is this analysis sent to HeyGen for voice synthesis. The audio is not published.'}</small>
-  </aside>
+    </div>}
+  </div>
 }
