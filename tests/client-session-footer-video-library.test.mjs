@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {parseSessionYouTubeUrl} from '../lib/clients/youtube-resource.js'
 import {reportReusableVideoCandidates} from '../lib/clients/report-video-candidates.js'
+import {ownerMaterialApi} from '../lib/clients/owner-material-api.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const one='00000000-1111-4111-8111-000000000001',two='00000000-1111-4111-8111-000000000002'
@@ -107,4 +108,29 @@ test('unsafe non-YouTube links are never accepted as reusable source links',()=>
   ])assert.deepEqual(reportReusableVideoCandidates({
     draft:{plan:{resources:[{url,title:'private'}]}},
   }),{links:[],videos:[]})
+})
+
+test('reuses a preexisting admin session when iPhone omits the /api/admin cookie',async()=>{
+  const requests=[]
+  const fetcher=async(url,options)=>{
+    requests.push([url,options.method])
+    if(requests.length===1)return Response.json({error:'MATERIAL_UNAVAILABLE'},{status:404})
+    if(requests.length===2)return Response.json({ready:true},{status:200})
+    return Response.json({materials:[{id:one,kind:'youtube',title:'Lesson'}]},{status:200})
+  }
+  const res=await ownerMaterialApi('/api/admin/materials',{fetcher})
+  assert.equal(res.materials.length,1)
+  assert.deepEqual(requests,[
+    ['/api/admin/materials','GET'],
+    ['/admin/api/recorder-auth','POST'],
+    ['/api/admin/materials','GET'],
+  ])
+})
+
+test('does not bypass failed owner session repair or access non-catalog paths',async()=>{
+  const fetcher=async(path)=>path.includes('recorder-auth')?
+    Response.json({error:'ADMIN_SIGN_IN_REQUIRED'},{status:401}):
+    Response.json({error:'MATERIAL_UNAVAILABLE'},{status:404})
+  await assert.rejects(()=>ownerMaterialApi('/api/admin/materials',{fetcher}),/ADMIN_SIGN_IN_REQUIRED/)
+  await assert.rejects(()=>ownerMaterialApi('https://evil.example/api/admin/materials',{fetcher}),/MATERIAL_UNAVAILABLE/)
 })
