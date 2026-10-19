@@ -1,7 +1,7 @@
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Check, Feather, ShieldCheck, Video, Flower2, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Check, Feather, ShieldCheck, Video, Flower2, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraInitiationForm, tantraInitiationWhatsAppUrl } from "@/components/tantra-initiation-form";
@@ -345,6 +345,14 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
+        <section id="tantra-practice-video" className={styles.section} aria-labelledby="tantra-video-title">
+          <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.videoEyebrow}</p><h2 id="tantra-video-title">{t.videoTitle}</h2><p>{t.videoLead}</p></header>
+          <div className={styles.videoLayout}>
+            <div className={styles.videoCanvas}>{video?.youtubeId ? <AcademyVideoPlayer youtubeId={video.youtubeId} title={video.title} /> : null}</div>
+            <div className={styles.videoAside}><div className={styles.videoAsideIcon}><PlayCircle size={28} aria-hidden="true"/></div><p>{t.videoCaption}</p><strong>{video?.title ?? "Tantra Reiki Practice"}</strong><small>{t.videoNote}</small></div>
+          </div>
+        </section>
+
         <section id="how-to" className={styles.howSection} aria-labelledby="tantra-how-title">
           <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.guideEyebrow}</p><h2 id="tantra-how-title">{t.guideTitle}</h2><p>{t.guideLead}</p></header>
           <div className={styles.guidedJourney}>
@@ -474,14 +482,6 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
             })}
           </div>
           <p className={styles.availability}><ShieldCheck size={16} aria-hidden="true"/>{t.availability}</p>
-        </section>
-
-        <section id="tantra-practice-video" className={styles.section} aria-labelledby="tantra-video-title">
-          <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.videoEyebrow}</p><h2 id="tantra-video-title">{t.videoTitle}</h2><p>{t.videoLead}</p></header>
-          <div className={styles.videoLayout}>
-            <div className={styles.videoCanvas}>{video?.youtubeId ? <AcademyVideoPlayer youtubeId={video.youtubeId} title={video.title} /> : null}</div>
-            <div className={styles.videoAside}><div className={styles.videoAsideIcon}><PlayCircle size={28} aria-hidden="true"/></div><p>{t.videoCaption}</p><strong>{video?.title ?? "Tantra Reiki Practice"}</strong><small>{t.videoNote}</small></div>
-          </div>
         </section>
 
         <section id="tantra-apply" className={styles.application} aria-labelledby="tantra-apply-title">
