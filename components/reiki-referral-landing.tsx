@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Check, HeartHandshake, Leaf, PlayCircle, Sparkles } from "lucide-react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { TantraLearnerReviewCards } from "@/components/tantra-learner-review-cards";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./reiki-referral-landing.module.css";
@@ -192,6 +193,10 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
             <summary>{item.question}<span aria-hidden="true">+</span></summary>
             <p>{item.answer}</p>
           </details>)}</div>
+        </section>
+
+        <section className={styles.reviews} id="reiki-practitioner-testimonials" aria-labelledby="reiki-practitioner-testimonials-heading">
+          <TantraLearnerReviewCards locale={locale} headingId="reiki-practitioner-testimonials-heading" context="practitioner" />
         </section>
 
         <section className={styles.bottomCta} aria-labelledby="reiki-referral-end">
