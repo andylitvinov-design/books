@@ -12,6 +12,7 @@ const copy = {
     mobileLead: "Бесплатный письменный разбор или личная сессия с Андреем — выберите удобный первый шаг.",
     benefits: ["Бесплатный письменный старт", "Личные сессии от €50 · время согласуем", "Торонто и онлайн"],
     cta: "Получить бесплатный письменный разбор",
+    freeCta: "Начать бесплатно · 3 варианта",
     paidCta: "Запросить личную сессию · от €50",
     secondary: "Все три бесплатных варианта",
     small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
@@ -27,6 +28,7 @@ const copy = {
     mobileLead: "A free written review or a personal session with Andrey — choose your first step.",
     benefits: ["Free written first step", "Personal sessions from €50 · time confirmed", "Toronto & online"],
     cta: "Get a free written review",
+    freeCta: "Start free · 3 options",
     paidCta: "Ask about a personal session · from €50",
     secondary: "See all three free options",
     small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
@@ -42,6 +44,7 @@ const copy = {
     mobileLead: "Revisión escrita gratuita o sesión con Andrey: elige cómo empezar.",
     benefits: ["Primera revisión escrita gratuita", "Sesiones desde €50 · horario a confirmar", "Toronto y en línea"],
     cta: "Recibir revisión escrita gratuita",
+    freeCta: "Empezar gratis · 3 opciones",
     paidCta: "Solicitar sesión personal · desde €50",
     secondary: "Opciones gratuitas y cursos",
     small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
@@ -62,14 +65,15 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
         <p className={styles.lead}>{t.lead}</p>
         <p className={styles.mobileLead}>{t.mobileLead}</p>
         <div className={styles.actions}>
-          <Link className={styles.cta} href="#consultation" data-service-hero-cta="paid">
-            {t.paidCta}<ArrowUpRight size={20} aria-hidden="true" />
+          <Link className={styles.cta} href="#free-insights" data-service-hero-cta="free">
+            {t.freeCta}<ArrowRight size={20} aria-hidden="true" />
           </Link>
-          <Link className={styles.paidLink} href={"/" + locale + "/services/free-situation-review"} data-service-hero-cta="free-written-review">
-            {t.cta}<ArrowRight size={17} aria-hidden="true" />
+          <Link className={styles.paidLink} href="#consultation" data-service-hero-cta="paid">
+            {t.paidCta}<ArrowUpRight size={17} aria-hidden="true" />
           </Link>
-          <Link className={styles.secondary} href="#free-insights">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>
-          <Link className={styles.secondary} href="#solutions">{t.solutions}<ArrowRight size={17} aria-hidden="true" /></Link>
+          <Link className={styles.secondary} href="#solutions">
+            {t.solutions}<ArrowRight size={17} aria-hidden="true" />
+          </Link>
         </div>
         <p className={styles.small}>{t.small}</p>
         <p className={styles.small}>{t.workWith}</p>
