@@ -80,7 +80,7 @@ test('owner search and export are bounded, decrypted only by owner transaction',
  assert.doesNotMatch(code,/assessment_results|assessment_runs|medical_notes|service_role/)
 })
 test('owner-only export audit is append-only and FORCE RLS',()=>{
- const sql=read('supabase/migrations/20261019004500_hh_crm_data_exports_audit.sql')
+ const sql=read('supabase/migrations/20261019004748_hh_crm_data_exports_audit_20261018.sql')
  assert.match(sql,/CREATE TABLE app\.crm_data_exports/)
  assert.match(sql,/scope='business_contacts'/)
  assert.match(sql,/format='csv'/)
