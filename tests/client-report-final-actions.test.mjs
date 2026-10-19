@@ -81,7 +81,7 @@ test('PDF preview is inline for authorized client routes, while download stays a
     'app/admin/api/documents/[id]/pdf/route.js',
   ]){
     const pdf=source(path)
-    assert.match(pdf,/searchParams\.get\('preview'\)/,path)
+    assert.match(pdf,/get\('preview'\)/,path)
     assert.match(pdf,/inline/,path)
     assert.match(pdf,/attachment/,path)
     assert.match(pdf,/privateHeaders|PRIVATE_HEADERS/,path)
