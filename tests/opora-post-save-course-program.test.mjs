@@ -34,7 +34,8 @@ const words={
 test('confirmed Day 1 save leads to three programme slides with real 14-day titles and one map exit',async()=>{
   for(const locale of ['en','ru']){
     const f=fixture(locale,1),w=words[locale]
-    for(let i=0;i<8;i++)await press(f.h,w.next)
+    for(let i=0;i<9;i++)await press(f.h,w.next)
+    await press(f.h,locale==='ru'?'Получилось немного':'I managed a little')
     await press(f.h,w.save)
     assert.equal(f.saved.length,1)
     assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
@@ -52,6 +53,11 @@ test('confirmed Day 1 save leads to three programme slides with real 14-day titl
     await press(f.h,w.next)
     assert.match(textOf(f.h.tree),new RegExp(w.nextTitle))
     assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(2,locale).practice))
+    await press(f.h,"I'm committed")
+    assert.match(textOf(f.h.tree),locale==='ru'?/Увидимся завтра/:/See you tomorrow/)
+    assert.deepEqual(nodes(f.h.tree).filter(node=>node.type==='a').map(node=>node.props.href),[
+      '/'+locale+'/tests','/'+locale+'/academy/principles-of-energywork/learn',
+      '/'+locale+'/services/free-consultation'])
     await press(f.h,w.map)
     assert.equal(f.finishCount,1)
     assert.equal(f.saved.length,1,'preview must not submit another lesson')
@@ -61,7 +67,8 @@ test('confirmed Day 1 save leads to three programme slides with real 14-day titl
 test('Days 2-13 show the real next lesson after saving; Day 14 shows completion, not Day 15',async()=>{
   for(const day of [2,13,14]){
     const f=fixture('en',day),w=words.en
-    for(let i=0;i<OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1;i++)await press(f.h,w.next)
+    for(let i=0;i<OPORA_EXPERIENCE_PRE_SAVE_KEYS.length;i++)await press(f.h,w.next)
+    await press(f.h,'I managed a little')
     await press(f.h,w.save)
     assert.equal(f.saved.length,1)
     assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
@@ -75,6 +82,8 @@ test('Days 2-13 show the real next lesson after saving; Day 14 shows completion,
       assert.ok(rendered.includes(oporaExperienceDay(day+1,'en').title))
       assert.ok(rendered.includes(oporaExperienceDay(day+1,'en').practice))
     }
+    await press(f.h,"I'm committed")
+    assert.match(textOf(f.h.tree),day===14?/Your course is complete!/:/See you tomorrow!/)
     await press(f.h,w.map)
     assert.equal(f.finishCount,1)
     assert.equal(f.saved.length,1)
