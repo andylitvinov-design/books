@@ -16,8 +16,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 57, "One consecutive course must have 57 screens");
-const milestones = new Set([1,2,4,5,6,8,11,12,14,15,16,19,21,24,25,26,34,41,49,57]);
+assert.equal(expectedSequence.length, 56, "One consecutive course must have 56 screens");
+const milestones = new Set([1,2,4,5,6,8,11,12,14,15,16,19,21,24,25,26,34,41,49,56]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -170,7 +170,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p4");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p5");
 
   // Opening the bottom hint should consume height in the flex column,
   // shrinking the slide instead of overlaying its contents.
@@ -257,6 +257,15 @@ async function exerciseJourney(page, locale, width) {
       await answer.fill("   ");
       await expect(nextButton).toBeDisabled();
       await answer.fill(locale === "ru" ? "Мой короткий ответ по материалу." : "My short answer from the guide.");
+      if (id === "tan-study-02") {
+        const second = page.locator('textarea[id="answer-tan-study-03"]');
+        await expect(page.locator("[data-tantra-study-combined]")).toHaveCount(1);
+        await expect(second).toHaveAttribute("required", "");
+        await expect(nextButton).toBeDisabled();
+        await second.fill("   ");
+        await expect(nextButton).toBeDisabled();
+        await second.fill(locale === "ru" ? "Применение системы из материала." : "Uses of the system from the guide.");
+      }
       await expect(nextButton).toBeEnabled();
     }
     if (index===expectedSequence.length) break;
@@ -264,7 +273,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 57 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 56 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
@@ -396,7 +405,7 @@ try {
   }
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
-  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:57,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
+  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:56,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
   await browser.close();
 }

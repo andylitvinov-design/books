@@ -9,14 +9,14 @@ const curriculum = read('data/academy/energywork-ai-curriculum.ts');
 const schema = read('data/academy/energywork-ai-schema.js');
 const localPortrait = '/images/holistic-house/reiki-approved-sunrise-v3.webp';
 
-test('Approved V3 retains the complete five-lesson, 57-screen real learning flow', () => {
+test('Approved V3 retains the complete five-lesson, 56-screen real learning flow', () => {
   assert.match(learner,/data-course-visual="reiki-airy-v2" data-course-portrait="v3"/);
   assert.match(learner,/data-reiki-reviews="v4"/);
   assert.match(learner,/energyworkLessons\.map\(\(lesson, number\) =>/);
   assert.match(learner,/const slides = useMemo\(\(\) => energyworkSlides\(\), \[\]\)/);
   assert.match(learner,/const total = slides\.length/);
-  assert.match(curriculum,/ENERGYWORK_COURSE_VERSION = "2026-10-19\.p4"/);
-  assert.match(schema,/ENERGYWORK_VERSION = '2026-10-19\.p4'/);
+  assert.match(curriculum,/ENERGYWORK_COURSE_VERSION = "2026-10-19\.p5"/);
+  assert.match(schema,/ENERGYWORK_VERSION = '2026-10-19\.p5'/);
   assert.match(learner,/<AcademyVideoPlayer/);
   assert.match(learner,/styles\.milestoneCard/);
   assert.match(learner,/styles\.voicesCard/);

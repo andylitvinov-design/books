@@ -2,7 +2,8 @@
 // The bilingual editorial content lives in data/academy/energywork-ai-curriculum.ts.
 // Keep this registry aligned with that file; tests enforce exact ID parity.
 export const ENERGYWORK_KEY = 'academy-energywork-principles'
-export const ENERGYWORK_VERSION = '2026-10-19.p4'
+export const ENERGYWORK_VERSION = '2026-10-19.p5'
+export const ENERGYWORK_P4_VERSION = '2026-10-19.p4'
 export const ENERGYWORK_P3_VERSION = '2026-10-19.p3'
 export const ENERGYWORK_P2_VERSION = '2026-10-19.p2'
 export const ENERGYWORK_PREVIOUS_VERSION = '2026-10-18.p1'
@@ -18,7 +19,7 @@ export const ENERGYWORK_COMMON = Object.freeze([
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
   yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-06','ygg-done'],
-  tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07'],
+  tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02'],
   kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-06','kun-done'],
 })
 export const ENERGYWORK_INITIATION = Object.freeze(['init-01','init-02'])
@@ -37,11 +38,11 @@ export function energyworkMeditationFeedbackComplete(answer) {
   }
   return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
-export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07','kun-06','ygg-06','init-01'])
+export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03','kun-06','ygg-06','init-01'])
 // Each of the seven Tantra Reiki study answers is required to move forward.
 // Drafts may still be saved blank, but a whitespace-only answer is not complete.
 export const ENERGYWORK_TANTRA_STUDY_QUESTION_IDS = Object.freeze([
-  'tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07',
+  'tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03',
 ])
 export function energyworkTantraStudyAnswerComplete(answer) {
   return typeof answer === 'string' && answer.trim().length > 0
@@ -108,43 +109,55 @@ export function energyworkLegacyResumeId(slideId) {
 // Migrate a saved p1 position by its original step number within the two
 // edited lessons. This also recovers IDs removed from the new course.
 // Later lessons keep their saved ID: their progress is never reset.
-const PREVIOUS_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
+const PREVIOUS_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
 const PREVIOUS_TANTRA = Object.freeze([
   'tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06',
   'presence-01','presence-02','presence-03','presence-04','tan-done',
 ])
-export function energyworkPreviousResumeId(slideId) {
-  const sequence = energyworkSequence()
-  const flightStep = PREVIOUS_FLIGHT.indexOf(slideId)
-  if (flightStep >= 0) return sequence[2 + flightStep]
-  const tantraStep = PREVIOUS_TANTRA.indexOf(slideId)
-  if (tantraStep >= 0) return sequence[9 + tantraStep]
-  return sequence.includes(slideId) ? slideId : 'flight-01'
+// Keep p3's on-screen order for stable p0/p1/p2 step mappings.
+const P3_TANTRA = Object.freeze([
+  'tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06',
+  'tan-study-02','tan-study-03','tan-study-04','tan-study-05',
+  'tan-study-06','tan-study-07','presence-01','presence-04','tan-done',
+])
+// Resume on the first unanswered original question in the NEW order.
+// The last shared screen retains both historic answer keys privately.
+export function energyworkP4ResumeId(slideId, answers = {}) {
+  if (['tan-06','tan-study-02','tan-study-03','tan-study-04',
+    'tan-study-05','tan-study-06','tan-study-07'].includes(slideId)) {
+    const missing = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.find(id =>
+      !energyworkTantraStudyAnswerComplete(answers[id]))
+    return missing === 'tan-study-03' ? 'tan-study-02' : missing ?? 'tan-study-02'
+  }
+  return energyworkSequence().includes(slideId) ? slideId : 'flight-01'
 }
-// p2 -> p3: retain the reached screen number in both edited lessons.
- // The encrypted answers stay attached to their original stable slide IDs.
+export function energyworkPreviousResumeId(slideId, answers = {}) {
+  const flightStep = PREVIOUS_FLIGHT.indexOf(slideId)
+  if (flightStep >= 0) return energyworkP3ResumeId(PREVIOUS_FLIGHT[flightStep], answers)
+  const tantraStep = PREVIOUS_TANTRA.indexOf(slideId)
+  if (tantraStep >= 0) return energyworkP4ResumeId(P3_TANTRA[tantraStep], answers)
+  return energyworkP3ResumeId(slideId, answers)
+}
+// p2/p1 retained screen number within their reordered meditation lessons.
 const P2_FLIGHT = Object.freeze(['flight-01','flight-02','flight-05','flight-voices','flight-04','flight-03','flight-done'])
 const P2_TANTRA = Object.freeze([
   'tan-01','tan-02','presence-01','tan-voices','tan-04','tan-05',
   'tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05',
   'tan-study-06','tan-study-07','tan-03','presence-04','tan-done',
 ])
-export function energyworkP2ResumeId(slideId) {
-  const sequence = energyworkSequence()
+export function energyworkP2ResumeId(slideId, answers = {}) {
   const flightStep = P2_FLIGHT.indexOf(slideId)
-  if (flightStep >= 0) return sequence[2 + flightStep]
+  if (flightStep >= 0) return energyworkP3ResumeId(PREVIOUS_FLIGHT[flightStep], answers)
   const tantraStep = P2_TANTRA.indexOf(slideId)
-  if (tantraStep >= 0) return sequence[9 + tantraStep]
-  return sequence.includes(slideId) ? slideId : 'flight-01'
+  if (tantraStep >= 0) return energyworkP4ResumeId(P3_TANTRA[tantraStep], answers)
+  return energyworkP3ResumeId(slideId, answers)
 }
-// p3 -> p4: restore the reached ordinal in lesson 1 after slides 5 and 6 swap.
-// Answers remain attached to their original stable slide IDs, never rewritten.
+// P3 lesson-one positions preceded the p4 swap. P4 quiz positions preceded p5.
 const P3_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
-export function energyworkP3ResumeId(slideId) {
-  const sequence = energyworkSequence()
+export function energyworkP3ResumeId(slideId, answers = {}) {
   const flightStep = P3_FLIGHT.indexOf(slideId)
-  if (flightStep >= 0) return sequence[2 + flightStep]
-  return sequence.includes(slideId) ? slideId : 'flight-01'
+  if (flightStep >= 0) return energyworkSequence()[2 + flightStep]
+  return energyworkP4ResumeId(slideId, answers)
 }
 export function energyworkInitiationReady(answers) {
   return Boolean(answers && typeof answers === 'object' && !Array.isArray(answers) &&

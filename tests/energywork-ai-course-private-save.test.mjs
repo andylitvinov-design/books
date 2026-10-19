@@ -2,13 +2,13 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
-  ENERGYWORK_KEY, ENERGYWORK_VERSION, ENERGYWORK_LEGACY_VERSION, ENERGYWORK_PREVIOUS_VERSION, ENERGYWORK_P2_VERSION, ENERGYWORK_P3_VERSION,
+  ENERGYWORK_KEY, ENERGYWORK_VERSION, ENERGYWORK_LEGACY_VERSION, ENERGYWORK_PREVIOUS_VERSION, ENERGYWORK_P2_VERSION, ENERGYWORK_P3_VERSION, ENERGYWORK_P4_VERSION,
   ENERGYWORK_COMMON, ENERGYWORK_BRANCH, ENERGYWORK_FINISH,
   ENERGYWORK_INITIATION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_STARTS,
   ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
   ENERGYWORK_MEDITATION_REPORT_IDS, energyworkMeditationFeedbackComplete,
   energyworkSequence, energyworkAnswerValid, energyworkInitiationReady,
-  energyworkLegacyResumeId, energyworkPreviousResumeId, energyworkP2ResumeId, energyworkP3ResumeId,
+  energyworkLegacyResumeId, energyworkPreviousResumeId, energyworkP2ResumeId, energyworkP3ResumeId, energyworkP4ResumeId,
 } from '../data/academy/energywork-ai-schema.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -18,25 +18,27 @@ const upgrade = read('supabase/migrations/20261018142000_hh_academy_reiki_unifie
 const latest = read('supabase/migrations/20261019044513_hh_academy_reiki_tantra_study_p2_20261019.sql')
 const p3Migration = read('supabase/migrations/20261019133000_hh_academy_reiki_practice_p3_20261019.sql')
 const p4Migration = read('supabase/migrations/20261019145500_hh_academy_reiki_lesson1_slide_swap_p4_20261019.sql')
+const p5Migration = read('supabase/migrations/20261019160000_hh_academy_reiki_questions_p5_20261019.sql')
 const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
-test('Server registry includes exactly 57 editorial IDs in one fixed five-lesson order', () => {
+test('Server registry includes exactly 56 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
-  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p4')
+  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p5')
+  assert.equal(ENERGYWORK_P4_VERSION, '2026-10-19.p4')
   assert.equal(ENERGYWORK_P3_VERSION, '2026-10-19.p3')
   assert.equal(ENERGYWORK_P2_VERSION, '2026-10-19.p2')
   assert.equal(ENERGYWORK_PREVIOUS_VERSION, '2026-10-18.p1')
   assert.equal(ENERGYWORK_LEGACY_VERSION, '2026-10-17.p0')
   const editorial = [...source.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
-    .map(match=>match[0].slice(5,-1))
+    .map(match=>match[0].slice(5,-1)).filter(id=>id !== 'tan-study-03')
   const registered = [...ENERGYWORK_COMMON,...Object.values(ENERGYWORK_BRANCH).flat(),...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH]
-  assert.equal(editorial.length, 57)
-  assert.equal(new Set(registered).size,57)
+  assert.equal(editorial.length, 56)
+  assert.equal(new Set(registered).size,56)
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
-  assert.equal(sequence.length,57)
+  assert.equal(sequence.length,56)
   assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
   assert.equal(sequence[0],'welcome-01')
   assert.equal(sequence.at(-1),'end-02')
@@ -69,7 +71,7 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
   assert.match(repository,/MEDITATION_FEEDBACK_REQUIRED/)
   assert.match(learner,/feedbackMissing = isMeditationFeedback/)
   assert.match(learner,/experienceMissing \|\| feedbackMissing/)
-  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05','tan-study-06','tan-study-07','kun-06','ygg-06','init-01'])
+  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03','kun-06','ygg-06','init-01'])
   assert.equal(energyworkInitiationReady(null),false)
   assert.equal(energyworkInitiationReady({}),false)
   const complete = Object.fromEntries([...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS].map(id=>[id,'My own note']))
@@ -126,6 +128,8 @@ test('Existing encrypted owner-only RLS is retained and version upgrade is addit
   assert.match(p3Migration, /2026-10-19\.p3/)
   assert.match(p4Migration, /2026-10-19\.p4/)
   assert.match(p4Migration, /alter column course_version set default '2026-10-19\.p4'/)
+  assert.match(p5Migration, /alter column course_version set default '2026-10-19\.p5'/)
+  assert.doesNotMatch(p5Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p4Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p3Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(upgrade,/drop table|delete from|drop policy|drop column/i)
@@ -141,7 +145,7 @@ test('Existing p0 learner keeps private answers and is resumed at first unskippe
   assert.match(repository,/energyworkLegacyResumeId\(row\.slide_id\)/)
   assert.match(repository,/const answers=answersFrom\(row,config\)/)
   assert.match(repository,/MAX_RESPONSES = 32/)
-  assert.equal(energyworkPreviousResumeId('presence-02'),'tan-study-03')
+  assert.equal(energyworkPreviousResumeId('presence-02'),'tan-study-04')
   assert.equal(energyworkPreviousResumeId('presence-03'),'tan-study-04')
   assert.equal(energyworkPreviousResumeId('flight-03'),'flight-03')
   assert.equal(energyworkPreviousResumeId('flight-05'),'flight-04')
@@ -154,8 +158,10 @@ test('Existing p0 learner keeps private answers and is resumed at first unskippe
   assert.equal(energyworkP3ResumeId('flight-done'),'flight-done')
   assert.equal(energyworkP3ResumeId('tan-04'),'tan-04')
   assert.match(repository,/ENERGYWORK_P2_VERSION/)
-  assert.match(repository,/energyworkP2ResumeId\(row\.slide_id\)/)
-  assert.match(repository, /energyworkP3ResumeId\(row\.slide_id\)/)
+  assert.match(repository,/energyworkP2ResumeId\(row\.slide_id, answers\)/)
+  assert.match(repository, /energyworkP3ResumeId\(row\.slide_id, answers\)/)
+  assert.match(repository, /energyworkP4ResumeId\(row\.slide_id, answers\)/)
+  assert.equal(energyworkP4ResumeId('tan-study-03'),'tan-study-04')
 })
 
 test('Server requires owner, consent, optimistic revision and per-owner encrypted writes', () => {
