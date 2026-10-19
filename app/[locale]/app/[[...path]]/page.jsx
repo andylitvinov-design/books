@@ -40,5 +40,7 @@ export default async function AppPage({ params }) {
   if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course'].includes(path[0]) && path.length)) notFound()
   // Existing Analysis bookmarks are permanently useful: open the merged report archive.
   if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait#personal-reports')
-  return <AppWorkspace locale={locale} path={path} />
+  // A tab-specific workspace cannot briefly render full screens with a
+  // previous tab's reduced Profile data while the next bootstrap is loading.
+  return <AppWorkspace key={path[0]} locale={locale} path={path} />
 }
