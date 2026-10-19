@@ -15,6 +15,10 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
+import {
+  ENERGYWORK_FIRST_LESSON_NEXT, ENERGYWORK_FIRST_LESSON_STORAGE_KEY,
+  energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
+} from "@/data/academy/energywork-first-lesson";
 import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
@@ -38,6 +42,8 @@ type StoredProgress = {
   applicationLead?: { id: string; status: string; submittedAt: string } | null;
 };
 type SyncStatus = "checking" | "guest" | "consent" | "ready" | "unavailable";
+type ReikiBootstrap = { account?: { id?: string; displayName?: string; onboardingState?: string } };
+type FirstLessonHandoff = { answers: Record<string, string> };
 type SaveCommand = {
   action: "save";
   version: string; slideId: string; nextSlideId: string;
@@ -129,6 +135,16 @@ const copy = {
     voicesNavigation: "Browse learner reviews",
     milestoneLabel: "Well done — keep going!",
     firstMilestoneLabel: "Your Reiki journey is underway",
+    firstSaveTitle: "Keep your Reiki lessons in My Courses",
+    firstSaveText: "Save Lesson 1, your notes and a link to your course materials. After Google sign-in, Lesson 2 opens automatically.",
+    firstSaveConsent: "I am at least 18 and agree to save my lesson progress and answers privately in my Holistic House account.",
+    firstSavePolicy: "Read our Privacy Policy",
+    firstSaveGoogle: "Continue with Google & save",
+    firstSaveAccount: "Save to My Courses & continue",
+    firstSaveGuest: "Or continue as a guest without saving",
+    firstSaveError: "Lesson 1 was not saved. Try again; your answers are still here.",
+    firstSignInCancelled: "Google sign-in was not completed. You can try again or continue as a guest.",
+    firstSaveReady: "Lesson 1 is saved in My Courses.",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
     reviewNeeded: "To request personal initiation, add five meditation reports and answer all study questions in Tantra, Kundalini and Yggdrasil Reiki.",
@@ -250,6 +266,16 @@ const copy = {
     voicesNavigation: "Переключение отзывов",
     milestoneLabel: "Отличный результат!",
     firstMilestoneLabel: "Ваш путь в Рейки начался",
+    firstSaveTitle: "Сохраните уроки Рейки в личном кабинете",
+    firstSaveText: "Сохраним первый урок, ваши записи и ссылку на материалы курса. После входа через Google автоматически откроется второй урок.",
+    firstSaveConsent: "Мне исполнилось 18 лет, и я согласен(на) на приватное хранение прогресса и ответов курса в Holistic House.",
+    firstSavePolicy: "Политика конфиденциальности",
+    firstSaveGoogle: "Войти через Google и сохранить",
+    firstSaveAccount: "Сохранить в кабинете и продолжить",
+    firstSaveGuest: "Или продолжить без сохранения",
+    firstSaveError: "Не удалось сохранить первый урок. Повторите попытку: ваши ответы остались на этом экране.",
+    firstSignInCancelled: "Вход через Google не завершён. Можно повторить попытку или продолжить как гость.",
+    firstSaveReady: "Первый урок сохранён в «Моих курсах».",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
     reviewNeeded: "Для заявки заполните пять отчётов и ответы на вопросы, по Тантра, Кундалини и Иггдрасиль Рейки. Учёбу можно продолжать без них.",
@@ -531,6 +557,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
   const [sync, setSync] = useState<SyncStatus>("checking");
   const [consented, setConsented] = useState(false);
+  const [firstLessonConsent, setFirstLessonConsent] = useState(false);
+  const authorizedOAuthLeave = useRef(false);
   const [shareConsented, setShareConsented] = useState(false);
   const [sharingWithTeacher, setSharingWithTeacher] = useState(false);
   const [applicationLead, setApplicationLead] = useState<StoredProgress["applicationLead"]>(null);
@@ -594,7 +622,72 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setSync((error as { status?: number })?.status === 401 ? "guest" : "unavailable");
     } finally { setBusy(false); }
   }, [hydrate]);
-  useEffect(() => { void reloadProgress(); }, [reloadProgress]);
+
+  const completeFirstLesson = useCallback(async (handoff: FirstLessonHandoff) => {
+    setBusy(true);
+    setSync("checking");
+    setSaveError(null);
+    try {
+      // Google creates a login first; a new cabinet may still require consent.
+      // The adult/necessary-processing consent was explicitly selected on the
+      // Lesson 1 save card before the OAuth redirect.
+      const bootstrap = await appFetch("bootstrap", undefined, "GET") as ReikiBootstrap;
+      if (!bootstrap.account?.id) throw new Error("ACCOUNT_UNAVAILABLE");
+      if (bootstrap.account.onboardingState !== "active") {
+        await appFetch("onboarding", {
+          adult: true, necessary: true, marketing: false,
+          uiLocale: locale, goal: "explore",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          displayName: bootstrap.account.displayName || "",
+        }, "POST", { accountId: bootstrap.account.id });
+      }
+      const value = await appFetch("academy-energywork", {
+        action: "start", consent: true, teacherConsent: false,
+        version: ENERGYWORK_COURSE_VERSION, firstLesson: handoff,
+      }, "POST", { accountId: bootstrap.account.id }) as StoredProgress;
+      if (!value.enrolled || !value.slideId || !Number.isSafeInteger(value.revision)) {
+        throw new Error("INVALID_FIRST_LESSON_RESPONSE");
+      }
+      hydrate(value); // The saved cursor is at least tan-01: the next lesson.
+      window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY);
+      setFirstLessonConsent(false);
+    } catch (error) {
+      // A network error must never masquerade as a successful saved course.
+      // Retain the short-lived, same-tab handoff for a deliberate retry.
+      const unauthorized = (error as { status?: number })?.status === 401;
+      setSync(unauthorized ? "guest" : "consent");
+      setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+      setSaveError(unauthorized ? t.signupError : t.firstSaveError);
+    } finally {
+      setBusy(false);
+    }
+  }, [hydrate, locale, t.firstSaveError, t.signupError]);
+
+  useEffect(() => {
+    let raw: string | null = null;
+    try { raw = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+    catch { /* Storage unavailable: the guest course still works normally. */ }
+    const pending = energyworkReadFirstLessonHandoff(raw, locale);
+    if (pending && !new URLSearchParams(window.location.search).has("auth")) {
+      // Resume immediately in the lesson, not the cabinet homepage.
+      setAnswers(pending.answers);
+      answersRef.current = pending.answers;
+      setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+      void completeFirstLesson(pending);
+      return;
+    }
+    if (raw) {
+      try { window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+      catch { /* Nonessential cleanup on restricted browsers. */ }
+      if (pending) {
+        answersRef.current = pending.answers;
+        setAnswers(pending.answers);
+        setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+        setSaveError(t.firstSignInCancelled);
+      }
+    }
+    void reloadProgress();
+  }, [completeFirstLesson, locale, reloadProgress, t.firstSignInCancelled]);
   // Mobile Safari can restore a scrolled document below our fixed lesson.
   // Reset only the document; the slide's own scroll and bottom CTA remain intact.
   useEffect(() => {
@@ -641,9 +734,33 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     try {
       const response = await appFetch("auth/start", { locale, continueTo: "energywork" }, "POST") as { redirectUrl?: string };
       if (!response.redirectUrl || !response.redirectUrl.startsWith("https://")) throw new Error("BAD_OAUTH_URL");
+      // The short-lived, consented first-lesson handoff is safely kept within
+      // this tab, so an expected OAuth navigation should not warn of lost edits.
+      let pending: string | null = null;
+      try { pending = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+      catch { /* Standard Google login still works without storage. */ }
+      authorizedOAuthLeave.current = Boolean(energyworkReadFirstLessonHandoff(pending, locale));
       window.location.assign(response.redirectUrl);
     } catch {
+      authorizedOAuthLeave.current = false;
       setSaveError(t.signupError); setBusy(false);
+    }
+  }
+  async function saveLessonOneToCabinet() {
+    if (busy || !firstLessonConsent || !["guest", "consent"].includes(sync) ||
+        slide.id !== "flight-done") return;
+    try {
+      const value = energyworkCreateFirstLessonHandoff(answersRef.current, locale);
+      // Only a checked and deliberately clicked save action writes temporary
+      // private reflections to sessionStorage. Nothing enters the URL.
+      window.sessionStorage.setItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value);
+      const pending = energyworkReadFirstLessonHandoff(value, locale);
+      if (!pending) throw new Error("INVALID_FIRST_LESSON");
+      setSaveError(null);
+      if (sync === "guest") await signIn();
+      else await completeFirstLesson(pending);
+    } catch {
+      setSaveError(t.firstSaveError);
     }
   }
   const slides = useMemo(() => energyworkSlides(), []);
@@ -805,7 +922,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   // Warn before losing a not-yet-confirmed private answer.
   useEffect(() => {
     if (!dirtyRef.current.size) return;
-    const beforeLeave = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    const beforeLeave = (event: BeforeUnloadEvent) => {
+      if (authorizedOAuthLeave.current) return;
+      event.preventDefault(); event.returnValue = "";
+    };
     window.addEventListener("beforeunload", beforeLeave);
     return () => window.removeEventListener("beforeunload", beforeLeave);
   }, [answers, savedAt]);
@@ -928,6 +1048,42 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                   </div>
                 </div>
+              ) : null}
+              {slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? (
+                <aside className={styles.firstLessonSave} data-reiki-first-lesson-save
+                  aria-labelledby="reiki-save-first-lesson-title">
+                  <div className={styles.firstLessonSaveHeading}>
+                    <LockKeyhole size={23} aria-hidden="true" />
+                    <div>
+                      <h2 id="reiki-save-first-lesson-title">{t.firstSaveTitle}</h2>
+                      <p>{t.firstSaveText}</p>
+                    </div>
+                  </div>
+                  <label className={styles.consentLabel}>
+                    <input type="checkbox" checked={firstLessonConsent}
+                      onChange={event => setFirstLessonConsent(event.target.checked)}
+                      data-reiki-first-lesson-consent />
+                    <span>{t.firstSaveConsent}</span>
+                  </label>
+                  <p className={styles.firstLessonPrivacy}>
+                    <Link href="/privacy" target="_blank" rel="noopener noreferrer">{t.firstSavePolicy}</Link>
+                    {" · "}{t.reviewPrivate}
+                  </p>
+                  <button type="button" className={styles.firstLessonSaveAction}
+                    onClick={saveLessonOneToCabinet}
+                    disabled={!firstLessonConsent || busy}
+                    data-reiki-first-lesson-google-save>
+                    {busy ? t.saving : sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount}
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </button>
+                  <p className={styles.firstLessonGuestNote}>{t.firstSaveGuest}</p>
+                </aside>
+              ) : null}
+              {slide.id === "flight-done" && sync === "ready" ? (
+                <p className={styles.firstLessonSaved} data-reiki-first-lesson-saved>
+                  <Check size={18} aria-hidden="true" />{t.firstSaveReady}
+                  <Link href={"/" + locale + "/app/course?view=courses"}>{t.myCourses}</Link>
+                </p>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
