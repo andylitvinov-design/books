@@ -54,7 +54,10 @@ test('photographic mobile player uses a bright panel and high-contrast large typ
   assert.match(jsx,/moment==='welcome'\|\|moment==='arrive'\|\|receipt/);
   assert.match(jsx,/data-opora-start-mood="true"/);
   assert.match(jsx,/welcomeFeeling:welcomeFeeling\|\|null/);
-  // The original tall photograph intentionally fills the short panoramic slot.\n  // A locally hosted landscape fallback prevents an empty image card.\n  assert.match(css,/\.arrivalPhoto img\{[\s\S]*?object-fit:cover/);\n  assert.match(css,/\.arrivalPhoto\{[^}]*course-focus-mountain-boy\.webp/);
+  // The original tall photograph intentionally fills the short panoramic slot.
+  // A locally hosted landscape fallback prevents an empty image card.
+  assert.match(css,/\.arrivalPhoto img\{[\s\S]*?object-fit:cover/);
+  assert.match(css,/\.arrivalPhoto\{[^}]*course-focus-mountain-boy\.webp/);
   assert.match(css,/\.moodChoices button\[aria-pressed=true\]/);
   const photo=new URL('../public/images/holistic-house/report-lighthouse-coast.webp',import.meta.url);
   assert.ok(existsSync(photo),'Welcome photo must ship with the site');
