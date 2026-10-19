@@ -42,6 +42,19 @@ type SaveCommand = {
   answer?: string;
 };
 
+const programmeSystemDescriptions: Record<EnergyworkLocale, Record<EnergyworkPath, string>> = {
+  en: {
+    tantra: "presence & connection",
+    kundalini: "grounding & energy",
+    yggdrasil: "runes & World Tree",
+  },
+  ru: {
+    tantra: "присутствие и контакт",
+    kundalini: "опора и энергия",
+    yggdrasil: "руны и Древо",
+  },
+};
+
 const copy = {
   en: {
     shortTitle: "Reiki Practitioner",
@@ -60,7 +73,8 @@ const copy = {
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Discover your Reiki journey",
-    programmeIntro: "Five short lessons: a guided meditation and three Reiki traditions.",
+    programmeIntro: "Three Reiki traditions — discover each approach.",
+    programmeRead: "Guide",
     systemDetails: "About this practice",
     openLesson: "Open lesson",
     lessonLocked: "Opens as you progress",
@@ -180,7 +194,8 @@ const copy = {
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Откройте свой путь в Рейки",
-    programmeIntro: "Пять коротких уроков: медитация и знакомство с тремя системами Рейки.",
+    programmeIntro: "Три системы Рейки — познакомьтесь с каждой.",
+    programmeRead: "Описание",
     systemDetails: "Об этой практике",
     openLesson: "Открыть урок",
     lessonLocked: "Откроется по мере прохождения",
@@ -471,6 +486,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const t = copy[locale];
   // Referral entrants have already read the course overview; saved account progress still wins.
   const [index, setIndex] = useState(startAtExperience ? 1 : 0);
+  const [programmeOpen, setProgrammeOpen] = useState(false);
   const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const answersRef = useRef<AnswerMap>({});
@@ -1092,16 +1108,32 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </div>
         </div>
 
-        <details className={styles.programme}>
-          <summary className={styles.programmeSummary}>
+        <section className={styles.programme} data-expanded={programmeOpen ? "true" : "false"} aria-label={t.program}>
+          <div className={styles.programmeBody} id="reiki-journey-help" hidden={!programmeOpen}>
+            <p className={styles.programmeIntro}>{t.programmeIntro}</p>
+            <div className={styles.programmeSystems}>
+              {energyworkPathChoices.map((choice) => (
+                <p key={choice.id} className={styles.programmeSystem}>
+                  <strong>{choice.title[locale]}</strong>
+                  <span className={styles.programmeSystemDescription}>— {programmeSystemDescriptions[locale][choice.id]}</span>
+                  <Link className={styles.programmeSystemLink}
+                    href={"/" + locale + "/academy/" + choice.studyPath}
+                    target="_blank" rel="noopener noreferrer"
+                    aria-label={choice.title[locale] + " — " + t.systemDetails}>
+                    {t.programmeRead}<ExternalLink size={12} aria-hidden="true" />
+                  </Link>
+                </p>
+              ))}
+            </div>
+          </div>
+          <button type="button" className={styles.programmeSummary}
+            aria-expanded={programmeOpen} aria-controls="reiki-journey-help"
+            onClick={() => setProgrammeOpen((open) => !open)}>
             <span className={styles.programmeSummaryIcon}><BookOpen size={17} aria-hidden="true" /></span>
             <span className={styles.programmeSummaryCopy}><strong>{t.program}</strong></span>
             <ChevronDown className={styles.programmeChevron} size={18} aria-hidden="true" />
-          </summary>
-          <div className={styles.programmeBody}>
-            <p className={styles.programmeIntro}>{t.programmeIntro}</p>
-          </div>
-        </details>
+          </button>
+        </section>
         <footer className={styles.footer}>
           {!completed ? (
             <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
