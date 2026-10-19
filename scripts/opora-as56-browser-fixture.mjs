@@ -74,7 +74,9 @@ export async function buildOporaBrowserFixture({ projectRoot = projectDirectory 
       output: { path: directory, filename: 'fixture.js' },
       devtool: false,
       cache: false,
-      optimization: { minimize: false },
+      // A production-like compact browser bundle keeps the fixed 750 KiB QA budget
+      // without weakening source-traceability, isolation, or performance checks.
+      optimization: { minimize: true },
       performance: fixturePerformanceBudget,
       resolve: {
         extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
