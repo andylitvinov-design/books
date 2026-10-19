@@ -13,6 +13,8 @@ import { getOwnerReportTextTemplate } from '@/lib/consultations/owner-report-tem
 import { reportFollowUpCopy } from '@/lib/documents/recommendation'
 import { ReportLanguagePicker } from './report-language-picker'
 import { ConsultationRecommendedTests } from './consultation-recommended-tests'
+import { DaoResourceStageField } from './dao-resource-stage'
+import { parseDaoResourceScore } from '@/lib/consultations/dao-resource-stage'
 import { readUiLocale } from '@/lib/ui-locale'
 
 const copy = {
@@ -203,6 +205,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
   const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale).additionalNotes)
   const [recommendedTestKeys, setRecommendedTestKeys] = useState(() => consultation?.recommendedTestKeys ?? [])
+  const [daoResourceScore, setDaoResourceScore] = useState(() => consultation?.daoResourceScore == null ? '' : String(consultation.daoResourceScore))
   const [uiLocale, setUiLocale] = useState('en')
 
   useEffect(() => {
@@ -215,6 +218,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const labels = copy[uiLocale]
   const reportType = useMemo(() => detectedType(items), [items])
   const reportLabel = reportType === 'mixed' ? labels.reportMixed : reportType === 'bach' ? labels.reportBach : labels.reportHomeopathy
+  const daoScoreInvalid = (() => { try { parseDaoResourceScore(daoResourceScore); return false } catch { return true } })()
 
   function changeReportLocale(nextLocale) {
     const next = nextLocale === 'ru' ? 'ru' : 'en'
@@ -330,6 +334,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     } else if (includeRecommendation && !validateConsultationRows(items)) {
       event.preventDefault()
       setError(labels.chooseError)
+    } else if (includeRecommendation && daoScoreInvalid) {
+      event.preventDefault()
+      setError(uiLocale === 'ru' ? 'Укажите балл У-син от 0 до 10 с одним знаком после запятой.' : 'Enter a Wu Xing score from 0 to 10 with at most one decimal place.')
     } else {
       setError('')
     }
@@ -608,6 +615,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       </div>}
       {!includeInvoice && payment && <p className="consultation-existing-payment-note">{labels.existingPaymentHint}</p>}
     </section>
+
+    {includeRecommendation && <DaoResourceStageField value={daoResourceScore} onChange={setDaoResourceScore} locale={uiLocale} />}
 
     <div className="consultation-studio-submit">
       <div className="consultation-studio-submit-copy">
