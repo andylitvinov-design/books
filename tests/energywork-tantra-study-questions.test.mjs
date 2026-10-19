@@ -103,7 +103,7 @@ test("All seven study questions require an answer for Next, with contextual sour
   assert.match(learner, /required=\{isTantraStudyQuestion\}/)
   assert.match(learner, /data-tantra-study-hint/)
   assert.match(learner, /target="_blank" rel="noopener noreferrer" data-tantra-study-hint/)
-  assert.match(learner, /href=\{"/" \+ locale \+ "\/academy\/reiki\/tantra-reiki" \+ TANTRA_STUDY_HINT_ANCHORS\[slide.id\]\}/)
+  assert.ok(learner.includes('href={"/" + locale + "/academy/reiki/tantra-reiki" + TANTRA_STUDY_HINT_ANCHORS[slide.id]}'))
   assert.match(learner, /t\.tantraAnswerRequired/)
   assert.match(learner, /t\.tantraAnswerPlaceholder/)
   assert.match(repo, /ENERGYWORK_TANTRA_STUDY_QUESTION_IDS\.includes\(body\.slideId\)/)
