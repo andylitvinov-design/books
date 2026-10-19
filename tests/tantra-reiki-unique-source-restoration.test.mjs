@@ -58,11 +58,17 @@ test("Tantra Reiki preserves newly recovered source-unique passages in the corre
   assert.match(story, /id="tantra-original-academy-history"/);
   assert.match(story, /id="tantra-original-author-biography"/);
 
-  assert.match(reviews, /name: "Litten", blocks: \[86, 87\]/);
-  assert.match(reviews, /name: "Margaret", blocks: \[89\]/);
-  assert.match(reviews, /tantraReikiArchive\.blocks\.en\[index\]\.text/);
-  assert.match(reviews, /id="tantra-original-english-testimonials"/);
-  assert.doesNotMatch(reviews, /name: "Olga"/);
+  // PR #1160 restored all four complete archived reviews through one shared
+  // source used by both the Tantra and Reiki Practitioner landings.
+  const learnerCards = await read("components/tantra-learner-review-cards.tsx");
+  const curriculum = await read("data/academy/energywork-ai-curriculum.ts");
+  assert.match(reviews, /<TantraLearnerReviewCards locale=\{locale\}/);
+  assert.match(learnerCards, /tantraVoices\.map\(\(review, index\) =>/);
+  assert.match(learnerCards, /review\.quote\[reviewLanguage\]/);
+  for (const id of ["margaret", "olga", "litten", "tantra-level-1"]) {
+    assert.ok(curriculum.includes('id: "' + id + '"'), "Original learner account missing: " + id);
+  }
+  assert.match(curriculum, /testimonials: tantraVoices/);
   for (const index of [86, 87, 89]) assert.ok(archive.blocks.en[index].text.length >= 20);
 
   assert.match(programme, /new Set\(\[5, 6, 7, 8, 182\]\)/);
