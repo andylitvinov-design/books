@@ -14,7 +14,7 @@ const videos = read('data/academy/english-guided-meditations.ts')
 
 test('Unified Reiki Practitioner course has 57 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p3"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p4"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0])
   assert.equal(ids.length, 57)
@@ -62,8 +62,8 @@ test('Sun meditation is followed by the gentle pause before reflections', () => 
   const lesson = curriculum.split('id: "flight-01"')[1].split('id: "presence-01"')[0]
   assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-03"'))
   assert.ok(lesson.indexOf('id: "flight-03"') < lesson.indexOf('id: "flight-voices"'))
-  assert.ok(lesson.indexOf('id: "flight-voices"') < lesson.indexOf('id: "flight-04"'))
-  assert.ok(lesson.indexOf('id: "flight-04"') < lesson.indexOf('id: "flight-05"'))
+  assert.ok(lesson.indexOf('id: "flight-voices"') < lesson.indexOf('id: "flight-05"'))
+  assert.ok(lesson.indexOf('id: "flight-05"') < lesson.indexOf('id: "flight-04"'))
   assert.match(lesson, /Sun’s light and warmth/)
   assert.match(lesson, /Ваш опыт важен/)
   assert.match(lesson, /question: \{ type: "text"/)
