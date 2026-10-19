@@ -376,8 +376,8 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   return highlights;
 }
 
-function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
-  const [remaining, setRemaining] = useState(120);
+function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLocale; durationSeconds?: number }) {
+  const [remaining, setRemaining] = useState(durationSeconds);
   const [running, setRunning] = useState(false);
   const deadline = useRef(0);
   useEffect(() => {
@@ -394,8 +394,8 @@ function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
       setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
       setRunning(false);
     } else {
-      deadline.current = Date.now() + (remaining || 120) * 1000;
-      if (remaining === 0) setRemaining(120);
+      deadline.current = Date.now() + (remaining || durationSeconds) * 1000;
+      if (remaining === 0) setRemaining(durationSeconds);
       setRunning(true);
     }
   }
@@ -405,9 +405,9 @@ function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
       {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
     </strong>
     <button type="button" onClick={toggle}>{running ? (locale === "ru" ? "Пауза" : "Pause") :
-      (remaining < 120 && remaining > 0 ? (locale === "ru" ? "Продолжить" : "Resume") :
-        (locale === "ru" ? "Начать 2 минуты" : "Start 2 minutes"))}</button>
-    <button type="button" onClick={() => { setRunning(false); setRemaining(120); }}>
+      (remaining < durationSeconds && remaining > 0 ? (locale === "ru" ? "Продолжить" : "Resume") :
+        (locale === "ru" ? (durationSeconds === 60 ? "Начать 1 минуту" : "Начать 2 минуты") : (durationSeconds === 60 ? "Start 1 minute" : "Start 2 minutes")))}</button>
+    <button type="button" onClick={() => { setRunning(false); setRemaining(durationSeconds); }}>
       {locale === "ru" ? "Сбросить" : "Reset"}
     </button>
   </div>;
@@ -839,7 +839,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </div>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
-              {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
+              {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={slide.id === "flight-03" || slide.id === "tan-03" ? 60 : 120} /> : null}
 
               {slide.id === "paths-04" ? (
                 <div className={styles.reviewChecklist} data-initiation-readiness>
@@ -878,7 +878,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
                   {slide.question.type === "text" ? (
-                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (slide.id === "flight-03" ? flightPracticeResponse(answers[slide.id] ?? "", locale) : (answers[slide.id] ?? ""))}
+                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (answers[slide.id] ?? "")}
                       onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
                       maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
