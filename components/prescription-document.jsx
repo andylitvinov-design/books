@@ -129,10 +129,10 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
                 <RemedyReportThumbnail src={remedy?.primary_image} number={number} />
                 <span className="canonical-remedy-unified-main">
                   <span className="canonical-remedy-title">
-                    <h3>{item.displayName}{potency && <span
+                    <strong className="canonical-remedy-unified-name">{item.displayName}{potency && <span
                       className="canonical-remedy-potency"
                       aria-label={locale === 'ru' ? `Потенция ${potency}` : `Potency ${potency}`}
-                    >{' '}{potency}</span>}</h3>
+                    >{' '}{potency}</span>}</strong>
                   </span>
                   {administration && <span className="canonical-remedy-schedule" aria-label={administration}>
                     {administration.split(' · ').map((part, index) => <span className="canonical-remedy-schedule-part" key={index}>
