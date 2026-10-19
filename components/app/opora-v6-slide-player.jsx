@@ -244,12 +244,13 @@ function oporaLearningReceipt(answers,authored,lang,ease){
 }
 const versionTag='as-5.4-live-v6'
 
-export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,onFinish,onSession}){
+export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,onFinish,onSession,habitSetupContent=null}){
   const lang=locale==='ru'?'ru':'en',t=DICTIONARY[lang],lesson=data?.lesson||{},cycle=data?.cycle||{}
   const authored=lesson.opora54
   const slides=useMemo(()=>buildCourseSlides(lesson),[lesson])
   const hasSaved=Boolean(data?.currentSession)
   const [saved,setSaved]=useState(hasSaved)
+  const [habitSetup,setHabitSetup]=useState(false)
   const [step,setStep]=useState(hasSaved?OPORA54_PRE_SAVE_KEYS.length:0)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [hints,setHints]=useState(data?.currentSession?.signals?.opora54?.hints||[])
@@ -469,6 +470,17 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 ?'Это ваш собственный отчёт об учебном опыте, не оценка здоровья и не доказательство освоения.'
                 :'This is your own learning report, not a health rating or proof of skill mastery.'}</small>
             </section>
+            {cycle.day===1&&<section className={styles.habitOffer} data-opora-first-lesson-habit-option>
+              <button type="button" disabled={locked} aria-expanded={habitSetup}
+                onClick={()=>setHabitSetup(value=>!value)}>
+                {lang==='ru'?'ОПОРА на телефоне и пауза перед YouTube (по желанию)':
+                  'OPORA on your phone & a pause before YouTube (optional)'}
+                <ChevronDown size={17} aria-hidden="true"/>
+              </button>
+              {habitSetup&&(habitSetupContent||<p className={styles.helper}>
+                {lang==='ru'?'Настроить можно на странице курса.':'Set it up from your course page.'}
+              </p>)}
+            </section>}
             <p className={styles.helper}>{t.advance}</p>
           </>:<>
             {role==='aphorism'
