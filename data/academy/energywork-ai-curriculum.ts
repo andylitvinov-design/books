@@ -55,34 +55,32 @@ const yggdrasilVoices: EnergyworkTestimonial[] = yggdrasilTextTestimonials.map((
   sourcePath: "reiki/yggdrasil",
 }));
 
-// Verbatim brief extracts from archived Tantra Reiki testimonials and their
-// existing EN translation: tantra-reiki-full.generated.json / tantra-reiki-ru-en.generated.json.
-// Course reviews are NOT presented as reactions to this exact meditation recording.
+// Full archived learner reports, not isolated promotional excerpts.
+// EN: tantra-reiki-full.generated.json + tantra-reiki-ru-en.generated.json;
+// RU: original Russian source where available, faithful translations for Margaret and Litten.
+// These are subjective reports about the course, not the exact meditation recording.
 const tantraVoices: EnergyworkTestimonial[] = [
   {
     id: "margaret",
-    quote: l("It was also a shift in perception and it felt like flowing energy as I went on my day.",
-      "Я заметила изменение восприятия и ощущение потока, которое сохранялось в течение дня."),
+    quote: l("The first time I followed the steps the video, I felt a powerful energy coming in with the Tantric flow. It was immediately noticable when it was invited in. It was also a shift in perception and it felt like flowing energy as I went on my day - I was in the flow. Loving and flowing movements that were in deeper connection with myself. Mundane tasks (like laundry) seemed effortless and that previously seemed irritating. It didn't seem to matter what I was doing because of the soft and loving energy flowing. This distinct continuity of pleasurable energy continued throughout for the rest of the day", "Когда я впервые выполнила шаги из видео, я почувствовала мощный поток энергии Тантра Рейки. Он был заметен сразу, как только я его пригласила. Изменилось и моё восприятие: ощущение потока сопровождало меня весь день — я была в потоке. Движения стали мягкими, любящими, я чувствовала более глубокую связь с собой. Обычные дела (например, стирка), которые раньше раздражали, давались словно без усилий. Казалось, уже не так важно, что именно я делаю: меня сопровождала мягкая, любящая энергия. Это приятное ощущение непрерывного потока сохранялось до конца дня."),
     attribution: l("Margaret · published Tantra Reiki learner review", "Маргарет · опубликованный отзыв о Тантра Рейки"),
     sourcePath: "reiki/tantra-reiki",
   },
   {
     id: "olga",
-    quote: l("A soft and gentle flow that dissolves some tensions and blocks while working with the situation.",
-      "Мягкий и бережный поток который растворяет какие-то напряжения и блоки, в работе с ситуацией."),
+    quote: l("Trans flow. You enter an altered state and you can stick to it. A soft and gentle flow that dissolves some tensions and blocks while working with the situation. Activation of sexual energy - I felt energy pulsations, a gentle awakening of energy in the lower centers. The attraction is not quite understood, the feeling is in upper chakras. Anahata, vishuddha. Like opening, expanding and at the same time blooming.", "Трансовый поток. Входишь в измененное состояние и можно на этом залипать.\n\nМягкий и бережный поток который растворяет какие-то напряжения и блоки, в работе с ситуацией.\n\nАктивизация сексуальной энергии - ощутила энергетические пульсации, мягкое пробуждение энергии в нижних центрах.\n\nПривлекательность не совсем поняла, ощущения вверху. Агахана, вишудха. Как раскрытие, расширение и в то же время"),
     attribution: l("Olga · published Tantra Reiki learner review", "Ольга · опубликованный отзыв о Тантра Рейки"),
     sourcePath: "reiki/tantra-reiki",
   },
   {
     id: "litten",
-    quote: l("I feel the heat in the palms of my hands.", "Я ощущаю тепло в ладонях."),
+    quote: l("I felt really dizzy I heard the blood flow flushing in my ears like sound of water fall In My two palms pointing up I felt like pillars coming upwards .... they meet in big energy above First they were flames 🔥 A strong light from a night sky 🌌... In thé attunement I couldn’t get through to one of us, It was blocked by a branch with strong cover. On the other hand, during the Tantra flow to Andy the pillars from my hands were like light beams reaching up up up..... After the attunement, I send to my daughter.... I feel the heat in the palms of my hands. The flow meets in a triangle above me .... A space that represents the person I’m sending to. My daughter is a gentle being and truly the flow was adjusted to exactly how much she could take in one time.\n\nWill still practice with attuned partner", "У меня сильно кружилась голова. Я слышала шум крови в ушах — словно водопад. Из обеих ладоней, обращённых вверх, будто поднимались столбы энергии… Они соединились высоко надо мной. Сначала это были языки пламени 🔥, затем — сильный свет ночного неба 🌌. Во время инициации мне не удалось достучаться до одного из нас: как будто мешала ветка с плотным покровом. Зато во время потока Тантра Рейки, направленного Энди, столбы из моих рук были словно лучи света, уходящие всё выше. После инициации я посылала энергию дочери. Я ощущала тепло в ладонях. Потоки соединились в треугольник надо мной — пространство, представляющее того, кому я посылаю энергию. Моя дочь — очень нежное существо, и поток, как мне показалось, подстроился ровно под то, сколько она могла принять за один раз. Я ещё буду практиковать с партнёром, прошедшим инициацию."),
     attribution: l("Litten · published Tantra Reiki learner review", "Литтен · опубликованный отзыв о Тантра Рейки"),
     sourcePath: "reiki/tantra-reiki",
   },
   {
     id: "tantra-level-1",
-    quote: l("Outside, I delight in the wind and the sun. A state of unconditional Love!",
-      "На улице кайфую От ветра) Солнца) Состояние Безусловной Любви!"),
+    quote: l("I feel relaxed :) rested :) I look at myself in the mirror and admire myself :) Outside, I delight in the wind and the sun. A state of unconditional Love!\n\nThank you, Andrey! As beautiful as always :)", "Состояние розслабленое) отдохнувшая) смотрю на себя в зеркало и любуюсь )) На улице кайфую От ветра) Солнца) Состояние Безусловной Любви!\n\nБлагодарю Андрей! Как всегда красиво )"),
     attribution: l("Tantra Reiki Level 1 learner · published anonymous review", "Участница Тантра Рейки 1-й ступени · отзыв без подписи"),
     sourcePath: "reiki/tantra-reiki",
   },
