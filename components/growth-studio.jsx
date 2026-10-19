@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {useEffect, useMemo, useState} from 'react'
 import {CalendarDays, Check, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
-import {listGrowthStudioPostsAction,updateGrowthStudioPostAction} from '@/app/admin/growth-studio/actions'
+import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import styles from './growth-studio.module.css'
@@ -18,7 +18,11 @@ const COPY={
   en:{
     heading:'Content command center',sub:'One place to prepare posts for your channels, with explicit approvals.',
     draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',
-    pending:'For review',planned:'Planned for manual posting',noAuto:'No automatic posts will be sent from this version.',
+    sending:'Sending — do not retry',published:'Published (provider confirmed)',delivery_unknown:'Delivery uncertain — verify in Telegram',
+    pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
+    telegramReady:'Telegram channel ready',telegramDisabled:'Telegram is not connected. Add the dedicated bot settings.',
+    telegramSend:'Publish now to Telegram',telegramConfirm:'Publish this exact post now to the configured public Telegram channel?',
+    telegramSent:'Telegram confirmed publication.',telegram_delivery_unknown:'The result is uncertain. Check your channel before taking further action. Do NOT retry.',telegram_unconfigured:'Telegram is not configured.',telegram_invalid_post:'This Telegram post is not ready.',telegram_media_unsupported:'This media format requires manual publication.',telegram_text_too_long:'Telegram caption is too long.',
     unavailable:'Durable storage is not available. Editing is disabled to prevent losing your work.',
     reload:'Refresh',new:'New post',compose:'Editor',calendar:'Calendar',library:'Media',bulk:'Bulk / CSV',export:'Export CSV',
     brand:'Brand',channel:'Channel',language:'Post language',title:'Internal title',caption:'Caption / post text',media:'Public photo/video URL',mediaAlt:'Image description (alt text)',mediaHint:'Use a public JPG, PNG, WEBP, GIF or MP4 file on the selected brand website. Never use private client files.',
@@ -51,7 +55,11 @@ const COPY={
   ru:{
     heading:'Центр управления контентом',sub:'Готовьте публикации для разных площадок и согласовывайте их перед размещением.',
     draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',
-    pending:'На согласование',planned:'Запланировано вручную',noAuto:'Эта версия не отправляет публикации автоматически.',
+    sending:'Отправка — не повторять',published:'Опубликовано (подтверждено)',delivery_unknown:'Доставка неясна — проверьте Telegram',
+    pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
+    telegramReady:'Канал Telegram подключён',telegramDisabled:'Telegram не подключён — настройте отдельного бота.',
+    telegramSend:'Опубликовать сейчас в Telegram',telegramConfirm:'Опубликовать этот точный текст сейчас в настроенном публичном Telegram-канале?',
+    telegramSent:'Telegram подтвердил публикацию.',telegram_delivery_unknown:'Результат неизвестен. Проверьте канал. НЕ повторяйте отправку автоматически.',telegram_unconfigured:'Telegram не настроен.',telegram_invalid_post:'Пост не готов к отправке в Telegram.',telegram_media_unsupported:'Этот формат медиа нужно опубликовать вручную.',telegram_text_too_long:'Слишком длинная подпись для Telegram.',
     unavailable:'Серверное хранилище недоступно. Редактор отключён, чтобы не потерять изменения.',
     reload:'Обновить',new:'Новая публикация',compose:'Редактор',calendar:'Календарь',library:'Медиа',bulk:'Массово / CSV',export:'Экспорт CSV',
     brand:'Проект',channel:'Площадка',language:'Язык публикации',title:'Внутреннее название',caption:'Текст публикации',media:'Публичная ссылка на фото/видео',mediaAlt:'Описание изображения (alt)',mediaHint:'Публичный JPG, PNG, WEBP, GIF или MP4 на сайте выбранного проекта. Не используйте личные файлы клиентов.',
@@ -125,7 +133,7 @@ function saveCsv(records) {
   document.body.appendChild(link);link.click();link.remove()
   setTimeout(()=>URL.revokeObjectURL(url),1000)
 }
-export default function GrowthStudio({initialLocale='en',initialRecords=[],storageReady=false}) {
+export default function GrowthStudio({initialLocale='en',initialRecords=[],storageReady=false,telegram={ready:false,channel:null}}) {
   const [locale,setLocale]=useState(initialLocale==='ru'?'ru':'en')
   const t=COPY[locale]
   const [records,setRecords]=useState(initialRecords)
@@ -213,6 +221,22 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     } catch {setNotice(t.tryAgain)}
     finally {setBusy(false)}
   }
+  async function sendTelegram(post){
+    if(!telegram.ready||busy)return
+    const destination=telegram.channel||'the configured channel'
+    if(!window.confirm(t.telegramConfirm+'\n'+destination+'\n\n'+post.title))return
+    setBusy(true);setNotice('')
+    try{
+      const result=await publishGrowthTelegramNowAction({id:post.id,expectedRevision:post.revision,confirmed:true})
+      if(result.record)onCreated([result.record])
+      if(result.ok)setNotice(t.telegramSent)
+      else{
+        setNotice(t[result.error]||t.tryAgain)
+        if(!result.record)await refresh()
+      }
+    }catch{setNotice(t.telegram_delivery_unknown)}
+    finally{setBusy(false)}
+  }
   async function copyPost(post){
     try {
       const link=publicCampaignLink(post)
@@ -251,12 +275,15 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <div className={styles.safetyBadge}><ShieldCheck size={18} aria-hidden="true"/>{t.noAuto}</div>
     </div>
     {!ready&&<p className={styles.warning} role="alert"><CircleAlert size={18}/>{t.unavailable}</p>}
+    <p className={telegram.ready?styles.connectionReady:styles.connectionUnavailable}>
+      <ShieldCheck size={15}/>{telegram.ready?t.telegramReady+': '+(telegram.channel||'Telegram'):t.telegramDisabled}
+    </p>
     <p className={styles.privacyNote}><ShieldCheck size={15} aria-hidden="true"/>{t.unsafe}</p>
     <div className={styles.metrics}>
       <div><span>{t.draftCount}</span><strong>{counts.draft}</strong></div>
       <div><span>{t.approvedCount}</span><strong>{counts.approved}</strong></div>
       <div><span>{t.planCount}</span><strong>{counts.planned_manual}</strong></div>
-      <div><span>{t.publishedCount}</span><strong className={styles.notMeasured}>{t.notMeasured}</strong></div>
+      <div><span>{t.publishedCount}</span><strong>{records.filter(x=>x.status==='published'&&x.delivery?.messageId).length}</strong></div>
     </div>
     <div className={styles.toolbar}>
       <div className={styles.tabs} role="group" aria-label={t.filter}>
@@ -352,7 +379,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <option value="all">{t.allBrands}</option>{Object.keys(BRANDS).map(key=><option key={key} value={key}>{BRANDS[key]}</option>)}</select></label>
       <label>{t.filter}<select value={filter} onChange={event=>setFilter(event.target.value)}>
         <option value="active">{t.all}</option><option value="all">{t.all} + {t.archived}</option>
-        {['draft','approved','planned_manual','archived'].map(status=><option key={status} value={status}>{t[status]}</option>)}
+        {['draft','approved','planned_manual','sending','published','delivery_unknown','archived'].map(status=><option key={status} value={status}>{t[status]}</option>)}
       </select></label>
     </div>}
     {tab==='calendar'&&<div className={styles.calendar}>
@@ -382,13 +409,21 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{t[post.status]}</span>
           <h3>{post.title}</h3><p>{BRANDS[post.brand]} · {CHANNELS[post.channel]} · {post.locale.toUpperCase()}</p>
           {post.scheduledAt&&<small>{formatTime(post.scheduledAt,locale)} · {t.localTime}</small>}</div>
-          <button type="button" disabled={busy} onClick={()=>edit(post)}><Edit3 size={15}/>{t.edit}</button></div>
+          {!['sending','published','delivery_unknown'].includes(post.status)
+            && <button type="button" disabled={busy} onClick={()=>edit(post)}><Edit3 size={15}/>{t.edit}</button>}</div>
         <p className={styles.postExcerpt}>{post.caption||'—'}</p>
         <div className={styles.postButtons}>
           {post.status==='draft'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
           {post.status==='approved'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
+          {post.channel==='telegram'&&['approved','planned_manual'].includes(post.status)&&
+            <button type="button" disabled={busy||!ready||!telegram.ready}
+              title={telegram.ready?t.telegramSend:t.telegramDisabled} onClick={()=>sendTelegram(post)}>
+              <Send size={15}/>{t.telegramSend}</button>}
+          {post.status==='published'&&post.delivery?.url&&
+            <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>
           {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
-          {post.status!=='archived'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
+          {!['archived','sending','published','delivery_unknown'].includes(post.status)&&
+            <button type="button" disabled={busy||!ready} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
           <button type="button" onClick={()=>copyPost(post)}><Copy size={15}/>{t.copyPost}</button>
           {post.sourceUrl&&<button type="button" onClick={()=>copyLink(post)}><Copy size={15}/>{t.copy}</button>}
           <button type="button" onClick={()=>duplicate(post)}><Plus size={15}/>{t.duplicate}</button>
