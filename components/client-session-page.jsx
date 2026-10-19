@@ -88,7 +88,26 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
     {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button>{isMov&&<> <a href={route} download="consultation-video.mov">{ru?'Открыть оригинал MOV':'Open original MOV'}</a></>}</p>}
   </article>
 }
-export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false}) {
+// Embed the same private audio player directly after the signed report cover.
+export function ClientSessionVoiceMessage({session,selector,locale='en',mode='guest',savedId=null}) {
+  const ru=locale==='ru'
+  const audio=(session?.media||[]).filter(item=>item.kind==='audio'&&item.role!=='hidden'&&
+    (!item.role||item.role==='personal'))
+  if(!audio.length)return null
+  return <section id="session-message" className={styles.clientSection+' '+styles.reportVoiceSection}
+    aria-label={ru?'Голосовое обращение':'Voice message'}>
+    <header className={styles.sectionHeader}>
+      <span className={styles.sectionIcon}><Headphones size={21}/></span>
+      <div><span className={styles.sectionKicker}>{ru?'ГОЛОСОВОЕ ОБРАЩЕНИЕ':'VOICE MESSAGE'}</span>
+        <h2>{ru?'Аудиосообщение для вас':'An audio message for you'}</h2></div>
+    </header>
+    <div className={styles.mediaList}>
+      {audio.map(item=><PrivatePlayer key={item.assetId} item={item}
+        session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
+    </div>
+  </section>
+}
+export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false,audioEmbedded=false}) {
   const ru=locale==='ru'
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
     .format(new Date(session.occurredOn+'T12:00:00Z'))
@@ -189,22 +208,15 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
     </section>}
 
+    {!audioEmbedded&&!hasFullReport&&<ClientSessionVoiceMessage session={session}
+      selector={selector} mode={mode} locale={locale} savedId={savedId}/>}
     {hasFullReport&&<section id="session-report" className={styles.fullReportSection}
       aria-label={ru?'Полный отчёт консультации':'Complete consultation report'}>
       <div className={styles.fullReportContent}>{reportContent}</div>
     </section>}
 
-    {personalAudio.length>0&&<section id="session-message" className={styles.clientSection} aria-label={ru?'Голосовое обращение':'Voice message'}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><Headphones size={21}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ГОЛОСОВОЕ ОБРАЩЕНИЕ':'VOICE MESSAGE'}</span>
-          <h2>{ru?'Аудиосообщение для вас':'An audio message for you'}</h2></div>
-      </header>
-      <div className={styles.mediaList}>
-        {personalAudio.map(item=><PrivatePlayer key={item.assetId} item={item}
-          session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
-      </div>
-    </section>}
+    {!audioEmbedded&&hasFullReport&&<ClientSessionVoiceMessage session={session}
+      selector={selector} mode={mode} locale={locale} savedId={savedId}/>}}
 
     {!hasFullReport&&hasRecommendation&&<>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="summary"/>
