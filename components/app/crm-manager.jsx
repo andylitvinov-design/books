@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
+import CrmSmsTools from './crm-sms-tools'
 import CrmContactEditor from './crm-contact-editor'
 import CrmExportTools from './crm-export-tools'
 import CrmMessengerPanel from './crm-messenger'
@@ -106,9 +107,9 @@ export default function CrmManager({ locale = 'en', accountId }) {
     try {
       const response = await fetch('/api/app/crm', { method: 'POST', credentials: 'same-origin', signal: session.controller.signal, headers: { 'Content-Type': 'application/json', 'X-HH-Account-Id': session.accountId }, body: JSON.stringify({ action, payload }) })
       const result = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','CONTACT_CHANNEL_REQUIRED','INVALID_PHONE','EMAIL_ADDRESS_REQUIRED','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY','INVALID_BUSINESS_LEAD','INVALID_CONTACT_EDIT','EMAIL_CHANGE_REQUIRES_NEW_CONTACT','PHONE_LINKED_TO_MESSAGES','CONTACT_ARCHIVED'].includes(result.error) ? result.error : 'unavailable')
+      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','CONTACT_CHANNEL_REQUIRED','INVALID_PHONE','EMAIL_ADDRESS_REQUIRED','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY','INVALID_BUSINESS_LEAD','INVALID_CONTACT_EDIT','EMAIL_CHANGE_REQUIRES_NEW_CONTACT','PHONE_LINKED_TO_MESSAGES','CONTACT_ARCHIVED','SMS_PHONE_CHANGE_REQUIRES_NEW_CONTACT','SMS_NOT_CONFIGURED','SMS_DELIVERY_UNCONFIRMED','SMS_CONTACT_BLOCKED','SMS_CONSENT_REQUIRED','SMS_DAILY_LIMIT','SMS_RECENT_DUPLICATE','INVALID_SMS_MESSAGE','SMS_TOO_LONG','PRIVATE_CONTENT_BLOCKED','SMS_PILOT_ONLY','SMS_CONSENT_CHANGED'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
-      setNotice(action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
+      setNotice(action==='send_sms'?(result.accepted?(language==='ru'?'SMS принято провайдером; это ещё не подтверждение доставки.':language==='es'?'SMS aceptado por el proveedor, no confirmado como entregado.':'SMS accepted by provider; delivery not confirmed.'):(language==='ru'?'Отправка SMS не подтверждена.':'SMS status is unconfirmed.')):action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setPhone(''); setLifecycle('lead'); setSource('manual') }
       await load(session).catch(() => {})
       setSearchRefresh(v=>v+1)
@@ -116,6 +117,18 @@ export default function CrmManager({ locale = 'en', accountId }) {
     } catch (error) {
       if (sessionRef.current === session) {
         const labels={
+          SMS_NOT_CONFIGURED:language==='ru'?'Для SMS необходимо подключить и подтвердить отправителя Twilio.':'A verified Twilio SMS sender must be connected first.',
+          SMS_DELIVERY_UNCONFIRMED:language==='ru'?'Статус отправки SMS неизвестен. Не отправляйте повторно без проверки.':'SMS delivery unconfirmed. Do not retry without checking.',
+          SMS_CONSENT_REQUIRED:language==='ru'?'Нет действующего согласия на SMS или номер отписан.':'SMS consent missing or number opted out.',
+          SMS_CONTACT_BLOCKED:language==='ru'?'Для этого контакта отправка SMS запрещена.':'SMS sending is blocked for this contact.',
+          SMS_DAILY_LIMIT:language==='ru'?'Достигнут лимит 10 SMS в сутки.':'Daily limit of 10 SMS reached.',
+          SMS_RECENT_DUPLICATE:language==='ru'?'Похожее SMS этому контакту уже отправлялось. Проверьте историю.':'Similar SMS was already attempted recently.',
+          SMS_PILOT_ONLY:language==='ru'?'В тестовом режиме SMS допускаются только на контрольный номер.':'Only the approved pilot phone is allowed.',
+          SMS_TOO_LONG:language==='ru'?'Слишком длинное SMS. Сократите текст.':'SMS exceeds the permitted segment limit.',
+          INVALID_SMS_MESSAGE:language==='ru'?'Проверьте текст SMS.':'Check SMS message text.',
+          PRIVATE_CONTENT_BLOCKED:language==='ru'?'Не включайте в SMS медицинские сведения или приватные ссылки.':'Do not include private links or medical information in SMS.',
+          SMS_CONSENT_CHANGED:language==='ru'?'Согласие на SMS изменилось, отправка остановлена.':'SMS consent changed; sending blocked.',
+          SMS_PHONE_CHANGE_REQUIRES_NEW_CONTACT:language==='ru'?'Телефон имеет историю SMS или согласий. Для нового номера создайте отдельный контакт.':'Phone has SMS consent or delivery history; create a new contact.',
           EMAIL_DELIVERY_UNCONFIRMED:language==='ru'?'Статус доставки неизвестен. Не повторяйте отправку автоматически.':'Delivery status unknown. Do not resend automatically.',
           EMAIL_NOT_CONFIGURED:language==='ru'?'Почтовый сервис пока не подключён.':'Email sender is not configured.',
           EMAIL_CONSENT_REQUIRED:language==='ru'?'Нет подтверждённого согласия.':'Consent evidence required.',
@@ -276,6 +289,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
           <CrmContactEditor contact={contact} locale={language} busy={busy||pageBusy} onAction={save} />
           <CrmContactWorkflow contact={contact} locale={language} accountId={accountId} busy={busy||pageBusy} onAction={save} followups={data.followups||[]} />
           <CrmEmailTools contact={contact} locale={language} enabled={data.emailEnabled} busy={busy} onAction={save} messages={data.emailMessages||[]} />
+          <CrmSmsTools contact={contact} locale={language} enabled={data.smsEnabled} live={data.smsLive} busy={busy} onAction={save} messages={data.smsMessages||[]} />
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
       {!globalSearch&&data.contactsNextCursor&&<button className={styles.loadMore} type="button"
