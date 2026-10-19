@@ -24,8 +24,14 @@ async function handle(request){
     const repo=createCrmRepository(config)
     let data
     if(request.method==='GET'){
-      const threadId=new URL(request.url).searchParams.get('thread')
-      data=await repo.withOwner(actor,store=>store.listMessengerThreads(threadId))
+      const params=new URL(request.url).searchParams
+      const allowed=['thread','threadsBefore','messagesBefore']
+      if([...params.keys()].some(key=>!allowed.includes(key))||
+         allowed.some(key=>params.getAll(key).length>1))
+        throw new AppError('INVALID_MESSENGER_CURSOR',400)
+      data=await repo.withOwner(actor,store=>store.listMessengerThreads(
+        params.get('thread'),{threadsBefore:params.get('threadsBefore'),messagesBefore:params.get('messagesBefore')}
+      ))
     }else{
       const body=await readBody(request,4096)
       onlyKeys(body,['action','payload'])
