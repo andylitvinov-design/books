@@ -26,7 +26,7 @@ test('rejects duplicate headers, overly large batch, unclosed quotes, missing ca
   assert.throws(()=>parseGrowthCsv('caption,caption\nA,B'),/invalid_csv/)
   assert.throws(()=>parseGrowthCsv('title,brand\nHi,holistic_house'),/invalid_csv/)
   assert.throws(()=>parseGrowthCsv('caption\n"hello'),/invalid_csv/)
-  assert.throws(()=>parseGrowthCsv('caption\n'+Array.from({length:21},()=> 'hi').join('\n')),/too_many_rows/)
+  assert.throws(()=>parseGrowthCsv('caption\n'+Array.from({length:501},()=> 'hi').join('\n')),/too_many_rows/)
 })
 test('does not infer private client URLs or keep unknown columns as storage fields',()=>{
   const parsed=parseGrowthCsv('text,platform,secret\nhello,telegram,hidden')
