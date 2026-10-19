@@ -48,8 +48,8 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
       <span className={styles.count}>{selectedIds.length}</span>
     </summary>
     <div className={styles.contents}>
-      <p className={styles.help}>{ru?'Отметьте галочками ранее загруженные общие фото, видео и ссылки YouTube. Здесь материалы не загружаются; они добавляются отдельно в меню «Материалы» кабинета мастера. После публикации выбранное появится в конце отчёта.':
-        'Select existing general photos, videos and YouTube links. No uploads are made here; add new resources from Practitioner Cabinet → Materials. Selected items appear at the end of the published report.'}</p>
+      <p className={styles.help}>{ru?'Отметьте материалы, которые нужно приложить к этому отчёту. Новое видео можно сохранить выше. Клиент увидит выбор после публикации отчёта.':
+        'Choose materials for this report. Save a new video above. Clients see selected items after you publish.'}</p>
       <div className={styles.tools}>
         <input className={styles.search} value={search} onChange={e=>setSearch(e.target.value)}
           placeholder={ru?'Поиск по материалам…':'Search materials…'} aria-label={ru?'Поиск материалов':'Search materials'}/>
