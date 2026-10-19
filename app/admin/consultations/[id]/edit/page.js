@@ -55,6 +55,9 @@ export default async function EditConsultation({ params }) {
     <div className="consultation-edit-return">
       <Link href={`/admin/consultations/${id}`} prefetch={false}>← Назад к документам / Back to documents</Link>
     </div>
+    {mediaEditorProps && <section className="consultation-edit-video" aria-label={ru?'Видеоприветствие':'Video welcome'}>
+      <ReportVideoMaterialsEditor {...mediaEditorProps} placement="video" />
+    </section>}
     {mediaEditorProps && <section className="consultation-edit-voice" aria-label={ru?'Голосовое сообщение':'Voice message'}>
       <ReportVideoMaterialsEditor {...mediaEditorProps} placement="audio" />
     </section>}
