@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
@@ -347,7 +348,10 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
             <h1 id="free-initiation-title">{t.title}</h1>
             <p className={styles.heroLead}>{t.intro}</p>
             <ul className={styles.benefits}>{t.benefits.map((item) => <li key={item}>{item}</li>)}</ul>
-            <a className={styles.primaryAction} href="#choose-initiation">{t.discover}<span aria-hidden="true"> →</span></a>
+            <div className={styles.heroActions}>
+              <Link href={REIKI_FREE_COURSE_PATH} className={styles.primaryAction} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"}<span aria-hidden="true"> →</span></Link>
+              <a className={styles.secondaryAction} href="#choose-initiation">{t.discover}<span aria-hidden="true"> →</span></a>
+            </div>
           </div>
           <div className={styles.heroVisual}>
             <Image unoptimized src="/academy/reiki-yggdrasil/source/school-introduction.jpg" alt="" fill priority sizes="(max-width: 800px) 100vw, 42vw" />

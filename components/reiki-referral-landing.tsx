@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, HeartHandshake, Leaf, PlayCircle, Sparkles } from "lucide-react";
@@ -128,8 +129,7 @@ const copy = {
 
 export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  const courseLocale = locale === "es" ? "en" : locale;
-  const courseHref = "/" + courseLocale + "/academy/principles-of-energywork/learn?start=1";
+  const courseHref = REIKI_FREE_COURSE_PATH;
   const tantraHref = "/" + locale + "/academy/reiki/tantra-reiki";
   return (
     <main className={styles.page} data-reiki-referral-landing data-locale={locale}>
