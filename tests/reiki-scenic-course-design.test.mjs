@@ -61,9 +61,9 @@ test('Welcome keeps the free course scenic illustration and three benefits while
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
 })
 
-test('Course has teacher initiation readiness checklist with five private reports + twenty-three answers', () => {
+test('Course has teacher initiation readiness checklist with five private reports + twenty-five answers', () => {
   assert.equal(ENERGYWORK_REPORT_IDS.length,5)
-  assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,23)
+  assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,25)
   assert.match(learner, /const initiationReady = readyCount === readyTargetCount/)
   assert.match(learner, /data-initiation-readiness/)
   assert.match(css, /\.page\[data-course-theme\] \.reviewChecklist/)
