@@ -40,7 +40,7 @@ test('Energywork links to its safe interactive preview while Reiki level-one lin
 })
 
 test('EN/RU copy distinguishes free study from personally confirmed initiations, including mobile layout', () => {
-  for (const phrase of ['Основы энергетики','Тантра Рейки','Рейки Иггдрасиль','Бесплатные курсы','Energywork Basics','Tantra Reiki','Reiki Yggdrasil','Free courses']) {
+  for (const phrase of ['Практик Рейки','Тантра Рейки','Рейки Иггдрасиль','Бесплатные курсы','Reiki Practitioner','Tantra Reiki','Reiki Yggdrasil','Free courses']) {
     assert.ok(banners.includes(phrase), phrase)
   }
   assert.match(banners, /Инициация проводится по согласованию/)
