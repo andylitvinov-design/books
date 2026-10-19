@@ -162,6 +162,14 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}
       </div>
     </section>
+    <section className={styles.editorCard} aria-label={ru?'Персональные записи консультации':'Private session recordings'}>
+      <h2>{ru?'Персональные записи консультации':'Private session recordings'}</h2>
+      <p>{ru?'Личные аудио, видео и фото относятся только к этой консультации и хранятся отдельно от общей библиотеки. Их запись и загрузка вынесены в отдельный экран.':
+        'Client-specific audio, video and photos remain private to this consultation. Their recorder/uploader is on a separate screen, not in shared Materials.'}</p>
+      <a className={styles.secondaryButton} href={'/admin/clients/'+encodeURIComponent(clientId)+'/sessions/'+encodeURIComponent(session.id)+'/recordings'}>
+        {ru?'Открыть личные записи →':'Open private recordings →'}
+      </a>
+    </section>
     <details className={styles.optionalTextEditor}>
       <summary>{ru?'Личное сопроводительное сообщение (необязательно)':'Personal cover message (optional)'}
         {Boolean(draft.summary?.trim())&&<span className={styles.optionalFilled}>{ru?'Есть текст':'Has text'}</span>}
@@ -231,32 +239,6 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       </label>
       </div>
     </details>
-    <section className={styles.editorCard} aria-label={ru?'Общие материалы из библиотеки':'Shared library materials'}>
-      <h2>{ru?'Материалы из библиотеки':'Materials from library'}</h2>
-      <p>{ru?'Выбирайте только готовые общие материалы. Загрузить фото, видео или добавить YouTube-ссылку можно в отдельном разделе кабинета мастера «Материалы».':
-        'Attach existing general materials only. Upload photos, videos or YouTube links in the separate practitioner Materials library.'}</p>
-      <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
-      <SessionMaterialPicker locale={locale}
-        selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
-        disabled={block}
-        onChange={ids=>updatePlan({materialIds:ids})}/>
-      {(plan.resources||[]).length>0&&<p className={styles.ownerMaterialsMuted}>{ru?
-        'Ранее добавленные ссылки этой консультации сохранены без изменений. Новые общие материалы выбираются из библиотеки выше.':
-        'Previously attached session links remain unchanged. Choose new shared resources from the library above.'}</p>}
-      <div className={styles.actions}>
-        <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
-          setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))
-        }}><Save size={17}/>{ru?'Сохранить выбранные материалы':'Save selected materials'}</button>
-      </div>
-    </section>
-    <section className={styles.editorCard} aria-label={ru?'Персональные записи консультации':'Private session recordings'}>
-      <h2>{ru?'Персональные записи консультации':'Private session recordings'}</h2>
-      <p>{ru?'Личные аудио, видео и фото относятся только к этой консультации и хранятся отдельно от общей библиотеки. Их запись и загрузка вынесены в отдельный экран.':
-        'Client-specific audio, video and photos remain private to this consultation. Their recorder/uploader is on a separate screen, not in shared Materials.'}</p>
-      <a className={styles.secondaryButton} href={'/admin/clients/'+encodeURIComponent(clientId)+'/sessions/'+encodeURIComponent(session.id)+'/recordings'}>
-        {ru?'Открыть личные записи →':'Open private recordings →'}
-      </a>
-    </section>
     <section className={styles.editorCard}>
       <h2>{ru?'Сохранённые личные вложения':'Existing private attachments'}</h2>
       <button type="button" disabled={block} onClick={async()=>{setBusy('cleanup');setError('');try{await api(base+'/media','POST',{action:'cleanup'});setMessage(ru?'Незавершённые загрузки старше суток очищены. Сохранённые записи не затронуты.':'Incomplete uploads older than one day cleaned up. Saved recordings are unchanged.')}catch(e){setError(e.message)}finally{setBusy('')}}}>{ru?'Очистить старые незавершённые загрузки':'Clean up old incomplete uploads'}</button>
@@ -299,6 +281,24 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
             <button className={styles.secondaryButton} onClick={()=>play(row.assetId)}><PlayCircle size={18}/>{ru?'Проверить материал':'Preview material'}</button>}
         </div>
       })}
+    </section>
+    <section className={styles.editorCard} aria-label={ru?'Общие материалы из библиотеки':'Shared library materials'}>
+      <h2>{ru?'Материалы из библиотеки':'Materials from library'}</h2>
+      <p>{ru?'Выбирайте только готовые общие материалы. Загрузить фото, видео или добавить YouTube-ссылку можно в отдельном разделе кабинета мастера «Материалы».':
+        'Attach existing general materials only. Upload photos, videos or YouTube links in the separate practitioner Materials library.'}</p>
+      <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
+      <SessionMaterialPicker locale={locale}
+        selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
+        disabled={block}
+        onChange={ids=>updatePlan({materialIds:ids})}/>
+      {(plan.resources||[]).length>0&&<p className={styles.ownerMaterialsMuted}>{ru?
+        'Ранее добавленные ссылки этой консультации сохранены без изменений. Новые общие материалы выбираются из библиотеки выше.':
+        'Previously attached session links remain unchanged. Choose new shared resources from the library above.'}</p>}
+      <div className={styles.actions}>
+        <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
+          setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))
+        }}><Save size={17}/>{ru?'Сохранить выбранные материалы':'Save selected materials'}</button>
+      </div>
     </section>
     <section className={styles.editorCard} id="session-publication">
       <h2>{ru?'Публикация для клиента':'Client publication'}</h2>
