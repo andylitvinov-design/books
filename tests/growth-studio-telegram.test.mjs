@@ -53,6 +53,25 @@ test('photo and video are explicit; unsupported media and oversize caption fail 
   const long=approved({mediaUrl:'/images/public.jpg',mediaAlt:'Poster',caption:'a'.repeat(1100)})
   assert.throws(()=>telegramPayload(long,env.HH_GROWTH_TELEGRAM_CHAT_ID),/telegram_text_too_long/)
 })
+test('preflight only accepts a real matching public channel, never a user or wrong account',async()=>{
+  let checks=0
+  const verified=await verifyTelegramChannel({environment:env,fetchFn:async(url,request)=>{
+    checks++
+    assert.match(url,/\/getChat$/)
+    assert.deepEqual(JSON.parse(request.body),{chat_id:'@HolisticHouseChannel'})
+    return {ok:true,json:async()=>({ok:true,result:{type:'channel',id:-1001234567890,username:'HolisticHouseChannel'}})}
+  }})
+  assert.equal(verified,true)
+  assert.equal(checks,1)
+  for(const actual of [
+    {type:'private',username:'HolisticHouseChannel'},
+    {type:'channel',username:'NotOurChannel'},
+    null,
+  ])await assert.rejects(verifyTelegramChannel({environment:env,fetchFn:async()=>({
+    ok:true,json:async()=>({ok:true,result:actual}),
+  })}),/telegram_channel_unverified/)
+})
+
 test('provider success returns only real channel-confirmed message ID and URL',async()=>{
   const post=approved()
   let calls=0
