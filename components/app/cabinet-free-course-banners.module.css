@@ -43,3 +43,27 @@
 .savedAction { display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 11px 15px; border-radius: 10px; text-decoration: none; background: #0b847f; color: white; min-height: 44px; font-weight: 850; font-size: 13px; }
 .savedAction:hover, .savedAction:focus-visible { background: #076962; color: #fff; }
 @media (max-width: 430px) { .savedAction { width: 100%; } }
+
+/* Saved Reiki course: independent resume and reached-lesson navigation. */
+.savedOverview { min-width: 0; flex: 1 1 230px; }
+.lessonPicker { flex: 1 0 100%; width: 100%; border-top: 1px solid #c1e1dd; padding-top: 11px; }
+.lessonPicker > strong { display: block; margin: 0 0 9px; font-size: 12px; color: #195e5c; }
+.lessonGrid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.lessonGrid li { min-width: 0; }
+.lessonLink, .lessonLocked {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; min-height: 46px; padding: 9px 11px; border-radius: 11px;
+  font-size: 12px; line-height: 1.33; font-weight: 750;
+}
+.lessonLink { border: 1px solid #8fcfc6; background: #fff; text-decoration: none; color: #235b63; }
+.lessonLink:hover { background: #d8f6f1; color: #145c61; }
+.lessonLink:focus-visible { outline: 3px solid #03a6ad; outline-offset: 2px; }
+.lessonLink[aria-current="step"] { border-color: #008e8e; box-shadow: inset 0 0 0 1px #008e8e; }
+.lessonLocked { color: #718f93; background: #e2eeed; border: 1px dashed #c6d8d5; cursor: not-allowed; }
+.lessonLink > span, .lessonLocked > span { min-width: 0; }
+.lessonLink small, .lessonLocked small { display: inline-flex; align-items: center; white-space: nowrap; gap: 3px; flex: none; font-size: 10px; font-weight: 700; }
+.lessonLocked > svg { flex: none; }
+@media (max-width: 540px) {
+  .lessonGrid { grid-template-columns: 1fr; gap: 6px; }
+  .lessonLink, .lessonLocked { min-height: 43px; padding: 8px 10px; }
+}
