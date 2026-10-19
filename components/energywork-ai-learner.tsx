@@ -552,7 +552,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
       )}
       {(currentReview || youtubeId) ? (
         <div className={styles.voicesReferences}>
-          {currentReview ? (
+          {currentReview?.sourcePath ? (
             <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
               {t.voicesSource}<ExternalLink size={14} aria-hidden="true" />
             </Link>
