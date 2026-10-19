@@ -137,7 +137,7 @@ test('Existing encrypted owner-only RLS is retained and version upgrade is addit
   assert.doesNotMatch(p6Migration, /drop table|delete from|drop policy|drop column/i)
   assert.match(p7Migration, /alter column course_version set default '2026-10-19\.p7'/)
   assert.doesNotMatch(p7Migration, /drop table|delete from|drop policy|drop column/i)
-  assert.match(p8Migration, /alter column course_version set default '2026-10-19\\.p8'/)
+  assert.match(p8Migration, /alter column course_version set default '2026-10-19\.p8'/)
   assert.doesNotMatch(p8Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p4Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p3Migration, /drop table|delete from|drop policy|drop column/i)
