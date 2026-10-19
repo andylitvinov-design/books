@@ -1,5 +1,6 @@
 'use client'
-import {useState} from 'react'
+import {useEffect,useState} from 'react'
+import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract'
 import PractitionerArticles from './practitioner-articles'
 import styles from './practice-materials.module.css'
 
@@ -14,7 +15,7 @@ const supportedUrl=value=>{
   return ['vimeo.com','www.vimeo.com','player.vimeo.com'].includes(host)&&/\d{6,12}/.test(url.pathname)
  }catch{return false}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,onSaveVideos,onSubmitVideos}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,isOwner=false,onSaveVideos,onSubmitVideos,onOpenOwner}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -44,12 +45,17 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   moderation:'Your videos appear on the public profile after editorial approval. Previously published materials remain visible until changes are approved.',
   invalid:'Enter a valid YouTube or Vimeo URL.',
  }
- const [tab,setTab]=useState('videos')
+ const [tab,setTab]=useState(()=>isOwner?'reports':'videos')
  const original=practitioner?.draftProfile?.videoMaterials||[]
  const [videos,setVideos]=useState(()=>original)
  const [editing,setEditing]=useState(null)
  const [form,setForm]=useState(()=>fresh(locale))
  const [error,setError]=useState('')
+ const [saving,setSaving]=useState(false)
+ const [privateItems,setPrivateItems]=useState([])
+ const [privateLoading,setPrivateLoading]=useState(Boolean(isOwner))
+ const [privateError,setPrivateError]=useState('')
+ const [privateRevision,setPrivateRevision]=useState(0)
  const published=practitioner?.profile?.videoMaterials||[]
  const dirty=JSON.stringify(videos)!==JSON.stringify(original)
  function open(index=null){
