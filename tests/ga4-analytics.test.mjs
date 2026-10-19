@@ -44,7 +44,10 @@ function assertContactAnalyticsContract(intake, chooser) {
   assert.ok(trigger, "Order is a button");
   assert.match(trigger, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
   assert.doesNotMatch(trigger, /emit|analytics|dispatchEvent|onChannelClick|event=/);
-  assert.doesNotMatch(chooser, /emitPublicAnalyticsEvent|dispatchEvent|sendBeacon|fetch\(/);
+  assert.doesNotMatch(chooser, /emitPublicAnalyticsEvent|dispatchEvent|sendBeacon|window\.gtag/);
+  assert.match(chooser, /fetch\("\/api\/service-enquiries", \{/);
+  assert.match(chooser, /method: "POST"/);
+  assert.doesNotMatch(chooser, /analyticsEvent:|utm_source:|onChannelClick:|event: event/);
 }
 
 test("handoff analytics rejects caller drift and records channel selection only", () => {
