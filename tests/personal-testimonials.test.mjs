@@ -138,7 +138,7 @@ test("the testimonial gallery uses real ID-matched archived frames instead of de
   assert.doesNotMatch(component, /homepage-constellations\.svg|homepage-guided-imagery\.svg/);
   assert.match(component, /data-testimonial-video-id=\{item\.id\}/);
   assert.match(player, /fallbackPoster\?: string/);
-  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
+  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
   assert.match(player, /href=\{watchUrl\}/);
   // Two older RU About clips remain in the catalog without a wrong-person thumbnail.
