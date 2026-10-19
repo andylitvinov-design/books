@@ -99,3 +99,17 @@ test('folder names cannot be duplicated even with mixed case',()=>{
  assert.match(repo,/FOLDER_EXISTS/)
  assert.match(repo,/ON CONFLICT/i)
 })
+
+
+test('public article repository projects only approved snapshots, never owner drafts',()=>{
+ const repo=read('lib/practitioners/article-repository.js')
+ const list=repo.slice(repo.indexOf('async publicList('),repo.indexOf('async moderationList('))
+ assert.match(repo,/function publicView\(row\)/)
+ assert.match(list,/a\.id,a\.slug,a\.published,a\.published_at/)
+ assert.match(list,/\.rows\.map\(publicView\)/)
+ assert.match(list,/return \{\.\.\.publicView\(row\),services\}/)
+ assert.doesNotMatch(list,/select a\.\*/)
+ assert.doesNotMatch(list,/\.rows\.map\(view\)/)
+ assert.doesNotMatch(list,/return \{\.\.\.view\(row\),services\}/)
+ assert.doesNotMatch(repo.slice(repo.indexOf('function publicView('),repo.indexOf('async function own(')),/draft:|reviewNote:|folderId:/)
+})
