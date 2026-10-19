@@ -23,7 +23,15 @@ SELECT
   array_agg(DISTINCT source_commit) AS source_commits,
   array_agg(DISTINCT rules_engine_version) AS rules_engine_versions
 FROM release;
--- Expected 218 / 436 / 218 / 218 / 218 / 416 / 20, all four mismatch counts zero.
+-- Historical v1 seed is immutable: 230 source versions × 2 report locales = 460 rows,
+-- of which 440 were active and 20 historical when this version was signed.
+-- app.assessment_versions can now include newer registered source forms (235
+-- at the 19 October 2026 audit). Their 10 unsupplied v1 locales appear as
+-- missing_expected_keys in THIS cross-release diagnostic query, not as missing
+-- records from the original approved 460-row source set. Do not update the
+-- signed v1/v2/v3 seed, source digests, or historical payloads to fill that gap.
+-- The native CI uses the signed digest identities to determine exact historical
+-- coverage and checks newer forms use a separately verified code fallback.
 
 SELECT count(*) AS provenance_mismatches
 FROM app.assessment_interpretation_versions i
