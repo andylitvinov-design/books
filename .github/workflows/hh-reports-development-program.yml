@@ -11,6 +11,8 @@ on:
       - 'lib/app/development-goals.js'
       - 'app/api/app/**'
       - 'tests/reports-development-program.test.mjs'
+      - 'tests/profile-portrait-test-suggestions.test.mjs'
+      - 'lib/profile/portrait-test-suggestions.js'
       - 'package.json'
   pull_request:
     branches: ['codex/public-book-library']
@@ -19,6 +21,8 @@ on:
       - 'lib/profile/development-program.js'
       - 'lib/app/development-goals.js'
       - 'tests/reports-development-program.test.mjs'
+      - 'tests/profile-portrait-test-suggestions.test.mjs'
+      - 'lib/profile/portrait-test-suggestions.js'
 permissions:
   contents: read
 concurrency:
@@ -38,8 +42,8 @@ jobs:
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
       - name: Test development programme and canonical sector calculations
-        run: node --conditions=react-server --test tests/reports-development-program.test.mjs tests/portrait-sectors.test.mjs tests/psych-portrait.test.mjs tests/my-course-programs.test.mjs
+        run: node --conditions=react-server --test tests/reports-development-program.test.mjs tests/profile-portrait-test-suggestions.test.mjs tests/portrait-sectors.test.mjs tests/psych-portrait.test.mjs tests/my-course-programs.test.mjs
       - name: Lint newly created feature files
-        run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/app/development-goals.js
+        run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/profile/portrait-test-suggestions.js lib/app/development-goals.js tests/profile-portrait-test-suggestions.test.mjs
       - name: Verify production Next.js build without preview deployment
         run: npm run build
