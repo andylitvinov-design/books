@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const SOUND_PREFERENCE_KEY = "holistic-house.practice-ocean-sound.v1";
-const OCEAN_LOOP = "/audio/holistic-house-ocean-waves-ambient-20s.wav";
+const OCEAN_LOOP = "/audio/holistic-house-soft-melody-gentle-waves-20s.wav";
 
 export type OceanPlaybackStatus = "idle" | "loading" | "playing" | "paused" | "blocked" | "unsupported";
 
@@ -18,7 +18,7 @@ type OceanSoundscape = {
 // AudioContext oscillator. In particular, iPhone silent-mode / embedded Safari
 // can mute WebAudio even while the UI says "Waves on". HTML media playback is
 // more reliable, and play() rejects when the browser blocks it.
-// The 20s original recording loops seamlessly throughout 1–15 minute timers.
+// The original, intentionally quiet 20s melody/surf recording loops through all practice timers.
 function createOceanSoundscape(onStatus: (next: OceanPlaybackStatus) => void): OceanSoundscape | null {
   if (typeof window === "undefined" || typeof window.Audio !== "function") return null;
 
@@ -28,7 +28,7 @@ function createOceanSoundscape(onStatus: (next: OceanPlaybackStatus) => void): O
     audio.loop = true;
     audio.preload = "auto";
     audio.muted = false;
-    audio.volume = 1;
+    audio.volume = 0.65; // Extra attenuation where supported; iOS may enforce device volume.
   } catch {
     return null;
   }

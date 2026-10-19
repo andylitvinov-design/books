@@ -38,7 +38,7 @@ class FakeMedia {
   load(){}
 }
 
-const snippet = 'const OCEAN_LOOP = "/audio/holistic-house-ocean-waves-ambient-20s.wav";\n'
+const snippet = 'const OCEAN_LOOP = "/audio/holistic-house-soft-melody-gentle-waves-20s.wav";\n'
   + full.slice(first,last);
 const compiled = ts.transpileModule(snippet, {compilerOptions:{
   target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None
@@ -56,10 +56,10 @@ function fixture(){
 
 test('one tap starts native, looped and unmuted sound before the timer may begin',async()=>{
   const {sound,media,states}=fixture();
-  assert.match(media.src,/holistic-house-ocean-waves-ambient-20s\.wav$/);
+  assert.match(media.src,/holistic-house-soft-melody-gentle-waves-20s\.wav$/);
   assert.equal(media.loop,true);
   assert.equal(media.muted,false);
-  assert.equal(media.volume,1);
+  assert.equal(media.volume,0.65);
   assert.equal(await sound.play(),true);
   assert.equal(media.playCalls,1);
   assert.equal(states.at(-1),'playing');
