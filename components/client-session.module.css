@@ -1425,6 +1425,14 @@
 }
 
 
+/* Print-specific test-card adjustments are outside the screen-only coastal theme. */
+@media print{
+  /* Print recommendations after the signed report without showing navigation. */
+  .cabinetSessionPage:has(.fullReportSection) > .reportRecommendedTestsSection{display:block!important}
+  .reportRecommendedTestList{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .reportRecommendedTestCard{box-shadow:none!important;break-inside:avoid}
+}
+
 /* Client report coastal v2 · Approved option 2 (2026-10-18).
    Screen-only and restricted to an authorized ClientSessionPage, never PDFs,
    signed printed documents, invoices, editor forms or public report links. */
@@ -2153,9 +2161,3 @@
   .reportRecommendedTestCard{min-height:68px;padding:11px 12px}
 }
 @media(prefers-reduced-motion:reduce){.reportRecommendedTestCard{transition:none}}
-@media print{
-  /* Print recommendations after the signed report without showing navigation. */
-  .cabinetSessionPage:has(.fullReportSection) > .reportRecommendedTestsSection{display:block!important}
-  .reportRecommendedTestList{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .reportRecommendedTestCard{box-shadow:none;break-inside:avoid}
-}
