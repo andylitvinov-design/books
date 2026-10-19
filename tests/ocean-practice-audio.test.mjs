@@ -8,9 +8,9 @@ const toggle = read('components/ocean-sound-toggle.tsx');
 const reiki = read('components/energywork-ai-learner.tsx');
 const guided = read('components/app/course-guided-timer.jsx');
 const outro = read('components/app/opora-ocean-outro.jsx');
-const assetPath = 'public/audio/holistic-house-ocean-waves-ambient-20s.wav';
+const assetPath = 'public/audio/holistic-house-soft-melody-gentle-waves-20s.wav';
 
-test('original, local and audible recording has a valid WAV header and real signal', () => {
+test('original, gently mixed melody and light waves have valid and safe WAV dynamics', () => {
   const wav = readFileSync(new URL('../' + assetPath, import.meta.url));
   assert.equal(wav.toString('ascii', 0, 4), 'RIFF');
   assert.equal(wav.toString('ascii', 8, 12), 'WAVE');
@@ -29,9 +29,10 @@ test('original, local and audible recording has a valid WAV header and real sign
     power += v * v;
     max = Math.max(max, Math.abs(v));
   }
-  assert.ok(Math.sqrt(power / frames) > 0.08, 'Wave+ambient recording must not be inaudibly quiet');
-  assert.ok(max < 0.98, 'No hard clipping');
-  assert.ok(Math.abs(wav.readInt16LE(44) - wav.readInt16LE(wav.length - 2)) < 4000,
+  const rms = Math.sqrt(power / frames);
+  assert.ok(rms > 0.025 && rms < 0.08, 'Soft melody should be audible without the harsh previous loudness');
+  assert.ok(max < 0.35, 'Soft soundtrack has comfortable, low peaks even on iOS');
+  assert.ok(Math.abs(wav.readInt16LE(44) - wav.readInt16LE(wav.length - 2)) < 1500,
     'Loop seam must not create a noticeable click');
 });
 
@@ -40,7 +41,7 @@ test('wave playback uses native iPhone media, not muted WebAudio oscillators', (
   assert.match(audio, /new window\.Audio\(OCEAN_LOOP\)/);
   assert.match(audio, /audio\.loop = true/);
   assert.match(audio, /audio\.muted = false/);
-  assert.match(audio, /audio\.volume = 1/);
+  assert.match(audio, /audio\.volume = 0\.65/);
   assert.match(audio, /await audio\.play\(\)/);
   assert.match(audio, /onStatus\("blocked"\)/);
   assert.match(audio, /return false/);
