@@ -53,6 +53,13 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     (plan.practices||[]).some(item=>item.title?.trim()||item.instructions?.trim())
   )
   const changed=JSON.stringify(draft)!==JSON.stringify(session.draft)
+  const sourceDocument=documents.find(doc=>doc.id===draft.reportDocumentId)
+  const sourceHasProgressScores=sourceDocument?.progressBefore!=null&&sourceDocument?.progressAfter!=null
+  const publishedHasProgressScores=session.published?.reportSnapshot?.progressBefore!=null&&session.published?.reportSnapshot?.progressAfter!=null
+  const reportUpdatePending=session.status==='published'&&Boolean(
+    (sourceHasProgressScores&&!publishedHasProgressScores)||
+    (draft.reportDocumentId&&session.published?.reportFingerprint!==session.publicationSource?.reportFingerprint)
+  )
   async function load() {
     const result=await api(base)
     const next=result.session
@@ -302,6 +309,14 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     </section>
     <section className={styles.editorCard} id="session-publication">
       <h2>{ru?'Публикация для клиента':'Client publication'}</h2>
+      {reportUpdatePending&&<p className={styles.previewDisclaimer} role="status">
+        <strong>{ru?'В опубликованном отчёте ещё нет последних изменений.':'The published report does not contain your latest saved changes.'}</strong>{' '}
+        {sourceHasProgressScores&&!publishedHasProgressScores
+          ?(ru?'Оценки «Было / Стало» сохранены, но диаграммы появятся по этой же ссылке только после проверки и повторного нажатия «Опубликовать клиенту».':
+            'Before / After scores are saved, but the two charts appear at the existing client link only after you review and select “Publish to client” again.')
+          :(ru?'Проверьте сохранённый отчёт и повторно нажмите «Опубликовать клиенту», чтобы клиент увидел изменения.':
+            'Review the saved report, then select “Publish to client” again to make the changes visible.')}
+      </p>}
       {draft.reportDocumentId&&<p><a className={styles.secondaryButton}
         href={'/admin/documents/'+encodeURIComponent(draft.reportDocumentId)+'/session-preview?locale='+previewReportLocale}
         target="_blank" rel="noopener noreferrer">

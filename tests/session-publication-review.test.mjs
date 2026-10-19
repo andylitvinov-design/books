@@ -191,6 +191,28 @@ test('an edit after publication never hides the reviewed text or shows the newer
   assert.notEqual(approved.analysis,'Later private draft')
 })
 
+test('approved before/after scores survive publication while later edits stay private',async()=>{
+  const f=fixture()
+  f.changeSource({progressBefore:0,progressAfter:8.5})
+  await f.publish(f.review())
+  assert.equal(f.row.published_payload.reportSnapshot.progressBefore,0)
+  assert.equal(f.row.published_payload.reportSnapshot.progressAfter,8.5)
+  const first=await f.publishedReport()
+  assert.equal(first.progressBefore,0)
+  assert.equal(first.progressAfter,8.5)
+
+  f.changeSource({progressBefore:9,progressAfter:2,analysis:'Not yet reviewed'})
+  const stillPublished=await f.publishedReport()
+  assert.equal(stillPublished.progressBefore,0)
+  assert.equal(stillPublished.progressAfter,8.5)
+  assert.equal(stillPublished.analysis,'Reviewed report')
+
+  await f.publish(f.review())
+  const updated=await f.publishedReport()
+  assert.equal(updated.progressBefore,9)
+  assert.equal(updated.progressAfter,2)
+})
+
 test('a later edit replaces the published text only after an explicit reviewed republish',async()=>{
   const f=fixture()
   await f.publish(f.review())
