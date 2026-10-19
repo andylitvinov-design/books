@@ -129,17 +129,41 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(portrait).toHaveJSProperty("complete", true);
     const loaded = await portrait.evaluate((image) => image.naturalWidth);
     assert.ok(loaded > 0, where + ": the approved human portrait loads");
-    const expectedReviews = id === "ygg-voices" ? 5 : id === "tan-voices" ? 4 : 0;
+    // All four meditation review screens have learner examples.
+    // Screenshot-supplied Sun/Kundalini reports have no verified original review URL.
+    const expectedReviewsBySlide = {
+      "flight-voices": 4,
+      "tan-voices": 4,
+      "kun-voices": 3,
+      "ygg-voices": 5,
+    };
+    const expectedReviews = expectedReviewsBySlide[id] ?? 0;
     const carousel = page.locator("[data-meditation-review-carousel]");
     if (expectedReviews) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
-      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(2);
+      const screenshotExamples = id === "flight-voices" || id === "kun-voices";
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(screenshotExamples ? 1 : 2);
+      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
       const first = await carousel.locator("blockquote p").innerText();
+      if (id === "kun-voices") {
+        assert.ok(first.includes(locale === "ru" ? "Бреанной" : "Breanna"), where + ": Breanna review is first");
+      }
       await page.locator("button[data-review-next]").click();
       await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('02 / 0' + expectedReviews);
-      assert.notEqual(await carousel.locator("blockquote p").innerText(), first, where + ": Next switches quote in place");
+      const second = await carousel.locator("blockquote p").innerText();
+      assert.notEqual(second, first, where + ": Next switches quote in place");
+      if (id === "kun-voices") {
+        assert.ok(second.includes(locale === "ru" ? "Риту" : "Ritu"), where + ": Ritu review is second");
+        await page.locator("button[data-review-next]").click();
+        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText("03 / 03");
+        const third = await carousel.locator("blockquote p").innerText();
+        assert.ok(third.includes("Aesthesia"), where + ": Aesthesia review is third");
+        assert.notEqual(third, second, where + ": third review is distinct");
+        await page.locator("button[data-review-prev]").click();
+        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText("02 / 03");
+      }
       await page.locator("button[data-review-prev]").click();
       assert.equal(await carousel.locator("blockquote p").innerText(), first, where + ": Previous restores quote");
     } else {
