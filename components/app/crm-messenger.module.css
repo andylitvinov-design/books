@@ -57,3 +57,21 @@
 .historyButton:hover:not(:disabled){background:#e3f1eb}
 .historyButton:disabled{cursor:wait;opacity:.55}
 .historyButton:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+
+/* Channel onboarding: compact, no secrets, mobile-first read-only diagnostics. */
+.setupIntro{font:550 13px/1.5 system-ui,sans-serif;color:#426a68;margin:12px 0;padding:12px 14px;border-left:3px solid #72b0a2;background:#f2faf6;border-radius:8px}
+.channel{min-width:0}
+.channelGuide{width:100%;border-top:1px solid #dde9e4;padding-top:6px;margin-top:8px}
+.channelGuide summary{display:list-item;cursor:pointer;min-height:37px;font:700 12px/1.4 system-ui,sans-serif;color:#246c70;padding:8px 3px}
+.guideBody{min-width:0;display:flex;align-items:flex-start;flex-direction:column;gap:8px;padding:7px 0 2px;color:#57706b;font:500 12px/1.45 system-ui,sans-serif;overflow-wrap:anywhere}
+.guideBody a{color:#0f6776;text-decoration:underline;text-underline-offset:2px;font-weight:750}
+.guideBody p{margin:0;font:500 12px/1.5 system-ui,sans-serif}
+.guideBody strong{font:750 12px/1.4 system-ui,sans-serif;color:#24474b}
+.guideBody ul{margin:0;padding-left:20px;list-style:disc;max-width:100%;box-sizing:border-box}
+.guideBody li{padding:2px 0;overflow-wrap:anywhere}
+.guideBody code,.guideBody .settingKey{max-width:100%;font:500 11px/1.45 ui-monospace,monospace;overflow-wrap:anywhere;white-space:normal;color:#365c58;background:#edf6f2;border-radius:6px;padding:3px 5px}
+.guideBody .callbackUrl{display:block;width:100%;box-sizing:border-box;word-break:break-all}
+.pilotKeys{display:flex;gap:7px;flex-direction:column;width:100%}
+.guideBody .copyButton{background:#ebf7f2;color:#1e6468;border:1px solid #9ccbc0;padding:10px 13px;min-height:44px}
+.channelGuide :focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+@media(max-width:690px){.channelGrid{grid-template-columns:minmax(0,1fr)}.guideBody{padding-right:5px}}
