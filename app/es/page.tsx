@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import Link from 'next/link';
 import { BriefcaseBusiness, ClipboardCheck, Flower2, GraduationCap, Sparkles } from 'lucide-react';
-import { SiteVideoPlayer } from '@/components/site-video-player';
+import { PersonalTestimonials } from '@/components/personal-testimonials';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { AcquisitionEventLink } from '@/components/acquisition-event-link';
@@ -71,18 +71,7 @@ export default function SpanishHomePage() {
       </div>
       <p className="service-home-start__returning"><Link href="/es/tests">Cómo funcionan las pruebas gratuitas <span aria-hidden="true">→</span></Link><span aria-hidden="true"> · </span>¿Ya tienes resultados o un perfil? <Link href="/es/client">Abrir mi espacio <span aria-hidden="true">→</span></Link></p>
     </section>
-    <section className="about-testimonials" aria-labelledby="home-es-testimonials-title">
-      <div className="about-section-heading">
-        <p className="homeopathy-kicker">Experiencias de participantes</p>
-        <h2 id="home-es-testimonials-title">Testimonios en vídeo</h2>
-        <p>Testimonios anteriores de participantes, grabados originalmente en ruso. Puedes consultar más testimonios y el contexto de los archivos en la página Sobre mí.</p>
-        <Link href="/es/about#testimonials-title">Ver todos los testimonios <span aria-hidden="true">→</span></Link>
-      </div>
-      <div className="about-video-grid">
-        <SiteVideoPlayer video={{ youtubeId: 'm9RfDgK76PU', title: 'Anton Korchinsky — testimonio sobre nuestro trabajo', language: 'ru' }} locale="es" textLanguage="es" compact />
-        <SiteVideoPlayer video={{ youtubeId: '5oj0BIbLT4w', title: 'Elena Bakhtina — testimonio de una clienta', language: 'ru' }} locale="es" textLanguage="es" compact />
-      </div>
-    </section>
+    <PersonalTestimonials locale="es" variant="home" />
     <section className="service-home-about" aria-labelledby="service-home-about-title"><div><p className="service-home-kicker">Sobre mí</p><h2 id="service-home-about-title">Andrey Litvinov</h2></div><div><p>Consultor, facilitador y docente. Llevo más de 20 años trabajando con grupos y prácticas de desarrollo interior, combinando constelaciones sistémicas, trabajo con imágenes, enfoques corporales y exploración arquetípica.</p><Link href="/es/about">Conoce mi trabajo<span aria-hidden="true">→</span></Link></div></section>
     <section className="service-home-library" aria-labelledby="service-home-library-title"><Image unoptimized src="/images/holistic-house/books-library.webp" alt="" fill sizes="(max-width: 767px) 100vw, 1200px" className="service-home-library-photo" /><div className="service-home-library-copy"><p className="service-home-kicker">Libro del autor</p><h2 id="service-home-library-title">El poder de la vida</h2><p className="service-home-library-intro">Mi libro sobre desarrollo interior, psicohomeopatía y un enfoque integrador del trabajo con los estados humanos.</p><Link href="/es/books">Explorar la biblioteca<span aria-hidden="true">→</span></Link></div></section>
     <PublicConsultationCta locale="es" />
