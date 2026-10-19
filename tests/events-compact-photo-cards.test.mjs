@@ -7,6 +7,10 @@ import ts from "typescript";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const source = read("components/events-discovery.tsx");
 const css = read("components/events-discovery.module.css");
+const academyCss = read("components/academy-discovery.module.css");
+const page = read("app/[locale]/events/page.tsx");
+const eventData = read("data/public-events.ts");
+const middleware = read("middleware.ts");
 const nodes = tree => !tree || typeof tree !== "object" ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)];
 const jsx = (type, props, key) => ({ type, props: props || {}, key });
 const styles = { default: new Proxy({}, { get: (_, key) => String(key) }) };
@@ -71,9 +75,32 @@ test("Events removes Explore by theme and directions while retaining a compact e
   assert.match(source, /event\.status === "published"/);
   assert.match(source, /event\.registrationHref\.trim\(\)/);
   assert.match(css, /\.eventGrid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(css, /\.eventCard\s*\{[^}]*grid-template-columns:\s*minmax\(155px,\s*34%\)/s);
+  assert.match(css, /\.eventCard\s*\{[^}]*grid-template-columns:\s*minmax\(114px,\s*32%\)/s);
   assert.match(css, /@media \(max-width: 620px\)/);
   assert.match(css, /\.eventPoster\s*\{[^}]*object-fit:\s*cover/s);
+});
+
+test("Events matches the Academy page shell, hero and catalogue rhythm", () => {
+  assert.match(page, /className="library-shell academy-shell"/);
+  assert.match(source, /Find your next event/);
+  assert.match(source, /styles\.listKicker/);
+  assert.match(source, /styles\.count/);
+  assert.match(source, /id="hh-events-results"/);
+  assert.match(source, /onSubmit=\{submitSearch\}/);
+  assert.match(css, /background: linear-gradient\(121deg, #203450 0%, #283d5c 58%, #483a52 100%\)/);
+  assert.match(academyCss, /background: linear-gradient\(121deg, #203450 0%, #283d5c 58%, #483a52 100%\)/);
+  assert.match(css, /\.form button[^}]*background: #993c5f/s);
+  assert.match(css, /\.root\s*\{[^}]*padding: 0 0 48px/s);
+  assert.match(css, /\.resultHeading h2[^}]*font: 400/s);
+});
+
+test("Public Eventbrite artwork loads from its CDN with strictly route-scoped CSP", () => {
+  assert.match(eventData, /posterUrl: "https:\/\/img\.evbuc\.com\//);
+  assert.doesNotMatch(eventData, /www\.eventbrite\.ca\/e\/_next\/image/);
+  assert.ok(middleware.includes("const eventsPosterImageOrigin = /^\\/(en|ru|es)\\/events\\/?$/"));
+  assert.ok(middleware.includes("+ listingImageOrigin + eventsPosterImageOrigin"));
+  assert.match(middleware, /eventsPosterImageOrigin[^;]*https:\/\/img\.evbuc\.com/);
+  assert.match(source, /onError=\{error => \{ error\.currentTarget\.style\.display = "none"; \}\}/);
 });
 
 for (const locale of ["en", "ru", "es"]) {
