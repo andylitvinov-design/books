@@ -1068,7 +1068,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </li>
               );
             })}</ol>
-            <p className={styles.programmeNote}>{sync === "ready" ? t.stopSaved : t.stop}</p>
+            <p className={styles.disclaimer}>{sync === "ready" ? t.stopSaved : t.stop}</p>
           <aside className={styles.preview} aria-live="polite">
           <LockKeyhole size={19} aria-hidden="true" />
           <div className={styles.syncContent}>
