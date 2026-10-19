@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmSmsTools from './crm-sms-tools'
+import CrmSmsSetup from './crm-sms-setup'
 import CrmContactEditor from './crm-contact-editor'
 import CrmExportTools from './crm-export-tools'
 import CrmMessengerPanel from './crm-messenger'
@@ -109,7 +110,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
       const result = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','CONTACT_CHANNEL_REQUIRED','INVALID_PHONE','EMAIL_ADDRESS_REQUIRED','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY','INVALID_BUSINESS_LEAD','INVALID_CONTACT_EDIT','EMAIL_CHANGE_REQUIRES_NEW_CONTACT','PHONE_LINKED_TO_MESSAGES','CONTACT_ARCHIVED','SMS_PHONE_CHANGE_REQUIRES_NEW_CONTACT','SMS_NOT_CONFIGURED','SMS_DELIVERY_UNCONFIRMED','SMS_CONTACT_BLOCKED','SMS_CONSENT_REQUIRED','SMS_DAILY_LIMIT','SMS_RECENT_DUPLICATE','INVALID_SMS_MESSAGE','SMS_TOO_LONG','PRIVATE_CONTENT_BLOCKED','SMS_PILOT_ONLY','SMS_CONSENT_CHANGED'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
-      setNotice(action==='send_sms'?(result.accepted?(language==='ru'?'SMS принято провайдером; это ещё не подтверждение доставки.':language==='es'?'SMS aceptado por el proveedor, no confirmado como entregado.':'SMS accepted by provider; delivery not confirmed.'):(language==='ru'?'Отправка SMS не подтверждена.':'SMS status is unconfirmed.')):action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
+      setNotice(action==='check_sms_connection'?'':action==='send_sms'?(result.accepted?(language==='ru'?'SMS принято провайдером; это ещё не подтверждение доставки.':language==='es'?'SMS aceptado por el proveedor, no confirmado como entregado.':'SMS accepted by provider; delivery not confirmed.'):(language==='ru'?'Отправка SMS не подтверждена.':'SMS status is unconfirmed.')):action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setPhone(''); setLifecycle('lead'); setSource('manual') }
       await load(session).catch(() => {})
       setSearchRefresh(v=>v+1)
@@ -220,6 +221,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />}
     {activeSection==='sms'&&data&&<div className={styles.formCard}>
       <h3>SMS · {language==='ru'?'сообщения клиентам':language==='es'?'mensajes a clientes':'client messages'}</h3>
+      <CrmSmsSetup locale={language} setup={data.smsSetup} busy={busy} onAction={save} />
       <p className={styles.fine}>{language==='ru'?'Выберите контакт, подтвердите согласие на SMS и отправляйте сообщения вручную. Групповых рассылок нет.':language==='es'?'Selecciona un contacto con consentimiento SMS. Los envíos requieren confirmación individual.':'Select a contact with recorded SMS consent. Every send is manual and individually confirmed.'}</p>
       <p className={styles.fine}>{data.smsEnabled?
         (data.smsLive?(language==='ru'?'SMS-канал активен.':'SMS sending is available.'):(language==='ru'?'Тестовый режим: только проверенный номер.':'Test mode: approved phone number only.')):
