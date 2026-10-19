@@ -114,7 +114,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   if (data.kind === "practice") await expect(page.locator('[data-energywork-slide-kind="practice"]').locator('[class*="practiceTimer"]')).toBeVisible();
   if (id === "flight-03" || id === "tan-03") {
     await expect(page.locator('[class*="practiceTimer"] strong')).toHaveText("1:00");
-    await expect(page.locator('[class*="practiceTimer"] button').first()).toContainText(locale === "ru" ? "1 минуту" : "1 minute");
+    await expect(page.locator('[class*="practiceTimer"] button:not([data-ocean-sound-toggle])').first()).toContainText(locale === "ru" ? "1 минуту" : "1 minute");
     await expect(page.locator('input[type="radio"][name="' + id + '"]')).toHaveCount(2);
     assert.ok(data.slideVerticalOverflow <= 2, where + ": practice should fit on one mobile screen: " + JSON.stringify(data));
   }
