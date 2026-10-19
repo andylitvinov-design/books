@@ -9,6 +9,7 @@ import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/t
 import styles from './topic-journey-selector.module.css'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { DiscoverySectionTabs } from '@/components/discovery-section-tabs'
+import { BusinessConsultationFinder } from '@/components/business-consultation-finder'
 
 type Language = 'en' | 'ru' | 'es'
 type Item = { id: string; title: Record<Language, string>; detail: Record<Language, string>; focus: readonly string[] }
@@ -120,17 +121,17 @@ const businessDiscoveryCopy = {
   en: { eyebrow: 'HOLISTIC HOUSE · BUSINESS', title: 'Find your business direction',
     lead: 'Explore decisions, focus and work challenges. Start with free self-reflection or choose personal business consulting.',
     searchLabel: 'Search business topics', placeholder: 'Decisions, focus, work pressure or goals…',
-    submit: 'Find my focus', paths: 'Explore business options', topics: 'Business topics', tests: 'Free tests', sessions: 'Consultations',
+    submit: 'Find my focus', paths: 'Explore business options', match: 'Find a consultation', topics: 'Business topics', tests: 'Free tests', sessions: 'Consultations',
     none: 'No business topics match your search.', reset: 'Show all topics' },
   ru: { eyebrow: 'HOLISTIC HOUSE · БИЗНЕС', title: 'Найдите свой бизнес-маршрут',
     lead: 'Исследуйте решения, концентрацию и рабочие задачи. Начните с бесплатных тестов или выберите личную бизнес-консультацию.',
     searchLabel: 'Поиск тем бизнеса', placeholder: 'Решения, цели, деньги, работа…',
-    submit: 'Найти направление', paths: 'Направления бизнеса', topics: 'Темы бизнеса', tests: 'Тесты', sessions: 'Консультации',
+    submit: 'Найти направление', paths: 'Направления бизнеса', match: 'Подобрать консультацию', topics: 'Темы бизнеса', tests: 'Тесты', sessions: 'Консультации',
     none: 'По этому запросу темы не найдены.', reset: 'Показать все темы' },
   es: { eyebrow: 'HOLISTIC HOUSE · NEGOCIOS', title: 'Encuentra tu camino empresarial',
     lead: 'Explora decisiones, enfoque y retos de trabajo. Comienza con pruebas gratuitas o una consulta empresarial personal.',
     searchLabel: 'Buscar temas de negocios', placeholder: 'Decisiones, trabajo, dinero o metas…',
-    submit: 'Buscar mi enfoque', paths: 'Explorar opciones', topics: 'Temas', tests: 'Pruebas', sessions: 'Consultas',
+    submit: 'Buscar mi enfoque', paths: 'Explorar opciones', match: 'Elegir consulta', topics: 'Temas', tests: 'Pruebas', sessions: 'Consultas',
     none: 'No hay temas que coincidan con la búsqueda.', reset: 'Mostrar todos los temas' },
 } as const
 type StartAttempt = { controller: AbortController; scope: string; href: string; intent?: string; handedOff: boolean }
@@ -352,9 +353,9 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
             <button type="submit">{businessText.submit}<Search size={19} aria-hidden="true" /></button>
           </form>
           <nav className={styles.businessQuickPaths} aria-label={businessText.paths}>
-            <a href="#hh-topic-selection-heading"><BriefcaseBusiness size={16} aria-hidden="true" />{businessText.topics}</a>
+            <a href="#hh-business-finder"><Sparkles size={16} aria-hidden="true" />{businessText.match}</a>
             <a href="#hh-topic-recommended-tests"><ClipboardCheck size={16} aria-hidden="true" />{businessText.tests}</a>
-            <a href="#hh-business-consultation-title"><CalendarDays size={16} aria-hidden="true" />{businessText.sessions}</a>
+            <a href="#business-direct-request"><CalendarDays size={16} aria-hidden="true" />{businessText.sessions}</a>
           </nav>
         </div>
       ) : (
@@ -374,6 +375,8 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         </>
       )}
     </section>
+
+    {journey.id === 'business' && <BusinessConsultationFinder locale={language} />}
 
     {journey.id === 'business' && (
       <aside className={styles.businessPromo} aria-labelledby="hh-business-consultation-title" data-business-consultation-banner>
