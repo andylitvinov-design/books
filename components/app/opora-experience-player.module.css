@@ -188,7 +188,7 @@
   font:750 clamp(14px,3.65vw,16px)/1.25 system-ui,-apple-system,sans-serif;
   cursor:pointer;text-align:left;box-shadow:0 2px 8px rgba(33,100,107,.08);
 }
-.moodChoices button span:first-child{flex-shrink:0;font-size:19px;line-height:1}
+.moodChoices button::before{content:attr(data-symbol);flex-shrink:0;font-size:19px;line-height:1}
 .moodChoices button[aria-pressed=true]{
   border-color:#078b90;background:#d7f7ee;color:#125763;
   box-shadow:0 0 0 1px rgba(6,139,144,.32),0 4px 12px rgba(17,129,133,.11);
