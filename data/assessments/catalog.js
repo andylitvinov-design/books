@@ -20,6 +20,7 @@ import { OPEN_PROFESSIONAL_2026_CATALOG } from './open-professional-2026.js'
 import { IPIP_VIA_R_COMPLETION_CATALOG } from './ipip-via-r-completion-2026.js'
 import { IPIP_VIA_R_PROFILE_96_CATALOG } from './ipip-via-r-profile-96.js'
 import { CFPB_FINANCIAL_WELLBEING_SHORT_CATALOG } from './cfpb-financial-wellbeing-short-v1.js'
+import { ADDITIONAL_PROFESSIONAL_CATALOG } from './professional-additions-2026.js'
 
 export const MONITORING_AXES = deepFreeze([
   'state',
@@ -732,6 +733,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...IPIP_VIA_R_COMPLETION_CATALOG,
   ...IPIP_VIA_R_PROFILE_96_CATALOG,
   ...CFPB_FINANCIAL_WELLBEING_SHORT_CATALOG,
+  ...ADDITIONAL_PROFESSIONAL_CATALOG,
   {
     key: 'mspss',
     version: 'v1',
