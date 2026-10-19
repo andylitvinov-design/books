@@ -649,5 +649,5 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact}){
 function safeLeadContact(value){
   if(typeof value==='string')return value
   if(!value||typeof value!=='object')return ''
-  return [value.displayName||value.name,value.email,value.phone].filter(part=>typeof part==='string'&&part.trim()).join(' · ')
+  return [value.displayName||value.name,value.email,value.phone,value.telegram].filter(part=>typeof part==='string'&&part.trim()).join(' · ')
 }
