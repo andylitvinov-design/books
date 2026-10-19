@@ -9,9 +9,11 @@ import { inspectSavedClientReportPublication } from '@/lib/clients/report-auto-p
 import { revokeConsultationDocumentAction, reactivateConsultationDocumentAction } from '../actions'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Documents ready', robots: { index: false, follow: false } }
-export default async function ConsultationResult({ params }) {
+export default async function ConsultationResult({ params, searchParams }) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const { id } = await params
+  const query = await searchParams
+  const materialNotice = ['staged', 'review'].includes(query?.materials) ? query.materials : null
   const store = getPrescriptionStore()
   const recommendation = store ? await store.findById(id) : undefined
   const payment = recommendation?.paymentDocumentId ? await store.findById(recommendation.paymentDocumentId) : undefined
@@ -22,6 +24,16 @@ export default async function ConsultationResult({ params }) {
     { record: recommendation, kind: 'recommendation', recommendationType: recommendation.recommendationType, count: recommendation.items.length, editHref: `/admin/consultations/${recommendation.id}/edit#edit-recommendation` },
   ].map(({ record, ...display }) => ({ ...display, id: record.id, active: record.status === 'active', revoke: revokeConsultationDocumentAction.bind(null, id, record.id), reactivate: reactivateConsultationDocumentAction.bind(null, id, record.id) }))
   return <main className="prescription-admin-shell consultation-result">
+    {materialNotice && <section className="report-save-publication-state" role="status">
+      <strong>{materialNotice === 'staged'
+        ? 'Материалы сохранены в черновике / Materials saved to draft'
+        : 'Проверьте прикрепление материалов / Review report materials'}</strong>
+      <p>{materialNotice === 'staged'
+        ? 'Выбор сохранён. Клиент увидит материалы только после проверки и публикации сессии.'
+        : 'Отчёт создан, но прикрепление материалов не подтверждено. Откройте редактор и повторите выбор. Второй отчёт создавать не нужно.'}</p>
+      {recommendation.clientId && <a href={`/admin/consultations/${id}/edit#report-video-materials-editor`}>
+        {materialNotice === 'staged' ? 'Проверить материалы →' : 'Повторить выбор →'}</a>}
+    </section>}
     <ResultScreen clientId={recommendation.clientId} logout={logout}
       patientName={recommendation.patientName} dateIssued={recommendation.dateIssued}
       languagePreference={recommendation.languagePreference} documents={documents}

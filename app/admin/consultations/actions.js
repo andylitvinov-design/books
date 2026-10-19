@@ -6,6 +6,12 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { consultationSavingAvailable } from '@/lib/consultations/availability'
 import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/consultations/lifecycle'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
+import { parseReportMaterialIds, stageReportMaterials } from '@/lib/consultations/report-material-staging'
+import { deliveryEnabled } from '@/lib/clients/delivery-model'
+import { getAppConfig } from '@/lib/app/config'
+import { transaction } from '@/lib/app/database'
+import { selectedMaterialSnapshots } from '@/lib/clients/material-library'
+import { createClientSession, getOwnerSession, saveOwnerDraft } from '@/lib/clients/session-delivery-service'
 
 function input(formData) {
   const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'additionalNotes', 'followUp', 'followUpDate', 'patientDob', 'internalNotes']
@@ -30,6 +36,7 @@ function safeConsultationError(error) {
   if (/date/i.test(message)) return 'Choose a valid consultation date.'
   if (/language/i.test(message)) return 'Choose the report language: English or Russian.'
   if (/client|patient name/i.test(message)) return 'Choose an existing client or complete the new client details.'
+  if (/material|APP_UNAVAILABLE|database/i.test(message)) return 'The selected materials are unavailable. Refresh the library selection and try again.'
   if (/remedy|item|granules|times per day|potency/i.test(message)) return 'Choose a valid remedy and check the prescription fields.'
   return 'Documents could not be saved. Please try again. If the error persists, contact the site administrator.'
 }
@@ -40,13 +47,37 @@ export async function createConsultationAction(previous, formData) {
   const store = getPrescriptionStore()
   if (!store) return { error: 'Documents are temporarily unavailable. Please try again.' }
   let pair
+  let selectedMaterialIds = []
+  let materialConfig
   try {
     const data = input(formData)
+    selectedMaterialIds = parseReportMaterialIds(formData.get('materialIdsJson'))
+    if (selectedMaterialIds.length) {
+      if (!deliveryEnabled() || !data.includeRecommendation) throw new Error('INVALID_SESSION_MATERIALS')
+      // Check the chosen IDs against the approved, ready catalog BEFORE creating the document.
+      materialConfig = getAppConfig()
+      await transaction(materialConfig, null,
+        db => selectedMaterialSnapshots(db, selectedMaterialIds), { server: true })
+    }
     if (formData.get('clientMode') === 'new') data.newClient = { fullName: data.patientName, preferredLocale: data.languagePreference, email: formData.get('clientEmail') ?? '', phone: formData.get('clientPhone') ?? '' }
     else { data.clientId = String(formData.get('clientId') ?? ''); if (!data.clientId) throw new Error('Choose a client') }
-    pair = await createConsultation(data, { store, requestId: String(formData.get('requestId') ?? '') }) }
-  catch (error) { return { error: safeConsultationError(error) } }
-  if (pair.recommendation) redirect(`/admin/consultations/${pair.recommendation.id}`)
+    pair = await createConsultation(data, { store, requestId: String(formData.get('requestId') ?? '') })
+  } catch (error) { return { error: safeConsultationError(error) } }
+  if (pair.recommendation) {
+    if (selectedMaterialIds.length) {
+      try {
+        await stageReportMaterials({ config: materialConfig, store,
+          report: pair.recommendation, materialIds: selectedMaterialIds }, {
+          createSession: createClientSession, getSession: getOwnerSession, saveDraft: saveOwnerDraft,
+        })
+      } catch {
+        // A saved document is never recreated after a media-side failure.
+        redirect(`/admin/consultations/${pair.recommendation.id}?materials=review`)
+      }
+      redirect(`/admin/consultations/${pair.recommendation.id}?materials=staged`)
+    }
+    redirect(`/admin/consultations/${pair.recommendation.id}`)
+  }
   redirect(`/admin/payments/${pair.payment.id}`)
 }
 

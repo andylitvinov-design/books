@@ -7,6 +7,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { ConsultationForm } from '@/components/consultation-form'
 import { getRecommendedTestOptions } from '@/lib/consultations/recommended-tests'
 import { ReportVideoMaterialsEditor } from '@/components/report-video-materials-editor'
+import { SessionPhotoUploader } from '@/components/session-photo-uploader'
 import { AdminDocumentPanels } from '@/components/admin-document-panels'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { inspectSavedClientReportPublication } from '@/lib/clients/report-auto-publish'
@@ -63,6 +64,8 @@ export default async function EditConsultation({ params }) {
       <section className="consultation-edit-materials" aria-label="Client report materials">
         <ReportVideoMaterialsEditor clientId={consultation.clientId} documentId={consultation.id}
           sourceConsultationId={consultation.consultationId || consultation.id}
+          locale={consultation.languagePreference === 'ru' ? 'ru' : 'en'} />
+        <SessionPhotoUploader clientId={consultation.clientId} documentId={consultation.id}
           locale={consultation.languagePreference === 'ru' ? 'ru' : 'en'} />
       </section>}
     <details className="consultation-edit-document-links">

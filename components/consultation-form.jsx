@@ -323,7 +323,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     if (parsed.generalInstructions) setNote((current) => [current, parsed.generalInstructions].filter(Boolean).join('\n'))
   }
 
-  return <form action={submit} className="prescription-admin-form consultation-form consultation-form--compact consultation-studio" onSubmit={(event) => {
+  return <form id="consultation-report-form" action={submit} className="prescription-admin-form consultation-form consultation-form--compact consultation-studio" onSubmit={(event) => {
     if (!includeRecommendation && !includeInvoice) {
       event.preventDefault()
       setError(labels.noDocumentError)
