@@ -7,6 +7,7 @@ import { ClipboardList, FileCheck2, UsersRound } from 'lucide-react'
 import { ConsultationTextImport } from './consultation-text-import'
 import { ConsultationDraftPreview } from './consultation-draft-preview'
 import { useActionState, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { consultationClinicalFields, initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
 import { getOwnerReportTextTemplate } from '@/lib/consultations/owner-report-template'
@@ -185,7 +186,7 @@ function detectedType(items) {
   return 'homeopathy'
 }
 
-export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId, recommendedTestOptions = { en: [], ru: [] } }) {
+export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId, recommendedTestOptions = { en: [], ru: [] }, saveFooterTargetId = null }) {
   const selectedClientLocale = clients.find((client) => client.id === selectedClientId)?.preferredLocale
   const initialReportLocale = consultation?.languagePreference === 'ru' || consultation?.languagePreference === 'en'
     ? consultation.languagePreference
@@ -207,6 +208,11 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [recommendedTestKeys, setRecommendedTestKeys] = useState(() => consultation?.recommendedTestKeys ?? [])
   const [daoResourceScore, setDaoResourceScore] = useState(() => consultation?.daoResourceScore == null ? '' : String(consultation.daoResourceScore))
   const [uiLocale, setUiLocale] = useState('en')
+  const [saveFooterTarget, setSaveFooterTarget] = useState(null)
+
+  useEffect(() => {
+    setSaveFooterTarget(saveFooterTargetId ? document.getElementById(saveFooterTargetId) : null)
+  }, [saveFooterTargetId])
 
   useEffect(() => {
     setUiLocale(readUiLocale(document.cookie))
@@ -327,7 +333,31 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     if (parsed.generalInstructions) setNote((current) => [current, parsed.generalInstructions].filter(Boolean).join('\n'))
   }
 
-  return <form id="consultation-report-form" action={submit} className="prescription-admin-form consultation-form consultation-form--compact consultation-studio" onSubmit={(event) => {
+  const saveFooter = (
+    <div className="consultation-studio-submit">
+      <div className="consultation-studio-submit-copy">
+        <strong>{includeRecommendation
+          ? (uiLocale==='ru'?'Сохранение не публикует изменения для клиента':'Saving does not publish changes to the client')
+          : (consultation ? labels.saveHeading : labels.createHeading)}</strong>
+        <span>{includeRecommendation
+          ? includeInvoice
+            ? paymentStatus === 'received' ? labels.receiptHint : labels.invoiceHint
+            : labels.prescriptionOnlyHint
+          : includeInvoice
+            ? paymentStatus === 'received' ? labels.receiptOnlyHint : labels.invoiceOnlyHint
+            : labels.noDocumentError}</span>
+      </div>
+      {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
+      <div className="consultation-studio-submit-buttons">
+        {includeInvoice && <ConsultationDraftPreview locale={reportLocale} includeRecommendation={false} includeInvoice={includeInvoice} disabled={pending} formId="consultation-report-form" />}
+        <button className="prescription-save consultation-primary-action" type="submit" disabled={pending} form="consultation-report-form">
+          {pending ? labels.saving : consultation ? labels.save : labels.create}
+        </button>
+      </div>
+    </div>
+  )
+
+  return <form action={submit} id="consultation-report-form" className="prescription-admin-form consultation-form consultation-form--compact consultation-studio" onSubmit={(event) => {
     if (!includeRecommendation && !includeInvoice) {
       event.preventDefault()
       setError(labels.noDocumentError)
@@ -618,26 +648,6 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
 
     {includeRecommendation && <DaoResourceStageField value={daoResourceScore} onChange={setDaoResourceScore} locale={uiLocale} />}
 
-    <div className="consultation-studio-submit">
-      <div className="consultation-studio-submit-copy">
-        <strong>{includeRecommendation
-          ? (uiLocale==='ru'?'Сохранение не публикует изменения для клиента':'Saving does not publish changes to the client')
-          : (consultation ? labels.saveHeading : labels.createHeading)}</strong>
-        <span>{includeRecommendation
-          ? includeInvoice
-            ? paymentStatus === 'received' ? labels.receiptHint : labels.invoiceHint
-            : labels.prescriptionOnlyHint
-          : includeInvoice
-            ? paymentStatus === 'received' ? labels.receiptOnlyHint : labels.invoiceOnlyHint
-            : labels.noDocumentError}</span>
-      </div>
-      {(error || state.error) && <p className="prescription-form-error" role="alert">{error || state.error}</p>}
-      <div className="consultation-studio-submit-buttons">
-        <ConsultationDraftPreview locale={reportLocale} includeRecommendation={includeRecommendation} includeInvoice={includeInvoice} disabled={pending} />
-        <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>
-          {pending ? labels.saving : consultation ? labels.save : labels.create}
-        </button>
-      </div>
-    </div>
+    {saveFooterTarget ? createPortal(saveFooter, saveFooterTarget) : saveFooter}
   </form>
 }
