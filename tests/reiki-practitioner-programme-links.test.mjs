@@ -65,3 +65,18 @@ test("Closed bar stays one row; expanded guidance participates in vertical layou
   assert.ok(styles.includes(".saveManager > .preview {\n  position: absolute"));
   assert.ok(styles.includes("prefers-reduced-motion: reduce"));
 });
+
+test("Kundalini manual teaching slide links directly to its public course without losing progress", () => {
+  const start = learner.indexOf('{slide.id === "kun-05" ? (');
+  const end = learner.indexOf(') : null}', start);
+  assert.ok(start >= 0 && end > start, "Kundalini source slide needs a visible CTA");
+  const link = learner.slice(start, end);
+  assert.ok(link.includes('href={"/" + locale + "/academy/reiki/kundalini-reiki"}'));
+  assert.ok(link.includes('target="_blank" rel="noopener noreferrer"'));
+  assert.ok(link.includes('data-kundalini-study-link'));
+  assert.ok(link.includes('className={styles.studyButton}'));
+  assert.ok(link.includes('"Открыть курс Кундалини Рейки"'));
+  assert.ok(link.includes('"Open Kundalini Reiki Course"'));
+  assert.ok(curriculum.includes('id: "kun-05"'));
+  assert.ok(curriculum.includes('title: l("Explore the original manual"'));
+});
