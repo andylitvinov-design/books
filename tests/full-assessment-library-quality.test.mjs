@@ -1,10 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
+import { assertAssessmentSourceIntegrity, approvedLegacySourceKeys } from './helpers/legacy-source-fingerprint.mjs'
 import { verifiedHistoryResult } from '../lib/assessments/verified-history.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import { PRIORITY_METHODS_2026 } from '../data/assessments/priority-methods-2026.js'
@@ -111,8 +111,7 @@ test('whole published library has exact provenance, no orphaned rubric or score-
     authors:0,researchCandidates:0}
   for(const d of ALL) {
     const label=identity(d)
-    const {contentHash,...rest}=d
-    assert.equal(contentHash,'sha256:'+createHash('sha256').update(canonicalJSON(rest)).digest('hex'),label)
+    assertAssessmentSourceIntegrity(d)
     const scored=analyze(d)
     assert.deepEqual(scored.issues,[],label)
     assert.ok(d.questions.length>0,label)
