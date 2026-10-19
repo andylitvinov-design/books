@@ -20,7 +20,7 @@ import {
   energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
 } from "@/data/academy/energywork-first-lesson";
 import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
-import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest, REIKI_INITIATION_NAMES } from "@/data/academy/reiki-initiation-request.js";
+import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest } from "@/data/academy/reiki-initiation-request.js";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -417,7 +417,7 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
     : "You chose to skip " + skipped + " practice(s). That is a valid choice; participation remains voluntary.");
   if (reikiInitiationRequestValid(present("end-01"))) {
     const request = readReikiInitiationRequest(present("end-01"));
-    const selected = REIKI_INITIATION_NAMES[request.freeInitiation] || "";
+    const selected = energyworkPathChoices.find((choice) => choice.id === request.freeInitiation)?.title[locale] ?? "";
     highlights.push(locale === "ru" ? "Ваш выбор бесплатной личной инициации: " + selected + "." :
       "Your free personal initiation choice: " + selected + ".");
   }
