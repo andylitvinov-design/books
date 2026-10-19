@@ -1617,23 +1617,6 @@
 .page[data-course-visual] .milestoneCard p {
   max-width:45ch;margin:0;font-size:12px;line-height:1.5;color:#547685;
 }
-.page[data-course-visual] .meditationFeeling {
-  display:flex;flex-direction:column;gap:6px;
-  margin:5px 0 11px;min-width:0;
-}
-.page[data-course-visual] .meditationFeeling label {
-  font-size:14px;color:#165c70;font-weight:750;
-}
-.page[data-course-visual] .feelingValue {
-  display:flex;align-items:center;justify-content:space-between;gap:6px;
-}
-.page[data-course-visual] .feelingValue span {color:#557d8b;font-size:11px;}
-.page[data-course-visual] .feelingValue strong {
-  white-space:nowrap;font-size:16px;color:#087c92;
-}
-.page[data-course-visual] .meditationFeeling input[type="range"] {
-  accent-color:#03a9b9;width:100%;min-height:38px;cursor:pointer;
-}
 .page[data-course-visual] .feedbackTextarea {
   min-height:85px;resize:vertical;
 }
@@ -1646,7 +1629,6 @@
   .page[data-course-visual] .milestoneCard {padding:13px;min-height:128px;gap:6px;}
   .page[data-course-visual] .milestoneSymbol {width:55px;height:55px;}
   .page[data-course-visual] .milestoneCard strong {font-size:15px;}
-  .page[data-course-visual] .feelingValue span {font-size:10px;}
   .page[data-course-visual] .feedbackRequired {font-size:11px;}
 }
 
@@ -1936,8 +1918,6 @@
   .page[data-course-portrait="v3"] .voicesEmpty {font-size:15px;}
   .page[data-course-portrait="v3"] .voicesNote {font-size:13px;}
   .page[data-course-portrait="v3"] .voicesLink {min-height:44px;font-size:14px;}
-  .page[data-course-portrait="v3"] .meditationFeeling label {font-size:15px;}
-  .page[data-course-portrait="v3"] .feelingValue span {font-size:12px;}
   .page[data-course-portrait="v3"] .feedbackRequired {font-size:13px;}
 }
 
@@ -2158,10 +2138,6 @@
   line-height:1.5;
 }
 /* Refinement of adjacent meditation feedback and lesson celebration panels. */
-.page[data-reiki-reviews="v4"] .meditationFeeling input[type="range"] {
-  min-height:43px;
-  accent-color:#079bb0;
-}
 .page[data-reiki-reviews="v4"] .feedbackTextarea {
   border-radius:14px;
   background:rgba(255,255,255,.9);
