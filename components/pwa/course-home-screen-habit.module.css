@@ -49,3 +49,10 @@
   .copyRow input, .copyRow button { flex: 1 1 100%; }
   .root button { font-size: 12px; }
 }
+/* Reuse existing opt-in controls inside the Day 1 closing slide. */
+.embedded{margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;
+  align-items:stretch;border:0;border-radius:0;background:transparent;box-shadow:none}
+.embeddedIntro{margin:0!important;color:#446978;font-size:14px!important;line-height:1.48}
+.embedded .actions{justify-content:stretch;min-width:0}
+.embedded .actions > *{flex:1 1 150px}
+.embedded .guide{padding-top:10px}
