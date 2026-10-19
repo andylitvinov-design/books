@@ -13,6 +13,7 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
+import { energyworkLessonRanges } from "@/data/academy/energywork-ai-schema";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -52,6 +53,12 @@ const copy = {
     program: "Explore the programme",
     programmeIntro: "Your five-step journey is just beginning. Discover the Reiki paths that inspire you.",
     systemDetails: "Learn more",
+    intro: "Introduction",
+    slidesWord: "slides",
+    saveProgress: "Save progress",
+    saveAndContinue: "Save & continue",
+    signInToSave: "Sign in to save",
+    returnAnytime: "Your place is saved. You can return from My Courses at any time.",
     backCourse: "Course details",
     step: "Slide",
     of: "of",
@@ -163,6 +170,12 @@ const copy = {
     program: "Посмотреть программу",
     programmeIntro: "Ваш путь из пяти шагов только начинается. Знакомьтесь с системами Рейки и находите то, что вдохновляет.",
     systemDetails: "Подробнее",
+    intro: "Введение",
+    slidesWord: "слайдов",
+    saveProgress: "Сохранить прогресс",
+    saveAndContinue: "Сохранить и продолжить",
+    signInToSave: "Войти и сохранить",
+    returnAnytime: "Ваш прогресс сохраняется. Вы сможете вернуться из раздела «Курсы» в любой момент.",
     backCourse: "Описание курса",
     step: "Слайд",
     of: "из",
@@ -467,6 +480,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const accountIdRef = useRef<string | null>(null);
   const revisionRef = useRef(0);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const programmeRef = useRef<HTMLDetailsElement>(null);
   const dirtyRef = useRef(new Set<string>());
   const progressRef = useRef("welcome-01");
   const request = useCallback((body: SaveCommand) => {
@@ -498,7 +512,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     const restoredAnswers = value.answers ?? {};
     answersRef.current = restoredAnswers;
     setAnswers(restoredAnswers);
-    setIndex(Math.max(0, restored.findIndex((item) => item.id === value.slideId)));
+    const savedIndex = Math.max(0, restored.findIndex((item) => item.id === value.slideId));
+    // Only previously reached slides may be opened via cabinet deep links.
+    const requestedId = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("slide");
+    const requestedIndex = requestedId ? restored.findIndex((item) => item.id === requestedId) : -1;
+    setIndex(requestedIndex >= 0 && requestedIndex <= savedIndex ? requestedIndex : savedIndex);
     setSavedAt(value.savedAt || null);
     setSharingWithTeacher(Boolean(value.sharingWithTeacher));
     setApplicationLead(value.applicationLead || null);
@@ -558,6 +576,14 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const slides = useMemo(() => energyworkSlides(), []);
   const slide = slides[index] ?? slides[0]!;
   const total = slides.length;
+  const lessonRanges = useMemo(() => energyworkLessonRanges(), []);
+  const currentLessonRange = lessonRanges.find((range) => index >= range.start && index < range.end);
+  const savedIndex = sync === "ready" ? Math.max(0, slides.findIndex((item) => item.id === progressRef.current)) : index;
+  const reachedIndex = Math.max(index, savedIndex);
+  const progressPercent = Math.round((reachedIndex + 1) / total * 100);
+  const lessonProgressLabel = currentLessonRange
+    ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
+    : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01";
   const voicesArt = slide.kind === "voices";
@@ -569,8 +595,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
-  const lessonNumber = slide.phase === "welcome" ? 1 : slide.phase === "complete" ? 5 :
-    Math.max(1, energyworkLessons.findIndex((item) => item.phase === slide.phase) + 1);
+  const lessonNumber = currentLessonRange?.lesson ?? 1;
   const initiationItems = energyworkInitiationRequirements.map((item) => ({
     ...item,
     title: energyworkLessons.find((lesson) => lesson.phase === item.lesson)?.title[locale] ?? item.lesson,
@@ -631,6 +656,27 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setBusy(false);
     }
     setIndex((current) => Math.min(current + 1, slides.length - 1));
+  }
+  async function saveAndLeave() {
+    if (busy || slide.kind !== "milestone") return;
+    // A guest cannot claim to have saved private progress.
+    if (sync === "guest") { await signIn(); return; }
+    if (sync === "consent") {
+      programmeRef.current?.setAttribute("open", "");
+      programmeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return;
+    }
+    if (sync === "unavailable") { await reloadProgress(); return; }
+    if (sync !== "ready") return;
+    const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
+    setBusy(true);
+    try {
+      await store(nextId);
+      window.location.assign("/" + locale + "/app/course?view=courses");
+    } catch (error) {
+      setSaveError((error as { status?: number })?.status === 409 ? t.conflict : t.saveFailed);
+      setBusy(false);
+    }
   }
   async function previous() {
     if (index === 0 || busy) return;
@@ -771,6 +817,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
                   <strong>{t.milestoneLabel}</strong>
                   <p>{t.milestoneNote}</p>
+                  {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                 </div>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
@@ -962,24 +1009,31 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
         <div className={styles.progressFooter}>
           <div className={styles.progressHeader}>
-            <span>{t.lesson} {index + 1} {t.of} {total}</span>
-            <span>{Math.round((index + 1) / total * 100)}% {t.completedLabel}</span>
+            <span>{lessonProgressLabel}</span>
+            <span>{progressPercent}% {t.completedLabel}</span>
           </div>
           <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
-            aria-valuenow={index + 1} aria-label={t.lesson}>
-            <span style={{ width: ((index + 1) / total * 100) + "%" }} />
+            aria-valuenow={reachedIndex + 1} aria-label={t.lesson}>
+            <span style={{ width: progressPercent + "%" }} />
           </div>
         </div>
 
-        <details className={styles.programme}>
+        <details className={styles.programme} ref={programmeRef}>
           <summary>{t.program}</summary>
           <p className={styles.programmeIntro}>{t.programmeIntro}</p>
-          <ol>{energyworkLessons.map((lesson) => {
+          <ol>{energyworkLessons.map((lesson, number) => {
+            const range = lessonRanges[number]!;
+            const unlocked = range.start <= reachedIndex;
             const system = energyworkPathChoices.find((choice) => choice.id === lesson.phase);
             return (
-              <li key={lesson.phase} aria-current={lesson.phase === slide.phase ? "step" : undefined}>
+              <li key={lesson.phase} aria-current={currentLessonRange?.lesson === number + 1 ? "step" : undefined}>
                 <span className={styles.programmeRow}>
-                  <span className={styles.programmeLesson}>{lesson.title[locale]}</span>
+                  <button type="button" className={styles.programmeJump}
+                    disabled={busy || sync === "checking" || !unlocked}
+                    onClick={() => void jumpToSlide(lesson.firstSlideId)}>
+                    <span className={styles.programmeLesson}>{lesson.title[locale]}</span>
+                    <small>{range.count} {t.slidesWord}</small>
+                  </button>
                   {system ? (
                     <Link className={styles.programmeLink}
                       href={"/" + locale + "/academy/" + system.studyPath}
@@ -1025,7 +1079,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
             {sync === "ready" ? <>
               <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
               {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
-              <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
+              <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
               {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
                 <details className={styles.saveDetails}>
                   <summary>{t.teacherShareTitle}</summary>
@@ -1047,13 +1101,29 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         </details>
         <footer className={styles.footer}>
           {!completed ? (
-            <div className={styles.actions}>
-              <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing} className={styles.next} data-energywork-next>
-                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : slide.kind === "milestone" ? t.committed : t.continue}<ArrowRight size={19} aria-hidden="true" />
+            <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
+              {slide.kind === "milestone" ? <>
+                <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
+                  className={styles.milestoneBack} aria-label={t.back} title={t.back}>
+                  <ArrowLeft size={19} aria-hidden="true" />
+                </button>
+                <button type="button" onClick={saveAndLeave} disabled={busy || sync === "checking"}
+                  className={styles.saveProgress} data-energywork-save-progress>
+                  {sync === "guest" ? t.signInToSave : t.saveProgress}
+                </button>
+              </> : (
+                <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
+                  className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
+              )}
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing}
+                className={styles.next} data-energywork-next>
+                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
+                  slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continue) : t.continue}
+                <ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
+          {slide.kind === "milestone" && saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
         </footer>
       </div>
     </main>

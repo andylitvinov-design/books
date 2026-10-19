@@ -5,7 +5,9 @@ import { appFetch } from '@/lib/app/client-fetch'
 import Image from 'next/image'
 import { cardArtworkUrl, hasCardArtwork } from '@/lib/public-card-artwork'
 import Link from 'next/link'
-import { ArrowUpRight, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Check, LockKeyhole, Sparkles } from 'lucide-react'
+import { energyworkLessonRanges, energyworkSequence } from '@/data/academy/energywork-ai-schema'
+import { energyworkLessons } from '@/data/academy/energywork-ai-curriculum'
 import styles from './cabinet-free-course-banners.module.css'
 
 // These are existing Academy learning and free introductory initiation pages.
@@ -34,18 +36,23 @@ const COURSES = [
   },
 ]
 
+const ENERGYWORK_SEQUENCE = energyworkSequence()
+const ENERGYWORK_LESSON_RANGES = energyworkLessonRanges(ENERGYWORK_SEQUENCE)
+
 const COPY = {
   en: {
     eyebrow: 'HOLISTIC HOUSE ACADEMY',
     title: 'Free courses',
     note: 'Explore for free. Teacher-led initiations require personal confirmation.',
     action: 'Open course', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume saved course', completed: 'Completed', slide: 'Slide',
+    lesson: 'Lesson', intro: 'Introduction', of: 'of', slides: 'slides', chooseLesson: 'Go to a lesson', locked: 'Reach this lesson to unlock it',
   },
   ru: {
     eyebrow: 'АКАДЕМИЯ HOLISTIC HOUSE',
     title: 'Бесплатные курсы',
     note: 'Начальные материалы бесплатны. Инициация проводится по согласованию.',
     action: 'Открыть курс', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить сохранённый курс', completed: 'Завершён', slide: 'Слайд',
+    lesson: 'Урок', intro: 'Введение', of: 'из', slides: 'слайдов', chooseLesson: 'Перейти к уроку', locked: 'Урок ещё не открыт',
   },
 }
 
@@ -53,6 +60,7 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const t = COPY[language]
   const [academyProgress, setAcademyProgress] = useState(null)
+  const courseHref = '/' + language + '/academy/principles-of-energywork/learn'
   useEffect(() => {
     let alive = true
     appFetch('academy-energywork').then(value => {
@@ -60,6 +68,12 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
     }).catch(() => {})
     return () => { alive = false }
   }, [])
+
+  const savedIndex = academyProgress ? Math.max(0, ENERGYWORK_SEQUENCE.indexOf(academyProgress.slideId)) : 0
+  const currentLesson = ENERGYWORK_LESSON_RANGES.find(range => savedIndex >= range.start && savedIndex < range.end)
+  const resumeLabel = currentLesson
+    ? `${t.lesson} ${currentLesson.lesson} · ${t.slide} ${savedIndex - currentLesson.start + 1} ${t.of} ${currentLesson.count}`
+    : `${t.intro} · ${t.slide} ${savedIndex + 1} ${t.of} ${ENERGYWORK_LESSON_RANGES[0].start}`
 
   return <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
     <div className={styles.heading}>
@@ -70,14 +84,30 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
       <p className={styles.note}>{t.note}</p>
     </div>
     {academyProgress ? <div className={styles.savedCourse} data-energywork-course-resume>
-      <div>
+      <div className={styles.savedOverview}>
         <span className={styles.savedLabel}>{academyProgress.status === 'completed' ? t.completed : t.continueTitle}</span>
         <p>{t.continueText}</p>
-        <small>{t.slide}: {academyProgress.slideId}</small>
+        <small>{resumeLabel}</small>
       </div>
-      <Link className={styles.savedAction} href={'/' + language + '/academy/principles-of-energywork/learn'} prefetch={false}>
+      <Link className={styles.savedAction} href={courseHref} prefetch={false}>
         {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
       </Link>
+      <div className={styles.lessonPicker} data-energywork-cabinet-lessons>
+        <strong>{t.chooseLesson}</strong>
+        <ol className={styles.lessonGrid}>
+          {ENERGYWORK_LESSON_RANGES.map((range, number) => {
+            const unlocked = savedIndex >= range.start
+            const finished = academyProgress.status === 'completed' || savedIndex >= range.end
+            const label = <><span>{t.lesson} {range.lesson} · {energyworkLessons[number].title[language]}</span>
+              <small>{finished ? <Check size={13} aria-hidden="true" /> : null}{range.count} {t.slides}</small></>
+            return <li key={range.firstSlideId}>
+              {unlocked
+                ? <Link className={styles.lessonLink} href={courseHref + '?slide=' + encodeURIComponent(range.firstSlideId)} prefetch={false} aria-current={currentLesson?.lesson === range.lesson ? 'step' : undefined}>{label}</Link>
+                : <span className={styles.lessonLocked} title={t.locked} aria-disabled="true"><LockKeyhole size={13} aria-hidden="true" />{label}</span>}
+            </li>
+          })}
+        </ol>
+      </div>
     </div> : null}
     <div className={styles.grid}>
       {COURSES.map(course => {

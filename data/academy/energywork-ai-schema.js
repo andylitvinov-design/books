@@ -73,6 +73,17 @@ export function energyworkSequence(_legacyPath = null) {
     'end-01','paths-04','end-02',
   ]
 }
+// Derive lesson lengths from the canonical sequence, not hard-coded totals.
+// end is exclusive; the two welcome slides are an introduction before lesson 1.
+export function energyworkLessonRanges(sequence = energyworkSequence()) {
+  const starts = ENERGYWORK_LESSON_STARTS.map(id => sequence.indexOf(id))
+  if (starts.some((value, index) => value < 0 || (index > 0 && value <= starts[index - 1])))
+    throw new Error('ENERGYWORK_LESSON_SEQUENCE_INVALID')
+  return starts.map((start, index) => {
+    const end = starts[index + 1] ?? sequence.length
+    return { lesson: index + 1, firstSlideId: ENERGYWORK_LESSON_STARTS[index], start, end, count: end - start }
+  })
+}
 // Keep encrypted private answers. Legacy progress returns to the introductory
 // lesson when the three previously exclusive systems become sequential.
 export function energyworkLegacyResumeId(slideId) {
