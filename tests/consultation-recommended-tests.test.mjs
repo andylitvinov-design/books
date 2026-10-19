@@ -35,6 +35,14 @@ test('recommendable tests come only from the real, launchable and licensed guest
   for (const item of en) {
     assert.ok(['ru', 'en'].includes(item.startLocale))
     assert.equal(item.href, `/${item.startLocale}/client?startTests=${encodeURIComponent(item.key)}`)
+    assert.ok(Number.isInteger(item.questionCount) && item.questionCount > 0, item.key + ': actual questions')
+    assert.ok(Number.isFinite(item.durationMinutes) && item.durationMinutes > 0, item.key + ': catalogue time estimate')
+    assert.ok(['professional', 'monitoring', 'hobby'].includes(item.testKind), item.key + ': catalogue kind')
+  }
+  for (const item of ru) {
+    assert.ok(Number.isInteger(item.questionCount) && item.questionCount > 0, item.key)
+    assert.ok(Number.isFinite(item.durationMinutes) && item.durationMinutes > 0, item.key)
+    assert.ok(['professional', 'monitoring', 'hobby'].includes(item.testKind), item.key)
   }
 })
 
@@ -86,4 +94,16 @@ test('owner form, both save paths and HTML report are wired to the same test sel
   assert.match(read('lib/consultations/service.js'), /recommendedTestKeys: input\.recommendedTestKeys/)
   assert.match(read('components/prescription-document.jsx'), /canonical-recommended-tests/)
   assert.match(read('components/client-session-page.jsx'), /session-recommended-tests/)
+})
+
+test('client session recommended cards show real questions, minutes and type, including on phones', () => {
+  const page = readFileSync(new URL('../components/client-session-page.jsx', import.meta.url), 'utf8')
+  const css = readFileSync(new URL('../components/client-session.module.css', import.meta.url), 'utf8')
+  assert.match(page, /test\.questionCount/)
+  assert.match(page, /test\.durationMinutes/)
+  assert.match(page, /test\.testKind==='professional'\?'Pro'/)
+  assert.match(page, /Опросник/)
+  assert.match(css, /\.reportRecommendedTestFacts\{/)
+  assert.match(css, /flex-wrap:wrap/)
+  assert.match(css, /@media\(max-width:380px\)/)
 })
