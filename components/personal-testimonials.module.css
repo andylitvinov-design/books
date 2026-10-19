@@ -102,6 +102,63 @@
 .videoItem :global(.site-video-title) { font-size: 20px; }
 .videoItem :global(.site-video-poster-title) { display: none; } /* Title appears once in the caption, not twice over the real still. */
 .videoItem :global(.site-video-actions) { margin-top: 8px; }
+
+/* Homepage keeps four visible previews; all other approved videos live in an accessible
+   native disclosure. The YouTube iframe is still created only after a play click. */
+.moreVideoDisclosure {
+  margin-top: 17px;
+  overflow: hidden;
+  border: 1px solid #d9c2a8;
+  border-radius: 15px;
+  background: #f3e8dc;
+}
+.moreVideoDisclosure > summary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  color: #70462f;
+  font: 700 14px/1.4 Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+.moreVideoDisclosure > summary::-webkit-details-marker { display: none; }
+.moreVideoDisclosure > summary::after {
+  content: "⌄";
+  font-size: 23px;
+  line-height: 1;
+}
+.moreVideoDisclosure[open] > summary::after { transform: rotate(180deg); }
+.moreVideoDisclosure > summary:hover { background: #eee0d0; }
+.moreVideoDisclosure > summary:focus-visible { outline: 3px solid #98634e; outline-offset: -3px; }
+.moreCount {
+  padding: 3px 9px;
+  border: 1px solid #d4b99f;
+  border-radius: 999px;
+  background: #fffaf4;
+  color: #735846;
+  font: 700 11px/1.4 Arial, Helvetica, sans-serif;
+}
+.moreVideoContent {
+  padding: 20px 18px 22px;
+  border-top: 1px solid #d9c2a8;
+  background: #fbf8f3;
+}
+.moreSectionTitle {
+  margin: 0 0 13px;
+  color: #5c4336;
+  font: 700 14px/1.5 Arial, Helvetica, sans-serif;
+}
+.moreSectionTitle:not(:first-child) { margin-top: 24px; }
+@media (max-width: 767px) {
+  .moreVideoContent { padding: 16px 11px 19px; }
+  .moreVideoDisclosure > summary { min-height: 48px; padding: 11px 10px; }
+}
+
 .disclaimer {
   margin: 18px 0 0;
   color: #76675b;
