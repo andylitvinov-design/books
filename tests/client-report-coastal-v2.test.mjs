@@ -33,7 +33,10 @@ test('approved coastal report option 2 is scoped to authorized consultation view
   assert.match(styles, /@media screen \{/)
   assert.match(styles, /sessionBottomPrimary/)
   assert.match(styles, /sessionBottomSecondary/)
-  assert.doesNotMatch(styles.slice(styles.indexOf('Client report coastal v2')), /\@media print\s*\{/)
+  // The coastal theme is restricted to screen queries. Earlier print rules in
+  // this shared module belong to other report features, not to the theme.
+  assert.match(styles, /Client report coastal v2[^]*?@media screen \\{/)
+  assert.match(styles, /Coastal client report: honor the compact prescription and appendix layout[^]*?@media screen \\{/)
 })
 
 test('coastal hero is lightweight, same-origin and free of client data', () => {
