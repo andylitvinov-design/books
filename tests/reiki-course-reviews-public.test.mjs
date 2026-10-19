@@ -82,6 +82,8 @@ test('Owner CRM can approve/reject and student edits revoke previously approved 
   assert.match(owner,/moderateReview\(review,'approved'\)/)
   assert.match(owner,/moderateReview\(review,'rejected'\)/)
   assert.match(pub,/row\.status !== 'pending'/)
+  assert.match(owner,/unpublish:'Unpublish'/)
+  assert.match(pub,/row.status === 'approved' && status === 'rejected'/)
   assert.match(pub,/row\.revision !== expectedRevision/)
   assert.match(repo,/await deleteAllPublicReviews\(db,actor\)/)
   assert.match(repo,/if \(body\.answer !== \(answers\[body\.slideId\] \|\| ''\)\)/)
