@@ -246,7 +246,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     {!hasFullReport&&hasRecommendation&&<>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="summary"/>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="remedies"/>
-      <DaoStageDisclosure score={recommendation?.daoResourceScore} locale={locale}/>
+
     </>}
 
     {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
@@ -409,6 +409,10 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         </a>)}
       </div>
     </section>}
+
+    {!hasFullReport&&hasRecommendation&&<DaoStageDisclosure
+      score={recommendation?.daoResourceScore} locale={locale}
+      published={recommendation?.daoResourcePublished !== false}/>}
 
     {session.report&&<section id={hasFullReport?'session-download':'session-report'} className={styles.clientSection+' '+styles.reportDownloadSection}>
       <header className={styles.sectionHeader}>
