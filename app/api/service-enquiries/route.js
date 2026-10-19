@@ -16,7 +16,7 @@ export async function POST(request) {
     requireSameOrigin(request, config)
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     await consumeRate(config, { op: 'guest-service-enquiry', ip }, 6, 3600)
-    const payload = await readBody(request, 4096)
+    const payload = await readBody(request, 8192)
     const result = await createPublicServiceEnquiry(config, payload)
     return NextResponse.json(result, { status: 201, headers: PRIVATE_HEADERS })
   } catch (error) {
