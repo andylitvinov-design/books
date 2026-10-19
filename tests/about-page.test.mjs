@@ -38,16 +38,17 @@ test('publishes paired localized About routes with complete, Ontario-safe editor
 })
 
 test('shares all public destinations with six mobile shortcuts and no administration', async () => {
-  const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'events', 'business', 'relationships', 'academy', 'courses', 'cabinet'])
+  const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'events', 'relationships', 'academy', 'courses', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
-    assert.equal(items.length, 9)
+    assert.equal(items.length, 8)
     assert.equal(items.find(item=>item.id==='relationships')?.href, `/${locale}/relationships`)
     assert.equal(items.find((item) => item.id === 'courses').href, `/${locale}/courses`)
     assert.equal(items.find((item) => item.id === 'events').href, `/${locale}/events`)
-    assert.equal(items.find((item) => item.id === 'business').href, `/${locale}/explore/business`)
+    assert.equal(items.some((item) => item.id === 'business'), false)
     assert.equal(items.find((item) => item.id === 'cabinet').href, `/${locale}/client`)
+    assert.equal(getCompactNavigation(locale).find((item) => item.id === 'business').href, `/${locale}/explore/business`)
   }
   assert.match(mobileNavigation, /getCompactNavigation/)
   assert.match(mobileNavigation, /data-nav-item/)
