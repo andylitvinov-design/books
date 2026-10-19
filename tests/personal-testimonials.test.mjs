@@ -16,10 +16,12 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
   assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<PublicConsultationCta locale='));
   assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
-  assert.match(testimonials, /data-home-testimonial-disclosure="true"/);
+  assert.match(testimonials, /<HomeTestimonialMore/);
+  const lazy = read("components", "home-testimonial-more.tsx");
+  assert.match(lazy, /data-home-testimonial-disclosure="true"/);
   assert.match(testimonials, /data-more-services-testimonials/);
   assert.match(extra, /<PageVideo slot="consultation" locale=\{locale\} \/>/);
-  assert.match(extra, /id="method-videos"/);
+  assert.match(extra, /id="method-videos" data-services-methods lang=\{locale\} open/);
 });
 
 test("homepage previews four sourced videos and preserves all 12 originals behind the disclosure", () => {
@@ -51,10 +53,17 @@ test("homepage previews four sourced videos and preserves all 12 originals behin
   }
   assert.match(component, /const remainingHomeVideos = isHome \? testimonialVideos\[locale\]\.slice\(4\) : \[\]/);
   assert.match(component, /const otherLanguageVideos = isHome \? testimonialVideos\[locale === "ru" \? "en" : "ru"\] : \[\]/);
-  assert.match(component, /<details className=\{styles\.moreVideoDisclosure\} data-home-testimonial-disclosure="true">/);
-  assert.match(component, /renderVideoCards\(remainingHomeVideos\)/);
-  assert.match(component, /renderVideoCards\(otherLanguageVideos, true\)/);
-  assert.match(component, /remainingHomeVideos\.length \+ otherLanguageVideos\.length/);
+  const lazy = read("components", "home-testimonial-more.tsx");
+  assert.match(component, /<HomeTestimonialMore/);
+  assert.match(component, /remainingVideos=\{remainingHomeVideos\.map/);
+  assert.match(component, /otherLanguageVideos=\{otherLanguageVideos\.map/);
+  assert.match(lazy, /<details/);
+  assert.match(lazy, /data-home-testimonial-disclosure="true"/);
+  assert.match(lazy, /remainingVideos\.length \+ otherLanguageVideos\.length/);
+  assert.match(lazy, /renderCards\(remainingVideos\)/);
+  assert.match(lazy, /renderCards\(otherLanguageVideos, true\)/);
+  assert.match(lazy, /expanded \? \(/);
+  assert.doesNotMatch(component, /renderVideoCards\(remainingHomeVideos\)/);
   assert.match(component,/storyQuote/);
   assert.match(component,/current\.storyQuote/);
   assert.match(component, /video=\{\{ youtubeId: item\.id, language: item\.language, title: item\.title \}\}/);
