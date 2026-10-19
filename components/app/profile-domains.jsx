@@ -3,9 +3,10 @@
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Brain, CalendarDays, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
+import { ArrowRight, Brain, CalendarDays, ChevronDown, FileText, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
+import { availableSavedReports, latestReceivedReport } from '@/lib/profile/report-summary'
 import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
 import './profile-domains.css'
 import './profile-refresh.css'
@@ -45,6 +46,10 @@ const WORDS = {
     selected: 'selected', emptyLegacyPsy: 'Psychological test reports shared by Andy will appear here. Your Google Cabinet also keeps results from tests you complete yourself.',
     google: 'Open my Google Cabinet',
     archiveTitle: 'My reports and recommendations', archiveHint: 'Read and download reports you have saved from your practitioner.',
+    archivePanelTitle: 'My reports', archivePanelIntro: 'Reports from Andrey · private',
+    archiveLatest: 'Latest report', archiveReceived: 'Received', archiveDated: 'Report date',
+    archiveEmpty: 'No reports yet. A report you save from Andrey will appear here.',
+    archiveViewAll: 'View all reports', archiveHideAll: 'Hide all reports', archiveOpen: 'Open report', archiveDefaultTitle: 'Personal report',
     browseTitle: 'Reports by area', browseHint: 'Browse your saved reports by topic.', savedDocumentsLink: 'My saved documents', getReview: 'Request a free written review', noReportsHint: 'Your personal archive starts with a report shared with you.',
     consultationNote: 'Free introductory request, not an instant booking. Andrey confirms availability personally; full sessions are paid.',
     emptyInviteTitle: 'No reports yet? Start with a consultation',
@@ -85,6 +90,10 @@ const WORDS = {
     selected: 'подобрано', emptyLegacyPsy: 'Здесь будут психологические отчёты от Andy. Результаты самостоятельно пройденных тестов сохраняются в вашем Google-кабинете.',
     google: 'Открыть Google-кабинет',
     archiveTitle: 'Мои отчёты и рекомендации', archiveHint: 'Читать и скачивать сохранённые отчёты специалиста.',
+    archivePanelTitle: 'Мои отчёты', archivePanelIntro: 'Отчёты от Андрея · лично',
+    archiveLatest: 'Последний отчёт', archiveReceived: 'Получен', archiveDated: 'Дата отчёта',
+    archiveEmpty: 'Пока нет отчётов. Сохранённый отчёт от Андрея появится здесь.',
+    archiveViewAll: 'Показать все отчёты', archiveHideAll: 'Свернуть отчёты', archiveOpen: 'Открыть отчёт', archiveDefaultTitle: 'Личный отчёт',
     browseTitle: 'Отчёты по направлениям', browseHint: 'Просмотрите сохранённые отчёты по темам.', savedDocumentsLink: 'Сохранённые документы', getReview: 'Заказать бесплатный письменный разбор', noReportsHint: 'Ваш личный архив начнётся с отчёта, которым с вами поделились.',
     consultationNote: 'Бесплатное ознакомительное обращение, не подтверждённая запись. Андрей согласует время лично; полноценные сессии платные.',
     emptyInviteTitle: 'Нет отчётов? Начните с консультации',
@@ -196,6 +205,7 @@ export function ProfileDomains({
   const t = WORDS[ru ? 'ru' : 'en']
   const [active, setActive] = useState('psychology')
   const [expanded, setExpanded] = useState(mode === 'legacy')
+  const [archiveOpen, setArchiveOpen] = useState(false)
   const [interactive, setInteractive] = useState(false)
   const [fetchedReports, setFetchedReports] = useState([])
   const [fetchedDocuments, setFetchedDocuments] = useState([])
@@ -207,12 +217,16 @@ export function ProfileDomains({
     if (!reportsContent || focusedArchive.current) return
     if (!focusReports && window.location.hash !== '#personal-reports') return
     focusedArchive.current = true
+    if (mode !== 'legacy') setArchiveOpen(true)
     // Profile is client-rendered after account bootstrap; browser fragment scrolling
     // can happen before its report archive exists, so complete it after mount.
     requestAnimationFrame(() => document.getElementById('personal-reports')?.scrollIntoView({ block: 'start' }))
   }, [focusReports, reportsContent])
   useEffect(() => { setInteractive(true) }, [])
   const external = mode === 'legacy'
+  const availableReports = availableSavedReports(savedReports)
+  const latestSavedReport = latestReceivedReport(savedReports)
+  const lastReceivedDate = readableDate(latestSavedReport?.savedAt || latestSavedReport?.occurredOn, locale)
   const reports = external ? assessments : fetchedReports
   const updates = external ? homeopathyUpdates : fetchedDocuments
   const byArea = area => ordered(reports.filter(report => report.profileArea === area && report.available !== false))
@@ -270,7 +284,7 @@ export function ProfileDomains({
   )
 
   return <section className="hh-profile-domains" data-profile-domains data-profile-mode={mode} data-profile-interactive={interactive ? "true" : "false"}>
-    <header className="hh-domain-hero">
+    {external && <header className="hh-domain-hero">
       <div className="hh-domain-title">
         <p className="hh-domain-eyebrow">{t.eyebrow}</p>
         <h1>{t.title}</h1>
@@ -280,23 +294,54 @@ export function ProfileDomains({
         {!external && <Link href={'/' + locale + '/app/history'} prefetch={false}>{t.savedDocumentsLink}</Link>}
       </div>
       </div>
-    </header>
-    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} />}
-    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive" aria-labelledby="hh-analysis-reports-title" data-profile-report-archive>
-      {reportsContent}
-      {!external && savedReports.filter(report => report.available !== false).length === 0 && (
-        <div className="hh-domain-when-empty" data-profile-empty-consultation>
-          <a className="hh-domain-appointment-button" href={freeIntroConsultationHref(locale)}
-            target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp"
-            data-consultation-kind="free-introduction">
-            <CalendarDays size={20} aria-hidden="true" />
-            <span>{t.consultation}</span>
-            <ArrowRight size={20} aria-hidden="true" />
-          </a>
-          <p className="hh-domain-consultation-disclaimer">{t.consultationNote}</p>
+    </header>}
+    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive"
+      aria-labelledby={external ? 'hh-analysis-reports-title' : 'hh-account-report-title'} data-profile-report-archive>
+      {external ? reportsContent : <>
+        <div className="hh-account-report-heading">
+          <span className="hh-account-report-icon" aria-hidden="true"><FileText size={23} /></span>
+          <div className="hh-account-report-heading-copy">
+            <h1 id="hh-account-report-title">{t.archivePanelTitle}</h1>
+            <p>{t.archivePanelIntro}</p>
+          </div>
+          <span className="hh-account-report-private"><LockKeyhole size={12} aria-hidden="true" />{ru ? 'ЛИЧНО' : 'PRIVATE'}</span>
         </div>
-      )}
+        {latestSavedReport
+          ? <article className="hh-account-report-latest" data-profile-latest-report>
+              <div className="hh-account-report-latest-copy">
+                <span className="hh-account-report-eyebrow">{t.archiveLatest}</span>
+                <strong>{latestSavedReport.title || t.archiveDefaultTitle}</strong>
+                {lastReceivedDate && <time dateTime={String(latestSavedReport.savedAt || latestSavedReport.occurredOn).slice(0,10)}>
+                  {latestSavedReport.savedAt ? t.archiveReceived : t.archiveDated}: {lastReceivedDate}
+                </time>}
+              </div>
+              <Link className="hh-account-report-open" href={'/' + locale + '/app/reports/' + encodeURIComponent(latestSavedReport.id)} prefetch={false}>
+                {t.archiveOpen} <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </article>
+          : <p className="hh-account-report-empty">{t.archiveEmpty}</p>}
+        <button type="button" className="hh-account-report-toggle" aria-expanded={archiveOpen}
+          aria-controls="hh-account-report-all" onClick={() => setArchiveOpen(open => !open)}>
+          <span>{archiveOpen ? t.archiveHideAll : t.archiveViewAll}</span>
+          <span className="hh-account-report-number">{availableReports.length}</span>
+          <ChevronDown className={archiveOpen ? 'is-open' : ''} size={19} aria-hidden="true" />
+        </button>
+        <div id="hh-account-report-all" hidden={!archiveOpen} className="hh-account-report-full">
+          {archiveOpen && reportsContent}
+          {archiveOpen && availableReports.length === 0 && <div className="hh-domain-when-empty" data-profile-empty-consultation>
+            <a className="hh-domain-appointment-button" href={freeIntroConsultationHref(locale)}
+              target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp"
+              data-consultation-kind="free-introduction">
+              <CalendarDays size={20} aria-hidden="true" />
+              <span>{t.consultation}</span>
+              <ArrowRight size={20} aria-hidden="true" />
+            </a>
+            <p className="hh-domain-consultation-disclaimer">{t.consultationNote}</p>
+          </div>}
+        </div>
+      </>}
     </section>}
+    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} />}
     {!external && footerActions}
     <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
