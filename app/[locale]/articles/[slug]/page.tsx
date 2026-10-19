@@ -10,6 +10,7 @@ import {articleBlocks,inlineArticleSegments} from '@/lib/practitioners/article-f
 import styles from '@/components/practitioner-articles-public.module.css'
 export const dynamic='force-dynamic';export const revalidate=0;
 type Props={params:Promise<{locale:string;slug:string}>}
+type ArticleBlock={type:'h2'|'h3'|'p';text:string}|{type:'ul'|'ol';items:string[]}
 async function load(locale:string,slug:string){
  try{return await createArticleRepository(getAppConfig()).publicArticle(locale,slug)}catch{return null}
 }
@@ -29,7 +30,7 @@ export default async function ArticleDetail({params}:Props){
  const {locale,slug}=await params;if(!isPublicLocale(locale))notFound()
  const article=await load(locale,slug);if(!article)notFound()
  const ru=locale==='ru',es=locale==='es',published=article.published
- const blocks=articleBlocks(published.body||'')
+ const blocks=articleBlocks(published.body||'') as ArticleBlock[]
  return <main className="services-shell services-shell--studio" lang={locale}><PublicSiteHeader locale={locale}/>
   <article className={styles.article}>
    <Link href={'/'+locale+'/articles'}>← {ru?'Все статьи':es?'Artículos':'All articles'}</Link>
