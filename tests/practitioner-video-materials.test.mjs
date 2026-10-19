@@ -28,6 +28,33 @@ test('material record validation enforces title, locale, duplicates, bounds and 
  assert.throws(()=>profile(Array(13).fill(v)),{code:'INVALID_LIST'})
  assert.throws(()=>profile([{...v,clientId:'private'}]),{code:'UNKNOWN_FIELD'})
 })
+test('iPhone YouTube share links are accepted and stripped of tracking parameters',()=>{
+ const saved=profile([{title:'Как принимать препараты',description:'',locale:'ru',
+  url:'https://youtu.be/24-RuhV-EV4?si=pJ-49example'}]).videoMaterials
+ assert.deepEqual(saved,[{title:'Как принимать препараты',description:'',locale:'ru',
+  url:'https://www.youtube.com/watch?v=24-RuhV-EV4'}])
+})
+
+test('material editor saves each action to the server before confirming success',async()=>{
+ const [editor,workspace,css]=await Promise.all([
+  'components/app/practice-materials.jsx',
+  'components/app/practice-workspace.jsx',
+  'components/app/practice-materials.module.css',
+ ].map(f=>readFile(new URL('../'+f,import.meta.url),'utf8')))
+ assert.match(editor,/normalizeVideoPresentation/)
+ assert.match(editor,/await onSaveVideos\(next\)/)
+ assert.ok(editor.indexOf('await onSaveVideos(next)')<editor.indexOf('setVideos(next)'))
+ assert.match(editor,/if\(await persist\(next,t\.saved\)\)/)
+ assert.match(editor,/if\(await persist\(next,t\.removed\)\)/)
+ assert.match(editor,/role="alert"/)
+ assert.match(editor,/role="status"/)
+ assert.doesNotMatch(editor,/Add to list|Добавить в список/)
+ assert.doesNotMatch(editor,/onClick=\{\(\)=>onSaveVideos\(videos\)\}/)
+ assert.match(workspace,/key=\{p\?\.id\|\|'materials'\}/)
+ assert.match(workspace,/videoMaterials:videos\},expectedRevision:p\.revision\}\),\{rethrow:true\}/)
+ assert.match(css,/:global\(\.hh-app\) \.shell \.primary/)
+})
+
 test('videos share profile editorial review; public page uses only approved author materials',async()=>{
  const [contracts,repo,publicPage,cabinet,gallery,articlesRepo,articleEditor]=await Promise.all([
   'lib/practitioners/contracts.js','lib/practitioners/repository.js','app/[locale]/masters/[slug]/page.tsx',
