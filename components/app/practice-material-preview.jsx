@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client'
 import {useState} from 'react'
+import Image from 'next/image'
 import {ExternalLink,Film,Image as ImageIcon,Play, X} from 'lucide-react'
 import {SessionPrivateVideoPoster} from '@/components/session-private-video-poster'
 import {safeMaterialVideoUrl,youtubePreviewId} from '@/lib/practitioners/material-preview.js'
@@ -23,8 +24,9 @@ export default function PracticeMaterialPreview({
   const body=<>
     {image&&!imageFailed&&<img className={styles.thumbnailImage} src={mediaUrl}
       loading="lazy" alt="" onError={()=>setImageFailed(true)}/>}
-    {previewImage&&<img className={styles.thumbnailImage} src={previewImage}
-      loading="lazy" alt="" onError={()=>setImageFailed(true)}/>}
+    {previewImage&&<Image className={styles.thumbnailImage} src={previewImage}
+      width={256} height={160} sizes="116px" loading="lazy" alt=""
+      onError={()=>setImageFailed(true)}/>}
     {kind==='video'&&mediaUrl&&<SessionPrivateVideoPoster src={mediaUrl}/>}
     {((kind==='image'&&imageFailed)||(kind==='youtube'&&!previewImage))&&
       <span className={styles.thumbnailFallback}>
