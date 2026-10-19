@@ -26,6 +26,10 @@
     rgba(223,244,244,.16) 58%,
     rgba(218,241,240,.56) 100%);
 }
+.welcome{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.baseline{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.checkin{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.recall{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .arrive{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
 .practice{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .feel{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
@@ -120,6 +124,20 @@
   box-shadow:inset 0 0 0 1px #fff,0 2px 9px #159a9b1c;
 }
 .chips button:disabled{opacity:.6}
+/* Short optional 0–10 observations: two thumb-friendly rows, no giant questionnaire. */
+.ratingGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+.ratingGrid button{
+  min-width:0;min-height:44px;padding:8px 0;border-radius:12px;
+  border:1.5px solid #afced1;background:rgba(255,255,255,.92);
+  color:#235467;font-size:clamp(16px,4.3vw,19px);font-weight:750;cursor:pointer;
+}
+.ratingGrid button[aria-pressed=true]{
+  border:2px solid #138e98;background:#cdf3eb;color:#0f5c67;
+}
+.ratingGrid button:disabled{opacity:.6}
+.ratingBounds{display:flex;justify-content:space-between;gap:8px;color:#446979;
+  font-size:clamp(12px,3.4vw,14px);line-height:1.3}
+.ratingGrid button:focus-visible{outline:3px solid #096d89;outline-offset:2px}
 .linkHint{
   display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
   padding:4px 0;border:0;background:transparent;color:#1b6d7c;
@@ -202,6 +220,7 @@
   .title{font-size:27px}
   .chips{gap:7px}
   .chips button{padding:9px;font-size:15.5px;min-height:48px}
+  .ratingGrid{gap:5px}
 }
 @media(max-height:680px){
   .header{padding-top:calc(5px + env(safe-area-inset-top));padding-bottom:5px;min-height:57px}
@@ -211,6 +230,7 @@
   .title{font-size:clamp(25px,6.7vw,31px)}
   .lead{font-size:17px;line-height:1.38}
   .chips button{min-height:46px}
+  .ratingGrid button{min-height:42px}
   .quotation{font-size:clamp(22px,5.7vw,27px);line-height:1.26}
   .footer{padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom))}
   .primary,.back{min-height:49px;font-size:16px}
