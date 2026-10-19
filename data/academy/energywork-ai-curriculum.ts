@@ -159,8 +159,8 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("One course, five lessons in sequence: Flight to the Sun and three Reiki systems.", "Один курс из пяти последовательных уроков: «Полёт к Солнцу» и три системы Рейки.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
-    body: l("Not a test — choose the option that matches your experience.",
-      "Это не тест — выберите вариант, который ближе вашему опыту."),
+    body: l("Not a test — just choose your experience.",
+      "Это не тест — просто выберите свой опыт."),
     question: { type: "choice", prompt: l("My experience so far", "Мой опыт"), options: [
       { id: "beginner", label: l("I'm new to Reiki", "Пока не знаком(а) с Рейки") },
       { id: "energywork", label: l("I have energy-work experience, but not Reiki", "Есть опыт энергетических практик, но не Рейки") },
