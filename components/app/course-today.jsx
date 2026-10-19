@@ -11,7 +11,7 @@ import CourseSlidePlayer from './course-slide-player'
 import OporaV6SlidePlayer from './opora-v6-slide-player'
 import OporaExperiencePlayer from './opora-experience-player'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '@/lib/inner-growth/anti-stress-skills-v7'
-import {OPORA54_SLIDE_MODEL} from '@/lib/inner-growth/anti-stress-skills-v6'
+import {COURSE_ANTISTRESS_SKILLS_V6,OPORA54_SLIDE_MODEL} from '@/lib/inner-growth/anti-stress-skills-v6'
 import CourseFocusEntry from './course-focus-entry'
 import CourseFinalRetest from './course-final-retest'
 import Course14DayOverview from './course-14-day-overview'
@@ -31,8 +31,12 @@ const UI={
   addNote:'Optional private note',skip:'Skip this check-in',save:'Save today’s check-in',update:'Correct today’s check-in',
   saved:'Your check-in was saved. You can correct it without changing previous days.',
   thought:'Thought of the day',idea:'Why we practise this',meditation:'Guided practice',ritual:'Your small ritual',
-  reflection:'Integration and reflection',afterNow:'How strong is the feeling RIGHT NOW, after the exercise? (optional)',
-  beforeNow:'How strong was it RIGHT BEFORE the exercise? (optional)',feedback:'How did the practice feel?',
+  reflection:'Integration and reflection',afterNow:'How difficult did the same focus feel just after the exercise? (0 = not difficult, 10 = very difficult; optional)',
+  beforeNow:'How difficult did this focus feel just before the exercise? (0 = not difficult, 10 = very difficult; optional)',
+  beforeAvailability:'Before: how available did this small step feel? (0 = not yet available, 10 = available)',
+  afterAvailability:'After: how available did this small step feel? (0 = not yet available, 10 = available)',
+  availabilityClarification:'This earlier lesson used an availability scale: a higher number means the step felt more available, not greater distress.',
+  feedback:'How did the practice feel?',
   helpful:'Helpful',neutral:'Neutral',uncomfortable:'Uncomfortable',noAnswer:'Prefer not to say',
   journal:'Optional private reflection',finish:'Save completed practice',finished:'Today’s practice is saved.',
   step:'Step',next:'Next step',start:'Start practice',restart:'Read again',short:'2-minute practice',
@@ -91,8 +95,12 @@ const UI={
   addNote:'Личная заметка (необязательно)',skip:'Пропустить замер',save:'Сохранить сегодняшний замер',update:'Исправить сегодняшний замер',
   saved:'Замер сохранён. Сегодня его можно исправить, не меняя предыдущие дни.',
   thought:'Афоризм дня',idea:'Для чего эта практика',meditation:'Направленная практика',ritual:'Маленький ритуал',
-  reflection:'Интеграция и рефлексия',afterNow:'Насколько сильно ощущение ПРЯМО СЕЙЧАС после упражнения? (необязательно)',
-  beforeNow:'Насколько сильно оно было НЕПОСРЕДСТВЕННО ПЕРЕД упражнением? (необязательно)',feedback:'Как прошла практика?',
+  reflection:'Интеграция и рефлексия',afterNow:'Насколько трудной ощущалась эта тема сразу после упражнения? (0 — совсем не трудно, 10 — очень трудно; по желанию)',
+  beforeNow:'Насколько трудной ощущалась эта тема прямо перед упражнением? (0 — совсем не трудно, 10 — очень трудно; по желанию)',
+  beforeAvailability:'До: насколько доступным казался небольшой шаг? (0 — пока недоступен, 10 — доступен)',
+  afterAvailability:'После: насколько доступным казался тот же шаг? (0 — пока недоступен, 10 — доступен)',
+  availabilityClarification:'В этой ранней версии шкала показывала доступность шага: большее число — доступнее, а не сильнее беспокойство.',
+  feedback:'Как прошла практика?',
   helpful:'Помогло',neutral:'Нейтрально',uncomfortable:'Было некомфортно',noAnswer:'Не хочу отвечать',
   journal:'Личная рефлексия (необязательно)',finish:'Сохранить выполнение',finished:'Сегодняшняя практика сохранена.',
   step:'Шаг',next:'Следующий шаг',start:'Начать практику',restart:'Прочитать ещё раз',short:'2-минутная практика',
@@ -361,6 +369,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  if(loading&&!data)return <section className={'hh-panel '+styles.shell} aria-busy="true">{ru?'Открываем ваш ежедневный курс…':'Opening your daily course…'}</section>
  if(!data)return <section className={'hh-panel '+styles.shell} role="alert"><p>{t.error}</p><button type="button" onClick={reload}>{t.retry}</button></section>
  const cycle=data.cycle,lesson=data.lesson,progress=data.progress||{},target=data.target||{},today=data.currentCheckin
+ const legacyAvailabilityRatings = cycle?.contentVersion === COURSE_ANTISTRESS_SKILLS_V6
  const continuationGoals=(data.continuationGoals||[]).filter(goal=>GROWTH_GOALS[goal])
  const nextGoal=continuationGoals.includes(newGoal)?newGoal
   :continuationGoals.includes(cycle?.primaryGoal)?cycle.primaryGoal:continuationGoals[0]||''
@@ -801,9 +810,10 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       <strong>{t.reflectionV3}:</strong> {lesson.practiceV3.review}
     </p>}
     <div className={styles.ratingPair}>
-      <Rating optional label={t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
-      <Rating optional label={t.afterNow} value={afterNow} onChange={setAfterNow}/>
+      <Rating optional label={legacyAvailabilityRatings?t.beforeAvailability:t.beforeNow} value={beforeNow} onChange={setBeforeNow}/>
+      <Rating optional label={legacyAvailabilityRatings?t.afterAvailability:t.afterNow} value={afterNow} onChange={setAfterNow}/>
     </div>
+    {legacyAvailabilityRatings&&<p className={styles.hint} data-course-legacy-availability-direction>{t.availabilityClarification}</p>}
     <fieldset className={styles.feedback}><legend>{t.feedback}</legend>
       {[['helped',t.helpful],['neutral',t.neutral],['uncomfortable',t.uncomfortable],['skip',t.noAnswer]].map(([value,label])=>
       <label key={value}><input type="radio" name="course-feedback" checked={feedback===value} onChange={()=>setFeedback(value)}/>{label}</label>)}
