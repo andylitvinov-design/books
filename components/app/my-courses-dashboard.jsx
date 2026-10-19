@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { ArrowRight, BookOpenCheck, Check, ChevronDown, Crown, HeartHandshake, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, Star, X } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, Check, ChevronDown, Crown, HeartHandshake, Leaf, LockKeyhole, Plus, Sparkles, Star, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { COURSE_PLANS } from '@/lib/inner-growth/course-plans'
 import { canStartCheckout, PURCHASABLE_PLAN_KEYS } from '@/lib/billing/public-plan'
@@ -12,7 +12,7 @@ import styles from './my-courses-dashboard.module.css'
 
 const copy={
   en:{
-    eyebrow:'MY COURSES',heading:'Your growth journey',more:'Build one skill at a time, or explore several paths in parallel.',
+    eyebrow:'MY COURSES',started:'Continue learning',heading:'Your growth journey',more:'Build one skill at a time, or explore several paths in parallel.',
     primary:'MAIN COURSE',primaryAction:'Make main',today:'Continue course',setup:'Finish setting up',day:'Day',of:'of',lessons:'lessons complete',
     axes:'Your development focus',other:'Other courses',options:'Other possible courses',explore:'Explore',add:'Start another course',addNote:'Explore a new learning direction',
     full:'Your active-course limit is reached. Pause or close a course to free a place.',fullSingle:'One course at a time. Close the current course to start a new one.',completed:'Completed courses',
@@ -30,7 +30,7 @@ const copy={
     viewHistory:'Review course', historySafe:'Pausing or closing frees an active place while preserving history.',historySafeSingle:'Closing frees the course place. Your saved tests and lessons remain.', closeDialog:'Dismiss', setupAxes:'Choose your focus areas during setup.', billingError:'Payment could not be opened. Please try again from subscription settings.',
   },
   ru:{
-    eyebrow:'МОИ КУРСЫ',heading:'Ваш путь развития',more:'Развивайте один навык или работайте над несколькими темами параллельно.',
+    eyebrow:'МОИ КУРСЫ',started:'Продолжить обучение',heading:'Ваш путь развития',more:'Развивайте один навык или работайте над несколькими темами параллельно.',
     primary:'ГЛАВНЫЙ КУРС',primaryAction:'Сделать главным',today:'Продолжить курс',setup:'Завершить настройку',
     day:'День',of:'из',lessons:'уроков пройдено',axes:'Направления развития',other:'Другие курсы',options:'Другие возможные курсы',explore:'Посмотреть',
     add:'Начать новый курс',addNote:'Выберите ещё одно направление развития',
@@ -73,34 +73,38 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,bus
   const finished=course.status==='completed'
   const paused=course.status==='paused'
   const progress=Math.round(100*completed/duration)
-  return <article className={hero?styles.mainCard:styles.smallCard} data-course-item={course.id}>
-    <div className={styles.cardTop}>
-      <span className={styles.courseIllustration} aria-hidden="true">{hero?<ShieldCheck size={28}/>:<Leaf size={22}/>}</span>
-      <div className={styles.cardHeading}>
-        {hero&&<span className={styles.micro}>{t.primary}</span>}
-        <h3>{title}</h3>
-        <small>{course.stage<4?(locale==='ru'?'Настройка курса':'Course setup'):t.day+' '+day+' '+t.of+' '+duration}
-          {paused?' · '+t.paused:''}</small>
+  return <article className={hero?styles.mainCard:styles.smallCard} data-course-item={course.id} data-started-course-card>
+    <span className={styles.coursePhoto} aria-hidden="true">
+      <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
+        width={240} height={220} loading="lazy" decoding="async" />
+    </span>
+    <div className={styles.courseBody}>
+      <div className={styles.cardTop}>
+        <div className={styles.cardHeading}>
+          <span className={styles.micro}>{hero?t.primary:paused?t.paused:t.other}</span>
+          <h3>{title}</h3>
+          <small>{course.stage<4?(locale==='ru'?'Настройка курса':'Course setup'):t.day+' '+day+' '+t.of+' '+duration}
+            {paused?' · '+t.paused:''}</small>
+        </div>
+        {course.isPrimary&&<Star size={16} fill="currentColor" className={styles.favorite} aria-label={t.primary}/>}
       </div>
-      {course.isPrimary&&<Star size={18} fill="currentColor" className={styles.favorite} aria-label={t.primary}/>}
-    </div>
-    <div className={styles.progressTrack} role="progressbar" aria-label={t.lessons}
-      aria-valuenow={completed} aria-valuemin={0} aria-valuemax={duration}>
-      <span style={{width:progress+'%'}}/>
-    </div>
-    {hero&&<div className={styles.axisSection}>
-      <p>{t.axes}</p>
-      {!axes(course,locale).length&&<small className={styles.muted}>{t.setupAxes}</small>}
-      <div className={styles.axes}>{axes(course,locale).map((axis)=><span key={axis}><Check size={14}/>{axis}</span>)}</div>
-    </div>}
-    <div className={styles.tileActions}>
-      <button className={styles.primaryButton} type="button" disabled={busy} onClick={()=>onOpen(course)}>
-          {course.stage===4?t.today:t.setup}<ArrowRight size={17}/>
+      {hero&&axes(course,locale).length>0&&<div className={styles.axes} aria-label={t.axes}>
+        {axes(course,locale).slice(0,3).map(axis=><span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
+      </div>}
+      <div className={styles.progressTrack} role="progressbar" aria-label={t.lessons}
+        aria-valuenow={completed} aria-valuemin={0} aria-valuemax={duration}>
+        <span style={{width:progress+'%'}}/>
+      </div>
+      <div className={styles.tileActions}>
+        <button className={styles.primaryButton} type="button" disabled={busy} onClick={()=>onOpen(course)}>
+          {course.stage===4?t.today:t.setup}<ArrowRight size={16} aria-hidden="true"/>
         </button>
-      {!hero&&!course.isPrimary&&!finished&&<button type="button" className={styles.linkButton} disabled={busy||!canManageCourses} onClick={()=>onMakePrimary(course)}>{t.primaryAction}</button>}
-      {!finished&&<button type="button" className={styles.linkButton} disabled={busy||!canManageCourses} onClick={()=>onClose(course)}>{t.close}</button>}
+        {!hero&&!course.isPrimary&&!finished&&<button type="button" className={styles.linkButton}
+          disabled={busy||!canManageCourses} onClick={()=>onMakePrimary(course)}>{t.primaryAction}</button>}
+        {!finished&&<button type="button" className={styles.linkButton} disabled={busy||!canManageCourses}
+          onClick={()=>onClose(course)}>{t.close}</button>}
+      </div>
     </div>
-    {!hero&&<small className={styles.micro}>{completed}/{duration} {t.lessons}</small>}
   </article>
 }
 export default function MyCoursesDashboard({
@@ -137,13 +141,17 @@ export default function MyCoursesDashboard({
       <div><span className={styles.micro}>{t.eyebrow} · HOLISTIC HOUSE</span><h2>{t.heading}</h2><p>{t.more}</p></div>
       <span className={styles.cap}><Sparkles size={15}/>{occupied} / {limit}</span>
     </header>
-    <CabinetFreeCourseBanners locale={locale}/>
-    {main&&<CourseTile course={main} locale={locale} t={t} hero onOpen={onOpen} onClose={setClosing} onMakePrimary={onPrimary} busy={busy} canManageCourses={canManageCourses}/>}
-    {others.length>0&&<section aria-label={t.other} className={styles.additional}>
-      <h3>{t.other}</h3>
-      <div className={styles.extraGrid}>{others.map(course=><CourseTile key={course.id} course={course} locale={locale} t={t}
-        onOpen={onOpen} onClose={setClosing} onMakePrimary={onPrimary} busy={busy} canManageCourses={canManageCourses}/>)}</div>
+    {main&&<section className={styles.startedCourses} aria-label={t.started} data-started-courses>
+      <h3>{t.started}</h3>
+      <CourseTile course={main} locale={locale} t={t} hero onOpen={onOpen} onClose={setClosing}
+        onMakePrimary={onPrimary} busy={busy} canManageCourses={canManageCourses}/>
+      {others.length>0&&<div className={styles.startedList}>
+        {others.map(course=><CourseTile key={course.id} course={course} locale={locale} t={t}
+          onOpen={onOpen} onClose={setClosing} onMakePrimary={onPrimary}
+          busy={busy} canManageCourses={canManageCourses}/>)}
+      </div>}
     </section>}
+    <CabinetFreeCourseBanners locale={locale}/>
     {suggested.length>0&&<section className={styles.discover} aria-label={t.options} data-course-options>
       <h3>{t.options}</h3>
       <div className={styles.discoverList}>{suggested.map(preset=><article key={preset.id}

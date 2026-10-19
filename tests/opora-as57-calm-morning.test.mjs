@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync,statSync} from 'node:fs';
 import {
   oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,
   OPORA_EXPERIENCE_DESIGN_VERSION,
@@ -46,5 +46,13 @@ test('photographic mobile player uses a bright panel and high-contrast large typ
   assert.match(jsx,/locale==='es'/);
   assert.match(jsx,/practiceAttempt:attempted/);
   assert.match(jsx,/visitedSlideKeys:\[\.\.\.OPORA_EXPERIENCE_PRE_SAVE_KEYS\]/);
-  assert.match(jsx,/\(moment==='arrive'\|\|receipt\)/);
+  assert.match(jsx,/\{receipt&&<small className=\{styles\.disclaimer\}/);
+  assert.match(jsx,/data-opora-start-mood="true"/);
+  assert.match(jsx,/welcomeFeeling:welcomeFeeling\|\|null/);
+  assert.match(css,/\.arrivalPhoto img\{[\s\S]*?object-fit:contain/);
+  assert.match(css,/\.moodChoices button\[aria-pressed=true\]/);
+  const photo=new URL('../public/images/holistic-house/report-lighthouse-coast.webp',import.meta.url);
+  assert.ok(existsSync(photo),'Welcome photo must ship with the site');
+  assert.ok(statSync(photo).size>100_000,'Welcome photo must not be a tiny pixelated thumbnail');
+  assert.doesNotMatch(css,/\.arrive\{--scene-photo:url\('\/images\/holistic-house\/course-start-heron/);
 });

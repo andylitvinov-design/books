@@ -14,10 +14,18 @@ const WORDS={
   ru:{
     day:'День',of:'из',pause:'Пауза',close:'Закончить',back:'Назад',next:'Продолжить',
     save:'Сохранить мою практику',saving:'Сохраняем…',finish:'К карте курса',
-    minute:'Один спокойный момент',learn:'Маленькая практика',feel:'Что изменилось?',
+    minute:'СНАЧАЛА — ВЫ',learn:'Маленькая практика',feel:'Что изменилось?',
     quote:'Мысль сегодняшнего дня',keep:'Возьмите с собой',
-    arriveTitle:'Можно просто побыть здесь',
-    arriveText:'Найдите взглядом одну приятную или нейтральную деталь вокруг.',
+    arriveTitle:'Как вы сейчас себя чувствуете?',
+    arriveText:'Выберите то, что ближе. Здесь нет правильного ответа.',
+    arriveSkip:'Можно продолжить и без ответа.',
+    startFeeling:'В начале занятия',
+    moods:[
+      {value:'steady',symbol:'🌿',label:'Спокойно',reply:'Спасибо, что поделились. Можно просто побыть с этим состоянием.'},
+      {value:'tense',symbol:'☁️',label:'Напряжённо',reply:'Спасибо, что сказали. Здесь не нужно заставлять себя расслабиться.'},
+      {value:'low',symbol:'🌙',label:'Мало сил',reply:'Спасибо, что заметили. Можно идти совсем маленькими шагами.'},
+      {value:'unsure',symbol:'💭',label:'Не знаю',reply:'Это тоже подходит. Необязательно сразу понимать свои чувства.'},
+    ],
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
     stepLabel:'Сегодня можно попробовать',
@@ -49,10 +57,18 @@ const WORDS={
   en:{
     day:'Day',of:'of',pause:'Pause',close:'End lesson',back:'Back',next:'Continue',
     save:'Save my practice',saving:'Saving…',finish:'My course map',
-    minute:'One quiet moment',learn:'A small practice',feel:'What do you notice?',
+    minute:'A MOMENT FOR YOU',learn:'A small practice',feel:'What do you notice?',
     quote:'A thought for today',keep:'Take this with you',
-    arriveTitle:'You can arrive just as you are',
-    arriveText:'Find one calm or pleasant detail around you.',
+    arriveTitle:'How are you feeling right now?',
+    arriveText:'Choose what feels closest. There is no right answer.',
+    arriveSkip:'You can continue without answering.',
+    startFeeling:'At the start',
+    moods:[
+      {value:'steady',symbol:'🌿',label:'Calm',reply:'Thank you for sharing. You can begin just as you are.'},
+      {value:'tense',symbol:'☁️',label:'Tense',reply:'Thank you for sharing. You do not have to make yourself relax.'},
+      {value:'low',symbol:'🌙',label:'Tired',reply:'Thank you for noticing. We can go one small step at a time.'},
+      {value:'unsure',symbol:'💭',label:'Not sure',reply:'That is okay, too. You do not have to name a feeling to begin.'},
+    ],
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
     stepLabel:'A gentle step for today',
@@ -85,10 +101,18 @@ WORDS.es = {
   ...WORDS.en,
   day:'Día',pause:'Pausa',close:'Cerrar lección',back:'Atrás',next:'Continuar',
   save:'Guardar mi práctica',saving:'Guardando…',finish:'Mapa del curso',
-  minute:'UN MOMENTO TRANQUILO',learn:'Una práctica pequeña',feel:'¿Qué notas?',
+  minute:'UN MOMENTO PARA TI',learn:'Una práctica pequeña',feel:'¿Qué notas?',
   quote:'UNA IDEA PARA HOY',keep:'LLÉVATE ESTO',
-  arriveTitle:'Puedes llegar tal como estás',
-  arriveText:'Encuentra con la mirada un detalle agradable o neutro.',
+  arriveTitle:'¿Cómo te sientes ahora?',
+  arriveText:'Elige lo que más se acerque. No hay respuesta correcta.',
+  arriveSkip:'Puedes continuar sin responder.',
+  startFeeling:'Al empezar',
+  moods:[
+    {value:'steady',symbol:'🌿',label:'En calma',reply:'Gracias por compartirlo. Puedes empezar tal como estás.'},
+    {value:'tense',symbol:'☁️',label:'Con tensión',reply:'Gracias por contarlo. No tienes que obligarte a relajarte.'},
+    {value:'low',symbol:'🌙',label:'Sin energía',reply:'Gracias por notarlo. Podemos ir poco a poco.'},
+    {value:'unsure',symbol:'💭',label:'No lo sé',reply:'También está bien. No necesitas definir lo que sientes para empezar.'},
+  ],
   practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
   stepLabel:'UN PASO AMABLE',tryAfter:'¿Cómo te fue?',
   tried:'Lo intenté',partly:'Un poquito',read:'Hoy solo leo',
@@ -119,6 +143,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [step,setStep]=useState(hasSaved?OPORA_EXPERIENCE_PRE_SAVE_KEYS.length:0)
   const [saved,setSaved]=useState(hasSaved)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
+  // Reuse the authenticated course-session feeling signal; do not invent a parallel store.
+  const [welcomeFeeling,setWelcomeFeeling]=useState(data?.currentSession?.signals?.welcomeFeeling||null)
   const [practiceReport,setPracticeReport]=useState(
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
@@ -139,6 +165,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
   const rating=answers.reflection
   const vote=answers.aphorism
+  const chosenFeeling=t.moods.find(item=>item.value===welcomeFeeling)
   const ratingText=rating==='useful'?t.feelingBetter:rating==='partly'?t.feelingPartial:
     rating==='unchanged'?t.feelingSame:rating==='uncomfortable'?t.feelingHard:''
   useEffect(()=>{
@@ -211,6 +238,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         beforeNow:null,afterNow:null,practiceWindow:'practice_v6',
         aphorismResponse:safe.answers.aphorism||null,
         practiceAttempt:attempted?(practiceReport==='tried'?'tried':'simplified'):null,
+        welcomeFeeling:welcomeFeeling||null,
         comfort:rating==='uncomfortable'?'uncomfortable':null,
         transferStage:safe.answers.transfer==='planned'?'plan':null,
         opora54:safe,visitedSlideKeys:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS],
@@ -244,7 +272,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           onClick={()=>setSafety(true)} disabled={locked}><Pause size={16}/>{t.pause}</button>
       </header>
       <main className={styles.stage}>
-        <section className={styles.panel} aria-live="off">
+        {moment==='arrive'&&<div className={styles.arrivalPhoto} aria-hidden="true">
+          <img src="/images/holistic-house/report-lighthouse-coast.webp" alt="" loading="eager" />
+        </div>}
+        <section className={styles.panel+' '+(moment==='arrive'?styles.arrivalPanel:'')} aria-live="off">
           {!receipt&&<span className={styles.eyebrow}>
             {moment==='arrive'?t.minute:moment==='practice'?t.stepLabel:
             moment==='feel'?t.feel:moment==='affirmation'?t.quote:t.keep}
@@ -256,6 +287,17 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
           {moment==='arrive'&&!neutralSupport&&<>
             <p className={styles.lead}>{t.arriveText}</p>
+            <div className={styles.moodChoices} role="group" aria-label={t.arriveTitle}
+              data-opora-start-mood="true">
+              {t.moods.map(item=><button key={item.value} type="button" disabled={locked}
+                data-symbol={item.symbol} aria-pressed={welcomeFeeling===item.value}
+                onClick={()=>setWelcomeFeeling(item.value)}>
+                <span>{item.label}</span>
+              </button>)}
+            </div>
+            {chosenFeeling
+              ?<p className={styles.moodReply} role="status" aria-live="polite">{chosenFeeling.reply}</p>
+              :<p className={styles.moodOptional}>{t.arriveSkip}</p>}
           </>}
           {moment==='practice'&&<>
             {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
@@ -305,11 +347,12 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
             </div>
+            {chosenFeeling&&<p className={styles.soft}><strong>{t.startFeeling}:</strong> {chosenFeeling.label}</p>}
             {answers.transfer==='planned'&&<p className={styles.soft}><strong>{t.takeaway}:</strong> {plan}</p>}
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
-          {(moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
+          {receipt&&<small className={styles.disclaimer}>{t.noMedical}</small>}
         </section>
       </main>
       {error&&<p className={styles.error} role="alert">{error}</p>}

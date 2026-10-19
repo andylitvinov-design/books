@@ -27,7 +27,7 @@ const words = {
     back: 'Go back', end: 'End without saving', anchor: 'If you wish, look at one ordinary object around you.' },
 }
 const assets = new Map(await Promise.all(['course-start-heron.webp', 'course-focus-mountain-boy.webp',
-  'reiki-practitioner-sunrise.webp'].map(async name => [
+  'reiki-practitioner-sunrise.webp', 'report-lighthouse-coast.webp'].map(async name => [
   '/images/holistic-house/' + name, await readFile(new URL('../public/images/holistic-house/' + name, import.meta.url)),
 ])))
 const browser = await (engineName === 'webkit' ? webkit : chromium).launch()
