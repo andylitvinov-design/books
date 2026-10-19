@@ -232,11 +232,11 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       <h2>{ru?'Материалы из библиотеки':'Materials from library'}</h2>
       <p>{ru?'Выбирайте только готовые общие материалы. Загрузить фото, видео или добавить YouTube-ссылку можно в отдельном разделе кабинета мастера «Материалы».':
         'Attach existing general materials only. Upload photos, videos or YouTube links in the separate practitioner Materials library.'}</p>
+      <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
       <SessionMaterialPicker locale={locale}
         selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
         disabled={block}
         onChange={ids=>updatePlan({materialIds:ids})}/>
-      <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
       {(plan.resources||[]).length>0&&<p className={styles.ownerMaterialsMuted}>{ru?
         'Ранее добавленные ссылки этой консультации сохранены без изменений. Новые общие материалы выбираются из библиотеки выше.':
         'Previously attached session links remain unchanged. Choose new shared resources from the library above.'}</p>}
