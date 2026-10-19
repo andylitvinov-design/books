@@ -60,7 +60,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
   if (!isSupportedLocale(locale)) notFound();
   // Old shared links to the optional finder remain valid after moving the
   // marketplace out of Andrey's personal consultation landing.
-  if ((await searchParams)?.catalog === "1") redirect("/" + locale + "/services/catalog");
+  if ((await searchParams)?.catalog === "1") redirect("/" + locale + "/services/catalog#service-listings");
   const current = copy[locale as Locale];
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
