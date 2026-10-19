@@ -40,6 +40,50 @@ const messageStatuses={
   unknown:{en:'Unconfirmed — do not resend',ru:'Не подтверждено — не повторяйте',es:'Sin confirmar — no reenviar'},
 }
 const statusLabel=(status,locale)=>messageStatuses[status]?.[locale]||status
+
+const workflowCopy={
+  en:{stage:'Contact stage',lead:'Interested',client:'Client',archived:'Archived',
+    archiveConfirm:'Archive this contact? Replies will be disabled while archived.',
+    followups:'Next actions',schedule:'Create task',complete:'Complete',noFollowups:'No open tasks.',
+    reply:'Reply to client',call:'Call client',booking:'Follow up about booking',checkIn:'Check in',
+    due:'Date',added:'Task saved.',completed:'Task completed.',
+    note:'Internal note',noteHint:'Only business notes, no health information. Never sent to the client.',
+    notePlaceholder:'Example: send information about available appointments',saveNote:'Save internal note',
+    noteSaved:'Internal note saved.',failure:'Could not save. Refresh and try again.',
+    conflict:'This contact changed in another tab. Refresh its data.',
+    loadingThread:'Opening conversation…',notesBadge:'Internal · not sent',
+    overview:'Contact workflow'},
+  ru:{stage:'Статус контакта',lead:'Интересуется',client:'Клиент',archived:'Архив',
+    archiveConfirm:'Перенести контакт в архив? Ответы этому контакту будут запрещены.',
+    followups:'Следующие действия',schedule:'Создать задачу',complete:'Выполнено',noFollowups:'Открытых задач нет.',
+    reply:'Ответить клиенту',call:'Позвонить',booking:'Уточнить запись',checkIn:'Связаться повторно',
+    due:'Дата',added:'Задача создана.',completed:'Задача завершена.',
+    note:'Внутренняя заметка',noteHint:'Только деловые заметки, без информации о здоровье. Клиенту не отправляется.',
+    notePlaceholder:'Например: уточнить удобное время для консультации',saveNote:'Сохранить заметку',
+    noteSaved:'Внутренняя заметка сохранена.',failure:'Не удалось сохранить. Обновите переписку.',
+    conflict:'Контакт был изменён в другой вкладке. Обновите данные.',
+    loadingThread:'Открываю переписку…',notesBadge:'Внутренняя · не отправлено',
+    overview:'Работа с контактом'},
+  es:{stage:'Estado del contacto',lead:'Interesado',client:'Cliente',archived:'Archivado',
+    archiveConfirm:'¿Archivar este contacto? Se bloquearán las respuestas.',
+    followups:'Próximas acciones',schedule:'Crear tarea',complete:'Completar',noFollowups:'No hay tareas pendientes.',
+    reply:'Responder al cliente',call:'Llamar',booking:'Confirmar reserva',checkIn:'Seguimiento',
+    due:'Fecha',added:'Tarea creada.',completed:'Tarea completada.',
+    note:'Nota interna',noteHint:'Solo notas profesionales, sin datos médicos. No se envía al cliente.',
+    notePlaceholder:'Por ejemplo: confirmar una hora disponible',saveNote:'Guardar nota',
+    noteSaved:'Nota interna guardada.',failure:'No se pudo guardar. Actualiza la conversación.',
+    conflict:'El contacto cambió en otra pestaña. Actualiza los datos.',
+    loadingThread:'Abriendo conversación…',notesBadge:'Interno · no enviado',
+    overview:'Gestión del contacto'},
+}
+function torontoTomorrow(now=new Date()){
+  const d=new Date(now.getTime()+86400000)
+  const parts=new Intl.DateTimeFormat('en-US',{
+    timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',
+  }).formatToParts(d)
+  const get=type=>parts.find(part=>part.type===type)?.value||''
+  return [get('year'),get('month'),get('day')].join('-')
+}
 function replyReason(reason,lang){
   const labels={
     CUSTOMER_MUST_START:{en:'Customer must message first',ru:'Клиент должен написать первым',es:'El cliente debe escribir primero'},
@@ -50,10 +94,17 @@ function replyReason(reason,lang){
   return labels[reason]?.[lang]||reason||''
 }
 export default function CrmMessengerPanel({accountId,locale='en'}){
-  const lang=copy[locale]?locale:'en',t=copy[lang]
+  const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const pendingRequest=useRef(null)
+  const pendingNote=useRef(null)
+  const pendingFollowup=useRef(null)
+  const activeRef=useRef('')
+  const [threadLoading,setThreadLoading]=useState(false)
+  const [noteText,setNoteText]=useState('')
+  const [followupKind,setFollowupKind]=useState('reply')
+  const [dueOn,setDueOn]=useState(()=>torontoTomorrow())
   const [search,setSearch]=useState('')
   const [channelFilter,setChannelFilter]=useState('all')
   const [unreadOnly,setUnreadOnly]=useState(false)
@@ -68,21 +119,36 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
     if(!accountId)return
     const ctrl=new AbortController()
     pendingRequest.current=null
-    setData(null);setActive('');setText('');setError('');setStatus('')
+    pendingNote.current=null
+    pendingFollowup.current=null
+    activeRef.current=''
+    setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('')
     setSearch('');setChannelFilter('all');setUnreadOnly(false)
-    load('',ctrl.signal).then(setData).catch(e=>{if(e.name!=='AbortError')setError('unavailable')})
+    load('',ctrl.signal).then(result=>{
+      if(!activeRef.current)setData(result)
+    }).catch(e=>{if(e.name!=='AbortError'&&!activeRef.current)setError('unavailable')})
     return ()=>ctrl.abort()
   },[accountId,load])
-  async function refresh(id=active){
-    try {const result=await load(id);setData(result);setError('')}catch{setError('unavailable')}
+  async function refresh(id=activeRef.current){
+    try {
+      const result=await load(id)
+      if(id===activeRef.current){setData(result);setError('')}
+    }catch{if(id===activeRef.current)setError('unavailable')}
   }
   async function selectThread(id){
+    activeRef.current=id
     pendingRequest.current=null
-    setActive(id);setText('');setStatus('')
+    pendingNote.current=null
+    pendingFollowup.current=null
+    setActive(id);setText('');setNoteText('');setStatus('');setError('')
+    setThreadLoading(true)
+    // Never display messages belonging to the previous client while B is loading.
+    setData(previous=>previous?{...previous,messages:[],followups:[]}:previous)
     try{
       const result=await load(id)
-      setData(result)
-    }catch{setError('unavailable')}
+      if(activeRef.current===id){setData(result);setError('')}
+    }catch{if(activeRef.current===id)setError('unavailable')}
+    finally{if(activeRef.current===id)setThreadLoading(false)}
   }
   async function action(name,payload){
     if(busy)return null
@@ -93,9 +159,13 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
         body:JSON.stringify({action:name,payload})})
       const value=await response.json().catch(()=>({}))
       if(!response.ok)throw new Error(value.error||'UNAVAILABLE')
-      await refresh(name==='send'||name==='read'?active:'')
+      await refresh(activeRef.current)
       return value
-    }catch(e){setStatus(replyReason(e.message,lang)||t.sendError);return null}
+    }catch(e){
+      setStatus(e.message==='CONFLICT'?w.conflict:
+        replyReason(e.message,lang)||w.failure)
+      return null
+    }
     finally{setBusy(false)}
   }
   async function send(){
@@ -118,6 +188,45 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
     }else if(result.status==='failed'||result.status==='blocked'){
       setStatus(t.sendError)
     }else setStatus(t.unknown)
+  }
+
+  async function saveNote(){
+    const body=noteText.trim(),threadId=activeRef.current
+    if(!threadId||!body)return
+    const old=pendingNote.current
+    const pending=old&&old.threadId===threadId&&old.text===body
+      ?old:{threadId,text:body,id:crypto.randomUUID()}
+    pendingNote.current=pending
+    const result=await action('note',{threadId,noteId:pending.id,text:body})
+    if(!result)return
+    pendingNote.current=null
+    setNoteText('')
+    setStatus(w.noteSaved)
+  }
+  async function changeStage(nextValue){
+    if(!selected||busy||nextValue===selected.lifecycle)return
+    if(nextValue==='archived'&&!window.confirm(w.archiveConfirm))return
+    const result=await action('set_stage',{
+      threadId:selected.id,lifecycle:nextValue,expectedRevision:selected.contactRevision,
+    })
+    if(result)setStatus(w.completed)
+  }
+  async function createFollowup(){
+    if(!selected||!dueOn||busy)return
+    const args={threadId:selected.id,kind:followupKind,dueOn}
+    const old=pendingFollowup.current
+    const pending=old&&old.threadId===args.threadId&&old.kind===args.kind&&old.dueOn===args.dueOn
+      ?old:{...args,id:crypto.randomUUID()}
+    pendingFollowup.current=pending
+    const result=await action('create_followup',pending)
+    if(result){pendingFollowup.current=null;setStatus(w.added)}
+  }
+  async function completeFollowup(item){
+    if(!selected||busy)return
+    const result=await action('complete_followup',{
+      threadId:selected.id,id:item.id,expectedRevision:item.revision,
+    })
+    if(result)setStatus(w.completed)
   }
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
