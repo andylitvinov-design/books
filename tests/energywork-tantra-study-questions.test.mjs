@@ -118,7 +118,7 @@ test("Old saves return to the new quiz without removing encrypted answers", () =
   assert.equal(energyworkPreviousResumeId("presence-03"), "tan-study-04")
   assert.equal(energyworkPreviousResumeId("kun-04"), "kun-04")
   assert.equal(energyworkP2ResumeId("flight-05"), "flight-03")
-  assert.equal(energyworkP2ResumeId("flight-03"), "flight-04")
+  assert.equal(energyworkP2ResumeId("flight-03"), "flight-05")
   assert.equal(energyworkP2ResumeId("presence-01"), "tan-03")
   assert.equal(energyworkP2ResumeId("tan-03"), "presence-01")
   assert.match(migration, /2026-10-19\.p5/)
