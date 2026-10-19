@@ -178,8 +178,19 @@ async function exerciseJourney(page, locale, width) {
     "Journey hint must push the lesson slide upward instead of floating above it");
   const infoRect = await journeyInfo.boundingBox();
   const toggleRect = await journeyToggle.boundingBox();
+  const hintLayout = await root.locator("section[data-expanded]").evaluate((element) => ({
+    display: getComputedStyle(element).display,
+    flexDirection: getComputedStyle(element).flexDirection,
+    children: [...element.children].map(child => ({
+      tag: child.tagName,
+      top: child.getBoundingClientRect().top,
+      bottom: child.getBoundingClientRect().bottom,
+      position: getComputedStyle(child).position,
+      order: getComputedStyle(child).order,
+    })),
+  }));
   assert.ok(infoRect && toggleRect && infoRect.bottom <= toggleRect.top + 2,
-    "Explanations appear above the bottom-row toggle");
+    "Explanations appear above the bottom-row toggle: " + JSON.stringify({ infoRect, toggleRect, hintLayout }));
   for (const path of ["reiki/tantra-reiki", "reiki/kundalini-reiki", "reiki/yggdrasil"]) {
     const link = journeyInfo.locator('a[href="/' + locale + '/academy/' + path + '"]');
     await expect(link).toHaveCount(1);
