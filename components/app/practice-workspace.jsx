@@ -165,6 +165,16 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[showSignup,setShowSignup]=useState(false)
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
+  useEffect(()=>{
+    if(!showSignup)return undefined
+    if(data?.practiceActivated){
+      setShowSignup(false)
+      window.scrollTo({top:0,behavior:'smooth'})
+      return undefined
+    }
+    const frame=requestAnimationFrame(()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'}))
+    return ()=>cancelAnimationFrame(frame)
+  },[showSignup,data?.practiceActivated])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
