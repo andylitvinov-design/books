@@ -4,9 +4,9 @@
 
 ## Owner workflow
 
-My Practice → CRM → Contacts → SMS → record documented SMS opt-in → write a message → confirm a single recipient → send. Saving a contact, website enquiry or paid appointment does NOT grant SMS promotional consent. This is not a bulk-campaign tool.
+My Practice → CRM → SMS (or Contacts → SMS) → record documented SMS opt-in → write a message → confirm a single recipient → send. Saving a contact, website enquiry or paid appointment does NOT grant SMS promotional consent. This is not a bulk-campaign tool.
 
-- Sender is identified as Holistic House and an unsubscribe instruction is appended.
+- Sender is identified as Holistic House, a public website contact-information URL and an unsubscribe instruction are appended. Public sender identity, physical mailing address and reply contact details on that website must be verified before sending.
 - Do not include health details, test reports, diagnoses, private links or bearer tokens.
 - E.164 international phone required, actual consent proof separately recorded, no send for archived or opted-out contacts.
 - Max 10 outgoing attempts per owner per 24h; max four GSM-7/UCS-2 SMS segments per message. Carrier pricing depends on destination, type and segment count.
@@ -17,7 +17,7 @@ My Practice → CRM → Contacts → SMS → record documented SMS opt-in → wr
 ## Configure a real sending account
 
 1. Create or sign in to your owned [Twilio Console](https://console.twilio.com/). Verify business/sender identity, a compliant sending phone number, regional SMS/A2P requirements and billing. Do not purchase or rent a number without owner review of cost and terms. Complete any required Canadian anti-spam (CASL) checks for the message and recipient.
-2. Create a Twilio Messaging Service, attach the verified sending number. Configure the **Incoming Messages** webhook as:
+2. Create a Twilio Messaging Service, attach the verified sending number, and enable **Advanced Opt-Out**. Configure the **Incoming Messages** webhook as:
    https://holistichouse.vercel.app/api/app/crm/sms/webhook
    Outgoing requests pass this exact URL in the StatusCallback parameter. Preserve any existing app's webhook unless a migration is approved.
 3. Add Vercel **Production server-side encrypted Environment Variables** (never NEXT_PUBLIC, never in GitHub/chat):
@@ -25,6 +25,7 @@ My Practice → CRM → Contacts → SMS → record documented SMS opt-in → wr
    - HH_CRM_TWILIO_AUTH_TOKEN — real Twilio auth token
    - HH_CRM_TWILIO_MESSAGING_SERVICE_SID — real MG service SID
    - HH_CRM_SMS_SENDER_VERIFIED=true — ONLY after sender and compliance verification
+   - HH_CRM_SMS_CONTACT_DETAILS_VERIFIED=true — ONLY after the linked public site displays correct legal name, postal address and contact details as required for commercial SMS
    - HH_CRM_SMS_ENABLED=true — ONLY after backend, migration and test are verified
    - HH_CRM_SMS_PRODUCTION_APPROVED=true — only after owner-approved deployment
    - HH_CRM_SMS_PILOT_APPROVED=true and HH_CRM_SMS_TEST_PHONE=+1... — controlled consenting test recipient
@@ -40,3 +41,9 @@ My Practice → CRM → Contacts → SMS → record documented SMS opt-in → wr
 - Tests: node --test tests/crm-sms.test.mjs; check Next production build and GitHub PR CI.
 - **Kill switch:** unset HH_CRM_SMS_ENABLED or set it to false. Keep incoming callback credentials available for opt-out and late delivery receipts.
 - Never report "live" until the confirmed production deploy SHA, configured sender, one real test delivery and signed provider receipt are all verified.
+
+## References
+
+- [Twilio Advanced Opt-Out (STOP, START, OptOutType)](https://www.twilio.com/docs/messaging/tutorials/advanced-opt-out)
+- [Twilio request-signature validation](https://www.twilio.com/docs/usage/security)
+- [CRTC: CASL requirements for commercial SMS](https://crtc.gc.ca/eng/com500/faq500.htm)
