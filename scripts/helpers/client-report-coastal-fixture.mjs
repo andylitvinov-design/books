@@ -154,6 +154,10 @@ export async function buildCoastalFixture() {
     './document-auto-print': { DocumentAutoPrint: () => null },
     './report-appendix-print-expander': { ReportAppendixPrintExpander: () => null },
     './prescription-actions': { PrescriptionActions: () => null },
+    // Match current production imports while keeping the browser fixture fully synthetic.
+    './report-narration-player': { ReportNarrationPlayer: () => null },
+    './dao-resource-stage': { DaoStageDisclosure: () => null },
+    '@/lib/clients/report-narration-service': { narrationEnabled: () => false },
     './document-letterhead': {
       DocumentLetterhead: () => React.createElement('div', { className: 'canonical-letterhead canonical-letterhead--compact' },
         React.createElement('div', null,
@@ -162,7 +166,7 @@ export async function buildCoastalFixture() {
       DocumentSignature: () => React.createElement('div', { className: 'canonical-signature canonical-signature--wide' }, 'Sample signature placeholder'),
     },
     '@/lib/documents/report-progress': {
-      extractReportProgress: analysis => analysis?.includes('3/10') ? { before: 3, after: 6 } : null,
+      resolveReportProgress: document => document?.analysis?.includes('3/10') ? { before: 3, after: 6 } : null,
     },
     '@/lib/consultations/recommended-tests': { resolveRecommendedTests: () => [] },
     '@/lib/documents/report-heading': {
@@ -177,6 +181,9 @@ export async function buildCoastalFixture() {
     'react': React,
     'lucide-react': icons,
     './client-session-prescription': { SessionPrescriptionOverview: () => React.createElement('section', {className: scoped.styles.prescriptionSummary}, 'Synthetic concise note') },
+    './dao-resource-stage': deps['./dao-resource-stage'],
+    './client-session-voice-card.module.css': scoped.styles,
+    './static-portrait': { StaticPortrait: () => null },
     './public-site-header': { PublicSiteHeader: () => React.createElement('div', {className:'house-header house-header--services'}, 'HOLISTIC HOUSE') },
     '@/lib/documents/recommendation': deps['@/lib/documents/recommendation'],
     '@/lib/clients/shared-education-model': { GRANULES_GUIDE_ID: 'synthetic-guide', GRANULES_GUIDE_TRANSCRIPT_RU: '' },
