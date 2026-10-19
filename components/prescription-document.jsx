@@ -100,13 +100,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           itemNumber += 1
           const number = itemNumber
           const schedule = remedySchedule(item, locale, document.recommendationType)
-          const sourceRemedy = item.remedySlug ? getRemedy(locale, item.remedySlug) : null
           return <section className="canonical-remedy" key={number}>
-            {sourceRemedy?.primary_image && <figure className="canonical-remedy-card-photo">
-              {/* Reuse the client's selected original library image, never a stock substitute. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={sourceRemedy.primary_image} alt={sourceRemedy.primary_image_alt || sourceRemedy.canonical_latin_name} loading="lazy" decoding="async" />
-            </figure>}
             <div className="canonical-remedy-heading">
               <span className="canonical-remedy-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
               <div className="canonical-remedy-title">
@@ -114,8 +108,9 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
                 {schedule && <p className="canonical-remedy-schedule">{schedule}</p>}
               </div>
             </div>
-            {item.remedyPath && <Link className="canonical-remedy-profile-action" href={item.remedyPath}>
-              <span>{locale === 'ru' ? 'Открыть описание препарата' : 'View remedy description'}</span>
+            {item.remedyPath && <Link className="canonical-remedy-profile-action" href={item.remedyPath}
+              aria-label={locale === 'ru' ? `Прочитать описание препарата ${item.displayName}` : `Read the profile for ${item.displayName}`}>
+              <span>{locale === 'ru' ? 'Описание препарата' : 'Remedy description'}</span>
               <span aria-hidden="true">↗</span>
             </Link>}
             <dl className="canonical-remedy-fields">{['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key]).map((key) => <div key={key}><dt>{labels[key]}</dt><dd>{item[key]}</dd></div>)}</dl>
