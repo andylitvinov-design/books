@@ -55,6 +55,21 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
   const model = gaugeModel(dimension, result, locale)
   const ru = locale === 'ru'
   if (!model) return <span className={styles.unavailable}>{ru ? 'Нет достоверной числовой шкалы' : 'No verified numeric scale'}</span>
+  // Separate ordinal check-in answers have no continuous position or dial.
+  if (model.displayKind === 'checkin-observation') return <figure className={styles.gauge + (compact ? ' ' + styles.compact : '')}
+    data-assessment-gauge="checkin-observation" aria-label={model.label}>
+    <figcaption>{ru ? 'Ваш ответ' : 'Your response'}</figcaption>
+    <strong className={styles.value} data-checkin-raw-answer>{dimension.value}</strong>
+    {model.responseLabel !== null && <p data-checkin-response-label lang={result?.instrumentLocale}>{model.responseLabel}</p>}
+    {showAnswerAnchors && <div data-checkin-answer-endpoints lang={result?.instrumentLocale}>
+      <p>{dimension.min}: {model.anchors[0]}</p>
+      <p>{dimension.max}: {model.anchors[1]}</p>
+    </div>}
+    {showScaleNote && <small className={styles.scaleNote}>{ru
+      ? 'Отдельный ответ для самонаблюдения; не клинический уровень.'
+      : 'A separate self-observation response; not a clinical level.'}</small>}
+  </figure>
+  // End of the exact-source check-in presentation.
   if (model.displayKind === 'screening-count') return <figure className={styles.gauge + (compact ? ' ' + styles.compact : '')}
     data-assessment-gauge="screening-count">
     <strong className={styles.value}>{numeral(dimension.value, locale)} <span>/ 6</span></strong>

@@ -1,4 +1,5 @@
 'use client'
+import { checkinTrendResults, checkinComparisonNote, checkinFacetLabel } from '@/lib/assessments/checkin-result-analysis'
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -632,7 +633,7 @@ function InstrumentTrend({ item, data, locale, c, onStarted }) {
       ? -Infinity
       : Date.parse(latest.measurementAt) - Number(range) * 24 * 60 * 60 * 1000
   const points = selected
-    ? series
+    ? checkinTrendResults(series, to, selected.key)
         .filter((result) => Date.parse(result.measurementAt) >= cutoff)
         .map((result) => ({
           id: result.id,
@@ -699,7 +700,7 @@ function InstrumentTrend({ item, data, locale, c, onStarted }) {
                 >
                   {latest.dimensions.map((dimension) => (
                     <option value={dimension.key} key={dimension.key}>
-                      {labelFor(dimension.key, locale)}
+                      {checkinFacetLabel(to, dimension.key) || labelFor(dimension.key, locale)}
                     </option>
                   ))}
                 </select>
@@ -745,7 +746,7 @@ function InstrumentTrend({ item, data, locale, c, onStarted }) {
                 ))}
               </svg>
             ) : (
-              <p className="hh-fine">{c.noTrend}</p>
+              <p className="hh-fine">{checkinComparisonNote(to, selected?.key, locale) || c.noTrend}</p>
             )}
 
             <table className="hh-table">
@@ -815,7 +816,7 @@ function InstrumentTrend({ item, data, locale, c, onStarted }) {
             </div>
             {comparePart ? (
               <p className="hh-psi-comparison">
-                <strong>{labelFor(comparePart.key, locale)}</strong>{' '}
+                <strong>{checkinFacetLabel(to, comparePart.key) || labelFor(comparePart.key, locale)}</strong>{' '}
                 {comparePart.prior} → {comparePart.current}{' '}
                 <span>
                   ({comparePart.delta > 0 ? '+' : ''}
@@ -823,7 +824,7 @@ function InstrumentTrend({ item, data, locale, c, onStarted }) {
                 </span>
               </p>
             ) : (
-              <p className="hh-fine">{c.noTrend}</p>
+              <p className="hh-fine">{checkinComparisonNote(to, selected?.key, locale) || c.noTrend}</p>
             )}
           </section>
 
