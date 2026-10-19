@@ -78,8 +78,8 @@ const copy = {
     optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
     feedbackBadge: "Your review",
     saveReview: "Save review",
-    reviewMissing: "Write a short review to continue.",
-    feelingPlaceholder: "Write about your experience here…",
+    reviewMissing: "Write at least 15 characters to save your review.",
+    feelingPlaceholder: "Share your meditation experience: what did you feel, notice or discover?",
     feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
     voicesLabel: "Learner experiences",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
@@ -89,8 +89,6 @@ const copy = {
     voicesPrevious: "Previous review",
     voicesNext: "Next review",
     voicesNavigation: "Browse learner reviews",
-    voicesScrollHint: "Scroll down to read the full review",
-    voicesScrollLabel: "Full learner review — scroll inside this area to read it all",
     milestoneLabel: "Lovely progress",
     milestoneNote: "Personal initiation and group membership are arranged separately, never granted automatically.",
     committed: "I'm committed!",
@@ -189,8 +187,8 @@ const copy = {
     optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
     feedbackBadge: "Ваш отзыв",
     saveReview: "Сохранить отзыв",
-    reviewMissing: "Напишите короткий отзыв, чтобы продолжить.",
-    feelingPlaceholder: "Напишите о своём опыте…",
+    reviewMissing: "Напишите хотя бы 15 символов, чтобы сохранить отзыв.",
+    feelingPlaceholder: "Расскажите о медитации: какие ощущения, мысли или открытия вы заметили?",
     feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
     voicesLabel: "Отзывы участников",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
@@ -200,8 +198,6 @@ const copy = {
     voicesPrevious: "Предыдущий отзыв",
     voicesNext: "Следующий отзыв",
     voicesNavigation: "Переключение отзывов",
-    voicesScrollHint: "Листайте вниз — здесь полный отзыв",
-    voicesScrollLabel: "Полный отзыв участника — прокручивайте внутри текста",
     milestoneLabel: "Прекрасный прогресс",
     milestoneNote: "Инициация и вступление в сообщество согласуются отдельно, а не происходят автоматически.",
     committed: "I'm committed!",
@@ -370,23 +366,6 @@ function MeditationVoices({ slide, locale, youtubeId }: {
   const entries = slide.testimonials ?? [];
   const [active, setActive] = useState(0);
   const currentReview = entries[active];
-  const reviewScrollRef = useRef<HTMLParagraphElement>(null);
-  const [canScrollReview, setCanScrollReview] = useState(false);
-  const [showScrollHint, setShowScrollHint] = useState(false);
-  const updateReviewScroll = useCallback(() => {
-    const element = reviewScrollRef.current;
-    const scrollable = !!element && element.scrollHeight > element.clientHeight + 3;
-    setCanScrollReview(scrollable);
-    setShowScrollHint(scrollable && !!element && element.scrollTop + element.clientHeight < element.scrollHeight - 3);
-  }, []);
-  useEffect(() => {
-    updateReviewScroll();
-    const element = reviewScrollRef.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(updateReviewScroll);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [active, locale, slide.id, updateReviewScroll]);
   return (
     <div className={styles.voicesCard} data-meditation-voices>
       <div className={styles.voicesHeading}>
@@ -401,9 +380,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
         <div data-meditation-review-carousel data-review-count={entries.length}>
           <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
             <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
-            <p data-review-scroll ref={reviewScrollRef} role="region" tabIndex={canScrollReview ? 0 : -1}
-              aria-label={t.voicesScrollLabel} onScroll={updateReviewScroll}>{currentReview.quote[locale]}</p>
-            {showScrollHint ? <span className={styles.voicesScrollHint} aria-hidden="true">↓ {t.voicesScrollHint}</span> : null}
+            <p>{currentReview.quote[locale]}</p>
             <cite>{currentReview.attribution[locale]}</cite>
           </blockquote>
           {entries.length > 1 ? (
@@ -565,7 +542,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
-  const feedbackMissing = isMeditationFeedback && !meditationReview.trim();
+  const feedbackMissing = isMeditationFeedback && Array.from(meditationReview.trim()).length < 15;
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -819,6 +796,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       maxLength={1600} rows={4}
                       placeholder={isMeditationFeedback ? t.feelingPlaceholder : t.placeholder} autoComplete="off" />
                   ) : null}
+                  {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{Math.min(15, Array.from(meditationReview.trim()).length)} / 15</p> : null}
                   {slide.question.type === "scale" ? (
                     <div className={styles.scaleWrap}>
                       <input id={"answer-" + slide.id} className={styles.scale} type="range" min="0" max="10" step="1"
