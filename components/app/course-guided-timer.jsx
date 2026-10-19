@@ -62,7 +62,7 @@ export default function CourseGuidedTimer({ seconds=60, locale='en' }) {
     setActive(false)
   }
   useEffect(()=>{
-    if(!active||!ocean.enabled||!['loading','blocked','paused'].includes(ocean.status))return
+    if(!active||!ocean.enabled||!['blocked','paused'].includes(ocean.status))return
     setRemaining(Math.max(0,Math.ceil((deadline.current-Date.now())/1000)))
     setActive(false)
   },[active,ocean.enabled,ocean.status])
