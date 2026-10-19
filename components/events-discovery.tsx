@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, ChevronDown, MapPin, Search, Sparkles } from "lucide-react";
 import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
@@ -12,9 +12,12 @@ type FormatChoice = PublicEventFormat | "all";
 
 const copy = {
   en: {
-    kicker: "FIND YOUR WAY · HOLISTIC HOUSE",
-    title: "Events & gatherings",
-    lead: "Explore workshops, community circles and learning experiences. Only confirmed dates appear in the event calendar.",
+    kicker: "HOLISTIC HOUSE · EVENTS",
+    title: "Find your next event",
+    lead: "Explore workshops, community circles and shared practices. Discover confirmed dates and choose an experience that feels right.",
+    catalogLabel: "UPCOMING GATHERINGS", archiveLabel: "PAST GATHERINGS", browse: "Choose your event",
+    upcomingTab: "Upcoming", pastTab: "Past", calendar: "Event dates",
+    eventSingle: "event", eventPlural: "events",
     placeholder: "Search by topic, location or event name...",
     search: "Find events", searchLabel: "Search public events",
     upcoming: "Upcoming events", past: "Past events", allFormats: "All formats", online: "Online", inPerson: "In person",
@@ -24,9 +27,12 @@ const copy = {
     reset: "Clear filters", view: "Register", details: "Details", program: "Workshop program", onlineLocation: "Online", pastNote: "Past events are shown for reference, not for booking.",
   },
   ru: {
-    kicker: "НАЙДИТЕ СВОЁ · HOLISTIC HOUSE",
-    title: "События и встречи",
-    lead: "Мастер-классы, групповые практики и обучающие встречи. В афише публикуются только подтверждённые даты.",
+    kicker: "HOLISTIC HOUSE · СОБЫТИЯ",
+    title: "Найдите свою встречу",
+    lead: "Мастер-классы, групповые практики и встречи сообщества. Выбирайте из событий с подтверждёнными датами и открытой регистрацией.",
+    catalogLabel: "БЛИЖАЙШИЕ ВСТРЕЧИ", archiveLabel: "ПРОШЕДШИЕ ВСТРЕЧИ", browse: "Выберите событие",
+    upcomingTab: "Скоро", pastTab: "Архив", calendar: "Даты событий",
+    eventSingle: "событие", eventPlural: "событий",
     placeholder: "Тема, город или название мероприятия...",
     search: "Найти события", searchLabel: "Поиск публичных мероприятий",
     upcoming: "Ближайшие события", past: "Прошедшие события", allFormats: "Все форматы", online: "Онлайн", inPerson: "Очно",
@@ -36,9 +42,12 @@ const copy = {
     reset: "Сбросить фильтры", view: "Записаться", details: "Подробнее", program: "Программа семинара", onlineLocation: "Онлайн", pastNote: "Прошедшие встречи показаны для информации, не для записи.",
   },
   es: {
-    kicker: "ENCUENTRA TU CAMINO · HOLISTIC HOUSE",
-    title: "Eventos y encuentros",
-    lead: "Talleres, círculos comunitarios y experiencias de aprendizaje. Solo mostramos fechas confirmadas.",
+    kicker: "HOLISTIC HOUSE · EVENTOS",
+    title: "Encuentra tu próximo evento",
+    lead: "Explora talleres, círculos y prácticas compartidas. Descubre fechas confirmadas y elige una experiencia para ti.",
+    catalogLabel: "PRÓXIMOS ENCUENTROS", archiveLabel: "ENCUENTROS ANTERIORES", browse: "Elige tu evento",
+    upcomingTab: "Próximos", pastTab: "Anteriores", calendar: "Fechas de eventos",
+    eventSingle: "evento", eventPlural: "eventos",
     placeholder: "Busca por tema, lugar o evento...",
     search: "Buscar eventos", searchLabel: "Buscar eventos públicos",
     upcoming: "Próximos eventos", past: "Eventos anteriores", allFormats: "Todos los formatos", online: "En línea", inPerson: "Presencial",
@@ -99,6 +108,15 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
 
   function reset() { setSearchText(""); setSearch(""); setFormat("all"); }
 
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSearch(searchText.slice(0, 120));
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("hh-events-results")?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth", block: "start",
+    });
+  }
+
   return (
     <div className={styles.root} data-events-discovery>
       <section className={styles.hero} aria-labelledby="hh-events-title">
@@ -108,7 +126,7 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
         </div>
         <h1 id="hh-events-title">{t.title}</h1>
         <p className={styles.lead}>{t.lead}</p>
-        <form className={styles.form} role="search" onSubmit={event => { event.preventDefault(); setSearch(searchText.slice(0, 120)); }}>
+        <form className={styles.form} role="search" onSubmit={submitSearch}>
           <label htmlFor="hh-events-search" className={styles.srOnly}>{t.searchLabel}</label>
           <input id="hh-events-search" type="search" value={searchText}
             onChange={event => { setSearchText(event.target.value); if (!event.target.value.trim()) setSearch(""); }}
@@ -117,39 +135,47 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
         </form>
       </section>
 
-      <div className={styles.toolbar}>
-        <div className={styles.periods} role="group" aria-label={t.upcoming}>
-          <button type="button" aria-pressed={!past} onClick={() => { setPast(false); setOpenEventId(null); }}>{t.upcoming}</button>
-          <button type="button" aria-pressed={past} onClick={() => { setPast(true); setOpenEventId(null); }}>{t.past}</button>
+      <section className={styles.results} id="hh-events-results" aria-labelledby="hh-events-results-title">
+        <div className={styles.resultHeading}>
+          <div>
+            <p className={styles.listKicker}>{past ? t.archiveLabel : t.catalogLabel}</p>
+            <h2 id="hh-events-results-title">{past ? t.past : t.browse}</h2>
+          </div>
+          <span className={styles.count} role="status" aria-live="polite">
+            {filtered.length} {filtered.length === 1 ? t.eventSingle : t.eventPlural}
+          </span>
         </div>
-        <div className={styles.toolbarControls}>
-          <label>
-            <span className={styles.srOnly}>{t.filters}</span>
-            <select value={format} aria-label={t.filters} onChange={event => setFormat(event.target.value as FormatChoice)}>
-              <option value="all">{t.allFormats}</option>
-              <option value="in_person">{t.inPerson}</option>
-              <option value="online">{t.online}</option>
-            </select>
-          </label>
-          {filtersActive && <button type="button" className={styles.reset} onClick={reset}>{t.reset} ×</button>}
+        <div className={styles.toolbar}>
+          <div className={styles.periods} role="group" aria-label={t.calendar}>
+            <button type="button" aria-pressed={!past} onClick={() => { setPast(false); setOpenEventId(null); }}>{t.upcomingTab}</button>
+            <button type="button" aria-pressed={past} onClick={() => { setPast(true); setOpenEventId(null); }}>{t.pastTab}</button>
+          </div>
+          <div className={styles.toolbarControls}>
+            <label>
+              <span className={styles.srOnly}>{t.filters}</span>
+              <select value={format} aria-label={t.filters} onChange={event => setFormat(event.target.value as FormatChoice)}>
+                <option value="all">{t.allFormats}</option>
+                <option value="in_person">{t.inPerson}</option>
+                <option value="online">{t.online}</option>
+              </select>
+            </label>
+            {filtersActive && <button type="button" className={styles.reset} onClick={reset}>{t.reset} ×</button>}
+          </div>
         </div>
-      </div>
-
-      <section className={styles.results} aria-live="polite" aria-labelledby="hh-events-results">
-        <div className={styles.resultHeading}><h2 id="hh-events-results">{past ? t.past : t.upcoming}</h2><span>{filtered.length}</span></div>
         {filtered.length ? (
           <div className={styles.eventGrid}>
             {filtered.map(event => {
               const expanded = openEventId === event.id;
-              const where = event.format === "online" ? t.onlineLocation : event.location || event.city || "";
+              const where = event.format === "online" ? t.onlineLocation
+                : event.location?.split(",").slice(0, 2).join(",") || event.city || "";
               const detailsId = "hh-event-details-" + event.id;
               return (
                 <article key={event.id} className={styles.eventCard} data-event-card={event.id}>
                   <div className={styles.posterFrame}>
-                    {event.posterUrl ? (
-                      <img src={event.posterUrl} className={styles.eventPoster} alt="" width={940} height={492} loading="lazy" decoding="async" />
-                    ) : (
-                      <div className={styles.posterFallback} aria-hidden="true"><CalendarDays size={36} strokeWidth={1.3} /></div>
+                    <div className={styles.posterFallback} aria-hidden="true"><CalendarDays size={36} strokeWidth={1.3} /></div>
+                    {event.posterUrl && (
+                      <img src={event.posterUrl} className={styles.eventPoster} alt="" width={940} height={492}
+                        loading="lazy" decoding="async" onError={error => { error.currentTarget.style.display = "none"; }} />
                     )}
                   </div>
                   <div className={styles.eventContent}>
@@ -180,6 +206,7 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
                     </div>
                     <div id={detailsId} className={styles.eventExpanded} hidden={!expanded}>
                       <p>{event.description[locale]}</p>
+                      {event.format === "in_person" && event.location && <p className={styles.venue}><MapPin size={14} aria-hidden="true" />{event.location}</p>}
                       {event.highlights?.[locale]?.length ? (
                         <>
                           <strong>{t.program}</strong>
