@@ -3398,3 +3398,18 @@
     padding: 4px 9px;
   }
 }
+
+/* Russian welcome needs 18px less vertical chrome at 375×625 because its
+   translated heading and benefit labels wrap differently from English.
+   Preserve text sizes, real photo, and all benefit descriptions. */
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .slideMain {
+    padding-block: 5px;
+  }
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .welcomeReward {
+    margin-top: 3px;
+  }
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .benefits {
+    margin-top: 4px;
+  }
+}
