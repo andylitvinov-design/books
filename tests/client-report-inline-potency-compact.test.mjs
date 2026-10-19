@@ -35,6 +35,15 @@ test('the saved regimen is formatted without modifying a practitioner prescripti
   assert.equal(remedySchedule({ itemType: 'bach', potency: '30' }, 'ru', 'mixed'), '')
 })
 
+test('HTML and both signed PDF layouts keep saved potency on the title line', () => {
+  const pdf = read('lib/prescriptions/pdf.js')
+  assert.match(pdf, /const nameLines=wrapPdfText\(String\(itemNumber\)\+'\.'\+item\.displayName\+\(potency\?' '\+potency:''\)/)
+  assert.match(pdf, /const nameLines=wrapPdfText\(String\(item\.displayName\|\|''\)\+\(potency\?' '\+potency:''\)/)
+  assert.equal((pdf.match(/const administration\s*=\s*potency \? schedule\.split\(' · '\)\.slice\(1\)\.join\(' · '\) : schedule/g) || []).length, 2)
+  assert.match(pdf, /const scheduleLines=administration\?wrapPdfText\(administration,titleWidth,10\.7\):\[\]/)
+  assert.match(pdf, /const scheduleLines=administration\?wrapPdfText\(administration,nameWidth,14\.2\):\[\]/)
+})
+
 test('compact screen-only treatment keeps accessibility and full printed appendix', () => {
   const css = read('components/consultation-report.css')
   const theme = read('components/client-session.module.css')
