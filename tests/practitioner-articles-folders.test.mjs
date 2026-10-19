@@ -130,3 +130,17 @@ test('iPhone article save shows inline feedback and does not mistake a failed re
  assert.match(save,/setItems\(current=>\[saved,\.\.\.current\.filter/)
  assert.match(save,/if\(!saved\?\.id\|\|!Number\.isSafeInteger\(saved\.revision\)\)/)
 });
+
+test('Nux Vomica original Telegram photo is complete, retained and previewed in the practitioner editor',()=>{
+ const src=read('content/remedies/ru/nux-vomica.md')
+ const imagePath='/media/remedies/nux-vomica/message1070-1.jpg'
+ const photo=readFileSync(new URL('../public'+imagePath,import.meta.url))
+ assert.ok(photo.byteLength>=15000,'a tiny truncated grey JPEG must not be shipped as the remedy cover')
+ assert.equal(photo.subarray(0,3).toString('hex'),'ffd8ff')
+ assert.equal(photo.subarray(-2).toString('hex'),'ffd9')
+ assert.ok(src.includes('primary_image: '+imagePath))
+ const ui=read('components/app/practitioner-articles.jsx')
+ assert.match(ui,/draft\.coverPath&&<div className=\{styles\.coverPreview\}/)
+ assert.match(ui,/src=\{draft\.coverPath\}/)
+ assert.match(ui,/The cover photograph stays attached/)
+});
