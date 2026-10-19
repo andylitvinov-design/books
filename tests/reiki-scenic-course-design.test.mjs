@@ -105,7 +105,7 @@ test('Public catalogue systems and descriptions match the interactive learning o
   const paths = landing.split('const paths = [')[1].split('] as const;')[0]
   const order = [...paths.matchAll(/key: "(tantra|kundalini|yggdrasil)"/g)].map(x => x[1])
   assert.deepEqual(order, ['tantra','kundalini','yggdrasil'])
-  assert.match(landing, /systemsTitle: "Three Reiki systems\. One learning journey\."/)
-  assert.match(landing, /systemsTitle: "Три системы Рейки\. Один путь обучения\."/)
-  assert.match(landing, /systemsTitle: "Tres sistemas de Reiki\. Un solo curso\."/)
+  assert.match(landing, /systemsTitle: "Three Reiki paths"/)
+  assert.match(landing, /systemsTitle: "Три пути Рейки"/)
+  assert.match(landing, /systemsTitle: "Tres caminos de Reiki"/)
 })
