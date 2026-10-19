@@ -143,7 +143,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </section>}
       {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
       {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
-        <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
+        <h2>{locale === 'ru' ? 'Приложение.' : 'Appendix.'}</h2>
         <p className="canonical-remedy-appendix-description">
           <span className="canonical-remedy-appendix-hint">{locale === 'ru'
             ? 'Нажмите на карточку, чтобы прочесть описание препарата.'

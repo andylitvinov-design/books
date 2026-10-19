@@ -22,6 +22,7 @@ test('client tests appear in separate cards after Materials and before the next 
 test('appendix shows an instruction and original photos, then the signed footer', () => {
   const document = read('components/prescription-document.jsx')
   assert.ok(document.includes('Нажмите на карточку, чтобы прочесть описание препарата.'))
+  assert.ok(document.includes("{locale === 'ru' ? 'Приложение.' : 'Appendix.'}"))
   assert.ok(document.includes('className="canonical-remedy-profile-thumb"'))
   assert.ok(document.includes('img src={remedy.primary_image} alt=""'))
   assert.ok(document.indexOf('className="canonical-remedy-profiles"') < document.lastIndexOf('<DocumentSignature'))
