@@ -52,11 +52,11 @@ test('Nine owner-approved Kundalini slides appear in exact order, with their exa
 test('Multiple-choice questions have validated choices; personal body question remains free text', () => {
   assert.equal(Object.keys(ENERGYWORK_KUNDALINI_CHOICE_VALUES).length,8)
   for(const id of ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS){
-    assert.equal(energyworkAnswerValid(id,'unknown-choice'),false)
     if(id==='kun-question-06'){
       assert.equal(energyworkAnswerValid(id,'My shoulders'),true)
       continue
     }
+    assert.equal(energyworkAnswerValid(id,'unknown-choice'),false)
     assert.ok(ENERGYWORK_KUNDALINI_CHOICE_VALUES[id].length>=3)
     for(const option of ENERGYWORK_KUNDALINI_CHOICE_VALUES[id]){
       assert.equal(energyworkAnswerValid(id,option),true,id+':'+option)
