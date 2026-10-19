@@ -2,6 +2,7 @@
 import {useEffect,useState} from 'react'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract'
 import PractitionerArticles from './practitioner-articles'
+import PracticeReportMaterials from './practice-report-materials'
 import styles from './practice-materials.module.css'
 
 const fresh=locale=>({locale:['en','ru','es'].includes(locale)?locale:'en',title:'',description:'',url:''})
@@ -106,10 +107,17 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  }
  return <div className={styles.shell}>
   <div className={styles.tabs} role="group" aria-label={ru?'Тип материалов':'Material type'}>
-   <button type="button" aria-pressed={tab==='videos'} onClick={()=>setTab('videos')}>{t.videos} ({videos.length})</button>
+   {isOwner&&<button type="button" aria-pressed={tab==='reports'} onClick={()=>setTab('reports')}>
+     {ptext.reports} ({privateLoading?'…':privateError?'?':privateItems.length})</button>}
+   <button type="button" aria-pressed={tab==='videos'} onClick={()=>setTab('videos')}>
+     {ptext.public} ({videos.length})</button>
    <button type="button" aria-pressed={tab==='articles'} onClick={()=>setTab('articles')}>{t.articles}</button>
   </div>
   {tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
+   tab==='reports'&&isOwner?<PracticeReportMaterials items={privateItems}
+    loading={privateLoading} error={privateError} locale={locale}
+    onRefresh={()=>setPrivateRevision(value=>value+1)}
+    onManage={()=>onOpenOwner?.('materials')}/>:
   <div className={styles.body}>
    <p className={styles.intro}>{t.note}</p>
    <div className={styles.heading}>
