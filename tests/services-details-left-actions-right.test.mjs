@@ -43,9 +43,19 @@ test("matched and editorial service cards show Details first on all locales", ()
   assert.ok(css.includes("grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr)"));
 });
 
-test("the featured service on the Services page shows Details first", () => {
-  expectDetailsBeforePrimary(actionBlock("app/[locale]/services/page.tsx", '<div className="services-marketplace-actions">'),
-    'className="services-marketplace-details"', 'className="services-marketplace-request');
+test("personal offer cards show expandable Details to the left of the request action", () => {
+  const src = read("components/services-studio-offers.tsx");
+  const start = src.indexOf('<div className={styles.actions}>');
+  const end = src.indexOf('</article>', start + 10);
+  assert.ok(start >= 0 && end > start);
+  const actions = src.slice(start, end);
+  assert.ok(actions.indexOf('<details className={styles.details}>') >= 0);
+  assert.ok(actions.indexOf('<details className={styles.details}>') < actions.indexOf('<Link href={offer.href} className={styles.action}'));
+  assert.match(src, /<ContactChannelChooser/);
+  const css = read("components/services-studio-offers.module.css");
+  assert.match(css, /\.actions\{[^}]*grid-template-columns:/);
+  assert.match(css, /\.details summary\{/);
+  assert.match(css, /\.booking/);
 });
 
 test("marketplace service and practitioner cards keep their burgundy action on the right", () => {
