@@ -30,6 +30,8 @@ test('a truncated or invalid minimal bootstrap never puts Cabinet into ready sta
 test('Profile-only repository projection skips expensive non-profile reads, preserves reports and auth', () => {
   const repository = read('lib/app/repository.js')
   const route = read('app/api/app/[...path]/route.js')
+  assert.match(route, /export const runtime = 'nodejs'/)
+  assert.match(route, /export const preferredRegion = 'yul1'/)
   const start = repository.indexOf('    async bootstrap(actor, { view =')
   const end = repository.indexOf('    async createTestPlan(', start)
   assert.ok(start >= 0 && end > start)
