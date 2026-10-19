@@ -22,6 +22,21 @@ test('entire research master becomes discoverable metadata with no key duplicate
   assert.ok(last.results.length>0&&last.results.length<=12)
   assert.equal(last.page,last.pages)
 })
+test('cycle168 contains five distinct research-only editions without activating observer coding or unknown-item forms',()=>{
+  const keys=['pnep-dandachifitzgerald2024-nlcohort69','g3rs-baldwin2026-enca-observer-v1','batq-bolter1987-joseph2026-global19','sstms-joseph2026-global-formpending','cose-tr-karairmak2018-trtr27']
+  for(const key of keys){
+    const entry=RESEARCH_CATALOGUE.find(row=>row.key===key)
+    assert.ok(entry,key+' must be present in the source directory')
+    assert.equal(entry.access,'research_only')
+    assert.equal(entry.rightsStatus,'permission_required')
+    assert.equal(entry.commercialDigitalRightsCleared,false)
+    assert.equal(entry.psychometricStatus,'pending_exact_edition_review')
+  }
+  assert.match(RESEARCH_CATALOGUE.find(row=>row.key===keys[1]).itemCount,/not a self-report/i)
+  assert.match(RESEARCH_CATALOGUE.find(row=>row.key===keys[3]).itemCount,/pending/i)
+  assert.match(RESEARCH_CATALOGUE.find(row=>row.key===keys[4]).itemCount,/27/)
+})
+
 test('lookup filters research scales and titles while keeping output within strict page sizes',()=>{
   const found=searchResearchCatalogue({q:'Stress Mindset',pageSize:24})
   assert.ok(found.total>=3)
