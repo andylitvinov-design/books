@@ -158,6 +158,16 @@ const practiceQuestion: EnergyworkQuestion = {
   ],
 };
 
+// Unlike the other short practice check-ins, the Sun exercise invites a
+// voluntary description in the learner's own words. No sensation is required.
+const sunPracticeQuestion: EnergyworkQuestion = {
+  type: "text",
+  prompt: l(
+    "Without the meditation, could you tune in to the Sun and feel its warmth and light within and around you?",
+    "Удалось ли вам без медитации настроиться на Солнце и почувствовать его тепло и свет внутри себя и вокруг?"
+  ),
+};
+
 const commonSlides: EnergyworkSlide[] = [
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
     title: l("Reiki Practitioner — your first step", "Практик Рейки — начало пути"),
@@ -190,9 +200,10 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Your meditation feedback", "Ваш отзыв о медитации"),
     body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
     question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
-  { id: "flight-03", phase: "flight", kind: "practice", question: practiceQuestion,
+  { id: "flight-03", phase: "flight", kind: "practice", question: sunPracticeQuestion,
     title: l("A gentle pause", "Небольшая пауза"),
-    body: l("Pause, notice your chair, or imagine warmth or light.", "Сделайте паузу, ощутите опору стула или представьте тепло и свет.") },
+    body: l("Without replaying the meditation, take a moment to sense the Sun’s warmth and light within and around you.",
+      "Без медитации попробуйте почувствовать тепло и свет Солнца внутри себя и вокруг.") },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
