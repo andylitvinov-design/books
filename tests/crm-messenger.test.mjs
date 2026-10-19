@@ -67,7 +67,7 @@ test('message retries preserve one client id and queued messages never retry aut
   const store=source('lib/crm/messenger-store.js')
   assert.match(component,/pendingRequest\.current=pending/)
   assert.match(component,/requestId:pending\.id/)
-  assert.match(component,/old&&old\.threadId===active&&old\.text===body/)
+  assert.match(component,/old&&old\.threadId===threadId&&old\.text===body/)
   assert.match(store,/status='unknown'.*direction='out'.*status='queued'/)
   assert.doesNotMatch(store,/sendOneMessengerMessage\(/)
 })
@@ -278,4 +278,13 @@ test('v3 quick replies are neutral owner-selected drafts, not scheduled or auto-
   assert.match(ui,/disabled=\{busy\|\|threadLoading\|\|!selected\.reply\.ok\}/)
   assert.doesNotMatch(ui,/setInterval\(|sendOneMessengerMessage\(/)
   assert.match(api,/action==='send'/)
+})
+
+test('v3 stale replies and notes never clear another chat draft or display old status',()=>{
+  const ui=source('components/app/crm-messenger.jsx')
+  assert.match(ui,/const requestThreadId=payload\?\.threadId\|\|activeRef\.current/)
+  assert.match(ui,/if\(activeRef\.current===requestThreadId\)/)
+  assert.match(ui,/if\(!result\|\|activeRef\.current!==threadId\)return/)
+  assert.match(ui,/if\(result&&activeRef\.current===args\.threadId\)/)
+  assert.match(ui,/if\(result&&activeRef\.current===threadId\)setStatus/)
 })
