@@ -146,3 +146,10 @@ test("Deleted questions never erase old encrypted answers or reset earlier progr
   assert.match(migration, /2026-10-19\.p8/)
   assert.doesNotMatch(migration, /delete from|drop table|drop column/i)
 })
+
+test("Archived p7 two-field replies can still be combined without data loss", async () => {
+  const { energyworkCombinedTantraAnswer } = await import("../data/academy/energywork-ai-schema.js")
+  assert.equal(energyworkCombinedTantraAnswer("A", "B"), ["A","B"].join(String.fromCharCode(10,10)))
+  assert.equal(energyworkCombinedTantraAnswer("A", "A"), "A")
+  assert.equal(energyworkCombinedTantraAnswer("", "Past use"), "Past use")
+})

@@ -55,6 +55,16 @@ export function energyworkReikiStudyAnswerComplete(answer) {
 export function energyworkTantraStudyAnswerComplete(answer) {
   return typeof answer === 'string' && answer.trim().length > 0
 }
+// One written response can cover both prompts on the last Tantra study screen.
+// Keep both historic question IDs, and show distinct older responses together
+// without discarding either private answer.
+export function energyworkCombinedTantraAnswer(primary, secondary) {
+  const first = typeof primary === 'string' ? primary : ''
+  const second = typeof secondary === 'string' ? secondary : ''
+  if (!first.trim()) return second
+  if (!second.trim() || first.trim() === second.trim()) return first
+  return first.trimEnd() + '\n\n' + second.trimStart()
+}
 export const ENERGYWORK_QUESTIONS = Object.freeze({
   'welcome-02': 'choice',
   'flight-04': 'text', 'flight-05': 'text',
