@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('client report distinguishes practitioner prescriptions from other recommendations', () => {
+test('prescription groups retain original names and keep individual instructions visible', () => {
   const source = read('components/prescription-document.jsx')
   assert.match(source, /'НАЗНАЧЕНИЯ' : 'PRESCRIPTIONS'/)
   assert.match(source, /ГОМЕОПАТИЧЕСКИЕ НАЗНАЧЕНИЯ/)
@@ -12,32 +12,30 @@ test('client report distinguishes practitioner prescriptions from other recommen
   assert.match(source, /Индивидуальная схема приёма/)
   assert.match(source, /canonical-remedy-section-heading/)
   assert.match(source, /remedySchedule\(item, locale, document\.recommendationType\)/)
-  assert.match(source, /detailKeys\.length > 0 && <dl className="canonical-remedy-fields">/)
-  assert.match(source, /detailKeys\.map\(\(key\) => <div key=\{key\}>/)
-  assert.match(source, /item\[key\]/)
-  assert.match(source, /item\.remedyPath && <Link className="canonical-remedy-profile-action"/)
+  const summary = source.slice(source.indexOf('<summary className="canonical-remedy-unified-summary">'), source.indexOf('</summary>'))
+  assert.match(summary, /detailKeys\.length > 0 && <span className="canonical-remedy-fields canonical-remedy-unified-instructions">/)
+  assert.match(summary, /detailKeys\.map\(\(key\) => <span/)
+  assert.match(summary, /item\[key\]/)
+  assert.match(summary, /item\.displayName/)
 })
 
-test('prescription rows remain image-free, compact and usable on mobile and paper', () => {
+test('mobile prescription cards integrate source images, clickable descriptions and all authored data', () => {
   const source = read('components/prescription-document.jsx')
-  const first = source.indexOf('return <section className="canonical-remedy" key={number}>')
-  const last = source.indexOf('</section>\n        })}', first)
-  assert.ok(first > -1 && last > first, 'rendered prescription row should be present')
-  const row = source.slice(first, last)
-  assert.doesNotMatch(row, /<img|primary_image|canonical-remedy-card-photo/)
-  assert.match(row, /canonical-remedy-schedule-part/)
-  assert.match(row, /Описание препарата/)
-
+  assert.match(source, /canonical-remedy--unified/)
+  assert.match(source, /canonical-remedy-profile-disclosure canonical-remedy-unified-disclosure/)
+  assert.match(source, /RemedyReportThumbnail src=\{remedy\?\.primary_image\}/)
+  assert.match(source, /canonical-remedy-schedule-part/)
+  assert.match(source, /Описание/)
+  assert.match(source, /<RemedyContent locale=\{locale\} remedy=\{remedy\}/)
+  assert.doesNotMatch(source, /className="canonical-remedy-profiles"/)
   const css = read('components/consultation-report.css')
-  const start = css.indexOf('Prescription-sheet refinement:')
+  const start = css.indexOf('Unified prescription + remedy library cards — 2026-10-19')
   assert.ok(start > -1)
-  const plan = css.slice(start)
-  assert.match(plan, /max-width:\s*680px/)
-  assert.match(plan, /grid-template-columns:\s*minmax\(0, 1fr\) auto/)
-  assert.match(plan, /\.canonical-remedy-schedule-chip\s*\{/)
-  assert.match(plan, /@media screen and \(max-width:\s*700px\)/)
-  assert.match(plan, /@media print/)
-  assert.match(plan, /break-inside:\s*avoid/)
+  const unified = css.slice(start)
+  assert.match(unified, /grid-template-columns: 65px minmax\(0, 1fr\) auto/)
+  assert.match(unified, /@media screen and \(max-width: 700px\)/)
+  assert.match(unified, /@media print/)
+  assert.match(unified, /break-inside: auto/)
 })
 
 test('fallback session projection uses prescription terminology', () => {
