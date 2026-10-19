@@ -2613,3 +2613,67 @@
     min-height: 34px;
   }
 }
+
+
+/* Reiki programme invitation and system landing links */
+.page[data-course-visual] .programmeIntro {
+  margin: 10px 0 2px;
+  color: #376a7b;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.page[data-course-visual] .programmeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+}
+.page[data-course-visual] .programmeLesson {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+.page[data-course-visual] .programmeLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(1, 131, 151, .28);
+  background: rgba(0, 168, 184, .09);
+  color: #08677a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.page[data-course-visual] .programmeLink:hover {
+  background: rgba(0, 168, 184, .2);
+  border-color: rgba(1, 131, 151, .55);
+}
+.page[data-course-visual] .programmeLink:focus-visible {
+  outline: 3px solid #08a5ad;
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .page[data-course-visual] .programme ol {
+    padding-left: 18px;
+    gap: 5px;
+  }
+  .page[data-course-visual] .programmeIntro {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .page[data-course-visual] .programmeLink {
+    min-height: 36px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page[data-course-visual] .programmeLink { transition: none; }
+}
