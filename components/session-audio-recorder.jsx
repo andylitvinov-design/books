@@ -386,7 +386,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       onError={()=>setLocalPlaybackError(true)} onCanPlay={()=>setLocalPlaybackError(false)}/>)}
     {localPlaybackError&&<p role="alert" className={styles.error}>{ru?
       'Этот локальный дубль не воспроизводится на iPhone. Проверьте версию, сохранённую на сервере, ниже; не прикрепляйте неисправную запись.':
-      'This local preview failed to play. Check the securely stored take below; do not attach an unplayable recording.'}</p>
+      'This local preview failed to play. Check the securely stored take below; do not attach an unplayable recording.'}</p>}
     {playback&&selectedMov&&<p className={styles.photoHint}>{ru?'MOV сохранится без изменения кодека. Видео HEVC может не воспроизводиться на некоторых Android/Windows — при необходимости используйте оригинал MOV или отдельную MP4-версию.':'MOV is kept unchanged. HEVC may not play on some Android/Windows browsers; keep the original or prepare a separate MP4 version for wider playback.'}</p>}
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
     {error&&<div className={styles.error} role="alert"><p>{error}</p>{retryFile&&sessionId&&
