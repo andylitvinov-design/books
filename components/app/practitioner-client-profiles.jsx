@@ -1,6 +1,7 @@
 'use client'
 import {useMemo,useState} from 'react'
 import PracticeRequestConversation from './practice-request-conversation'
+import {groupVerifiedPractitionerClients} from '@/lib/practitioners/client-profile-groups'
 import styles from './practitioner-client-profiles.module.css'
 
 const COPY={
@@ -38,43 +39,12 @@ const COPY={
     noPortal:'Puedes responder dentro de Holistic House. El historial de Telegram/WhatsApp no está conectado.',
     historySummary:'Solicitud original y respuestas privadas'},
 }
-function contactText(value){
-  if(typeof value==='string')return value.trim().slice(0,500)
-  if(!value||typeof value!=='object')return ''
-  return [value.displayName||value.name,value.email,value.phone]
-    .filter(value=>typeof value==='string'&&value.trim()).join(' · ').slice(0,500)
-}
-function clientName(value,locale){
-  if(value&&typeof value==='object'){
-    const name=String(value.displayName||value.name||'').trim()
-    if(name)return name.slice(0,120)
-  }
-  const label=contactText(value)
-  return label|| (locale==='ru'?'Клиент':locale==='es'?'Cliente':'Client')
-}
-function groupVerifiedClients(requests,locale){
-  const groups=new Map()
-  for(const item of requests){
-    // Never link a client's medical/cabinet identity based on a typed contact.
-    const key=/^[a-f0-9]{64}$/i.test(item.clientKey||'')?item.clientKey:'request:'+item.id
-    if(!groups.has(key))groups.set(key,{key,items:[]})
-    groups.get(key).items.push(item)
-  }
-  return [...groups.values()].map(group=>{
-    group.items.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))
-    group.latest=group.items[0]
-    group.name=clientName(group.latest.contact,locale)
-    group.contact=contactText(group.latest.contact)
-    group.open=group.items.filter(item=>['requested','contacted'].includes(item.status)).length
-    return group
-  }).sort((a,b)=>Date.parse(b.latest.createdAt)-Date.parse(a.latest.createdAt))
-}
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
 }).format(new Date(value)):''
 export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang]
-  const groups=useMemo(()=>groupVerifiedClients(items,lang),[items,lang])
+  const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
   const [search,setSearch]=useState('')
   const selected=groups.find(item=>item.key===selectedKey)
