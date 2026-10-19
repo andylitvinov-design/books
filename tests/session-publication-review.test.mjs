@@ -259,8 +259,8 @@ function studioFixture({changeReference=false}={}) {
   const start=studio.indexOf('  const changed='),end=studio.indexOf('  async function play(')
   assert.ok(start>0&&end>start)
   const actions=new Function('dependencies',
-    'const {api,session,draft,base,ru,locale,setSession,setDraft,setMessage,setBusy,setError,setLink}=dependencies;'+
-    studio.slice(start,end)+';return {act,save,load};')({api,session,draft,base:'/synthetic-session',ru:false,locale:'en',
+    'const {api,session,draft,documents,base,ru,locale,setSession,setDraft,setMessage,setBusy,setError,setLink}=dependencies;'+
+    studio.slice(start,end)+';return {act,save,load};')({api,session,draft,documents:[],base:'/synthetic-session',ru:false,locale:'en',
     setSession:value=>loaded.push(value),setDraft:()=>{},setMessage:()=>{},setBusy:()=>{},
     setError:value=>errors.push(value),setLink:()=>{}})
   return {actions,calls,errors,loaded,originalSource}
