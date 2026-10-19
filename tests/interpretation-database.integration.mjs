@@ -69,6 +69,7 @@ async function foundation(db){
   // and their independently approved complete-definition digest, without
   // silently changing their historical source identities.
   assertAssessmentSourceIntegrity(definition)
+  const contentHash=definition.contentHash
   await db.query(`INSERT INTO app.assessment_versions(id,definition_key,definition_version,instrument_locale,translation_version,
     definition,questions,answer_schema,scoring_key,scoring_version,result_schema,timeframe,source_metadata,content_hash)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,[definition.id,definition.key,definition.version,
