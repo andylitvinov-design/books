@@ -83,3 +83,30 @@ test("Academy still offers original source programmes, archives and consultation
   assert.match(hub, /academy-featured-temple-studies/);
   assert.match(hub, /academy\/archive/);
 });
+
+test("Featured programme buttons open their own landings; only real AI lessons say Take course", () => {
+  const hub = read("components/academy-hub.tsx");
+  const cards = read("components/academy-course-card-list.tsx");
+  const expectedLandings = [
+    ["academy-featured-yggdrasil", "/academy/reiki/yggdrasil"],
+    ["academy-featured-tantra-reiki", "/academy/reiki/tantra-reiki"],
+    ["academy-featured-kundalini-reiki", "/academy/reiki/kundalini-reiki"],
+    ["academy-featured-temple-studies", "/academy/temple-studies"],
+  ];
+  for (const [id, landing] of expectedLandings) {
+    const start = hub.indexOf('id: "' + id + '"');
+    assert.ok(start >= 0, id);
+    const end = hub.indexOf("actionLabel: action.program,", start);
+    assert.ok(end > start, id);
+    const block = hub.slice(start, end);
+    assert.ok(block.includes('href: "/" + locale + "' + landing + '"'), id + " must open its programme landing");
+    assert.doesNotMatch(block, /courseHref:/, id + " must not masquerade as an AI lesson");
+  }
+  assert.match(cards, /href=\\{item\\.courseHref \\?\\? item\\.href\\}/);
+  assert.match(cards, /item\\.courseHref \\? t\\.start : t\\.open/);
+  for (const id of ["academy-free-opora", "academy-featured-principles-energywork", "academy-free-tantra-introduction", "academy-free-yggdrasil-introduction"]) {
+    const start = hub.indexOf('id: "' + id + '"');
+    const end = hub.indexOf("actionLabel:", start);
+    assert.ok(start >= 0 && end > start && hub.slice(start, end).includes("courseHref:"), id + " should retain an actual AI lesson link");
+  }
+});
