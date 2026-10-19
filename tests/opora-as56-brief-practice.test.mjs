@@ -57,7 +57,9 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
   test(`AS5.7 ${locale} day ${day}: actual player preserves owner title, practice and voluntary hint without writes`,async()=>{
     const f=fixture(locale,day),t=words[locale]
     try{
-      await f.click(t.next)
+      // Day 1 now begins with five restored check-in slides and a gentle arrival;
+      // the daily practice follows those six screens, not the initial Welcome.
+      for(let i=0;i<(day===1?6:1);i++)await f.click(t.next)
       assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
       assert.ok(textOf(f.h.tree).includes(oporaExperienceGuide(day,locale)))
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
