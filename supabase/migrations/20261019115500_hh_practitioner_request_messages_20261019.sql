@@ -5,6 +5,7 @@ CREATE TABLE app.practitioner_request_messages (
  request_id uuid NOT NULL REFERENCES app.consultation_requests(id) ON DELETE CASCADE,
  author_account_id uuid NOT NULL REFERENCES app.accounts(id) ON DELETE CASCADE,
  author_role text NOT NULL CHECK (author_role IN ('client','practitioner')),
+ visibility text NOT NULL DEFAULT 'participants' CHECK(visibility IN('participants','practitioner_note')),
  body_ciphertext text NOT NULL CHECK (char_length(body_ciphertext) BETWEEN 40 AND 16000),
  created_at timestamptz NOT NULL DEFAULT now(),
  UNIQUE (request_id,id)
@@ -26,7 +27,8 @@ CREATE POLICY practitioner_request_messages_participant_read
    JOIN app.practitioners p ON p.id=r.recipient_practitioner_id
    WHERE r.id=practitioner_request_messages.request_id
      AND (
-       r.account_id=(SELECT auth.uid())
+       (practitioner_request_messages.visibility='participants'
+         AND r.account_id=(SELECT auth.uid()))
        OR (p.trusted_auth_user_id=(SELECT auth.uid())
          AND p.active AND p.status IN ('approved','submitted','changes_requested'))
      )
@@ -43,13 +45,16 @@ CREATE POLICY practitioner_request_messages_participant_insert
    SELECT 1 FROM app.consultation_requests r
    JOIN app.practitioners p ON p.id=r.recipient_practitioner_id
    WHERE r.id=practitioner_request_messages.request_id
-     AND r.status IN ('requested','contacted')
      AND (
-       (practitioner_request_messages.author_role='client'
+       (practitioner_request_messages.visibility='participants'
+         AND r.status IN ('requested','contacted')
+         AND practitioner_request_messages.author_role='client'
          AND r.account_id=(SELECT auth.uid()))
        OR (practitioner_request_messages.author_role='practitioner'
          AND p.trusted_auth_user_id=(SELECT auth.uid()) AND p.active
-         AND p.status IN ('approved','submitted','changes_requested'))
+         AND p.status IN ('approved','submitted','changes_requested')
+         AND (practitioner_request_messages.visibility='practitioner_note'
+           OR r.status IN ('requested','contacted')))
      )
   )
  );
