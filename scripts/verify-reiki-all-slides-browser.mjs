@@ -129,12 +129,13 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(portrait).toHaveJSProperty("complete", true);
     const loaded = await portrait.evaluate((image) => image.naturalWidth);
     assert.ok(loaded > 0, where + ": the approved human portrait loads");
-    const expectedReviews = id === "ygg-voices" ? 5 : ["tan-voices", "flight-voices"].includes(id) ? 4 : 0;
+    const expectedReviews = id === "ygg-voices" ? 5 : ["tan-voices", "flight-voices"].includes(id) ? 4 : id === "kun-voices" ? 3 : 0;
     const carousel = page.locator("[data-meditation-review-carousel]");
     if (expectedReviews) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
       // Anonymous, owner-supplied Sun reflections have no invented source URL.
-      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(id === "flight-voices" ? 1 : 2);
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(
+        ["flight-voices", "kun-voices"].includes(id) ? 1 : 2);
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
       const first = await carousel.locator("blockquote p").innerText();
       await page.locator("button[data-review-next]").click();
