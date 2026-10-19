@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { FileDown,Headphones,LockKeyhole,PlayCircle,Play,AudioLines,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
+import { FileDown,FileText,Headphones,LockKeyhole,PlayCircle,Play,AudioLines,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { DaoStageDisclosure } from './dao-resource-stage'
 import { PublicSiteHeader } from './public-site-header'
@@ -383,54 +383,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         {ru?'Дополнительные материалы пока не выбраны.':'No additional materials have been selected yet.'}</p>}
     </section>}
 
-    {recommendedTests.length>0&&<section id="session-recommended-tests"
-      className={styles.clientSection+' '+styles.reportRecommendedTestsSection}
-      aria-labelledby="session-recommended-tests-title">
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><BookOpen size={20} aria-hidden="true"/></span>
-        <div>
-          <span className={styles.sectionKicker}>{ru?'ДЛЯ САМОСТОЯТЕЛЬНОЙ РАБОТЫ':'FOR YOUR NEXT STEP'}</span>
-          <h2 id="session-recommended-tests-title">{ru?'Рекомендуемые тесты':'Recommended tests'}</h2>
-        </div>
-      </header>
-      <p className={styles.reportRecommendedTestsIntro}>{ru
-        ? 'Выберите тест, чтобы начать.'
-        : 'Choose a test to begin.'}</p>
-      <div className={styles.reportRecommendedTestList}>
-        {recommendedTests.map(test=><a key={test.key} className={styles.reportRecommendedTestCard}
-          href={test.href}>
-          <span className={styles.reportRecommendedTestIcon}><BookOpen size={22} aria-hidden="true"/></span>
-          <span className={styles.reportRecommendedTestText}>
-            <strong>{test.title}</strong>
-            <small>{test.startLocale!==locale
-              ?(ru?'Откроется на доступном языке':'Opens in the available language')
-              :(ru?'Пройти тест':'Take the test')}</small>
-          </span>
-          <ExternalLink size={18} className={styles.reportRecommendedTestArrow} aria-hidden="true"/>
-        </a>)}
-      </div>
-    </section>}
-
     {!hasFullReport&&hasRecommendation&&<DaoStageDisclosure
       score={recommendation?.daoResourceScore} locale={locale}
       published={recommendation?.daoResourcePublished !== false}/>}
 
-    {session.report&&<section id={hasFullReport?'session-download':'session-report'} className={styles.clientSection+' '+styles.reportDownloadSection}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><FileDown size={20}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
-          <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
-      </header>
-      <div className={styles.reportPanel}>
-        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
-          'Your original PDF contains the complete recommendations and additional details.'}</p>
-        <a href={pdfPath} className={styles.downloadButton} download><FileDown size={20}/>
-          {ru?'Скачать PDF-отчёт':'Download the full PDF'}</a>
-      </div>
-    </section>}
-
     <nav className={styles.sessionBottomActions} data-hh-report-next-actions
-      aria-label={ru?'Дальнейшие действия после отчёта':'After your report'}>
+      aria-label={ru?'Сохранить отчёт в кабинете':'Save the report to your Cabinet'}>
       <div className={styles.sessionBottomHeading}>
         <span className={styles.sectionKicker}>{ru?'СОХРАНИТЕ И ПРОДОЛЖАЙТЕ':'SAVE & CONTINUE'}</span>
         <h2>{ru?'Ваши следующие шаги':'Your next steps'}</h2>
@@ -446,10 +404,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <BookmarkCheck size={20} aria-hidden="true"/>
         {ru?'Открыть мой кабинет — отчёт сохранён':'Open my Cabinet — report saved'}
       </a>}
-      <a href={'/'+locale+'/client'} className={styles.sessionBottomSecondary}>
-        <Gift size={21} aria-hidden="true"/>
-        {ru?'Пройти дополнительное тестирование (бонус)':'Take additional tests (bonus)'}
-      </a>
       {mode==='owner'&&<p className={styles.sessionBottomHint} role="note">
         {ru?'Предпросмотр специалиста: кнопка сохранения становится активной у клиента по защищённой ссылке.':
           'Practitioner preview: the save button is enabled only for the client with an authorized report link.'}
@@ -459,6 +413,62 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           'Google saving is temporarily unavailable. This report remains accessible through its protected link.'}
       </p>}
     </nav>
+
+    <section id="session-recommended-tests"
+      className={styles.clientSection+' '+styles.reportRecommendedTestsSection}
+      aria-labelledby="session-recommended-tests-title">
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><BookOpen size={20} aria-hidden="true"/></span>
+        <div>
+          <span className={styles.sectionKicker}>{ru?'ДЛЯ САМОСТОЯТЕЛЬНОЙ РАБОТЫ':'FOR YOUR NEXT STEP'}</span>
+          <h2 id="session-recommended-tests-title">{ru?'Рекомендуемые тесты':'Recommended tests'}</h2>
+        </div>
+      </header>
+      <p className={styles.reportRecommendedTestsIntro}>{recommendedTests.length>0
+        ? (ru?'Выберите тест, чтобы начать.':'Choose a test to begin.')
+        : (ru?'Вы можете выбрать дополнительные бесплатные тесты.':'Explore additional free tests.')}</p>
+      {recommendedTests.length>0&&<div className={styles.reportRecommendedTestList}>
+        {recommendedTests.map(test=><a key={test.key} className={styles.reportRecommendedTestCard}
+          href={test.href}>
+          <span className={styles.reportRecommendedTestIcon}><BookOpen size={22} aria-hidden="true"/></span>
+          <span className={styles.reportRecommendedTestText}>
+            <strong>{test.title}</strong>
+            <small>{test.startLocale!==locale
+              ?(ru?'Откроется на доступном языке':'Opens in the available language')
+              :(ru?'Пройти тест':'Take the test')}</small>
+          </span>
+          <ExternalLink size={18} className={styles.reportRecommendedTestArrow} aria-hidden="true"/>
+        </a>)}
+      </div>}
+      <a href={'/'+locale+'/client'} className={styles.reportTestCatalogLink}>
+        <Gift size={20} aria-hidden="true"/>
+        {ru?'Пройти дополнительное тестирование (бонус)':'Take additional tests (bonus)'}
+      </a>
+    </section>
+
+    {session.report&&<section id={hasFullReport?'session-download':'session-report'}
+      className={styles.clientSection+' '+styles.reportDownloadSection}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><FileDown size={20} aria-hidden="true"/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
+          <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
+      </header>
+      <div className={styles.reportPanel}>
+        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
+          'Your original PDF contains the complete recommendations and additional details.'}</p>
+        <div className={styles.reportPdfActions}>
+          <a href={pdfPath+'&preview=1&layout=a4'} className={styles.reportPdfPreviewButton}
+            target="_blank" rel="noopener noreferrer">
+            <FileText size={20} aria-hidden="true"/>
+            {ru?'Просмотреть PDF-отчёт':'Preview PDF report'}
+          </a>
+          <a href={pdfPath} className={styles.downloadButton} download>
+            <FileDown size={20} aria-hidden="true"/>
+            {ru?'Скачать отчёт':'Download report'}
+          </a>
+        </div>
+      </div>
+    </section>}
 
     <footer className={styles.clientFooter}>
       <p><LockKeyhole size={14}/>{mode==='owner'?(ru?'Закрытый предпросмотр специалиста. Для клиента используйте отдельную ссылку на опубликованную сессию.':'Practitioner-only preview. Send clients only an approved session invitation.'):
