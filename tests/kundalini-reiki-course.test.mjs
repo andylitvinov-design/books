@@ -105,9 +105,9 @@ test("WhatsApp buttons carry the specific Kundalini Reiki course and enquiry typ
 
 test("Kundalini landing identifies the linked free AI course as covering all three Reiki systems", async () => {
   const component = await read("components/kundalini-reiki-course.tsx");
-  assert.match(component, /href=\\{REIKI_FREE_COURSE_PATH\\}/);
+  assert.ok(component.includes("href={REIKI_FREE_COURSE_PATH}"));
   assert.match(component, /AI course · 3 Reiki systems/);
   assert.match(component, /ИИ-курс · 3 системы Рейки/);
   assert.match(component, /Curso de IA · 3 sistemas Reiki/);
-  assert.match(component, /kundalini-reiki\\/free-initiation/);
+  assert.ok(component.includes("/academy/reiki/kundalini-reiki/free-initiation"));
 });
