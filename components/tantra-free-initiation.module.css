@@ -684,3 +684,16 @@
   .pillarVisual img,.optionalOffers > summary svg { transition:none; }
   .pillarStory:hover .pillarVisual img { transform:none; }
 }
+
+
+/* Reuse pre-compressed source assets without requesting image transformations. */
+.yinYangSymbol { display:block; width:43px; height:43px; background:url("/images/holistic-house/tantra-reiki-yin-yang-mark.svg") center / contain no-repeat; }
+.pillarVisual { background-position:center; background-repeat:no-repeat; background-size:cover; }
+.pillarStory:first-child .pillarVisual { background-size:min(70%,420px) auto; }
+.journeyVisual { background:url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center / cover no-repeat; }
+.materialVisual { background:#dff2eb url("/images/holistic-house/tantra-reiki-yin-yang-cover.svg") center / min(85%,470px) auto no-repeat; }
+.choiceVisual img { object-fit:cover; }
+@media(max-width:760px) {
+  .pillarStory:first-child .pillarVisual { background-size:min(65%,240px) auto; }
+  .materialVisual { background-size:min(75%,270px) auto; }
+}
