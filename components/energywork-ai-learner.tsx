@@ -33,23 +33,6 @@ type SaveCommand = {
   answer?: string;
 };
 
-const programmeBenefits: Record<EnergyworkLocale, Record<string, string>> = {
-  en: {
-    flight: "Begin with a guided meditation and your first reflection.",
-    tantra: "Explore presence, connection and gentle energywork.",
-    kundalini: "Discover grounding and the Kundalini Reiki approach.",
-    yggdrasil: "Meet the World Tree, runes and Reiki Yggdrasil.",
-    initiation: "See how personal learning and initiation with Andrey work.",
-  },
-  ru: {
-    flight: "Начните с медитации и первого личного впечатления.",
-    tantra: "Познакомьтесь с практикой присутствия и контакта.",
-    kundalini: "Откройте для себя опору и подход Кундалини Рейки.",
-    yggdrasil: "Познакомьтесь с Мировым Древом, рунами и Рейки Иггдрасиль.",
-    initiation: "Узнайте, как проходят личное обучение и инициация у Андрея.",
-  },
-};
-
 const copy = {
   en: {
     shortTitle: "Reiki Practitioner",
@@ -68,8 +51,7 @@ const copy = {
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Discover your Reiki journey",
-    programmeTeaser: "5 lessons · 3 Reiki traditions · guided practices",
-    programmeIntro: "Start with a guided meditation, discover three Reiki traditions and explore how to continue with Andrey.",
+    programmeIntro: "Five short lessons: a guided meditation and three Reiki traditions."
     systemDetails: "About this practice",
     openLesson: "Open lesson",
     lessonLocked: "Opens as you progress",
@@ -187,8 +169,7 @@ const copy = {
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Откройте свой путь в Рейки",
-    programmeTeaser: "5 уроков · 3 системы Рейки · медитации",
-    programmeIntro: "Начните с медитации, познакомьтесь с тремя системами Рейки и узнайте, как продолжить обучение с Андреем.",
+    programmeIntro: "Пять коротких уроков: медитация и знакомство с тремя системами Рейки."
     systemDetails: "Об этой практике",
     openLesson: "Открыть урок",
     lessonLocked: "Откроется по мере прохождения",
@@ -494,7 +475,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const accountIdRef = useRef<string | null>(null);
   const revisionRef = useRef(0);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
-  const programmeRef = useRef<HTMLDetailsElement>(null);
   const dirtyRef = useRef(new Set<string>());
   const progressRef = useRef("welcome-01");
   const request = useCallback((body: SaveCommand) => {
@@ -1017,8 +997,65 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
         <div className={styles.progressFooter}>
           <div className={styles.progressHeader}>
-            <span>{lessonProgressLabel}</span>
-            <span>{progressPercent}% {t.completedLabel}</span>
+            <span className={styles.progressStep}>{lessonProgressLabel}</span>
+            <div className={styles.progressStatus}>
+              <span>{progressPercent}% {t.completedLabel}</span>
+              <details className={styles.saveManager}>
+                <summary aria-label={t.consentTitle} title={t.consentTitle}>
+                  {sync === "ready" ? <Check size={16} aria-hidden="true" /> : <LockKeyhole size={16} aria-hidden="true" />}
+                </summary>
+                <aside className={styles.preview} aria-live="polite">
+                <LockKeyhole size={19} aria-hidden="true" />
+                <div className={styles.syncContent}>
+                  {sync === "checking" ? <strong>{t.checking}</strong> : null}
+                  {sync === "guest" ? <>
+                    <strong>{t.preview}</strong>
+                    <details className={styles.saveDetails}>
+                      <summary>{t.consentTitle}</summary>
+                      <p>{t.previewHelp}</p>
+                      <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
+                      <p>{t.guestHint}</p>
+                    </details>
+                  </> : null}
+                  {sync === "consent" ? <>
+                    <details className={styles.saveDetails}>
+                      <summary>{t.consentTitle}</summary>
+                      <label className={styles.consentLabel}>
+                        <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
+                        <span>{t.consentText}</span>
+                      </label>
+                      <label className={styles.consentLabel}>
+                        <input type="checkbox" checked={shareConsented} onChange={(event) => setShareConsented(event.target.checked)} />
+                        <span>{t.teacherShareConsent}</span>
+                      </label>
+                      <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
+                      <p>{t.guestHint}</p>
+                    </details>
+                  </> : null}
+                  {sync === "ready" ? <>
+                    <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
+                    {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
+                    <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
+                    {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
+                      <details className={styles.saveDetails}>
+                        <summary>{t.teacherShareTitle}</summary>
+                        <p>{t.teacherShareHint}</p>
+                        <label className={styles.consentLabel}>
+                          <input type="checkbox" checked={shareConsented}
+                            onChange={event => setShareConsented(event.target.checked)} />
+                          <span>{t.teacherShareConsent}</span>
+                        </label>
+                        <button type="button" onClick={shareWithTeacher}
+                          disabled={!shareConsented || busy} className={styles.syncButton}>{t.teacherShareAction}</button>
+                      </details>}
+                  </> : null}
+                  {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
+                  {saveError ? <p role="alert" className={styles.saveError}>{saveError}
+                    <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
+                </div>
+                </aside>
+              </details>
+            </div>
           </div>
           <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
             aria-valuenow={reachedIndex + 1} aria-label={t.lesson}>
@@ -1026,102 +1063,14 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </div>
         </div>
 
-        <details className={styles.programme} ref={programmeRef}>
+        <details className={styles.programme}>
           <summary className={styles.programmeSummary}>
-            <span className={styles.programmeSummaryIcon}><BookOpen size={20} aria-hidden="true" /></span>
-            <span className={styles.programmeSummaryCopy}>
-              <strong>{t.program}</strong>
-              <small>{t.programmeTeaser}</small>
-            </span>
-            <ChevronDown className={styles.programmeChevron} size={20} aria-hidden="true" />
+            <span className={styles.programmeSummaryIcon}><BookOpen size={17} aria-hidden="true" /></span>
+            <span className={styles.programmeSummaryCopy}><strong>{t.program}</strong></span>
+            <ChevronDown className={styles.programmeChevron} size={18} aria-hidden="true" />
           </summary>
           <div className={styles.programmeBody}>
             <p className={styles.programmeIntro}>{t.programmeIntro}</p>
-            <ol className={styles.programmeList}>{energyworkLessons.map((lesson, number) => {
-              const range = lessonRanges[number]!;
-              const unlocked = range.start <= reachedIndex;
-              const system = energyworkPathChoices.find((choice) => choice.id === lesson.phase);
-              return (
-                <li key={lesson.phase} className={styles.programmeCard}
-                  data-lesson-open={unlocked ? "true" : "false"}
-                  aria-current={currentLessonRange?.lesson === number + 1 ? "step" : undefined}>
-                  <span className={styles.programmeNumber} aria-hidden="true">{number + 1}</span>
-                  <div className={styles.programmeCardCopy}>
-                    <span className={styles.programmeLesson}>{lesson.title[locale]}</span>
-                    <small className={styles.programmeBenefit}>{programmeBenefits[locale][lesson.phase]}</small>
-                    <span className={styles.programmeMeta}>
-                      <span className={styles.programmeCount}>{range.count} {t.slidesWord}</span>
-                      {system ? (
-                        <Link className={styles.programmeLink}
-                          href={"/" + locale + "/academy/" + system.studyPath}
-                          target="_blank" rel="noopener noreferrer"
-                          aria-label={lesson.title[locale] + " — " + t.systemDetails}>
-                          {t.systemDetails}<ExternalLink size={13} aria-hidden="true" />
-                        </Link>
-                      ) : null}
-                    </span>
-                  </div>
-                  <button type="button" className={styles.programmeJump}
-                    disabled={busy || sync === "checking" || !unlocked}
-                    onClick={() => void jumpToSlide(lesson.firstSlideId)}
-                    aria-label={(unlocked ? t.openLesson : t.lessonLocked) + ": " + lesson.title[locale]}
-                    title={unlocked ? t.openLesson : t.lessonLocked}>
-                    <ArrowRight size={19} aria-hidden="true" />
-                  </button>
-                </li>
-              );
-            })}</ol>
-            <p className={styles.disclaimer}>{sync === "ready" ? t.stopSaved : t.stop}</p>
-          <aside className={styles.preview} aria-live="polite">
-          <LockKeyhole size={19} aria-hidden="true" />
-          <div className={styles.syncContent}>
-            {sync === "checking" ? <strong>{t.checking}</strong> : null}
-            {sync === "guest" ? <>
-              <strong>{t.preview}</strong>
-              <details className={styles.saveDetails}>
-                <summary>{t.consentTitle}</summary>
-                <p>{t.previewHelp}</p>
-                <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
-                <p>{t.guestHint}</p>
-              </details>
-            </> : null}
-            {sync === "consent" ? <>
-              <details className={styles.saveDetails}>
-                <summary>{t.consentTitle}</summary>
-                <label className={styles.consentLabel}>
-                  <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
-                  <span>{t.consentText}</span>
-                </label>
-                <label className={styles.consentLabel}>
-                  <input type="checkbox" checked={shareConsented} onChange={(event) => setShareConsented(event.target.checked)} />
-                  <span>{t.teacherShareConsent}</span>
-                </label>
-                <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
-                <p>{t.guestHint}</p>
-              </details>
-            </> : null}
-            {sync === "ready" ? <>
-              <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
-              {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
-              <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
-              {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
-                <details className={styles.saveDetails}>
-                  <summary>{t.teacherShareTitle}</summary>
-                  <p>{t.teacherShareHint}</p>
-                  <label className={styles.consentLabel}>
-                    <input type="checkbox" checked={shareConsented}
-                      onChange={event => setShareConsented(event.target.checked)} />
-                    <span>{t.teacherShareConsent}</span>
-                  </label>
-                  <button type="button" onClick={shareWithTeacher}
-                    disabled={!shareConsented || busy} className={styles.syncButton}>{t.teacherShareAction}</button>
-                </details>}
-            </> : null}
-            {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
-            {saveError ? <p role="alert" className={styles.saveError}>{saveError}
-              <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
-          </div>
-          </aside>
           </div>
         </details>
         <footer className={styles.footer}>
