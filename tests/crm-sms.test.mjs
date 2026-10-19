@@ -7,6 +7,8 @@ import { getSmsConfig,smsSetupStatus,smsSegments,validateSmsBody,
 import { CRM_CHANNELS,marketingEligibility } from '../lib/crm/consent.js'
 import { smsMessageEstimate,formatSmsText } from '../lib/crm/sms-text.js'
 import { probeTwilioSmsConnection } from '../lib/crm/sms-setup.js'
+import { getTwilioStatusConfig, fetchTwilioSmsStatus, refreshCrmSmsStatus } from '../lib/crm/sms-status.js'
+import { createSmsStore } from '../lib/crm/sms-store.js'
 
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const sid='AC'+'a'.repeat(32), service='MG'+'b'.repeat(32), token='c'.repeat(32)
@@ -201,4 +203,115 @@ test('SMS onboarding is owner-only, never exposes Twilio tokens or sends on page
  assert.match(source('components/app/crm-sms-tools.jsx'),/smsMessageEstimate/)
  assert.match(source('lib/crm/sms-store.js'),/:sms:owner_quota/)
  assert.doesNotMatch(source('lib/crm/sms-store.js'),/:sms:quota/)
+})
+
+
+test('Twilio delivery readback accepts only exact account, service, owner phone and outbound status', async()=>{
+ const providerId='SM'+'d'.repeat(32), phone='+14165550123'
+ const encryptionKey=Buffer.from('synthetic_owner_key')
+ const recipientHash=smsRecipientFingerprint(phone,encryptionKey)
+ const setup=getTwilioStatusConfig({...env,HH_CRM_SMS_ENABLED:'false'})
+ assert.equal(setup.enabled,true,'history remains verifiable after send kill-switch')
+ assert.equal(getTwilioStatusConfig({}).enabled,false)
+ let calls=0
+ const request=async(url,options)=>{
+   calls++
+   assert.equal(options.method,'GET')
+   assert.equal(url,'https://api.twilio.com/2010-04-01/Accounts/'+sid+'/Messages/'+providerId+'.json')
+   assert.ok(options.headers.Authorization.startsWith('Basic '))
+   return {ok:true,json:async()=>({
+     sid:providerId,account_sid:sid,messaging_service_sid:service,to:phone,status:'delivered',
+   })}
+ }
+ const args={providerId,recipientHash,encryptionKey,config:setup}
+ assert.deepEqual(await fetchTwilioSmsStatus(args,request),{status:'delivered'})
+ assert.equal(calls,1)
+ await assert.rejects(fetchTwilioSmsStatus({...args,providerId:'invalid'},request))
+ assert.equal(calls,1)
+ for(const change of [
+   {account_sid:'AC'+'f'.repeat(32)},
+   {messaging_service_sid:'MG'+'f'.repeat(32)},
+   {to:'+14165550124'},
+   {status:'received'},
+   {sid:'SM'+'e'.repeat(32)},
+ ]){
+   await assert.rejects(fetchTwilioSmsStatus(args,async()=>({ok:true,json:async()=>({
+     sid:providerId,account_sid:sid,messaging_service_sid:service,to:phone,status:'delivered',...change,
+   })})),/SMS_STATUS_UNCONFIRMED/)
+ }
+})
+
+test('SMS status refresh is owner-scoped and cannot send or leak a provider SID',async()=>{
+ const requestId='48c218a4-617e-42f2-bff2-799dc7a30fe0'
+ const providerId='SM'+'d'.repeat(32)
+ const phone='+14165550123'
+ const encryptionKey=Buffer.from('synthetic_owner_key')
+ const recipientHash=smsRecipientFingerprint(phone,encryptionKey)
+ const calls=[]
+ const repo={async withOwner(actor,callback){
+   assert.equal(actor.id,'owner-123')
+   return callback({
+     async smsForStatusCheck(id) {
+       calls.push('owner-read')
+       assert.equal(id,requestId)
+       return {id,status:'sent',providerId,recipientHash}
+     },
+     async applySmsProviderStatus(input) {
+       calls.push('owner-write')
+       assert.equal(input.requestId,requestId)
+       assert.equal(input.providerId,providerId)
+       assert.equal(input.recipientHash,recipientHash)
+       assert.equal(input.status,'delivered')
+       return {status:'delivered'}
+     },
+   })
+ }}
+ let methods=[]
+ const fetcher=async(url,opts)=>{
+   methods.push(opts.method)
+   return {ok:true,json:async()=>({
+     sid:providerId,account_sid:sid,messaging_service_sid:service,to:phone,status:'delivered',
+   })}
+ }
+ const value=await refreshCrmSmsStatus({repo,actor:{id:'owner-123'},appConfig:{encryptionKey},
+    payload:{requestId},env,fetcher})
+ assert.deepEqual(value,{updated:true,status:'delivered'})
+ assert.deepEqual(calls,['owner-read','owner-write'])
+ assert.deepEqual(methods,['GET'])
+ assert.ok(!JSON.stringify(value).includes(providerId))
+ await assert.rejects(refreshCrmSmsStatus({repo,actor:{id:'owner-123'},
+   appConfig:{encryptionKey},payload:{requestId,phone},env,fetcher}))
+})
+
+test('SMS DB status updates never reverse delivered/failed outcomes; orphan sending ages to unknown',async()=>{
+ const ownerId='7e210a31-01ee-434f-9a50-41805f27a8b0'
+ const providerId='SM'+'d'.repeat(32),recipientHash='d'.repeat(64),requestId='48c218a4-617e-42f2-bff2-799dc7a30fe0'
+ let current='delivered',writes=[]
+ const db={async query(query,values){
+  if(query.includes('select status,provider_id,recipient_hash')) return {rows:[{
+   status:current,provider_id:providerId,recipient_hash:recipientHash,
+  }]}
+  if(query.startsWith('update app.crm_sms_jobs')){
+   writes.push(values)
+   current=values[0]
+  }
+  return {rows:[]}
+ }}
+ const store=createSmsStore(db,{id:ownerId},{})
+ const id={requestId,providerId,recipientHash}
+ const done=await store.applySmsProviderStatus({...id,status:'sent'})
+ assert.equal(done.status,'delivered')
+ assert.equal(writes.length,0)
+ current='sending'
+ const sent=await store.applySmsProviderStatus({...id,status:'sent'})
+ assert.equal(sent.status,'sent')
+ assert.equal(writes.length,1)
+ const downgrade=await store.applySmsProviderStatus({...id,status:'queued'})
+ assert.equal(downgrade.status,'sent')
+ assert.equal(writes.length,1)
+ const code=source('lib/crm/sms-store.js')
+ assert.match(code,/status in \('reserved','dispatching'\)/)
+ assert.match(code,/status='unknown',completed_at=now\(\)/)
+ assert.match(code,/interval '24 hours' and status in \('reserved','dispatching','unknown'\)/)
+ assert.match(code,/canCheckStatus/)
 })
