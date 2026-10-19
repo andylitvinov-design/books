@@ -16,7 +16,7 @@ test('canonical PDF has A4 letterhead, lighthouse and active remedy link without
   assert.doesNotMatch(source, /PRIVATE-NOTE/)
   const guidance = recommendationGuidance({ ...recommendation, recommendationType: 'homeopathy' }, 'en')
   assert.ok(guidance.sections.flatMap((section) => section.bullets).includes('5 granules of the remedy.'))
-  assert.match(source, /\(1\. Arsenicum album\) Tj ET/)
+  assert.match(source, /\(1\. Arsenicum album 30C\) Tj ET/, 'approved potency is shown inline in the real PDF card')
 })
 
 test('font metrics preserve newlines and wrap long unbroken values within content width', () => {
