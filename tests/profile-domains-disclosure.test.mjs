@@ -7,9 +7,16 @@ import * as whatsappEnquiry from '../lib/whatsapp-enquiry.js'
 import { availableSavedReports, latestReceivedReport } from '../lib/profile/report-summary.js'
 
 const source = readFileSync(new URL('../components/app/profile-domains.jsx', import.meta.url), 'utf8')
-const compiled = ts.transpileModule(source, { fileName: 'profile-domains.jsx', compilerOptions: {
+const transpiled = ts.transpileModule(source, { fileName: 'profile-domains.jsx', reportDiagnostics: true, compilerOptions: {
   jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
-} }).outputText
+} })
+assert.deepEqual(
+  (transpiled.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error)
+    .map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n')),
+  [],
+  'Profile JSX must compile without syntax errors',
+)
+const compiled = transpiled.outputText
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree)
   ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
 
