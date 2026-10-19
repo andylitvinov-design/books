@@ -10,6 +10,7 @@ test('OPORA has a dedicated installable manifest per public language', () => {
     assert.equal(manifest.start_url, '/' + (locale === 'ru' ? 'ru' : 'en') + '/app/course?program=stress')
     assert.equal(manifest.icons.length, 2)
     assert.ok(manifest.icons.every(icon => icon.type === 'image/png'))
+    assert.ok(manifest.icons.every(icon => icon.src.startsWith('/opora-course-icon/')))
   }
 })
 

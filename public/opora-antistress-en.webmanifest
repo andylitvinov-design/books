@@ -11,13 +11,13 @@
   "theme_color": "#123e53",
   "icons": [
     {
-      "src": "/course-icon/192",
+      "src": "/opora-course-icon/192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/course-icon/512",
+      "src": "/opora-course-icon/512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
