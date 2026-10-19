@@ -39,6 +39,11 @@ export function ResearchDirectory({locale='en',search=''}) {
         <div className={styles.metadata}><span>{item.acronym||item.key}</span><span>{item.itemCount ? copy.items+': '+item.itemCount:''}</span><span>{item.area||item.category}</span></div>
         {item.measuredDomains&&<p><b>{copy.scales}: </b>{item.measuredDomains}</p>}
         {item.targetPopulation&&<p><b>{copy.population}: </b>{item.targetPopulation}</p>}
+        {item.evidenceNote&&<details className={styles.evidenceDetails}>
+          <summary>{copy.evidence}</summary>
+          <p>{item.evidenceNote}</p>
+          {item.safetyNote&&<p>{item.safetyNote}</p>}
+        </details>}
         <p className={styles.caution}>{copy.evidence}. {copy.rights}.</p>
         {item.sourceUrl&&<a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className={styles.external}>{copy.source} ↗</a>}
       </article>)}
