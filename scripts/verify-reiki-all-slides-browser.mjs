@@ -308,7 +308,7 @@ async function verifyShortViewport(page,locale) {
     // Welcome and introductory photo/video slides should fit by design.
     // Dense translated answers or timer+reflection may scroll naturally:
     // never make the type tiny or hide the five course stage names to force fit.
-    const allowedExtra = id === "flight-done" ? 3 : id === "welcome-02" ? 110 : id === "flight-03" ? 125 : 35;
+    const allowedExtra = id === "flight-done" ? 3 : id === "welcome-02" ? 110 : 35;
     assert.ok(dimensions.used <= dimensions.space + allowedExtra,
       locale+" "+id+" must not require excessive inner scrolling on 375×625: "+JSON.stringify(dimensions));
     assert.ok(dimensions.justify.includes("center"),
@@ -353,7 +353,7 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-02"); // video poster remains visible without autoplay
   await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-05");
+  await expectFits("flight-03"); // one-minute light and warmth practice on slide 3
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-voices");
   await page.locator("button[data-energywork-next]").click();
@@ -361,7 +361,7 @@ async function verifyShortViewport(page,locale) {
   await page.locator('textarea[id="answer-flight-04"]').fill(locale==="ru"
     ? "Я заметил спокойное состояние и тёплый свет." : "I felt a quiet, peaceful moment.");
   await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-03");
+  await expectFits("flight-05"); // learning reflection moved to slide 6
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
