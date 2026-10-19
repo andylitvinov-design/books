@@ -10,6 +10,7 @@ const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const sid='AC'+'a'.repeat(32), service='MG'+'b'.repeat(32), token='c'.repeat(32)
 const env={VERCEL_ENV:'production',HH_CRM_SMS_ENABLED:'true',
  HH_CRM_SMS_PRODUCTION_APPROVED:'true',HH_CRM_SMS_SENDER_VERIFIED:'true',
+ HH_CRM_SMS_CONTACT_DETAILS_VERIFIED:'true',
  HH_CRM_SMS_PILOT_APPROVED:'true',HH_CRM_SMS_TEST_PHONE:'+14165550123',
  HH_CRM_TWILIO_ACCOUNT_SID:sid,HH_CRM_TWILIO_MESSAGING_SERVICE_SID:service,
  HH_CRM_TWILIO_AUTH_TOKEN:token}
@@ -17,7 +18,7 @@ const env={VERCEL_ENV:'production',HH_CRM_SMS_ENABLED:'true',
 test('SMS disabled by default; credential and explicit pilot gates',()=>{
  assert.equal(getSmsConfig({}).enabled,false)
  for(const key of ['HH_CRM_SMS_ENABLED','HH_CRM_SMS_PRODUCTION_APPROVED',
- 'HH_CRM_SMS_SENDER_VERIFIED','HH_CRM_TWILIO_ACCOUNT_SID',
+ 'HH_CRM_SMS_SENDER_VERIFIED','HH_CRM_SMS_CONTACT_DETAILS_VERIFIED','HH_CRM_TWILIO_ACCOUNT_SID',
  'HH_CRM_TWILIO_AUTH_TOKEN','HH_CRM_TWILIO_MESSAGING_SERVICE_SID',
  'HH_CRM_SMS_PILOT_APPROVED','HH_CRM_SMS_TEST_PHONE']){
   assert.equal(getSmsConfig({...env,[key]:''}).enabled,false,key)
@@ -40,6 +41,7 @@ test('SMS identifies sender, includes STOP and rejects private/oversized content
  const hello=validateSmsBody({body:'Hello, which day works for a call?'})
  assert.match(hello.formatted,/^Holistic House: /)
  assert.match(hello.formatted,/Reply STOP to unsubscribe\.$/)
+ assert.match(hello.formatted,/holistichouse\.vercel\.app/)
  assert.ok(hello.segments>=1&&hello.segments<=4)
  assert.throws(()=>validateSmsBody({body:'My diagnosis is here'}),/PRIVATE_CONTENT_BLOCKED/)
  assert.throws(()=>validateSmsBody({body:'See https://holistichouse.vercel.app/en/client/session/secret#token1234567890'}),/PRIVATE_CONTENT_BLOCKED/)
@@ -78,7 +80,7 @@ test('Twilio webhook validates HMAC on all form params, URL and SID',()=>{
   MessagingServiceSid:service,To:'+14165550123',ErrorCode:'',
  })
  const canonical=SMS_WEBHOOK_URL+[...params.entries()]
-  .sort(([a],[b])=>a.localeCompare(b,'en')).map(([a,b])=>a+b).join('')
+  .sort(([a],[b])=>a<b?-1:a>b?1:0).map(([a,b])=>a+b).join('')
  const sig=createHmac('sha1',token).update(canonical).digest('base64')
  const headers=new Headers({'x-twilio-signature':sig})
  assert.equal(verifyTwilioWebhook(params.toString(),headers,token).get('MessageStatus'),'delivered')
@@ -134,6 +136,7 @@ test('SQL schema isolates owner records, STOP and provider callbacks',()=>{
  assert.match(schema,/crm_sms_is_opted_out/)
  assert.match(schema,/crm_sms_record_stop/)
  assert.match(schema,/crm_sms_reconcile/)
+ assert.match(schema,/foreign key\(consent_event_id,owner_id,contact_id\)/)
  assert.match(schema,/crm_sms_status_receipt/)
  assert.doesNotMatch(schema,/grant.*(select|insert|update).*authenticated/i)
 })
