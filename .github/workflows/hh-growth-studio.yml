@@ -1,0 +1,36 @@
+name: HH Growth Studio editorial checks
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'app/admin/growth-studio/**'
+      - 'components/growth-studio.*'
+      - 'components/prescription-admin-header.jsx'
+      - 'components/practitioner-cabinet.jsx'
+      - 'components/app/practice-workspace.jsx'
+      - 'lib/growth-studio/**'
+      - 'tests/growth-studio-editorial.test.mjs'
+      - '.github/workflows/hh-growth-studio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  editorial-security:
+    name: Owner editorial and storage safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JS modules
+        run: |
+          node --check lib/growth-studio/model.mjs
+          node --check lib/growth-studio/store.js
+          node --check app/admin/growth-studio/actions.js
+      - name: Check editorial transitions, URL and Redis guards
+        run: node --test tests/growth-studio-editorial.test.mjs
