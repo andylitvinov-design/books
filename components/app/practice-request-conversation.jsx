@@ -41,7 +41,7 @@ const ordered=(older=[],fresh=[])=>{
   for(const message of fresh)map.set(message.id,message)
   return [...map.values()].sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id))
 }
-function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null}){
+function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null,onSaved}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang]
   const [view,setView]=useState(null),[error,setError]=useState('')
   const [busy,setBusy]=useState(false),[paging,setPaging]=useState(false)
@@ -106,6 +106,8 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       if(requestRef.current!==id)return
       await reload()
       pending.current=null;setText('');setNotice(visibility==='practitioner_note'?t.noteSaved:t.saved)
+      // Parent master directory refresh is user-action-only; never auto-poll all clients.
+      onSaved?.()
     }catch(err){
       if(requestRef.current===id){
         setNotice(err.message==='PRIVATE_CONTENT_BLOCKED'?t.private:

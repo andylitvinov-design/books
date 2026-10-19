@@ -162,3 +162,50 @@ test('client directory opens with the latest five and reveals the next five on d
   assert.match(css,/\.withProfile\{grid-template-columns/)
   assert.match(css,/\.sidebar\{max-height:none;overflow:visible\}/)
 })
+
+test('a returning client with a fresh reply rises above clients with newer original enquiries',()=>{
+  const earlier='2026-10-01T10:00:00Z'
+  const later='2026-10-18T10:00:00Z'
+  const lastReply='2026-10-19T11:00:00Z'
+  const clients=groupVerifiedPractitionerClients([
+    {id:'old',clientKey:'a'.repeat(64),contact:{displayName:'Returning client'},
+      status:'contacted',createdAt:earlier,lastConversationAt:lastReply,needsReply:true},
+    {id:'new',clientKey:'b'.repeat(64),contact:{displayName:'New client'},
+      status:'requested',createdAt:later,lastConversationAt:later,needsReply:true},
+  ],'en')
+  assert.equal(clients.length,2)
+  assert.equal(clients[0].name,'Returning client')
+  assert.equal(clients[0].awaiting,1)
+  assert.equal(clients[1].name,'New client')
+})
+test('private practitioner note does not reorder a client or falsely create a reply task',()=>{
+  const groups=groupVerifiedPractitionerClients([
+    {id:'quiet',clientKey:'a'.repeat(64),contact:'Quiet',
+      createdAt:'2026-10-01T10:00:00Z',lastConversationAt:'2026-10-01T10:00:00Z',
+      messageCount:3,needsReply:false},
+    {id:'active',clientKey:'b'.repeat(64),contact:'Active',
+      createdAt:'2026-10-17T10:00:00Z',lastConversationAt:'2026-10-18T11:00:00Z',
+      needsReply:true},
+  ])
+  assert.equal(groups[0].name,'Active')
+  assert.equal(groups[0].awaiting,1)
+  assert.equal(groups[1].awaiting,0)
+})
+test('master reply queue is owner-scoped, ignores private notes, and stays opt-in refresh-only',()=>{
+  const repo=src('lib/practitioners/repository.js')
+  const ui=src('components/app/practitioner-client-profiles.jsx')
+  const master=src('components/app/practice-workspace.jsx')
+  const chat=src('components/app/practice-request-conversation.jsx')
+  assert.match(repo,/select distinct on \(request_id\) request_id,author_role,created_at/)
+  assert.match(repo,/where request_id=any\(\$1::uuid\[\]\) and visibility='participants'/)
+  assert.match(repo,/lastShared\?\.author_role==='client'/)
+  assert.match(repo,/needsReply:stillOpen/)
+  assert.match(repo,/lastConversationAt:iso\(lastShared\?\.created_at\)/)
+  assert.match(ui,/awaitingCount=groups\.filter/)
+  assert.match(ui,/\['reply',t\.awaiting\]/)
+  assert.match(ui,/group\.awaiting>0/)
+  assert.match(ui,/onRefresh&&<button/)
+  assert.match(master,/onRefresh=\{\(\)=>load\(\)\}/)
+  assert.match(chat,/onSaved\?\.\(\)/)
+  assert.doesNotMatch(ui,/setInterval\(/)
+})
