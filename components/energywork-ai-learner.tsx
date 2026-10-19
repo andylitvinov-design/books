@@ -265,16 +265,16 @@ function joinMeditationFeedback(rating: string, note: string) {
 
 const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
   en: {
-    beginner: "Welcome! The course introduces the Reiki traditions without assuming previous training.",
-    energywork: "Your existing practice may be a useful reference point. We'll distinguish Reiki traditions as we go.",
-    "reiki-1-2": "You can revisit the foundations and compare the three Reiki traditions at your own pace.",
-    master: "Explore this as a comparison of three traditions, noticing what is familiar and what is new.",
+    beginner: "Welcome! No Reiki experience is needed.",
+    energywork: "Use your experience to compare the three Reiki traditions.",
+    "reiki-1-2": "Review the foundations at your own pace.",
+    master: "Compare the three traditions at your own pace.",
   },
   ru: {
-    beginner: "Добро пожаловать! Курс знакомит с направлениями Рейки без требования предварительной подготовки.",
-    energywork: "Ваш опыт может стать опорой. По ходу курса мы будем пояснять особенности направлений Рейки.",
-    "reiki-1-2": "Можно повторить основы и в своём темпе сравнить три направления Рейки.",
-    master: "Рассматривайте курс как знакомство с тремя традициями: отмечайте знакомое и новое.",
+    beginner: "Добро пожаловать! Опыт Рейки не требуется.",
+    energywork: "Ваш опыт поможет сравнить три традиции Рейки.",
+    "reiki-1-2": "Повторите основы в удобном темпе.",
+    master: "Сравните три традиции Рейки в своём темпе.",
   },
 };
 
