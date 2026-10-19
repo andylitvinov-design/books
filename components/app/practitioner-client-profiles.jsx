@@ -15,7 +15,7 @@ const COPY={
     filtered:'No clients match the filters.',noNotes:'No initial text provided.',
     privacy:'Client profile shows only information the person shared with you through your services. Private tests, other practitioners’ requests and personal medical records are not available.',
     noPortal:'Reply inside Holistic House or use the contact details the client shared. Telegram/WhatsApp history is not connected.',
-    historySummary:'Original request and secure in-app replies'},
+    historySummary:'Original request and secure in-app replies',messageCount:'Conversation entries'},
   ru:{title:'Мои клиенты',intro:'Только люди, которые обращались к вам за вашими услугами. Обращения объединяются по подтверждённому аккаунту, а не по совпадению имён или телефонов.',
     count:'Клиентов',requests:'Обращений',pending:'Требуют внимания',latest:'Последнее обращение',
     search:'Поиск клиентов',all:'Все',open:'Требуют внимания',closed:'Закрытые',
@@ -26,7 +26,7 @@ const COPY={
     filtered:'По выбранному фильтру клиентов нет.',noNotes:'Первоначальное сообщение не указано.',
     privacy:'Мастер видит только сведения, которыми клиент поделился при обращении к нему. Чужие заявки, личные тесты и медицинские записи недоступны.',
     noPortal:'Можно ответить внутри Holistic House или по указанному контакту. История Telegram/WhatsApp пока не подключена.',
-    historySummary:'Первое обращение и ответы внутри сайта'},
+    historySummary:'Первое обращение и ответы внутри сайта',messageCount:'Записей переписки'},
   es:{title:'Mis clientes',intro:'Solo personas que solicitaron tus servicios. Las solicitudes se agrupan por cuenta verificada, no por nombres.',
     count:'Clientes',requests:'Solicitudes',pending:'Requieren atención',latest:'Última solicitud',
     search:'Buscar clientes',all:'Todos',open:'Pendientes',closed:'Cerrados',
@@ -37,7 +37,7 @@ const COPY={
     filtered:'No hay coincidencias.',noNotes:'Sin mensaje inicial.',
     privacy:'Solo los datos compartidos contigo en las solicitudes. No se muestran pruebas privadas ni expedientes médicos.',
     noPortal:'Puedes responder dentro de Holistic House. El historial de Telegram/WhatsApp no está conectado.',
-    historySummary:'Solicitud original y respuestas privadas'},
+    historySummary:'Solicitud original y respuestas privadas',messageCount:'Mensajes guardados'},
 }
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
@@ -105,7 +105,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                     request.status==='requested'?t.requested:
                     request.status==='contacted'?t.contacted:
                     request.status==='closed'?t.closedStatus:t.cancelled
-                  }</small>
+                  }{request.messageCount>0?' · '+t.messageCount+': '+request.messageCount:''}</small>
                 </div>
                 {request.message&&<p className={styles.original}>{request.message}</p>}
                 {['requested','contacted'].includes(request.status)&&<div className={styles.actions}>
