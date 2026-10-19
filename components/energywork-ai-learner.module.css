@@ -2742,9 +2742,34 @@
   .page[data-course-portrait="v3"] .welcomeSlide .welcomeRequirement {
     display: none;
   }
+  .page[data-course-portrait="v3"] .welcomeSlide .content > .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0;
+    line-height: 1.17;
+  }
   .page[data-course-portrait="v3"] .welcomeSlide .welcomeReward {
-    margin-top: 8px;
-    padding: 10px 12px;
+    margin-top: 6px;
+    padding: 9px 11px;
+  }
+  /* Three course systems share one row instead of two tall rows. Labels can
+     wrap within their pill in RU/EN without truncation. */
+  .page[data-course-portrait="v3"] .welcomeSlide .welcomeSystems {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    margin: 7px 0 0;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .welcomeSystems li {
+    min-width: 0;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    font-size: 10.5px;
+    line-height: 1.12;
+    padding: 4px 5px;
   }
   .page[data-course-portrait="v3"] .welcomeSlide .welcomeSystems {
     margin: 7px 0 0;
