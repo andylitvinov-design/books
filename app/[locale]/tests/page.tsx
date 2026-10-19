@@ -26,6 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     openGraph: { type: "website", siteName: "Holistic House", title: t.title, description: t.description,
       url: "/" + locale + "/tests", images: [{ url: "/images/holistic-house/course-start-heron.webp", alt: "Free wellbeing tests — Holistic House" }] },
+    twitter: { card: "summary_large_image", title: t.title, description: t.description, images: ["/images/holistic-house/course-start-heron.webp"] },
   };
 }
 
