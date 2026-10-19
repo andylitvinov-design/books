@@ -219,6 +219,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   function changeReportLocale(nextLocale) {
     const next = nextLocale === 'ru' ? 'ru' : 'en'
     if (next === reportLocale) return
+    if (consultation && next !== consultation.languagePreference && !window.confirm(uiLocale === 'ru'
+      ? 'Изменить язык сохранённого отчёта? Заголовки и приложения переключатся, но ваш текст не будет переведён.'
+      : 'Change the saved report language? Headings and appendices will switch, but your text will not be translated.')) return
     if (!consultation) {
       const previousTemplate = getOwnerReportTextTemplate(reportLocale)
       const nextTemplate = getOwnerReportTextTemplate(next)
@@ -333,6 +336,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   }}>
     <input type="hidden" name="consultationId" value={consultation?.id ?? ''} />
     <input type="hidden" name="recommendationRevision" value={consultation?.updatedAt ?? ''} />
+    <input type="hidden" name="languageChangeConfirmed" value={reportLocale !== initialReportLocale ? 'yes' : 'no'} />
     <input type="hidden" name="paymentRevision" value={payment?.updatedAt ?? ''} />
     <input type="hidden" name="requestId" value={requestId ?? ''} />
     <input type="hidden" name="itemsJson" value={JSON.stringify(serializeConsultationRows(items))} />
