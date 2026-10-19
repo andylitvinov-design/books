@@ -151,3 +151,11 @@
 .libraryItem button{min-height:34px;border:1px solid #d6e6e1;background:#eef7f3;color:#13656b;padding:5px 10px;border-radius:8px;font-size:12px}
 @media(max-width:900px){.libraryGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:580px){.library{padding:10px}.libraryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.libraryItem img{height:110px}.bulkIntro h3{font-size:18px}.bulkChecks label{font-size:11px;padding:6px}}
+
+.connectionReady,.connectionUnavailable{display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:10px 12px;border-radius:11px;font-size:12px;line-height:1.45}
+.connectionReady{background:#ebf8f4;border:1px solid #c6e9db;color:#116555}
+.connectionUnavailable{background:#fff6e9;border:1px solid #f1e0c1;color:#8b6531}
+.connectionReady svg,.connectionUnavailable svg{flex:none}
+.status[data-state="published"]{background:#dcf5e7;color:#12644c}
+.status[data-state="sending"],.status[data-state="delivery_unknown"]{background:#fff0db;color:#855119}
+.deliveryLink{display:inline-flex;align-items:center;min-height:34px;padding:7px 10px;border-radius:8px;background:#edfaf3;color:#197154;font-size:12px;font-weight:650}
