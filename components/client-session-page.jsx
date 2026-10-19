@@ -125,6 +125,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   // Retain existing introductory videos; only explicitly selected videos
   // and approved study links appear in the final Materials section.
   const videoMedia=media.filter(item=>item.kind==='video'&&!['meditation','additional'].includes(item.role))
+  const hasVideoWelcome=videoMedia.some(item=>!item.role||item.role==='personal')
   const materialsVideos=media.filter(item=>item.kind==='video'&&['meditation','additional'].includes(item.role))
   const personalAudio=media.filter(item=>item.kind==='audio'&&(!item.role||item.role==='personal'))
   const photos=media.filter(item=>item.kind==='image')
@@ -172,8 +173,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         aria-label={ru?'Видео к вашей консультации':'Videos for your consultation'}>
         <header className={styles.sectionHeader}>
           <span className={styles.sectionIcon}><Video size={21}/></span>
-          <div><span className={styles.sectionKicker}>{videoMedia.length>0?(ru?'ВИДЕОПРИВЕТСТВИЕ':'VIDEO WELCOME'):(ru?'ВИДЕО К КОНСУЛЬТАЦИИ':'CONSULTATION VIDEOS')}</span>
-            <h2>{videoMedia.length>0?(ru?'Видеоприветствие':'Video welcome'):(ru?'Видео для вас':'Videos for you')}</h2></div>
+          <div><span className={styles.sectionKicker}>{hasVideoWelcome?(ru?'ВИДЕОПРИВЕТСТВИЕ':'VIDEO WELCOME'):(ru?'ВИДЕО К КОНСУЛЬТАЦИИ':'CONSULTATION VIDEOS')}</span>
+            <h2>{hasVideoWelcome?(ru?'Видеоприветствие':'Video welcome'):(ru?'Видео для вас':'Videos for you')}</h2></div>
         </header>
         {videoMedia.length>0&&<div className={styles.mediaList}>
           {videoMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
