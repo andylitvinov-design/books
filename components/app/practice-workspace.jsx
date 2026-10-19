@@ -488,6 +488,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <PractitionerClientProfiles items={requests} services={services}
             locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
+            onRefresh={()=>load()}
             onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
         {activePanel==='crm'&&isOwner&&accountId&&
