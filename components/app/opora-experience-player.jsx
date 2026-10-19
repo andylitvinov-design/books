@@ -47,7 +47,7 @@ const WORDS={
     keepText:'Выберите одно напоминание на сегодня.',
     plan:'Хочу запомнить этот вариант',noPlan:'Пока без плана',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
-    audioTitle:'Минута спокойствия',audioKicker:'МЯГКОЕ ЗАВЕРШЕНИЕ',audioNext:'Послушать волны',
+    audioTitle:'Две минуты спокойствия',audioKicker:'МЯГКОЕ ЗАВЕРШЕНИЕ',audioNext:'Послушать волны',
     attempted:'Вы попробовали упражнение',readOnly:'Сегодня только ознакомление — выполнение не отмечено',
     takeaway:'Ваш возможный следующий шаг',
     feedback:'Ваше наблюдение',noResult:'Можно закончить без оценок самочувствия.',
@@ -104,7 +104,7 @@ const WORDS={
     keepText:'Choose one gentle reminder for today.',
     plan:'Keep this reminder',noPlan:'No plan today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
-    audioTitle:'One quiet minute',audioKicker:'A GENTLE ENDING',audioNext:'Relax with waves',
+    audioTitle:'Two quiet minutes',audioKicker:'A GENTLE ENDING',audioNext:'Relax with waves',
     attempted:'You reported trying the exercise',readOnly:'Explored the idea only — no attempt recorded',
     takeaway:'Your possible next step',feedback:'Your observation',noResult:'You can finish without rating yourself.',
     noSave:'Saving was not confirmed. Check the connection and try again.',
@@ -157,7 +157,7 @@ WORDS.es = {
   quoteText:'¿Te resuena esta idea?',agree:'Me resuena',unsure:'Aún no sé',disagree:'No estoy de acuerdo',
   keepText:'Elige un recordatorio amable para hoy.',plan:'Recordar esta idea',noPlan:'Hoy sin plan',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
-  audioTitle:'Un minuto tranquilo',audioKicker:'UN FINAL SUAVE',audioNext:'Escuchar las olas',
+  audioTitle:'Dos minutos de calma',audioKicker:'UN FINAL SUAVE',audioNext:'Escuchar las olas',
   attempted:'Has indicado que probaste la práctica',readOnly:'Solo exploraste la idea; no registraste un intento',
   takeaway:'Tu recordatorio',feedback:'Tu sensación',noResult:'Puedes terminar sin evaluarte.',
   noSave:'No se confirmó el guardado. Revisa la conexión e inténtalo otra vez.',
@@ -620,8 +620,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {outroOpen&&<OporaOceanOutro locale={lang} paused={safety}/>}
           {outroOpen&&<button type="button" className={styles.linkHint} disabled={locked}
             onClick={onFinish||onClose}>{t.finish}</button>}
-          {moment==='receipt'&&<button type="button" className={styles.linkHint} disabled={locked}
-            onClick={()=>setOutroOpen(true)}>{t.audioNext}</button>}
           {guidanceForMoment&&<div className={styles.guidanceGroup} data-gentle-guidance={moment}>
             <div className={styles.guidanceRow}>
               <img className={styles.guidanceAnimal} src="/images/holistic-house/gentle-owl.svg"
@@ -644,8 +642,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         </button>:step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={inPreview?advancePreview:receipt?openPreview:step===scenes.length-1?submit:next}>
-          {inPreview?(previewIndex===previewScreens.length-1?t.finish:t.next):receipt?t.seeProgram:step===scenes.length-1?(saving?t.saving:t.save):t.next}
+          onClick={inPreview?advancePreview:outroOpen?openPreview:receipt?()=>setOutroOpen(true):step===scenes.length-1?submit:next}>
+          {inPreview?(previewIndex===previewScreens.length-1?t.finish:t.next):outroOpen?t.seeProgram:receipt?t.audioNext:step===scenes.length-1?(saving?t.saving:t.save):t.next}
           {(inPreview&&previewIndex===previewScreens.length-1)||(!receipt&&step===scenes.length-1)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
