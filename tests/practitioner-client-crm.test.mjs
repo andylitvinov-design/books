@@ -45,7 +45,7 @@ test('master client grouping handles unexpected contact types without disclosing
   assert.match(g[0].contact,/1416/)
 })
 test('new participant message table requires FORCE RLS and denies direct public/API privileges',()=>{
-  const sql=src('supabase/migrations/20261019115500_hh_practitioner_request_messages_20261019.sql')
+  const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
   assert.match(sql,/ALTER TABLE app\.practitioner_request_messages FORCE ROW LEVEL SECURITY/)
   assert.match(sql,/REVOKE ALL ON app\.practitioner_request_messages FROM PUBLIC,anon,authenticated/)
   assert.match(sql,/GRANT SELECT,INSERT ON app\.practitioner_request_messages TO hh_app_backend/)
@@ -56,7 +56,7 @@ test('new participant message table requires FORCE RLS and denies direct public/
   assert.match(sql,/WITH CHECK/)
 })
 test('only requester or exactly assigned active practitioner can see participant replies',()=>{
-  const sql=src('supabase/migrations/20261019115500_hh_practitioner_request_messages_20261019.sql')
+  const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
   assert.match(sql,/r\.account_id=\(SELECT auth\.uid\(\)\)/)
   assert.match(sql,/p\.trusted_auth_user_id=\(SELECT auth\.uid\(\)\)/)
   assert.match(sql,/p\.id=r\.recipient_practitioner_id/)
@@ -65,7 +65,7 @@ test('only requester or exactly assigned active practitioner can see participant
   assert.match(sql,/practitioner_request_messages\.visibility='participants'/)
 })
 test('master-only notes remain invisible to client even when they belong to the same request',()=>{
-  const sql=src('supabase/migrations/20261019115500_hh_practitioner_request_messages_20261019.sql')
+  const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
   assert.match(sql,/visibility IN\('participants','practitioner_note'\)/)
   assert.match(sql,/visibility='practitioner_note'/)
   assert.match(sql,/author_role='practitioner'/)
@@ -93,7 +93,7 @@ test('message send uses real server session, exact request participant and immut
   assert.match(route,/onlyKeys\(body,\['requestId','operationId','text','visibility'\]\)/)
 })
 test('only active participant correspondence, not closed requests, may create shared replies',()=>{
-  const sql=src('supabase/migrations/20261019115500_hh_practitioner_request_messages_20261019.sql')
+  const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
   assert.match(sql,/r\.status IN \('requested','contacted'\)/)
   const store=src('lib/practitioners/client-messages.js')
   assert.match(store,/if\(visibility==='participants'&&!scope\.canReply\)/)
