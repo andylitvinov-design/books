@@ -6,6 +6,7 @@ import {isPublicLocale} from '@/data/academy/catalog'
 import {metadataBaseFor} from '@/data/site-metadata'
 import {getAppConfig} from '@/lib/app/config'
 import {createArticleRepository} from '@/lib/practitioners/article-repository'
+import {articleBlocks,inlineArticleSegments} from '@/lib/practitioners/article-format'
 import styles from '@/components/practitioner-articles-public.module.css'
 export const dynamic='force-dynamic';export const revalidate=0;
 type Props={params:Promise<{locale:string;slug:string}>}
@@ -19,16 +20,16 @@ export async function generateMetadata({params}:Props):Promise<Metadata>{
  if(!article)return{title:'Not found',robots:{index:false,follow:false}}
  return {metadataBase:metadataBaseFor(),title:article.published.title+' | Holistic House',description:article.published.excerpt,alternates:{canonical:'/'+locale+'/articles/'+slug},openGraph:{type:'article',title:article.published.title,description:article.published.excerpt}}
 }
-// Keep authored article formatting safe: React escapes text; no raw HTML is inserted.
+// Renderer creates React text/strong elements only; article text is always escaped.
 function inlineArticleText(value:string){
- return value.split(/(\*\*[^*\n]+\*\*)/g).map((part,i)=>
-   part.startsWith('**')&&part.endsWith('**')?<strong key={i}>{part.slice(2,-2)}</strong>:part)
+ return inlineArticleSegments(value).map((segment,i)=>
+  segment.strong?<strong key={i}>{segment.text}</strong>:segment.text)
 }
 export default async function ArticleDetail({params}:Props){
  const {locale,slug}=await params;if(!isPublicLocale(locale))notFound()
  const article=await load(locale,slug);if(!article)notFound()
  const ru=locale==='ru',es=locale==='es',published=article.published
- const sections=String(published.body||'').split(/\n{2,}/).filter(Boolean)
+ const blocks=articleBlocks(published.body||'')
  return <main className="services-shell services-shell--studio" lang={locale}><PublicSiteHeader locale={locale}/>
   <article className={styles.article}>
    <Link href={'/'+locale+'/articles'}>← {ru?'Все статьи':es?'Artículos':'All articles'}</Link>
@@ -37,7 +38,13 @@ export default async function ArticleDetail({params}:Props){
    <p className={styles.lead}>{published.excerpt}</p>
    <p className={styles.meta}><Link href={'/'+locale+'/masters/'+article.practitionerSlug}>{article.practitionerName}</Link> · {article.publishedAt?new Date(article.publishedAt).toLocaleDateString(locale):''}</p>
    {published.coverPath?<img className={styles.heroCover} src={published.coverPath} alt="" loading="lazy"/>:null}
-   <div className={styles.body}>{sections.map((block,i)=>block.startsWith('## ')?<h2 key={i}>{block.slice(3)}</h2>:block.trim().startsWith('- ')?<ul key={i}>{block.split(/\n/).filter(Boolean).map((line,j)=><li key={j}>{inlineArticleText(line.replace(/^[-*]\s+/,''))}</li>)}</ul>:<p key={i}>{inlineArticleText(block)}</p>)}</div>
+   <div className={styles.body}>{blocks.map((block,i)=>
+    block.type==='h2'?<h2 key={i}>{inlineArticleText(block.text)}</h2>:
+    block.type==='h3'?<h3 key={i}>{inlineArticleText(block.text)}</h3>:
+    block.type==='ul'?<ul key={i}>{block.items.map((item,j)=><li key={j}>{inlineArticleText(item)}</li>)}</ul>:
+    block.type==='ol'?<ol key={i}>{block.items.map((item,j)=><li key={j}>{inlineArticleText(item)}</li>)}</ol>:
+    <p key={i} style={{whiteSpace:'pre-line'}}>{inlineArticleText(block.text)}</p>
+   )}</div>
    {(published.sourceUrls||[]).length>0&&<aside className={styles.sources}><h2>{ru?'Источники':es?'Fuentes':'Sources'}</h2><ul>{published.sourceUrls.map((url:string,i:number)=><li key={i}><a href={url} rel="noopener noreferrer nofollow" target="_blank">{new URL(url).hostname}</a></li>)}</ul></aside>}
    {article.services?.length>0&&<aside className={styles.related}><h2>{ru?'Услуги автора':es?'Servicios del autor':'Work with this practitioner'}</h2><div className={styles.grid}>
     {article.services.map((service:{id:string;slug:string;title:string;pricingMode:string;price:number|null;currency:string})=><section key={service.id} className={styles.card}>
