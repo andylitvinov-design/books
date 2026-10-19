@@ -50,16 +50,17 @@ test('Enrollment lead only after explicit teacher consent; learner can keep priv
   assert.doesNotMatch(leads,/sendMail|sendEmail|publish|marketingConsent|newsletter/i)
 })
 
-test('After five lessons, the student explicitly submits a motivation letter as lead 2',()=>{
+test('After five lessons, the student explicitly submits an initiation-choice application as lead 2',()=>{
   assert.match(curriculum,/id: "end-01"/)
-  assert.match(curriculum,/Why would I like to receive a personal initiation/)
-  assert.match(curriculum,/Почему я хочу пройти личную инициацию/)
+  assert.match(curriculum,/Choose your personal Reiki initiation/)
+  assert.match(curriculum,/Выберите личную Рейки-инициацию/)
   assert.match(schema,/ENERGYWORK_REPORT_IDS = Object\.freeze\(\['flight-04','tan-04','kun-04','ygg-04','end-01'\]\)/)
   assert.match(repo,/body\.action === 'apply'/)
   assert.match(repo,/body\.confirmed !== true/)
   assert.match(repo,/energyworkInitiationReady\(answers\)/)
   assert.match(leads,/progress\.status !== 'completed'/)
-  assert.match(leads,/reason\.length < 20/)
+  assert.match(leads,/reikiInitiationRequestValid\(reason\)/)
+  assert.match(leads,/formatReikiInitiationRequest\(reason\)/)
   assert.match(leads,/findLead\(db, actor\.id, 'application'/)
   assert.match(leads,/reiki-initiation-application-v1/)
   assert.match(learner,/applicationConsented/)

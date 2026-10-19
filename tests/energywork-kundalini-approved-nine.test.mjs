@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { writeReikiInitiationRequest } from '../data/academy/reiki-initiation-request.js'
 import {
   ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS,
   ENERGYWORK_LESSON_ANSWER_IDS,
@@ -34,8 +35,8 @@ const previousIds = ['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-
 test('Lesson three contains exactly nine approved questions in the requested order', () => {
   assert.equal(ENERGYWORK_VERSION, '2026-10-19.p9')
   assert.deepEqual(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ids)
-  assert.deepEqual(energyworkLessonRanges().map(({ count }) => count), [7,15,16,22,8])
-  assert.equal(energyworkSequence().length, 70)
+  assert.deepEqual(energyworkLessonRanges().map(({ count }) => count), [7,14,16,22,8])
+  assert.equal(energyworkSequence().length, 69)
   for (let i = 0; i < original.length; i++) {
     const start = curriculum.indexOf('id: "' + ids[i] + '"')
     const end = curriculum.indexOf('id: "' + (ids[i + 1] || 'kun-done') + '"', start)
@@ -71,6 +72,7 @@ test('Pre-p7 stored responses are archived under their original IDs, not relabel
   assert.match(server,/ENERGYWORK_P5_VERSION \|\| row\.course_version === ENERGYWORK_P6_VERSION/)
   const completed = Object.fromEntries(ENERGYWORK_LESSON_ANSWER_IDS.map(id => [id, 'done']))
   for (const id of ['flight-04','tan-04','kun-04','ygg-04','end-01']) completed[id] = 'My experience'
+  completed['end-01'] = writeReikiInitiationRequest({firstName:'Elena',lastName:'Petrova',location:'Toronto, Canada',timezone:'America/Toronto',preferredTime:'Evenings after 7',freeInitiation:'tantra',donationInitiations:['yggdrasil'],motivation:'I want to learn Reiki with intention and receive a personal initiation.'})
   assert.equal(energyworkInitiationReady(completed), true)
   delete completed[ids[8]]
   assert.equal(energyworkInitiationReady(completed), false)

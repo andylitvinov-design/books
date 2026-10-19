@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { writeReikiInitiationRequest, reikiInitiationRequestValid } from '../data/academy/reiki-initiation-request.js'
 import {
   ENERGYWORK_KEY, ENERGYWORK_VERSION, ENERGYWORK_LEGACY_VERSION, ENERGYWORK_PREVIOUS_VERSION, ENERGYWORK_P2_VERSION, ENERGYWORK_P3_VERSION, ENERGYWORK_P4_VERSION,
   ENERGYWORK_COMMON, ENERGYWORK_BRANCH, ENERGYWORK_FINISH,
@@ -79,6 +80,13 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
   assert.equal(energyworkInitiationReady(null),false)
   assert.equal(energyworkInitiationReady({}),false)
   const complete = Object.fromEntries([...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS].map(id=>[id,'My own note']))
+  complete['end-01'] = writeReikiInitiationRequest({
+    firstName: 'Maria', lastName: 'Ivanova', location: 'Toronto, Canada',
+    timezone: 'America/Toronto', preferredTime: 'Weekdays after 19:00',
+    freeInitiation: 'tantra', donationInitiations: ['kundalini'],
+    motivation: 'I would like to learn how to deepen my personal Reiki practice.',
+  })
+  assert.equal(reikiInitiationRequestValid(complete['end-01']),true)
   assert.equal(energyworkInitiationReady(complete),true)
   for(const id of [...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS]){
     assert.equal(energyworkInitiationReady({...complete,[id]:'  '}),false,'Must not accept blank '+id)

@@ -20,6 +20,7 @@ import {
   energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
 } from "@/data/academy/energywork-first-lesson";
 import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
+import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest } from "@/data/academy/reiki-initiation-request.js";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -178,12 +179,12 @@ const copy = {
     teacherShareAction: "Create my learning lead",
     teacherShareDone: "Andrey can see your course progress and responses in his private CRM.",
     teacherShareHint: "Only you can decide whether your personal course journal is shared with Andrey.",
-    initiationLetterHeading: "Request personal initiation with Andrey",
-    initiationLetterHint: "Your letter from the final lesson and your course materials will be sent securely to Andrey's CRM as a second lead.",
-    initiationConfirm: "I agree to send my initiation letter and course answers to Andrey for personal review.",
+    initiationLetterHeading: "Your personal Reiki initiation request",
+    initiationLetterHint: "Your selected free initiation, optional donation-based choices, contact details and motivation will be shared privately with Andrey only when you confirm below.",
+    initiationConfirm: "I agree to send my initiation choices, name, city, preferred chat time, motivation and course answers to Andrey's private CRM.",
     initiationSend: "Send my initiation request",
-    initiationSent: "Request received in Andrey's private CRM. Your application is awaiting a personal response.",
-    initiationTooShort: "Write at least 20 characters in your initiation letter on the previous step.",
+    initiationSent: "Your request is in Andrey's private CRM. He will review it and arrange a suitable time with you in chat.",
+    initiationTooShort: "Complete your personal initiation form on the previous lesson slide.",
     initiationShareNeeded: "Enable teacher sharing to send your application.",
     initiationNotReady: "Complete your lesson reports and answers to request personal initiation.",
     enableSave: "Start & save my course", signIn: "Sign in with Google to save",
@@ -311,12 +312,12 @@ const copy = {
     teacherShareAction: "Создать мой учебный лид",
     teacherShareDone: "Андрей видит прогресс и ваши ответы в закрытой CRM.",
     teacherShareHint: "Только вы решаете, передавать ли Андрею материалы вашего курса.",
-    initiationLetterHeading: "Запрос на личную инициацию у Андрея",
-    initiationLetterHint: "Ваше письмо из последнего урока и ответы сохранятся у Андрея в CRM как второй лид.",
-    initiationConfirm: "Я согласен(на) отправить Андрею своё письмо и ответы курса для личного рассмотрения.",
+    initiationLetterHeading: "Ваша заявка на личную Рейки-инициацию",
+    initiationLetterHint: "Выбранная бесплатная инициация, дополнительные варианты за донейшн, контакты и мотивация попадут к Андрею только после подтверждения отправки.",
+    initiationConfirm: "Я согласен(на) отправить Андрею в закрытую CRM выбранные инициации, имя, город, удобное время для связи в чате, мотивацию и ответы курса.",
     initiationSend: "Отправить заявку на инициацию",
-    initiationSent: "Ваша заявка получена в закрытой CRM Андрея и ожидает личного ответа.",
-    initiationTooShort: "Напишите не меньше 20 символов в письме на предыдущем шаге.",
+    initiationSent: "Заявка получена в закрытой CRM Андрея. Он рассмотрит её и согласует с вами подходящее время в чате.",
+    initiationTooShort: "Заполните анкету личной инициации на предыдущем слайде.",
     initiationShareNeeded: "Для заявки разрешите передачу материалов преподавателю.",
     initiationNotReady: "Заполните ответы и отчёты, чтобы отправить заявку.",
     enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
@@ -385,7 +386,8 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
       const choice = slide.question?.options?.find((option) => option.id === answer);
       return [slide.title[locale],
         ...(answer?.trim() ? [prompt,
-          choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""] : []),
+          slide.id === "end-01" ? formatReikiInitiationRequest(answer, locale) :
+            choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""] : []),
         ...(secondary?.trim() && slide.secondaryQuestion && !shared
           ? [slide.secondaryQuestion.prompt[locale], secondary, ""] : []),
       ];
@@ -413,9 +415,12 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   if (skipped) highlights.push(locale === "ru"
     ? "Вы выбрали пропустить практики: " + skipped + ". Это допустимо; участие остаётся добровольным."
     : "You chose to skip " + skipped + " practice(s). That is a valid choice; participation remains voluntary.");
-  if (present("end-01")) highlights.push(locale === "ru"
-    ? "Ваш следующий шаг: «" + present("end-01") + "»."
-    : "Your next step: “" + present("end-01") + "”.");
+  if (reikiInitiationRequestValid(present("end-01"))) {
+    const request = readReikiInitiationRequest(present("end-01"));
+    const selected = energyworkPathChoices.find((choice) => choice.id === request.freeInitiation)?.title[locale] ?? "";
+    highlights.push(locale === "ru" ? "Ваш выбор бесплатной личной инициации: " + selected + "." :
+      "Your free personal initiation choice: " + selected + ".");
+  }
   return highlights;
 }
 
@@ -565,6 +570,117 @@ function MeditationVoices({ slide, locale, youtubeId }: {
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+
+/** Lesson 5: all selections serialize into the existing encrypted end-01 answer. */
+function ReikiInitiationRequestForm({ value, locale, onChange }: {
+  value: string; locale: EnergyworkLocale; onChange: (next: string) => void;
+}) {
+  const request = readReikiInitiationRequest(value);
+  const ru = locale === "ru";
+  const ready = reikiInitiationRequestValid(value);
+  const change = (patch: Partial<ReturnType<typeof readReikiInitiationRequest>>) => {
+    // Capture the learner's own browser time zone; they may edit it freely.
+    const timezone = request.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    onChange(writeReikiInitiationRequest({ ...request, timezone, ...patch }));
+  };
+  return (
+    <div className={styles.initiationForm} data-reiki-initiation-choice-form>
+      <div className={styles.initiationGiftIntro}>
+        <span><Sparkles size={18} aria-hidden="true" />{ru ? "Ваш подарок после обучения" : "Your gift after the course"}</span>
+        <p>{ru
+          ? "Выберите любую одну личную инициацию I ступени бесплатно. Андрей рассмотрит вашу заявку и лично согласует проведение. Прохождение курса само по себе не является инициацией."
+          : "Choose any one personal Level 1 initiation for free. Andrey reviews your request and personally confirms the session. Finishing the course does not itself confer initiation."}</p>
+      </div>
+      <fieldset className={styles.initiationChoiceGroup}>
+        <legend>{ru ? "1. Какую инициацию хотите бесплатно?" : "1. Choose your free initiation"}</legend>
+        <div className={styles.initiationChoiceGrid} data-reiki-free-choices>
+          {energyworkPathChoices.map((choice) => (
+            <label key={choice.id} className={styles.initiationChoice + (request.freeInitiation === choice.id ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="radio" name="reiki-free-initiation" value={choice.id}
+                checked={request.freeInitiation === choice.id}
+                onChange={() => change({
+                  freeInitiation: choice.id,
+                  donationInitiations: request.donationInitiations.filter((id) => id !== choice.id),
+                })} />
+              <span>{choice.title[locale]}</span>
+              <small>{ru ? "Бесплатно" : "Free"}</small>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className={styles.initiationChoiceGroup} data-reiki-donation-choices>
+        <legend>{ru ? "2. Хотите вторую или третью инициацию за донейшн?" : "2. Add a second or third initiation by donation?"}</legend>
+        <p className={styles.initiationHelper}>{ru
+          ? "Необязательно. Выберите одну или обе оставшиеся системы. Пожертвование добровольное, его размер можно обсудить позже — оплаты здесь нет."
+          : "Optional: select one or both remaining systems. Donations are voluntary; discuss the amount later. No payment is taken here."}</p>
+        <div className={styles.initiationChoiceGrid}>
+          {energyworkPathChoices.filter((choice) => choice.id !== request.freeInitiation).map((choice) => (
+            <label key={choice.id} className={styles.initiationChoice + (request.donationInitiations.includes(choice.id) ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="checkbox" value={choice.id} checked={request.donationInitiations.includes(choice.id)}
+                onChange={(event) => change({
+                  donationInitiations: event.target.checked
+                    ? [...request.donationInitiations, choice.id]
+                    : request.donationInitiations.filter((id) => id !== choice.id),
+                })} />
+              <span>{choice.title[locale]}</span>
+              <small>{ru ? "За донейшн" : "By donation"}</small>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className={styles.initiationDetails}>
+        <p className={styles.initiationSectionTitle}>{ru ? "3. Как к вам обращаться и когда вам удобно?" : "3. Tell Andrey how to reach you and when you're available"}</p>
+        <div className={styles.initiationFields}>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Имя *" : "First name *"}</span>
+            <input type="text" autoComplete="given-name" maxLength={60} value={request.firstName}
+              onChange={(event) => change({ firstName: event.target.value })} placeholder={ru ? "Ваше имя" : "Your first name"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Фамилия *" : "Last name *"}</span>
+            <input type="text" autoComplete="family-name" maxLength={60} value={request.lastName}
+              onChange={(event) => change({ lastName: event.target.value })} placeholder={ru ? "Ваша фамилия" : "Your last name"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Город и страна проживания *" : "City and country *"}</span>
+            <input type="text" autoComplete="address-level2" maxLength={120} value={request.location}
+              onChange={(event) => change({ location: event.target.value })}
+              placeholder={ru ? "Например: Торонто, Канада" : "For example: Toronto, Canada"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Ваш часовой пояс *" : "Your time zone *"}</span>
+            <input type="text" maxLength={80} value={request.timezone}
+              onChange={(event) => change({ timezone: event.target.value })}
+              placeholder="America/Toronto" required />
+          </label>
+          <label className={styles.initiationField + " " + styles.initiationFieldWide}>
+            <span>{ru ? "Удобные дни и время для инициации *" : "Preferred days and times for initiation *"}</span>
+            <input type="text" maxLength={180} value={request.preferredTime}
+              onChange={(event) => change({ preferredTime: event.target.value })}
+              placeholder={ru ? "Например: будни после 19:00, по моему времени" : "For example: weekdays after 7 PM, my local time"} required />
+          </label>
+        </div>
+        <p className={styles.initiationHelper}>{ru
+          ? "Это не автоматическое бронирование. Андрей уточнит удобное время и формат лично в чате."
+          : "This is not an automatic booking. Andrey will discuss the time and format with you personally in chat."}</p>
+      </div>
+      <label className={styles.initiationMotivation}>
+        <span>{ru ? "4. Почему вам нужна именно эта инициация? *" : "4. Why do you want this initiation? *"}</span>
+        <textarea rows={3} maxLength={700} value={request.motivation}
+          placeholder={ru ? "Что вы хотите развить, почувствовать или привнести в свою практику?" : "What would you like to explore or bring into your practice?"}
+          onChange={(event) => change({ motivation: event.target.value })} required />
+        <small>{ru ? "Минимум 20 символов мотивации" : "At least 20 characters about your motivation"} · {request.motivation.trim().length}/700</small>
+      </label>
+      <p className={styles.initiationFormStatus} role="status">
+        {ready ? <Check size={17} aria-hidden="true" /> : <LockKeyhole size={17} aria-hidden="true" />}
+        {ready
+          ? (ru ? "Анкета заполнена. Перейдите далее, чтобы проверить ответы и отдельно подтвердить отправку Андрею." : "Your form is complete. Continue to review your answers and separately confirm sending them to Andrey.")
+          : (ru ? "Для отправки заявки выберите бесплатную инициацию и заполните поля со звёздочкой. Продолжить курс можно и без заявки." : "Choose a free initiation and complete the starred fields to send a request. You can continue studying without applying.")}
+      </p>
     </div>
   );
 }
@@ -827,7 +943,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const initiationItems = energyworkInitiationRequirements.map((item) => ({
     ...item,
     title: energyworkLessons.find((lesson) => lesson.phase === item.lesson)?.title[locale] ?? item.lesson,
-    reportDone: Boolean(answers[item.reportId]?.trim()),
+    reportDone: item.reportId === "end-01" ? reikiInitiationRequestValid(answers["end-01"]) : Boolean(answers[item.reportId]?.trim()),
     questionCount: item.questionIds.filter((id) => Boolean(answers[id]?.trim())).length,
     questionDone: item.questionIds.every((id) => Boolean(answers[id]?.trim())),
     nextQuestionId: item.questionIds.find((id) => !answers[id]?.trim()) ?? item.questionId,
@@ -979,7 +1095,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
   async function applyForInitiation() {
     if (busy || !applicationConsented || !savedInitiationReady || !sharingWithTeacher ||
-        applicationLead || (answers["end-01"] || "").trim().length < 20) return;
+        applicationLead || !reikiInitiationRequestValid(answers["end-01"])) return;
     setBusy(true);setApplicationMessage("");
     try {
       await queueRef.current.catch(() => {});
@@ -1168,7 +1284,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </div>
               ) : null}
 
-              {slide.question ? (
+              {slide.id === "end-01" ? (
+                <ReikiInitiationRequestForm value={answers["end-01"] ?? ""} locale={locale}
+                  onChange={(value) => setAnswer(value, "end-01")} />
+              ) : slide.question ? (
                 <div className={styles.question}>
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
                      isMeditationFeedback ? t.feedbackBadge :
@@ -1282,11 +1401,15 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       <p className={styles.initiationHint}>{t.initiationNotReady}</p>
                     ) : !sharingWithTeacher ? (
                       <p className={styles.initiationHint}>{t.initiationShareNeeded}</p>
-                    ) : (answers["end-01"] || "").trim().length < 20 ? (
-                      <p className={styles.initiationHint}>{t.initiationTooShort}</p>
+                    ) : !reikiInitiationRequestValid(answers["end-01"]) ? (
+                      <p className={styles.initiationHint}>{t.initiationTooShort}{" "}
+                        <button type="button" className={styles.reviewMissing} onClick={() => jumpToSlide("end-01")}>
+                          {locale === "ru" ? "Открыть анкету" : "Open the form"}
+                        </button>
+                      </p>
                     ) : (
                       <div className={styles.initiationApplication}>
-                        <blockquote className={styles.letterPreview}>{answers["end-01"]}</blockquote>
+                        <blockquote className={styles.letterPreview}>{formatReikiInitiationRequest(answers["end-01"], locale)}</blockquote>
                         <label className={styles.consentLabel}>
                           <input type="checkbox" checked={applicationConsented}
                             onChange={event => setApplicationConsented(event.target.checked)} />
