@@ -72,19 +72,18 @@ const spanishHome = loadComponent('app/es/page.tsx', {
 }).default;
 // Render the real interactive Academy hero, including its localized links and
 // initial unfiltered program choices. React hooks work in server rendering.
-const catalogue = { CatalogShowcase: ({ items }) => items.map((item) => React.createElement('a', { key: item.id, href: item.href }, item.title)) };
+const courseCards = { AcademyCourseCardList: ({ items }) => items.map((item) => React.createElement('a', { key: item.id, href: item.href }, item.title + ' · ' + item.subtitle)) };
 const academyDiscovery = loadComponent('components/academy-discovery.tsx', {
   ...shared,
   react: React,
   'lucide-react': { ...shared['lucide-react'], ChevronDown: empty, Search: empty },
-  '@/components/catalog-showcase': catalogue,
+  '@/components/academy-course-card-list': courseCards,
   './academy-discovery.module.css': {},
 }).AcademyDiscovery;
 const academy = loadComponent('components/academy-hub.tsx', {
   ...shared,
   '@/components/academy-discovery': { AcademyDiscovery: academyDiscovery },
   '@/components/academy-video-courses': { AcademyVideoCourses: empty },
-  '@/components/catalog-showcase': catalogue,
   '@/components/academy-course-capture': { AcademyCourseCapture: empty },
   '@/components/academy-free-course-banner': { AcademyFreeCourseBanner: empty },
   '@/data/academy/catalog': { academyCopy: Object.fromEntries(['en', 'ru', 'es'].map((locale) => [locale, {
@@ -95,6 +94,7 @@ const academy = loadComponent('components/academy-hub.tsx', {
 const links = (html) => [...html.matchAll(/<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map(([, href, content]) => ({ href, text: content.replace(/<[^>]+>/g, '') }));
 const renderLinks = (component, props) => links(renderToStaticMarkup(React.createElement(component, props)));
 const labels = { en: /Tantra Reiki.*free Level 1 initiation/, ru: /Тантра Рейки.*бесплатная инициация 1-й ступени/, es: /Tantra Reiki.*iniciación gratuita de Nivel 1/ };
+const courseLabels = { en: /Tantra Reiki.*Level 1/, ru: /Тантра Рейки.*1 ступень/, es: /Tantra Reiki.*Nivel 1/ };
 
 for (const locale of ['en', 'ru', 'es']) {
   test(`${locale} Home renders a direct localized Tantra entry and preserves its written-review link`, () => {
@@ -106,14 +106,14 @@ for (const locale of ['en', 'ru', 'es']) {
     assert.ok(pageLinks.some((link) => link.href === (locale === 'es' ? '/es/books' : `/${locale}/library`)));
   });
 
-  test(`${locale} Academy renders a direct localized Tantra entry without replacing the full program`, () => {
-    for (const view of ['programs', 'videos']) {
-      const pageLinks = renderLinks(academy, { locale, view });
-      const tantra = pageLinks.filter((link) => link.href === `/${locale}/academy/reiki/tantra-reiki/free-initiation`);
-      assert.equal(tantra.length, 1, view);
-      assert.match(tantra[0].text, labels[locale]);
-      if (view === 'programs') assert.ok(pageLinks.some((link) => link.href === `/${locale}/academy/reiki/tantra-reiki`));
-    }
+  test(`${locale} Academy has a direct Tantra free card and an independent video archive`, () => {
+    const cards = renderLinks(academy, { locale, view: 'programs' });
+    const tantra = cards.filter((link) => link.href === `/${locale}/academy/reiki/tantra-reiki/free-initiation`);
+    assert.equal(tantra.length, 1);
+    assert.match(tantra[0].text, courseLabels[locale]);
+    assert.ok(cards.some((link) => link.href === `/${locale}/academy/reiki/tantra-reiki`));
+    const videoLinks = renderLinks(academy, { locale, view: 'videos' });
+    assert.ok(videoLinks.some((link) => link.href === `/${locale}/academy`));
   });
 }
 
