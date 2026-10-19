@@ -3475,3 +3475,313 @@
     padding: 7px 8px;
   }
 }
+
+/* REIKI FULL TESTIMONIALS V1 · 2026-10-19
+   The sunrise portrait is the backdrop, not a separate media stripe.
+   Give the complete, attributed, source-linked review the remaining viewport;
+   only its text scrolls on smaller phones. No line clamps or excerpt limits.
+   Scoped to "voices" slides; navigation, journal and other lessons are unchanged. */
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .slideMain {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  min-height: 0;
+  padding: clamp(14px, 2.5vw, 26px);
+  background: #e9f6f7;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  order: initial;
+  flex: none;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #d1e9e8;
+  pointer-events: none;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .art img {
+  object-fit: cover;
+  object-position: 72% 35%;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(112deg, rgba(235, 249, 251, .91) 0%, rgba(242, 251, 251, .75) 65%, rgba(241, 249, 247, .48) 100%);
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .content {
+  position: relative;
+  z-index: 1;
+  order: initial;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  align-items: stretch;
+  width: 100%;
+  min-height: 0;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .content h1 {
+  max-width: none;
+  margin: 0 0 5px;
+  font-size: clamp(24px, 3.6vw, 35px);
+  line-height: 1.12;
+  color: #134459;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .eyebrow {
+  margin-bottom: 6px;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .description {
+  max-width: none;
+  margin: 0;
+  font-size: clamp(12px, 1.3vw, 14px);
+  line-height: 1.36;
+  color: #355f70;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesCard {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: clamp(8px, 1.6vh, 15px);
+  padding: clamp(12px, 2vw, 21px);
+  border: 1px solid rgba(255,255,255,.94);
+  border-radius: 23px;
+  background: rgba(248, 254, 254, .91);
+  box-shadow: 0 12px 34px rgba(12, 67, 87, .14), inset 0 1px 0 rgba(255,255,255,.95);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesHeading {
+  flex: 0 0 auto;
+  padding-bottom: 8px;
+  margin-bottom: 9px;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-meditation-review-carousel] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 4px 2px 0 18px;
+  overflow: hidden;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote p {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 2px 9px 3px 1px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+  scrollbar-color: #7bbfc8 transparent;
+  color: #15465b;
+  font: italic 500 clamp(17px, 1.75vw, 21px)/1.47 Georgia, "Times New Roman", serif;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote p::-webkit-scrollbar {
+  width: 5px;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote p::-webkit-scrollbar-thumb {
+  background: #7bbfc8;
+  border-radius: 9px;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote p:focus-visible {
+  outline: 2px solid #078c9a;
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote cite {
+  flex: 0 0 auto;
+  max-width: none;
+  padding-top: 7px;
+  margin-top: 6px;
+  border-top: 1px solid rgba(122, 183, 198, .25);
+  font-size: 12px;
+  line-height: 1.28;
+  color: #39677b;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls,
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesReferences {
+  flex: 0 0 auto;
+}
+.page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesReferences {
+  padding-top: 5px;
+  margin-top: 5px;
+}
+@media (min-width: 761px) {
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .slideMain {
+    min-height: min(70dvh, 680px);
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesCard {
+    max-width: 830px;
+  }
+}
+@media (max-width: 760px) {
+  /* Five lesson dots stay visible; long repeated names are visually tucked away
+     for this reading slide only (but remain readable by screen readers). */
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .journey {
+    flex: none;
+    margin: 0;
+    padding: 0;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .journey ol {
+    min-height: 32px;
+    align-items: center;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .journey ol::before {
+    top: 15px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .journey li {
+    gap: 0;
+    justify-content: center;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .journeyDot {
+    width: 31px;
+    height: 31px;
+    font-size: 13px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .journeyLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    padding: 0;
+    margin: -1px;
+    border: 0;
+    white-space: nowrap;
+    clip-path: inset(50%);
+    overflow: hidden;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .slideMain {
+    height: 100%;
+    max-height: 100%;
+    gap: 0;
+    padding: 9px 10px;
+    overflow: hidden;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .art {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    border-radius: 0;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .art img {
+    object-position: 70% 33%;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .content h1 {
+    font-size: clamp(22px, 6vw, 28px);
+    line-height: 1.08;
+    margin-bottom: 4px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .eyebrow {
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] [data-energywork-slide-kind="voices"] .description {
+    font-size: 11.5px;
+    line-height: 1.26;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesCard {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-top: 7px;
+    padding: 10px 11px 8px;
+    border-radius: 17px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesHeading {
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesEyebrow {
+    font-size: 12.5px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote {
+    min-height: 0;
+    padding: 3px 0 0 16px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote p {
+    max-height: none;
+    min-height: 0;
+    font-size: clamp(15px, 4vw, 17px);
+    line-height: 1.39;
+    padding-right: 6px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote cite {
+    padding-top: 5px;
+    margin-top: 4px;
+    font-size: 10.8px;
+    line-height: 1.24;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls {
+    margin: 4px auto 0;
+    gap: 7px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button {
+    width: 39px;
+    height: 39px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesReferences {
+    padding-top: 2px;
+    margin-top: 3px;
+    gap: 3px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesLink {
+    min-height: 35px;
+    margin: 0;
+    padding: 5px 7px;
+    font-size: 11px;
+  }
+}
+@media (max-width: 380px) and (max-height: 700px) {
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesCard {
+    padding: 7px 9px;
+    margin-top: 5px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesHeading {
+    margin-bottom: 3px;
+    padding-bottom: 3px;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote p {
+    font-size: 14.5px;
+    line-height: 1.33;
+  }
+}
+@media print {
+  .page[data-reiki-full-reviews="v1"] [data-energywork-slide-kind="voices"] .slideMain,
+  .page[data-reiki-full-reviews="v1"] [data-energywork-slide-kind="voices"] .content,
+  .page[data-reiki-full-reviews="v1"] .voicesCard,
+  .page[data-reiki-full-reviews="v1"] [data-meditation-review-carousel],
+  .page[data-reiki-full-reviews="v1"] .voiceQuote {
+    display: block;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    background: white;
+    box-shadow: none;
+  }
+  .page[data-reiki-full-reviews="v1"] .voiceQuote p {
+    max-height: none;
+    height: auto;
+    overflow: visible;
+  }
+}

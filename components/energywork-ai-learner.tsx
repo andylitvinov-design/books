@@ -102,6 +102,7 @@ const copy = {
     feedbackPrivacy: "Your reflection stays private unless you choose to share it.",
     feedbackCharacters: "characters", feedbackMinimum: "minimum 15",
     voicesLabel: "Learner experiences",
+    voicesFullText: "Full learner review",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
     voicesSource: "Original review",
     voicesComments: "Video comments",
@@ -221,6 +222,7 @@ const copy = {
     feedbackPrivacy: "Отзыв остаётся личным, если вы не решите поделиться им.",
     feedbackCharacters: "символов", feedbackMinimum: "минимум 15",
     voicesLabel: "Отзывы участников",
+    voicesFullText: "Полный текст отзыва",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
     voicesSource: "Источник отзыва",
     voicesComments: "Комментарии к видео",
@@ -422,7 +424,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
         <div data-meditation-review-carousel data-review-count={entries.length}>
           <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
             <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
-            <p>{currentReview.quote[locale]}</p>
+            <p data-review-fulltext role="region" tabIndex={0} aria-label={t.voicesFullText}>{currentReview.quote[locale]}</p>
             <cite>{currentReview.attribution[locale]}</cite>
           </blockquote>
           {entries.length > 1 ? (
@@ -749,7 +751,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>
