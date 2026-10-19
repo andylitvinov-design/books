@@ -10,6 +10,9 @@ import styles from "./event-detail.module.css";
 
 type Props = { params: Promise<{ locale: string; eventId: string }> };
 
+// The upcoming/past CTA and indexability must change after the real start time.
+export const revalidate = 300;
+
 const locales: readonly PublicLocale[] = ["en", "ru", "es"];
 const isLocale = (value: string): value is PublicLocale => locales.includes(value as PublicLocale);
 
