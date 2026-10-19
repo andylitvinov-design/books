@@ -54,6 +54,19 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  const [error,setError]=useState('')
  const [saving,setSaving]=useState(false)
  const [feedback,setFeedback]=useState('')
+ useEffect(()=>{
+  let alive=true
+  fetch('/api/app/practice/report-materials',{credentials:'same-origin',cache:'no-store'})
+   .then(async r=>r.status===404?null:(r.ok?await r.json():Promise.reject()))
+   .then(data=>{
+    if(!alive)return
+    if(data===null){setReportMode('not-owner');return}
+    setReportItems(Array.isArray(data.items)?data.items:[])
+    setReportMode('ready')
+    if(reportRefresh===0)setTab(v=>v==='videos'?'reports':v)
+   }).catch(()=>{if(alive){setReportMode('error');setReportError('Unable to load the private library')}})
+  return ()=>{alive=false}
+ },[reportRefresh])
  const published=practitioner?.profile?.videoMaterials||[]
  const dirty=JSON.stringify(videos)!==JSON.stringify(original)
  const locked=busy||saving
