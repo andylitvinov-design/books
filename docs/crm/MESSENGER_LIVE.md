@@ -79,3 +79,17 @@ Provider activation is a separate operational gate, not part of a normal code me
 - UI mobile layout includes 44 px touch targets, compact stage/tasks/note panels, filter for “Needs reply”, and no automatic polling/paid messaging calls. Sensitive message bodies never appear in URL strings or telemetry.
 - Server reads/writes remain authenticated, same-origin, `X-HH-Account-Id` matched and `hh_crm_backend` owner-restricted; the new POST actions have explicit payload whitelists.
 - **Release:** merge only after source checks and Next.js Production build. Since provider credentials `HH_CRM_MSG_*` remain missing, all real Telegram/WhatsApp/Instagram/Messenger sending stays disabled by design. No client messages or paid provider operations are part of this v3 work.
+
+## 10. Messenger history paging and immutable send retries (issue #985)
+
+This release adds bounded server-side keyset pagination for both **conversations** and **the encrypted message history** without a schema migration.
+
+- `GET /api/app/crm/messenger` initially returns at most **30 conversations**, plus `nextThreadsCursor` when more pages exist. `?threadsBefore=<opaque>` fetches the next 30; only the authenticated owner receives results. Opening a specific owner thread by `?thread=<uuid>` works **even if it is older than the first 30**.
+- An open conversation loads **50 most recent messages**, plus `nextMessagesCursor`. `?thread=<uuid>&messagesBefore=<opaque>` fetches the next older 50. Existing messages are merged by immutable ID into chronological order; the current selected thread is retained when an older page is appended.
+- Cursors contain only the exact PostgreSQL timestamp text and a UUID; they do **not** contain message text, email, phone or auth credentials. The server rejects malformed, oversized, duplicate/unknown query parameters and incompatible cursor combinations. Exact PG microsecond precision prevents skipped/duplicated same-millisecond messages.
+- The owner UI offers localized `Load more conversations` and `Earlier messages` buttons, controlled loading and useful retry error states. Search and filters apply to loaded pages, and the empty-state text explains that scope.
+- **Immutable request-id contract:** an existing outgoing request UUID must match the same owner-thread, direction `out`, and decrypted original body, or it is rejected with conflict. Reusing a request ID cannot silently report status for a different recipient or content.
+- This change does not alter consent, suppressions, health-data exclusions, existing RLS, outbound provider fees or the **disabled-by-default `HH_CRM_MSG_*`** feature flags. No messages are automatically sent.
+- PostgreSQL read-only EXPLAIN checks confirmed the owner-filtered 30-conversation / 50-message keyset queries parse and use existing `crm_msg_threads_owner_last` and `crm_msg_items_thread_date` indexes. Source/pure tests live in `tests/crm-messenger.test.mjs`. Check GitHub CI and the exact Production SHA after merging.
+
+**Provider activation remains separate:** no official Telegram/WhatsApp/Instagram/Messenger account credentials have been verified in Vercel Production, so external real-client delivery is not enabled or claimed.
