@@ -186,3 +186,94 @@ test('current and historical scores are not rescored; report discloses item mapp
   assert.match(modelSource,/authorScoreClusters\(\{result, dimension, interpretation, locale\}\)/)
   assert.doesNotMatch(modelSource,/scoreAssessment\(/)
 })
+
+test('every audited source cluster publishes exact attainable score points without gaps disguised as scores', () => {
+  let count = 0
+  const active = new Map(MONITORING_CATALOG.filter(row=>row.startable &&
+    row.key.startsWith('hh-') && row.key !== 'hh-bach-flower-profile')
+    .map(row=>[row.key,row.version]))
+  for (const def of ASSESSMENT_DEFINITIONS.filter(d=>active.get(d.key) === d.version)) {
+    const answers = Object.fromEntries(def.questions.map(q => [q.id,q.min ?? def.answerScale.min]))
+    const result = scoreAssessment(def,answers)
+    for (const dimension of result.dimensions) {
+      const reading = gaugeModel(dimension,result,def.instrumentLocale)?.rangeReading
+      assert.ok(reading?.clusterBasis,def.key+'/'+dimension.key+' has documented source intervals')
+      const points = reading.rows.flatMap(row => {
+        assert.ok(Object.isFrozen(row.scorePoints), 'reported attainable points must be immutable')
+        assert.equal(row.attainableCount,row.scorePoints.length)
+        assert.equal(row.scorePoints[0],row.from)
+        assert.equal(row.scorePoints.at(-1),row.to)
+        assert.deepEqual(row.scorePoints,[...new Set(row.scorePoints)].sort((a,b)=>a-b))
+        return row.scorePoints
+      })
+      assert.deepEqual(points,[...new Set(points)].sort((a,b)=>a-b),'no overlap between score clusters')
+      assert.equal(points[0],dimension.min)
+      assert.equal(points.at(-1),dimension.max)
+      assert.ok(points.includes(dimension.value))
+      assert.equal(reading.rows.filter(row=>row.scorePoints.includes(dimension.value)).length,1)
+      assert.match(reading.scoringNote,def.instrumentLocale==='ru'
+        ? /Формула:|один ответ|не среднее/ : /Formula:|one direct response/)
+      assert.ok(reading.contentBoundary?.length > 60)
+      count++
+    }
+  }
+  assert.ok(count>120,'all active authored subscales covered by attainable scores and construct warnings')
+})
+
+test('money-pressure v2 explains every coded answer, each attainable mean and the exact 3-item formula', () => {
+  for (const locale of ['en','ru']) {
+    const {result}=get('hh-money-pressure','v2',locale,'mid')
+    for (const dimension of result.dimensions) {
+      const reading=gaugeModel(dimension,result,locale)?.rangeReading
+      assert.deepEqual(reading.sourceResponseOptions.map(option=>option.value),[0,1,2,3,4])
+      assert.deepEqual(reading.rows.map(row=>row.originalAnswerCode),[0,1,2,3,4])
+      assert.deepEqual(reading.rows.map(row=>row.scorePoints),[
+        [0,.33],[.67,1,1.33],[1.67,2,2.33],[2.67,3,3.33],[3.67,4],
+      ])
+      assert.match(reading.scoringNote,locale==='ru'
+        ? /Формула: сумма кодов ответов ÷ 3/
+        : /Formula: sum of coded responses ÷ 3/)
+      assert.match(reading.contentBoundary,locale==='ru'
+        ? /разные подшкалы/ : /separately/)
+    }
+  }
+})
+
+test('direct ratings stay standalone values; mixed-domain author scales disclose what total cannot measure', () => {
+  for (const locale of ['en','ru']) {
+    const {result}=get('hh-current-state','v2',locale,'mid')
+    for (const dimension of result.dimensions) {
+      const reading=gaugeModel(dimension,result,locale)?.rangeReading
+      assert.equal(reading.sourceResponseOptions,null)
+      assert.deepEqual(reading.rows.flatMap(row=>row.scorePoints),Array.from({length:11},(_,i)=>i))
+      assert.match(reading.scoringNote,locale==='ru' ? /один ответ/ : /one direct response/)
+      assert.match(reading.contentBoundary,locale==='ru' ? /Пять отдельных вопросов/ : /Five separate questions/)
+    }
+    for (const [key,version,keyword] of [
+      ['hh-felt-safety','v1',locale==='ru'?/объективную безопасность/:/objective safety/],
+      ['hh-body-mind-context','v1',locale==='ru'?/тяжесть болезни/:/illness severity/],
+      ['hh-overthinking-loop','v2',locale==='ru'?/раздельно/:/separate/],
+      ['hh-screen-saturation','v2',locale==='ru'?/отдельно/:/separately/],
+    ]) {
+      const {result}=get(key,version,locale,'mid')
+      for (const dimension of result.dimensions) {
+        const reading=gaugeModel(dimension,result,locale)?.rangeReading
+        assert.ok(reading?.contentBoundary,key+'/'+dimension.key)
+        assert.match(reading.contentBoundary,keyword)
+        assert.doesNotMatch(reading.contentBoundary,/diagnos(?:is|ed) confirmed|клинический диагноз подтвержден/)
+      }
+    }
+  }
+})
+
+test('full report shows original 0–4 response codes, exact attainable points and construct limitations', () => {
+  const view=readFileSync(new URL('../components/app/compact-assessment-report.jsx',import.meta.url),'utf8')
+  const source=readFileSync(new URL('../lib/assessments/assessment-range-reading.js',import.meta.url),'utf8')
+  assert.match(view,/data-author-response-codes/)
+  assert.match(view,/data-attainable-score-points/)
+  assert.match(view,/data-author-construct-boundary/)
+  assert.match(view,/rangeReading\.sourceResponseOptions\.map/)
+  assert.match(view,/band\.scorePoints\.map/)
+  assert.match(source,/sourceResponseOptions: authorClusters\?\.responseOptions/)
+  assert.match(source,/contentBoundary: authorClusters\?\.contentBoundary/)
+})
