@@ -45,6 +45,7 @@ export default function PractitionerArticles({locale,services=[]}){
   confirmArchive:'Архивировать статью?',saveFirst:'Сначала сохраните правки — затем отправляйте на проверку.',
   editTitle:'Редактор статьи',draftTitle:'Новая статья',close:'Закрыть редактор',emptyInput:'Введите название папки.',
   tags:'Ключевые слова через запятую',discard:'Есть несохранённые изменения. Закрыть без сохранения?',filterStatus:'Статус',allStatuses:'Любой статус',
+  duplicateFolder:'Такая папка уже существует.',revisionError:'Материал изменился в другой вкладке. Обновите страницу и повторите.',
  }:{
   heading:'My articles',intro:'Your personal article library. Drafts stay private until publication is approved.',
   newArticle:'New article',newFolder:'New folder',folder:'Folders',all:'All articles',
@@ -61,6 +62,7 @@ export default function PractitionerArticles({locale,services=[]}){
   confirmArchive:'Archive this article?',saveFirst:'Save your changes before submitting for review.',
   editTitle:'Edit article',draftTitle:'New article',close:'Close editor',emptyInput:'Enter a folder name.',
   tags:'Search keywords (comma-separated)',discard:'You have unsaved edits. Close without saving?',filterStatus:'Status',allStatuses:'Any status',
+  duplicateFolder:'This folder already exists.',revisionError:'This item changed in another tab. Refresh and try again.',
  }
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
  const [query,setQuery]=useState(''),[limit,setLimit]=useState(24),[statusFilter,setStatusFilter]=useState('all')
@@ -113,7 +115,7 @@ export default function PractitionerArticles({locale,services=[]}){
  }
  async function perform(fn){
   setBusy(true);setError('');setNotice('')
-  try{await fn()}catch(e){setError(e.message||'ERROR')}finally{setBusy(false)}
+  try{await fn()}catch(e){setError(e.message==='FOLDER_EXISTS'?t.duplicateFolder:e.message==='REVISION_CONFLICT'?t.revisionError:e.message||'ERROR')}finally{setBusy(false)}
  }
  async function save(){
   await perform(async()=>{
