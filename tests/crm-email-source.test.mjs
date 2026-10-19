@@ -51,7 +51,7 @@ test('provider webhook checks signature first, applies only bounce/complaint/fai
  assert.doesNotMatch(src,/sendResendEmail/)
 })
 test('no public table grants and owner-only RLS on durable email delivery',()=>{
- const sql=read('supabase/migrations/20261018160000_hh_crm_email_delivery.sql')
+ const sql=read('supabase/migrations/20261018131448_hh_crm_email_delivery_20261018.sql')
  assert.match(sql,/revoke all on app\.crm_email_tokens,app\.crm_email_jobs,app\.crm_email_webhook_events from public,anon,authenticated/)
  assert.match(sql,/crm_email_job_update on app\.crm_email_jobs for update to hh_crm_backend/)
  assert.match(sql,/app_private\.crm_consume_email_token/)
