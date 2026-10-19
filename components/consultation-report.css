@@ -1,4 +1,5 @@
 /* Private practitioner notes and document preview · Holistic House */
+/* One full-width card per narrative block: Analysis → Recommendations → Notes. */
 .consultation-studio .consultation-report-note-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
