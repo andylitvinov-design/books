@@ -515,11 +515,62 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'tests' && (
             searchParams.get('summary')
               ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(root + '/tests')} />
-              : <AccountTestBattery key={data.account.id + ':' + (searchParams.get('courseId') || '')} data={data} locale={locale}
-                  requestedPlanId={searchParams.get('plan')}
-                  recommendedKey={searchParams.get('suggest')}
-                  initialStatusFilter={searchParams.get('filter')}
-                  reload={load} />
+              : <>
+                  {!searchParams.get('courseId') && (
+                    <details className="hh-tests-mood-disclosure" data-cabinet-mood-checkin>
+                      <summary>
+                        <span className="hh-tests-mood-symbol" aria-hidden="true">🙂</span>
+                        <strong>{locale === 'ru' ? 'Настроение сегодня' : 'Today\u2019s mood'}</strong>
+                        <small>{locale === 'ru' ? 'Отметить самочувствие' : 'Quick check-in'}</small>
+                        <ChevronDown size={18} aria-hidden="true" />
+                      </summary>
+                      <MoodCheckIn
+                        locale={locale}
+                        compact
+                        latestMood={data.moodCheckins?.[0] || null}
+                        onMoodChange={(payload) =>
+                          appFetch('mood', {
+                            ...payload,
+                            timezone: localZone(),
+                            sourceSurface: 'monitoring',
+                          }).then((savedMood) => {
+                            if (savedMood?.id) {
+                              setData((current) => current
+                                ? {
+                                    ...current,
+                                    moodCheckins: [
+                                      savedMood,
+                                      ...(current.moodCheckins || []).filter((item) => item.id !== savedMood.id),
+                                    ],
+                                  }
+                                : current)
+                            }
+                            return savedMood
+                          })
+                        }
+                        onQuickCheckin={async () => {
+                          try {
+                            const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
+                            const run = await appFetch('runs', {
+                              definitionKey: def.key,
+                              definitionVersion: def.version,
+                              instrumentLocale: def.instrumentLocale,
+                              operationId: crypto.randomUUID(),
+                            })
+                            window.location.assign('/' + locale + '/app/runs/' + run.id)
+                          } catch {
+                            window.location.assign(root + '/monitoring/hh-current-state')
+                          }
+                        }}
+                      />
+                    </details>
+                  )}
+                  <AccountTestBattery key={data.account.id + ':' + (searchParams.get('courseId') || '')} data={data} locale={locale}
+                    requestedPlanId={searchParams.get('plan')}
+                    recommendedKey={searchParams.get('suggest')}
+                    initialStatusFilter={searchParams.get('filter')}
+                    reload={load} />
+                </>
           )}
           {page === 'runs' && (
             <Runner
@@ -2657,34 +2708,6 @@ function Portrait({ data, locale }) {
         <summary>{locale === 'ru' ? 'Подробные шкалы, непройденные тесты и инструменты' : 'Detailed scales, pending tests and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
       <ProfileAssessmentOverview data={data} locale={locale} onBeginTest={beginSelectedTest} showPortrait={false}>
         <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
-        <div className="hh-profile-mood">
-          <MoodCheckIn
-            locale={locale}
-            compact
-            latestMood={data.moodCheckins?.[0] || null}
-            onMoodChange={(payload) =>
-              appFetch('mood', {
-                ...payload,
-                timezone: localZone(),
-                sourceSurface: 'portrait',
-              })
-            }
-            onQuickCheckin={async () => {
-              try {
-                const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
-                const run = await appFetch('runs', {
-                  definitionKey: def.key,
-                  definitionVersion: def.version,
-                  instrumentLocale: def.instrumentLocale,
-                  operationId: crypto.randomUUID(),
-                })
-                window.location.assign('/' + locale + '/app/runs/' + run.id)
-              } catch {
-                window.location.assign(root + '/monitoring/hh-current-state')
-              }
-            }}
-          />
-        </div>
         {data.practitioner && <OwnerTools locale={locale} />}
         <ReportsFromAndy data={data} locale={locale} />
         <ClientMaterialsFromAndy locale={locale} />
