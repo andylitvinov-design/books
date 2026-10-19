@@ -49,16 +49,21 @@
   flex-direction:column;align-items:center;justify-content:flex-end;
   gap:clamp(8px,1.25vh,14px);
 }
+/* The original coast photo is portrait (1600 × 2394), but this is a
+   panoramic welcome slot. Containing it leaves nearly the whole card blank.
+   Fill the card instead, with a local landscape photo underneath if the
+   coast image fails to load. Keep both images decorative. */
 .arrivalPhoto{
+  position:relative;isolation:isolate;
   flex:1 1 185px;min-height:55px;max-height:clamp(130px,28vh,245px);
-  width:min(100%,590px);overflow:hidden;display:grid;place-items:center;
+  width:min(100%,590px);overflow:hidden;
   border:1px solid rgba(255,255,255,.85);border-radius:23px;
-  background:rgba(235,250,246,.76);
+  background:#dcefeb url('/images/holistic-house/course-focus-mountain-boy.webp') center 52%/cover no-repeat;
   box-shadow:0 8px 30px rgba(20,81,88,.11);
 }
 .arrivalPhoto img{
-  display:block;width:100%;height:100%;
-  object-fit:contain;object-position:center;
+  position:absolute;inset:0;display:block;width:100%;height:100%;
+  object-fit:cover;object-position:center 64%;
 }
 .arrivalPanel{
   margin:0 auto;flex:0 1 auto;
