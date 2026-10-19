@@ -790,8 +790,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               {slide.kind === "milestone" ? (
                 <div className={styles.milestoneCard}>
                   <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
-                  <strong>{t.milestoneLabel}</strong>
-                  {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
+                  <div className={styles.milestoneCopy}>
+                    <strong>{t.milestoneLabel}</strong>
+                    {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
+                  </div>
                 </div>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
