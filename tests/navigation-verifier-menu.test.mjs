@@ -38,6 +38,7 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/lib/ui-locale': { localePath: (path, locale) => '/' + locale + path, saveUiLocale() {} },
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
+  './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
 });
 const { AcquisitionEventLink } = loadComponent('components/acquisition-event-link.tsx', { ...common, '@/data/local-acquisition': acquisition });
@@ -181,7 +182,7 @@ async function menuScenario(locale, surface, fault) {
   const menu = { count: fault === 'missing menu' ? 0 : 1, locator(selector) {
     if (selector === 'summary') return trigger;
     if (selector === 'a[aria-current="page"]') return { count: current.length, href: current[0]?.props.href };
-    if (selector === '.site-main-menu-panel > a') return {
+    if (selector === '.site-main-menu-panel a') return {
       evaluateAll: async callback => callback(actualHrefs.map(href => ({ getAttribute: () => href }))),
       all: async () => links, first: () => links[0],
     };
@@ -259,7 +260,7 @@ for (const fault of ['wrong free hash', 'wrong services route', 'wrong About rou
 
 test('library audit checks the menu active link while preserving exact six-slot bottom navigation', () => {
   assert.match(ia, /verifyDirectNavigation\(nav, \{ locale, surface: 'library', expected, label:/);
-  assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel > a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
+  assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
   assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/library'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(6\)/);
   assert.match(ia, /const libraryEntry = header\.locator\('a\.site-library-entry'\)/);
