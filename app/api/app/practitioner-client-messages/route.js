@@ -31,7 +31,7 @@ async function handler(request){
       data=await store.list(actor,params.get('requestId'),params.get('before'))
     }else{
       const body=await readBody(request,2048)
-      onlyKeys(body,['requestId','operationId','text'])
+      onlyKeys(body,['requestId','operationId','text','visibility'])
       data=await store.send(actor,body)
     }
     return auth.apply(NextResponse.json(data,{headers:PRIVATE_HEADERS}))
