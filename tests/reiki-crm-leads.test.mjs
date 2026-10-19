@@ -69,10 +69,10 @@ test('After five lessons, the student explicitly submits a motivation letter as 
   assert.match(learner,/onClick=\{applyForInitiation\}/)
 })
 
-test('All 70 steps, four meditation reports and course progress remain intact',()=>{
+test('All 69 steps, four meditation reports and course progress remain intact',()=>{
   const slides=[...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
-  // Combined Tantra questions 2+3 share one visual slide but keep both answer IDs.
-  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,70)
+  // Tantra Reiki now has five question screens; historical retired IDs remain private.
+  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,69)
   assert.match(repo,/energyworkMeditationFeedbackComplete/)
   assert.match(repo,/COURSE_PROGRESS_CHANGED/)
   assert.match(repo,/updateSharedReikiJournal/)
