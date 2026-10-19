@@ -50,7 +50,7 @@ test("homepage previews four sourced videos and preserves all 12 originals behin
   }
   assert.match(component, /const remainingHomeVideos = isHome \? testimonialVideos\[locale\]\.slice\(4\) : \[\]/);
   assert.match(component, /const otherLanguageVideos = isHome \? testimonialVideos\[locale === "ru" \? "en" : "ru"\] : \[\]/);
-  assert.match(component, /<details className=\{styles\.moreVideoDisclosure\} data-home-testimonial-disclosure>/);
+  assert.match(component, /<details className=\{styles\.moreVideoDisclosure\} data-home-testimonial-disclosure="true">/);
   assert.match(component, /renderVideoCards\(remainingHomeVideos\)/);
   assert.match(component, /renderVideoCards\(otherLanguageVideos, true\)/);
   assert.match(component, /remainingHomeVideos\.length \+ otherLanguageVideos\.length/);
