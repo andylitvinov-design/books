@@ -273,21 +273,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       {!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
     </section>}
 
-    {!hasFullReport&&recommendedTests.length>0&&<section id="session-recommended-tests"
-      className={styles.clientSection} aria-label={ru?'Рекомендуемые тесты':'Recommended tests'}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><ListChecks size={20}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ПОСЛЕ КОНСУЛЬТАЦИИ':'AFTER YOUR CONSULTATION'}</span>
-          <h2>{ru?'Рекомендуемые тесты':'Recommended tests'}</h2></div>
-      </header>
-      <p className={styles.sectionIntro}>{ru?'Специалист выбрал тесты для вашего следующего шага.':'Your practitioner selected these tests as a next step.'}</p>
-      {recommendedTests.map(test=><a key={test.key} className={styles.attachmentCard}
-        href={test.href}>
-        <BookOpen size={20} aria-hidden="true"/><div><strong>{test.title}</strong>
-          <small>{ru?'Пройти тест':'Take the test'}</small></div>
-        <ExternalLink size={17} aria-hidden="true"/>
-      </a>)}
-    </section>}
     {hasHomeopathyRecommendation&&sharedGuideReady&&
       <section id="session-granules-guide" className={styles.clientSection+' '+styles.sharedEducationSection}
         aria-labelledby="session-granules-guide-title">
@@ -403,6 +388,22 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           'Google saving is temporarily unavailable. This report remains accessible through its protected link.'}
       </p>}
     </nav>
+
+    {recommendedTests.length>0&&<section id="session-recommended-tests"
+      className={styles.clientSection} aria-label={ru?'Рекомендуемые тесты':'Recommended tests'}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><ListChecks size={20}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ПОСЛЕ КОНСУЛЬТАЦИИ':'AFTER YOUR CONSULTATION'}</span>
+          <h2>{ru?'Рекомендуемые тесты':'Recommended tests'}</h2></div>
+      </header>
+      <p className={styles.sectionIntro}>{ru?'Специалист выбрал тесты для вашего следующего шага.':'Your practitioner selected these tests as a next step.'}</p>
+      {recommendedTests.map(test=><a key={test.key} className={styles.attachmentCard}
+        href={test.href}>
+        <BookOpen size={20} aria-hidden="true"/><div><strong>{test.title}</strong>
+          <small>{ru?'Пройти тест':'Take the test'}</small></div>
+        <ExternalLink size={17} aria-hidden="true"/>
+      </a>)}
+    </section>}
 
     <footer className={styles.clientFooter}>
       <p><LockKeyhole size={14}/>{mode==='owner'?(ru?'Закрытый предпросмотр специалиста. Для клиента используйте отдельную ссылку на опубликованную сессию.':'Practitioner-only preview. Send clients only an approved session invitation.'):
