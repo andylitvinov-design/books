@@ -131,7 +131,7 @@ test('only the original remedy-description appendix collapses, with complete pri
   assert.match(appendix, /<details className="canonical-remedy-profile canonical-remedy-profile-disclosure"/)
   // The original library photograph is shown before the Latin name in the
   // closed summary; an older assertion expected the name immediately first.
-  assert.match(appendix, /<summary className="canonical-remedy-profile-summary">[\\s\\S]*?<h3>\\{remedy\\.canonical_latin_name\\}<\\/h3>/)
+  assert.match(appendix, /<summary className="canonical-remedy-profile-summary">[\s\S]*?<h3>\{remedy\.canonical_latin_name\}<\/h3>/)
   assert.match(appendix, /className="canonical-remedy-profile-thumb"/)
   assert.doesNotMatch(appendix, /<details[^>]*\sopen(?:\s|=|>)/,
     'library descriptions are closed initially on mobile/desktop')
