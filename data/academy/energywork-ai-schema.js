@@ -2,7 +2,8 @@
 // The bilingual editorial content lives in data/academy/energywork-ai-curriculum.ts.
 // Keep this registry aligned with that file; tests enforce exact ID parity.
 export const ENERGYWORK_KEY = 'academy-energywork-principles'
-export const ENERGYWORK_VERSION = '2026-10-19.p6'
+export const ENERGYWORK_VERSION = '2026-10-19.p7'
+export const ENERGYWORK_P6_VERSION = '2026-10-19.p6'
 export const ENERGYWORK_P5_VERSION = '2026-10-19.p5'
 export const ENERGYWORK_P4_VERSION = '2026-10-19.p4'
 export const ENERGYWORK_P3_VERSION = '2026-10-19.p3'
@@ -21,7 +22,7 @@ export const ENERGYWORK_COMMON = Object.freeze([
 export const ENERGYWORK_BRANCH = Object.freeze({
   yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','ygg-done'],
   tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02'],
-  kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07','kun-done'],
+  kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-question-01','kun-question-02','kun-question-03','kun-question-04','kun-question-05','kun-question-06','kun-question-07','kun-question-08','kun-question-09','kun-done'],
 })
 export const ENERGYWORK_INITIATION = Object.freeze(['init-01','init-02'])
 export const ENERGYWORK_FINISH = Object.freeze(['end-01','end-02'])
@@ -39,13 +40,26 @@ export function energyworkMeditationFeedbackComplete(answer) {
   }
   return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
-export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03','kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','init-01'])
+export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03','kun-question-01','kun-question-02','kun-question-03','kun-question-04','kun-question-05','kun-question-06','kun-question-07','kun-question-08','kun-question-09','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','init-01'])
 // Each of the seven Tantra Reiki study answers is required to move forward.
 // Drafts may still be saved blank, but a whitespace-only answer is not complete.
 export const ENERGYWORK_TANTRA_STUDY_QUESTION_IDS = Object.freeze([
   'tan-study-04','tan-06','tan-study-05','tan-study-06','tan-study-07','tan-study-02','tan-study-03',
 ])
-export const ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS = Object.freeze(['kun-06', 'kun-study-02', 'kun-study-03', 'kun-study-04', 'kun-study-05', 'kun-study-06', 'kun-study-07'])
+export const ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS = Object.freeze(["kun-question-01","kun-question-02","kun-question-03","kun-question-04","kun-question-05","kun-question-06","kun-question-07","kun-question-08","kun-question-09"])
+// Legacy answers remain encrypted under their original IDs: never relabel an old response
+// as an answer to a different question.
+export const ENERGYWORK_P6_KUNDALINI_ANSWER_IDS = Object.freeze(['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07'])
+export const ENERGYWORK_KUNDALINI_CHOICE_VALUES = Object.freeze({
+  'kun-question-01': Object.freeze(['root','heart','crown']),
+  'kun-question-02': Object.freeze(['symbol','literal','hands']),
+  'kun-question-03': Object.freeze(['flow','control','force']),
+  'kun-question-04': Object.freeze(['intention','hands','focus']),
+  'kun-question-05': Object.freeze(['warmth','calm','love','strength']),
+  'kun-question-07': Object.freeze(['yes','touch','unsure']),
+  'kun-question-08': Object.freeze(['meditation','master','same']),
+  'kun-question-09': Object.freeze(['master','reverse','same']),
+})
 export const ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS = Object.freeze(['ygg-06', 'ygg-study-02', 'ygg-study-03', 'ygg-study-04', 'ygg-study-05', 'ygg-study-06', 'ygg-study-07'])
 export function energyworkReikiStudyAnswerComplete(answer) {
   return typeof answer === 'string' && answer.trim().length > 0
@@ -72,6 +86,16 @@ export const ENERGYWORK_QUESTIONS = Object.freeze({
   'kun-04': 'text', 'kun-06': 'text',
   'kun-study-02': 'text', 'kun-study-03': 'text', 'kun-study-04': 'text', 'kun-study-05': 'text', 'kun-study-06': 'text', 'kun-study-07': 'text',
   'kun-03': 'choice',
+  // New student answers use new keys so old p6 responses cannot be mistaken for new prompts.
+  'kun-question-01': 'choice',
+  'kun-question-02': 'choice',
+  'kun-question-03': 'choice',
+  'kun-question-04': 'choice',
+  'kun-question-05': 'choice',
+  'kun-question-06': 'text',
+  'kun-question-07': 'choice',
+  'kun-question-08': 'choice',
+  'kun-question-09': 'choice',
   'init-01': 'text', 'init-02': 'text', 'end-01': 'text',
 })
 export const ENERGYWORK_EXPERIENCE_VALUES = Object.freeze(['beginner','energywork','reiki-1-2','master'])
@@ -131,6 +155,7 @@ const P3_TANTRA = Object.freeze([
 // Resume on the first unanswered original question in the NEW order.
 // The last shared screen retains both historic answer keys privately.
 export function energyworkP4ResumeId(slideId, answers = {}) {
+  if (ENERGYWORK_P6_KUNDALINI_ANSWER_IDS.includes(slideId)) return 'kun-question-01'
   if (['tan-06','tan-study-02','tan-study-03','tan-study-04',
     'tan-study-05','tan-study-06','tan-study-07'].includes(slideId)) {
     const missing = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.find(id =>
@@ -167,6 +192,12 @@ export function energyworkP3ResumeId(slideId, answers = {}) {
   if (flightStep >= 0) return energyworkSequence()[2 + flightStep]
   return energyworkP4ResumeId(slideId, answers)
 }
+// Existing p5/p6 study slides resume on the first newly authored prompt.
+// Keep historical private responses intact: the p7 questions have fresh IDs.
+export function energyworkP6ResumeId(slideId) {
+  return ENERGYWORK_P6_KUNDALINI_ANSWER_IDS.includes(slideId) || slideId === 'kun-done'
+    ? 'kun-question-01' : energyworkSequence().includes(slideId) ? slideId : 'flight-01'
+}
 export function energyworkInitiationReady(answers) {
   return Boolean(answers && typeof answers === 'object' && !Array.isArray(answers) &&
     [...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS]
@@ -178,7 +209,9 @@ export function energyworkAnswerValid(id, answer) {
   if (kind === 'text') return !answer.includes('\\u0000') &&
     (ENERGYWORK_MEDITATION_REPORT_IDS.includes(id) || answer.length <= 1600)
   if (kind === 'scale') return /^(?:[0-9]|10)$/.test(answer)
-  if (kind === 'choice') return id === 'welcome-02'
+  if (kind === 'choice') return ENERGYWORK_KUNDALINI_CHOICE_VALUES[id]
+    ? ENERGYWORK_KUNDALINI_CHOICE_VALUES[id].includes(answer)
+    : id === 'welcome-02'
     ? ENERGYWORK_EXPERIENCE_VALUES.includes(answer)
     : id === 'flight-03'
       ? ENERGYWORK_SUN_PRACTICE_VALUES.includes(answer)
