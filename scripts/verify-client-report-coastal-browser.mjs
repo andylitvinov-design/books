@@ -42,6 +42,15 @@ try{
         assets.push(address)
         return route.fulfill({status:200,contentType:'image/svg+xml',body:fixture.imageBytes})
       }
+      // Current coastal theme also layers same-origin AVIF/WebP versions.
+      // Only these known static files are permitted by the isolated fixture.
+      if(address===origin+'/images/holistic-house/report-lighthouse-coast.avif' ||
+         address===origin+'/images/holistic-house/report-lighthouse-coast.webp'){
+        const modern=address.endsWith('.avif')
+        assets.push(address)
+        return route.fulfill({status:200,contentType:modern?'image/avif':'image/webp',
+          body:await readFile(new URL('../public/images/holistic-house/report-lighthouse-coast.'+(modern?'avif':'webp'),import.meta.url))})
+      }
       if(address===origin+'/images/holistic-house/homepage-botanical.svg'){
         assets.push(address)
         return route.fulfill({status:200,contentType:'image/svg+xml',body:fixture.botanicalBytes})
