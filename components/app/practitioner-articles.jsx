@@ -266,6 +266,10 @@ export default function PractitionerArticles({locale,services=[]}){
   {filtered.length>limit&&<div className={styles.actions}><button className={styles.secondary} type="button" onClick={()=>setLimit(x=>x+24)}>{t.more} <ChevronDown size={15} aria-hidden="true"/></button></div>}
   {editorOpen&&<form ref={editorRef} className={styles.editor} aria-busy={busy} onSubmit={e=>{e.preventDefault();void save()}}>
    <div className={styles.editorHeader}><h4>{editing?t.editTitle:t.draftTitle}</h4><button type="button" className={styles.secondary} onClick={closeEditor}>{t.close} ×</button></div>
+   {draft.coverPath&&<div className={styles.coverPreview}>
+    <img src={draft.coverPath} alt={draft.title||t.cover} loading="eager"/>
+    <span>{ru?'Фотография прикреплена к статье и сохраняется вместе с текстом.':'The cover photograph stays attached when you save this article.'}</span>
+   </div>}
    {editing?.reviewNote&&<p className={styles.error}>{editing.reviewNote}</p>}
    {editing?.status&&<p className={styles.caption}>{shortStatus(editing.status,ru)}</p>}
    <div className={styles.row}>
