@@ -121,9 +121,10 @@ export function middleware(request: NextRequest) {
       return url.protocol==='https:'&&url.hostname.endsWith('.supabase.co')?' '+url.origin:''
     }catch{return ''}
   })()
-  // Only the three public Events landing pages may fetch the organizer's
-  // Eventbrite image CDN. Private Account/client/API routes keep their CSP.
-  const eventsPosterImageOrigin = /^\/(en|ru|es)\/events\/?$/.test(pathname)
+  // Only public Events directories and their verified leaf pages may fetch
+  // the organizer's Eventbrite image CDN. Private Account/client/API routes
+  // and calendar downloads keep their restrictive CSP.
+  const eventsPosterImageOrigin = /^\/(en|ru|es)\/events(?:\/[^/]+)?\/?$/.test(pathname)
     ? ' https://img.evbuc.com https://cdn.evbuc.com' : ''
   // Owner-only private video PUT; never widen client/guest playback CSP.
   const externalVideoUploadOrigin = (() => {

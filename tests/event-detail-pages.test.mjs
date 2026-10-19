@@ -11,7 +11,7 @@ test("one published event has one shareable, localized page and an explicit regi
 
   assert.match(route, /export function generateStaticParams/);
   assert.match(route, /publishedEvent\(eventId\)/);
-  assert.match(route, /event\.status === "published"/);
+  assert.match(route, /item\.status === "published"/);
   assert.match(route, /alternates:/);
   assert.match(route, /canonical: eventPath\(locale, event\)/);
   assert.match(route, /"x-default": eventPath\("en", event\)/);
@@ -56,4 +56,23 @@ test("the event detail page keeps the existing event directory and public servic
   assert.match(route, /href=\{".*locale \+ "\/services"\}/);
   assert.match(route, /rel="noopener noreferrer"/);
   assert.match(route, /className=\{styles\.primary\}/);
+});
+
+test("an upcoming confirmed event can be shared and exported without exposing provider or attendee data", () => {
+  const route = file("app/[locale]/events/[eventId]/page.tsx");
+  const calendarRoute = file("app/[locale]/events/[eventId]/calendar/route.ts");
+  const controls = file("components/public-event-actions.tsx");
+  assert.match(route, /EventDetailActions/);
+  assert.match(route, /\/calendar/);
+  assert.match(calendarRoute, /createPublicEventCalendar/);
+  assert.match(calendarRoute, /Content-Type.*text\/calendar/);
+  assert.match(calendarRoute, /Content-Disposition.*attachment/);
+  assert.match(controls, /navigator\.share/);
+  assert.match(controls, /navigator\.clipboard/);
+  assert.doesNotMatch(controls, /analytics|track|provider|attendee/i);
+});
+
+test("the public event detail page permits its already-approved Eventbrite poster in its narrow CSP", () => {
+  const middleware = file("middleware.ts");
+  assert.ok(middleware.includes("events(?:\\/[^/]+)?\\/?$"));
 });

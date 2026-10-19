@@ -151,6 +151,8 @@ Production: [holistichouse.vercel.app](https://holistichouse.vercel.app), Vercel
 | GSC / SEO | SEO-план и crawl/sitemap живут в books; сторонний GSC Wizard subscription_required | Не покупать подписку. Данные индексации проверять в авторизованном Google Search Console |
 | Telegram / партнёры | Органические referral labels в исходном коде уже есть | Размещать в группах только при праве публиковать, без массовых холодных сообщений |
 
+**Техническое обновление 19.10.2026 (ещё не production):** verified Event leaf page выдаёт локализованный RFC 5545 `.ics` только пока опубликованное мероприятие не началось; календарь содержит лишь уже публичные title, description, time, address и canonical URL. Нативный Share / fallback Copy передаёт только canonical public URL, поэтому мессенджеры используют существующее OG preview. CSP разрешает Eventbrite poster исключительно для public Events directory и его leaf page, а calendar/API/private routes не расширяет. Нет GA4 event, provider write, регистрации, attendee, цены, organizer или payment data.
+
 Контроль внешнего Event Publisher сохраняется в [TorontoTantra #74](https://github.com/andylitvinov-design/torontotantra/issues/74), разрешения в [#69](https://github.com/andylitvinov-design/torontotantra/issues/69), реальные лиды на сайте в [books #801](https://github.com/andylitvinov-design/books/issues/801). Список возможностей и ограничений площадок: [Provider Capability Matrix](https://github.com/andylitvinov-design/torontotantra/blob/main/docs/event-publisher/PROVIDER_CAPABILITY_MATRIX.md).
 
 ### Модель события и разграничение ответственности

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { EventDetailActions } from "@/components/public-event-actions";
 import { PUBLIC_EVENTS, type PublicEvent } from "@/data/public-events";
 import { metadataBaseFor } from "@/data/site-metadata";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -178,6 +179,14 @@ export default async function EventDetailPage({ params }: Props) {
                 <a href={event.registrationHref} target="_blank" rel="noopener noreferrer" className={styles.primary}>
                   {t.registration} <ArrowUpRight size={18} aria-hidden="true" />
                 </a>
+                <EventDetailActions
+                  calendarHref={eventPath(locale, event) + "/calendar"}
+                  className={styles.utilityActions}
+                  actionClassName={styles.secondary}
+                  locale={locale}
+                  title={event.title[locale]}
+                  url={new URL(eventPath(locale, event), metadataBaseFor()).href}
+                />
                 <small>{t.note}</small>
               </div>
             )}
