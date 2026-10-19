@@ -4338,7 +4338,7 @@
 .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title {
   display: block;
 }
-.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title h3 {
+.canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title .canonical-remedy-unified-name {
   margin: 0;
   padding: 0;
   color: #1b4e5a;
@@ -4451,7 +4451,7 @@
     width: 53px;
     height: 57px;
   }
-  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title h3 {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title .canonical-remedy-unified-name {
     font-size: clamp(16px, 4.1vw, 19px);
   }
   .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule {
@@ -4486,7 +4486,7 @@
     width: 44px;
     height: 49px;
   }
-  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title h3 {
+  .canonical-shell .canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-title .canonical-remedy-unified-name {
     font-size: 15px;
   }
   .canonical-shell .canonical-document--editorial .canonical-remedy-profile-action.canonical-remedy-unified-toggle {
