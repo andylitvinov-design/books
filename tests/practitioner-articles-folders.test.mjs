@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {validateArticleDraft} from '../lib/practitioners/article-contracts.js'
+import {articleBlocks,inlineArticleSegments} from '../lib/practitioners/article-format.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const base={locale:'ru',title:'Arsenicum Album',excerpt:'Краткое описание авторского образовательного материала.',body:'Авторское описание архетипа и основных наблюдений.',sourceUrls:[],linkedServiceIds:[]}
@@ -15,7 +16,8 @@ test('original remedy cover paths are allowed without accepting external private
 })
 
 test('owner-scoped folder migration keeps articles when a folder is deleted',()=>{
- const sql=read('sql/practitioner-article-folders-20261019.sql')
+ const sql=read('supabase/migrations/20261019172000_hh_practitioner_article_folders.sql')
+ assert.match(read('tests/helpers/app-db-setup.mjs'),/20261019172000_hh_practitioner_article_folders\.sql/)
  assert.match(sql,/UNIQUE \(id, practitioner_id\)/)
  assert.match(sql,/FOREIGN KEY \(folder_id, practitioner_id\)/)
  assert.match(sql,/ON DELETE SET NULL \(folder_id\)/)
@@ -47,4 +49,53 @@ test('master article editor includes search, folders, inline formatting and prev
  assert.match(ui,/ArticlePreview/)
  assert.match(ui,/insertFormat/)
  assert.match(ui,/sourceUrls/)
+})
+
+
+test('article formatter handles remedy headings, lists and bold without HTML interpretation',()=>{
+ const blocks=articleBlocks('## Показания\n\nОписание первой строки.\nДополнительная строка.\n\n### Источники\n- Алхимия\n- Самонаблюдение\n\n1. Первый\n2. Второй')
+ assert.deepEqual(blocks.map(x=>x.type),['h2','p','h3','ul','ol'])
+ assert.deepEqual(blocks[3].items,['Алхимия','Самонаблюдение'])
+ assert.deepEqual(blocks[4].items,['Первый','Второй'])
+ assert.match(blocks[1].text,/\nДополнительная строка/)
+ assert.deepEqual(inlineArticleSegments('Text **bold** end'),[
+  {text:'Text ',strong:false},{text:'bold',strong:true},{text:' end',strong:false},
+ ])
+ assert.deepEqual(articleBlocks('<script>alert(1)</script>'),[{type:'p',text:'<script>alert(1)</script>'}])
+ const publicPage=read('app/[locale]/articles/[slug]/page.tsx')
+ assert.match(publicPage,/articleBlocks\(published\.body/)
+ assert.doesNotMatch(publicPage,/dangerouslySetInnerHTML/)
+})
+
+test('owner search keywords are optional, deduplicated and bounded',()=>{
+ const clean=validateArticleDraft({...base,tags:['Цинк','Zincum','цинк']})
+ assert.deepEqual(clean.tags,['Цинк','Zincum'])
+ assert.deepEqual(validateArticleDraft(base).tags,[])
+ assert.throws(()=>validateArticleDraft({...base,tags:['bad\nentry']}),{code:'INVALID_TAG'})
+ assert.throws(()=>validateArticleDraft({...base,tags:Array(13).fill('bad')}),{code:'INVALID_LIST'})
+ assert.throws(()=>validateArticleDraft({...base,tags:['x'.repeat(81)]}),{code:'INVALID_TEXT'})
+})
+
+test('remedy editor keeps unfiled selection valid, protects unsaved edits and supports quick links',()=>{
+ const ui=read('components/app/practitioner-articles.jsx')
+ const workspace=read('components/app/practice-workspace.jsx')
+ const materials=read('components/app/practice-materials.jsx')
+ assert.match(ui,/folders\.some\(f=>f\.id===selectedFolder\)\?selectedFolder:''/)
+ assert.match(ui,/hasUnsaved&&!window\.confirm\(t\.discard\)/)
+ assert.match(ui,/type="search"/)
+ assert.match(ui,/tokens\.every\(token=>haystack\.includes\(token\)\)/)
+ assert.match(ui,/tagInput/)
+ assert.match(ui,/statusFilter/)
+ assert.match(ui,/Submit for review/)
+ assert.match(workspace,/params\.get\('panel'\)==='materials'/)
+ assert.match(materials,/get\('materialTab'\)==='articles'/)
+})
+
+test('folder names cannot be duplicated even with mixed case',()=>{
+ const sql=read('sql/practitioner-article-folder-name-unique-20261019.sql')
+ const repo=read('lib/practitioners/article-repository.js')
+ assert.match(sql,/UNIQUE INDEX/)
+ assert.match(sql,/lower\(btrim\(name\)\)/)
+ assert.match(repo,/FOLDER_EXISTS/)
+ assert.match(repo,/ON CONFLICT/i)
 })

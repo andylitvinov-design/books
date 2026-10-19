@@ -3,8 +3,9 @@ import {useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {BookOpen,FolderPlus,Folder,Search,PenLine,Trash2,Eye,ChevronDown} from 'lucide-react'
 import styles from './practitioner-articles.module.css'
+import {articleBlocks,inlineArticleSegments} from '@/lib/practitioners/article-format'
 
-const initial=(locale='en')=>({locale:['ru','en','es'].includes(locale)?locale:'en',title:'',excerpt:'',body:'',coverPath:'',sourceUrls:[],linkedServiceIds:[]})
+const initial=(locale='en')=>({locale:['ru','en','es'].includes(locale)?locale:'en',title:'',excerpt:'',body:'',coverPath:'',sourceUrls:[],linkedServiceIds:[],tags:[]})
 const clean=value=>String(value||'').normalize('NFKC').toLocaleLowerCase().trim()
 function shortStatus(status,ru){
  const map={draft:ru?'Черновик':'Draft',submitted:ru?'На проверке':'In review',published:ru?'Опубликовано':'Published',
@@ -12,16 +13,18 @@ function shortStatus(status,ru){
  return map[status]||status
 }
 function InlineText({value}){
- return String(value||'').split(/(\*\*[^*\n]+\*\*)/g).map((chunk,i)=>
-  chunk.startsWith('**')&&chunk.endsWith('**')?<strong key={i}>{chunk.slice(2,-2)}</strong>:<span key={i}>{chunk}</span>)
+ return inlineArticleSegments(value).map((part,i)=>
+   part.strong?<strong key={i}>{part.text}</strong>:<span key={i}>{part.text}</span>)
 }
 function ArticlePreview({body}){
  return <div className={styles.preview}>
-  {String(body||'').split(/\n{2,}/).filter(Boolean).map((block,i)=>{
-   if(block.startsWith('## '))return <h5 key={i}>{block.slice(3)}</h5>
-   if(block.trim().startsWith('- '))return <ul key={i}>{block.split(/\n/).filter(Boolean).map((line,j)=><li key={j}><InlineText value={line.replace(/^[-*]\s+/, '')}/></li>)}</ul>
-   return <p key={i}><InlineText value={block}/></p>
-  })}
+  {articleBlocks(body).map((block,i)=>
+   block.type==='h2'?<h5 key={i}><InlineText value={block.text}/></h5>:
+   block.type==='h3'?<h6 key={i}><InlineText value={block.text}/></h6>:
+   block.type==='ul'?<ul key={i}>{block.items.map((line,j)=><li key={j}><InlineText value={line}/></li>)}</ul>:
+   block.type==='ol'?<ol key={i}>{block.items.map((line,j)=><li key={j}><InlineText value={line}/></li>)}</ol>:
+   <p key={i}><InlineText value={block.text}/></p>
+  )}
  </div>
 }
 export default function PractitionerArticles({locale,services=[]}){
@@ -36,11 +39,13 @@ export default function PractitionerArticles({locale,services=[]}){
   body:'Содержание статьи',place:'Сохранить в папке',preview:'Предпросмотр',hidePreview:'Скрыть просмотр',
   sources:'Источники, обложка и связанные услуги',sourceLinks:'Ссылки на источники (по одной на строку)',
   cover:'Путь к изображению',related:'Связанные услуги',save:'Сохранить черновик',
-  submit:'Отправить на публикацию',archive:'В архив',opened:'Открыть опубликованную статью',
+  submit:'Отправить на проверку',archive:'В архив',opened:'Открыть опубликованную статью',
   saved:'Статья сохранена.',folderSaved:'Папка создана.',folderRenamed:'Папка переименована.',folderRemoved:'Папка удалена, статьи сохранены.',
   confirmDelete:'Удалить папку? Статьи останутся в разделе «Без папки».',
   confirmArchive:'Архивировать статью?',saveFirst:'Сначала сохраните правки — затем отправляйте на проверку.',
   editTitle:'Редактор статьи',draftTitle:'Новая статья',close:'Закрыть редактор',emptyInput:'Введите название папки.',
+  tags:'Ключевые слова через запятую',discard:'Есть несохранённые изменения. Закрыть без сохранения?',filterStatus:'Статус',allStatuses:'Любой статус',
+  duplicateFolder:'Такая папка уже существует.',revisionError:'Материал изменился в другой вкладке. Обновите страницу и повторите.',
  }:{
   heading:'My articles',intro:'Your personal article library. Drafts stay private until publication is approved.',
   newArticle:'New article',newFolder:'New folder',folder:'Folders',all:'All articles',
@@ -51,19 +56,32 @@ export default function PractitionerArticles({locale,services=[]}){
   body:'Article text',place:'Save in folder',preview:'Preview',hidePreview:'Hide preview',
   sources:'Sources, cover and related services',sourceLinks:'Source URLs (one per line)',
   cover:'Cover image path',related:'Related services',save:'Save draft',
-  submit:'Submit for publication',archive:'Archive',opened:'Open published article',
+  submit:'Submit for review',archive:'Archive',opened:'Open published article',
   saved:'Article saved.',folderSaved:'Folder created.',folderRenamed:'Folder renamed.',folderRemoved:'Folder deleted; articles were kept.',
   confirmDelete:'Delete this folder? Articles will remain in Unfiled.',
   confirmArchive:'Archive this article?',saveFirst:'Save your changes before submitting for review.',
   editTitle:'Edit article',draftTitle:'New article',close:'Close editor',emptyInput:'Enter a folder name.',
+  tags:'Search keywords (comma-separated)',discard:'You have unsaved edits. Close without saving?',filterStatus:'Status',allStatuses:'Any status',
+  duplicateFolder:'This folder already exists.',revisionError:'This item changed in another tab. Refresh and try again.',
  }
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
- const [query,setQuery]=useState(''),[limit,setLimit]=useState(24)
+ const [query,setQuery]=useState(''),[limit,setLimit]=useState(24),[statusFilter,setStatusFilter]=useState('all')
  const [editing,setEditing]=useState(null),[editorOpen,setEditorOpen]=useState(false)
  const [draft,setDraft]=useState(()=>initial(locale)),[folderId,setFolderId]=useState('')
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
  const [addingFolder,setAddingFolder]=useState(false),[folderName,setFolderName]=useState('')
  const [preview,setPreview]=useState(false),bodyRef=useRef(null),editorRef=useRef(null)
+ const [tagInput,setTagInput]=useState('')
+ const tags=[...new Set(tagInput.split(/[,;\n]+/).map(value=>value.trim()).filter(Boolean))].slice(0,12)
+ const preparedDraft={...draft,tags}
+ const isUnchanged=!!editing&&JSON.stringify({...initial(editing.draft?.locale),...editing.draft})===JSON.stringify(preparedDraft)&&
+  (editing.folderId||'')===folderId
+ const hasUnsaved=editorOpen&&(editing?!isUnchanged:Boolean(draft.title.trim()||draft.body.trim()||draft.excerpt.trim()||tags.length||draft.coverPath||draft.sourceUrls?.length))
+ function closeEditor(){
+  if(busy)return
+  if(hasUnsaved&&!window.confirm(t.discard))return
+  setEditorOpen(false)
+ }
  async function reload(){
   const response=await fetch('/api/app/practice/articles',{credentials:'same-origin',cache:'no-store'})
   const json=await response.json().catch(()=>({}))
@@ -72,10 +90,18 @@ export default function PractitionerArticles({locale,services=[]}){
  }
  useEffect(()=>{reload().catch(e=>setError(e.message))},[])
  useEffect(()=>{if(editorOpen)editorRef.current?.scrollIntoView({behavior:'smooth',block:'start'})},[editorOpen,editing?.id])
+ useEffect(()=>{
+  if(!hasUnsaved)return undefined
+  const guard=event=>{event.preventDefault();event.returnValue=''}
+  window.addEventListener('beforeunload',guard)
+  return ()=>window.removeEventListener('beforeunload',guard)
+ },[hasUnsaved])
  function choose(item){
+  if(busy||(hasUnsaved&&!window.confirm(t.discard)))return
   setEditing(item||null)
   setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale))
-  setFolderId(item?.folderId||(selectedFolder==='all'?'':selectedFolder))
+  setTagInput((item?.draft?.tags||[]).join(', '))
+  setFolderId(item?.folderId||(folders.some(f=>f.id===selectedFolder)?selectedFolder:''))
   setEditorOpen(true);setPreview(false);setError('');setNotice('')
  }
  async function request(path,body){
@@ -89,13 +115,13 @@ export default function PractitionerArticles({locale,services=[]}){
  }
  async function perform(fn){
   setBusy(true);setError('');setNotice('')
-  try{await fn()}catch(e){setError(e.message||'ERROR')}finally{setBusy(false)}
+  try{await fn()}catch(e){setError(e.message==='FOLDER_EXISTS'?t.duplicateFolder:e.message==='REVISION_CONFLICT'?t.revisionError:e.message||'ERROR')}finally{setBusy(false)}
  }
  async function save(){
   await perform(async()=>{
-   const saved=await request(editing?'/'+editing.id:'',{draft,folderId:folderId||null,expectedRevision:editing?.revision})
+   const saved=await request(editing?'/'+editing.id:'',{draft:preparedDraft,folderId:folderId||null,expectedRevision:editing?.revision})
    await reload();setEditing(saved);setDraft({...initial(saved.draft?.locale),...saved.draft})
-   setFolderId(saved.folderId||'');setNotice(t.saved)
+   setFolderId(saved.folderId||'');setTagInput((saved.draft?.tags||[]).join(', '));setNotice(t.saved)
   })
  }
  async function command(action){
@@ -104,14 +130,14 @@ export default function PractitionerArticles({locale,services=[]}){
    const result=await request('/'+editing.id,{action,expectedRevision:editing.revision})
    await reload()
    if(action==='archive'){setEditorOpen(false);setEditing(null)}
-   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setNotice(ru?'Статус обновлён.':'Status updated.')}
+   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setTagInput((result.draft?.tags||[]).join(', '));setNotice(ru?'Статус обновлён.':'Status updated.')}
   })
  }
  async function createFolder(e){
   e.preventDefault();if(!folderName.trim()){setError(t.emptyInput);return}
   await perform(async()=>{
    const folder=await request('/folders',{name:folderName})
-   await reload();setSelectedFolder(folder.id);setFolderName('');setAddingFolder(false);setLimit(24);setNotice(t.folderSaved)
+   await reload();setSelectedFolder(folder.id);if(editorOpen)setFolderId(folder.id);setFolderName('');setAddingFolder(false);setLimit(24);setNotice(t.folderSaved)
   })
  }
  async function renameFolder(){
@@ -140,28 +166,28 @@ export default function PractitionerArticles({locale,services=[]}){
   setDraft(current=>({...current,body:next.slice(0,16000)}))
  }
  const filtered=useMemo(()=>{
-  const q=clean(query)
+  const tokens=clean(query).split(/\s+/).filter(Boolean)
   return items.filter(item=>{
    if(selectedFolder==='unfiled'&&item.folderId)return false
    if(selectedFolder!=='all'&&selectedFolder!=='unfiled'&&item.folderId!==selectedFolder)return false
-   if(!q)return true
-   const text=[item.draft?.title,item.draft?.excerpt,item.draft?.body,item.published?.title,item.slug].join(' ')
-   return clean(text).includes(q)
+   if(statusFilter!=='all'&&item.status!==statusFilter)return false
+   if(!tokens.length)return true
+   const haystack=clean([item.draft?.title,item.draft?.excerpt,item.draft?.body,
+    ...(item.draft?.tags||[]),item.published?.title,item.slug].join(' '))
+   return tokens.every(token=>haystack.includes(token))
   })
- },[items,query,selectedFolder])
+ },[items,query,selectedFolder,statusFilter])
  const selected=folders.find(x=>x.id===selectedFolder)
- const isUnchanged=!!editing&&JSON.stringify({...initial(editing.draft?.locale),...editing.draft})===JSON.stringify(draft)&&
-  (editing.folderId||'')===folderId
  const complete=draft.title.trim()&&draft.excerpt.trim().length>=30&&draft.body.trim().length>=200
  return <div className={styles.shell}>
   <div className={styles.top}>
    <div><h3>{t.heading} ({items.filter(x=>x.status!=='archived').length})</h3><p>{t.intro}</p></div>
-   <button type="button" className={styles.primary} onClick={()=>choose(null)}>+ {t.newArticle}</button>
+   <button type="button" className={styles.primary} disabled={busy} onClick={()=>choose(null)}>+ {t.newArticle}</button>
   </div>
   {error&&<p role="alert" className={styles.error}>{error}</p>}
   {notice&&<p role="status" className={styles.status}>{notice}</p>}
   <div className={styles.folders}>
-   <div className={styles.folderTitle}><span>{t.folder}</span><button type="button" className={styles.secondary} onClick={()=>setAddingFolder(x=>!x)}><FolderPlus size={14} aria-hidden="true"/> {t.newFolder}</button></div>
+   <div className={styles.folderTitle}><span>{t.folder}</span><button type="button" className={styles.secondary} disabled={busy} onClick={()=>setAddingFolder(x=>!x)}><FolderPlus size={14} aria-hidden="true"/> {t.newFolder}</button></div>
    <div className={styles.folderList} role="group" aria-label={t.folder}>
     <button type="button" className={styles.folder} aria-pressed={selectedFolder==='all'} onClick={()=>{setSelectedFolder('all');setLimit(24)}}><BookOpen size={15} aria-hidden="true"/>{t.all}<small>{items.length}</small></button>
     {folders.map(f=><button type="button" className={styles.folder} key={f.id} aria-pressed={selectedFolder===f.id} onClick={()=>{setSelectedFolder(f.id);setLimit(24)}}><Folder size={15} aria-hidden="true"/>{f.name}<small>{items.filter(x=>x.folderId===f.id).length}</small></button>)}
@@ -172,7 +198,13 @@ export default function PractitionerArticles({locale,services=[]}){
     {selected&&<><button type="button" className={styles.secondary} disabled={busy} onClick={renameFolder}>{t.rename}</button><button type="button" className={styles.danger} disabled={busy} onClick={deleteFolder}><Trash2 size={14} aria-hidden="true"/> {t.delete}</button></>}
    </div>}
   </div>
-  <label className={styles.search}><Search size={18} aria-hidden="true"/><input type="search" aria-label={t.search} placeholder={t.search} value={query} onChange={e=>{setQuery(e.target.value);setLimit(24)}}/></label>
+  <div className={styles.findBar}>
+   <label className={styles.search}><Search size={18} aria-hidden="true"/><input type="search" aria-label={t.search} placeholder={t.search} value={query} onChange={e=>{setQuery(e.target.value);setLimit(24)}}/></label>
+   <select className={styles.statusSelect} aria-label={t.filterStatus} value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setLimit(24)}}>
+    <option value="all">{t.allStatuses}</option>
+    {['draft','submitted','published','changes_requested','archived'].map(value=><option key={value} value={value}>{shortStatus(value,ru)}</option>)}
+   </select>
+  </div>
   <div className={styles.results}><span>{t.found}: {filtered.length}</span><span>{selected?.name||(selectedFolder==='unfiled'?t.noFolder:t.all)}</span></div>
   {filtered.length?<div className={styles.list}>{filtered.slice(0,limit).map(item=><article key={item.id} className={styles.card}>
     <div className={styles.cardHeader}>
@@ -182,13 +214,13 @@ export default function PractitionerArticles({locale,services=[]}){
       <p>{item.draft?.excerpt||item.draft?.body||''}</p></div>
     </div>
     <div className={styles.cardActions}>
-     <button type="button" className={styles.secondary} onClick={()=>choose(item)} disabled={item.status==='archived'||item.status==='suspended'}><PenLine size={14} aria-hidden="true"/> {t.edit}</button>
+     <button type="button" className={styles.secondary} onClick={()=>choose(item)} disabled={busy||item.status==='archived'||item.status==='suspended'}><PenLine size={14} aria-hidden="true"/> {t.edit}</button>
      {item.published?.title&&<Link href={'/'+item.published.locale+'/articles/'+item.slug}>{t.opened} →</Link>}
     </div>
    </article>)}</div>:<p className={styles.empty}>{t.none}</p>}
   {filtered.length>limit&&<div className={styles.actions}><button className={styles.secondary} type="button" onClick={()=>setLimit(x=>x+24)}>{t.more} <ChevronDown size={15} aria-hidden="true"/></button></div>}
   {editorOpen&&<form ref={editorRef} className={styles.editor} onSubmit={e=>{e.preventDefault();void save()}}>
-   <div className={styles.editorHeader}><h4>{editing?t.editTitle:t.draftTitle}</h4><button type="button" className={styles.secondary} onClick={()=>setEditorOpen(false)}>{t.close} ×</button></div>
+   <div className={styles.editorHeader}><h4>{editing?t.editTitle:t.draftTitle}</h4><button type="button" className={styles.secondary} onClick={closeEditor}>{t.close} ×</button></div>
    {editing?.reviewNote&&<p className={styles.error}>{editing.reviewNote}</p>}
    {editing?.status&&<p className={styles.caption}>{shortStatus(editing.status,ru)}</p>}
    <div className={styles.row}>
@@ -197,13 +229,14 @@ export default function PractitionerArticles({locale,services=[]}){
    </div>
    <label>{t.title}<input required maxLength={160} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
    <label>{t.excerpt}<textarea value={draft.excerpt} maxLength={500} rows={2} onChange={e=>setDraft({...draft,excerpt:e.target.value})}/></label>
-   <label>{t.body}<div className={styles.tools}>
+   <label>{t.tags}<input value={tagInput} maxLength={600} onChange={e=>setTagInput(e.target.value)} placeholder={ru?'Например: Arsenicum, мышьяк, тревога':'E.g. Arsenicum, arsenic, anxiety'}/></label>
+   <div className={styles.bodyField}><span>{t.body}</span><div className={styles.tools}>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('\n\n## ')}>H2</button>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('\n- ')}>•</button>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('**','**')}><b>B</b></button>
      <button type="button" className={styles.tool} aria-pressed={preview} onClick={()=>setPreview(x=>!x)}><Eye size={14} aria-hidden="true"/> {preview?t.hidePreview:t.preview}</button>
     </div>
-    <textarea ref={bodyRef} maxLength={16000} rows={12} value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})}/></label>
+    <textarea ref={bodyRef} maxLength={16000} rows={12} aria-label={t.body} value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})}/></div>
    {preview&&<ArticlePreview body={draft.body}/>}
    <details className={styles.source}><summary>{t.sources}</summary>
     <label>{t.sourceLinks}<textarea rows={3} value={(draft.sourceUrls||[]).join('\n')} onChange={e=>setDraft({...draft,sourceUrls:e.target.value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,8)})}/></label>

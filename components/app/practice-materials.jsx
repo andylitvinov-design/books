@@ -45,6 +45,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   invalid:'Enter a valid YouTube or Vimeo URL.',duplicate:'This video is already in your materials.',saving:'Saving…',saved:'Video saved to your materials as a draft.',removed:'Video removed from your materials.',saveFailed:'Could not save the video. Please try again.',conflict:'Your profile changed in another tab. Refresh the page and try again.',confirmRemove:'Remove this video from your materials?',autoSaved:'Videos save immediately. Submit for review to publish them on your profile.',
  }
  const [tab,setTab]=useState('reports')
+ useEffect(()=>{
+  if(new URLSearchParams(window.location.search).get('materialTab')==='articles')setTab('articles')
+ },[])
  const [reportItems,setReportItems]=useState([])
  const [reportMode,setReportMode]=useState('loading')
  const [reportError,setReportError]=useState('')

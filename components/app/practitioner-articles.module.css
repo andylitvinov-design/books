@@ -58,3 +58,17 @@
 :global(.hh-app) .shell .primary{background:#124658;color:#fff;border-color:#124658}
 :global(.hh-app) .shell .secondary,:global(.hh-app) .shell .tool{background:#fff;color:#164b5f}
 :global(.hh-app) .shell .folder[aria-pressed=true]{background:#174e62;color:#fff;border-color:#174e62}
+
+/* Follow-up polish: compact query controls and accessible editor fields */
+.findBar{display:grid;grid-template-columns:minmax(0,1fr) minmax(155px,200px);gap:9px;margin:0 0 12px;align-items:stretch}
+.findBar .search{margin:0}
+.statusSelect{border:1px solid #cbdde1;border-radius:12px;background:#fff;color:#285568;padding:0 12px;font:inherit;font-size:.9rem;font-weight:700;min-height:45px;max-width:100%}
+.statusSelect:focus-visible{outline:2px solid #8fbcc7;outline-offset:2px}
+.bodyField{display:grid;gap:6px;font-size:.86rem;color:#244c5d;font-weight:700;min-width:0}
+.bodyField textarea{width:100%;min-width:0;border:1px solid #c8dce2;border-radius:10px;padding:10px 12px;font:inherit;font-size:.94rem;color:#183b4f;background:#fff}
+.preview{font-weight:400}
+.preview h6{font-size:.98rem;color:#21495a;margin:13px 0 6px}
+.preview ul,.preview ol{padding-left:23px;margin:7px 0 12px}
+.preview p{white-space:pre-line}
+.editor{scroll-margin-top:100px}
+@media(max-width:600px){.findBar{grid-template-columns:1fr}.statusSelect{width:100%;padding:10px 12px}}
