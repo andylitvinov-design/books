@@ -181,6 +181,7 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("welcome-02");
   await page.locator('input[name="welcome-02"][value="beginner"]').check();
+  await expectFits("welcome-02"); // guidance appears after an answer
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-01");
   await page.locator("button[data-energywork-next]").click(); // source video; playback stays optional
