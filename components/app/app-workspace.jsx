@@ -51,6 +51,7 @@ import { isNativePsiAlchemy } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
+import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -402,6 +403,20 @@ export default function AppWorkspace({ locale, path = [] }) {
           errorMessage={error ? message(error, c) : undefined}
           onRetry={state === 'error' ? load : undefined}
           legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
+      </main>
+    )
+  // Public Cabinet entry explains the personal and practitioner spaces only to
+  // signed-out visitors. Authenticated accounts keep their existing workspace.
+  // Course/test deep links retain the dedicated Google handoff flows above.
+  if (state !== 'ready' && page === 'portrait' && !stressSignup)
+    return (
+      <main className="hh-app hh-app--cabinet-guest">
+        <CabinetGuestOverview
+          locale={locale} busy={busy} onSignin={signin}
+          unavailable={state === 'unavailable'}
+          onRetry={state === 'error' ? load : undefined}
+          errorMessage={error ? message(error, c) : undefined}
+        />
       </main>
     )
   if (state !== 'ready')

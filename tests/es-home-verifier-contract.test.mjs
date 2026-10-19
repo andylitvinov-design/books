@@ -187,7 +187,7 @@ test('Spanish account handoff opens the real menu and follows its unique visible
   async function run(fault) {
     const tree = renderNavigation('/es/client');
     const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
-    const links = treeNodes(menuTree).filter(node => node.type === 'a' && textOf(node) === 'Mi Casa');
+    const links = treeNodes(menuTree).filter(node => node.type === 'a' && textOf(node) === 'Gabinete');
     if (fault === 'wrong destination') links[0].props.href = '/es/client';
     if (fault === 'missing link') links.length = 0;
     if (fault === 'duplicate link') links.push(links[0]);
@@ -197,7 +197,7 @@ test('Spanish account handoff opens the real menu and follows its unique visible
       assert.equal(selector, 'summary');
       return { async click() { open = fault !== 'cannot open'; } };
     }, getByRole(role, options) {
-      assert.equal(role, 'link'); assert.deepEqual(options, { name: 'Mi Casa', exact: true });
+      assert.equal(role, 'link'); assert.deepEqual(options, { name: 'Gabinete', exact: true });
       return account;
     } };
     const trigger = { trigger: true };
@@ -208,7 +208,7 @@ test('Spanish account handoff opens the real menu and follows its unique visible
     } };
     const expect = actual => ({
       async toHaveCount(count) { assert.equal(actual.count, count); },
-      async toHaveAccessibleName(name) { assert.equal(actual, account); assert.equal(name, 'Mi Casa'); assert.equal(textOf(links[0]), name); },
+      async toHaveAccessibleName(name) { assert.equal(actual, account); assert.equal(name, 'Gabinete'); assert.equal(textOf(links[0]), name); },
       async toHaveJSProperty(name, value) { assert.equal(actual, menu); assert.equal(name, 'open'); assert.equal(open, value); },
       async toBeVisible() { assert.equal(actual, account); assert.equal(open, true); assert.notEqual(fault, 'hidden link'); },
       async toHaveAttribute(name, value) { assert.equal(actual, account); assert.equal(name, 'href'); assert.equal(links[0].props.href, value); },

@@ -244,7 +244,7 @@ async function verifyPublicDiscoveryNavigation(page, engine) {
     }
   }
   await resizePublicViewport(page, originalViewport)
-  pass(engine + ': public client and client/tests discovery retain exact Tests/My House navigation, active Tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
+  pass(engine + ': public client and client/tests discovery retain exact Tests/Cabinet navigation, active Tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
 }
 
 try {
