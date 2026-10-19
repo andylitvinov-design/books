@@ -3,12 +3,14 @@ import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
 import { CompactAssessmentReport } from './compact-assessment-report'
+import { CheckinFacetReport } from './checkin-facet-report'
 
 export function PersonalResultReport({ result, locale = 'en', previous = null, focusScaleKey = null }) {
   const report = buildAssessmentResultReport(result, locale)
   if (!report.sections.length) return <section data-personal-result-report data-unverified-assessment-result>
     <p role="note">{report.intro}</p>
   </section>
+  if (report.reportKind === 'checkin-facets' && report.verified === true) return <CheckinFacetReport result={result} report={report} locale={locale} focusScaleKey={focusScaleKey} />
   const ru = locale === 'ru'
   const bach = report.reportKind === 'bach'
   const verified = report.verified !== false

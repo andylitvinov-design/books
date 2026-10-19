@@ -594,7 +594,7 @@ async function handle(request, { params }) {
       }
       return json({ ...workspace, newServices })
     }
-    if (joined === 'practice/articles' && method === 'GET') return json({items:await articleRepo.mine(actor)})
+    if (joined === 'practice/articles' && method === 'GET') return json(await articleRepo.library(actor))
     if (joined === 'practice/events' && method === 'GET') return json({items:await eventsRepo.mine(actor)})
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
@@ -717,6 +717,12 @@ async function handle(request, { params }) {
       }
     }
     if (path[0] === 'practice' && path[1] === 'articles') {
+      if(path[2] === 'folders'){
+        if(path.length===3) return json(await articleRepo.createFolder(actor,body),201)
+        if(path.length===4 && body.action==='delete') return json(await articleRepo.removeFolder(actor,path[3]))
+        if(path.length===4 && body.action==='rename') return json(await articleRepo.renameFolder(actor,path[3],body))
+        throw new AppError('NOT_FOUND',404)
+      }
       if(path.length === 2) return json(await articleRepo.save(actor,null,body),201)
       if(path.length === 3){
         if(body.action === 'submit') return json(await articleRepo.submit(actor,path[2],body))

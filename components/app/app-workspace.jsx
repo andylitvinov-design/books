@@ -1,4 +1,5 @@
 'use client'
+import { checkinTrendResults, checkinComparisonNote, checkinFacetLabel } from '@/lib/assessments/checkin-result-analysis'
 import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
@@ -2518,15 +2519,15 @@ function ProfileOverview({ profile, locale, results = [] }) {
               <div className="hh-profile-chart-row" key={`${row.sourceDefinitionId}::${row.key}`}>
                 <div className="hh-profile-chart-label">
                   <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
-                  <strong>{readableScaleName(row, locale)}</strong>
+                  <strong>{row.checkinLabel || readableScaleName(row, locale)}</strong>
                 </div>
-                {row.screening ? (
+                {row.displayKind === 'checkin-observation' ? <span data-checkin-profile-observation>{ru ? 'Отдельный ответ, без процентной оценки' : 'Individual response, without a percentage score'}</span> : row.screening ? (
                   <span data-screening-count data-screening-verified={row.screening.verified}>{row.screening.label}</span>
                 ) : Number.isFinite(row.currentPercent) ? <div
                   className="hh-profile-chart-track"
                   role="img"
                   aria-label={
-                    `${readableScaleName(row, locale)}: ${profileNumber(row.value)} / ${row.max}`
+                    `${row.checkinLabel || readableScaleName(row, locale)}: ${profileNumber(row.value)} / ${row.max}`
                   }
                 >
                   <i style={{ width: `${row.currentPercent}%` }} />
@@ -2546,7 +2547,9 @@ function ProfileOverview({ profile, locale, results = [] }) {
                   <span>
                     {row.priorValue !== null
                       ? `${ru ? 'было' : 'was'} ${profileNumber(row.priorValue)} · ${profileDelta(row.delta)}`
-                      : ru
+                      : row.displayKind === 'checkin-observation'
+                        ? (checkinComparisonNote({ definitionId: row.sourceDefinitionId }, row.key, locale))
+                        : ru
                         ? 'первый замер'
                         : 'first measurement'}
                   </span>
@@ -2592,7 +2595,7 @@ function ProfileOverview({ profile, locale, results = [] }) {
                     <tr key={`${row.sourceDefinitionId}::${row.key}`}>
                       <th scope="row">
                         <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
-                        <strong>{readableScaleName(row, locale)}</strong>
+                        <strong>{row.checkinLabel || readableScaleName(row, locale)}</strong>
                         <span>{definition.title || definition.key}</span>
                       </th>
                       <td><strong>{profileNumber(row.value)}</strong><small>{row.min}–{row.max}</small></td>
@@ -3202,7 +3205,7 @@ function HistoryView({ data, locale, reload }) {
   const dimension = latest?.dimensions.find((d) => d.key === dimensionKey) || latest?.dimensions[0],
     delta = latest && prior && latest.id !== prior.id ? compareResults(latest, prior) : []
   const points = dimension
-    ? series.map((r) => ({
+    ? checkinTrendResults(series, latest, dimension.key).map((r) => ({
         id: r.id,
         date: r.measurementAt,
         value: r.dimensions.find((d) => d.key === dimension.key).value,
@@ -3299,7 +3302,7 @@ function HistoryView({ data, locale, reload }) {
               <p>{locale === 'ru' ? 'Прохождений' : 'Completed'}: <strong>{group.count}</strong>{group.latest && <> · {locale === 'ru' ? 'Последний' : 'Most recent'}: <time>{dateLabel(group.latest.measurementAt, locale)}</time></>}</p></div>
               {group.latest && <Link href={`/${locale}/app/results/${group.latest.id}`}>{locale === 'ru' ? 'Последний результат →' : 'Latest result →'}</Link>}</div>
             {group.latest && <div className="hh-assessment-history-dimensions">{group.latest.dimensions.map((d) => (
-              <div key={d.key}><span>{readableScaleName(d, locale)}</span><strong>{d.value} <small>/ {d.max}</small></strong></div>
+              <div key={d.key}><span>{checkinFacetLabel(group.latest, d.key) || readableScaleName(d, locale)}</span><strong>{d.value} <small>/ {d.max}</small></strong></div>
             ))}</div>}
             {group.count > 1 && <details className="hh-assessment-history-previous"><summary>{locale === 'ru' ? `Все прохождения (${group.count})` : `All attempts (${group.count})`}</summary><ul>{group.history.map((result) => <li key={result.id}><time>{dateLabel(result.measurementAt, locale)}</time> <Link href={`/${locale}/app/results/${result.id}`}>{locale === 'ru' ? 'Открыть результат' : 'Open result'}</Link></li>)}</ul></details>}
             <div className="hh-actions">{group.draft && <Link href={`/${locale}/app/runs/${group.draft.id}`}>{locale === 'ru' ? 'Продолжить начатый тест' : 'Resume unfinished test'}</Link>}
@@ -3350,7 +3353,7 @@ function HistoryView({ data, locale, reload }) {
               <select value={dimension.key} onChange={(e) => setDimensionKey(e.target.value)}>
                 {latest.dimensions.map((d) => (
                   <option key={d.key} value={d.key}>
-                    {d.sourceConstruct || labelFor(d.key, locale)}
+                    {checkinFacetLabel(latest, d.key) || d.sourceConstruct || labelFor(d.key, locale)}
                   </option>
                 ))}
               </select>
@@ -3370,9 +3373,9 @@ function HistoryView({ data, locale, reload }) {
               {c.previous}
             </button>
           </div>
-          {delta.length ? (
+          {delta.some(part => part.key === dimension.key) ? (
             <p className="hh-change">
-              {c.since} {dateLabel(prior.measurementAt, locale)}: {dimension.sourceConstruct || labelFor(dimension.key, locale)}{' '}
+              {c.since} {dateLabel(prior.measurementAt, locale)}: {checkinFacetLabel(latest, dimension.key) || dimension.sourceConstruct || labelFor(dimension.key, locale)}{' '}
               {delta.find((d) => d.key === dimension.key)?.prior} → {dimension.value}{' '}
               <span>
                 ({delta.find((d) => d.key === dimension.key)?.delta > 0 ? '+' : ''}
@@ -3380,14 +3383,14 @@ function HistoryView({ data, locale, reload }) {
               </span>
             </p>
           ) : (
-            <p>{c.noChange}</p>
+            <p>{checkinComparisonNote(latest, dimension.key, locale) || c.noChange}</p>
           )}
           {points.length >= 3 && (
             <svg
               className="hh-chart"
               viewBox="0 0 640 200"
               role="img"
-              aria-label={`${dimension.sourceConstruct || labelFor(dimension.key, locale)} — ${c.history}`}
+              aria-label={`${checkinFacetLabel(latest, dimension.key) || dimension.sourceConstruct || labelFor(dimension.key, locale)} — ${c.history}`}
             >
               <line x1="30" y1="170" x2="610" y2="170" />
               <polyline points={points.map((p) => `${x(p)},${y(p)}`).join(' ')} />
@@ -3402,7 +3405,7 @@ function HistoryView({ data, locale, reload }) {
           )}
           <table className="hh-table">
             <caption>
-              {dimension.sourceConstruct || labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
+              {checkinFacetLabel(latest, dimension.key) || dimension.sourceConstruct || labelFor(dimension.key, locale)} · {c.scale} {dimension.min}–{dimension.max}
             </caption>
             <thead>
               <tr>
