@@ -103,7 +103,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   const normalized={title:form.title.trim(),description:form.description.trim(),url:form.url.trim(),locale:form.locale}
   const next=editing==='new'?[...videos,normalized]:videos.map((video,index)=>index===editing?normalized:video)
   if(next.length>12){setError('Maximum 12 videos');return}
-  setVideos(next);setEditing(null);setError('')
+  const saved=await onSaveVideos(next)
+  if(saved===true){setVideos(next);setEditing(null);setError('')}
+  else setError(ptext.saveError)
  }
  return <div className={styles.shell}>
   <div className={styles.tabs} role="group" aria-label={ru?'Тип материалов':'Material type'}>
