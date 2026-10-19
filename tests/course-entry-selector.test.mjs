@@ -66,7 +66,7 @@ test('dialog is accessible and does not hide existing course navigation', () => 
 
 import { mount, nodes, textOf, findPart, findButton, account, course, courseView, access, deferred } from './helpers/course-ui-harness.mjs'
 
-test('canonical landing passes authoritative scope and opens an additional course without mutating before consent', async () => {
+test('canonical landing passes authoritative scope and starts only when the signed-in learner clicks', async () => {
   const h = mount('my-course', { props: { data: account('owner-a'), locale: 'en' }, fetcher: () => courseView(course('course-a', 2), { courses: [course('course-a', 2), course('course-b', 2)] }) })
   await h.settle()
   const entry = findPart(h.tree, 'CourseEntrySelector')
@@ -78,8 +78,12 @@ test('canonical landing passes authoritative scope and opens an additional cours
   assert.ok(findPart(h.tree, 'CoursePresetCatalog'))
   assert.equal(h.calls.filter(call => call.body).length, 0, 'opening a choice cannot create a course')
   findPart(h.tree, 'CoursePresetCatalog').props.onPersonal(); await h.settle()
-  assert.equal(findButton(h.tree, 'Agree & start').props.disabled, true)
-  assert.equal(h.calls.filter(call => call.body).length, 0)
+  const writes = h.calls.filter(call => call.body)
+  assert.equal(writes.length, 1, 'the course starts on the selected CTA, with no extra confirmation')
+  assert.equal(writes[0].body.action, 'start')
+  assert.equal(writes[0].body.consent, true)
+  assert.equal(writes[0].options.headers['X-HH-Account-ID'], 'owner-a')
+  assert.equal(findButton(h.tree, 'Agree & start'), undefined)
   h.unmount()
 })
 
