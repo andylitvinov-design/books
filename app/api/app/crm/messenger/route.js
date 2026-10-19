@@ -58,10 +58,8 @@ async function handle(request){
       }else if(action==='complete_followup'){
         onlyKeys(payload,['threadId','id','expectedRevision'])
         data=await repo.withOwner(actor,async store=>{
-          const contactId=await store.messengerContactId(payload.threadId)
-          const rows=await store.listFollowups()
-          if(!rows.some(r=>r.id===payload.id&&r.contactId===contactId&&r.status==='open'))
-            throw new AppError('NOT_FOUND',404)
+          const belongs=await store.messengerFollowupBelongsToThread(payload.threadId,payload.id)
+          if(!belongs) throw new AppError('NOT_FOUND',404)
           return store.changeFollowup({id:payload.id,action:'complete',expectedRevision:payload.expectedRevision})
         })
       }else if(action==='send'){
