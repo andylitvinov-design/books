@@ -133,6 +133,8 @@ const copy = {
     voicesNext: "Next review",
     voicesNavigation: "Browse learner reviews",
     milestoneLabel: "Well done — keep going!",
+    initiationVideoNoteTitle: "A video meditation is not an initiation",
+    initiationVideoNoteText: "Listening to a recorded meditation does not initiate you. Initiation is always personal. To receive a personal meditation from Andrey, complete all five lessons and write to him.",
     firstMilestoneLabel: "Your Reiki journey is underway",
     firstSaveTitle: "Keep your Reiki lessons in My Courses",
     firstSaveText: "Save Lesson 1, your notes and a link to your course materials. After Google sign-in, Lesson 2 opens automatically.",
@@ -264,6 +266,8 @@ const copy = {
     voicesNext: "Следующий отзыв",
     voicesNavigation: "Переключение отзывов",
     milestoneLabel: "Отличный результат!",
+    initiationVideoNoteTitle: "Видеомедитация — это ещё не инициация",
+    initiationVideoNoteText: "Прослушанная видеомедитация сама по себе не является инициацией. Инициация всегда персональна. Чтобы получить персональную медитацию от Андрея, завершите все пять уроков курса и напишите ему.",
     firstMilestoneLabel: "Ваш путь в Рейки начался",
     firstSaveTitle: "Сохраните уроки Рейки в личном кабинете",
     firstSaveText: "Сохраним первый урок, ваши записи и ссылку на материалы курса. После входа через Google автоматически откроется второй урок.",
@@ -797,6 +801,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01" || slide.id === "flight-done";
   const voicesArt = slide.kind === "voices";
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
+  // Decorative artwork belongs behind the lesson copy, never in a cropped strip.
+  // Video playback and the existing welcome/testimonial backgrounds are unaffected.
+  const artBackground = Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind);
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
@@ -1028,7 +1035,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </ol>
         </nav>
 
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} aria-labelledby="energywork-slide-title">
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
@@ -1089,7 +1096,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   </div>
                 </div>
               ) : null}
-              {slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? (
+              {(slide.id === "tan-done" || slide.id === "kun-done") ? (
+                 <aside className={styles.personalInitiationNote} data-reiki-personal-initiation-note>
+                   <span className={styles.personalInitiationNoteTitle}><Heart size={17} aria-hidden="true" />{t.initiationVideoNoteTitle}</span>
+                   <p>{t.initiationVideoNoteText}</p>
+                 </aside>
+               ) : null}
+               {slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? (
                 <aside className={styles.firstLessonSave} data-reiki-first-lesson-save
                   aria-labelledby="reiki-save-first-lesson-title">
                   <div className={styles.firstLessonSaveHeading}>
@@ -1342,9 +1355,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               ) : null}
             </div>
             {artSource ? (
-              <div className={styles.art} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}>
+              <div className={styles.art} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}
+                 data-reiki-diagram={artBackground && artSource?.includes("kundalini-manual") ? "true" : undefined}
+                 aria-hidden={artBackground ? true : undefined}>
                 <Image src={artSource}
-                  alt={portraitArt || voicesArt ? (locale === "ru" ? "Женщина спокойно медитирует в лучах утреннего солнца" : "Woman resting peacefully in morning sunlight") : ""}
+                  alt={artBackground ? "" : portraitArt || voicesArt ? (locale === "ru" ? "Женщина спокойно медитирует в лучах утреннего солнца" : "Woman resting peacefully in morning sunlight") : ""}
                   fill priority={index === 0 || voicesArt} unoptimized={portraitArt || voicesArt}
                   sizes="(max-width: 720px) 100vw, 42vw" />
               </div>
