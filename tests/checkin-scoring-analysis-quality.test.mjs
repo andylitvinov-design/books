@@ -78,6 +78,17 @@ test('neutral multidimensional and invalid instruments do not get a directional 
   assert.equal(initialAssessmentSection(unsafe),0)
 })
 
+test('a malformed or missing section cannot break a stored preview or shift its index', () => {
+  const report = {verified:true,sections:[
+    null,
+    {key:'neutral',value:4,min:0,max:10,bandBasis:'descriptive',presentationDirection:'neutral'},
+    {key:'difficulty',value:9,min:0,max:10,bandBasis:'descriptive',presentationDirection:'difficulty'},
+    ['invalid'],
+  ]}
+  assert.equal(initialAssessmentSection(report),2)
+  assert.deepEqual(assessmentResultOverview(report,{},'en').preview.map(item=>item.key),['difficulty','neutral'])
+})
+
 test('an explicit source-backed follow-up stays ahead of descriptive display priorities', () => {
   const review={verified:true,sections:[
     {key:'a',value:10,min:0,max:10,bandBasis:'descriptive',presentationDirection:'difficulty',recommendedReview:false},
