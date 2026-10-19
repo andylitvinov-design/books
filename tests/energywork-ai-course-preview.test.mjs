@@ -58,6 +58,16 @@ test('Videos reuse the four approved original source recordings; no render or au
   assert.match(learner, /t\.unavailable/)
 })
 
+test('Lesson 1 Sun meditation review uses the approved two questions and one answer field', () => {
+  const review = curriculum.split('id: "flight-04"')[1]?.split('id: "flight-done"')[0] ?? ''
+  assert.match(review, /body: l\("Did you manage to fly up to the Sun during the Sun meditation\?"/)
+  assert.match(review, /prompt: l\("Describe please how was the Sun energy flow\?"/)
+  assert.match(review, /type: "text"/)
+  assert.match(review, /Удалось ли вам подняться к Солнцу/)
+  assert.match(learner, /isMeditationFeedback \? meditationReview/)
+  assert.match(learner, /textarea id=\{"answer-" \+ slide\.id\}/)
+})
+
 test('Sun meditation is followed by the gentle pause before reflections', () => {
   const lesson = curriculum.split('id: "flight-01"')[1].split('id: "presence-01"')[0]
   assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-03"'))
