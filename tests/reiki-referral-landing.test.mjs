@@ -64,7 +64,8 @@ test("campaign entry skips redundant intro only for fresh users; saved learners 
   assert.match(routes, /startAtExperience=\{query\.start === "1"\}/);
   assert.match(course, /startAtExperience\?: boolean/);
   assert.match(course, /useState\(startAtExperience \? 1 : 0\)/);
-  assert.match(course, /setIndex\(Math\.max\(0, restored\.findIndex\(\(item\) => item\.id === value\.slideId\)\)\)/);
+  assert.match(course, /const savedIndex = Math\.max\(0, restored\.findIndex\(\(item\) => item\.id === value\.slideId\)\)/);
+  assert.match(course, /setIndex\(requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex\)/);
   assert.match(course, /startAtExperience = false/);
   assert.ok(read("data/academy/energywork-ai-curriculum.ts").includes('id: "welcome-02"'),
     "first course question remains the approved Reiki experience choice");
