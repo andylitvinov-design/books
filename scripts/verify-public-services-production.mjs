@@ -107,36 +107,44 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
       await visible(page.locator("#services-conversion-title"));
-      const quick = page.locator("[data-services-quick-start]");
-      await visible(quick);
-      const freeDirect = quick.locator('[data-services-quick-action="free-written-review"]');
-      const paidDirect = quick.locator('[data-services-quick-action="personal-session"]');
-      assert.equal(await freeDirect.getAttribute("href"), "/" + locale + "/services/free-situation-review");
-      assert.equal(await paidDirect.getAttribute("href"), "/" + locale + "/services/alchemy-of-soul");
-      for (const action of [freeDirect, paidDirect]) {
+      // Free-first studio: three distinct no-payment paths, then five real
+      // personal offers. No secondary marketplace repeats on the landing.
+      const freeCta = page.locator('[data-service-hero-cta="free"]');
+      const paidCta = page.locator('[data-service-hero-cta="paid"]');
+      await visible(freeCta);
+      await visible(paidCta);
+      assert.equal(await freeCta.getAttribute("href"), "#free-insights");
+      assert.equal(await paidCta.getAttribute("href"), "#consultation");
+      for (const action of [freeCta, paidCta]) {
         const bounds = await action.boundingBox();
-        assert.ok(bounds && bounds.width >= 105 && bounds.height >= 44,
+        assert.ok(bounds && bounds.height >= 44,
           "Services first-screen actions must be usable at " + locale + "/" + width);
       }
-      const banner = page.locator('[data-services-tests-intro]#free-insights');
-      assert.equal(await banner.count(), 1, "one free tests/course banner");
-      await visible(banner);
-      await visible(banner.locator("h2#services-tests-heading"));
-      const testAction = banner.locator("a[data-services-test-action]");
-      const courseAction = banner.locator("a[data-services-course-action]");
-      await visible(testAction);
-      await visible(courseAction);
-      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/client/tests", "free tests keep their locale-specific entry");
-      assert.equal(await courseAction.getAttribute("href"), "/" + locale + "/courses/antistress", "free course keeps its locale-specific entry");
-      await visible(banner.locator('a[href="#solutions"]'));
-      assert.equal(await page.locator("h1#services-conversion-title").count(), 1, "restored hero has one primary heading");
+      const free = page.locator('[data-services-studio-free]#free-insights');
+      const paid = page.locator('[data-services-studio-paid]#solutions');
+      await visible(free.locator("h2#services-free-title"));
+      await visible(paid.locator("h2#services-personal-title"));
+      assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
+      assert.equal(await paid.locator('[data-services-studio-card]').count(), 5);
+      assert.equal(await page.locator("#find-your-service").count(), 0,
+        "Detailed practitioner search belongs on the separate directory");
+      const testAction = free.locator('[data-services-studio-action="tests"]');
+      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/client/tests");
+      await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+      await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
+      await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
+      assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
       assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#solutions", "#consultation", '[data-personal-testimonials="services"]', "[data-services-tests-intro]#free-insights"];
+        const selectors = ["#services-conversion-title", "#free-insights", "#solutions",
+          "[data-services-meet]", '[data-personal-testimonials="services"]',
+          "#method-videos", "#consultation", "[data-services-directory-invitation]"];
         const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
         if (sections.some(matches => matches.length !== 1)) return false;
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner conversion order: hero, service offers, enquiry, testimonials, optional tests");
+      }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
+      assert.equal(await page.locator("#method-videos").getAttribute("open"), null,
+        "Extended method videos stay collapsed by default");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // Canonical header: Library shortcut; My House keeps cabinet access in the menu.
@@ -170,12 +178,14 @@ try {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
       }
       if (width === 390) {
-        const insights = page.locator("[data-services-tests-intro]#free-insights");
+        const insights = page.locator("[data-services-studio-free]#free-insights");
         await insights.scrollIntoViewIfNeeded();
         await insights.screenshot({ path: output + "/services-" + locale + "-free-insights-390.png" });
       }
-      // Contract for the mobile screenshot regression: restore ONE full-width
-      // Find my options action and a small, initially unchecked free-only filter.
+      // Keep the advanced matching UX available on a separate, dedicated
+      // directory page, instead of duplicating it below personal offers.
+      const directoryResponse = await page.goto(origin + "/" + locale + "/services/catalog", { waitUntil: "networkidle" });
+      assert.equal(directoryResponse?.status(), 200, "The dedicated Services catalog must load");
       const discovery = page.locator("#find-your-service");
       const searchForm = discovery.locator('form[role="search"]');
       const findOptions = searchForm.locator('button[type="submit"]');
@@ -254,10 +264,11 @@ try {
   {
     const page = await createPage(390);
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
-    const quick = page.locator("[data-services-quick-start]");
-    await visible(quick);
-    assert.equal(await quick.locator('[data-services-quick-action="free-written-review"]').getAttribute("href"), "/es/services/free-situation-review");
-    assert.equal(await quick.locator('[data-services-quick-action="personal-session"]').getAttribute("href"), "/es/services/alchemy-of-soul");
+    await visible(page.locator('[data-services-studio-free]'));
+    assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
+    assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
+    assert.equal(await page.locator("#find-your-service").count(), 0);
+    await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);
     await expect(freeOnly).not.toBeChecked();
