@@ -11,6 +11,8 @@ My Practice → CRM → SMS → verify setup/connectivity without sending → re
 - E.164 international phone required, actual consent proof separately recorded, no send for archived or opted-out contacts.
 - Max 10 outgoing attempts per owner per 24h; max four GSM-7/UCS-2 SMS segments per message. The browser shows the segment estimate including the full sender/footer, and Twilio's outbound validity window is 3600 seconds to reduce stale sends. Carrier pricing depends on destination, type and segment count.
 - Manual confirmation, stable request UUID and no automatic retry if delivery status uncertain.
+- **Manual delivery readback:** SMS history offers 'Check delivery' for accepted/pending jobs with a known Twilio Message SID. The owner-only route makes a single signed-credential **GET** to Twilio, verifies account, service and recipient fingerprint, then updates the owner-scoped job without ever sending a new message. This remains usable when the outbound SMS kill-switch is off, if the read-only provider credentials are retained. It never exposes the SID or customer phone in the browser response.
+- Stale reserved/dispatching SMS jobs are marked `unknown` on the next authenticated CRM read after five minutes, not misleadingly 'sending' indefinitely. Unknown/pending attempts suppress exact-text manual duplicates for 24 hours across browser tabs, helping prevent a second charge after timeouts.
 - Encrypted message body, keyed phone fingerprint and FORCE RLS owner-scoped database table.
 - Provider "accepted" is not "delivered"; Twilio signed webhook records delivery/undelivered/failure. Incoming STOP is registered even if outbound send is disabled.
 
