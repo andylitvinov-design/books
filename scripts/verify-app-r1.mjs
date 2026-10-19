@@ -1087,7 +1087,7 @@ try {
  await screenshotEvidence(page,{path:output+'/personality-runner.png',fullPage:true})
  for(let i=0;i<20;i++){await savedClick(page.locator('.hh-scale').getByRole('button',{name:'3 Neither Inaccurate nor Accurate'}));if(i<19)await savedClick(page.getByRole('button',{name:'Next',exact:true}))}
  await page.getByRole('button',{name:'Save results and get recommendations'}).click();await openCompletedPlanResult();data=(await api('bootstrap')).data;const trait=data.results.find(r=>r.definitionKey==='mini-ipip-20');assert.deepEqual(trait.dimensions.map(d=>d.value),[12,12,12,12,12]);assert.equal(data.snapshot.dimensions.length,10);passed('Mini-IPIP scoring is preserved alongside completed plan summaries')
- await enterTest('Weekly Psychic Health','Quick')
+ await enterTest('Weekly Wellbeing Check-in','Quick')
  await expect(page.getByText('Over the past 7 days',{exact:false})).toBeVisible()
  await expect(page.locator('.hh-quick-question')).toHaveCount(8)
  await expect(page.getByRole('heading',{name:'Overall, how emotionally okay have you felt during the past 7 days?',exact:true})).toBeVisible()

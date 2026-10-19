@@ -17,8 +17,8 @@ test("a dedicated three-language referral route leads directly to the existing r
   assert.match(sitemap, /\/reiki\/free-practitioner-course/);
   assert.match(routes, /const referralLanding = routeKey\(slug\) === "reiki\/free-practitioner-course"/);
   assert.match(routes, /tantraFreeInitiation \|\| referralLanding/);
-  assert.match(landing, /const courseLocale = locale === "es" \? "en" : locale/);
-  assert.match(landing, /\/academy\/principles-of-energywork\/learn/);
+  assert.match(landing, /const courseHref = REIKI_FREE_COURSE_PATH/);
+  assert.match(read("lib/academy/reiki-free-course.ts"), /\/en\/academy\/principles-of-energywork\/learn/);
   assert.equal((landing.match(/event="academy_course_enquiry_click"/g) || []).length, 2);
 });
 
@@ -57,10 +57,11 @@ test("shareable landing shows its image before text and primary action above sec
     "the first action is visible before detailed copy");
   assert.match(css, /\.heroVisual \{ order: -1; min-height:/);
   assert.match(css, /\.heroText \{ padding: 24px 23px 23px; order: 1; \}/);
-  assert.match(landing, /learn\?start=1/);
+  assert.match(landing, /href=\{courseHref\}/);
+  assert.doesNotMatch(landing, /learn\?start=1/);
 });
 
-test("campaign entry skips redundant intro only for fresh users; saved learners resume", () => {
+test("canonical free-course entry starts at the beginning and saved learners can resume", () => {
   const course = read("components/energywork-ai-learner.tsx");
   assert.match(routes, /startAtExperience=\{query\.start === "1"\}/);
   assert.match(course, /startAtExperience\?: boolean/);
@@ -76,7 +77,7 @@ test("short referral flow is discoverable from both legacy Tantra pages without 
   const tantra = read("components/tantra-free-initiation.tsx");
   const program = read("components/academy-record-page.tsx");
   assert.match(tantra, /className=\{styles\.freeCourseBridge\}/);
-  assert.match(tantra, /academy\/reiki\/free-practitioner-course/);
+  assert.match(tantra, /freeCourseBridge\} href=\{REIKI_FREE_COURSE_PATH\}/);
   assert.match(program, /Try the free 5-lesson course/);
   assert.match(program, /academy\/reiki\/tantra-reiki\/free-initiation/);
   assert.match(routes, /reiki-approved-sunrise-v3\.webp/);

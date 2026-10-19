@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Check, Feather, ShieldCheck, Video, Flower2, ChevronDown } from "lucide-react";
@@ -311,7 +312,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
               <a href="#tantra-practice-video" className={styles.buttonGhost}><PlayCircle size={18} aria-hidden="true"/>{t.watchCta}</a>
             </div>
             <div className={styles.heroStats}>{t.heroMeta.map((item) => <span key={item}><Check size={14} aria-hidden="true"/>{item}</span>)}</div>
-            <Link className={styles.freeCourseBridge} href={"/" + locale + "/academy/reiki/free-practitioner-course"}>
+            <Link className={styles.freeCourseBridge} href={REIKI_FREE_COURSE_PATH}>
               {locale === "ru" ? "Хотите сначала попробовать? Бесплатный курс из 5 уроков" : locale === "es" ? "¿Quieres probar primero? Curso gratis de 5 lecciones" : "Want to try it first? Take the free 5-lesson course"}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>

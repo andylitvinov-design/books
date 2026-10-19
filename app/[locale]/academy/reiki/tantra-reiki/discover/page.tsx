@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -105,7 +106,7 @@ export default async function TantraReikiPromo({params}:Props){
   const t=messages[locale];
   const course="/"+locale+"/academy/reiki/tantra-reiki";
   const video=course+"/free-initiation#tantra-practice-video";
-  const freeCourse="/"+locale+"/academy/principles-of-energywork/learn";
+  const freeCourse=REIKI_FREE_COURSE_PATH;
   const initiation=course+"/free-initiation#initiation-choices";
   const icons=[PlayCircle,BookOpen,Heart] as const;
   const links=[video,freeCourse,initiation];

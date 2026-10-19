@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -33,6 +33,23 @@ type SaveCommand = {
   answer?: string;
 };
 
+const programmeBenefits: Record<EnergyworkLocale, Record<string, string>> = {
+  en: {
+    flight: "Begin with a guided meditation and your first reflection.",
+    tantra: "Explore presence, connection and gentle energywork.",
+    kundalini: "Discover grounding and the Kundalini Reiki approach.",
+    yggdrasil: "Meet the World Tree, runes and Reiki Yggdrasil.",
+    initiation: "See how personal learning and initiation with Andrey work.",
+  },
+  ru: {
+    flight: "Начните с медитации и первого личного впечатления.",
+    tantra: "Познакомьтесь с практикой присутствия и контакта.",
+    kundalini: "Откройте для себя опору и подход Кундалини Рейки.",
+    yggdrasil: "Познакомьтесь с Мировым Древом, рунами и Рейки Иггдрасиль.",
+    initiation: "Узнайте, как проходят личное обучение и инициация у Андрея.",
+  },
+};
+
 const copy = {
   en: {
     shortTitle: "Reiki Practitioner",
@@ -50,9 +67,12 @@ const copy = {
     eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
-    program: "Explore the programme",
-    programmeIntro: "Your five-step journey is just beginning. Discover the Reiki paths that inspire you.",
-    systemDetails: "Learn more",
+    program: "Discover your Reiki journey",
+    programmeTeaser: "5 lessons · 3 Reiki traditions · guided practices",
+    programmeIntro: "Start with a guided meditation, discover three Reiki traditions and explore how to continue with Andrey.",
+    systemDetails: "About this practice",
+    openLesson: "Open lesson",
+    lessonLocked: "Opens as you progress",
     intro: "Introduction",
     slidesWord: "slides",
     saveProgress: "Save progress",
@@ -64,7 +84,8 @@ const copy = {
     of: "of",
     continue: "Continue",
     back: "Back",
-    stop: "Enjoy learning at your own pace. You can take a break and return to any lesson whenever you like.",
+    stop: "Explore all five steps now. Sign in to save your place as you learn.",
+    stopSaved: "Your progress is saved in My Courses. Revisit any step you have reached.",
     optional: "Optional reflection",
     experienceBadge: "Your starting point",
     experienceNote: "Choose one answer to continue. You can change it later.",
@@ -99,7 +120,6 @@ const copy = {
     voicesNavigation: "Browse learner reviews",
     voicesScrollLabel: "Learner review",
     milestoneLabel: "Lovely progress",
-    milestoneNote: "Personal initiation and group membership are arranged separately, never granted automatically.",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
     reviewNeeded: "For a personal initiation request, complete the five reports and five course answers. You can continue learning without them.",
@@ -167,9 +187,12 @@ const copy = {
     eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
-    program: "Посмотреть программу",
-    programmeIntro: "Ваш путь из пяти шагов только начинается. Знакомьтесь с системами Рейки и находите то, что вдохновляет.",
-    systemDetails: "Подробнее",
+    program: "Откройте свой путь в Рейки",
+    programmeTeaser: "5 уроков · 3 системы Рейки · медитации",
+    programmeIntro: "Начните с медитации, познакомьтесь с тремя системами Рейки и узнайте, как продолжить обучение с Андреем.",
+    systemDetails: "Об этой практике",
+    openLesson: "Открыть урок",
+    lessonLocked: "Откроется по мере прохождения",
     intro: "Введение",
     slidesWord: "слайдов",
     saveProgress: "Сохранить прогресс",
@@ -181,7 +204,8 @@ const copy = {
     of: "из",
     continue: "Продолжить",
     back: "Назад",
-    stop: "Учитесь в своём ритме: делайте паузы и возвращайтесь к любимым урокам, когда захотите.",
+    stop: "Изучайте все пять этапов. Войдите в кабинет, чтобы сохранять свой прогресс.",
+    stopSaved: "Ваш прогресс сохранён в разделе «Мои курсы». Возвращайтесь к пройденным урокам.",
     optional: "Необязательная рефлексия",
     experienceBadge: "Ваш уровень знакомства",
     experienceNote: "Выберите один вариант, чтобы продолжить. Позже его можно изменить.",
@@ -216,7 +240,6 @@ const copy = {
     voicesNavigation: "Переключение отзывов",
     voicesScrollLabel: "Отзыв участника",
     milestoneLabel: "Прекрасный прогресс",
-    milestoneNote: "Инициация и вступление в сообщество согласуются отдельно, а не происходят автоматически.",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
     reviewNeeded: "Для заявки на личную инициацию заполните пять отчётов и пять ответов. Учёбу можно продолжать без них.",
@@ -566,7 +589,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
     : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
-  const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01";
+  const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01" || slide.id === "flight-done";
   const voicesArt = slide.kind === "voices";
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
@@ -797,9 +820,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               {slide.kind === "milestone" ? (
                 <div className={styles.milestoneCard}>
                   <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
-                  <strong>{t.milestoneLabel}</strong>
-                  <p>{t.milestoneNote}</p>
-                  {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
+                  <div className={styles.milestoneCopy}>
+                    <strong>{t.milestoneLabel}</strong>
+                    {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
+                  </div>
                 </div>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
@@ -1002,35 +1026,51 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         </div>
 
         <details className={styles.programme} ref={programmeRef}>
-          <summary>{t.program}</summary>
-          <p className={styles.programmeIntro}>{t.programmeIntro}</p>
-          <ol>{energyworkLessons.map((lesson, number) => {
-            const range = lessonRanges[number]!;
-            const unlocked = range.start <= reachedIndex;
-            const system = energyworkPathChoices.find((choice) => choice.id === lesson.phase);
-            return (
-              <li key={lesson.phase} aria-current={currentLessonRange?.lesson === number + 1 ? "step" : undefined}>
-                <span className={styles.programmeRow}>
+          <summary className={styles.programmeSummary}>
+            <span className={styles.programmeSummaryIcon}><BookOpen size={20} aria-hidden="true" /></span>
+            <span className={styles.programmeSummaryCopy}>
+              <strong>{t.program}</strong>
+              <small>{t.programmeTeaser}</small>
+            </span>
+            <ChevronDown className={styles.programmeChevron} size={20} aria-hidden="true" />
+          </summary>
+          <div className={styles.programmeBody}>
+            <p className={styles.programmeIntro}>{t.programmeIntro}</p>
+            <ol className={styles.programmeList}>{energyworkLessons.map((lesson, number) => {
+              const range = lessonRanges[number]!;
+              const unlocked = range.start <= reachedIndex;
+              const system = energyworkPathChoices.find((choice) => choice.id === lesson.phase);
+              return (
+                <li key={lesson.phase} className={styles.programmeCard}
+                  data-lesson-open={unlocked ? "true" : "false"}
+                  aria-current={currentLessonRange?.lesson === number + 1 ? "step" : undefined}>
+                  <span className={styles.programmeNumber} aria-hidden="true">{number + 1}</span>
+                  <div className={styles.programmeCardCopy}>
+                    <span className={styles.programmeLesson}>{lesson.title[locale]}</span>
+                    <small className={styles.programmeBenefit}>{programmeBenefits[locale][lesson.phase]}</small>
+                    <span className={styles.programmeMeta}>
+                      <span className={styles.programmeCount}>{range.count} {t.slidesWord}</span>
+                      {system ? (
+                        <Link className={styles.programmeLink}
+                          href={"/" + locale + "/academy/" + system.studyPath}
+                          target="_blank" rel="noopener noreferrer"
+                          aria-label={lesson.title[locale] + " — " + t.systemDetails}>
+                          {t.systemDetails}<ExternalLink size={13} aria-hidden="true" />
+                        </Link>
+                      ) : null}
+                    </span>
+                  </div>
                   <button type="button" className={styles.programmeJump}
                     disabled={busy || sync === "checking" || !unlocked}
-                    onClick={() => void jumpToSlide(lesson.firstSlideId)}>
-                    <span className={styles.programmeLesson}>{lesson.title[locale]}</span>
-                    <small>{range.count} {t.slidesWord}</small>
+                    onClick={() => void jumpToSlide(lesson.firstSlideId)}
+                    aria-label={(unlocked ? t.openLesson : t.lessonLocked) + ": " + lesson.title[locale]}
+                    title={unlocked ? t.openLesson : t.lessonLocked}>
+                    <ArrowRight size={19} aria-hidden="true" />
                   </button>
-                  {system ? (
-                    <Link className={styles.programmeLink}
-                      href={"/" + locale + "/academy/" + system.studyPath}
-                      target="_blank" rel="noopener noreferrer"
-                      aria-label={lesson.title[locale] + " — " + t.systemDetails}>
-                      {t.systemDetails}<ExternalLink size={13} aria-hidden="true" />
-                    </Link>
-                  ) : null}
-                </span>
-              </li>
-            );
-          })}</ol>
-          {slide.kind === "welcome" ? <p className={styles.programmeNote}>{t.welcomeTeacher}</p> : null}
-          <p className={styles.disclaimer}>{t.stop}</p>
+                </li>
+              );
+            })}</ol>
+            <p className={styles.disclaimer}>{sync === "ready" ? t.stopSaved : t.stop}</p>
           <aside className={styles.preview} aria-live="polite">
           <LockKeyhole size={19} aria-hidden="true" />
           <div className={styles.syncContent}>
@@ -1081,6 +1121,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
           </div>
           </aside>
+          </div>
         </details>
         <footer className={styles.footer}>
           {!completed ? (

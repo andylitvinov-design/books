@@ -520,14 +520,18 @@
   .sceneCopy p { margin-bottom: 17px; font-size: 15px; line-height: 1.5; }
   .sceneCopy a { width: 100%; font-size: 14px; }
   .outcomeScene,.stepsScene { grid-template-columns: minmax(0,1fr); margin-top: 18px; border-radius: 20px; }
-  .outcomeImage { min-height: 210px; max-height: 30svh; }
-  .outcomeScene .outcomeGrid { gap: 8px; padding: 14px; }
-  .outcomeScene .outcomeGrid article { padding: 13px 15px; }
+  /* Keep the illustration and complete written guidance in one mobile theme. */
+  .outcomeImage { min-height: 128px; max-height: 128px; }
+  .outcomeScene .outcomeGrid { gap: 6px; padding: 10px; }
+  .outcomeScene .outcomeGrid article { padding: 11px 15px; }
   .outcomeScene .outcomeGrid h3 { font-size: 21px; }
-  .outcomeScene .outcomeGrid p { font-size: 13px; }
-  .stepsImage { min-height: 196px; max-height: 27svh; }
-  .stepsScene .steps { gap: 8px; padding: 13px; }
-  .stepsScene .steps li { padding: 13px 14px; }
+  .outcomeScene .outcomeGrid p { grid-column: 1 / -1; font-size: 13px; }
+  .outcomeScene .outcomeGrid article span { grid-row: auto; }
+  .stepsImage { min-height: 96px; max-height: 96px; }
+  .stepsScene .steps { gap: 6px; padding: 8px; }
+  .stepsScene .steps li { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 5px 8px; padding: 8px 14px; }
+  .stepsScene .steps li > div { display: contents; }
+  .stepsScene .steps p { grid-column: 1 / -1; }
   .stepsScene .steps h3 { font-size: 20px; }
   .stepsScene .steps p { font-size: 12.5px; }
   .about { grid-template-columns: minmax(0,1fr); padding: 16px; }

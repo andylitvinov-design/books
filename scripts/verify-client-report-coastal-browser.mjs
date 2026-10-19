@@ -38,6 +38,11 @@ try{
           'Content-Security-Policy':"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'none'; connect-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'none'",
         },body:fixture.document(sample)})
       }
+      const publicAsset=fixture.publicAssets.get(address)
+      if(publicAsset && request.method()==='GET'){
+        assets.push(address)
+        return route.fulfill({status:200,...publicAsset})
+      }
       if(address===origin+'/images/holistic-house/report-lighthouse-coast.svg'){
         assets.push(address)
         return route.fulfill({status:200,contentType:'image/svg+xml',body:fixture.imageBytes})

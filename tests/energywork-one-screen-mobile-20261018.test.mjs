@@ -6,6 +6,18 @@ import ts from "typescript";
 
 const source = () => readFile("components/principles-of-energywork.tsx", "utf8");
 const css = () => readFile("components/principles-of-energywork.module.css", "utf8");
+function assertCanonicalCourseTarget(page, targetSource) {
+  const exports = {};
+  const compiled = ts.transpileModule(targetSource, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  runInNewContext(compiled, { exports, require: name => { throw new Error('Unexpected course target dependency: '+name); } });
+  assert.equal(exports.REIKI_FREE_COURSE_PATH, '/en/academy/principles-of-energywork/learn');
+  assert.match(page, /const learnPath = REIKI_FREE_COURSE_PATH/);
+  assert.match(page, /import \{ REIKI_FREE_COURSE_PATH \} from "@\/lib\/academy\/reiki-free-course"/);
+  for (const marker of ['data-energywork-interactive-course', 'data-energywork-final-online']) {
+    assert.equal(page.split(marker).length-1, 1, marker);
+    assert.match(page, new RegExp('href=\\{learnPath\\}[^>]+'+marker));
+  }
+}
 function flightSection(page) {
   const id = 'id="energywork-flight-to-sun"';
   assert.equal(page.split(id).length - 1, 1, "one exact meditation section");
@@ -51,7 +63,24 @@ test("Each Reiki path keeps its initiation links, original videos and optional r
   assert.match(page, /youtubeId="DYo-fG-SyKw"/);
   assert.match(styles, /\.captureDisclosure > summary:focus-visible/);
   assert.match(page, /locale === "ru"[\s\S]*?locale === "es"/);
-  assert.match(page, /\(locale === "es" \? "en" : locale\)/);
+  assert.match(page, /const learnPath = REIKI_FREE_COURSE_PATH/);
+  assert.match(page, /import \{ REIKI_FREE_COURSE_PATH \} from "@\/lib\/academy\/reiki-free-course"/);
+  assert.match(page, /href=\{learnPath\}[^>]+data-energywork-interactive-course/);
+  assert.match(page, /href=\{learnPath\}[^>]+data-energywork-final-online/);
+});
+
+test('both course CTAs execute the approved shared EN target and reject wrong routes or bindings', async () => {
+  const page = await source();
+  const target = await readFile('lib/academy/reiki-free-course.ts','utf8');
+  assertCanonicalCourseTarget(page,target);
+  for (const route of ['/ru/academy/principles-of-energywork/learn','/en/academy/reiki/tantra-reiki/free-initiation','/en/app/course','/en/academy/principles-of-energywork/learn?start=1']) {
+    assert.throws(()=>assertCanonicalCourseTarget(page,target.replace('/en/academy/principles-of-energywork/learn',route)));
+  }
+  assert.throws(()=>assertCanonicalCourseTarget(page.replace('const learnPath = REIKI_FREE_COURSE_PATH','const learnPath = "/wrong"'),target));
+  for (const marker of ['data-energywork-interactive-course','data-energywork-final-online']) {
+    assert.throws(()=>assertCanonicalCourseTarget(page.replace(marker,''),target));
+    assert.throws(()=>assertCanonicalCourseTarget(page.replace(marker,marker+' '+marker),target));
+  }
 });
 
 

@@ -34,6 +34,7 @@ function loadComponent(path, imports) {
 const publicArtwork = loadComponent('lib/public-card-artwork.ts', { '@/data/public-card-artwork-urls.json': JSON.parse(read('data/public-card-artwork-urls.json')) });
 const shared = {
   '@/lib/public-card-artwork': publicArtwork,
+  '@/lib/academy/reiki-free-course': loadComponent('lib/academy/reiki-free-course.ts', {}),
   'next/link': anchor,
   'next/image': empty,
   'lucide-react': { ArrowUpRight: empty, FileText: empty, ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty },
