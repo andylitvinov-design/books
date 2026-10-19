@@ -1176,3 +1176,14 @@
   .consultation-advanced-grid { grid-template-columns: minmax(0, 1fr); }
   .consultation-advanced-grid .consultation-advanced-notes { grid-column: 1; }
 }
+
+/* Create and edit offer the same reusable report-materials panel. */
+.consultation-new-materials .consultation-new-materials-help {
+  margin: 8px 0 14px; color: #55747b; font-size: 14px; line-height: 1.5;
+}
+.consultation-new-materials .consultation-new-materials-pending {
+  display: grid; gap: 7px; margin-top: 14px; border: 1px solid #cfdfdf;
+  border-radius: 13px; background: #f4fbfa; padding: 13px;
+  color: #335f68; font-size: 13px; line-height: 1.55;
+}
+.consultation-new-materials .consultation-new-materials-link { color: #246976; font-weight: 700; }

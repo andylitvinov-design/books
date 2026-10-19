@@ -7,7 +7,9 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getConsultationRemedyOptions } from '@/lib/remedies/registry'
 import { uiLocaleCookie } from '@/lib/ui-locale'
+import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { ConsultationForm } from '@/components/consultation-form'
+import { NewReportMaterials } from '@/components/new-report-materials'
 import { getRecommendedTestOptions } from '@/lib/consultations/recommended-tests'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { createConsultationAction } from '../actions'
@@ -69,5 +71,8 @@ export default async function NewConsultation({ searchParams }) {
       recommendedTestOptions={{ en: getRecommendedTestOptions('en'), ru: getRecommendedTestOptions('ru') }}
       requestId={randomUUID()}
     />
+    {deliveryEnabled() && <section className="consultation-edit-materials" aria-label={ru ? 'Материалы отчёта' : 'Report materials'}>
+      <NewReportMaterials locale={ru ? 'ru' : 'en'} />
+    </section>}
   </main>
 }
