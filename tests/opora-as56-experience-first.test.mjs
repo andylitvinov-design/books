@@ -41,7 +41,7 @@ test('five lived moments replace quizzes; 28 RU/EN lessons save a truthful resul
   assert.equal(oporaExperienceGuidesValid(),true)
   for(const lang of ['ru','en'])for(let day=1;day<=14;day++){
     const f=fixture(lang,day),h=f.h,d=t[lang]
-    assert.match(textOf(h.tree),lang==='ru'?/Можно просто побыть здесь/:/You can arrive just as you are/)
+    assert.match(textOf(h.tree),lang==='ru'?/Как вы сейчас себя чувствуете\?/:/How are you feeling right now\?/)
     assert.doesNotMatch(textOf(h.tree),/Choose your pace|Today's focus|A simple example|Prepare gently/)
     await click(h,d.next)
     // The participant sees concrete day-specific ACTION guidance, not a quiz
@@ -72,6 +72,36 @@ test('five lived moments replace quizzes; 28 RU/EN lessons save a truthful resul
   }
 })
 
+test('opening asks about feelings before any task and answers with genuine feedback (EN/RU/ES)',async()=>{
+  const variants=[
+    {lang:'en',question:/How are you feeling right now/,label:'Tense',
+      response:/do not have to make yourself relax/},
+    {lang:'ru',question:/Как вы сейчас себя чувствуете/,label:'Напряжённо',
+      response:/не нужно заставлять себя расслабиться/},
+    {lang:'es',question:/Cómo te sientes ahora/,label:'Con tensión',
+      response:/No tienes que obligarte a relajarte/},
+  ]
+  for(const item of variants){
+    const f=fixture(item.lang),h=f.h
+    assert.match(textOf(h.tree),item.question)
+    assert.ok(findButton(h.tree,item.label),'Feeling must be an actual choice')
+    assert.ok(!textOf(h.tree).includes('Find one calm or pleasant detail around you.'))
+    await click(h,item.label)
+    assert.match(textOf(h.tree),item.response,'Feedback must appear on the SAME slide')
+    const selection=nodes(h.tree).find(node=>node.type==='button'&&
+      textOf(node).includes(item.label))
+    assert.equal(selection?.props['aria-pressed'],true)
+    for(let i=0;i<4;i++)await click(h,item.lang==='ru'?'Продолжить':
+      item.lang==='es'?'Continuar':'Continue')
+    await click(h,item.lang==='ru'?'Сохранить мою практику':
+      item.lang==='es'?'Guardar mi práctica':'Save my practice')
+    assert.equal(f.payload.welcomeFeeling,'tense','Authenticated session must receive chosen feeling')
+    assert.match(textOf(h.tree),item.lang==='ru'?/В начале занятия/:
+      item.lang==='es'?/Al empezar/:/At the start/)
+    h.unmount()
+  }
+})
+
 test('no action, vote, future plan or better feeling is required to finish',async()=>{
   const f=fixture('en',1),h=f.h
   // View the concrete step without claiming to perform it.
@@ -79,6 +109,7 @@ test('no action, vote, future plan or better feeling is required to finish',asyn
   await click(h,t.en.save)
   assert.equal(f.requests,1)
   assert.equal(f.payload.practiceAttempt,null)
+  assert.equal(f.payload.welcomeFeeling,null,'Unanswered welcome cannot be recorded as a feeling')
   assert.equal(f.payload.opora54.answers.act,undefined)
   assert.equal(f.payload.opora54.answers.aphorism,undefined)
   assert.equal(f.payload.opora54.answers.reflection,undefined)
@@ -121,7 +152,7 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
   assert.match(today,/<OporaExperiencePlayer/)
   assert.match(today,/<OporaV6SlidePlayer/)
   assert.match(css,/100dvh/)
-  assert.match(css,/course-start-heron\.webp/)
+  assert.match(css,/report-lighthouse-coast\.webp/)
   assert.match(css,/course-focus-mountain-boy\.webp/)
   assert.match(css,/reiki-practitioner-sunrise\.webp/)
   assert.match(css,/prefers-reduced-motion/)
