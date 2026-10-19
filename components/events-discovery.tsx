@@ -200,6 +200,11 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
                       <time dateTime={event.startsAt}><CalendarDays size={15} aria-hidden="true" />{renderSchedule(event, locale)}</time>
                       {where && <span className={styles.eventLocation}><MapPin size={15} aria-hidden="true" />{where}</span>}
                     </div>
+                    {(event.organizerName || event.priceLabel) && <p className={styles.eventByline}>
+                      {event.organizerName && <Link href={(event.organizerHref || '/en/masters').replace(/^\/en\//, '/' + locale + '/')}>{event.organizerName}</Link>}
+                      {event.organizerName && event.priceLabel && <span aria-hidden="true"> · </span>}
+                      {event.priceLabel && <span>{event.priceLabel === 'Free' ? (locale === 'ru' ? 'Бесплатно' : locale === 'es' ? 'Gratis' : 'Free') : event.priceLabel === 'Contact organizer' ? (locale === 'ru' ? 'По запросу' : locale === 'es' ? 'Consultar' : 'Contact organizer') : event.priceLabel}</span>}
+                    </p>}
                     <p className={styles.eventExcerpt}>{event.description[locale]}</p>
                     <div className={styles.eventActions}>
                       <button type="button" className={styles.detailsButton} aria-expanded={expanded}

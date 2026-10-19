@@ -3,10 +3,16 @@ import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { EventsDiscovery } from "@/components/events-discovery";
 import { PUBLIC_EVENTS } from "@/data/public-events";
+import type { PublicEvent } from "@/data/public-events";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerEventsRepository } from "@/lib/practitioners/events-repository";
 import { metadataBaseFor } from "@/data/site-metadata";
 import type { PublicLocale } from "@/lib/public-locales";
 
 type Props = { params: Promise<{ locale: string }> };
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const meta = {
   en: { title: "Events & Gatherings | Holistic House", description: "Explore Holistic House events, workshops and circles. Confirmed upcoming dates and registration links appear here." },
@@ -34,10 +40,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EventsPage({ params }: Props) {
   const { locale } = await params;
   if (!validLocale(locale)) notFound();
+  let practitionerEvents: PublicEvent[] = [];
+  try {
+    practitionerEvents = await createPractitionerEventsRepository(getAppConfig()).publicEvents() as PublicEvent[];
+  } catch {
+    // Keep organizer-confirmed events visible if the practitioner database is unavailable.
+  }
+  const events = [...PUBLIC_EVENTS, ...practitionerEvents]
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
-      <EventsDiscovery locale={locale} events={PUBLIC_EVENTS} />
+      <EventsDiscovery locale={locale} events={events} />
     </main>
   );
 }

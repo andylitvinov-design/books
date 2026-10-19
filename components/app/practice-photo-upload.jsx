@@ -53,7 +53,7 @@ function messageFor(error,ru){
 
 /** Uploads publicly displayable marketing photos only. Client notes/media never belong here. */
 export default function PracticePhotoUpload({mode='profile',value,onChange,locale='en',disabled=false}){
-  const ru=locale==='ru',es=locale==='es',gallery=mode==='service'
+  const ru=locale==='ru',es=locale==='es',gallery=mode==='service',eventCover=mode==='event'
   const photos=gallery?(Array.isArray(value)?value:[]):value?[value]:[]
   const locked=useRef(false)
   const [busy,setBusy]=useState(false)
@@ -85,14 +85,14 @@ export default function PracticePhotoUpload({mode='profile',value,onChange,local
     setNotice(ru?'Сохраните изменения в форме.':es?'Guarda los cambios en el formulario.':'Save the changes in this form.')
     setError('')
   }
-  return <section className={styles.section} aria-label={gallery?(ru?'Фотографии услуги':es?'Fotos del servicio':'Service photos'):(ru?'Фото мастера':es?'Foto del profesional':'Practitioner photo')}>
+  return <section className={styles.section} aria-label={eventCover?(ru?'Обложка мероприятия':es?'Portada del evento':'Event cover photo'):gallery?(ru?'Фотографии услуги':es?'Fotos del servicio':'Service photos'):(ru?'Фото мастера':es?'Foto del profesional':'Practitioner photo')}>
     <div className={styles.heading}>
-      <strong>{gallery?(ru?'Фотографии услуги':es?'Fotos del servicio':'Service photos'):(ru?'Моё фото':es?'Mi foto':'My profile photo')}</strong>
+      <strong>{eventCover?(ru?'Обложка мероприятия':es?'Portada del evento':'Event cover photo'):gallery?(ru?'Фотографии услуги':es?'Fotos del servicio':'Service photos'):(ru?'Моё фото':es?'Mi foto':'My profile photo')}</strong>
       <span>{photos.length}/{max}</span>
     </div>
     <div className={gallery?styles.gallery:styles.portraitRow}>
       {photos.map((photo,index)=><div key={photo} className={gallery?styles.imageCard:styles.portraitCard}>
-        <img src={photo} alt={gallery?(ru?'Фото услуги '+(index+1):'Service photo '+(index+1)):(ru?'Фото профиля':'Profile photo')} loading="lazy"/>
+        <img src={photo} alt={eventCover?(ru?'Обложка мероприятия':es?'Portada del evento':'Event cover photo'):gallery?(ru?'Фото услуги '+(index+1):'Service photo '+(index+1)):(ru?'Фото профиля':'Profile photo')} loading="lazy"/>
         <div className={styles.photoTools}>
           {gallery&&index>0&&<button type="button" disabled={busy||disabled} onClick={()=>change([photo,...photos.filter((_,i)=>i!==index)])}>{ru?'Обложка':'Cover'}</button>}
           {gallery&&index===0&&<span>{ru?'Обложка':es?'Portada':'Cover'}</span>}
