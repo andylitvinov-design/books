@@ -1137,3 +1137,20 @@ a.service-home-start-card:hover {
     font-size: 13px;
   }
 }
+
+/* Mobile checkout shortcut: show the basket only when an item is selected.
+   On narrow phones it takes the secondary Library shortcut’s place, avoiding overflow.
+   Library remains available through the site menu and on the desktop. */
+@media (max-width: 767px) {
+  .house-header--services .site-navigation > a[data-nav-item="cart"][data-cart-has-items="true"] {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 40px;
+    min-width: 40px;
+  }
+}
+@media (max-width: 490px) {
+  .house-header--services .site-navigation:has(> a[data-nav-item="cart"][data-cart-has-items="true"]) > .site-library-entry {
+    display: none;
+  }
+}
