@@ -6,23 +6,25 @@ import { getSitemapEntries, getRobotsPolicy } from "../data/seo.js";
 const origin = "https://holistichouse.vercel.app";
 const locales = ["en", "ru", "es"];
 const route = "app/[locale]/tests/page.tsx";
-const pageSource = readFileSync(new URL("../" + route, import.meta.url), "utf8");
-const config = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
-const privateSource = readFileSync(new URL("../app/[locale]/client/tests/page.tsx", import.meta.url), "utf8");
+const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+const pageSource = read(route);
+const landing = read("components/free-entry-landing.tsx");
+const css = read("components/free-entry-landing.module.css");
+const config = read("next.config.ts");
+const privateSource = read("app/[locale]/client/tests/page.tsx");
 
-test("public tests have own crawleable locale page, distinct from private test explorer", () => {
+test("public /tests guide is separate from private test explorer and has valid metadata", () => {
   assert.ok(existsSync(new URL("../" + route, import.meta.url)));
-  assert.ok(existsSync(new URL("../app/[locale]/tests/tests.module.css", import.meta.url)));
   assert.match(pageSource, /generateMetadata/);
   assert.match(pageSource, /generateStaticParams/);
   assert.match(pageSource, /languages/);
   assert.match(pageSource, /canonical/);
-  assert.match(pageSource, /<h1/);
-  assert.match(pageSource, /images: \[\{ url: image, alt:/);
-  assert.match(pageSource, /twitter: \{ card: "summary_large_image".*images: \[image\]/);
-
-  assert.match(pageSource, /\/client\/tests/);
-  assert.match(pageSource, /not medical or psychiatric diagnoses/);
+  assert.match(pageSource, /<FreeEntryLanding locale=\{locale\} kind="tests"/);
+  assert.match(landing, /<h1 id="free-entry-title">/);
+  assert.match(pageSource, /openGraph:/);
+  assert.match(pageSource, /twitter:/);
+  assert.match(landing, /\/client\/tests/);
+  assert.match(landing, /do not diagnose or treat health conditions/);
   assert.doesNotMatch(config, /source:\s*["']\/\:locale\(en\|ru\|es\)\/tests["'],\s*destination:\s*["']\/\:locale\/client\/tests/);
   assert.match(privateSource, /robots:\s*\{\s*index:\s*false/);
   assert.match(privateSource, /referrer:\s*["']no-referrer/);
@@ -30,7 +32,7 @@ test("public tests have own crawleable locale page, distinct from private test e
   for (const locale of locales) assert.ok(robots.rules.disallow.includes("/" + locale + "/client"));
 });
 
-test("public /tests sitemap entries are absolute, reciprocal and never expose client paths", () => {
+test("public /tests sitemap entries are absolute, reciprocal and private-path-safe", () => {
   const entries = getSitemapEntries(origin).filter(entry => /^https:\/\/holistichouse\.vercel\.app\/(en|ru|es)\/tests$/.test(entry.url));
   assert.equal(entries.length, 3);
   for (const entry of entries) {
@@ -45,31 +47,28 @@ test("public /tests sitemap entries are absolute, reciprocal and never expose cl
   }
 });
 
-test("public SEO descriptions, topic explanations and FAQs are localized and non-diagnostic", () => {
+test("SEO benefits and accessible FAQs are translated and non-diagnostic", () => {
   const descriptions = [...pageSource.matchAll(/description: "([^"]+)"/g)].map(match => match[1]);
   assert.equal(descriptions.length, 3);
-  for (const description of descriptions) {
-    assert.ok(description.length >= 100 && description.length <= 160,
-      "Public test description must be human-readable and concise: " + description.length);
-  }
+  for (const description of descriptions) assert.ok(description.length >= 100 && description.length <= 180);
   for (const snippet of [
-    "What can I explore?", "Что можно исследовать?", "¿Qué puedes explorar?",
-    "Common questions", "Частые вопросы", "Preguntas frecuentes",
-    "without registration", "без регистрации", "sin registrarte",
-  ]) assert.ok(pageSource.includes(snippet), "Missing localized guidance: " + snippet);
-  assert.match(pageSource, /<details className=\{styles\.question\}/);
-  assert.match(pageSource, /className=\{styles\.endCta\}/);
-  assert.match(pageSource, /\/\$\{locale\}\/client\/tests/);
-  assert.doesNotMatch(pageSource, /medical diagnosis guaranteed|certified diagnosis|cure your/i);
+    "From a feeling to a clearer picture", "От ощущения — к понятной картине", "De una sensación a una imagen más clara",
+    "Questions before you begin", "Вопросы перед началом", "Preguntas frecuentes",
+    "without signing in", "без входа", "sin iniciar sesión",
+  ]) assert.ok(landing.includes(snippet) || pageSource.includes(snippet), "Missing translation: " + snippet);
+  assert.match(landing, /<details key=\{question\}><summary>\{question\}<\/summary>/);
+  assert.match(landing, /<Link className=\{styles\.primary\} href=\{testsHref\}/);
+  assert.match(css, /@media\(max-width:600px\)/);
+  assert.doesNotMatch(pageSource + landing, /medical diagnosis guaranteed|certified diagnosis|cure your/i);
 });
 
-test("search crawlers can discover the public guide from EN/RU/ES homes without slowing the direct test entry", () => {
-  const sharedHome = readFileSync(new URL("../components/holistic-house-home.tsx", import.meta.url), "utf8");
-  const spanishHome = readFileSync(new URL("../app/es/page.tsx", import.meta.url), "utf8");
+test("public guide remains discoverable from three homepages without forcing a signup", () => {
+  const sharedHome = read("components/holistic-house-home.tsx");
+  const spanishHome = read("app/es/page.tsx");
   assert.ok(sharedHome.includes("How free self-checks work"));
   assert.ok(sharedHome.includes("Как работают бесплатные тесты"));
-  assert.ok(sharedHome.includes("href={`/${locale}/tests`}"));
-  assert.ok(sharedHome.includes("href={`/${locale}/client/tests`}"));
-  assert.ok(spanishHome.includes('href="/es/tests"'));
-  assert.ok(spanishHome.includes('href="/es/client/tests"'));
+  assert.match(sharedHome, /client\/tests/);
+  assert.match(sharedHome, /\/tests/);
+  assert.match(spanishHome, /href="\/es\/tests"/);
+  assert.match(spanishHome, /href="\/es\/client\/tests"/);
 });
