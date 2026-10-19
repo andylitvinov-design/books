@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 import styles from './topic-journey-selector.module.css'
@@ -24,7 +24,7 @@ type RecommendedTest = {
 
 const art: Record<string, string> = {
   relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
-  business: '/images/holistic-house/course-focus-mountain-boy.webp',
+  business: '/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp',
   stress: '/images/holistic-house/hero-olive-incense.webp',
   energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
   effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
@@ -88,6 +88,33 @@ const personalServiceForJourney: Record<string, string> = {
   effectiveness: 'imagery-therapy',
 }
 
+
+// A separate, editorial link to Andrey's existing consultation offer.
+// Keep it independent of the voluntary self-check flow and any private test results.
+const businessPromo = {
+  en: {
+    kicker: 'PERSONAL BUSINESS CONSULTATION',
+    title: 'A clearer direction for your next business decision',
+    description: 'Explore your strategy, priorities and founder challenges with Andrey Litvinov. Toronto & online.',
+    price: '30 min · €50  |  60 min · €100',
+    action: 'Explore business consultation',
+  },
+  ru: {
+    kicker: 'ЛИЧНАЯ БИЗНЕС-КОНСУЛЬТАЦИЯ',
+    title: 'Найдите ясность в важном бизнес-решении',
+    description: 'Разберём вашу стратегию, приоритеты и сложности предпринимателя вместе с Андреем Литвиновым. Торонто и онлайн.',
+    price: '30 мин · €50  |  60 мин · €100',
+    action: 'Открыть бизнес-консультацию',
+  },
+  es: {
+    kicker: 'CONSULTORÍA EMPRESARIAL PERSONAL',
+    title: 'Más claridad para tu próxima decisión empresarial',
+    description: 'Explora tu estrategia, prioridades y desafíos como emprendedor con Andrey Litvinov. Toronto y en línea.',
+    price: '30 min · €50  |  60 min · €100',
+    action: 'Ver consulta de negocios',
+  },
+} as const
+
 type StartAttempt = { controller: AbortController; scope: string; href: string; intent?: string; handedOff: boolean }
 
 function stopAttempt(attempt: StartAttempt | null) {
@@ -121,6 +148,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
   // Private test sessions still use the existing English/Russian app.
   const appLocale = language === 'es' ? 'en' : language
   const c = copy[language]
+  const businessCallout = businessPromo[language]
   const [selected, setSelected] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
@@ -290,6 +318,26 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         <p className={styles.introduction}>{journey.introduction[language]}</p>
       </div>
     </section>
+
+    {journey.id === 'business' && (
+      <aside className={styles.businessPromo} aria-labelledby="hh-business-consultation-title" data-business-consultation-banner>
+        <span className={styles.businessPromoIcon} aria-hidden="true"><BriefcaseBusiness size={25} strokeWidth={1.8}/></span>
+        <div className={styles.businessPromoCopy}>
+          <p className={styles.businessPromoKicker}>{businessCallout.kicker}</p>
+          <h2 id="hh-business-consultation-title">{businessCallout.title}</h2>
+          <p>{businessCallout.description}</p>
+        </div>
+        <div className={styles.businessPromoSide}>
+          <span className={styles.businessPromoPrice}>{businessCallout.price}</span>
+          <AcquisitionEventLink onClick={cancelStart}
+            href={'/' + language + '/services/business-consulting'}
+            event="service_view" prefetch={false} className={styles.businessPromoLink}
+            attributes={{ 'data-topic-action': 'business-consultation-banner', 'data-topic-service': 'business' }}>
+            {businessCallout.action}<ArrowRight size={17} aria-hidden="true" />
+          </AcquisitionEventLink>
+        </div>
+      </aside>
+    )}
 
     <section className={styles.selection} aria-labelledby="hh-topic-selection-heading">
       <div className={styles.sectionHead}>

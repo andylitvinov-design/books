@@ -4,8 +4,10 @@ import PracticeRequestConversation from './practice-request-conversation'
 import {groupVerifiedPractitionerClients} from '@/lib/practitioners/client-profile-groups'
 import styles from './practitioner-client-profiles.module.css'
 
+const CLIENTS_PAGE_SIZE=5
+
 const COPY={
-  en:{title:'My clients',intro:'People who enquired about your services. Requests are linked only to their verified account.',introOwner:'All your client records: manually created contacts and verified service enquiries. No email required for manual contacts.',
+  en:{title:'My clients',intro:'Your latest clients appear automatically, ordered by their most recent enquiry.',
     count:'Clients',requests:'Enquiries',pending:'Need attention',latest:'Last enquiry',
     search:'Search clients',all:'All',open:'Need attention',closed:'Closed',
     openProfile:'View client profile',closeProfile:'Close profile',history:'Request and conversation history',
@@ -13,12 +15,13 @@ const COPY={
     requested:'New request',contacted:'Contacted',closedStatus:'Closed',cancelled:'Withdrawn',
     markContacted:'Mark contacted',markClosed:'Close request',none:'No clients yet.',
     filtered:'No clients match the filters.',noNotes:'No initial text provided.',
-    privacy:'Client profile shows only information the person shared with you through your services. Private tests, other practitioners’ requests and personal medical records are not available.',privacyOwner:'Manually created clinical records are visible only to the owner. Service enquiries remain account-bound and separate; matching names or phone numbers never combines records.',
+    privacy:'Only verified enquiries to your services. Private tests, other practitioners’ requests and medical records stay hidden.',
     noPortal:'Reply inside Holistic House or use the contact details the client shared. Telegram/WhatsApp history is not connected.',
     historySummary:'Original request and secure in-app replies',messageCount:'Conversation entries',
-    manual:'Created manually',manualTitle:'My saved clients',manualHint:'Open a card to view its old reports, prescriptions and document history.',manualEmpty:'No saved manual clients match your search.',manualLoading:'Loading saved clients…',manualError:'The old client directory could not be loaded.',retry:'Retry',openDirectory:'Open full client database',
-    enquiriesTitle:'Service enquiries',enquiriesEmpty:'No service enquiries yet.',showMore:'Show 5 more',allRecords:'Client entries',privacyTitle:'Privacy and record matching',openReports:'Open reports and client profile',archived:'Archived',updated:'Updated'},
-  ru:{title:'Мои клиенты',intro:'Клиенты, обращавшиеся к вам за услугами. Заявки объединяются только по подтверждённому аккаунту.',introOwner:'Ваши клиенты: созданные вручную карточки и обращения по услугам. Для ручных карточек email не нужен.',
+    recent:'Recent clients',tip:'Tap a client to see their requests and conversation.',
+    emptyHelp:'When someone enquires about your service, they will appear here automatically. You can add a service or share your practitioner profile to invite enquiries.',
+    more:'Show {count} more clients',less:'Show latest 5',showing:'Showing {visible} of {total}'},
+  ru:{title:'Мои клиенты',intro:'Последние клиенты появляются здесь автоматически — по дате последнего обращения.',
     count:'Клиентов',requests:'Обращений',pending:'Требуют внимания',latest:'Последнее обращение',
     search:'Поиск клиентов',all:'Все',open:'Требуют внимания',closed:'Закрытые',
     openProfile:'Открыть профиль клиента',closeProfile:'Закрыть профиль',history:'История заявок и переписки',
@@ -26,12 +29,13 @@ const COPY={
     requested:'Новая заявка',contacted:'Связались',closedStatus:'Закрыта',cancelled:'Отозвана',
     markContacted:'Отметить связь',markClosed:'Закрыть заявку',none:'Клиентов пока нет.',
     filtered:'По выбранному фильтру клиентов нет.',noNotes:'Первоначальное сообщение не указано.',
-    privacy:'Мастер видит только сведения, которыми клиент поделился при обращении к нему. Чужие заявки, личные тесты и медицинские записи недоступны.',privacyOwner:'Созданные вручную медицинские карточки доступны только владельцу практики. Заявки по услугам хранятся отдельно по подтверждённым аккаунтам; совпадения имён и телефонов не объединяют людей.',
+    privacy:'Здесь только подтверждённые обращения к вам. Личные тесты, медицинские записи и чужие заявки недоступны.',
     noPortal:'Можно ответить внутри Holistic House или по указанному контакту. История Telegram/WhatsApp пока не подключена.',
     historySummary:'Первое обращение и ответы внутри сайта',messageCount:'Записей переписки',
-    manual:'Создан вручную',manualTitle:'Сохранённые клиенты',manualHint:'Откройте карточку, чтобы найти старые отчёты, назначения и историю документов.',manualEmpty:'По поиску ручных карточек нет.',manualLoading:'Загружаем старых клиентов…',manualError:'Не удалось загрузить старую базу клиентов.',retry:'Повторить',openDirectory:'Открыть всю базу клиентов',
-    enquiriesTitle:'Обращения по услугам',enquiriesEmpty:'Обращений по услугам пока нет.',showMore:'Показать ещё 5',allRecords:'Карточек клиентов',privacyTitle:'Конфиденциальность и привязка записей',openReports:'Открыть отчёты и карточку',archived:'В архиве',updated:'Обновлён'},
-  es:{title:'Mis clientes',intro:'Clientes que solicitaron tus servicios, agrupados solo por cuenta verificada.',introOwner:'Tus clientes: contactos creados manualmente y solicitudes. No se requiere email para los contactos manuales.',
+    recent:'Последние клиенты',tip:'Нажмите на клиента, чтобы увидеть его заявки и переписку.',
+    emptyHelp:'После обращения по вашей услуге клиент появится здесь автоматически. Для первых заявок можно разместить услугу или поделиться профилем.',
+    more:'Показать ещё {count}',less:'Показать последние 5',showing:'Показано {visible} из {total}'},
+  es:{title:'Mis clientes',intro:'Tus clientes recientes aparecen automáticamente, ordenados por su última solicitud.',
     count:'Clientes',requests:'Solicitudes',pending:'Requieren atención',latest:'Última solicitud',
     search:'Buscar clientes',all:'Todos',open:'Pendientes',closed:'Cerrados',
     openProfile:'Ver perfil del cliente',closeProfile:'Cerrar perfil',history:'Solicitudes y mensajes',
@@ -39,115 +43,147 @@ const COPY={
     requested:'Nueva solicitud',contacted:'Contactado',closedStatus:'Cerrado',cancelled:'Retirado',
     markContacted:'Marcar contactado',markClosed:'Cerrar solicitud',none:'Todavía no hay clientes.',
     filtered:'No hay coincidencias.',noNotes:'Sin mensaje inicial.',
-    privacy:'Solo los datos compartidos contigo en las solicitudes. No se muestran pruebas privadas ni expedientes médicos.',privacyOwner:'Las fichas clínicas manuales son privadas del propietario. Las solicitudes permanecen vinculadas a cuentas verificadas, sin fusionar registros por nombre o teléfono.',
+    privacy:'Solo solicitudes verificadas a tus servicios. Sin pruebas privadas, historiales médicos ni solicitudes a otros profesionales.',
     noPortal:'Puedes responder dentro de Holistic House. El historial de Telegram/WhatsApp no está conectado.',
     historySummary:'Solicitud original y respuestas privadas',messageCount:'Mensajes guardados',
-    manual:'Creado manualmente',manualTitle:'Clientes guardados',manualHint:'Abre una ficha para consultar informes y documentos anteriores.',manualEmpty:'No hay contactos manuales que coincidan.',manualLoading:'Cargando clientes guardados…',manualError:'No se pudo cargar la base anterior.',retry:'Reintentar',openDirectory:'Abrir toda la base de clientes',
-    enquiriesTitle:'Solicitudes de servicios',enquiriesEmpty:'Todavía no hay solicitudes.',showMore:'Mostrar 5 más',allRecords:'Fichas de clientes',privacyTitle:'Privacidad y vinculación de registros',openReports:'Abrir informes y ficha',archived:'Archivado',updated:'Actualizado'},
+    recent:'Clientes recientes',tip:'Elige un cliente para ver sus solicitudes y mensajes.',
+    emptyHelp:'Los clientes aparecerán aquí cuando soliciten tus servicios. Puedes publicar un servicio o compartir tu perfil.',
+    more:'Mostrar {count} clientes más',less:'Mostrar los últimos 5',showing:'Mostrando {visible} de {total}'},
+}
+
+const MANUAL_COPY={
+  en:{intro:'Saved clients and service enquiries, including manually created people without email.',title:'Saved client records',hint:'Open a card to see previous consultations and reports.',source:'Manual record',count:'Saved',all:'Open full client database',missing:'No saved clients match your search.',loading:'Loading saved clients…',failed:'Old client records could not be loaded.',retry:'Retry',more:'Show 5 more',archived:'Archived',enquiries:'Service enquiries',emptyEnquiries:'No service enquiries yet.',privacy:'Manual clinical records are owner-only. Enquiries stay linked to verified accounts; matching names or phone numbers never merge people.'},
+  ru:{intro:'Сохранённые вручную клиенты и обращения по услугам, включая карточки без email.',title:'Сохранённые клиенты',hint:'Откройте карточку, чтобы найти прежние консультации и отчёты.',source:'Создан вручную',count:'Сохранено',all:'Открыть всю базу клиентов',missing:'Сохранённые клиенты не найдены.',loading:'Загружаем сохранённых клиентов…',failed:'Не удалось загрузить старую базу клиентов.',retry:'Повторить',more:'Показать ещё 5',archived:'В архиве',enquiries:'Обращения по услугам',emptyEnquiries:'Обращений пока нет.',privacy:'Клинические карточки доступны только владельцу. Заявки привязаны к подтверждённым аккаунтам; совпадения имени или телефона не объединяют людей.'},
+  es:{intro:'Clientes guardados y solicitudes, incluidos contactos manuales sin email.',title:'Clientes guardados',hint:'Abre una ficha para ver consultas e informes anteriores.',source:'Ficha manual',count:'Guardados',all:'Abrir toda la base',missing:'No se encontraron clientes guardados.',loading:'Cargando clientes…',failed:'No se pudo cargar la base anterior.',retry:'Reintentar',more:'Mostrar 5 más',archived:'Archivado',enquiries:'Solicitudes de servicios',emptyEnquiries:'Aún no hay solicitudes.',privacy:'Solo el propietario puede abrir fichas clínicas. Las solicitudes son de cuentas verificadas; no se fusionan por nombre o teléfono.'},
 }
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
 }).format(new Date(value)):''
 export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,isOwner=false,onOpenLegacy}){
-  const lang=COPY[locale]?locale:'en',t=COPY[lang]
+  const lang=COPY[locale]?locale:'en',t=COPY[lang],u=MANUAL_COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
   const [search,setSearch]=useState('')
+  const [visibleCount,setVisibleCount]=useState(CLIENTS_PAGE_SIZE)
   const [manualClients,setManualClients]=useState([])
+  const [manualCount,setManualCount]=useState(CLIENTS_PAGE_SIZE)
   const [manualLoading,setManualLoading]=useState(isOwner)
-  const [manualError,setManualError]=useState('')
-  const [refreshManual,setRefreshManual]=useState(0)
-  const [manualVisible,setManualVisible]=useState(5)
-  const [enquiryVisible,setEnquiryVisible]=useState(5)
+  const [manualError,setManualError]=useState(false)
+  const [manualRetry,setManualRetry]=useState(0)
   useEffect(()=>{
     if(!isOwner||!accountId)return
-    const controller=new AbortController()
-    setManualLoading(true)
-    setManualError('')
+    const abort=new AbortController()
+    setManualLoading(true);setManualError(false)
     fetch('/api/app/practitioner/legacy-clients',{
-      credentials:'same-origin',cache:'no-store',
-      headers:{'X-HH-Account-Id':accountId},signal:controller.signal,
+      credentials:'same-origin',cache:'no-store',signal:abort.signal,
+      headers:{'X-HH-Account-Id':accountId},
     }).then(async response=>{
-      const data=await response.json().catch(()=>({}))
-      if(!response.ok)throw new Error(data.error||'UNAVAILABLE')
-      if(!Array.isArray(data.clients))throw new Error('UNAVAILABLE')
+      if(!response.ok)throw new Error('CLIENT_DIRECTORY_UNAVAILABLE')
+      const data=await response.json()
+      if(!Array.isArray(data.clients))throw new Error('CLIENT_DIRECTORY_UNAVAILABLE')
       return data.clients
-    }).then(clients=>{if(!controller.signal.aborted)setManualClients(clients)})
-      .catch(error=>{if(!controller.signal.aborted)setManualError(error.message||'UNAVAILABLE')})
-      .finally(()=>{if(!controller.signal.aborted)setManualLoading(false)})
-    return ()=>controller.abort()
-  },[isOwner,accountId,refreshManual])
+    }).then(clients=>{if(!abort.signal.aborted)setManualClients(clients)})
+      .catch(()=>{if(!abort.signal.aborted)setManualError(true)})
+      .finally(()=>{if(!abort.signal.aborted)setManualLoading(false)})
+    return ()=>abort.abort()
+  },[isOwner,accountId,manualRetry])
   const selected=groups.find(item=>item.key===selectedKey)
-  const term=search.trim().toLocaleLowerCase()
   const filtered=groups.filter(group=>
-    (!term||(group.name+' '+group.contact).toLocaleLowerCase().includes(term))
+    (!search.trim()||(group.name+' '+group.contact).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
     &&(filter==='all'||(filter==='open'?group.open>0:group.open===0)))
-  const matchingManual=isOwner?manualClients.filter(client=>
-    !term||(client.name+' '+client.phone+' '+client.email).toLocaleLowerCase().includes(term)):[]
-  const activeCount=groups.filter(group=>group.open>0).length
-  const resetSearch=value=>{setSearch(value);setManualVisible(5);setEnquiryVisible(5)}
+  const activeCount=groups.filter(g=>g.open>0).length
+  const visible=filtered.slice(0,visibleCount)
+  const remaining=Math.max(0,filtered.length-visibleCount)
+  const term=search.trim().toLocaleLowerCase()
+  const matchingManual=isOwner?manualClients.filter(item=>
+    !term||(item.name+' '+item.email+' '+item.phone).toLocaleLowerCase().includes(term)):[]
+  const visibleManual=matchingManual.slice(0,manualCount)
   return <section className={styles.panel} aria-label={t.title}>
     <header className={styles.head}>
-      <div><h3>{t.title}</h3><p>{isOwner?t.introOwner:t.intro}</p></div>
+      <div><h3>{t.title}</h3><p>{isOwner?u.intro:t.intro}</p></div>
       <div className={styles.metrics}>
-        <span>{isOwner&&manualLoading?'…':groups.length+manualClients.length} {isOwner?t.allRecords:t.count}</span>
-        {isOwner&&<span>{manualLoading?'…':manualClients.length} {t.manual}</span>}
+        <span>{isOwner&&manualLoading?'…':groups.length+(isOwner?manualClients.length:0)} {t.count}</span>
+        {isOwner&&<span>{manualLoading?'…':manualClients.length} {u.count}</span>}
         <span>{items.length} {t.requests}</span><span>{activeCount} {t.pending}</span>
       </div>
     </header>
-    <details className={styles.privacy}><summary>{t.privacyTitle}</summary><p>{isOwner?t.privacyOwner:t.privacy}</p></details>
+    {isOwner?<details className={styles.privacy}><summary>{u.source} · {u.enquiries}</summary><p>{u.privacy}</p></details>
+      :<p className={styles.privacy}>{t.privacy}</p>}
     <label className={styles.searchLabel}>{t.search}
-      <input type="search" value={search} onChange={event=>resetSearch(event.target.value)}
+      <input type="search" value={search}
+        onChange={event=>{setSearch(event.target.value);setVisibleCount(CLIENTS_PAGE_SIZE);setSelectedKey('');setManualCount(CLIENTS_PAGE_SIZE)}}
         placeholder={t.search}/>
     </label>
-    {isOwner&&<section className={styles.manual} aria-label={t.manualTitle}>
-      <div className={styles.sectionHead}><div><h4>{t.manualTitle}</h4><p>{t.manualHint}</p></div>
-        <button type="button" onClick={()=>onOpenLegacy?.()}>{t.openDirectory} ↗</button>
+    {isOwner&&<section className={styles.manual} aria-label={u.title}>
+      <div className={styles.manualHead}>
+        <div><h4>{u.title}</h4><p>{u.hint}</p></div>
+        <button type="button" onClick={()=>onOpenLegacy?.()}>{u.all} ↗</button>
       </div>
-      {manualLoading&&<p className={styles.empty} role="status">{t.manualLoading}</p>}
+      {manualLoading&&<p className={styles.empty} role="status">{u.loading}</p>}
       {!manualLoading&&manualError&&<div className={styles.manualError} role="alert">
-        <span>{t.manualError}</span>
-        <button type="button" onClick={()=>setRefreshManual(value=>value+1)}>{t.retry}</button>
-        <button type="button" onClick={()=>onOpenLegacy?.()}>{t.openDirectory}</button>
+        <span>{u.failed}</span>
+        <button type="button" onClick={()=>setManualRetry(value=>value+1)}>{u.retry}</button>
+        <button type="button" onClick={()=>onOpenLegacy?.()}>{u.all}</button>
       </div>}
-      {!manualLoading&&!manualError&&matchingManual.length===0&&<p className={styles.empty}>{t.manualEmpty}</p>}
+      {!manualLoading&&!manualError&&matchingManual.length===0&&<p className={styles.empty}>{u.missing}</p>}
       {!manualLoading&&!manualError&&<div className={styles.manualList}>
-        {matchingManual.slice(0,manualVisible).map(client=><button className={styles.manualClient} type="button" key={client.id}
+        {visibleManual.map(client=><button type="button" className={styles.manualClient} key={client.id}
           onClick={()=>onOpenLegacy?.(client.id)}>
           <span className={styles.avatar} aria-hidden="true">{client.name.slice(0,1).toUpperCase()}</span>
           <span className={styles.summary}><strong>{client.name}</strong>
-            <small>{t.manual}{client.status==='archived'?' · '+t.archived:''}
+            <small>{u.source}{client.status==='archived'?' · '+u.archived:''}
               {client.phone?' · '+client.phone:''}
-              {client.updatedAt||client.createdAt?' · '+t.updated+': '+labelDate(client.updatedAt||client.createdAt,lang):''}
+              {client.email?' · '+client.email:''}
             </small></span><span aria-hidden="true">→</span>
         </button>)}
-        {matchingManual.length>manualVisible&&<button className={styles.more} type="button"
-          onClick={()=>setManualVisible(count=>count+5)}>{t.showMore} ({matchingManual.length-manualVisible})</button>}
+        {matchingManual.length>manualCount&&<button type="button" className={styles.manualMore}
+          onClick={()=>setManualCount(count=>count+CLIENTS_PAGE_SIZE)}>
+          {u.more} ({matchingManual.length-manualCount})
+        </button>}
       </div>}
     </section>}
-    <section className={styles.enquirySection} aria-label={t.enquiriesTitle}>
-      <h4>{t.enquiriesTitle} ({groups.length})</h4>
-      {groups.length===0?<p className={styles.empty}>{isOwner?t.enquiriesEmpty:t.none}</p>:
-    <div className={styles.layout}>
+    <div className={selected?`${styles.layout} ${styles.withProfile}`:styles.layout}>
       <aside className={styles.sidebar}>
-        <div className={styles.filters} role="group" aria-label={t.enquiriesTitle}>
-          {[[ 'all',t.all ],['open',t.open],['closed',t.closed]].map(([id,label])=>
-            <button type="button" key={id} aria-pressed={filter===id}
-              onClick={()=>{setFilter(id);setEnquiryVisible(5)}}>{label}</button>)}
+        <div className={styles.recentLead}>
+          <strong>{isOwner?u.enquiries:t.recent}</strong>
+          {groups.length>0&&<span>{t.tip}</span>}
         </div>
-        {filtered.length===0&&<p className={styles.empty}>{t.filtered}</p>}
-        {filtered.slice(0,enquiryVisible).map(group=><button type="button" key={group.key}
-          className={selectedKey===group.key?styles.activeClient:styles.client}
-          aria-pressed={selectedKey===group.key} onClick={()=>setSelectedKey(group.key)}>
-          <span className={styles.avatar} aria-hidden="true">{group.name.slice(0,1).toUpperCase()}</span>
-          <span className={styles.summary}><strong>{group.name}</strong>
-            <small>{t.requests}: {group.items.length} · {t.latest}: {labelDate(group.latest.createdAt,lang)}</small></span>
-          {group.open>0&&<span className={styles.count}>{group.open}</span>}
-        </button>)}
-        {filtered.length>enquiryVisible&&<button className={styles.more} type="button" onClick={()=>setEnquiryVisible(count=>count+5)}>{t.showMore} ({filtered.length-enquiryVisible})</button>}
+        {groups.length===0
+          ? <div className={styles.noClients} role="status">
+              <strong>{isOwner?u.emptyEnquiries:t.none}</strong>
+              <p>{isOwner?u.emptyEnquiries:t.emptyHelp}</p>
+            </div>
+          : <>
+            <div className={styles.filters} role="group" aria-label={t.title}>
+              {[[ 'all',t.all ],['open',t.open],['closed',t.closed]].map(([id,label])=>
+                <button type="button" key={id} aria-pressed={filter===id}
+                  onClick={()=>{setFilter(id);setVisibleCount(CLIENTS_PAGE_SIZE);setSelectedKey('')}}>{label}</button>)}
+            </div>
+            {filtered.length===0&&<p className={styles.empty}>{t.filtered}</p>}
+            {visible.map(group=><button type="button" key={group.key}
+              className={selectedKey===group.key?styles.activeClient:styles.client}
+              aria-pressed={selectedKey===group.key} onClick={()=>setSelectedKey(group.key)}>
+              <span className={styles.avatar} aria-hidden="true">{group.name.slice(0,1).toUpperCase()}</span>
+              <span className={styles.summary}><strong>{group.name}</strong>
+                <small>{t.requests}: {group.items.length} · {t.latest}: {labelDate(group.latest.createdAt,lang)}</small></span>
+              {group.open>0&&<span className={styles.count}>{group.open}</span>}
+            </button>)}
+            {filtered.length>CLIENTS_PAGE_SIZE&&<div className={styles.paging}>
+              <span>{t.showing.replace('{visible}',String(visible.length)).replace('{total}',String(filtered.length))}</span>
+              {remaining>0
+                ? <button type="button" className={styles.moreLink}
+                    onClick={()=>setVisibleCount(count=>count+CLIENTS_PAGE_SIZE)}>
+                    {t.more.replace('{count}',String(Math.min(CLIENTS_PAGE_SIZE,remaining)))} <span aria-hidden="true">↓</span>
+                  </button>
+                : <button type="button" className={styles.moreLink}
+                    onClick={()=>setVisibleCount(CLIENTS_PAGE_SIZE)}>
+                    {t.less} <span aria-hidden="true">↑</span>
+                  </button>}
+            </div>}
+          </>}
       </aside>
-      <div className={styles.profile}>
-        {!selected?<p className={styles.empty}>{t.openProfile}</p>:<>
+      {selected&&<div className={styles.profile}>
+        <>
           <div className={styles.profileHead}>
             <h3>{selected.name}</h3>
             <button type="button" onClick={()=>setSelectedKey('')}>{t.closeProfile}</button>
@@ -184,9 +220,8 @@ export default function PractitionerClientProfiles({items=[],services=[],account
               </article>
             })}
           </div>
-        </>}
-      </div>
-    </div>}
-    </section>
+        </>
+      </div>}
+    </div>
   </section>
 }

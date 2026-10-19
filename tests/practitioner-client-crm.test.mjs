@@ -131,3 +131,34 @@ test('master client profile displays genuine conversation activity counts for ea
   assert.match(ui,/request\.messageCount>0/)
   assert.match(ui,/localizedCopy\?\.\[lang\]\?\.title/)
 })
+
+test('client directory opens with the latest five and reveals the next five on demand',()=>{
+  const requests=Array.from({length:12},(_,index)=>({
+    id:'enquiry-'+index,
+    clientKey:index.toString(16).padStart(64,'0'),
+    contact:{displayName:'Client '+index},
+    status:'requested',
+    createdAt:new Date(Date.UTC(2026,9,19,12,index)).toISOString(),
+  }))
+  const groups=groupVerifiedPractitionerClients(requests,'en')
+  assert.equal(groups.length,12)
+  assert.equal(groups[0].name,'Client 11')
+  assert.equal(groups[4].name,'Client 7')
+  assert.equal(groups[9].name,'Client 2')
+  const ui=src('components/app/practitioner-client-profiles.jsx')
+  const css=src('components/app/practitioner-client-profiles.module.css')
+  assert.match(ui,/const CLIENTS_PAGE_SIZE=5/)
+  assert.match(ui,/\[visibleCount,setVisibleCount\]=useState\(CLIENTS_PAGE_SIZE\)/)
+  assert.match(ui,/filtered\.slice\(0,visibleCount\)/)
+  assert.match(ui,/setVisibleCount\(count=>count\+CLIENTS_PAGE_SIZE\)/)
+  assert.match(ui,/Math\.min\(CLIENTS_PAGE_SIZE,remaining\)/)
+  assert.match(ui,/setVisibleCount\(CLIENTS_PAGE_SIZE\);setSelectedKey\(''\)/)
+  assert.match(ui,/groups\.length===0/)
+  assert.match(ui,/styles\.noClients/)
+  assert.match(ui,/visible\.map\(group=>/)
+  assert.match(ui,/more:'Show \{count\} more clients'/)
+  assert.match(ui,/more:'Показать ещё \{count\}'/)
+  assert.match(ui,/more:'Mostrar \{count\} clientes más'/)
+  assert.match(css,/\.withProfile\{grid-template-columns/)
+  assert.match(css,/\.sidebar\{max-height:none;overflow:visible\}/)
+})

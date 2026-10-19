@@ -10,6 +10,14 @@ import styles from "./events-discovery.module.css";
 
 type FormatChoice = PublicEventFormat | "all";
 
+// Use existing first-party artwork when an organizer poster is unavailable.
+const FALLBACK_EVENT_ART: Record<PublicEvent["category"], string> = {
+  somatic: "/images/holistic-house/course-focus-mountain-boy.webp",
+  connection: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  reiki: "/academy/reiki-yggdrasil/source/basic-program.jpg",
+  temple: "/academy/reiki-yggdrasil/source/temple-studies.png",
+};
+
 const copy = {
   en: {
     kicker: "HOLISTIC HOUSE · EVENTS",
@@ -18,7 +26,7 @@ const copy = {
     catalogLabel: "UPCOMING GATHERINGS", archiveLabel: "PAST GATHERINGS", browse: "Choose your event",
     upcomingTab: "Upcoming", pastTab: "Past", calendar: "Event dates",
     eventSingle: "event", eventPlural: "events",
-    placeholder: "Search by topic, location or event name...",
+    placeholder: "Reiki, workshops or Toronto...",
     search: "Find events", searchLabel: "Search public events",
     upcoming: "Upcoming events", past: "Past events", allFormats: "All formats", online: "Online", inPerson: "In person",
     filters: "Event format", all: "All", somatic: "Body & safety", connection: "Heart & connection", reiki: "Energy & Reiki", temple: "Temple studies",
@@ -33,7 +41,7 @@ const copy = {
     catalogLabel: "БЛИЖАЙШИЕ ВСТРЕЧИ", archiveLabel: "ПРОШЕДШИЕ ВСТРЕЧИ", browse: "Выберите событие",
     upcomingTab: "Скоро", pastTab: "Архив", calendar: "Даты событий",
     eventSingle: "событие", eventPlural: "событий",
-    placeholder: "Тема, город или название мероприятия...",
+    placeholder: "Рейки, практики или Торонто...",
     search: "Найти события", searchLabel: "Поиск публичных мероприятий",
     upcoming: "Ближайшие события", past: "Прошедшие события", allFormats: "Все форматы", online: "Онлайн", inPerson: "Очно",
     filters: "Формат мероприятий", all: "Все", somatic: "Тело и безопасность", connection: "Сердце и общение", reiki: "Энергия и Рейки", temple: "Храмовые практики",
@@ -48,7 +56,7 @@ const copy = {
     catalogLabel: "PRÓXIMOS ENCUENTROS", archiveLabel: "ENCUENTROS ANTERIORES", browse: "Elige tu evento",
     upcomingTab: "Próximos", pastTab: "Anteriores", calendar: "Fechas de eventos",
     eventSingle: "evento", eventPlural: "eventos",
-    placeholder: "Busca por tema, lugar o evento...",
+    placeholder: "Reiki, talleres o Toronto...",
     search: "Buscar eventos", searchLabel: "Buscar eventos públicos",
     upcoming: "Próximos eventos", past: "Eventos anteriores", allFormats: "Todos los formatos", online: "En línea", inPerson: "Presencial",
     filters: "Formato del evento", all: "Todos", somatic: "Cuerpo y seguridad", connection: "Corazón y conexión", reiki: "Energía y Reiki", temple: "Estudios del templo",
@@ -83,6 +91,7 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
   const [format, setFormat] = useState<FormatChoice>("all");
   const [past, setPast] = useState(false);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
+  const [failedPosterIds, setFailedPosterIds] = useState<string[]>([]);
   const filtersActive = Boolean(search.trim()) || format !== "all";
   const verified = useMemo(() => events.filter(event =>
     event.status === "published"
@@ -172,10 +181,13 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
               return (
                 <article key={event.id} className={styles.eventCard} data-event-card={event.id}>
                   <div className={styles.posterFrame}>
-                    <div className={styles.posterFallback} aria-hidden="true"><CalendarDays size={36} strokeWidth={1.3} /></div>
-                    {event.posterUrl && (
+                    {event.posterUrl && !failedPosterIds.includes(event.id) ? (
                       <img src={event.posterUrl} className={styles.eventPoster} alt="" width={940} height={492}
-                        loading="lazy" decoding="async" onError={error => { error.currentTarget.style.display = "none"; }} />
+                        loading="lazy" decoding="async"
+                        onError={() => setFailedPosterIds(ids => ids.includes(event.id) ? ids : [...ids, event.id])} />
+                    ) : (
+                      <img src={FALLBACK_EVENT_ART[event.category]} className={styles.eventPoster} alt=""
+                        width={940} height={492} loading="lazy" decoding="async" />
                     )}
                   </div>
                   <div className={styles.eventContent}>

@@ -7,7 +7,6 @@ import { ArrowRight, Brain, CalendarDays, ChevronDown, FileText, Flower2, HeartH
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
 import { availableSavedReports, latestReceivedReport } from '@/lib/profile/report-summary'
-import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
 import './profile-domains.css'
 import './profile-refresh.css'
 
@@ -48,10 +47,9 @@ const WORDS = {
     archiveTitle: 'My reports and recommendations', archiveHint: 'Read and download reports you have saved from your practitioner.',
     archivePanelTitle: 'My reports', archivePanelIntro: 'Reports from Andrey · private',
     archiveLatest: 'Latest report', archiveReceived: 'Received', archiveDated: 'Report date',
-    archiveEmpty: 'No reports yet. A report you save from Andrey will appear here.',
-    archiveViewAll: 'View all reports', archiveHideAll: 'Hide all reports', archiveOpen: 'Open report', archiveDefaultTitle: 'Personal report',
+    archiveAll: 'All saved reports', archiveOpen: 'Open report', archiveDefaultTitle: 'Personal report',
     browseTitle: 'Reports by area', browseHint: 'Browse your saved reports by topic.', savedDocumentsLink: 'My saved documents', getReview: 'Request a free written review', noReportsHint: 'Your personal archive starts with a report shared with you.',
-    consultationNote: 'Free introductory request, not an instant booking. Andrey confirms availability personally; full sessions are paid.',
+    consultationNote: 'Choose a free written review, Wu Xing resource profile or self-checks. An introductory conversation can also be requested; availability is confirmed personally.',
     emptyInviteTitle: 'No reports yet? Start with a consultation',
     emptyInviteCopy: 'Discuss your situation with Andrey in a personal session. Choose 30 minutes (€50) or 60 minutes (€100). A free written review is available separately.',
     benefitGuidance: 'Personal guidance', benefitGuidanceHint: 'Discuss your goals',
@@ -92,10 +90,9 @@ const WORDS = {
     archiveTitle: 'Мои отчёты и рекомендации', archiveHint: 'Читать и скачивать сохранённые отчёты специалиста.',
     archivePanelTitle: 'Мои отчёты', archivePanelIntro: 'Отчёты от Андрея · лично',
     archiveLatest: 'Последний отчёт', archiveReceived: 'Получен', archiveDated: 'Дата отчёта',
-    archiveEmpty: 'Пока нет отчётов. Сохранённый отчёт от Андрея появится здесь.',
-    archiveViewAll: 'Показать все отчёты', archiveHideAll: 'Свернуть отчёты', archiveOpen: 'Открыть отчёт', archiveDefaultTitle: 'Личный отчёт',
+    archiveAll: 'Все сохранённые отчёты', archiveOpen: 'Открыть отчёт', archiveDefaultTitle: 'Личный отчёт',
     browseTitle: 'Отчёты по направлениям', browseHint: 'Просмотрите сохранённые отчёты по темам.', savedDocumentsLink: 'Сохранённые документы', getReview: 'Заказать бесплатный письменный разбор', noReportsHint: 'Ваш личный архив начнётся с отчёта, которым с вами поделились.',
-    consultationNote: 'Бесплатное ознакомительное обращение, не подтверждённая запись. Андрей согласует время лично; полноценные сессии платные.',
+    consultationNote: 'Выберите бесплатный письменный разбор, профиль У-Син или тесты. Возможность ознакомительного разговора Андрей подтверждает лично.',
     emptyInviteTitle: 'Нет отчётов? Начните с консультации',
     emptyInviteCopy: 'Обсудите свою ситуацию с Андреем лично: 30 минут — €50, 60 минут — €100. Бесплатный письменный разбор можно заказать отдельно.',
     benefitGuidance: 'Личная поддержка', benefitGuidanceHint: 'Обсудите свой запрос',
@@ -103,18 +100,6 @@ const WORDS = {
     benefitPrivate: 'Личный архив', benefitPrivateHint: 'Сохраняйте свои отчёты',
     overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Посмотреть услуги', support: 'Личная поддержка',
   },
-}
-// No report content, client ID, test answers or private URLs enter this enquiry.
-// An owner-approved introductory call is a request pending personal availability confirmation.
-function freeIntroConsultationHref(locale) {
-  const ru = locale === 'ru'
-  return whatsappEnquiryUrl({
-    locale: ru ? 'ru' : 'en',
-    service: ru ? 'Бесплатная ознакомительная консультация' : 'Free introductory consultation',
-    request: ru
-      ? 'Хочу запросить бесплатную ознакомительную консультацию. Подскажите, пожалуйста, возможно ли такое знакомство и доступное время. Понимаю, что это запрос, а не подтверждённая запись; полноценные консультации оплачиваются отдельно.'
-      : 'I would like to request a free introductory consultation. Please confirm whether an introductory conversation is available and suggest a time. I understand this is a request, not a confirmed booking, and longer personal sessions are paid separately.',
-  })
 }
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10))
 function readableDate(value, locale) {
@@ -205,7 +190,6 @@ export function ProfileDomains({
   const t = WORDS[ru ? 'ru' : 'en']
   const [active, setActive] = useState('psychology')
   const [expanded, setExpanded] = useState(mode === 'legacy')
-  const [archiveOpen, setArchiveOpen] = useState(false)
   const [interactive, setInteractive] = useState(false)
   const [fetchedReports, setFetchedReports] = useState([])
   const [fetchedDocuments, setFetchedDocuments] = useState([])
@@ -217,7 +201,6 @@ export function ProfileDomains({
     if (!reportsContent || focusedArchive.current) return
     if (!focusReports && window.location.hash !== '#personal-reports') return
     focusedArchive.current = true
-    if (mode !== 'legacy') setArchiveOpen(true)
     // Profile is client-rendered after account bootstrap; browser fragment scrolling
     // can happen before its report archive exists, so complete it after mount.
     requestAnimationFrame(() => document.getElementById('personal-reports')?.scrollIntoView({ block: 'start' }))
@@ -306,38 +289,32 @@ export function ProfileDomains({
           </div>
           <span className="hh-account-report-private"><LockKeyhole size={12} aria-hidden="true" />{ru ? 'ЛИЧНО' : 'PRIVATE'}</span>
         </div>
-        {latestSavedReport
-          ? <article className="hh-account-report-latest" data-profile-latest-report>
-              <div className="hh-account-report-latest-copy">
-                <span className="hh-account-report-eyebrow">{t.archiveLatest}</span>
-                <strong>{latestSavedReport.title || t.archiveDefaultTitle}</strong>
-                {lastReceivedDate && <time dateTime={String(latestSavedReport.savedAt || latestSavedReport.occurredOn).slice(0,10)}>
-                  {latestSavedReport.savedAt ? t.archiveReceived : t.archiveDated}: {lastReceivedDate}
-                </time>}
-              </div>
-              <Link className="hh-account-report-open" href={'/' + locale + '/app/reports/' + encodeURIComponent(latestSavedReport.id)} prefetch={false}>
-                {t.archiveOpen} <ArrowRight size={17} aria-hidden="true" />
-              </Link>
-            </article>
-          : <p className="hh-account-report-empty">{t.archiveEmpty}</p>}
-        <button type="button" className="hh-account-report-toggle" aria-expanded={archiveOpen}
-          aria-controls="hh-account-report-all" onClick={() => setArchiveOpen(open => !open)}>
-          <span>{archiveOpen ? t.archiveHideAll : t.archiveViewAll}</span>
-          <span className="hh-account-report-number">{availableReports.length}</span>
-          <ChevronDown className={archiveOpen ? 'is-open' : ''} size={19} aria-hidden="true" />
-        </button>
-        <div id="hh-account-report-all" hidden={!archiveOpen} className="hh-account-report-full">
-          {archiveOpen && reportsContent}
-          {archiveOpen && availableReports.length === 0 && <div className="hh-domain-when-empty" data-profile-empty-consultation>
-            <a className="hh-domain-appointment-button" href={freeIntroConsultationHref(locale)}
-              target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp"
-              data-consultation-kind="free-introduction">
+        {latestSavedReport && <article className="hh-account-report-latest" data-profile-latest-report>
+          <div className="hh-account-report-latest-copy">
+            <span className="hh-account-report-eyebrow">{t.archiveLatest}</span>
+            <strong>{latestSavedReport.title || t.archiveDefaultTitle}</strong>
+            {lastReceivedDate && <time dateTime={String(latestSavedReport.savedAt || latestSavedReport.occurredOn).slice(0,10)}>
+              {latestSavedReport.savedAt ? t.archiveReceived : t.archiveDated}: {lastReceivedDate}
+            </time>}
+          </div>
+          <Link className="hh-account-report-open" href={'/' + locale + '/app/reports/' + encodeURIComponent(latestSavedReport.id)} prefetch={false}>
+            {t.archiveOpen} <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        </article>}
+        <div id="hh-account-report-all" className="hh-account-report-full" data-report-archive-always-open>
+          {availableReports.length > 0 && <div className="hh-account-report-count">
+            <span>{t.archiveAll}</span><span className="hh-account-report-number">{availableReports.length}</span>
+          </div>}
+          {reportsContent}
+          <div className="hh-domain-when-empty" data-profile-free-consultation>
+            <Link className="hh-domain-appointment-button" href={'/' + locale + '/services/free-consultation'}
+              prefetch={false} data-consultation-kind="free-options">
               <CalendarDays size={20} aria-hidden="true" />
               <span>{t.consultation}</span>
               <ArrowRight size={20} aria-hidden="true" />
-            </a>
+            </Link>
             <p className="hh-domain-consultation-disclaimer">{t.consultationNote}</p>
-          </div>}
+          </div>
         </div>
       </>}
     </section>}
