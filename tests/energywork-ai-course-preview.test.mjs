@@ -14,7 +14,7 @@ const videos = read('data/academy/english-guided-meditations.ts')
 
 test('Unified Reiki Practitioner course has 70 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p7"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p8"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
   assert.equal(ids.length, 70)
@@ -87,7 +87,7 @@ test('Sun practice uses two optional choices for the one-minute exercise', () =>
 test('Five lessons have separate post-meditation reports and question answers', () => {
   const assignments = [
     ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-06'],
-    ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-06'],
+    ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-study-v2-01'],
     ['initiation','end-01','init-01'],
   ]
   for (const [name,report,question] of assignments) {
