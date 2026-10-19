@@ -141,12 +141,14 @@ export function SessionRecordingReview({clientId,sessionId,locale='en',refreshKe
         const selected=Boolean(row&&row.scope==='client'&&row.role!=='hidden')
         const inPublished=publishedIds.has(asset.id)
         const isVideo=asset.kind==='video'
+        const genericTitle=!row?.title||['Voice message','Video message','Private voice note','Голосовое сообщение','Видеообращение'].includes(row.title)
+        const displayTitle=genericTitle?namedTake(ru,asset.kind,index):row.title
         const playable=canPlay[asset.id]===true
         const broken=Boolean(playbackErrors[asset.id])
         return <article key={asset.id} className={styles.takeCard}>
           <div className={styles.takeName}>
             {isVideo?<Video size={20}/>:<Headphones size={20}/>}
-            <strong>{row?.title||namedTake(ru,asset.kind,index)}</strong>
+            <strong>{displayTitle}</strong>
             {Number.isFinite(asset.bytes)&&<small>{Math.ceil(asset.bytes/1024)} KB</small>}
           </div>
           {isVideo?
