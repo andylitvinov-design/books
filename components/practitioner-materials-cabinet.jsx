@@ -6,15 +6,10 @@ import {preparePhoto} from './session-photo-uploader'
 import {normalizePhoneVideoFile} from '@/lib/clients/phone-video-file'
 import {SessionYouTubePlayer} from './session-youtube-player'
 import {readUiLocale} from '@/lib/ui-locale'
+import {ownerMaterialApi} from '@/lib/clients/owner-material-api'
 import styles from './practitioner-materials-cabinet.module.css'
 
-async function request(url,method='GET',body){
-  const response=await fetch(url,{method,credentials:'same-origin',cache:'no-store',
-    ...(body?{headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{})})
-  const data=await response.json()
-  if(!response.ok)throw new Error(data.error||'MATERIAL_UNAVAILABLE')
-  return data
-}
+const request=(url,method='GET',body)=>ownerMaterialApi(url,{method,body})
 export function uploadFile(intent,file,mime,onProgress){
   if(intent.provider==='external')return new Promise((resolve,reject)=>{
     if(!intent.uploadUrl?.startsWith('https://'))return reject(new Error('VIDEO_STORAGE_NOT_CONFIGURED'))
