@@ -97,7 +97,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
           <div className={styles.history}>
             {selected.items.map(request=>{
               const service=services.find(item=>item.id===request.serviceId)
-              const name=service?.copy?.[lang]?.title||service?.copy?.en?.title||t.service
+              const name=service?.localizedCopy?.[lang]?.title||service?.copy?.title||t.service
               return <article className={styles.request} key={request.id}>
                 <div className={styles.requestHead}>
                   <strong>{name}</strong>
