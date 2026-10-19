@@ -116,6 +116,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const c = copy[locale as PublicLocale];
   const origin = metadataBaseFor();
   const path = `/${locale}/tests`;
+  const image = new URL("/images/holistic-house/andy-about.png", origin).href;
   const languages = Object.fromEntries(locales.map((language) => [language, new URL(`/${language}/tests`, origin).href]));
   languages["x-default"] = languages.en;
   return {
@@ -130,8 +131,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: new URL(path, origin).href,
       title: c.title,
       description: c.description,
+      images: [{ url: image, alt: "Andrey Litvinov — Holistic House" }],
     },
-    twitter: { card: "summary_large_image", title: c.title, description: c.description },
+    twitter: { card: "summary_large_image", title: c.title, description: c.description, images: [image] },
   };
 }
 
