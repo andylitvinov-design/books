@@ -32,7 +32,7 @@ test("Inner slides have no duplicate top buttons but all five steps and one bott
 })
 
 test("Save-private function is retained in expanded programme, not an always-visible panel", () => {
-  const detailStart=ui.indexOf('<details className={styles.programme}>')
+  const detailStart=ui.indexOf('<details className={styles.programme} ref={programmeRef}>')
   const preview=ui.indexOf('<aside className={styles.preview}',detailStart)
   const footer=ui.indexOf('<footer className={styles.footer}>',preview)
   assert.ok(detailStart>0 && preview>detailStart && footer>preview)
