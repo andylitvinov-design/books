@@ -37,6 +37,8 @@ test('Business first-screen finder reuses consent-bound CRM handoff in all local
   const enquiry=read('components/business-website-enquiry.tsx')
   assert.match(selector,/<BusinessConsultationFinder locale=\{language\}/)
   assert.match(source,/data-business-consultation-finder/)
+  // The hero already introduces the interaction; never repeat instructional copy below it.
+  assert.doesNotMatch(source,/t\.helper|className=\{styles\.helper\}/)
   assert.match(source,/data-business-finder-step="need"/)
   assert.match(source,/data-business-need=\{key\}/)
   assert.match(source,/data-business-finder-result/)
