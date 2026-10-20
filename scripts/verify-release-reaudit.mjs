@@ -1,3 +1,5 @@
+import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
+import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
 import { decodeReadyPoster } from './public-poster-readiness.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
@@ -37,6 +39,17 @@ async function assertCspPublicHome(page) {
   await expect(home).toBeVisible();
 }
 
+async function assertAnonymousPrivateNavigation(page) {
+  const response = await page.goto(origin + '/en/app/portrait', { waitUntil: 'networkidle' });
+  assert.equal(response.status(), 200);
+  await expect(page).toHaveURL(origin + '/en/app/portrait');
+  await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
+  await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+  await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
+  await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
+  await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href', '/en/client');
+}
+
 async function verifyCspBfcache() {
   // Playwright Page lifecycle/locators explicitly do not support BFCache.
   // Use its browser launcher only; every observation/navigation below is CDP.
@@ -61,7 +74,7 @@ async function verifyCspBfcache() {
       const record = (type, extra = {}) => {
         const entries = JSON.parse(sessionStorage.getItem('__rawCspLifecycle') || '[]');
         const nav = performance.getEntriesByType('navigation')[0];
-        entries.push({ type, time: performance.timeOrigin + performance.now(), probe: window.__rawCspProbe, url: location.href, documentClass: document.body?.dataset.cspClass, readyState: document.readyState, notRestoredReasons: nav?.notRestoredReasons?.toJSON?.() ?? null, ...extra });
+        entries.push({ type, time: performance.timeOrigin + performance.now(), probe: window.__rawCspProbe, url: location.href, documentClass: document.body?.dataset.cspClass, readyState: document.readyState, navigationEntryKey: window.navigation?.currentEntry?.key ?? null, ownsHistoryEntry: window.__hhOwnsHistoryEntry?.() ?? null, notRestoredReasons: nav?.notRestoredReasons?.toJSON?.() ?? null, ...extra });
         sessionStorage.setItem('__rawCspLifecycle', JSON.stringify(entries));
       };
       record('init');
@@ -75,7 +88,7 @@ async function verifyCspBfcache() {
     assert.ok(!value.exceptionDetails, JSON.stringify(value.exceptionDetails));
     return value.result.value;
   };
-  const snapshot = () => evaluate(`({url:location.href,documentClass:document.body?.dataset.cspClass,readyState:document.readyState,probe:window.__rawCspProbe,hydrated:history.pushState.toString().includes('__NA'),lifecycle:JSON.parse(sessionStorage.getItem('__rawCspLifecycle')||'[]')})`);
+  const snapshot = () => evaluate(`({url:location.href,documentClass:document.body?.dataset.cspClass,readyState:document.readyState,probe:window.__rawCspProbe,navigationEntryKey:window.navigation?.currentEntry?.key??null,ownsHistoryEntry:window.__hhOwnsHistoryEntry?.()??null,hydrated:history.pushState.toString().includes('__NA'),lifecycle:JSON.parse(sessionStorage.getItem('__rawCspLifecycle')||'[]')})`);
   const waitFor = async (description, predicate) => {
     const deadline = Date.now() + 15000;
     while (Date.now() < deadline) {
@@ -90,6 +103,11 @@ async function verifyCspBfcache() {
     await cdp.send('Page.navigate', { url: origin + '/en/about' });
     const initial = await waitFor('Initial public document must hydrate', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated);
     originalProbe = initial.probe;
+    const candidateProvenance = ['localhost', '127.0.0.1'].includes(new URL(origin).hostname);
+    if (candidateProvenance) {
+      assert.ok(initial.navigationEntryKey, 'Native entry key must be available in raw BFCache probe');
+      assert.equal(initial.ownsHistoryEntry, true, 'Initial entry belongs to its document');
+    }
     phase = 'full-document-to-tantra';
     await evaluate(`location.assign('/en/academy/reiki/tantra-reiki')`);
     await waitFor('Full cross-policy navigation must load a fresh Tantra document', state => state.url === origin + '/en/academy/reiki/tantra-reiki' && state.documentClass === 'tantra-media' && state.probe !== originalProbe && state.readyState === 'complete' && state.hydrated);
@@ -100,6 +118,10 @@ async function verifyCspBfcache() {
     await cdp.send('Page.navigateToHistoryEntry', { entryId: publicEntry.id });
     const restored = await waitFor('Back must restore the correct public URL and document policy', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated);
     const bfcachePersistedVerified = restored.probe === originalProbe && restored.lifecycle.some(event => event.type === 'pageshow' && event.persisted === true && event.probe === originalProbe && event.url === origin + '/en/about');
+    if (candidateProvenance) {
+      assert.equal(restored.ownsHistoryEntry, true, 'Restored public entry must belong to its document');
+      if (bfcachePersistedVerified) assert.equal(restored.navigationEntryKey, initial.navigationEntryKey, 'Owned BFCache restoration retains its native entry key');
+    }
     let ineligibilityReasons = [];
     if (!bfcachePersistedVerified) {
       assert.notEqual(restored.probe, originalProbe, 'A retained original document requires actual persisted evidence');
@@ -130,8 +152,9 @@ async function verifyCspBfcache() {
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
-  const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [] };
+  const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [], statsResponses: [], statsFetch: [] };
   let publicPhase = 'initial';
+  await context.addInitScript({ content: catalogStatsDiagnosticSource() });
   await context.addInitScript(() => {
     if (window.top !== window) return;
     window.__publicAuditProbe = crypto.randomUUID();
@@ -156,6 +179,7 @@ async function exercise(engine, browserType, width) {
   const createPublicPage = async () => {
   const errors = [];
   const page = await context.newPage();
+  attachCatalogStatsResponseDiagnostic(page, origin, publicDiagnostics.statsResponses);
   page.on('pageerror', error => {
     errors.push(String(error.message).slice(0, 300));
     publicDiagnostics.pageErrors.push({ phase: publicPhase, time: Date.now(), pageUrl: page.url(), message: error.message, stack: error.stack });
@@ -220,6 +244,7 @@ async function exercise(engine, browserType, width) {
           assert.equal(await page.locator('.public-consultation-cta').count(), 0, 'About must not repeat the generic consultation CTA');
         }
         publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
+        publicDiagnostics.statsFetch = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]'));
         publicDiagnostics.checkpoints.push({ type: 'assert', path, time: Date.now(), state: await page.evaluate(() => ({ probe: window.__publicAuditProbe, url: location.href, readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') })) });
         assert.deepEqual(errors, [], 'Unexpected page JS error');
         assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors in public documents');
@@ -247,7 +272,7 @@ async function exercise(engine, browserType, width) {
         // routes from requests belonging to the failed, departed document.
         const lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => []);
         publicDiagnostics.retiredDocuments ??= [];
-        publicDiagnostics.retiredDocuments.push({ path, lifecycle, pendingRequests: publicPageState.pendingPublicRequests.size });
+        publicDiagnostics.retiredDocuments.push({ path, lifecycle, statsFetch: await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => []), pendingRequests: publicPageState.pendingPublicRequests.size });
         await page.close();
         publicPageState = await createPublicPage();
         page = publicPageState.page;
@@ -298,7 +323,7 @@ async function exercise(engine, browserType, width) {
         await page.locator(`.site-language-menu [lang="${locale}"]`).click();
         await expect(page).toHaveURL(origin + `/books/maya-tradition?lang=${locale}`);
         await expect(page.locator('main').first()).toHaveAttribute('lang', locale);
-        await expect(page.locator(`main ol a[href$="?lang=${locale}"]`)).toHaveCount(4);
+        await expect(page.locator(`main ol a[href^="/${locale}/books/"]`)).toHaveCount(4);
       });
     }
     for (const locale of ['en', 'ru', 'es']) {
@@ -334,8 +359,10 @@ async function exercise(engine, browserType, width) {
         assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
         return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
-      await check('paid-consultation-safe-handoff', { engine, width, locale }, async () => {
-        await page.goto(origin + `/${locale}/services/psychohomeopathy`, { waitUntil: 'networkidle' });
+      await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, async () => {
+        // Alchemy now has a dedicated form covered by verify-app-r1; retain the
+        // complete generic paid-selector contract on the actual imagery service.
+        await page.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
         const capture = page.locator('[data-consultation-capture="service"]');
         await expect(capture).toHaveCount(1);
         await expect(capture.locator('[role="group"] button')).toHaveCount(3);
@@ -373,6 +400,9 @@ async function exercise(engine, browserType, width) {
       });
     }
     if (width === 390) {
+      if (['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) {
+        await check('csp-history-provenance', { engine, width }, () => verifyHistoryProvenance({ browser, origin, evidencePath: `${evidence}/${label}-csp-${engine}-provenance.json` }));
+      }
       for (const readiness of ['rapid-history', 'loaded-history']) {
       await check('csp-navigation-and-history', { engine, width, readiness }, async () => {
         // New context isolates document policies and service-worker caching. This
@@ -400,13 +430,21 @@ async function exercise(engine, browserType, width) {
           // replacement; the asynchronous exposed binding alone may be lost.
           const record = (type, extra = {}) => {
             const navigation = performance.getEntriesByType('navigation')[0];
-            const state = { type, time: performance.timeOrigin + performance.now(), documentProbe: window.__cspInitDocumentProbe, url: location.href, readyState: document.readyState, visibilityState: document.visibilityState, documentClass: document.body?.dataset.cspClass, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null, ...extra };
+            const state = { type, time: performance.timeOrigin + performance.now(), documentProbe: window.__cspInitDocumentProbe, url: location.href, readyState: document.readyState, visibilityState: document.visibilityState, documentClass: document.body?.dataset.cspClass, navigationEntryKey: window.navigation?.currentEntry?.key ?? null, ownsHistoryEntry: window.__hhOwnsHistoryEntry?.() ?? null, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null, ...extra };
             const entries = JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]');
             entries.push(state);
             sessionStorage.setItem('__cspLifecycleTrace', JSON.stringify(entries));
             return state;
           };
           record('init');
+          document.addEventListener('securitypolicyviolation', event => {
+            let blockedPath = null;
+            try {
+              const blocked = new URL(event.blockedURI, location.origin);
+              if (blocked.origin === location.origin && blocked.pathname === '/api/test-catalog/stats' && !blocked.search) blockedPath = blocked.pathname;
+            } catch { /* Do not retain unrecognized URLs. */ }
+            record('policy-violation', { directive: event.effectiveDirective, disposition: event.disposition, blockedPath });
+          }, true);
           // Observe actual uncaught errors independently of WebKit's console
           // diagnostics, which Playwright also exposes through pageerror.
           window.addEventListener('error', event => {
@@ -420,14 +458,33 @@ async function exercise(engine, browserType, width) {
           }, true);
           window.addEventListener('pagehide', event => record('pagehide', { persisted: event.persisted }), true);
           window.addEventListener('popstate', () => record('popstate'), true);
+          window.navigation?.addEventListener('currententrychange', event => record('currententrychange', { navigationType: event.navigationType }));
           window.addEventListener('load', () => record('load'), true);
           document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
           document.addEventListener('visibilitychange', () => record('visibilitychange'), true);
-          window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
+          // Passive synchronous stack capture identifies who issued competing
+          // hard replaces. Do not wrap Location/history or cancel navigation:
+          // either would change the WebKit race this audit is measuring.
+          window.navigation?.addEventListener('navigate', event => {
+            record('navigate', {
+              destination: event.destination.url,
+              sameDocument: event.destination.sameDocument,
+              navigationType: event.navigationType,
+              cancelable: event.cancelable,
+              canIntercept: event.canIntercept,
+              userInitiated: event.userInitiated,
+              defaultPrevented: event.defaultPrevented,
+              sourceElementTag: event.sourceElement?.tagName ?? null,
+              initiatorStack: new Error('CSP navigation initiator').stack,
+            });
+          });
         });
         await cspContext.addInitScript({ content: cspFetchTelemetrySource() });
+        await cspContext.addInitScript({ content: catalogStatsDiagnosticSource() });
         const cspPage = await cspContext.newPage();
         const requestTelemetry = [];
+        const statsResponses = [];
+        attachCatalogStatsResponseDiagnostic(cspPage, origin, statsResponses);
         attachCspRequestTelemetry(cspPage, origin, requestTelemetry);
         const navigationTrace = [];
         const waitForDocument = async () => {
@@ -458,8 +515,8 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
-          await cspPage.locator('.mobile-bottom-navigation a[href="/en/client"]').click();
-          await expect(cspPage).toHaveURL(origin + '/en/client');
+          await cspPage.locator('.mobile-bottom-navigation a[href="/en/client/tests"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Entering private must load a new document');
@@ -471,11 +528,24 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          // Private pages intentionally omit the public bottom bar. Leave through
-          // the visible header wordmark, then use the public About content link.
-          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          // Test discovery keeps public navigation while retaining private CSP.
+          // Check the actual private account separately, without altering this
+          // page's Back/Forward chain or reading an authenticated account.
+          const discoveryBottom = cspPage.locator('.mobile-bottom-navigation');
+          await expect(discoveryBottom).toBeVisible();
+          await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
+          await expect(discoveryBottom.locator('[data-nav-item="tests"]')).toHaveAttribute('aria-current', 'page');
+          await expect(discoveryBottom.locator('[data-nav-item="house"]')).toHaveAttribute('href', '/en/app');
+          const privatePage = await cspContext.newPage();
+          privatePage.on('pageerror', error => cspErrors.push({ phase: 'anonymous-private-account', time: Date.now(), message: error.message, stack: error.stack }));
+          try {
+            await assertAnonymousPrivateNavigation(privatePage);
+          } finally { await privatePage.close(); }
+          // Leave discovery through its visible header wordmark, then use the
+          // public About content link to preserve the cross-policy history test.
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-before-home'; });
-          const privateWordmark = cspPage.locator('.client-entry-shell .house-wordmark');
+          const privateWordmark = cspPage.locator('.house-header--services .house-wordmark');
+          await expect(privateWordmark).toHaveCount(1);
           await expect(privateWordmark).toBeVisible();
           await expect(privateWordmark).toHaveAttribute('href', '/');
           await privateWordmark.click();
@@ -514,10 +584,12 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           historyPhase = 'back-to-private';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
-          await expect(cspPage).toHaveURL(origin + '/en/client');
+          await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
-          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toBeVisible();
+          await expect(cspPage.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
+          await expect(cspPage.locator('.mobile-bottom-navigation [data-nav-item="tests"]')).toHaveAttribute('aria-current', 'page');
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await assertCspPublicHome(cspPage);
@@ -553,7 +625,7 @@ async function exercise(engine, browserType, width) {
           });
           if (readiness === 'loaded-history') assert.deepEqual(cspErrors, [], 'No page errors in the fully loaded navigation journey');
           assert.deepEqual(unexpectedErrors, [], 'No unexplained JavaScript diagnostics during CSP navigation');
-          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, publicTestsNavigationVerified: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
           const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
           throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);
@@ -561,7 +633,8 @@ async function exercise(engine, browserType, width) {
           // Keep full structured diagnostics even when check() bounds its message.
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]')).catch(() => lifecycleTrace);
           const fetchTelemetry = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]')).catch(() => []);
-          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
+          const statsFetch = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => []);
+          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ statsResponses, statsFetch, requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
           await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
         }
       });
@@ -621,7 +694,7 @@ async function exercise(engine, browserType, width) {
     }
     if (engine === 'chromium' && width === 390) {
       for (const book of volumes) {
-        for (const [readerPath, locale] of [[`/books/${book}?lang=en`, 'en'], [`/books/${book}`, 'ru']]) {
+        for (const [readerPath, locale] of [[`/en/books/${book}`, 'en'], [`/ru/books/${book}`, 'ru']]) {
           await check('maya-reader-and-images', { path: readerPath, locale }, async () => {
             const response = await page.goto(origin + readerPath, { waitUntil: 'domcontentloaded', timeout: 35000 });
             assert.equal(response.status(), 200);
@@ -644,6 +717,7 @@ async function exercise(engine, browserType, width) {
     }
   } finally {
     publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => publicDiagnostics.lifecycle);
+    publicDiagnostics.statsFetch = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => publicDiagnostics.statsFetch);
     writeFileSync(`${evidence}/${label}-public-${engine}-${width}-diagnostics.json`, JSON.stringify(publicDiagnostics, null, 2));
     await context.close(); await browser.close();
   }

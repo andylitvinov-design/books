@@ -6,16 +6,52 @@ on:
     paths:
       - '.github/workflows/hh-live-seo-audit.yml'
       - 'scripts/verify-live-sitemap.mjs'
+      - 'scripts/verify-public-tests-mobile.mjs'
+      - 'app/[locale]/tests/**'
+      - 'tests/public-tests-seo-landing.test.mjs'
+      - 'scripts/verify-public-assets.mjs'
+      - 'data/academy/catalog.ts'
+      - 'tests/seo-nightly-crawl.test.mjs'
       - 'app/sitemap.ts'
+      - 'data/seo.js'
+      - 'app/[locale]/books/**'
+      - 'app/books/**'
       - 'app/not-found.tsx'
       - 'lib/seo-descriptions.ts'
   pull_request:
     paths:
       - '.github/workflows/hh-live-seo-audit.yml'
       - 'scripts/verify-live-sitemap.mjs'
+      - 'scripts/verify-public-tests-mobile.mjs'
+      - 'app/[locale]/tests/**'
+      - 'tests/public-tests-seo-landing.test.mjs'
+      - 'scripts/verify-public-assets.mjs'
+      - 'data/academy/catalog.ts'
+      - 'tests/seo-nightly-crawl.test.mjs'
+      - 'data/seo.js'
+      - 'app/[locale]/books/**'
+      - 'app/books/**'
+      - 'app/not-found.tsx'
 permissions:
   contents: read
 jobs:
+  source-build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify TypeScript after localized book migration
+        run: npx --no-install tsc --noEmit
+      - name: Verify Next.js production build
+        run: npm run build
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -29,7 +65,16 @@ jobs:
       - name: Allow Git-triggered Vercel production build to finish before live crawl
         if: github.event_name == 'push'
         run: sleep 150
+      - name: Check localized book sitemap against real catalog
+        run: node --test tests/seo-localized-books.test.mjs tests/seo-nightly-crawl.test.mjs tests/public-tests-seo-landing.test.mjs
+      # A PR is not production: do not require newly introduced routes on the old live build.
+      - name: Check public crawler syntax
+        run: |
+          node --check scripts/verify-live-sitemap.mjs
+          node --check scripts/verify-public-assets.mjs
+          node --check scripts/verify-public-tests-mobile.mjs
       - name: Run comprehensive public-only SEO audit against production
+        if: github.event_name != 'pull_request'
         run: node scripts/verify-live-sitemap.mjs
       - name: Add report to GitHub Actions summary
         if: always()
@@ -60,4 +105,36 @@ jobs:
           name: seo-complete-live-${{ github.run_id }}
           path: artifacts/seo-live-audit.json
           if-no-files-found: ignore
+          retention-days: 14
+
+  # Public routes only. The browser never signs in or opens private results.
+  # Run on release/dispatch, not PRs: public hostname still serves the old code
+  # until a PR is merged and deployed by Vercel.
+  public-tests-mobile:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium for real public-page QA
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Allow the Git-triggered production deployment to settle
+        if: github.event_name == 'push'
+        run: sleep 160
+      - name: Validate EN/RU/ES public tests at 320/390/430px
+        run: node scripts/verify-public-tests-mobile.mjs
+      - name: Save production browser QA report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-public-tests-mobile-${{ github.run_id }}
+          path: artifacts/seo-tests-mobile/
+          if-no-files-found: warn
           retention-days: 14

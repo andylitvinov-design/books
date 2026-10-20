@@ -128,7 +128,7 @@ test('client and API permit only voluntary bounded NAV-2.0 learning choices',()=
   assert.match(server,/interactionSchema:'opora-level-2'/)
   assert.match(server,/optionalChoice\(input\.practiceAttempt,practiceAttemptOptions\)/)
   assert.match(server,/if\(!supportsStressInteraction&&/)
-  assert.match(server,/supportsStressInteraction=version===COURSE_ANTISTRESS_OUTCOME_V3\|\|Boolean\(routePlan\)/)
+  assert.match(server,/supportsStressInteraction=\[COURSE_ANTISTRESS_OUTCOME_V3,COURSE_ANTISTRESS_SKILLS_V5,COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7\]\.includes\(version\)\|\|Boolean\(routePlan\)/)
   assert.match(server,/routePlan=!coursePresetForTags\(course\.focus_tags\)/)
 })
 

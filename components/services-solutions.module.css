@@ -15,6 +15,7 @@
 .card h3 a:hover{text-decoration:underline;text-underline-offset:4px}
 .cardSummary{margin:0;color:#57534b;font:13px/1.52 Arial,Helvetica,sans-serif}
 .cardBenefit{margin:10px 0 13px;color:#4b694e;font:700 11px/1.42 Arial,Helvetica,sans-serif}
+.cardPrice{margin:0 0 11px;color:#7b384b;font:750 12px/1.4 Arial,Helvetica,sans-serif}
 .cardCta{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-top:auto;width:100%;padding:9px 13px;box-sizing:border-box;border-radius:12px;background:#285947;color:#fff!important;font:750 12px/1.35 Arial,Helvetica,sans-serif;text-decoration:none}
 .cardCta:hover{background:#1d4839}
 .cardCta svg{flex:none}
@@ -282,4 +283,26 @@
  .servicesPage .card {min-height:174px}
  .servicesPage .header h2 {font-size:clamp(29px,7.6vw,36px)}
  .servicesPage .card:first-child {min-height:185px}
+}
+
+
+/* A single, unmistakable service card for Soul Alchemy, in the established
+   Holistic House photo-left / Details-left / burgundy-Order-right system. */
+.card[data-core-service-id="alchemy"]{overflow:visible;z-index:2;border-color:#b6dad6;background:linear-gradient(135deg,#fffefa,#eefaf7)}
+.card[data-core-service-id="alchemy"]:focus-within{z-index:20}
+.cardActionRow{display:grid;grid-template-columns:minmax(0,.79fr) minmax(0,1.21fr);align-items:start;gap:7px;min-width:0;width:100%;margin-top:auto}
+.cardDetails{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;padding:8px;border:1px solid #aecacb;border-radius:12px;background:#f2fcf9;color:#216777!important;font-size:12px;font-weight:800;text-decoration:none}
+.cardDetails:hover{background:#e1f6f1}
+.cardDetails svg{flex:none}
+.cardDirectOrder{position:relative;min-width:0;width:100%}
+.cardDirectOrder :global([data-contact-order]){min-width:0;min-height:44px;padding:8px 6px;border-radius:12px;background:#8c3754;color:#fff;gap:4px;font-size:12px;box-shadow:none}
+.cardDirectOrder :global([data-contact-order]):hover{background:#722942}
+.cardDirectOrder :global([data-contact-order] > svg:first-child){display:none}
+.cardDirectOrder :global([data-contact-order] > svg:last-child){width:15px;height:15px}
+.cardDirectOrder :global([data-contact-channel-chooser] > div[id]){position:absolute;z-index:30;right:0;top:calc(100% + 5px);width:min(310px,calc(100vw - 45px));box-shadow:0 12px 30px rgba(31,62,80,.2)}
+.card[data-core-service-id="alchemy"] .cardActionRow :is(a,button):focus-visible{outline:3px solid #9e6678;outline-offset:2px}
+@media(max-width:760px){
+ .cardActionRow{gap:6px}
+ .cardDetails{min-height:43px;font-size:11px;padding:7px 5px}
+ .cardDirectOrder :global([data-contact-order]){min-height:43px;font-size:11px;gap:3px;padding:7px 4px}
 }

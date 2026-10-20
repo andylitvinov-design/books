@@ -12,14 +12,15 @@ async function assertSpanishHomeAlternates(page) {
 // Exact approved public hero and its real topic-selection anchor, in each tested locale.
 async function assertPublicPickerEntrance(target,locale){
  const copy=locale==='ru'
-  ? {region:'Подберите свои тесты',hero:'Лучше понять себя и свою жизнь',action:'Выбрать темы',first:'Что вы хотите исследовать?'}
-  : {region:'Choose your tests',hero:'Understand yourself and your life better',action:'Choose my topics',first:'What would you like to explore?'}
+  ? {region:'Подберите свои тесты',hero:'Лучше поймите себя. Найдите следующий шаг.',action:'Тесты',first:'Что вы хотите исследовать?'}
+  : {region:'Choose your tests',hero:'Understand yourself. Find your next step.',action:'Tests',first:'What would you like to explore?'}
  const picker=target.locator('[data-prelogin-test-picker]')
  await expect(picker).toHaveAttribute('aria-label',copy.region)
  await expect(picker.locator('[data-client-tests-hero]').getByRole('heading',{name:copy.hero,level:1,exact:true})).toBeVisible()
- const entrance=picker.locator('[data-client-tests-promo]').getByRole('link',{name:copy.action,exact:true})
+ const entrance=picker.locator('[data-client-tests-hero]').getByRole('navigation').getByRole('link',{name:copy.action,exact:true})
  await expect(entrance).toBeVisible()
- await expect(entrance).toHaveAttribute('href','#hh-simple-topic-title')
+ await expect(entrance).toHaveAttribute('href',`/${locale}/client/tests`)
+ await expect(entrance).toHaveAttribute('aria-current','page')
  await expect(picker.getByRole('heading',{name:copy.first,level:2,exact:true})).toHaveAttribute('id','hh-simple-topic-title')
 }
 // Keep direct actions compact; the complete catalog remains in the site menu.
@@ -27,12 +28,12 @@ async function assertSpanishNavigation(page, path) {
   const currentUrl = page.url();
   const navigation = page.locator('.site-navigation');
   await expect(navigation).toHaveCount(1);
-  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/en/app'], 'Spanish direct destinations: ' + path);
+  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library'], 'Spanish direct destinations: ' + path);
   const destinations = [
     ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
-    ['/es/library', 'Biblioteca'], ['/es/services', 'Servicios'],
-    ['/es/academy', 'Academia'], ['/es/courses', 'Mis cursos'],
-    ['/en/app', 'Mis pruebas'], ['/es/about', 'Sobre mí'],
+    ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
+    ['/es/academy', 'Academia'], ['/es/events', 'Eventos'],
+    ['/en/app', 'Gabinete'], ['/es/library', 'Biblioteca'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -57,6 +58,46 @@ async function assertSpanishNavigation(page, path) {
   await expect(trigger).toBeFocused();
   await expect(page).toHaveURL(currentUrl);
 }
+async function assertSpanishCourseCatalog(page, response) {
+  const canonical = '/es/academy/free-ai-courses';
+  await expect(page).toHaveURL(origin + canonical);
+  assert.equal(response.status(), 200, 'Canonical Spanish course catalog must render');
+  assert.equal(response.url(), origin + canonical, 'The final navigation response belongs to the canonical catalog');
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://holistichouse.vercel.app' + canonical);
+  const catalog = page.locator('main[data-public-my-courses]');
+  await expect(catalog).toHaveCount(1);
+  await expect(catalog).toHaveAttribute('lang', 'es');
+  await expect(catalog.getByRole('heading', { level: 1, name: 'Cursos de IA gratuitos', exact: true })).toBeVisible();
+  // The header's free-start action and the course hero intentionally share a label.
+  // Scope each contract; the direct header action is hidden at compact widths.
+  const freeStart = catalog.locator('.site-navigation > a.site-nav-free-entry');
+  await expect(freeStart).toHaveCount(1);
+  await expect(freeStart).toHaveText('Empezar gratis');
+  await expect(freeStart).toHaveAttribute('href', '/es#free-start');
+  if (page.viewportSize().width > 1140) {
+    await expect(freeStart).toBeVisible();
+    await expect(freeStart).toHaveAccessibleName('Empezar gratis');
+  } else await expect(freeStart).toBeHidden();
+  const hero = catalog.locator('section[aria-labelledby="courses-title"]');
+  await expect(hero).toHaveCount(1);
+  const start = hero.getByRole('link', { name: 'Empezar gratis', exact: true });
+  await expect(start).toHaveCount(1);
+  await expect(start).toBeVisible();
+  await expect(start).toHaveAttribute('href', '/en/app/course?program=stress');
+  await expect(catalog.locator('[data-course-programme]')).toHaveCount(1);
+  const stress = catalog.locator('[data-course-programme="stress"]');
+  await expect(stress.getByRole('heading', { level: 3, name: 'Menos estrés', exact: true })).toBeVisible();
+  await expect(stress.locator('a[href="/en/app/course?program=stress"]')).toHaveCount(1);
+  await expect(catalog.getByRole('link', { name: 'Conocer Antiestrés', exact: true })).toHaveCount(2);
+  for (const link of await catalog.getByRole('link', { name: 'Conocer Antiestrés', exact: true }).all()) await expect(link).toHaveAttribute('href', '/es/courses/antistress');
+  await expect(catalog.getByRole('link', { name: 'Conocer el método OPORA', exact: true })).toHaveAttribute('href', '/es/courses/methodology');
+  await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
+  await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
+  await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
+  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
+  await expect(page.locator('.mobile-bottom-navigation [data-nav-item="academy"]')).toHaveAttribute('aria-current', 'page');
+}
+
 // Production-parity HTTPS browser checks. Never read real private records,
 // submit production forms, send messages, or mutate publication data.
 import assert from 'node:assert/strict';
@@ -77,7 +118,7 @@ const results = [];
 const diagnostics = createPublicDiagnostics(origin);
 const saveDiagnostics = () => writeFileSync(`${evidence}/${live?'live':'local'}-es-public-diagnostics.json`, JSON.stringify({events:diagnostics.events, dropped:diagnostics.dropped}, null, 2));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
+const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/academy/free-ai-courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
 mkdirSync(evidence, { recursive: true });
 let app, proxy, stage = 'start';
 try {
@@ -114,7 +155,7 @@ try {
         page.on('pageerror', error => errors.push(error.message));
         page.on('request', request => {
           const url = new URL(request.url());
-          if (watchingUnselectedClients && url.origin === origin && /^\/(en|ru)\/client\/?$/.test(url.pathname)) {
+          if (watchingUnselectedClients && url.origin === origin && /^\/(en|ru)\/client(?:\/tests)?\/?$/.test(url.pathname)) {
             unselectedClientRequests.push({path:url.pathname,resourceType:request.resourceType()});
           }
         });
@@ -143,6 +184,7 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang','es');
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
           await assertSpanishNavigation(page, path);
+          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);
           assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),'No untranslated public labels: '+path);
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
@@ -189,9 +231,19 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
-        await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));
-        await expect(page).toHaveURL(origin+'/en/app');
+        const accountMenu = page.locator('.site-navigation details.site-main-menu');
+        await expect(accountMenu).toHaveCount(1);
+        await expect(accountMenu).toHaveJSProperty('open', false);
+        await click(page.locator('.site-main-menu-trigger'));
+        await expect(accountMenu).toHaveJSProperty('open', true);
+        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
+        await expect(accountMenu.getByRole('link', { name: 'Gabinete', exact: true })).toHaveCount(1);
+        await expect(accountLink).toHaveCount(1);
+        await expect(accountLink).toHaveAccessibleName('Gabinete');
+        await expect(accountLink).toBeVisible();
+        await expect(accountLink).toHaveAttribute('href','/en/app');
+        await click(accountLink);
+        await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
         await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
@@ -199,7 +251,7 @@ try {
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
-        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         stage=`${engine} ${width} search`;
@@ -233,7 +285,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eight-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eleven-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }
@@ -246,7 +298,9 @@ try {
     assert.ok(/<html lang="es"/.test(html),'Spanish remedy document: '+slug); assert.ok(html.includes('Traducción automática'),slug); assert.ok(!response.url.includes('/en/'),slug);
   }));
   const xml=await(await fetch(auditOrigin+'/sitemap.xml')).text();
-  for(const path of routes.filter(path=>path!=='/es/client'))assert.ok(xml.includes('https://holistichouse.vercel.app'+path),path);
+  const sitemapUrls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
+  for(const path of routes.filter(path=>!['/es/client','/es/courses'].includes(path)))assert.ok(sitemapUrls.includes('https://holistichouse.vercel.app'+path),path);
+  assert.ok(!sitemapUrls.some(href => new URL(href).pathname === '/es/courses'), 'Legacy course redirect must not be indexed');
   for(const slug of slugs)assert.ok(xml.includes('/es/homeopathy/remedies/'+slug),slug);
   assert.ok(!xml.includes('/es/client'));
   console.log(`PASS: ${slugs.length} complete Spanish remedy routes and public sitemap`);

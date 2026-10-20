@@ -1,0 +1,46 @@
+name: Holistic House interpretation registry database verification
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+permissions:
+  contents: read
+concurrency:
+  group: hh-interpretation-database-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  interpretation-database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    # Dedicated fresh service. Never point this job at the application database.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      HH_APP_TEST_RUNTIME: isolated
+      HH_INTERPRETATION_DB_TEST: synthetic-only
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Verify isolated transport and strict C1/C2 release gates
+        run: node --test tests/interpretation-db-isolation.test.mjs
+      - name: Native PostgreSQL schema, approved seed, readback and server loader
+        run: node --conditions=react-server --test --test-concurrency=1 tests/interpretation-database.integration.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: interpretation-native-db-proof
+          path: artifacts/interpretation-db-proof.json
+          if-no-files-found: ignore

@@ -1,5 +1,7 @@
 -- UNAPPLIED PROPOSAL ONLY. No production DB/roles/access changes are authorized.
 -- Review AFTER proposed-subscription-schema.sql. Do not place in migrations.
+-- Provider-aware ZEN additions are also UNAPPLIED and require PostgreSQL/RLS
+-- review, merchant approval, sandbox round-trip and explicit production consent.
 DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED SERVICE COMMERCE PROPOSAL: explicit approval required'; END $$;
 BEGIN;
 CREATE TABLE billing_private.service_orders (
@@ -23,10 +25,19 @@ CREATE TABLE billing_private.service_orders (
   fulfillment_status text NOT NULL CHECK(fulfillment_status IN ('awaiting_payment','awaiting_schedule','scheduled','fulfilled','on_hold','cancelled')),
   refund_status text NOT NULL CHECK(refund_status IN ('none','partial','full')),
   refunded_minor integer NOT NULL DEFAULT 0 CHECK(refunded_minor BETWEEN 0 AND total_minor),
-  provider_checkout_id text CHECK(provider_checkout_id ~ '^cs_[A-Za-z0-9_]+$'),
-  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
-  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
-  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  provider_checkout_id text CHECK(provider_checkout_id IS NULL OR
+    (provider='stripe' AND provider_checkout_id ~ '^cs_[A-Za-z0-9_]+$') OR
+    (provider='zen' AND provider_checkout_id ~ '^zc_[a-f0-9]{32}$')),
+  payment_intent_id text CHECK(payment_intent_id IS NULL OR
+    (provider='stripe' AND payment_intent_id ~ '^pi_[A-Za-z0-9]+$') OR
+    (provider='zen' AND payment_intent_id ~ '^zt_[a-f0-9]{32}$')),
+  invoice_id text CHECK(invoice_id IS NULL OR
+    (provider='stripe' AND invoice_id ~ '^in_[A-Za-z0-9]+$')),
+  checkout_url text CHECK(checkout_url IS NULL OR
+    (length(checkout_url)<=4096 AND
+      ((provider='stripe' AND checkout_url LIKE 'https://checkout.stripe.com/%') OR
+       (provider='zen' AND environment='live' AND checkout_url ~ '^https://secure\.zen\.com/') OR
+       (provider='zen' AND environment='sandbox' AND checkout_url ~ '^https://secure\.zen-test\.com/')))),
   expires_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),

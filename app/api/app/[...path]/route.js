@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
+import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/development-goals'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
@@ -10,6 +11,7 @@ import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-cours
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createPresentationUploadIntent, completePresentationUpload } from '@/lib/practitioners/presentation-storage'
 import { createArticleRepository } from '@/lib/practitioners/article-repository'
+import { createPractitionerEventsRepository } from '@/lib/practitioners/events-repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import { readAccountTestRating, saveAccountTestRating, readGuestTestRating, saveGuestTestRating } from '@/lib/app/test-catalog-social-proof'
 import {
@@ -32,6 +34,7 @@ import {
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { ownerClientSummary, ownerClientDirectory, ownerClientDocumentSummary } from '@/lib/clients/owner-client-directory'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { listLegacyClientIdsForAccount } from '@/lib/app/client-account-binding'
 import { authorizePrescription, prescriptionSessionCookieName } from '@/lib/prescriptions/session'
@@ -56,7 +59,11 @@ import {createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeS
 import {deliveryEnabled} from '@/lib/clients/delivery-model'
 import {readSessionViewerCookie,authorizeSessionGuest} from '@/lib/clients/session-delivery-access'
 import {getPublishedClientSession} from '@/lib/clients/session-delivery-service'
+import {listPractitionerMaterials,streamReadyMaterial} from '@/lib/clients/material-library'
 export const runtime = 'nodejs'
+// The Cabinet Postgres and verified Supabase Auth run in ca-central-1.
+// Keep only this private API close to its data source (not the whole site).
+export const preferredRegion = 'yul1'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 async function handle(request, { params }) {
@@ -67,23 +74,28 @@ async function handle(request, { params }) {
       path = (await params).path || [],
       method = request.method,
       joined = path.join('/')
-    if (method !== 'GET') requireSameOrigin(request, config)
+    if (method !== 'GET' && method !== 'HEAD') requireSameOrigin(request, config)
     auth = createRequestAuth(request, config)
     const json = (data, status = 200) =>
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native'])
       const locale = body.locale === 'ru' ? 'ru' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
-        program = body.program || null
-      if (continueTo !== null && !['tests', 'course'].includes(continueTo) &&
-        !['cabinet','my-tests','my-courses','reports','energywork'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        program = body.program || null,
+        requestId = body.requestId || null,
+        native = body.native === true
+      if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
+      if (continueTo !== null && !['tests', 'course', 'consultations'].includes(continueTo) &&
+        !['cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
+      if (requestId !== null) requireUUID(requestId)
+      if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
       if ((intentId && serviceId) || (continueTo && (intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       await consumeRate(
         config,
@@ -98,7 +110,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -113,15 +125,35 @@ async function handle(request, { params }) {
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
         continueTo = url.searchParams.get('continue'),
-        program = url.searchParams.get('program')
+        program = url.searchParams.get('program'),
+        requestId = url.searchParams.get('request')
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports','energywork'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (requestId !== null) requireUUID(requestId)
+      if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      // Native OAuth runs Google in the system browser. This HTTPS callback
+      // merely returns the single-use PKCE authorization code to the app;
+      // the WebView's existing HttpOnly PKCE cookie then exchanges it through
+      // THIS SAME callback without native=1. Never transfer session tokens.
+      if (url.searchParams.get('native') === '1') {
+        const handoff = new URL('holistichouse://auth/callback')
+        for (const key of ['locale','intent','service','continue','program','request','sb_flow_id']) {
+          const value = url.searchParams.get(key)
+          if (value !== null) handoff.searchParams.set(key,value)
+        }
+        if (url.searchParams.has('error')) handoff.searchParams.set('error','cancelled')
+        else if (code && code.length <= 4096) handoff.searchParams.set('code',code)
+        else handoff.searchParams.set('error','cancelled')
+        return auth.apply(NextResponse.redirect(handoff.toString(),{status:303,headers:PRIVATE_HEADERS}))
+      }
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
+          : continueTo === 'consultations'
+            ? `${origin}/${locale}/app/consultations?request=${encodeURIComponent(requestId)}`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
@@ -134,8 +166,10 @@ async function handle(request, { params }) {
                     ? `${origin}/${locale}/app/course`
                     : continueTo === 'reports'
                       ? `${origin}/${locale}/app/portrait#personal-reports`
-                      : continueTo === 'energywork'
-                        ? `${origin}/${locale}/academy/principles-of-energywork/learn`
+                      : continueTo === 'practitioner'
+                        ? `${origin}/admin/login`
+                        : continueTo === 'energywork'
+                          ? `${origin}/${locale}/academy/principles-of-energywork/learn`
                         : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
@@ -358,7 +392,8 @@ async function handle(request, { params }) {
     const actor = await auth.verified(),
       repo = createAppRepository(config),
       practiceRepo = createPractitionerRepository(config),
-      articleRepo = createArticleRepository(config)
+      articleRepo = createArticleRepository(config),
+      eventsRepo = createPractitionerEventsRepository(config)
     const expectedAccount = request.headers.get('x-hh-account-id')
     if (expectedAccount && expectedAccount !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
     await consumeRate(
@@ -432,7 +467,7 @@ async function handle(request, { params }) {
         throw new AppError('ACCOUNT_CHANGED',409)
       const energywork=createEnergyworkCourseRepository(config)
       if (method === 'GET') return json({ accountId:actor.id, ...await energywork.read(actor) })
-      if (method === 'POST') return json({ accountId:actor.id, ...await energywork.command(actor,await readBody(request,8192)) })
+      if (method === 'POST') return json({ accountId:actor.id, ...await energywork.command(actor,await readBody(request,32768)) })
       throw new AppError('NOT_FOUND',404)
     }
     if (path[0] === 'course' && request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
@@ -475,7 +510,18 @@ async function handle(request, { params }) {
       onlyKeys(await readBody(request),[])
       return json(await removeSavedSession(config,actor,path[1]))
     }
-    if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if (joined === 'development-goals') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method === 'GET') return json(await readDevelopmentGoals(config, actor))
+      if (method === 'POST') return json(await saveDevelopmentGoals(config, actor, await readBody(request, 8192)))
+      throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'bootstrap' && method === 'GET') {
+      // A reduced initial payload is safe only after the normal verified session,
+      // account check and private rate limit above. Other tabs stay unchanged.
+      const view = new URL(request.url).searchParams.get('view') === 'portrait' ? 'portrait' : 'full'
+      return json(await repo.bootstrap(actor, { view }))
+    }
     if (joined === 'personal-analysis-reports' && method === 'GET')
       return json(await listPersonalAnalysisReports(config, getPrescriptionStore(), actor))
     if (joined === 'shared-materials' && method === 'GET') {
@@ -500,16 +546,67 @@ async function handle(request, { params }) {
       if (path[2] === 'cancel') return json(await repo.cancelTestPlan(actor, path[1], body))
       if (path[2] === 'remove') return json(await repo.removeTestPlanItem(actor, path[1], body))
     }
+    // Legacy clinical clients were created manually, often without email.
+    // Read the existing encrypted prescription directory; do not treat
+    // account-bound service enquiries or owner marketing CRM as its source.
+    if (joined === 'practitioner/legacy-clients' && method === 'GET') {
+      if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor))
+        throw new AppError('NOT_FOUND', 404)
+      const store = getPrescriptionStore()
+      if (!store) throw new AppError('CLIENT_STORAGE_UNAVAILABLE', 503)
+      const query = new URL(request.url).searchParams
+      const keys = [...query.keys()]
+      if (keys.length > 1 || (keys.length === 1 && keys[0] !== 'clientId'))
+        throw new AppError('INVALID_QUERY', 400)
+      const clientId = query.get('clientId')
+      if (clientId !== null) {
+        requireUUID(clientId)
+        const client = await store.findClientById(clientId)
+        if (!client) throw new AppError('NOT_FOUND', 404)
+        const documents = await store.listClientDocuments(clientId)
+        return json({ client: ownerClientSummary(client), ...ownerClientDocumentSummary(documents) })
+      }
+      return json({ clients: ownerClientDirectory(await store.listClients()) })
+    }
     if (joined === 'practitioner/open' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['destination'])
-      const destination = practitionerDestination[body.destination]
-      if (!destination) throw new AppError('NOT_FOUND', 404)
+      onlyKeys(body, ['destination', 'clientId'])
       if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor)) throw new AppError('NOT_FOUND', 404)
+      const isClient = body.destination === 'client'
+      if (isClient) requireUUID(body.clientId)
+      else if (body.clientId !== undefined) throw new AppError('INVALID_INPUT', 400)
+      const destination = isClient
+        ? '/admin/clients/' + body.clientId
+        : practitionerDestination[body.destination]
+      if (!destination) throw new AppError('NOT_FOUND', 404)
+      if (isClient) {
+        const store = getPrescriptionStore()
+        if (!store) throw new AppError('CLIENT_STORAGE_UNAVAILABLE', 503)
+        if (!await store.findClientById(body.clientId)) throw new AppError('NOT_FOUND', 404)
+      }
       const response = json({ redirectUrl: destination })
       if (!issueTrustedAdminSession(response, { secure: !config.test }))
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       return response
+    }
+    // Owner-only PRIVATE report media catalog. This is deliberately distinct
+    // from moderated YouTube/Vimeo links on the public practitioner profile.
+    if(joined === 'practice/report-materials' && method === 'GET'){
+      if(!practitionerEmailAllowed(actor)||!await repo.isPractitioner(actor))
+        throw new AppError('NOT_FOUND',404)
+      return json({items:await listPractitionerMaterials(config)})
+    }
+    if(path[0]==='practice'&&path[1]==='report-materials'&&
+      path.length===4&&path[3]==='media'&&['GET','HEAD'].includes(method)){
+      if(!practitionerEmailAllowed(actor)||!await repo.isPractitioner(actor))
+        throw new AppError('NOT_FOUND',404)
+      requireUUID(path[2])
+      // Byte range and private Storage credentials stay behind the
+      // already-tested first-party owner media streaming adapter.
+      const streamed=await streamReadyMaterial(config,path[2],request)
+      return auth.apply(new NextResponse(streamed.body,{
+        status:streamed.status,headers:streamed.headers,
+      }))
     }
     if (joined === 'practice' && method === 'GET') {
       const workspace = await practiceRepo.getMyPractice(actor)
@@ -522,7 +619,14 @@ async function handle(request, { params }) {
       }
       return json({ ...workspace, newServices })
     }
-    if (joined === 'practice/articles' && method === 'GET') return json({items:await articleRepo.mine(actor)})
+    if (joined === 'practice/articles' && method === 'GET') {
+      await practiceRepo.requireActivated(actor)
+      return json(await articleRepo.library(actor))
+    }
+    if (joined === 'practice/events' && method === 'GET') {
+      await practiceRepo.requireActivated(actor)
+      return json({items:await eventsRepo.mine(actor)})
+    }
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
       const store = getPrescriptionStore()
@@ -547,6 +651,7 @@ async function handle(request, { params }) {
         }
         exported.savedSessions=exportedSessions
       }
+      exported.developmentGoals = await readDevelopmentGoals(config, actor)
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
@@ -627,6 +732,10 @@ async function handle(request, { params }) {
     if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
     if (path[0] === 'requests' && path.length === 2)
       return json(await repo.updateRequest(actor, path[1], body))
+    // Keep onboarding and own profile/service drafts available during signup.
+    // All other master tools require a submitted profile and first offering.
+    if (path[0] === 'practice' && !['onboarding','profile','services'].includes(path[1]))
+      await practiceRepo.requireActivated(actor)
     if (joined === 'practice/video-upload/intent') return json(await createPresentationUploadIntent(config, actor, body), 201)
     if (joined === 'practice/video-upload/complete') return json(await completePresentationUpload(config, actor, body))
     if (joined === 'practice/onboarding') return json(await practiceRepo.onboarding(actor, body))
@@ -643,11 +752,26 @@ async function handle(request, { params }) {
       }
     }
     if (path[0] === 'practice' && path[1] === 'articles') {
+      if(path[2] === 'folders'){
+        if(path.length===3) return json(await articleRepo.createFolder(actor,body),201)
+        if(path.length===4 && body.action==='delete') return json(await articleRepo.removeFolder(actor,path[3]))
+        if(path.length===4 && body.action==='rename') return json(await articleRepo.renameFolder(actor,path[3],body))
+        throw new AppError('NOT_FOUND',404)
+      }
       if(path.length === 2) return json(await articleRepo.save(actor,null,body),201)
       if(path.length === 3){
         if(body.action === 'submit') return json(await articleRepo.submit(actor,path[2],body))
         if(body.action === 'archive') return json(await articleRepo.archive(actor,path[2],body))
         return json(await articleRepo.save(actor,path[2],body))
+      }
+    }
+    if (path[0] === 'practice' && path[1] === 'events') {
+      if (path.length === 2) return json(await eventsRepo.save(actor, null, body), 201)
+      if (path.length === 3) {
+        if (body.action === 'submit') return json(await eventsRepo.submit(actor, path[2], { expectedRevision: body.expectedRevision }))
+        if (body.action === 'pause' || body.action === 'archive')
+          return json(await eventsRepo.changeVisibility(actor, path[2], body))
+        return json(await eventsRepo.save(actor, path[2], body))
       }
     }
     if (path[0] === 'practice' && path[1] === 'services') {
@@ -691,5 +815,5 @@ async function handle(request, { params }) {
     return auth ? auth.apply(response) : response
   }
 }
-export { handle as GET, handle as POST }
+export { handle as GET, handle as HEAD, handle as POST }
 

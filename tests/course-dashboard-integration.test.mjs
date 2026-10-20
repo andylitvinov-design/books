@@ -10,11 +10,56 @@ const freeStatus = (enabledPlans = ['start', 'advanced', 'premium']) => normaliz
   available: true, enabled: true, enabledPlans, provider: 'stripe', plans: SUBSCRIPTION_PLANS, plan: SUBSCRIPTION_PLANS.free,
   entitlement: { active: false, tier: 'free', ...SUBSCRIPTION_PLANS.free },
 })
-const checkConsent = async h => {
-  nodes(h.tree).find(node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({ target: { checked: true } })
-  await h.settle()
-}
 const tiles = tree => nodes(tree).filter(node => typeof node.type === 'function' && node.type.name === 'CourseTile').map(node => node.type(node.props))
+
+test('Cabinet Courses tab always shows started courses before the chosen lesson', async () => {
+  const workspace = readFileSync(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
+  assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course\?view=courses'/)
+  const active = course('course-a', 4)
+  const h = mount('my-course', {
+    search: '?view=courses',
+    props: { data: account('owner-a'), locale: 'en' },
+    fetcher: () => courseView(active, {
+      courses: [active],
+      access: { ...access, tier: 'free', activeCourseLimit: 1, activeCourseCount: 1, multiCourseEnabled: false },
+    }),
+  })
+  await h.settle()
+  const dashboard = findPart(h.tree, 'MyCoursesDashboard')
+  assert.ok(dashboard, 'the navigation destination is the owned-courses overview')
+  assert.deepEqual(dashboard.props.courses.map(item => item.id), ['course-a'])
+  assert.equal(findPart(h.tree, 'CourseToday'), undefined, 'the lesson must not open without choosing a course')
+  assert.equal(h.navigations.length, 0, 'opening Courses must not manufacture a courseId URL')
+  dashboard.props.onOpen(active)
+  await h.settle()
+  assert.equal(findPart(h.tree, 'CourseToday')?.props.courseId, 'course-a')
+  assert.match(h.navigations.at(-1), /courseId=course-a/)
+  assert.doesNotMatch(h.navigations.at(-1), /view=courses/)
+  h.unmount()
+})
+
+test('other possible course directions stay visible at the free active-course limit', async () => {
+  const current = { ...course('course-a', 4), presetId: 'calm_balance' }
+  let newCourseRequests = 0
+  const props = {
+    courses: [current], locale: 'en',
+    membership: { tier: 'free', maxActiveCourses: 1, occupiedCount: 1 },
+    canAddCourse: false, canManageCourses: true, multiCourseEnabled: false,
+    onOpen() {}, onNew() { newCourseRequests++ }, onClose() {}, onPrimary() {},
+  }
+  const h = mount('my-courses-dashboard', { props })
+  await h.settle()
+  const options = nodes(h.tree).filter(node => node.props?.['data-course-option'])
+  assert.deepEqual(options.map(option => option.props['data-course-option']), ['business_focus', 'confidence'])
+  assert.ok(textOf(h.tree).includes('Focus & Productivity'))
+  assert.ok(textOf(h.tree).includes('Confidence & Inner Strength'))
+  assert.equal(options.flatMap(nodes).filter(node => node.type === 'button').length, 0,
+    'a full account can see other directions but cannot bypass the active-course quota')
+  h.render({ ...props, canAddCourse: true }); await h.settle()
+  nodes(h.tree).filter(node => node.props?.['data-course-option'])[0].props.children[2].props.onClick()
+  assert.equal(newCourseRequests, 1, 'an available option opens the existing catalog flow')
+  h.unmount()
+})
 
 test('My courses opens the authored dashboard and explicitly selected cards retain the course URL and account', async () => {
   const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: path => courseView(path.includes('course-b') ? courseB : courseA) })
@@ -32,38 +77,34 @@ test('My courses opens the authored dashboard and explicitly selected cards reta
   h.unmount()
 })
 
-test('preset cards and personal selection never save before explicit checked consent, including cancellation', async () => {
+test('preset cards and personal selection save only after one deliberate signed-in click', async () => {
   for (const presetId of [...COURSE_PRESETS.map(preset => preset.id), null]) {
-    const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: (_path, _options, body) => body
+    const h = mount('my-course', { enterCourse: true, props: { data: account('owner-a') }, fetcher: (_path, _options, body) => body
       ? courseView({ ...course(body.courseId, presetId ? 2 : 1), presetId })
       : { course: null, courses: [], access: { ...access, activeCourseCount: 0 }, assessments: {} } })
     await h.settle()
     const catalog = findPart(h.tree, 'CoursePresetCatalog')
+    assert.ok(catalog)
+    assert.equal(h.calls.filter(call => call.body).length, 0, 'opening the course list must not save anything')
     const choose = () => presetId ? catalog.props.onPreset(presetId) : catalog.props.onPersonal()
-    choose(); await h.settle()
-    assert.equal(findButton(h.tree, 'Agree & start').props.disabled, true)
-    findButton(h.tree, 'Agree & start').props.onClick(); await h.settle()
-    assert.equal(h.calls.filter(call => call.body).length, 0)
-    await checkConsent(h)
-    findButton(h.tree, 'Not now').props.onClick(); await h.settle()
-    assert.equal(h.calls.filter(call => call.body).length, 0)
-    choose(); await h.settle()
-    assert.equal(findButton(h.tree, 'Agree & start').props.disabled, true)
-    await checkConsent(h)
-    const confirm = findButton(h.tree, 'Agree & start')
-    confirm.props.onClick(); confirm.props.onClick(); await h.settle()
+    choose()
+    choose() // Double-tapping the same CTA must still submit only once.
+    await h.settle()
+    assert.equal(findButton(h.tree, 'Agree & start'), undefined, 'no duplicate consent modal for signed-in learners')
     const writes = h.calls.filter(call => call.body)
     assert.equal(writes.length, 1)
+    assert.equal(writes[0].body.action, 'start')
     assert.equal(writes[0].body.presetId || null, presetId)
     assert.equal(writes[0].body.consent, true)
     assert.equal(writes[0].body.newCourse, true)
+    assert.equal(writes[0].options.headers['X-HH-Account-ID'], 'owner-a')
     assert.match(writes[0].body.courseId, /^[a-f\d-]{36}$/)
     assert.equal(findPart(h.tree, 'CourseR3Steps').props.state.course.id, writes[0].body.courseId)
     h.unmount()
   }
 })
 
-test('switching preset requires fresh consent and invalidates callbacks from the dismissed personal setup', async () => {
+test('switching preset uses one explicit click and invalidates callbacks from the dismissed personal setup', async () => {
   const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => courseView(body ? { ...courseA, stage: 2, revision: 2, presetId: body.presetId } : courseA) })
   await h.settle()
   const oldSteps = findPart(h.tree, 'CourseR3Steps')
@@ -72,7 +113,7 @@ test('switching preset requires fresh consent and invalidates callbacks from the
   await assert.rejects(oldSteps.props.onCourseCommand('intake', { concerns: 'outdated' }), /COURSE_SELECTION_CHANGED/)
   assert.equal(h.calls.length, count)
   findPart(h.tree, 'CoursePresetCatalog').props.onPreset('confidence'); await h.settle()
-  await checkConsent(h); findButton(h.tree, 'Agree & start').props.onClick(); await h.settle()
+  assert.equal(findButton(h.tree, 'Agree & start'), undefined)
   const write = h.calls.find(call => call.body)
   assert.equal(write.body.action, 'select-preset')
   assert.equal(write.body.courseId, 'course-a')
@@ -184,7 +225,9 @@ test('dashboard and catalogue retain source visuals while using one subscription
   assert.match(dashboard, /startCheckout\(tier\)/)
   assert.doesNotMatch(dashboard + ui, /course-billing|billing\/checkout|onUnlock|status==='locked'|window\.location\.assign/)
   assert.match(r3, /if \(preset\) return\s+if\(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY\) return\s+setTestsTouched/)
-  assert.match(r3, /preset \? \[\.\.\.preset.testKeys\] : withAntistressRequiredBaseline\(confirmedKeys.length/)
+  assert.match(r3, /getCourseProgram\('stress'\)\.starterKeys\.filter/)
+  assert.match(r3, /const initial=programme\?\.id==='stress'/)
+  assert.match(r3, /setChosenTests\(preset \? \[\.\.\.preset.testKeys\] : withAntistressRequiredBaseline\(initial,programme\?\.id\)\)/)
   assert.match(r3, /X-HH-Account-ID/)
   assert.match(r3, /courseId='\+encodeURIComponent\(fresh.course.id\)/)
 })

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildPortraitRecommendations, PORTRAIT_PRESENTATION_BANDS } from '../lib/profile/portrait-recommendations.js'
+import { buildPortraitRecommendations } from '../lib/profile/portrait-recommendations.js'
 import { profileCompletionRecommendations } from '../lib/profile/summary.js'
 
 const source = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -17,18 +17,22 @@ function completedState(id = 'test-result', date = '2026-10-16T14:00:00.000Z') {
 test('portrait suggestions only use verified saved measurements, never missing or invented rays', () => {
   const empty = buildPortraitRecommendations([], 'en')
   assert.equal(empty.measuredCount, 0)
+  assert.deepEqual(empty.measurements, [])
   assert.deepEqual(empty.strengths, [])
   assert.deepEqual(empty.growth, [])
 
   const measured = buildPortraitRecommendations([completedState()], 'ru')
   assert.ok(measured.measuredCount > 0)
-  for (const row of [...measured.strengths, ...measured.growth]) {
+  for (const row of measured.measurements) {
     assert.equal(row.resultId, 'test-result')
-    assert.ok(row.percent >= 0 && row.percent <= 100)
+    assert.ok(row.rawValue >= row.min && row.rawValue <= row.max)
     assert.ok(typeof row.label === 'string' && row.label)
+    assert.ok(row.sourceTitle && row.dimensionKey)
     assert.ok(row.reflection.length > 8)
   }
-  assert.deepEqual(PORTRAIT_PRESENTATION_BANDS, { supportiveFrom: 60, attentionThrough: 45 })
+  // 60/45 thresholds were editorial display rules, not psychometric standards.
+  assert.deepEqual(measured.strengths, [])
+  assert.deepEqual(measured.growth, [])
 })
 
 test('unverified later results cannot be used as current portrait strengths or weaknesses', () => {
@@ -54,7 +58,7 @@ test('already completed questionnaire is not recommended to fill a different pro
   }
 })
 
-test('Reports portrait places both actions after photo and before ray chooser; target is reachable below', () => {
+test('Reports portrait places all three actions after photo and before ray chooser; targets are reachable', () => {
   const workspace = source('components/app/app-workspace.jsx')
   const visual = source('components/app/test-explorer-visual.jsx')
   const reports = workspace.slice(workspace.indexOf('function PortfolioPage('), workspace.indexOf('function ProfileOverview('))
@@ -62,6 +66,9 @@ test('Reports portrait places both actions after photo and before ray chooser; t
   assert.match(visual, /\{portrait && !compact && portraitActions\}/)
   assert.ok(visual.indexOf('{portrait && !compact && portraitActions}') < visual.indexOf('className={styles.portraitControls}'))
   assert.match(reports, /data-testid="portrait-completion-action"/)
+  assert.match(reports, /data-testid="portrait-analyses-action"/)
+  assert.match(reports, /setAnalysisScrollRequest/)
+  assert.match(reports, /hh-insights-title/)
   assert.match(reports, /data-testid="portrait-recommendations-action"/)
   assert.match(reports, /profile=missing/)
   assert.match(reports, /setRecommendationScrollRequest/)
@@ -69,8 +76,8 @@ test('Reports portrait places both actions after photo and before ray chooser; t
   assert.match(reports, /<PortraitRecommendations results=\{data.results \|\| \[\]\} locale=\{locale\} \/>/)
   const guidance = source('components/app/portrait-recommendations.jsx')
   assert.match(guidance, /id="hh-portrait-recommendations"/)
-  assert.match(guidance, /Your strengths/)
-  assert.match(guidance, /Areas for growth/)
+  assert.match(guidance, /What your questionnaires report/)
+  assert.match(guidance, /Choose your own focus/)
   assert.match(guidance, /app\/results\//)
 })
 

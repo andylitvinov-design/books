@@ -18,6 +18,15 @@ function privatePath(pathname: string) {
 export function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
+  // Legacy book URLs are 301, preserving the former ?lang= selection.
+  // The Maya collection hub is a separate route, not an individual book.
+  const oldBook = request.nextUrl.pathname.match(/^\/books\/([a-z0-9-]+)\/?$/)
+  if (oldBook && oldBook[1] !== 'maya-tradition' && ['GET', 'HEAD'].includes(request.method)) {
+    const requested = request.nextUrl.searchParams.get('lang')
+    const locale = requested === 'ru' || requested === 'es' ? requested : 'en'
+    const destination = new URL(`/${locale}/books/${oldBook[1]}`, request.url)
+    return NextResponse.redirect(destination, 301)
+  }
   const bridgeNonce = crypto.randomUUID().replaceAll('-', '')
   const bridge = privateMigrationBridge(request.url, bridgeNonce)
   if (bridge && ['GET', 'HEAD'].includes(request.method)) return new NextResponse(request.method === 'HEAD' ? null : bridge, { headers: {
@@ -56,6 +65,17 @@ export function middleware(request: NextRequest) {
   const videoManager = pathname === '/admin/videos'
   const materialLibraryPage = pathname === '/admin/materials'
   const youtubePhoneUploader = pathname === '/admin/youtube-upload'
+  // Separate public Reiki lesson audio and owner-only upload route.
+  const reikiIntroAudioManager = /^\/admin\/materials\/audio\/reiki-practitioner\/?$/.test(pathname)
+  const reikiLessonAudioPage = /^\/(en|ru|es)\/academy\/principles-of-energywork\/learn\/?$/.test(pathname)
+  const reikiIntroAudioOrigin = (() => {
+    if (!reikiIntroAudioManager && !reikiLessonAudioPage) return ''
+    try {
+      const url = new URL(process.env.HH_APP_SUPABASE_URL || '')
+      return url.protocol === 'https:' && /^[a-z0-9]{20}\.supabase\.co$/.test(url.hostname)
+        ? ' ' + url.origin : ''
+    } catch { return '' }
+  })()
   const academyVideoPage = /^\/(en|ru|es)\/academy(?:\/|$)/.test(pathname)
   const privateDocument = privatePath(pathname)
   const publicDocument = !privateDocument && !pathname.startsWith('/api/')
@@ -87,6 +107,13 @@ export function middleware(request: NextRequest) {
   // A local MediaRecorder preview uses a blob: URL even if the optional
   // private Storage connection is temporarily unavailable. Scope this to
   // existing staff session editors, never public/client report readers.
+  // Only authorized private report readers can play local narration blobs.
+  const reportNarrationReader = /^\/(en|ru)\/client\/session\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/client\/[^/]+\/sessions\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/client\/[^/]+\/documents\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/prescriptions\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/app\/sessions\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/app\/document-view\/[^/]+\/?$/.test(pathname)
   const ownerRecorderPage = deliveryPath && pathname.startsWith('/admin/')
   const deliveryOrigin = (() => {
     if((process.env.HH_CLIENT_DELIVERY_ENABLED !== 'true'&&!materialLibraryPage) || !deliveryPath) return ''
@@ -105,6 +132,11 @@ export function middleware(request: NextRequest) {
       return url.protocol==='https:'&&url.hostname.endsWith('.supabase.co')?' '+url.origin:''
     }catch{return ''}
   })()
+  // Only public Events directories and their verified leaf pages may fetch
+  // the organizer's Eventbrite image CDN. Private Account/client/API routes
+  // and calendar downloads keep their restrictive CSP.
+  const eventsPosterImageOrigin = /^\/(en|ru|es)\/events(?:\/[^/]+)?\/?$/.test(pathname)
+    ? ' https://img.evbuc.com https://cdn.evbuc.com' : ''
   // Owner-only private video PUT; never widen client/guest playback CSP.
   const externalVideoUploadOrigin = (() => {
     if ((process.env.HH_CLIENT_DELIVERY_ENABLED!=='true'&&!materialLibraryPage) ||
@@ -124,10 +156,10 @@ export function middleware(request: NextRequest) {
           : 'restricted'
   const csp = [
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubePhoneUploader ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
-    (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + listingImageOrigin,
+    (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + listingImageOrigin + eventsPosterImageOrigin,
     youtubePhoneUploader ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin) ? ' blob:' : '') + deliveryOrigin,
-    "font-src 'self'", "connect-src 'self'" + (youtubePhoneUploader ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + externalVideoUploadOrigin + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubePhoneUploader ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
+    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin,
+    "font-src 'self'", "connect-src 'self'" + (youtubePhoneUploader ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + externalVideoUploadOrigin + (reikiIntroAudioManager ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubePhoneUploader ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)

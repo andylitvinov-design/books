@@ -67,8 +67,8 @@ test('six original EN/RU tantra questionnaires include the full 64-question port
    }
  }
  const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
- assert.equal(coverage.total, 145)
- assert.equal(coverage.registered, 145)
+ assert.equal(coverage.total, 150)
+ assert.equal(coverage.registered, 150)
  assert.deepEqual(coverage.uncovered, [])
  assert.deepEqual(coverage.obsolete, [])
 })
@@ -204,7 +204,7 @@ test('tampered tantric versions never receive explanatory answer levels', () => 
   }
 })
 
-test('responsive five-position explanation grid and personal test journeys are part of real UI', async () => {
+test('responsive five-position explanations and unified collection test journeys use the real UI', async () => {
   const read=(file)=>import('node:fs').then(({readFileSync})=>
     readFileSync(new URL('../'+file,import.meta.url),'utf8'))
   const [picker,explorer,report,reportCss,pathCss]=await Promise.all([
@@ -214,15 +214,16 @@ test('responsive five-position explanation grid and personal test journeys are p
     read('components/app/compact-assessment-report.module.css'),
     read('components/app/simple-test-picker.module.css'),
   ])
-  assert.match(picker,/data-tantra-test-paths/)
-  assert.match(picker,/data-tantra-path=\{path\.id\}/)
-  assert.match(picker,/onChooseTantraPath\?\.\(path\.keys\)/)
-  assert.match(explorer,/setSelectedKeys\(distinct\)/)
-  assert.match(explorer,/setSimpleSelectionChanged\(true\)/)
+  assert.match(picker,/data-test-topic-collections/)
+  assert.match(picker,/data-test-collection-marker/)
+  assert.match(picker,/className=\{styles\.takeTest\}/)
+  assert.match(explorer,/setActiveCollectionId\(id\)/)
+  assert.match(explorer,/collectionId: activeCollectionId/)
   assert.match(report,/data-answer-level=\{index \+ 1\}/)
   assert.match(report,/band\.levelLabel/)
   assert.match(report,/band\.note/)
   assert.match(reportCss,/\.answerRanges \.rangeList\{display:grid;grid-template-columns:repeat\(2/)
   assert.match(reportCss,/@media\(max-width:680px\)/)
-  assert.match(pathCss,/\.tantraPaths:not\(\[data-expanded="true"\]\) \.tantraPath:nth-child\(n\+5\)/)
+  assert.match(pathCss,/\.collectionMarker/)
+  assert.doesNotMatch(picker,/data-tantra-test-paths/)
 })

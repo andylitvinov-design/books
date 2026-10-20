@@ -9,6 +9,8 @@ import { buildAssessmentResultReport } from '../lib/assessments/result-report.js
 import { assessmentMethodology } from '../lib/assessments/assessment-methodology.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeModel, gaugeChange } from '../lib/assessments/dashboard-gauges.js'
+import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
+import { scoreChangeReading } from '../lib/assessments/score-change-reading.js'
 import { assessmentResultOverview } from '../lib/assessments/result-overview.js'
 import { buildClientReport } from '../lib/profile/client-report.js'
 import { generateClientPdf } from '../lib/profile/client-report-pdf.js'
@@ -28,7 +30,8 @@ function load(path, imports) {
   } })
   return loaded.exports
 }
-const gauges = load('components/app/assessment-gauge.jsx', { '@/lib/assessments/dashboard-gauges': { gaugeModel, gaugeChange } })
+const gauges = load('components/app/assessment-gauge.jsx', { '@/lib/assessments/dashboard-gauges': { gaugeModel, gaugeChange },
+  '@/lib/assessments/score-change-reading': { scoreChangeReading } })
 const compact = load('components/app/compact-assessment-report.jsx', {
   react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] },
   './assessment-gauge': gauges,
@@ -36,6 +39,7 @@ const compact = load('components/app/compact-assessment-report.jsx', {
   '@/lib/assessments/scale-guides': { getTestScaleGuide },
   '@/lib/assessments/dashboard-gauges': { gaugeModel },
   '@/lib/assessments/result-overview': { assessmentResultOverview },
+  '@/lib/assessments/assessment-evidence-status': { assessmentEvidenceStatus },
 })
 const actualRoute = load('components/app/personal-result-report.jsx', {
   'next/link': { default: 'a' }, './compact-assessment-report': compact,

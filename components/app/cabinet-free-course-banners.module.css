@@ -43,3 +43,68 @@
 .savedAction { display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 11px 15px; border-radius: 10px; text-decoration: none; background: #0b847f; color: white; min-height: 44px; font-weight: 850; font-size: 13px; }
 .savedAction:hover, .savedAction:focus-visible { background: #076962; color: #fff; }
 @media (max-width: 430px) { .savedAction { width: 100%; } }
+
+/* Saved Reiki course: independent resume and reached-lesson navigation. */
+.savedOverview { min-width: 0; flex: 1 1 230px; }
+.lessonPicker { flex: 1 0 100%; width: 100%; border-top: 1px solid #c1e1dd; padding-top: 11px; }
+.lessonPicker > strong { display: block; margin: 0 0 9px; font-size: 12px; color: #195e5c; }
+.lessonGrid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.lessonGrid li { min-width: 0; }
+.lessonLink, .lessonLocked {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; min-height: 46px; padding: 9px 11px; border-radius: 11px;
+  font-size: 12px; line-height: 1.33; font-weight: 750;
+}
+.lessonLink { border: 1px solid #8fcfc6; background: #fff; text-decoration: none; color: #235b63; }
+.lessonLink:hover { background: #d8f6f1; color: #145c61; }
+.lessonLink:focus-visible { outline: 3px solid #03a6ad; outline-offset: 2px; }
+.lessonLink[aria-current="step"] { border-color: #008e8e; box-shadow: inset 0 0 0 1px #008e8e; }
+.lessonLocked { color: #718f93; background: #e2eeed; border: 1px dashed #c6d8d5; cursor: not-allowed; }
+.lessonLink > span, .lessonLocked > span { min-width: 0; }
+.lessonLink small, .lessonLocked small { display: inline-flex; align-items: center; white-space: nowrap; gap: 3px; flex: none; font-size: 10px; font-weight: 700; }
+.lessonLocked > svg { flex: none; }
+@media (max-width: 540px) {
+  .lessonGrid { grid-template-columns: 1fr; gap: 6px; }
+  .lessonLink, .lessonLocked { min-height: 43px; padding: 8px 10px; }
+}
+
+/* My Courses: resumed Academy learning precedes the free-course catalogue. */
+.savedSection{display:grid;min-width:0}
+.savedCourse{
+  display:grid;grid-template-columns:clamp(108px,20vw,145px) minmax(0,1fr);
+  gap:0;margin:0 0 12px;padding:0;min-width:0;overflow:hidden;
+  border:1px solid #32576d;border-radius:18px;
+  background:linear-gradient(120deg,#1e5063 0%,#1b314b 100%);
+  box-shadow:0 8px 22px #18394b1e;color:#fff;
+}
+.savedPhoto{position:relative;grid-column:1;grid-row:1;min-width:0;min-height:152px;background:#1d435d}
+.savedPhoto img{object-fit:cover;object-position:center}
+.savedOverview{
+  grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:center;gap:6px;min-width:0;padding:13px 17px;
+}
+.savedEyebrow{font-size:9px;font-weight:850;letter-spacing:.09em;color:#a8e6e3}
+.savedOverview .savedLabel{font-size:clamp(17px,2.2vw,22px);line-height:1.15;color:#fff}
+.savedOverview p{margin:0;color:#d2e7eb;font-size:11px;line-height:1.4}
+.savedAction{
+  display:inline-flex;min-height:39px;gap:6px;margin-top:3px;
+  padding:9px 13px;background:#099ca7;color:#fff!important;
+  font-size:12px;border-radius:10px;text-decoration:none!important;
+}
+.savedAction:hover{background:#078791}
+.lessonDisclosure{grid-column:1/-1;min-width:0;border-top:1px solid #42687b;background:#1b3c50}
+.lessonDisclosure summary{
+  display:flex;align-items:center;min-height:42px;padding:10px 15px;
+  color:#d4e9ee;font-size:11px;font-weight:750;cursor:pointer;
+}
+.lessonDisclosure summary:focus-visible{outline:3px solid #83e8ea;outline-offset:-3px}
+.lessonDisclosure .lessonPicker{width:100%;padding:12px;border-top:1px solid #c7e6e7;background:#eef8f8}
+@media(max-width:540px){
+  .savedCourse{grid-template-columns:99px minmax(0,1fr);border-radius:15px;margin-bottom:10px}
+  .savedPhoto{min-height:130px}
+  .savedOverview{padding:10px 12px;gap:5px}
+  .savedOverview .savedLabel{font-size:17px}
+  .savedOverview p{font-size:10px}
+  .savedAction{font-size:11px;min-height:38px;padding:8px 10px}
+  .lessonDisclosure summary{min-height:40px}
+}

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, MessageCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, CalendarCheck2, Check, Clock3, MessageCircle, ShieldCheck } from "lucide-react";
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -13,6 +13,46 @@ import styles from "./personal-service-landing.module.css";
 export function PersonalServiceLanding({ locale, service }: { locale: ServicePageLocale; service: PersonalServiceKey }) {
   const t = personalServiceCopy[service][locale];
   const ui = servicePageShared[locale];
+  const facts = {
+    en: {
+      formats: "Personal session formats",
+      short: "30 min · €50",
+      full: "60 min · €100",
+      confirmation: "Time and format agreed before payment",
+      meet: "Personally with Andrey",
+      next: "Choose a format and send your request; Andrey confirms availability before a booking.",
+    },
+    ru: {
+      formats: "Форматы личных сессий",
+      short: "30 мин · €50",
+      full: "60 мин · €100",
+      confirmation: "Время и формат согласуем до оплаты",
+      meet: "Лично с Андреем",
+      next: "Выберите формат и отправьте запрос; Андрей подтвердит время до оформления записи.",
+    },
+    es: {
+      formats: "Formatos de sesiones individuales",
+      short: "30 min · €50",
+      full: "60 min · €100",
+      confirmation: "Horario y modalidad confirmados antes del pago",
+      meet: "Personalmente con Andrey",
+      next: "Elige el formato y envía tu solicitud; Andrey confirmará el horario antes de reservar.",
+    },
+  }[locale];
+  const closing = {
+    en: {
+      heading: "Choose your next step",
+      body: "Ask about a personal session, or begin with a free written review. Nothing is booked or charged automatically.",
+    },
+    ru: {
+      heading: "Выберите удобный первый шаг",
+      body: "Можно запросить личную сессию или начать с бесплатного письменного разбора. Никакой автоматической записи или оплаты.",
+    },
+    es: {
+      heading: "Elige tu próximo paso",
+      body: "Solicita una sesión personal o empieza con una revisión escrita gratuita. No hay reservas ni cobros automáticos.",
+    },
+  }[locale];
   return (
     <main className={styles.page} lang={locale} data-personal-service={service}>
       <PublicSiteHeader locale={locale} />
@@ -25,6 +65,10 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
             <p className={styles.eyebrow}>{t.eyebrow} · {ui.remote}</p>
             <h1 id="personal-service-title">{t.headline}</h1>
             <p className={styles.lead}>{t.lead}</p>
+            <div className={styles.heroFacts} aria-label={facts.formats}>
+              <span><Clock3 size={17} aria-hidden="true" />{facts.short}<span className={styles.factSeparator} aria-hidden="true">·</span>{facts.full}</span>
+              <span><CalendarCheck2 size={17} aria-hidden="true" />{facts.confirmation}</span>
+            </div>
             <p className={styles.practitioner}><ShieldCheck size={19} aria-hidden="true" />{ui.practitioner}</p>
             <div className={styles.heroActions}>
               <a className={styles.primary} href="#request-session">{t.orderLabel}<ArrowRight size={19} aria-hidden="true"/></a>
@@ -48,7 +92,6 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
         <div className={styles.mainColumns}>
           <div className={styles.reading}>
             <section className={styles.section} aria-labelledby="questions-title">
-              <p className={styles.smallEyebrow}>{ui.forWhom}</p>
               <h2 id="questions-title">{ui.forWhom}</h2>
               <ul className={styles.questions}>
                 {t.questions.map(question => <li key={question}><Check size={20} aria-hidden="true"/><span>{question}</span></li>)}
@@ -79,6 +122,10 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
           </div>
           <aside className={styles.order} id="request-session" aria-label={ui.request}>
             <div className={styles.orderCard}>
+              <div className={styles.bookingIdentity}>
+                <Image src="/images/holistic-house/andy-about.png" alt="" width={54} height={54} sizes="54px" />
+                <div><strong>{facts.meet}</strong><span>{facts.next}</span></div>
+              </div>
               <PersonalConsultationForm locale={locale} service={t.orderLabel} />
               <p className={styles.orderNote}>{ui.price} {ui.requestNote}</p>
             </div>
@@ -91,9 +138,12 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
         </section>
         <section className={styles.closing}>
           <MessageCircle size={27} aria-hidden="true"/>
-          <h2>{ui.start}</h2>
-          <p>{ui.freeBody}</p>
-          <Link href={`/${locale}/services/free-situation-review`}>{ui.free}<ArrowRight size={19} aria-hidden="true"/></Link>
+          <h2>{closing.heading}</h2>
+          <p>{closing.body}</p>
+          <div className={styles.closingActions}>
+            <a className={styles.closingPrimary} href="#request-session">{t.orderLabel}<ArrowRight size={19} aria-hidden="true"/></a>
+            <Link className={styles.closingSecondary} href={`/${locale}/services/free-situation-review`}>{ui.free}<ArrowRight size={19} aria-hidden="true"/></Link>
+          </div>
         </section>
       </div>
     </main>

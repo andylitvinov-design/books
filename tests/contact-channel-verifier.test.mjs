@@ -5,13 +5,15 @@ import test from 'node:test';
 import ts from 'typescript';
 import { openContactChannelChooser, assertPreparedContactChannels } from '../scripts/helpers/contact-channel-verifier.mjs';
 import * as enquiries from '../lib/whatsapp-enquiry.js';
+import * as referrals from '../lib/organic-event-referrals.js';
 import * as publicLead from '../lib/public-lead-capture.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} };
-function mountChooser(locale, fault, reducedMotion = false) {
+function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}) {
   let choice = 'session', externalClicks = 0, cursor = 0, dirty = true, pendingEffects = [];
-  const hooks = [], scrollCalls = [];
+  const hooks = [], scrollCalls = [], channelClicks = [];
+  const location = { pathname: '/' + locale + '/services/psychohomeopathy', search: '', ...locationOptions };
   // Render/commit/effect cycles preserve hook slots and dependencies. A no-op
   // useEffect shim would silently miss the selected-request reset regression.
   const react = {
@@ -34,27 +36,30 @@ function mountChooser(locale, fault, reducedMotion = false) {
       const index = cursor++, previous = hooks[index];
       const changed = !previous || dependencies.some((value, i) => !Object.is(value, previous[i]));
       hooks[index] = dependencies;
-      if (changed && !(fault === 'missing selection reset' && previous && typeof dependencies[0] === 'string')) pendingEffects.push(effect);
+      const skipSelectionReset = fault === 'missing selection reset' && previous && typeof dependencies[0] === 'string' && dependencies[0].startsWith('https://wa.me/');
+      if (changed && !skipSelectionReset) pendingEffects.push(effect);
     },
   };
   const modules = {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     react,
+    'next/navigation': { usePathname: () => location.pathname },
     'lucide-react': Object.fromEntries(['ChevronDown', 'MessageCircle', 'Send', 'ShoppingBag'].map(name => [name, () => null])),
     '@/components/acquisition-event-link': { AcquisitionEventLink: ({ attributes, ...props }) => jsx('a', { ...props, ...attributes }) },
     '@/lib/whatsapp-enquiry': enquiries,
+    '@/lib/organic-event-referrals': referrals,
     './contact-channel-chooser.module.css': { default: {} },
   };
   const exports = {};
   const compiled = ts.transpileModule(read('components/contact-channel-chooser.tsx'), { fileName: 'chooser.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  runInNewContext(compiled, { exports, window: { matchMedia: () => ({ matches: reducedMotion }) }, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
+  runInNewContext(compiled, { exports, URLSearchParams, window: { location, matchMedia: () => ({ matches: reducedMotion }) }, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
   function nodes() {
     const message = choice === 'session' ? 'Personal session 60 minutes €100' : 'Questions 30 minutes €50';
     let result;
     for (let pass = 0; ; pass++) {
       assert.ok(pass < 10, 'Chooser effects must settle');
       cursor = 0; dirty = false; pendingEffects = []; result = [];
-      const tree = exports.ContactChannelChooser({ locale, whatsappUrl: enquiries.whatsappEnquiryUrl({ locale, service: 'Consultation', request: message, pagePath: '/' + locale + '/services/psychohomeopathy?private=never-share' }), attributes: { 'data-consultation-action': choice } });
+      const tree = exports.ContactChannelChooser({ locale, whatsappUrl: enquiries.whatsappEnquiryUrl({ locale, service: 'Consultation', request: message, pagePath: '/' + locale + '/services/psychohomeopathy?private=never-share' }), attributes: { 'data-consultation-action': choice }, onChannelClick: channel => channelClicks.push(channel) });
       function visit(node, hidden = false) {
         if (!node || typeof node !== 'object') return;
         if (Array.isArray(node)) { node.forEach(child => visit(child, hidden)); return; }
@@ -102,7 +107,7 @@ function mountChooser(locale, fault, reducedMotion = false) {
       if (value instanceof RegExp) assert.match(actualValue, value); else assert.equal(actualValue, value);
     },
   });
-  return { scope: { locator }, expect, choose: value => { choice = value; }, externalClicks: () => externalClicks, scrollCalls };
+  return { scope: { locator }, expect, choose: value => { choice = value; }, navigate: (pathname, search) => Object.assign(location, { pathname, search }), externalClicks: () => externalClicks, scrollCalls, channelClicks };
 }
 
 for (const locale of ['en', 'ru', 'es']) test(locale + ' actual chooser opens exactly two safe channels and updates both prepared requests', async () => {
@@ -159,9 +164,63 @@ test('chooser acceptance rejects stale-open selection when its reset effect is m
   assert.equal(mounted.externalClicks(), 0);
 });
 
+function plainRequest(locale, choice = 'session') {
+  return new URL(enquiries.whatsappEnquiryUrl({ locale, service: 'Consultation', request: choice === 'session' ? 'Personal session 60 minutes €100' : 'Questions 30 minutes €50', pagePath: '/' + locale + '/services/psychohomeopathy?private=never-share' })).searchParams.get('text');
+}
+
+for (const [locale, label] of [['en', 'Event referral'], ['ru', 'Источник мероприятия'], ['es', 'Origen del evento']]) {
+  test(locale + ' actual chooser keeps approved referral on both channels, resets selection and refreshes public route attribution', async () => {
+    const mounted = mountChooser(locale, undefined, false, { search: '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026&utm_content=listing' });
+    const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
+    async function assertDraft(choice, suffix = '') {
+      const channels = await assertPreparedContactChannels(chooser, mounted.expect);
+      for (const url of [channels.whatsappUrl, channels.telegramUrl]) {
+        assert.equal(url.searchParams.get('text'), plainRequest(locale, choice) + suffix);
+        assert.doesNotMatch(url.searchParams.get('text'), /utm_|listing|private|never-share/);
+      }
+      for (const link of [channels.whatsapp, channels.telegram]) assert.equal(await link.getAttribute('data-consultation-action'), choice);
+    }
+    const firstSuffix = '\n\n' + label + ': Eventbrite · public_event_2026';
+    await assertDraft('session', firstSuffix);
+    mounted.choose('questions');
+    await openContactChannelChooser(mounted.scope, mounted.expect);
+    await assertDraft('questions', firstSuffix);
+    mounted.navigate('/' + locale + '/services/free-situation-review', '?utm_source=meetup&utm_medium=organic_event&utm_campaign=next_public_event');
+    await assertDraft('questions', '\n\n' + label + ': Meetup · next_public_event');
+    mounted.navigate('/' + locale + '/app/tests', '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026');
+    await assertDraft('questions');
+    mounted.navigate('/' + locale + '/services/psychohomeopathy', '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026&email=must-not-share');
+    await assertDraft('questions');
+    assert.equal(mounted.scrollCalls.length, 2, 'Referral refresh must not reopen or scroll the unchanged request');
+    assert.equal(mounted.externalClicks(), 0);
+    assert.deepEqual(mounted.channelClicks, [], 'Preparing referrals must not invoke a contact action');
+  });
+}
+
+test('actual chooser ignores invalid or personal referral parameters without changing either prepared request', async () => {
+  const valid = '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026';
+  for (const search of [
+    valid.replace('eventbrite', 'unknown'),
+    valid.replace('organic_event', 'paid'),
+    valid + '&utm_source=meetup',
+    valid + '&utm_content=listing&utm_content=other',
+    valid + '&answer=must-not-share',
+    valid + '&token=must-not-share',
+    valid.replace('public_event_2026', 'private%20answer'),
+  ]) {
+    const mounted = mountChooser('en', undefined, false, { search });
+    const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
+    const channels = await assertPreparedContactChannels(chooser, mounted.expect);
+    for (const url of [channels.whatsappUrl, channels.telegramUrl]) assert.equal(url.searchParams.get('text'), plainRequest('en'), search);
+    assert.equal(mounted.externalClicks(), 0);
+    assert.deepEqual(mounted.channelClicks, []);
+  }
+});
+
 test('release retains explicit paid selection, free internal action, reset, privacy and separate footer Telegram checks', () => {
   const source = read('scripts/verify-release-reaudit.mjs');
-  const paid = source.slice(source.indexOf("await check('paid-consultation-safe-handoff'"), source.indexOf("if (width === 390)"));
+  const paid = source.slice(source.indexOf("await check('paid-imagery-consultation-safe-handoff'"), source.indexOf("if (width === 390)"));
+  assert.match(paid, /services\/imagery-therapy/);
   assert.match(paid, /openContactChannelChooser\(capture, expect\)/);
   assert.match(paid, /assertPreparedContactChannels\(chooser, expect\)/);
   assert.match(paid, /\[data-consultation-action\]'\)\)\.toHaveCount\(2\)/);
@@ -246,6 +305,12 @@ test('actual core JSX has one footer section with one chooser and the matching s
     for (const chooser of nodes(tree).filter(node => node.type === 'contact-chooser')) assert.equal(chooser.props.whatsappUrl, expected);
     pathname = '/' + locale + '/services/' + slug;
     const fallback = sitewide.SitewideLeadCapture();
+    if (kind === 'alchemy') {
+      assert.equal(fallback, null, 'Dedicated Alchemy form suppresses duplicate global capture');
+      assert.match(read('components/alchemy-soul-lead-form.tsx'), /data-alchemy-lead-form="single"/);
+      assert.match(read('components/alchemy-soul-lead-form.tsx'), /ContactChannelChooser/);
+      continue;
+    }
     assert.equal(fallback.props['data-core-service-capture'], kind);
     const fallbackChoosers = nodes(fallback).filter(node => node.type === 'contact-chooser');
     assert.equal(fallbackChoosers.length, 1);

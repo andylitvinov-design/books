@@ -1,4 +1,4 @@
-import type { Locale } from "@/data/remedies";
+import type { PublicLocale } from "@/lib/public-locales";
 
 export type CoreServiceId = "situation" | "dao" | "alchemy" | "hypnotherapy" | "business";
 
@@ -18,7 +18,7 @@ const images = {
   dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
   alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
   hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-  business: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  business: "/images/holistic-house/andy-about.png",
 } as const;
 
 const offers = {
@@ -48,7 +48,7 @@ const offers = {
       label: "Personal session · integrated method",
       title: "Alchemy of the Soul · Psycho-homeopathy",
       promise: "Explore the situation through constellations, guided imagery hypnotherapy and optional psycho-homeopathy.",
-      benefit: "Constellation diagnosis · hypnotherapy · complementary homeopathic selection",
+      benefit: "Systemic constellation · guided imagery · optional complementary reflection",
       image: images.alchemy,
       route: "alchemy-of-soul",
       action: "Explore the session",
@@ -66,12 +66,12 @@ const offers = {
     {
       id: "business",
       label: "Business · Personal session",
-      title: "Business consulting & goal activation",
-      promise: "Explore the business system through a constellation and turn one clear goal into your next action.",
-      benefit: "System map · goal activation · 14-day action plan",
+      title: "Business Strategy & Founder Coaching",
+      promise: "Clarify a business decision, explore what holds it back and choose a practical next move.",
+      benefit: "Free written review · €50 express · €100 strategy session",
       image: images.business,
       route: "business-consulting",
-      action: "Explore business consulting",
+      action: "Explore business coaching",
     },
   ],
   ru: [
@@ -100,7 +100,7 @@ const offers = {
       label: "Личная сессия · авторский метод",
       title: "Алхимия души · Психогомеопатия",
       promise: "Исследовать ситуацию через расстановку, образную гипнотерапию и дополнительную психогомеопатию.",
-      benefit: "Расстановка · гипнотерапия · дополнительный гомеопатический подбор",
+      benefit: "Расстановка · образная работа · необязательная дополнительная практика",
       image: images.alchemy,
       route: "alchemy-of-soul",
       action: "О сессии",
@@ -118,17 +118,69 @@ const offers = {
     {
       id: "business",
       label: "Бизнес · Личная сессия",
-      title: "Бизнес-консалтинг и активация цели",
-      promise: "Исследуем бизнес через расстановку и превращаем выбранную цель в конкретное решение и план.",
-      benefit: "Карта системы · активация цели · план на 14 дней",
+      title: "Бизнес-стратегия и коучинг предпринимателей",
+      promise: "Проясним бизнес-решение, исследуем препятствия и выберем конкретный следующий шаг.",
+      benefit: "Бесплатный разбор · экспресс €50 · стратегия €100",
       image: images.business,
       route: "business-consulting",
-      action: "Подробнее о бизнес-сессии",
+      action: "Форматы бизнес-коучинга",
     },
   ],
-} as const satisfies Record<Locale, readonly (Omit<CoreServiceOffer, "href"> & { route: string })[]>;
+  es: [
+    {
+      id: "situation",
+      label: "Gratis · Revisión escrita",
+      title: "Revisión gratuita de tu situación",
+      promise: "Observa tu pregunta, los obstáculos y los posibles siguientes pasos desde otra perspectiva.",
+      benefit: "Reflexión personal por escrito",
+      image: images.situation,
+      route: "free-situation-review",
+      action: "Empezar gratis",
+    },
+    {
+      id: "dao",
+      label: "Gratis · DAO / Wu Xing",
+      title: "Perfil gratuito de recursos Wu Xing",
+      promise: "Explora tus recursos personales mediante un modelo taoísta simbólico.",
+      benefit: "Perspectiva sobre recursos personales, no diagnóstico médico",
+      image: images.dao,
+      route: "dao-health-profile",
+      action: "Explorar el perfil gratuito",
+    },
+    {
+      id: "alchemy",
+      label: "Sesión personal · método integrado",
+      title: "Alquimia del Alma · Psicohomeopatía",
+      promise: "Explora tu situación mediante constelaciones, hipnoterapia con imágenes guiadas y psicohomeopatía opcional.",
+      benefit: "Constelaciones · hipnoterapia · apoyo homeopático complementario",
+      image: images.alchemy,
+      route: "alchemy-of-soul",
+      action: "Conocer la sesión",
+    },
+    {
+      id: "hypnotherapy",
+      label: "Curso individual",
+      title: "Hipnoterapia con imágenes guiadas",
+      promise: "Explora imágenes interiores y preguntas difíciles de resolver solo con el pensamiento.",
+      benefit: "Recursos internos · patrones emocionales · respuestas personales",
+      image: images.hypnotherapy,
+      route: "hypnotherapy-course",
+      action: "Conocer el curso",
+    },
+    {
+      id: "business",
+      label: "Negocios · Sesión personal",
+      title: "Estrategia de negocios y coaching para emprendedores",
+      promise: "Aclara una decisión empresarial, explora obstáculos y elige una acción concreta.",
+      benefit: "Revisión gratuita · sesión exprés €50 · estrategia €100",
+      image: images.business,
+      route: "business-consulting",
+      action: "Explorar coaching de negocios",
+    },
+  ],
+} as const satisfies Record<PublicLocale, readonly (Omit<CoreServiceOffer, "href"> & { route: string })[]>;
 
-export function coreServiceOffers(locale: Locale): CoreServiceOffer[] {
+export function coreServiceOffers(locale: PublicLocale): CoreServiceOffer[] {
   return offers[locale].map((item) => ({
     ...item,
     href: "/" + locale + "/services/" + item.route,

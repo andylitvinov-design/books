@@ -4,7 +4,7 @@ import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
 import { CompactAssessmentReport } from './compact-assessment-report'
 
-export function PersonalResultReport({ result, locale = 'en', previous = null }) {
+export function PersonalResultReport({ result, locale = 'en', previous = null, focusScaleKey = null }) {
   const report = buildAssessmentResultReport(result, locale)
   if (!report.sections.length) return <section data-personal-result-report data-unverified-assessment-result>
     <p role="note">{report.intro}</p>
@@ -13,7 +13,7 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
   const bach = report.reportKind === 'bach'
   const verified = report.verified !== false
   // Keep the bespoke Bach ranking presentation; numeric tests use the concise dial layout.
-  if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} />
+  if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} focusScaleKey={focusScaleKey} />
   const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
   const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
   const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)
@@ -35,6 +35,12 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
           )}
           <h3>{section.title}</h3>
           <p className={styles.construct}>{section.construct}</p>
+          {bach && verified && <p className={styles.bachSelectedGroup} data-bach-selected-group={section.group}>
+            <strong>{ru ? 'Статус совпадения:' : 'Match status:'}</strong>{' '}
+            {section.group === 'main' ? (ru ? 'ведущая эмоциональная тема' : 'leading emotional theme')
+              : section.group === 'support' ? (ru ? 'дополнительная тема для изучения' : 'supporting theme for reflection')
+                : (ru ? 'тема вне ведущих совпадений' : 'theme outside the leading matches')}
+          </p>}
           <p className={styles.score}>{bach
             ? (verified ? (ru ? 'Вес совпадений' : 'Weighted match') : (ru ? 'Сохранённое значение' : 'Saved value')) + ': ' +
               (section.value ?? (ru ? 'недоступно' : 'unavailable')) + ' (' +
@@ -74,6 +80,23 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
           {report.methodology && <p className={styles.methodology}><strong>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}:</strong> {report.methodology}</p>}
         </div>
       </header>
+      {bach && verified && <section className={styles.bachScaleGuide} data-bach-score-reading>
+        <h3>{ru ? 'Как читать эмоциональный профиль' : 'How to read your emotional profile'}</h3>
+        <p>{ru
+          ? 'Здесь не используются клинические уровни. Каждая тема получает вес совпадений по вашим ответам и свою позицию относительно других тем именно этого прохождения.'
+          : 'There are no clinical severity levels here. Each emotional theme receives a weighted match score and a position relative to the other themes in this particular response set.'}</p>
+        <div className={styles.bachRankLegend} data-bach-match-categories>
+          <span><strong>{ru ? '3 ведущие темы' : '3 leading themes'}</strong>
+            {ru ? 'Самые заметные совпадения для размышления' : 'Most prominent questionnaire matches to explore'}</span>
+          <span><strong>{ru ? 'До 4 дополнительных' : 'Up to 4 supporting'}</strong>
+            {ru ? 'Другие заметные эмоциональные темы' : 'Other notable emotional themes'}</span>
+          <span><strong>{ru ? 'Остальные темы' : 'Other themes'}</strong>
+            {ru ? 'Не входят в ведущую группу этого прохождения' : 'Outside this attempt’s leading matches'}</span>
+        </div>
+        <small>{ru
+          ? 'Группы основаны на рейтинге ответов, а не на опубликованных диагностических порогах. Результат не является назначением препаратов или эссенций.'
+          : 'Groups reflect within-attempt response ranking, not published diagnostic cutoffs. The result is not a remedy or essence prescription.'}</small>
+      </section>}
       {bach && verified && featured.length > 0 && (
         <p className={styles.profileLead}>
           {ru

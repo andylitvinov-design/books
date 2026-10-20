@@ -189,7 +189,7 @@ function englishPrograms(locale: PublicLocale): AcademyVideoProgram[] {
       id: "english-tantra-reiki",
       title: t.tantra,
       href: "/" + locale + "/academy/reiki/tantra-reiki",
-      poster: "/library/maya-mysteries/media/post-217-1.jpg",
+      poster: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
       courses: englishCourse(practice, "tantra-level-1", t.levelOne, "/" + locale + "/academy/reiki/tantra-reiki"),
     },
     {

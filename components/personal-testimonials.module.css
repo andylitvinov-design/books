@@ -102,6 +102,63 @@
 .videoItem :global(.site-video-title) { font-size: 20px; }
 .videoItem :global(.site-video-poster-title) { display: none; } /* Title appears once in the caption, not twice over the real still. */
 .videoItem :global(.site-video-actions) { margin-top: 8px; }
+
+/* Homepage keeps four visible previews; all other approved videos live in an accessible
+   native disclosure. The YouTube iframe is still created only after a play click. */
+.moreVideoDisclosure {
+  margin-top: 17px;
+  overflow: hidden;
+  border: 1px solid #d9c2a8;
+  border-radius: 15px;
+  background: #f3e8dc;
+}
+.moreVideoDisclosure > summary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  color: #70462f;
+  font: 700 14px/1.4 Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+.moreVideoDisclosure > summary::-webkit-details-marker { display: none; }
+.moreVideoDisclosure > summary::after {
+  content: "⌄";
+  font-size: 23px;
+  line-height: 1;
+}
+.moreVideoDisclosure[open] > summary::after { transform: rotate(180deg); }
+.moreVideoDisclosure > summary:hover { background: #eee0d0; }
+.moreVideoDisclosure > summary:focus-visible { outline: 3px solid #98634e; outline-offset: -3px; }
+.moreCount {
+  padding: 3px 9px;
+  border: 1px solid #d4b99f;
+  border-radius: 999px;
+  background: #fffaf4;
+  color: #735846;
+  font: 700 11px/1.4 Arial, Helvetica, sans-serif;
+}
+.moreVideoContent {
+  padding: 20px 18px 22px;
+  border-top: 1px solid #d9c2a8;
+  background: #fbf8f3;
+}
+.moreSectionTitle {
+  margin: 0 0 13px;
+  color: #5c4336;
+  font: 700 14px/1.5 Arial, Helvetica, sans-serif;
+}
+.moreSectionTitle:not(:first-child) { margin-top: 24px; }
+@media (max-width: 767px) {
+  .moreVideoContent { padding: 16px 11px 19px; }
+  .moreVideoDisclosure > summary { min-height: 48px; padding: 11px 10px; }
+}
+
 .disclaimer {
   margin: 18px 0 0;
   color: #76675b;
@@ -201,4 +258,60 @@
   .section[data-personal-testimonials="all"] .intro h2{font-size:24px}
   .section[data-personal-testimonials="all"] .intro>p:last-child{line-height:1.38;margin-top:5px}
   .section[data-personal-testimonials="all"] .storyDisclosure{margin:9px 0 12px}
+}
+
+
+/* Services: four provenance-checked videos in one browsable row; the other
+   two remain available through an explicit disclosure. Home and About
+   retain their independent presentation contracts. */
+.section[data-personal-testimonials="services"]{
+  background:linear-gradient(135deg,#f5fbfa,#fdf9f3);
+  border-color:#d2e6e3;
+}
+.section[data-personal-testimonials="services"] .eyebrow{color:#167a83}
+.section[data-personal-testimonials="services"] .videoGrid{
+  display:flex;
+  grid-template-columns:none;
+  gap:13px;
+  padding:3px 2px 13px;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:thin;
+}
+.section[data-personal-testimonials="services"] .videoItem{
+  flex:0 0 clamp(224px,23.2%,300px);
+  scroll-snap-align:start;
+}
+.section[data-personal-testimonials="services"] .videoGrid:focus-visible{
+  outline:3px solid #e0b17b;
+  outline-offset:2px;
+}
+.moreVideos{
+  margin-top:14px;
+  padding:0 13px;
+  border:1px solid #d5e5e4;
+  border-radius:13px;
+  background:#fff;
+}
+.moreVideos>summary{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:49px;cursor:pointer;list-style:none;
+  font:800 13px/1.4 Arial,Helvetica,sans-serif;color:#206876;
+}
+.moreVideos>summary::-webkit-details-marker{display:none}
+.moreVideos>summary span{
+  display:grid;place-items:center;min-width:30px;min-height:27px;border-radius:50%;
+  background:#e2f2f0;color:#14676f;font:800 12px/1 Arial,Helvetica,sans-serif;
+}
+.moreVideos[open]{padding-bottom:10px}
+.moreVideos>summary:focus-visible{outline:3px solid #dfa968;outline-offset:2px}
+@media(max-width:767px){
+  .section[data-personal-testimonials="services"] .videoGrid{display:flex;grid-template-columns:none}
+  .section[data-personal-testimonials="services"] .videoItem{flex:0 0 83%;max-width:295px}
+  .section[data-personal-testimonials="services"] .videoItem :global(.site-video-title){font-size:16px}
+  .section[data-personal-testimonials="services"] .videoItem :global(.site-video-caption){padding:9px 11px}
+  .section[data-personal-testimonials="services"] .quoteText{font-size:20px}
+  .moreVideos{padding:0 10px}
+  .moreVideos>summary{font-size:12px}
 }

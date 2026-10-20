@@ -31,20 +31,18 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.doesNotMatch(publicSource, /force-static|s-maxage|public, max-age/);
 });
 
-test("homepage prioritizes free written review and tests while preserving accessible paid booking", () => {
+test("homepage prioritizes personal enquiry while retaining accessible free review and tests", () => {
   const home = read("components/holistic-house-home.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Personal sessions · from €50"/);
-  assert.match(home, /heroBook: "Личная сессия · от €50"/);
+  assert.match(home, /heroBook: "Ask about a session · from €50"/);
+  assert.match(home, /heroBook: "Запросить личную сессию · от €50"/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
-  assert.match(home, /className="service-home-paid-link"/);
+  assert.match(home, /className="service-home-button service-home-button--primary"/);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(freeCapture, /data-home-free-capture="true"/);
-  assert.match(freeCapture, /selected === "situation" \? \x60\/\$\{locale\}\/services\/free-situation-review\x60/);
-  assert.match(freeCapture, /selected === "wu" \? \x60\/\$\{locale\}\/services\/dao-health-profile\x60/);
-  assert.match(freeCapture, /\x60\/\$\{locale\}\/client#cabinet-tests\x60/);
+  for (const target of ['/client/tests','/services/free-situation-review','/academy/principles-of-energywork/learn']) assert.ok(freeCapture.includes(target));
   assert.match(freeCapture, /href=\{href\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
@@ -57,11 +55,11 @@ test("homepage prioritizes free written review and tests while preserving access
     "Optional paid format choice is deferred until after the free review's benefits and optional deeper-work link");
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
-  const free = home.indexOf('className="service-home-button service-home-button--primary"');
-  const tests = home.indexOf('className="service-home-button service-home-button--secondary"');
-  const book = home.indexOf('className="service-home-paid-link"');
+  const book = home.indexOf('"data-hero-cta": "paid-sessions"');
+  const free = home.indexOf('"data-hero-cta": "free-written-review"');
+  const tests = home.indexOf('"data-hero-cta": "free-tests"');
   const belowFold = home.indexOf("<ServicesSolutions");
-  assert.ok(firstScreen < free && free < tests && tests < book && book < belowFold, "Free routes must precede the optional paid booking");
+  assert.ok(firstScreen < book && book < free && free < tests && tests < belowFold, "Personal enquiry is primary and free options remain accessible");
   assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
 });
 
@@ -111,4 +109,24 @@ test('private Cabinet loads heavyweight tab modules on demand', () => {
   const route = read('app/[locale]/app/[[...path]]/page.jsx');
   assert.match(route, /force-dynamic/);
   assert.match(route, /revalidate = 0/);
+});
+
+
+test("hero H1 matches personal-session metadata, and optional free CTA stays clear across EN/RU/ES", () => {
+  const enRu = read("components/holistic-house-home.tsx");
+  const es = read("app/es/page.tsx");
+  const seo = read("lib/home-seo.ts");
+  const css = read("app/holistic-house-home.css");
+  assert.match(seo, /Personal Sessions in Toronto & Online/);
+  assert.match(enRu, /heroTitle: "Stuck in relationships, work or an important decision\?"/);
+  assert.match(enRu, /heroTitle: "Сложности в отношениях, работе или важном решении\?"/);
+  assert.match(enRu, /heroBook: "Ask about a session · from €50"/);
+  assert.match(enRu, /heroBook: "Запросить личную сессию · от €50"/);
+  assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
+  assert.match(es, /Solicitar sesión personal · desde €50/);
+  assert.match(es, /href="\/es\/services#consultation"/);
+  assert.match(css, /\.house-home--services \.service-home-paid-link \{/);
+  assert.match(css, /background: #0a7180/);
+  assert.match(css, /\.house-home--services \.service-home-paid-link:focus-visible/);
+  assert.doesNotMatch(enRu, /force-static|s-maxage/);
 });

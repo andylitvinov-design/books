@@ -29,7 +29,7 @@ test("critical photo-first sections use existing local image files, never placeh
   ]) validateFiles(file);
 });
 
-test("personal services retain source images and five compact Spanish image-left cards", () => {
+test("personal services retain source images and nine compact Spanish image-left cards", () => {
   const shared = read("components/personal-work-journey.tsx");
   const es = read("app/es/services/page.tsx");
   const photos = shared.match(/const photos = \[([\s\S]*?)\];/)?.[1]?.match(/"\/[^"]+\.(?:jpg|webp|png|svg)"/g) || [];
@@ -39,8 +39,9 @@ test("personal services retain source images and five compact Spanish image-left
   assert.match(shared, /<Image src=\{photos\[index\]\}/);
   assert.match(shared, /styles\.servicePhoto/);
   const images = [...es.matchAll(/image: "(\/[^"]+\.(?:jpg|png|webp))"/g)].map(m => m[1]);
-  assert.equal(images.length, 5);
-  assert.equal(new Set(images).size, 4); // Business and constellations share the same approved photographic still.
+  assert.equal(images.length, 9);
+  assert.equal(new Set(images).size, 6); // Owner Business landing now uses its approved practitioner portrait.
+  assert.match(es, /id: "business", image: "\/images\/holistic-house\/andy-about\.png"/);
   assert.ok(es.includes("/es/services/business-consulting"));
   for (const image of images) assert.ok(readImage(image), "Missing Spanish service image: " + image);
   assert.ok(es.includes("className={offerStyles.photo}"));

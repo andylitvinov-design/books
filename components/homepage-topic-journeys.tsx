@@ -9,7 +9,7 @@ import styles from './homepage-topic-journeys.module.css'
 // unoptimized to avoid consuming the exhausted Vercel image-transform quota.
 const photos: Record<string, string> = {
   relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
-  business: '/images/holistic-house/course-focus-mountain-boy.webp',
+  business: '/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp',
   stress: '/images/holistic-house/hero-olive-incense.webp',
   energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
   effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',

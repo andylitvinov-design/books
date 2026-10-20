@@ -1,43 +1,49 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { availableTantraTestPaths } from '../lib/assessments/test-collections.js'
+import { availableTantraTestPaths, availableTestCollections } from '../lib/assessments/test-collections.js'
+import { testCollectionAffinity } from '../lib/assessments/test-collection-membership.js'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('Tantra section explicitly explains that cards are themed test collections in EN/RU/ES', () => {
-  const source = read('components/app/simple-test-picker.jsx')
-  for (const fragment of [
-    "THEMED TEST COLLECTIONS · TANTRA",
-    "Tantra & intimacy: thematic test collections",
-    "ТЕМАТИЧЕСКИЕ ПОДБОРКИ ТЕСТОВ · ТАНТРА",
-    "Тантра и близость: тематические подборки тестов",
-    "COLECCIONES TEMÁTICAS DE PRUEBAS · TANTRA",
-  ]) assert.ok(source.includes(fragment), fragment)
-})
-
-test('every collection card has separate Details and Take test buttons with an accessible real-test disclosure', () => {
+test('Tantra and sexuality open the ONE standardized recommendation card list', () => {
   const picker = read('components/app/simple-test-picker.jsx')
   const parent = read('components/app/test-explorer.jsx')
   const css = read('components/app/simple-test-picker.module.css')
-  const section = picker.split('data-tantra-test-paths')[1]?.split('id="hh-simple-topic-title"')[0]
-  assert.ok(section, 'thematic cards section is shown by existing topic selection')
-  assert.match(section, /<article key=\{path\.id\} className=\{styles\.tantraPath\}/)
-  assert.match(section, /data-tantra-action="details" aria-expanded=\{expanded\} aria-controls=\{detailId\}/)
-  assert.match(section, /data-tantra-action="start" disabled=\{starting \|\| !onStartTantraPath\}/)
-  assert.match(section, /onStartTantraPath\?\.\(path\.keys\)/)
-  assert.match(section, /includedTests\.map\(\(entry\) => <li key=\{entry\.key\}>/)
-  assert.match(section, /entry\.scaleGuide\.scales\.map\(\(scale\) => scale\.label\)/)
-  assert.ok(section.indexOf('data-tantra-action="details"') < section.indexOf('data-tantra-action="start"'))
-  assert.match(parent, /onStartTantraPath=\{startTantraPath\}/)
-  assert.match(parent, /await onStart\(batch, preferences\)/)
-  assert.match(parent, /entry\.rightsStatus === 'cleared' && entry\.definition/)
-  assert.match(css, /\.tantraPathDetailsBody\[hidden\]\{display:none!important\}/)
-  assert.match(css, /\.tantraPathActions\{grid-column:1\/-1;display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(picker, /Test collections by topic/)
+  assert.match(picker, /Подборки тестов по темам/)
+  assert.match(picker, /Colecciones de pruebas por tema/)
+  assert.match(picker, /onChooseCollection\?\.\(active \? null : collection\.id\)/)
+  assert.match(picker, /getElementById\('hh-simple-recommendations'\)/)
+  assert.match(picker, /data-test-match=\{entry\.key\}/)
+  assert.match(picker, /data-test-collection-marker/)
+  assert.match(picker, /className=\{styles\.testDetailsButton\}/)
+  assert.match(picker, /className=\{styles\.takeTest\}/)
+  assert.doesNotMatch(picker, /data-tantra-test-paths|TANTRA_PATH_COPY|tantraPathActions/)
+  assert.match(parent, /activeCollectionId=\{activeCollectionId\}/)
+  assert.match(parent, /collectionId: activeCollectionId/)
+  assert.match(css, /\.collectionHighlight/)
+  assert.match(css, /\.collectionMarker/)
 })
 
-test('visible thematic collections enumerate only existing startable cleared instruments', () => {
+test('Tantra and sexuality collections contain genuine available opt-in instruments', () => {
+  for (const locale of ['en', 'ru']) {
+    const entries = buildExplorerEntries({ locale, audience: 'guest' })
+    const collections = availableTestCollections(entries)
+    for (const [id, example] of [['tantra', 'hh-tantra-presence'],
+      ['sexuality', 'hh-sexual-self-kindness'],
+      ['relationships', 'hh-love-affection']]) {
+      const collection = collections.find((item) => item.id === id)
+      const entry = entries.find((item) => item.key === example)
+      assert.ok(collection?.count > 0, id)
+      assert.ok(entry?.selectable && entry?.rightsStatus === 'cleared', example)
+      assert.ok(testCollectionAffinity(entry, id) > 0, example)
+    }
+  }
+})
+
+test('legacy named paths remain valid as catalog data, but no longer render duplicate cards', () => {
   for (const locale of ['en', 'ru']) {
     const entries = buildExplorerEntries({ locale, audience: 'guest' })
     const paths = availableTantraTestPaths(entries)

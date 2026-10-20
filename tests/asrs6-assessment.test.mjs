@@ -1,4 +1,5 @@
 import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
+import { ADDITIONAL_PROFESSIONAL_DEFINITIONS } from '../data/assessments/professional-additions-2026.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -99,7 +100,7 @@ test('all six valid answers required, including zero; missing/null never become 
 
 test('one separate ASRS6 catalog entry supports EN/RU filters, persistent selection and run definition without activating 18Q',()=>{
   assert.equal(MONITORING_CATALOG.filter(c=>c.key==='asrs-6').length,1)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,145)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,150)
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     const matches=entries.filter(e=>e.key==='asrs-6')
@@ -217,7 +218,8 @@ test('source-backed runner and report wiring preserve adult guard, accessible sh
   // The separately approved Bach pair is additive; no historical ID is excluded.
   const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
   assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
-  const historicalDefinitions=ASSESSMENT_DEFINITIONS.filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key))
+  const newerIDs=new Set(ADDITIONAL_PROFESSIONAL_DEFINITIONS.map(d=>d.id))
+  const historicalDefinitions=ASSESSMENT_DEFINITIONS.filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key) && !newerIDs.has(d.id))
   const beforeSplit=historicalDefinitions.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id))
   assert.equal(beforeSplit.length,210)
   assert.equal(digest(beforeSplit),'2eaa644a6c1d3db5c1a661ce9b9d180a7cc420b54cbe9d0dfe2a6561851efc36')

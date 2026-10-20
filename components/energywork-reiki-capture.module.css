@@ -7,7 +7,7 @@
   border-radius: 14px;
 }
 .prompt { margin:0 0 12px; color:#243e5b; font-size:14px; line-height:1.35; font-weight:800; }
-.choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
 .choice {
   min-height:67px;
   min-width:0;

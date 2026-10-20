@@ -9,6 +9,7 @@ import { remedySeoDescription } from "@/lib/seo-descriptions";
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
 
+export const revalidate = 3600;
 export const dynamicParams = false;
 export function generateStaticParams() { return getRemedyRouteParams(); }
 

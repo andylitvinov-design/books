@@ -25,8 +25,9 @@ test("Service discovery renders local photo-left cards without changing order or
   assert.match(css,/\.editorialCard \.editorialCardActions\{[\s\S]*?grid-column:2;grid-row:3;display:grid/);
   assert.match(css,/\.suggestion \.suggestionActions\{[\s\S]*?grid-column:2;grid-row:5;display:grid/);
   assert.match(css,/@media\(max-width:350px\)\{[\s\S]*?\.editorialCard \.editorialCardActions\{grid-column:1\/-1;grid-row:3\}/);
-  assert.match(pages[0],/image:offer.image/);
-  assert.match(pages[1],/id,image,title,promise:situation/);
+  for (const page of pages) assert.match(page, /<ServicesStudioOffers/);
+  assert.match(read("components/services-directory-page.tsx"), /image: offer.image/);
+  assert.match(read("components/services-studio-offers.tsx"), /<Image src=\{offer.image\}/);
 });
 
 test("Service discovery uses shipped service photos, not remote stock art", () => {

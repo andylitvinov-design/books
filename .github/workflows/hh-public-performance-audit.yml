@@ -4,7 +4,14 @@ on:
     paths:
       - '.github/workflows/hh-public-performance-audit.yml'
       - 'scripts/measure-hh-public-ttfb.mjs'
+      - 'scripts/hh-public-html-metrics.mjs'
+      - 'tests/hh-public-html-metrics.test.mjs'
       - 'components/site-video-player.tsx'
+      - 'components/personal-testimonials.tsx'
+      - 'components/home-testimonial-more.tsx'
+      - 'components/services-studio-extras.tsx'
+      - 'tests/personal-testimonials.test.mjs'
+      - 'tests/home-testimonial-lazy-disclosure.test.mjs'
       - 'components/services-solutions.tsx'
       - 'components/holistic-house-home.tsx'
       - 'components/home-intro-video-section.tsx'
@@ -24,7 +31,14 @@ on:
     paths:
       - '.github/workflows/hh-public-performance-audit.yml'
       - 'scripts/measure-hh-public-ttfb.mjs'
+      - 'scripts/hh-public-html-metrics.mjs'
+      - 'tests/hh-public-html-metrics.test.mjs'
       - 'components/site-video-player.tsx'
+      - 'components/personal-testimonials.tsx'
+      - 'components/home-testimonial-more.tsx'
+      - 'components/services-studio-extras.tsx'
+      - 'tests/personal-testimonials.test.mjs'
+      - 'tests/home-testimonial-lazy-disclosure.test.mjs'
       - 'components/services-solutions.tsx'
       - 'components/holistic-house-home.tsx'
       - 'components/home-intro-video-section.tsx'
@@ -54,14 +68,16 @@ jobs:
         with:
           node-version: 22
       - name: Validate targeted safety and booking contracts
-        run: node --test tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs
-      - name: Measure live public TTFB only (no login, no private routes)
+        run: node --test tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
+      - name: Measure public TTFB and HTML/RSC size (no login, no private routes)
         env:
           TTFB_SAMPLES: '7'
+          HH_HTML_WARN_KIB: '120'
+          HH_INLINE_WARN_KIB: '60'
         run: |
           node scripts/measure-hh-public-ttfb.mjs https://holistichouse.vercel.app | tee hh-public-ttfb.txt
-          echo '## Public EN/RU TTFB audit' >> "$GITHUB_STEP_SUMMARY"
-          echo 'The first request and warmed headers are reported separately; not Lighthouse or LCP.' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Public EN/RU TTFB and HTML payload audit' >> "$GITHUB_STEP_SUMMARY"
+          echo 'TTFB is measured independently of decoded HTML bytes, inline scripts and Next RSC payload. Warning budgets are observational, not CI failures; not Lighthouse, LCP, or transferred/compressed bytes.' >> "$GITHUB_STEP_SUMMARY"
           echo '```json' >> "$GITHUB_STEP_SUMMARY"
           cat hh-public-ttfb.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"

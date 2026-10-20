@@ -51,7 +51,32 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  assert.match(source,/assert\.deepEqual\(errors,\[\]\)/);
  assert.ok(!source.includes('errors.filter'));assert.ok(!source.includes('errors.length ='));
  const start=source.indexOf('        // Do not abort');const end=source.indexOf('        results.push',start);
- assert.equal(createHash('sha256').update(source.slice(start,end)).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen published action/assertion block');
+ const block=source.slice(start,end);
+ const portraitAssertion="await expect(page).toHaveURL(origin+'/en/app/portrait');";
+ assert.equal(block.split(portraitAssertion).length-1,2,'Both actual navigation and reload require the approved canonical portrait route');
+ // Preserve the original frozen action sequence except for the two approved
+ // portrait redirects and the new exact canonical-course catalog assertion.
+ const catalogAssertion="\n          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);";
+ assert.equal(block.split(catalogAssertion).length-1,1,'Exactly one bounded course catalog assertion');
+ // The approved Library header moved account access into the exact My House
+ // menu item. Freeze that complete handoff, then preserve the old rest-of-flow hash.
+ const accountEntry=`        const accountMenu = page.locator('.site-navigation details.site-main-menu');
+        await expect(accountMenu).toHaveCount(1);
+        await expect(accountMenu).toHaveJSProperty('open', false);
+        await click(page.locator('.site-main-menu-trigger'));
+        await expect(accountMenu).toHaveJSProperty('open', true);
+        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
+        await expect(accountMenu.getByRole('link', { name: 'Mi Casa', exact: true })).toHaveCount(1);
+        await expect(accountLink).toHaveCount(1);
+        await expect(accountLink).toHaveAccessibleName('Mi Casa');
+        await expect(accountLink).toBeVisible();
+        await expect(accountLink).toHaveAttribute('href','/en/app');
+        await click(accountLink);`;
+ assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed menu-to-account handoff');
+ const priorAccountEntry=`        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
+        await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));`;
+ const normalized=block.replace(accountEntry,priorAccountEntry).replace(catalogAssertion,'').replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
+ assert.equal(createHash('sha256').update(normalized).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen action/assertion block apart from approved redirects and account menu handoff');
 });
 
 test('each exact browser group retains reserved capacity and reports drops; kinds and source paths are bounded',()=>{
@@ -90,4 +115,16 @@ test('diagnostic write failure cannot prevent original proxy and app cleanup',()
  const run=new Function('saveDiagnostics','proxy','app',cleanup.slice(0,cleanup.lastIndexOf('}')));
  assert.throws(()=>run(()=>{throw failure;},{closeAllConnections(){calls.push('connections');},close(){calls.push('proxy');}},{kill(signal){calls.push(signal);}}),error=>error===failure);
  assert.deepEqual(calls,['connections','proxy','SIGTERM']);
+});
+
+for (const locale of ['en', 'ru', 'es']) test(locale + ' canonical course diagnostics retain sanitized lifecycle and request evidence', () => {
+ const path='/' + locale + '/academy/free-ai-courses';
+ assert.deepEqual(publicRoute(path+'?_rsc=secret&token=secret#secret',origin),{path,rsc:true});
+ const d=createPublicDiagnostics(origin);
+ for(const kind of ['request-start','response','request-failed','proxy-response','frame-navigation','pageerror'])d.record(kind,path+'?secret=hidden',{stage:'webkit 390 '+path,status:200,error:'other'});
+ assert.equal(d.events.length,6);
+ assert.ok(d.events.every(event=>event.path===path && event.stage===path));
+ assert.ok(!/secret|hidden/.test(JSON.stringify(d.events)));
+ for(const suffix of ['/private-id','/progress','/course-a'])assert.equal(publicRoute(path+suffix,origin),null);
+ for(const privatePath of ['/'+locale+'/client/tests','/'+locale+'/app/course'])assert.equal(publicRoute(privatePath,origin),null);
 });

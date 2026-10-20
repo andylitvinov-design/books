@@ -39,7 +39,7 @@ test('wrong-language reader fails', () => {
   assert.throws(() => assertPage('<main lang="ru"><h1>Calendar</h1><article class="reader-article">Text</article></main>', '/books/maya-calendar', 'en'), /Wrong reader language/);
 });
 test('hub must link to every existing reader', () => {
-  const links = volumes.map(([slug]) => `<a href="/books/${slug}?lang=en">Open</a>`).join('');
+  const links = volumes.map(([slug]) => `<a href="/en/books/${slug}">Open</a>`).join('');
   assertPage(`<h1>Maya tradition</h1>${links}`, '/books/maya-tradition', 'en');
   assert.throws(() => assertPage('<h1>Maya tradition</h1>', '/books/maya-tradition', 'en'), /Missing hub link/);
 });

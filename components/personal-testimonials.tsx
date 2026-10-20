@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowRight, Quote } from "lucide-react";
 
 import { SiteVideoPlayer } from "@/components/site-video-player";
-import type { Locale } from "@/data/remedies";
+import { HomeTestimonialMore } from "@/components/home-testimonial-more";
+import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./personal-testimonials.module.css";
 
 // Existing public first-party About-page testimonials and previously published,
@@ -21,11 +22,11 @@ const locallyArchivedVideoPosterIds = new Set([
 
 const testimonialVideos = {
   ru: [
+    { id: "m9RfDgK76PU", title: "Антон Корчинский — отзыв о работе", language: "ru" },
     { id: "MIVLm1GUTtM", title: "Юрий Гончаренко — отзыв клиента", language: "ru" },
     { id: "ttQxUHopaUM", title: "Бизнес-расстановки — отзыв", language: "ru" },
     { id: "VABgpmn4ZYA", title: "Татьяна Разумовская — отзыв о бизнес-консультации", language: "ru" },
     { id: "muOnIHllI7E", title: "Экспресс-диагностика — отзыв", language: "ru" },
-    { id: "m9RfDgK76PU", title: "Антон Корчинский — отзыв о работе", language: "ru" },
     { id: "5oj0BIbLT4w", title: "Елена Бахтина — отзыв клиента", language: "ru" },
   ],
   en: [
@@ -35,6 +36,14 @@ const testimonialVideos = {
     { id: "itjo2_z2NGk", title: "Experience of working together", language: "en" },
     { id: "4NrryHcEF1A", title: "Psychic Alchemy — testimonial", language: "en" },
     { id: "hYwRNMxIMjc", title: "Family constellations — testimonial", language: "en" },
+  ],
+  es: [
+    { id: "Dk0LBmOivQo", title: "Constelaciones empresariales — testimonio (en inglés)", language: "en" },
+    { id: "aUJde6A-9p0", title: "Consultoría de negocios — testimonio (en inglés)", language: "en" },
+    { id: "fE6sD1zr1Js", title: "Claire — testimonio (en inglés)", language: "en" },
+    { id: "itjo2_z2NGk", title: "Experiencia de trabajo personal (en inglés)", language: "en" },
+    { id: "4NrryHcEF1A", title: "Alquimia psíquica — testimonio (en inglés)", language: "en" },
+    { id: "hYwRNMxIMjc", title: "Constelaciones familiares — testimonio (en inglés)", language: "en" },
   ],
 } as const;
 
@@ -51,7 +60,10 @@ const copy = {
     videoHeading: "Видеоотзывы",
     videoLanguage: "Видео на русском",
     disclaimer: "Каждый отзыв — личный опыт конкретного человека. Внешние события и результаты нельзя приписывать работе на сессии; похожий результат не гарантируется. Отзывы не являются доказательством эффективности лечения.",
-    moreLink: "Больше видео и архивных отзывов",
+    moreLink: "Полный архив отзывов",
+    moreToggle: "Смотреть больше отзывов",
+    sameLanguageMore: "Ещё видеоотзывы на русском",
+    otherLanguageMore: "Отзывы на английском · EN audio",
     ctaLink: "Обсудить мой запрос",
   },
   en: {
@@ -66,8 +78,29 @@ const copy = {
     videoHeading: "Video testimonials",
     videoLanguage: "Audio in English",
     disclaimer: "These are individual experiences, not typical or guaranteed outcomes. An external event cannot be attributed to the session. Testimonials are not evidence of medical treatment effectiveness.",
-    moreLink: "More videos and archived reviews",
+    moreLink: "Complete testimonial archive",
+    moreToggle: "Watch more testimonials",
+    sameLanguageMore: "More testimonials in English",
+    otherLanguageMore: "Testimonials in Russian · RU audio",
     ctaLink: "Discuss my situation",
+  },
+  es: {
+    eyebrow: "Experiencias reales",
+    title: "Lo que comparten quienes han trabajado conmigo",
+    lead: "Experiencias de sesiones individuales, constelaciones y formación. Incluye vídeos publicados anteriormente y un testimonio escrito compartido con permiso.",
+    serviceTitle: "Experiencias del trabajo personal",
+    serviceLead: "Testimonios auténticos sobre diversas formas de trabajo, desde las imágenes guiadas hasta las constelaciones.",
+    storyEyebrow: "Después de una sesión con imágenes guiadas",
+    storyQuote: "Durante nuestra sesión surgió el deseo de tener mi propio estudio de psicología y juegos transformacionales. ... Hoy mi esposo me compró precisamente ese estudio. ... No entiendo cómo funciona, pero gracias.",
+    storySource: "Mensaje privado de una clienta · compartido con permiso · abreviado y traducido del ruso",
+    videoHeading: "Testimonios en vídeo",
+    videoLanguage: "Audio original en inglés",
+    disclaimer: "Estas son experiencias individuales, no resultados habituales ni garantizados. No es posible atribuir acontecimientos externos a una sesión. Los testimonios no demuestran eficacia médica.",
+    moreLink: "Archivo completo de testimonios",
+    moreToggle: "Ver más testimonios",
+    sameLanguageMore: "Más testimonios en inglés",
+    otherLanguageMore: "Testimonios en ruso · audio en ruso",
+    ctaLink: "Consultar mi situación",
   },
 } as const;
 
@@ -75,17 +108,35 @@ export function PersonalTestimonials({
   locale,
   variant = "home",
 }: {
-  locale: Locale;
+  locale: PublicLocale;
   variant?: "home" | "services" | "all";
 }) {
   const current = copy[locale];
   const isHome = variant === "home";
-  const videos = isHome ? testimonialVideos[locale].slice(0, 2) : testimonialVideos[locale].slice(0, 3);
+  const videos = isHome ? testimonialVideos[locale].slice(0, 4) : testimonialVideos[locale].slice(0, 4);
   // Full consultation landing: show all 12 provenance-checked videos, not the compact home/services subset.
   const presentedVideos = variant === "all"
     ? [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]]
     : videos;
+  // Home shows four matching-audio originals, with every other archived clip available in-place.
+  const remainingHomeVideos = isHome ? testimonialVideos[locale].slice(4) : [];
+  const otherLanguageVideos = isHome ? testimonialVideos[locale === "ru" ? "en" : "ru"] : [];
   const titleId = isHome ? "home-testimonials-title" : "services-testimonials-title";
+
+  const renderVideoCards = (
+    items: ReadonlyArray<{ id: string; title: string; language: "en" | "ru" }>,
+    showLanguage = false,
+  ) => items.map((item) => (
+    <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
+      {showLanguage ? <p className={styles.videoLanguageTag}>{item.language === "ru" ? "Русский · RU" : "English · EN"}</p> : null}
+      <SiteVideoPlayer
+        video={{ youtubeId: item.id, language: item.language, title: item.title }}
+        locale={locale}
+        compact
+        fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
+      />
+    </div>
+  ));
 
   const story = (
       <figure className={styles.quoteCard}>
@@ -109,44 +160,67 @@ export function PersonalTestimonials({
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{current.eyebrow}</p>
         <h2 id={titleId}>{isHome || variant === "all" ? current.title : current.serviceTitle}</h2>
-        <p>{variant === "all" ? (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : "12 authentic video testimonials in English and Russian. Tap to read a client story.") : isHome ? current.lead : current.serviceLead}</p>
+        <p>{variant === "all" ? (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : locale === "es" ? "12 testimonios reales en vídeo, con audio en inglés y ruso. Pulsa para leer una historia personal." : "12 authentic video testimonials in English and Russian. Tap to read a client story.") : isHome ? current.lead : current.serviceLead}</p>
       </header>
 
       {variant === "all" ? (
         <details className={styles.storyDisclosure}>
-          <summary>{locale === "ru" ? "Прочитать личную историю клиента" : "Read a personal client story"}</summary>
+          <summary>{locale === "ru" ? "Прочитать личную историю клиента" : locale === "es" ? "Leer una historia personal" : "Read a personal client story"}</summary>
           {story}
         </details>
       ) : story}
 
       <div className={styles.videoHeader}>
         <h3>{current.videoHeading}</h3>
-        <span>{variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
+        <span>{variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : locale === "es" ? "12 vídeos · audio en inglés y ruso" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
       </div>
-      {variant === "all" && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : "Swipe or scroll to see all video reviews →"}</p>}
+      {variant === "all" && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : locale === "es" ? "Desliza para ver más testimonios →" : "Swipe or scroll to see all video reviews →"}</p>}
       <div className={styles.videoGrid}
         role={variant === "all" ? "region" : undefined}
         aria-label={variant === "all" ? (locale === "ru" ? "Галерея из 12 видеоотзывов" : "Gallery of 12 video testimonials") : undefined}
         tabIndex={variant === "all" ? 0 : undefined}>
-        {presentedVideos.map((item) => (
-          <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
-            {variant === "all" ? <p className={styles.videoLanguageTag}>{item.language === "ru" ? "Русский · RU" : "English · EN"}</p> : null}
-            <SiteVideoPlayer
-              video={{ youtubeId: item.id, language: item.language, title: item.title }}
-              locale={locale}
-              compact
-              fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
-            />
-          </div>
-        ))}
+        {renderVideoCards(presentedVideos, variant === "all")}
       </div>
+
+      {isHome && (
+        <HomeTestimonialMore
+          locale={locale}
+          title={current.moreToggle}
+          sameLanguageTitle={current.sameLanguageMore}
+          otherLanguageTitle={current.otherLanguageMore}
+          remainingVideos={remainingHomeVideos.map((item) => ({
+            ...item,
+            fallbackPoster: locallyArchivedVideoPosterIds.has(item.id)
+              ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
+              : undefined,
+          }))}
+          otherLanguageVideos={otherLanguageVideos.map((item) => ({
+            ...item,
+            fallbackPoster: locallyArchivedVideoPosterIds.has(item.id)
+              ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
+              : undefined,
+          }))}
+        />
+      )}
+
+      {variant === "services" && (
+        <details className={styles.moreVideos} data-more-services-testimonials>
+          <summary>{current.moreToggle}
+            <span>+{testimonialVideos[locale].length - videos.length}</span>
+          </summary>
+          <div className={styles.videoGrid} role="region"
+            aria-label={locale === "ru" ? "Дополнительные видеоотзывы" : "Additional video testimonials"} tabIndex={0}>
+            {renderVideoCards(testimonialVideos[locale].slice(4))}
+          </div>
+        </details>
+      )}
 
       <p className={styles.disclaimer}>{current.disclaimer}</p>
       <div className={styles.actions}>
-        <Link className={styles.more} href={"/" + locale + "/about#testimonials-title"}>
+        <Link prefetch={false} className={styles.more} href={"/" + locale + "/about#testimonials-title"}>
           {current.moreLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>
-        <Link className={styles.contact} href={variant === "all" ? "#request-free-review" : "/" + locale + "/services/free-situation-review"}>
+        <Link prefetch={false} className={styles.contact} href={variant === "all" ? "#request-free-review" : "/" + locale + "/services/free-situation-review"}>
           {current.ctaLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>
       </div>

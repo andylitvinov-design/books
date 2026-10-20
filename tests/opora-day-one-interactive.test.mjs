@@ -130,3 +130,19 @@ test('displaying a hint cannot by itself count as independent practice',()=>{
   assert.throws(()=>validateDayOneAnswers({hintUsed:'yes',independent:'independent'}),/DEPENDENCY/)
   assert.deepEqual(validateDayOneAnswers({hintUsed:'yes',independent:'guided'}),{hintUsed:'yes',independent:'guided'})
 })
+
+test('the OPORA welcome photo visibly fills the panoramic iPhone slot with a local fallback',()=>{
+  const ui=readFileSync('components/app/opora-experience-player.jsx','utf8')
+  const css=readFileSync('components/app/opora-experience-player.module.css','utf8')
+  assert.match(ui, /<div className=\{styles\.arrivalPhoto\}/)
+  assert.match(ui, /<img src="\/images\/holistic-house\/report-lighthouse-coast\.webp"/)
+  const frame=css.match(/\.arrivalPhoto\{([^}]*)\}/)?.[1]
+  const image=css.match(/\.arrivalPhoto img\{([^}]*)\}/)?.[1]
+  assert.ok(frame && image,'Welcome image frame styles must exist')
+  assert.match(frame,/position:relative/)
+  assert.match(frame,/course-focus-mountain-boy\.webp/,'Local backup scene fills the frame on image failure')
+  assert.match(image,/position:absolute/)
+  assert.match(image,/object-fit:cover/,'Portrait photo must fill the landscape slot, not disappear as a narrow strip')
+  for(const asset of ['report-lighthouse-coast.webp','course-focus-mountain-boy.webp'])
+    assert.ok(readFileSync('public/images/holistic-house/'+asset).byteLength>1000,asset+' should be shipped locally')
+})

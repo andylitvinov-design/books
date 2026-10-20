@@ -4,7 +4,7 @@ import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Check, ShieldCheck } from "lucide-react";
-import type { Locale } from "@/data/remedies";
+import type { PublicLocale } from "@/lib/public-locales";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import styles from "./core-service-detail.module.css";
 
@@ -76,6 +76,105 @@ const copy = {
       image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
     },
   },
+  es: {
+    "dao": {
+        "eyebrow": "GRATIS · PERFIL SIMBÓLICO DAO / WU XING",
+        "title": "Perfil gratuito de recursos Wu Xing",
+        "lead": "Explora cómo percibes hoy tu energía, tu equilibrio y los apoyos que tienes a mano mediante el modelo simbólico Dao / Wu Xing. No es una evaluación médica ni una prueba diagnóstica.",
+        "benefit": "Una mirada más clara a tus recursos actuales y a los aspectos que deseas observar.",
+        "sectionsTitle": "Qué puedes explorar en este perfil gratuito",
+        "sections": [
+            {
+                "title": "Tus recursos actuales",
+                "text": "Describe tu energía, las exigencias diarias y cómo sientes tu apoyo interior en este momento."
+            },
+            {
+                "title": "Perspectiva Dao / Wu Xing",
+                "text": "Reflexiona sobre tu experiencia mediante el modelo simbólico de los cinco elementos y las etapas de recursos del autor."
+            },
+            {
+                "title": "Reflexión y siguientes preguntas",
+                "text": "Identifica asuntos que quieras comprender mejor, sin asignar diagnósticos ni interpretar una puntuación como dato clínico."
+            }
+        ],
+        "action": "Solicitar mi perfil gratuito Wu Xing",
+        "actionMessage": "Servicio: Perfil gratuito de recursos Wu Xing\nSolicitud: Me gustaría recibir el perfil simbólico gratuito de recursos Wu Xing. ¿Podrías indicarme cómo empezar?",
+        "note": "Este perfil es gratuito. WhatsApp prepara el texto de tu solicitud, pero no lo envía hasta que tú lo confirmes.",
+        "safety": "El modelo Dao / Wu Xing es un marco simbólico del autor, no un instrumento diagnóstico validado. No permite diagnosticar enfermedades, modificar medicamentos ni sustituir la atención médica o de salud mental.",
+        "secondary": "Conocer el modelo Dao / Wu Xing",
+        "secondaryHref": "/es/wu-xing",
+        "image": "/academy/reiki-yggdrasil/source/eastern-tradition.png"
+    },
+    "alchemy": {
+        "eyebrow": "MÉTODO PERSONAL · CONSTELACIONES · IMÁGENES GUIADAS · PSICOHOMEOPATÍA",
+        "title": "Alquimia del Alma · Psicohomeopatía",
+        "lead": "Cuando una situación se repite, empezamos por explorar sus dinámicas mediante una constelación sistémica. Después, si resulta adecuado y tú lo deseas, utilizamos imágenes guiadas para reflexionar sobre las emociones y las respuestas al estrés. La perspectiva homeopática simbólica y otras prácticas complementarias son opcionales.",
+        "benefit": "Comprender el patrón · explorar tus reacciones · encontrar apoyo y un siguiente paso realista.",
+        "sectionsTitle": "Un enfoque integrado · cuatro etapas",
+        "sections": [
+            {
+                "title": "01 · Constelación: mapa de la situación",
+                "text": "Aclaramos tu objetivo, los roles, las relaciones y los obstáculos. Una constelación ofrece hipótesis simbólicas para reflexionar, no pruebas de hechos ocultos."
+            },
+            {
+                "title": "02 · Imágenes guiadas y trabajo interior",
+                "text": "Con tu consentimiento, una exploración suave mediante imágenes o hipnoterapia permite observar emociones, necesidades y respuestas repetitivas. Las imágenes no se presentan como recuerdos recuperados de hechos reales."
+            },
+            {
+                "title": "03 · Perspectiva homeopática complementaria",
+                "text": "Si te interesa, podemos hablar del significado simbólico de un remedio en el modelo personal de psicohomeopatía. No es un tratamiento con eficacia demostrada ni una receta médica; aquí no se indican dosis."
+            },
+            {
+                "title": "04 · Integración y seguimiento",
+                "text": "Podemos incorporar trabajo arquetípico, recursos Dao / Wu Xing o prácticas contemplativas y elegir acciones concretas. Si continúas con el acompañamiento, revisamos juntos tus observaciones."
+            }
+        ],
+        "action": "Consultar por una sesión de Alquimia del Alma",
+        "actionMessage": "Servicio: Alquimia del Alma / Psicohomeopatía\nSolicitud: Quisiera conocer las opciones de una sesión personal con constelaciones e imágenes guiadas, y recursos complementarios si procede. ¿Podrías confirmar disponibilidad, formato y precio?",
+        "note": "Enviar una solicitud no confirma una reserva ni implica un cargo. Sesión exprés de 30 minutos: €50. Sesión completa de 60 minutos: €100. Otras modalidades se acuerdan individualmente.",
+        "safety": "Esta consulta simbólica y reflexiva no es diagnóstico ni tratamiento médico o psiquiátrico. No existen pruebas fiables de que la homeopatía sea eficaz para tratar enfermedades. No suspendas ni modifiques medicamentos prescritos; busca atención profesional para problemas de salud o urgencias. No se garantizan resultados.",
+        "secondary": "Explorar las sesiones con imágenes guiadas",
+        "secondaryHref": "/es/services/hypnotherapy-course",
+        "image": "/images/holistic-house/video-posters/constellations-en-v1.webp",
+        "supportKicker": "ACOMPAÑAMIENTO PERSONAL CONTINUADO",
+        "supportTitle": "Una sesión o un proceso de cuatro semanas",
+        "supportLead": "Para un tema que requiera más tiempo, se pueden acordar dos sesiones personales y cuatro semanas de observaciones y seguimiento: primero aclaramos la situación, después definimos un plan y revisamos lo que haya cambiado.",
+        "supportItems": [
+            "Revisión exprés · 30 minutos · €50",
+            "Sesión personal completa · 60 minutos · €100",
+            "Programa mensual opcional · 2 sesiones y 4 semanas de apoyo · precio a acordar"
+        ],
+        "supportFootnote": "Tú decides qué enfoques usar. La solicitud no activa ninguna suscripción ni realiza un pago."
+    },
+    "hypnotherapy": {
+        "eyebrow": "PROCESO INDIVIDUAL · IMÁGENES GUIADAS",
+        "title": "Hipnoterapia con imágenes guiadas",
+        "lead": "Un proceso de sesiones individuales que utiliza imágenes, diálogo y reflexión para explorar patrones emocionales, recursos interiores y preguntas difíciles de aclarar solo pensando. Es un acompañamiento personal, no un curso de formación profesional en hipnoterapia.",
+        "benefit": "Conocer mejor tus recursos y descubrir opciones de respuesta a partir de tu propia experiencia.",
+        "sectionsTitle": "Qué podemos trabajar",
+        "sections": [
+            {
+                "title": "Fortalecer el apoyo interior",
+                "text": "Explorar imágenes relacionadas con seguridad, límites personales, estabilidad y recursos."
+            },
+            {
+                "title": "Comprender patrones que se repiten",
+                "text": "Reflexionar con delicadeza sobre emociones, relaciones y reacciones mediante imágenes guiadas y diálogo."
+            },
+            {
+                "title": "Elegir tus próximos pasos",
+                "text": "Llevar lo observado a decisiones cotidianas realistas. Puedes hacer una pausa, preguntar o cambiar de dirección en cualquier momento."
+            }
+        ],
+        "action": "Preguntar por las sesiones con imágenes guiadas",
+        "actionMessage": "Servicio: Hipnoterapia con imágenes guiadas\nSolicitud: Quisiera informarme sobre sesiones individuales de imágenes guiadas para explorar mis recursos y mis decisiones. ¿Podrías indicarme el formato, la disponibilidad y el precio?",
+        "note": "La cantidad y la frecuencia de las sesiones se acuerdan individualmente. No hay reserva automática ni pago al enviar la solicitud.",
+        "safety": "Este trabajo reflexivo no garantiza el tratamiento de ansiedad, depresión u otros problemas de salud y no sustituye la atención de profesionales de salud mental, la psiquiatría ni los servicios de crisis.",
+        "secondary": "Más sobre la psicoterapia con imágenes",
+        "secondaryHref": "/es/services/imagery-therapy",
+        "image": "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp"
+    }
+},
   ru: {
     dao: {
       eyebrow: "БЕСПЛАТНО · ДАО / У-СИН",
@@ -143,13 +242,33 @@ const copy = {
   },
 } as const;
 
-export function coreOfferDetailData(locale: Locale, kind: DetailKind) {
+export function coreOfferDetailData(locale: PublicLocale, kind: DetailKind) {
   return copy[locale][kind];
 }
 
-export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: DetailKind }) {
+export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind: DetailKind }) {
   const t = copy[locale][kind];
   const serviceSlug = { dao: "dao-health-profile", alchemy: "alchemy-of-soul", hypnotherapy: "hypnotherapy-course" }[kind];
+  const pathFacts = {
+    ru: {
+      free: "Бесплатно · Символический профиль",
+      session: "Индивидуальные сессии · Стоимость согласуем до записи",
+      alchemy: "30 мин · €50 / 60 мин · €100",
+      noPayment: "Вы отправляете запрос, а не оплачиваете и не подтверждаете запись",
+    },
+    en: {
+      free: "Free · Symbolic resource profile",
+      session: "Personal sessions · Price agreed before booking",
+      alchemy: "30 min · €50 / 60 min · €100",
+      noPayment: "Send an enquiry first; no payment or automatic booking",
+    },
+    es: {
+      free: "Gratis · Perfil simbólico de recursos",
+      session: "Sesiones personales · Precio confirmado antes de reservar",
+      alchemy: "30 min · €50 / 60 min · €100",
+      noPayment: "Primero envías una solicitud; no hay pago ni reserva automática",
+    },
+  }[locale];
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
     service: t.title,
@@ -159,19 +278,23 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
   });
   return (
     <main className={styles.main} lang={locale} data-core-service-detail={kind}>
-      <div className={styles.breadcrumb}><Link href={"/" + locale + "/services"}><ArrowLeft size={17} aria-hidden="true"/>{locale === "ru" ? "Все услуги" : "All services"}</Link></div>
+      <div className={styles.breadcrumb}><Link href={"/" + locale + "/services"}><ArrowLeft size={17} aria-hidden="true"/>{locale === "ru" ? "Все услуги" : locale === "es" ? "Todos los servicios" : "All services"}</Link></div>
       <section className={styles.hero}>
         <div className={styles.intro}>
           <p className={styles.eyebrow}>{t.eyebrow}</p>
           <h1>{t.title}</h1>
           <p className={styles.lead}>{t.lead}</p>
           <p className={styles.benefit}><Check size={17} aria-hidden="true"/>{t.benefit}</p>
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.primary} id={kind === "dao" ? "request-free-wu-xing" : undefined} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+          <div className={styles.quickFacts} aria-label={locale === "ru" ? "Условия" : locale === "es" ? "Condiciones" : "Session details"}>
+            <strong>{kind === "dao" ? pathFacts.free : kind === "alchemy" ? pathFacts.alchemy : pathFacts.session}</strong>
+            <span>{pathFacts.noPayment}</span>
+          </div>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.primary} id={kind === "dao" ? "request-free-wu-xing" : undefined} event="service_request_start" attributes={{ "data-service-request": kind }}/>
           <p className={styles.note}>{t.note}</p>
           <aside className={styles.andrey}>
-            <strong>{locale === "ru" ? "С Андреем Литвиновым" : "With Andrey Litvinov"}</strong>
-            <span>{locale === "ru" ? "После запроса уточняем вопрос и формат; затем можно посмотреть короткое видео о подходе ниже." : "After your enquiry, we clarify your question and format; then you can watch the short approach video below."}</span>
-            <Link href={"/" + locale + "/about"}>{locale === "ru" ? "Об Андрее" : "About Andrey"}<ArrowUpRight size={14} aria-hidden="true"/></Link>
+            <strong>{locale === "ru" ? "С Андреем Литвиновым" : locale === "es" ? "Con Andrey Litvinov" : "With Andrey Litvinov"}</strong>
+            <span>{locale === "ru" ? "После запроса уточняем вопрос и формат; затем можно посмотреть короткое видео о подходе ниже." : locale === "es" ? "Después de enviar la solicitud, aclaramos tu pregunta y el formato. Más abajo puedes ver un vídeo breve sobre el enfoque." : "After your enquiry, we clarify your question and format; then you can watch the short approach video below."}</span>
+            <Link href={"/" + locale + "/about"}>{locale === "ru" ? "Об Андрее" : locale === "es" ? "Sobre Andrey" : "About Andrey"}<ArrowUpRight size={14} aria-hidden="true"/></Link>
           </aside>
         </div>
         <div className={styles.photo}><Image src={cardArtworkUrl(t.image, "feature")} unoptimized={hasCardArtwork(t.image)} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
@@ -201,11 +324,11 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
         <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true"/>{t.safety}</p>
         <div className={styles.links}>
           <Link href={t.secondaryHref}>{t.secondary}<ArrowUpRight size={16} aria-hidden="true"/></Link>
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
         </div>
         <details className={styles.freeAlternative}>
-          <summary>{locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?"}</summary>
-          <Link href={"/" + locale + "/services/free-situation-review"}>{locale === "ru" ? "Открыть бесплатный разбор" : "Open the free written review"}<ArrowUpRight size={16} aria-hidden="true"/></Link>
+          <summary>{locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : locale === "es" ? "¿Prefieres comenzar con una revisión gratuita por escrito?" : "Prefer to start with a free written situation review?"}</summary>
+          <Link href={"/" + locale + "/services/free-situation-review"}>{locale === "ru" ? "Открыть бесплатный разбор" : locale === "es" ? "Abrir revisión gratuita" : "Open the free written review"}<ArrowUpRight size={16} aria-hidden="true"/></Link>
         </details>
       </section>
     </main>

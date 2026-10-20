@@ -21,6 +21,12 @@ const practitionerRecordingSources = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The idle Next badge covers fixed mobile navigation in isolated browser CI.
+  // This supported option preserves compile/runtime error badges and overlays.
+  devIndicators: process.env.CI === "true" &&
+    process.env.HH_APP_TEST_RUNTIME === "isolated" &&
+    process.env.NODE_ENV === "development" && !process.env.VERCEL
+    ? false : undefined,
   poweredByHeader: false,
   // Keep optimization for existing book/media redirect paths.
   // Verified static course photographs and the hot-path portrait opt out locally.
@@ -91,7 +97,6 @@ const nextConfig: NextConfig = {
       // English has one canonical root. Russian is served at its own /ru URL.
       { source: "/en", destination: "/", permanent: true },
       // Old campaign/CTA links should always reach the public tool or cabinet.
-      { source: "/:locale(en|ru|es)/tests", destination: "/:locale/client/tests", permanent: true },
       { source: "/:locale(en|ru|es)/cabinet", destination: "/:locale/client", permanent: true },
       { source: "/:locale(en|ru|es)/review", destination: "/:locale/services/free-situation-review", permanent: true },
       { source: "/book", destination: "/books", permanent: true },
@@ -119,12 +124,14 @@ const nextConfig: NextConfig = {
     "/document-preview/[kind]": ["./assets/documents/andrii-signature-left-90.png"],
     // Tracing keys are route globs, not literal Next.js dynamic-segment names.
     // Readers load these existing HTML files dynamically at request time.
-    "/books/*": [
+    ...["/books/*", "/[locale]/books/*"].map((route) => [route, [
       "./source-books/book-1-alchemy-soul/*.html",
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
-    ],
+    ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
+      all[route] = [...files]; return all;
+    }, {}),
     "/[locale]/homeopathy/remedies/[slug]": ["./content/remedies/**/*.md"],
     "/api/prescriptions/[selector]/pdf": reportPdfAssets,
     "/document-preview/[kind]/pdf": reportPdfAssets,

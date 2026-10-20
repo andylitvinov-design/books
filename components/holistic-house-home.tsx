@@ -8,7 +8,6 @@ import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { TestSelectionCourseBanner } from "@/components/sitewide-antistress-banner";
-import { HomeFreeTestsBanner } from "@/components/home-free-tests-banner";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
@@ -18,10 +17,10 @@ const copy = {
   ru: {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
-    heroTitle: "Разберитесь в ситуации. Найдите следующий шаг.",
-    heroIntro: "Бесплатные тесты и персональный письменный разбор. При желании — платные консультации с Андреем Литвиновым в Торонто или онлайн.",
+    heroTitle: "Сложности в отношениях, работе или важном решении?",
+    heroIntro: "Обсудите один важный вопрос с Андреем Литвиновым через системные расстановки и работу с образами. Личные сессии в Торонто и онлайн; можно начать и с бесплатного письменного разбора.",
     heroPrimary: "Получить бесплатный разбор",
-    heroBook: "Личная сессия · от €50",
+    heroBook: "Запросить личную сессию · от €50",
     heroSecondary: "Пройти бесплатные тесты",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
@@ -42,6 +41,7 @@ const copy = {
     tantraAction: "Тантра Рейки · бесплатная инициация 1-й ступени",
     returning: "Уже есть профиль или результаты?",
     cabinetAction: "Открыть кабинет",
+    testGuideAction: "Как работают бесплатные тесты",
     videoKicker: "Короткое знакомство",
     videoTitle: "О Holistic House за полминуты",
     aboutKicker: "Лично об Андрее",
@@ -52,10 +52,10 @@ const copy = {
   en: {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
-    heroTitle: "Understand your situation. Find your next step.",
-    heroIntro: "Free self-checks and a personal written review. Optional paid sessions with Andrey Litvinov in Toronto or online.",
+    heroTitle: "Stuck in relationships, work or an important decision?",
+    heroIntro: "Explore one real question with Andrey Litvinov through systemic constellations and guided imagery. Personal sessions in Toronto or online; a free written review is also available.",
     heroPrimary: "Get a free written review",
-    heroBook: "Personal sessions · from €50",
+    heroBook: "Ask about a session · from €50",
     heroSecondary: "Take free self-checks",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
@@ -76,6 +76,7 @@ const copy = {
     tantraAction: "Tantra Reiki · free Level 1 initiation",
     returning: "Already have a profile or previous results?",
     cabinetAction: "Open Cabinet",
+    testGuideAction: "How free self-checks work",
     videoKicker: "A short introduction",
     videoTitle: "Holistic House in half a minute",
     aboutKicker: "Meet your practitioner",
@@ -97,7 +98,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
   return (
     <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
       <header className="house-header house-header--services">
-        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} aria-label={text.homeLabel}>
+        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} aria-label={text.homeLabel} prefetch={false}>
           Holistic House
           <span>{text.wordmark}</span>
         </Link>
@@ -121,28 +122,28 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
           <div className="service-home-actions">
             <AcquisitionEventLink
               className="service-home-button service-home-button--primary"
-              href={`/${locale}/services/free-situation-review`}
-              event="service_request_start"
-              attributes={{ "data-hero-cta": "free-written-review" }}
-            >
-              {text.heroPrimary}<span aria-hidden="true">→</span>
+              href={`/${locale}/services#consultation`}
+              event="service_view"
+              attributes={{ "data-hero-cta": "paid-sessions" }}
+              prefetch={false}>
+              {text.heroBook}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
-              href={`/${locale}/client/tests`}
-              event="self_check_start"
-              attributes={{ "data-hero-cta": "free-tests" }}
-            >
-              {text.heroSecondary}<span aria-hidden="true">→</span>
+              href={`/${locale}/services/free-situation-review`}
+              event="service_request_start"
+              attributes={{ "data-hero-cta": "free-written-review" }}
+              prefetch={false}>
+              {text.heroPrimary}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
           </div>
           <AcquisitionEventLink
-            className="service-home-paid-link"
-            href={`/${locale}/services#consultation`}
-            event="service_view"
-            attributes={{ "data-hero-cta": "paid-sessions" }}
-          >
-            {text.heroBook}<span aria-hidden="true">→</span>
+            className="service-home-selfcheck-link"
+            href={`/${locale}/client/tests`}
+            event="self_check_start"
+            attributes={{ "data-hero-cta": "free-tests" }}
+            prefetch={false}>
+            {text.heroSecondary}<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
           <p className="service-home-offer-note">
             {locale === "ru"
@@ -153,7 +154,6 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </section>
 
       <ServicesSolutions locale={locale} variant="home" />
-      <HomeFreeTestsBanner locale={locale} />
       <HomepageTopicJourneys locale={locale} />
       <TestSelectionCourseBanner locale={locale} />
 
@@ -169,7 +169,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
             className="service-home-start-card"
             href={entry.selfCheck.href}
             event="self_check_start"
-          >
+           prefetch={false}>
             <span className="service-home-start-card__icon" aria-hidden="true"><ClipboardCheck /></span>
             <span className="service-home-start-card__eyebrow">{text.checkEyebrow}</span>
             <h3>{text.checkTitle}</h3>
@@ -183,15 +183,17 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
             <h3>{text.learnTitle}</h3>
             <p>{text.learnText}</p>
             <div className="service-home-start-card__actions">
-              <Link href={`/${locale}/academy`}>{text.academyAction}<span aria-hidden="true">→</span></Link>
-              <Link href={`/${locale}/library`}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
-              <Link href={`/${locale}/academy/reiki/tantra-reiki/free-initiation`}>{text.tantraAction}<span aria-hidden="true">→</span></Link>
+              <Link href={`/${locale}/academy`} prefetch={false}>{text.academyAction}<span aria-hidden="true">→</span></Link>
+              <Link href={`/${locale}/library`} prefetch={false}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
+              <Link href={`/${locale}/academy/reiki/tantra-reiki/free-initiation`} prefetch={false}>{text.tantraAction}<span aria-hidden="true">→</span></Link>
             </div>
           </article>
         </div>
 
         <p className="service-home-start__returning">
-          {text.returning} <Link href={`/${locale}/client`}>{text.cabinetAction}<span aria-hidden="true">→</span></Link>
+          <Link href={`/${locale}/tests`} prefetch={false}>{text.testGuideAction}<span aria-hidden="true">→</span></Link>
+          <span aria-hidden="true"> · </span>
+          {text.returning} <Link href={`/${locale}/client`} prefetch={false}>{text.cabinetAction}<span aria-hidden="true">→</span></Link>
         </p>
       </section>
 
@@ -204,7 +206,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
           <p className="service-home-kicker">{text.aboutKicker}</p>
           <h2 id="service-home-about-title">Andrey Litvinov</h2>
           <p>{text.aboutIntro}</p>
-          <AcquisitionEventLink href={entry.practitioner.href} event="practitioner_view">
+          <AcquisitionEventLink href={entry.practitioner.href} event="practitioner_view" prefetch={false}>
             {text.aboutAction}<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
         </div>
@@ -227,13 +229,13 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomepageContactCta locale={locale} />
 
       <footer className="service-home-footer">
-        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"}>Holistic House</Link>
+        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} prefetch={false}>Holistic House</Link>
         <p>{text.footer}</p>
-        <Link href={`/${locale}/services`}>{entry.hero.servicesLabel}<span aria-hidden="true">→</span></Link>
+        <Link href={`/${locale}/services`} prefetch={false}>{entry.hero.servicesLabel}<span aria-hidden="true">→</span></Link>
         <p className="service-home-footer__legal">
-          <Link href="/privacy">Privacy</Link>
+          <Link href="/privacy" prefetch={false}>Privacy</Link>
           <span aria-hidden="true"> · </span>
-          <Link href="/terms">Terms</Link>
+          <Link href="/terms" prefetch={false}>Terms</Link>
         </p>
       </footer>
     </main>

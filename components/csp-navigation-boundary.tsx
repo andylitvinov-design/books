@@ -6,6 +6,7 @@ import { isNativePsiAlchemy } from "@/lib/native/client";
 
 declare global {
   interface Window {
+    __hhOwnsHistoryEntry?: () => boolean;
     __cspPreHydration?: { destination: string | null; dispose: () => void };
   }
 }
@@ -38,9 +39,10 @@ function cspClassForPath(pathname: string) {
 
 /**
  * Next client navigation keeps the CSP of the document that was first loaded.
- * Reload only when navigation crosses a CSP class, so a public iframe never
+ * Reload when navigation crosses a CSP class, so a public iframe never
  * inherits a restrictive document policy and a private document never inherits
- * a public embed policy.
+ * a public embed policy. Foreign-document history entries also need a fresh
+ * router instead of replaying a tree from an earlier document.
  */
 export function CspNavigationBoundary() {
   const pathname = usePathname();
@@ -63,11 +65,17 @@ export function CspNavigationBoundary() {
       event.preventDefault();
       window.location.assign(url.href);
     };
+    const ownsCurrentEntry = window.__hhOwnsHistoryEntry;
     const onPopState = (event?: Event) => {
       const url = new URL(window.location.href);
       const restoresInterruptedRouter = event?.type === "pageshow"
         && (event as PageTransitionEvent).persisted && interruptedRouterNavigation.current;
-      if (!crossesPolicy(url) && !restoresInterruptedRouter) return;
+      // Next restores its history tree on persisted pageshow as well as popstate.
+      const restoresForeignRouter = (event?.type === "popstate"
+        || (event?.type === "pageshow" && (event as PageTransitionEvent).persisted))
+        && ownsCurrentEntry?.() === false;
+      if (!crossesPolicy(url) && !restoresInterruptedRouter && !restoresForeignRouter) return;
+      // Reload foreign-document history trees even when the CSP class matches.
       // Prevent Next from replaying the stale canonical URL while this document
       // is being replaced. Capture runs before the router's history listeners.
       event?.stopImmediatePropagation();

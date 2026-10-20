@@ -30,6 +30,7 @@ export type PractitionerPublicProfile = {
   socialUrls?: string[]
   photoPath?: string
   videoPresentation?: VideoPresentation | null
+  videoMaterials?: {title:string;description:string;locale:'en'|'ru'|'es';url:string}[]
 }
 
 export type PublicService = {

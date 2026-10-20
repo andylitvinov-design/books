@@ -1,0 +1,85 @@
+name: Holistic House PDF graphics regressions
+
+on:
+  pull_request:
+    paths:
+      - "lib/prescriptions/pdf.js"
+      - "scripts/build-report-pdf-art.mjs"
+      - "scripts/render-premium-report-samples.mjs"
+      - "tests/report-premium-pagination-v5.test.mjs"
+      - "package.json"
+      - "public/images/holistic-house/report-lighthouse-coast.webp"
+      - "tests/report-photo-contain-exif.test.mjs"
+      - "tests/report-illustrations.test.mjs"
+      - "tests/report-editorial-grid.test.mjs"
+      - "tests/report-progress-geometry-v6.test.mjs"
+      - "tests/report-premium-art-direction-v7.test.mjs"
+      - "tests/report-premium-editorial-v8.test.mjs"
+      - "tests/report-editorial-quiet-v8.test.mjs"
+      - ".github/workflows/holistic-house-pdf-graphics.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pdf-graphics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build pinned approved coast image for A4 PDF
+        run: node scripts/build-report-pdf-art.mjs
+      - name: Verify A4/mobile images, narrative, pagination and signatures
+        run: |
+          node --test \
+            tests/report-premium-pagination-v5.test.mjs \
+            tests/report-photo-contain-exif.test.mjs \
+            tests/report-illustrations.test.mjs \
+            tests/report-editorial-grid.test.mjs \
+            tests/report-progress-geometry-v6.test.mjs \
+            tests/report-premium-art-direction-v7.test.mjs \
+            tests/report-premium-editorial-v8.test.mjs \
+            tests/report-editorial-quiet-v8.test.mjs \
+            tests/mobile-readable-pdf.test.mjs \
+            tests/canonical-pdf.test.mjs \
+            tests/document-samples.test.mjs \
+            tests/signed-pdf.test.mjs
+      - name: Render synthetic EN/RU cover, signed core and first appendix as PNG for visual QA
+        run: |
+          node scripts/render-premium-report-samples.mjs
+          if ! command -v pdftoppm >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils; fi
+          for locale in en ru; do
+            pdftoppm -f 1 -l 3 -scale-to 880 -png "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/$locale"
+          done
+          for locale in en ru; do
+            pdftotext -layout "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/sample-$locale.txt"
+            grep -q 'Avena Sativa' "tmp/premium-pdf-qa/sample-$locale.txt"
+            grep -q 'Phosphoricum Acidum' "tmp/premium-pdf-qa/sample-$locale.txt"
+            grep -q 'Nux Vomica' "tmp/premium-pdf-qa/sample-$locale.txt"
+          done
+          ls -lh tmp/premium-pdf-qa/
+      - name: Emit small anonymous RU page proofs for visual inspection
+        run: |
+          python3 - <<'PY'
+          import base64, glob
+          for index, filename in enumerate(sorted(glob.glob('tmp/premium-pdf-qa/ru-*.png'))[:3], start=1):
+              payload=base64.b64encode(open(filename,'rb').read()).decode('ascii')
+              print(f'HH_PDF_PROOF_BEGIN_{index}')
+              for start in range(0,len(payload),4096):
+                  print('HH_PDF_PROOF_DATA:'+payload[start:start+4096])
+              print(f'HH_PDF_PROOF_END_{index}')
+          PY
+      - name: Attach anonymous rendered visual comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-pdf-qa-anonymous
+          path: tmp/premium-pdf-qa/
+          retention-days: 7
+

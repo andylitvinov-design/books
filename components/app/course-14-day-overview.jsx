@@ -11,7 +11,7 @@ const COPY = {
     eyebrow: 'THE 14-DAY JOURNEY',
     title: 'What happens during the 14 days?',
     intro: 'A clear journey from understanding your reactions to practising small, useful choices in everyday life.',
-    daily: 'One lesson each day · 5–12 min',
+    daily: 'One lesson each day · 8–12 min',
     days: 'Days',
     day: 'Day',
     allDays: 'See the plan for each of the 14 days',
@@ -23,7 +23,7 @@ const COPY = {
     eyebrow: 'ПРОГРАММА · 14 ДНЕЙ',
     title: 'Что вас ждёт за 14 дней?',
     intro: 'Понятный путь от изучения своих реакций к небольшим полезным действиям в повседневной жизни.',
-    daily: 'Один урок в день · 5–12 минут',
+    daily: 'Один урок в день · 8–12 минут',
     days: 'Дни',
     day: 'День',
     allDays: 'Посмотреть план каждого из 14 дней',
@@ -34,24 +34,24 @@ const COPY = {
 }
 
 const STRESS = {
-  en: { title:'Seven recovery steps · your 14-day route',
-    intro:'Five separate stress-informed courses. Inside each: seven practical recovery stages from safety through integration. Open any stage to preview its two lessons.',
+  en: { title:'Seven practical skills · 14 days',
+    intro:'Learn seven core skills during week one, then use each again with greater independence in week two. Other specialist routes keep their own lesson sequence.',
     allDays:'All 14 daily exercises and results',
     hint:'Exercises, outcomes and related measurements',
     practice:'Exercise', result:'Observable learning result', scales:'Related scales', check:'Skill check',
-    screens:'The 15 learning + 3 closing screens', tests:'Measurement: Weekly Pulse (8 questions) before and after; optional eligible GAD-7. Practice choices are tracked separately from symptom scores.' },
-  ru: { title:'Семь этапов восстановления · 14 занятий',
-    intro:'Пять разных программ по уровню стресса. Внутри каждой — путь от безопасности и стабилизации до восстановления ресурсов и интеграции. Раскройте этап, чтобы увидеть два занятия.',
+    screens:'15 short interactive steps per lesson', tests:'Measurement: Weekly Pulse (8 questions) before and after; optional eligible GAD-7. Practice choices are tracked separately from symptom scores.' },
+  ru: { title:'7 практических навыков · 14 занятий',
+    intro:'Первая неделя — семь ключевых навыков. Вторая — повтор тех же навыков с большей самостоятельностью. Остальные специализированные маршруты сохраняют собственную последовательность.',
     allDays:'Практики и результаты всех 14 дней',
     hint:'Упражнения, результаты и связанные шкалы',
     practice:'Упражнение',result:'Ожидаемый результат',scales:'Связанные шкалы',check:'Проверка навыка',
-    screens:'15 учебных + 3 завершающих интерактивных слайда', tests:'Измерение: Weekly Pulse (8 вопросов) до и после курса, GAD-7 дополнительно при подходящем языке и сроке. Навыки оцениваются отдельно от симптомов.' },
-  es: { title:'Siete etapas · tu ruta de 14 días',
-    intro:'Cinco cursos según el estrés percibido. Cada curso tiene siete etapas de seguridad, estabilización, recursos e integración.',
+    screens:'15 коротких интерактивных экранов в каждом уроке', tests:'Измерение: Weekly Pulse (8 вопросов) до и после курса, GAD-7 дополнительно при подходящем языке и сроке. Навыки оцениваются отдельно от симптомов.' },
+  es: { title:'Siete habilidades prácticas · 14 días',
+    intro:'Primera semana: aprende siete habilidades. Segunda semana: practícalas con mayor autonomía. Las otras rutas mantienen su propio plan.',
     allDays:'Ejercicios y resultados de los 14 días',
     hint:'Ejercicios, resultados y medidas relacionadas',
     practice:'Ejercicio',result:'Resultado observable',scales:'Escalas relacionadas',check:'Prueba de habilidad',
-    screens:'15 pasos de práctica + 3 de cierre', tests:'Medición: Weekly Pulse antes y después; GAD-7 opcional cuando corresponda. Las habilidades no se confunden con los síntomas.' },
+    screens:'15 pantallas interactivas breves por lección', tests:'Medición: Weekly Pulse antes y después; GAD-7 opcional cuando corresponda. Las habilidades no se confunden con los síntomas.' },
 }
 export default function Course14DayOverview({ locale = 'en', compact = false, programId = '', moduleId = '', routerVersion = '' }) {
   const t = COPY[locale] || COPY.en
@@ -59,15 +59,15 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
   const stress=programId==='stress'
   const blueprint=stress?antiStressBlueprint(locale):null
   // The old NAV-1.3 module-specific curriculum and labels remain pinned for existing cycles.
-  const updatedPath=stress && (!routerVersion || routerVersion==='opora-nav-2.0-20261014')
-  const groups=stress ? (updatedPath
+  const legacyModulePreview=stress&&Boolean(moduleId)&&moduleId!=='AS2'
+  const groups=stress ? (legacyModulePreview
     ? oporaRecoveryStages(locale).map(stage=>({id:stage.id,start:stage.days[0],end:stage.days[1],title:stage.title,summary:stage.description}))
     : blueprint.skills.map(skill=>({id:skill.id,start:skill.days[0],end:skill.days[1],title:skill.title,summary:skill.description})))
     : coursePreEnrolmentPlan(locale)
   const chosenTitle=stress&&moduleId?antistressModuleTitle(moduleId,locale,routerVersion):null
   const days=stress ? blueprint.days.map(day=>{
-    const adapted=moduleId?moduleDayMeta(moduleId,day.day,locale,routerVersion):null
-    return adapted?{...day,title:adapted.title,exercise:adapted.exercise,skill:groups[Math.floor((day.day-1)/2)]?.title||day.skill,adapted:true}:day
+    const adapted=legacyModulePreview?moduleDayMeta(moduleId,day.day,locale,routerVersion):null
+    return adapted?{...day,title:adapted.title,exercise:adapted.exercise,skill:legacyModulePreview?groups[Math.floor((day.day-1)/2)]?.title||day.skill:day.skill,adapted:true}:day
   }) : groups.flatMap(group=>group.days)
   return <section className={styles.overview} data-course-14-day-overview
     data-course-before-signup={compact ? 'guest' : 'intro'}
@@ -88,7 +88,7 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
           <summary className={styles.phaseSummary}>
             <span className={styles.phaseNumber} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
             <span className={styles.phaseBody}>
-              <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
+              <span className={styles.phaseRange}>{legacyModulePreview?t.days:t.day} {group.start} {legacyModulePreview?'–':'+'} {group.end}</span>
               <strong>{group.title}</strong>
             </span>
             <ChevronDown className={styles.phaseChevron} size={18} aria-hidden="true" />

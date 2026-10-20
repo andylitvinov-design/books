@@ -37,7 +37,7 @@ test('Anti-Stress baseline uses three compact options, one save-and-start click 
   const runner = read('components/app/app-workspace.jsx')
   const flow = read('lib/app/course-test-flow.js')
   assert.match(picker, /data-antistress-compact-picker/)
-  assert.match(picker, /const defaultKeys = new Set\(\['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse'\]\)/)
+  assert.match(picker, /const defaultKeys\s*=\s*new Set\(\[\s*'hh-weekly-pulse',\s*'gad-7',\s*'hh-resource-pulse'\s*\]\)/)
   assert.match(picker, /if\(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY\) return/)
   assert.match(picker, /data-course-required-baseline/)
   assert.match(picker, /async function startCompactTests\(\)/)

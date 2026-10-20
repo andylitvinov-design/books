@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { getAppConfig } from "@/lib/app/config";
+import { listPublicLibraryVideos } from "@/lib/clients/material-library";
+import { createArticleRepository } from "@/lib/practitioners/article-repository";
 import { notFound } from "next/navigation";
 
-import { LibraryHub, libraryCopy, type LibraryView } from "@/components/library-hub";
+import { LibraryHub, libraryCopy, type LibraryView, type LibraryPublicVideo, type LibraryPublicArticle } from "@/components/library-hub";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     metadataBase: metadataBaseFor(),
     title: `${libraryCopy[locale].title} — Holistic House`,
-    description: { en: "Explore Holistic House books, educational videos, remedy references and practical guides in one library. Find original materials and start reading.", ru: "Книги, обучающие видео, справочник препаратов и практические материалы Holistic House собраны в одной библиотеке. Выберите подходящий раздел.", es: "Explora libros, vídeos educativos, el catálogo de remedios y guías prácticas de Holistic House. Encuentra materiales originales en una biblioteca." }[locale],
+    description: { en: "Read the latest Holistic House articles, watch educational videos and explore practical guides in our regularly updated library.", ru: "Лента новых материалов Holistic House: видео, статьи, методички и практические руководства. Все публикации в одном месте.", es: "Nuevas publicaciones de Holistic House: vídeos, artículos y guías para aprender y explorar." }[locale],
     alternates: {
       canonical: `/${locale}/library`,
       languages: { en: "/en/library", ru: "/ru/library", es: "/es/library", "x-default": "/en/library" },
@@ -33,7 +39,21 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   if (!isSupportedLocale(locale)) notFound();
 
   const rawView = Array.isArray(query.view) ? query.view[0] : query.view;
-  const view: LibraryView = rawView === "videos" ? "videos" : "books";
-
-  return <LibraryHub locale={locale} view={view} />;
+  const view: LibraryView = rawView === "videos" || rawView === "books" ? rawView : "latest";
+  let videos: LibraryPublicVideo[] = [];
+  let articles: LibraryPublicArticle[] = [];
+  if (view !== "books") {
+    try {
+      const config = getAppConfig();
+      const results = await Promise.allSettled([
+        listPublicLibraryVideos(config, locale),
+        createArticleRepository(config).publicList(locale),
+      ]);
+      if (results[0].status === "fulfilled") videos = results[0].value;
+      if (results[1].status === "fulfilled") articles = results[1].value;
+    } catch {
+      // The curated public collection stays available if app data is temporarily offline.
+    }
+  }
+  return <LibraryHub locale={locale} view={view} publishedVideos={videos} articles={articles} />;
 }

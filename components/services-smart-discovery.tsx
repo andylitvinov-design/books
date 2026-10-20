@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
-  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
+  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, SlidersHorizontal, Sparkles, Tag, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
@@ -14,6 +14,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ServicesFreeRecommendations } from "@/components/services-free-recommendations";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./services-smart-discovery.module.css";
+import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
 
 type Locale = "en" | "ru" | "es";
 type Editorial = {id:string;title:string;promise:string;benefit?:string;details?:string;href:string;areaKey:string;label?:string;price?:string;free?:boolean;image?:string};
@@ -26,6 +27,10 @@ const COPY = {
     description:"Describe your goal. Find related services and practitioners — free, with no sign-up.",
     placeholder:"e.g. stress, confidence, relationships or Reiki...",
     button:"Find my options",
+    quickHints:[
+      { label:"energy healing", query:"energy healing Reiki" },
+      { label:"business analyses", query:"business analyses consulting" },
+    ],
     freeOnlyLabel:"Free Services Only",
     examples:"You could try",
     exampleList:["I want more balance in my body and energy","I want support with stress and anxiety","I want clarity in my relationships","I want to explore business and money questions","I want to clarify my goals, life purpose and personal growth"],
@@ -62,7 +67,7 @@ const COPY = {
     browse:"All practitioners",
     clear:"Reset",
     personal:"Prefer personal guidance?",
-    personalAction:"Explore Andrey's personal services below",
+    personalAction:"Explore Andrey's personal services",
     categoryCount:"offers",
     localMatch:"Topic-based matching",
     aiMatch:"AI-enhanced matching",
@@ -80,6 +85,10 @@ const COPY = {
     description:"Опишите свою цель. Мы покажем подходящие услуги и мастеров — бесплатно и без регистрации.",
     placeholder:"Например: стресс, уверенность, отношения или Рейки…",
     button:"Подобрать услуги",
+    quickHints:[
+      { label:"энергопрактики", query:"Рейки энергетическая поддержка" },
+      { label:"бизнес-анализ", query:"бизнес анализ консалтинг" },
+    ],
     freeOnlyLabel:"Только бесплатные услуги",
     examples:"Например",
     exampleList:["Хочу больше энергии и контакта с телом","Хочу справиться со стрессом и тревогой","Хочу разобраться в отношениях","Хочу разобраться с бизнесом и деньгами","Ищу ясность в целях, смыслах и саморазвитии"],
@@ -116,7 +125,7 @@ const COPY = {
     browse:"Все мастера",
     clear:"Сбросить",
     personal:"Хотите личную консультацию?",
-    personalAction:"Ниже — личные услуги Андрея",
+    personalAction:"Личные услуги Андрея",
     categoryCount:"предложений",
     localMatch:"Смысловой подбор",
     aiMatch:"Подбор с помощью ИИ",
@@ -134,6 +143,10 @@ const COPY = {
     description:"Describe tu objetivo. Encuentra servicios y profesionales relacionados, gratis y sin registro.",
     placeholder:"Por ejemplo: estrés, confianza, relaciones o Reiki…",
     button:"Encontrar servicios",
+    quickHints:[
+      { label:"sanación energética", query:"sanación energética Reiki" },
+      { label:"análisis empresarial", query:"análisis empresarial y consultoría" },
+    ],
     freeOnlyLabel:"Solo servicios gratuitos",
     examples:"Por ejemplo",
     exampleList:["Quiero sentir más energía y conexión con mi cuerpo","Busco ayuda con el estrés y la ansiedad","Quiero entender mejor mis relaciones","Quiero explorar mi negocio y mi dinero","Quiero claridad en mis metas, propósito y desarrollo personal"],
@@ -170,7 +183,7 @@ const COPY = {
     browse:"Profesionales",
     clear:"Limpiar",
     personal:"¿Prefieres orientación personal?",
-    personalAction:"Más abajo: servicios personales de Andrey",
+    personalAction:"Servicios personales de Andrey",
     categoryCount:"opciones",
     localMatch:"Búsqueda temática",
     aiMatch:"Búsqueda con IA",
@@ -359,8 +372,11 @@ export function ServicesSmartDiscovery({
   return (
     <section className={styles.discovery} id="find-your-service" aria-labelledby="hh-service-discovery-title">
       <div className={styles.hero}>
+        <div className={styles.topline}>
+          <p className={styles.kicker}><Sparkles size={16} aria-hidden="true"/>{t.kicker}</p>
+          <DiscoverySectionTabs locale={locale} active="services" />
+        </div>
         <div className={styles.heroCopy}>
-          <p className={styles.kicker}><Sparkles size={15} aria-hidden="true"/>{t.kicker}</p>
           <h2 id="hh-service-discovery-title">{t.title}</h2>
           <p className={styles.intro}>{t.description}</p>
         </div>
@@ -373,6 +389,46 @@ export function ServicesSmartDiscovery({
             {aiStatus==="loading"?t.waiting:t.button}<Search size={19} aria-hidden="true"/>
           </button>
         </form>
+        <div className={styles.quickHints} role="group" aria-label={
+          locale==="ru"?"Подсказки для поиска":locale==="es"?"Búsquedas sugeridas":"Suggested searches"
+        }>
+          {t.quickHints.map(({label,query:hintQuery})=>(
+            <button key={label} type="button" className={styles.quickHint} onClick={()=>runExample(hintQuery)}>
+              <Tag size={15} strokeWidth={1.9} aria-hidden="true"/>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.categorySection} id="browse-service-categories" data-services-filter-below-search aria-labelledby="hh-service-category-title">
+        <div className={styles.categoryHead}>
+          <div className={styles.stepHeader}>
+            <span className={styles.stepBadge} aria-hidden="true">1</span>
+            <div>
+              <h2 id="hh-service-category-title">{t.categories}</h2>
+              <p>{t.categoriesIntro}</p>
+            </div>
+          </div>
+          <Link href={"/"+locale+"/masters"} className={styles.allMasters}>{t.browse}<ArrowRight size={16} aria-hidden="true"/></Link>
+        </div>
+        <div className={styles.categoryGrid}>
+          {DISCOVERY_AREAS.map((area,i)=>{
+            const Icon=ICONS[i];
+            const count=services.filter(s=>s.areaKey===area.key).length;
+            const active=activeCategory===area.key;
+            return <button type="button" key={area.key}
+              className={active?styles.categoryActive:styles.category}
+              aria-pressed={active} onClick={()=>chooseCategory(area.key)}>
+              <span className={styles.categoryIcon}><Icon size={21} strokeWidth={1.75} aria-hidden="true"/></span>
+              <span className={styles.categoryName}>{area.label[locale]}</span>
+              {count>0
+                ? <small className={styles.categoryCount} aria-label={`${count} ${t.categoryCount}`}>{count}</small>
+                : <ArrowRight className={styles.categoryArrow} size={15} aria-hidden="true" />}
+            </button>;
+          })}
+        </div>
+        <div className={styles.filterControls}>
         <label className={styles.freeOnlyToggle}>
           <input
             type="checkbox"
@@ -387,6 +443,13 @@ export function ServicesSmartDiscovery({
           />
           <span>{t.freeOnlyLabel}</span>
         </label>
+          <details className={styles.extraFilters} data-services-extra-filters>
+            <summary>
+              <span className={styles.extraIcon}><SlidersHorizontal size={19} aria-hidden="true"/></span>
+              <span className={styles.extraLabel}><strong>{locale==="ru"?"Дополнительные фильтры":locale==="es"?"Filtros adicionales":"Additional filters"}</strong><small>{locale==="ru"?"Формат, цена и язык":locale==="es"?"Modalidad, precio e idioma":"Format, price and language"}</small></span>
+              <ChevronDown className={styles.extraChevron} size={19} aria-hidden="true"/>
+            </summary>
+            <div className={styles.extraBody}>
         <div className={styles.quickFacets} role="group" aria-label={locale==="ru"?"Фильтры поиска":locale==="es"?"Filtros de búsqueda":"Search filters"}>
           <label>
             <span>{locale==="ru"?"Формат":locale==="es"?"Modalidad":"Format"}</span>
@@ -419,6 +482,13 @@ export function ServicesSmartDiscovery({
             </select>
           </label>
         </div>
+        {aiAvailable&&<label className={styles.aiOption}>
+          <input type="checkbox" checked={useExternalAi} onChange={event=>setUseExternalAi(event.target.checked)}/>
+          <span>{t.aiToggle}<small>{t.aiConsent}</small></span>
+        </label>}
+            </div>
+          </details>
+        </div>
         <div className={styles.examples}>
           <span>{t.examples}:</span>
           {t.exampleList.map((text,index)=><button type="button" key={text} aria-label={text} onClick={()=>runExample(text)}>
@@ -426,37 +496,10 @@ export function ServicesSmartDiscovery({
             <span className={styles.exampleShort} aria-hidden="true">{t.quickExamples[index]}</span>
           </button>)}
         </div>
-        {aiAvailable&&<label className={styles.aiOption}>
-          <input type="checkbox" checked={useExternalAi} onChange={event=>setUseExternalAi(event.target.checked)}/>
-          <span>{t.aiToggle}<small>{t.aiConsent}</small></span>
-        </label>}
         <p className={styles.privacy}>
           <span className={styles.privacyFull}><span aria-hidden="true">◦</span> {t.privacy} {t.caution}</span>
           <span className={styles.privacyCompact}>{t.mobilePrivacy}</span>
         </p>
-      </div>
-
-      <div className={styles.categorySection} id="browse-service-categories">
-        <div className={styles.categoryHead}>
-          <div><h2>{t.categories}</h2></div>
-          <Link href={"/"+locale+"/masters"} className={styles.allMasters}>{t.browse}<ArrowRight size={16} aria-hidden="true"/></Link>
-        </div>
-        <div className={styles.categoryGrid}>
-          {DISCOVERY_AREAS.map((area,i)=>{
-            const Icon=ICONS[i];
-            const count=services.filter(s=>s.areaKey===area.key).length;
-            const active=activeCategory===area.key;
-            return <button type="button" key={area.key}
-              className={active?styles.categoryActive:styles.category}
-              aria-pressed={active} onClick={()=>chooseCategory(area.key)}>
-              <span className={styles.categoryIcon}><Icon size={21} strokeWidth={1.75} aria-hidden="true"/></span>
-              <span className={styles.categoryName}>{area.label[locale]}</span>
-              {count>0
-                ? <small className={styles.categoryCount} aria-label={`${count} ${t.categoryCount}`}>{count}</small>
-                : <ArrowRight className={styles.categoryArrow} size={15} aria-hidden="true" />}
-            </button>;
-          })}
-        </div>
       </div>
 
       {hasSelection&&<div ref={resultsRef} tabIndex={-1} className={styles.results} id="service-discovery-results" aria-live="polite" aria-labelledby="hh-service-discovery-results-title">
@@ -489,8 +532,9 @@ export function ServicesSmartDiscovery({
                   onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
                   {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
                 </button>
-                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>
+                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)} aria-label={locale==="es"?"Solicitar este servicio (formulario en inglés)":undefined}>{t.order}</TrackedServiceLink>
               </div>
+              {locale==="es"&&<small className={styles.intakeNote}>El formulario de solicitud se abre en inglés; se conserva el servicio elegido.</small>}
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
               <div id={"hh-listing-details-"+service.id} hidden={expandedCard!=="listing:"+service.id} className={styles.suggestionDetailPanel}>
                 <p>{service.copy.description || service.copy.shortDescription}</p>

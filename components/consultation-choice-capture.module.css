@@ -109,3 +109,10 @@
   .homeFreeChoices .homeFreeChoice{gap:5px;padding:8px 7px}
   .homeFreeOptionText strong{font-size:11px}
 }
+
+/* Secondary Wise route only appears after verified merchant configuration. */
+.wisePayment{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:9px;text-align:center}
+.wisePayment a{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 13px;border:1px solid #26818b;border-radius:12px;color:#126474;background:#fff;font:750 13px/1.3 Arial,Helvetica,sans-serif;text-decoration:none}
+.wisePayment a:hover{text-decoration:underline;text-underline-offset:3px}
+.wisePayment small{color:#446e77;font:12px/1.5 Arial,Helvetica,sans-serif;max-width:490px}
+.wisePayment a:focus-visible{outline:3px solid #8a632c;outline-offset:3px}

@@ -548,13 +548,17 @@
 .catalogHeading p:not(.eyebrow){max-width:68ch;font-size:.91rem;line-height:1.48;color:#5b6c79;margin:0}
 .catalogTopbar .availability{display:flex;gap:4px;flex:0 0 auto;align-self:flex-start;margin:0;padding:5px;background:#eff6fc;border:1px solid #d4e2ee;border-radius:13px}
 .catalogTopbar .availability button{min-height:40px;border-radius:9px;padding:8px 14px;font-size:.86rem}
-.catalogControls{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,230px);align-items:end;gap:12px}
+.catalogControls{display:grid;grid-template-columns:minmax(0,1fr) minmax(185px,245px) minmax(145px,205px);align-items:end;gap:12px}
 .catalogSearchLabel{display:grid;gap:6px;min-width:0}
 .catalogSearchLabel>span{color:#315267;font-size:.77rem;font-weight:700}
 .catalogTopbar .search{width:100%;margin:0;padding:12px 14px;min-height:48px;border:1px solid #b8d0e1;border-radius:12px;background:#f9fcff;color:#183e59;font-size:.91rem}
 .catalogTopbar .sort{min-width:0;display:grid;gap:6px;font-size:.77rem;font-weight:700;color:#315267}
 .catalogTopbar .sort select{width:100%;margin:0;min-height:48px;padding:11px 32px 11px 11px;border:1px solid #b8d0e1;border-radius:12px;background:#f9fcff;color:#183e59;font-size:.86rem}
 .catalogTopbar :is(button,input,select):focus-visible{outline:3px solid #1768a9;outline-offset:3px}
+@media(max-width:950px){
+  .catalogControls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .catalogControls .catalogSearchLabel{grid-column:1/-1}
+}
 @media(max-width:600px){
   .catalogTopbar{margin:14px auto 0;padding:16px 13px;border-radius:17px;gap:13px}
   .catalogHeading{flex-basis:100%}
@@ -903,19 +907,28 @@
 .portraitRayItem{position:relative;min-width:0}
 .portraitRayItem .portraitRayOption{width:100%;height:100%}
 .portraitRayItem[data-measured=false] .portraitRayOption{min-height:80px;padding-bottom:37px}
-.portraitRayTestLink{
+.portraitRayItem:has(.portraitRayDetailsLink) .portraitRayOption{min-height:80px;padding-bottom:37px}
+.portraitRayTestLink,.portraitRayDetailsLink{
   position:absolute;right:8px;bottom:7px;
   display:inline-flex;align-items:center;justify-content:center;gap:4px;
   min-height:29px;padding:5px 9px;border:1px solid #accdbd;border-radius:8px;
   background:#fffdfa;color:#276b5b!important;text-decoration:none;
   font:750 11px/1.1 system-ui,sans-serif;white-space:nowrap;
 }
-.portraitRayTestLink:hover{background:#ecf7f1;border-color:#78ab95}
-.portraitRayTestLink:focus-visible{outline:3px solid #1e8e83;outline-offset:2px}
-.portraitRayTestLink span{font-size:13px;line-height:1}
+.portraitRayTestLink:hover,.portraitRayDetailsLink:hover{background:#ecf7f1;border-color:#78ab95}
+.portraitRayTestLink:focus-visible,.portraitRayDetailsLink:focus-visible{outline:3px solid #1e8e83;outline-offset:2px}
+.portraitRayTestLink span,.portraitRayDetailsLink span{font-size:13px;line-height:1}
+/* An unavailable source never becomes a fake Test it action. */
+.portraitUnavailable{display:block;padding:5px 7px;font:650 10px/1.35 system-ui,sans-serif;color:#766c61}
+.portraitRayItem[data-portrait-status=descriptive] .portraitRayOption{background:#f3f1eb;color:#49615d}
+.portraitRayItem[data-portrait-status=stale] .portraitRayOption{background:#f6f4ef;color:#766c61}
+.portraitRayItem .portraitRayOption strong{font-variant-numeric:tabular-nums}
+.portraitRayItem .portraitDelta{font-size:10px;letter-spacing:-.15px;white-space:nowrap}
+
 @media(max-width:440px){
   .portraitRayItem[data-measured=false] .portraitRayOption{min-height:77px;padding-bottom:36px}
-  .portraitRayTestLink{right:6px;bottom:6px;min-height:28px;padding:5px 7px;font-size:10px}
+  .portraitRayItem:has(.portraitRayDetailsLink) .portraitRayOption{min-height:77px;padding-bottom:36px}
+  .portraitRayTestLink,.portraitRayDetailsLink{right:6px;bottom:6px;min-height:28px;padding:5px 7px;font-size:10px}
 }
 
 /* Focused, consent-first test choice from an unfinished portrait scale. */
@@ -927,3 +940,373 @@
 .portraitAxisBrowse strong{display:block;font-weight:750;font-size:14px}
 .portraitAxisBrowse p{margin:4px 0 0!important;font:inherit;color:#436c61}
 @media(max-width:440px){.portraitAxisBrowse{padding:10px 12px;margin-bottom:12px}.portraitAxisBrowse strong{font-size:13px}.portraitAxisBrowse p{font-size:12px}}
+
+/* Portrait: four-sector summary switch (2026-10-17).
+   Keep non-portrait explorer and compact public image untouched. */
+.visual:not(.visualCompact):has(.portraitRadar){
+  min-width:0;
+  padding:clamp(8px,1.4vw,16px);
+  background:linear-gradient(145deg,#fffaf2,#f6f0e6);
+}
+.visual:not(.visualCompact) .portraitSectorPicker{
+  display:grid;
+  gap:7px;
+  margin:2px 0 8px;
+  padding:8px;
+  border:1px solid #bbd9d0;
+  border-radius:14px;
+  background:#f1f9f5;
+}
+.visual:not(.visualCompact) .portraitSectorAll,
+.visual:not(.visualCompact) .portraitSectorChip{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:42px;
+  margin:0;
+  padding:8px 11px;
+  border:1px solid #b1d3ca;
+  border-radius:10px;
+  background:#e7f3ef;
+  color:#226258;
+  font:750 12px/1.27 system-ui,sans-serif;
+  text-align:center;
+  cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.visual:not(.visualCompact) .portraitSectorGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  min-width:0;
+  flex:none;
+  font:inherit;
+  line-height:1.27;
+  overflow-wrap:normal;
+}
+.visual:not(.visualCompact) .portraitSectorAll[aria-pressed=true],
+.visual:not(.visualCompact) .portraitSectorChip[aria-pressed=true]{
+  background:#22776d;
+  border-color:#22776d;
+  color:#fff;
+  box-shadow:0 2px 8px rgba(19,92,84,.14);
+}
+.visual:not(.visualCompact) .portraitSectorAll:hover:not([aria-pressed=true]),
+.visual:not(.visualCompact) .portraitSectorChip:hover:not([aria-pressed=true]){
+  background:#d8ede5;
+  border-color:#81b9ad;
+}
+.visual:not(.visualCompact) .portraitSectorAll:focus-visible,
+.visual:not(.visualCompact) .portraitSectorChip:focus-visible{
+  outline:3px solid #1b7472;
+  outline-offset:2px;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar){
+  position:relative;
+  min-height:0;
+  height:auto;
+  width:100%;
+  aspect-ratio:360 / 390;
+  margin:0;
+  border-radius:16px;
+  overflow:hidden;
+  touch-action:auto;
+  cursor:default;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .model{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .portraitRadar{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  filter:drop-shadow(0 2px 4px rgba(39,73,67,.09));
+}
+.visual:not(.visualCompact) .radarReference{stroke-width:2}
+.visual:not(.visualCompact) .radarRay{stroke-width:4.4}
+.visual:not(.visualCompact) .radarPoint{stroke-width:2.6}
+.radarSummarySector{pointer-events:none}
+.radarSummaryMissingRay{stroke:#aab8b4;stroke-width:1.5;stroke-dasharray:4 7;opacity:.47}
+.radarSummaryMissingPoint{fill:#f7f8f4;stroke:#8ca59a;stroke-width:2.2;stroke-dasharray:3 3}
+.radarSummaryLabel{
+  fill:#17544e;
+  font:750 14px/1.18 system-ui,sans-serif;
+  paint-order:stroke fill;
+  stroke:rgba(255,253,246,.97);
+  stroke-width:3.5px;
+  stroke-linejoin:round;
+}
+.radarSummaryValue{fill:#1e7266;font-size:15px;font-weight:800}
+.radarSummarySector[data-measured=false] .radarSummaryValue{fill:#788a82}
+.visual:not(.visualCompact) .radarInlineLabel{
+  font-size:12.5px;
+  stroke-width:3.5px;
+}
+.visual:not(.visualCompact) .portraitControls{
+  padding:12px 13px;
+  margin-top:10px;
+}
+.visual:not(.visualCompact) .visualFooter{
+  margin:7px 1px 0;
+  gap:4px;
+  color:#67736e;
+}
+.visual:not(.visualCompact) .visualFooter p{max-width:68ch;font-size:11px;line-height:1.42}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{min-height:38px;padding:7px 8px;font-size:12px}
+  .visual:not(.visualCompact) .portraitSectorPicker{padding:7px;gap:6px}
+  .visual:not(.visualCompact) .portraitControls{padding:10px}
+  .visual:not(.visualCompact) .radarInlineLabel{font-size:12px}
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact):has(.portraitRadar){padding:6px}
+  .visual:not(.visualCompact) .portraitSectorPicker{margin-bottom:5px;padding:6px;border-radius:12px}
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:11.5px;min-height:37px;padding:7px 6px}
+  .visual:not(.visualCompact) .modelStage:has(.portraitRadar){border-radius:12px}
+  .visual:not(.visualCompact) .radarSummaryLabel{font-size:13.5px}
+  .visual:not(.visualCompact) .radarSummaryValue{font-size:14px}
+  .visual:not(.visualCompact) .portraitControlsHeading{font-size:13px}
+  .visual:not(.visualCompact) .portraitRayOptions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:345px){
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:11px}
+  .visual:not(.visualCompact) .radarSummaryLabel{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{transition:none}
+}
+
+/* Portrait v3: four compact tabs and full-circle category scales, 17 Oct 2026. */
+/* Keep the photo, public explorer and compact test illustrations unchanged. */
+.visual:not(.visualCompact):has(.portraitRadar) .portraitSectorPicker{
+  display:block;
+  margin:2px 0 6px;
+  padding:6px;
+  min-width:0;
+  border:1px solid #c0ded5;
+  border-radius:12px;
+  background:rgba(242,250,245,.9);
+}
+.visual:not(.visualCompact) .portraitSectorGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  min-width:0;
+}
+.visual:not(.visualCompact) .portraitSectorChip{
+  width:100%;
+  min-width:0;
+  min-height:51px;
+  margin:0;
+  padding:8px 5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #b4d7cd;
+  border-radius:10px;
+  background:#e9f5ef;
+  color:#235f56;
+  box-shadow:none;
+  font:750 clamp(10px,1.3vw,13px)/1.2 system-ui,sans-serif;
+  text-align:center;
+  white-space:normal;
+  word-break:normal;
+  cursor:pointer;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  flex:none;
+  display:block;
+  font:inherit;
+  line-height:inherit;
+  min-width:0;
+  overflow-wrap:break-word;
+  hyphens:auto;
+}
+.visual:not(.visualCompact) .portraitSectorChip[aria-pressed="true"]{
+  background:#23796f;
+  border-color:#23796f;
+  color:#fff;
+  box-shadow:0 3px 10px rgba(20,89,83,.18);
+}
+.visual:not(.visualCompact) .portraitSectorChip:hover:not([aria-pressed="true"]){
+  background:#daefe7;
+  border-color:#7cb6aa;
+}
+.visual:not(.visualCompact) .portraitSectorChip:focus-visible{
+  outline:3px solid #115e61;
+  outline-offset:2px;
+}
+/* Five or fewer true scales distributed evenly around 360°, with ring
+   markers distinct from actual measured radial values. */
+.radarContourPolygon{
+  fill:rgba(35,121,111,.035);
+  stroke:#257c75;
+  stroke-width:1.75;
+  stroke-linejoin:round;
+  opacity:.74;
+}
+.radarContourMeasured{
+  fill:#fffdf4;
+  stroke:#1d776b;
+  stroke-width:2.6;
+}
+.radarContourUnmeasured{
+  fill:#f9f7ee;
+  stroke:#929f96;
+  stroke-width:1.8;
+  stroke-dasharray:2.4 2.4;
+}
+.visual:not(.visualCompact) .portraitRadar .radarGuide{
+  stroke:#517d70;
+  stroke-width:1.6;
+  stroke-dasharray:2 5;
+  opacity:.52;
+}
+.visual:not(.visualCompact) .portraitRadar .radarInlineLabel{
+  font-size:13px;
+  letter-spacing:-.2px;
+  stroke:rgba(255,253,248,.98);
+  stroke-width:3.8px;
+}
+.visual:not(.visualCompact) .portraitRadar .radarLabelUnmeasured .radarInlineLabel{
+  fill:#636f68;
+}
+.visual:not(.visualCompact) .portraitRadar .radarRay{stroke-width:4.4}
+.visual:not(.visualCompact) .portraitRadar .radarPoint{
+  fill:#fffdf4;
+  stroke:#1a776d;
+  stroke-width:2.7;
+}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:5px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip{
+    min-height:48px;
+    font-size:clamp(9.5px,2.7vw,12px);
+    padding:7px 3px;
+    line-height:1.16;
+  }
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact):has(.portraitRadar){padding:5px}
+  .visual:not(.visualCompact):has(.portraitRadar) .portraitSectorPicker{
+    padding:5px;
+    margin-bottom:5px;
+  }
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:4px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip{
+    min-height:47px;
+    font-size:clamp(9.3px,2.6vw,11.5px);
+    padding:6px 3px;
+    border-radius:9px;
+  }
+  .visual:not(.visualCompact) .portraitRadar .radarInlineLabel{font-size:12.5px}
+}
+@media(max-width:340px){
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:9px;padding-inline:2px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitSectorChip{transition:none}
+}
+
+/* Portrait v4: All + four category views, and three compact quick actions. */
+.visual:not(.visualCompact) .portraitSectorGrid{
+  grid-template-columns:minmax(43px,.68fr) repeat(4,minmax(0,1fr));
+  gap:5px;
+}
+.visual:not(.visualCompact) .portraitSectorAll{
+  width:100%;
+  min-width:0;
+  min-height:49px;
+  padding:7px 2px;
+  margin:0;
+  font:800 12px/1.2 system-ui,sans-serif;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  overflow-wrap:anywhere;
+  hyphens:auto;
+}
+.visual:not(.visualCompact) .radarSummaryValue{
+  fill:#17695f;
+  font-size:14px;
+  font-weight:850;
+  stroke:rgba(255,253,246,.95);
+  stroke-width:3.8px;
+  paint-order:stroke fill;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:8px;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(a),
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
+  min-width:0;
+  min-height:65px;
+  padding:9px 4px;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  font-size:clamp(11px,2.2vw,14px);
+  line-height:1.15;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) :global(svg){
+  flex:none;
+}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:minmax(43px,.68fr) repeat(4,minmax(0,1fr));
+    gap:4px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip,
+  .visual:not(.visualCompact) .portraitSectorAll{
+    min-height:49px;
+    padding:6px 2px;
+    font-size:clamp(9px,2.35vw,12px);
+  }
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:minmax(39px,.68fr) repeat(4,minmax(0,1fr));
+    gap:3px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip,
+  .visual:not(.visualCompact) .portraitSectorAll{
+    min-height:47px;
+    padding:5px 2px;
+    font-size:clamp(8.5px,2.45vw,10.5px);
+  }
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
+    gap:6px;
+  }
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(a),
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
+    min-height:58px;
+    font-size:clamp(10px,2.65vw,12px);
+    padding:7px 2px;
+  }
+}

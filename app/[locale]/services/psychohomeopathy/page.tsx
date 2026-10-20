@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ServicePage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
-  // Keep existing incoming links, but EN/RU psycho-homeopathy is ONE canonical Alchemy landing.
-  if (locale === "en" || locale === "ru") permanentRedirect("/" + locale + "/services/alchemy-of-soul");
+  // All three public languages use ONE canonical Alchemy landing and booking flow.
+  permanentRedirect("/" + locale + "/services/alchemy-of-soul");
   return <PersonalServiceLanding locale={locale as ServicePageLocale} service={service} />;
 }

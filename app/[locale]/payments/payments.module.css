@@ -1,0 +1,47 @@
+.shell{width:min(1080px,100%);margin:0 auto;padding:20px 18px 52px;color:#12394a}
+.intro{max-width:840px}
+.back{display:inline-flex;align-items:center;color:#167d87;font:650 13px/1.5 Arial,Helvetica,sans-serif;text-decoration:none;margin-bottom:14px}
+.back:hover{text-decoration:underline}
+.eyebrow{color:#108b91;font:800 11px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.11em;margin:0 0 9px}
+.intro h1{font:750 clamp(26px,4.3vw,42px)/1.15 Arial,Helvetica,sans-serif;letter-spacing:-.03em;color:#123b54;margin:0 0 11px}
+.intro>p:last-child{color:#466b76;font:15px/1.55 Arial,Helvetica,sans-serif;margin:0 0 18px}
+.notice{display:flex;align-items:flex-start;gap:12px;background:#e8f6f5;border:1px solid #b7dfdc;border-radius:16px;padding:14px 16px;color:#0c6974}
+.notice>svg{flex:none;margin-top:4px}
+.noticeText{display:flex;flex-direction:column;gap:5px;min-width:0}
+.noticeText strong{color:#0c5267;font:750 14px/1.4 Arial,Helvetica,sans-serif}
+.noticeText span{color:#176875;font:650 13px/1.4 Arial,Helvetica,sans-serif}
+.noticeText small{font:12px/1.5 Arial,Helvetica,sans-serif;color:#3c6872}
+.heading{margin:22px 0 13px;font:750 19px/1.2 Arial,Helvetica,sans-serif;color:#143d54}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{display:flex;flex-direction:column;min-width:0;gap:10px;padding:20px;border:1px solid #d6e7ea;border-radius:19px;background:#fff;box-shadow:0 8px 26px rgba(13,57,82,.055)}
+.productHead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.duration{font:700 12px Arial,Helvetica,sans-serif;color:#177b83;background:#e5f5f2;border-radius:999px;padding:7px 10px}
+.price{font:800 24px Arial,Helvetica,sans-serif;color:#104f74;font-variant-numeric:tabular-nums}
+.card h3{font:750 19px/1.24 Arial,Helvetica,sans-serif;color:#123b54;margin:2px 0 0}
+.card>p{font:13px/1.58 Arial,Helvetica,sans-serif;color:#4a6472;margin:0;flex:1}
+.payButton,.receiptButton{min-height:45px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:12px;text-decoration:none;font:750 13px/1.35 Arial,Helvetica,sans-serif;text-align:center;padding:11px 12px;transition:background .16s ease}
+.payButton{color:#fff;background:linear-gradient(120deg,#06477b,#007c8f)}
+.payButton:hover{background:linear-gradient(120deg,#07345a,#086b82)}
+.receiptButton{background:#f1f8f8;color:#166876;border:1px solid #bddcdd}
+.receiptButton:hover{background:#e4f4f3}
+.payButton:focus-visible,.receiptButton:focus-visible,.contact:focus-visible,.back:focus-visible{outline:3px solid #ad813c;outline-offset:3px}
+.unavailable{color:#a55b39;font:13px/1.5 Arial,Helvetica,sans-serif}
+.final{margin-top:18px;border-top:1px solid #dce9ea;padding:18px 4px 0}
+.step{display:flex;align-items:flex-start;gap:9px;color:#167e85}
+.step svg{flex:none;margin-top:2px}
+.step p{font:700 13px/1.58 Arial,Helvetica,sans-serif;color:#285c68;margin:0 0 11px}
+.warning{font:650 13px/1.5 Arial,Helvetica,sans-serif;color:#865a30;margin:0 0 8px}
+.disclaimer{font:12px/1.55 Arial,Helvetica,sans-serif;color:#5c7780;margin:0 0 14px}
+.contact{display:inline-flex;color:#167280;font:700 13px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:620px){.shell{padding:16px 13px 40px}.notice{padding:12px;gap:9px}.cards{grid-template-columns:1fr;gap:11px}.card{padding:15px;gap:9px}.heading{margin:17px 0 11px}.price{font-size:23px}.intro>p:last-child{font-size:14px}.card>p{font-size:12.5px}.final{padding-top:13px}}
+@media(prefers-reduced-motion:reduce){.payButton,.receiptButton{transition:none}}
+
+
+/* ZEN is a payment enquiry until recipient/commercial acceptance is verified.
+   Visually distinguish it from the hosted PayPal checkout. */
+.zenNotice{margin:12px 0 4px;padding:12px 15px;border:1px solid #c9e0e3;border-radius:15px;background:#f1f8fa}
+.zenNotice strong{display:block;color:#115567;font:750 14px/1.35 Arial,Helvetica,sans-serif;margin-bottom:4px}
+.zenNotice p{margin:0;color:#466f7a;font:13px/1.53 Arial,Helvetica,sans-serif}
+.zenButton{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #abd5d9;border-radius:12px;padding:11px 12px;min-height:45px;text-align:center;text-decoration:none;color:#0f6676;background:#e8f5f4;font:750 13px/1.35 Arial,Helvetica,sans-serif}
+.zenButton:hover{background:#d8f0ec}
+.zenButton:focus-visible{outline:3px solid #ad813c;outline-offset:3px}

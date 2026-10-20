@@ -1,4 +1,4 @@
-name: Practitioner video presentations verification
+name: Practitioner presentations and materials verification
 on:
   push:
     branches: ['feature/practitioner-video-presentations-20261017']
@@ -9,11 +9,17 @@ on:
       - 'components/app/practice-video-field.jsx'
       - 'components/app/practice-workspace.jsx'
       - 'components/practitioner-presentation-video.*'
-      - 'app/[locale]/masters/**'
-      - 'app/[locale]/services/[practitionerSlug]/**'
-      - 'app/api/app/[...path]/route.js'
+      - 'components/practitioner-video-gallery.*'
+      - 'components/app/practice-materials.*'
+      - 'components/app/practitioner-articles.jsx'
+      - 'components/app/practitioner-articles.module.css'
+      - 'tests/practitioner-articles-folders.test.mjs'
+      - 'app/\[locale\]/masters/**'
+      - 'app/\[locale\]/services/\[practitionerSlug\]/**'
+      - 'app/api/app/\[...path\]/route.js'
       - 'supabase/migrations/*practitioner_presentation*'
       - 'tests/practitioner-presentation-video.test.mjs'
+      - 'tests/practitioner-video-materials.test.mjs'
       - '.github/workflows/practitioner-presentations.yml'
 permissions:
   contents: read
@@ -27,6 +33,6 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
-      - run: node --test tests/practitioner-presentation-video.test.mjs tests/master-network-r2.test.mjs
+      - run: node --test tests/practitioner-presentation-video.test.mjs tests/practitioner-video-materials.test.mjs tests/practitioner-articles-v4.test.mjs tests/practitioner-articles-folders.test.mjs tests/master-network-r2.test.mjs
       - run: npx tsc --noEmit
       - run: npm run build

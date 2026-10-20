@@ -57,8 +57,8 @@
 .house-header--services .site-language-switch { font-size: 12px; }
 .house-header--services .site-language-switch > * { min-height: 44px; padding-inline: 8px; }
 
-/* A direct, always-visible entrance to the private Google-authenticated app. */
-.house-header--services .site-navigation > .site-cabinet-entry {
+/* Direct Library shortcut beside the language picker; My House remains on the bottom bar. */
+.house-header--services .site-navigation > .site-library-entry {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
@@ -77,21 +77,21 @@
   white-space: nowrap;
   transition: background-color .15s ease, border-color .15s ease;
 }
-.house-header--services .site-cabinet-entry svg { width: 18px; height: 18px; flex: 0 0 18px; stroke-width: 1.8; }
-.house-header--services .site-cabinet-entry__compact { display: none; }
-.house-header--services .site-navigation > .site-cabinet-entry:hover,
-.house-header--services .site-navigation > .site-cabinet-entry[aria-current="page"] {
+.house-header--services .site-library-entry svg { width: 18px; height: 18px; flex: 0 0 18px; stroke-width: 1.8; }
+.house-header--services .site-library-entry__compact { display: none; }
+.house-header--services .site-navigation > .site-library-entry:hover,
+.house-header--services .site-navigation > .site-library-entry[aria-current="page"] {
   border-color: #a77b5d;
   background: #e9d7c5;
   color: #513222;
 }
-.house-header--services .site-navigation > .site-cabinet-entry:focus-visible {
+.house-header--services .site-navigation > .site-library-entry:focus-visible {
   outline: 3px solid #9b7056;
   outline-offset: 3px;
 }
 @media (max-width: 1023px) {
-  .house-header--services .site-cabinet-entry__full { display: none; }
-  .house-header--services .site-cabinet-entry__compact { display: inline; }
+  .house-header--services .site-library-entry__full { display: none; }
+  .house-header--services .site-library-entry__compact { display: inline; }
 }
 
 .service-home-hero {
@@ -504,14 +504,14 @@ a.service-home-start-card:hover {
   .house-header--services { gap: 8px; padding-inline: clamp(12px, 3.8vw, 22px); }
   .house-header--services .house-wordmark { min-width: 0; flex-shrink: 1; font-size: clamp(21px, 6vw, 27px); }
   .house-header--services .site-navigation { gap: 7px; flex-wrap: nowrap; }
-  .house-header--services .site-navigation > .site-cabinet-entry {
+  .house-header--services .site-navigation > .site-library-entry {
     display: inline-flex;
     min-height: 44px;
     gap: 5px;
     padding: 8px 10px;
     font-size: 11px;
   }
-  .house-header--services .site-cabinet-entry svg { width: 17px; height: 17px; flex-basis: 17px; }
+  .house-header--services .site-library-entry svg { width: 17px; height: 17px; flex-basis: 17px; }
   .house-header--services .site-language-switch { margin: 0; font-size: 12px; }
   .house-header--services .site-language-switch > * { padding-inline: 7px; }
   .service-home-hero { min-height: 410px; align-items: flex-start; }
@@ -571,8 +571,8 @@ a.service-home-start-card:hover {
   .house-header--services { padding-inline: 8px; gap: 2px; }
   .house-header--services .house-wordmark { font-size: 19px; }
   .house-header--services .house-wordmark span { font-size: 7px; }
-  .house-header--services .site-cabinet-entry__compact { display: none; }
-  .house-header--services .site-navigation > .site-cabinet-entry { width: 44px; padding-inline: 0; }
+  .house-header--services .site-library-entry__compact { display: none; }
+  .house-header--services .site-navigation > .site-library-entry { width: 44px; padding-inline: 0; }
   .service-home-hero-copy { padding-inline: 16px; }
   .service-home-intro { max-width: 80%; }
   .house-header--services .site-main-menu-trigger__label { display: none; }
@@ -827,7 +827,7 @@ a.service-home-start-card:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .house-header--services .site-navigation > .site-cabinet-entry { transition: none; }
+  .house-header--services .site-navigation > .site-library-entry { transition: none; }
 }
 
 /* Give the free written review and paid one-to-one session equal clarity in the hero. */
@@ -895,8 +895,8 @@ a.service-home-start-card:hover {
   z-index: 80;
   top: calc(100% + 10px);
   right: 0;
-  width: min(284px, calc(100vw - 24px));
-  max-height: min(68vh, 540px);
+  width: min(336px, calc(100vw - 20px));
+  max-height: min(70dvh, calc(100dvh - 220px), 550px);
   overflow-y: auto;
   border: 1px solid #d8c6b4;
   border-radius: 18px;
@@ -927,25 +927,94 @@ a.service-home-start-card:hover {
   text-decoration: none;
 }
 
-.site-navigation .site-main-menu-panel a:hover,
+/* Six large shortcuts match the mobile bar, without making the menu taller. */
+.site-navigation .site-main-menu-group-label {
+  margin: 12px 4px 7px;
+  color: #8a6854;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.site-navigation .site-main-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.site-navigation .site-main-menu-grid a {
+  display: grid;
+  min-width: 0;
+  min-height: 76px;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid #eadccc;
+  padding: 9px 3px;
+  background: #faf3eb;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.site-navigation .site-main-menu-grid a svg {
+  width: 23px;
+  height: 23px;
+  stroke-width: 1.5;
+}
+
+.site-navigation .site-main-menu-more a {
+  min-height: 40px;
+  padding-block: 7px;
+  font-size: 13px;
+}
+
+.site-navigation .site-main-menu-panel .site-main-menu-free {
+  min-height: 42px;
+  justify-content: center;
+  background: #782d46;
+  color: #fffaf4;
+  font-size: 13px;
+}
+
 .site-navigation .site-main-menu-panel a[aria-current="page"] {
   background: #f0e1d2;
   color: #5d3240;
 }
 
+.site-navigation .site-main-menu-grid a[aria-current="page"] {
+  border-color: #a77b5d;
+  background: #f0e1d2;
+}
+
+/* iOS Safari retains :hover after tapping; do not display two active items. */
+@media (hover: hover) and (pointer: fine) {
+  .site-navigation .site-main-menu-panel a:hover {
+    background: #f0e1d2;
+    color: #5d3240;
+  }
+  .site-navigation .site-main-menu-panel .site-main-menu-free:hover {
+    background: #622238;
+    color: #fffaf4;
+  }
+}
+
 @media (min-width: 768px) and (max-width: 1140px) {
   .house-header--services .site-navigation { flex-wrap: nowrap; }
-  .house-header--services .site-navigation > a:not(.site-cabinet-entry) { display: none; }
+  .house-header--services .site-navigation > a:not(.site-library-entry) { display: none; }
 }
 
 @media (max-width: 600px) {
-  /* Preserve logo + cabinet + language + menu on a single phone-width row. */
+  /* Preserve logo + Library + language + menu on a single phone-width row. */
   .house-header--services .site-navigation { gap: 6px; }
-  .house-header--services .site-navigation > .site-cabinet-entry {
+  .house-header--services .site-navigation > .site-library-entry {
     width: 44px;
     padding-inline: 0;
   }
-  .house-header--services .site-cabinet-entry__compact { display: none; }
+  .house-header--services .site-library-entry__compact { display: none; }
   .house-header--services .site-language-switch > * { padding-inline: 0; }
   .house-header--services .site-language-menu-trigger { padding-inline: 9px; }
 }
@@ -998,5 +1067,90 @@ a.service-home-start-card:hover {
   .house-home--services .site-main-menu-trigger { width: 44px; padding: 0; }
   .house-home--services .service-home-hero-photo::after {
     background: linear-gradient(90deg, rgba(251,247,239,.97), rgba(251,247,239,.87) 55%, rgba(251,247,239,.25) 100%);
+  }
+}
+
+
+/* Distinct consultation action, while keeping both free entries visible.
+   Public home hero only; no client/account or CMS buttons. */
+.house-home--services .service-home-paid-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 46px;
+  margin-top: 8px;
+  padding: 9px 20px;
+  border: 1px solid #0a7180;
+  border-radius: 999px;
+  background: #0a7180;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgb(7 82 97 / .2);
+}
+.house-home--services .service-home-paid-link:hover {
+  background: #075b67;
+  border-color: #075b67;
+  color: #fff;
+}
+.house-home--services .service-home-paid-link:focus-visible {
+  outline: 3px solid #075b67;
+  outline-offset: 3px;
+}
+@media (max-width: 767px) {
+  .house-home--services .service-home-paid-link {
+    width: 100%;
+    max-width: min(325px, 95%);
+    margin-top: 7px;
+    padding: 10px 13px;
+    font-size: 13px;
+  }
+}
+
+/* Service-first hero: the voluntary self-check route is a readable tertiary link,
+   not the previous turquoise booking button. Applies equally to EN/RU/ES. */
+.house-home--services .service-home-selfcheck-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 6px;
+  color: #583b31;
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.house-home--services .service-home-selfcheck-link:hover { color: #742c42; }
+.house-home--services .service-home-selfcheck-link:focus-visible {
+  outline: 3px solid #945838;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+@media (max-width: 767px) {
+  .house-home--services .service-home-selfcheck-link {
+    max-width: min(325px, 95%);
+    font-size: 13px;
+  }
+}
+
+/* Mobile checkout shortcut: show the basket only when an item is selected.
+   On narrow phones it takes the secondary Library shortcut’s place, avoiding overflow.
+   Library remains available through the site menu and on the desktop. */
+@media (max-width: 767px) {
+  .house-header--services .site-navigation > a[data-nav-item="cart"][data-cart-has-items="true"] {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 40px;
+    min-width: 40px;
+  }
+}
+@media (max-width: 490px) {
+  .house-header--services .site-navigation:has(> a[data-nav-item="cart"][data-cart-has-items="true"]) > .site-library-entry {
+    display: none;
   }
 }

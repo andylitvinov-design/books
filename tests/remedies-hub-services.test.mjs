@@ -36,7 +36,7 @@ test('Remedies landing combines remedy search, free consultation and book covers
 test('public navigation groups existing remedies inside Library and keeps bilingual Services', async () => {
   const navigation = await readFile('components/site-navigation.tsx', 'utf8')
   const { getSiteNavigation } = await import('../lib/site-navigation-model.js')
-  assert.match(navigation, /getSiteNavigation/)
+  assert.match(navigation, /getCompactNavigation/)
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
     assert.equal(items.find((item) => item.id === 'library').href, `/${locale}/library`)
@@ -84,7 +84,7 @@ test('remedy pages build related links from exact mentions in source articles', 
 
 test('mobile navigation uses the shared Library and Services routes', async () => {
   const navigation = await readFile('components/mobile-bottom-navigation.tsx', 'utf8')
-  assert.match(navigation, /getSiteNavigation/)
+  assert.match(navigation, /getCompactNavigation/)
   assert.match(navigation, /data-nav-item/)
   assert.match(navigation, /aria-current/)
 })
@@ -102,13 +102,19 @@ test('English Remedies page localizes book card titles while preserving source-l
 
 
 test('practitioner and service detail pages label zero-price offerings as free', async () => {
-  const [profile, detail] = await Promise.all([
+  const [profile, marketplace, detail] = await Promise.all([
     readFile('app/[locale]/masters/[slug]/page.tsx', 'utf8'),
+    readFile('components/master-network-explorer.tsx', 'utf8'),
     readFile('app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx', 'utf8'),
   ])
-  assert.match(profile, /confirmedPrice===0/)
-  assert.match(profile, /Пройти бесплатно/)
-  assert.match(profile, /Start free/)
+  assert.match(profile, /isFreeService/)
+  assert.match(profile, /confirmedPrice\s*===\s*0/)
+  assert.match(profile, /PractitionerServicesGrid/)
+  // Public profiles now reuse the canonical price badge and localized request
+  // buttons instead of maintaining a second, stale copy of service cards.
+  assert.match(marketplace, /freePrice/)
+  assert.match(marketplace, /"Получить бесплатно"/)
+  assert.match(marketplace, /"Get free"/)
   assert.match(detail, /confirmedPrice===0/)
   assert.match(detail, /Бесплатно/)
   assert.match(detail, /Free/)

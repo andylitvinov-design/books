@@ -1,0 +1,21 @@
+.root { min-width: 0; width: 100%; }
+.heading { max-width: 750px; margin: 0 0 clamp(20px, 3vw, 30px); }
+.eyebrow { margin: 0 0 9px; color: #168679; font-size: 11px; font-weight: 800; letter-spacing: .14em; line-height: 1.5; }
+.heading h2 { margin: 0 0 11px; color: #18474b; font: 500 clamp(29px, 3.5vw, 44px)/1.15 Georgia, "Times New Roman", serif; letter-spacing: -.025em; text-wrap: balance; }
+.heading > p:last-child { margin: 0; color: #4f6b70; font-size: clamp(14px, 1.45vw, 16px); line-height: 1.65; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: clamp(12px, 1.8vw, 20px); }
+.card { position: relative; display: flex; flex-direction: column; min-width: 0; margin: 0; padding: clamp(18px, 2.5vw, 29px); border: 1px solid #d6e6dd; border-radius: 20px; background: linear-gradient(155deg, #fffdfa 0%, #f6faf8 100%); box-shadow: 0 10px 30px rgba(18, 77, 78, .055); }
+.ordinal { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 11px; background: #e4f3ef; color: #166c6b; font-size: 12px; font-weight: 800; letter-spacing: .06em; }
+.quote { margin: 16px 0 20px; padding: 0; border: 0; color: #234448; font-size: clamp(15px, 1.4vw, 17px); line-height: 1.75; font-style: normal; white-space: pre-line; overflow-wrap: anywhere; }
+.quote p { margin: 0; white-space: inherit; }
+.caption { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 14px; row-gap: 8px; margin-top: auto; padding-top: 17px; border-top: 1px solid #dbe9e4; font-style: normal; }
+.caption strong { color: #1d5556; font-size: 13px; font-weight: 750; line-height: 1.45; }
+.caption a { color: #167e76; font-size: 12px; font-weight: 700; line-height: 1.5; text-underline-offset: 3px; }
+.caption a:hover { color: #0a514e; }
+.caption a:focus-visible { outline: 3px solid #17a799; outline-offset: 3px; border-radius: 3px; }
+@media (max-width: 730px) {
+  .grid { grid-template-columns: 1fr; }
+  .card { padding: 19px 18px; border-radius: 16px; }
+  .quote { margin: 13px 0 16px; font-size: 15px; line-height: 1.7; }
+  .heading h2 { font-size: 30px; }
+}

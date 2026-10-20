@@ -85,13 +85,13 @@ try {
       await pause(5000)
     }
   }
-  for (const [target, slot, locale, id] of [
-    ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34'],
-    ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b'],
-    ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a'],
-    ['/?lang=ru', 'home-intro', 'ru', '388a04b39ebf215ae656bcd22d0d0847'],
-    ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a'],
-    ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9'],
+  for (const [target, slot, locale, id, youtubeId] of [
+    ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34', 'Y4K4piEwwA8'],
+    ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 's30Y42IwPcg'],
+    ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a', 'ILyRWyHtJoE'],
+    ['/?lang=ru', 'home-intro', 'ru', '388a04b39ebf215ae656bcd22d0d0847', 'AE8Pelpo424'],
+    ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a', 'Cz6SxXJNZbw'],
+    ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9', 'Q9NvYECKWuc'],
   ]) {
     await navigate(target)
     if (slot === 'services-intro' && await page.locator('#method-videos').count()) {
@@ -114,9 +114,10 @@ try {
       await pause(1200)
       if (await play.count()) await play.click()
     }
-    await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`, { timeout: 10000 })
+    await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
+    await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
-  pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos load exact HeyGen embeds on click`)
+  pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos use their exact YouTube mirrors on click`)
 
   // Regressions reported by the owner: the Services videos were buried inside
   // a collapsed block, while the detailed service pages contained no players.
@@ -130,7 +131,9 @@ try {
       const sourceLinks = page.locator('[data-core-service-offers="services"] [data-service-card-video]')
       await expect(sourceLinks).toHaveCount(2)
       const hrefs = await sourceLinks.evaluateAll(links => links.map(link => link.getAttribute('href')))
-      assert.ok(hrefs.every(url => url && /^(https:\/\/(?:www\.youtube\.com\/watch\?v=|app\.heygen\.com\/share\/))/.test(url)))
+      assert.ok(hrefs.every(url => url && (locale === 'ru'
+        ? /^https:\/\/www\.youtube\.com\/watch\?v=/.test(url)
+        : /^\/en\/services\/(?:alchemy-of-soul|hypnotherapy-course)#service-video$/.test(url))))
       await page.setViewportSize({ width: 390, height: 844 })
       await expect(visibleGallery.locator('[data-video-slot="services-intro"] .site-video-play')).toBeVisible()
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
@@ -144,8 +147,8 @@ try {
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/en/services/psychohomeopathy', 'homeopathy', 'https://www.youtube-nocookie.com/embed/ILyRWyHtJoE?'],
-      ['/ru/services/psychohomeopathy', 'homeopathy', 'https://www.youtube-nocookie.com/embed/Q9NvYECKWuc?'],
+      ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
@@ -153,11 +156,16 @@ try {
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
-      const block = page.locator(`[data-service-video="${topic}"]`)
+      if (route.endsWith('/psychohomeopathy')) {
+        assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
+      }
+      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
       assert.equal(await block.locator('iframe').count(), 0, route + ' eager third-party iframe')
+      const transcript = block.locator('details.site-video-transcript')
+      if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
       await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
       await block.locator('.site-video-play').click()
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
@@ -177,7 +185,7 @@ try {
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
   assert.ok(remedyPath)
   await navigate('/en/books')
-  const bookPath = await page.locator('a[href^="/books/"]').first().getAttribute('href')
+  const bookPath = await page.locator('a[href^="/en/books/"]').first().getAttribute('href')
   assert.ok(bookPath)
   const paths = ['/?lang=en', '/?lang=ru', '/en/about', '/ru/about', '/en/services', '/ru/services', '/en/homeopathy', '/ru/homeopathy', '/en/homeopathy/remedies', '/ru/homeopathy/remedies', '/en/books', '/ru/books', remedyPath, bookPath]
   for (const width of [1365, 390]) {

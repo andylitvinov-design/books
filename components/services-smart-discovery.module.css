@@ -430,3 +430,131 @@
   .editorialCard .editorialCardActions{grid-column:1/-1;grid-row:3}
   .suggestion .suggestionActions{grid-column:1/-1;grid-row:5}
 }
+
+
+/* Services / Tests parity: the navy search hero stands alone, followed by a
+   light, mobile-first topic filter card. Keep service result-card rules intact. */
+.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px}
+.topline .kicker{margin:0;max-width:46%;color:#d7c4cd;line-height:1.45}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:none;gap:3px;width:min(368px,55%);padding:3px;border:1px solid #ffffff57;border-radius:100px;background:#ffffff14}
+.tabs a{display:grid;place-items:center;min-width:0;min-height:36px;padding:4px 8px;border-radius:100px;color:#f0eef3;font:700 12px/1.2 system-ui,sans-serif;text-decoration:none;text-align:center}
+.tabs a[aria-current="page"]{color:#243854;background:#fff9f3}
+.tabs a:hover:not([aria-current="page"]){background:#ffffff21}
+.hero h2{max-width:790px;margin:0 0 12px;font:400 clamp(31px,4.5vw,52px)/1.12 Georgia,serif;letter-spacing:-.025em}
+.hero .intro{max-width:720px;margin:0 0 20px;font-size:clamp(13px,1.5vw,15px);line-height:1.6}
+.hero .textarea{font-size:16px;line-height:1.45;min-height:65px}
+.hero .submit{background:#993c5f;font-size:14px}
+/* Do not wash the berry CTA out when a query has not been entered yet. */
+.hero .submit:disabled{opacity:1;background:#993c5f;color:#fff}
+.hero .submit:hover:not(:disabled){background:#822d4d}
+/* Two compact, tappable discovery prompts directly beneath the first form. */
+.quickHints{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(100%,1100px);margin:12px 0 0}
+.quickHint{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:38px;padding:8px 11px;border:1px solid #86c5f3;border-radius:999px;background:linear-gradient(110deg,#214875,#315578);color:#fff;font:700 12px/1.25 system-ui,sans-serif;text-align:center;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff25}
+.quickHint:hover{background:linear-gradient(110deg,#285a8d,#396790)}
+.quickHint svg{width:15px;height:15px;flex:none;color:#a3d9ff}
+.quickHint span{min-width:0;overflow-wrap:break-word}
+@media(max-width:620px){
+  .quickHints{gap:7px;margin-top:10px}
+  .quickHint{min-height:35px;padding:7px 6px;gap:6px;font-size:clamp(10px,2.7vw,12px)}
+  .quickHint svg{width:14px;height:14px}
+}
+@media(max-width:350px){
+  .quickHint{gap:4px;padding-inline:4px;font-size:10px}
+  .quickHint svg{width:12px;height:12px}
+}
+.categorySection{box-sizing:border-box;margin:10px 0 18px;padding:clamp(15px,2.4vw,24px);border:1px solid #d1ebee;border-radius:22px;background:linear-gradient(135deg,#fff,#f8ffff);box-shadow:0 4px 20px #237f9008;color:#19536a}
+.categoryHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}
+.stepHeader{display:grid;grid-template-columns:43px minmax(0,1fr);align-items:start;gap:13px;min-width:0;flex:1}
+.stepBadge{width:43px;height:43px;display:grid;place-items:center;border-radius:50%;background:#ddf5f6;color:#07869c;font:700 23px/1 Georgia,serif}
+.categoryHead h2{color:#15536a;font:700 clamp(20px,2.55vw,27px)/1.21 Georgia,serif;letter-spacing:-.025em;margin:2px 0 3px}
+.stepHeader p{margin:0;color:#73909e;font:400 13px/1.45 system-ui,sans-serif}
+.allMasters{box-sizing:border-box;flex:none;max-width:200px;padding:9px 12px;min-height:38px;min-width:0;white-space:normal;border:1px solid #b8e0e6;border-radius:999px;background:#e2f8fa;color:#147c8b;text-decoration:none;text-align:center;font:750 11px/1.3 system-ui,sans-serif}
+.allMasters:hover{background:#d4f1f5}
+.categoryGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.category,.categoryActive{min-height:57px;gap:9px;padding:11px;border:1px solid #c8e6eb;border-radius:14px;background:#fcffff;color:#195673;box-shadow:0 2px 8px #167e8c05}
+.category:hover,.categoryActive:hover{border-color:#66c2c9;background:#f0fbfd}
+.categoryActive{border-color:#079eaf;box-shadow:0 0 0 1px #08a4b822;background:#dbf6f8;color:#096278}
+.categoryIcon{background:#e8f6f8;color:#078aa0}
+.categoryName{font-weight:650;font-size:13px}
+.categoryCount{background:#ddf5f6;color:#07869c}
+.categoryArrow{color:#118c9c}
+.filterControls{display:grid;gap:10px;margin:14px 0 0}
+.freeOnlyToggle{box-sizing:border-box;display:inline-flex;align-items:center;justify-self:start;gap:10px;min-height:38px;margin:0;padding:6px 12px;border-radius:11px;background:#eff9fa;color:#15536a;font:700 12px/1.35 system-ui,sans-serif}
+.freeOnlyToggle:hover{color:#14586a;background:#e9f6f8}
+.freeOnlyToggle input{width:19px;height:19px;accent-color:#078b9c}
+.extraFilters{box-sizing:border-box;width:100%;overflow:hidden;border:1px solid #d0e8eb;border-radius:16px;background:#fcffff}
+.extraFilters summary{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 14px;list-style:none;cursor:pointer;color:#15536a}
+.extraFilters summary::-webkit-details-marker{display:none}
+.extraIcon{display:grid;place-items:center;flex:none;width:37px;height:37px;border-radius:50%;background:#e2f4f6;color:#078b9c}
+.extraLabel{display:grid;gap:2px;flex:1;min-width:0}
+.extraLabel strong{font:700 15px/1.3 Georgia,serif}
+.extraLabel small{color:#73909e;font:400 11px/1.4 system-ui,sans-serif}
+.extraChevron{flex:none;transition:transform .2s}
+.extraFilters[open] .extraChevron{transform:rotate(180deg)}
+.extraBody{padding:4px 14px 14px;border-top:1px solid #edf1f1}
+.quickFacets{flex-wrap:wrap;overflow:visible;overscroll-behavior:auto;scrollbar-width:auto;margin:10px 0 2px;gap:8px}
+.quickFacets label{flex:1 1 160px;max-width:280px;min-height:42px;justify-content:space-between;padding:0 10px}
+.quickFacets select{flex:1;max-width:115px;text-align:right}
+.aiOption{color:#254e62}
+.aiOption small{color:#617b89}
+.examples{margin:15px 0 0;gap:8px}
+.examples>span{color:#688896;font-size:12px}
+.examples button{min-height:37px;border:1px solid #c8e6eb;border-radius:12px;background:#fcffff;color:#195673;font-size:12px}
+.examples button:hover{background:#e5f5f7}
+.privacy{color:#718996;margin:13px 0 0;font-size:11px}
+.discovery :is(button,a,textarea,select,input,summary):focus-visible{outline:3px solid #078b9c;outline-offset:3px}
+@media(max-width:620px){
+  .hero{padding:19px 15px 18px;border-radius:16px}
+  .topline{align-items:flex-start;gap:8px;margin-bottom:15px}
+  .topline .kicker{display:flex;max-width:34%;font-size:9px;line-height:1.45;letter-spacing:.075em}
+  .tabs{width:64%}
+  .tabs a{min-height:36px;padding:5px 2px;font-size:10px}
+  .hero h2{font-size:clamp(30px,8vw,38px);line-height:1.12;margin-bottom:10px}
+  .hero .intro{font-size:13px;line-height:1.5;margin-bottom:16px}
+  .hero .form{gap:6px;padding:6px;border-radius:14px}
+  .hero .textarea{min-height:66px;height:66px;padding:12px;font-size:16px}
+  .hero .submit{min-height:46px;font-size:14px}
+  .categorySection{margin:10px 0 16px;padding:13px 11px;border-radius:17px}
+  .categoryHead{gap:8px;margin-bottom:13px}
+  .stepHeader{grid-template-columns:35px minmax(0,1fr);gap:9px}
+  .stepBadge{width:35px;height:35px;font-size:19px}
+  .categoryHead h2{font-size:21px;margin:0 0 4px}
+  .stepHeader p{font-size:12px;line-height:1.38}
+  .allMasters{max-width:112px;min-height:36px;padding:7px 9px;font-size:10px}
+  .allMasters svg{height:14px;width:14px}
+  .categoryGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .category,.categoryActive{min-height:52px;padding:8px;gap:7px;border-radius:12px}
+  .categoryIcon{width:28px;height:28px}
+  .categoryName{font-size:12px}
+  .freeOnlyToggle{min-height:38px;font-size:12px}
+  .extraFilters{border-radius:14px}
+  .extraFilters summary{min-height:58px;padding:9px 11px;gap:10px}
+  .extraIcon{width:33px;height:33px}
+  .extraLabel strong{font-size:14px}
+  .extraLabel small{font-size:11px}
+  .extraBody{padding:4px 10px 12px}
+  .quickFacets{gap:7px;margin:10px 0 4px;flex-wrap:wrap;overflow:visible}
+  .quickFacets label{flex:1 1 calc(50% - 7px);max-width:none;min-height:42px;padding:0 8px;gap:3px;font-size:11px}
+  .quickFacets select{font-size:12px;min-height:37px;max-width:99px}
+  .examples{margin-top:14px;gap:7px}
+  .examples>span{font-size:11px;color:#5f8291}
+  .examples button{background:#f3fcfd;border-color:#c8e6eb;color:#1c6375;font-size:11px}
+  .privacy{color:#688997;font-size:10px;line-height:1.45;margin:12px 0 0}
+  .aiOption{color:#235c69}
+  .aiOption small{color:#6b8591}
+}
+@media(max-width:350px){
+  .topline .kicker{font-size:8.5px}
+  .categoryHead h2{font-size:19px}
+  .categoryName{font-size:11px}
+  .allMasters{max-width:95px;padding:6px;font-size:9px}
+  .quickFacets label{flex-basis:100%}
+}
+@media(prefers-reduced-motion:reduce){.extraChevron{transition:none}}
+
+/* Four discovery tabs wrap below the kicker on extra-narrow mobile screens. */
+@media(max-width:400px){.topline{flex-wrap:wrap}.topline .kicker{max-width:100%}}
+
+
+/* Locale handoff is explicit: Spanish discovery keeps the selected service ID. */
+.intakeNote{display:block;grid-column:1/-1;margin:0;color:#476b73;font:11px/1.5 system-ui,sans-serif}

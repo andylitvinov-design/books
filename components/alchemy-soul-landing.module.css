@@ -69,29 +69,45 @@
 .videoMedia{min-width:0}
 .videoMedia :global(.site-video-player){max-width:100%}
 .videoNote{grid-column:1/-1;margin:0;color:#c9eee7;font-size:11px;line-height:1.5}
-.reviewRail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,32%);gap:13px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;padding:0 0 8px;scrollbar-width:thin;scrollbar-color:#a6d9d2 transparent}
-.reviewCard{min-width:0;scroll-snap-align:start;padding:11px;border:1px solid #cde6e2;border-radius:18px;background:#f7fcfa}
-.reviewCard>p{margin:8px 3px 0;color:#4b6e75;font-size:12px;line-height:1.4}
-.reviewCard :global(.site-video-player){width:100%}
-.swipeHint{display:flex;align-items:center;gap:7px;margin:10px 0 0;color:#0a8386;font-size:12px;font-weight:800}
+
+/* One full-width testimonial row per person, stacked vertically. */
+.reviewStack{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;max-width:750px}
+.reviewCard{display:grid;grid-template-columns:minmax(132px,160px) minmax(0,1fr);align-items:center;gap:16px;min-width:0;padding:10px;border:1px solid #cde6e2;border-radius:17px;background:#f7fcfa}
+.reviewVideo{min-width:0;position:relative;border-radius:11px;overflow:hidden;align-self:center;background:#e7f4f1}
+.reviewVideo :global(.site-video-player){width:100%;min-width:0;margin:0}
+.reviewVideo :global(.site-video-frame){aspect-ratio:16/9;min-height:0;height:auto}
+.reviewVideo :global(.site-video-caption){display:none}
+.reviewVideo :global(.site-video-poster-title){display:none}
+.reviewInfo{min-width:0}
+.reviewInfo h3{margin:0 0 12px;font:400 clamp(17px,2vw,23px)/1.2 Georgia,serif;color:#1b4a56;overflow-wrap:anywhere}
+.reviewInfo a{display:inline-flex;align-items:center;gap:5px;color:#087e83;font-size:12px;line-height:1.4;font-weight:800;text-underline-offset:3px}
 .reviewNote{margin:11px 0 0;color:#647d80;font-size:11px}
+
 .optionsSection{background:linear-gradient(150deg,#fff,#f2fbf7)}
+
 .optionGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-.optionCard{min-width:0;position:relative;padding:20px;border:1px solid #d3e7e5;border-radius:18px;background:#fff}
+.optionCard{appearance:none;display:block;width:100%;min-width:0;position:relative;cursor:pointer;text-align:left;padding:20px;border:1px solid #d3e7e5;border-radius:18px;background:#fff;color:inherit}
 .optionFeatured{border-color:#91d9d0;background:#eafaf6}
-.optionTime{margin:0;color:#327781;font-size:12px;font-weight:800}
+.optionCard[aria-pressed="true"],.monthlyCard[aria-pressed="true"]{border-color:#079a96;box-shadow:inset 0 0 0 1px #079a96,0 4px 15px rgba(10,139,131,.09)}
+.optionCard:hover,.monthlyCard:hover{border-color:#11aba7}
+.optionTime{display:block;margin:0;color:#327781;font-size:12px;font-weight:800}
 .optionCard strong{display:block;margin:9px 0 0;color:#0d6473;font:400 36px/.96 Georgia,serif}
-.optionCard h3{margin:11px 0 0;color:#254f59;font:400 24px/1.17 Georgia,serif}
-.optionCard>p:last-child{margin:7px 0 0;color:#58757b;font-size:12px;line-height:1.45}
-.monthlyCard{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding:18px 20px;border:1px solid #c7e6df;border-radius:18px;background:#e6f8f3}
-.monthlyCard h3{margin:0;color:#184e5b;font:400 23px/1.16 Georgia,serif}
-.monthlyCard p{margin:5px 0;color:#54717a;font-size:13px;line-height:1.5}
-.monthlyCard small{color:#0a8386;font-size:11px;font-weight:800}
-.monthlyCard>span{flex:none;color:#3cb5a9;font:400 78px/1 Georgia,serif}
-.optionsAction{width:100%;max-width:420px;margin-top:14px;background:#ab5164;color:#fff!important}
-.optionsAction:hover{background:#923e55}
+.optionName{display:block;margin:11px 0 0;color:#254f59;font:400 24px/1.17 Georgia,serif}
+.optionDescription{display:block;margin:7px 0 0;color:#58757b;font-size:12px;line-height:1.45}
+.optionCheck{display:none;position:absolute;top:10px;right:10px;place-items:center;width:22px;height:22px;border-radius:50%;background:#068986;color:#fff}
+.optionCard[aria-pressed="true"] .optionCheck{display:grid}
+.monthlyCard{appearance:none;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;cursor:pointer;text-align:left;margin-top:12px;padding:18px 20px;border:1px solid #c7e6df;border-radius:18px;background:#e6f8f3;color:inherit}
+.monthlyName{display:block;margin:0;color:#184e5b;font:400 23px/1.16 Georgia,serif}
+.monthlyText{display:block;margin:5px 0;color:#54717a;font-size:13px;line-height:1.5}
+.monthlyCard small{display:block;color:#0a8386;font-size:11px;font-weight:800}
+.monthlySparkle{flex:none;color:#3cb5a9;font:400 78px/1 Georgia,serif}
+.formatHint{margin:12px 0 0;color:#537680;font-size:11px;line-height:1.4}
+.optionsOrder{width:100%;max-width:440px;margin-top:11px}
+.optionsOrder :global([data-contact-order]),.formOrder :global([data-contact-order]){min-height:49px;border-radius:100px;background:#ab5164;color:#fff;font-size:14px}
+.optionsOrder :global([data-contact-order]):hover,.formOrder :global([data-contact-order]):hover{background:#923e55}
 .freeOption{margin:12px 0 0;color:#587479;font-size:12px}
 .freeOption a{color:#087f85;font-weight:850;text-underline-offset:3px}
+
 .faqSection{background:#f8fcfb}
 .faqList details{border-bottom:1px solid #d2e6e3}
 .faqList details:first-child{border-top:1px solid #d2e6e3}
@@ -126,7 +142,7 @@
   .painGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .videoSection,.requestSection{grid-template-columns:1fr}
   .videoMedia{width:min(100%,600px);margin:0 auto}
-  .reviewRail{grid-auto-columns:minmax(250px,60%)}
+  
 }
 @media(max-width:680px){
   .shell{width:calc(100% - 20px)}
@@ -164,22 +180,22 @@
   .videoText{max-width:600px}
   .videoMedia{max-width:100%;width:100%}
   .videoNote{font-size:10px}
-  .reviewRail{grid-auto-columns:minmax(0,calc(100% - 26px));gap:10px}
-  .reviewCard{padding:8px;border-radius:15px}
-  .reviewCard>p{font-size:11px}
+  
+  
+  
   .swipeHint{font-size:11px}
   .optionGrid{gap:8px}
-  .optionCard{padding:14px 12px;border-radius:15px}
-  .optionTime{font-size:10px}
-  .optionCard strong{font-size:29px;margin-top:8px}
-  .optionCard h3{font-size:19px;margin-top:10px}
-  .optionCard>p:last-child{font-size:11px}
-  .monthlyCard{padding:12px 13px;border-radius:15px;margin-top:9px}
-  .monthlyCard h3{font-size:19px}
-  .monthlyCard p{font-size:11px;line-height:1.4}
-  .monthlyCard small{font-size:10px}
-  .monthlyCard>span{font-size:51px}
-  .optionsAction{min-height:44px;margin-top:11px;font-size:12px}
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   .freeOption{font-size:11px;line-height:1.45}
   .faqList summary{font-size:13px;padding:14px 28px 14px 0}
   .faqList summary::after{top:10px}
@@ -203,7 +219,7 @@
   .heroLead{font-size:11px}
   .painCard{min-height:126px;padding:11px 9px}
   .painCard h3{font-size:17px}
-  .monthlyCard>span{display:none}
+  
 }
 @media(max-height:650px) and (max-width:680px){
   .panel{min-height:0;padding-top:16px;padding-bottom:16px}
@@ -214,3 +230,87 @@
   .methodStep{padding:9px 10px}
 }
 @media(prefers-reduced-motion:reduce){.heroAction,.optionsAction{transition:none}.heroAction:hover{transform:none}}
+
+
+/* Hero direct ordering uses the standard two-channel chooser; no modal or duplicate form. */
+.heroOrder{width:min(100%,430px);margin-top:18px}
+.heroOrder :global([data-contact-order]){min-height:49px;border-radius:100px;background:#f6d79f;color:#193f4b;box-shadow:0 8px 24px rgba(4,43,54,.14)}
+.heroOrder :global([data-contact-order]):hover{background:#ffe6b9}
+.heroOrder :global([data-contact-channel-chooser] > div[id]){background:#f8fdfb}
+.formOrder{width:100%;margin-top:2px}
+.page :global([data-contact-channel-chooser]){min-width:0}
+@media(max-width:680px){
+ .reviewStack{gap:8px}
+ .reviewCard{grid-template-columns:minmax(108px,38%) minmax(0,1fr);gap:10px;padding:8px;border-radius:14px}
+ .reviewInfo h3{font-size:clamp(15px,4.2vw,19px);margin-bottom:7px;line-height:1.2}
+ .reviewInfo a{font-size:11px}
+ .optionCard{padding:14px 12px;border-radius:15px}
+ .optionTime{font-size:10px}
+ .optionCard strong{font-size:29px;margin-top:8px}
+ .optionName{font-size:19px;margin-top:10px}
+ .optionDescription{font-size:11px;line-height:1.35}
+ .monthlyCard{padding:12px 13px;border-radius:15px;margin-top:9px}
+ .monthlyName{font-size:19px}
+ .monthlyText{font-size:11px;line-height:1.4}
+ .monthlyCard small{font-size:10px}
+ .monthlySparkle{font-size:51px}
+ .heroOrder{width:100%;margin-top:14px}
+ .heroOrder :global([data-contact-order]){min-height:47px;font-size:13px}
+ .optionsOrder :global([data-contact-order]),.formOrder :global([data-contact-order]){min-height:46px;font-size:13px}
+}
+@media(max-width:350px){.monthlySparkle{display:none}.reviewCard{grid-template-columns:minmax(99px,36%) minmax(0,1fr)}}
+
+/* Gated, one-time Wise payment — never an automatic booking or confirmation. */
+.wisePayment{display:flex;flex-direction:column;gap:6px;align-items:center;margin:10px auto 0;text-align:center}
+.wisePaymentCta{display:inline-flex;min-height:44px;align-items:center;justify-content:center;padding:9px 15px;border:1px solid #15828a;border-radius:11px;color:#086577;background:#f7fefd;text-decoration:none;font-weight:800;font-size:13px}
+.wisePaymentCta:hover{text-decoration:underline;text-underline-offset:3px}
+.wisePaymentCta:focus-visible{outline:3px solid #8a632c;outline-offset:3px}
+.wisePayment small{max-width:510px;color:#4e737c;font-size:12px;line-height:1.5}
+
+/* Conversion clarity: prices and confirmation boundaries next to first action. */
+.heroPricing{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.heroPricing span{display:inline-flex;align-items:center;min-height:34px;padding:6px 12px;border:1px solid rgba(219,255,249,.46);border-radius:100px;background:rgba(242,255,252,.12);color:#fffdf2;font:750 12px/1.3 Arial,Helvetica,sans-serif}
+.heroRequestNote{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 15px;margin-top:11px;color:#d0eeea;font:12px/1.5 Arial,Helvetica,sans-serif}
+.heroRequestNote a{display:inline-flex;align-items:center;gap:6px;color:#ffe4af;text-decoration:underline;text-underline-offset:4px;font-weight:800}
+.heroRequestNote a:focus-visible{outline:3px solid #ffd5a4;outline-offset:3px}
+@media(max-width:680px){
+  .heroPricing{gap:6px;margin-top:11px}
+  .heroPricing span{padding:6px 9px;font-size:11px;min-height:30px}
+  .heroRequestNote{font-size:11px;line-height:1.42;margin-top:9px}
+}
+
+/* Payment is deliberately secondary to arranging an appointment.
+   Keep approved Wise/PayPal/ZEN paths discoverable, but collapsed by default,
+   so the pricing choice fits an ordinary phone screen. */
+.paymentDisclosure{margin:10px 0 0;border:1px solid #cce6e1;border-radius:13px;background:rgba(255,255,255,.82);overflow:clip}
+.paymentDisclosure summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 13px;cursor:pointer;list-style:none;color:#1e6973;font:750 12px/1.45 Arial,Helvetica,sans-serif}
+.paymentDisclosure summary::-webkit-details-marker{display:none}
+.paymentDisclosure summary::after{content:"+";flex:none;color:#0b7a82;font:400 23px/1 Georgia,serif}
+.paymentDisclosure[open] summary::after{content:"−"}
+.paymentDisclosureBody{display:grid;gap:9px;padding:2px 13px 13px;border-top:1px solid #d5e9e5}
+.paymentDisclosure:not([open]) .paymentDisclosureBody{display:none}
+.paymentDisclosureBody .wisePayment{margin:7px 0 0}
+.paymentDisclosureBody .wisePayment small{font-size:11px;line-height:1.5}
+.paymentDisclosure summary:focus-visible{outline:3px solid #bb8a58;outline-offset:3px}
+@media(max-width:680px){
+ .optionsSection{justify-content:flex-start;padding-top:16px;padding-bottom:16px}
+ .optionsSection .sectionHeading{margin-bottom:10px}
+ .optionCard{padding:12px}
+ .optionName{margin-top:7px}
+ .optionDescription{margin-top:5px}
+ .monthlyCard{margin-top:7px;padding-top:10px;padding-bottom:10px}
+ .monthlyText{margin:3px 0}
+ .formatHint{margin-top:8px}
+ .optionsOrder{margin-top:8px}
+ .freeOption{margin-top:8px}
+ .paymentDisclosure{margin-top:7px}
+}
+@media(max-width:350px){
+ .optionsSection{padding-top:14px;padding-bottom:14px}
+ .optionCard{padding:11px 9px}
+ .monthlyCard{padding:10px 11px}
+ .paymentDisclosure summary{padding-inline:11px}
+}
+
+/* Keep every revealed payment link, including terms, comfortably tappable. */
+.paymentDisclosureBody .wisePayment>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px}

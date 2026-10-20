@@ -6,26 +6,29 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '../lib/assessments/test-explorer.js'
 import { layoutPortraitRayLabels } from '../lib/assessments/portrait-ray-labels.js'
-import { PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER, portraitAngleForAxis, portraitAxesForSectors } from '../lib/assessments/portrait-sectors.js'
+import { portraitAxisChoices } from '../lib/assessments/portrait-constructs.js'
+import {
+  PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
+  portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors,
+  portraitSectorMidAngle, portraitFullCircleAngleForAxis,
+} from '../lib/assessments/portrait-sectors.js'
 
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const descendants = node => node == null || typeof node !== 'object' ? []
   : Array.isArray(node) ? node.flatMap(descendants)
     : [node, ...descendants(node.props?.children)]
-const options = tree => descendants(tree).filter(node => node.type === 'label'
-  && typeof node.props.className === 'string' && node.props.className.includes('portraitRayOption'))
-// The sector checkboxes are separate from the original individual-ray checkboxes.
-const inputs = tree => options(tree).flatMap(item => descendants(item).filter(node => node.type === 'input' && node.props.type === 'checkbox'))
-const sectorLabels = tree => descendants(tree).filter(node => node.type === 'label' && typeof node.props.className === 'string' && node.props.className.includes('portraitSectorChip'))
-const sectorInput = (tree, key) => descendants(sectorLabels(tree).find(label => label.props['data-portrait-sector'] === key))
-  .find(node => node.type === 'input')
-const allSectorInput = tree => descendants(tree).find(node => node.type === 'input' && node.props['data-portrait-sector-all'])
-const rayLabels = tree => descendants(tree).filter(node => node.type === 'text' && node.props.className === 'radarInlineLabel')
-const moreButton = tree => descendants(tree).find(node => node.type === 'button'
-  && String(node.props.className).includes('portraitShowMore'))
+const nodes = (tree,type,match) => descendants(tree).filter(node => node.type === type && match(node.props))
+const sectors = tree => nodes(tree,'button',p => typeof p['data-portrait-sector'] === 'string')
+const rayOptions = tree => nodes(tree,'label',p => String(p.className).includes('portraitRayOption'))
+const rayInputs = tree => rayOptions(tree).flatMap(item => nodes(item,'input',p => p.type === 'checkbox'))
+const anchors = tree => nodes(tree,'circle',p => p['data-contour-axis'] !== undefined)
+const detailRays = tree => nodes(tree,'g',p => p['data-detail-axis'] !== undefined)
+const labels = tree => nodes(tree,'text',p => p.className === 'radarInlineLabel')
+const testItLinks = tree => nodes(tree,'a',p => String(p.className).includes('portraitRayTestLink'))
+const detailsLinks = tree => nodes(tree,'a',p => String(p.className).includes('portraitRayDetailsLink'))
 
-function harness(locale) {
+function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== 'personality').slice(0,8)) {
   const values = []
   let hook = 0
   const fakeReact = {
@@ -35,177 +38,215 @@ function harness(locale) {
       return [values[index], next => { values[index] = typeof next === 'function' ? next(values[index]) : next }]
     },
     useRef: initial => ({ current: initial }),
-    useId: () => 'test-portrait-rays-id',
+    useId: () => 'portrait-rays-test-options',
   }
-  const content = ts.transpileModule(read('components/app/test-explorer-visual.jsx'), {
-    fileName: 'components/app/test-explorer-visual.jsx',
-    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+  const code = ts.transpileModule(read('components/app/test-explorer-visual.jsx'), {
+    fileName:'components/app/test-explorer-visual.jsx',
+    compilerOptions:{ jsx:ts.JsxEmit.ReactJSX, module:ts.ModuleKind.CommonJS, esModuleInterop:true },
   }).outputText
-  const loaded = { exports: {} }
-  runInNewContext(content, {
-    module: loaded, exports: loaded.exports,
+  const compiled = { exports:{} }
+  runInNewContext(code,{
+    module:compiled,exports:compiled.exports,
     require(name) {
       if (name === 'react') return fakeReact
-      if (name === 'next/link') return { __esModule: true, default: 'a' }
-      if (name === 'next/image') return { __esModule: true, default: 'img' }
-      if (name === '@/lib/assessments/test-explorer') return { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS }
-      if (name === '@/lib/assessments/portrait-ray-labels') return { layoutPortraitRayLabels }
-      if (name === '@/lib/assessments/portrait-sectors') return { PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER, portraitAngleForAxis, portraitAxesForSectors }
-      if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) }
+      if (name === 'next/link') return { __esModule:true, default:'a' }
+      if (name === 'next/image') return { __esModule:true, default:'img' }
+      if (name === '@/lib/assessments/test-explorer') return {TEST_EXPLORER_AXES,TEST_EXPLORER_AXIS_LABELS}
+      if (name === '@/lib/assessments/portrait-ray-labels') return {layoutPortraitRayLabels}
+      if (name === '@/lib/assessments/portrait-sectors') return {
+        PORTRAIT_SECTORS,PORTRAIT_SECTOR_KEYS,PORTRAIT_AXIS_ORDER,
+        portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,
+        portraitSectorMidAngle,portraitFullCircleAngleForAxis,
+      }
+      if (name.endsWith('.module.css')) return {__esModule:true,default:new Proxy({}, {get:(_,key)=>key})}
       return require(name)
     },
   })
-  const measured = TEST_EXPLORER_AXES.filter(axis => axis !== 'personality').slice(0, 8)
-  const portrait = { axes: Object.fromEntries(measured.map((axis, n) =>
-    [axis, { percent: 40 + n, source: 'Synthetic test', change: null }])) }
-  const coverage = { axes: Object.fromEntries(TEST_EXPLORER_AXES.map(axis => [axis, { coverage: 0 }])), coveredCount: 0 }
+  const portrait = {axes:Object.fromEntries(measured.map((axis,index)=>[axis,{
+    mode:'directional',percent:40+index,rawValue:4+index/10,min:0,max:10,
+    source:'Synthetic only',sourceTitle:'Synthetic only',change:null,
+    resultId:'saved-result-'+index, dimensionKey:'fixture.'+axis+'.total',
+  }])),staleAxes:{},axisCandidates:portraitAxisChoices()}
+  const coverage = {axes:Object.fromEntries(TEST_EXPLORER_AXES.map(axis=>[axis,{coverage:0}])),coveredCount:0}
   return {
-    render() { hook = 0; return loaded.exports.TestExplorerVisual({ locale, portrait, coverage }) },
-    total: TEST_EXPLORER_AXES.filter(axis => axis !== 'personality').length,
+    render(){hook=0;return compiled.exports.TestExplorerVisual({locale,coverage,portrait})},
+    measured,portrait,
+    choose(key){
+      const control=sectors(this.render()).find(button=>button.props['data-portrait-sector']===key)
+      assert.ok(control, 'missing category button: '+key)
+      control.props.onClick()
+      return this.render()
+    },
   }
 }
 
-test('portrait ray options show five two-column rows before expansion in EN/RU/ES', () => {
-  for (const locale of ['en', 'ru', 'es']) {
-    const app = harness(locale)
-    const initial = app.render()
-    assert.equal(app.total, 17)
-    assert.equal(options(initial).length, 10, locale)
-    assert.equal(inputs(initial).filter(input => input.props.checked).length, 8, locale)
-    const button = moreButton(initial)
-    assert.ok(button, locale)
-    assert.equal(button.props['aria-expanded'], false)
-    assert.equal(button.props['aria-controls'], 'test-portrait-rays-id')
-    button.props.onClick()
-    const expanded = app.render()
-    assert.equal(options(expanded).length, 17, locale)
-    assert.equal(inputs(expanded).filter(input => input.props.checked).length, 8)
-    assert.equal(moreButton(expanded).props['aria-expanded'], true)
-    moreButton(expanded).props.onClick()
-    const collapsedAgain = app.render()
-    assert.equal(options(collapsedAgain).length, 10, locale)
-    assert.equal(inputs(collapsedAgain).filter(input => input.props.checked).length, 8)
+test('All is the first of five views and shows only measurement coverage, not averaged health percentages',()=>{
+  for(const locale of ['en','ru','es']){
+    const app=harness(locale)
+    const tree=app.render()
+    assert.equal(sectors(tree).length,4)
+    const all = nodes(tree,'button',p=>p['data-portrait-sector-all']!==undefined)
+    assert.equal(all.length,1)
+    assert.equal(all[0].props['aria-pressed'],true)
+    assert.equal(sectors(tree).filter(b=>b.props['aria-pressed']===true).length,0)
+    assert.equal(nodes(tree,'div',p=>p.role==='status' && String(p.className).includes('visualState')).length,0)
+    assert.equal(nodes(tree,'svg',p=>p['data-radar-mode']==='summary').length,1)
+    assert.equal(nodes(tree,'g',p=>p['data-summary-sector']!==undefined).length,4)
+    assert.equal(nodes(tree,'polygon',p=>p.className==='radarArea').length,0)
+    const summaryValues=nodes(tree,'text',p=>String(p.className).includes('radarSummaryValue'))
+    assert.equal(summaryValues.length,4)
+    assert.equal(anchors(tree).length,0)
+    assert.equal(labels(tree).length,4)
+    assert.equal(rayOptions(tree).length,0)
+    const detail = app.choose('body')
+    assert.equal(sectors(detail)[0].props['aria-pressed'],true)
+    assert.equal(nodes(detail,'svg',p=>p['data-radar-layout']==='full-circle').length,1)
+    assert.equal(anchors(detail).length,5)
+    assert.equal(labels(detail).length,5)
+    assert.equal(rayOptions(detail).length,5)
+    assert.equal(rayInputs(detail).filter(input=>input.props.checked).length,5)
   }
 })
 
-test('ray selection persists when its checkbox is hidden by collapsing the list', () => {
-  const app = harness('en')
-  moreButton(app.render()).props.onClick()
-  let expanded = app.render()
-  assert.equal(inputs(expanded).at(-1).props.checked, false)
-  assert.notEqual(inputs(expanded).at(-1).props.disabled, true)
-  inputs(expanded).at(-1).props.onChange()
-  expanded = app.render()
-  assert.equal(inputs(expanded).at(-1).props.checked, true)
-  assert.equal(inputs(expanded).filter(input => input.props.checked).length, 9)
-  moreButton(expanded).props.onClick()
-  assert.equal(options(app.render()).length, 10)
-  moreButton(app.render()).props.onClick()
-  assert.equal(inputs(app.render()).at(-1).props.checked, true)
-})
-
-test('portrait ray options retain two columns even on iPhone width with legible score layout', () => {
-  const css = read('components/app/test-explorer.module.css')
-  assert.match(css, /\.portraitRayOptions\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
-  assert.match(css, /@media\(max-width:440px\)\{[\s\S]*?\.portraitRayOptions\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
-  assert.doesNotMatch(css, /\.portraitRayOptions\{grid-template-columns:1fr\}/)
-  assert.match(css, /\.portraitRayOption\{display:grid;grid-template-columns:18px minmax\(0,1fr\) auto/)
-  assert.match(css, /\.portraitDelta\{grid-column:3;grid-row:2/)
-  assert.match(css, /\.portraitControls \.portraitShowMore\{display:flex/)
-})
-
-test('four sector checkboxes independently filter rays, all restores view without losing fine selections', () => {
-  const app = harness('en')
-  const initial = app.render()
-  assert.equal(sectorLabels(initial).length, 4)
-  assert.equal(sectorLabels(initial).filter(item => item.props['data-selected']).length, 4)
-  assert.equal(allSectorInput(initial).props.checked, true)
-  assert.equal(inputs(initial).filter(input => input.props.checked).length, 8)
-  assert.equal(rayLabels(initial).length, 8)
-
-  allSectorInput(initial).props.onChange()
-  const empty = app.render()
-  assert.equal(allSectorInput(empty).props.checked, false)
-  assert.equal(options(empty).length, 0)
-  assert.equal(rayLabels(empty).length, 0)
-
-  sectorInput(empty, 'body').props.onChange()
-  const body = app.render()
-  assert.equal(options(body).length, 5)
-  assert.equal(inputs(body).filter(input => input.props.checked).length, 4)
-  assert.equal(rayLabels(body).length, 4)
-
-  sectorInput(body, 'relationships').props.onChange()
-  const bodyAndRelationships = app.render()
-  assert.equal(options(bodyAndRelationships).length, 9)
-  assert.equal(rayLabels(bodyAndRelationships).length, 4)
-
-  allSectorInput(bodyAndRelationships).props.onChange()
-  const restored = app.render()
-  assert.equal(allSectorInput(restored).props.checked, true)
-  assert.equal(inputs(restored).filter(input => input.props.checked).length, 8)
-  assert.equal(rayLabels(restored).length, 8)
-})
-
-test('portrait SVG captions are plain near-dot words without pill rectangles, localized EN RU ES', () => {
-  for (const locale of ['en', 'ru', 'es']) {
-    const tree = harness(locale).render()
-    assert.equal(rayLabels(tree).length, 8, locale)
-    assert.ok(rayLabels(tree).every(node => node.props.textAnchor === 'start'), locale)
-    assert.ok(!descendants(tree).some(node => node.type === 'rect' && String(node.props.className).includes('radarLabelPill')), locale)
-  }
-  const css = read('components/app/test-explorer.module.css')
-  assert.ok(css.includes('.radarInlineLabel{'))
-  assert.ok(css.includes('.portraitSectorGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'))
-  assert.ok(css.includes('.radarSectorArc[data-radar-sector=body]'))
-  assert.equal(css.includes('.radarLabelPill{'), false)
-})
-
-const testItLinks = tree => descendants(tree).filter(node => node.type === 'a' &&
-  String(node.props.className).includes('portraitRayTestLink'))
-
-test('only missing portrait scales show a separate localized Test it link to matching test choices', () => {
-  const missingAxes = TEST_EXPLORER_AXES.filter(axis => axis !== 'personality').slice(8)
-  for (const locale of ['en', 'ru', 'es']) {
-    const app = harness(locale)
-    const initial = app.render()
-    assert.equal(testItLinks(initial).length, 2, locale)
-    assert.equal(inputs(initial).length, 10, locale)
-    moreButton(initial).props.onClick()
-    const expanded = app.render()
-    const links = testItLinks(expanded)
-    assert.equal(links.length, 9, locale)
-    assert.deepEqual(
-      links.map(link => link.props.href),
-      missingAxes.map(axis => `/${locale}/app/tests?explore=1&axis=${axis}`),
-      locale,
-    )
-    assert.ok(links.every(link => link.props.prefetch === false &&
-      String(link.props['aria-label']).length > 10), locale)
-    assert.equal(inputs(expanded).filter(input => input.props.checked).length, 8, locale)
-    for (const link of links) {
-      assert.ok(!descendants(options(expanded).find(option =>
-        descendants(option).some(node => node === link))).includes(link),
-        'the test link must not be nested in its independent checkbox label')
+test('each category shows all its own 3–5 scales, spaced over the FULL 360-degree contour',()=>{
+  for(const locale of ['en','ru','es']){
+    const app=harness(locale)
+    for(const sector of PORTRAIT_SECTORS){
+      const tree=app.choose(sector.key)
+      assert.equal(sectors(tree).filter(b=>b.props['aria-pressed']===true).length,1)
+      assert.equal(sectors(tree).find(b=>b.props['aria-pressed']).props['data-portrait-sector'],sector.key)
+      assert.equal(detailRays(tree).length,sector.axes.length)
+      assert.equal(rayInputs(tree).length,sector.axes.length)
+      assert.equal(anchors(tree).length,sector.axes.length)
+      assert.equal(labels(tree).length,sector.axes.length)
+      assert.equal(nodes(tree,'svg',p=>p['data-active-portrait-sector']===sector.key).length,1)
+      for(let index=0;index<sector.axes.length;index++){
+        const axis=sector.axes[index]
+        const dot=anchors(tree).find(item=>item.props['data-contour-axis']===axis)
+        assert.ok(dot,axis)
+        const a=-Math.PI/2+index*2*Math.PI/sector.axes.length
+        assert.ok(Math.abs(dot.props.cx-(180+146*Math.cos(a)))<1e-7,'full-circle x position '+axis)
+        assert.ok(Math.abs(dot.props.cy-(182+146*Math.sin(a)))<1e-7,'full-circle y position '+axis)
+        assert.equal(dot.props['data-measured'],app.measured.includes(axis))
+      }
+      const unrelated=PORTRAIT_AXIS_ORDER.filter(axis=>!sector.axes.includes(axis))
+      assert.ok(!detailRays(tree).some(node=>unrelated.includes(node.props['data-detail-axis'])))
     }
   }
 })
 
-test('portrait ray link drives the account catalog with a safe exact measurement axis', () => {
-  const visual = read('components/app/test-explorer-visual.jsx')
-  const picker = read('components/app/account-test-battery.jsx')
-  const explorer = read('components/app/test-explorer.jsx')
-  const css = read('components/app/test-explorer.module.css')
-  assert.match(visual, /!measure && <Link/)
-  assert.match(picker, /TEST_EXPLORER_AXES\.includes\(rayParam\)/)
-  assert.match(picker, /rayParam !== 'personality'/)
-  assert.match(picker, /portraitAxis\s*\?\s*\{ axes: \[portraitAxis\], focus: \[\] \}/)
-  assert.match(picker, /initialAxis=\{portraitAxis\}/)
-  assert.match(picker, /portraitAxis \? 'hh-test-list' : 'hh-test-customizer'/)
-  assert.match(explorer, /initialAxis = null/)
-  assert.match(explorer, /data-testid="portrait-axis-test-choices"/)
-  assert.match(explorer, /axes\.includes\(initialAxis\)/)
-  assert.match(css, /\.portraitRayItem\[data-measured=false\]/)
-  assert.match(css, /\.portraitRayTestLink:focus-visible/)
-  assert.match(css, /\.portraitAxisBrowse\{/)
+test('user can opt out of one scale; switching categories preserves that preference',()=>{
+  const app=harness('en')
+  const first=app.choose('body')
+  const bodyAxes=PORTRAIT_SECTORS[0].axes
+  assert.equal(rayInputs(first).filter(input=>input.props.checked).length,bodyAxes.length)
+  // Embodiment is not measured in the fixture but its axis and label are visible.
+  const finalInput=rayInputs(first).at(-1)
+  assert.equal(finalInput.props.checked,true)
+  finalInput.props.onChange()
+  assert.equal(anchors(app.render()).length,bodyAxes.length-1)
+  app.choose('work')
+  app.choose('relationships')
+  const body=app.choose('body')
+  assert.equal(anchors(body).length,bodyAxes.length-1)
+  assert.equal(rayInputs(body).at(-1).props.checked,false)
+  // Real values have not been changed by presentation preferences.
+  assert.equal(app.portrait.axes.stress.percent,40)
+})
+
+test('without test results each category retains its axes and does not invent values',()=>{
+  const app=harness('ru',[])
+  for(const sector of PORTRAIT_SECTORS){
+    const tree=app.choose(sector.key)
+    assert.equal(labels(tree).length,sector.axes.length)
+    assert.equal(anchors(tree).length,sector.axes.length)
+    assert.ok(anchors(tree).every(node=>node.props['data-measured']===false))
+    assert.ok(detailRays(tree).every(node=>node.props['data-measured']===false))
+    assert.equal(testItLinks(tree).length,sector.axes.length)
+    assert.equal(nodes(tree,'polygon',p=>p.className==='radarArea').length,0)
+  }
+})
+
+test('missing scales keep actual test links and source data stays private',()=>{
+  const app=harness('en')
+  for(const sector of PORTRAIT_SECTORS){
+    const tree=app.choose(sector.key)
+    const missing=sector.axes.filter(axis=>!app.measured.includes(axis))
+    assert.equal(testItLinks(tree).length,missing.length)
+    for(const link of testItLinks(tree)){
+      const axis=new URL('https://holistichouse.vercel.app'+link.props.href).searchParams.get('axis')
+      assert.ok(missing.includes(axis))
+      assert.equal(link.props.href,`/en/app/tests?explore=1&axis=${axis}&suggest=${encodeURIComponent(app.portrait.axisCandidates[axis].testKey)}`)
+      assert.equal(link.props.prefetch,false)
+    }
+  }
+})
+
+test('measured rays show localized Details links to their exact result and scored dimension',()=>{
+  for(const locale of ['en','ru','es']){
+    const app=harness(locale)
+    for(const sector of PORTRAIT_SECTORS){
+      const tree=app.choose(sector.key)
+      const measured=sector.axes.filter(axis=>app.measured.includes(axis))
+      assert.equal(detailsLinks(tree).length,measured.length)
+      for(const link of detailsLinks(tree)){
+        const axis=link.props['data-portrait-scale-details']
+        assert.ok(measured.includes(axis))
+        const source=app.portrait.axes[axis]
+        assert.equal(link.props.href,`/${locale}/app/results/${encodeURIComponent(source.resultId)}?scale=${encodeURIComponent(source.dimensionKey)}#hh-assessment-scale-panel`)
+        assert.equal(link.props.prefetch,false)
+        const contents=JSON.stringify(link.props.children)
+        assert.ok(contents.includes(locale==='ru'?'Подробнее':locale==='es'?'Detalles':'Details'))
+      }
+    }
+  }
+})
+
+test('Test it opens the reviewed source with the correct scored axis, without automatic start',()=>{
+  const explorer=read('components/app/test-explorer.jsx')
+  const visual=read('components/app/test-explorer-visual.jsx')
+  assert.match(visual,/suggest=\$\{encodeURIComponent\(candidate\.testKey\)\}/)
+  assert.match(explorer,/params\.get\('suggest'\)/)
+  assert.match(explorer,/params\.get\('axis'\)/)
+  assert.match(explorer,/item\.selectable === true/)
+  assert.match(explorer,/item\.measurementAxes\?\.includes\(requestedAxis\)/)
+  assert.match(explorer,/setSelectedKeys\(\[entry\.key\]\)/)
+  assert.match(explorer,/setAxes\(\[requestedAxis\]\)/)
+  assert.ok(!explorer.slice(explorer.indexOf('// Reports → Test it:'), explorer.indexOf('  const facets =')).includes('onStart('))
+})
+
+test('the saved report honors the exact scale selected by the portrait Details link',()=>{
+  const workspace=read('components/app/app-workspace.jsx')
+  const personal=read('components/app/personal-result-report.jsx')
+  const compact=read('components/app/compact-assessment-report.jsx')
+  assert.match(workspace,/focusScaleKey = searchParams\?\.get\('scale'\)/)
+  assert.match(workspace,/focusScaleKey=\{focusScaleKey\}/)
+  assert.match(personal,/focusScaleKey=\{focusScaleKey\}/)
+  assert.match(compact,/sections\.findIndex\(item => item\.key === focusScaleKey\)/)
+  assert.match(compact,/focusedIndex >= 0 \? focusedIndex/)
+})
+
+test('mobile CSS keeps five portrait views in one row down to 320px',()=>{
+  const css=read('components/app/test-explorer.module.css')
+  const fresh=css.slice(css.lastIndexOf('/* Portrait v4:'))
+  assert.ok(fresh.length>1500)
+  assert.match(fresh,/\.visual:not\(\.visualCompact\) \.portraitSectorGrid\{/)
+  assert.match(fresh,/grid-template-columns:minmax\(43px,\.68fr\) repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(fresh,/@media\(max-width:440px\)\{/)
+  assert.match(fresh,/grid-template-columns:minmax\(39px,\.68fr\) repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(fresh,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.visual:not\(\.visualCompact\) \.modelStage:has\(\.portraitRadar\)\{[\s\S]*?aspect-ratio:360 \/ 390/)
+  assert.match(css,/\.visual:not\(\.visualCompact\) \.modelStage:has\(\.portraitRadar\) > \.portraitRadar\{[\s\S]*?height:100%/)
+  assert.match(css,/\.radarContourMeasured\{/)
+  assert.match(css,/\.radarContourUnmeasured\{/)
+  assert.match(css,/\.portraitRayTestLink:focus-visible/)
+})
+
+test('Reports keeps the three quick actions right under the radar',()=>{
+  const src=read('components/app/test-explorer-visual.jsx')
+  assert.ok(src.indexOf('className={styles.portraitRadar}')<src.indexOf('{portrait && !compact && portraitActions}'))
+  assert.ok(src.indexOf('{portrait && !compact && portraitActions}')<src.indexOf('className={styles.portraitControls}'))
+  assert.match(src,/\{portrait && !compact && !allSectors && <section className=\{styles.portraitControls\}/)
+  assert.match(src,/data-portrait-sector=\{sector.key\}/)
+  assert.match(src,/data-portrait-sector-all/)
 })

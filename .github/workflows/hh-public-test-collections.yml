@@ -1,0 +1,57 @@
+name: Holistic House public test collections acceptance
+
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/simple-test-picker.jsx'
+      - 'components/app/simple-test-picker.module.css'
+      - 'components/app/test-explorer.jsx'
+      - 'lib/assessments/test-collection-membership.js'
+      - 'lib/assessments/test-collections.js'
+      - 'lib/assessments/test-explorer.js'
+      - 'tests/public-test-topic-collections.test.mjs'
+      - 'tests/tantra-themed-collection-cards.test.mjs'
+      - 'tests/spanish-test-topic-collections.test.mjs'
+      - 'tests/public-test-match-paging.test.mjs'
+      - 'tests/tantric-reflections.test.mjs'
+      - '.github/workflows/hh-public-test-collections.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-public-test-collections-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  collections-unit-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Real collection membership, matching, standard cards and EN/RU/ES tests
+        run: >-
+          node --conditions=react-server --test
+          tests/public-test-topic-collections.test.mjs
+          tests/tantra-themed-collection-cards.test.mjs
+          tests/public-test-match-paging.test.mjs
+          tests/spanish-test-topic-collections.test.mjs
+          tests/public-love-search.test.mjs
+          tests/tantric-reflections.test.mjs
+      - name: Lint modified application code
+        run: >-
+          npx --no-install eslint
+          components/app/simple-test-picker.jsx
+          components/app/test-explorer.jsx
+          lib/assessments/test-collection-membership.js
+          lib/assessments/test-collections.js
+          lib/assessments/test-explorer.js
+      - name: Verify Next.js production build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

@@ -44,6 +44,9 @@ const transpile = relative => ts.transpileModule(fs.readFileSync(path.join(work,
   fileName: relative, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
 }).outputText;
 const overview = addVirtual('overview', transpile('lib/assessments/result-overview.js'));
+// Keep the current evidence-status logic in the real synthetic report, not a fake
+// clinical-quality status. This pure module requires no account or network data.
+const evidenceStatus = addVirtual('evidence-status', transpile('lib/assessments/assessment-evidence-status.js'));
 const stubs = addVirtual('stubs', `const React=require('react');
 exports.FreeCourseBanner=({locale})=>React.createElement('aside',{'data-synthetic-banner':true},locale==='ru'?'Учебный блок':'Learning block');
 exports.ScoreGauge=({dimension})=>React.createElement('span',{'data-synthetic-gauge':true},dimension?.value);
@@ -55,7 +58,9 @@ addVirtual('component', transpile('components/app/compact-assessment-report.jsx'
   react, 'react/jsx-runtime': jsxRuntime,
   './free-course-banner': stubs, './assessment-gauge': stubs,
   '@/lib/assessments/scale-guides': stubs, '@/lib/assessments/dashboard-gauges': stubs,
-  '@/lib/assessments/result-overview': overview, './compact-assessment-report.module.css': css,
+  '@/lib/assessments/result-overview': overview,
+  '@/lib/assessments/assessment-evidence-status': evidenceStatus,
+  './compact-assessment-report.module.css': css,
 });
 const bootstrap = `
 const React=load(${JSON.stringify(react)}),{createRoot}=load(${JSON.stringify(client)}),{flushSync}=load(${JSON.stringify(dom)}),{CompactAssessmentReport}=load('component');

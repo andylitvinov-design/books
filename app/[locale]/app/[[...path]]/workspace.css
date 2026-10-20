@@ -1686,8 +1686,8 @@
   .hh-app .hh-mobile-app-nav a svg { width:19px;height:19px; }
 }
 
-/* Five private Cabinet tabs plus the rightmost shortcut to the public homepage. */
-@media(max-width:820px){
+/* Use the same 760px breakpoint as the desktop-menu hide and fixed mobile bar. */
+@media(max-width:760px){
   .hh-app .hh-mobile-app-nav{
     display:grid;
     grid-template-columns:repeat(6,minmax(0,1fr))!important;

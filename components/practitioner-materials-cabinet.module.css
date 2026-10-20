@@ -28,3 +28,15 @@
 .empty{grid-column:1/-1;text-align:center;padding:30px;background:#f5f8fc;border-radius:15px;color:#60768b}
 @media(max-width:590px){.shell{margin-top:12px;padding:0 12px}.panel{padding:16px}.types button{flex:1}.catalog{grid-template-columns:1fr 1fr}.item{padding:10px}.item header{flex-wrap:wrap}.tag{margin-left:0}}
 @media(max-width:410px){.catalog{grid-template-columns:1fr}}
+
+/* Explicit owner-controlled publication for public educational YouTube resources only. */
+.publication{display:grid;gap:8px;margin-top:auto;border-top:1px solid #e5e9ee;padding-top:11px}
+.published{font-size:12px;color:#237358;font-weight:700;line-height:1.4}
+.published a{color:#245d8e;text-decoration:underline;text-underline-offset:2px}
+.privateLabel{font-size:12px!important;color:#697b8a!important;line-height:1.45!important}
+.publishActions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.publishActions select{border:1px solid #c5d2dd;border-radius:9px;padding:8px;background:white;color:#284966;min-height:40px}
+.publishActions button{flex:1 1 160px;min-height:40px;border-radius:10px;border:1px solid #263f64;padding:8px 11px;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.publish{background:#243d6c;color:white}
+.unpublish{background:#fff;color:#6b4851!important;border-color:#ccb6bb!important}
+.publishActions button:disabled{opacity:.55;cursor:wait}

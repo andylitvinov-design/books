@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowRight, CheckCircle2, ChevronDown, List, Sparkles } from 'lucide-react'
+import { ArrowRight, BookOpen, CheckCircle2, ChevronDown, List, Sparkles } from 'lucide-react'
 import { ANTISTRESS_MODULE_FINDER_ITEMS, ANTISTRESS_MODULE_GOALS, recommendAntistressModule } from '@/lib/inner-growth/antistress-module-router'
 import styles from './antistress-module-finder.module.css'
 
@@ -10,42 +10,45 @@ import styles from './antistress-module-finder.module.css'
 const words = {
   en: {
     label: 'CONGRATULATIONS', title: 'Your course is ready',
-    intro: 'Based on your test results, we suggest starting with the programme block',
+    intro: 'Based on your test results, we recommend starting here.',
+    firstLesson: 'YOUR FIRST LESSON', as2Lesson: 'Notice my first stress signals', progress: '0/14 completed',
     suggested: 'Recommended starting point', selected: 'Your chosen starting point',
     day: 'Day 1 of 14', viewAll: 'View all 6 programme blocks',
     duration: '14 days', recommended: 'Recommended', clinical: 'Clinician only',
-    start: 'Let’s go', starting: 'Opening your first lesson…',
+    start: 'Start my first lesson', starting: 'Opening your first lesson…',
     reset: 'Use recommended starting point',
     missing: 'Please complete a recent Weekly Pulse assessment before starting.',
     clinicianNotice: 'This block requires a qualified clinician and cannot be started independently. Please choose another block.',
     note: 'A suggested learning direction, not a diagnosis.',
-    heroAlt: 'A calm heron standing in sunlit water',
+    heroAlt: 'A traveller in a blue hoodie taking a peaceful pause overlooking the sea',
   },
   ru: {
     label: 'ПОЗДРАВЛЯЕМ', title: 'Ваш курс готов!',
-    intro: 'Судя по результатам ваших тестов, рекомендуем начать с блока программы',
+    intro: 'По результатам тестов рекомендуем начать здесь.',
+    firstLesson: 'ПЕРВЫЙ УРОК', as2Lesson: 'Замечаю первые сигналы стресса', progress: '0 из 14 пройдено',
     suggested: 'Рекомендуемый старт', selected: 'Выбранное направление',
     day: 'День 1 из 14', viewAll: 'Посмотреть все 6 блоков программы',
     duration: '14 дней', recommended: 'Рекомендуем', clinical: 'Со специалистом',
-    start: 'Поехали!', starting: 'Открываем первый урок…',
+    start: 'Начать первый урок', starting: 'Открываем первый урок…',
     reset: 'Вернуться к рекомендации',
     missing: 'Чтобы начать, пройдите актуальный тест Weekly Pulse.',
     clinicianNotice: 'Этот блок возможен только при сопровождении квалифицированного специалиста. Выберите другой блок.',
     note: 'Рекомендация для обучения и самонаблюдения, не диагноз.',
-    heroAlt: 'Спокойная цапля у воды на рассвете',
+    heroAlt: 'Парень в бирюзовой толстовке отдыхает с видом на море',
   },
   es: {
     label: '¡FELICIDADES!', title: '¡Tu curso está listo!',
-    intro: 'Según los resultados de tus pruebas, te recomendamos empezar por el bloque',
+    intro: 'Según tus resultados, te recomendamos empezar aquí.',
+    firstLesson: 'PRIMERA LECCIÓN', as2Lesson: 'Reconozco mis primeras señales de estrés', progress: '0 de 14 completados',
     suggested: 'Punto de partida recomendado', selected: 'Tu punto de partida',
     day: 'Día 1 de 14', viewAll: 'Ver los 6 bloques del programa',
     duration: '14 días', recommended: 'Recomendado', clinical: 'Con especialista',
-    start: '¡Vamos!', starting: 'Abriendo tu primera clase…',
+    start: 'Empezar mi primera lección', starting: 'Abriendo tu primera clase…',
     reset: 'Volver a la recomendación',
     missing: 'Completa primero una evaluación Weekly Pulse reciente.',
     clinicianNotice: 'Este bloque requiere acompañamiento profesional cualificado. Elige otro bloque.',
     note: 'Una sugerencia educativa, no un diagnóstico.',
-    heroAlt: 'Una garza tranquila junto al agua al amanecer',
+    heroAlt: 'Un viajero sentado en la montaña frente al mar',
   },
 }
 
@@ -84,17 +87,17 @@ export default function AntiStressModuleFinder({ locale = 'en', profile, busy = 
   }
 
   return (
-    <section className={styles.root} data-course-module-finder data-course-welcome-screen
+    <section className={styles.root} data-course-module-finder data-course-welcome-screen data-course-unified-entry
       data-opora-route-version={recommendation.version}>
       <div className={styles.card}>
         <div className={styles.heroArt}>
-          <img src="/images/holistic-house/course-start-heron.webp" width="640" height="377"
+          <img src="/images/holistic-house/course-focus-mountain-boy.webp" width="705" height="411"
             alt={t.heroAlt} loading="eager" decoding="async" />
         </div>
         <div className={styles.content}>
           <div className={styles.celebration}><Sparkles size={17} aria-hidden="true"/>{t.label}</div>
           <h1 className={styles.title}>{t.title}</h1>
-          <p className={styles.intro}>{t.intro} <strong>{selected?.title[language] || selected?.title.en}</strong>.</p>
+          <p className={styles.intro}>{t.intro}</p>
 
           <div className={styles.selectedCard} aria-live="polite" data-module-recommendation={recommendation.moduleId}>
             <div className={styles.selectedMeta}>
@@ -110,6 +113,17 @@ export default function AntiStressModuleFinder({ locale = 'en', profile, busy = 
                 <h2>{selected?.title[language] || selected?.title.en}</h2>
                 <p>{selected?.short[language] || selected?.short.en}</p>
               </div>
+            </div>
+            <div className={styles.lessonPreview} data-course-first-lesson-preview>
+              <BookOpen size={17} aria-hidden="true"/>
+              <div>
+                <small>{t.firstLesson}</small>
+                <strong>{chosen === 'AS2' ? t.as2Lesson : (selected?.title[language] || selected?.title.en)}</strong>
+              </div>
+            </div>
+            <div className={styles.progressLine}>
+              <progress className={styles.courseProgress} value={0} max={14} aria-label={t.progress}/>
+              <span>{t.progress}</span>
             </div>
           </div>
 

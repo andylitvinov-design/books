@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Download, FileText, MessageCircle } from "lucide-react";
@@ -87,7 +88,10 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
               <span>{t.manualCount}</span>
             </div>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryAction} href={"/" + locale + "/academy/reiki/kundalini-reiki/free-initiation"}>
+              <Link className={styles.primaryAction} href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>
+                {locale === "ru" ? "ИИ-курс · 3 системы Рейки" : locale === "es" ? "Curso de IA · 3 sistemas Reiki" : "AI course · 3 Reiki systems"}<ArrowRight size={17} aria-hidden="true" />
+              </Link>
+              <Link className={styles.secondaryAction} href={"/" + locale + "/academy/reiki/kundalini-reiki/free-initiation"}>
                 {locale === "ru" ? "Получить 1-ю ступень бесплатно" : locale === "es" ? "Nivel 1 gratis" : "Free Level 1 initiation"}<ArrowRight size={17} aria-hidden="true" />
               </Link>
               <a className={styles.primaryAction} href="#kundalini-levels">

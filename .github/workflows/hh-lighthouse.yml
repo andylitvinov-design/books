@@ -6,7 +6,11 @@ on:
     paths:
       - '.github/workflows/hh-lighthouse.yml'
       - 'scripts/report-hh-lighthouse.mjs'
+      - 'scripts/export-hh-lighthouse-screenshots.mjs'
       - 'app/layout.tsx'
+      - 'app/globals.css'
+      - 'app/es/homeopathy/remedies/[slug]/page.tsx'
+      - 'components/remedy-page.tsx'
       - 'components/holistic-house-home.tsx'
       - 'tests/homepage-server-rendering.test.mjs'
       - 'app/academy.css'
@@ -17,7 +21,7 @@ permissions:
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,14 +36,23 @@ jobs:
         run: sleep 150
       - name: Lighthouse mobile (public home only)
         run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/ --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-mobile.json
+      - name: Lighthouse mobile (services catalog)
+        run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/en/services --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-services-mobile.json
+      - name: Lighthouse mobile (homeopathy remedy detail)
+        run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/en/homeopathy/remedies/arnica --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-remedy-mobile.json
       - name: Lighthouse desktop (public home only)
         run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/ --quiet --preset=desktop --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-desktop.json
       - name: Publish measured metrics and findings
         run: node scripts/report-hh-lighthouse.mjs
+      - name: Save actual final-screen screenshots (mobile and desktop)
+        run: node scripts/export-hh-lighthouse-screenshots.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: hh-lighthouse-${{ github.run_id }}
-          path: artifacts/lighthouse-*.json
+          path: |
+            artifacts/lighthouse-*.json
+            artifacts/lighthouse-*.jpg
+            artifacts/lighthouse-*.png
           if-no-files-found: ignore
           retention-days: 14
