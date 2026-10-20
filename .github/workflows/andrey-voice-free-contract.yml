@@ -1,13 +1,16 @@
-name: Andrey Voice free local narration contract
+name: Andrey Voice free local narration checks
 on:
   pull_request:
     paths:
-      - 'lib/clients/local-narration-queue.mjs'
-      - 'lib/clients/report-narration-service.js'
-      - 'tests/local-narration-queue.test.mjs'
+      - 'app/api/report-narration/**'
+      - 'lib/clients/local-narration*'
+      - 'lib/clients/report-narration*'
+      - 'components/local-report-narration-player.jsx'
+      - 'components/prescription-document.jsx'
+      - 'scripts/andrey-voice/**'
+      - 'tests/local-narration*'
       - 'tests/report-narration.test.mjs'
-      - 'scripts/andrey-voice/check_reference.py'
-      - 'tests/test_andrey_voice_reference.py'
+      - 'tests/test_andrey_voice_*.py'
       - '.github/workflows/andrey-voice-free-contract.yml'
   workflow_dispatch:
 permissions:
@@ -15,19 +18,27 @@ permissions:
 jobs:
   protocol:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check syntax (no paid APIs or external voice assets)
+      - name: Check JavaScript syntax
         run: |
           node --check lib/clients/local-narration-queue.mjs
+          node --check lib/clients/local-narration-service.js
+          node --check lib/clients/local-narration-redis.js
+          node --check lib/clients/local-narration-media.js
+          node --check lib/clients/report-narration-access.js
           node --check lib/clients/report-narration-service.js
           node --check tests/local-narration-queue.test.mjs
+          node --check tests/local-narration-backend-contract.test.mjs
           node --check tests/report-narration.test.mjs
-      - name: Run cost and security contracts
-        run: node --test tests/local-narration-queue.test.mjs tests/report-narration.test.mjs
-      - name: Audit synthetic WAV reference samples offline
-        run: python3 -m unittest discover -s tests -p 'test_andrey_voice_reference.py' -v
+      - name: Run Node privacy and cost contracts
+        run: node --test tests/local-narration-queue.test.mjs tests/local-narration-backend-contract.test.mjs tests/report-narration.test.mjs
+      - name: Check Python worker and synthetic references
+        run: |
+          python3 -m compileall -q scripts/andrey-voice
+          python3 -m unittest discover -s tests -p 'test_andrey_voice_reference.py' -v
+          python3 -m unittest discover -s tests -p 'test_andrey_voice_worker.py' -v
