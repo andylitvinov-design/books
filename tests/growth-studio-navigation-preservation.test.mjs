@@ -55,12 +55,14 @@ test("provider OAuth links are owner-invoked and never imply publishing connecti
  const admin=read("app/admin/growth-studio/page.js");
  assert.ok(admin.includes("requireAdminRequest()"));
  for(const url of [
-  "https://app.hypd.ai/sources?manage=google-ads",
-  "https://app.hypd.ai/sources?manage=meta",
-  "https://app.hypd.ai/sources?manage=search-console",
+  "https://t.me/BotFather",
+  "https://vercel.com/super10/codex-public-book-library/settings/environment-variables",
   "https://app.metricool.com/",
-  "https://github.com/andylitvinov-design/torontotantra/settings/secrets/actions",
+  "https://business.facebook.com/",
+  "/admin/youtube-upload",
  ])assert.ok(panel.includes(url),url);
+ // Marketing pixel/ad connectors never grant social publishing OAuth.
+ assert.doesNotMatch(panel,/app\.hypd\.ai\/sources\?manage=/);
  assert.ok(panel.includes("t.ownerConnectNote"));
  assert.ok(!panel.includes("autoConnect(") && !panel.includes("accessToken"));
  assert.match(panel,/rel="noopener noreferrer"/);
