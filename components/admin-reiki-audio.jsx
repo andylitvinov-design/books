@@ -324,30 +324,76 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     <div className={styles.fileList} data-reiki-audio-folder-contents>
       <div className={styles.fileListHeading}>
         <h4><FileAudio size={17} aria-hidden="true"/>{copy.files}</h4>
-        <span>{files.length}</span>
+        <span>{visibleFiles.length} / {files.length}</span>
       </div>
-      {!files.length ? <p className={styles.folderEmpty}>{copy.noFiles}</p> : <div className={styles.files}>
-        {files.map((item)=>{
+      <div className={styles.folderControls}>
+        <small>{copy.storageUsage}: {files.length} · {formatBytes(usageBytes)}</small>
+        <label className={styles.archivedToggle}>
+          <input type="checkbox" checked={showArchived} onChange={event=>setShowArchived(event.target.checked)}/>
+          {copy.showArchived}
+        </label>
+      </div>
+      {!visibleFiles.length ? <p className={styles.folderEmpty}>{copy.noFiles}</p> : <div className={styles.files}>
+        {visibleFiles.map((item)=>{
           const isActive = item.storage === 'public' && item.path === current?.path
           const isSelected = item.path === staged?.path
           return <div key={item.path} className={styles.fileRow + (isSelected? ' '+styles.fileRowSelected:'')}
             data-reiki-audio-file={item.path} data-file-on-slide={isActive?'true':'false'}>
             <span className={styles.fileIcon}><FileAudio size={18} aria-hidden="true"/></span>
             <div className={styles.fileDetails}>
-              <strong>{locale==='ru'?'Запись':'Recording'} · {item.path.split('/').pop()?.slice(0,8).toUpperCase()}</strong>
+              <strong>{item.title || ((locale==='ru'?'Запись':'Recording')+' · '+item.path.split('/').pop()?.slice(0,8).toUpperCase())}</strong>
               <small>{formatFileDate(item.createdAt,locale)} · {formatBytes(item.bytes)} · {item.path.slice(-3).toUpperCase()}</small>
-              <small>{item.storage === 'draft' ? copy.draft : copy.publishedFile}</small>
+              <small>{item.storage === 'draft' ? copy.draft : copy.publishedFile}{item.archived ? ' · '+copy.archivedLabel : ''}</small>
+              {item.description ? <small>{item.description}</small> : null}
             </div>
-            {isActive ? <span className={styles.fileActive}><Check size={13} aria-hidden="true"/>{copy.published}</span> :
-              <button type="button" disabled={!!busy}
-                className={styles.selectRecording} aria-pressed={isSelected}
-                onClick={()=>void chooseSaved(item)}>{busy==='preview'&&isSelected?copy.preparing:
-                  (isSelected ? copy.selected:copy.selectFile)}</button>}
+            <div className={styles.fileActions}>
+              {isActive ? <span className={styles.fileActive}><Check size={13} aria-hidden="true"/>{copy.published}</span> :
+                <button type="button" disabled={!!busy || item.archived}
+                  className={styles.selectRecording} aria-pressed={isSelected}
+                  onClick={()=>void chooseSaved(item)}>{busy==='preview'&&isSelected?copy.preparing:
+                    (isSelected ? copy.selected:copy.selectFile)}</button>}
+              <button type="button" className={styles.editRecording} disabled={!!busy}
+                onClick={()=>editItem(item)} aria-label={copy.edit+' — '+(item.title||item.path)}>
+                <Pencil size={15} aria-hidden="true"/>{copy.edit}
+              </button>
+            </div>
           </div>
         })}
       </div>}
-      {truncated ? <p className={styles.notice}>{copy.truncated}</p> : null}
+      {truncated ? <p className={styles.notice}>{copy.truncated} {copy.incompleteUsage}</p> : null}
     </div>
+
+    {editing ? <form className={styles.metadataEditor} onSubmit={saveMetadata} data-reiki-audio-editor>
+      <strong>{copy.edit}</strong>
+      <label>{copy.editTitle}
+        <input type="text" required maxLength={REIKI_AUDIO_MAX_TITLE}
+          value={editing.title} disabled={!!busy}
+          onChange={event=>setEditing({...editing,title:event.target.value})}/>
+      </label>
+      <label>{copy.editDescription}
+        <textarea rows={2} maxLength={REIKI_AUDIO_MAX_DESCRIPTION}
+          value={editing.description} disabled={!!busy}
+          onChange={event=>setEditing({...editing,description:event.target.value})}/>
+      </label>
+      <label className={styles.archivedToggle}>
+        <input type="checkbox" checked={editing.archived} disabled={!!busy}
+          onChange={event=>setEditing({...editing,archived:event.target.checked})}/>
+        {editing.archived ? <><RotateCcw size={15} aria-hidden="true"/>{copy.restore}</> :
+          <><Archive size={15} aria-hidden="true"/>{copy.archive}</>}
+      </label>
+      <p className={styles.fileHint}>{copy.descriptionHint}</p>
+      <div className={styles.editorActions}>
+        <button type="submit" disabled={!!busy || !editing.title.trim()}>
+          {busy==='metadata'?copy.saving:copy.save}
+        </button>
+        <button type="button" disabled={!!busy} onClick={()=>setEditing(null)}>{copy.cancel}</button>
+        {editing.storage==='draft' && files.some(item=>item.path===editing.path && item.archived) ?
+          <button type="button" className={styles.dangerButton}
+            disabled={!!busy} onClick={()=>void deleteDraft(editing)}>
+            <Trash2 size={15} aria-hidden="true"/>{copy.delete}
+          </button> : null}
+      </div>
+    </form> : null}
 
     {staged ? <div className={styles.reviewPanel} data-reiki-audio-selection>
       <strong>{copy.choice}</strong>
@@ -360,16 +406,26 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     <div className={styles.uploadPanel}>
       <label className={styles.filePicker}>
         <span><UploadCloud size={16} aria-hidden="true"/>{copy.choose}</span>
-        <input type="file" accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
+        <input type="file" multiple accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
           onChange={select} disabled={!!busy}/>
       </label>
       {preview && !staged ? <div className={styles.player}>
         <span>{copy.localPreview} · {file?.name}</span>
         <audio controls preload="none" src={preview} aria-label={copy.localPreview}/>
       </div> : null}
-      <button type="button" className={styles.uploadButton} disabled={!file || !!busy || !!staged}
-        onClick={upload}><UploadCloud size={18} aria-hidden="true"/>{busy==='upload'?copy.loading:copy.upload}</button>
-      <small className={styles.fileHint}>{copy.fileInfo}</small>
+      {pendingFiles.length>1 ? <strong className={styles.fileHint}>
+        {copy.batchCount}: {pendingFiles.length} / {REIKI_AUDIO_MAX_BATCH}
+      </strong> : null}
+      {progress ? <p className={styles.progress} role="status">{progress}</p> : null}
+      <div className={styles.uploadActions}>
+        <button type="button" className={styles.uploadButton} disabled={!file || !!busy || !!staged}
+          onClick={upload}><UploadCloud size={18} aria-hidden="true"/>{busy==='upload'?copy.loading:copy.upload}</button>
+        {busy==='upload' && pendingFiles.length>1 ?
+          <button type="button" className={styles.stopUpload} onClick={()=>{cancelAfterCurrent.current=true}}>
+            {copy.stopBatch}
+          </button> : null}
+      </div>
+      <small className={styles.fileHint}>{copy.fileInfo} {copy.bulkLimit}</small>
     </div>
     {notice ? <p className={styles.success} role="status">{notice}</p> : null}
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
