@@ -2,7 +2,6 @@ import { ImageResponse } from 'next/og'
 import { createElement } from 'react'
 
 export const runtime = 'edge'
-export const dynamic = 'force-static'
 // Raster icons for Safari Home Screen and Chromium installability.
 // Pure vector geometry; no private account content or external lookups.
 export async function GET(_request, { params }) {
