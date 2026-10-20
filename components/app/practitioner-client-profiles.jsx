@@ -60,10 +60,17 @@ const MANUAL_COPY={
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
 }).format(new Date(value)):''
-export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onSaveContact,onRefresh,isOwner=false,onOpenLegacy}){
+export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onSaveContact,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[]}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang],u=MANUAL_COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
+  // Deep links only select requests that actually appear in this master's list.
+  // URL ids are never used to grant access to the underlying conversation.
+  useEffect(()=>{
+    if(!focusRequestId)return
+    const actual=groups.find(group=>group.items.some(item=>item.id===focusRequestId))
+    if(actual)setSelectedKey(actual.key)
+  },[focusRequestId,groups])
   const [search,setSearch]=useState('')
   const [visibleCount,setVisibleCount]=useState(CLIENTS_PAGE_SIZE)
   const [manualClients,setManualClients]=useState([])
@@ -232,7 +239,8 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                   ? <PublicEnquiryContact request={request} locale={lang} busy={busy} onSave={onSaveContact}/>
                   : <PracticeRequestConversation key={request.id} requestId={request.id}
                       accountId={accountId} locale={lang} initialMessage={typeof request.message==='string'?request.message:''}
-                      createdAt={request.createdAt} onSaved={()=>onRefresh?.()} onViewed={()=>onRefresh?.()}/>}
+                      createdAt={request.createdAt} autoOpen={request.id===focusRequestId}
+                      onSaved={()=>onRefresh?.()} onViewed={()=>onRefresh?.()}/>}
               </article>
             })}
           </div>
