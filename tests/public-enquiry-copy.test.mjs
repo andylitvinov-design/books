@@ -37,9 +37,11 @@ const patterns = {
 };
 for (const locale of ['en', 'ru', 'es']) {
   const p = patterns[locale];
-  test(`${locale}: quick enquiry distinguishes optional local draft from consented CRM request`, () => {
+  test(`${locale}: quick enquiry explains a single consented CRM request`, () => {
     const note = quick[locale].note;
-    for (const pattern of [p.local, p.separate, p.consent, p.submit, p.receipt, p.optional, p.manual, /CRM/, /WhatsApp/, /Telegram/]) assert.match(note, pattern);
+    assert.match(note, { en: /once in the request form/, ru: /один раз/, es: /una sola vez/ }[locale]);
+    assert.doesNotMatch(note, p.local);
+    for (const pattern of [p.consent, p.submit, p.receipt, p.optional, p.manual, /CRM/, /WhatsApp/, /Telegram/]) assert.match(note, pattern);
   });
   test(`${locale}: free-review FAQ distinguishes questionnaire from submitted contact request`, () => {
     const answer = landing[locale].situation.faq[2][1];
@@ -60,10 +62,10 @@ for (const locale of ['en', 'ru', 'es']) {
     for (const pattern of [p.submit, p.receipt, p.optional, p.noCharge, /CRM/]) assert.match(lead[locale].note, pattern);
   });
 }
-test('quick draft and full questionnaire still only copy private text; no new upload or API behavior', () => {
+test('quick entry has no redundant private draft; full questionnaire still copies locally without uploads', () => {
   const quickSource = read('components/free-resource-enquiry.tsx');
   const drawingSource = read('components/free-drawing-intake.tsx');
-  assert.match(quickSource, /navigator\.clipboard\.writeText\(privateContext\)/);
+  assert.doesNotMatch(quickSource, /privateContext|copyPrivateContext|navigator\.clipboard|<input|<textarea/);
   assert.match(drawingSource, /navigator\.clipboard\.writeText\(answers\)/);
   for (const source of [quickSource, drawingSource]) {
     assert.match(source, /<ContactChannelChooser/);

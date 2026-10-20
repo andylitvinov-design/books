@@ -5,9 +5,9 @@ on:
     paths:
       - 'public/holistic-house*.webmanifest'
       - 'app/holistic-house-icon/**'
-      - 'app/[locale]/install/**'
-      - 'app/[locale]/app/[[...path]]/page.jsx'
-      - 'app/[locale]/app/layout.jsx'
+      - 'app/\[locale\]/install/**'
+      - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
+      - 'app/\[locale\]/app/layout.jsx'
       - 'components/app/install-holistic-house.jsx'
       - 'tests/holistic-house-pwa.test.mjs'
       - 'tests/holistic-house-install-push-regression.test.mjs'
@@ -18,8 +18,8 @@ on:
     paths:
       - 'public/holistic-house*.webmanifest'
       - 'app/holistic-house-icon/**'
-      - 'app/[locale]/install/**'
-      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'app/\[locale\]/install/**'
+      - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
       - 'components/app/install-holistic-house.jsx'
       - 'tests/holistic-house-pwa.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'

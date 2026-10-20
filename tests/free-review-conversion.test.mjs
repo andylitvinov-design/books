@@ -89,17 +89,15 @@ test("the real free drawing questionnaire remains reachable and keeps answers lo
   assert.match(intakeCss, /@media\(max-width:767px\)/);
 });
 
-test("new DAO and free situation lead capture prepares real WhatsApp/Telegram drafts, with no URL leak of personal notes", () => {
+test("DAO and free situation keep broad topics with a single consented contact form", () => {
   for (const label of ["Relationships & family", "Отношения и семья", "Relaciones y familia",
     "Balance & everyday energy", "Баланс и энергия", "Equilibrio y energía diaria"]) assert.ok(enquiry.includes(label), label);
   assert.match(enquiry, /<select value=\{topic\}/);
-  assert.match(enquiry, /<input value=\{name\}/);
-  assert.match(enquiry, /<textarea rows=\{3\} maxLength=\{350\}/);
+  assert.doesNotMatch(enquiry, /<input|<textarea|privateContext|copyPrivateContext/);
   assert.match(enquiry, /whatsappEnquiryUrl\(\{/);
   assert.match(enquiry, /topic: offer\.topics\[topic\]/);
   assert.match(enquiry, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{whatsappUrl\}/);
-  assert.match(enquiry, /navigator\.clipboard\.writeText\(privateContext\)/);
-  assert.match(enquiry, /copyStatus === "error"/);
+  assert.equal((enquiry.match(/<ContactChannelChooser\b/g) || []).length, 1);
   assert.doesNotMatch(enquiry, /\n\s+context,\n/, "Personal free-form notes must never enter messenger query URL");
   assert.doesNotMatch(enquiry, /localStorage|sessionStorage|fetch\(|sendBeacon|<\/form>/);
   assert.match(enquiryCss, /focus-visible/);

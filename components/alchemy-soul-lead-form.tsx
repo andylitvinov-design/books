@@ -16,8 +16,6 @@ type Topic = "relationships" | "stress" | "business" | "direction" | "other";
 
 const copy = {
   ru: {
-    name: "Как к вам обращаться? (необязательно)",
-    namePlaceholder: "Ваше имя",
     format: "Формат",
     topics: "Тема",
     formatNames: {
@@ -39,12 +37,9 @@ const copy = {
     greeting: "Здравствуйте! Хочу заказать сеанс «Алхимия души / Психогомеопатия».",
     formatField: "Формат",
     topicField: "Тема",
-    nameField: "Имя",
     question: "Подскажите, пожалуйста, свободное время и следующие шаги.",
   },
   en: {
-    name: "Your name (optional)",
-    namePlaceholder: "How should I address you?",
     format: "Session format",
     topics: "Topic",
     formatNames: {
@@ -66,12 +61,9 @@ const copy = {
     greeting: "Hello! I would like to book an Alchemy of the Soul / Psycho-homeopathy session.",
     formatField: "Format",
     topicField: "Topic",
-    nameField: "Name",
     question: "Please let me know availability and the next steps.",
   },
   es: {
-    name: "¿Cómo te llamas? (opcional)",
-    namePlaceholder: "Tu nombre",
     format: "Formato de la sesión",
     topics: "Tema",
     formatNames: {
@@ -93,7 +85,6 @@ const copy = {
     greeting: "¡Hola! Quisiera solicitar una sesión de Alquimia del Alma / Psicohomeopatía.",
     formatField: "Formato",
     topicField: "Tema",
-    nameField: "Nombre",
     question: "¿Podrías indicarme los horarios disponibles y los siguientes pasos?",
   },
 } as const;
@@ -104,7 +95,6 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
   const formId = useId();
   const [format, setFormat] = useState<Format>("60");
   const [topic, setTopic] = useState<Topic>("relationships");
-  const [name, setName] = useState("");
 
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
@@ -112,7 +102,6 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
     request: t.greeting + " " + t.question,
     option: t.formatNames[format],
     topic: t.topicNames[topic],
-    ...(name.trim() ? { context: t.nameField + ": " + name.trim() } : {}),
     pagePath: "/" + locale + "/services/alchemy-of-soul",
   });
 
@@ -131,9 +120,6 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
             <option value={key} key={key}>{t.topicNames[key]}</option>
           ))}
         </select>
-      </label>
-      <label htmlFor={formId + "-name"}>{t.name}
-        <input id={formId + "-name"} name="name" autoComplete="given-name" maxLength={70} placeholder={t.namePlaceholder} value={name} onChange={(value) => setName(value.target.value)} />
       </label>
       <div className={styles.formOrder}>
         <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
