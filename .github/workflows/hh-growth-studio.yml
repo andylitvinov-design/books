@@ -25,7 +25,7 @@ on:
       - 'tests/growth-studio-evergreen.test.mjs'
       - 'tests/growth-studio-navigation-preservation.test.mjs'
       - 'tests/growth-studio-storage-health.test.mjs'
-      - 'tests/growth-studio-manual-inbox.test.mjs
+      - 'tests/growth-studio-manual-inbox.test.mjs'
       - '.github/workflows/hh-growth-studio.yml'
   workflow_dispatch:
 
