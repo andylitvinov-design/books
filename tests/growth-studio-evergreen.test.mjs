@@ -73,6 +73,35 @@ test('same batch ID generates stable post IDs across retries with no duplication
   await assert.rejects(store.batchCreate(retry),/conflict/)
   assert.equal((await store.list()).length,3)
 })
+
+test('atomic source-revision guard prevents concurrent unapproval or editing during repeat import',async()=>{
+  const store=createMemoryGrowthStudioStore()
+  const original=approved()
+  const draft=nextGrowthPost({action:'save',id:original.id,now,fields:{
+    brand:original.brand,channel:original.channel,locale:original.locale,title:original.title,
+    caption:original.caption,sourceUrl:original.sourceUrl,campaign:original.campaign,
+    scheduledAt:'',mediaUrl:original.mediaUrl,mediaAlt:original.mediaAlt,
+  }})
+  await store.save(draft,0)
+  await store.save(original,1)
+  const prepared=prepareEvergreenGrowthDrafts(args(),{source:original,now})
+  assert.equal((await store.batchCreateFromSource(prepared,original.id,2)).length,3)
+  assert.equal((await store.list()).length,4)
+  await assert.rejects(store.batchCreateFromSource(prepared,original.id,2),/conflict/)
+  const reopened=nextGrowthPost({current:original,action:'reopen',now})
+  await store.save(reopened,2)
+  const different=prepareEvergreenGrowthDrafts(args({batchId:randomUUID()}),{source:original,now})
+  await assert.rejects(store.batchCreateFromSource(different,original.id,2),/conflict/)
+  assert.equal((await store.list()).length,4)
+})
+test('source that has not been persisted cannot generate repeats in durable storage',async()=>{
+  const store=createMemoryGrowthStudioStore()
+  const original=approved()
+  const drafts=prepareEvergreenGrowthDrafts(args(),{source:original,now})
+  await assert.rejects(store.batchCreateFromSource(drafts,original.id,2),/conflict/)
+  assert.deepEqual(await store.list(),[])
+})
+
 test('publication receipts and past approvals never get cloned into new drafts',()=>{
   const source=approved({status:'published'})
   const items=prepareEvergreenGrowthDrafts(args(),{source,now})
@@ -110,7 +139,7 @@ test('evergreen owner action must reuse verified saved source and atomic draft s
   assert.match(source,/createGrowthEvergreenDraftsAction/)
   assert.match(source,/requireAdminRequest\(\)/)
   assert.match(source,/prepareEvergreenGrowthDrafts\(/)
-  assert.match(source,/store\.batchCreate\(drafts\)/)
+  assert.match(source,/store\.batchCreateFromSource\(drafts,sourceId,input\.expectedRevision\)/)
   const model=readFileSync(new URL('../lib/growth-studio/evergreen.mjs',import.meta.url),'utf8')
   assert.doesNotMatch(model,/sendTelegramPost|publishGrowthTelegramNowAction|fetch\(/)
 })
