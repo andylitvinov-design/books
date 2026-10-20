@@ -18,10 +18,11 @@ export async function GET(_request, { params }) {
     div({display:'flex',position:'absolute',width:size*.70,height:size*.70,
       borderRadius:size*.35,background:'#ffffff',opacity:0.07,
       left:size*.15,top:size*.15}),
-    div({display:'flex',position:'absolute',top:size*.13,left:size*.425,
-      width:size*.15,height:size*.15,borderRadius:size*.075,
-      justifyContent:'center',alignItems:'center',fontSize:size*.11,
-      color:'#c4e7cf'},'✦'),
+    // Draw the sparkle geometrically: glyph ✦ forced @vercel/og to fetch a
+    // dynamic font and produced repeated 400/font errors in production.
+    div({display:'flex',position:'absolute',top:size*.15,left:size*.455,
+      width:size*.09,height:size*.09,borderRadius:size*.014,
+      background:'#c4e7cf',transform:'rotate(45deg)'}),
     div({display:'flex',fontFamily:'sans-serif',fontWeight:800,
       fontSize:size*.37,letterSpacing:-size*.014,
       color:'#f6fbf8',lineHeight:1},'HH'),
