@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, BadgeCheck, MessageCircle, ShieldCheck } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { ServiceCart } from "@/components/commerce/service-cart";
+import { getCommerceConfig } from "@/lib/commerce/config";
 import { publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
 import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled, buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
@@ -103,6 +105,8 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
   const { locale } = await params;
   if (!localeAllowed(locale)) notFound();
   const t = copy[locale];
+  const commerce = getCommerceConfig();
+  const verifiedPayPalCheckout = commerce.provider === "paypal" && commerce.enabled;
   const enabled = personalPayPalEnabled();
   const products = publicServiceCatalog(locale);
   const squareLinks = configuredSquarePaymentLinks();
@@ -119,6 +123,7 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
           <h1 id="personal-payment-title">{t.title}</h1>
           <p>{t.lead}</p>
         </div>
+        {verifiedPayPalCheckout ? <ServiceCart locale={locale} /> : <>
         <div className={styles.notice}>
           <ShieldCheck size={22} aria-hidden="true" />
           <div className={styles.noticeText}>
@@ -197,6 +202,7 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
           <p className={styles.disclaimer}>{t.disclaimer}</p>
           <a className={styles.contact} href="https://wa.me/14376066502" target="_blank" rel="noopener noreferrer">{t.contact} →</a>
         </div>
+        </>}
       </section>
     </main>
   );
