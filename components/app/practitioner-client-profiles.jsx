@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import {useEffect,useMemo,useState} from 'react'
 import PracticeRequestConversation from './practice-request-conversation'
 import PractitionerRequestTasks from './practitioner-request-tasks'
@@ -21,7 +22,7 @@ const COPY={
     privacy:'Only enquiries to your services. Anonymous contacts are not verified; private tests and records stay hidden.',
     noPortal:'Reply inside Holistic House or use the contact details the client shared. Telegram/WhatsApp history is not connected.',
     historySummary:'Original request and secure in-app replies',messageCount:'Conversation entries',
-    recent:'Recent clients',tasks:'Open tasks',overdue:'Overdue',nextActions:'Upcoming actions',taskFilter:'With tasks',awaiting:'Awaiting my reply',newMessages:'New messages',lastActivity:'Recent activity',refresh:'Refresh clients',tip:'Tap a client to see their requests and conversation.',
+    recent:'Recent clients',tasks:'Open tasks',overdue:'Overdue',nextActions:'Upcoming actions',taskFilter:'With tasks',alerts:'Phone alerts',awaiting:'Awaiting my reply',newMessages:'New messages',lastActivity:'Recent activity',refresh:'Refresh clients',tip:'Tap a client to see their requests and conversation.',
     emptyHelp:'When someone enquires about your service, they will appear here automatically. You can add a service or share your practitioner profile to invite enquiries.',
     more:'Show {count} more clients',less:'Show latest 5',showing:'Showing {visible} of {total}'},
   ru:{title:'Мои клиенты',intro:'Последние клиенты появляются здесь автоматически — по дате последнего обращения.',
@@ -35,7 +36,7 @@ const COPY={
     privacy:'Здесь только обращения к вам. Анонимные контакты не подтверждены; личные тесты и чужие заявки недоступны.',
     noPortal:'Можно ответить внутри Holistic House или по указанному контакту. История Telegram/WhatsApp пока не подключена.',
     historySummary:'Первое обращение и ответы внутри сайта',messageCount:'Записей переписки',
-    recent:'Последние клиенты',tasks:'Открытые задачи',overdue:'Просрочено',nextActions:'Ближайшие действия',taskFilter:'С задачами',awaiting:'Ждут моего ответа',newMessages:'Новые сообщения',lastActivity:'Недавняя активность',refresh:'Обновить клиентов',tip:'Нажмите на клиента, чтобы увидеть его заявки и переписку.',
+    recent:'Последние клиенты',tasks:'Открытые задачи',overdue:'Просрочено',nextActions:'Ближайшие действия',taskFilter:'С задачами',alerts:'Уведомления на телефон',awaiting:'Ждут моего ответа',newMessages:'Новые сообщения',lastActivity:'Недавняя активность',refresh:'Обновить клиентов',tip:'Нажмите на клиента, чтобы увидеть его заявки и переписку.',
     emptyHelp:'После обращения по вашей услуге клиент появится здесь автоматически. Для первых заявок можно разместить услугу или поделиться профилем.',
     more:'Показать ещё {count}',less:'Показать последние 5',showing:'Показано {visible} из {total}'},
   es:{title:'Mis clientes',intro:'Tus clientes recientes aparecen automáticamente, ordenados por su última solicitud.',
@@ -49,7 +50,7 @@ const COPY={
     privacy:'Solo solicitudes a tus servicios. Los contactos anónimos no están verificados; sin datos privados de terceros.',
     noPortal:'Puedes responder dentro de Holistic House. El historial de Telegram/WhatsApp no está conectado.',
     historySummary:'Solicitud original y respuestas privadas',messageCount:'Mensajes guardados',
-    recent:'Clientes recientes',tasks:'Tareas pendientes',overdue:'Atrasadas',nextActions:'Próximas acciones',taskFilter:'Con tareas',awaiting:'Esperan mi respuesta',newMessages:'Mensajes nuevos',lastActivity:'Actividad reciente',refresh:'Actualizar clientes',tip:'Elige un cliente para ver sus solicitudes y mensajes.',
+    recent:'Clientes recientes',tasks:'Tareas pendientes',overdue:'Atrasadas',nextActions:'Próximas acciones',taskFilter:'Con tareas',alerts:'Alertas al teléfono',awaiting:'Esperan mi respuesta',newMessages:'Mensajes nuevos',lastActivity:'Actividad reciente',refresh:'Actualizar clientes',tip:'Elige un cliente para ver sus solicitudes y mensajes.',
     emptyHelp:'Los clientes aparecerán aquí cuando soliciten tus servicios. Puedes publicar un servicio o compartir tu perfil.',
     more:'Mostrar {count} clientes más',less:'Mostrar los últimos 5',showing:'Mostrando {visible} de {total}'},
 }
@@ -132,6 +133,9 @@ export default function PractitionerClientProfiles({items=[],services=[],account
           {newMessagesCount} {t.newMessages}</span>}
         {onRefresh&&<button type="button" className={styles.refresh} disabled={busy}
           onClick={()=>onRefresh()}>{t.refresh}</button>}
+        <Link className={styles.alertSettings} href={`/${lang==='es'?'en':lang}/app/settings`} prefetch={false}>
+          {t.alerts}
+        </Link>
       </div>
     </header>
     {openTasks.length>0&&<section className={styles.nextActions} aria-label={t.nextActions}>
