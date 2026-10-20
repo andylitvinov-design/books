@@ -74,7 +74,7 @@ async function handle(request) {
     } else {
       const body = await readBody(request, 8192)
       onlyKeys(body, ['action', 'payload'])
-      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'send_sms', 'check_sms_connection', 'check_sms_status', 'create_followup', 'change_followup', 'log_activity', 'update_business_enquiry', 'import_business_contact', 'edit_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
+      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'send_sms', 'check_sms_connection', 'check_sms_status', 'create_followup', 'change_followup', 'plan_lead_reply', 'log_activity', 'update_business_enquiry', 'import_business_contact', 'edit_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
       if (body.action === 'send_verification') data = await sendCrmVerification({repo,actor,payload:body.payload})
       else if (body.action === 'send_email') data = await sendCrmMessage({repo,actor,payload:body.payload})
       else if (body.action === 'send_sms') data = await sendCrmSms({repo,actor,payload:body.payload})
@@ -91,6 +91,7 @@ async function handle(request) {
         }
         if (body.action === 'update_business_enquiry') return store.updateBusinessEnquiry(body.payload)
         if (body.action === 'create_followup') return store.createFollowup(body.payload)
+        if (body.action === 'plan_lead_reply') return store.planLeadReply(body.payload)
         if (body.action === 'change_followup') return store.changeFollowup(body.payload)
         if (body.action === 'log_activity') return store.logBusinessActivity(body.payload)
         if (body.action === 'edit_contact') return store.editContact(body.payload)
