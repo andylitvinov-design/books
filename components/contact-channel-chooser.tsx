@@ -18,18 +18,18 @@ type SavedEnquiry = { referenceCode: string; saved: true };
 
 const copy = {
   en: {
-    order: "Order",
-    question: "Describe what you would like help with",
-    description: "Briefly describe your situation or question",
-    placeholder: "I would like to explore...",
+    order: "Request to join",
+    question: "Leave your contact to enquire or join",
+    description: "Add a short note (optional)",
+    placeholder: "Any practical questions? You can leave this blank.",
     name: "Your name", email: "Email", phone: "Phone / WhatsApp",
     contactHelp: "Add an email address, a phone number or both. No account needed.",
     contactError: "Enter your name and a valid email or international phone number.",
     consent: "I agree to be contacted personally about this enquiry only. No marketing subscription.",
     submit: "Register my request",
     sending: "Saving request…",
-    saved: "Request received in our CRM",
-    next: "Your contact details are saved. If you prefer, you can also start a WhatsApp or Telegram chat using this reference.",
+    saved: "Thank you — your request was received",
+    next: "Andrey can contact you using the details provided. A date or place is confirmed separately. WhatsApp or Telegram is optional.",
     messengers: "Continue in your preferred messenger",
     error: "We could not save your request. Please try again; no enquiry has been recorded.",
     privateNote: "Please avoid medical records, diagnoses or sensitive personal details in this short enquiry.",
@@ -39,18 +39,18 @@ const copy = {
     again: "New enquiry",
   },
   ru: {
-    order: "Заказать",
-    question: "Расскажите, с чем вам нужна помощь",
-    description: "Кратко опишите ситуацию или ваш запрос",
-    placeholder: "Я хотел(а) бы разобраться в...",
+    order: "Оставить заявку",
+    question: "Оставьте контакт, чтобы записаться или узнать подробности",
+    description: "Добавить комментарий (необязательно)",
+    placeholder: "Дополнительные вопросы? Можно оставить пустым.",
     name: "Ваше имя", email: "Электронная почта", phone: "Телефон / WhatsApp",
     contactHelp: "Укажите почту, телефон или оба контакта. Регистрация аккаунта не нужна.",
     contactError: "Укажите имя и действительный email или телефон в международном формате.",
     consent: "Согласен(на) на личный ответ по этой заявке. На рекламную рассылку не подписываюсь.",
     submit: "Оставить заявку",
     sending: "Сохраняем заявку…",
-    saved: "Заявка поступила в CRM",
-    next: "Ваш контакт сохранён. При желании можете также написать в WhatsApp или Telegram с номером заявки.",
+    saved: "Спасибо! Ваша заявка получена",
+    next: "Андрей сможет связаться с вами по указанным контактам. Место и время подтверждаются отдельно. WhatsApp и Telegram — по желанию.",
     messengers: "Продолжить в удобном мессенджере",
     error: "Не удалось сохранить заявку. Попробуйте ещё раз; обращение пока не зарегистрировано.",
     privateNote: "Не указывайте здесь диагнозы, медицинские документы и другие чувствительные сведения.",
@@ -60,18 +60,18 @@ const copy = {
     again: "Новый запрос",
   },
   es: {
-    order: "Solicitar",
-    question: "Cuéntanos en qué podemos ayudarte",
-    description: "Describe brevemente tu situación o solicitud",
-    placeholder: "Me gustaría hablar sobre...",
+    order: "Solicitar plaza",
+    question: "Deja tus datos para consultar o inscribirte",
+    description: "Añadir una nota (opcional)",
+    placeholder: "¿Alguna pregunta práctica? Puedes dejarlo en blanco.",
     name: "Tu nombre", email: "Correo electrónico", phone: "Teléfono / WhatsApp",
     contactHelp: "Deja tu email, teléfono o ambos. No necesitas crear una cuenta.",
     contactError: "Introduce tu nombre y un correo o teléfono internacional válido.",
     consent: "Acepto que me contacten solamente sobre esta solicitud. No me suscribo a publicidad.",
     submit: "Registrar mi solicitud",
     sending: "Guardando solicitud…",
-    saved: "Solicitud recibida en CRM",
-    next: "Guardamos tus datos de contacto. También puedes escribir por WhatsApp o Telegram con esta referencia.",
+    saved: "¡Gracias! Hemos recibido tu solicitud",
+    next: "Andrey puede responder usando tus datos. Fecha y plaza se confirman por separado. WhatsApp y Telegram son opcionales.",
     messengers: "Continuar por mensajería",
     error: "No pudimos guardar tu solicitud. Inténtalo de nuevo; no se ha registrado.",
     privateNote: "Evita incluir diagnósticos, documentos médicos o datos personales sensibles.",
@@ -164,7 +164,7 @@ export function ContactChannelChooser({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || saved || description.trim().length < 10) return;
+    if (busy || saved) return;
     const cleanedPhone = phone.replace(/[\s().-]/g, "");
     if (displayName.trim().length < 2 || (!email.trim() && !cleanedPhone) ||
       (cleanedPhone && !/^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
@@ -202,8 +202,7 @@ export function ContactChannelChooser({
   if (saved) {
     const draftUrl = new URL(referredWhatsappUrl);
     draftUrl.searchParams.set("text",
-      originalMessage + "\n\n" + c.situation + ": " + description.trim()
-      + "\n" + c.reference + ": " + saved.referenceCode,
+      originalMessage + "\n\n" + c.reference + ": " + saved.referenceCode,
     );
     preparedWhatsApp = draftUrl.toString();
   }
@@ -243,13 +242,16 @@ export function ContactChannelChooser({
               </div>
             </div>
             <small className={styles.privateNote}>{c.contactHelp}</small>
-            <label htmlFor={panelId + "-situation"}>{c.description}</label>
-            <textarea id={panelId + "-situation"} required minLength={10} maxLength={1400} rows={3}
-              placeholder={c.placeholder} value={description} disabled={busy}
-              onChange={event => {
-                setDescription(event.target.value); setError(""); operationId.current = null;
-              }} />
-            <small className={styles.privateNote}>{c.privateNote}</small>
+            <details className={styles.optionalNote}>
+              <summary>{c.description}</summary>
+              <textarea id={panelId + "-situation"} aria-label={c.description}
+                maxLength={1400} rows={2}
+                placeholder={c.placeholder} value={description} disabled={busy}
+                onChange={event => {
+                  setDescription(event.target.value); setError(""); operationId.current = null;
+                }} />
+              <small className={styles.privateNote}>{c.privateNote}</small>
+            </details>
             <label className={styles.consent}>
               <input type="checkbox" required checked={consent} disabled={busy}
                 onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
@@ -260,7 +262,7 @@ export function ContactChannelChooser({
                 value={website} onChange={event => setWebsite(event.target.value)} />
             </label>
             <button type="submit" className={styles.submit}
-              disabled={busy || description.trim().length < 10 || displayName.trim().length < 2 ||
+              disabled={busy || displayName.trim().length < 2 ||
                 (!email.trim() && !phone.trim()) || !consent}>
               <Send size={17} aria-hidden="true" />{busy ? c.sending : c.submit}
             </button>

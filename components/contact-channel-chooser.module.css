@@ -99,7 +99,20 @@
   .contactFields { grid-template-columns:1fr; }
 }
 
-/* A code selector and national digits must have the entire narrow card width. */
+/* Optional notes stay out of the first mobile screen: name, reply contact and
+   consent are the only required registration inputs. */
+.optionalNote { min-width:0; border:1px solid #c9d9e1; border-radius:10px; background:#fff; }
+.optionalNote > summary {
+  box-sizing:border-box; min-height:44px; padding:11px 12px;
+  cursor:pointer; font:650 13px/1.45 Arial,Helvetica,sans-serif;
+  color:#375872; list-style-position:inside;
+}
+.optionalNote > summary:focus-visible { outline:3px solid #80abc7; outline-offset:2px; }
+.optionalNote[open] { padding-bottom:10px; }
+.optionalNote[open] > textarea { margin:0 10px 8px; width:calc(100% - 20px); }
+.optionalNote[open] > .privateNote { display:block; margin:0 10px; }
+
+/* The code selector and phone number need the entire narrow card width. */
 .contactFields .phoneField{grid-column:1/-1;display:grid;gap:5px;min-width:0}
 .phoneField label{display:block}
 .contactFields .phoneField input,.contactFields .phoneField select{font-size:16px}
