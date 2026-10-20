@@ -42,12 +42,16 @@ async function handler(request){
     }
     // A saved reply remains saved even if its optional Web Push delivery fails.
     // Never return an internal notification flag to the browser.
-    if(request.method==='POST'&&data.notifyClient===true&&data.duplicate===false){
+    if(request.method==='POST'&&data.duplicate===false){
       const id=data.id
-      after(async()=>{try{await dispatchClientMessagePush(config,id)}catch{/* best effort; no private logs */}})
+      if(data.notifyClient===true)
+        after(async()=>{try{await dispatchClientMessagePush(config,id)}catch{/* best effort; no private logs */}})
+      else if(data.notifyMaster===true)
+        after(async()=>{try{await dispatchPractitionerMessagePush(config,id)}catch{/* best effort; no private logs */}})
     }
     const safeData={...data}
     delete safeData.notifyClient
+    delete safeData.notifyMaster
     return auth.apply(NextResponse.json(safeData,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)
