@@ -44,5 +44,5 @@ test("standalone 64-card catalogue and Library tab link to the same first-party 
   assert.ok(hub.includes('view === "dao"'));
   assert.ok(hub.includes('view=dao'));
   assert.ok(panel.includes('/dao/hexagrams/" + item.number'));
-  assert.match(panel, /"ru" \| "en" \| "es"/);
+  assert.match(panel, /type Locale = "en" \| "ru" \| "es"/);
 });
