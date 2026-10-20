@@ -1,5 +1,5 @@
 'use client'
-import {useMemo,useState} from 'react'
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {CheckCircle2, AlertCircle, CircleHelp, RefreshCcw, ShieldCheck} from 'lucide-react'
 import {GROWTH_PUBLICATION_NETWORKS,CHANNEL_CAPABILITIES} from '@/lib/growth-studio/channel-capabilities.mjs'
@@ -22,8 +22,9 @@ const messages={
     storageTitle:'Хранилище черновиков · Redis',
     storageNotChecked:'Ещё не проверено', storageChecking:'Проверка…',
     storageCheck:'Проверить сохранение',storageRecheck:'Проверить ещё раз',
-    storageOk:'Запись, чтение и удаление временного ключа подтверждены',
-    storageInfo:'Создаётся один случайный технический ключ со сроком 30 секунд. Мы читаем его и удаляем. Клиентские данные, черновики и публикации не затрагиваются.',
+    storageOk:'Redis: запись, чтение, изменение и защита от повторной записи проверены',
+    storageRunning:'Redis: проверяем…',storageFailShort:'Redis: нужна проверка',storagePassShort:'Redis: проверен',channelCount:'каналов',
+    storageInfo:'При входе автоматически проверяются операции сохранения, чтения и обновления тестового черновика в отдельном Redis-ключе (TTL 30 сек), затем ключ удаляется. Реальные черновики и клиенты не затрагиваются.',
     storageError:'Не удалось проверить Redis. Сохранение черновиков в этой проверке не подтверждено. Проверьте серверное подключение.',
     direct:'Перейти в YouTube-загрузчик', existing:'Открыть медиатеку',
     guidelines:'Готовность определяется по реальному разрешению и ответу провайдера, а не по наличию кнопки.',
@@ -48,8 +49,9 @@ const messages={
     storageTitle:'Draft storage · Redis',
     storageNotChecked:'Not yet verified',storageChecking:'Checking…',
     storageCheck:'Test draft storage',storageRecheck:'Test again',
-    storageOk:'A temporary Redis key was written, read back and deleted',
-    storageInfo:'Creates a single random technical key with a 30-second expiry, then reads and deletes it. No client information, drafts or published posts are touched.',
+    storageOk:'Redis: synthetic editor save, readback, update and conflict protection verified',
+    storageRunning:'Redis: checking…',storageFailShort:'Redis: check failed',storagePassShort:'Redis: verified',channelCount:'channels',
+    storageInfo:'On opening the owner workspace, checks a synthetic draft using the editor\'s Redis write, read and update path. Its isolated 30-second key is deleted. No real drafts or client data are touched.',
     storageError:'Redis could not be verified. Draft persistence is not confirmed by this test. Check the server connection.',
     direct:'Open YouTube uploader',existing:'Open material library',
     guidelines:'Readiness requires real provider permission and delivery evidence, not a button in this app.',
@@ -87,6 +89,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [error,setError]=useState('')
   const [storageState,setStorageState]=useState('untested')
   const [storageChecking,setStorageChecking]=useState(false)
+  const storageProbeInFlight=useRef(false)
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
@@ -98,8 +101,9 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
     }catch{setError('unverified')}
     finally{setChecking(false)}
   }
-  async function verifyStorage() {
-    if(storageChecking)return
+  const verifyStorage=useCallback(async()=>{
+    if(storageProbeInFlight.current)return
+    storageProbeInFlight.current=true
     setStorageChecking(true)
     setStorageState('untested')
     try {
@@ -108,11 +112,21 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
     } catch {
       setStorageState('failed')
     } finally {
+      storageProbeInFlight.current=false
       setStorageChecking(false)
     }
-  }
+  },[])
+  // Executes once when an already-authenticated owner opens this workspace.
+  // The server action checks the real admin session first. No provider posts.
+  useEffect(()=>{void verifyStorage()},[verifyStorage])
   return <details className={styles.connectionPanel}>
-    <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.summary}</span><span className={styles.connectionSummaryCount}>{verified?'1': '0'} / {all.length}</span></summary>
+    <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.summary}</span>
+      <span className={storageState==='verified'?styles.verifiedText:styles.notVerifiedText} role="status">
+        {storageChecking?t.storageRunning:storageState==='verified'?t.storagePassShort:
+          storageState==='failed'?t.storageFailShort:t.storageNotChecked}
+      </span>
+      <span className={styles.connectionSummaryCount}>{verified?'1':'0'} / {all.length} {t.channelCount}</span>
+    </summary>
     <p>{t.explanation}</p>
     <div className={styles.connectionBox}>
       <div className={styles.connectionBoxTitle}>
