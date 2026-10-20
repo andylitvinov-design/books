@@ -575,7 +575,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
 
     const article = (
       <article
-        className={"tantra-journey__level tantra-journey__level--phase-" + phase + (n === 1 ? " tantra-journey__level--first" : "")}
+        className={"tantra-journey__level tantra-journey__level--phase-" + phase + (n === 1 ? " tantra-journey__level--first" : "") + " reiki-screen reiki-screen--chapter"}
         id={n === 1 ? "tantra-level-1" : undefined}
         aria-labelledby={"tantra-heading-" + n}
       >
@@ -608,7 +608,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
                 <strong>{c.restored}</strong>
                 <p>{originalProgrammeStudyStep(locale, i)}</p>
               </div>
-              <details className="tantra-journey__extras" open={i === 0}>
+              <details className="tantra-journey__extras">
                 <summary><span>{c.details}</span><span className="tantra-journey__extras-indicator" aria-hidden="true">+</span></summary>
                 <div className="tantra-journey__extras-body">
                   <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>

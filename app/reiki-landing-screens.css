@@ -1,0 +1,196 @@
+/* Holistic House · All Reiki systems
+   One editorial focus per viewport. The original learning material remains intact
+   and is revealed with native <details> rather than expanding long pages by default. */
+.reiki-screen { scroll-margin-top: 108px; min-width: 0; }
+.reiki-screen--hero, .reiki-screen--feature, .reiki-screen--media,
+.reiki-screen--social, .reiki-screen--explore, .reiki-screen--archive {
+  margin-block: clamp(20px, 4.5vw, 56px);
+}
+.reiki-screen--hero { border-radius: clamp(20px,2.8vw,34px); overflow: hidden; }
+.reiki-screen--explore, .reiki-screen--feature, .reiki-screen--archive {
+  border-radius: clamp(18px,2vw,26px);
+}
+@media (min-width: 800px) {
+  .reiki-screen--hero { min-height: min(810px, calc(100svh - 110px)); }
+  .reiki-screen--feature, .reiki-screen--media, .reiki-screen--social,
+  .reiki-screen--explore { min-height: min(740px, calc(100svh - 124px)); }
+}
+.reiki-swipe-cue { margin: 16px 0 4px; color: #678074; font-size: 12px; font-weight: 700; letter-spacing: .035em; }
+.reiki-card-track, .reiki-roadmap-track {
+  display: flex !important; gap: clamp(14px,2.6vw,25px) !important;
+  overflow-x: auto; overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity; scrollbar-color: #c8b297 transparent; scrollbar-width: thin;
+  padding: 6px 4px 21px;
+}
+.reiki-card-track > *, .reiki-roadmap-track > * { scroll-snap-align: start; min-width: 0; }
+.reiki-card-track:focus-visible, .reiki-roadmap-track:focus-visible,
+.yggdrasil-program-landing .yggdrasil-module-grid:focus-visible {
+  outline: 3px solid #a57d45; outline-offset: 4px;
+}
+/* Secondary details are keyboard-accessible native disclosures. */
+.reiki-disclosure, .reiki-optional-capture, .reiki-full-manual {
+  margin: 18px 0; overflow: hidden;
+  border: 1px solid #d9d3c7; border-radius: 16px; background: rgba(255,253,248,.89);
+}
+.reiki-disclosure > summary, .reiki-optional-capture > summary,
+.reiki-full-manual > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  min-height: 52px; padding: 14px clamp(16px,2.4vw,23px);
+  color: #315348; font-size: clamp(13px,1.1vw,15px);
+  font-weight: 750; line-height: 1.45; cursor: pointer; list-style: none;
+}
+.reiki-disclosure > summary::-webkit-details-marker,
+.reiki-optional-capture > summary::-webkit-details-marker,
+.reiki-full-manual > summary::-webkit-details-marker { display: none; }
+.reiki-disclosure > summary > span, .reiki-optional-capture > summary > span,
+.reiki-full-manual > summary > span {
+  flex: 0 0 auto; font-size: 22px; color: #b08c5f; transition: transform .18s ease;
+}
+.reiki-disclosure[open] > summary > span, .reiki-optional-capture[open] > summary > span,
+.reiki-full-manual[open] > summary > span { transform: rotate(45deg); }
+.reiki-disclosure > summary:hover, .reiki-optional-capture > summary:hover,
+.reiki-full-manual > summary:hover { background: #f8f3e9; }
+.reiki-disclosure > summary:focus-visible, .reiki-optional-capture > summary:focus-visible,
+.reiki-full-manual > summary:focus-visible { outline: 3px solid #a68151; outline-offset: -3px; }
+.reiki-disclosure--hero { max-width: 620px; margin-top: 20px; background: rgba(255,255,255,.65); }
+.reiki-disclosure--hero .yggdrasil-program-highlights { padding: 0 24px 20px; margin: 0; }
+.reiki-disclosure--archive { margin-block: 30px; }
+.reiki-disclosure--archive > :not(summary) { padding: 10px clamp(14px,3vw,24px) 24px; }
+.reiki-optional-capture { margin: 25px 0; border-color: #d5e0d6; }
+.reiki-optional-capture > :not(summary) { margin: 0; padding: 0 clamp(14px,3vw,26px) 20px; }
+.reiki-full-manual { margin: 0; }
+.reiki-full-manual__body { padding: 24px clamp(14px,3vw,28px); border-top: 1px solid #e3d8c9; }
+.reiki-disclosure__actions { display: flex; flex-wrap: wrap; gap: 9px; padding: 0 15px 17px; }
+/* Yggdrasil · authentic photography, seven swipeable modules, five focus chapters. */
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero.reiki-screen {
+  border: 1px solid #e1d3bf; background: linear-gradient(130deg,#fffaf0,#f3eee6);
+  box-shadow: 0 24px 58px rgba(55,68,51,.09);
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero-image { min-height: 420px; }
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero-copy { padding: clamp(24px,4.1vw,62px); }
+.academy-reading-shell--yggdrasil .yggdrasil-program-hero h1 {
+  font-size: clamp(37px,4.8vw,65px); line-height: 1.05; letter-spacing: -.035em;
+}
+.academy-reading-shell--yggdrasil .yggdrasil-program-actions { margin-top: 26px; }
+.academy-reading-shell--yggdrasil .yggdrasil-program-actions > a { border-radius: 10px; min-height: 48px; }
+.academy-reading-shell--yggdrasil .yggdrasil-program-section.reiki-screen {
+  padding: clamp(20px,3.4vw,46px);
+  background: linear-gradient(155deg,#f0f6f2,#fffaf1 70%); border: 1px solid #d9e4dc;
+}
+.reiki-module-jumps { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding: 17px 0 6px; }
+.reiki-module-jumps a {
+  flex: 0 0 auto; display: inline-flex; min-height: 42px; align-items: center;
+  padding: 8px 12px; border: 1px solid #ccddcf; border-radius: 999px;
+  text-decoration: none; color: #315f4c; background: #fffefa; font-size: 12px; font-weight: 700;
+}
+.reiki-module-jumps a:hover, .reiki-module-jumps a:focus-visible { background: #dfeae0; border-color: #95b6a0; }
+.yggdrasil-program-landing .yggdrasil-module-grid {
+  display: flex; gap: 18px; overflow-x: auto; overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity; scrollbar-color: #b9c8b7 transparent; scrollbar-width: thin;
+  padding: 6px 4px 24px; margin-top: 14px;
+}
+.yggdrasil-program-landing .yggdrasil-module-card {
+  flex: 0 0 min(100%,760px); scroll-snap-align: start;
+  grid-template-columns: minmax(200px,42%) minmax(0,1fr); min-height: 355px;
+  border: 1px solid #d6e0d6; border-radius: 20px; background: #fffdf9;
+  box-shadow: 0 15px 34px rgba(33,69,51,.09);
+}
+.yggdrasil-program-landing .yggdrasil-module-art { position: relative; min-height: 300px; }
+.yggdrasil-program-landing .yggdrasil-module-card-copy { align-self: center; padding: clamp(22px,3.5vw,40px); }
+.yggdrasil-program-landing .yggdrasil-module-card-copy h3 { font-size: clamp(26px,3vw,40px); line-height: 1.12; }
+.yggdrasil-program-landing .yggdrasil-module-card-copy p { margin-top: 13px; font-size: 15px; line-height: 1.65; }
+.yggdrasil-program-landing .yggdrasil-module-card-copy a { margin-top: 24px; font-size: 13px; color: #2e6b54; }
+.yggdrasil-program-landing .yggdrasil-basic-course {
+  margin-block: 45px; padding: clamp(18px,3.5vw,42px); border-radius: 26px;
+  background: linear-gradient(170deg,#f9f0e6,#fffdf9);
+}
+.yggdrasil-program-landing .yggdrasil-basic-course-heading { max-width: 760px; margin-bottom: 26px; }
+.yggdrasil-basic-level-card.reiki-screen--chapter {
+  min-height: clamp(400px,72svh,690px); margin-block: 20px;
+  padding: clamp(17px,3vw,32px); border: 1px solid #e6d4bc; border-radius: 18px;
+  background: #fffefa; box-shadow: 0 15px 37px rgba(62,54,39,.045); align-items: center;
+}
+.yggdrasil-basic-level-card .reiki-disclosure { margin-block: 17px; }
+.yggdrasil-basic-level-card .reiki-disclosure > strong { display: block; padding: 12px 20px 5px; }
+.yggdrasil-basic-level-card .reiki-disclosure > ul { margin: 0; padding: 0 20px 18px; }
+.yggdrasil-program-landing .reiki-screen--media, .yggdrasil-program-landing .reiki-screen--social {
+  display: grid; align-items: center;
+}
+.yggdrasil-module-page .reiki-roadmap-track .reiki-roadmap-card {
+  flex: 0 0 min(77vw,425px); min-height: 258px; border-radius: 16px;
+}
+.yggdrasil-module-page .reiki-screen--hero { overflow: hidden; }
+.yggdrasil-description-page .yggdrasil-description-hero.reiki-screen {
+  background: linear-gradient(145deg,#f9f0e4,#f5f9f4);
+  border: 1px solid #e1d6c7; padding: clamp(20px,3.5vw,40px);
+}
+.yggdrasil-description-page .yggdrasil-description-summary { border-radius: 17px; margin: 22px 0; }
+.yggdrasil-description-page .yggdrasil-full-book { padding-top: 8px; }
+/* Tantra · one level per stage with original photos and closed optional attunements. */
+.academy-reading-shell--tantra .tantra-course-hero.reiki-screen {
+  border-radius: 26px; align-items: center; background: linear-gradient(125deg,#f9efe8,#fff9f0 58%,#f1e9e5);
+  box-shadow: 0 20px 55px rgba(82,56,39,.075);
+}
+.academy-reading-shell--tantra .tantra-course-hero h1 { font-size: clamp(35px,4.5vw,62px); line-height: 1.05; }
+.academy-reading-shell--tantra .tantra-course-hero__visual { overflow: hidden; border-radius: 18px; }
+.academy-reading-shell--tantra .tantra-level-summary {
+  border-radius: 22px; background: linear-gradient(160deg,#fffaf4,#f7ece4);
+}
+.academy-reading-shell--tantra .tantra-journey__level.reiki-screen--chapter {
+  min-height: clamp(480px,76svh,800px); margin-block: 18px;
+  border-radius: 20px; align-content: center;
+}
+.academy-reading-shell--tantra .tantra-journey__extras { border-radius: 12px; }
+.academy-reading-shell--tantra .tantra-mobile-guide.reiki-screen {
+  border-radius: 22px; background: #fbf5ec;
+}
+.academy-reading-shell--tantra .reiki-screen--archive {
+  border: 1px solid #e3d7c7; padding: clamp(15px,3vw,35px); background: #fffcf6;
+}
+.academy-reading-shell--tantra .reiki-screen--social { display: grid; align-items: center; }
+/* Kundalini · focus card tracks for every viewport, with long source lists folded. */
+.reiki-kundalini-page .reiki-screen--hero { border-radius: 27px; }
+.reiki-kundalini-page .reiki-screen--explore {
+  padding: clamp(20px,3vw,36px); border: 1px solid #dae5da;
+  background: linear-gradient(150deg,#f1f7f0,#fffcf6);
+}
+.reiki-kundalini-page .reiki-screen--feature {
+  padding: clamp(22px,3vw,38px); border-radius: 24px;
+  background: linear-gradient(135deg,#e9f3eb,#fffdf7);
+}
+.reiki-kundalini-page .reiki-screen--media { border-radius: 23px; overflow: hidden; }
+.reiki-kundalini-page .reiki-kundalini-card {
+  flex: 0 0 min(100%,640px); scroll-snap-align: start; min-height: 510px;
+  display: flex; flex-direction: column; border-radius: 19px;
+}
+.reiki-kundalini-page .reiki-kundalini-card > details { margin-top: auto; }
+.reiki-kundalini-page .reiki-card-track:not(.reiki-kundalini-levels) > * { flex: 0 0 min(100%,465px); }
+.reiki-kundalini-page .reiki-disclosure--quote { max-width: 580px; background: rgba(255,255,255,.56); }
+.reiki-kundalini-page .reiki-disclosure--quote blockquote { margin: 0 18px 20px; }
+.reiki-kundalini-page .reiki-disclosure--actions { flex-basis: 100%; margin: 0; background: transparent; }
+.reiki-kundalini-page .reiki-disclosure--actions > summary { justify-content: flex-start; min-height: 46px; }
+.reiki-kundalini-page .reiki-disclosure--actions .reiki-disclosure__actions { padding: 0 13px 15px; }
+.reiki-kundalini-page .reiki-card-track { margin-top: 16px; }
+.reiki-kundalini-page .reiki-screen--cta { border-radius: 25px; }
+@media (max-width: 760px) {
+  .reiki-screen--hero, .reiki-screen--feature, .reiki-screen--media,
+  .reiki-screen--social, .reiki-screen--explore, .reiki-screen--archive {
+    min-height: 0; margin-block: 18px; border-radius: 18px;
+  }
+  .yggdrasil-program-landing .yggdrasil-module-card { flex-basis: 100%; grid-template-columns: 1fr; min-height: 0; }
+  .yggdrasil-program-landing .yggdrasil-module-art { min-height: 195px; }
+  .yggdrasil-program-landing .yggdrasil-module-card-copy { padding: 23px; }
+  .yggdrasil-program-landing .yggdrasil-module-card-copy h3 { font-size: 28px; }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-hero-image { min-height: 200px; }
+  .academy-reading-shell--yggdrasil .yggdrasil-program-section.reiki-screen { padding: 20px 15px; }
+  .yggdrasil-basic-level-card.reiki-screen--chapter { min-height: 0; padding: 14px; margin-block: 15px; }
+  .academy-reading-shell--tantra .tantra-journey__level.reiki-screen--chapter { min-height: 0; }
+  .reiki-kundalini-page .reiki-screen--explore { padding: 20px 14px; }
+  .reiki-kundalini-page .reiki-kundalini-card { min-height: 0; }
+  .reiki-kundalini-page .reiki-disclosure--actions { width: 100%; }
+  .reiki-kundalini-page .reiki-disclosure__actions > * { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reiki-disclosure > summary > span, .reiki-optional-capture > summary > span,
+  .reiki-full-manual > summary > span { transition: none; }
+}

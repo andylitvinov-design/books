@@ -138,7 +138,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         ) : null}
         {isVerbatimTantraArchive ? (
           <>
-            <section className="tantra-course-hero" aria-labelledby="tantra-course-hero-title">
+            <section className="tantra-course-hero reiki-screen reiki-screen--hero" aria-labelledby="tantra-course-hero-title">
               <div className="tantra-course-hero__copy">
                 <span className="tantra-course-hero__tao-seal" aria-hidden="true">
                   <svg viewBox="0 0 100 100" focusable="false">
@@ -177,7 +177,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               </figure>
             </section>
             <section className="tantra-level-summary" aria-label={locale === "ru" ? "Первая ступень и остальные по желанию" : locale === "es" ? "Nivel 1 y niveles posteriores opcionales" : "Level 1 first; optional later levels"}><TantraReikiJourney locale={locale} /></section>
-            <section className="tantra-mobile-guide tantra-mobile-guide--combined" id="tantra-levels" aria-labelledby="tantra-mobile-guide-heading">
+            <section className="tantra-mobile-guide tantra-mobile-guide--combined reiki-screen reiki-screen--feature" id="tantra-levels" aria-labelledby="tantra-mobile-guide-heading">
               <div className="tantra-mobile-guide__cover" aria-hidden="true">
                 <span>HOLISTIC HOUSE</span>
                 <div className="tantra-mobile-guide__ornament"><span>✦</span></div>
@@ -195,9 +195,9 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 </details>
               </div>
             </section>
-            <TantraReikiFestivalMoments locale={locale} />
+            <div className="reiki-screen reiki-screen--social"><TantraReikiFestivalMoments locale={locale} /></div>
             {locale === "en" ? <EnglishGuidedMeditations focus="tantra-reiki" /> : null}
-            <TantraReikiTestimonials locale={locale} />
+            <div className="reiki-screen reiki-screen--social"><TantraReikiTestimonials locale={locale} /></div>
           </>
         ) : null}
         {!isVerbatimTantraArchive && outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
@@ -205,7 +205,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         {isCanonicalYggdrasil ? (
           <YggdrasilProgramLanding locale={locale} />
         ) : isVerbatimTantraArchive ? (
-          <TantraReikiProgrammeModules locale={locale} publicBlocks={publicBlocks} />
+          <section className="reiki-screen reiki-screen--archive" aria-label={locale === "ru" ? "Материалы и история Тантра Рейки" : locale === "es" ? "Materiales e historia de Tantra Reiki" : "Tantra Reiki teaching & source archive"}><TantraReikiProgrammeModules locale={locale} publicBlocks={publicBlocks} /></section>
         ) : hasBody ? <div className="academy-source-content">{renderBlocks(publicBlocks)}</div> : <p className="academy-empty-source">{text.noContent}</p>}
         {!isVerbatimTantraArchive && (sourceVideos.length || videos.length) ? (
           <section className="academy-media-section" aria-label={text.videos}>
