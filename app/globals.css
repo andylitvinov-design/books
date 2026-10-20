@@ -5881,3 +5881,17 @@
     scroll-behavior: auto;
   }
 }
+
+
+/* Business coaching printable view: these are genuinely global page chrome
+   elements and must not live in a pure CSS Module. Scope to this single page. */
+@media print {
+  body:has([data-business-coaching]) {
+    background: #fff !important;
+  }
+  body:has([data-business-coaching]) .hh-header,
+  body:has([data-business-coaching]) .hh-nav,
+  body:has([data-business-coaching]) .hh-account-menu {
+    display: none !important;
+  }
+}
