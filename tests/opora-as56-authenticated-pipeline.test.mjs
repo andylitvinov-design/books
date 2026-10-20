@@ -3,11 +3,11 @@ import assert from 'node:assert/strict'
 import { repositoryHarness, mount, findButton, nodes, textOf } from './helpers/route-pipeline-harness.mjs'
 import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner-growth/anti-stress-skills-v6.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
+import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_EXPERIENCE_EXTENDED_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 
 const labels = {
-  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Not sure yet', plan: 'Keep this reminder', save: 'Save my practice', receipt: 'Your moment is saved' },
-  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Пока не уверен(а)', plan: 'Хочу запомнить этот вариант', save: 'Сохранить мою практику', receipt: 'Ваш момент сохранён' },
+  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Not sure yet', plan: 'Keep this reminder', save: 'Save my practice', receipt: 'Saved to your course' },
+  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Пока не уверен(а)', plan: 'Хочу запомнить этот вариант', save: 'Сохранить мою практику', receipt: 'Сохранено в вашем курсе' },
 }
 async function click(player, label) {
   const button = findButton(player.tree, label)
@@ -18,7 +18,7 @@ async function click(player, label) {
 }
 
 for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
-  test(`AS-5.6 ${locale} day ${day}: actual five-moment player saves an exact V7 lesson through the owner repository`, async () => {
+  test(`AS-5.6 ${locale} day ${day}: expanded learner player saves an exact V7 lesson through the owner repository`, async () => {
     const owner = repositoryHarness({ freshPhase: true })
     const cycle = await owner.create('AS2')
     assert.equal(cycle.content_version, COURSE_ANTISTRESS_SKILLS_V7)
@@ -48,13 +48,14 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         await click(player, locale==='ru'?'Напряжённо':'Tense')
         assert.match(textOf(player.tree),locale==='ru'
           ?/не нужно заставлять себя расслабиться/:/do not have to make yourself relax/)
-        await click(player,t.next)
+        for(let i=0;i<5;i++)await click(player,t.next)
       }
       await click(player,t.tried)
       await click(player,t.next)
+      if(day!==1)await click(player,t.next) // optional repeat screen
       await click(player,t.same)
       await click(player,t.next)
-      if(day!==1){await click(player,t.vote);await click(player,t.next)}
+      if(day!==1){await click(player,t.next);await click(player,t.vote);await click(player,t.next)}
       await click(player,t.plan)
       await click(player,t.next)
       await click(player,locale==='ru'?'Получилось немного':'I managed a little')
@@ -73,7 +74,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(payload.welcomeFeeling,'tense')
       assert.equal(saved.signals.welcomeFeeling,'tense')
       assert.deepEqual(payload.visitedSlideKeys,
-        day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+        day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_EXTENDED_KEYS])
       if(day===1)assert.deepEqual(saved.signals.oporaOpening,
         {resource:null,lastDayDifficulty:null,familiarSupport:null})
       assert.equal(saved.signals.practiceAttempt, 'tried')
