@@ -14,6 +14,7 @@ on:
       - "tests/report-editorial-grid.test.mjs"
       - "tests/report-progress-geometry-v6.test.mjs"
       - "tests/report-premium-art-direction-v7.test.mjs"
+      - "tests/report-editorial-quiet-v8.test.mjs"
       - ".github/workflows/holistic-house-pdf-graphics.yml"
   workflow_dispatch:
 
@@ -43,6 +44,7 @@ jobs:
             tests/report-editorial-grid.test.mjs \
             tests/report-progress-geometry-v6.test.mjs \
             tests/report-premium-art-direction-v7.test.mjs \
+            tests/report-editorial-quiet-v8.test.mjs \
             tests/mobile-readable-pdf.test.mjs \
             tests/canonical-pdf.test.mjs \
             tests/document-samples.test.mjs \
@@ -52,7 +54,13 @@ jobs:
           node scripts/render-premium-report-samples.mjs
           if ! command -v pdftoppm >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils; fi
           for locale in en ru; do
-            pdftoppm -f 1 -l 3 -scale-to 720 -png "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/$locale"
+            pdftoppm -f 1 -l 3 -scale-to 880 -png "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/$locale"
+          done
+          for locale in en ru; do
+            pdftotext -layout "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/sample-$locale.txt"
+            grep -q 'Avena Sativa' "tmp/premium-pdf-qa/sample-$locale.txt"
+            grep -q 'Phosphoricum Acidum' "tmp/premium-pdf-qa/sample-$locale.txt"
+            grep -q 'Nux Vomica' "tmp/premium-pdf-qa/sample-$locale.txt"
           done
           ls -lh tmp/premium-pdf-qa/
       - name: Emit small anonymous RU page proofs for visual inspection
