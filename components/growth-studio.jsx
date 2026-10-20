@@ -5,6 +5,7 @@ import {useEffect, useMemo, useState} from 'react'
 import {CalendarDays, Check, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
 import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
+import GrowthStudioEvergreen from './growth-studio-evergreen'
 import GrowthStudioSourcePicker from './growth-studio-source-picker'
 import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/lib/growth-studio/manual-calendar.mjs'
 import GrowthStudioConnections from './growth-studio-connections'
@@ -162,6 +163,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [editing,setEditing]=useState(null)
   const [form,setForm]=useState(empty)
   const [tab,setTab]=useState('compose')
+  const [evergreenSource,setEvergreenSource]=useState(null)
   const [filter,setFilter]=useState('active')
   const [brandFilter,setBrandFilter]=useState('all')
   const [month,setMonth]=useState(()=>torontoKey(new Date().toISOString()).slice(0,7))
@@ -455,6 +457,15 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       </div>
       <p className={styles.hint}>{scheduled.length} {t.monthItems}. {t.notes}</p>
     </div>}
+    {tab==='posts'&&evergreenSource&&<GrowthStudioEvergreen key={evergreenSource.id}
+      source={evergreenSource} locale={locale} disabled={!ready||busy}
+      onClose={()=>setEvergreenSource(null)}
+      onCreated={(items,reused)=>{
+        onCreated(items);setEvergreenSource(null)
+        setNotice(locale==='ru'
+          ?reused?'Пакет повторов уже сохранён, дубли не созданы.':'Повторные черновики созданы. Проверьте и одобрите каждый отдельно.'
+          :reused?'Repeat batch already exists — no duplicates.':'Repeat drafts created. Review and approve each separately.')
+      }}/>} 
     {tab==='posts'&&<div className={styles.postList}>
       {!visible.length&&<p className={styles.empty}>{t.noPosts}</p>}
       {visible.map(post=><article key={post.id} className={styles.post}>
@@ -476,6 +487,9 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
           {!['archived','sending','published','delivery_unknown'].includes(post.status)&&
             <button type="button" disabled={busy||!ready} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
+          {['approved','planned_manual','published'].includes(post.status)&&
+            <button type="button" disabled={busy||!ready} onClick={()=>{setEvergreenSource(post);setNotice('')}}>
+              <RefreshCcw size={15}/>{locale==='ru'?'Подготовить повторы':'Prepare repeats'}</button>}
           <button type="button" onClick={()=>copyPost(post)}><Copy size={15}/>{t.copyPost}</button>
           {post.sourceUrl&&<button type="button" onClick={()=>copyLink(post)}><Copy size={15}/>{t.copy}</button>}
           <button type="button" onClick={()=>duplicate(post)}><Plus size={15}/>{t.duplicate}</button>
