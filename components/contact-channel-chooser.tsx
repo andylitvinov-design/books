@@ -254,7 +254,7 @@ export function ContactChannelChooser({
             <details className={styles.optionalNote}>
               <summary>{c.description}</summary>
               <textarea id={panelId + "-situation"} aria-label={c.description}
-                maxLength={1400} rows={2}
+                maxLength={1400 - (requestContext?.trim().length ? requestContext.trim().length + 1 : 0)} rows={2}
                 placeholder={c.placeholder} value={description} disabled={busy}
                 onChange={event => {
                   setDescription(event.target.value); setError(""); operationId.current = null;
