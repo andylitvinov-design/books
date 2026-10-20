@@ -44,6 +44,7 @@ export async function generateMetadata({params}){
     description:ru?'Установка Holistic House на iPhone и Android и уведомления о сообщениях.':
       'Install Holistic House on iPhone and Android, with private-message notifications.',
     robots:{index:false,follow:false},
+    appleWebApp:{capable:true,title:'Holistic House',statusBarStyle:'black-translucent'},
     manifest:ru?'/holistic-house-app-ru.webmanifest':'/holistic-house-app.webmanifest',
     icons:{icon:'/icons/holistic-house-teal.svg',apple:'/holistic-house-icon/180'}
   }
