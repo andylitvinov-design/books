@@ -30,6 +30,7 @@ jobs:
           node --check lib/clients/local-narration-service.js
           node --check lib/clients/local-narration-redis.js
           node --check lib/clients/local-narration-media.js
+          node --check lib/clients/local-narration-worker-request.js
           node --check lib/clients/report-narration-access.js
           node --check lib/clients/report-narration-service.js
           node --check tests/local-narration-queue.test.mjs
