@@ -149,8 +149,14 @@ export function ContactChannelChooser({
   useEffect(() => {
     if (!open) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    panelRef.current?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
-  }, [open]);
+    // On iPhone, the form shrinks after save and the messenger actions can fall
+    // under the fixed bottom navigation. Reposition the saved actions, not just
+    // the first form opening. The visitor still decides whether to open a chat.
+    const target = saved
+      ? panelRef.current?.querySelector('[data-contact-channel="whatsapp"]')
+      : panelRef.current;
+    target?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
+  }, [open, saved]);
 
   const referredWhatsappUrl = withPaidAdReferral(
     withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale),
@@ -207,7 +213,7 @@ export function ContactChannelChooser({
   }
 
   return (
-    <div className={styles.wrapper} data-contact-channel-chooser>
+    <div className={styles.wrapper} data-contact-channel-chooser data-open={open}>
       <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
         aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}
         data-contact-order>
