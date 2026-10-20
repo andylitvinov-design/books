@@ -4,6 +4,7 @@
 create table if not exists app_private.native_push_devices (
   id uuid primary key default gen_random_uuid(),
   account_id uuid not null references app.accounts(id) on delete cascade,
+  session_id uuid not null,
   platform text not null check(platform in ('ios','android')),
   environment text not null check(environment in ('sandbox','production')),
   app_id text not null default 'com.holistichouse.app'
@@ -61,6 +62,8 @@ as $$
     join app.practitioners practitioner on practitioner.id=r.recipient_practitioner_id
     join app.accounts account on account.id=r.account_id
     join app_private.native_push_devices d on d.account_id=r.account_id
+    join auth.sessions active_session on active_session.id=d.session_id
+      and active_session.user_id=d.account_id
     where msg.id=p_message_id
       and msg.author_role='practitioner'
       and msg.visibility='participants'
