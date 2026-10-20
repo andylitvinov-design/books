@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, PauseCircle, PlayCircle, Target, TrendingUp, Sparkles, ListChecks } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, Moon, PauseCircle, PlayCircle, Sun, Target, TrendingUp, ListChecks } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import {
   BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
@@ -33,6 +33,7 @@ const copy = {
   en: {
     eyebrow:'BUSINESS & CAREER · MY DEVELOPMENT PATH', title:'My 90-day business journey',
     courseKicker:'HOLISTIC HOUSE · MY COURSES', pathway:'12 weekly modules · 90 learning days',
+    woodTheme:'Choose course appearance', woodLight:'Light wood', woodDark:'Executive walnut',
     startStep1:'My direction', startStep2:'My reflection', startStep3:'My private plan',
     nextStep:'Continue', previousStep:'Back', skipCheck:'Skip self-reflection for now', optionalCheck:'Optional · 18 short questions',
     overviewLabel:'What happens next', overviewText:'Each day opens one practical lesson. You choose the pace; your results stay in your private Cabinet.',
@@ -86,6 +87,7 @@ const copy = {
   ru: {
     eyebrow:'БИЗНЕС И КАРЬЕРА · МОЙ МАРШРУТ РАЗВИТИЯ', title:'Мои 90 дней развития',
     courseKicker:'HOLISTIC HOUSE · МОИ КУРСЫ', pathway:'12 недельных модулей · 90 учебных дней',
+    woodTheme:'Оформление курса', woodLight:'Светлое дерево', woodDark:'Тёмный кабинет',
     startStep1:'Моё направление', startStep2:'Моя самооценка', startStep3:'Личный план',
     nextStep:'Продолжить', previousStep:'Назад', skipCheck:'Пропустить опрос пока', optionalCheck:'Необязательно · 18 коротких вопросов',
     overviewLabel:'Как устроен курс', overviewText:'Каждый день — одно практическое задание. Темп выбираете вы; результаты хранятся в личном кабинете.',
@@ -184,11 +186,37 @@ export default function BusinessCoaching({locale='en',accountId}){
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [goal,setGoal]=useState(initialGoal),[consent,setConsent]=useState(false),[answers,setAnswers]=useState({})
   const [startStep,setStartStep]=useState(1)
+  const [woodMode,setWoodMode]=useState('light')
   const [tab,setTab]=useState('today'),[day,setDay]=useState(1),[dayNote,setDayNote]=useState(''),[dayDone,setDayDone]=useState(false)
   const [dayResult,setDayResult]=useState(''),[moduleWeek,setModuleWeek]=useState(1)
   const [reviewNote,setReviewNote]=useState(''),[metricForm,setMetricForm]=useState(initialMetric)
   const [retestAnswers,setRetestAnswers]=useState({}),[goalEditing,setGoalEditing]=useState(false)
   const course=state?.course,revision=state?.revision||0
+  // Cosmetic preference only, never stored with the encrypted client course.
+  // Restore after hydration so SSR and the first paint remain consistent.
+  useEffect(()=>{
+    try {
+      const saved=window.localStorage.getItem('hh-business-coaching-wood-mode')
+      if(saved==='light'||saved==='dark')setWoodMode(saved)
+    }catch{ /* Private browsing or blocked storage: default to light wood. */ }
+  },[])
+  function chooseWoodMode(next){
+    if(next!=='light'&&next!=='dark')return
+    setWoodMode(next)
+    try{window.localStorage.setItem('hh-business-coaching-wood-mode',next)}
+    catch{ /* Appearance remains selectable for this visit. */ }
+  }
+  const themePicker=<div className={styles.themeBar}>
+    <span className={styles.eyebrow}><BriefcaseBusiness size={17}/>{t.courseKicker}</span>
+    <div className={styles.themeToggle} role="group" aria-label={t.woodTheme}>
+      <button type="button" aria-pressed={woodMode==='light'} onClick={()=>chooseWoodMode('light')}>
+        <Sun size={16} aria-hidden="true"/><span>{t.woodLight}</span>
+      </button>
+      <button type="button" aria-pressed={woodMode==='dark'} onClick={()=>chooseWoodMode('dark')}>
+        <Moon size={16} aria-hidden="true"/><span>{t.woodDark}</span>
+      </button>
+    </div>
+  </div>
   useEffect(()=>{
     if(!accountId)return
     let active=true
@@ -312,13 +340,13 @@ export default function BusinessCoaching({locale='en',accountId}){
       <small>{t.targetHelp}</small>
     </div>
   }
-  if(loading)return <section className={'hh-panel '+styles.root} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
-  if(!state)return <section className={'hh-panel '+styles.root}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
-  if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v1">
-    <div className={styles.eyebrow}><BookOpen size={17}/>{t.courseKicker}</div>
+  if(loading)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
+  if(!state)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
+  if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-wood-mode={woodMode}>
+    {themePicker}
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
-        <span className={styles.heroKicker}><Sparkles size={14} aria-hidden="true"/>{t.pathway}</span>
+        <span className={styles.heroKicker}><BriefcaseBusiness size={14} aria-hidden="true"/>{t.pathway}</span>
         <h1>{t.title}</h1><p>{t.description}</p>
         <span className={styles.heroInfo}><LockKeyhole size={15}/>{t.privacy}</span>
       </div>
@@ -378,11 +406,11 @@ export default function BusinessCoaching({locale='en',accountId}){
       </form>
     </div>
   </section>
-  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v1">
-    <div className={styles.eyebrow}><BookOpen size={17}/>{t.courseKicker}</div>
+  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-wood-mode={woodMode}>
+    {themePicker}
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
-        <span className={styles.heroKicker}><Sparkles size={14} aria-hidden="true"/>{t.pathway}</span>
+        <span className={styles.heroKicker}><BriefcaseBusiness size={14} aria-hidden="true"/>{t.pathway}</span>
         <h1>{t.title}</h1><p>{course.goal.primaryGoal}</p>
         <div className={styles.statRow}>
           <span><CheckCircle2 size={17}/><strong>{progress.completed} / 90</strong> {t.progress}</span>
