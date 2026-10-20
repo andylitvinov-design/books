@@ -1,29 +1,57 @@
-# Holistic House — individual (unincorporated) checkout
+# Holistic House — individual payments (without a registered corporation)
+Updated: 2026-10-20
+Source: codex/public-book-library, Holistic House.
 
-Updated: 2026-10-20. Production source branch: codex/public-book-library.
-Scope: published, fixed-price 30-min EUR 50 and 60-min EUR 100 consultations (both EUR 150). No memberships, taxes, customer records, appointment inventory or private health data are added to these payment URLs.
+## Current approved default: personal PayPal.Me
+- Site uses the existing owner-verified PayPal.Me profile at paypal.me/psitrends.
+- Website catalog only allows €50 / €100 / €150 combinations of one-time sessions.
+- PayPal Canada User Agreement: a personal account **can receive Goods & Services payments**, although PayPal recommends a business account if the account primarily sells goods/services.
+- Tell the payer to select **Goods & Services**; NEVER request Friends & Family for services. Availability of cards or paying without a PayPal account cannot be promised with PayPal.Me.
+- After payment: request only the transaction reference, then manually verify incoming funds inside the PayPal account before confirming an appointment or marking an order paid. No automatic entitlement/fulfillment.
+- Optional: PayPal Seller Profile is offered to eligible Canadian personal-account sellers, not a guaranteed account feature.
+- Official PayPal Canada agreement: https://www.paypal.com/ca/legalhub/paypal/useragreement-full
+- Official help: https://www.paypal.com/ca/cshelp/article/what-is-a-seller-profile-and-how-do-i-sign-up-help510
 
-## Available before a merchant account
+## Canada: Interac e-Transfer
+- Available as a **manual request** through WhatsApp. It is not a one-click card charge.
+- Before sending: personally confirm session, authorized recipient, purpose/reference and a **specific CAD amount**. EUR list prices are not automatically converted.
+- Confirm personal bank-account terms for receiving professional services payments; no credentials or banking details in client web URLs.
+- Do not grant service access based on a screenshot or the website redirect; confirm actual deposit.
 
-- Personal PayPal.Me: existing verified recipient Andrii Litvinov. Manual confirmation only. Use Goods & Services when available; never request Friends & Family for paid professional services.
-- Interac e-Transfer (Canada): cart generates WhatsApp enquiry, not a payment. Owner first quotes a CAD amount and verified recipient/reference. Do not assume the EUR amount equals a CAD amount.
-- ZEN.COM: manual transfer-details enquiry; Wise: only when an existing merchant-verified flag allows it.
-- Card: if merchant-approved hosted links are absent, the cart requests a secure card payment link via WhatsApp. NEVER ask clients to send card information through WhatsApp.
+## Optional card acceptance: Square Individual / sole proprietor, not Stripe
+Square Canada's official onboarding instructions support individual / sole proprietor applicants. The provider still must verify identity, business activity and a Canadian CAD bank account and has sole discretion to approve the merchant. It is not guaranteed to work without any information about the activity.
+Sources:
+- https://squareup.com/help/ca/en/article/8329-onboard-your-sole-proprietorship-to-square
+- https://squareup.com/ca/en/payment-links
+- https://squareup.com/help/ca/en/article/5085-accepted-cards
 
-## Activate hosted credit/debit card payments without incorporation
+Square Canada charges **CAD only**. Do not copy EUR amounts to Square or silently do FX.
 
-1. Register with Stripe in Canada as **Individual / sole proprietorship** if eligible, using real identity, business activity, settlement account and contact details. Stripe approval, tax or registration obligations and any permit restrictions are merchant decisions; do not fake a corporation. See https://support.stripe.com/questions/types-of-business-and-structure-guidelines-in-canada .
-2. In the provider's dashboard create **three distinct, one-time EUR Payment Links** for the exact existing catalog totals: EUR 50, EUR 100 and EUR 150. Disable quantity editing, customer-chosen amount, tips, coupons and automatic recurring charges. Use clear consultation descriptions and review public cancellation/refund policy and tax treatment.
-3. Verify the live payee/merchant, currency, exact total, customer-facing name, payment methods, and final settlement in the Stripe dashboard. A redirect or screenshot is not payment evidence. Note: payment links do not automatically write to the private Holistic House order ledger.
-4. Put the three public, non-secret Stripe checkout URLs in the existing Holistic House Vercel project for Production: HH_CARD_PAYMENT_LINK_50_EUR, HH_CARD_PAYMENT_LINK_100_EUR, HH_CARD_PAYMENT_LINK_150_EUR. Must each be https://buy.stripe.com/... with no query or fragment. Test links may be used only in Preview and must never be mixed with live.
-5. After verification set HH_CARD_PAYMENT_LINKS_PAYEE_VERIFIED=true and HH_CARD_PAYMENT_LINKS_PRICES_VERIFIED=true. Set HH_CARD_PAYMENT_LINKS_ENABLED=true **last**. Omit/false any approval to disable instantly. Partial amounts fall back to requesting a link; duplicate merchant links disable all direct card links.
-6. Test a real low-risk checkout with the intended merchant (or a test checkout only in Preview), then reconcile transaction status, exact EUR amount, payee, disputes/refunds, and appointment availability. A client must send a reference for human verification. Never grant services automatically based on returning to the site.
+To enable Square payment links after owner verification:
+1. Owner registers as individual/sole proprietor if eligible and confirms name, identity, Canadian settlement bank and exact seller display name; no claim of corporation.
+2. Set up **three distinct** Square fixed-price one-time links for the **CAD** amounts the owner chooses for the existing €50, €100 and €150 catalog totals. Verify price, recipient, product description, cancellation/refund policy and any applicable tax handling. Do not allow user-entered price, add-ons or repeat billing.
+3. Use these Production Vercel non-secret public link / CAD minor-unit pairs:
+   - HH_SQUARE_CAD_50_LINK and HH_SQUARE_CAD_50_MINOR
+   - HH_SQUARE_CAD_100_LINK and HH_SQUARE_CAD_100_MINOR
+   - HH_SQUARE_CAD_150_LINK and HH_SQUARE_CAD_150_MINOR
+   Example CAD minor units: 7500 means CAD $75.00. This is **only an example**, NOT a recommended exchange rate or actual pricing.
+4. After confirming link ownership and **exact CAD amounts** on Square, set HH_SQUARE_INDIVIDUAL_PAYEE_APPROVED=true and HH_SQUARE_CAD_AMOUNTS_APPROVED=true. Set HH_SQUARE_CAD_LINKS_ENABLED=true **last**. Turning any flag off is a kill switch.
+5. Provider URLs must be exact HTTPS square.link/u/… or checkout.square.site/… with no query, fragments, credentials or redirects supplied by users. All three links must be distinct, with increasing prices. The site fails closed if any mapping is missing or malformed.
+6. Verify a legitimate paid test/real charge with Square, check balance and refund reconciliation independently. Square links do **not** automatically settle the app's internal service-order ledger, so continue manual verification.
+7. The Square option remains **hidden** until the Production account, payee and all three amounts are approved; an unconfigured card button must never pretend to be ready.
 
-## Important safeguards
+## Legacy integrations
+- Existing Stripe Checkout / Stripe Payment Links remain unconfigured and are NOT displayed in the personal public cart. Never present Stripe signup as a prerequisite for personal PayPal.
+- PayPal Business Orders v2 PR #923 is still not activated: it requires a verified PayPal Business merchant account, approved private ledger, signed webhooks and sandbox evidence. Never merge it solely to create a "PayPal" button.
+- ZEN.COM and merchant-verified Wise remain existing optional/manual paths. Do not send client health information or bank/card credentials to payment-provider links.
 
-- Website prices come from fixed SERVICE_PRODUCTS, never a URL amount supplied by the browser.
-- Card links are allowlisted to buy.stripe.com and must have explicit owner approval; only public URLs go to client, no API keys.
-- No health questionnaire responses, client identifiers, symptoms or diagnosis appear in provider links, queries, or WhatsApp templates.
-- The existing authenticated Stripe Checkout and PayPal Orders-v2 PR #923 remain separately gated by approved schemas, account matching, signed webhook verification, idempotency and settlement reconciliation. Do not conflate them with this manual-ref hosted payment path.
-- Do not add PayPal Business keys or run production migrations on behalf of an unverified seller.
-- Individual/sole proprietor != registered corporation; eligibility, taxes and banking terms still apply. For Interac, use your bank's permitted account/payment terms.
+## Legal boundary
+- "No corporation" is distinct from "no business activity". In Ontario, operating under a trade name different from your personal legal name may require registering that business name; confirm the actual public-facing arrangement before taking further merchant steps.
+  https://www.ontario.ca/page/business/start/decide-ownership-structure
+- Verify the individual's right to perform remunerated services in Canada, taxes/GST-HST if applicable, payment account restrictions, and professional-service advertising rules. The site itself cannot waive these conditions.
+
+## Payment UX and verification
+- Supported locales EN/RU/ES. SKU selection amounts come only from the fixed catalog, no user-entered price or invoice IDs.
+- PayPal.Me shows exact EUR totals; Square only shows its separately approved CAD charge.
+- Interac requires a personally confirmed CAD quote. No automatic conversion and no "payment succeeded" state based on a click, query string or screenshot.
+- No tokens, names, diagnoses, symptoms, answers or billing bank/card data are exposed in payment URLs or WhatsApp scripts.
