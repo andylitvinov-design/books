@@ -1,12 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {validClientBotUsername,telegramClientLinkReady,telegramClientSendReady,
+import {validClientBotUsername,telegramClientBotMode,telegramClientBotUsername,telegramClientLinkReady,telegramClientSendReady,
  interpretTelegramClientUpdate,telegramClientMessage} from '../lib/app/client-telegram-policy.js'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('dedicated bot needs explicit setup and dispatch approval',()=>{
- const e={HH_CLIENT_TG_LINK_ENABLED:'true',HH_CLIENT_TG_BOT_TOKEN:'synthetic-secret-for-unit-tests',
+ const e={HH_CLIENT_TG_LINK_ENABLED:'true',HH_CLIENT_TG_BOT_TOKEN:'123456789:'+ 'x'.repeat(36),
  HH_CLIENT_TG_BOT_USERNAME:'HolisticHouseNoticeBot',HH_CLIENT_TG_WEBHOOK_SECRET:'x'.repeat(40)}
  assert.equal(validClientBotUsername(e.HH_CLIENT_TG_BOT_USERNAME),true)
  assert.equal(validClientBotUsername('Abbot'),true)
@@ -84,4 +84,49 @@ test('owner sees a read-only Telegram setup readiness check without secrets',()=
  assert.match(screen,/state\.sendingEnabled/)
  // No token values or forced delivery toggles may exist in a client component.
  assert.doesNotMatch(screen,/HH_CLIENT_TG_BOT_TOKEN=|HH_CLIENT_TG_SEND_APPROVED=true/)
+})
+
+test('existing verified practice BotFather token is reusable only by deliberate mode, with sends off',()=>{
+ const env={
+  HH_CLIENT_TG_LINK_ENABLED:'true',
+  HH_CLIENT_TG_WEBHOOK_SECRET:'s'.repeat(48),
+  HH_PRACTICE_TG_ENABLED:'true',
+  HH_PRACTICE_TG_BOT_TOKEN:'123456789:'+ 'a'.repeat(40),
+  HH_CLIENT_TG_USE_PRACTICE_BOT:'true',
+ }
+ assert.equal(telegramClientBotMode(env),'shared_practice')
+ assert.equal(telegramClientBotUsername(env),'andydotbot')
+ assert.equal(telegramClientLinkReady(env),true)
+ assert.equal(telegramClientSendReady(env),false)
+ assert.equal(telegramClientLinkReady({...env,HH_CLIENT_TG_USE_PRACTICE_BOT:'false'}),false)
+ assert.equal(telegramClientLinkReady({...env,HH_PRACTICE_TG_ENABLED:'false'}),false)
+ assert.equal(telegramClientLinkReady({...env,HH_PRACTICE_TG_BOT_TOKEN:'bad'}),false)
+ assert.equal(telegramClientBotMode({...env,HH_CLIENT_TG_BOT_USERNAME:'IncompleteBot'}),null)
+ assert.equal(telegramClientBotMode({...env,HH_CLIENT_TG_BOT_TOKEN:'invalid'}),null)
+ // Dedicated bot takes precedence if completely provided.
+ assert.equal(telegramClientBotMode({...env,HH_CLIENT_TG_BOT_TOKEN:'123456789:'+ 'b'.repeat(40),
+  HH_CLIENT_TG_BOT_USERNAME:'OtherNoticesBot'}),'dedicated')
+})
+test('sharing never silently reassigns webhook or loses the paired master identity',()=>{
+ const transport=read('lib/app/client-telegram-transport.js')
+ const policy=read('lib/app/client-telegram-policy.js')
+ const pairing=read('lib/practitioners/telegram-owner-pairing.js')
+ const discovery=read('lib/practitioners/telegram-owner-discovery.mjs')
+ const setup=read('app/api/app/notification-channels/telegram/setup/route.js')
+ const ui=read('components/app/customer-telegram-bot-setup.jsx')
+ assert.match(policy,/HH_CLIENT_TG_USE_PRACTICE_BOT==='true'/)
+ assert.match(policy,/HH_PRACTICE_TG_BOT_TOKEN/)
+ assert.match(transport,/verifyOwnerTelegram\(paired\)/)
+ assert.match(transport,/resolvedOwnerTelegramEnv\(config,env\)/)
+ assert.match(transport,/TELEGRAM_WEBHOOK_ALREADY_IN_USE/)
+ assert.match(transport,/existing\?\.url&&existing\.url!==expected/)
+ assert.match(transport,/drop_pending_updates:false/)
+ assert.match(pairing,/if\(prior\?\.chat_ciphertext\)return \{status:'paired'\}/)
+ assert.match(discovery,/if\(typeof hook\.url==='string'&&hook\.url\.trim\(\)\)/)
+ assert.match(setup,/registerClientTelegramWebhook\(process\.env,\{config\}\)/)
+ assert.match(setup,/usingExistingPracticeBot/)
+ assert.match(ui,/state\?\.usingExistingPracticeBot/)
+ assert.match(ui,/t\.reuse/)
+ assert.match(ui,/t\.reuseHelp/)
+ assert.doesNotMatch(ui,/HH_PRACTICE_TG_BOT_TOKEN\s*=|HH_CLIENT_TG_BOT_TOKEN\s*=/)
 })
