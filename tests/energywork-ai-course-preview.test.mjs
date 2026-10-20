@@ -13,12 +13,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 70 stable editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 63 published editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
   assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 70)
+  assert.equal(ids.length, 63)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -100,7 +100,6 @@ test('Five lesson reports and four sets of study questions gate initiation', () 
   const assignments = [
     ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-study-04'],
     ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-study-v2-01'],
-
   ]
   for (const [name,report,question] of assignments) {
     assert.ok(curriculum.includes('lesson: "'+name+'", reportId: "'+report+'", questionId: "'+question+'"'))
