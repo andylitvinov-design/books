@@ -692,6 +692,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const t = copy[locale];
   // Referral entrants have already read the course overview; saved account progress still wins.
   const [index, setIndex] = useState(startAtExperience ? 1 : 0);
+  const pageRef = useRef<HTMLElement | null>(null);
   const [programmeOpen, setProgrammeOpen] = useState(false);
   const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
@@ -843,6 +844,50 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     window.addEventListener("pageshow", keepCourseAtTop);
     return () => window.removeEventListener("pageshow", keepCourseAtTop);
   }, [index]);
+  // iOS Safari does not resize 100dvh when its software keyboard opens.
+  // Reposition the whole lesson to the actual visual viewport so the CTA
+  // stays tappable without sacrificing a long-answer textarea's scroll.
+  useEffect(() => {
+    const page = pageRef.current;
+    const viewport = window.visualViewport;
+    if (!page || !viewport) return;
+    const updateKeyboardViewport = () => {
+      const active = document.activeElement;
+      const editing = active instanceof HTMLElement && page.contains(active) &&
+        (active.matches('textarea, input:not([type="checkbox"]):not([type="radio"])') || active.isContentEditable);
+      const obscured = window.innerHeight - viewport.height;
+      // Retain the position during a button tap: blur fires before click and
+      // Safari animates keyboard dismissal afterwards.
+      const keyboardVisible = window.matchMedia("(max-width: 760px)").matches &&
+        viewport.height > 180 && obscured > 100 &&
+        (editing || page.dataset.reikiKeyboardOpen === "true");
+      if (keyboardVisible) {
+        page.dataset.reikiKeyboardOpen = "true";
+        page.style.setProperty("--reiki-visual-height", `${Math.floor(viewport.height)}px`);
+        page.style.setProperty("--reiki-visual-top", `${Math.max(0, Math.floor(viewport.offsetTop))}px`);
+      } else {
+        delete page.dataset.reikiKeyboardOpen;
+        page.style.removeProperty("--reiki-visual-height");
+        page.style.removeProperty("--reiki-visual-top");
+      }
+    };
+    viewport.addEventListener("resize", updateKeyboardViewport);
+    viewport.addEventListener("scroll", updateKeyboardViewport);
+    window.addEventListener("resize", updateKeyboardViewport);
+    document.addEventListener("focusin", updateKeyboardViewport);
+    document.addEventListener("focusout", updateKeyboardViewport);
+    updateKeyboardViewport();
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardViewport);
+      viewport.removeEventListener("scroll", updateKeyboardViewport);
+      window.removeEventListener("resize", updateKeyboardViewport);
+      document.removeEventListener("focusin", updateKeyboardViewport);
+      document.removeEventListener("focusout", updateKeyboardViewport);
+      delete page.dataset.reikiKeyboardOpen;
+      page.style.removeProperty("--reiki-visual-height");
+      page.style.removeProperty("--reiki-visual-top");
+    };
+  }, []);
   async function startSaving() {
     if (!consented || busy) return;
     setBusy(true);
@@ -1130,7 +1175,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main ref={pageRef} className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>
