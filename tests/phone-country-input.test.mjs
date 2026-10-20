@@ -38,3 +38,20 @@ test("country code UI supports EN/RU/ES, 320px widths, iPhone keyboard and no tr
  assert.match(css,/font:500 16px/);
  assert.doesNotMatch(src,/fetch\(|geolocation|localStorage|marketingSms/);
 });
+
+test("one dial-code component is used at every principal customer and CRM phone entry",()=>{
+ const files=[
+ "components/business-website-enquiry.tsx",
+ "components/contact-channel-chooser.tsx",
+ "components/app/client-contact-phone.jsx",
+ "components/app/crm-contact-editor.jsx"];
+ for(const p of files)assert.match(read(p),/<PhoneCountryInput\b/,p);
+ const business=read(files[0]);
+ assert.match(business,/replyMode==="whatsapp"/);
+ assert.match(business,/reply\.replyChannel!==replyMode/);
+ assert.match(business,/role="group" aria-label=\{t\.contact\}/);
+ assert.match(business,/type="email"/);
+ assert.match(read(files[1]),/id=\{panelId \+ "-phone"\}/);
+ assert.match(read(files[2]),/normalizeClientPhone\(phone\)/);
+ assert.match(read(files[3]),/update\('phone',value\)/);
+});

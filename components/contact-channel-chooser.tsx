@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { PhoneCountryInput } from "@/components/phone-country-input";
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
 import type { PublicAnalyticsEvent } from "@/lib/public-analytics";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -21,7 +22,7 @@ const copy = {
     question: "Describe what you would like help with",
     description: "Briefly describe your situation or question",
     placeholder: "I would like to explore...",
-    name: "Your name", email: "Email", phone: "Phone / WhatsApp (+country code)",
+    name: "Your name", email: "Email", phone: "Phone / WhatsApp",
     contactHelp: "Add an email address, a phone number or both. No account needed.",
     contactError: "Enter your name and a valid email or international phone number.",
     consent: "I agree to be contacted personally about this enquiry only. No marketing subscription.",
@@ -42,7 +43,7 @@ const copy = {
     question: "Расскажите, с чем вам нужна помощь",
     description: "Кратко опишите ситуацию или ваш запрос",
     placeholder: "Я хотел(а) бы разобраться в...",
-    name: "Ваше имя", email: "Электронная почта", phone: "Телефон / WhatsApp (+код страны)",
+    name: "Ваше имя", email: "Электронная почта", phone: "Телефон / WhatsApp",
     contactHelp: "Укажите почту, телефон или оба контакта. Регистрация аккаунта не нужна.",
     contactError: "Укажите имя и действительный email или телефон в международном формате.",
     consent: "Согласен(на) на личный ответ по этой заявке. На рекламную рассылку не подписываюсь.",
@@ -63,7 +64,7 @@ const copy = {
     question: "Cuéntanos en qué podemos ayudarte",
     description: "Describe brevemente tu situación o solicitud",
     placeholder: "Me gustaría hablar sobre...",
-    name: "Tu nombre", email: "Correo electrónico", phone: "Teléfono / WhatsApp (+prefijo)",
+    name: "Tu nombre", email: "Correo electrónico", phone: "Teléfono / WhatsApp",
     contactHelp: "Deja tu email, teléfono o ambos. No necesitas crear una cuenta.",
     contactError: "Introduce tu nombre y un correo o teléfono internacional válido.",
     consent: "Acepto que me contacten solamente sobre esta solicitud. No me suscribo a publicidad.",
@@ -233,12 +234,13 @@ export function ContactChannelChooser({
                     setEmail(event.target.value); setError(""); operationId.current = null;
                   }} />
               </label>
-              <label>{c.phone}
-                <input type="tel" autoComplete="tel" maxLength={40} placeholder="+14165551234"
-                  disabled={busy} value={phone} onChange={event => {
-                    setPhone(event.target.value); setError(""); operationId.current = null;
+              <div className={styles.phoneField}>
+                <label htmlFor={panelId + "-phone"}>{c.phone}</label>
+                <PhoneCountryInput id={panelId + "-phone"} locale={locale}
+                  disabled={busy} value={phone} onChange={value => {
+                    setPhone(value); setError(""); operationId.current = null;
                   }} />
-              </label>
+              </div>
             </div>
             <small className={styles.privateNote}>{c.contactHelp}</small>
             <label htmlFor={panelId + "-situation"}>{c.description}</label>

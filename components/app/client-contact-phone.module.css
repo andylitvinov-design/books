@@ -17,3 +17,7 @@
 .notice{color:#236748!important;font-weight:700}
 .error{color:#992f3e!important;font-weight:650}
 @media(max-width:450px){.panel{padding:13px}.actions button{flex:1 1 150px}}
+
+.phoneField{display:grid;gap:5px;min-width:0}
+.phoneField label{font-size:12px;font-weight:700}
+.form .phoneField input,.form .phoneField select{font-size:16px}

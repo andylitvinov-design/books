@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import {PhoneCountryInput} from '@/components/phone-country-input'
 import styles from './crm-contact-editor.module.css'
 
 const COPY={
@@ -42,8 +43,11 @@ export default function CrmContactEditor({contact,locale='en',busy=false,onActio
         onChange={e=>update('displayName',e.target.value)}/></label>
       <label>{t.email}<input type="email" maxLength={254} value={values.email}
         onChange={e=>update('email',e.target.value)}/></label>
-      <label>{t.phone}<input type="tel" maxLength={40} placeholder="+14165551234" value={values.phone}
-        onChange={e=>update('phone',e.target.value)}/></label>
+      <div className={styles.phoneField}>
+        <label htmlFor={'crm-phone-'+contact.id}>{t.phone}</label>
+        <PhoneCountryInput id={'crm-phone-'+contact.id} locale={lang} value={values.phone}
+          onChange={value=>update('phone',value)} disabled={busy}/>
+      </div>
       <label>{t.source}<select value={values.source} onChange={e=>update('source',e.target.value)}>
         {Object.entries(t.sources).map(([id,label])=><option key={id} value={id}>{label}</option>)}
       </select></label>

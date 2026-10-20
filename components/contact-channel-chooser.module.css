@@ -98,3 +98,8 @@
 @container (max-width:340px) {
   .contactFields { grid-template-columns:1fr; }
 }
+
+/* A code selector and national digits must have the entire narrow card width. */
+.contactFields .phoneField{grid-column:1/-1;display:grid;gap:5px;min-width:0}
+.phoneField label{display:block}
+.contactFields .phoneField input,.contactFields .phoneField select{font-size:16px}

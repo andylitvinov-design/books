@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import type { BusinessLocale } from "@/data/business-consulting-copy";
+import { PhoneCountryInput } from "@/components/phone-country-input";
 import { parseBusinessReplyContact } from "@/lib/business-consulting/intake-policy";
 import styles from "./business-website-enquiry.module.css";
 
@@ -16,7 +17,7 @@ const translations = {
     lead:"Choose a format and leave a contact. Andrey replies personally. No payment or confirmed booking here.",
     format:"Consultation",formatNames:{free:"Free written review",express:"30 minutes · €50",full:"60 minutes · €100",mentoring:"Goals Mentoring · by arrangement"},
     name:"Your name",namePlaceholder:"How should I address you?",
-    contact:"Email or WhatsApp",contactPlaceholder:"name@example.com or +1 416 555 1234",
+    contact:"How should Andrey reply?",email:"Email",whatsapp:"WhatsApp",contactPlaceholder:"name@example.com or +1 416 555 1234",
     addNote:"+ Add a question (optional)",hideNote:"− Hide question",question:"Your question (optional)",questionPlaceholder:"What would you like to discuss?",
     consent:"I agree to a personal reply about this request. No marketing.",
     send:"Send request",sending:"Sending…",success:"Request saved. Andrey can see it in his private CRM.",
@@ -32,7 +33,7 @@ const translations = {
     lead:"Выберите формат и оставьте контакт. Андрей ответит лично. Это не запись и не оплата.",
     format:"Формат",formatNames:{free:"Бесплатный письменный разбор",express:"30 минут · €50",full:"60 минут · €100",mentoring:"Goals Mentoring · по договорённости"},
     name:"Ваше имя",namePlaceholder:"Как к вам обращаться?",
-    contact:"Email или WhatsApp",contactPlaceholder:"name@example.com или +1 416 555 1234",
+    contact:"Как вам ответить?",email:"Email",whatsapp:"WhatsApp",contactPlaceholder:"name@example.com или +1 416 555 1234",
     addNote:"+ Добавить вопрос (по желанию)",hideNote:"− Скрыть вопрос",question:"Ваш вопрос (по желанию)",questionPlaceholder:"Что хотите обсудить?",
     consent:"Согласен(на) получить ответ по этой заявке. Без рассылок.",
     send:"Отправить заявку",sending:"Отправляем…",success:"Заявка сохранена. Андрей увидит её в CRM.",
@@ -48,7 +49,7 @@ const translations = {
     lead:"Elige una modalidad y deja un contacto. Andrey responderá personalmente. Sin pago ni reserva confirmada.",
     format:"Modalidad",formatNames:{free:"Revisión escrita gratuita",express:"30 minutos · €50",full:"60 minutos · €100",mentoring:"Goals Mentoring · por acuerdo"},
     name:"Tu nombre",namePlaceholder:"¿Cómo te llamas?",
-    contact:"Correo o WhatsApp",contactPlaceholder:"nombre@ejemplo.com o +1 416 555 1234",
+    contact:"¿Cómo deseas recibir respuesta?",email:"Correo",whatsapp:"WhatsApp",contactPlaceholder:"nombre@ejemplo.com o +1 416 555 1234",
     addNote:"+ Añadir una pregunta (opcional)",hideNote:"− Ocultar pregunta",question:"Tu pregunta (opcional)",questionPlaceholder:"¿De qué quieres hablar?",
     consent:"Acepto recibir una respuesta sobre esta solicitud. Sin publicidad.",
     send:"Enviar solicitud",sending:"Enviando…",success:"Solicitud guardada. Andrey la verá en su CRM privado.",
@@ -66,6 +67,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
   const [format,setFormat]=useState<Format>("free");
   const [name,setName]=useState("");
   const [contact,setContact]=useState("");
+  const [replyMode,setReplyMode]=useState<"whatsapp"|"email">("whatsapp");
   const [showQuestion,setShowQuestion]=useState(false);
   const [question,setQuestion]=useState("");
   const [consent,setConsent]=useState(false);
@@ -103,7 +105,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
     event.preventDefault();
     if(busy||success)return;
     const reply=parseBusinessReplyContact(contact);
-    if(!reply){setError(t.contactError);return}
+    if(!reply||reply.replyChannel!==replyMode){setError(t.contactError);return}
     setBusy(true);setError("");
     try{
       operation.current ||= crypto.randomUUID();
@@ -150,9 +152,21 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
       </label>
       <label>{t.name}<input required type="text" autoComplete="name" maxLength={120} minLength={2}
         value={name} placeholder={t.namePlaceholder} onChange={event=>{setName(event.target.value);edit();}} /></label>
-      <label>{t.contact}<input required type="text" autoComplete="on" maxLength={254}
-        autoCapitalize="none" spellCheck={false} value={contact} placeholder={t.contactPlaceholder}
-        onChange={event=>{setContact(event.target.value);edit();}} /></label>
+      <div className={styles.replyMode} role="group" aria-label={t.contact}>
+        {(["whatsapp","email"] as const).map(mode=><button key={mode} type="button"
+          aria-pressed={replyMode===mode} onClick={()=>{setReplyMode(mode);setContact("");edit();}}>
+          {t[mode]}
+        </button>)}
+      </div>
+      {replyMode==="whatsapp"?
+        <div className={styles.phoneField}>
+          <label htmlFor="business-reply-phone">{t.whatsapp}</label>
+          <PhoneCountryInput id="business-reply-phone" locale={locale} value={contact} required
+            disabled={busy} onChange={value=>{setContact(value);edit();}}/>
+        </div>
+        :<label>{t.email}<input required type="email" autoComplete="email" maxLength={254}
+          autoCapitalize="none" spellCheck={false} value={contact} placeholder="name@example.com"
+          disabled={busy} onChange={event=>{setContact(event.target.value);edit();}} /></label>}
       <button type="button" className={styles.detailsToggle} aria-expanded={showQuestion}
         aria-controls="business-request-note" onClick={()=>{setShowQuestion(open=>!open);edit();}}>
         {showQuestion?t.hideNote:t.addNote}
