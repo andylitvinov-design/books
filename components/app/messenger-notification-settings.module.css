@@ -26,3 +26,5 @@
 .privacy,.notice,.error,.success{font-size:12px;line-height:1.55;margin:14px 0 0;color:#627970}
 .error{color:#a03e36}.success{color:#207252;font-weight:700}
 @media(max-width:420px){.root{padding:12px;border-radius:15px}.card{padding:13px}.actions button{flex:1 1 130px}}
+
+.verified{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:5px 8px;border-radius:10px;background:#eaf7ed;color:#28674c;font-weight:700}
