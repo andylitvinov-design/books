@@ -41,7 +41,7 @@ export default async function TopicJourneyPage({ params }: Props) {
     {theme === 'business'
       ? <BusinessTestimonials locale={locale as PublicLocale}/>
       : <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>}
-    {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) 44px'}}>
+    {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) calc(116px + env(safe-area-inset-bottom))'}}>
       <BusinessWebsiteEnquiry locale={locale as 'en'|'ru'|'es'} />
     </div>}
   </main>
