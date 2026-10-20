@@ -2,11 +2,13 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {generateKeyPairSync} from 'node:crypto'
 import {readFileSync} from 'node:fs'
-import {nativePushReady,nativeTokenValid,sendNativeClientPush} from '../lib/app/native-push-transport.js'
+const withServerCondition=process.execArgv.some(arg=>arg.includes('react-server'))
+const nativeTransport=()=>import('../lib/app/native-push-transport.js')
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const id='11111111-1111-4111-8111-111111111111'
 
-test('APNs and FCM are off without explicit server secrets; tokens validated by platform',()=>{
+test('APNs and FCM are off without explicit server secrets; tokens validated by platform',{skip:!withServerCondition},async()=>{
+  const {nativePushReady,nativeTokenValid}=await nativeTransport()
   assert.equal(nativePushReady({},'ios'),false)
   assert.equal(nativePushReady({},'android'),false)
   assert.equal(nativeTokenValid('ios','abcdef0123456789'.repeat(4)),true)
@@ -14,7 +16,8 @@ test('APNs and FCM are off without explicit server secrets; tokens validated by 
   assert.equal(nativeTokenValid('android','abc:'.repeat(35)),true)
   assert.equal(nativeTokenValid('android','../../secrets'),false)
 })
-test('FCM HTTP v1 uses fixed service URLs and generic message-only payload',async()=>{
+test('FCM HTTP v1 uses fixed service URLs and generic message-only payload',{skip:!withServerCondition},async()=>{
+  const {nativePushReady,sendNativeClientPush}=await nativeTransport()
   const {privateKey}=generateKeyPairSync('rsa',{modulusLength:2048})
   const env={
     HH_FCM_PROJECT_ID:'hh-tests-project',
