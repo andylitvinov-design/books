@@ -1,0 +1,40 @@
+/* Business landing → free private 90-day plan. Scope to this one CTA. */
+.promo{max-width:1160px;margin:0 auto 17px;padding:0 clamp(14px,3.5vw,34px)}
+.card{position:relative;isolation:isolate;display:grid;
+  grid-template-columns:56px minmax(0,1fr) auto;gap:clamp(12px,2vw,19px);
+  align-items:center;min-width:0;padding:clamp(17px,2.7vw,25px);
+  border:1px solid #c9ad88;border-radius:20px;
+  background:linear-gradient(117deg,#fffaf1,#f4e6d2 60%,#e9d1b1);
+  box-shadow:0 10px 27px #5b41221e;color:#36271e;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0 auto 0 0;width:7px;z-index:-1;
+  background:linear-gradient(180deg,#64442d,#b68a57,#60432e)}
+.card::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:repeating-linear-gradient(92deg,transparent 0 13px,#a27b3e08 15px,transparent 18px)}
+.icon{display:grid;place-items:center;width:56px;height:56px;border:1px solid #b99872;
+  border-radius:15px;color:#fef5e9;background:linear-gradient(140deg,#795438,#462e21);
+  box-shadow:0 5px 13px #51321d32}
+.copy{min-width:0}
+.eyebrow{display:block;margin:0 0 5px;font-size:10px;letter-spacing:.09em;font-weight:850;color:#815a36}
+.title{display:block;font:700 clamp(16px,2vw,23px)/1.23 Georgia,serif;letter-spacing:-.025em;color:#39291f}
+.description{margin:6px 0 7px!important;font-size:12px!important;line-height:1.5!important;color:#69503d!important}
+.metadata{display:flex;gap:6px 12px;flex-wrap:wrap;color:#72563c;font-size:10px;font-weight:730}
+.metadata span{display:inline-flex;gap:6px;align-items:center}
+.metadata span::before{content:"";width:5px;height:5px;border-radius:50%;background:#b68c57}
+.link{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:47px;max-width:100%;padding:11px 16px;
+  border:1px solid #3b2419;border-bottom:3px solid #24150d;border-radius:12px;
+  background:linear-gradient(105deg,#67462f,#483023);
+  color:#fff8ea!important;text-decoration:none;font-size:12px;font-weight:850;
+  white-space:nowrap;box-shadow:0 6px 14px #4d2f1e22}
+.link:hover{background:linear-gradient(105deg,#4b3122,#352015)}
+.link:focus-visible{outline:3px solid #a6783c;outline-offset:3px}
+@media(max-width:770px){
+  .card{grid-template-columns:46px minmax(0,1fr);gap:11px}
+  .icon{width:46px;height:46px}
+  .link{grid-column:1/-1;justify-self:stretch;width:100%}
+}
+@media(max-width:370px){
+  .card{padding:14px 12px}
+  .title{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){.link{transition:none}}
