@@ -41,6 +41,8 @@ test('guest API cannot receive arbitrary chat IDs, requires same-origin and Http
  const api=file('app/api/public/telegram-subscribe/route.js')
  const service=file('lib/app/telegram-guest-news.js')
  assert.match(api,/requireSameOrigin\(request,config\)/)
+ assert.match(api,/publicTelegramReady\(\)/)
+ assert.match(api,/verifyClientBot\(process\.env,\{requireWebhook:true\}\)/)
  assert.match(api,/readBody\(request,512\)/)
  assert.match(api,/httpOnly:true/)
  assert.match(api,/sameSite:'lax'/)
