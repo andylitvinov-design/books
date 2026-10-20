@@ -24,7 +24,7 @@ export function ClientSessionEngagement({selector,locale='en'}) {
   const t=WORDS[locale]||WORDS.en
   const [accepted,setAccepted]=useState(false),[ready,setReady]=useState(false)
   const [busy,setBusy]=useState(false),[error,setError]=useState(false)
-  const lastActivity=useRef(0),buffer=useRef(0)
+  const lastActivity=useRef(0),minuteBucket=useRef(0),secondsThisMinute=useRef(0),lastSent=useRef(0)
   const url='/api/client-session-viewer/'+encodeURIComponent(selector)+'/engagement'
   useEffect(()=>{
     const controller=new AbortController()
@@ -47,7 +47,9 @@ export function ClientSessionEngagement({selector,locale='en'}) {
   useEffect(()=>{
     if(!ready||!accepted)return
     lastActivity.current=Date.now()
-    buffer.current=0
+    minuteBucket.current=Math.floor(Date.now()/60000)
+    secondsThisMinute.current=0
+    lastSent.current=0
     const send=(kind,seconds=0,keepalive=false)=>{
       const command={op:'event',id:crypto.randomUUID(),kind,seconds}
       // No retries or persistent queue: failed events are not inferred as visits.
@@ -65,14 +67,20 @@ export function ClientSessionEngagement({selector,locale='en'}) {
       if(allowed.has(kind))send(kind,0,true)
     }
     const flush=()=>{
-      const seconds=Math.min(60,Math.max(0,buffer.current))
-      buffer.current=0
-      if(seconds>0)send('active',seconds,true)
+      // Send cumulative active seconds for this minute. Server keeps MAX per
+      // shared viewer/minute (not SUM), so retries and multiple tabs cannot
+      // double-count the same elapsed interval.
+      const seconds=Math.min(60,Math.max(0,secondsThisMinute.current))
+      if(seconds>lastSent.current){lastSent.current=seconds;send('active',seconds,true)}
     }
     send('opened')
     const tick=setInterval(()=>{
+      const now=Date.now(),currentMinute=Math.floor(now/60000)
+      if(minuteBucket.current!==currentMinute){
+        flush();minuteBucket.current=currentMinute;secondsThisMinute.current=0;lastSent.current=0
+      }
       if(document.visibilityState==='visible'&&document.hasFocus()&&
-         Date.now()-lastActivity.current<60000)buffer.current=Math.min(60,buffer.current+1)
+         now-lastActivity.current<60000)secondsThisMinute.current=Math.min(60,secondsThisMinute.current+1)
     },1000)
     const batching=setInterval(flush,30000)
     const visibility=()=>{if(document.visibilityState!=='visible')flush()}
