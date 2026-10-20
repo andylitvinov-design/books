@@ -1,13 +1,14 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import {appFetch} from '@/lib/app/client-fetch'
+import {PhoneCountryInput} from '@/components/phone-country-input'
 import {PHONE_STORAGE_CONSENT_VERSION,normalizeClientPhone} from '@/lib/app/client-phone-policy.js'
 import styles from './client-contact-phone.module.css'
 
 const COPY={
  en:{
   title:'My contact phone',intro:'Add an optional phone number for future account notifications. It stays separate from practitioner CRM and private reports.',
-  number:'Phone with country code',hint:'Enter an international number, e.g. +14165551234. We do not guess your country code.',
+  number:'Phone with country code',hint:'Select the country calling code, then enter your number. No SMS is sent.',
   consent:'I allow Holistic House to securely store this phone in my private account contact settings. This is not consent to receive marketing or SMS.',
   save:'Save phone',saving:'Saving…',remove:'Remove my phone',removePrompt:'Remove your saved contact phone from this account?',
   saved:'Saved phone',unverified:'Not verified: no carrier SMS will be sent to this number until a verified service and separate notification consent exist.',
@@ -18,7 +19,7 @@ const COPY={
  },
  ru:{
   title:'Мой контактный телефон',intro:'По желанию сохраните телефон для будущих уведомлений кабинета. Он хранится отдельно от маркетинговой CRM и личных отчётов.',
-  number:'Телефон с кодом страны',hint:'Международный формат, например +14165551234. Код страны не подставляется автоматически.',
+  number:'Телефон с кодом страны',hint:'Выберите страну и введите номер без кода. SMS не отправляется.',
   consent:'Разрешаю Holistic House защищённо хранить этот номер в контактных настройках моего кабинета. Это не согласие на рекламу или SMS.',
   save:'Сохранить телефон',saving:'Сохраняю…',remove:'Удалить мой номер',removePrompt:'Удалить сохранённый телефон из вашего кабинета?',
   saved:'Сохранённый номер',unverified:'Номер не подтверждён. SMS не будут отправляться до настройки проверенного оператора и отдельного согласия.',
@@ -29,7 +30,7 @@ const COPY={
  },
  es:{
   title:'Mi teléfono de contacto',intro:'Guarda opcionalmente tu número para futuras notificaciones privadas; no se une a la CRM comercial.',
-  number:'Teléfono con código de país',hint:'Número internacional como +14165551234. No inferimos tu país.',
+  number:'Teléfono con código de país',hint:'Selecciona el prefijo del país e introduce tu número. No enviamos SMS.',
   consent:'Autorizo a Holistic House a guardar este teléfono cifrado en mi cuenta. No es consentimiento para SMS ni publicidad.',
   save:'Guardar teléfono',saving:'Guardando…',remove:'Eliminar mi teléfono',removePrompt:'¿Eliminar el teléfono de tu cuenta?',
   saved:'Teléfono guardado',unverified:'No verificado. No se enviarán SMS sin un proveedor aprobado y consentimiento separado.',
@@ -81,8 +82,11 @@ export default function ClientContactPhone({accountId,locale='en'}){
      <span>{t.none}</span>}
   </div>:<p role="status">{error||t.loading}</p>}
   {status&&<form onSubmit={submit} className={styles.form}>
-   <label>{t.number}<input type="tel" autoComplete="tel" placeholder="+14165551234"
-     maxLength={40} value={phone} onChange={e=>setPhone(e.target.value)} disabled={busy} required/></label>
+   <div className={styles.phoneField}>
+    <label htmlFor="hh-client-phone-input">{t.number}</label>
+    <PhoneCountryInput id="hh-client-phone-input" value={phone} locale={locale}
+      onChange={value=>setPhone(value)} disabled={busy} required/>
+   </div>
    <p>{t.hint}</p>
    <label className={styles.consent}><input type="checkbox" checked={consent}
       onChange={e=>setConsent(e.target.checked)} disabled={busy} required/><span>{t.consent}</span></label>

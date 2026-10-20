@@ -118,3 +118,7 @@
   .wrapper[data-open="true"] { padding-bottom:calc(94px + env(safe-area-inset-bottom)); }
   .choices a { scroll-margin-block:110px 140px; }
 }
+
+.contactFields .phoneField{grid-column:1/-1;display:grid;gap:5px;min-width:0}
+.phoneField label{display:block}
+.contactFields .phoneField input,.contactFields .phoneField select{font-size:16px}
