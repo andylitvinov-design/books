@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {getTorontoCompletedPeriod,makePracticeDigest} from '../lib/practitioners/daily-digest.mjs'
 import {cronAuthorized} from '../lib/app/housekeeping-cron.js'
+import {practiceTelegramConfigured,telegramSendMessage} from '../lib/practitioners/daily-telegram-transport.mjs'
 
 const one={id:'s1',slug:'test-service',copy:{title:'Публичная услуга'}}
 const two={id:'s2',slug:'second-service',copy:{title:'Вторая услуга'}}
@@ -64,6 +65,31 @@ test('cron route is fail-closed, no client data and safe bounded receipts',()=>{
   assert.match(backend,/status='failed'/)
   assert.match(backend,/status='sending'/)
   assert.match(backend,/status='approved'/)
-  assert.match(backend,/TELEGRAM_NOT_ACCEPTED/)
+  const transport=readFileSync(new URL('../lib/practitioners/daily-telegram-transport.mjs',import.meta.url),'utf8')
+  assert.match(transport,/TELEGRAM_NOT_ACCEPTED/)
   assert.doesNotMatch(source,/contact_ciphertext|description_ciphertext|message_ciphertext/)
+})
+
+test('Telegram is completely disabled without every secret and exact opt-in',()=>{
+  const env={HH_PRACTICE_TG_ENABLED:'false',HH_PRACTICE_TG_BOT_TOKEN:'123456:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi',HH_PRACTICE_TG_CHAT_ID:'999888777'}
+  assert.equal(practiceTelegramConfigured(env),false)
+  assert.equal(practiceTelegramConfigured({...env,HH_PRACTICE_TG_ENABLED:'true'}),true)
+  assert.equal(practiceTelegramConfigured({...env,HH_PRACTICE_TG_ENABLED:'true',HH_PRACTICE_TG_CHAT_ID:''}),false)
+})
+test('Telegram reply must confirm exact target chat; no provider errors become success',async()=>{
+  const env={HH_PRACTICE_TG_ENABLED:'true',HH_PRACTICE_TG_BOT_TOKEN:'123456:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi',HH_PRACTICE_TG_CHAT_ID:'999888777'}
+  const calls=[]
+  const accepted=async (url,options)=>{
+    calls.push({url,options})
+    return Response.json({ok:true,result:{chat:{id:999888777},message_id:1}})
+  }
+  assert.equal(await telegramSendMessage('Публичные агрегаты',env,accepted),true)
+  assert.equal(calls.length,1)
+  assert.match(calls[0].url,/api\\.telegram\\.org\\/bot/)
+  assert.equal(JSON.parse(calls[0].options.body).chat_id,'999888777')
+  assert.doesNotMatch(calls[0].options.body,/clientEmail|diagnosis/)
+  await assert.rejects(telegramSendMessage('test',env,async()=>Response.json({ok:true,result:{chat:{id:111}}})),/TELEGRAM_NOT_ACCEPTED/)
+  await assert.rejects(telegramSendMessage('test',env,async()=>Response.json({ok:false},{status:429})),/TELEGRAM_HTTP_429/)
+  await assert.rejects(telegramSendMessage('x'.repeat(4000),env,accepted),/DIGEST_INVALID/)
+  assert.equal(calls.length,1)
 })
