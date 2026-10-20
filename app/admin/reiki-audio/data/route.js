@@ -2,7 +2,7 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getAppConfig, requireSameOrigin } from '@/lib/app/config'
 import {
   reikiIntroAudioAdminRead, reikiIntroAudioPrepare,
-  reikiIntroAudioPublish, reikiIntroAudioUnpublish,
+  reikiIntroAudioPublish, reikiIntroAudioUnpublish, reikiIntroAudioPreview,
 } from '@/lib/academy/reiki-intro-audio-store'
 
 export const runtime = 'nodejs'
@@ -55,8 +55,12 @@ export async function POST(request) {
     if (body?.action === 'prepare' &&
         permitted(body, ['action','lesson','locale','mime','filename','bytes']))
       return result({ intent: await reikiIntroAudioPrepare(config, body) }, 201)
-    if (body?.action === 'publish' &&
+    if (body?.action === 'preview' &&
         permitted(body, ['action','lesson','locale','path']) &&
+        body.confirmed === undefined)
+      return result(await reikiIntroAudioPreview(config, body))
+    if (body?.action === 'publish' &&
+        permitted(body, ['action','lesson','locale','path','storage']) &&
         body.confirmed === undefined)
       return result({ audio: await reikiIntroAudioPublish(config, body) })
     if (body?.action === 'unpublish' &&

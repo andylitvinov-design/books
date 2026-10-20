@@ -2,11 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
-  REIKI_INTRO_BUCKET, REIKI_INTRO_MANIFEST, REIKI_INTRO_LESSONS,
+  REIKI_INTRO_BUCKET, REIKI_INTRO_DRAFT_BUCKET, REIKI_INTRO_MANIFEST, REIKI_INTRO_LESSONS,
   REIKI_INTRO_MAX_BYTES, reikiIntroSlot, reikiIntroMime, reikiIntroAudioPath,
   reikiIntroPublicStorageOrigin, reikiIntroPublicUrl, readReikiIntroManifest,
   validReikiIntroAudioPath, validReikiIntroEntry,
   reikiIntroAudioFolder, reikiIntroPublicObjectUrl, reikiIntroInventoryFile,
+  reikiIntroCanonicalMime,
 } from '../lib/academy/reiki-intro-audio-model.js'
 import { energyworkSequence } from '../data/academy/energywork-ai-schema.js'
 
@@ -63,10 +64,15 @@ test('Four meditation introductions and the fifth initiation lesson preserve all
 
 test('Audio formats and immutable object paths are tightly constrained to separate public bucket', () => {
   assert.equal(REIKI_INTRO_BUCKET,'hh-reiki-course-audio')
+  assert.equal(REIKI_INTRO_DRAFT_BUCKET,'hh-reiki-audio-drafts')
   assert.equal(REIKI_INTRO_MANIFEST,'reiki-practitioner/intro-manifest-v1.json')
   assert.equal(REIKI_INTRO_MAX_BYTES,20000000)
   assert.equal(reikiIntroMime('audio/mpeg','voice.mp3'),'audio/mpeg')
   assert.equal(reikiIntroMime('audio/mp4','voice.m4a'),'audio/mp4')
+  assert.equal(reikiIntroCanonicalMime('audio/x-m4a'),'audio/mp4')
+  assert.equal(reikiIntroCanonicalMime('audio/mp4; charset=UTF-8'),'audio/mp4')
+  assert.equal(reikiIntroCanonicalMime('audio/x-wav'),'audio/wav')
+  assert.equal(reikiIntroCanonicalMime('audio/mpeg'),'audio/mpeg')
   assert.equal(reikiIntroMime('','recording.M4A'),'audio/mp4')
   assert.equal(reikiIntroMime('','recording.mp3'),'audio/mpeg')
   assert.equal(reikiIntroMime('text/html','voice.mp3'),null)
@@ -195,7 +201,7 @@ test('A lesson language folder lists safe uploaded audio, never client assets or
     origin+'/storage/v1/object/public/'+REIKI_INTRO_BUCKET+'/'+parsed.path)
   assert.equal(reikiIntroPublicObjectUrl(origin,parsed.path,'kundalini','ru'),null)
   assert.match(store,/storage\.list\(folder,/)
-  assert.match(store,/reikiIntroInventoryFile\(file, lesson, locale\)/)
+  assert.match(store,/reikiIntroInventoryFile\(file, lesson, locale, scope\)/)
   assert.match(ownerRoute,/params\.get\('lesson'\)/)
   assert.match(ownerRoute,/params\.get\('locale'\)/)
   assert.match(ownerRoute,/reikiIntroAudioAdminRead\(config, \{ lesson, locale \}\)/)
@@ -206,14 +212,77 @@ test('Several saved audio files can be previewed; only one is assigned to the le
   assert.match(adminUi,/data-reiki-audio-folder-contents/)
   assert.match(adminUi,/files\.map\(\(item\)=>/)
   assert.match(adminUi,/data-reiki-audio-file=\{item\.path\}/)
-  assert.match(adminUi,/setStaged\(\{path:item\.path,fileName:null\}\)/)
+  assert.match(adminUi,/setStaged\(\{path:item\.path,fileName:null,storage:item\.storage/)
   assert.match(adminUi,/reikiIntroPublicObjectUrl\(origin,staged\.path,lesson\.id,locale\)/)
   assert.match(adminUi,/type="file"/)
   assert.match(adminUi,/uploadToSignedUrl/)
   assert.match(adminUi,/window\.confirm\(copy\.confirmPublish\)/)
   assert.match(adminUi,/action:'publish'/)
+  assert.match(adminUi,/storage:staged\.storage\|\|'public'/)
   assert.match(adminUi,/action:'unpublish'/)
   assert.match(adminUi,/setOperationBusy\(true\)/)
   assert.match(adminUi,/setOperationBusy\(false\)/)
   assert.doesNotMatch(adminUi,/autoPlay|autoplay|youtube\.com/)
 })
+
+
+test('Private draft bucket is non-public, owner-only, and separate from client recordings', () => {
+  const migration = read('supabase/migrations/20261020134000_hh_reiki_audio_private_drafts.sql')
+  assert.match(migration,/hh-reiki-audio-drafts/)
+  assert.match(migration,/20000000/)
+  assert.match(migration,/false/)
+  assert.doesNotMatch(migration,/create policy|grant select|client-private-media/i)
+  assert.match(store,/checkedDraftStorage\(config\)/)
+  assert.match(store,/checkedBucket\(config, REIKI_INTRO_DRAFT_BUCKET, false\)/)
+  assert.match(store,/checkedBucket\(config, REIKI_INTRO_BUCKET, true\)/)
+  assert.match(store,/storage\.createSignedUploadUrl\(path\)/)
+  assert.match(store,/bucket: REIKI_INTRO_DRAFT_BUCKET/)
+  assert.match(store,/createSignedUrl\(path, 300\)/)
+  assert.match(store,/signed\.origin !== config\.supabaseUrl/)
+  assert.match(ownerRoute,/body\?\.action === 'preview'/)
+  assert.match(ownerRoute,/reikiIntroAudioPreview\(config, body\)/)
+  assert.match(ownerRoute,/requireSameOrigin\(request, config\)/)
+  assert.doesNotMatch(publicRoute,/REIKI_INTRO_DRAFT_BUCKET|createSignedUrl|storage\.list|secretKey/)
+})
+
+test('Draft selection never exposes a public URL or posts the private object as public playback', () => {
+  const f={id:'fixture',name:'d'.repeat(32)+'.mp3',
+    metadata:{size:123456,mimetype:'audio/mpeg'},created_at:'2026-10-20T08:00:00Z'}
+  const draft=reikiIntroInventoryFile(f,'flight','ru','draft')
+  const legacy=reikiIntroInventoryFile(f,'flight','ru','public')
+  assert.equal(draft?.storage,'draft')
+  assert.equal(legacy?.storage,'public')
+  assert.equal(reikiIntroInventoryFile(f,'flight','ru','something-else'),null)
+  assert.match(adminUi,/item\.storage === 'draft'/)
+  assert.match(adminUi,/action:'preview'/)
+  assert.match(adminUi,/previewUrl:response\.previewUrl/)
+  assert.match(adminUi,/staged\.storage === 'public'/)
+  assert.match(adminUi,/storage:'draft'/)
+  assert.match(adminUi,/storage:staged\.storage/)
+  assert.match(ownerRoute,/permitted\(body, \['action','lesson','locale','path','storage'\]\)/)
+})
+
+test('Owner-approved publication copies from private storage before updating only public manifest', () => {
+  const start=store.indexOf('export async function reikiIntroAudioPublish')
+  const end=store.indexOf('export async function reikiIntroAudioUnpublish',start)
+  assert.ok(start>0 && end>start)
+  const p=store.slice(start,end)
+  assert.match(p,/source !== 'draft' && source !== 'public'/)
+  assert.match(p,/originStorage\.copy\(path, publishedPath, \{/)
+  assert.match(p,/destinationBucket: REIKI_INTRO_BUCKET/)
+  assert.match(p,/await publicStorage\.info\(publishedPath\)/)
+  assert.ok(p.indexOf('await publicStorage.info(publishedPath)') <
+    p.indexOf('writeStoredManifest(publicStorage,'), 'Never publish a path before inspecting copied bytes/MIME')
+  assert.match(p,/releaseId = createHash\('sha256'\)/)
+  assert.match(p,/if \(current\?\.path === publishedPath/)
+  assert.match(p,/return updated\.slots\[key\]/)
+  assert.doesNotMatch(p,/remove\(\[path\]\)|move\(path/)
+})
+
+test('The public audio reader only returns a published manifest entry and ignores drafts', () => {
+  assert.match(store,/const manifest = readReikiIntroManifest\(await response\.json\(\)\)/)
+  assert.match(store,/const entry = manifest\.slots\[reikiIntroSlot\(lesson, locale\)\]/)
+  assert.match(store,/const src = reikiIntroPublicUrl\(origin, entry, lesson, locale\)/)
+  assert.match(audioPlayer,/<audio controls preload="none"/)
+  assert.doesNotMatch(audioPlayer,/autoPlay|autoplay/)
+});
