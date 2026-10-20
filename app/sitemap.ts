@@ -12,7 +12,7 @@ const academyDirectoryPaths = ["", "/free-ai-courses", "/reiki", "/temple-studie
 
 // A missing data asset in a Vercel Function must not bring down the whole public
 // sitemap. Normal deployments include all files via next.config.ts tracing.
-async function loadSeoEntries(base: string): Promise<MetadataRoute.Sitemap> {
+async function loadSeoEntries(base: string) {
   try {
     const { getSitemapEntries } = await import("@/data/seo");
     return getSitemapEntries(base);
