@@ -332,7 +332,7 @@ async function exercise(engine, browserType, width) {
     await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-${engine}-${width}.png`, fullPage: true });
     // Poster click must load the exact YouTube original inside this card.
     await firstReview.locator('button.site-video-play').click();
-    await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\\.com\\/embed\\/Dk0LBmOivQo\\?/);
+    await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
     await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0);
 
     phase = 'journeys';
