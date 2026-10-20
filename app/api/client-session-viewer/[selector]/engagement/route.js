@@ -19,7 +19,7 @@ export async function POST(request,{params}) {
     const credential=readSessionViewerCookie(request.cookies,selector)
     const access=await authorizeSessionGuest(config,store,selector,credential)
     const command=await smallJson(request,512)
-    if(!await store?.consumeAccessAttempt('session-engagement:'+credential.id,120,3600))
+    if(!await store?.consumeAccessAttempt('session-engagement:'+credential.id,240,3600))
       return privateJson({error:'RATE_LIMITED'},429)
     return privateJson(await writeShareEngagement(config,access,credential.id,command))
   })
