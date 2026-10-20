@@ -24,6 +24,7 @@ const copy = {
     zenTitle: "Prefer ZEN.COM?",
     zenIntro: "Ask whether you can pay by EUR bank transfer. No payment is collected here; we first confirm the appointment and verified recipient details.",
     zenRequest: "Ask for ZEN.COM transfer details",
+    otherPayment: "Card or Interac options",
   },
   ru: {
     back: "Услуги", tag: "СПОСОБЫ ОПЛАТЫ · РАЗОВЫЕ УСЛУГИ",
@@ -39,6 +40,7 @@ const copy = {
     zenTitle: "Предпочитаете ZEN.COM?",
     zenIntro: "Узнайте, можно ли оплатить переводом EUR. Здесь деньги не списываются: сначала согласуем время и проверим реквизиты получателя.",
     zenRequest: "Запросить реквизиты ZEN.COM",
+    otherPayment: "Карта или Interac",
   },
   es: {
     back: "Servicios", tag: "FORMAS DE PAGO · SERVICIOS ÚNICOS",
@@ -54,6 +56,7 @@ const copy = {
     zenTitle: "¿Prefieres ZEN.COM?",
     zenIntro: "Consulta si puedes pagar mediante transferencia en EUR. Aquí no se cobra: primero confirmamos la cita y los datos del destinatario.",
     zenRequest: "Solicitar datos para ZEN.COM",
+    otherPayment: "Tarjeta o Interac",
   },
 } as const;
 
@@ -125,6 +128,9 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
                   target="_blank" rel="noopener noreferrer" data-paypal-personal-link>
                 {t.pay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
               </a> : <p className={styles.unavailable}>{t.help}</p>}
+              <Link href={"/" + locale + "/cart?items=" + encodeURIComponent(product.id)} className={styles.zenButton} data-other-payment-methods>
+                {t.otherPayment} <ArrowUpRight size={17} aria-hidden="true" />
+              </Link>
               {zenInquiryUrl ? <a href={zenInquiryUrl} className={styles.zenButton}
                 target="_blank" rel="noopener noreferrer" data-zen-transfer-inquiry={product.id}>
                 {t.zenRequest} <MessageCircle size={17} aria-hidden="true" />

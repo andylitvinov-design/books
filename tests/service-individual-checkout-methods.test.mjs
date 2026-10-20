@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { SERVICE_PRODUCTS } from '../lib/commerce/catalog.js'
-import { configuredIndividualCardLinks, buildIndividualCardPaymentUrl, normalizeStripePaymentLink } from '../lib/commerce/card-payment-links.js'
+import { configuredIndividualCardLinks, buildIndividualCardPaymentUrl, normalizeStripePaymentLink, buildIndividualCardLinkInquiry } from '../lib/commerce/card-payment-links.js'
 import { buildInteracTransferInquiry } from '../lib/commerce/interac-transfer-inquiry.js'
 
 const ids = SERVICE_PRODUCTS.map(item => item.id)
@@ -47,6 +47,14 @@ test('only exact hosted Stripe links are accepted for catalog totals, never arbi
     ...approved,
     HH_CARD_PAYMENT_LINK_100_EUR: approved.HH_CARD_PAYMENT_LINK_50_EUR,
   }), {})
+})
+
+test('card request is a safe fixed catalog inquiry and never collects card details', () => {
+  const url = buildIndividualCardLinkInquiry(ids, 'ru')
+  const text = new URL(url).searchParams.get('text')
+  assert.match(text, /€150\.00/)
+  assert.match(text, /карт/)
+  assert.equal(buildIndividualCardLinkInquiry(['fake']), null)
 })
 
 test('Interac is a manual CAD quote for fixed EUR catalog items, not a paid status', () => {
