@@ -36,6 +36,7 @@ test('synthesis stays server-only, uses verified private voices and cannot silen
   const service = source('lib/clients/report-narration-service.js')
   assert.match(service, /import 'server-only'/)
   assert.match(service, /HH_REPORT_NARRATION_ENABLED/)
+  assert.match(service, /HH_REPORT_NARRATION_PAID_ACKNOWLEDGED/)
   assert.match(service, /HEYGEN_API_KEY/)
   assert.match(service, /333115d9f7ff4042846baa63a26b6f76/)
   assert.match(service, /f447c75e0b7c40f4ae992bd6cfbce23c/)
