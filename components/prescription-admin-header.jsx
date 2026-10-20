@@ -52,7 +52,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
         <Link href="/admin/clients/legacy">{labels.legacy}</Link>
         <Link href="/admin/videos">{labels.videos}</Link>
         <Link href="/admin/youtube-upload">{labels.youtubeUploader}</Link>
-        <Link href="/admin/reiki-audio">{labels.reikiAudio}</Link>
+        <Link href="/admin/materials/audio/reiki-practitioner">{labels.reikiAudio}</Link>
       </nav>
     </header>
   )

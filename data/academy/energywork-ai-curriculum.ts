@@ -40,7 +40,7 @@ export type EnergyworkSlide = {
   // A concise "what we'll learn" panel in the existing first slide of each lesson.
   // Keep the stable slide IDs and all private answers/progress intact.
   introTopics?: Localized[];
-  introAudioKey?: "flight" | EnergyworkPath;
+  introAudioKey?: "flight" | EnergyworkPath | "initiation";
   question?: EnergyworkQuestion;
   // A second independently saved answer can share one visual slide.
   secondaryQuestion?: { id: string; prompt: Localized };
@@ -322,7 +322,13 @@ const commonSlides: EnergyworkSlide[] = [
 
   { id: "paths-01", phase: "initiation", kind: "lesson",
     title: l("Personal initiation: what comes next?", "Личная инициация: что дальше?"),
-    body: l("You have learned about all three Reiki systems within one course. Personal Level 1 initiation is a separate, teacher-led process that requires your informed choice and Andrey's confirmation.", "Вы познакомились со всеми тремя системами в одном курсе. Личная инициация первой ступени — отдельный процесс с преподавателем: нужен ваш осознанный выбор и подтверждение Андрея.") },
+    body: l("You have learned about all three Reiki systems within one course. Personal Level 1 initiation is a separate, teacher-led process that requires your informed choice and Andrey's confirmation.", "Вы познакомились со всеми тремя системами в одном курсе. Личная инициация первой ступени — отдельный процесс с преподавателем: нужен ваш осознанный выбор и подтверждение Андрея."),
+    introAudioKey: "initiation",
+    introTopics: [
+      l("How personal initiation differs from listening to a meditation", "Чем личная инициация отличается от прослушивания медитации"),
+      l("Choosing one gift initiation and optional additional traditions", "Как выбрать одну бесплатную инициацию и дополнительные варианты"),
+      l("Preparing your motivation and arranging a time with Andrey in chat", "Как описать мотивацию и согласовать время в чате с Андреем"),
+    ] },
   { id: "paths-02", phase: "initiation", kind: "lesson", image: image.tree,
     title: l("What your learning journal needs", "Что нужно для учебного дневника"),
     body: l("After each meditation, add a short review to continue. You may return to the separate lesson questions later; all five are needed before personal initiation review.", "После каждой медитации оставьте короткий отзыв для продолжения. К отдельным вопросам уроков можно вернуться позже — все пять понадобятся перед рассмотрением личной инициации.") },

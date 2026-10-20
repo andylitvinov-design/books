@@ -4595,7 +4595,8 @@
 .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .slideMain,
 .page[data-course-portrait="v3"] [data-energywork-slide-id="tan-01"] .slideMain,
 .page[data-course-portrait="v3"] [data-energywork-slide-id="kun-01"] .slideMain,
-.page[data-course-portrait="v3"] [data-energywork-slide-id="ygg-01"] .slideMain {
+.page[data-course-portrait="v3"] [data-energywork-slide-id="ygg-01"] .slideMain,
+.page[data-course-portrait="v3"] [data-energywork-slide-id="paths-01"] .slideMain {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -4617,7 +4618,8 @@
     [data-energywork-slide-id="flight-01"],
     [data-energywork-slide-id="tan-01"],
     [data-energywork-slide-id="kun-01"],
-    [data-energywork-slide-id="ygg-01"]) .slideMain {
+    [data-energywork-slide-id="ygg-01"],
+    [data-energywork-slide-id="paths-01"]) .slideMain {
     padding: 8px 11px;
     justify-content: safe center;
   }
