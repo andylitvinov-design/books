@@ -201,3 +201,37 @@ Until those gates are verified keep `HH_LOCAL_NARRATION_ENABLED=false`,
 `HH_LOCAL_NARRATION_OWNER_APPROVED=false`,
 `HH_LOCAL_NARRATION_END_TO_END_VERIFIED=false` and
 `HH_REPORT_NARRATION_ENABLED=false`. No credentials are committed.
+
+
+## 14. Bounded no-cloud-charge audio lifecycle (2026-10-20)
+
+- Pending encrypted jobs expire after 14 days (a powered-off Mac does not
+  force the site to rent a paid GPU).
+- Successful jobs keep metadata and playable private MP3s for **90 days**.
+  The job's sealed clinical text and viewer proof are dropped upon success.
+- The Redis Lua completion records only the opaque private Storage path in a
+  sorted expiry index. Failed, canceled and timeout-reclaimed leases also
+  enqueue their possible orphaned MP3 paths there.
+- An authenticated Mac idle poll requests deletion of at most two expired
+  objects at a time, using the site's private server-side Supabase client.
+  Failed deletions are retryable after ten minutes, and cleanup does not
+  transmit client report text or invoke AI inference.
+- When Mac stays offline beyond expiry, a ready file may physically remain
+  in the private bucket until the Mac returns, but its authorization-bound
+  site metadata expires and the client can no longer open it. No *new* media
+  files are generated while the Mac is off.
+- This is a **bounded retention** choice to stay within the existing storage
+  free tier, not a promise of lifetime storage. Future owner-approved
+  longer retention requires a storage-capacity/consent review.
+
+The worker uses macOS Keychain for its bearer credential and can run every
+five minutes on login via a LaunchAgent, but the installer only prepares an
+inactive agent. Both real voice source checksums must match the owner's
+approved QA marker before enabling it. No medical content goes to the
+client phone except audio authorized on every request.
+
+**Still blocked for actual client rollout:** connected Mac agent, measured
+local RU/EN speech, owner approval, integration on an allowed synthetic
+test account across the six report scopes, and real iPhone Safari playback.
+Never preemptively switch on the production flags just because code is
+merged or Vercel is READY.
