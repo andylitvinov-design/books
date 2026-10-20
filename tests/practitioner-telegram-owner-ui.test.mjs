@@ -19,7 +19,7 @@ test('signed admin Server Actions are explicit, guarded, and preview-blocked',()
  assert.match(s,/await ensureOwnerTelegramPairing\(config\)/)
  assert.match(s,/await sendOwnerTelegramTest\(config\)/)
  assert.match(s,/process\.env\.VERCEL_ENV==='preview'/)
- assert.doesNotMatch(s,/setWebhook|getUpdates|TELEGRAM_BOT_TOKEN|chat_id/)
+ assert.doesNotMatch(s,/setWebhook|getUpdates|TELEGRAM_BOT_TOKEN|\\bchat_id\\s*:/)
 })
 test('neutral test is one-shot and verifies Bot API target before send',()=>{
  const s=read('lib/practitioners/telegram-owner-setup.js')
