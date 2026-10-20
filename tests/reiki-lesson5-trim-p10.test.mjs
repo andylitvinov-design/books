@@ -50,7 +50,7 @@ test('All seven historical p9 cursors resume forward without dropping encrypted 
   }
   assert.equal(energyworkP9ResumeId('end-01'),'end-01')
   assert.match(repository, /const activeSlideId = energyworkP9ResumeId\(row\.slide_id\)/)
-  assert.match(repository, /ENERGYWORK_P9_VERSION\]\ .includes\(progress\.course_version\)/.source ? /ENERGYWORK_P9_VERSION/ : /ENERGYWORK_P9_VERSION/)
+  assert.match(repository, /\[ENERGYWORK_VERSION, ENERGYWORK_P9_VERSION\]\.includes\(progress\.course_version\)/)
   assert.match(repository, /ENERGYWORK_P8_VERSION \|\|/)
   assert.doesNotMatch(migration, /delete from|truncate|drop table|drop column|update\s+app_private\.academy_course_progress/i)
 })
