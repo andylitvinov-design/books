@@ -221,6 +221,14 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
         (metadataFailed ? ' · ' + copy.metadataWarning : ''))
     } catch {
       if (saved) await onChanged().catch(() => {})
+      // Never silently re-upload completed files when the owner retries
+      // after a partial network failure.
+      if (saved) {
+        const remaining = pendingFiles.slice(saved)
+        setPendingFiles(remaining)
+        setFile(remaining[0] || null)
+        if (!remaining.length && fileInputRef.current) fileInputRef.current.value=''
+      }
       setError(copy.failed + (saved ? ' · ' + copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length : ''))
     } finally {
       setBusy('');setOperationBusy(false);cancelAfterCurrent.current = false
@@ -251,7 +259,9 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       await ownerRequest({action:'publish',lesson:lesson.id,locale,path:staged.path,
         storage:staged.storage||'public'})
       await onChanged()
-      setStaged(null);setFile(null);setNotice(copy.publishedDone)
+      setStaged(null);setFile(null);setPendingFiles([])
+      if (fileInputRef.current) fileInputRef.current.value=''
+      setNotice(copy.publishedDone)
     } catch (error) {setError(error?.message==='REIKI_AUDIO_COPY_FAILED'?copy.copyFailed:copy.failed)}
     finally {setBusy('');setOperationBusy(false)}
   }
@@ -393,7 +403,8 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
           {busy==='metadata'?copy.saving:copy.save}
         </button>
         <button type="button" disabled={!!busy} onClick={()=>setEditing(null)}>{copy.cancel}</button>
-        {editing.storage==='draft' && files.some(item=>item.path===editing.path && item.archived) ?
+        {editing.storage==='draft' && editing.archived &&
+          files.some(item=>item.path===editing.path && item.storage==='draft' && item.archived) ?
           <button type="button" className={styles.dangerButton}
             disabled={!!busy} onClick={()=>void deleteDraft(editing)}>
             <Trash2 size={15} aria-hidden="true"/>{copy.delete}
