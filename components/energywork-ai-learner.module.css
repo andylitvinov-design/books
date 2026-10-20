@@ -3941,91 +3941,133 @@
 }
 
 
-/* Reiki Practitioner · optional private-cabinet checkpoint after Lesson 1.
-   Fits the approved scenic course without opening a new page or modal. */
-.page[data-course-portrait="v3"] .firstLessonSave {
-  margin-top: 14px;
-  padding: clamp(12px, 2vw, 18px);
-  border: 1px solid rgba(124, 212, 204, .55);
-  background: linear-gradient(125deg, rgba(8, 61, 72, .88), rgba(14, 91, 94, .82));
-  box-shadow: 0 10px 27px rgba(0, 39, 53, .19);
-  color: #f5fffd;
-  border-radius: 18px;
+/* Reiki Practitioner · Lesson 1, Slide 8: gentle, save-only personal keepsake.
+   Privacy consent is still explicit. The only forward action is confirmed save. */
+.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .slideMain {
+  justify-content: safe center;
+  gap: 12px;
 }
-.page[data-course-portrait="v3"] .firstLessonSaveHeading { display: flex; gap: 11px; align-items: flex-start; }
-.page[data-course-portrait="v3"] .firstLessonSaveHeading > svg { flex: 0 0 auto; margin-top: 2px; color: #93dfcc; }
+.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .content {
+  width: 100%;
+}
+.page[data-course-portrait="v3"] .firstLessonSave {
+  display: grid;
+  justify-items: stretch;
+  gap: 10px;
+  width: min(100%, 660px);
+  margin: 12px auto 0;
+  padding: clamp(17px, 3vw, 27px);
+  border: 1px solid rgba(143, 211, 210, .88);
+  border-radius: 23px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(226, 250, 246, .92));
+  box-shadow: 0 14px 36px rgba(18, 91, 100, .1);
+  color: #275b66;
+  text-align: center;
+}
+.page[data-course-portrait="v3"] .firstLessonKeepsake {
+  position: relative;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: 68px;
+  height: 68px;
+  border: 1px solid rgba(130, 215, 200, .78);
+  border-radius: 23px;
+  background: radial-gradient(circle at 35% 28%, #fff 0%, #dbf8ed 58%, #bfe9df 100%);
+  box-shadow: 0 7px 21px rgba(31, 139, 132, .13);
+  color: #12878a;
+}
+.page[data-course-portrait="v3"] .firstLessonKeepsake svg:last-child {
+  position: absolute;
+  top: -6px;
+  right: -11px;
+  color: #cb9d49;
+}
+.page[data-course-portrait="v3"] .firstLessonSaveHeading { display: grid; gap: 8px; }
 .page[data-course-portrait="v3"] .firstLessonSaveHeading h2 {
-  margin: 0 0 5px;
-  color: #fff;
-  font-size: clamp(16px, 1.8vw, 20px);
-  font-weight: 850;
-  line-height: 1.2;
+  margin: 0; color: #116b76;
+  font-size: clamp(20px, 2.4vw, 26px);
+  line-height: 1.18; font-weight: 830;
 }
 .page[data-course-portrait="v3"] .firstLessonSaveHeading p {
-  margin: 0;
-  color: #e1f8f3;
-  font-size: clamp(12px, 1.25vw, 14px);
-  line-height: 1.48;
+  margin: 0; color: #376a75;
+  font-size: clamp(14px, 1.5vw, 17px); line-height: 1.54;
 }
+.page[data-course-portrait="v3"] .firstLessonAssurance {
+  display: inline-flex;
+  align-items: center; justify-content: center; gap: 8px;
+  margin: 3px 0 0; padding: 11px 13px;
+  border-radius: 14px;
+  background: rgba(205, 241, 232, .6);
+  color: #286b65;
+  font-size: 13px; line-height: 1.4; font-weight: 650;
+}
+.page[data-course-portrait="v3"] .firstLessonAssurance svg { flex: none; color: #148e89; }
 .page[data-course-portrait="v3"] .firstLessonSave .consentLabel {
-  margin-top: 12px;
-  color: #fff;
-  font-size: 12px;
-  line-height: 1.45;
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 3px 0 0; padding: 8px 4px 1px;
+  color: #4e7078; text-align: left;
+  font-size: 12px; line-height: 1.45;
 }
 .page[data-course-portrait="v3"] .firstLessonSave .consentLabel input {
-  accent-color: #1ecab0;
+  flex: none; width: 19px; height: 19px; margin-top: 0;
+  accent-color: #149d9d;
 }
 .page[data-course-portrait="v3"] .firstLessonPrivacy {
-  margin: 7px 0 9px;
-  color: #d6ede8;
-  font-size: 11px;
-  line-height: 1.4;
+  margin: 0; color: #637c82;
+  font-size: 11px; line-height: 1.4; text-align: left;
 }
-.page[data-course-portrait="v3"] .firstLessonPrivacy a { color: #bcfae8; text-underline-offset: 2px; }
+.page[data-course-portrait="v3"] .firstLessonPrivacy a { color: #117e85; text-underline-offset: 2px; }
 .page[data-course-portrait="v3"] .firstLessonSaveAction {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  min-height: 49px;
-  border: 1px solid #b3f0de;
-  background: #effff9;
-  color: #065f65;
-  border-radius: 11px;
-  padding: 9px 13px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 850;
-  cursor: pointer;
+  display: inline-flex;
+  justify-content: center; align-items: center; gap: 9px;
+  width: 100%; min-height: 54px; border: 0;
+  border-radius: 15px; padding: 10px 16px;
+  background: linear-gradient(105deg, #04abbf, #26c8b5);
+  box-shadow: 0 5px 0 #0f9f9e;
+  color: #fff; font: inherit; font-weight: 830;
+  font-size: clamp(14px, 1.7vw, 17px);
+  line-height: 1.28; white-space: normal; cursor: pointer;
 }
-.page[data-course-portrait="v3"] .firstLessonSaveAction:hover { background: #d9faf0; }
-.page[data-course-portrait="v3"] .firstLessonSaveAction:disabled { opacity: .48; cursor: not-allowed; }
-.page[data-course-portrait="v3"] .firstLessonGuestNote { margin: 7px 0 0; color: #d3ebe5; font-size: 11px; text-align: center; }
+.page[data-course-portrait="v3"] .firstLessonSaveAction svg { flex: none; }
+.page[data-course-portrait="v3"] .firstLessonSaveAction:hover:not(:disabled) { background: linear-gradient(105deg, #079dad, #12baa9); }
+.page[data-course-portrait="v3"] .firstLessonSaveAction:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.page[data-course-portrait="v3"] .firstLessonSaveAction:focus-visible { outline: 3px solid #075c68; outline-offset: 3px; }
 .page[data-course-portrait="v3"] .firstLessonSaved {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-  margin-top: 12px;
-  font-size: 13px;
-  font-weight: 750;
-  color: #d5fff2;
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 7px; margin: 0; color: #11766a;
+  font-size: 12px; line-height: 1.35; font-weight: 720;
 }
-.page[data-course-portrait="v3"] .firstLessonSaved a { color: #b6fae5; text-decoration: underline; }
+.page[data-course-portrait="v3"] .firstLessonSaved a { color: #096c79; text-decoration: underline; }
+.page[data-course-portrait="v3"] .firstLessonError {
+  margin: 0; color: #8c3c38; font-size: 12px; line-height: 1.4;
+}
 @media (max-width: 760px) {
-  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-done"] .firstLessonSave {
-    margin-top: 9px;
-    padding: 10px 11px;
-    border-radius: 13px;
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .slideMain {
+    gap: 8px; padding: 12px;
   }
-  .page[data-course-portrait="v3"] .firstLessonSaveHeading { gap: 8px; }
-  .page[data-course-portrait="v3"] .firstLessonSaveHeading > svg { width: 17px; height: 17px; }
-  .page[data-course-portrait="v3"] .firstLessonSaveHeading h2 { font-size: 15px; }
-  .page[data-course-portrait="v3"] .firstLessonSaveHeading p { font-size: 12px; line-height: 1.34; }
-  .page[data-course-portrait="v3"] .firstLessonSave .consentLabel { margin-top: 8px; font-size: 12px; }
-  .page[data-course-portrait="v3"] .firstLessonSaveAction { min-height: 47px; font-size: 13px; }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .content h1 {
+    font-size: clamp(25px, 7vw, 32px); line-height: 1.12;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .description {
+    font-size: 13px; line-height: 1.36;
+  }
+  .page[data-course-portrait="v3"] .firstLessonSave {
+    margin-top: 5px; gap: 9px;
+    padding: 15px 13px; border-radius: 19px;
+  }
+  .page[data-course-portrait="v3"] .firstLessonKeepsake { width: 51px; height: 51px; border-radius: 17px; }
+  .page[data-course-portrait="v3"] .firstLessonKeepsake svg:first-child { width: 27px; height: 27px; }
+  .page[data-course-portrait="v3"] .firstLessonSaveHeading { gap: 6px; }
+  .page[data-course-portrait="v3"] .firstLessonSaveHeading h2 { font-size: 19px; }
+  .page[data-course-portrait="v3"] .firstLessonSaveHeading p { font-size: 13px; line-height: 1.43; }
+  .page[data-course-portrait="v3"] .firstLessonAssurance { font-size: 11px; padding: 8px 10px; }
+  .page[data-course-portrait="v3"] .firstLessonSave .consentLabel { font-size: 11px; }
+  .page[data-course-portrait="v3"] .firstLessonPrivacy { font-size: 10px; }
+  .page[data-course-portrait="v3"] .firstLessonSaveAction { min-height: 49px; font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page[data-course-portrait="v3"] .firstLessonSaveAction { transition: none; }
 }
 
 /* REIKI ONE-SCREEN TEXT QUESTIONS · 2026-10-19

@@ -138,15 +138,16 @@ const copy = {
     initiationVideoNoteTitle: "A video meditation is not an initiation",
     initiationVideoNoteText: "Listening to a recorded meditation does not initiate you. Initiation is always personal. To receive a personal meditation from Andrey, complete all five lessons and write to him.",
     firstMilestoneLabel: "Your Reiki journey is underway",
-    firstSaveTitle: "Keep your Reiki lessons in My Courses",
-    firstSaveText: "Save Lesson 1, your notes and a link to your course materials. After Google sign-in, Lesson 2 opens automatically.",
+    firstSaveTitle: "Your reflections, gently kept",
+    firstSaveText: "Your answers and your Flight to the Sun review will be carefully saved in My Courses. Return to them whenever you like, and edit or rewrite them at any time.",
+    firstSaveAssurance: "Only you decide what to share. Your reflections stay private.",
     firstSaveConsent: "I am at least 18 and agree to save my lesson progress and answers privately in my Holistic House account.",
-    firstSavePolicy: "Read our Privacy Policy",
-    firstSaveGoogle: "Continue with Google & save",
+    firstSavePolicy: "Privacy Policy",
+    firstSaveGoogle: "Save with Google & continue",
     firstSaveAccount: "Save to My Courses & continue",
-    firstSaveGuest: "Or continue as a guest without saving",
-    firstSaveError: "Lesson 1 was not saved. Try again; your answers are still here.",
-    firstSignInCancelled: "Google sign-in was not completed. You can try again or continue as a guest.",
+    firstSaveNext: "Continue to saving",
+    firstSaveError: "We couldn't save your lesson yet. Your answers are still here — please try again.",
+    firstSignInCancelled: "Google sign-in wasn't completed. Please try again to save and continue.",
     firstSaveReady: "Lesson 1 is saved in My Courses.",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
@@ -189,7 +190,7 @@ const copy = {
     initiationShareNeeded: "Enable teacher sharing to send your application.",
     initiationNotReady: "Complete your lesson reports and answers to request personal initiation.",
     enableSave: "Start & save my course", signIn: "Sign in with Google to save",
-    guestHint: "You may continue as a guest without saving.",
+    guestHint: "To start Lesson 2, save Lesson 1 in your private account.",
     saved: "Saved privately", saving: "Saving…", offline: "Saving is unavailable. Your answers are not stored on the server.",
     retry: "Retry", saveFailed: "Could not save. Your answer is still on this screen; retry before continuing.",
     conflict: "Your course changed in another session. Reload the saved version before continuing.",
@@ -271,15 +272,16 @@ const copy = {
     initiationVideoNoteTitle: "Видеомедитация — это ещё не инициация",
     initiationVideoNoteText: "Прослушанная видеомедитация сама по себе не является инициацией. Инициация всегда персональна. Чтобы получить персональную медитацию от Андрея, завершите все пять уроков курса и напишите ему.",
     firstMilestoneLabel: "Ваш путь в Рейки начался",
-    firstSaveTitle: "Сохраните уроки Рейки в личном кабинете",
-    firstSaveText: "Сохраним первый урок, ваши записи и ссылку на материалы курса. После входа через Google автоматически откроется второй урок.",
+    firstSaveTitle: "Ваши впечатления будут бережно сохранены",
+    firstSaveText: "Ваши ответы и отзыв о «Полёте к Солнцу» будут бережно сохранены в вашем кабинете. Вы сможете в любой момент к ним вернуться, изменить или переписать.",
+    firstSaveAssurance: "Только вы решаете, чем делиться. Ваши записи остаются личными.",
     firstSaveConsent: "Мне исполнилось 18 лет, и я согласен(на) на приватное хранение прогресса и ответов курса в Holistic House.",
     firstSavePolicy: "Политика конфиденциальности",
-    firstSaveGoogle: "Войти через Google и сохранить",
+    firstSaveGoogle: "Сохранить через Google и продолжить",
     firstSaveAccount: "Сохранить в кабинете и продолжить",
-    firstSaveGuest: "Или продолжить без сохранения",
-    firstSaveError: "Не удалось сохранить первый урок. Повторите попытку: ваши ответы остались на этом экране.",
-    firstSignInCancelled: "Вход через Google не завершён. Можно повторить попытку или продолжить как гость.",
+    firstSaveNext: "Продолжить к сохранению",
+    firstSaveError: "Пока не получилось сохранить урок. Ваши ответы на месте — попробуйте ещё раз.",
+    firstSignInCancelled: "Вход через Google не завершён. Повторите вход, чтобы сохранить урок и продолжить.",
     firstSaveReady: "Первый урок сохранён в «Моих курсах».",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
@@ -322,7 +324,7 @@ const copy = {
     initiationShareNeeded: "Для заявки разрешите передачу материалов преподавателю.",
     initiationNotReady: "Заполните ответы и отчёты, чтобы отправить заявку.",
     enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
-    guestHint: "Можно продолжить как гость без сохранения.",
+    guestHint: "Чтобы перейти ко второму уроку, сохраните первый в личном кабинете.",
     saved: "Сохранено приватно", saving: "Сохраняем…", offline: "Сохранение недоступно. Ответы не записываются на сервер.",
     retry: "Повторить", saveFailed: "Не удалось сохранить. Ответ остался на экране; повторите перед переходом.",
     conflict: "Курс изменился в другой вкладке. Загрузите сохранённую версию перед продолжением.",
@@ -785,7 +787,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         action: "start", consent: true, teacherConsent: false,
         version: ENERGYWORK_COURSE_VERSION, firstLesson: handoff,
       }, "POST", { accountId: bootstrap.account.id }) as StoredProgress;
-      if (!value.enrolled || !value.slideId || !Number.isSafeInteger(value.revision)) {
+      if (!value.enrolled || !value.slideId || !Number.isSafeInteger(value.revision) ||
+          !value.answers?.["flight-04"]) {
         throw new Error("INVALID_FIRST_LESSON_RESPONSE");
       }
       hydrate(value); // The saved cursor is at least tan-01: the next lesson.
@@ -796,7 +799,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       // Retain the short-lived, same-tab handoff for a deliberate retry.
       const unauthorized = (error as { status?: number })?.status === 401;
       setSync(unauthorized ? "guest" : "consent");
-      setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+      setIndex(energyworkSlides().findIndex(item => item.id === "flight-save"));
       setSaveError(unauthorized ? t.signupError : t.firstSaveError);
     } finally {
       setBusy(false);
@@ -812,7 +815,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       // Resume immediately in the lesson, not the cabinet homepage.
       setAnswers(pending.answers);
       answersRef.current = pending.answers;
-      setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+      setIndex(energyworkSlides().findIndex(item => item.id === "flight-save"));
       void completeFirstLesson(pending);
       return;
     }
@@ -822,7 +825,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       if (pending) {
         answersRef.current = pending.answers;
         setAnswers(pending.answers);
-        setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+        setIndex(energyworkSlides().findIndex(item => item.id === "flight-save"));
         setSaveError(t.firstSignInCancelled);
       }
     }
@@ -888,7 +891,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
   async function saveLessonOneToCabinet() {
     if (busy || !firstLessonConsent || !["guest", "consent"].includes(sync) ||
-        slide.id !== "flight-done") return;
+        slide.id !== "flight-save") return;
     try {
       const value = energyworkCreateFirstLessonHandoff(answersRef.current, locale);
       // Only a checked and deliberately clicked save action writes temporary
@@ -1005,6 +1008,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     if (busy) return;
     const target = slides.findIndex((item) => item.id === (id === "tan-study-03" ? "tan-study-02" : id));
     if (target < 0) return;
+    // Without a verified private save, Lesson 2 and later remain locked.
+    if (sync !== "ready" && target > slides.findIndex(item => item.id === "flight-save")) return;
     if (sync === "ready" && slide.question &&
       (dirtyRef.current.has(slide.id) ||
         Boolean(slide.secondaryQuestion && dirtyRef.current.has(slide.secondaryQuestion.id)))) {
@@ -1018,7 +1023,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     setIndex(target);
   }
   async function next() {
-    if (busy || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing) return;
+    if (busy || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing ||
+        (slide.id === "flight-save" && sync !== "ready")) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -1220,7 +1226,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <strong>{t.privateProgress}</strong><small>{t.privateProgressDetail}</small></div>
                 </div>
               ) : null}
-              {slide.kind === "milestone" ? (
+              {slide.kind === "milestone" && slide.id !== "flight-save" ? (
                 <div className={styles.milestoneCard}>
                   <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
                   <div className={styles.milestoneCopy}>
@@ -1235,41 +1241,45 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                    <p>{t.initiationVideoNoteText}</p>
                  </aside>
                ) : null}
-               {slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? (
+               {slide.id === "flight-save" ? (
                 <aside className={styles.firstLessonSave} data-reiki-first-lesson-save
                   aria-labelledby="reiki-save-first-lesson-title">
-                  <div className={styles.firstLessonSaveHeading}>
-                    <LockKeyhole size={23} aria-hidden="true" />
-                    <div>
-                      <h2 id="reiki-save-first-lesson-title">{t.firstSaveTitle}</h2>
-                      <p>{t.firstSaveText}</p>
-                    </div>
+                  <div className={styles.firstLessonKeepsake} aria-hidden="true">
+                    <HandHeart size={34} strokeWidth={1.6} /><Sparkles size={19} />
                   </div>
-                  <label className={styles.consentLabel}>
-                    <input type="checkbox" checked={firstLessonConsent}
-                      onChange={event => setFirstLessonConsent(event.target.checked)}
-                      data-reiki-first-lesson-consent />
-                    <span>{t.firstSaveConsent}</span>
-                  </label>
-                  <p className={styles.firstLessonPrivacy}>
-                    <Link href="/privacy" target="_blank" rel="noopener noreferrer">{t.firstSavePolicy}</Link>
-                    {" · "}{t.reviewPrivate}
-                  </p>
+                  <div className={styles.firstLessonSaveHeading}>
+                    <h2 id="reiki-save-first-lesson-title">{t.firstSaveTitle}</h2>
+                    <p>{t.firstSaveText}</p>
+                  </div>
+                  <p className={styles.firstLessonAssurance}><Heart size={16} aria-hidden="true" />{t.firstSaveAssurance}</p>
+                  {sync === "ready" ? (
+                    <p className={styles.firstLessonSaved} data-reiki-first-lesson-saved>
+                      <Check size={18} aria-hidden="true" />{t.firstSaveReady}
+                      <Link href={"/" + locale + "/app/course?view=courses"}>{t.myCourses}</Link>
+                    </p>
+                  ) : (
+                    <>
+                      <label className={styles.consentLabel}>
+                        <input type="checkbox" checked={firstLessonConsent}
+                          onChange={event => setFirstLessonConsent(event.target.checked)}
+                          data-reiki-first-lesson-consent />
+                        <span>{t.firstSaveConsent}</span>
+                      </label>
+                      <p className={styles.firstLessonPrivacy}>
+                        <Link href="/privacy" target="_blank" rel="noopener noreferrer">{t.firstSavePolicy}</Link>
+                        {" · "}{t.reviewPrivate}
+                      </p>
+                    </>
+                  )}
+                  {saveError ? <p className={styles.firstLessonError} role="alert">{saveError}</p> : null}
                   <button type="button" className={styles.firstLessonSaveAction}
-                    onClick={saveLessonOneToCabinet}
-                    disabled={!firstLessonConsent || busy}
+                    onClick={sync === "ready" ? next : saveLessonOneToCabinet}
+                    disabled={busy || sync === "checking" || sync === "unavailable" || (sync !== "ready" && !firstLessonConsent)}
                     data-reiki-first-lesson-google-save>
                     {busy ? t.saving : sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount}
-                    <ArrowRight size={18} aria-hidden="true" />
+                    <ArrowRight size={19} aria-hidden="true" />
                   </button>
-                  <p className={styles.firstLessonGuestNote}>{t.firstSaveGuest}</p>
                 </aside>
-              ) : null}
-              {slide.id === "flight-done" && sync === "ready" ? (
-                <p className={styles.firstLessonSaved} data-reiki-first-lesson-saved>
-                  <Check size={18} aria-hidden="true" />{t.firstSaveReady}
-                  <Link href={"/" + locale + "/app/course?view=courses"}>{t.myCourses}</Link>
-                </p>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
@@ -1620,15 +1630,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               )}
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
-                className={styles.next} data-energywork-next>
-                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
-                  slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continuePath) : t.continue}
-                <ArrowRight size={19} aria-hidden="true" />
-              </button>
+              {slide.id !== "flight-save" ? (
+                <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
+                  className={styles.next} data-energywork-next>
+                  {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
+                    slide.id === "flight-done" ? t.firstSaveNext :
+                    slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continuePath) : t.continue}
+                  <ArrowRight size={19} aria-hidden="true" />
+                </button>
+              ) : null}
             </div>
           ) : null}
-          {slide.kind === "milestone" && saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
+          {slide.kind === "milestone" && slide.id !== "flight-save" && saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
         </footer>
       </div>
     </main>
