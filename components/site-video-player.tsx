@@ -66,7 +66,7 @@ const approvedAndyPosters: Readonly<Record<string, string>> = {
 // Approved Unlisted YouTube mirror links for these exact public HeyGen masters.
 // Prefer these identity-verified YouTube copies for public playback when HeyGen embeds fail.
 // Preserve the original HeyGen record, artwork, transcript and owner editor state.
-const existingYouTubeMirrors: Readonly<Record<string, string>> = {
+export const existingYouTubeMirrors: Readonly<Record<string, string>> = {
   ed202847a43a96b918308aa972177b34: "Y4K4piEwwA8",
   "48105a2f2228e7cb3a67391e97acaf8b": "s30Y42IwPcg",
   "34df311e461509433b45929908a9097a": "ILyRWyHtJoE",
