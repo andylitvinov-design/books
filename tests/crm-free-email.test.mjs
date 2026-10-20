@@ -59,5 +59,5 @@ test('automatic sender/unsubscribe footer is present even after editing; local l
  const direct=prepareFreeEmail(contacts[0],'Appointments','I can offer a meeting tomorrow.','ru')
  assert.match(direct.body,/Отписаться/)
  assert.match(prepareFreeEmail(contacts[0],'Appointments','I can offer a meeting tomorrow.','es').body,/Baja/)
- assert.equal(formatFreeEmailBody('   Hello there   ').startsWith('Hello there\\n\\n'),true)
+ assert.equal(formatFreeEmailBody('   Hello there   ').startsWith('Hello there\n\n'),true)
 })
