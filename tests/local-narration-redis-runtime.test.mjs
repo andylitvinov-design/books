@@ -59,11 +59,11 @@ test('lease excludes concurrent worker and completion eliminates encrypted text'
     [JSON.stringify(f.original),ttl,f.now])
   const lease=randomUUID(),now=6000
   const objectKey='narration/'+randomUUID()+'/'+'1'.repeat(64)+'.mp3'
-  const first=JSON.parse(evalLua('CLAIM_SCRIPT',[f.queue],
+  const first=JSON.parse(evalLua('CLAIM_SCRIPT',[f.queue,f.ready],
     [now,lease,60000,objectKey,ttl]))
   assert.equal(first.status,'leased')
   assert.equal(first.attempts,1)
-  assert.equal(evalLua('CLAIM_SCRIPT',[f.queue],
+  assert.equal(evalLua('CLAIM_SCRIPT',[f.queue,f.ready],
     [now+1,randomUUID(),60000,objectKey,ttl]),'')
   assert.equal(evalLua('COMPLETE_SCRIPT',[f.key,f.queue,f.ready],
     [randomUUID(),now+2,'audio/mpeg',12345,'a'.repeat(64),readyTtl,now+7776000*1000]),'')
@@ -74,7 +74,7 @@ test('lease excludes concurrent worker and completion eliminates encrypted text'
   assert.equal(done.audio.assetPath,objectKey)
   assert.equal(evalLua('CLAIM_EXPIRED_AUDIO_SCRIPT',[f.ready],
     [now+7776000*1000+1,1,600000]),objectKey)
-  assert.equal(evalLua('CANCEL_STALE_SCRIPT',[f.key,f.queue,f.idKey],[lease]),'0')
+  assert.equal(evalLua('CANCEL_STALE_SCRIPT',[f.key,f.queue,f.idKey,f.ready],[lease,7000]),'0')
 })
 
 test('stale lease cancellation removes metadata; valid readers may enqueue again',()=>{
@@ -82,10 +82,10 @@ test('stale lease cancellation removes metadata; valid readers may enqueue again
   evalLua('ENQUEUE_SCRIPT',[f.key,f.queue,f.idKey],
     [JSON.stringify(f.original),ttl,f.now])
   const lease=randomUUID(),objectKey='narration/'+randomUUID()+'/'+'b'.repeat(64)+'.mp3'
-  evalLua('CLAIM_SCRIPT',[f.queue],[6000,lease,60000,objectKey,ttl])
-  assert.equal(evalLua('CANCEL_STALE_SCRIPT',[f.key,f.queue,f.idKey],
-    [randomUUID()]),'0')
-  assert.equal(evalLua('CANCEL_STALE_SCRIPT',[f.key,f.queue,f.idKey],[lease]),'1')
+  evalLua('CLAIM_SCRIPT',[f.queue,f.ready],[6000,lease,60000,objectKey,ttl])
+  assert.equal(evalLua('CANCEL_STALE_SCRIPT',[f.key,f.queue,f.idKey,f.ready],
+    [randomUUID(),7000]),'0')
+  assert.equal(evalLua('CANCEL_STALE_SCRIPT',[f.key,f.queue,f.idKey,f.ready],[lease,7000]),'1')
   assert.equal(get(f.key),'')
   assert.equal(get(f.idKey),'')
   const newer=evalLua('ENQUEUE_SCRIPT',[f.key,f.queue,f.idKey],
@@ -100,14 +100,28 @@ test('three failed attempts stop retries and discard sealed payload',()=>{
   let now=6000
   for(let n=1;n<=3;n++) {
     const lease=randomUUID(),objectKey='narration/'+randomUUID()+'/'+'e'.repeat(64)+'.mp3'
-    const claimed=JSON.parse(evalLua('CLAIM_SCRIPT',[f.queue],
+    const claimed=JSON.parse(evalLua('CLAIM_SCRIPT',[f.queue,f.ready],
       [now,lease,60000,objectKey,ttl]))
     assert.equal(claimed.attempts,n)
-    const failed=JSON.parse(evalLua('FAILURE_SCRIPT',[f.key,f.queue],
+    const failed=JSON.parse(evalLua('FAILURE_SCRIPT',[f.key,f.queue,f.ready],
       [lease,now+100,ttl]))
     if(n<3){assert.equal(failed.status,'retry_wait');now=failed.nextAttemptAt+10}
     else{assert.equal(failed.status,'failed');assert.equal(failed.encryptedPayload,null)}
   }
-  assert.equal(evalLua('CLAIM_SCRIPT',[f.queue],
+  assert.equal(evalLua('CLAIM_SCRIPT',[f.queue,f.ready],
     [now+99999,randomUUID(),60000,'narration/'+randomUUID()+'/'+'f'.repeat(64)+'.mp3',ttl]),'')
+})
+
+test('expired lease is reclaimed and its previous MP3 is scheduled for deletion',()=>{
+  const f=fixture()
+  evalLua('ENQUEUE_SCRIPT',[f.key,f.queue,f.idKey],
+    [JSON.stringify(f.original),ttl,f.now])
+  const abandoned='narration/'+randomUUID()+'/'+'7'.repeat(64)+'.mp3'
+  evalLua('CLAIM_SCRIPT',[f.queue,f.ready],
+    [6000,randomUUID(),20000,abandoned,ttl])
+  // First claim pass at lease expiry parks this job for bounded backoff.
+  evalLua('CLAIM_SCRIPT',[f.queue,f.ready],
+    [26001,randomUUID(),20000,'narration/'+randomUUID()+'/'+'8'.repeat(64)+'.mp3',ttl])
+  assert.equal(evalLua('CLAIM_EXPIRED_AUDIO_SCRIPT',[f.ready],
+    [26002,1,600000]),abandoned)
 })
