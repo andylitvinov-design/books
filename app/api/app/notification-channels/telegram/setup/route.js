@@ -5,7 +5,7 @@ import {practitionerEmailAllowed} from '@/lib/app/practitioner-access'
 import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
 import {registerClientTelegramWebhook,verifyClientBot} from '@/lib/app/client-telegram-transport'
-import {telegramClientLinkReady,telegramClientSendReady} from '@/lib/app/client-telegram-policy'
+import {telegramClientLinkReady,telegramClientSendReady,validClientBotUsername} from '@/lib/app/client-telegram-policy'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -15,8 +15,16 @@ export const revalidate=0
 function readiness(env=process.env){
  const required=['HH_CLIENT_TG_BOT_TOKEN','HH_CLIENT_TG_BOT_USERNAME',
    'HH_CLIENT_TG_WEBHOOK_SECRET','HH_CLIENT_TG_LINK_ENABLED']
- const missingKeys=required.filter(key=>key==='HH_CLIENT_TG_LINK_ENABLED'
-   ?env[key]!=='true':!String(env[key]||'').trim())
+ const missingKeys=required.filter(key=>{
+  if(key==='HH_CLIENT_TG_LINK_ENABLED')return env[key]!=='true'
+  if(key==='HH_CLIENT_TG_BOT_TOKEN')
+    return typeof env[key]!=='string'||env[key].length<20
+  if(key==='HH_CLIENT_TG_BOT_USERNAME')
+    return !validClientBotUsername(env[key])
+  if(key==='HH_CLIENT_TG_WEBHOOK_SECRET')
+    return typeof env[key]!=='string'||!/^[A-Za-z0-9_-]{32,256}$/.test(env[key])
+  return true
+ })
  return {configured:telegramClientLinkReady(env),sendingEnabled:telegramClientSendReady(env),
    missingKeys,webhookVerified:false}
 }
