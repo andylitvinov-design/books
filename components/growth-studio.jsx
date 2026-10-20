@@ -5,6 +5,7 @@ import {useEffect, useMemo, useState} from 'react'
 import {CalendarDays, Check, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
 import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
+import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import styles from './growth-studio.module.css'
 
@@ -13,6 +14,7 @@ const CHANNELS={
   instagram:'Instagram',facebook:'Facebook',telegram:'Telegram',youtube:'YouTube',
   linkedin:'LinkedIn',threads:'Threads',bluesky:'Bluesky',pinterest:'Pinterest',
   tiktok:'TikTok',eventbrite:'Eventbrite',meetup:'Meetup',manual:'Manual / Other',
+  twitter:'X / Twitter',google_business:'Google Business Profile',mastodon:'Mastodon',wordpress:'WordPress',
 }
 const COPY={
   en:{
