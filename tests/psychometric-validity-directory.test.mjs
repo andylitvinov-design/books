@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFile } from 'node:fs/promises'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { RESEARCH_CATALOGUE, RESEARCH_CATALOGUE_TOTAL, searchResearchCatalogue } from '../lib/assessments/research-directory-2026.js'
-import { calculatePsychometricGrade, assessmentValidity, auditAssessmentCatalog, compareAssessmentValidity, VALIDATION_IMPROVEMENT_PROTOCOL } from '../lib/assessments/psychometric-validity-2026.js'
+import { calculatePsychometricGrade, assessmentValidity, auditAssessmentCatalog, compareAssessmentValidity, assessmentEvidenceGroup, ASSESSMENT_EVIDENCE_GROUPS, VALIDATION_IMPROVEMENT_PROTOCOL } from '../lib/assessments/psychometric-validity-2026.js'
 import { officialQuestionnaireSource } from '../data/assessments/official-questionnaire-sources-2026.js'
 import { buildExplorerEntries, rankExplorerEntries } from '../lib/assessments/test-explorer.js'
 
@@ -99,11 +99,12 @@ test('all runnable instruments receive evidence audit; unvalidated originals are
 })
 test('grade requires study-linked exact edition, language, population, independent review and every rated domain',()=>{
   assert.equal(calculatePsychometricGrade({}),null)
-  const review={exactEdition:true,respondentLanguageVerified:true,populationDocumented:true,independentReview:true,primarySourceUrl:'https://example.org/study',ratings:{
+  const review={exactEdition:true,respondentLanguageVerified:true,populationDocumented:true,scoringVerified:true,independentReview:true,primarySourceUrl:'https://example.org/study',ratings:{
     contentValidity:2,structuralValidity:2,internalConsistency:2,constructValidity:2,reliability:2,crossCulturalValidity:2,responsiveness:2,scoringAndInterpretation:2
   }}
   assert.deepEqual(calculatePsychometricGrade(review),{score:100,grade:'A',coverage:1})
   assert.equal(calculatePsychometricGrade({...review,respondentLanguageVerified:false}),null)
+  assert.equal(calculatePsychometricGrade({...review,scoringVerified:false}),null)
   assert.equal(calculatePsychometricGrade({...review,ratings:{...review.ratings,constructValidity:null}}),null)
   assert.ok(compareAssessmentValidity({validity:{priority:5}},{validity:{priority:2}})<0)
   assert.equal(VALIDATION_IMPROVEMENT_PROTOCOL.length,8)
