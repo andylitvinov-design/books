@@ -509,8 +509,8 @@ const endSlides: EnergyworkSlide[] = [
     body: l("Choose one Level 1 initiation as a free gift. You may also request the other two by donation. Tell Andrey about yourself, your preferred time and why this matters to you.", "Выберите одну инициацию первой ступени в подарок. Две другие можно запросить за добровольный донейшн. Расскажите Андрею о себе, удобном времени и своей мотивации."),
     question: { type: "text", prompt: l("My personal initiation request and motivation", "Моя заявка и мотивация на личную инициацию") } },
   { id: "end-02", phase: "complete", kind: "finish", image: image.world,
-    title: l("Your five Reiki lessons", "Ваши пять уроков Рейки"),
-    body: l("You have explored Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and personal initiation preparation. This course does not grant Level 1 initiation or certification.", "Вы прошли «Полёт к Солнцу», Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и подготовку к личной инициации. Учебный курс сам по себе не предоставляет инициацию первой ступени или сертификат.") },
+    title: l("Congratulations! All five Reiki lessons complete", "Поздравляем! Все пять уроков Рейки пройдены"),
+    body: l("You've completed your Reiki learning journey and prepared for a personal next step. Level 1 initiation is arranged separately; completing these lessons is not an initiation or certification.", "Вы завершили пять уроков Рейки и подготовились к следующему личному шагу. Инициация первой ступени согласуется отдельно: завершение курса само по себе не является инициацией или сертификацией.") },
 ];
 
 // Keep the same IDs, questions and audio component while placing each lesson's
