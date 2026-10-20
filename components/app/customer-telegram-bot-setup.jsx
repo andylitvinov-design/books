@@ -16,7 +16,7 @@ const TEXT={
   error:'Setup check failed. Verify your signed-in owner account and Vercel configuration.',
   sendingOff:'Automatic client messaging is OFF until a controlled pilot is approved.',
   sendingOn:'Automatic client messaging is enabled. Review the pilot and consent controls.',
-  loading:'Checking setup…',reuse:'Using your existing verified practice bot; no new BotFather token or username is needed.',reuseHelp:'The owner chat remains paired. Webhook setup refuses to overwrite another app’s callback.',bot:'Bot:',
+  loading:'Checking setup…',otherWebhook:'This bot already uses another webhook. No changes made.',ownerPair:'Verify the owner's saved private Telegram pairing first.',reuse:'Using your existing verified practice bot; no new BotFather token or username is needed.',reuseHelp:'The owner chat remains paired. Webhook setup refuses to overwrite another app’s callback.',bot:'Bot:',
   test:'Send one test to my Telegram',testAccepted:'Telegram accepted the test request. Check your chat; delivery and reading are not confirmed.',
   testNotLinked:'Connect your own Telegram in Cabinet Settings before testing.',testRate:'Only one test every ten minutes.',
   testHelp:'Manual test goes only to your verified Telegram. Client broadcasting remains OFF.',accountSettings:'Open Cabinet Settings',
@@ -33,7 +33,7 @@ const TEXT={
   error:'Проверка не удалась. Проверьте вход владельца и переменные Vercel.',
   sendingOff:'Автоматические сообщения клиентам ВЫКЛЮЧЕНЫ до подтверждённого теста.',
   sendingOn:'Автоматические сообщения клиентам включены. Проверьте согласия и результаты пилота.',
-  loading:'Проверяем подключение…',reuse:'Используем уже настроенного бота мастера. Новый BotFather-токен и имя бота не нужны.',reuseHelp:'Привязка мастера сохранена. Подключение откажется заменять webhook другого приложения.',bot:'Бот:',
+  loading:'Проверяем подключение…',otherWebhook:'У бота уже есть webhook другого приложения. Ничего не изменено.',ownerPair:'Сначала подтвердите сохранённую привязку мастера к Telegram.',reuse:'Используем уже настроенного бота мастера. Новый BotFather-токен и имя бота не нужны.',reuseHelp:'Привязка мастера сохранена. Подключение откажется заменять webhook другого приложения.',bot:'Бот:',
   test:'Отправить тест себе в Telegram',testAccepted:'Telegram принял тест. Проверьте чат; доставка и прочтение не подтверждаются.',
   testNotLinked:'Сначала подключите свой Telegram в настройках кабинета.',testRate:'Один тест разрешён раз в десять минут.',
   testHelp:'Ручной тест отправляется только на ваш подтверждённый Telegram. Рассылка клиентам остаётся выключенной.',accountSettings:'Открыть настройки кабинета',
@@ -50,7 +50,7 @@ const TEXT={
   error:'No se pudo verificar. Comprueba tu sesión de propietario y Vercel.',
   sendingOff:'Mensajes automáticos DESACTIVADOS hasta aprobar la prueba.',
   sendingOn:'Mensajes automáticos activados. Revisa el consentimiento y las pruebas.',
-  loading:'Comprobando conexión…',reuse:'Se utiliza el bot de práctica ya verificado; no hace falta otro token de BotFather.',reuseHelp:'Se conserva la vinculación del profesional y nunca se sobrescribe otro webhook.',bot:'Bot:',
+  loading:'Comprobando conexión…',otherWebhook:'Este bot utiliza otro webhook. No se cambió nada.',ownerPair:'Verifica primero la vinculación privada del profesional.',reuse:'Se utiliza el bot de práctica ya verificado; no hace falta otro token de BotFather.',reuseHelp:'Se conserva la vinculación del profesional y nunca se sobrescribe otro webhook.',bot:'Bot:',
   test:'Enviar una prueba a mi Telegram',testAccepted:'Telegram aceptó la prueba. Comprueba el chat; no se confirma la entrega ni la lectura.',
   testNotLinked:'Primero conecta tu Telegram en ajustes de tu cuenta.',testRate:'Solo una prueba cada diez minutos.',
   testHelp:'La prueba se envía solo a tu Telegram verificado. Los envíos a clientes siguen desactivados.',accountSettings:'Abrir ajustes de cuenta',
@@ -93,7 +93,10 @@ export default function CustomerTelegramBotSetup({locale='en',accountId}){
     signal:session.controller.signal,headers:{'X-HH-Account-Id':session.accountId},
    })
    const result=await response.json()
-   if(!response.ok||!Array.isArray(result?.missingKeys))throw new Error('UNAVAILABLE')
+   if(!response.ok||!Array.isArray(result?.missingKeys)){
+     const problem=new Error('UNAVAILABLE');problem.code=result?.error
+     throw problem
+   }
    // Re-read owner link + verified webhook after a successful mutation; never
    // rely on an optimistic connection label or stale cached state.
    let actual=result
@@ -108,8 +111,10 @@ export default function CustomerTelegramBotSetup({locale='en',accountId}){
    if(sessionRef.current!==session)return
    setState(actual)
    setFeedback(actual.webhookVerified?t.ready:actual.configured?t.notReady:t.notConfigured)
-  }catch{
-   if(sessionRef.current===session)setError(t.error)
+  }catch(problem){
+   if(sessionRef.current===session)setError(
+     problem?.code==='TELEGRAM_WEBHOOK_ALREADY_IN_USE'?t.otherWebhook:
+     problem?.code==='TELEGRAM_OWNER_PAIRING_REQUIRED'?t.ownerPair:t.error)
   }finally{
    if(sessionRef.current===session){running.current=false;setBusy(false)}
   }
@@ -140,14 +145,14 @@ export default function CustomerTelegramBotSetup({locale='en',accountId}){
  if(!accountId)return null
  return <section className={styles.formCard} aria-label={t.title}>
   <h3>{t.title}</h3>
-  {state?.usingExistingPracticeBot?
+  {!state&&!error?<p role="status">{t.loading}</p>:
+   state?.usingExistingPracticeBot?
     <><p>{t.reuse}</p><p>{t.reuseHelp}</p>
       {state.botUsername&&<p>{t.bot} <strong>@{state.botUsername}</strong></p>}</>:
-    <><p>{t.note}</p>
+    state?<><p>{t.note}</p>
       <p>{t.step1}</p><p>{t.step2}</p><p>{t.step3}</p>
       <p><a href="https://t.me/BotFather" target="_blank" rel="noreferrer">{t.openBot}</a>
-        {' · '}<a href={DASHBOARD} target="_blank" rel="noreferrer">{t.openVercel}</a></p></>}
-  {!state&&!error&&<p role="status">{t.loading}</p>}
+        {' · '}<a href={DASHBOARD} target="_blank" rel="noreferrer">{t.openVercel}</a></p></>:null}
   {state&&<div>
    <p>{state.missingKeys.length?t.missing:t.allKeys}</p>
    {state.missingKeys.length>0&&<ul>{state.missingKeys.map(key=>
