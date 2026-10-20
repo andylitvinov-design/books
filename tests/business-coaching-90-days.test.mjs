@@ -241,3 +241,19 @@ test('mobile learning UX renders only the chosen module days, an authored daily 
   assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/)
   assert.doesNotMatch(css,/^\s*:global\(/m)
 })
+
+test('90-day journal capacity extension keeps original RLS/grants unchanged',()=>{
+  const sql=readFileSync(new URL('../supabase/migrations/20261020184500_hh_business_weekly_module_journal_capacity.sql',import.meta.url),'utf8')
+  assert.match(sql,/app_private\.business_coaching_programs/)
+  assert.match(sql,/750000/)
+  assert.match(sql,/drop constraint business_coaching_programs_payload_ciphertext_check/)
+  assert.match(sql,/add constraint business_coaching_programs_payload_ciphertext_check/)
+  assert.doesNotMatch(sql,/(?:grant|revoke|create policy|drop policy|disable row level security|drop table)/i)
+})
+test('unsaved daily results get explicit EN/RU confirmation before day navigation',()=>{
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  assert.match(ui,/unsavedResult:'Your current day has unsaved changes/)
+  assert.match(ui,/unsavedResult:'В текущем дне остались несохранённые изменения/)
+  assert.match(ui,/dayResult!==(previous\.result\|\|'')/)
+  assert.match(ui,/unsaved && !window\.confirm\(t\.unsavedResult\)/)
+})
