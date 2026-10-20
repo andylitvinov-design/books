@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, ExternalLink, Film, Globe2, Save } from "lucide-react";
 
 import { refreshSiteVideosAction, saveSiteVideoAction } from "@/app/admin/videos/actions";
-import { SiteVideoPlayer } from "@/components/site-video-player";
+import { SiteVideoPlayer, existingYouTubeMirrors } from "@/components/site-video-player";
 import { parseSiteVideoSource, siteVideoWatchUrl, SITE_VIDEO_SLOTS, videoKey, videoPagePath } from "@/lib/site-videos/model";
 import type { SiteVideoRecord, VideoLocale } from "@/lib/site-videos/model";
 
@@ -43,6 +43,7 @@ const copy = {
     preview: "Предпросмотр", previewHelp: "Добавьте ссылку на видео YouTube или HeyGen, чтобы проверить воспроизведение.", invalidLink: "Проверьте ссылку: нужна ссылка на видео YouTube или ссылка Share / Embed из HeyGen.",
     reviewed: "Я проверил видео: оно открывается и предназначено для посетителей сайта.",
     save: "Сохранить черновик", publish: "Опубликовать на странице", update: "Обновить публикацию", hide: "Скрыть с сайта", saving: "Сохранение…",
+    youtubePending: "публичных видео ожидают переноса на YouTube", youtubeMigration: "Для этого опубликованного видео пока нет подтверждённой YouTube-копии. Действующий HeyGen-плеер сохраняется до загрузки оригинала как Unlisted и проверки просмотра без входа.", youtubeUploader: "Загрузить на YouTube", youtubeReady: "YouTube ID указан. Проверьте воспроизведение в предпросмотре перед публикацией.",
     draftHelp: "Сохранение черновика не меняет видео, которое уже видят посетители.", unsaved: "Есть несохранённые изменения", current: "Сейчас на сайте", watch: "Открыть видео",
     savedDraft: "Черновик сохранён. Видео на сайте не изменилось.", savedPublish: "Видео опубликовано на выбранной странице.", savedHide: "Видео скрыто с сайта. Чтобы сохранить новые правки, нажмите «Сохранить черновик».",
     refresh: "Обновить список, сохранив правки", refreshed: "Список обновлён, ваши правки остались в форме. Проверьте актуальное видео и сохраните изменения ещё раз.", selection: "Выберите страницу слева, затем препарат или книгу, если это нужно.",
@@ -70,6 +71,7 @@ const copy = {
     preview: "Preview", previewHelp: "Add a YouTube or HeyGen video link to check playback.", invalidLink: "Check the link: use a YouTube video link or a Share / Embed link from HeyGen.",
     reviewed: "I checked that the video plays and is intended for website visitors.",
     save: "Save draft", publish: "Publish to page", update: "Update publication", hide: "Hide from website", saving: "Saving…",
+    youtubePending: "public videos awaiting a YouTube copy", youtubeMigration: "This published video has no confirmed YouTube counterpart yet. The working HeyGen player stays until you upload the approved original as Unlisted and verify anonymous playback.", youtubeUploader: "Upload to YouTube", youtubeReady: "YouTube ID entered. Verify playback in the preview before publishing.",
     draftHelp: "Saving a draft does not change the video visitors already see.", unsaved: "Unsaved changes", current: "Currently on the website", watch: "Open video",
     savedDraft: "Draft saved. The website video has not changed.", savedPublish: "Video published to the selected page.", savedHide: "Video hidden from the website. To keep any new edits, choose Save draft.",
     refresh: "Refresh list and keep edits", refreshed: "List refreshed. Your edits remain in the form. Review the current video before saving again.", selection: "Choose a page on the left, then a remedy or book if needed.",
@@ -118,6 +120,10 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
   const entityOptions = slot.entityType === "remedy" ? entities.remedies : entities.books;
   const publishedCount = records.filter(item => item.locale === locale && item.published).length;
   const draftCount = records.filter(item => item.locale === locale && item.draft && !item.published).length;
+  const missingYouTubeCount = records.filter(item => item.locale === locale && item.published?.heygenId
+    && !existingYouTubeMirrors[item.published.heygenId]).length;
+  const pendingYouTube = Boolean(record?.published?.heygenId && !existingYouTubeMirrors[record.published.heygenId]);
+  const youtubeConfigured = Boolean(source?.youtubeId || (source?.heygenId && existingYouTubeMirrors[source.heygenId]));
 
   useEffect(() => {
     function onLocale(event: Event) {
@@ -198,7 +204,7 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
             {(["en", "ru", "es"] as const).map(language => <button key={language} type="button" aria-pressed={locale === language} disabled={pending} onClick={() => { setLocale(language); if (language === "es") { setSlotId("about-intro"); setEntityId(""); } setNotice(null); }}>{text[language]}<span>{language.toUpperCase()}</span></button>)}
           </div>
         </div>
-        <p className="site-video-readiness"><strong>{publishedCount}</strong> {text.available}<span> · {draftCount} {text.draftCount}</span></p>
+        <p className="site-video-readiness"><strong>{publishedCount}</strong> {text.available}<span> · {draftCount} {text.draftCount}</span>{missingYouTubeCount > 0 && <span data-youtube-missing-count> · {missingYouTubeCount} {text.youtubePending}</span>}</p>
       </div>
       <p className="site-video-manager-intro">{text.intro}</p>
 
@@ -220,9 +226,11 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
           {needsEntity && <label className="site-video-field"><span>{slot.entityType === "remedy" ? text.chooseRemedy : text.chooseBook}</span><select value={entityId} disabled={pending} onChange={event => { setEntityId(event.target.value); setNotice(null); }}><option value="">{slot.entityType === "remedy" ? text.chooseRemedy : text.chooseBook}</option>{entityOptions.map(item => <option key={item.id} value={item.id}>{item.label[uiLocale]}</option>)}</select></label>}
           {!key ? <p className="site-video-selection-help">{text.selection}</p> : <>
             {record?.published && <div className="site-video-current"><Check size={17} aria-hidden="true" /><div><strong>{text.current}</strong><span>{record.published.title}</span></div><a href={siteVideoWatchUrl(record.published)} target="_blank" rel="noreferrer">{text.watch}</a></div>}
+            {pendingYouTube && <p className="site-video-admin-notice" role="note" data-youtube-migration="pending">{text.youtubeMigration} <a href="/admin/youtube-upload">{text.youtubeUploader}<ExternalLink size={14} aria-hidden="true" /></a></p>
             <form className="site-video-editor-form" onSubmit={event => event.preventDefault()}>
               <label className="site-video-field"><span>{text.link}</span><input name="youtubeUrl" value={form.youtubeUrl} disabled={pending} maxLength={2048} placeholder="https://youtu.be/… / https://app.heygen.com/share/…" autoComplete="off" spellCheck={false} onChange={event => change({ youtubeUrl: event.target.value })} /><small>{text.linkHelp}</small>{form.youtubeUrl.trim() && !source && <small className="site-video-field-error">{text.invalidLink}</small>}</label>
               <label className="site-video-field"><span>{text.title}</span><input name="title" value={form.title} disabled={pending} maxLength={160} placeholder={text.titlePlaceholder} onChange={event => change({ title: event.target.value })} /></label>
+              {youtubeConfigured && <p className="site-video-draft-help" data-youtube-migration="linked">{text.youtubeReady}</p>}
               {source?.youtubeId ? <label className="site-video-field"><span>{text.visibility}</span><select name="youtubeVisibility" value={form.youtubeVisibility} disabled={pending} onChange={event => change({ youtubeVisibility: event.target.value as "unlisted" | "public" })}><option value="unlisted">{text.unlisted}</option><option value="public">{text.public}</option></select><small>{text.visibilityHelp}</small></label> : source?.heygenId ? <p className="site-video-draft-help">{text.heygenVisibilityHelp}</p> : null}
 
               <details className="site-video-editor-details">
