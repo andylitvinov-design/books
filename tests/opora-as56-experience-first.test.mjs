@@ -5,7 +5,7 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
@@ -36,11 +36,12 @@ async function click(h,label){
   await h.settle()
 }
 
-test('day one restores five opening screens while days 2–14 keep their existing short route',async()=>{
+test('day one restores five opening screens and all days add untracked support at step two',async()=>{
   assert.deepEqual([...OPORA_EXPERIENCE_PRE_SAVE_KEYS],['arrive','practice','feel','affirmation','save'])
   assert.deepEqual([...OPORA_DAY_ONE_RESTORED_KEYS],
     ['welcome','baseline','checkin','recall','affirmation','arrive','practice','feel','save'])
   assert.equal(oporaExperienceGuidesValid(),true)
+  assert.equal(oporaExperienceSupportValid(),true)
   for(const lang of ['ru','en'])for(let day=1;day<=14;day++){
     const f=fixture(lang,day),h=f.h,d=t[lang]
     if(day===1){
@@ -49,6 +50,9 @@ test('day one restores five opening screens while days 2–14 keep their existin
       const choice=lang==='ru'?'Чувствую напряжение':'I feel tense'
       await click(h,choice)
       assert.match(textOf(h.tree),lang==='ru'?/Не нужно сразу менять своё состояние/:/Nothing needs to change right away/)
+      await click(h,d.next)
+      assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
+      assert.ok(!findButton(h.tree,d.try),'No exercise reporting on support screen')
       await click(h,d.next)
       assert.match(textOf(h.tree),lang==='ru'?/Насколько вы сейчас чувствуете внутреннюю опору/:/How much inner support do you feel/)
       await click(h,'4')
@@ -66,7 +70,12 @@ test('day one restores five opening screens while days 2–14 keep their existin
     assert.match(textOf(h.tree),lang==='ru'?(day===1?/Можно просто побыть здесь/:/Как вы сейчас себя чувствуете/):
       (day===1?/You can arrive just as you are/:/How are you feeling right now/))
     await click(h,d.next)
-    // Day 1 action occurs only after the original supportive opening.
+    if(day!==1){
+      assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
+      assert.ok(!findButton(h.tree,d.try),'Step two must never ask for practice proof')
+      await click(h,d.next)
+    }
+    // Practical work always comes after the voluntary acceptance screen.
     assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
     await click(h,d.try)
     await click(h,d.next)
@@ -133,7 +142,7 @@ test('day one restores five opening screens while days 2–14 keep their existin
 
 test('the restored five opening screens remain fully optional, with no false practice claim',async()=>{
   const f=fixture('en',1),h=f.h
-  for(let i=0;i<9;i++)await click(h,t.en.next)
+  for(let i=0;i<10;i++)await click(h,t.en.next)
   await click(h,'I only explored them today')
   await click(h,t.en.save)
   assert.equal(f.requests,1)
@@ -161,7 +170,7 @@ test('photo-first feelings and optional feedback work in ES without changing val
   const selection=nodes(h.tree).find(node=>node.type==='button'&&textOf(node).includes('Me siento tenso/a'))
   assert.equal(selection?.props['aria-pressed'],true)
   assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-start-mood']==='true').length,1)
-  for(let i=0;i<9;i++)await click(h,'Continuar')
+  for(let i=0;i<10;i++)await click(h,'Continuar')
   await click(h,'Hoy solo las exploré')
   await click(h,'Guardar mi práctica')
   assert.equal(f.payload.welcomeFeeling,'tense')
@@ -172,7 +181,7 @@ test('photo-first feelings and optional feedback work in ES without changing val
 
 test('a missing recap selection never sends a completion receipt or invented action',async()=>{
   const f=fixture('en',2),h=f.h
-  for(let i=0;i<5;i++)await click(h,t.en.next)
+  for(let i=0;i<6;i++)await click(h,t.en.next)
   assert.match(textOf(h.tree),/What you learned today/)
   await click(h,t.en.save)
   assert.equal(f.requests,0)
