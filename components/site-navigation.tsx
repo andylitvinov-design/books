@@ -19,6 +19,8 @@ const libraryEntryCopy = {
   es: { full: 'Biblioteca', compact: 'Biblioteca', aria: 'Abrir biblioteca' },
 } as const;
 
+const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
+
 const siteMenuCopy = {
   en: { open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu', start: 'Start free', quick: 'Main sections', more: 'Explore more' },
   ru: { open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню', start: 'Начать бесплатно', quick: 'Основные разделы', more: 'Другие разделы' },
@@ -120,6 +122,10 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       <span className="site-library-entry__full">{library.full}</span>
       <span className="site-library-entry__compact">{library.compact}</span>
     </Link>
+    <Link className="site-nav-shop-entry" data-nav-item="shop" href={"/" + activeLocale + "/shop"}
+      prefetch={false} aria-current={pathname === "/" + activeLocale + "/shop" ? "page" : undefined}>
+      {shopMenuCopy[activeLocale]}
+    </Link>
     <CartNavLink locale={activeLocale} />
     <span className="site-language-switch"><details className="site-language-menu" ref={languageRef}>
       <summary className="site-language-menu-trigger" aria-label={text.language}>{activeLocale.toUpperCase()}</summary>
@@ -151,6 +157,11 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
         </div>
         <p className="site-main-menu-group-label site-main-menu-group-label--more">{siteMenu.more}</p>
         <div className="site-main-menu-more">
+          <Link href={"/" + activeLocale + "/shop"} prefetch={false} data-nav-item="shop"
+            aria-current={pathname === "/" + activeLocale + "/shop" ? "page" : undefined}
+            onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
+            {shopMenuCopy[activeLocale]}
+          </Link>
           <Link href={`/${activeLocale}/cart`} prefetch={false} data-nav-item="cart" onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
             {activeLocale === 'ru' ? 'Корзина' : activeLocale === 'es' ? 'Carrito' : 'Cart'}
           </Link>
