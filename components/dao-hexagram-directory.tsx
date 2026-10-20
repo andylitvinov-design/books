@@ -13,9 +13,9 @@ export type DaoHexagramEntry = {
 };
 
 const copy = {
-  ru: { search: "Найти гексаграмму", placeholder: "Номер, название, символ, стихия…", filter: "Материалы", all: "Все 64", author: "Авторские (12)", basic: "Справочные (52)", count: "карточек", authored: "Авторский текст", reference: "Справка", read: "Открыть карточку →", none: "Совпадений нет. Попробуйте другой запрос." },
-  en: { search: "Find a hexagram", placeholder: "Number, name, Chinese character, element…", filter: "Content type", all: "All 64", author: "Original (12)", basic: "Reference (52)", count: "cards", authored: "Original text", reference: "Reference", read: "Open card →", none: "Nothing found. Try another search." },
-  es: { search: "Buscar un hexagrama", placeholder: "Número, nombre, carácter o elemento…", filter: "Tipo de texto", all: "Los 64", author: "Originales (12)", basic: "Referencias (52)", count: "tarjetas", authored: "Texto del autor", reference: "Referencia", read: "Abrir tarjeta →", none: "Sin resultados. Prueba otra búsqueda." },
+  ru: { search: "Найти гексаграмму", placeholder: "Номер, название, символ, стихия…", filter: "Материалы", all: "Все 64", author: "Оригиналы (12)", basic: "Новые трактовки (52)", count: "карточек", authored: "Оригинал автора", reference: "Новое толкование", read: "Открыть карточку →", none: "Совпадений нет. Попробуйте другой запрос." },
+  en: { search: "Find a hexagram", placeholder: "Number, name, Chinese character, element…", filter: "Content type", all: "All 64", author: "Originals (12)", basic: "New readings (52)", count: "cards", authored: "Original text", reference: "New interpretation", read: "Open card →", none: "Nothing found. Try another search." },
+  es: { search: "Buscar un hexagrama", placeholder: "Número, nombre, carácter o elemento…", filter: "Tipo de texto", all: "Los 64", author: "Originales (12)", basic: "Nuevas lecturas (52)", count: "tarjetas", authored: "Texto original", reference: "Nueva interpretación", read: "Abrir tarjeta →", none: "Sin resultados. Prueba otra búsqueda." },
 } as const;
 
 export function DaoHexagramDirectory({ locale, entries }: {
