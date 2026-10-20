@@ -45,7 +45,7 @@ test('original, gently mixed melody and light waves have valid and safe WAV dyna
 });
 
 test('wave playback uses native iPhone media, not muted WebAudio oscillators', () => {
-  assert.match(audio, /holistic-house-soft-melody-gentle-waves-20s\.wav/);
+  assert.match(audio, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
   assert.match(audio, /new window\.Audio\(OCEAN_LOOP\)/);
   assert.match(audio, /audio\.loop = true/);
   assert.match(audio, /audio\.muted = false/);
