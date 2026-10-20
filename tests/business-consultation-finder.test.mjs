@@ -72,6 +72,13 @@ test('Business-only wizard is localised, progressive, accessible and reuses cons
   assert.match(finder,/aria-pressed=\{area===key\}/)
   assert.match(finder,/aria-pressed=\{issue===key\}/)
   assert.match(finder,/aria-valuemax=\{2\}/)
+  assert.match(finder,/className=\{styles\.srOnly\}/)
+  assert.match(finder,/className=\{styles\.choiceIcon\}/)
+  assert.match(finder,/className=\{styles\.stageLabel\}/)
+  assert.match(finderCss,/\.choiceIcon\{/)
+  assert.match(finderCss,/\.primary\{/)
+  assert.doesNotMatch(finder,/data-business-finder-step="outcome"/)
+
   assert.match(finder,/aria-valuenow=\{answered\}/)
   assert.match(finder,/href="#business-direct-request"/)
   assert.match(finder,/data-business-finder-context/)
@@ -83,8 +90,8 @@ test('Business-only wizard is localised, progressive, accessible and reuses cons
   assert.match(enquiry,/type="checkbox" required/)
   assert.match(finderCss,/@media\(max-width:650px\)/)
   for (const lang of ['en', 'ru', 'es']) assert.match(finder,new RegExp('\\b'+lang+': \\{'))
-  for (const phrase of ['Business & work','Money & income','For myself','My project / own venture',
-    'Бизнес и работа','Деньги и доход','Для себя','Для своего дела']) assert.ok(finder.includes(phrase))
+  for (const phrase of ['Business & work','Money & income','For myself','My own project',
+    'Бизнес и работа','Деньги и доход','Для себя','Мой проект']) assert.ok(finder.includes(phrase))
   assert.doesNotMatch(finder,/fetch\(|localStorage|sessionStorage|accountId|clientId|testResults|diagnose\(/)
 })
 
