@@ -36,6 +36,7 @@ const EXTRA_COPY = {
   ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Поиск и фильтры работают по загруженным контактам. Для остальных нажмите «Загрузить ещё».', stage: 'Статус контакта', conflict: 'Контакт изменён в другой вкладке. Обновите страницу.' },
   es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'La búsqueda y los filtros abarcan los contactos cargados. Carga más para ver los demás.', stage: 'Estado del contacto', conflict: 'El contacto cambió en otra pestaña. Actualiza la página.' },
 }
+const CRM_SECTION_IDS=new Set(['overview','tasks','messages','sms','integrations','contacts'])
 export default function CrmManager({ locale = 'en', accountId }) {
   const language = COPY[locale] ? locale : 'en'
   const c = { ...COPY[language], ...EXTRA_COPY[language] }
@@ -62,9 +63,8 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [lifecycle, setLifecycle] = useState('lead')
   const [source, setSource] = useState('manual')
   const [activeSection, setActiveSection] = useState('overview')
-  const allowedSections=new Set(['overview','tasks','messages','sms','integrations','contacts'])
   function switchSection(next){
-    if(!allowedSections.has(next))return
+    if(!CRM_SECTION_IDS.has(next))return
     setActiveSection(next)
     if(typeof window==='undefined')return
     const url=new URL(window.location.href)
@@ -109,7 +109,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     focusedIdRef.current='';setFocusedContactId('');setFocusError('');setFocusBusy(false)
     setTaskPageBusy(false);setTaskPageError(false)
     const initialTab=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('crmTab'):null
-    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection(allowedSections.has(initialTab)?initialTab:'overview')
+    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection(CRM_SECTION_IDS.has(initialTab)?initialTab:'overview')
     void load(session).catch(error=>{
       if(error.name!=='AbortError'&&sessionRef.current===session)setNotice(c.error)
     })
