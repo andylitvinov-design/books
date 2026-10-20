@@ -15,7 +15,7 @@ export function AcademyVideoPlayer({ youtubeId, title }: { youtubeId: string; ti
           <iframe
             allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
-            loading="lazy"
+            loading="eager"
             referrerPolicy="strict-origin-when-cross-origin"
             src={"https://www.youtube-nocookie.com/embed/" + safeId + "?autoplay=1&playsinline=1&rel=0"}
             title={title}
