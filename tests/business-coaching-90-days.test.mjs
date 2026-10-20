@@ -336,7 +336,7 @@ test('Wood redesign has complete CSS Module bindings without impacting other cou
   assert.ok(publicPage.includes('business-coaching-promo.module.css'))
   assert.ok(publicPage.includes('12 недель, конкретный результат каждого дня'))
   assert.ok(publicPage.includes("locale==='ru'?'ru':'en'"))
-  assert.ok(promoCss.includes('linear-gradient(115deg,#67462f,#483023)'))
+  assert.ok(promoCss.includes('linear-gradient(105deg,#67462f,#483023)'))
   assert.ok(courseListCss.includes('.businessTrack'))
   assert.ok(courseListCss.includes('background:linear-gradient(115deg,#fffaf1,#f0dfc7'))
   assert.ok(css.includes('data-wood-mode=dark'))
