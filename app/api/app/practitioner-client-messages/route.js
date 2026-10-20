@@ -4,7 +4,7 @@ import { createRequestAuth } from '@/lib/app/session'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createPractitionerClientMessages } from '@/lib/practitioners/client-messages'
-import { dispatchClientMessagePush } from '@/lib/app/client-message-push'
+import { dispatchClientMessagePush,dispatchPractitionerMessagePush } from '@/lib/app/client-message-push'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
