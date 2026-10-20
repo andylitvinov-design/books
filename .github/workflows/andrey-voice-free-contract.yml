@@ -45,6 +45,7 @@ jobs:
           python3 -m compileall -q scripts/andrey-voice
           python3 -m unittest discover -s tests -p 'test_andrey_voice_reference.py' -v
           python3 -m unittest discover -s tests -p 'test_andrey_voice_worker.py' -v
+          python3 -m unittest discover -s tests -p 'test_andrey_voice_launch_agent.py' -v
 
 
   redis-atomic:
