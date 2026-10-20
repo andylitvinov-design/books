@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
@@ -8,6 +11,9 @@ import { coreServiceOffers, type CoreServiceOffer } from "@/data/core-service-of
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./services-studio-offers.module.css";
+
+type ServiceMode = "all" | "online" | "in-person";
+type SelectedMode = Exclude<ServiceMode, "all">;
 
 type Offer = {
   id: string;
@@ -20,6 +26,7 @@ type Offer = {
   price?: string;
   isFree?: boolean;
   externalFlow?: boolean;
+  actionLabel?: string;
 };
 
 const text = {
@@ -139,6 +146,70 @@ const text = {
   },
 } as const;
 
+
+const modeCopy = {
+  en: {
+    label: "How would you like to meet?", all: "All options", online: "Online", inPerson: "In person",
+    onlineTitle: "Online personal sessions", onlineLead: "Personal video sessions and remote support, wherever you live.",
+    inPersonTitle: "In-person sessions in Toronto", inPersonLead: "Individual meetings in Toronto. Place and availability are confirmed before booking.",
+    onlineIntro: "Our free starting points are available online, even if you prefer an in-person session later.",
+    onlineIntroAction: "See free online options",
+    groupEyebrow: "PRACTICE & COMMUNITY", groupTitle: "Reiki initiations & Toronto events",
+    groupLead: "Explore the existing programmes and gatherings. Please confirm the in-person format and venue directly with Andrey.",
+    initiation: "Personal initiation · by arrangement", initiationAction: "Explore initiation",
+    tantraTitle: "Tantra Reiki initiation", tantraAbout: "Explore sensitivity, boundaries and respectful tantric connection.",
+    tantraDetails: "The introductory Level 1 option is subject to personal confirmation; discuss private initiation separately.",
+    yggTitle: "Reiki Yggdrasil initiation", yggAbout: "Explore the World Tree tradition with personal initiation and guided practice.",
+    kundTitle: "Kundalini Reiki learning path", kundAbout: "Explore original training materials and options for a personal initiation.",
+    details: "Availability, format and personal terms must be confirmed before booking.",
+    eventsTitle: "Live workshops & gatherings", eventsAbout: "Join community events with confirmed dates and locations.",
+    eventsDetails: "View the events calendar for current times, venue and conditions.",
+    eventsCategory: "Toronto · group events", eventsAction: "Explore events",
+    priceOnRequest: "Format and terms confirmed personally",
+    preferred: { online: "Preferred format: Online", "in-person": "Preferred format: In person (Toronto)" },
+  },
+  ru: {
+    label: "Как вам удобнее встретиться с Андреем?", all: "Все", online: "Онлайн", inPerson: "Лично",
+    onlineTitle: "Личные онлайн-сессии", onlineLead: "Видеовстречи и дистанционная поддержка из любой страны.",
+    inPersonTitle: "Очные сессии в Торонто", inPersonLead: "Личные встречи в Торонто. Место и время подтверждаем до записи.",
+    onlineIntro: "Бесплатные способы начать доступны онлайн, даже если позже вы предпочитаете очную встречу.",
+    onlineIntroAction: "Посмотреть бесплатные онлайн-варианты",
+    groupEyebrow: "ПРАКТИКА И СООБЩЕСТВО", groupTitle: "Инициации Рейки и встречи в Торонто",
+    groupLead: "Изучите существующие программы и мероприятия. Очный формат и место инициации уточняйте у Андрея.",
+    initiation: "Личная инициация · по согласованию", initiationAction: "Об инициации",
+    tantraTitle: "Инициация Тантра Рейки", tantraAbout: "Развивайте чувствительность, уважение границ и бережный контакт.",
+    tantraDetails: "Вводная инициация первого уровня требует подтверждения. Личный формат обсуждается отдельно.",
+    yggTitle: "Инициация Рейки Иггдрасиль", yggAbout: "Изучайте традицию Мирового древа на личной инициации.",
+    kundTitle: "Обучение Кундалини Рейки", kundAbout: "Оригинальные материалы и возможность личного обучения и инициации.",
+    details: "Наличие мест, формат и условия необходимо подтвердить до записи.",
+    eventsTitle: "Мастер-классы и встречи", eventsAbout: "Групповые мероприятия с подтверждённым местом и датой.",
+    eventsDetails: "Актуальные даты, адреса и условия участия указаны в календаре.",
+    eventsCategory: "Торонто · групповые встречи", eventsAction: "Смотреть мероприятия",
+    priceOnRequest: "Формат и условия — по согласованию",
+    preferred: { online: "Предпочтительный формат: онлайн", "in-person": "Предпочтительный формат: лично в Торонто" },
+  },
+  es: {
+    label: "¿Cómo prefieres trabajar con Andrey?", all: "Todos", online: "En línea", inPerson: "Presencial",
+    onlineTitle: "Sesiones personales en línea", onlineLead: "Sesiones por vídeo y apoyo a distancia desde cualquier país.",
+    inPersonTitle: "Sesiones presenciales en Toronto", inPersonLead: "Encuentros personales en Toronto. Confirmamos lugar y disponibilidad antes de reservar.",
+    onlineIntro: "Las opciones gratuitas están disponibles en línea, incluso si después prefieres una cita presencial.",
+    onlineIntroAction: "Ver opciones gratuitas en línea",
+    groupEyebrow: "PRÁCTICA Y COMUNIDAD", groupTitle: "Iniciaciones Reiki y eventos en Toronto",
+    groupLead: "Explora programas y eventos existentes. Confirma con Andrey el formato presencial y el lugar.",
+    initiation: "Iniciación personal · por confirmar", initiationAction: "Ver iniciación",
+    tantraTitle: "Iniciación Tantra Reiki", tantraAbout: "Descubre la sensibilidad, los límites personales y la conexión respetuosa.",
+    tantraDetails: "El nivel introductorio requiere confirmación. Consulta la posibilidad de iniciación personal.",
+    yggTitle: "Iniciación Reiki Yggdrasil", yggAbout: "Explora la tradición del Árbol del Mundo en una iniciación personal.",
+    kundTitle: "Formación Kundalini Reiki", kundAbout: "Materiales originales y opciones de aprendizaje e iniciación personal.",
+    details: "La disponibilidad, modalidad y condiciones se confirman antes de reservar.",
+    eventsTitle: "Talleres y encuentros", eventsAbout: "Encuentros de grupo con fechas y ubicaciones confirmadas.",
+    eventsDetails: "Consulta el calendario para ver fechas, lugar y condiciones.",
+    eventsCategory: "Toronto · eventos", eventsAction: "Ver eventos",
+    priceOnRequest: "Formato y condiciones a confirmar",
+    preferred: { online: "Modalidad preferida: en línea", "in-person": "Modalidad preferida: presencial en Toronto" },
+  },
+} as const;
+
 // These five owned public illustrations are already delivered at <=104 KB.
 // Do not send them through paid Vercel /_next/image transformations. Keep
 // runtime resizing available for any future/unreviewed media source instead.
@@ -150,7 +221,7 @@ const directStaticServiceImages = new Set([
   "/academy/reiki-yggdrasil/source/basic-program.jpg",
 ]);
 
-function ServiceCard({ offer, locale, index }: { offer: Offer; locale: PublicLocale; index: number }) {
+function ServiceCard({ offer, locale, index, preferredFormat }: { offer: Offer; locale: PublicLocale; index: number; preferredFormat?: SelectedMode }) {
   const t = text[locale];
   return (
     <article className={styles.card} data-services-studio-card={offer.id}>
@@ -185,19 +256,20 @@ function ServiceCard({ offer, locale, index }: { offer: Offer; locale: PublicLoc
             </Link>
           ) : offer.externalFlow ? (
             <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
-              {t.remoteAction}<ArrowRight size={16} aria-hidden="true" />
+              {offer.actionLabel ?? t.remoteAction}<ArrowRight size={16} aria-hidden="true" />
             </Link>
           ) : (
             <div className={styles.booking}>
               <ContactChannelChooser
                 locale={locale}
                 label={t.request}
+                requestContext={preferredFormat ? modeCopy[locale].preferred[preferredFormat] : undefined}
                 className={styles.action}
                 event="service_request_start"
                 whatsappUrl={whatsappEnquiryUrl({
                   locale,
                   service: offer.title,
-                  request: t.enquiry,
+                  request: t.enquiry + (preferredFormat ? "\n" + modeCopy[locale].preferred[preferredFormat] : ""),
                   option: "30 min · €50 / 60 min · €100",
                   pagePath: offer.href,
                 })}
@@ -213,6 +285,8 @@ function ServiceCard({ offer, locale, index }: { offer: Offer; locale: PublicLoc
 
 export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
   const t = text[locale];
+  const m = modeCopy[locale];
+  const [format, setFormat] = useState<ServiceMode>("all");
   const core = coreServiceOffers(locale);
   const byId = (id: CoreServiceOffer["id"]) => core.find((offer) => offer.id === id)!;
   const situation = byId("situation");
@@ -253,36 +327,96 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
       price: t.remotePrice, externalFlow: true },
   ];
 
+  const inPerson: Offer[] = [
+    { id: "tantra-reiki-initiation", title: m.tantraTitle, description: m.tantraAbout,
+      details: m.tantraDetails, image: "/images/tantra-reiki/participant-1-poster.png",
+      href: "/" + locale + "/academy/reiki/tantra-reiki", category: m.initiation,
+      price: m.priceOnRequest, externalFlow: true, actionLabel: m.initiationAction },
+    { id: "yggdrasil-initiation", title: m.yggTitle, description: m.yggAbout,
+      details: m.details, image: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+      href: "/" + locale + "/academy/reiki/yggdrasil", category: m.initiation,
+      price: "€100 / 60 min / level", externalFlow: true, actionLabel: m.initiationAction },
+    { id: "kundalini-reiki-training", title: m.kundTitle, description: m.kundAbout,
+      details: m.details, image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
+      href: "/" + locale + "/academy/reiki/kundalini-reiki", category: m.initiation,
+      price: m.priceOnRequest, externalFlow: true, actionLabel: m.initiationAction },
+    { id: "toronto-events", title: m.eventsTitle, description: m.eventsAbout,
+      details: m.eventsDetails, image: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+      href: "/" + locale + "/events", category: m.eventsCategory,
+      externalFlow: true, actionLabel: m.eventsAction },
+  ];
+  const shownPaid = format === "in-person"
+    ? paid.filter((offer) => offer.id !== "remote-energy-support")
+    : paid;
+  const preferredFormat = format === "all" ? undefined : format;
+
   return (
     <>
+      <div className={styles.formatPicker} role="group" aria-label={m.label} data-services-format-picker>
+        <p>{m.label}</p>
+        <div className={styles.formatOptions}>
+          {([
+            ["all", m.all],
+            ["online", m.online],
+            ["in-person", m.inPerson],
+          ] as const).map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={format === value}
+              data-services-format-option={value}
+              className={format === value ? styles.formatActive : undefined}
+              onClick={() => setFormat(value)}>{label}</button>
+          ))}
+        </div>
+      </div>
       <section className={styles.section} id="free-insights" aria-labelledby="services-free-title" data-services-studio-free lang={locale}>
-        <header className={styles.heading}>
-          <p className={styles.eyebrow}><ClipboardCheck size={16} aria-hidden="true" />{t.freeEyebrow}</p>
-          <h2 id="services-free-title">{t.freeTitle}</h2>
-          <p>{t.freeLead}</p>
-        </header>
-        <div className={styles.freeGrid}>
-          {free.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} />)}
-        </div>
-        <div className={styles.freeFooter}>
-          <span><ShieldCheck size={17} aria-hidden="true" />{t.freeNote}</span>
-          <Link href={"/" + locale + "/courses/antistress"} prefetch={false}>{t.opora}<ArrowRight size={16} aria-hidden="true" /></Link>
-        </div>
+        {format === "in-person" ? (
+          <div className={styles.freeOffline}>
+            <h2 id="services-free-title">{t.freeTitle}</h2>
+            <p>{m.onlineIntro}</p>
+            <button type="button" onClick={() => setFormat("online")}>{m.onlineIntroAction}<ArrowRight size={16} aria-hidden="true" /></button>
+          </div>
+        ) : (
+          <>
+            <header className={styles.heading}>
+              <p className={styles.eyebrow}><ClipboardCheck size={16} aria-hidden="true" />{t.freeEyebrow}</p>
+              <h2 id="services-free-title">{t.freeTitle}</h2>
+              <p>{t.freeLead}</p>
+            </header>
+            <div className={styles.freeGrid}>
+              {free.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} />)}
+            </div>
+            <div className={styles.freeFooter}>
+              <span><ShieldCheck size={17} aria-hidden="true" />{t.freeNote}</span>
+              <Link href={"/" + locale + "/courses/antistress"} prefetch={false}>{t.opora}<ArrowRight size={16} aria-hidden="true" /></Link>
+            </div>
+          </>
+        )}
       </section>
       <section className={styles.section} id="solutions" aria-labelledby="services-personal-title" data-services-studio-paid lang={locale}>
         <header className={styles.heading}>
           <p className={styles.eyebrow}>{t.paidEyebrow}</p>
-          <h2 id="services-personal-title">{t.paidTitle}</h2>
-          <p>{t.paidLead}</p>
+          <h2 id="services-personal-title">{format === "online" ? m.onlineTitle : format === "in-person" ? m.inPersonTitle : t.paidTitle}</h2>
+          <p>{format === "online" ? m.onlineLead : format === "in-person" ? m.inPersonLead : t.paidLead}</p>
         </header>
         <div className={styles.paidGrid}>
-          {paid.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} />)}
+          {shownPaid.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} preferredFormat={preferredFormat} />)}
         </div>
         <div className={styles.paidFooter}>
           <span><ShieldCheck size={17} aria-hidden="true" />{t.reassurance}</span>
           <p>{t.disclaimer}</p>
         </div>
       </section>
+      {format !== "online" ? (
+        <section className={styles.section} aria-labelledby="services-in-person-title" data-services-studio-initiations lang={locale}>
+          <header className={styles.heading}>
+            <p className={styles.eyebrow}>{m.groupEyebrow}</p>
+            <h2 id="services-in-person-title">{m.groupTitle}</h2>
+            <p>{m.groupLead}</p>
+          </header>
+          <div className={styles.paidGrid}>
+            {inPerson.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} preferredFormat="in-person" />)}
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }
