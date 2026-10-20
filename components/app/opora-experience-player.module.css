@@ -31,6 +31,25 @@
 .checkin{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
 .recall{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .arrive{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+/* Support is an experience of acceptance, not a task or a scored interaction. */
+.support{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.support::after{background:linear-gradient(180deg,rgba(250,246,236,.50),rgba(237,245,233,.75))}
+.support .stage{align-items:center}
+.support .panel{
+  margin:auto;padding:clamp(22px,5.5vw,34px);
+  background:linear-gradient(145deg,rgba(255,253,246,.96),rgba(244,250,244,.94));
+  border-color:rgba(255,251,241,.95);
+}
+.supportMessage{display:grid;gap:10px}
+.supportBody{
+  margin:0;color:#36535b;font-size:clamp(18px,4.55vw,21px);
+  font-weight:530;line-height:1.55;text-wrap:pretty;
+}
+@media(max-width:359px){
+  .support .panel{padding:19px 17px}
+  .supportBody{font-size:17px;line-height:1.47}
+}
+
 .practice{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .feel{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
 .affirmation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
