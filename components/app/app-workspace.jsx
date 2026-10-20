@@ -48,6 +48,7 @@ import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/c
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
+import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import { isNativePsiAlchemy } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
@@ -655,6 +656,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
               <InstallHolisticHouse locale={locale} />
               <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
+              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
