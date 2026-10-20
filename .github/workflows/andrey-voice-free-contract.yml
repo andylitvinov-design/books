@@ -6,6 +6,8 @@ on:
       - 'lib/clients/report-narration-service.js'
       - 'tests/local-narration-queue.test.mjs'
       - 'tests/report-narration.test.mjs'
+      - 'scripts/andrey-voice/check_reference.py'
+      - 'tests/test_andrey_voice_reference.py'
       - '.github/workflows/andrey-voice-free-contract.yml'
   workflow_dispatch:
 permissions:
@@ -27,3 +29,5 @@ jobs:
           node --check tests/report-narration.test.mjs
       - name: Run cost and security contracts
         run: node --test tests/local-narration-queue.test.mjs tests/report-narration.test.mjs
+      - name: Audit synthetic WAV reference samples offline
+        run: python3 -m unittest discover -s tests -p 'test_andrey_voice_reference.py' -v
