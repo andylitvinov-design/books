@@ -26,6 +26,7 @@ The feature intentionally stays disabled until the owner explicitly approves sen
 
 ```
 HH_REPORT_NARRATION_ENABLED=true
+HH_REPORT_NARRATION_PAID_ACKNOWLEDGED=true
 HEYGEN_API_KEY=<owner's own HeyGen API key; server-side only>
 ```
 
@@ -44,3 +45,8 @@ Use protected Vercel environment variables (production and separately preview if
 7. Confirm mobile layout 320/390 px, audio duration, accessibility and that the button never prints.
 
 Rollback: set `HH_REPORT_NARRATION_ENABLED=false` (no client documents or media require data migration).
+
+
+## Free Mac narration migration (2026-10-20)
+
+The owner selected **$0 paid inference**. The separate free Mac narration workflow is specified in [andrey-voice-local-queue.md](./andrey-voice-local-queue.md) and tracked in books issue #1299. The above HeyGen settings are **not** required or recommended for the free workflow. A second explicitly set `HH_REPORT_NARRATION_PAID_ACKNOWLEDGED=true` is now required to prevent a future API key alone from accidentally spending paid credits. The local queue remains disabled/not live until the Mac worker, private storage and client consent gates pass.
