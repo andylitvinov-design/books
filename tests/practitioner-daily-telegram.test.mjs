@@ -85,7 +85,7 @@ test('Telegram reply must confirm exact target chat; no provider errors become s
   }
   assert.equal(await telegramSendMessage('Публичные агрегаты',env,accepted),true)
   assert.equal(calls.length,1)
-  assert.match(calls[0].url,/api\\.telegram\\.org\\/bot/)
+  assert.match(calls[0].url,/api[.]telegram[.]org[/]bot/)
   assert.equal(JSON.parse(calls[0].options.body).chat_id,'999888777')
   assert.doesNotMatch(calls[0].options.body,/clientEmail|diagnosis/)
   await assert.rejects(telegramSendMessage('test',env,async()=>Response.json({ok:true,result:{chat:{id:111}}})),/TELEGRAM_NOT_ACCEPTED/)
