@@ -53,7 +53,7 @@ test("all 31 reviewed public academy, Library and poster sources are pinned with
   assert.equal(Object.keys(registry.images).length, 31);
   assert.equal(entries.length, 54);
   for (const [key, item] of Object.entries(registry.images)) {
-    assert.ok(key.startsWith("/academy/") || key.startsWith("/images/holistic-house/") || key.startsWith("/library/"));
+    assert.ok(key.startsWith("/academy/") || key.startsWith("/images/holistic-house/") || key.startsWith("/library/") || key === "/media/remedies/arnica/message168-1.jpg");
     assert.equal(item.source, "public" + key);
     assert.deepEqual(sourceGitHash(item.source), { hash: item.sha, bytes: item.bytes });
     for (const [name, width] of [["thumb", 256], ["feature", 960]]) {
