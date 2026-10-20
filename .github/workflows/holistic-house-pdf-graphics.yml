@@ -51,6 +51,17 @@ jobs:
             pdftoppm -f 1 -l 2 -scale-to 720 -png "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/$locale"
           done
           ls -lh tmp/premium-pdf-qa/
+      - name: Emit small anonymous RU page proofs for visual inspection
+        run: |
+          python3 - <<'PY'
+          import base64, glob
+          for index, filename in enumerate(sorted(glob.glob('tmp/premium-pdf-qa/ru-*.png'))[:2], start=1):
+              payload=base64.b64encode(open(filename,'rb').read()).decode('ascii')
+              print(f'HH_PDF_PROOF_BEGIN_{index}')
+              for start in range(0,len(payload),4096):
+                  print('HH_PDF_PROOF_DATA:'+payload[start:start+4096])
+              print(f'HH_PDF_PROOF_END_{index}')
+          PY
       - name: Attach anonymous rendered visual comparison
         uses: actions/upload-artifact@v4
         with:
