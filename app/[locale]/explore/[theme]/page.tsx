@@ -5,10 +5,26 @@ import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
 import { TopicGrowthGuide } from '@/components/topic-growth-guide'
 import { BusinessWebsiteEnquiry } from '@/components/business-website-enquiry'
+import { BusinessTestimonials } from '@/components/business-testimonials'
 import { growthGuideFor } from '@/data/growth-guides'
 import { TOPIC_JOURNEYS, getTopicJourney } from '@/lib/assessments/topic-journeys'
 import { buildTopicTestSuggestions } from '@/lib/assessments/topic-test-suggestions'
 import type { PublicLocale } from '@/lib/public-locales'
+
+const BUSINESS_SEO = {
+  en: {
+    title: 'Business Consultations & Founder Coaching',
+    description: 'Explore business strategy, income decisions and project goals with Andrey Litvinov. Free written review or personal 30-minute (€50) and 60-minute (€100) consultations.',
+  },
+  ru: {
+    title: 'Бизнес-консультации и коучинг предпринимателей',
+    description: 'Разбор бизнес-решений, дохода, целей и собственного дела с Андреем Литвиновым. Бесплатный письменный разбор, консультации 30 минут (€50) и 60 минут (€100).',
+  },
+  es: {
+    title: 'Consultoría de negocios y coaching de emprendedores',
+    description: 'Explora decisiones de negocio, ingresos y proyectos con Andrey Litvinov. Revisión escrita gratuita y consultas personales de 30 min (€50) o 60 min (€100).',
+  },
+} as const
 
 type Props = { params: Promise<{ locale: string; theme: string }> }
 export function generateStaticParams() {
@@ -20,8 +36,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!journey || !['en','ru','es'].includes(locale)) return {title:'Not found'}
   const language = locale as 'en' | 'ru' | 'es'
   const guide = growthGuideFor(theme,language)
-  const title = (guide?.title || journey.title[language]) + ' | Holistic House'
-  const description = (guide?.lead || journey.summary[language]).slice(0,180)
+  const title = (theme === 'business' ? BUSINESS_SEO[language].title : guide?.title || journey.title[language]) + ' | Holistic House'
+  const description = (theme === 'business' ? BUSINESS_SEO[language].description : guide?.lead || journey.summary[language]).slice(0,180)
   return {
     title,
     description,
@@ -38,29 +54,27 @@ export default async function TopicJourneyPage({ params }: Props) {
   return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
     <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
     <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale)}/>
-    <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>
-    {theme==='business'&&<section style={{maxWidth:1160,margin:'16px auto 30px',padding:'0 clamp(14px,3.5vw,34px)'}}>
-      <div style={{display:'flex',flexWrap:'wrap',gap:18,alignItems:'center',justifyContent:'space-between',padding:'clamp(18px,3vw,30px)',background:'linear-gradient(110deg,#eaf5f0,#fffcf5)',border:'1px solid #c5dfd5',borderRadius:20}}>
-        <div style={{maxWidth:650}}>
-          <span style={{fontSize:11,fontWeight:800,letterSpacing:'.09em',color:'#368778'}}>
-            {locale==='ru'?'БЕСПЛАТНО · ПЕРСОНАЛЬНЫЙ ПЛАН':'FREE · PERSONAL DEVELOPMENT'}
-          </span>
-          <h2 style={{fontSize:'clamp(22px,3vw,30px)',color:'#194756',fontFamily:'Georgia,serif',margin:'8px 0 10px'}}>
-            {locale==='ru'?'Бизнес и карьера: личная программа на 90 дней':'Business & Career: Your 90-day plan'}
-          </h2>
-          <p style={{margin:0,lineHeight:1.55,color:'#547177'}}>
-            {locale==='ru'
-              ? 'Авторский опросник, личная цель, короткие ежедневные задания и история реальных результатов в приватном кабинете.'
-              : 'A short self-reflection questionnaire, chosen goals, everyday actions and private tracking of real-world results.'}
+    {theme === 'business'
+      ? <BusinessTestimonials locale={locale as PublicLocale}/>
+      : <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>}
+    {theme === 'business' && <aside data-business-free-90-day-plan
+      style={{maxWidth:1160,margin:'0 auto 16px',padding:'0 clamp(14px,3.5vw,34px)'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',border:'1px solid #c6ded7',borderRadius:14,background:'#f0f7f4'}}>
+        <div style={{flex:'1 1 240px'}}>
+          <strong style={{color:'#1d5662',fontSize:14}}>
+            {locale === 'ru' ? 'Бесплатная программа развития на 90 дней' : locale === 'es' ? 'Plan de desarrollo gratuito de 90 días' : 'Free 90-day business development plan'}
+          </strong>
+          <p style={{margin:'4px 0 0',fontSize:12,lineHeight:1.45,color:'#607982'}}>
+            {locale === 'ru' ? 'Цели, короткие ежедневные шаги и динамика в личном кабинете.' : locale === 'es' ? 'Objetivos, acciones diarias y seguimiento privado.' : 'Set goals, take small daily actions and track your progress privately.'}
           </p>
         </div>
-        <Link href={`/${locale==='ru'?'ru':'en'}/app/business`} prefetch={false}
-          style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minHeight:46,padding:'12px 17px',background:'#803e55',color:'#fff',borderRadius:11,textDecoration:'none',fontSize:13,fontWeight:800}}>
-          {locale==='ru'?'Создать мой план →':'Build my free plan →'}
+        <Link prefetch={false} href={`/${locale === 'ru' ? 'ru' : 'en'}/app/business`}
+          style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minHeight:44,padding:'9px 13px',background:'#275f68',color:'#fff',borderRadius:10,textDecoration:'none',fontSize:12,fontWeight:800}}>
+          {locale === 'ru' ? 'Создать мой план →' : locale === 'es' ? 'Crear mi plan →' : 'Start free plan →'}
         </Link>
       </div>
-    </section>}
-    {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) 44px'}}>
+    </aside>}
+    {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) calc(116px + env(safe-area-inset-bottom))'}}>
       <BusinessWebsiteEnquiry locale={locale as 'en'|'ru'|'es'} />
     </div>}
   </main>
