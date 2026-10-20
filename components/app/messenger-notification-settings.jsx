@@ -17,7 +17,7 @@ const TEXT={
   telegram:'Telegram',whatsapp:'WhatsApp',
   telegramHelp:'Tap Connect Telegram and press Start in the official bot. Return here to confirm your connection.',
   whatsappHelp:'Save an international number. WhatsApp Business verification is required before sending.',
-  whatsappLabel:'WhatsApp phone number',type:'Which alerts do you want?',
+  whatsappLabel:'WhatsApp phone number',telegramLabel:'Telegram username (optional until bot is ready)',saveTelegram:'Save Telegram username',type:'Which alerts do you want?',
   messages:'New private messages',booking:'Bookings and reminders',reports:'Reports ready',
   courses:'Course lessons and tasks',news:'News and offers (separate marketing consent required)',
   agree:'I consent to connecting this messenger and saving these alert choices. Promotional messages require separate opt-in.',
@@ -38,7 +38,7 @@ const TEXT={
   telegram:'Telegram',whatsapp:'WhatsApp',
   telegramHelp:'Нажмите «Подключить Telegram», затем Start в официальном боте. Вернитесь сюда и проверьте статус.',
   whatsappHelp:'Сохраните номер с кодом страны. Для отправки требуется подтверждение через официальный WhatsApp Business.',
-  whatsappLabel:'Номер WhatsApp',type:'Какие уведомления получать?',
+  whatsappLabel:'Номер WhatsApp',telegramLabel:'Имя Telegram (пока бот не подключён)',saveTelegram:'Сохранить Telegram',type:'Какие уведомления получать?',
   messages:'Новые личные сообщения',booking:'Записи и напоминания',reports:'Готовые отчёты',
   courses:'Уроки и задания курса',news:'Новости и предложения (требуется отдельное согласие)',
   agree:'Согласен привязать мессенджер и сохранить выбранные уведомления. Рекламная рассылка требует отдельного согласия.',
@@ -59,7 +59,7 @@ const TEXT={
   telegram:'Telegram',whatsapp:'WhatsApp',
   telegramHelp:'Toca Conectar Telegram y luego Start en el bot oficial. Regresa para comprobar el estado.',
   whatsappHelp:'Guarda tu número internacional. WhatsApp Business debe verificarlo antes de enviar avisos.',
-  whatsappLabel:'Número de WhatsApp',type:'¿Qué avisos quieres recibir?',
+  whatsappLabel:'Número de WhatsApp',telegramLabel:'Usuario de Telegram (antes de activar el bot)',saveTelegram:'Guardar Telegram',type:'¿Qué avisos quieres recibir?',
   messages:'Mensajes privados nuevos',booking:'Reservas y recordatorios',reports:'Informes listos',
   courses:'Lecciones y tareas',news:'Noticias y ofertas (consentimiento separado)',
   agree:'Acepto conectar este mensajero y guardar mis preferencias. El marketing requiere otro consentimiento.',
@@ -172,6 +172,12 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
        </span>
       </div>
       {hasEntry&&<p className={styles.saved}><CheckCircle2 size={14}/>{t.hint}: {isTelegram?(connected?t.connected:t.pending):existing.destinationHint}</p>}
+      {isTelegram&&!ready&&<label className={styles.field}>
+       <span>{t.telegramLabel}</span>
+       <input type="text" autoComplete="off" placeholder="@username" maxLength={80}
+        value={draft.destination} disabled={Boolean(busy)}
+        onChange={event=>update(channel,{destination:event.target.value})}/>
+      </label>}
       {!isTelegram&&<label className={styles.field}>
        <span>{t.whatsappLabel}</span>
        <input type="tel" autoComplete="off" inputMode="tel"
@@ -198,10 +204,12 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
       <div className={styles.actions}>
        {isTelegram?
         <>
-         <button type="button" disabled={Boolean(busy)||!ready||!draft.permission}
+         {ready?<button type="button" disabled={Boolean(busy)||!draft.permission}
           onClick={()=>perform(channel,'begin_telegram')}>
           {connected?t.reconnect:t.connect}
-         </button>
+         </button>:
+          <button type="button" disabled={Boolean(busy)||!draft.permission||!draft.destination.trim()}
+           onClick={()=>perform(channel,'save')}>{t.saveTelegram}</button>}
          {hasEntry&&<button type="button" className={styles.secondary}
           disabled={Boolean(busy)} onClick={()=>perform(channel,'refresh')}>
           <RefreshCw size={13}/>{t.refresh}
