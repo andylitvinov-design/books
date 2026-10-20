@@ -63,29 +63,48 @@
   .mainCard .cardHeading h3,.smallCard .cardHeading h3{font-size:17px}
 }
 
-/* Only the Business & Career tile adopts Executive Wood: other courses keep their own style.
-   This route remains free and does NOT affect membership course slots. */
-.businessTrack{position:relative;isolation:isolate;display:flex;gap:13px;align-items:center;
-  min-width:0;margin:13px 0 17px;padding:15px 17px;overflow:hidden;text-decoration:none;
-  border:1px solid #c8ad8a;border-radius:17px;
-  background:linear-gradient(115deg,#fffaf1,#f0dfc7 78%,#e8d0ae);
-  color:#3b2b20;box-shadow:0 8px 22px #60401c1c}
-.businessTrack::before{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(90deg,transparent 0 18px,#a9845a07 20px,transparent 23px);
-  border-left:5px solid #664a31}
-.businessTrackIcon{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;
-  border:1px solid #76543a;border-radius:13px;
-  background:linear-gradient(135deg,#805a3b,#462e22);color:#fff4df;
-  box-shadow:0 4px 12px #52331c30}
-.businessTrack>span:nth-child(2){display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
-.businessTrack strong{font:700 clamp(14px,1.7vw,17px)/1.25 Georgia,serif;color:#3d2a1f}
-.businessTrack small{font-size:11px;line-height:1.48;color:#755740}
-.businessTrack>svg:last-child{flex:0 0 auto;color:#745135}
-.businessTrack:hover{border-color:#976d43;background:linear-gradient(115deg,#fff8ec,#ead5b7)}
-.businessTrack:focus-visible{outline:3px solid #a97942;outline-offset:3px}
-@media(max-width:460px){
-  .businessTrack{padding:12px;gap:9px;border-radius:14px}
-  .businessTrackIcon{flex-basis:40px;width:40px;height:40px}
-  .businessTrack strong{font-size:14px}
-  .businessTrack small{font-size:11px}
+
+/* Business course is a free, independent track, but shares the photo-left
+   navy course-card language with saved courses. No membership slot is used. */
+.businessTrack{
+  display:grid;grid-template-columns:clamp(112px,19vw,162px) minmax(0,1fr);
+  gap:0;min-width:0;overflow:hidden;margin:4px 0 12px;
+  border:1px solid #355e70;border-radius:18px;
+  background:linear-gradient(118deg,#1c4e61,#1a314b);
+  box-shadow:0 7px 20px #173a4a20;color:#fff;text-decoration:none;
+}
+.businessTrackPhoto{display:block;position:relative;min-width:0;min-height:166px;background:#284d5d}
+.businessTrackPhoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
+.businessTrackBody{
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  gap:7px;min-width:0;padding:14px 18px;
+}
+.businessTrackEyebrow{color:#a2e0df;font-size:9px;letter-spacing:.09em;font-weight:800;text-transform:uppercase}
+.businessTrack .businessTrackTitle{
+  display:block;color:#fff;font-family:inherit;font-size:clamp(17px,2.5vw,23px);
+  line-height:1.18;font-weight:800;letter-spacing:-.035em;
+}
+.businessTrackDescription{display:block;font-size:11px;line-height:1.45;color:#c5dfe5}
+.businessTrackAction{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:40px;margin-top:3px;padding:8px 13px;border-radius:10px;
+  border:1px solid #0b9fa8;background:#0b9fa8;color:#fff;
+  text-align:center;font-size:12px;line-height:1.3;font-weight:800;
+}
+.businessTrackAction svg{flex:none}
+.businessTrack:hover{border-color:#63b6bd}
+.businessTrack:hover .businessTrackAction{background:#07858f;border-color:#07858f}
+.businessTrack:focus-visible{outline:3px solid #83e8ea;outline-offset:3px}
+@media(max-width:600px){
+  .businessTrack{grid-template-columns:102px minmax(0,1fr);border-radius:15px}
+  .businessTrackPhoto{min-height:154px}
+  .businessTrackBody{gap:6px;padding:11px 12px}
+  .businessTrack .businessTrackTitle{font-size:18px}
+  .businessTrackAction{min-height:39px;padding:8px 11px}
+}
+@media(max-width:370px){
+  .businessTrack{grid-template-columns:91px minmax(0,1fr)}
+  .businessTrackBody{padding:9px 10px}
+  .businessTrack .businessTrackTitle{font-size:17px}
+  .businessTrackDescription{font-size:10px}
 }
