@@ -95,3 +95,32 @@ test('private deep links are always validated and filtered before native routing
   ])assert.notEqual(classifyHolisticHouseNativeLink(url).kind,'hh-consultation')
   assert.equal(classifyNativeLink('https://holistichouse.vercel.app/ru/client/secret').kind,'private-blocked')
 })
+
+test('external Google OAuth returns only a one-time PKCE code to original secure SSR callback',async()=>{
+  const {classifyHolisticHouseNativeAuth}=await import('../lib/native/deep-link-policy.js')
+  const code='safe-opaque-pkce-code_123'
+  const accepted=classifyHolisticHouseNativeAuth(
+    'holistichouse://auth/callback?locale=ru&continue=consultations&request=12345678-1234-4234-8234-123456789abc&code='+code)
+  assert.equal(accepted.kind,'hh-auth')
+  assert.match(accepted.path,/^\/api\/app\/auth\/callback\?/)
+  assert.match(accepted.path,/code=safe-opaque-pkce-code_123/)
+  assert.doesNotMatch(accepted.path,/native=1|https:\/\/attacker/)
+  for(const candidate of [
+    'holistichouse://evil/callback?code=token',
+    'https://evil.example/api/app/auth/callback?code=token',
+    'holistichouse://auth/callback?code=one&code=two',
+    'holistichouse://auth/callback?code=one&next=https://evil.example',
+    'holistichouse://auth/callback?code=one#fragment'
+  ])assert.notEqual(classifyHolisticHouseNativeAuth(candidate).kind,'hh-auth')
+  const server=source('app/api/app/[...path]/route.js')
+  const client=source('components/app/app-workspace.jsx')
+  const native=source('components/native-link-handler.tsx')
+  assert.match(server,/native \? '&native=1' : ''/)
+  assert.match(server,/new URL\('holistichouse:\/\/auth\/callback'\)/)
+  assert.match(server,/NextResponse\.redirect\(handoff\.toString\(\)/)
+  assert.match(server,/exchangeCodeForSession/)
+  assert.match(client,/await Browser\.open\(\{ url: result\.redirectUrl \}\)/)
+  assert.match(native,/classifyHolisticHouseNativeAuth/)
+  assert.match(native,/window\.location\.assign\(callback\.path\)/)
+  assert.match(source('scripts/prepare-holistic-house-native.mjs'),/android:host="auth"/)
+})
