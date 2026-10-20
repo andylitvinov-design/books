@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, LockKeyhole, PauseCircle, PlayCircle, Target, TrendingUp } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import {
-  BUSINESS_COURSE_VERSION, BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
+  BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
   BUSINESS_RESPONSE_LABELS, BUSINESS_WEEKS, BUSINESS_METRICS,
-  businessSnapshotScores, businessSuggestions, businessProgress, businessDay,
+  businessSnapshotScores, businessSuggestions, businessProgress, businessDay, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
 import styles from './business-coaching.module.css'
 
@@ -45,6 +45,8 @@ const copy = {
     insight:'Your own answers can guide elective skill-practice topics. They are not professional psychometrics.',
     status:'Programme status', saveGoal:'Update my goals', editGoal:'Edit goals', back:'Back',
     daySaved:'Saved', checkinDue:'Check-ins may only be repeated after 21 days.', export:'Export all my Cabinet data',
+    relatedTests:'Explore other tests in My Tests', describeChange:'Comparable changes', noComparison:'At least two compatible measurements are needed before we can compare outcomes.',
+    differenceNote:'Changes below are descriptive, not evidence that the course caused the result.', editCancel:'Cancel',
   },
   ru: {
     eyebrow:'БИЗНЕС И КАРЬЕРА · МОЙ МАРШРУТ РАЗВИТИЯ', title:'Мои 90 дней развития',
@@ -79,6 +81,8 @@ const copy = {
     insight:'Ответы могут подсказать добровольные учебные темы, но не заменяют профессиональную психометрию.',
     status:'Статус программы', saveGoal:'Обновить цели', editGoal:'Изменить цели', back:'Назад',
     daySaved:'Сохранено', checkinDue:'Повторный опрос доступен через 21 день.', export:'Экспортировать все данные кабинета',
+    relatedTests:'Посмотреть другие тесты в «Моих тестах»', describeChange:'Сопоставимые изменения', noComparison:'Для сравнения необходимы хотя бы два сопоставимых наблюдения.',
+    differenceNote:'Изменения носят описательный характер и не доказывают, что их вызвал курс.', editCancel:'Отмена',
   },
 }
 const initialGoal = {track:'owner',primaryGoal:'',supportingGoal:'',habit:'',metric:'',target:'',currency:'CAD'}
@@ -129,17 +133,26 @@ export default function BusinessCoaching({locale='en',accountId}){
     let active=true
     setLoading(true)
     appFetch('business-coaching',undefined,'GET',{accountId}).then(result=>{
-      if(active){setState(result);setError('')}
+      if(active){
+        setState(result);setError('')
+        if(result.course){
+          const next=Array.from({length:90},(_,i)=>i+1).find(i=>!result.course.days?.[i]?.done)||90
+          setDay(next)
+          setDayNote(result.course.days?.[next]?.note||'')
+          setDayDone(Boolean(result.course.days?.[next]?.done))
+          setReviewNote(result.course.reviews?.[Math.ceil(next/7)]?.note||'')
+        }
+      }
     }).catch(()=>{if(active)setError(t.loadError)}).finally(()=>{if(active)setLoading(false)})
     return()=>{active=false}
   },[accountId,t.loadError])
   const progress=useMemo(()=>businessProgress(course),[course])
   const selected=businessDay(day,lang)
   const week=selected?.week||1
-  const done=Boolean(course?.days?.[day]?.done)
   const baseline=course?.surveys?.[0]
   const latest=course?.surveys?.at(-1)
-  const latestScores=businessSnapshotScores(latest?.answers||{})
+  const surveyChanges=businessSurveyChanges(baseline,latest)
+  const metricChanges=businessMetricChanges(course?.metrics||[])
   const suggestions=businessSuggestions(latest?.answers||{},course?.track||'owner')
   const metricKinds=useMemo(()=>new Map(BUSINESS_METRICS.map(m=>[m.id,m])),[])
   const due=!latest||Date.now()-Date.parse(latest.recordedAt)>=21*86400000
@@ -181,7 +194,7 @@ export default function BusinessCoaching({locale='en',accountId}){
     if(yes)setMetricForm(initialMetric())
   }
   function goalFields(edit=false){
-    const value=edit?goal:goal
+    const value=goal
     return <div className={styles.fields}>
       {!edit&&<label>{t.track}
         <select value={value.track} onChange={e=>setGoal(v=>({...v,track:e.target.value}))}>
@@ -233,6 +246,23 @@ export default function BusinessCoaching({locale='en',accountId}){
       </div>
       <div className={styles.overallTrack}><span style={{width:progress.percent+'%'}}/></div>
     </header>
+    {course.status==='active'&&<div className={styles.goalEditor}>
+      {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
+        setGoal({...course.goal,target:course.goal.target??''})
+        setGoalEditing(true)
+      }}><Target size={16}/>{t.editGoal}</button>:<form className={styles.editGoalsForm} onSubmit={async e=>{
+        e.preventDefault()
+        const ok=await command('goal',{...goal,metric:goal.metric||null,
+          target:goal.target===''?null:Number(goal.target)})
+        if(ok)setGoalEditing(false)
+      }}>
+        <h2>{t.editGoal}</h2>{goalFields(true)}
+        <div className={styles.goalButtons}>
+          <button type="submit" className={styles.primary} disabled={busy||goal.primaryGoal.trim().length<4}>{t.saveGoal}</button>
+          <button type="button" onClick={()=>setGoalEditing(false)}>{t.editCancel}</button>
+        </div>
+      </form>}
+    </div>}
     <nav className={styles.tabs} aria-label={t.title}>
       {[['today',t.today,BookOpen],['plan',t.plan,CalendarDays],['survey',t.survey,ClipboardCheck],
         ['metrics',t.metrics,TrendingUp],['report',t.report,Download]].map(([id,label,Icon])=>
@@ -301,7 +331,15 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button type="button" className={styles.primary} disabled={busy||!due||course.status==='completed'||Object.keys(retestAnswers).length<6}
           onClick={async()=>{if(await command('survey',{answers:retestAnswers}))setRetestAnswers({})}}>{t.retest}</button>
       </details>
+      {surveyChanges.length>0&&<section className={styles.changes} data-business-survey-comparison>
+        <h3>{t.describeChange}</h3><p className={styles.finePrint}>{t.differenceNote}</p>
+        {surveyChanges.map(m=><div key={m.id} className={styles.changeRow}>
+          <span>{BUSINESS_DOMAINS.find(d=>d.id===m.id)?.[lang]}</span>
+          <strong>{m.previous.toFixed(1)} → {m.latest.toFixed(1)} ({m.delta>0?'+':''}{m.delta.toFixed(1)})</strong>
+        </div>)}
+      </section>}
       <p className={styles.finePrint}>{t.insight}</p>
+      <Link href={'/'+lang+'/app/tests'} prefetch={false} className={styles.relatedTests}>{t.relatedTests}<ArrowRight size={16}/></Link>
     </div>}
     {tab==='metrics'&&<div className={styles.panel}>
       <h2>{t.records}</h2><p>{t.metricInfo}</p>
@@ -319,6 +357,16 @@ export default function BusinessCoaching({locale='en',accountId}){
           value={metricForm.to} onChange={e=>setMetricForm(v=>({...v,to:e.target.value}))}/></label>
         <button type="submit" className={styles.primary} disabled={busy}>{t.addMetric}</button>
       </form>
+      {metricChanges.length>0&&<div className={styles.changes} data-business-metric-comparisons>
+        <h3>{t.describeChange}</h3><p className={styles.finePrint}>{t.differenceNote}</p>
+        {metricChanges.map(m=><div key={m.metric+'-'+m.unit+'-'+(m.currency||'')} className={styles.changeRow}>
+          <span>{metricKinds.get(m.metric)?.[lang]}</span>
+          <strong>{m.previous.value} → {m.latest.value} {m.currency||''}
+            {' · '}{m.delta>0?'+':''}{m.delta}{m.percentage===null?'':' ('+(m.percentage>0?'+':'')+m.percentage+'%)'}
+          </strong>
+          <small>{m.previous.from} – {m.previous.to} / {m.latest.from} – {m.latest.to}</small>
+        </div>)}
+      </div>}
       {course.metrics.length?<div className={styles.metricRecords}>{[...course.metrics].reverse().map(m=><div key={m.id} className={styles.metricRecord}>
         <strong>{metricKinds.get(m.metric)?.[lang]||m.metric}</strong>
         <span className={styles.metricValue}>{m.value.toLocaleString(lang==='ru'?'ru-RU':'en-CA')}{m.currency?' '+m.currency:''}</span>
@@ -335,6 +383,11 @@ export default function BusinessCoaching({locale='en',accountId}){
         <p>{t.progress}: <strong>{progress.completed}/90</strong></p></div>
       <div className={styles.reportBlock}><h3>{t.original}</h3>{baseline?<ScoreTable answers={baseline.answers} lang={lang} t={t}/>:t.noSurvey}</div>
       {latest&&latest!==baseline&&<div className={styles.reportBlock}><h3>{t.latest}</h3><ScoreTable answers={latest.answers} lang={lang} t={t}/></div>}
+      {surveyChanges.length>0&&<div className={styles.reportBlock}>
+        <h3>{t.describeChange} · {t.survey}</h3>
+        {surveyChanges.map(m=><p key={m.id}>{BUSINESS_DOMAINS.find(d=>d.id===m.id)?.[lang]}:
+          {' '}{m.previous.toFixed(1)} → {m.latest.toFixed(1)} ({m.delta>0?'+':''}{m.delta.toFixed(1)})</p>)}
+      </div>}
       <div className={styles.reportBlock}><h3>{t.actions}</h3>
         {Object.entries(course.days).filter(([,d])=>d.done).sort((a,b)=>Number(a[0])-Number(b[0])).map(([k,d])=>
           <p key={k}><strong>{t.day} {k}.</strong> {businessDay(Number(k),lang)?.action}{d.note?' — '+d.note:''}</p>)}
@@ -348,7 +401,12 @@ export default function BusinessCoaching({locale='en',accountId}){
         {course.metrics.length?course.metrics.map(m=><p key={m.id}><strong>{metricKinds.get(m.metric)?.[lang]}:</strong> {m.value} {m.currency||''}
           {' · '}{m.from} – {m.to} ({t.source})</p>):<p>{t.noMetrics}</p>}
       </div>
-      <small className={styles.finePrint}>{t.personal} · {t.reportIntro}</small>
+      {metricChanges.length>0&&<div className={styles.reportBlock}>
+        <h3>{t.describeChange} · {t.metrics}</h3>
+        {metricChanges.map(m=><p key={m.metric}>{metricKinds.get(m.metric)?.[lang]}:
+          {' '}{m.previous.value} → {m.latest.value} {m.currency||''} ({m.delta>0?'+':''}{m.delta})</p>)}
+      </div>}
+      <small className={styles.finePrint}>{t.personal} · {t.reportIntro} · {t.differenceNote}</small>
       <p className={styles.finePrint}><a href="/api/app/export" rel="nofollow">{t.export}</a></p>
     </div>}
     <footer className={styles.footer}>
