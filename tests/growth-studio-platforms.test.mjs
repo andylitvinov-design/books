@@ -75,7 +75,8 @@ test('not connected account does not sneak into already verified channel permiss
  assert.match(store,/checkGrowthTelegramPublisherAction/)
  assert.match(actions,/requireAdminRequest\(\)/)
  assert.match(actions,/verifyTelegramPostingPermissions\(\)/)
- assert.doesNotMatch(store,/BOT_TOKEN|API_KEY|password/i.test('') ? /INERT_TEST/ : /process\.env/)
- const model=normalizePostFields({...publicCopy,status:undefined})
+ assert.doesNotMatch(store,/process\.env|HH_GROWTH_TELEGRAM_BOT_TOKEN/)
+ const {status,...fields}=publicCopy
+ const model=normalizePostFields(fields)
  assert.equal(model.brand,'holistic_house')
 })
