@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { buildPrescriptionPdf } from '../lib/prescriptions/pdf.js'
+import { buildPrescriptionPdf, buildPrescriptionMobilePdf } from '../lib/prescriptions/pdf.js'
 
 // Authoritative synthetic render regression: no real names, medical data,
 // private URLs, signed client records or payment details are loaded.
@@ -31,4 +31,9 @@ for(const locale of ['en','ru']){
   const file=path.join(output,'sample-'+locale+'.pdf')
   writeFileSync(file,buildPrescriptionPdf(document,locale,'https://example.invalid'))
   console.log('SYNTHETIC_PDF_CREATED',locale,path.relative(process.cwd(),file))
+  // Separate source-complete mobile reading edition; this is NOT an A4 export
+  // and contains no real person, signed consultation or client-specific data.
+  const phone=path.join(output,'sample-mobile-'+locale+'.pdf')
+  writeFileSync(phone,buildPrescriptionMobilePdf(document,locale,'https://example.invalid'))
+  console.log('SYNTHETIC_PHONE_PDF_CREATED',locale,path.relative(process.cwd(),phone))
 }
