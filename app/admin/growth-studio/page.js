@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = {title:'Growth Studio · Holistic House',robots:{index:false,follow:false}}
 
 export default async function GrowthStudioPage() {
-  if (!await requireAdminRequest()) redirect('/admin/login')
+  if (!await requireAdminRequest()) redirect('/admin/login?next=growth-studio')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'ru' ? 'ru' : 'en'
   let initialRecords = [], storageReady = false
   try {
