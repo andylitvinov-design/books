@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, PauseCircle, PlayCircle, Target, TrendingUp, Sparkles, ListChecks } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import {
@@ -12,6 +11,23 @@ import {
 } from '@/lib/business-coaching/program'
 import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress } from '@/lib/business-coaching/week-modules'
 import styles from './business-coaching.module.css'
+
+// Decorative first-party CSS illustration: executive notebook on a walnut desk.
+// No remote photography, no new image requests, no user data in the artwork.
+function ExecutiveDeskScene(){
+  return <div className={styles.deskScene} aria-hidden="true">
+    <span className={styles.deskCoffee}/>
+    <div className={styles.deskNotebook}>
+      <span className={styles.deskNotebookMark}>HH</span>
+      <span className={styles.deskNotebookNumber}>90</span>
+      <span className={styles.deskNotebookRule}/>
+      <span className={styles.deskNotebookAccent}/>
+    </div>
+    <span className={styles.deskPen}/>
+    <span className={styles.deskBookmark}/>
+  </div>
+}
+
 
 const copy = {
   en: {
@@ -298,7 +314,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   }
   if(loading)return <section className={'hh-panel '+styles.root} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
   if(!state)return <section className={'hh-panel '+styles.root}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
-  if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="holistic-house-scenic-v2">
+  if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v1">
     <div className={styles.eyebrow}><BookOpen size={17}/>{t.courseKicker}</div>
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
@@ -306,10 +322,7 @@ export default function BusinessCoaching({locale='en',accountId}){
         <h1>{t.title}</h1><p>{t.description}</p>
         <span className={styles.heroInfo}><LockKeyhole size={15}/>{t.privacy}</span>
       </div>
-      <div className={styles.heroArt} aria-hidden="true">
-        <Image src="/images/holistic-house/course-journey-landscape.svg" width={440} height={190}
-          alt="" unoptimized />
-      </div>
+      <div className={styles.heroArt}><ExecutiveDeskScene/></div>
     </header>
     <div className={styles.intake}>
       <div className={styles.intakeHeader}>
@@ -365,7 +378,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       </form>
     </div>
   </section>
-  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="holistic-house-scenic-v2">
+  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v1">
     <div className={styles.eyebrow}><BookOpen size={17}/>{t.courseKicker}</div>
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
@@ -384,10 +397,7 @@ export default function BusinessCoaching({locale='en',accountId}){
           <span style={{width:progress.percent+'%'}}/>
         </div>
       </div>
-      <div className={styles.heroArt} aria-hidden="true">
-        <Image src="/images/holistic-house/course-journey-landscape.svg" width={440} height={190}
-          alt="" unoptimized />
-      </div>
+      <div className={styles.heroArt}><ExecutiveDeskScene/></div>
     </header>
     {course.status==='active'&&<div className={styles.goalEditor}>
       {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
