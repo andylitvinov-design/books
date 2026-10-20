@@ -120,3 +120,16 @@ Acceptance: (a) unauthorized actor cannot query or set another phone/consent; (b
 - Existing free options: \`docs/crm/NO_API_FEE_SMS_2026-10-20.md\`
 
 **Release gate:** This document is a design and readback, not a deployed new subscription/verification API. No customer phone data was read or modified, and no SMS was sent.
+
+
+## P1 implementation 20 Oct 2026 — client phone, owner enquiry contact copy
+
+- Authenticated \`/{en,ru,es}/app/settings\` now includes **My contact phone**. Saving requires explicit permission to store a phone in E.164 with an exact consent version; it is not SMS marketing permission, phone verification, or CRM contact synchronization.
+- Encrypted \`app_private.client_contact_phones\` is keyed to the signed-in \`app.accounts.id\`; full E.164 never appears in a plain database column or in the GET response. It stores only AES-GCM ciphertext, account-scoped keyed fingerprint, last four digits, consent version/time and timestamps. Account deletion cascades and users can remove the record immediately. No verification status is granted until provider-backed OTP has been built and reviewed.
+- Applied Supabase migration ledger \`20261020162221 hh_client_phone_self_service_20261020\`, mirrored by \`supabase/migrations/20261020162221_hh_client_phone_self_service_20261020.sql\`. Table has FORCE RLS, owner-only policies with active-session checks and **no anon/authenticated SQL access**. Live table initially had 0 rows.
+- \`GET/POST /api/app/contact-phone\` verifies origin, session, exact active account ID and record shape. No provider call is possible; no marketing preferences are auto-enabled. Save replaces the old phone with a fresh, **unverified** value; remove deletes it.
+- My Practice → CRM → Business enquiries has a user-click **Save to CRM contacts** action. A practitioner-owned, previously encrypted website enquiry with a valid reply-only statement is read inside the same owner-authorized transaction; **only name, email and phone** are copied to a new \`website\`/lead CRM record. Question text, scores, attribution, marketing permissions, email verification and SMS verification are *not* transferred. Duplicate email/phone uses existing owner-scoped unique HMAC and safely returns \`CONTACT_ALREADY_EXISTS\`, not a silent merge.
+- Previously saved anonymous enquiries, clinician records and client Cabinet phone contacts are never imported automatically. The public consulting form continues collecting an international-format phone and consent **to reply to the request only**; it is not an opt-in SMS broadcast.
+- Tests: \`tests/client-contact-phone.test.mjs\`, existing CRM test suite + lint and Vercel build. Signed-in mobile handset QA is required before calling the contact form tested end to end.
+
+**Still gated/off:** verified possession OTP/START, independent appointment vs promotional SMS consent ledger, public legally usable mailing address in /en/contact, owned Twilio account/sender, signed live STOP, actual handset SMS. These require additional configuration and separate controlled release; **do not enable \`HH_CRM_SMS_LIVE_APPROVED\`** and do not promise all SMS are free.

@@ -47,6 +47,7 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
+import ClientContactPhone from '@/components/app/client-contact-phone'
 import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
@@ -678,6 +679,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               <Preferences data={data} locale={locale} onDone={load} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+              <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
               <InstallHolisticHouse locale={locale} />
               {nativeApp
                 ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
