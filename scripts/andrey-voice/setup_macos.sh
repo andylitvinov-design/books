@@ -52,7 +52,15 @@ if [[ ! -d "$DEST/.venv" ]]; then "$PY" -m venv "$DEST/.venv"; fi
 "$DEST/.venv/bin/python" -m pip install --disable-pip-version-check --upgrade pip
 "$DEST/.venv/bin/python" -m pip install --disable-pip-version-check 'mlx-audio' 'soundfile' 'numpy'
 
-echo "MLX installed locally. NO voice model was downloaded and NO TTS request was made."
+# Install only owner-operated public source code. The private WAVs, model
+# weights, real client text, QA approval and Keychain token are never bundled.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+install -m 700 "$SCRIPT_DIR/local_worker.py" "$DEST/local_worker.py"
+install -m 700 "$SCRIPT_DIR/launch_agent.py" "$DEST/launch_agent.py"
+"$DEST/.venv/bin/python" "$DEST/launch_agent.py" --prepare
+
+echo "MLX tools and the INACTIVE launch agent are prepared locally."
+echo "NO voice model was downloaded and NO TTS request was made."
 echo "Keep original RU/EN reference WAVs and transcripts privately inside $DEST/voice_sources."
 echo "Run only synthetic voice tests until the owner approves the result."
 echo "The Mac worker and any client report processing remain disabled."
