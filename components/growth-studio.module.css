@@ -189,3 +189,10 @@
 .publisherDiagnostics ul{padding-left:20px;margin:7px 0 0;color:#85541b;font-size:12px}
 .publisherDiagnostics li+li{margin-top:3px}
 @media(max-width:580px){.connectionPanel>summary{padding:10px}.connectionScroller{margin:0 8px}.connectionNav{padding:8px 10px 12px}.connectionBox{margin:10px 8px}}
+
+
+.manualSlotActions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:2px 0 6px}
+.manualSlotActions button{display:inline-flex;align-items:center;gap:7px;min-height:37px;padding:7px 12px;border-radius:9px;border:1px solid #bcded9;background:#eff8f5;color:#17636b;font-size:12px;font-weight:690}
+.manualSlotActions button:disabled{opacity:.55;cursor:not-allowed}
+.manualSlotActions span{font-size:11px;color:#637f82;line-height:1.45}
+.manualSlotConflict{padding:10px 12px;border:1px solid #ebcd94;border-radius:9px;background:#fff5e3;color:#855315;font-size:12px;line-height:1.45;margin:0}

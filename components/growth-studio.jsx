@@ -5,6 +5,7 @@ import {useEffect, useMemo, useState} from 'react'
 import {CalendarDays, Check, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
 import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
+import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/lib/growth-studio/manual-calendar.mjs'
 import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
@@ -51,7 +52,7 @@ const COPY={
     planCount:'Manual plans',publishedCount:'Confirmed online',notMeasured:'Not integrated',
     links:'Existing tools',youtube:'YouTube upload',videos:'Website videos',materials:'Material library',
     localTime:'Toronto',createGuide:'Choose a public page, prepare the text, save, approve, then add it to your manual calendar.',
-    copyOk:'Link copied.',copyFail:'Could not copy automatically.',downloaded:'CSV prepared on your device.',
+    copyOk:'Link copied.',copyFail:'Could not copy automatically.',downloaded:'CSV prepared on your device.',calendarExport:'Export manual reminders (.ics)',calendarDone:'Manual posting calendar saved to your device. Import into your calendar app to receive reminders; this does not publish posts.',planNext:'Find free Toronto time',planNextFound:'Suggested Toronto editorial slot',planNoFree:'No suitable free weekday slot in the next 45 days.',planCollision:'Another manual post for this brand and network is planned within 15 minutes.',
     unsafe:'Do not paste diagnoses, client data, test responses or private material into marketing content.',
     duplicate:'Duplicate into draft',
   },
@@ -88,7 +89,7 @@ const COPY={
     planCount:'Ручной план',publishedCount:'Подтверждено онлайн',notMeasured:'Не подключено',
     links:'Готовые инструменты',youtube:'Загрузка YouTube',videos:'Видео сайта',materials:'Медиатека',
     localTime:'Торонто',createGuide:'Выберите открытую страницу, напишите текст, сохраните, одобрите и добавьте в ручной календарь.',
-    copyOk:'Ссылка скопирована.',copyFail:'Не удалось скопировать.',downloaded:'CSV подготовлен на устройстве.',
+    copyOk:'Ссылка скопирована.',copyFail:'Не удалось скопировать.',downloaded:'CSV подготовлен на устройстве.',calendarExport:'Скачать напоминания (.ics)',calendarDone:'Календарь ручных публикаций сохранён на устройстве. Импортируйте его в приложение-календарь для напоминаний. Автопубликации нет.',planNext:'Найти свободное время в Торонто',planNextFound:'Предлагаемое время по Торонто',planNoFree:'За 45 дней подходящего рабочего слота не найдено.',planCollision:'Другая ручная публикация того же проекта и канала запланирована в пределах 15 минут.',
     unsafe:'Не вставляйте диагнозы, результаты тестов, клиентские данные и частные материалы в рекламный контент.',
     duplicate:'Скопировать как черновик',
   },
@@ -133,6 +134,13 @@ function csvCell(value) {
   const text=String(value??'')
   const escaped=/^[\s]*[=+\-@]/.test(text)?"'"+text:text
   return '"'+escaped.replaceAll('"','""')+'"'
+}
+function saveManualReminders(records) {
+  const text=buildManualCalendarIcs(records)
+  const url=URL.createObjectURL(new Blob([text],{type:'text/calendar;charset=utf-8'}))
+  const link=document.createElement('a');link.href=url;link.download='hh-growth-studio-manual-calendar.ics'
+  document.body.appendChild(link);link.click();link.remove()
+  setTimeout(()=>URL.revokeObjectURL(url),1000)
 }
 function saveCsv(records) {
   const cols=['id','brand','channel','locale','title','caption','sourceUrl','campaign','scheduledAt','mediaUrl','mediaAlt','status','updatedAt']
@@ -185,6 +193,14 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const trackingLink=useMemo(()=>{
     try {return publicCampaignLink({...form,scheduledAt:isoFromLocal(form.scheduledAt)})} catch {return ''}
   },[form])
+  const plannedConflict=form.scheduledAt?findManualTimeConflicts({records,brand:form.brand,channel:form.channel,
+    scheduledAt:isoFromLocal(form.scheduledAt),excludeId:editing?.id}).length:0
+  const suggestManualTime=()=>{
+    const result=nextManualSlot({brand:form.brand,channel:form.channel,records,excludeId:editing?.id})
+    if(!result){setNotice(t.planNoFree);return}
+    setForm(old=>({...old,scheduledAt:localFromIso(result.scheduledAt)}))
+    setNotice(t.planNextFound+': '+result.localDate+' '+result.localTime+' America/Toronto')
+  }
   const isEditing=Boolean(editing)
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
   const reset=()=>{setEditing(null);setForm(empty());setNotice('');setTab('compose')}
@@ -307,6 +323,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <div className={styles.actions}>
         <button type="button" disabled={busy} onClick={refresh} title={t.reload}><RefreshCcw size={16}/>{t.reload}</button>
         <button type="button" disabled={!records.length} onClick={()=>{saveCsv(records);setNotice(t.downloaded)}}><Download size={16}/>{t.export}</button>
+        <button type="button" disabled={!records.some(post=>post.status==='planned_manual')} onClick={()=>{saveManualReminders(records);setNotice(t.calendarDone)}}><CalendarDays size={16}/>{t.calendarExport}</button>
       </div>
     </div>
     {notice&&<p className={styles.notice} role="status" aria-live="polite">{notice}</p>}
@@ -343,6 +360,11 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <p className={styles.hint}>{t.sourceHint}</p>
         <label>{t.schedule}<input disabled={!ready||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
         <p className={styles.hint}>{t.scheduleNote}</p>
+        <div className={styles.manualSlotActions}>
+          <button type="button" disabled={!ready||busy} onClick={suggestManualTime}><CalendarDays size={15}/>{t.planNext}</button>
+          <span>{locale==='ru'?'Пн–Пт · 10:00/17:00 по Торонто. Не прогноз лучшего времени.':'Mon–Fri · 10:00/17:00 Toronto. Editorial preset, not an analytics-based best time.'}</span>
+        </div>
+        {plannedConflict>0&&<p className={styles.manualSlotConflict} role="alert">{t.planCollision}</p>
         <div className={styles.publisherDiagnostics} role="status" aria-live="polite">
           <strong>{CHANNEL_CAPABILITIES[form.channel]?.name || form.channel} · {METHOD_LABELS[locale]?.[CHANNEL_CAPABILITIES[form.channel]?.mode] || METHOD_LABELS.en.manual}</strong>
           {reviewGrowthPublication({...form,status:'draft'},{telegramConfigured:telegram.ready,telegramChannelVerified:telegramVerified}).issues.length>0
