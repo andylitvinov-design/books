@@ -9,7 +9,6 @@ import styles from './business-consultation-finder.module.css'
 
 type Locale = 'en' | 'ru' | 'es'
 type Area = 'business' | 'money' | 'personal' | 'project'
-type Outcome = 'gentle' | 'one-step' | 'deeper' | 'ongoing'
 type Format = 'free' | 'express' | 'full' | 'mentoring'
 type Choice = { label: string; detail: string }
 
@@ -17,26 +16,23 @@ const areas: Area[] = ['business', 'money', 'personal', 'project']
 const formats = BUSINESS_FINDER_FORMATS as readonly Format[]
 
 const words: Record<Locale, {
-  eyebrow: string; title: string; lead: string; steps: string; stepOne: string; stepTwo: string; stepThree: string;
-  stepOneHelp: string; stepTwoHelp: string; stepThreeHelp: string; awaiting: string; match: string;
-  matchHint: string; approach: string; available: string; selection: string; request: string; detail: string;
-  privacy: string; noBooking: string; context: string; concern: string; wanted: string;
+  eyebrow: string; title: string; lead: string; steps: string; stepOne: string; stepTwo: string;
+  match: string; approach: string; available: string; request: string;
+  privacy: string; noBooking: string; context: string; concern: string;
   mentoringFee: string; reasons: Record<Format, string>;
-  areas: Record<Area, Choice>; issues: Record<string, Choice>; outcomes: Record<Outcome, Choice>;
+  areas: Record<Area, Choice>; issues: Record<string, Choice>;
 }> = {
   en: {
     eyebrow: '2 QUICK QUESTIONS',
     title: 'Find your consultation in 30 seconds',
     lead: 'Choose a topic and a challenge. We suggest a format that you can change.',
-    steps: 'Questions answered', stepOne: 'What is your question mostly about?', stepTwo: 'What feels hardest right now?', stepThree: 'What would help you most?',
-    stepOneHelp: 'There is no wrong choice.', stepTwoHelp: 'Choose the closest option; you can explain it in your own words when requesting a session.',
-    stepThreeHelp: 'This helps suggest a starting format, not a diagnosis.', awaiting: 'Your suggestion will appear after three short choices.',
-    match: 'A possible starting point', matchHint: 'Based only on the options you selected. You remain free to choose any format.',
-    approach: 'Focus for your conversation', available: 'Other available formats', selection: 'Selected',
-    request: 'Enquire about this consultation', detail: 'See the full consultation details',
+    steps: 'Questions answered', stepOne: 'What is your question mostly about?', stepTwo: 'What feels hardest right now?',
+    match: 'A possible starting point',
+    approach: 'Focus for your conversation', available: 'Other available formats',
+    request: 'Enquire about this consultation',
     privacy: 'Your answers stay here until you send an enquiry with consent.',
     noBooking: 'An enquiry is not a confirmed appointment or payment. Andrey confirms details personally. No financial results are promised.',
-    context: 'Area', concern: 'Question', wanted: 'Desired next step',
+    context: 'Area', concern: 'Question',
     mentoringFee: 'Price and schedule by arrangement',
     reasons: {
       free: 'A written first look may help you organise the question before choosing a paid conversation. No live call is included.',
@@ -68,26 +64,18 @@ const words: Record<Locale, {
       partnership: {label: 'My collaborators',detail: 'Roles, responsibilities and expectations'},
       stuck: {label: 'A stalled project',detail: 'Something keeps stopping progress'},
     },
-    outcomes: {
-      gentle: {label: 'First, a gentle written review',detail: 'I would like to organise my thoughts'},
-      'one-step': {label: 'Clarify one decision',detail: 'I want a concrete next action'},
-      deeper: {label: 'Explore the whole situation',detail: 'I need more space for patterns and choices'},
-      ongoing: {label: 'Support over time',detail: 'I want to revisit goals and progress'},
-    },
   },
   ru: {
     eyebrow: '2 КОРОТКИХ ВОПРОСА',
     title: 'Подберите консультацию за 30 секунд',
     lead: 'Выберите сферу и проблему — сразу увидите формат. Его можно изменить.',
-    steps: 'Ответов на вопросы', stepOne: 'О чём прежде всего ваш запрос?', stepTwo: 'Что сейчас сложнее всего?', stepThree: 'Какая помощь была бы полезнее?',
-    stepOneHelp: 'Здесь нет неправильных ответов.', stepTwoHelp: 'Выберите самое близкое; подробнее можно описать ситуацию в заявке.',
-    stepThreeHelp: 'Это помогает подобрать стартовый формат, а не поставить диагноз.', awaiting: 'После трёх коротких ответов появится предложение.',
-    match: 'Возможный формат для начала', matchHint: 'Подсказка основана только на вашем выборе. Любой формат можно изменить.',
-    approach: 'Тема вашей консультации', available: 'Другие доступные форматы', selection: 'Выбрано',
-    request: 'Оставить заявку на консультацию', detail: 'Подробнее о консультациях',
+    steps: 'Ответов на вопросы', stepOne: 'О чём прежде всего ваш запрос?', stepTwo: 'Что сейчас сложнее всего?',
+    match: 'Возможный формат для начала',
+    approach: 'Тема вашей консультации', available: 'Другие доступные форматы',
+    request: 'Оставить заявку на консультацию',
     privacy: 'Ответы остаются здесь до отправки заявки с вашим согласием.',
     noBooking: 'Заявка ещё не означает запись или оплату. Андрей согласует детали лично. Финансовые результаты не гарантируются.',
-    context: 'Сфера', concern: 'Вопрос', wanted: 'Ожидаемая помощь',
+    context: 'Сфера', concern: 'Вопрос',
     mentoringFee: 'Стоимость и график — по договорённости',
     reasons: {
       free: 'Можно начать с бесплатного письменного разбора, чтобы сформулировать вопрос. Живой созвон в него не входит.',
@@ -119,26 +107,18 @@ const words: Record<Locale, {
       partnership: {label: 'Взаимодействие с партнёрами',detail: 'Роли, ответственность, ожидания'},
       stuck: {label: 'Проект остановился',detail: 'Что мешает перейти к действию'},
     },
-    outcomes: {
-      gentle: {label: 'Сначала письменный разбор',detail: 'Хочу спокойно сформулировать вопрос'},
-      'one-step': {label: 'Прояснить одно решение',detail: 'Нужен конкретный следующий шаг'},
-      deeper: {label: 'Разобраться в ситуации глубже',detail: 'Есть несколько связанных факторов'},
-      ongoing: {label: 'Поддержка на протяжении времени',detail: 'Хочу возвращаться к целям и результатам'},
-    },
   },
   es: {
     eyebrow: '2 PREGUNTAS RÁPIDAS',
     title: 'Encuentra tu consulta en 30 segundos',
     lead: 'Elige un tema y tu reto. Verás una sugerencia que puedes cambiar.',
-    steps: 'Preguntas respondidas', stepOne: '¿De qué trata tu consulta?', stepTwo: '¿Qué te resulta más difícil?', stepThree: '¿Qué tipo de ayuda deseas?',
-    stepOneHelp: 'No hay respuestas incorrectas.', stepTwoHelp: 'Elige la opción más cercana; podrás explicar los detalles en tu solicitud.',
-    stepThreeHelp: 'Se trata de orientar, no de diagnosticar.', awaiting: 'Después de tres elecciones verás una sugerencia.',
-    match: 'Una opción para empezar', matchHint: 'Basada solo en tus elecciones; puedes elegir cualquier modalidad.',
-    approach: 'Tema de tu conversación', available: 'Otras modalidades disponibles', selection: 'Elegida',
-    request: 'Solicitar esta consulta', detail: 'Ver los detalles de la consulta',
+    steps: 'Preguntas respondidas', stepOne: '¿De qué trata tu consulta?', stepTwo: '¿Qué te resulta más difícil?',
+    match: 'Una opción para empezar',
+    approach: 'Tema de tu conversación', available: 'Otras modalidades disponibles',
+    request: 'Solicitar esta consulta',
     privacy: 'Tus respuestas quedan aquí hasta enviar una solicitud con consentimiento.',
     noBooking: 'Enviar una solicitud no confirma una cita ni un pago. Andrey acuerda los detalles personalmente. No se garantizan resultados económicos.',
-    context: 'Área', concern: 'Pregunta', wanted: 'Ayuda deseada',
+    context: 'Área', concern: 'Pregunta',
     mentoringFee: 'Precio y frecuencia por acuerdo',
     reasons: {
       free: 'Puedes comenzar con una revisión escrita para ordenar tus ideas; no incluye una llamada en directo.',
@@ -169,12 +149,6 @@ const words: Record<Locale, {
       priorities: {label: 'Plan y prioridades',detail: 'Qué abordar primero'},
       partnership: {label: 'Mis colaboradores',detail: 'Roles, responsabilidades y expectativas'},
       stuck: {label: 'Un proyecto estancado',detail: 'Qué impide avanzar'},
-    },
-    outcomes: {
-      gentle: {label: 'Primero una revisión escrita',detail: 'Quiero ordenar mis ideas'},
-      'one-step': {label: 'Aclarar una decisión',detail: 'Necesito un siguiente paso concreto'},
-      deeper: {label: 'Explorar la situación en profundidad',detail: 'Hay distintos elementos relacionados'},
-      ongoing: {label: 'Apoyo a lo largo del tiempo',detail: 'Quiero revisar metas y avances'},
     },
   }
 }
