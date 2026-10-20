@@ -1,11 +1,12 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import {isNativeHolisticHouse} from '@/lib/native/client'
+import {registerNativePushToken} from '@/lib/native/push-registration'
 import {appFetch} from '@/lib/app/client-fetch'
 
 const COPY={
   ru:{title:'Уведомления приложения',intro:'Получайте на телефон уведомление, когда мастер отвечает вам в личной переписке.',
-    allow:'Подключить этот телефон',off:'Отключить на всех телефонах',on:'Уведомления включены',
+    allow:'Подключить этот телефон',off:'Отключить на всех телефонах',on:'Для аккаунта подключены уведомления',
     disabled:'Уведомления отключены',loading:'Проверяем настройки…',
     unavailable:'Отправка нативных уведомлений пока не настроена на сервере.',
     denied:'Телефон запретил уведомления. Разрешите их в настройках устройства.',
@@ -14,7 +15,7 @@ const COPY={
     saved:'Устройство зарегистрировано для личных уведомлений.',
     revoked:'Регистрация этого аккаунта отозвана на сервере.'},
   en:{title:'App notifications',intro:'Receive a phone notification when a practitioner replies to your private conversation.',
-    allow:'Enable this phone',off:'Disable on all devices',on:'Notifications enabled',
+    allow:'Enable this phone',off:'Disable on all devices',on:'Notifications are registered for this account',
     disabled:'Notifications disabled',loading:'Checking settings…',
     unavailable:'Native push delivery has not been configured on the server yet.',
     denied:'Your phone has blocked notifications. Change this in device settings.',
@@ -41,23 +42,30 @@ export default function NativeMessageNotifications({accountId,locale='en'}){
   const [notice,setNotice]=useState('')
   const [error,setError]=useState('')
   const owner=useRef(null),active=useRef(false)
+  const scope=useRef(null);scope.current={accountId,locale}
+  const belongs=session=>owner.current===session&&scope.current.accountId===session.accountId&&
+    scope.current.locale===session.locale&&!session.controller.signal.aborted
   useEffect(()=>{
     const name=currentPlatform()
     setPlatform(name)
     if(!name)return
-    const session={accountId,controller:new AbortController()}
+    const session={accountId,locale,controller:new AbortController()}
     owner.current=session;active.current=false
     setState(null);setBusy(false);setError('');setNotice('')
     appFetch('notifications/native?platform='+name,undefined,'GET',
       {accountId,signal:session.controller.signal})
-      .then(result=>{if(owner.current===session)setState(result)})
-      .catch(()=>{if(owner.current===session)setError(t.error)})
+      .then(result=>{if(belongs(session))setState(result)})
+      .catch(()=>{if(belongs(session))setError(t.error)})
     return ()=>{session.controller.abort();if(owner.current===session)owner.current=null}
+  // belongs reads the render-updated account ref rather than a stale closure.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[accountId,locale,t.error])
   async function run(action){
     if(active.current||!owner.current)return
-    const session=owner.current;active.current=true;setBusy(true);setError('');setNotice('')
-    const fresh=()=>owner.current===session&&session.accountId===accountId&&!session.controller.signal.aborted
+    const session=owner.current
+    if(!belongs(session))return
+    active.current=true;setBusy(true);setError('');setNotice('')
+    const fresh=()=>belongs(session)
     try {await action(session,fresh)}
     catch {if(fresh())setError(t.error)}
     finally {if(fresh()){active.current=false;setBusy(false)}}
@@ -66,47 +74,27 @@ export default function NativeMessageNotifications({accountId,locale='en'}){
     await run(async(session,fresh)=>{
       if(!state?.ready)return
       const push=await plugin()
+      if(!fresh())return
       const permission=await push.checkPermissions()
       if(!fresh())return
-      const allowed=permission.receive==='granted'?permission:
-        await push.requestPermissions()
+      const allowed=permission.receive==='granted'?permission:await push.requestPermissions()
       if(!fresh())return
       if(allowed.receive!=='granted'){setError(t.denied);return}
       if(platform==='android'){
         await push.createChannel({id:'hh_private_messages',name:'Holistic House messages',
-          description:'Private message arrival alerts',importance:3,visibility:0,
-          sound:undefined,vibration:true})
+          description:'Private message arrival alerts',importance:3,visibility:0,vibration:true})
       }
-      let handles=[]
-      let expiry
-      try {
-        const registration=new Promise((resolve,reject)=>{
-          let settled=false
-          const success=token=>{
-            if(settled)return
-            settled=true;resolve(token?.value)
-          }
-          const failure=()=>{if(!settled){settled=true;reject(new Error('REGISTER_FAILED'))}}
-          // Attach listeners before register to avoid losing a fast native token.
-          Promise.all([
-            push.addListener('registration',success),
-            push.addListener('registrationError',failure)
-          ]).then(list=>{handles=list;return push.register()})
-            .catch(failure)
-          expiry=setTimeout(failure,15000)
-        })
-        const token=await registration
-        if(!fresh())return
-        const saved=await appFetch('notifications/native/register',{
-          platform,token,locale,environment:state.environment,messageAlerts:true,
-        },'POST',{accountId:session.accountId,signal:session.controller.signal})
-        if(!fresh())return
-        setState(previous=>({...previous,...saved,enabled:true,deviceCount:Math.max(1,previous?.deviceCount||0)}))
-        setNotice(t.saved)
-      }finally{
-        clearTimeout(expiry)
-        await Promise.allSettled(handles.map(h=>h.remove()))
-      }
+      if(!fresh())return
+      const token=await registerNativePushToken({
+        addListener:(...args)=>push.addListener(...args),register:()=>push.register(),
+      },{signal:session.controller.signal,isCurrent:fresh})
+      if(!fresh())return
+      const saved=await appFetch('notifications/native/register',{
+        platform,token,locale,environment:state.environment,messageAlerts:true,
+      },'POST',{accountId:session.accountId,signal:session.controller.signal})
+      if(!fresh())return
+      setState(previous=>({...previous,...saved,enabled:true,deviceCount:Math.max(1,previous?.deviceCount||0)}))
+      setNotice(t.saved)
     })
   }
   async function disable(){
@@ -114,7 +102,7 @@ export default function NativeMessageNotifications({accountId,locale='en'}){
       await appFetch('notifications/native/disable',{},'POST',
         {accountId:session.accountId,signal:session.controller.signal})
       if(!fresh())return
-      try { const push=await plugin();await push.unregister() } catch {}
+      try {const push=await plugin();if(fresh())await push.unregister()} catch {}
       if(!fresh())return
       setState(previous=>({...previous,enabled:false,deviceCount:0}))
       setNotice(t.revoked)

@@ -1,13 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync,copyFileSync,mkdtempSync,mkdirSync,rmSync,writeFileSync} from 'node:fs'
+import {readFileSync,mkdtempSync,mkdirSync,rmSync,writeFileSync} from 'node:fs'
 import {join,dirname} from 'node:path'
 import {tmpdir} from 'node:os'
 import {spawnSync} from 'node:child_process'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const stage=new URL('../scripts/prepare-holistic-house-native.mjs',import.meta.url)
 const files=[
-  'capacitor.config.json','capacitor.holistic-house.config.json','native-web/index.html',
+  'package.json','capacitor.config.json','capacitor.holistic-house.config.json','native-web/index.html',
   'ios/App/Podfile','ios/App/App/Info.plist','ios/App/App/App.entitlements','ios/App/App/AppDelegate.swift',
   'ios/App/App.xcodeproj/project.pbxproj','android/app/build.gradle',
   'android/app/src/main/AndroidManifest.xml','android/app/src/main/res/values/strings.xml'
@@ -37,10 +37,12 @@ test('Holistic House has an independent canonical-domain native identity; PsiAlc
   assert.equal(hh.server.url,'https://holistichouse.vercel.app/en/app/portrait')
   assert.deepEqual(hh.server.allowNavigation,['holistichouse.vercel.app'])
   assert.equal(hh.server.cleartext,false)
+  assert.equal(JSON.parse(source('package.json')).dependencies['@capacitor/push-notifications'],undefined)
 })
 test('staged Android identity, launch label and private conversation links survive real script execution',()=>{
   fixture(f=>{
     f.invoke('before-sync')
+    assert.equal(JSON.parse(f.read('package.json')).dependencies['@capacitor/push-notifications'],'7.0.1')
     const config=f.read('capacitor.config.json')
     mkdirSync(join(f.root,'android/app/src/main/assets'),{recursive:true})
     writeFileSync(join(f.root,'android/app/src/main/assets/capacitor.config.json'),config)
@@ -66,6 +68,8 @@ test('staged iOS app does not reuse PsiAlchemy bundle ID or stale developer Coco
     assert.match(f.read('ios/App/App/Info.plist'),/<string>holistichouse<\/string>/)
     assert.match(f.read('ios/App/App.xcodeproj/project.pbxproj'),/PRODUCT_BUNDLE_IDENTIFIER = com\.holistichouse\.app;/)
     assert.match(f.read('ios/App/App/App.entitlements'),/applinks:holistichouse\.vercel\.app/)
+    assert.equal(f.read('ios/App/App/AppDelegate.swift').split('.capacitorDidRegisterForRemoteNotifications,').length-1,1)
+    assert.equal(f.read('ios/App/App/AppDelegate.swift').split('.capacitorDidFailToRegisterForRemoteNotifications,').length-1,1)
   })
 })
 test('no native build claims signing, TestFlight, store release or verified association',()=>{
@@ -95,7 +99,6 @@ test('private deep links are always validated and filtered before native routing
   ])assert.notEqual(classifyHolisticHouseNativeLink(url).kind,'hh-consultation')
   assert.equal(classifyNativeLink('https://holistichouse.vercel.app/ru/client/secret').kind,'private-blocked')
 })
-
 test('external Google OAuth returns only a one-time PKCE code to original secure SSR callback',async()=>{
   const {classifyHolisticHouseNativeAuth}=await import('../lib/native/deep-link-policy.js')
   const code='safe-opaque-pkce-code_123'
@@ -112,13 +115,13 @@ test('external Google OAuth returns only a one-time PKCE code to original secure
     'holistichouse://auth/callback?code=one&next=https://evil.example',
     'holistichouse://auth/callback?code=one#fragment'
   ])assert.notEqual(classifyHolisticHouseNativeAuth(candidate).kind,'hh-auth')
-  const server=source('app/api/app/[...path]/route.js')
+  const api=source('app/api/app/[...path]/route.js')
   const client=source('components/app/app-workspace.jsx')
   const native=source('components/native-link-handler.tsx')
-  assert.match(server,/native \? '&native=1' : ''/)
-  assert.match(server,/new URL\('holistichouse:\/\/auth\/callback'\)/)
-  assert.match(server,/NextResponse\.redirect\(handoff\.toString\(\)/)
-  assert.match(server,/exchangeCodeForSession/)
+  assert.match(api,/native \? '&native=1' : ''/)
+  assert.match(api,/new URL\('holistichouse:\/\/auth\/callback'\)/)
+  assert.match(api,/NextResponse\.redirect\(handoff\.toString\(\)/)
+  assert.match(api,/exchangeCodeForSession/)
   assert.match(client,/await Browser\.open\(\{ url: result\.redirectUrl \}\)/)
   assert.match(native,/classifyHolisticHouseNativeAuth/)
   assert.match(native,/window\.location\.assign\(callback\.path\)/)

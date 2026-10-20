@@ -23,15 +23,13 @@ export function beforeSync(){
     fail('Refusing to modify a non-PsiAlchemy source checkout')
   write('capacitor.config.json',read('capacitor.holistic-house.config.json'))
   check()
-  // Capacitor CLI resolves plugins from package.json dependencies, not just
-  // their temporary presence in node_modules. This change is CI-checkout-only.
+  // The Capacitor CLI discovers dependencies from the staged package.json.
   const pkg=JSON.parse(read('package.json'))
   if(pkg.dependencies?.['@capacitor/push-notifications'])
     fail('Native push plugin must remain Holistic-House-only in source')
   pkg.dependencies['@capacitor/push-notifications']='7.0.1'
-  write('package.json',JSON.stringify(pkg,null,2)+'\\n')
+  write('package.json',JSON.stringify(pkg,null,2)+'\n')
   // Historical PsiAlchemy Podfile contains an obsolete developer npx cache path.
-  // Resolve all Capacitor Pods from this CI checkout's pinned node_modules.
   const pod='ios/App/Podfile'
   const previous=read(pod)
   const portable=previous.replace(/(?:\.\.\/){7}\.npm\/_npx\/[a-z0-9]+\/node_modules\/@capacitor\/ios/g,
@@ -95,8 +93,6 @@ export function afterIos(){
   entitlement=exact(entitlement,'</dict>',
     '<key>aps-environment</key>\n<string>development</string>\n</dict>')
   write(ent,entitlement)
-  // Register APNs callbacks with the officially pinned Capacitor push plugin.
-  // Only the temporary Holistic House build receives these methods.
   const delegate='ios/App/App/AppDelegate.swift'
   const registration=[
     '    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {',
@@ -108,9 +104,13 @@ export function afterIos(){
     ''
   ].join('\n')
   const swift=read(delegate)
-  if(!swift.includes('import Capacitor')||swift.includes('capacitorDidRegisterForRemoteNotifications'))
+  const classEnd=/\n}\s*$/
+  if(!swift.includes('import Capacitor')||swift.includes('capacitorDidRegisterForRemoteNotifications')||!classEnd.test(swift))
     fail('Unexpected AppDelegate push registration state')
-  write(delegate,swift.replace(/\n}\\s*$/, '\n'+registration+'}\n'))
+  const updated=swift.replace(classEnd,'\n'+registration+'}\n')
+  if(!updated.includes('object: deviceToken')||!updated.includes('object: error'))
+    fail('APNs delegate callbacks were not installed')
+  write(delegate,updated)
 }
 export function run(stage){
   if(stage==='before-sync')return beforeSync()
