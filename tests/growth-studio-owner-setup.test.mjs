@@ -13,7 +13,7 @@ test('getting-started panel links exactly to real verified provider setup pages'
     '/admin/youtube-upload',
     'https://app.metricool.com/',
     'https://business.facebook.com/',
-    'https://github.com/andylitvinov-design/books/blob/codex/public-book-library/docs/growth-studio/OWNER_CONNECTION_SETUP_2026-10-20.md',
+    'https://github.com/andylitvinov-design/books/blob/codex/public-book-library/docs/growth-studio/START_HERE_RU_2026-10-20.md',
   ])assert.ok(ui.includes(link),link)
   assert.doesNotMatch(ui,/app\.hypd\.ai\/sources\?manage=(?:google-ads|meta|search-console)/)
   assert.match(ui,/t\.setupTelegram/)
