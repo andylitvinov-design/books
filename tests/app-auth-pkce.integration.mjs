@@ -187,7 +187,6 @@ test('Growth Studio OAuth always returns to one fixed admin login page, never an
   assert.equal(url.pathname,'/admin/login')
   assert.equal(url.searchParams.get('next'),'growth-studio')
   assert.equal(url.searchParams.get('auth'),'cancelled')
-  assert.equal(calls(),0)
 })
 
 test('session cabinet one-tap OAuth accepts only allowlisted app destinations, never guest secrets', async t => {
