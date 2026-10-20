@@ -10,7 +10,7 @@ const root=process.cwd()
 const source=path.join(root,'public/images/holistic-house/report-lighthouse-coast.webp')
 const target=path.join(root,'assets/documents/report-coast-cover.jpg')
 const bytes=readFileSync(source)
-const sha=createHash('sha1').update('blob '+bytes.length+'\\0').update(bytes).digest('hex')
+const sha=createHash('sha1').update('blob '+bytes.length+String.fromCharCode(0)).update(bytes).digest('hex')
 const expected='89a86ea0b56778e7bafdfcaa0696d00551c1397f'
 if(sha!==expected)throw new Error('The approved PDF coastal cover source changed; review the new artwork before generating client PDFs.')
 const width=1100,height=740
