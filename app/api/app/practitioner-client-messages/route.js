@@ -6,6 +6,7 @@ import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createPractitionerClientMessages } from '@/lib/practitioners/client-messages'
 import { dispatchClientMessagePush,dispatchPractitionerMessagePush } from '@/lib/app/client-message-push'
 import {dispatchNativeClientMessagePush} from '@/lib/app/native-push-dispatch'
+import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -52,10 +53,16 @@ async function handler(request){
           await Promise.allSettled([
             dispatchClientMessagePush(config,id),
             dispatchNativeClientMessagePush(config,id),
+            dispatchClientTelegramNotification(config,id),
           ])
         })
       else if(data.notifyMaster===true)
-        after(async()=>{try{await dispatchPractitionerMessagePush(config,id)}catch{/* best effort; no private logs */}})
+        after(async()=>{
+          await Promise.allSettled([
+            dispatchPractitionerMessagePush(config,id),
+            dispatchClientTelegramNotification(config,id),
+          ])
+        })
     }
     const safeData={...data}
     delete safeData.notifyClient

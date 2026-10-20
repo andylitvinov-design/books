@@ -5,6 +5,7 @@ import CrmEmailTools from './crm-email-tools'
 import CrmSmsTools from './crm-sms-tools'
 import CrmSmsSetup from './crm-sms-setup'
 import CrmIntegrationDiagnostics from './crm-integration-diagnostics'
+import CustomerTelegramBotSetup from './customer-telegram-bot-setup'
 import CrmFreeSmsPanel from './crm-free-sms'
 import CrmFreeEmail from './crm-free-email'
 import CrmContactEditor from './crm-contact-editor'
@@ -227,7 +228,10 @@ export default function CrmManager({ locale = 'en', accountId }) {
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
     {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />}
-    {activeSection==='integrations'&&data&&<CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />}
+    {activeSection==='integrations'&&data&&<>
+      <CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />
+      <CustomerTelegramBotSetup locale={language} accountId={accountId} />
+    </>}
     {activeSection==='sms'&&data&&<div className={styles.formCard}>
       <h3>SMS · {language==='ru'?'сообщения клиентам':language==='es'?'mensajes a clientes':'client messages'}</h3>
       <input type="search" aria-label={language==='ru'?'Найти контакт для SMS':language==='es'?'Buscar contacto para SMS':'Find contact for SMS'}
