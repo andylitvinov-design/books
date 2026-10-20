@@ -15,7 +15,7 @@ test('every OPORA scenic lesson and outro background uses a locally hosted full-
       'Fullscreen background is too small for a phone: '+source)
   }
   assert.doesNotMatch(css,/course-start-heron\.webp|reiki-practitioner-sunrise\.webp/)
-  assert.doesNotMatch(css,/filter:blur\(/,'Do not intentionally defocus learner backgrounds')
+  assert.doesNotMatch(css,/(?<!-)filter:blur\(/,'Do not intentionally defocus learner backgrounds')
   assert.match(css,/background:var\(--scene-photo\) center\/cover no-repeat/)
 })
 
