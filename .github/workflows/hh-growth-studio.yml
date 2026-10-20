@@ -32,6 +32,7 @@ on:
       - 'tests/growth-studio-provider-readiness.test.mjs'
       - 'tests/growth-studio-simple-entry.test.mjs'
       - 'tests/growth-studio-login-return.test.mjs'
+      - 'tests/app-auth-pkce.integration.mjs'
       - 'tests/growth-studio-manual-inbox.test.mjs'
       - '.github/workflows/hh-growth-studio.yml'
   workflow_dispatch:
@@ -85,6 +86,6 @@ jobs:
       - name: Install exact dependency lock
         run: npm ci
       - name: Verify Google OAuth continuation with actual Next Auth SDK
-        run: node --test tests/app-auth-pkce.integration.mjs
+        run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: Next.js build
         run: npm run build

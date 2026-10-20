@@ -189,6 +189,39 @@ test('Growth Studio OAuth always returns to one fixed admin login page, never an
   assert.equal(url.searchParams.get('auth'),'cancelled')
 })
 
+test('successful Growth Studio callback keeps the fixed continuation and commits only the app session', async t => {
+  const flow=await routeStart([],null,'growth-studio')
+  const calls=provider(t,flow.challenge)
+  const before=route.accountWrites.length
+  const response=await routeCallback(flow,flow.cookies)
+  assert.equal(response.status,303)
+  assert.equal(response.headers.get('location'),origin+'/admin/login?next=growth-studio')
+  assert.equal(calls(),1)
+  assert.deepEqual(route.accountWrites.slice(before),[user.id])
+  const cookies=response.cookies.getAll()
+  assert(cookies.some(c=>/^hh-app-auth(\.\d+)?$/.test(c.name)&&c.value))
+  assert(!cookies.some(c=>c.name==='prescriptions_admin'||c.name==='prescriptions_admin_api'))
+})
+
+test('signed-in synthetic nonowner cannot turn the Growth continuation into an admin session', async t => {
+  const flow=await routeStart([],null,'growth-studio')
+  provider(t,flow.challenge)
+  const callback=await routeCallback(flow,flow.cookies)
+  assert.equal(callback.status,303)
+  const cookies=callback.cookies.getAll().filter(c=>c.maxAge!==0)
+  const req=new NextRequest(origin+'/api/app/practitioner/open',{
+    method:'POST',headers:{origin,'content-type':'application/json',
+      cookie:cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; ')},
+    body:JSON.stringify({destination:'cabinet'}),
+  })
+  const response=await route.POST(req,{params:Promise.resolve({path:['practitioner','open']})})
+  assert.equal(response.status,404)
+  const body=await response.json()
+  assert.equal(body.error,'NOT_FOUND')
+  assert.equal(body.redirectUrl,undefined)
+  assert(!response.cookies.getAll().some(c=>c.name==='prescriptions_admin'||c.name==='prescriptions_admin_api'))
+})
+
 test('session cabinet one-tap OAuth accepts only allowlisted app destinations, never guest secrets', async t => {
  const cases = [
   ['cabinet','/en/app/portrait'],['my-tests','/en/app/tests'],
