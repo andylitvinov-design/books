@@ -37,7 +37,7 @@ The connected Vercel project currently has neither of these provider credential 
 - Source checks: `node --test tests/native-private-message-push.test.mjs`.
 - Server transport exercise (fake FCM with fake RSA private key): `node --conditions=react-server --test tests/native-private-message-push.test.mjs`.
 - `npm ci` and pinned staging `@capacitor/push-notifications@7.0.1`; native Android debug APK and unsigned iOS simulator CI.
-- Confirm Supabase migration `20261020150500_hh_native_private_message_push.sql` applied to *holistichouse, ca-central-1*, and read back both RLS policies plus restricted function grants. Never run migration against PsiAlchemy or other projects.
+- Confirm Supabase migration `20261020151945_hh_native_private_message_push_20261020.sql` applied to *holistichouse, ca-central-1*, and read back both RLS policies plus restricted function grants. Never run migration against PsiAlchemy or other projects.
 - Android: with Firebase config and test phone, perform Google PKCE login, enable system permission, send a synthetic nonclinical practitioner message, receive generic lockscreen notification, tap and land in correct authorized conversation; test wrong account and logout.
 - iOS: same only after signed Apple TestFlight/Dev provisioning with push entitlement, APNs key and physical device. The unsigned simulator bundle is **not** installable on a phone.
 - Negative tests: declined permission, disabled consent, stale token, 401, mismatched `X-HH-Account-Id`, closed request, duplicate operation UUID, old `auth.sessions`, no private notes or message text, no external redirect.
