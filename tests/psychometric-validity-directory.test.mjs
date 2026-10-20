@@ -8,14 +8,14 @@ import { officialQuestionnaireSource } from '../data/assessments/official-questi
 import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries } from '../lib/assessments/test-explorer.js'
 
 test('entire research master becomes discoverable metadata with no key duplicates, executable tests or protected score keys',()=>{
-  assert.equal(RESEARCH_CATALOGUE_TOTAL,2978)
-  assert.equal(new Set(RESEARCH_CATALOGUE.map(r=>r.key)).size,2978)
+  assert.equal(RESEARCH_CATALOGUE_TOTAL,3092)
+  assert.equal(new Set(RESEARCH_CATALOGUE.map(r=>r.key)).size,3092)
   assert.ok(RESEARCH_CATALOGUE.every(r=>r.access==='research_only'&&!r.commercialDigitalRightsCleared))
   assert.ok(RESEARCH_CATALOGUE.every(r=>r.psychometricStatus==='pending_exact_edition_review'))
   assert.ok(RESEARCH_CATALOGUE.every(r=>!('questions' in r)&&!('scoring' in r)&&!('norms' in r)))
   const page=searchResearchCatalogue({page:1,pageSize:12})
   assert.ok(page.total>2500)
-  assert.equal(page.sourceCount,2978)
+  assert.equal(page.sourceCount,3092)
   assert.equal(page.results.length,12)
   assert.equal(new Set(page.results.map(r=>r.key)).size,12)
   const last=searchResearchCatalogue({page:100000})
@@ -35,6 +35,28 @@ test('cycle168 contains five distinct research-only editions without activating 
   assert.match(RESEARCH_CATALOGUE.find(row=>row.key===keys[1]).itemCount,/not a self-report/i)
   assert.match(RESEARCH_CATALOGUE.find(row=>row.key===keys[3]).itemCount,/pending/i)
   assert.match(RESEARCH_CATALOGUE.find(row=>row.key===keys[4]).itemCount,/27/)
+})
+
+test('cycle169–186 114 new research-only references preserve rights and exact form uncertainty',async()=>{
+  const appended=JSON.parse(await readFile(new URL('../data/assessments/research-directory-2026/chunk-11.json',import.meta.url),'utf8'))
+  assert.equal(appended.length,114)
+  assert.equal(new Set(appended.map(row=>row[0])).size,114)
+  assert.equal(appended.filter(row=>row[7]==='permission_required').length,104)
+  assert.equal(appended.filter(row=>row[7]==='licensed_only').length,10)
+  assert.ok(appended.every(row=>row.length===13 && row[8]==='research_only' &&
+    typeof row[0]==='string' && /^https:\/\//.test(row[9])))
+  for (const entry of appended) {
+    const saved=RESEARCH_CATALOGUE.find(row=>row.key===entry[0])
+    assert.ok(saved,'Missing append-only research record: '+entry[0])
+    assert.equal(saved.access,'research_only')
+    assert.equal(saved.commercialDigitalRightsCleared,false)
+    assert.equal(saved.psychometricStatus,'pending_exact_edition_review')
+    assert.ok(!('questions' in saved) && !('scoringKey' in saved))
+  }
+  const observer=RESEARCH_CATALOGUE.find(row=>row.key==='rpicbt-konitz2026-de-observer-2min')
+  assert.ok(observer && /Not a questionnaire/.test(observer.itemCount))
+  const hebrew=RESEARCH_CATALOGUE.find(row=>row.key==='cpps-katz2025-heil20-client-study')
+  assert.ok(hebrew && /verify|inferred/i.test(hebrew.itemCount))
 })
 
 test('lookup filters research scales and titles while keeping output within strict page sizes',()=>{
