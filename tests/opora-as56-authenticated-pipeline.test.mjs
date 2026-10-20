@@ -70,7 +70,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(owner.cycle.content_version, COURSE_ANTISTRESS_SKILLS_V7)
       assert.equal(saved.signals.window, 'practice_v6')
       assert.equal(saved.signals.interactionSchema,
-        day===1?'as-5.8-restored-five-opening-v1':'as-5.6-five-moments-v1')
+        day===1?'as-5.8-restored-five-opening-v1':'as-5.9-extended-eleven-v1')
       assert.equal(payload.welcomeFeeling,'tense')
       assert.equal(saved.signals.welcomeFeeling,'tense')
       assert.deepEqual(payload.visitedSlideKeys,
