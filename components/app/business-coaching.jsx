@@ -359,23 +359,50 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button disabled={day===90} onClick={()=>chooseDay(day+1)} type="button">{t.day} {day+1} →</button></div>
     </div>}
     {tab==='plan'&&<div className={styles.panel} data-business-plan>
-      <p>{t.planIntro}</p><div className={styles.weekList}>
-        {BUSINESS_WEEKS.map(w=>{
-          const completed=w.tasks.filter(item=>course.days?.[item.day]?.done).length
-          return <details key={w.week} className={styles.week} open={w.week===week||undefined}>
-            <summary><span className={styles.weekNumber}>{String(w.week).padStart(2,'0')}</span>
-              <span className={styles.weekTitle}><strong>{w.title[lang]}</strong><small>{w.introduction[lang]}</small></span>
-              <span className={styles.weekCount}>{completed}/7</span><ChevronDown size={17}/></summary>
-            <div className={styles.tasks}>{w.tasks.map(d=><button key={d.day} type="button" onClick={()=>chooseDay(d.day)}>
-              <span className={course.days?.[d.day]?.done?styles.doneMark:styles.emptyMark}>{course.days?.[d.day]?.done?'✓':d.day}</span>
-              {d[lang]}</button>)}</div>
-          </details>
-        })}
-        <div className={styles.finalWeek}><strong>{lang==='ru'?'Дни 85–90 · Закрепление':'Days 85–90 · Integration'}</strong>
-          <div className={styles.tasks}>{Array.from({length:6},(_,i)=>businessDay(i+85,lang)).map(d=>
-            <button key={d.day} onClick={()=>chooseDay(d.day)} type="button">
-              <span className={course.days?.[d.day]?.done?styles.doneMark:styles.emptyMark}>{course.days?.[d.day]?.done?'✓':d.day}</span>{d.action}
-            </button>)}</div></div>
+      <p>{t.planIntro}</p>
+      <div className={styles.moduleBrowser} data-business-weekly-modules>
+        <nav className={styles.moduleIndex} aria-label={t.selectModule}>
+          {BUSINESS_WEEK_MODULES.map(module=>{
+            const numbers=businessWeekProgress(course,module.week)
+            return <button type="button" key={module.id} aria-current={module.week===moduleWeek?'page':undefined}
+              onClick={()=>setModuleWeek(module.week)} className={module.week===moduleWeek?styles.moduleSelected:''}>
+              <span className={styles.moduleNumber}>{module.week===13?'★':String(module.week).padStart(2,'0')}</span>
+              <span className={styles.moduleIndexCopy}>
+                <strong>{module.week===13?t.finalModule:module.title[lang]}</strong>
+                <small>{module.outcome[lang]}</small>
+                <span>{numbers.complete}/{numbers.total} · {t.moduleDocumented}: {numbers.documented}</span>
+              </span>
+              <ChevronDown size={16} className={module.week===moduleWeek?styles.moduleArrow:''}/>
+            </button>
+          })}
+        </nav>
+        <section className={styles.moduleDetail} data-selected-business-week={moduleWeek}>
+          <span className={styles.moduleEyebrow}>{moduleWeek===13?t.finalModule:t.week+' '+moduleWeek+' / 12'}</span>
+          <h2>{openedModule.title}</h2>
+          <p>{openedModule.intro}</p>
+          <div className={styles.moduleOutcome}>
+            <strong>{t.weeklyObjective}</strong><p>{openedModule.outcome}</p>
+            <strong>{t.weekArtifact}</strong><p>{openedModule.capstone}</p>
+            <small>{t.moduleComplete}: {openedProgress.complete} / {openedProgress.total} · {t.moduleDocumented}: {openedProgress.documented}</small>
+          </div>
+          <div className={styles.moduleDays} role="group" aria-label={t.week+' '+moduleWeek}>
+            {openedModule.days.map((entry,index)=>{
+              const record=course.days?.[entry.day]
+              return <button type="button" key={entry.day} onClick={()=>chooseDay(entry.day)}
+                aria-label={t.day+' '+entry.day+': '+entry.resultLabel}>
+                <span className={record?.done?styles.doneMark:styles.emptyMark}>{record?.done?'✓':index+1}</span>
+                <span className={styles.moduleDayText}>
+                  <strong>{t.day} {entry.day} · {entry.resultLabel}</strong>
+                  <small>{entry.action}</small>
+                  <small><b>{t.doneWhen}:</b> {entry.doneWhen}</small>
+                  {record?.result&&<em>{record.result.length>135?record.result.slice(0,135)+'…':record.result}</em>}
+                  {record?.done&&!record?.result&&<em>{t.legacyCompletion}</em>}
+                </span>
+                <ArrowRight size={15} aria-hidden="true"/>
+              </button>
+            })}
+          </div>
+        </section>
       </div>
     </div>}
     {tab==='survey'&&<div className={styles.panel}>
@@ -450,10 +477,25 @@ export default function BusinessCoaching({locale='en',accountId}){
         {surveyChanges.map(m=><p key={m.id}>{BUSINESS_DOMAINS.find(d=>d.id===m.id)?.[lang]}:
           {' '}{m.previous.toFixed(1)} → {m.latest.toFixed(1)} ({m.delta>0?'+':''}{m.delta.toFixed(1)})</p>)}
       </div>}
-      <div className={styles.reportBlock}><h3>{t.actions}</h3>
-        {Object.entries(course.days).filter(([,d])=>d.done).sort((a,b)=>Number(a[0])-Number(b[0])).map(([k,d])=>
-          <p key={k}><strong>{t.day} {k}.</strong> {businessDay(Number(k),lang)?.action}{d.note?' — '+d.note:''}</p>)}
-        {!progress.completed&&<p>—</p>}
+      <div className={styles.reportBlock} data-business-weekly-report>
+        <h3>{t.weeklyResults}</h3>
+        {BUSINESS_WEEK_MODULES.map(module=>{
+          const entries=module.days.map(item=>({day:item.day,record:course.days?.[item.day],spec:item}))
+            .filter(row=>row.record && (row.record.done || row.record.result || row.record.note))
+          if(!entries.length)return null
+          return <section key={module.id} className={styles.reportModule}>
+            <h4>{t.week} {module.week} · {module.title[lang]}</h4>
+            <p><strong>{t.weekArtifact}:</strong> {module.capstone[lang]}</p>
+            {entries.map(({day:recordDay,record,spec})=><p key={recordDay}>
+              <strong>{t.day} {recordDay} · {record.resultLabelSnapshot?.[lang]||spec.result[lang]}</strong>
+              {' · '}{record.done?t.completed:t.daySaved}
+              {record.result?<span> — {record.result}</span>:
+                record.done?<span> — {t.legacyCompletion}</span>:null}
+              {record.note?<span> · {t.notes}: {record.note}</span>:null}
+            </p>)}
+          </section>
+        })}
+        {!Object.values(course.days).some(item=>item?.done||item?.result||item?.note)&&<p>—</p>}
       </div>
       <div className={styles.reportBlock}><h3>{t.notes}</h3>
         {Object.entries(course.reviews).sort((a,b)=>Number(a[0])-Number(b[0])).map(([k,d])=>
