@@ -130,3 +130,22 @@
  .panel{border:0;padding:0;margin:0}
  .reportBlock{page-break-inside:avoid}
 }
+
+.goalEditor{margin:13px 0}
+.editGoalsToggle{display:inline-flex;align-items:center;gap:7px;border:1px solid #d4e5df;border-radius:10px;background:#f7faf7;color:#356975;padding:9px 13px;font-size:12px;font-weight:750;cursor:pointer}
+.editGoalsForm{padding:15px;background:#f8fbf9;border:1px solid #cce1db;border-radius:14px}
+.editGoalsForm h2{font-size:20px}
+.goalButtons{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px}
+.goalButtons button:not(.primary){padding:9px 12px;border:1px solid #cddbd7;border-radius:10px;background:#fff;color:#356574}
+.changes{border:1px solid #d6e8df;border-radius:13px;background:#f8fbf9;padding:14px;margin:17px 0}
+.changes h3{margin:0 0 7px}
+.changeRow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 12px;padding:9px 0;border-bottom:1px solid #e1ece7;font-size:12px}
+.changeRow:last-child{border:0}
+.changeRow strong{font-variant-numeric:tabular-nums;color:#235c64}
+.changeRow small{width:100%;color:#7b8d8c}
+.relatedTests{display:inline-flex;gap:8px;align-items:center;margin-top:12px;color:#226575;font-size:12px;font-weight:750}
+@media print{
+ :global(.hh-header),:global(.hh-nav),:global(.hh-account-menu){display:none!important}
+ :global(body){background:#fff!important}
+ .goalEditor,.tabs,.footer,.hero,.eyebrow,.print,.metricForm,.changes{display:none!important}
+}
