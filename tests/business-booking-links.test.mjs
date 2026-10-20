@@ -60,6 +60,8 @@ test('private CRM can open directly, but still only renders for verified owner',
   assert.match(appPage,/['"]practice['"]/)
   assert.match(workspace,/params\.get\('panel'\)==='crm'/)
   assert.match(workspace,/activePanel==='crm'&&isOwner&&accountId/)
+  assert.match(workspace,/if\(!activePanel\|\|!hasPracticeData\)return undefined/)
+  assert.match(workspace,/\[activePanel,newServiceRequest,hasPracticeData\]/)
   assert.match(workspace,/onClick=\{\(\)=>choosePanel\('crm'\)\}/)
   assert.match(workspace,/CrmManager key=\{accountId\}/)
   assert.match(crm,/CrmBusinessEnquiries/)
