@@ -34,16 +34,18 @@
 - `lib/business-coaching/program.js` remains the original v1 sequence of teaching actions and stable 1..90 numbering.
 - `lib/business-coaching/week-modules.js` is the **v2 content layer** with original day IDs, weekly outcome, capstone and 90 unique daily deliverables.
 - `components/app/business-coaching.jsx` presents a selected module and 7 activities (6 for integration), separate result textarea, factual acceptance criterion and optional reflection.
-- `lib/app/business-coaching.js` stores `result`, `contentVersion` and the server-generated bilingual `resultLabelSnapshot` inside the existing AES-GCM encrypted account-owned payload. No new schema, encryption key, analytics integration, payment or client share.
+- `lib/app/business-coaching.js` stores `result`, `contentVersion` and the server-generated bilingual `resultLabelSnapshot` inside the existing AES-GCM encrypted account-owned payload. No new table, encryption key, analytics integration, payment or client share.
+- The existing payload had a 250,000-character ciphertext CHECK, too small for a full 90-day written journal with optional notes and KPI history. The additive migration `20261020184500_hh_business_weekly_module_journal_capacity.sql` raises this single column's bound to 750,000; **no changes to owner grants/RLS**. Apply the verified migration before releasing UI updates.
 - Old client payloads (`note` only) remain valid. They count as legacy participation; the interface explicitly distinguishes "completed" from "completed with recorded result". The server enforces a nonempty result only for requests declaring the reviewed v2 content version.
 - `Report` renders source-versioned actual outputs under each module. Do not reinterpret missing results as failure or empty business figures as zero.
 
 ## QA gates before merge
 1. 12×7+6 = 90 stable, unique, translated outputs with criteria; each maps to its original corresponding exercise.
 2. Unit tests prove weekly grouping, progress and legacy compatibility, server request contract, mobile module UI and print report.
-3. Syntax tests for JS, JSX, CSS Module purity; scoped CI test pass.
-4. Build and deploy to Vercel Preview if available, check mobile 320/390 and desktop UI, no horizontal scroll and working state transitions.
-5. Production only after safe merge; verify exact SHA and READY, then EN/RU route and actual owner save if authenticated test account is available.
-6. Never claim actual psychological/business improvement based solely on completed tasks.
+3. Syntax tests for JS, JSX, CSS Module purity; scoped CI test pass. Check that day transitions explicitly warn about unsaved writing.
+4. Migration capacity CHECK=750000 present, existing account-owner policies remain enabled, `anon` and `authenticated` cannot select the private table.
+5. Build and deploy to Vercel Preview if available, check mobile 320/390 and desktop UI, no horizontal scroll and working state transitions.
+6. Production only after safe merge; verify exact SHA and READY, then EN/RU route and actual owner save if authenticated test account is available.
+7. Never claim actual psychological/business improvement based solely on completed tasks.
 
 No render, publication of videos or client communication is requested.
