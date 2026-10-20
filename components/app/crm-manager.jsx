@@ -396,7 +396,14 @@ export default function CrmManager({ locale = 'en', accountId }) {
            ref={contact.id===focusedContactId?contactAnchorRef:undefined}
            className={contact.id===focusedContactId?styles.emailContactRow+' '+styles.focusedContact:styles.emailContactRow}>
           <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
-          <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{[contact.email,contact.phone].filter(Boolean).join(' · ')}</small></span>
+          <span className={styles.contactInfo}>
+            <strong>{contact.displayName}</strong>
+            <small>{[contact.email,contact.phone].filter(Boolean).join(' · ')}</small>
+            {contact.enquiry?.serviceTitle&&<small title={contact.enquiry.referenceCode}>
+              {SOURCE_CHOICES[language]?.[contact.source]||contact.source} · {contact.enquiry.serviceTitle}
+              {contact.enquiry.referenceCode&&' · '+contact.enquiry.referenceCode}
+            </small>}
+          </span>
           <label className={styles.stageLabel}><span>{c.stage}</span>
             <select aria-label={c.stage+' — '+contact.displayName} disabled={busy} value={contact.lifecycle} onChange={(event)=>save('set_lifecycle',{id:contact.id,lifecycle:event.target.value,expectedRevision:contact.revision})}>
               <option value="lead">{c.leads}</option><option value="client">{c.clients}</option><option value="archived">{c.archived}</option>
