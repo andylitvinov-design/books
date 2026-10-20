@@ -57,3 +57,30 @@ To enable Square payment links after owner verification:
 - PayPal.Me shows exact EUR totals; Square only shows its separately approved CAD charge.
 - Interac requires a personally confirmed CAD quote. No automatic conversion and no "payment succeeded" state based on a click, query string or screenshot.
 - No tokens, names, diagnoses, symptoms, answers or billing bank/card data are exposed in payment URLs or WhatsApp scripts.
+
+## Link handoff for the owner — 2026-10-20
+
+### PayPal: links already exist, do not recreate
+- 30 min EUR 50: https://paypal.me/psitrends/50EUR
+- 60 min EUR 100: https://paypal.me/psitrends/100EUR
+- Both consultations EUR 150: https://paypal.me/psitrends/150EUR
+- The /en/payments, /ru/payments and /es/payments pages now have direct PayPal links; the combined amount comes only from the fixed catalog.
+- Owner must verify the public payee is their PayPal account and that a real Goods & Services transaction reaches that account. Successful redirect does not mean a payment arrived.
+
+### Interac: do not create a web link
+- Customers click Request Interac for one consultation or ask via the validated cart for combined services.
+- Reply personally on WhatsApp with the verified AutoDeposit recipient (email/phone), agreed CAD total, payment reference and availability. Do not advertise unknown CAD conversion on site.
+- Check that the transfer has actually arrived in the bank before confirming an appointment. Do not share bank account numbers, login/password, or card information.
+
+### Square card links: only after identity approval
+- Square's Individual / sole-proprietor onboarding still requires provider KYC and a Canadian bank; no registered corporation is universally required, but Square decides eligibility.
+- Open Square Dashboard > Payments & orders > Payment links > Create link > Collect a payment. Make fixed one-time CAD links (not subscriptions, donations, tips or editable amounts).
+- Create THREE independent links with title/service and independently chosen verified CAD prices: 30-minute session (website €50), 60-minute session (€100), and both (€150). These are catalog references; Square itself charges only CAD.
+- Copy the THREE public Square checkout URLs and THREE exact CAD totals. Send those six items to the assistant to connect; never send dashboard login, passwords, customer data, API secrets or bank credentials.
+- The existing implementation uses Vercel Production variables HH_SQUARE_CAD_50_LINK / HH_SQUARE_CAD_50_MINOR, HH_SQUARE_CAD_100_LINK / HH_SQUARE_CAD_100_MINOR, HH_SQUARE_CAD_150_LINK / HH_SQUARE_CAD_150_MINOR, plus the merchant/price reviewed flags HH_SQUARE_INDIVIDUAL_PAYEE_APPROVED, HH_SQUARE_CAD_AMOUNTS_APPROVED, HH_SQUARE_CAD_LINKS_ENABLED.
+- Agent must verify each URL and amount, enable flags last, redeploy and test production. With no Square account/links, the customer must not see a fake Square button.
+- Square dashboard guidance: https://squareup.com/help/ca/en/article/8364-customize-square-payment-links
+
+### What is automated and what is not
+- Automated: fixed-price selection, PayPal EUR links, direct Interac enquiry, optional guarded Square CAD links and mobile EN/RU/ES navigation.
+- Not automated: provider identity onboarding, bank/card payout setup, proof of incoming funds, CRM paid settlement or appointment booking. Never treat a redirect, reference or user message as proof of payment.
