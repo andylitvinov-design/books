@@ -5,19 +5,19 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceDepth,oporaExperienceDepthValid,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_EXPERIENCE_EXTENDED_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const t={
   en:{next:'Continue',start:'I will try this step',try:'I tried it',
     unchanged:'About the same',vote:'Not sure yet',plan:'Keep this reminder',
-    save:'Save my practice',saved:'Your moment is saved',noPlan:'No plan today',
+    save:'Save my practice',saved:'Saved to your course',noPlan:'No plan today',
     pause:'Pause',return:'Go back'},
   ru:{next:'Продолжить',start:'Я попробую этот шаг',try:'Я попробовал(а)',
     unchanged:'Примерно так же',vote:'Пока не уверен(а)',plan:'Хочу запомнить этот вариант',
-    save:'Сохранить мою практику',saved:'Ваш момент сохранён',noPlan:'Пока без плана',
+    save:'Сохранить мою практику',saved:'Сохранено в вашем курсе',noPlan:'Пока без плана',
     pause:'Пауза',return:'Вернуться'},
 }
 function fixture(locale='en',day=1){
@@ -36,11 +36,14 @@ async function click(h,label){
   await h.settle()
 }
 
-test('day one restores five opening screens while days 2–14 keep their existing short route',async()=>{
+test('day one preserves its restored opening while days 2–14 offer 11 experiential moments',async()=>{
   assert.deepEqual([...OPORA_EXPERIENCE_PRE_SAVE_KEYS],['arrive','practice','feel','affirmation','save'])
   assert.deepEqual([...OPORA_DAY_ONE_RESTORED_KEYS],
     ['welcome','baseline','checkin','recall','affirmation','arrive','practice','feel','save'])
+  assert.deepEqual([...OPORA_EXPERIENCE_EXTENDED_KEYS],
+    ['arrive','support','understand','story','options','practice','repeat','feel','everyday','affirmation','save'])
   assert.equal(oporaExperienceGuidesValid(),true)
+  assert.equal(oporaExperienceDepthValid(),true)
   for(const lang of ['ru','en'])for(let day=1;day<=14;day++){
     const f=fixture(lang,day),h=f.h,d=t[lang]
     if(day===1){
@@ -66,13 +69,33 @@ test('day one restores five opening screens while days 2–14 keep their existin
     assert.match(textOf(h.tree),lang==='ru'?(day===1?/Можно просто побыть здесь/:/Как вы сейчас себя чувствуете/):
       (day===1?/You can arrive just as you are/:/How are you feeling right now/))
     await click(h,d.next)
-    // Day 1 action occurs only after the original supportive opening.
+    if(day!==1){
+      // Second screen offers support rather than a demand or a scored question.
+      assert.match(textOf(h.tree),lang==='ru'?/Здесь можно быть собой/:/You are welcome just as you are/)
+      await click(h,d.next)
+      assert.ok(textOf(h.tree).includes(oporaExperienceDepth(day,lang).why))
+      await click(h,d.next)
+      assert.ok(textOf(h.tree).includes(oporaExperienceDepth(day,lang).scenario))
+      await click(h,lang==='ru'?'Простой ориентир для внимания':'One simple point of attention')
+      await click(h,d.next)
+      assert.match(textOf(h.tree),lang==='ru'?/Подберите удобный вариант/:/Find your comfortable version/)
+      await click(h,lang==='ru'?'Полный вариант':'Explore the full practice')
+      await click(h,d.next)
+    }
+    // A chosen method is never represented as an attempt.
     assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
     await click(h,d.try)
     await click(h,d.next)
+    if(day!==1){
+      assert.ok(textOf(h.tree).includes(oporaExperienceDepth(day,lang).alternative))
+      await click(h,lang==='ru'?'Сегодня только знакомлюсь':'Just reading today')
+      await click(h,d.next)
+    }
     await click(h,d.unchanged)
     await click(h,d.next)
     if(day!==1){
+      assert.ok(textOf(h.tree).includes(oporaExperienceDepth(day,lang).everyday))
+      await click(h,d.next)
       assert.ok(textOf(h.tree).includes(f.lesson.aphorism))
       await click(h,d.vote)
       await click(h,d.next)
@@ -88,7 +111,7 @@ test('day one restores five opening screens while days 2–14 keep their existin
     assert.equal(f.payload.lessonId,f.lesson.id)
     assert.equal(f.payload.practiceWindow,'practice_v6')
     assert.deepEqual(f.payload.visitedSlideKeys,
-      day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+      day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_EXTENDED_KEYS])
     assert.deepEqual(validateOpora54Signals(f.payload.opora54).answers,f.payload.opora54.answers)
     assert.equal(f.payload.opora54.answers.act,undefined)
     assert.equal(f.payload.opora54.answers.actChoice,undefined)
@@ -147,7 +170,7 @@ test('the restored five opening screens remain fully optional, with no false pra
   assert.equal(f.payload.opora54.answers.aphorism,undefined)
   assert.equal(f.payload.opora54.answers.reflection,undefined)
   assert.equal(f.payload.opora54.answers.transfer,undefined)
-  assert.match(textOf(h.tree),/Explored the idea only/)
+  assert.match(textOf(h.tree),/No attempt was recorded/)
   assert.doesNotMatch(textOf(h.tree),/100%|trauma healed|clinically cured/)
   h.unmount()
 })
@@ -172,7 +195,7 @@ test('photo-first feelings and optional feedback work in ES without changing val
 
 test('a missing recap selection never sends a completion receipt or invented action',async()=>{
   const f=fixture('en',2),h=f.h
-  for(let i=0;i<5;i++)await click(h,t.en.next)
+  for(let i=0;i<OPORA_EXPERIENCE_EXTENDED_KEYS.length;i++)await click(h,t.en.next)
   assert.match(textOf(h.tree),/What you learned today/)
   await click(h,t.en.save)
   assert.equal(f.requests,0)
@@ -184,6 +207,35 @@ test('a missing recap selection never sends a completion receipt or invented act
   assert.equal(f.payload.practiceAttempt,null)
   assert.match(textOf(h.tree),/Congratulations! Lesson 2 complete!/)
   h.unmount()
+})
+
+
+test('an extended day stays truthful when nothing is attempted and receipt can review slides',async()=>{
+  const f=fixture('en',2),h=f.h
+  for(let i=0;i<OPORA_EXPERIENCE_EXTENDED_KEYS.length;i++)await click(h,t.en.next)
+  await click(h,'I need more practice')
+  await click(h,t.en.save)
+  assert.equal(f.requests,1)
+  assert.equal(f.payload.practiceAttempt,null)
+  assert.match(textOf(h.tree),/No attempt was recorded/)
+  assert.match(textOf(h.tree),/Saved to your course/)
+  await click(h,'Review slides')
+  assert.match(textOf(h.tree),/Choose one gentle reminder/)
+  await click(h,t.en.next)
+  assert.match(textOf(h.tree),/Congratulations! Lesson 2 complete!/)
+  assert.equal(f.requests,1,'Revisiting saved slides must never resubmit')
+  h.unmount()
+})
+
+test('extended content is day-specific and complete in EN RU ES',()=>{
+  for(const lang of ['en','ru','es'])for(let day=1;day<=14;day++){
+    const copy=oporaExperienceDepth(day,lang)
+    assert.ok(copy)
+    for(const key of ['why','scenario','alternative','everyday'])
+      assert.ok(copy[key].length>=28,lang+' '+day+' '+key)
+  }
+  assert.equal(oporaExperienceDepth(0,'en'),null)
+  assert.equal(oporaExperienceDepth(15,'en'),null)
 })
 
 test('a pause is safe, accessible and does not report a fake practice',async()=>{
@@ -206,13 +258,14 @@ test('a pause is safe, accessible and does not report a fake practice',async()=>
   h.unmount()
 })
 
-test('only active V7 can submit five moments; old 14-step lesson sequences stay intact',()=>{
+test('only V7 accepts the extended lesson while old tabs and historic versions remain intact',()=>{
   const server=read('lib/app/growth-daily.js')
   const today=read('components/app/course-today.jsx')
   const js=read('components/app/opora-experience-player.jsx')
   const css=read('components/app/opora-experience-player.module.css')
   assert.match(server,/practiceWindow==='practice_v6'&&version!==COURSE_ANTISTRESS_SKILLS_V7/)
-  assert.match(server,/OPORA_EXPERIENCE_PRE_SAVE_KEYS\.map/)
+  assert.match(server,/OPORA_EXPERIENCE_EXTENDED_KEYS/)
+  assert.match(server,/OPORA_EXPERIENCE_PRE_SAVE_KEYS/)
   assert.match(server,/OPORA_DAY_ONE_RESTORED_KEYS\.map/)
   assert.match(server,/oporaOpening/)
   assert.match(server,/as-5\.6-five-moments-v1/)
