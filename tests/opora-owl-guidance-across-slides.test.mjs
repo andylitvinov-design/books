@@ -28,7 +28,7 @@ for(const locale of ['en','ru','es']){
       let saves=0
       const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},onSession(){saves++;return true}})
       try{
-        for(let i=0;i<(day===1?6:1);i++){findButton(h.tree,next[locale]).props.onClick();await h.settle()}
+        for(let i=0;i<(day===1?6:5);i++){findButton(h.tree,next[locale]).props.onClick();await h.settle()}
         const section=nodes(h.tree).find(n=>n.props?.['data-gentle-guidance']==='practice')
         assert.ok(section,'missing practice guidance on '+locale+' day '+day)
         assert.ok(nodes(section).some(n=>n.type==='img'&&n.props?.src==='/images/holistic-house/gentle-owl.svg'))
@@ -46,7 +46,7 @@ for(const locale of ['en','ru','es']){
     const h=mount('opora-experience-player',{locale,data:{cycle:{day},lesson,programme:{id:'stress'},currentSession:null},
       onClose(){},onFinish(){},onSession(){throw new Error('unexpected write')}})
     try{
-      for(const moment of ['arrive','practice','feel','affirmation','save']){
+      for(const moment of ['arrive','support','understand','story','options','practice','repeat','feel','everyday','affirmation','save']){
         if(['arrive','practice','feel','save'].includes(moment)){
           assert.ok(nodes(h.tree).some(n=>n.props?.['data-gentle-guidance']===moment),moment)
           const button=findButton(h.tree,tips[locale]);assert.ok(button)
