@@ -1,3 +1,17 @@
+## 2026-10-20 — Automatic owner chat pairing after one BotFather token
+
+The owner added `HH_PRACTICE_TG_BOT_TOKEN` in **Holistic House Vercel Production**. It is a Sensitive secret; no plain-text token or numeric Telegram chat ID was copied into this repository or shown in ChatGPT.
+
+**One-place onboarding:** `app/api/internal/practice-telegram-digest` and `app/api/internal/council-archive-telegram` (existing CRON_SECRET protected daily schedules), as well as private AI Council hub probes, call `ensureOwnerTelegramPairing`. The method checks official Telegram `getMe`, `getWebhookInfo`, and—**only if no webhook is registered**—a recent verified private `/start` from @AndyTherapist via no-offset `getUpdates`, then `getChat` for secondary identity verification. It does not claim/read client conversations or modify bot webhooks. A private chat ID is stored **only encrypted** via the existing application AES-GCM key in `app_private.telegram_owner_pairings` (Supabase FORCE RLS, no anonymous or authenticated direct SELECT). The server resolves it for My Practice daily stats, the public Council archive, and authenticated Council relay. Numeric ID is not returned to owner-facing clients or exposed in public logs. No extra owner-entered environment variable is needed.
+
+The daily jobs **remain off** while `HH_PRACTICE_TG_ENABLED=false`; mere pairing never sends. After the private database reports `status='paired'`, verify the intended bot/owner through read-only official Bot API and explicitly activate HH + Council sender flags, redeploy, then send one neutral test and check exact recipient receipt. If status is `webhook_active`, never call getUpdates, drop or replace the existing webhook; an authorized integration with its receiver or separate numeric-ID confirmation is required. If `awaiting_new_start`, owner sends one fresh `/start` to [@Andydotbot](https://t.me/Andydotbot) and waits for the next scheduled authenticated pairing attempt. Old Oct 11 updates expire within Telegram's 24-hour retention.
+
+**Operator diagnostic:** the existing CRON_SECRET protected `/api/internal/telegram-owner-discovery` now returns only safe status `paired`, `awaiting_new_start`, `webhook_active`, etc., never chat IDs or tokens. Supabase migration `20261020160856_hh_telegram_owner_verified_private_pairing_20261020.sql` was applied to production with FORCE RLS. The existing bot token remains only in HH Vercel. No separate GitHub or Council Telegram token is necessary.
+
+**Actual delivery/identity status:** needs verification until production pairing, bot/owner readback and one accepted real Bot API message. Muse personal stays manual; Gemini/Mistral only when real free-tier model keys are configured.
+
+---
+
 ## 2026-10-20 · Owner's simplified Telegram onboarding (one token, Codex obtains ID)
 
 The full implementation plan and operator technical assignment are in [TELEGRAM_OWNER_AUTO_DISCOVERY_20261020.md](./TELEGRAM_OWNER_AUTO_DISCOVERY_20261020.md).
