@@ -23,12 +23,12 @@ const needIssues = {
 } as const
 
 const words: Record<Locale, {
-  title: string; helper: string; match: string; focus: string; change: string;
+  title: string; match: string; focus: string; change: string;
   request: string; other: string; available: string; consent: string; noBooking: string;
   mentorPrice: string; reasons: Record<Format, string>; choices: Record<Need, Choice>;
 }> = {
   en: {
-    title: 'Find your starting point', helper: 'Choose one answer. You can always change the suggested format.',
+    title: 'Find your starting point',
     match: 'A starting point for you', focus: 'Your focus', change: 'Change my answer',
     request: 'Request this consultation', other: 'See other formats', available: 'Available consultation formats',
     consent: 'Only an enquiry you submit with consent goes to Andrey. Your choice stays on this page until then.',
@@ -47,7 +47,7 @@ const words: Record<Locale, {
     },
   },
   ru: {
-    title: 'Найдите подходящий формат', helper: 'Выберите один вариант. Рекомендацию можно изменить.',
+    title: 'Найдите подходящий формат',
     match: 'С чего можно начать', focus: 'Ваш запрос', change: 'Изменить ответ',
     request: 'Оставить заявку', other: 'Другие форматы', available: 'Доступные форматы консультаций',
     consent: 'Только заявка с вашим согласием отправляется Андрею. До этого выбор остаётся на странице.',
@@ -66,7 +66,7 @@ const words: Record<Locale, {
     },
   },
   es: {
-    title: 'Encuentra tu punto de partida', helper: 'Elige una respuesta. Puedes cambiar la modalidad.',
+    title: 'Encuentra tu punto de partida',
     match: 'Una opción para empezar', focus: 'Tu tema', change: 'Cambiar respuesta',
     request: 'Solicitar esta consulta', other: 'Otras modalidades', available: 'Modalidades de consulta',
     consent: 'Solo enviamos tu solicitud con tu consentimiento. Hasta entonces, tu elección queda en la página.',
@@ -107,7 +107,6 @@ export function BusinessConsultationFinder({locale}: {locale: Locale}) {
     data-business-consultation-finder aria-labelledby="hh-business-finder-title">
     <h2 id="hh-business-finder-title" className={styles.srOnly}>{t.title}</h2>
     {!need ? <>
-      <p className={styles.helper}>{t.helper}</p>
       <div className={styles.choices} role="group" aria-label={t.title} data-business-finder-step="need">
         {needs.map(key=><button key={key} type="button" className={styles.choice}
           data-business-need={key} aria-pressed={need===key}
