@@ -31,7 +31,7 @@ const header = read('components/prescription-admin-header.jsx')
 const css = read('components/energywork-ai-learner.module.css')
 
 test('Four meditation introductions and the fifth initiation lesson preserve all existing slide IDs', () => {
-  assert.equal(energyworkSequence().length, 69)
+  assert.equal(energyworkSequence().length, 70)
   const ids = [
     ['flight-01','flight-02','flight'],
     ['tan-01','tan-02','tantra'],
