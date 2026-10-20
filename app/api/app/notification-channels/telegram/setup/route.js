@@ -26,7 +26,7 @@ function readiness(env=process.env){
   if(key==='HH_CLIENT_TG_LINK_ENABLED'||key==='HH_PRACTICE_TG_ENABLED')
     return env[key]!=='true'
   if(key==='HH_CLIENT_TG_BOT_TOKEN'||key==='HH_PRACTICE_TG_BOT_TOKEN')
-    return !/^\\d{6,16}:[A-Za-z0-9_-]{25,}$/.test(env[key]||'')
+    return !/^\d{6,16}:[A-Za-z0-9_-]{25,}$/.test(env[key]||'')
   if(key==='HH_CLIENT_TG_BOT_USERNAME')return !validClientBotUsername(env[key])
   if(key==='HH_CLIENT_TG_WEBHOOK_SECRET')
     return typeof env[key]!=='string'||!/^[A-Za-z0-9_-]{32,256}$/.test(env[key])
