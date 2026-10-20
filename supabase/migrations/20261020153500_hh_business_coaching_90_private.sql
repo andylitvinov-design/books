@@ -35,5 +35,5 @@ begin
    for delete to hh_app_backend
    using (account_id=(select auth.uid()) and (select app_private.account_active()));
  end if;
-end $;
+end $$;
 commit;
