@@ -255,11 +255,12 @@ export function AcademyVideoLibraryClient({
                                                 <div className={styles.frame}>
                                                   <iframe
                                                     key={lesson.id}
-                                                    src={"https://www.youtube-nocookie.com/embed/" + encodeURIComponent(lesson.id) + "?autoplay=1&rel=0"}
+                                                    src={"https://www.youtube-nocookie.com/embed/" + encodeURIComponent(lesson.id) + "?autoplay=1&playsinline=1&rel=0"}
                                                     title={lesson.title}
                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                     allowFullScreen
                                                     loading="eager"
+                                                    referrerPolicy="strict-origin-when-cross-origin"
                                                   />
                                                 </div>
                                                 <a href={"https://www.youtube.com/watch?v=" + lesson.id} target="_blank" rel="noopener noreferrer">
