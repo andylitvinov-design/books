@@ -51,3 +51,12 @@ test('owner activation is scoped to existing private CRM integrations, never pub
  assert.match(setup,/practitionerEmailAllowed/)
  assert.match(setup,/requireSameOrigin/)
 })
+
+test('pending Telegram usernames remain saveable until dedicated bot is configured',()=>{
+ const view=read('components/app/messenger-notification-settings.jsx')
+ assert.match(view,/isTelegram&&!ready/)
+ assert.match(view,/t\.telegramLabel/)
+ assert.match(view,/t\.saveTelegram/)
+ assert.match(view,/perform\(channel,'save'\)/)
+ assert.match(view,/perform\(channel,'begin_telegram'\)/)
+})
