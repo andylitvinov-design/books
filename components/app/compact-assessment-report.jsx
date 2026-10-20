@@ -150,6 +150,17 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   return <section className={styles.report} data-personal-result-report data-compact-assessment-report
     aria-label={ru ? 'Мои результаты и рекомендации' : 'Results and recommendations'}>
     {report.verified === false && <p className={styles.contextNote} role="note" data-unverified-assessment-result>{report.intro}</p>}
+    {report.verified === true && report.checkinInsight?.kind === 'original-descriptive-checkin' &&
+      <aside className={styles.checkinReflection} role="note"
+        aria-label={ru ? 'Самонаблюдение по вашим ответам' : 'Reflection on your answers'}
+        data-original-checkin-reflection data-checkin-focus-key={report.checkinInsight.focusKey}>
+        <h2>{ru ? 'Из ваших ответов' : 'From your answers'}</h2>
+        <p>{report.checkinInsight.summary}</p>
+        <p className={styles.checkinReflectionQuestion}>
+          <strong>{ru ? 'Вопрос для самонаблюдения: ' : 'One question to consider: '}</strong>
+          {report.checkinInsight.reflectionQuestion}
+        </p>
+      </aside>}
     <section className={styles.picker} id="hh-assessment-scales" data-assessment-scales data-assessment-scale-picker
       aria-labelledby="hh-assessment-scale-title">
       <div className={styles.pickerHeader}>
