@@ -61,6 +61,10 @@
 .typeSummary h3{font:500 1.1rem Georgia,serif;color:#2f583e}
 .typeSummary p,.typeSummary small{font-size:.88rem;line-height:1.5}
 .contextNote{font-size:.84rem!important;line-height:1.44!important;color:#665d53;background:#fbf8f2;border:1px solid #eee4d9;border-radius:10px;padding:10px 12px;margin:10px 0!important}
+.checkinReflection{min-width:0;overflow-wrap:anywhere;border-bottom:1px solid #d8e2d8;margin:0 0 16px;padding:4px 0 12px;color:#394a3e}
+.checkinReflection h2{font:600 clamp(1.08rem,2.5vw,1.22rem)/1.3 Georgia,serif!important;margin:0 0 6px!important;color:inherit!important}
+.checkinReflection p{font-size:.88rem!important;line-height:1.55!important;margin:5px 0!important;max-width:76ch}
+.checkinReflectionQuestion strong{font-weight:700}
 .instrumentText{margin-top:12px;padding:9px 12px;background:#fbfaf7;border:1px solid #e5ddd2;border-radius:10px;color:#6a6057}
 .instrumentText p{font-size:.82rem!important;line-height:1.45!important;margin:7px 0!important}
 @media(max-width:570px){
