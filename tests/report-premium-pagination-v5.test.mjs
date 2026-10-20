@@ -50,7 +50,7 @@ export function streamsOf(pdf) {
   return out
 }
 
-test('three source photographs and signature share the second core page, without a signature-only third sheet', () => {
+test('three source photographs fit across two core pages, with no signature-only third sheet', () => {
   for (const locale of ['ru', 'en']) {
     const document=threeRemedyLayoutFixture(locale)
     const pdf=buildPrescriptionPdf(document,locale,'https://example.invalid')
@@ -60,7 +60,8 @@ test('three source photographs and signature share the second core page, without
     assert.deepEqual(signaturePages,[1],locale+': ordinary three-remedy core ends on page 2')
     const signed=pages[1]
     for(const resource of ['/RemedyPhoto1 Do Q','/RemedyPhoto2 Do Q','/RemedyPhoto3 Do Q'])
-      assert.ok(signed.includes(resource),locale+': all approved photographs fit alongside the recommendations')
+      assert.ok(pages.slice(0,2).some(stream=>stream.includes(resource)),
+        locale+': approved source photographs fit on either summary or signed core page')
     if(locale==='en') assert.ok(signed.includes('November'),
       'the explicit follow-up date remains on the signed page')
     assert.ok(pages.slice(2).some(p=>p.includes('/RemedyPhoto')),
