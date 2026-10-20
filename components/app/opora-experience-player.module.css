@@ -421,9 +421,12 @@
 /* Scrollable, Duolingo-inspired learning path: 14 accessible previews, no
    future-lesson navigation or false completion claims. The header and CTA
    remain outside the scrolling panel at 320–430px. */
-.frame.nextStep .stage{align-items:stretch}
-.frame.nextStep .panel{height:100%;max-height:100%;min-height:0;margin:0 auto;overscroll-behavior:contain}
+.frame.nextStep .stage{align-items:stretch;overflow:hidden}
+.frame.nextStep .panel{height:100%;max-height:100%;min-height:0;margin:0 auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .coursePath{display:grid;gap:10px;min-width:0}
+.pathFinish{margin:0;display:flex;align-items:flex-start;gap:9px;padding:12px;border:1.5px solid #83cbc1;border-radius:15px;background:#e0f9ed;color:#225965;font-size:14px;line-height:1.42}
+.pathFinish svg{flex:none;color:#0b9488}
+.pathFinish strong{display:block;color:#13566a;font-size:16px;margin-bottom:3px}
 .pathIntro{margin:0;color:#345f6b;font-size:clamp(14px,3.6vw,16px);line-height:1.43}
 .pathProgress{display:grid;gap:7px;padding:10px 13px;border:1px solid #b5dfdb;border-radius:13px;background:#e2f7f0}
 .pathProgress span{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:720;color:#215766}

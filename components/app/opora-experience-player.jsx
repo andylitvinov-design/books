@@ -293,6 +293,10 @@ function OporaCoursePath({locale,cycle,saved,roadmap,words}){
   const p=words.preview
   const stateLabel={completed:p.done,today:p.today,next:p.next,locked:p.later}
   return <div className={styles.coursePath} data-opora-course-map="all-14-days">
+    {courseDay===14&&saved&&<p className={styles.pathFinish}>
+      <Trophy size={21} aria-hidden="true"/>
+      <span><strong>{p.completeTitle}</strong> {p.completeLead} {p.completeNote}</span>
+    </p>}
     <p className={styles.pathIntro}>{p.nextLead}</p>
     <div className={styles.pathProgress}>
       <span>{p.progress} <strong>{count}/14</strong></span>

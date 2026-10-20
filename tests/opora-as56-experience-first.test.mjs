@@ -126,6 +126,7 @@ test('day one restores five opening screens while days 2–14 keep their existin
         n<=day?'completed':n===day+1?'next':'locked')
     }
     assert.ok(textOf(map).includes(lang==='ru'?'Пройдено дней':'Days completed'))
+    if(day===14)assert.match(textOf(map),lang==='ru'?/Ваши 14 дней позади/:/Your 14 days are complete/)
     if(day===1){
       assert.equal(cards[0].props['data-day-status'],'completed')
       assert.equal(cards[1].props['data-day-status'],'next')
