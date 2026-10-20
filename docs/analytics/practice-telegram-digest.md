@@ -1,3 +1,14 @@
+## 2026-10-20 — prevent empty Gemini/Mistral reports from consuming the day
+
+**Production behavior:** the private Telegram bot is verified and the owner accepted the test; model keys remain **owner-held and missing** in HH Vercel Production. The scheduled AI Council digest now checks for both provider keys and explicit Google Free Tier confirmation *before* fetching GitHub HTML evidence or claiming a day. Missing settings return `model_setup_required`, with **no Telegram document** and **no accepted daily receipt**, so a later owner setup is not blocked by a fake 'complete' report.
+
+If credentials exist but **neither Gemini nor Mistral produced a verified actual response** (quota, model outages, wrong key, or provider errors), the day claim is safely released as `failed` for a future attempt, without sending a report containing only `NOT_AVAILABLE`. When one provider succeeds, the report names the real model and correctly identifies the unavailable one. If a previous accepted report exists, deduplication remains unchanged: no accidental duplicate sends.
+
+This is specifically to prevent the prior misleading Telegram-only HTML document displayed 2026-10-20. GitHub Actions still archives a deterministic *public-only* HTML/TZ draft in issue #242; that is not represented as AI model output and is not sent as an artificial Gemini/Mistral report.
+
+Keys must still be created by the owner in [Google AI Studio](https://aistudio.google.com/apikey) and [OpenRouter](https://openrouter.ai/settings/keys) and saved in **one** [HH Vercel Production Environment Variables screen](https://vercel.com/super10/codex-public-book-library/settings/environment-variables) as `HH_COUNCIL_GEMINI_API_KEY` (Sensitive), `HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED` (`true` only after checking the Free Tier), and `HH_COUNCIL_OPENROUTER_API_KEY` (Sensitive). Do not copy them into ChatGPT or GitHub. Re-deploy after saving; verify Vercel READY and actual distinct provider response/Telegram receipt before marking this channel LIVE.
+
+---
 ## 2026-10-20 · Genuine Gemini and Mistral reviews to the existing @Andydotbot
 
 **Implementation:** GitHub Actions daily public-site HTML/HTTP scan (09:15 America/Toronto) still archives one evidence report to [AI Council issue #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242). Holistic House Vercel's **existing** Council cron at **21:00 UTC** now uses this evidence for **two independent provider responses** before sending one .md to the verified private owner chat. The bot and chat are ALREADY paired; do not duplicate BotFather credentials or contact @userinfobot.
