@@ -26,6 +26,8 @@ const WORDS={
   expired:'Permission or number changed. Refresh the CRM before preparing this contact.',
   ready:'Ready to copy and open Messages',noneSelected:'Choose at least one eligible contact.',
   loaded:'Only already-loaded contacts are shown. Use “Load more contacts” below to expand the list.',
+  push:'Also free of SMS API charges: private Cabinet messages with opt-in Web Push. Only signed-in clients who enabled alerts receive them; never a phone-number broadcast.',
+  pushSettings:'Client notification settings',
  },
  ru:{
   title:'SMS с вашего телефона · без платного API',subtitle:'Подготовьте список согласившихся клиентов. Каждую SMS вы отдельно просматриваете, вставляете и отправляете через «Сообщения».',
@@ -47,6 +49,8 @@ const WORDS={
   expired:'Согласие или номер изменились. Обновите CRM перед продолжением.',
   ready:'Готово для копирования и открытия «Сообщений»',noneSelected:'Сначала выберите хотя бы один контакт с согласием.',
   loaded:'Показаны только загруженные контакты. Чтобы увидеть остальные, нажмите «Загрузить ещё контакты» ниже.',
+  push:'Ещё один канал без SMS API: личные сообщения кабинета с Web Push. Уведомления получают только авторизованные клиенты, включившие их сами; это не рассылка по номерам.',
+  pushSettings:'Настройки уведомлений кабинета',
  },
  es:{
   title:'SMS desde tu teléfono · sin API de pago',subtitle:'Prepara una lista con consentimiento; revisa y envía cada SMS manualmente en Mensajes.',
@@ -68,6 +72,8 @@ const WORDS={
   expired:'El permiso o número cambió. Actualiza CRM.',
   ready:'Listo para copiar y abrir Mensajes',noneSelected:'Elige al menos un contacto.',
   loaded:'Solo se muestran contactos cargados. Carga más contactos abajo para ampliar la lista.',
+  push:'Otra opción sin tarifa SMS: mensajes privados en el gabinete con Web Push. Solo clientes registrados que autorizaron avisos; no es una difusión por teléfono.',
+  pushSettings:'Preferencias de notificaciones',
  },
 }
 
@@ -188,5 +194,10 @@ export default function CrmFreeSmsPanel({contacts=[],locale='en'}){
    </div>
    <p className={styles.fine}>{t.stop}</p>
   </div>}
+  <div className={styles.pushInfo}>
+   <strong>{t.pushSettings}</strong>
+   <p>{t.push}</p>
+   <a href={'/'+language+'/app/settings#hh-phone-notifications'}>{t.pushSettings} ↗</a>
+  </div>
  </section>
 }
