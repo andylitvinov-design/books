@@ -49,6 +49,7 @@ const copy = {
     dailyArtifact:'Result to save today', doneWhen:'Completion check', myResult:'My actual result (private)',
     resultPlaceholder:'Write a short, factual result: what you prepared, decided, observed or actually tried. A draft or an honest “not yet” is fine.',
     resultRequired:'Write at least 6 characters describing the actual result before marking the lesson complete. You may save an unfinished draft instead.',
+    unsavedResult:'Your current day has unsaved changes. Leave this day without saving them?',
     moduleComplete:'Days done', moduleDocumented:'With saved results', finalModule:'Final integration · 6 days',
     weeklyResults:'Results saved by module', legacyCompletion:'Previously completed without a written result',
     optionalNote:'Optional reflections (separate from the concrete result)',
@@ -93,6 +94,7 @@ const copy = {
     dailyArtifact:'Результат, который сохраняем сегодня', doneWhen:'Критерий готовности', myResult:'Мой фактический результат (личная запись)',
     resultPlaceholder:'Кратко запишите конкретный результат: что подготовили, решили, заметили или действительно попробовали. Черновик или честное «пока нет» тоже подходит.',
     resultRequired:'Чтобы отметить день завершённым, опишите реальный результат хотя бы шестью символами. Незавершённый черновик можно сохранить без галочки.',
+    unsavedResult:'В текущем дне остались несохранённые изменения. Перейти к другому дню, не сохраняя их?',
     moduleComplete:'Дней выполнено', moduleDocumented:'С записанным результатом', finalModule:'Закрепление · 6 дней',
     weeklyResults:'Сохранённые результаты по модулям', legacyCompletion:'Ранее отмечено выполненным без записи результата',
     optionalNote:'Личные размышления (отдельно от конкретного результата)',
@@ -200,6 +202,10 @@ export default function BusinessCoaching({locale='en',accountId}){
     }finally{setBusy(false)}
   }
   function chooseDay(next){
+    const previous=course?.days?.[day]||{}
+    const unsaved=dayResult!==(previous.result||'') || dayNote!==(previous.note||'') ||
+      dayDone!==Boolean(previous.done)
+    if(next!==day && course?.status==='active' && unsaved && !window.confirm(t.unsavedResult))return
     setDay(next)
     setModuleWeek(Math.min(13,Math.ceil(next/7)))
     setDayNote(course?.days?.[next]?.note||'')
