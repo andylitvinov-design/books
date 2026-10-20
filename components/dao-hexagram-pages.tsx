@@ -5,6 +5,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { DaoHexagramDirectory, type DaoHexagramEntry } from "./dao-hexagram-directory";
 import { DaoHexagramGlyph } from "./dao-hexagram-glyph";
+import { DaoDivinationPanel } from "./dao-divination-panel";
 import { archivePhotoFor, daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle, hexagrams, trigramInfo } from "@/data/dao-hexagrams.mjs";
 import authorRecords from "@/data/dao-hexagram-author.json";
 import styles from "./dao-hexagrams.module.css";
@@ -76,6 +77,7 @@ export function DaoHexagramsIndex({ locale }: { locale: DaoLocale }) {
       <nav className={styles.featuredNav} aria-label={labels.sourceBook}>
         <Link href={"/" + locale + "/books/dao-yijing-predictions"}>{labels.sourceBook} →</Link>
       </nav>
+      <DaoDivinationPanel locale={locale} />
       <DaoHexagramDirectory locale={locale} entries={hexagrams.map((item) => entryFor(item.number, locale))} />
       <p className={styles.underNotice}>{labels.provenance} {labels.caution}</p>
       <PublicConsultationCta locale={locale} />

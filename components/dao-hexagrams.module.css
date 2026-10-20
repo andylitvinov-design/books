@@ -58,6 +58,7 @@
 .libraryLinkSymbol{font-size:2.25rem;line-height:1;color:#80582e}
 .libraryLink strong{display:block;font-size:1rem}
 .libraryLink small{display:block;margin-top:4px;font-size:.83rem}
+ .catalogueHeading{margin:24px 0 14px;color:#3c2b21}.catalogueHeading h2{margin:0 0 7px;font-size:clamp(1.28rem,2.4vw,1.8rem)}.catalogueHeading p{margin:0;color:#715740;font-size:.88rem;line-height:1.55}
 .empty{border:1px dashed #c6b29e;background:#faf3e8;padding:30px;border-radius:16px}
 @media(max-width:1050px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.hero{grid-template-columns:1fr}.heroSymbol{display:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.detail{grid-template-columns:1fr}.tools{grid-template-columns:1fr}.cardBody{padding:11px 10px 12px}.cardBody h2{font-size:1rem}}
