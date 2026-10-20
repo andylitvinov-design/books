@@ -1,3 +1,17 @@
+## 2026-10-20 · Owner's simplified Telegram onboarding (one token, Codex obtains ID)
+
+The full implementation plan and operator technical assignment are in [TELEGRAM_OWNER_AUTO_DISCOVERY_20261020.md](./TELEGRAM_OWNER_AUTO_DISCOVERY_20261020.md).
+
+**Owner's single input:** [Holistic House Vercel Production Environment Variables](https://vercel.com/super10/codex-public-book-library/settings/environment-variables) → encrypted `HH_PRACTICE_TG_BOT_TOKEN` from the **existing** BotFather @Andydotbot. No @userinfobot. Do not paste any token into chats, GitHub or the AI Council project.
+
+**Codex/authorized operator:** call `GET /api/internal/telegram-owner-discovery` on the production HH domain using the **existing** private `CRON_SECRET`. It verifies official Telegram `getMe`, `getWebhookInfo`, and (only with webhook absent) recent exact private `/start` from @AndyTherapist using `getUpdates` **without offset**, then `getChat`. The numeric ID is visible only to the authenticated operator, who sets encrypted Production `HH_PRACTICE_TG_CHAT_ID` in **that same Vercel project**. Before enabling messages, verify the owner chat and safe test via the existing unified gateway. If `webhook_active`, **stop** rather than hijacking the webhook. If `awaiting_new_start`, ask the owner to send one new `/start` to [@Andydotbot](https://t.me/Andydotbot).
+
+Current remaining source of truth: real BotFather token and actual numeric chat ID are **not present in Production settings**. Until verified, delivery remains disabled. This helper never reads private site/CRM content, never sends messages and does not run a new cron.
+
+**Legacy two-variable owner steps below are superseded for normal no-webhook onboarding.** If bot has an existing webhook, owner/authorized operator may need to handle an explicit safe alternate confirmation; token-only automatic discovery is not guaranteed.
+
+---
+
 ## 2026-10-20 — Telegram credentials in ONE place
 
 Use **only** [Holistic House Vercel Production env](https://vercel.com/super10/codex-public-book-library/settings/environment-variables) for the existing @Andydotbot BotFather token and numeric private @AndyTherapist chat ID:
