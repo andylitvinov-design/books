@@ -133,3 +133,13 @@ Acceptance: (a) unauthorized actor cannot query or set another phone/consent; (b
 - Tests: \`tests/client-contact-phone.test.mjs\`, existing CRM test suite + lint and Vercel build. Signed-in mobile handset QA is required before calling the contact form tested end to end.
 
 **Still gated/off:** verified possession OTP/START, independent appointment vs promotional SMS consent ledger, public legally usable mailing address in /en/contact, owned Twilio account/sender, signed live STOP, actual handset SMS. These require additional configuration and separate controlled release; **do not enable \`HH_CRM_SMS_LIVE_APPROVED\`** and do not promise all SMS are free.
+
+
+## P1.1 — requested response channel for public business enquiries (20 October)
+
+- The public business consulting request can **optionally** select email, SMS, phone call, WhatsApp, or "no preference" for this **specific enquiry only**. The form requires the matching email/E.164 phone for the selected channel, retains the existing required reply-only contact permission, and does not silently opt into promotions.
+- The preference is encrypted inside the **existing** \`app_private.business_consulting_requests.payload_ciphertext\`; no new plain phone columns or schema migration.
+- Owner CRM displays the preferred channel. An SMS preference offers a safe **copy-and-open personal Messages** shortcut with a fixed non-clinical text, sender name/site URL and manual STOP instruction. This is never sent from the website and may be billable by the owner's cellular tariff.
+- Before showing the shortcut, the owner-only CRM response checks both the global Twilio STOP fingerprint and suppressed matching CRM contacts via owner-scoped HMAC, with DB failure **fail-closed**. A stale open tab does not guarantee real-time STOP state; owners must refresh/recheck before manually sending. Client-replied STOP on a personal phone requires immediate manual "Do not contact" in CRM.
+- Existing old enquiries with no recorded reply preference **do not** receive implied SMS permission. Owner marketing-SMS queues still require independently evidenced product-update consent; reply-only permission does not qualify.
+- Tests: \`tests/business-enquiry-reply-channel.test.mjs\`, existing \`tests/business-website-enquiry.test.mjs\`, lint and Next production build. Genuine handset and native SMS delivery are not claimed from UI/source tests.
