@@ -80,6 +80,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
   const paypalCaptureAttempted = useRef(new Set<string>());
   const [paypalRetry, setPaypalRetry] = useState(0);
   const [paypalReturned, setPaypalReturned] = useState(false);
+  const [paypalCancelled, setPaypalCancelled] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [signInRequired, setSignInRequired] = useState(false);
@@ -94,6 +95,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     accountGuard.current.invalidate();
     setAccountId(null); setPaymentProvider(null); setAvailable(false); setOrderId(null); setOrderStatus("");
     setPending(false); setError(""); setSignInRequired(true); setRepeatOrderId(null);
+    setPaypalReturned(false); setPaypalCancelled(false); paypalCaptureAttempted.current.clear();
     operationId.current = null; inFlight.current = false;
   }, []);
 
@@ -111,6 +113,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     setSelected(selectedFromLink.length ? selectedFromLink
       : requestedService && products.some((product) => product.id === requestedService) ? [requestedService] : restoredItems);
     setPaypalReturned(parameters.get("paymentProvider") === "paypal" && parameters.get("paymentCancelled") !== "1");
+    setPaypalCancelled(parameters.get("paymentProvider") === "paypal" && parameters.get("paymentCancelled") === "1");
     setRestored(true);
     const abort = new AbortController();
     fetch("/api/app/commerce/status", { credentials: "same-origin", cache: "no-store", signal: abort.signal })
@@ -203,7 +206,8 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
         if (order.status === "paid") {
           const paidIds = new Set((order.items || []).map((item: { serviceId: string }) => item.serviceId));
           setSelected((current) => current.filter((value) => !paidIds.has(value)));
-        } else if (["pending", "open", "processing"].includes(order.status)) timer = setTimeout(check, paymentProvider === "zen" ? 12000 : 5000);
+        } else if (!paypalCancelled && ["pending", "open", "processing"].includes(order.status))
+          timer = setTimeout(check, paymentProvider === "zen" ? 12000 : 5000);
       } catch (error) {
         if (cancelled) return;
         if (error instanceof Error && error.message === "ACCOUNT_CHANGED") { invalidateAccount(); return; }
@@ -212,7 +216,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     }
     check();
     return () => { cancelled = true; clearTimeout(timer); abort.abort(); };
-  }, [orderId, accountId, repeatOrderId, paymentProvider, paypalReturned, paypalRetry, t.error, invalidateAccount]);
+  }, [orderId, accountId, repeatOrderId, paymentProvider, paypalReturned, paypalCancelled, paypalRetry, t.error, invalidateAccount]);
 
   const chosen = products.filter((product) => selected.includes(product.id));
   const total = chosen.reduce((value, product) => value + product.amountMinor, 0);
@@ -322,7 +326,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
             <button type="button" className={styles.pay} disabled={!available || pending} onClick={() => checkout(repeatOrderId)}>{t.repeatConfirm}</button>
             <button type="button" className={styles.remove} disabled={pending} onClick={() => { setSelected([]); setRepeatOrderId(null); operationId.current = null; }}>{t.keepExisting}</button>
           </div> : null}
-          {orderId && accountId ? <p className={styles.notice} role="status">{orderStatus === "paid" ? t.confirmed : ["expired", "failed"].includes(orderStatus) ? t.notPaid : ["refunded", "disputed", "payment_review"].includes(orderStatus) ? t.held : t.checking}</p> : null}
+          {orderId && accountId ? <p className={styles.notice} role="status">{orderStatus === "paid" ? t.confirmed : paypalCancelled || ["expired", "failed"].includes(orderStatus) ? t.notPaid : ["refunded", "disputed", "payment_review"].includes(orderStatus) ? t.held : t.checking}</p> : null}
           {orderId && accountId && paypalReturned && paymentProvider === "paypal" && ["open", "processing"].includes(orderStatus) ? <button type="button" className={styles.request}
             disabled={pending} data-paypal-verified-retry onClick={() => {
               paypalCaptureAttempted.current.delete(orderId);

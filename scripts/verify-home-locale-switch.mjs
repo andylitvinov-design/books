@@ -130,7 +130,7 @@ async function exerciseFreeJourneys(page, engine, width) {
   for (const locale of ['en', 'ru']) {
     for (const [id, suffix, target] of [
       ['selfTest', '/client/tests', '[data-prelogin-test-picker]'],
-      ['analysis', '/services/free-situation-review', '#review-hero-title'],
+      ['analysis', '/services/free-situation-review', '#free-entry-title'],
       ['reiki', '/academy/principles-of-energywork/learn', '[data-energywork-ai-learner]'],
     ]) {
       await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });

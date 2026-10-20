@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmSmsTools from './crm-sms-tools'
@@ -41,10 +41,14 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const billing = BILLING_COPY[language]
   const [data, setData] = useState(null)
   const sessionRef = useRef(null)
+  const loadVersionRef=useRef(0)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [pageBusy, setPageBusy] = useState(false)
   const [pageError, setPageError] = useState(false)
+  const [taskPageBusy,setTaskPageBusy]=useState(false)
+  const [taskPageError,setTaskPageError]=useState(false)
+  const taskPageAbortRef=useRef(null)
   const [displayName, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -63,28 +67,37 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const contactAnchorRef=useRef(null)
   const focusAbortRef=useRef(null)
   const focusedIdRef=useRef('')
-  async function load(session) {
-    const response = await fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: session.controller.signal, headers: { 'X-HH-Account-Id': session.accountId } })
-    if (!response.ok) throw new Error('unavailable')
-    const result = await response.json()
-    if (sessionRef.current === session) setData(previous=>{
+  const load=useCallback(async (session)=>{
+    // Only the newest response from this exact account may replace CRM state.
+    // Prevent delayed initial GET from undoing a just-saved follow-up mutation.
+    const version=++loadVersionRef.current
+    const response=await fetch('/api/app/crm',{
+      credentials:'same-origin',cache:'no-store',signal:session.controller.signal,
+      headers:{'X-HH-Account-Id':session.accountId},
+    })
+    if(!response.ok)throw new Error('unavailable')
+    const result=await response.json()
+    if(sessionRef.current!==session||version!==loadVersionRef.current)return
+    setData(previous=>{
       const focused=previous?.contacts?.find(contact=>contact.id===focusedIdRef.current)
       if(!focused||result.contacts?.some(contact=>contact.id===focused.id))return result
       return {...result,contacts:[focused,...result.contacts]}
     })
-  }
+  },[])
   useEffect(() => {
     if (!accountId) return
     const controller = new AbortController()
     const session = { accountId, controller }
     sessionRef.current = session
-    focusAbortRef.current?.abort();focusedIdRef.current='';setFocusedContactId('');setFocusError('');setFocusBusy(false)
+    focusAbortRef.current?.abort();taskPageAbortRef.current?.abort()
+    focusedIdRef.current='';setFocusedContactId('');setFocusError('');setFocusBusy(false)
+    setTaskPageBusy(false);setTaskPageError(false)
     setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection('overview')
-    fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'X-HH-Account-Id': accountId } })
-      .then(async (response) => { if (!response.ok) throw new Error('unavailable'); const result = await response.json(); if (sessionRef.current === session) setData(result) })
-      .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
-    return () => { controller.abort();focusAbortRef.current?.abort(); if (sessionRef.current === session) sessionRef.current = null }
-  }, [c.error, accountId])
+    void load(session).catch(error=>{
+      if(error.name!=='AbortError'&&sessionRef.current===session)setNotice(c.error)
+    })
+    return () => { controller.abort();focusAbortRef.current?.abort();taskPageAbortRef.current?.abort(); if (sessionRef.current === session) sessionRef.current = null }
+  }, [c.error, accountId, load])
   useEffect(()=>{
     const q=search.trim()
     if(!['contacts','sms'].includes(activeSection)||!accountId||!data||q.length<2) {
@@ -211,6 +224,67 @@ export default function CrmManager({ locale = 'en', accountId }) {
       if(sessionRef.current===session&&error?.name!=='AbortError')setPageError(true)
     } finally {if(sessionRef.current===session)setPageBusy(false)}
   }
+  // Refresh a paused CRM tab when the Toronto day changes; no polling.
+  const rolloverRef=useRef('')
+  useEffect(()=>{
+    const asOf=data?.overview?.asOf
+    if(!accountId||!asOf)return
+    const check=()=>{
+      if(document.visibilityState==='hidden')return
+      const parts=new Intl.DateTimeFormat('en-US',{
+        timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',
+      }).formatToParts(new Date())
+      const field=kind=>parts.find(item=>item.type===kind)?.value
+      const today=[field('year'),field('month'),field('day')].join('-')
+      if(today===asOf||rolloverRef.current===today)return
+      const session=sessionRef.current
+      if(!session||session.accountId!==accountId)return
+      rolloverRef.current=today
+      void load(session).catch(()=>{}).finally(()=>{
+        if(sessionRef.current===session)rolloverRef.current=''
+      })
+    }
+    document.addEventListener('visibilitychange',check)
+    window.addEventListener('focus',check)
+    return ()=>{
+      document.removeEventListener('visibilitychange',check)
+      window.removeEventListener('focus',check)
+    }
+  },[accountId,data?.overview?.asOf,load])
+  async function loadMoreFollowups() {
+    const session=sessionRef.current
+    const cursor=data?.followupsNextCursor
+    if(!session||session.accountId!==accountId||!cursor||taskPageBusy||busy)return
+    taskPageAbortRef.current?.abort()
+    const controller=new AbortController()
+    taskPageAbortRef.current=controller
+    setTaskPageBusy(true);setTaskPageError(false)
+    try {
+      const response=await fetch('/api/app/crm/followups',{
+        method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json','X-HH-Account-Id':session.accountId},
+        body:JSON.stringify({cursor}),
+      })
+      if(!response.ok)throw new Error('FOLLOWUPS_PAGE_UNAVAILABLE')
+      const page=await response.json()
+      if(!Array.isArray(page.followups)||page.followups.length>100||
+         (page.nextCursor!==null&&typeof page.nextCursor!=='string'))
+        throw new Error('FOLLOWUPS_PAGE_UNAVAILABLE')
+      if(controller.signal.aborted||sessionRef.current!==session)return
+      setData(previous=>{
+        if(!previous||previous.followupsNextCursor!==cursor)return previous
+        const known=new Set((previous.followups||[]).map(task=>task.id))
+        const extra=page.followups.filter(task=>!known.has(task.id))
+        return {...previous,followups:[...(previous.followups||[]),...extra],
+          followupsNextCursor:page.nextCursor}
+      })
+    }catch(error) {
+      if(error?.name!=='AbortError'&&!controller.signal.aborted&&sessionRef.current===session)
+        setTaskPageError(true)
+    }finally {
+      if(sessionRef.current===session&&!controller.signal.aborted)setTaskPageBusy(false)
+    }
+  }
   async function focusContact(id) {
     const session=sessionRef.current
     if(!session||session.accountId!==accountId)return
@@ -334,7 +408,9 @@ export default function CrmManager({ locale = 'en', accountId }) {
       </>}
       {activeSection==='tasks'&&<>
          <CrmWorkflowOverview mode="tasks" locale={language} overview={data.overview}
-           followups={data.followups||[]} busy={busy} onAction={save} onOpenContact={focusContact}/>
+           followups={data.followups||[]} busy={busy} onAction={save} onOpenContact={focusContact}
+           nextCursor={data.followupsNextCursor||null} onLoadMore={loadMoreFollowups}
+           pageBusy={taskPageBusy} pageError={taskPageError}/>
          {notice&&<p role="status" className={styles.notice}>{notice}</p>}
        </>}
        {activeSection==='contacts'&&<>

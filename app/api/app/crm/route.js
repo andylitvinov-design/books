@@ -43,11 +43,12 @@ async function handle(request) {
       } else {
         data=await repo.withOwner(actor,async store=>{
           const page=await store.listContactsPage(null)
+          const followupPage=await store.listFollowupsSnapshot()
           return {
             contacts:page.contacts,contactsNextCursor:page.nextCursor,
+            followups:followupPage.followups,followupsNextCursor:followupPage.nextCursor,
             businessEnquiries:await store.listBusinessEnquiries(),
             overview:await store.overview(),
-            followups:await store.listFollowups(),
             activity:await store.listRecentActivity(),
             recentExports:await store.listOwnerExportAudit(),
             drafts:await store.listDrafts(),

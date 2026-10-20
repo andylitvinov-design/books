@@ -5,7 +5,8 @@ import {practitionerEmailAllowed} from '@/lib/app/practitioner-access'
 import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
 import {registerClientTelegramWebhook,verifyClientBot} from '@/lib/app/client-telegram-transport'
-import {telegramClientLinkReady,telegramClientSendReady,validClientBotUsername} from '@/lib/app/client-telegram-policy'
+import {telegramClientLinkReady,telegramClientSendReady,validClientBotUsername,
+  telegramClientBotMode,telegramClientBotUsername} from '@/lib/app/client-telegram-policy'
 import {createMessengerNotificationRepository} from '@/lib/app/messenger-notification-repository'
 
 export const runtime='nodejs'
@@ -14,20 +15,27 @@ export const revalidate=0
 
 // A read-only owner diagnostic: only environment KEY NAMES and booleans are returned.
 function readiness(env=process.env){
- const required=['HH_CLIENT_TG_BOT_TOKEN','HH_CLIENT_TG_BOT_USERNAME',
-   'HH_CLIENT_TG_WEBHOOK_SECRET','HH_CLIENT_TG_LINK_ENABLED']
+ const mode=telegramClientBotMode(env)
+ const required=env.HH_CLIENT_TG_USE_PRACTICE_BOT==='true' &&
+    !env.HH_CLIENT_TG_BOT_TOKEN&&!env.HH_CLIENT_TG_BOT_USERNAME
+   ?['HH_PRACTICE_TG_BOT_TOKEN','HH_PRACTICE_TG_ENABLED',
+     'HH_CLIENT_TG_WEBHOOK_SECRET','HH_CLIENT_TG_LINK_ENABLED']
+   :['HH_CLIENT_TG_BOT_TOKEN','HH_CLIENT_TG_BOT_USERNAME',
+     'HH_CLIENT_TG_WEBHOOK_SECRET','HH_CLIENT_TG_LINK_ENABLED']
  const missingKeys=required.filter(key=>{
-  if(key==='HH_CLIENT_TG_LINK_ENABLED')return env[key]!=='true'
-  if(key==='HH_CLIENT_TG_BOT_TOKEN')
-    return typeof env[key]!=='string'||env[key].length<20
-  if(key==='HH_CLIENT_TG_BOT_USERNAME')
-    return !validClientBotUsername(env[key])
+  if(key==='HH_CLIENT_TG_LINK_ENABLED'||key==='HH_PRACTICE_TG_ENABLED')
+    return env[key]!=='true'
+  if(key==='HH_CLIENT_TG_BOT_TOKEN'||key==='HH_PRACTICE_TG_BOT_TOKEN')
+    return !/^\d{6,16}:[A-Za-z0-9_-]{25,}$/.test(env[key]||'')
+  if(key==='HH_CLIENT_TG_BOT_USERNAME')return !validClientBotUsername(env[key])
   if(key==='HH_CLIENT_TG_WEBHOOK_SECRET')
     return typeof env[key]!=='string'||!/^[A-Za-z0-9_-]{32,256}$/.test(env[key])
   return true
  })
  return {configured:telegramClientLinkReady(env),sendingEnabled:telegramClientSendReady(env),
-   missingKeys,webhookVerified:false}
+   missingKeys,webhookVerified:false,botMode:mode,
+   botUsername:mode?telegramClientBotUsername(env):null,
+   usingExistingPracticeBot:mode==='shared_practice'}
 }
 async function handler(request){
  let auth
@@ -54,9 +62,10 @@ async function handler(request){
   }
 
   // A server-side owner action only; cannot hijack another bot's webhook.
-  const status=await registerClientTelegramWebhook()
+  const status=await registerClientTelegramWebhook(process.env,{config})
   return auth.apply(NextResponse.json({...status,configured:true,
-    webhookVerified:true,sendingEnabled:telegramClientSendReady(),missingKeys:[]},
+    webhookVerified:true,sendingEnabled:telegramClientSendReady(),missingKeys:[],
+    botMode:telegramClientBotMode(),usingExistingPracticeBot:telegramClientBotMode()==='shared_practice'},
     {headers:PRIVATE_HEADERS}))
  }catch(error){
   const safe=safeError(error)

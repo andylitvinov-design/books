@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowRight, ChevronDown, ClipboardCheck, ShieldCheck } from "lucide-react";
 
@@ -138,12 +139,29 @@ const text = {
   },
 } as const;
 
+// These five owned public illustrations are already delivered at <=104 KB.
+// Do not send them through paid Vercel /_next/image transformations. Keep
+// runtime resizing available for any future/unreviewed media source instead.
+const directStaticServiceImages = new Set([
+  "/images/holistic-house/course-start-heron.webp",
+  "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+  "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+  "/academy/reiki-yggdrasil/source/basic-program.jpg",
+]);
+
 function ServiceCard({ offer, locale, index }: { offer: Offer; locale: PublicLocale; index: number }) {
   const t = text[locale];
   return (
     <article className={styles.card} data-services-studio-card={offer.id}>
       <Link href={offer.href} className={styles.photo} tabIndex={-1} aria-hidden="true" prefetch={false}>
-        <Image src={offer.image} alt="" fill sizes="(max-width: 680px) 112px, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
+        {offer.image === "/images/holistic-house/andy-about.png" ? (
+          <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
+            sizes="(max-width: 680px) 112px, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
+        ) : (
+          <Image src={offer.image} alt="" fill unoptimized={directStaticServiceImages.has(offer.image)}
+            sizes="(max-width: 680px) 112px, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
+        )}
       </Link>
       <div className={styles.cardContent}>
         <div className={styles.cardTop}>
