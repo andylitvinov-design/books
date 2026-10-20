@@ -6,7 +6,9 @@ Source: codex/public-book-library, Holistic House.
 - Site uses the existing owner-verified PayPal.Me profile at paypal.me/psitrends.
 - Website catalog only allows €50 / €100 / €150 combinations of one-time sessions.
 - PayPal Canada User Agreement: a personal account **can receive Goods & Services payments**, although PayPal recommends a business account if the account primarily sells goods/services.
-- Tell the payer to select **Goods & Services**; NEVER request Friends & Family for services. Availability of cards or paying without a PayPal account cannot be promised with PayPal.Me.
+- PayPal Canada Help clarifies that **PayPal.Me requires the payer to have a PayPal account**. A card added to their PayPal account may fund the payment; it is NOT guest card checkout. Never market it as card payment without PayPal login.
+- Tell the payer to select **Goods & Services**; NEVER request Friends & Family for services. Exact external payment methods depend on buyer eligibility and PayPal restrictions.
+- Official PayPal Canada payer-help: https://securepayments.paypal.com/ca/cshelp/article/how-do-i-send-money-help293
 - After payment: request only the transaction reference, then manually verify incoming funds inside the PayPal account before confirming an appointment or marking an order paid. No automatic entitlement/fulfillment.
 - Optional: PayPal Seller Profile is offered to eligible Canadian personal-account sellers, not a guaranteed account feature.
 - Official PayPal Canada agreement: https://www.paypal.com/ca/legalhub/paypal/useragreement-full
