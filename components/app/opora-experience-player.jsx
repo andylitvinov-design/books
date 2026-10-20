@@ -1,19 +1,19 @@
 'use client'
 
 import {useEffect,useRef,useState} from 'react'
-import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Pause,ShieldCheck,X} from 'lucide-react'
+import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Pause,ShieldCheck,Sparkles,X} from 'lucide-react'
 import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
-import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '@/lib/inner-growth/course-slide-sequence'
+import {OPORA_EXPERIENCE_EXTENDED_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '@/lib/inner-growth/course-slide-sequence'
 import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
 import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
-import {oporaExperienceDay,oporaExperienceGuide,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceDepth,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
-// Five learner-facing moments, not fourteen comprehension checks. Existing
-// fifteen-screen submissions/history remain supported by the server.
+// Day 1 retains its original five welcoming screens; days 2-14 use 11 educational
+// moments with optional reflection. Older five-moment tabs remain valid server-side.
 const WORDS={
   ru:{
     day:'День',of:'из',pause:'Пауза',close:'Закончить',back:'Назад',next:'Продолжить',
@@ -196,6 +196,88 @@ WORDS.es = {
   habitFallback:'También puedes configurarlo en la página del curso de Holistic House.',
   ideaTitle:'Una idea amable',reminderTitle:'Un recordatorio',feelTitle:'¿Cómo estás ahora?',
 }
+
+const DEEP_COPY={
+  en:{
+    supportKicker:'A LITTLE SPACE',supportTitle:'You are welcome just as you are',
+    supportLead:'There is no perfect way to do this lesson. Reading, pausing or trying one small step are all welcome.',
+    understandKicker:'UNDERSTAND',understandTitle:'The idea behind today’s skill',
+    storyKicker:'EVERYDAY LIFE',storyTitle:'A familiar kind of moment',
+    storyQuestion:'What does this skill offer here?',
+    storyNotice:'One simple point of attention',storyFix:'A promise to erase all feelings',
+    storyRight:'Yes. A small option is enough; no particular result is promised.',
+    storyLeft:'It need not remove feelings. Noticing an ordinary detail is already an option.',
+    optionsKicker:'YOUR CHOICE',optionsTitle:'Find your comfortable version',
+    optionsLead:'Choose how to explore. Your choice alone is not a recorded practice attempt.',
+    optionFull:'Explore the full practice',optionSmall:'Make it smaller',optionObserve:'Read or imagine only',
+    optionSelected:'This is a preference, not a completed practice.',
+    repeatKicker:'A SECOND CHANCE',repeatTitle:'Make this practice your own',
+    repeatLead:'If you want, explore this gentler variation. You can also just read it.',
+    repeatPrompt:'Did you try either version?',
+    everydayKicker:'TAKE IT WITH YOU',everydayTitle:'Where might this fit in real life?',
+    everydayLead:'This is one possibility, not a task or a promise to feel better.',
+    readPractice:'You may picture this step without performing it.',
+    celebrationOverline:'ONE MORE DAY IN YOUR JOURNEY',
+    celebrationBody:'No score, no pressure. You can return to any practice when it suits you.',
+    savedBadge:'Saved to your course',todayLesson:'TODAY’S SKILL',
+    triedNote:'You chose to try a small step. Thank you for giving it a go.',
+    exploredNote:'You explored the idea. No attempt was recorded, and that is okay.',
+    details:'Your reflections (optional)',reviewLesson:'Review slides',
+  },
+  ru:{
+    supportKicker:'НЕМНОГО ПРОСТРАНСТВА',supportTitle:'Здесь можно быть собой',
+    supportLead:'Не существует идеального способа пройти урок. Можно просто читать, сделать паузу или попробовать маленький шаг.',
+    understandKicker:'РАЗБИРАЕМСЯ',understandTitle:'Для чего этот навык',
+    storyKicker:'ИЗ ОБЫЧНОГО ДНЯ',storyTitle:'Знакомая ситуация',
+    storyQuestion:'Что здесь предлагает бережная практика?',
+    storyNotice:'Простой ориентир для внимания',storyFix:'Обещание убрать все чувства',
+    storyRight:'Да. Достаточно небольшого выбора, без обещаний результата.',
+    storyLeft:'Чувства не нужно убирать. Можно просто заметить обычную деталь.',
+    optionsKicker:'ВАШ ВЫБОР',optionsTitle:'Подберите удобный вариант',
+    optionsLead:'Выберите способ знакомства. Сам выбор не считается выполнением.',
+    optionFull:'Полный вариант',optionSmall:'Совсем маленький шаг',optionObserve:'Только прочитать или представить',
+    optionSelected:'Это выбор формата, а не отметка о выполнении.',
+    repeatKicker:'ЕЩЁ ОДНА ВОЗМОЖНОСТЬ',repeatTitle:'Попробовать по-своему',
+    repeatLead:'При желании познакомьтесь с более мягким вариантом. Можно и просто прочитать.',
+    repeatPrompt:'Попробовали один из вариантов?',
+    everydayKicker:'С СОБОЙ В ДЕНЬ',everydayTitle:'Где это может пригодиться?',
+    everydayLead:'Это пример из обычного дня, а не задание и не обещание улучшения.',
+    readPractice:'Можно мысленно представить этот шаг, не выполняя его.',
+    celebrationOverline:'ЕЩЁ ОДИН ДЕНЬ ВАШЕГО ПУТИ',
+    celebrationBody:'Без оценок и требований. Возвращайтесь к практике в своём темпе.',
+    savedBadge:'Сохранено в вашем курсе',todayLesson:'НАВЫК ДНЯ',
+    triedNote:'Вы решили попробовать маленький шаг. Спасибо за этот опыт.',
+    exploredNote:'Вы познакомились с идеей. Попытка не отмечена — и это нормально.',
+    details:'Ваши наблюдения (по желанию)',reviewLesson:'Просмотреть слайды',
+  },
+  es:{
+    supportKicker:'UN POCO DE ESPACIO',supportTitle:'Puedes estar aquí tal como eres',
+    supportLead:'No hay manera perfecta de hacer esta lección. Puedes leer, pausar o probar algo pequeño.',
+    understandKicker:'COMPRENDER',understandTitle:'La idea de la habilidad de hoy',
+    storyKicker:'VIDA COTIDIANA',storyTitle:'Una situación conocida',
+    storyQuestion:'¿Qué ofrece aquí esta práctica amable?',
+    storyNotice:'Un punto sencillo de atención',storyFix:'La promesa de borrar las emociones',
+    storyRight:'Exacto. Basta con una opción pequeña, sin prometer resultados.',
+    storyLeft:'No tienes que eliminar las emociones. Notar algo sencillo ya es una opción.',
+    optionsKicker:'TU ELECCIÓN',optionsTitle:'Elige una versión cómoda',
+    optionsLead:'Elige cómo explorarla. Elegir no significa haberla realizado.',
+    optionFull:'Práctica completa',optionSmall:'Versión más pequeña',optionObserve:'Solo leer o imaginar',
+    optionSelected:'Es una preferencia, no una práctica realizada.',
+    repeatKicker:'OTRA OPORTUNIDAD',repeatTitle:'Prueba a tu manera',
+    repeatLead:'Si quieres, explora esta variante más suave. También puedes solo leerla.',
+    repeatPrompt:'¿Probaste alguna versión?',
+    everydayKicker:'PARA TU DÍA',everydayTitle:'¿Dónde podría encajar?',
+    everydayLead:'Es un ejemplo cotidiano, no una tarea ni una promesa de sentirte mejor.',
+    readPractice:'Puedes imaginar el paso en lugar de hacerlo.',
+    celebrationOverline:'UN DÍA MÁS EN TU RECORRIDO',
+    celebrationBody:'Sin notas ni presión. Puedes volver a la práctica cuando quieras.',
+    savedBadge:'Guardado en tu curso',todayLesson:'HABILIDAD DE HOY',
+    triedNote:'Elegiste probar un paso pequeño. Gracias por intentarlo.',
+    exploredNote:'Hoy exploraste la idea. No registramos un intento, y está bien.',
+    details:'Tus observaciones (opcional)',reviewLesson:'Revisar pantallas',
+  },
+}
+
 // The five original lesson-one opening screens stay separate, and precede action.
 const OPENING={
   en:{
@@ -269,7 +351,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const lang=locale==='ru'?'ru':locale==='es'?'es':'en',t=WORDS[lang]
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
-  const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
+  const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_EXTENDED_KEYS
   const [step,setStep]=useState(hasSaved?scenes.length:0)
   const [previewIndex,setPreviewIndex]=useState(-1)
   const [habitSetup,setHabitSetup]=useState(false)
@@ -287,6 +369,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
   const [showHelp,setShowHelp]=useState(false)
+  const [storyChoice,setStoryChoice]=useState(null)
+  const [practiceMode,setPracticeMode]=useState(null)
   const [neutralSupport,setNeutralSupport]=useState(false)
   const [safety,setSafety]=useState(false)
   const [error,setError]=useState('')
@@ -310,8 +394,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     outroOpen?scenes.length+3:receipt?scenes.length+2:Math.min(step+1,previewTotal)
   const opening=OPENING[lang]
   const c=oporaEndingCopy(lang)
+  const d=DEEP_COPY[lang]
   const dayCopy=oporaExperienceDay(cycle.day,lang)
+  const depth=oporaExperienceDepth(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
+  const chosenPractice=practiceMode==='small'?depth?.alternative:practiceMode==='observe'?d.readPractice:practiceGuide
   const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
   const quote=cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
@@ -438,6 +525,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='checkin'?opening.checkin:
     moment==='recall'?opening.recall:
     moment==='arrive'?(cycle.day===1?t.arrivalWarmTitle:t.arriveTitle):
+    moment==='support'?d.supportTitle:moment==='understand'?d.understandTitle:
+    moment==='story'?d.storyTitle:moment==='options'?d.optionsTitle:
+    moment==='repeat'?d.repeatTitle:moment==='everyday'?d.everydayTitle:
     moment==='practice'?dayCopy?.title||t.learn:
     moment==='feel'?t.feelTitle:
     moment==='affirmation'?(cycle.day===1?opening.thought:t.ideaTitle):t.reminderTitle
@@ -499,6 +589,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
             moment==='arrive'?t.minute:moment==='practice'?(cycle.day===1?t.coreKicker:t.stepLabel):
+            moment==='support'?d.supportKicker:moment==='understand'?d.understandKicker:
+            moment==='story'?d.storyKicker:moment==='options'?d.optionsKicker:
+            moment==='repeat'?d.repeatKicker:moment==='everyday'?d.everydayKicker:
             moment==='feel'?t.feel:moment==='affirmation'?(cycle.day===1?opening.thoughtKicker:t.quote):t.keep}
           </span>}
           <h2 ref={heading} tabIndex={-1} className={styles.title}>{title}</h2>
