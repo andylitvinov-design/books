@@ -45,13 +45,13 @@
 
 | Слот / оригинал | Идентификатор HeyGen | Где мастер | Следующий шаг |
 |---|---|---|---|
-| About EN | `fd5fcead9b067f9a0649862675a38771` | Drive master: `1emF7Peqk8SFz0UVj3hm_k2RwUOa5xpi4` | Unlisted YouTube, проверить идентичность |
-| About RU | `d4e55c984e54b40fbeb8a21f81d27694` | Drive master: `1tIxupc1YD8MYEMI9LqEhejkvGSKonpfK` | Unlisted YouTube, проверить идентичность |
-| About ES | `2c251709aba74fd96ae8be43257a080b` | Drive source record: `1jOKgCvkaHsz8eJHY1VCH4DgH0cwK5-7U` | проверить master QA + Unlisted YouTube |
-| Hypnotherapy method EN | `8c1634ce904434a91931429b6a7eefe1` | Drive source record: `1DwdqVVVxNyvakpHsicaWzXu6jwrkZXgN` | Unlisted, тот же метод |
-| Constellations method EN | `7c6b243f048b9c0581ae29619a4a89fc` | Drive source record: `1MC2G4kvVB7nTBULcv59vwB26T_45g_Gk` | Unlisted, тот же метод |
+| About EN | `fd5fcead9b067f9a0649862675a38771` | Drive master: approved EN About master in SOP #219 | Unlisted YouTube, проверить идентичность |
+| About RU | `d4e55c984e54b40fbeb8a21f81d27694` | Drive master: approved RU About master in SOP #219 | Unlisted YouTube, проверить идентичность |
+| About ES | `2c251709aba74fd96ae8be43257a080b` | Drive source record: source in built-in SiteVideo records | проверить master QA + Unlisted YouTube |
+| Hypnotherapy method EN | `8c1634ce904434a91931429b6a7eefe1` | Drive source record: source in built-in SiteVideo records | Unlisted, тот же метод |
+| Constellations method EN | `7c6b243f048b9c0581ae29619a4a89fc` | Drive source record: source in built-in SiteVideo records | Unlisted, тот же метод |
 
-*Верифицировать размеры, SHA, доступ к мастер-файлам и права перед конкретной загрузкой. В таблице Drive ID из текущих записей, это не подтверждение свежего скачивания в этом PR.*
+*Верифицировать размеры, SHA, доступ к мастер-файлам и права перед конкретной загрузкой. Точные Drive ID сверять по актуальному SOP #219 и исходным данным проекта, а не дублировать в ТЗ.*
 
 Дополнительная категория: два исторических **публичных** native MP4 с PsiTrends в разделе `TantraVideoTestimonials`, `data/academy/tantra-native-assets.json`: `video_2024-01-16_11-06-01.mp4` (~46.9 MB) и `video.mp4` (~75.4 MB). До перевода нужно отдельно проверить разрешение участников на дублирование записи в YouTube, проверить файл и канал; нынешнее нативное воспроизведение не ломать. Пользовательские видео других мастеров и Vimeo-источники требуют отдельной проверки прав и не переводятся автоматически.
 
