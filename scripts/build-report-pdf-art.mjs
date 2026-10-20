@@ -13,7 +13,8 @@ const bytes=readFileSync(source)
 const sha=createHash('sha1').update('blob '+bytes.length+String.fromCharCode(0)).update(bytes).digest('hex')
 const expected='89a86ea0b56778e7bafdfcaa0696d00551c1397f'
 if(sha!==expected)throw new Error('The approved PDF coastal cover source changed; review the new artwork before generating client PDFs.')
-const width=1100,height=740
+const width=1100,height=740,zoom=1.7
+const zoomedWidth=Math.round(width*zoom),zoomedHeight=Math.round(height*zoom)
 const fading=Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="left"><stop offset="0" stop-color="white" stop-opacity="1"/><stop offset=".20" stop-color="white" stop-opacity=".96"/><stop offset=".49" stop-color="white" stop-opacity=".40"/><stop offset=".72" stop-color="white" stop-opacity="0"/></linearGradient>
@@ -22,7 +23,12 @@ const fading=Buffer.from(`<svg width="${width}" height="${height}" xmlns="http:/
   </defs><rect width="${width}" height="${height}" fill="url(#left)"/><rect width="${width}" height="${height}" fill="url(#top)"/><rect width="${width}" height="${height}" fill="url(#bottom)"/></svg>`)
 mkdirSync(path.dirname(target),{recursive:true})
 await sharp(bytes,{failOn:'error'}).rotate()
-  .resize(width,height,{fit:'cover',position:'attention',kernel:'lanczos3'})
+  .resize(zoomedWidth,zoomedHeight,{fit:'cover',position:'attention',kernel:'lanczos3'})
+  .extract({
+    left:Math.floor((zoomedWidth-width)/2),
+    top:Math.floor((zoomedHeight-height)/2),
+    width,height,
+  })
   .composite([{input:fading}])
   .flatten({background:'#ffffff'})
   .jpeg({quality:83,mozjpeg:true,chromaSubsampling:'4:4:4'})
