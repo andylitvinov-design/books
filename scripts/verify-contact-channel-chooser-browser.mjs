@@ -111,15 +111,27 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
     const b=await channel.boundingBox();
     assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target at " + name + ": " + JSON.stringify(b));
     assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");
+    // Playwright trial click checks real hit testing, performs its own scroll
+    // and never follows an external messenger URL. A fixed mobile tab bar
+    // must not intercept the control when a user tries to tap it.
     const marker=await channel.getAttribute("data-contact-channel");
-    await page.waitForFunction(({marker,panelId}) => {
-      const anchor = document.getElementById(panelId)?.querySelector('a[data-contact-channel="' + marker + '"]');
-      if (!anchor) return false;
-      const r = anchor.getBoundingClientRect();
-      if (r.top < 0 || r.bottom > innerHeight) return false;
-      const target = document.elementFromPoint(r.left + r.width / 2, r.bottom - 6);
-      return Boolean(target?.closest('a[data-contact-channel="' + marker + '"]'));
-    }, {marker,panelId},{timeout:5000});
+    try {
+      await channel.click({trial:true,timeout:8000});
+    } catch (error) {
+      const obstruction=await page.evaluate(({marker,panelId})=>{
+        const anchor=document.getElementById(panelId)?.querySelector('a[data-contact-channel="' + marker + '"]');
+        const rect=anchor?.getBoundingClientRect();
+        const atop=rect&&document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+        return {
+          control:rect?{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right}:null,
+          covering:atop?.tagName||null,
+          coveringClass:typeof atop?.className==='string'?atop.className.slice(0,90):'',
+          viewport:{width:innerWidth,height:innerHeight,scrollY:scrollY},
+        };
+      },{marker,panelId});
+      throw new Error("Messenger choice not tappable: "+name+" / "+marker+" "+
+        JSON.stringify(obstruction)+" / "+error.message);
+    }
   }
   const dimensions = await page.evaluate(() => ({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(dimensions.scroll <= dimensions.inner + 2, "No mobile horizontal overflow: " + JSON.stringify(dimensions));

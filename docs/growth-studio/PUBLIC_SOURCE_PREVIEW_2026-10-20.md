@@ -35,3 +35,20 @@ After merge, verify exact READY Vercel SHA and real owner browser access; then t
 ## Existing authoritative decisions
 - [Growth Studio product](https://github.com/andylitvinov-design/books/issues/1214)
 - [Master publishing SOP](https://github.com/andylitvinov-design/ai-projects-brain/issues/219) — approved Andrey Digital Twin, Drive master and YouTube/Metricool public release; private client videos in private authenticated storage, never generic YouTube.
+
+---
+
+## 20 октября 2026 — Контент-радар: публичные материалы → безопасные черновики
+
+**Расширение существующего Public Source Preview**, не второй редактор, не агент соцсетей и не новый storage/API. Маршрут: `/admin/growth-studio/content-radar`, вход только `requireAdminRequest()`, `noindex`; ссылка находится внутри текущего блока «Взять текст с сайта» Growth Studio.
+
+**Как работает:**
+1. Владелец нажимает «Найти материалы», выбирает EN/RU/ES. Сервер делает **один** ограниченный GET только `https://holistichouse.vercel.app/sitemap.xml`: не более 850 КБ, 10 секунд, без cookies, без перехода по редиректам и без доступа к CRM. Это не платный фоновой cron и не запрос к внешнему провайдеру.
+2. Доступны не более 12 кандидатов в выбранной локали из узкого allowlist открытых Academy, опубликованных Articles, будущих публичных Events (если остались в sitemap) и нескольких известных публичных Services. Никаких `/api`, `/app`, `/client`, `/tests`, `/reports`, `/payments`, профилей, адресов с параметрами или сторонних доменов. Отображаемый `lastmod` — **не доказательство** свежести или публикации.
+3. Перед созданием владелец отдельно подтверждает выбранную страницу/канал. Сервер **ещё раз проверяет** наличие в текущем sitemap, затем существующий `previewPublicGrowthSource` проверяет прямой HTTP 200, `noindex`, отсутствие редиректа и читает только ограниченный `<head>` (title/description, без приватного тела/скриптов).
+4. Создаётся ровно **один неизменённо редактируемый `status=draft`** через существующий `prepareGrowthBulk` + атомарный Redis `batchCreate`, идентификатор детерминирован по canonical `sourceUrl+channel`. Повторная команда или сетевой retry возвращает имеющийся черновик, не создавая дубль. Существующий отредактированный черновик никогда не перезаписывается.
+5. Пост можно открыть из текущего Growth Studio, проверить язык, название, факты, права на изображения и ограничения площадки. Только отдельное ручное согласование может перевести черновик в `approved`; отдельные официальные provider permissions требуются для фактической отправки. Ни один внешний провайдер не вызывается этим радаром.
+
+**Тесты:** `tests/growth-studio-content-radar.test.mjs`, добавлены в существующий `HH Growth Studio editorial checks`. Проверяют таймауты/лимиты sitemap, приватные и чужие URL, статус и язык, metadata-only preview, idempotency, отсутствие отправки/PII и owner-auth.
+
+**Ограничения:** радар не переводит контент автоматически, не показывает чужие сайты, не подтверждает реальную дату последней правки, не генерирует платное видео, не запускает Meta/Google Ads и не отправляет сообщения клиентам. Пользовательское сохранение в real production Redis и мобильные Safari клики должны быть проверены в авторизованной сессии; зелёный CI не заменяет E2E.

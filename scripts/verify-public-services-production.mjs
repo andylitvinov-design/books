@@ -1,5 +1,5 @@
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -318,7 +318,7 @@ try {
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
-      const chooser = await openContactChannelChooser(target, expect);
+      const chooser = await openRegisteredContactChannelChooser(target, expect, page);
       const prepared = await assertPreparedContactChannels(chooser, expect);
       assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
         "Express rate preserved in approved draft: " + label);

@@ -35,6 +35,6 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - name: ZEN checkout signatures, IPN, merchant readback and legacy Stripe regression
-        run: node --test tests/service-zen-transfer-inquiry.test.mjs tests/service-commerce-zen.test.mjs tests/service-cart.test.mjs tests/service-commerce-flow.test.mjs tests/service-commerce-stripe.test.mjs tests/service-commerce-paypal.test.mjs tests/service-paypal-hosted-links.test.mjs tests/service-paypal-auto-public-flow.test.mjs tests/service-commerce-repository.test.mjs tests/service-commerce-account-binding.test.mjs tests/service-individual-checkout-methods.test.mjs tests/service-square-individual-payments.test.mjs tests/service-personal-payment-entry.test.mjs tests/consultation-cart-experience.test.mjs
+        run: node --test tests/service-zen-transfer-inquiry.test.mjs tests/service-commerce-zen.test.mjs tests/service-cart.test.mjs tests/service-commerce-flow.test.mjs tests/service-commerce-stripe.test.mjs tests/service-commerce-paypal.test.mjs tests/service-paypal-hosted-links.test.mjs tests/service-paypal-auto-public-flow.test.mjs tests/service-commerce-repository.test.mjs tests/service-commerce-account-binding.test.mjs tests/service-individual-checkout-methods.test.mjs tests/service-square-individual-payments.test.mjs tests/service-personal-payment-entry.test.mjs tests/consultation-cart-experience.test.mjs tests/service-storefront-shop.test.mjs
       - name: Billing, commerce, CRM and push SQL/RLS with real concurrent transactions
         run: npm run test:billing:db
