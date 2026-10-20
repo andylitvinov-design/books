@@ -3,15 +3,15 @@ import { mkdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
 
-// The approved, public Holistic House lighthouse art is transformed once at
+// The approved, public Holistic House lighthouse SVG is rasterized once at
 // build time. The generated JPEG is a local PDF XObject, never a request-time
 // Vercel image transformation and never a client-uploaded image.
 const root=process.cwd()
-const source=path.join(root,'public/images/holistic-house/report-lighthouse-coast.webp')
+const source=path.join(root,'public/images/holistic-house/report-lighthouse-coast.svg')
 const target=path.join(root,'assets/documents/report-coast-cover.jpg')
 const bytes=readFileSync(source)
 const sha=createHash('sha1').update('blob '+bytes.length+String.fromCharCode(0)).update(bytes).digest('hex')
-const expected='89a86ea0b56778e7bafdfcaa0696d00551c1397f'
+const expected='95982fa4f3b59787c11673e05a3e472ab3a1202f'
 if(sha!==expected)throw new Error('The approved PDF coastal cover source changed; review the new artwork before generating client PDFs.')
 const width=1100,height=740,zoom=1.7
 const zoomedWidth=Math.round(width*zoom),zoomedHeight=Math.round(height*zoom)
@@ -25,8 +25,8 @@ mkdirSync(path.dirname(target),{recursive:true})
 await sharp(bytes,{failOn:'error'}).rotate()
   .resize(zoomedWidth,zoomedHeight,{fit:'cover',position:'attention',kernel:'lanczos3'})
   .extract({
-    left:Math.floor((zoomedWidth-width)/2),
-    top:Math.floor((zoomedHeight-height)/2),
+    left:Math.round((zoomedWidth-width)*0.67),
+    top:Math.round((zoomedHeight-height)*0.36),
     width,height,
   })
   .composite([{input:fading}])
