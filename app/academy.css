@@ -4689,3 +4689,9 @@
   }
 }
 
+
+/* An original YouTube link is available before loading the in-page lesson player. */
+.academy-video-choice{position:relative;width:100%;min-width:0}
+.academy-video-choice .academy-video-poster{width:100%;aspect-ratio:16/9}
+.academy-video-direct-link{position:absolute;right:9px;top:9px;z-index:2;display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 10px;border-radius:10px;background:#fffaf1f0;color:#68432f;font:700 12px/1.2 Arial,sans-serif;text-decoration:none;box-shadow:0 3px 13px #1a130d36}
+.academy-video-direct-link:hover,.academy-video-direct-link:focus-visible{background:#fff;color:#492c1c;text-decoration:underline;outline-offset:2px}
