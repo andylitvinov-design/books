@@ -5,19 +5,19 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid,oporaExperienceDepth,oporaExperienceDepthValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_EXPERIENCE_EXTENDED_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const t={
   en:{next:'Continue',start:'I will try this step',try:'I tried it',
     unchanged:'About the same',vote:'Not sure yet',plan:'Keep this reminder',
-    save:'Save my practice',saved:'Your moment is saved',noPlan:'No plan today',
+    save:'Save my practice',saved:'Saved to your course',noPlan:'No plan today',
     pause:'Pause',return:'Go back'},
   ru:{next:'Продолжить',start:'Я попробую этот шаг',try:'Я попробовал(а)',
     unchanged:'Примерно так же',vote:'Пока не уверен(а)',plan:'Хочу запомнить этот вариант',
-    save:'Сохранить мою практику',saved:'Ваш момент сохранён',noPlan:'Пока без плана',
+    save:'Сохранить мою практику',saved:'Сохранено в вашем курсе',noPlan:'Пока без плана',
     pause:'Пауза',return:'Вернуться'},
 }
 function fixture(locale='en',day=1){
@@ -36,12 +36,15 @@ async function click(h,label){
   await h.settle()
 }
 
-test('day one restores five opening screens and all days add untracked support at step two',async()=>{
+test('restored opening and a supporting second screen lead into substantive eleven-step days',async()=>{
   assert.deepEqual([...OPORA_EXPERIENCE_PRE_SAVE_KEYS],['arrive','practice','feel','affirmation','save'])
   assert.deepEqual([...OPORA_DAY_ONE_RESTORED_KEYS],
     ['welcome','baseline','checkin','recall','affirmation','arrive','practice','feel','save'])
   assert.equal(oporaExperienceGuidesValid(),true)
   assert.equal(oporaExperienceSupportValid(),true)
+  assert.equal(oporaExperienceDepthValid(),true)
+  assert.deepEqual([...OPORA_EXPERIENCE_EXTENDED_KEYS],
+    ['arrive','support','understand','story','options','practice','repeat','feel','everyday','affirmation','save'])
   for(const lang of ['ru','en'])for(let day=1;day<=14;day++){
     const f=fixture(lang,day),h=f.h,d=t[lang]
     if(day===1){
@@ -74,14 +77,29 @@ test('day one restores five opening screens and all days add untracked support a
       assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
       assert.ok(!findButton(h.tree,d.try),'Step two must never ask for practice proof')
       await click(h,d.next)
+      assert.ok(textOf(h.tree).includes(oporaExperienceDepth(day,lang).why))
+      await click(h,d.next)
+      assert.ok(textOf(h.tree).includes(oporaExperienceDepth(day,lang).scenario))
+      await click(h,lang==='ru'?'Простой ориентир для внимания':'One simple point of attention')
+      await click(h,d.next)
+      assert.match(textOf(h.tree),lang==='ru'?/Подберите удобный вариант/:/Find your comfortable version/)
+      await click(h,lang==='ru'?'Полный вариант':'Explore the full practice')
+      await click(h,d.next)
     }
-    // Practical work always comes after the voluntary acceptance screen.
+    // Mode selection does not count as practice; only an explicit answer can.
     assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
     await click(h,d.try)
     await click(h,d.next)
+    if(day!==1){
+      assert.ok(textOf(h.tree).includes(oporaExperienceDepth(day,lang).alternative))
+      await click(h,lang==='ru'?'Сегодня только знакомлюсь':'Just reading today')
+      await click(h,d.next)
+    }
     await click(h,d.unchanged)
     await click(h,d.next)
     if(day!==1){
+      assert.ok(textOf(h.tree).includes(oporaExperienceDepth(day,lang).everyday))
+      await click(h,d.next)
       assert.ok(textOf(h.tree).includes(f.lesson.aphorism))
       await click(h,d.vote)
       await click(h,d.next)
@@ -97,7 +115,7 @@ test('day one restores five opening screens and all days add untracked support a
     assert.equal(f.payload.lessonId,f.lesson.id)
     assert.equal(f.payload.practiceWindow,'practice_v6')
     assert.deepEqual(f.payload.visitedSlideKeys,
-      day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+      day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_EXTENDED_KEYS])
     assert.deepEqual(validateOpora54Signals(f.payload.opora54).answers,f.payload.opora54.answers)
     assert.equal(f.payload.opora54.answers.act,undefined)
     assert.equal(f.payload.opora54.answers.actChoice,undefined)
@@ -172,7 +190,7 @@ test('the restored five opening screens remain fully optional, with no false pra
   assert.equal(f.payload.opora54.answers.aphorism,undefined)
   assert.equal(f.payload.opora54.answers.reflection,undefined)
   assert.equal(f.payload.opora54.answers.transfer,undefined)
-  assert.match(textOf(h.tree),/Explored the idea only/)
+  assert.match(textOf(h.tree),/No attempt was recorded/)
   assert.doesNotMatch(textOf(h.tree),/100%|trauma healed|clinically cured/)
   h.unmount()
 })
@@ -197,7 +215,7 @@ test('photo-first feelings and optional feedback work in ES without changing val
 
 test('a missing recap selection never sends a completion receipt or invented action',async()=>{
   const f=fixture('en',2),h=f.h
-  for(let i=0;i<6;i++)await click(h,t.en.next)
+  for(let i=0;i<OPORA_EXPERIENCE_EXTENDED_KEYS.length;i++)await click(h,t.en.next)
   assert.match(textOf(h.tree),/What you learned today/)
   await click(h,t.en.save)
   assert.equal(f.requests,0)
@@ -208,6 +226,24 @@ test('a missing recap selection never sends a completion receipt or invented act
   assert.equal(f.payload.opora54.answers.lessonConfidence,'practice_more')
   assert.equal(f.payload.practiceAttempt,null)
   assert.match(textOf(h.tree),/Congratulations! Lesson 2 complete!/)
+  h.unmount()
+})
+
+
+test('Day 2 preserves truthful no-attempt evidence and allows reviewing earlier slides after saving',async()=>{
+  const f=fixture('en',2),h=f.h
+  for(let i=0;i<OPORA_EXPERIENCE_EXTENDED_KEYS.length;i++)await click(h,t.en.next)
+  await click(h,'I need more practice')
+  await click(h,t.en.save)
+  assert.equal(f.requests,1)
+  assert.equal(f.payload.practiceAttempt,null)
+  assert.deepEqual(f.payload.visitedSlideKeys,[...OPORA_EXPERIENCE_EXTENDED_KEYS])
+  assert.match(textOf(h.tree),/No attempt was recorded/)
+  await click(h,'Review slides')
+  assert.match(textOf(h.tree),/Choose one gentle reminder/)
+  await click(h,t.en.next)
+  assert.match(textOf(h.tree),/Congratulations! Lesson 2 complete!/)
+  assert.equal(f.requests,1,'Reviewing slides must never submit a duplicate session')
   h.unmount()
 })
 
@@ -237,7 +273,8 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
   const js=read('components/app/opora-experience-player.jsx')
   const css=read('components/app/opora-experience-player.module.css')
   assert.match(server,/practiceWindow==='practice_v6'&&version!==COURSE_ANTISTRESS_SKILLS_V7/)
-  assert.match(server,/OPORA_EXPERIENCE_PRE_SAVE_KEYS\.map/)
+  assert.match(server,/OPORA_EXPERIENCE_PRE_SAVE_KEYS/)
+  assert.match(server,/OPORA_EXPERIENCE_EXTENDED_KEYS/)
   assert.match(server,/OPORA_DAY_ONE_RESTORED_KEYS\.map/)
   assert.match(server,/oporaOpening/)
   assert.match(server,/as-5\.6-five-moments-v1/)
