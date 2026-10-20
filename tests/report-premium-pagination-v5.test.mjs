@@ -106,6 +106,20 @@ test('realistic anonymous report density avoids an orphan signed sheet and prese
   }
 })
 
+test('first remedy chapter never becomes an orphaned heading and the coast stays below credentials', () => {
+  const pdf=buildPrescriptionPdf(threeRemedyLayoutFixture('en'),'en','https://example.invalid')
+  const pages=streamsOf(pdf)
+  const header='(SELECTED REMEDIES)'
+  const headingPages=pages.flatMap((stream,index)=>stream.includes(header)?[index]:[])
+  assert.equal(headingPages.length,1,'one distinct premium chapter heading')
+  assert.match(pages[headingPages[0]],/\/RemedyPhoto1 Do Q/,
+    'first original photograph must accompany its chapter heading')
+  if(pdf.toString('latin1').includes('/CoastalPhoto')){
+    assert.match(pages[0],/q 200 0 0 135 327 579 cm \/CoastalPhoto Do Q/,
+      'coastal art stays below the y=715 masthead divider and outside credentials')
+  }
+})
+
 test('cover art is a single approved coastal photograph if the deterministic build has run', () => {
   const pdf=buildPrescriptionPdf(threeRemedyLayoutFixture('en'),'en','https://example.invalid')
   const pages=streamsOf(pdf)
