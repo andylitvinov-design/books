@@ -5,7 +5,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 
 const COPY={
   ru:{title:'Уведомления приложения',intro:'Получайте на телефон уведомление, когда мастер отвечает вам в личной переписке.',
-    allow:'Подключить этот телефон',off:'Отключить уведомления',on:'Уведомления включены',
+    allow:'Подключить этот телефон',off:'Отключить на всех телефонах',on:'Уведомления включены',
     disabled:'Уведомления отключены',loading:'Проверяем настройки…',
     unavailable:'Отправка нативных уведомлений пока не настроена на сервере.',
     denied:'Телефон запретил уведомления. Разрешите их в настройках устройства.',
@@ -14,7 +14,7 @@ const COPY={
     saved:'Устройство зарегистрировано для личных уведомлений.',
     revoked:'Регистрация этого аккаунта отозвана на сервере.'},
   en:{title:'App notifications',intro:'Receive a phone notification when a practitioner replies to your private conversation.',
-    allow:'Enable this phone',off:'Disable notifications',on:'Notifications enabled',
+    allow:'Enable this phone',off:'Disable on all devices',on:'Notifications enabled',
     disabled:'Notifications disabled',loading:'Checking settings…',
     unavailable:'Native push delivery has not been configured on the server yet.',
     denied:'Your phone has blocked notifications. Change this in device settings.',
