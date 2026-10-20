@@ -214,3 +214,24 @@
 .publicSourceResult small{font-size:11px;color:#758c8e;overflow-wrap:anywhere}
 .publicSourceResult button{align-self:flex-start;background:#087982;color:#fff;border-color:#087982}
 @media(max-width:580px){.publicSourcePicker{padding:10px}.publicSourcePicker>button{width:100%}}
+
+
+/* Owner-approved evergreen content reuse: every occurrence remains a new draft. */
+.evergreenPanel{margin:14px 0;padding:clamp(13px,2.5vw,22px);border:1px solid #cfe3df;
+  border-radius:17px;background:#f9fcfb;display:flex;flex-direction:column;gap:13px}
+.evergreenHead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.evergreenHead h3{display:flex;align-items:center;gap:9px;margin:0;color:#16525b;font-size:18px}
+.evergreenHead button{display:inline-flex;align-items:center;gap:5px;min-height:35px;padding:6px 10px;
+  border:1px solid #d5e5e1;border-radius:9px;background:#fff;color:#285d65;cursor:pointer;font-size:12px;font-weight:650}
+.evergreenSource{display:block;font-size:14px;line-height:1.5;color:#314f54;overflow-wrap:anywhere}
+.evergreenPanel .hint{display:flex;align-items:flex-start;gap:7px;line-height:1.6}
+.evergreenPanel .hint svg{flex:none;margin-top:2px}
+.evergreenPanel .pair{gap:12px}
+.evergreenPanel .pair label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:12px;font-weight:720;color:#35565e}
+.evergreenPanel .pair input,.evergreenPanel .pair select{width:100%;max-width:100%;min-height:41px;
+  padding:9px 10px;border-radius:9px;border:1px solid #c9dcd8;background:#fff;color:#204f56;font:inherit}
+.evergreenSubmit{display:inline-flex;align-items:center;align-self:flex-start;gap:8px;padding:10px 16px;
+  border-radius:10px;border:1px solid #087982;background:#087982;color:#fff;min-height:43px;
+  font-size:13px;font-weight:730;cursor:pointer}
+.evergreenSubmit:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:580px){.evergreenPanel .pair{grid-template-columns:1fr}.evergreenSubmit{width:100%;justify-content:center}}
