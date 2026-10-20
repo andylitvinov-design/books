@@ -116,6 +116,7 @@ import { mkdirSync, writeFileSync, createWriteStream, readFileSync } from 'node:
 import { chromium, webkit, expect } from '@playwright/test';
 import { getSpanishRemedySlugs } from '../data/remedies-es.js';
 import { assertUnsupportedSpanishPrivateLocale } from './helpers/es-private-denial-verifier.mjs';
+import { assertCabinetGuestEntry } from './helpers/cabinet-guest-entry-verifier.mjs';
 const live = process.argv.includes('--live');
 const origin = live ? 'https://holistichouse.vercel.app' : 'https://127.0.0.1:3443';
 const auditOrigin = live ? origin : 'http://127.0.0.1:3202';
@@ -250,16 +251,14 @@ try {
         await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
-        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
-        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
+        await assertCabinetGuestEntry(page, expect);
         await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await assertCabinetGuestEntry(page, expect);
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();

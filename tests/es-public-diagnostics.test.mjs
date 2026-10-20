@@ -75,7 +75,16 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed menu-to-account handoff');
  const priorAccountEntry=`        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
         await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));`;
- const normalized=block.replace(accountEntry,priorAccountEntry).replace(catalogAssertion,'').replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
+ // The approved guest redesign changes only the entry assertions, not the
+ // menu action, canonical arrival, reload, locale, or private-control guards.
+ const guestAssertion='        await assertCabinetGuestEntry(page, expect);';
+ assert.equal(block.split(guestAssertion).length-1,2,'Exactly two awaited guest checks, on arrival and reload');
+ const arrival=`        ${portraitAssertion}\n${guestAssertion}\n        await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);`;
+ const reload=`        await expect(page.locator('html')).toHaveAttribute('lang','en');\n${guestAssertion}`;
+ assert.equal(block.split(arrival).length-1,1,'Guest assertion immediately follows canonical arrival and retains the private-control guard');
+ assert.equal(block.split(reload).length-1,1,'Guest assertion follows the unchanged reload locale check');
+ const oldGuest=`        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();\n        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\\.|The new personal app is not connected yet\\.)$/);\n        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');`;
+ const normalized=block.replace(guestAssertion,oldGuest).replace(guestAssertion,"        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();").replace(accountEntry,priorAccountEntry).replace(catalogAssertion,'').replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
  assert.equal(createHash('sha256').update(normalized).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen action/assertion block apart from approved redirects and account menu handoff');
 });
 
