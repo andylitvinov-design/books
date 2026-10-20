@@ -6,6 +6,8 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {uiLocaleCookie} from '@/lib/ui-locale'
 import {getAppConfig} from '@/lib/app/config'
 import {ownerTelegramSetupStatus} from '@/lib/practitioners/telegram-owner-setup'
+import {modelSettings} from '@/lib/practitioners/council-free-models.mjs'
+import {sendDailyCouncilReportAction} from './actions'
 import {
   checkTelegramConnectionAction,connectAndTestTelegramAction
 } from './actions'
@@ -41,11 +43,18 @@ const resultNotes={
   identity_mismatch:{ru:'Имя бота или владельца чата не совпадает. Отправка заблокирована.',en:'Bot or private owner chat mismatch. Sending blocked.'},
   sender_disabled:{ru:'Отправка выключена на сервере.',en:'Server delivery switch is off.'},
   setup_unavailable:{ru:'Сервис проверки временно недоступен.',en:'Connection verification temporarily unavailable.'},
+  council_sent:{ru:'AI-отчёт принят Telegram. Проверь чат Dot.',en:'AI report accepted by Telegram. Check Dot.'},
+  council_duplicate:{ru:'Этот отчёт уже отправлен или выполняется. Без дубля.',en:'Already sent or running. No duplicate.'},
+  council_missing_keys:{ru:'Подключи оба ключа и подтверди бесплатный Gemini.',en:'Connect both keys and confirm Gemini Free Tier.'},
+  council_no_archive:{ru:'Публичный HTML-аудит ещё не создан.',en:'Public HTML audit not archived yet.'},
+  council_not_paired:{ru:'Личный чат ещё не подтверждён.',en:'Private Telegram chat not verified.'},
+  council_unavailable:{ru:'Доставка не подтверждена. Проверь статус отчёта.',en:'Delivery unconfirmed. Check report status.'},
 }
 
 export default async function TelegramSetupPage({searchParams}){
   if(!await requireAdminRequest())redirect('/admin/login')
   const ru=(await cookies()).get(uiLocaleCookie)?.value==='ru'
+  const models=modelSettings(process.env)
   const lang=ru?'ru':'en'
   const result=(await searchParams)?.result||''
   let state={token_saved:false,telegram_enabled:false,pairing:'not_started',
@@ -61,10 +70,13 @@ export default async function TelegramSetupPage({searchParams}){
       ?ru?'Личный чат привязан, тест ещё не отправлен':'Private chat paired; test not yet sent'
       :pairing[lang]
   const returned=resultNotes[result]
-  const displayResult=result==='accepted'&&!state.test_accepted
+  const displayResult=['accepted','already_accepted'].includes(result)&&!state.test_accepted
     ?resultNotes.setup_unavailable[lang]
     :returned?.[lang]
   const canCheck=state.token_saved&&!unavailable
+  const canCouncil=canCheck&&state.pairing==='paired'&&state.telegram_enabled&&
+    models.geminiKeyPresent&&models.geminiFreeConfirmed&&models.mistralKeyPresent&&
+    state.council?.status!=='sending'
   const canSend=canCheck&&state.telegram_enabled&&!state.test_accepted&&
     !['sending','uncertain'].includes(state.test)
 
@@ -134,6 +146,46 @@ export default async function TelegramSetupPage({searchParams}){
           target="_blank" rel="noopener noreferrer" className={styles.external}>
           {ru?'Vercel · защищённые переменные ↗':'Vercel · protected environment ↗'}
         </Link>
+        <div className={styles.modelSetup} aria-label={ru?'Доступность AI-отчётов':'AI audit readiness'}>
+          <h3>{ru?'Ежедневный анализ сайта':'Daily website review'}</h3>
+          <p>{ru?'Gemini:':'Gemini:'} <strong>{
+            models.geminiKeyPresent&&models.geminiFreeConfirmed
+              ?ru?'Ключ сохранён, бесплатный тариф подтверждён':'Key saved, Free Tier confirmed'
+              :models.geminiKeyPresent
+                ?ru?'Ключ сохранён; требуется подтверждение Free Tier':'Key saved; Free Tier confirmation required'
+                :ru?'API-ключ не подключён':'API key missing'
+          }</strong></p>
+          <p>Mistral: <strong>{
+            models.mistralKeyPresent
+              ?ru?'Ключ OpenRouter сохранён; цена модели проверяется при каждом запуске':
+                'OpenRouter key saved; model price checked on every run'
+              :ru?'Бесплатный API OpenRouter не подключён':'Free OpenRouter API not connected'
+          }</strong></p>
+          <p className={styles.footnote}>{
+            ru?'Аудиты выполняются только по публичным страницам; платные модели автоматически не используются.':
+              'Public-site evidence only. Paid model fallback is strictly disabled.'
+          }</p>
+          <p>{ru?'Последний AI-отчёт':'Latest AI report'}: <strong>{
+            state.council
+              ?state.council.date+' · '+state.council.status+
+                ' · Gemini '+state.council.gemini+' / Mistral '+state.council.mistral
+              :ru?'Нет подтверждённого отчёта':'No confirmed report yet'
+          }</strong></p>
+          <form action={sendDailyCouncilReportAction} className={styles.sendForm}>
+            <button type="submit" className={styles.primary} disabled={!canCouncil}>
+              {ru?'Отправить анализ Gemini и Mistral сейчас':'Send Gemini + Mistral audit now'}
+            </button>
+          </form>
+          <div className={styles.setupLinks}>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
+              Gemini · Google AI Studio ↗</a>
+            <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">
+              Mistral · OpenRouter ↗</a>
+            <a href="https://vercel.com/super10/codex-public-book-library/settings/environment-variables"
+               target="_blank" rel="noopener noreferrer">
+              {ru?'Подключить оба ключа в Vercel ↗':'Add both keys in Vercel ↗'}</a>
+          </div>
+        </div>
         <p className={styles.footnote}>
           {ru?'Автоматические Gemini/Mistral заключения появятся только при отдельно подключённых бесплатных API. Личный Muse пока добавляется вручную.':
             'Gemini/Mistral reviews require separate approved free-tier APIs. Personal Muse remains manual.'}

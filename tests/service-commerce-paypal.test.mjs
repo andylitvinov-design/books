@@ -77,7 +77,7 @@ if (!process.execArgv.includes('--conditions=react-server')) {
       breakdown: { item_total: { currency_code: 'EUR', value: '50.00' } } })
     assert.equal(sent.purchase_units[0].custom_id, buyer + ':' + id)
     assert.equal(sent.purchase_units[0].items[0].sku, 'express-consultation-30')
-    assert.match(sent.payment_source.paypal.experience_context.return_url, /\/en\/payments\?serviceOrder=/)
+    assert.match(sent.payment_source.paypal.experience_context.return_url, /\/en\/services\/checkout\?serviceOrder=/)
     assert.deepEqual(f.requests.filter(call => call.url.endsWith('/v2/checkout/orders')).map(call => call.options.headers['PayPal-Request-Id']), ['hh-create-' + id])
   })
   test('capture is forbidden before PayPal approval, then checked against merchant and exact amount', async () => {
@@ -153,6 +153,6 @@ if (!process.execArgv.includes('--conditions=react-server')) {
     const cart = read('components/commerce/service-cart.tsx')
     assert.match(cart, /paymentProvider === "paypal"/)
     assert.match(cart, /verifyCommerceIdentity/)
-    assert.match(cart, /orders\/\$\{encodeURIComponent\(orderId\)\}\/capture/)
+    assert.match(cart, /fetch\(route \+ "\/capture"/)
   })
 }

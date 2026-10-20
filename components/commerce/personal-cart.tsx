@@ -22,7 +22,7 @@ const copy = {
     squareNote: "Square Canada charges in CAD, not EUR. Check the CAD price and payee on Square before paying. We verify receipt manually; no appointment is booked.",
     cardUnavailable: "Card checkout is not connected yet. PayPal or Interac are available below; please never send card numbers in a message.",
     interacNote: "Canada only. Ask for the exact CAD quote and verified recipient before transferring. This button does not collect payment.",
-    paypalAction: "Continue to PayPal", zenAction: "Request ZEN transfer details",
+    paypalAction: "Continue to PayPal.Me", verifiedPayPalAction: "Secure checkout · auto confirmation", zenAction: "Request ZEN transfer details",
     wiseAction: "Open Wise", wiseItem: "Pay for", 
     paypalNote: "PayPal.Me requires a PayPal account to pay, even if you use a linked card. Choose Goods & Services; verify Andrii Litvinov and the EUR total. Never use Friends & Family. We check receipts manually.",
     zenNote: "ZEN.COM opens a WhatsApp request for transfer details, not a payment. Don't transfer before confirmation.",
@@ -39,7 +39,7 @@ const copy = {
     squareNote: "Square Canada списывает сумму в CAD, а не EUR. Проверьте получателя и сумму в CAD. Поступление проверяется вручную; время сеанса не бронируется.",
     cardUnavailable: "Оплата картой на сайте пока не подключена. Доступны PayPal или запрос Interac; не отправляйте данные карты в сообщениях.",
     interacNote: "Только Канада. До перевода уточните сумму в CAD и проверенные реквизиты. Эта кнопка не списывает деньги.",
-    paypalAction: "Перейти в PayPal", zenAction: "Запросить реквизиты ZEN",
+    paypalAction: "Перейти в PayPal.Me", verifiedPayPalAction: "Оплатить с автоподтверждением", zenAction: "Запросить реквизиты ZEN",
     wiseAction: "Открыть Wise", wiseItem: "Оплатить",
     paypalNote: "Для оплаты через PayPal.Me нужен аккаунт PayPal, даже при оплате привязанной картой. Выберите «Товары и услуги», проверьте Andrii Litvinov и сумму EUR. Не используйте «Друзьям и семье». Поступление проверяется вручную.",
     zenNote: "ZEN.COM открывает запрос реквизитов в WhatsApp, а не оплату. Не переводите деньги до подтверждения.",
@@ -56,7 +56,7 @@ const copy = {
     squareNote: "Square Canada cobra en CAD, no en EUR. Comprueba el precio en CAD y el destinatario. Verificamos el pago manualmente; no reserva cita.",
     cardUnavailable: "El pago directo con tarjeta aún no está conectado. Usa PayPal o solicita Interac; no compartas datos de la tarjeta por mensajes.",
     interacNote: "Solo Canadá. Solicita la cantidad exacta en CAD y un destinatario verificado antes de transferir. Esto no cobra dinero.",
-    paypalAction: "Continuar a PayPal", zenAction: "Solicitar datos para ZEN",
+    paypalAction: "Continuar a PayPal.Me", verifiedPayPalAction: "Pago seguro · confirmación automática", zenAction: "Solicitar datos para ZEN",
     wiseAction: "Abrir Wise", wiseItem: "Pagar",
     paypalNote: "PayPal.Me requiere una cuenta PayPal, incluso si pagas con una tarjeta vinculada. Selecciona Productos y servicios, comprueba Andrii Litvinov y el total en EUR. No uses Amigos y familiares. Verificación manual.",
     zenNote: "ZEN.COM abre una consulta de datos bancarios por WhatsApp, no es un pago. Espera la confirmación.",
@@ -67,9 +67,10 @@ const copy = {
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, verifiedPayPalEnabled }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
+  verifiedPayPalEnabled: boolean;
   wiseEnabled: boolean;
   squareLinks: Record<string, {url: string; amountMinor: number; currency: string}>;
 }) {
@@ -78,7 +79,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks }
   const products = publicServiceCatalog(locale);
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
-  const [method, setMethod] = useState<Method>(paypalEnabled ? "paypal" : Object.keys(squareLinks).length ? "square" : "interac");
+  const [method, setMethod] = useState<Method>(paypalEnabled || verifiedPayPalEnabled ? "paypal" : Object.keys(squareLinks).length ? "square" : "interac");
 
   useEffect(() => {
     let stored: string[] = [];
@@ -151,7 +152,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks }
           <legend>{t.method}</legend>
           <div className={styles.methodChoices}>
             {squarePayment && <label data-chosen={method === "square"}><input type="radio" name={id + "-payment"} checked={method === "square"} onChange={() => setMethod("square")} />{t.square}</label>}
-            {paypalEnabled && <label data-chosen={method === "paypal"}><input type="radio" name={id + "-payment"} checked={method === "paypal"} onChange={() => setMethod("paypal")} />{t.paypal}</label>}
+            {(paypalEnabled || verifiedPayPalEnabled) && <label data-chosen={method === "paypal"}><input type="radio" name={id + "-payment"} checked={method === "paypal"} onChange={() => setMethod("paypal")} />{t.paypal}</label>}
             <label data-chosen={method === "interac"}><input type="radio" name={id + "-payment"} checked={method === "interac"} onChange={() => setMethod("interac")} />{t.interac}</label>
             <label data-chosen={method === "zen"}><input type="radio" name={id + "-payment"} checked={method === "zen"} onChange={() => setMethod("zen")} />{t.zen}</label>
             {wiseEnabled && <label data-chosen={method === "wise"}><input type="radio" name={id + "-payment"} checked={method === "wise"} onChange={() => setMethod("wise")} />{t.wise}</label>}
@@ -163,10 +164,16 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks }
             <a className={styles.primary} href={squarePayment.url} target="_blank" rel="noopener noreferrer" data-cart-square-payment-link>
               <CreditCard size={18} aria-hidden="true" />{t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)}<ArrowRight size={16} aria-hidden="true" />
             </a><p className={styles.hint}>{t.squareNote}</p>
-          </> : method === "paypal" && paypalUrl ? <>
-            <a className={styles.primary} href={paypalUrl} target="_blank" rel="noopener noreferrer" data-cart-paypal-personal>
+          </> : method === "paypal" && (paypalUrl || verifiedPayPalEnabled) ? <>
+            {verifiedPayPalEnabled ? <Link className={styles.primary}
+              href={`/${locale}/services/checkout?items=${chosen.map(product => product.id).join(",")}`}
+              data-cart-verified-paypal-checkout>
+              <CreditCard size={18} aria-hidden="true" />{t.verifiedPayPalAction} · {formatServiceAmount(total, locale)}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link> : null}
+            {paypalUrl ? <a className={verifiedPayPalEnabled ? styles.booking : styles.primary} href={paypalUrl} target="_blank" rel="noopener noreferrer" data-cart-paypal-personal>
               <CreditCard size={18} aria-hidden="true" />{t.paypalAction} · {formatServiceAmount(total, locale)}<ArrowRight size={16} aria-hidden="true" />
-            </a><p className={styles.hint}>{t.paypalNote}</p>
+            </a> : null}<p className={styles.hint}>{t.paypalNote}</p>
           </> : method === "interac" && interacUrl ? <>
             <a className={styles.primary} href={interacUrl} target="_blank" rel="noopener noreferrer" data-interac-transfer-inquiry="cart">
               <MessageCircle size={18} aria-hidden="true" />{t.interacAction}<ArrowRight size={16} aria-hidden="true" />
