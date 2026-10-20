@@ -30,7 +30,7 @@ test('client can only queue an authorized server-side approved snapshot',()=>{
   assert.match(server,/authorizedNarrationAnalysis\(request,body,config,store\)/)
   assert.match(server,/splitApprovedAnalysis\(analysis\)/)
   assert.match(server,/narrationVersionKey/)
-  assert.match(server,/seal\(\{text:source\.text\}/)
+  assert.match(server,/seal\(\{text:source\.text,lineage:source\.lineage\}/)
   assert.match(server,/consumeAccessAttempt/)
   assert.doesNotMatch(route,/body\.text|voiceId|audioBlob|speechSynthesis/)
 })
