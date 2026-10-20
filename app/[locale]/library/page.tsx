@@ -39,10 +39,10 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   if (!isSupportedLocale(locale)) notFound();
 
   const rawView = Array.isArray(query.view) ? query.view[0] : query.view;
-  const view: LibraryView = rawView === "videos" || rawView === "books" ? rawView : "latest";
+  const view: LibraryView = rawView === "videos" || rawView === "books" || rawView === "dao" ? rawView : "latest";
   let videos: LibraryPublicVideo[] = [];
   let articles: LibraryPublicArticle[] = [];
-  if (view !== "books") {
+  if (view !== "books" && view !== "dao") {
     try {
       const config = getAppConfig();
       const results = await Promise.allSettled([

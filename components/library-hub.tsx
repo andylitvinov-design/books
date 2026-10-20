@@ -4,10 +4,11 @@ import type { CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LibraryFeed, type LibraryFeedItem } from "@/components/library-feed";
+import { DaoHexagramLibrarySection } from "@/components/dao-hexagram-library-section";
 import type { PublicLocale } from "@/lib/public-locales";
 import { growthGuideFor } from "@/data/growth-guides";
 
-export type LibraryView = "latest" | "books" | "videos";
+export type LibraryView = "latest" | "books" | "videos" | "dao";
 
 export type LibraryPublicVideo = { id: string; title: string; description: string; youtubeId: string; url: string; publishedAt: string };
 export type LibraryPublicArticle = {
@@ -19,7 +20,7 @@ export const libraryCopy = {
   en: {
     title: "Library",
     lead: "Books, guides and reference materials in one place.",
-    latestTab: "Latest", booksTab: "Books",
+    latestTab: "Latest", booksTab: "Books", daoTab: "Dao reading", leadDao: "Ask the I Ching or choose one of 64 illustrated symbols.",
     leadLatest: "Fresh videos, articles and guides from Holistic House.",
     leadVideos: "Short educational videos and introductions.",
     guides: "Explore the guides",
@@ -35,7 +36,7 @@ export const libraryCopy = {
   ru: {
     title: "Библиотека",
     lead: "Книги, справочники и методички в одном месте.",
-    latestTab: "Новое", booksTab: "Книги",
+    latestTab: "Новое", booksTab: "Книги", daoTab: "Даосское гадание", leadDao: "Задайте вопрос или выберите один из 64 символов Книги Перемен.",
     leadLatest: "Свежие видео, статьи и методички Holistic House.",
     leadVideos: "Обучающие видео и короткие объяснения практик.",
     guides: "Справочники и методички",
@@ -51,7 +52,7 @@ export const libraryCopy = {
   es: {
     title: "Biblioteca",
     lead: "Libros, guías y materiales de referencia en un solo lugar.",
-    latestTab: "Novedades", booksTab: "Libros",
+    latestTab: "Novedades", booksTab: "Libros", daoTab: "Oráculo taoísta", leadDao: "Haz una pregunta o elige uno de los 64 símbolos del I Ching.",
     leadLatest: "Nuevos vídeos, artículos y guías de Holistic House.",
     leadVideos: "Vídeos educativos e introducciones breves.",
     guides: "Explorar las guías",
@@ -118,6 +119,19 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
       href: `/${locale}/books`,
       actionLabel: allBooks[locale].action,
       image: "/images/holistic-house/books-library.webp",
+    },
+    {
+      id: "library-dao-hexagrams",
+      title: locale === "ru" ? "Даосское гадание · 64 гексаграммы" : locale === "es" ? "Oráculo taoísta · 64 hexagramas" : "Daoist divination · 64 hexagrams",
+      subtitle: locale === "ru" ? "Случайная карта или выбор номера" : locale === "es" ? "Pregunta o elige un número" : "Draw a card or choose a number",
+      description: locale === "ru"
+        ? "Вопрос, случайный символ, 12 подтверждённых авторских толкований и 64 иллюстрированные карточки в библиотеке."
+        : locale === "es"
+          ? "Haz una pregunta y descubre un símbolo al azar, o busca un número entre 64 tarjetas ilustradas."
+          : "Ask a question, draw a random symbol or open a numbered card. All 64 illustrated entries in the Library.",
+      href: `/${locale}/library?view=dao`,
+      actionLabel: text.open,
+      image: "/images/dao-hexagrams/post_85.jpg",
     },
     {
       id: "library-remedies",
@@ -252,15 +266,18 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
       <PublicSiteHeader locale={locale} />
       <header className="library-heading">
         <h1>{text.title}</h1>
-        <p>{view === "latest" ? text.leadLatest : view === "videos" ? text.leadVideos : text.lead}</p>
+        <p>{view === "latest" ? text.leadLatest : view === "videos" ? text.leadVideos : view === "dao" ? text.leadDao : text.lead}</p>
       </header>
       <nav className="library-media-switch" aria-label={text.title}>
         <Link aria-current={view === "latest" ? "page" : undefined} href={"/" + locale + "/library"}>{text.latestTab}</Link>
         <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/library?view=videos"}>{text.videosTab}</Link>
         <Link aria-current={view === "books" ? "page" : undefined} href={"/" + locale + "/library?view=books"}>{text.booksTab}</Link>
+        <Link aria-current={view === "dao" ? "page" : undefined} href={"/" + locale + "/library?view=dao"}>{text.daoTab}</Link>
       </nav>
-      <LibraryFeed locale={locale} items={view === "books" ? guideFeed : feedItems}
-        videosOnly={view === "videos"} guidesOnly={view === "books"} />
+      {view === "dao" ? <DaoHexagramLibrarySection locale={locale} /> : (
+        <LibraryFeed locale={locale} items={view === "books" ? guideFeed : feedItems}
+          videosOnly={view === "videos"} guidesOnly={view === "books"} />
+      )}
       <p className="library-note">{text.note}</p>
       <PublicConsultationCta locale={locale} />
     </main>

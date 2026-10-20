@@ -2041,3 +2041,20 @@ body:has(.client-entry-shell .cabinet-guest-tests) {
 @media (prefers-reduced-motion: reduce) {
   .hh-app .hh-tests-mood-disclosure > summary svg { transition: none; }
 }
+
+/* The Library has four destinations now, including the Dao reading.
+   Keep every tab visible, keyboard reachable and 44px high on narrow phones. */
+.library-media-switch {
+  width: min(560px, 100%);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.library-media-switch a {
+  min-height: 44px;
+  padding: 5px 3px;
+  text-align: center;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 380px) {
+  .library-media-switch a { font-size: 10px; }
+}
