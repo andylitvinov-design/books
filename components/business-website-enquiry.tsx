@@ -10,8 +10,8 @@ import styles from "./business-website-enquiry.module.css";
 type Format = "free" | "express" | "full" | "mentoring";
 const translations = {
   en: {
-    eyebrow:"SEND DIRECTLY TO ANDREY", title:"Leave a business enquiry on the website",
-    lead:"A short business question is enough. Your request goes into Andrey's private CRM; no account, automatic booking or payment required.",
+    eyebrow:"SEND DIRECTLY TO ANDREY", title:"Send your consultation request",
+    lead:"Choose a format, describe your question and leave a contact. Andrey will reply personally; no payment or confirmed booking happens here.",
     name:"Your name",namePlaceholder:"How should I address you?",email:"Email",phone:"Phone / WhatsApp",
     emailHelp:"Provide an email, phone number, or both.",
     format:"Which format interests you?",formatNames:{free:"Free written review",express:"30 minutes · €50",full:"60 minutes · €100",mentoring:"Goals Mentoring · by arrangement"},
@@ -25,8 +25,8 @@ const translations = {
     rate:"Too many requests. Please try again later.",offline:"The website request system is temporarily unavailable.",
   },
   ru: {
-    eyebrow:"НАПРЯМУЮ АНДРЕЮ",title:"Оставьте бизнес-заявку прямо на сайте",
-    lead:"Достаточно коротко описать деловой вопрос. Заявка сохранится в личной CRM Андрея без регистрации, оплаты и автоматической записи.",
+    eyebrow:"НАПРЯМУЮ АНДРЕЮ",title:"Оставить заявку на консультацию",
+    lead:"Выберите формат, кратко опишите вопрос и оставьте контакт. Андрей ответит лично; оплата и запись не происходят автоматически.",
     name:"Как к вам обращаться",namePlaceholder:"Ваше имя",email:"Email",phone:"Телефон / WhatsApp",
     emailHelp:"Укажите email, телефон или оба контакта.",
     format:"Какой формат интересен?",formatNames:{free:"Бесплатный письменный разбор",express:"30 минут · €50",full:"60 минут · €100",mentoring:"Goals Mentoring · по договорённости"},
@@ -40,8 +40,8 @@ const translations = {
     rate:"Слишком много запросов. Попробуйте позже.",offline:"Сохранение заявок временно недоступно.",
   },
   es: {
-    eyebrow:"MENSAJE DIRECTO A ANDREY",title:"Envía una solicitud empresarial desde la web",
-    lead:"Basta con una pregunta breve. Tu solicitud se guardará en el CRM privado de Andrey, sin registro, pago ni reserva automática.",
+    eyebrow:"MENSAJE DIRECTO A ANDREY",title:"Enviar solicitud de consulta",
+    lead:"Elige la modalidad, explica tu pregunta y deja un contacto. Andrey responderá personalmente; no hay pago ni reserva automática.",
     name:"Tu nombre",namePlaceholder:"¿Cómo te llamas?",email:"Correo electrónico",phone:"Teléfono / WhatsApp",
     emailHelp:"Indica correo, teléfono o ambos.",
     format:"¿Qué modalidad te interesa?",formatNames:{free:"Revisión escrita gratuita",express:"30 minutos · €50",full:"60 minutos · €100",mentoring:"Goals Mentoring · por acuerdo"},
