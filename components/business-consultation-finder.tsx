@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, ShieldCheck, Sparkles } from 'lucide-react'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { businessConsultingCopy } from '@/data/business-consulting-copy'
-import { BUSINESS_FINDER_ISSUES, BUSINESS_FINDER_OUTCOMES, BUSINESS_FINDER_FORMATS, suggestBusinessConsultation } from '@/lib/business-consulting/consultation-finder'
+import { BUSINESS_FINDER_ISSUES, BUSINESS_FINDER_FORMATS, suggestBusinessConsultation } from '@/lib/business-consulting/consultation-finder'
 import styles from './business-consultation-finder.module.css'
 
 type Locale = 'en' | 'ru' | 'es'
@@ -14,7 +14,6 @@ type Format = 'free' | 'express' | 'full' | 'mentoring'
 type Choice = { label: string; detail: string }
 
 const areas: Area[] = ['business', 'money', 'personal', 'project']
-const outcomes = BUSINESS_FINDER_OUTCOMES as readonly Outcome[]
 const formats = BUSINESS_FINDER_FORMATS as readonly Format[]
 
 const words: Record<Locale, {
@@ -26,16 +25,16 @@ const words: Record<Locale, {
   areas: Record<Area, Choice>; issues: Record<string, Choice>; outcomes: Record<Outcome, Choice>;
 }> = {
   en: {
-    eyebrow: '3 QUICK QUESTIONS',
-    title: 'Find your consultation in 1 minute',
-    lead: 'Choose a topic and answer two more questions. You can change the suggested format.',
+    eyebrow: '2 QUICK QUESTIONS',
+    title: 'Find your consultation in 30 seconds',
+    lead: 'Choose a topic and a challenge. We suggest a format that you can change.',
     steps: 'Questions answered', stepOne: 'What is your question mostly about?', stepTwo: 'What feels hardest right now?', stepThree: 'What would help you most?',
     stepOneHelp: 'There is no wrong choice.', stepTwoHelp: 'Choose the closest option; you can explain it in your own words when requesting a session.',
     stepThreeHelp: 'This helps suggest a starting format, not a diagnosis.', awaiting: 'Your suggestion will appear after three short choices.',
     match: 'A possible starting point', matchHint: 'Based only on the options you selected. You remain free to choose any format.',
     approach: 'Focus for your conversation', available: 'Other available formats', selection: 'Selected',
-    request: 'Continue to the enquiry form below', detail: 'See the full consultation details',
-    privacy: 'Your choices stay on this page until you decide to submit the consent-based enquiry form.',
+    request: 'Enquire about this consultation', detail: 'See the full consultation details',
+    privacy: 'Your answers stay here until you send an enquiry with consent.',
     noBooking: 'An enquiry is not a confirmed appointment or payment. Andrey confirms details personally. No financial results are promised.',
     context: 'Area', concern: 'Question', wanted: 'Desired next step',
     mentoringFee: 'Price and schedule by arrangement',
@@ -77,16 +76,16 @@ const words: Record<Locale, {
     },
   },
   ru: {
-    eyebrow: '3 КОРОТКИХ ВОПРОСА',
-    title: 'Подберите консультацию за минуту',
-    lead: 'Выберите тему и ответьте ещё на два вопроса. Рекомендацию можно изменить.',
+    eyebrow: '2 КОРОТКИХ ВОПРОСА',
+    title: 'Подберите консультацию за 30 секунд',
+    lead: 'Выберите сферу и проблему — сразу увидите формат. Его можно изменить.',
     steps: 'Ответов на вопросы', stepOne: 'О чём прежде всего ваш запрос?', stepTwo: 'Что сейчас сложнее всего?', stepThree: 'Какая помощь была бы полезнее?',
     stepOneHelp: 'Здесь нет неправильных ответов.', stepTwoHelp: 'Выберите самое близкое; подробнее можно описать ситуацию в заявке.',
     stepThreeHelp: 'Это помогает подобрать стартовый формат, а не поставить диагноз.', awaiting: 'После трёх коротких ответов появится предложение.',
     match: 'Возможный формат для начала', matchHint: 'Подсказка основана только на вашем выборе. Любой формат можно изменить.',
     approach: 'Тема вашей консультации', available: 'Другие доступные форматы', selection: 'Выбрано',
-    request: 'Перейти к заявке внизу страницы', detail: 'Подробнее о консультациях',
-    privacy: 'Ваши ответы остаются на этой странице, пока вы сами не решите отправить заявку с согласием на связь.',
+    request: 'Оставить заявку на консультацию', detail: 'Подробнее о консультациях',
+    privacy: 'Ответы остаются здесь до отправки заявки с вашим согласием.',
     noBooking: 'Заявка ещё не означает запись или оплату. Андрей согласует детали лично. Финансовые результаты не гарантируются.',
     context: 'Сфера', concern: 'Вопрос', wanted: 'Ожидаемая помощь',
     mentoringFee: 'Стоимость и график — по договорённости',
@@ -128,16 +127,16 @@ const words: Record<Locale, {
     },
   },
   es: {
-    eyebrow: '3 PREGUNTAS RÁPIDAS',
-    title: 'Encuentra tu consulta en 1 minuto',
-    lead: 'Elige un tema y responde dos preguntas. Podrás cambiar la modalidad sugerida.',
+    eyebrow: '2 PREGUNTAS RÁPIDAS',
+    title: 'Encuentra tu consulta en 30 segundos',
+    lead: 'Elige un tema y tu reto. Verás una sugerencia que puedes cambiar.',
     steps: 'Preguntas respondidas', stepOne: '¿De qué trata tu consulta?', stepTwo: '¿Qué te resulta más difícil?', stepThree: '¿Qué tipo de ayuda deseas?',
     stepOneHelp: 'No hay respuestas incorrectas.', stepTwoHelp: 'Elige la opción más cercana; podrás explicar los detalles en tu solicitud.',
     stepThreeHelp: 'Se trata de orientar, no de diagnosticar.', awaiting: 'Después de tres elecciones verás una sugerencia.',
     match: 'Una opción para empezar', matchHint: 'Basada solo en tus elecciones; puedes elegir cualquier modalidad.',
     approach: 'Tema de tu conversación', available: 'Otras modalidades disponibles', selection: 'Elegida',
-    request: 'Ir al formulario al final de la página', detail: 'Ver los detalles de la consulta',
-    privacy: 'Tus opciones permanecen en esta página hasta que decidas enviar el formulario con consentimiento.',
+    request: 'Solicitar esta consulta', detail: 'Ver los detalles de la consulta',
+    privacy: 'Tus respuestas quedan aquí hasta enviar una solicitud con consentimiento.',
     noBooking: 'Enviar una solicitud no confirma una cita ni un pago. Andrey acuerda los detalles personalmente. No se garantizan resultados económicos.',
     context: 'Área', concern: 'Pregunta', wanted: 'Ayuda deseada',
     mentoringFee: 'Precio y frecuencia por acuerdo',
@@ -184,11 +183,10 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
   const t = words[locale]
   const [area, setArea] = useState<Area | null>(null)
   const [issue, setIssue] = useState<string | null>(null)
-  const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [preferred, setPreferred] = useState<Format | null>(null)
-  const suggested = suggestBusinessConsultation({area, issue, outcome}) as Format | null
+  const suggested = suggestBusinessConsultation({area, issue}) as Format | null
   const selected = preferred || suggested
-  const answered = Number(Boolean(area)) + Number(Boolean(issue)) + Number(Boolean(outcome))
+  const answered = Number(Boolean(area)) + Number(Boolean(issue))
   const offers = businessConsultingCopy[locale].offers
   const offerCopy: Record<Format, {name: string; price: string; description: string}> = {
     free: { name: offers[0].name, price: offers[0].price, description: offers[0].description },
@@ -197,13 +195,12 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
     mentoring: { name: businessConsultingCopy[locale].mentorTitle, price: t.mentoringFee, description: businessConsultingCopy[locale].mentorText },
   }
   // Only static, editorial choice labels; no typed free text or client identifiers in URLs/analytics.
-  const context = area && issue && outcome ?
+  const context = area && issue ?
     t.context + ': ' + t.areas[area].label + '; ' +
-    t.concern + ': ' + t.issues[issue].label + '; ' +
-    t.wanted + ': ' + t.outcomes[outcome].label + '.' : ''
+    t.concern + ': ' + t.issues[issue].label + '.' : ''
 
 
-  const stage = !area ? 'area' : !issue ? 'issue' : !outcome ? 'outcome' : 'result'
+  const stage = !area ? 'area' : !issue ? 'issue' : 'result'
   const backLabel = locale === 'ru' ? 'Назад' : locale === 'es' ? 'Atrás' : 'Back'
   const choicesLabel = locale === 'ru' ? 'Другой формат' : locale === 'es' ? 'Otra modalidad' : 'Choose another format'
 
@@ -213,17 +210,16 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
       <h2 id="hh-business-finder-title">{t.title}</h2>
       <p>{t.lead}</p>
       <div className={styles.progressWrap}>
-        <span>{t.steps}: {answered}/3</span>
-        <div className={styles.progress} role="progressbar" aria-label={t.steps} aria-valuemin={0} aria-valuemax={3} aria-valuenow={answered}>
-          <span style={{width:(answered / 3 * 100) + '%'}}/>
+        <span>{t.steps}: {answered}/2</span>
+        <div className={styles.progress} role="progressbar" aria-label={t.steps} aria-valuemin={0} aria-valuemax={2} aria-valuenow={answered}>
+          <span style={{width:(answered / 2 * 100) + '%'}}/>
         </div>
       </div>
     </div>
 
     {area && <nav className={styles.trail} aria-label={t.steps}>
-      <button type="button" onClick={() => {setArea(null);setIssue(null);setOutcome(null);setPreferred(null)}}>{t.areas[area].label}</button>
-      {issue && <button type="button" onClick={() => {setIssue(null);setOutcome(null);setPreferred(null)}}>{t.issues[issue].label}</button>}
-      {outcome && <button type="button" onClick={() => {setOutcome(null);setPreferred(null)}}>{t.outcomes[outcome].label}</button>}
+      <button type="button" onClick={() => {setArea(null);setIssue(null);setPreferred(null)}}>{t.areas[area].label}</button>
+      {issue && <button type="button" onClick={() => {setIssue(null);setPreferred(null)}}>{t.issues[issue].label}</button>}
     </nav>}
 
     <div className={styles.questions}>
@@ -232,7 +228,7 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
         <div className={styles.choices}>
           {areas.map(key=><button key={key} type="button" className={styles.choice}
             data-business-area={key} aria-pressed={area===key}
-            onClick={()=>{setArea(key);setIssue(null);setOutcome(null);setPreferred(null)}}>
+            onClick={()=>{setArea(key);setIssue(null);setPreferred(null)}}>
             <span className={styles.mark}><Check size={16} aria-hidden="true"/></span>
             <span><strong>{t.areas[key].label}</strong><small>{t.areas[key].detail}</small></span>
           </button>)}
@@ -244,25 +240,12 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
         <div className={styles.choices}>
           {BUSINESS_FINDER_ISSUES[area].map((key:string)=><button key={key} type="button" className={styles.choice}
             data-business-issue={key} aria-pressed={issue===key}
-            onClick={()=>{setIssue(key);setOutcome(null);setPreferred(null)}}>
+            onClick={()=>{setIssue(key);setPreferred(null)}}>
             <span className={styles.mark}><Check size={16} aria-hidden="true"/></span>
             <span><strong>{t.issues[key].label}</strong><small>{t.issues[key].detail}</small></span>
           </button>)}
         </div>
-        <button className={styles.back} type="button" onClick={()=>{setArea(null);setIssue(null);setOutcome(null);setPreferred(null)}}><ArrowLeft size={15} aria-hidden="true"/>{backLabel}</button>
-      </fieldset>}
-
-      {stage === 'outcome' && <fieldset className={styles.step} data-business-finder-step="outcome">
-        <legend><span className={styles.number}>3</span>{t.stepThree}</legend>
-        <div className={styles.choices}>
-          {outcomes.map(key=><button key={key} type="button" className={styles.choice}
-            data-business-outcome={key} aria-pressed={outcome===key}
-            onClick={()=>{setOutcome(key);setPreferred(null)}}>
-            <span className={styles.mark}><Check size={16} aria-hidden="true"/></span>
-            <span><strong>{t.outcomes[key].label}</strong><small>{t.outcomes[key].detail}</small></span>
-          </button>)}
-        </div>
-        <button className={styles.back} type="button" onClick={()=>{setIssue(null);setOutcome(null);setPreferred(null)}}><ArrowLeft size={15} aria-hidden="true"/>{backLabel}</button>
+        <button className={styles.back} type="button" onClick={()=>{setArea(null);setIssue(null);setPreferred(null)}}><ArrowLeft size={15} aria-hidden="true"/>{backLabel}</button>
       </fieldset>}
     </div>
 
