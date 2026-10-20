@@ -20,6 +20,7 @@ const TEXT={
   test:'Send one test to my Telegram',testAccepted:'Telegram accepted the test request. Check your chat; delivery and reading are not confirmed.',
   testNotLinked:'Connect your own Telegram in Cabinet Settings before testing.',testRate:'Only one test every ten minutes.',
   testHelp:'Manual test goes only to your verified Telegram. Client broadcasting remains OFF.',accountSettings:'Open Cabinet Settings',
+  aiTitle:'AI Console in my Telegram',aiGuide:'Open your existing bot and send /ai. Choose Gemini, Mistral or Both; reply with your question. Answers return here.',aiBot:'Open @Andydotbot',aiWeb:'AI Console on the web',aiSync:'Connect AI menu',aiMenuReady:'AI menu registered for your private chat.',aiMenuMissing:'AI menu needs to be connected.',aiFeatureOff:'AI questions are disabled on the server. Enable HH_OWNER_AI_TG_ENABLED after verification.',aiGemini:'Gemini Free Tier key',aiMistral:'Mistral OpenRouter key',aiKeyYes:'saved (actual answer not yet verified)',aiKeyNo:'missing',
  },
  ru:{
   title:'Telegram-бот для клиентов',note:'Отдельный бот уведомлений. Существующие боты практики, CRM и Ezohata не затрагиваются.',
@@ -37,6 +38,7 @@ const TEXT={
   test:'Отправить тест себе в Telegram',testAccepted:'Telegram принял тест. Проверьте чат; доставка и прочтение не подтверждаются.',
   testNotLinked:'Сначала подключите свой Telegram в настройках кабинета.',testRate:'Один тест разрешён раз в десять минут.',
   testHelp:'Ручной тест отправляется только на ваш подтверждённый Telegram. Рассылка клиентам остаётся выключенной.',accountSettings:'Открыть настройки кабинета',
+  aiTitle:'AI Console в моём Telegram',aiGuide:'Откройте существующего бота, отправьте /ai, выберите Gemini, Mistral или обоих и напишите вопрос в ответ. Подсказки придут сюда же.',aiBot:'Открыть @Andydotbot',aiWeb:'AI Console на сайте',aiSync:'Подключить меню AI',aiMenuReady:'Меню ИИ зарегистрировано только для вашего чата.',aiMenuMissing:'Меню ИИ ещё нужно подключить.',aiFeatureOff:'Приём вопросов выключен на сервере. После проверки включите HH_OWNER_AI_TG_ENABLED.',aiGemini:'Ключ Gemini Free Tier',aiMistral:'Ключ Mistral OpenRouter',aiKeyYes:'сохранён (реальный ответ ещё не проверен)',aiKeyNo:'отсутствует',
  },
  es:{
   title:'Bot Telegram para clientes',note:'Un bot independiente. Los bots de práctica, CRM y Ezohata no cambian.',
@@ -54,6 +56,7 @@ const TEXT={
   test:'Enviar una prueba a mi Telegram',testAccepted:'Telegram aceptó la prueba. Comprueba el chat; no se confirma la entrega ni la lectura.',
   testNotLinked:'Primero conecta tu Telegram en ajustes de tu cuenta.',testRate:'Solo una prueba cada diez minutos.',
   testHelp:'La prueba se envía solo a tu Telegram verificado. Los envíos a clientes siguen desactivados.',accountSettings:'Abrir ajustes de cuenta',
+  aiTitle:'AI Console en mi Telegram',aiGuide:'Abre tu bot y envía /ai. Elige Gemini, Mistral o Ambos y responde con tu pregunta. Las sugerencias aparecerán en el mismo chat.',aiBot:'Abrir @Andydotbot',aiWeb:'AI Console web',aiSync:'Conectar menú AI',aiMenuReady:'Menú AI registrado solo para tu chat privado.',aiMenuMissing:'Hay que conectar el menú AI.',aiFeatureOff:'Las preguntas AI están desactivadas. Activa HH_OWNER_AI_TG_ENABLED tras la verificación.',aiGemini:'Clave Gemini Free Tier',aiMistral:'Clave Mistral OpenRouter',aiKeyYes:'guardada (respuesta real aún no verificada)',aiKeyNo:'falta',
  },
 }
 export default function CustomerTelegramBotSetup({locale='en',accountId}){
@@ -177,6 +180,18 @@ export default function CustomerTelegramBotSetup({locale='en',accountId}){
     {t.test}
    </button>
   </p>
+  {state?.usingExistingPracticeBot&&<div className={styles.integrationCard}>
+   <h4>{t.aiTitle}</h4>
+   <p>{t.aiGuide}</p>
+   <p><a href="https://t.me/Andydotbot" target="_blank" rel="noreferrer">{t.aiBot}</a>
+     {' · '}<a href="https://ai-council-chat.vercel.app/" target="_blank" rel="noreferrer">{t.aiWeb}</a></p>
+   <p role="status">{!state.ownerAiEnabled?t.aiFeatureOff:
+     state.ownerAiCommandsReady?t.aiMenuReady:t.aiMenuMissing}</p>
+   <p>{t.aiGemini}: {state.ownerAiGeminiReady?t.aiKeyYes:t.aiKeyNo}</p>
+   <p>{t.aiMistral}: {state.ownerAiMistralReady?t.aiKeyYes:t.aiKeyNo}</p>
+   <button type="button" disabled={busy||!state.configured||!state.ownerAiEnabled||state.ownerAiCommandsReady}
+     onClick={()=>run('POST')}>{t.aiSync}</button>
+  </div>}
   {feedback&&<p role="status" aria-live="polite">{feedback}</p>}
   {error&&<p role="alert">{error}</p>}
  </section>
