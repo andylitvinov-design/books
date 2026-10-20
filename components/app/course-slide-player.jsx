@@ -680,8 +680,8 @@ export default function CourseSlidePlayer({
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
-          src="/images/holistic-house/course-focus-mountain-boy.webp"
-          alt="" width={705} height={411} loading="eager" decoding="async"/>
+          src="/images/holistic-house/report-lighthouse-coast.webp"
+          alt="" width={1600} height={2394} loading="eager" decoding="async" fetchPriority="high"/>
       </div>}
       <header className={styles.header}>
         <button type="button" className={styles.close} onClick={onClose} disabled={locked}
