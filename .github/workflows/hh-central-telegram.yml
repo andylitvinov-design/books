@@ -10,6 +10,9 @@ on:
       - 'app/api/internal/telegram-hub/route.js'
       - 'app/api/internal/council-archive-telegram/route.js'
       - 'tests/practitioner-telegram-hub.test.mjs'
+      - 'tests/telegram-owner-discovery.test.mjs'
+      - 'lib/practitioners/telegram-owner-discovery.mjs'
+      - 'app/api/internal/telegram-owner-discovery/route.js'
       - 'tests/app-housekeeping-cron.test.mjs'
       - 'tests/practitioner-daily-telegram.test.mjs'
       - '.github/workflows/hh-central-telegram.yml'
@@ -29,9 +32,11 @@ jobs:
           node-version: '22'
       - name: Syntax and existing cron regressions
         run: |
+          node --check lib/practitioners/telegram-owner-discovery.mjs
+          node --check app/api/internal/telegram-owner-discovery/route.js
           node --check lib/practitioners/telegram-hub.mjs
           node --check lib/practitioners/council-telegram-archive.mjs
           node --check lib/practitioners/council-telegram-delivery.js
           node --check app/api/internal/telegram-hub/route.js
           node --check app/api/internal/council-archive-telegram/route.js
-          node --test tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
+          node --test tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
