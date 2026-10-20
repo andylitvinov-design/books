@@ -318,6 +318,10 @@ export function ProfileDomains({
         </div>
       </>}
     </section>}
+    {!external && accountId && <Link className="hh-domain-labs-link" href={'/' + locale + '/app/labs'} prefetch={false} data-health-labs-link>
+      <span><FileText size={23} aria-hidden="true" /><span><strong>{ru ? 'Мои лабораторные анализы' : 'My laboratory results'}</strong><small>{ru ? 'Загрузить показатели · увидеть отклонения · получить план' : 'Add values · see out-of-range indicators · create a plan'}</small></span></span>
+      <ArrowRight size={20} aria-hidden="true" />
+    </Link>}
     {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />}
     {external && <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
