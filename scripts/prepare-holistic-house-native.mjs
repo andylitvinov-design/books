@@ -86,7 +86,7 @@ export function afterIos(){
   const ent='ios/App/App/App.entitlements'
   let entitlement=exact(read(ent),'applinks:codex-public-book-library.vercel.app','applinks:'+host)
   entitlement=exact(entitlement,'</dict>',
-    '<key>aps-environment</key>\\n<string>development</string>\\n</dict>')
+    '<key>aps-environment</key>\n<string>development</string>\n</dict>')
   write(ent,entitlement)
   // Register APNs callbacks with the officially pinned Capacitor push plugin.
   // Only the temporary Holistic House build receives these methods.
@@ -99,11 +99,11 @@ export function afterIos(){
     '        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)',
     '    }',
     ''
-  ].join('\\n')
+  ].join('\n')
   const swift=read(delegate)
   if(!swift.includes('import Capacitor')||swift.includes('capacitorDidRegisterForRemoteNotifications'))
     fail('Unexpected AppDelegate push registration state')
-  write(delegate,swift.replace(/\\n}\\s*$/, '\\n'+registration+'}\\n'))
+  write(delegate,swift.replace(/\n}\\s*$/, '\n'+registration+'}\n'))
 }
 export function run(stage){
   if(stage==='before-sync')return beforeSync()
