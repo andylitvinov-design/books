@@ -137,3 +137,13 @@ test('approved public business page and auth page point to a real allowed and pr
   assert.match(page,/app\/business/)
   assert.match(cabinet,/robots: \{ index: false, follow: false \}/)
 })
+
+test('Business coaching print CSS remains scoped and pure for Next.js CSS Modules',()=>{
+  const moduleCss=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
+  const globalCss=readFileSync(new URL('../app/globals.css',import.meta.url),'utf8')
+  assert.doesNotMatch(moduleCss, /:global\(\.(?:hh-header|hh-nav|hh-account-menu)\)/)
+  assert.doesNotMatch(moduleCss, /:global\(body\)/)
+  assert.match(globalCss, /body:has\(\[data-business-coaching\]\) \.hh-header/)
+  assert.match(globalCss, /body:has\(\[data-business-coaching\]\) \.hh-nav/)
+  assert.match(globalCss, /body:has\(\[data-business-coaching\]\) \.hh-account-menu/)
+})
