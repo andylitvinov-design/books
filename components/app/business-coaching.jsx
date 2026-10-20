@@ -21,7 +21,7 @@ const copy = {
     nextStep:'Continue', previousStep:'Back', skipCheck:'Skip self-reflection for now', optionalCheck:'Optional · 18 short questions',
     overviewLabel:'What happens next', overviewText:'Each day opens one practical lesson. You choose the pace; your results stay in your private Cabinet.',
     lessonEyebrow:'ONE LESSON · ONE PRACTICAL RESULT', startHeading:'Start with what matters to you',
-    draftAction:'Save draft', saveContinue:'Save and continue', alreadySaved:'All changes saved',
+    draftAction:'Save draft', saveContinue:'Save and continue', nextLesson:'Next lesson', alreadySaved:'All changes saved',
     unsaved:'Not saved yet', courseMap:'Course map', privateJournal:'Private learning journal',
     completedDays:'Completed days', moduleDay:'Lesson', modulePace:'One step at a time', finishedDay:'Completed',
     description:'Define an achievable goal, explore your working habits, practise small actions and track real changes privately.',
@@ -74,7 +74,7 @@ const copy = {
     nextStep:'Продолжить', previousStep:'Назад', skipCheck:'Пропустить опрос пока', optionalCheck:'Необязательно · 18 коротких вопросов',
     overviewLabel:'Как устроен курс', overviewText:'Каждый день — одно практическое задание. Темп выбираете вы; результаты хранятся в личном кабинете.',
     lessonEyebrow:'ОДИН УРОК · ОДИН КОНКРЕТНЫЙ РЕЗУЛЬТАТ', startHeading:'Начните с того, что важно именно вам',
-    draftAction:'Сохранить черновик', saveContinue:'Сохранить и продолжить', alreadySaved:'Все изменения сохранены',
+    draftAction:'Сохранить черновик', saveContinue:'Сохранить и продолжить', nextLesson:'Следующий урок', alreadySaved:'Все изменения сохранены',
     unsaved:'Пока не сохранено', courseMap:'Карта курса', privateJournal:'Личный дневник',
     completedDays:'Пройдено дней', moduleDay:'Урок', modulePace:'Один шаг за раз', finishedDay:'Завершено',
     description:'Определите реалистичную цель, исследуйте рабочие привычки, выполняйте небольшие задания и сохраняйте реальные результаты.',
@@ -197,6 +197,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   const savedDay=course?.days?.[day]||{}
   const hasUnsavedDay=dayResult!==(savedDay.result||'')||dayNote!==(savedDay.note||'')||
     dayDone!==Boolean(savedDay.done)
+  const savedLessonCanContinue=!hasUnsavedDay && Boolean(savedDay.done) && day<90
   const selected=businessDayResult(day,lang)
   const week=selected?.week||1
   const currentModule=businessWeekModule(week,lang)
@@ -496,9 +497,11 @@ export default function BusinessCoaching({locale='en',accountId}){
           {hasUnsavedDay?t.unsaved:t.alreadySaved}
         </span>
         <button type="button" className={styles.primary}
-          disabled={busy||course.status!=='active'||!hasUnsavedDay||(dayDone&&dayResult.trim().length<6)}
-          onClick={saveDayAndContinue}>
-          <CheckCircle2 size={18}/>{dayDone?(day===90?t.saveAction:t.saveContinue):t.draftAction}
+          disabled={busy||course.status!=='active'||(!hasUnsavedDay&&!savedLessonCanContinue)||
+          (hasUnsavedDay&&dayDone&&dayResult.trim().length<6)}
+          onClick={()=>{if(savedLessonCanContinue)chooseDay(day+1);else void saveDayAndContinue()}}>
+          <CheckCircle2 size={18}/>{savedLessonCanContinue?t.nextLesson:
+            dayDone?(day===90?t.saveAction:t.saveContinue):t.draftAction}
           {dayDone&&day<90?<ArrowRight size={18} aria-hidden="true"/>:null}
         </button>
       </div>
