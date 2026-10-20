@@ -39,7 +39,8 @@ test('day 2 may enter/leave the musical slide before saving, with no added write
     b.props.onClick()
     await h.settle()}
   try{
-    await click('Continue')
+    await click('Continue') // supportive second slide
+    await click('Continue') // enter the daily practice
     await click('Music and a gentle exercise')
     assert.match(textOf(h.tree),/A musical pause/)
     assert.match(textOf(h.tree),/There is nothing to achieve/)
