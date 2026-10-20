@@ -46,7 +46,7 @@ test('FCM HTTP v1 uses fixed service URLs and generic message-only payload',{ski
   assert.doesNotMatch(JSON.stringify(body),/diagnos|medical report|private note|test score/i)
 })
 test('private native devices are opt-in, encrypted, session-bound and not directly exposed to client roles',()=>{
-  const sql=read('supabase/migrations/20261020150500_hh_native_private_message_push.sql')
+  const sql=read('supabase/migrations/20261020151945_hh_native_private_message_push_20261020.sql')
   assert.match(sql,/session_id uuid not null/)
   assert.match(sql,/active_session\.id=d\.session_id/)
   assert.match(sql,/active_session\.user_id=d\.account_id/)
