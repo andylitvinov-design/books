@@ -75,6 +75,9 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(read("components/sitewide-antistress-banner.tsx"), /cardArtworkUrl\("\/images\/holistic-house\/course-focus-mountain-boy\.webp"\)/);
   const generator = read("scripts/build-public-card-artwork.mjs");
   assert.match(generator, /sharp\(original/);
+  assert.match(generator, /Invalid pinned static artwork source/);
+  assert.match(generator, /item\.source/);
+  assert.match(generator, /\{ cause \}/);
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
