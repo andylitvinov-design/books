@@ -72,3 +72,18 @@ The pure metadata model lives in `lib/clients/local-narration-queue.mjs`, covere
 Desktop Commander Remote still reports `air-andrii-3.lan Offline`. The owner needs to open/authorize Remote on the Mac (https://mcp.desktopcommander.app/). Only then can Apple Silicon/MLX setup and sound QA occur. Until then, development proceeds with source-only contracts and synthetic fixtures; nothing is published to real clients. Existing infrastructure's privacy, billing and storage caps still need validation.
 
 **Rollback**: `HH_LOCAL_NARRATION_ENABLED=false`; keep `HH_REPORT_NARRATION_ENABLED=false`; revoke worker secret. No client text or media may be exposed by rollback.
+
+## 9. Offline voice-source QA (implemented, no network)
+
+When an authorized Mac is available, the source WAV may be scanned with:
+
+    python3 scripts/andrey-voice/check_reference.py /private/path/your_voice.wav --strict
+
+The audit reads 16-bit mono PCM WAV **locally** and reports duration, sample rate,
+RMS/peak, clipped samples and approximate active seconds. A strict reference must
+be 5–15 seconds, mostly audible and unclipped. It does not establish that
+pronunciation or the speaker matches Andrey, nor that the local TTS sounds natural;
+listening QA remains mandatory. The synthetic unit tests are
+`python3 -m unittest discover -s tests -p test_andrey_voice_reference.py`.
+
+No audio, voice models, transcripts or patient data are committed to the repository.
