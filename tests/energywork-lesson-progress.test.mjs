@@ -11,10 +11,10 @@ const repo = read("lib/academy/energywork-course-repository.js")
 test("The visible slide counter uses five real lesson lengths and a separate introduction", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges(sequence)
-  assert.equal(sequence.length, 69)
-  assert.deepEqual(sequence.slice(2,9), ["flight-01","flight-02","flight-03","flight-voices","flight-05","flight-04","flight-done"], "Lesson 1 slide 5 is Sun thought and slide 6 is meditation review")
+  assert.equal(sequence.length, 63)
+  assert.deepEqual(sequence.slice(2,9), ["flight-01","flight-02","flight-voices","flight-05","flight-04","flight-03","flight-done"], "Lesson 1 ends after the timed practice")
   assert.equal(ranges[0].start, 2, "Two introductory slides are outside lesson 1")
-  assert.deepEqual(ranges.map(range => range.count), [7, 14, 16, 22, 8])
+  assert.deepEqual(ranges.map(range => range.count), [8, 14, 16, 14, 9])
   assert.deepEqual(ranges.map(range => range.firstSlideId),
     ["flight-01", "tan-01", "kun-01", "ygg-01", "paths-01"])
   for (let i = 0; i < ranges.length; i++) {
