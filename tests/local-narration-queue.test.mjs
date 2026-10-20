@@ -5,7 +5,8 @@ import {
   FREE_NARRATION_MAX_ATTEMPTS, FREE_NARRATION_MAX_AUDIO_BYTES,
   FREE_NARRATION_MAX_LEASE_MS, FREE_NARRATION_SCOPES,
   narrationVersionKey, queuedNarrationJob, claimNarrationJob,
-  completeNarrationJob, failNarrationJob, revokeNarrationJob, publicNarrationStatus,
+  completeNarrationJob, failNarrationJob, recoverExpiredNarrationLease,
+  revokeNarrationJob, publicNarrationStatus,
 } from '../lib/clients/local-narration-queue.mjs'
 
 const key = randomBytes(32)
@@ -114,4 +115,22 @@ test('queue foundation does not open a public HTTP route, charge money or publis
   assert.equal(Object.hasOwn(job,'text'),false)
   assert.equal(Object.hasOwn(job,'clientId'),false)
   assert.equal(Object.hasOwn(job,'secret'),false)
+})
+
+test('expired Mac lease recovers for retry and exhausts safely after third timeout', () => {
+  let job = claimNarrationJob(queued(), {now:2_000,leaseMs:10_000})
+  assert.equal(recoverExpiredNarrationLease(job,{now:11_999}),null)
+  job = recoverExpiredNarrationLease(job,{now:12_000})
+  assert.equal(job.status,'retry_wait')
+  assert.equal(job.leaseId,null)
+  assert.equal(claimNarrationJob(job,{now:12_000,leaseMs:10_000}),null)
+  job = claimNarrationJob(job,{now:job.nextAttemptAt,leaseMs:10_000})
+  job = recoverExpiredNarrationLease(job,{now:job.leaseExpiresAt})
+  assert.equal(job.status,'retry_wait')
+  job = claimNarrationJob(job,{now:job.nextAttemptAt,leaseMs:10_000})
+  assert.equal(job.attempts,3)
+  job = recoverExpiredNarrationLease(job,{now:job.leaseExpiresAt})
+  assert.equal(job.status,'failed')
+  assert.equal(job.nextAttemptAt,null)
+  assert.equal(claimNarrationJob(job,{now:999_999,leaseMs:10_000}),null)
 })
