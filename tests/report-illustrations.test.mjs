@@ -153,7 +153,7 @@ test('mockup-aligned first-page composition uses two measured gauges, split clie
   for(const locale of ['ru','en']){
     const pdf=buildPrescriptionPdf(sample(locale),locale,origin).toString('latin1')
     assert.match(pdf,/\/Lighthouse Do Q/,'real lighthouse remains')
-    assert.match(pdf,/0\.974 0\.982 0\.976 rg/,'both cream/teal client/date cards drawn')
+    assert.match(pdf,/0\.986 0\.973 0\.953 rg/,'both warm ivory client/date cards drawn')
     assert.match(pdf,/\/RemedyPhoto1 Do Q/,'original remedy source photo remains')
     assert.match(pdf,/\/Signature Do Q/,'signed white closing remains')
     assert.doesNotMatch(pdf,/\(TARGET\)/,'a future goal is never a third score')
