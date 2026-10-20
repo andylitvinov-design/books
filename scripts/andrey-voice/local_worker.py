@@ -236,10 +236,14 @@ def main() -> int:
             "status": "local_config_check",
             "python": sys.version.split()[0],
             "site": PRODUCTION_SITE,
-            "engine_configured": Path(os.environ.get("HH_VOICE_ENGINE_SCRIPT", "/nonexistent")).is_file(),
-            "english_reference_exists": Path(os.environ.get("HH_VOICE_REFERENCE_EN", "/nonexistent")).is_file(),
-            "russian_reference_exists": Path(os.environ.get("HH_VOICE_REFERENCE_RU", "/nonexistent")).is_file(),
-            "token_present": len(os.environ.get("HH_LOCAL_NARRATION_WORKER_TOKEN", "")) >= 40,
+            "engine_configured": Path(os.environ.get(
+                "HH_VOICE_ENGINE_SCRIPT", str(VOICE_HOME / "andrey_tts.py"))).is_file(),
+            "english_reference_exists": Path(os.environ.get(
+                "HH_VOICE_REFERENCE_EN", str(VOICE_HOME / "voice_sources" / "en_v4_ref_12s.wav"))).is_file(),
+            "russian_reference_exists": Path(os.environ.get(
+                "HH_VOICE_REFERENCE_RU", str(VOICE_HOME / "voice_sources" / "ru_heygen_preview.wav"))).is_file(),
+            "token_in_environment": len(os.environ.get("HH_LOCAL_NARRATION_WORKER_TOKEN", "")) >= 40,
+            "token_may_be_in_keychain": sys.platform == "darwin",
         }))
         return 0
     api_token()
