@@ -1,5 +1,5 @@
 -- Owner-only business follow-ups for the actual assigned practitioner.
--- No patient records, automatic sends, or public/client access.
+-- No clinical content, automatic sends, or public/client access.
 CREATE TABLE app.practitioner_request_tasks(
  id uuid PRIMARY KEY,
  request_id uuid NOT NULL REFERENCES app.consultation_requests(id) ON DELETE CASCADE,
