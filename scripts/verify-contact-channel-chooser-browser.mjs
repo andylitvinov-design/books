@@ -14,9 +14,9 @@ await mkdir(output, { recursive: true });
 const results = [];
 const errors = [];
 const questions = {
-  en: "Where would you like to send your request?",
-  ru: "Куда отправить вашу заявку?",
-  es: "¿Dónde quieres enviar tu solicitud?",
+  en: "Describe what you would like help with",
+  ru: "Расскажите, с чем вам нужна помощь",
+  es: "Cuéntanos en qué podemos ayudarte",
 };
 const slug = value => value.replace(/[^a-z0-9-]+/gi,"-").replace(/^-|-$/g,"").slice(0,90);
 
@@ -31,7 +31,39 @@ function draft(href, host, path) {
   return message;
 }
 
-async function verifyChooser(page, chooser, locale, name, screenshot) {
+/**
+ * The public production acceptance job has no database credentials. Intercept
+ * the first-party POST, verify its shape, and return a synthetic successful
+ * acknowledgement. No real lead is written to production or test Supabase.
+ */
+async function submitSyntheticForm(page, chooser, locale, submissions) {
+  const form=chooser.locator('form');
+  await form.waitFor({state:"visible"});
+  const button=form.locator('button[type="submit"]');
+  assert.equal(await button.isDisabled(),true,"Contact+consent are required");
+  await form.locator('input[autocomplete="name"]').fill("QA Visitor");
+  await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
+  await form.locator('textarea').fill("I want to register for this course or service. Please send the next steps.");
+  assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
+  await form.locator('input[type="checkbox"]').check();
+  const priorCount=submissions.length;
+  await button.click();
+  const wa=chooser.locator('a[data-contact-channel="whatsapp"]');
+  await wa.waitFor({state:"visible",timeout:10000});
+  assert.equal(submissions.length,priorCount+1,"Exactly one first-party registration submitted");
+  const request=submissions[submissions.length-1];
+  assert.equal(request.locale,locale);
+  assert.equal(request.contactConsent,true);
+  assert.equal(request.contact.displayName,"QA Visitor");
+  assert.equal(request.contact.email,"qa-browser@example.test");
+  assert.equal(request.contact.phone,"");
+  assert.ok(request.operationId && /^[a-f0-9-]{36}$/i.test(request.operationId));
+  assert.ok(request.sourcePath && request.sourcePath.startsWith("/"+locale+"/"));
+  assert.ok(request.serviceTitle && request.description.length>=10);
+  assert.ok(!request.website);
+}
+
+async function verifyChooser(page, chooser, locale, name, screenshot, submissions) {
   const trigger = chooser.locator("button[data-contact-order]");
   await trigger.scrollIntoViewIfNeeded();
   await trigger.waitFor({ state:"visible" });
@@ -41,7 +73,7 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
   assert.ok(panelId, "Panel ID");
   const panel = chooser.locator('[id="' + panelId + '"]');
   assert.equal(await panel.count(), 1);
-  assert.equal(await panel.isVisible(), false, "The miniature form must start closed");
+  assert.equal(await panel.isVisible(), false, "The registration form must start closed");
   const startUrl = page.url();
   const ctaRect = await trigger.boundingBox();
   assert.ok(ctaRect && ctaRect.width >= 150 && ctaRect.height >= 44, "Large, accessible order button " + name + ": " + JSON.stringify(ctaRect));
@@ -52,6 +84,9 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
   assert.equal((await panel.locator("p").first().innerText()).trim(), questions[locale]);
   const wa = panel.locator('a[data-contact-channel="whatsapp"]');
   const tg = panel.locator('a[data-contact-channel="telegram"]');
+  assert.equal(await wa.count(), 0, "Do not offer messenger before registration is saved");
+  assert.equal(await tg.count(), 0, "Do not offer messenger before registration is saved");
+  await submitSyntheticForm(page,chooser,locale,submissions);
   assert.equal(await wa.count(), 1);
   assert.equal(await tg.count(), 1);
   const [waHref,tgHref] = await Promise.all([wa.getAttribute("href"),tg.getAttribute("href")]);
@@ -59,28 +94,23 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
   const tgDraft = draft(tgHref, "t.me", "/AndyTherapist");
   assert.equal(waDraft, tgDraft, "Both channels must retain the same selected request");
   assert.ok(waDraft.includes("Holistic House") && /Service|Услуга|Servicio/.test(waDraft));
-  const boxes = await Promise.all([wa.boundingBox(),tg.boundingBox()]);
+  assert.doesNotMatch(waDraft,/qa-browser@example.test|QA Visitor/,"Never leak stored contact in messenger URL");
+  assert.match(waDraft,/HH-CA5016DE79E4/,"The optional messenger handoff includes the enquiry reference");
   const viewportWidth = page.viewportSize().width;
-  for (const b of boxes) {
+  for (const channel of [wa,tg]) {
+    await channel.scrollIntoViewIfNeeded();
+    const b=await channel.boundingBox();
     assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target at " + name + ": " + JSON.stringify(b));
     assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");
-    // Scroll after React's effect and CSS visibility update settle. A link can be
-    // temporarily below the fold during opening even though scrolling succeeds.
-    await page.waitForFunction(({channel,panelId}) => {
-      const anchor = document.getElementById(panelId)?.querySelector('a[data-contact-channel="' + channel + '"]');
+    const marker=await channel.getAttribute("data-contact-channel");
+    await page.waitForFunction(({marker,panelId}) => {
+      const anchor = document.getElementById(panelId)?.querySelector('a[data-contact-channel="' + marker + '"]');
       if (!anchor) return false;
       const r = anchor.getBoundingClientRect();
       if (r.top < 0 || r.bottom > innerHeight) return false;
       const target = document.elementFromPoint(r.left + r.width / 2, r.bottom - 6);
-      return Boolean(target?.closest('a[data-contact-channel="' + channel + '"]'));
-    }, {channel: b === boxes[0] ? "whatsapp" : "telegram",panelId}, {timeout: 5000}).catch(async error => {
-      const diagnostic = await page.evaluate(() => ({
-        nav: document.querySelector('.mobile-bottom-navigation')?.getBoundingClientRect().toJSON(),
-        open: document.querySelector('[data-contact-order][aria-expanded="true"]')?.outerHTML.slice(0,250),
-        viewport: {height:innerHeight,width:innerWidth,scrollY},
-      }));
-      throw new Error("Messenger channel obstructed: " + name + " " + JSON.stringify(diagnostic) + ": " + error.message);
-    });
+      return Boolean(target?.closest('a[data-contact-channel="' + marker + '"]'));
+    }, {marker,panelId},{timeout:5000});
   }
   const dimensions = await page.evaluate(() => ({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(dimensions.scroll <= dimensions.inner + 2, "No mobile horizontal overflow: " + JSON.stringify(dimensions));
@@ -89,7 +119,7 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
   await page.keyboard.press("Enter");
   await panel.waitFor({state:"hidden",timeout:8000});
   assert.equal(await trigger.getAttribute("aria-expanded"), "false");
-  results.push({name,locale,viewportWidth,channels:["WhatsApp","Telegram"],matchingDrafts:true,keyboardClose:true,nonNavigating:true});
+  results.push({name,locale,viewportWidth,channels:["WhatsApp","Telegram"],matchingDrafts:true,contactSubmitted:true,keyboardClose:true,nonNavigating:true});
 }
 
 async function runEngine(name, engine) {
@@ -102,6 +132,13 @@ async function runEngine(name, engine) {
           locale: locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-CA",
         });
         const page = await context.newPage();
+        const submissions=[];
+        await page.route("**/api/service-enquiries",async route=>{
+          if(route.request().method()!=="POST")return route.continue();
+          submissions.push(JSON.parse(route.request().postData()||"{}"));
+          await route.fulfill({status:200,contentType:"application/json",
+            body:JSON.stringify({saved:true,referenceCode:"HH-CA5016DE79E4"})});
+        });
         page.on("pageerror",e=>errors.push({name,width,locale,message:e.message}));
         try {
           const cases = [
@@ -120,7 +157,7 @@ async function runEngine(name, engine) {
             assert.ok(count >= item.min, "Missing chooser on "+item.path+", count="+count);
             const indexes = count > 2 ? [0,count-1] : [0];
             for (const i of indexes) {
-              await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390);
+              await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
             }
             if (item.path.endsWith("/yggdrasil/free-initiation")) {
               const form = page.locator("[data-yggdrasil-form]");
@@ -131,6 +168,7 @@ async function runEngine(name, engine) {
               const button = chooser.locator("button[data-contact-order]");
               assert.equal(await button.getAttribute("aria-expanded"),"false");
               await button.click();
+              await submitSyntheticForm(page,chooser,locale,submissions);
               const text = new URL(await chooser.locator('a[data-contact-channel="telegram"]').getAttribute("href")).searchParams.get("text");
               assert.match(text || "", /PERSONAL|ЛИЧНУЮ/i, "The new selection must be in the prepared message");
               await button.click();
@@ -144,7 +182,7 @@ async function runEngine(name, engine) {
             await temple.locator('[data-temple-step="initiation"] button').first().click();
             const templeChooser = temple.locator("[data-contact-channel-chooser]");
             await templeChooser.waitFor({state:"visible"});
-            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true);
+            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
             assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
           }
         } finally {
