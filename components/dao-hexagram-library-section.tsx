@@ -7,9 +7,9 @@ import styles from "./dao-hexagrams.module.css";
 
 const authorByNumber = new Map(authorRecords.map((record) => [record.number, record]));
 const copy = {
-  ru: { title: "Все 64 символа", lead: "Карточки И-Цзин с изображениями: авторские трактовки и традиционные справочные значения. Нажмите на карту, чтобы открыть её отдельную страницу." },
-  en: { title: "All 64 symbols", lead: "An illustrated I Ching directory. Browse verified original readings and traditional reference entries, each on its own page." },
-  es: { title: "Los 64 símbolos", lead: "Un catálogo ilustrado del I Ching. Descubre interpretaciones originales y referencias tradicionales, cada una con su propia página." },
+  ru: { title: "Все 64 символа", lead: "Карточки И-Цзин с изображениями: 12 исходных авторских текстов и 52 новых развёрнутых толкования в том же архетипическом стиле. Нажмите на карту для полного текста." },
+  en: { title: "All 64 symbols", lead: "An illustrated I Ching directory: 12 original author readings and 52 newly written, fully structured interpretations in the same style, each on its own page." },
+  es: { title: "Los 64 símbolos", lead: "Catálogo ilustrado del I Ching: 12 textos originales y 52 interpretaciones nuevas y completas en el mismo estilo, cada una con su propia página." },
 } as const;
 
 export function DaoHexagramLibrarySection({ locale }: { locale: PublicLocale }) {
