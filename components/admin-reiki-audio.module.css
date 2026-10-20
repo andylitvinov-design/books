@@ -204,3 +204,67 @@
 @media(prefers-reduced-motion:reduce) {
   .lessonFolder { transition: none; }
 }
+
+
+/* Owner audio v3: clearly editable originals with safe archive and usage state. */
+.folderControls {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin: 1px 0 10px;
+}
+.folderControls > small { color: #4c7682; font-size: 11px; font-variant-numeric: tabular-nums; }
+.archivedToggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: #426e7b; font-size: 12px; font-weight: 750; cursor: pointer;
+}
+.archivedToggle input { height: 17px; width: 17px; accent-color: #078b8e; }
+.archivedToggle svg { color: #178d8c; flex: none; }
+.fileActions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.editRecording {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 9px; min-height: 36px; color: #436473;
+  border: 1px solid #d5e5e8; border-radius: 9px; background: #fff;
+  cursor: pointer; font-size: 11.5px; font-weight: 730;
+}
+.editRecording:disabled { opacity: .54; cursor: not-allowed; }
+.metadataEditor {
+  display: grid; gap: 11px; padding: 15px; border: 1px solid #9ed7d2;
+  border-radius: 14px; background: linear-gradient(140deg, #f4fcfa, #fff);
+}
+.metadataEditor > strong { font-size: 15px; color: #166b73; }
+.metadataEditor > label:not(.archivedToggle) {
+  display: grid; gap: 6px; color: #275b6d; font-size: 12px; font-weight: 760;
+}
+.metadataEditor input[type="text"],.metadataEditor textarea {
+  box-sizing: border-box; width: 100%; padding: 10px 12px;
+  min-height: 43px; border-radius: 10px; border: 1px solid #bfdae0;
+  background: #fff; color: #1b4f62; font: inherit; font-size: 14px;
+}
+.metadataEditor textarea { resize: vertical; min-height: 68px; }
+.metadataEditor input:disabled,.metadataEditor textarea:disabled { opacity: .55; }
+.editorActions,.uploadActions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.editorActions button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 42px; padding: 9px 13px; border-radius: 10px; font-size: 12px;
+  border: 1px solid #c5dedf; background: #f7fafa; color: #2d6170;
+  font-weight: 800; cursor: pointer;
+}
+.editorActions button[type="submit"] { background: #0b8f90; border-color: #0b8f90; color: #fff; }
+.editorActions .dangerButton { border-color: #eac9d1; color: #a64453; background: #fff7f8; }
+.editorActions button:disabled { opacity: .5; cursor: not-allowed; }
+.progress { color: #0a777a; font-size: 12px; font-weight: 750; margin: 0; }
+.uploadActions .stopUpload {
+  border-radius: 10px; border: 1px solid #e0cbd2; background: #fff8f8;
+  padding: 9px 12px; color: #8d5760; min-height: 41px; cursor: pointer;
+  font-weight: 750; font-size: 12px;
+}
+@media(max-width:690px) {
+  .fileActions { width: 100%; justify-content: flex-end; }
+  .fileActions .editRecording { min-height: 40px; }
+  .metadataEditor { padding: 11px; }
+  .folderControls { gap: 7px; }
+  .editorActions button { flex: 1 1 98px; }
+}
+@media(max-width:360px) {
+  .fileActions { justify-content: flex-start; margin-left: 36px; width: calc(100% - 36px); }
+  .uploadActions .uploadButton { width: 100%; }
+}

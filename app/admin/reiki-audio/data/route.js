@@ -3,6 +3,7 @@ import { getAppConfig, requireSameOrigin } from '@/lib/app/config'
 import {
   reikiIntroAudioAdminRead, reikiIntroAudioPrepare,
   reikiIntroAudioPublish, reikiIntroAudioUnpublish, reikiIntroAudioPreview,
+  reikiIntroAudioRegister, reikiIntroAudioEdit, reikiIntroAudioDeleteDraft,
 } from '@/lib/academy/reiki-intro-audio-store'
 
 export const runtime = 'nodejs'
@@ -59,6 +60,16 @@ export async function POST(request) {
         permitted(body, ['action','lesson','locale','path']) &&
         body.confirmed === undefined)
       return result(await reikiIntroAudioPreview(config, body))
+    if (body?.action === 'register' &&
+        permitted(body, ['action','lesson','locale','path','title']))
+      return result({ metadata: await reikiIntroAudioRegister(config, body) }, 201)
+    if (body?.action === 'metadata' &&
+        permitted(body, ['action','lesson','locale','path','storage','title','description','archived']))
+      return result({ metadata: await reikiIntroAudioEdit(config, body) })
+    if (body?.action === 'delete-draft' &&
+        permitted(body, ['action','lesson','locale','path','confirmed']) &&
+        body.confirmed === true)
+      return result(await reikiIntroAudioDeleteDraft(config, body))
     if (body?.action === 'publish' &&
         permitted(body, ['action','lesson','locale','path','storage']) &&
         body.confirmed === undefined)
@@ -70,7 +81,9 @@ export async function POST(request) {
     return result({ error: 'INVALID_REIKI_AUDIO_ACTION' }, 400)
   } catch (error) {
     const code = typeof error?.code === 'string' ? error.code : 'REIKI_AUDIO_STORAGE_UNAVAILABLE'
-    const status = code.startsWith('INVALID_') ? 400 : code === 'REIKI_AUDIO_UPLOAD_NOT_FOUND' ? 409 : 503
+    const status = code.startsWith('INVALID_') ? 400
+      : ['REIKI_AUDIO_UPLOAD_NOT_FOUND','REIKI_AUDIO_ACTIVE_ON_SLIDE','REIKI_AUDIO_ARCHIVE_FIRST'].includes(code) ? 409
+      : 503
     return result({ error: code }, status)
   }
 }

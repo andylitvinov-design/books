@@ -815,9 +815,11 @@ export default function CourseSlidePlayer({
                 </details>}
               </div>}
               <p className={styles.welcomePrompt}>{isDayOne
-                ? (locale==='ru'?'С каким внутренним состоянием вы пришли сегодня? Ничего менять не нужно.':
-                  'What inner state are you arriving with today? Nothing needs to change.')
+                ? (locale==='ru'?'Посмотрите на свет и море — или на предмет вокруг. Не нужно ничего менять.':
+                  'Notice the light and sea — or one ordinary detail nearby. Nothing needs to change.')
                 : words.welcomePrompt}</p>
+              <details className={styles.calmWelcomeCheck} open={isDayOne?undefined:true}>
+                <summary>{locale==='ru'?'Если хочется, можно отметить своё состояние':'Notice how you feel (optional)'}</summary>
               <div className={styles.welcomeChoices} role="group" aria-label={words.welcome}>
                 {welcomeFeelingChoices(cycle.activeGoal || cycle.primaryGoal, locale).map((choice, choiceIndex) => {
                   const FeelingIcon = [Sun, Cloud, Moon, CircleHelp][choiceIndex]
@@ -831,40 +833,72 @@ export default function CourseSlidePlayer({
               </div>
               {welcomeFeeling && welcomeFeeling !== 'skip' &&
                 <p className={styles.welcomeResponse} role="status">{welcomeFeelingSupport(welcomeFeeling, locale)}</p>}
+              </details>
               <p className={styles.welcomeNote}>{isDayOne
-                ? (locale==='ru'?'Сегодня вы потренируетесь замечать состояние и выбирать небольшую поддержку. Можно пропускать любые наблюдения.':
-                  'Today you can notice your state and choose a small support. Any observation may be skipped.')
+                ? (locale==='ru'?'Начнём с маленькой паузы. Вы сами выбираете темп.':
+                  'We can begin with one small pause. You choose the pace.')
                 : words.welcomeNote}</p>
-              {!isSkillV5&&<button type="button" className={styles.welcomeSkip} disabled={locked}
+              {!isSkillV5&&!isDayOne&&<button type="button" className={styles.welcomeSkip} disabled={locked}
                 onClick={() => { setWelcomeFeeling('skip'); goNext() }}>{words.welcomeSkip}</button>}
             </div>
           </section>}
 
           {slide.kind === 'baseline' && <>
-            <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
-            <p className={styles.prompt} data-course-baseline-presence>{baselinePrompt}</p>
-            <MomentScale value={entryNow} onChange={setEntryNow} words={words}
-              label={baselinePrompt + ': ' + focusLabel} lowLabel={words.baselineLow}
-              highLabel={words.baselineHigh} disabled={locked}/>
-            <p className={styles.helper}>{isDayOne
-              ? (locale==='ru'?'Необязательная моментная оценка — не диагностический тест и не требование улучшить показатель.':
-                  'Optional momentary rating, not a diagnostic test or a score you must improve.')
-              : words.ratingHint}</p>
+            {isDayOne&&<p className={styles.calmFirstDayPace}>
+              {locale==='ru'?'Посмотрите вокруг. Можно просто перейти дальше, не оценивая самочувствие.':
+                'Look around for a moment. You can continue without rating how you feel.'}
+            </p>}
+            <details className={styles.calmWelcomeCheck} open={isDayOne?undefined:true}>
+              <summary>{locale==='ru'?'Моё самочувствие (по желанию)':'How I feel now (optional)'}</summary>
+              <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
+              <p className={styles.prompt} data-course-baseline-presence>{baselinePrompt}</p>
+              <MomentScale value={entryNow} onChange={setEntryNow} words={words}
+                label={baselinePrompt + ': ' + focusLabel} lowLabel={words.baselineLow}
+                highLabel={words.baselineHigh} disabled={locked}/>
+              <p className={styles.helper}>{isDayOne
+                ? (locale==='ru'?'Число необязательно и не означает, что вы должны его улучшить.':
+                    'This optional number is not a score you must improve.')
+                : words.ratingHint}</p>
+            </details>
           </>}
 
           {slide.kind === 'checkin' && (lesson.antiStress||isOporaModule ? <>
             {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
-            <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
-            <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.practice}</p>
+            {isDayOne
+              ? <p className={styles.calmFirstDayPace} data-opora-calm-pace>
+                  {locale==='ru'
+                    ?'Сегодня достаточно одной небольшой паузы. Выберите темп и просто начните — никаких проверок.'
+                    :'Today a small pause is enough. Choose a pace and simply begin — nothing to prove.'}
+                </p>
+              :<>
+                <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
+                <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.practice}</p>
+              </>}
             <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length!=='quick'} onClick={()=>void updatePreferences({length:'standard'})}>{words.standard}</button>
-              <button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>
+              {!isDayOne&&<button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>}
             </div>
             <details className={styles.supportDetails} data-course-optional-explanation>
-              <summary><CircleHelp size={15} aria-hidden="true"/>{locale==='ru'?'О практике и безопасном выборе':'About this practice'}</summary>
-              <p>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
-              <p>{lesson.antiStress?.neutralText||lesson.disclaimer}</p>
+              <summary><CircleHelp size={15} aria-hidden="true"/>
+                {isDayOne
+                  ?(locale==='ru'
+                    ?cycle.preferences?.imagery==='no_imagery'?'Выбрано: без образов · изменить':'Другие настройки (по желанию)'
+                    :cycle.preferences?.imagery==='no_imagery'?'No imagery selected · change':'Other options (optional)')
+                  :locale==='ru'?'О практике и безопасном выборе':'About this practice'}
+              </summary>
+              {isDayOne&&<button type="button" className={styles.calmNoImagery} disabled={locked}
+                aria-pressed={cycle.preferences?.imagery==='no_imagery'}
+                onClick={()=>void updatePreferences({imagery:cycle.preferences?.imagery==='no_imagery'?'optional':'no_imagery'})}>
+                {locale==='ru'?'Без образов':'No imagery'}
+                {cycle.preferences?.imagery==='no_imagery'&&<Check size={15}/>}
+              </button>}
+              <p>{isDayOne
+                ?locale==='ru'?'Глаза могут оставаться открытыми. Дыхание — естественное. Если неприятно, можно остановиться.'
+                  :'Your eyes can stay open. Breathe naturally. You can stop if anything feels uncomfortable.'
+                :locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.'
+                  :'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
+              {!isDayOne&&<p>{lesson.antiStress?.neutralText||lesson.disclaimer}</p>}
             </details>
           </> : <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
@@ -888,7 +922,6 @@ export default function CourseSlidePlayer({
                 {value:'agree',label:locale==='ru'?'Согласен(на)':'I agree'},
                 {value:'unsure',label:locale==='ru'?'Не знаю':'I am not sure'},
                 {value:'disagree',label:locale==='ru'?'Не согласен(на)':'I disagree'},
-                {value:'skip',label:locale==='ru'?'Пропустить':'Skip'},
               ]}/>}
             {isDayOne && dayOneAnswers.quote==='disagree'&&<p className={styles.helper}>
               {locale==='ru'?'Необязательно соглашаться. Выберите то, что подходит именно вам.':'You may disagree. Choose what feels right for you.'}
@@ -910,9 +943,18 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'recall' && (isDayOne
-            ? <DayOneFocusPicker locale={locale} options={data.dayOneFocusOptions||[]}
-                value={dayOneAnswers.focusId} disabled={locked}
-                onSelect={value=>recordDayOne('focusId',value)}/>
+            ? <section className={styles.calmRecall}>
+                <p className={styles.calmFirstDayPace}>
+                  {locale==='ru'?'Сегодня можно потренировать одну простую опору. Результаты тестов выбирать необязательно.':
+                    'Today we can practise one simple support. No need to select any test score.'}
+                </p>
+                <details className={styles.calmWelcomeCheck}>
+                  <summary>{locale==='ru'?'Моя личная тема (по желанию)':'My personal focus (optional)'}</summary>
+                  <DayOneFocusPicker locale={locale} options={data.dayOneFocusOptions||[]}
+                    value={dayOneAnswers.focusId} disabled={locked}
+                    onSelect={value=>recordDayOne('focusId',value)}/>
+                </details>
+              </section>
             : <>
               <IllustratedMoment variant="calm" kind={slide.kind}/>
               <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
@@ -1265,8 +1307,7 @@ export default function CourseSlidePlayer({
         {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
-          {!isSkillV5&&(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)
-            || (isDayOne && slide.kind!=='welcome' && index<slides.length-1)) && <button
+          {!isSkillV5&&!isDayOne&&(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}

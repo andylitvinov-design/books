@@ -108,3 +108,10 @@
   .savedAction{font-size:11px;min-height:38px;padding:8px 10px}
   .lessonDisclosure summary{min-height:40px}
 }
+
+/* A private, re-editable reflection belongs in the learner's own My Courses card. */
+.savedReviewLink { display:inline-flex; align-items:center; gap:6px; max-width:100%;
+  margin-top:2px; color:#b8f5e8; font-size:11px; line-height:1.35; font-weight:750;
+  text-decoration:underline; text-underline-offset:3px; }
+.savedReviewLink:hover, .savedReviewLink:focus-visible { color:#fff; }
+.savedReviewLink svg { flex:none; }

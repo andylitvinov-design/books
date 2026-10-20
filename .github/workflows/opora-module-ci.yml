@@ -46,6 +46,8 @@ jobs:
         run: node --test tests/opora-as56-experience-first.test.mjs tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs tests/opora-post-save-course-program.test.mjs tests/opora-owl-guidance-across-slides.test.mjs
       - name: Verify 28 full AS-5.5 bilingual lesson sessions and trilingual public course promises
         run: node --test tests/opora-as55-28-day-end-to-end-acceptance.test.mjs tests/opora-as55-active-passport.test.mjs
+      - name: Verify photo-first calm Day 1, optional check-ins and compact iPhone UI
+        run: node --test tests/opora-calm-day-one-mobile.test.mjs
 
   as56-mobile-browser:
     runs-on: ubuntu-latest
