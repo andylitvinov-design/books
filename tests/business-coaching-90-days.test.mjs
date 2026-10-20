@@ -258,3 +258,13 @@ test('unsaved daily results get explicit EN/RU confirmation before day navigatio
   assert.ok(ui.includes("dayResult!==(previous.result||'')"))
   assert.match(ui,/unsaved && !window\.confirm\(t\.unsavedResult\)/)
 })
+
+test('weekly business module helpers remain compatible with Next production lint and CSS imports',()=>{
+  const helper=readFileSync(new URL('../lib/business-coaching/week-modules.js',import.meta.url),'utf8')
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  for (const source of [helper,ui]) {
+    assert.doesNotMatch(source,/\b(?:const|let|var)\s+module\b|\bmodule\s*=>/, 'Next disallows shadowing its special module variable')
+  }
+  assert.match(ui,/import styles from '\.\/business-coaching\.module\.css'/)
+  assert.doesNotMatch(ui,/weekModule\.css/)
+})
