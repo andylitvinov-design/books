@@ -46,7 +46,7 @@ export function NativeLinkHandler() {
     if (isNativeHolisticHouse()) {
       void import('@capacitor/core').then(async ({ registerPlugin }) => {
         const PushNotifications = registerPlugin<{
-          addListener:(event:string,callback:(value:any)=>void)=>Promise<{remove:()=>Promise<void>}>
+          addListener:(event:string,callback:(value:{notification?:{data?:{kind?:string,requestId?:string,locale?:string}}})=>void)=>Promise<{remove:()=>Promise<void>}>
         }>('PushNotifications')
         const subscribed = await PushNotifications.addListener(
           'pushNotificationActionPerformed',({notification}) => {
