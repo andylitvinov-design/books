@@ -5,6 +5,7 @@ import {useEffect, useMemo, useState} from 'react'
 import {CalendarDays, Check, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
 import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
+import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import styles from './growth-studio.module.css'
@@ -92,6 +93,12 @@ const COPY={
     duplicate:'Скопировать как черновик',
   },
 }
+
+const CHANNEL_WARNINGS={
+  en:{media_required:'Attach a public photo or video.',video_required:'This platform requires MP4 video.',text_too_long:'Text plus tracked link exceeds the supported single-post limit.',pinterest_board_not_configured:'Select a Pinterest board in an authorized publisher.',business_location_not_configured:'A verified business location is needed.',event_details_required:'Real event date, venue and organizer must be verified.',media_type_unsupported:'Unsupported media format.',telegram_media_unsupported:'Telegram supports JPG/PNG photo or MP4 video in this adapter.',telegram_brand_not_configured:'Telegram is configured only for Holistic House.',telegram_not_configured:'Telegram bot environment settings are missing.',telegram_channel_not_verified:'Verify posting rights in Connections.'},
+  ru:{media_required:'Добавьте публичное фото или видео.',video_required:'Для этого канала требуется MP4-видео.',text_too_long:'Текст вместе с UTM-ссылкой превышает ограничение площадки.',pinterest_board_not_configured:'Выберите доску в авторизованном Pinterest.',business_location_not_configured:'Нужен подтверждённый адрес организации.',event_details_required:'Нужна проверенная дата события, место и организатор.',media_type_unsupported:'Неподдерживаемый формат медиа.',telegram_media_unsupported:'Для Telegram разрешены JPG/PNG фото или MP4 видео.',telegram_brand_not_configured:'Бот Telegram настроен только на Holistic House.',telegram_not_configured:'Серверные настройки бота не заданы.',telegram_channel_not_verified:'Проверьте права в разделе подключений.'},
+}
+const METHOD_LABELS={en:{telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
 const empty = () => ({
   brand:'holistic_house',channel:'instagram',locale:'en',title:'',caption:'',
   sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',
@@ -140,6 +147,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const t=COPY[locale]
   const [records,setRecords]=useState(initialRecords)
   const [ready,setReady]=useState(storageReady)
+  const [telegramVerified,setTelegramVerified]=useState(false)
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [editing,setEditing]=useState(null)
@@ -224,7 +232,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     finally {setBusy(false)}
   }
   async function sendTelegram(post){
-    if(!telegram.ready||busy)return
+    if(!telegram.ready||!telegramVerified||busy)return
     const destination=telegram.channel||'the configured channel'
     if(!window.confirm(t.telegramConfirm+'\n'+destination+'\n\n'+post.title+'\n\n'+post.caption.slice(0,700)))return
     setBusy(true);setNotice('')
@@ -274,10 +282,12 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <div className={styles.safetyBadge}><ShieldCheck size={18} aria-hidden="true"/>{t.noAuto}</div>
     </div>
     {!ready&&<p className={styles.warning} role="alert"><CircleAlert size={18}/>{t.unavailable}</p>}
-    <p className={telegram.ready?styles.connectionReady:styles.connectionUnavailable}>
-      <ShieldCheck size={15}/>{telegram.ready?t.telegramReady+': '+(telegram.channel||'Telegram'):t.telegramDisabled}
+    <p className={telegramVerified?styles.connectionReady:styles.connectionUnavailable}>
+      <ShieldCheck size={15}/>{telegramVerified?(locale==='ru'?'Права бота Telegram подтверждены':'Telegram bot posting permissions verified'):
+        telegram.ready?(locale==='ru'?'Настройки Telegram найдены — сначала проверьте права ниже':'Telegram settings found — verify posting permissions below'):t.telegramDisabled}
     </p>
     <p className={styles.privacyNote}><ShieldCheck size={15} aria-hidden="true"/>{t.unsafe}</p>
+    <GrowthStudioConnections locale={locale} telegram={telegram} onTelegramVerified={setTelegramVerified}/>
     <div className={styles.metrics}>
       <div><span>{t.draftCount}</span><strong>{counts.draft}</strong></div>
       <div><span>{t.approvedCount}</span><strong>{counts.approved}</strong></div>
@@ -331,6 +341,12 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <p className={styles.hint}>{t.sourceHint}</p>
         <label>{t.schedule}<input disabled={!ready||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
         <p className={styles.hint}>{t.scheduleNote}</p>
+        <div className={styles.publisherDiagnostics} role="status" aria-live="polite">
+          <strong>{CHANNEL_CAPABILITIES[form.channel]?.name || form.channel} · {METHOD_LABELS[locale]?.[CHANNEL_CAPABILITIES[form.channel]?.mode] || METHOD_LABELS.en.manual}</strong>
+          {reviewGrowthPublication({...form,status:'draft'},{telegramConfigured:telegram.ready,telegramChannelVerified:telegramVerified}).issues.length>0
+            && <ul>{reviewGrowthPublication({...form,status:'draft'},{telegramConfigured:telegram.ready,telegramChannelVerified:telegramVerified}).issues.map(code=>
+              <li key={code}>{CHANNEL_WARNINGS[locale]?.[code]||CHANNEL_WARNINGS.en[code]||code}</li>)}</ul>}
+        </div>
         <div className={styles.editorActions}>
           <button className={styles.primary} disabled={!ready||busy||!form.title.trim()} type="button" onClick={()=>execute('save')}><Check size={16}/>{t.save}</button>
           {isEditing&&<button type="button" disabled={!ready||busy} onClick={reset}>{t.clear}</button>}
@@ -405,7 +421,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     {tab==='posts'&&<div className={styles.postList}>
       {!visible.length&&<p className={styles.empty}>{t.noPosts}</p>}
       {visible.map(post=><article key={post.id} className={styles.post}>
-        <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{t[post.status]}</span>
+        <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{publicationStatusLabel(post.status,locale)}</span>
           <h3>{post.title}</h3><p>{BRANDS[post.brand]} · {CHANNELS[post.channel]} · {post.locale.toUpperCase()}</p>
           {post.scheduledAt&&<small>{formatTime(post.scheduledAt,locale)} · {t.localTime}</small>}</div>
           {!['sending','published','delivery_unknown'].includes(post.status)
@@ -415,8 +431,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           {post.status==='draft'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
           {post.status==='approved'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
           {post.channel==='telegram'&&post.brand==='holistic_house'&&['approved','planned_manual'].includes(post.status)&&
-            <button type="button" disabled={busy||!ready||!telegram.ready}
-              title={telegram.ready?t.telegramSend:t.telegramDisabled} onClick={()=>sendTelegram(post)}>
+            <button type="button" disabled={busy||!ready||!telegramVerified}
+              title={telegramVerified?t.telegramSend:locale==='ru'?'Сначала проверьте права бота в разделе подключений':'Verify bot posting rights under Connections first' onClick={()=>sendTelegram(post)}>
               <Send size={15}/>{t.telegramSend}</button>}
           {post.status==='published'&&post.delivery?.url&&
             <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>}
