@@ -29,7 +29,7 @@
     "test:monetization": "node --conditions=react-server --test tests/billing-*.test.mjs tests/subscription-ui.test.mjs tests/service-*.test.mjs tests/paypal-personal-payments.test.mjs tests/crm-*.test.mjs tests/notifications*.test.mjs tests/course-test-sequence.test.mjs",
     "test:billing:db": "node --conditions=react-server --test --test-concurrency=1 tests/billing-database.integration.mjs",
     "test:session-save": "node --test tests/client-session-cabinet-navigation.test.mjs tests/app-auth-pkce.integration.mjs tests/client-session-save-to-google.test.mjs tests/session-exit-save-navigation.test.mjs",
-    "prebuild": "node scripts/build-public-card-artwork.mjs",
+    "prebuild": "node scripts/build-public-card-artwork.mjs && node scripts/build-report-pdf-art.mjs",
     "predev": "node scripts/build-public-card-artwork.mjs",
     "build:static-artwork": "node scripts/build-public-card-artwork.mjs"
   },
