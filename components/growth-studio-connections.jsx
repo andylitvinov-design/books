@@ -23,6 +23,7 @@ const messages={
     guidelines:'Готовность определяется по реальному разрешению и ответу провайдера, а не по наличию кнопки.',
     warning:'Для Instagram/TikTok/YouTube нужен подходящий медиафайл, для Pinterest — доска, для мероприятий — подтверждённые дата и организатор.',
     verificationNeeded:'Тест соединения ещё не проводился.',recheck:'Проверить снова',
+    bridgeTitle:'Metricool — отдельный сервис публикации',bridgeNote:'Подключение Metricool к ChatGPT не даёт прав сайту Holistic House. Для прямого API, по текущим правилам Metricool, нужен тариф Advanced/Custom и серверные ключи. Без этого размещение остаётся ручным.',bridgeHelp:'Требования Metricool API',
   },
   en:{
     summary:'Connections and publishing methods',
@@ -40,7 +41,26 @@ const messages={
     guidelines:'Readiness requires real provider permission and delivery evidence, not a button in this app.',
     warning:'Instagram/TikTok/YouTube need media; Pinterest requires a board; event listings need verified dates and organizer.',
     verificationNeeded:'No connection test completed yet.',recheck:'Check again',
+    bridgeTitle:'Metricool — separate publishing service',bridgeNote:'Connecting Metricool to ChatGPT does not authorize the Holistic House server. Metricool currently requires Advanced/Custom for direct API access, plus reviewed server-side credentials. Until then publishing is manual.',bridgeHelp:'Metricool API requirements',
   },
+}
+const RU_REQUIREMENTS={
+  facebook:'Требуются разрешения Meta на публикацию от имени страницы; личный профиль и группы могут требовать ручной отправки.',
+  instagram:'Профессиональный Instagram и проверенные разрешения публикации, подходящее фото или видео.',
+  youtube:'Используйте отдельный загрузчик RU/EN; OAuth, канал и фактическую видимость нужно подтвердить.',
+  twitter:'Требуются официальный API и подходящий тариф; длина текста зависит от подписки.',
+  linkedin:'Нужны разрешения личного или корпоративного аккаунта и официальный API.',
+  pinterest:'Нужно изображение или видео и конкретная доска Pinterest; в редакторе доска ещё не задаётся.',
+  google_business:'Нужны подтверждённая бизнес-локация, API-разрешения и тип публикации.',
+  tiktok:'Нужен одобренный Content Posting API и совместимое фото или видео.',
+  telegram:'Только после явного согласования и проверки прав бота на публикацию в публичном канале.',
+  mastodon:'Нужны OAuth и конкретный сервер Mastodon, лимиты зависят от сервера.',
+  threads:'Нужен официальный API, текст отдельной публикации — до 500 символов.',
+  bluesky:'Нужен доступ приложения, текст отдельной публикации — до 300 символов.',
+  wordpress:'Необходимо отдельное подключение WordPress и проверка прав публикации.',
+  eventbrite:'Требуется настоящее мероприятие с подтверждённой датой, организатором и Eventbrite-доступом.',
+  meetup:'Нужны права организатора и доступное официальное подключение Meetup.',
+  manual:'Готовый контент копируется владельцем вручную, без автоматической отправки.',
 }
 const modes={telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader',event_adapter:'eventAdapter',manual:'manual'}
 export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{}}){
@@ -78,6 +98,11 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       {error&&<p className={styles.connectionError} role="alert"><AlertCircle size={15}/>{t.mismatch}</p>}
       <small>{t.noTests}</small>
     </div>
+    <div className={styles.connectionBox}>
+      <div className={styles.connectionBoxTitle}><strong>{t.bridgeTitle}</strong><span className={styles.notVerifiedText}>{t.external}</span></div>
+      <p>{t.bridgeNote}</p>
+      <a href="https://help.metricool.com/basic-guide-for-api-integration-r97af" target="_blank" rel="noopener noreferrer">{t.bridgeHelp} ↗</a>
+    </div>
     <div className={styles.connectionScroller}>
       <table className={styles.connectionTable}>
         <thead><tr><th>{t.channel}</th><th>{t.mode}</th><th>{t.connection}</th><th>{t.what}</th></tr></thead>
@@ -89,7 +114,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
               <td>{t[modes[item.mode]]}</td>
               <td>{isTelegram?(verified?t.verified:telegram.ready?t.configured:t.unconfigured)
                 :isYoutube?t.external:t.manualOnly}</td>
-              <td>{item.description}</td>
+              <td>{locale==='ru'?RU_REQUIREMENTS[item.id]||item.description:item.description}</td>
             </tr>
           })}
         </tbody>
