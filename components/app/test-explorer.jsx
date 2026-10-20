@@ -7,6 +7,7 @@ import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Langu
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
 import { TEST_KINDS, testKindCardLabel, testKindShortLabel } from '@/lib/assessments/test-kinds'
+import { ASSESSMENT_EVIDENCE_GROUPS } from '@/lib/assessments/psychometric-validity-2026'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { PSYCHOTHERAPY_CORE_CATEGORIES } from '@/data/assessments/psychotherapy-core-100'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, buildPublicStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
@@ -228,6 +229,9 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   }, [selectionFocus])
   const [stylesFilter, setStylesFilter] = useState(() => initialPreferences?.styles ?? [])
   const [kinds, setKinds] = useState(() => initialPreferences?.kinds ?? [])
+  const [evidenceGroup, setEvidenceGroup] = useState(() =>
+    ASSESSMENT_EVIDENCE_GROUPS.some(group => group.key === initialPreferences?.evidenceGroup)
+      ? initialPreferences.evidenceGroup : 'all')
   const [lengths, setLengths] = useState(() => initialPreferences?.lengths ?? [])
   const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
@@ -293,18 +297,20 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     setCustomizeOpen(true)
     setShowAll(true)
   }, [entries])
-  const facets = { availability, focus, problems, styles: stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
-  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const facets = { availability, focus, problems, styles: stylesFilter, kinds,
+    evidenceGroups:evidenceGroup==='all'?[]:[evidenceGroup],
+    lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
+  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active
   // criterion. Exclude the facet's own current selection (multi-choice OR).
-  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
-  const areaCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, areas: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, details, axes, maxMinutes, language, tracking, freeOnly, query])
-  const axisCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, axes: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, maxMinutes, language, tracking, freeOnly, query])
+  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
+  const areaCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, areas: [] }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const axisCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, axes: [] }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, maxMinutes, language, tracking, freeOnly, query])
   const detailCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_DETAIL_TOPICS.map((item) => [item.key, detailCandidates.filter((entry) => entry.topics.includes(item.key)).length])), [detailCandidates])
   const areaCounts = useMemo(() => Object.fromEntries(MONITOR_AREAS.map((item) => [item.key, areaCandidates.filter((entry) => entry.areas?.includes(item.key)).length])), [areaCandidates])
   const axisCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_AXES.map((key) => [key, axisCandidates.filter((entry) => entry.measurementAxes?.includes(key)).length])), [axisCandidates])
   // A selected test stays visible even if new filters no longer match it.
-  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
+  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
   const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
   // Keep checked tests above the shortened discovery list. Re-ranking after
   // a checkbox change must never make that same checkbox disappear mid-click.
@@ -389,7 +395,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     }
     setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
   }
-  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
+  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setEvidenceGroup('all'); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
@@ -652,6 +658,18 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
           <span>{locale === 'ru' ? 'Найти тест' : locale === 'es' ? 'Buscar pruebas' : 'Search tests'}</span>
       <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.search} aria-label={c.search} />
         </label>
+      <label className={styles.sort}>
+        {locale==='ru'?'Доказательность':locale==='es'?'Estado de evidencia':'Evidence status'}
+        <select data-test-evidence-group-filter value={evidenceGroup}
+          onChange={(event)=>setEvidenceGroup(event.target.value)}>
+          <option value="all">{locale==='ru'?'Все группы':locale==='es'?'Todos los grupos':'All groups'}</option>
+          {ASSESSMENT_EVIDENCE_GROUPS.map(group=>
+            <option key={group.key} value={group.key}>
+              {group.label[locale] || group.label.en}
+            </option>
+          )}
+        </select>
+      </label>
       <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option><option value="type">{locale === "ru" ? "По типу теста" : locale === "es" ? "Por tipo" : "By type"}</option><option value="popular">{socialCopy.popular}</option><option value="rating">{socialCopy.rating}</option></select></label>
       </div>
     </section>
@@ -666,7 +684,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       <div className={styles.list}>{(showAll ? visibleCatalog : visibleCatalog.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.pdfResource ? 'PDF' : entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
-        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2><TestKindBadge entry={entry} locale={locale} />{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}{entry.validity && <p className={styles.methodology} data-psychometric-evidence={entry.validity.status} data-test-evidence-key={entry.validity.key}><strong>{(VALIDITY_COPY[locale] || VALIDITY_COPY.en).label}: </strong>{entry.validity.grade ? (VALIDITY_COPY[locale] || VALIDITY_COPY.en).graded + ' ' + entry.validity.grade : (VALIDITY_COPY[locale] || VALIDITY_COPY.en)[entry.validity.status]} · {(VALIDITY_COPY[locale] || VALIDITY_COPY.en).locale}: {entry.validity.respondentLocale}</p>}
+        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2><TestKindBadge entry={entry} locale={locale} />{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}{entry.validity && <p className={styles.methodology} data-psychometric-evidence={entry.validity.status} data-psychometric-group={entry.validity.group} data-test-evidence-key={entry.validity.key}><strong>{(VALIDITY_COPY[locale] || VALIDITY_COPY.en).label}: </strong>{entry.validity.grade ? (VALIDITY_COPY[locale] || VALIDITY_COPY.en).graded + ' ' + entry.validity.grade : (VALIDITY_COPY[locale] || VALIDITY_COPY.en)[entry.validity.status]} · {ASSESSMENT_EVIDENCE_GROUPS.find(group=>group.key===entry.validity.group)?.label?.[locale] || ASSESSMENT_EVIDENCE_GROUPS.find(group=>group.key===entry.validity.group)?.label?.en || entry.validity.group} · {(VALIDITY_COPY[locale] || VALIDITY_COPY.en).locale}: {entry.validity.respondentLocale}</p>}
         <TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />
         {!entry.selectable && entry.pdfResource && <div className={styles.pdfResource} data-professional-pdf={entry.key}>
           <div className={styles.pdfResourceActions}>
