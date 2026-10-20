@@ -149,3 +149,7 @@
  :global(body){background:#fff!important}
  .goalEditor,.tabs,.footer,.hero,.eyebrow,.print,.metricForm,.changes{display:none!important}
 }
+
+.removeMetric{margin-top:7px;align-self:flex-start;background:transparent;border:0;color:#805060;padding:0;font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer}
+.footerActions .deleteCourse{background:#fcf8f7;border-color:#eddbdf;color:#873e53}
+@media print{.removeMetric{display:none!important}}
