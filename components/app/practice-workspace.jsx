@@ -169,6 +169,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     if(params.get('panel')==='materials')setActivePanel('materials')
+    // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
+    if(params.get('panel')==='crm')setActivePanel('crm')
     if(params.get('panel')==='clients'){
       setActivePanel('clients')
       const requested=params.get('requestId')||''
@@ -176,12 +178,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         setFocusRequestId(requested)
     }
   },[])
+  const hasPracticeData=Boolean(data)
   useEffect(()=>{
-    if(!activePanel)return undefined
+    if(!activePanel||!hasPracticeData)return undefined
     const targetId=activePanel==='services'?'hh-practice-services-view':'hh-practice-workspace-detail'
     const frame=requestAnimationFrame(()=>document.getElementById(targetId)?.scrollIntoView({behavior:'smooth',block:'start'}))
     return ()=>cancelAnimationFrame(frame)
-  },[activePanel,newServiceRequest])
+  },[activePanel,newServiceRequest,hasPracticeData])
   const t=useMemo(()=>ru?{
     title:'Моя практика',personal:'Личное пространство',intro:'Публичный профиль, услуги и заявки — отдельно от ваших личных тестов и истории.',
     noProfile:'Начните с короткого профиля. Он не станет публичным без проверки.',profile:'Профиль мастера',credentials:'Образование и credentials',services:'Услуги',requests:'Заявки',

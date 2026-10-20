@@ -16,6 +16,9 @@
 .form button:disabled{opacity:.55;cursor:not-allowed}
 .honeypot{position:absolute;left:-9999px;top:auto;height:1px;width:1px;overflow:hidden}
 .error{font:600 13px/1.6 Arial,Helvetica,sans-serif;color:#8f3644;margin:0}
+.fallback{display:inline-flex;align-items:center;gap:6px;margin:7px 0 0;padding:7px 10px;border:1px solid #b88392;border-radius:10px;background:#fff;color:#723345;font:750 12px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.fallback:hover{background:#fff5f7}
+.fallback svg{flex:none}
 .success{display:flex;gap:13px;align-items:flex-start;background:#fff;border:1px solid #b7d1bd;padding:23px;border-radius:17px;max-width:800px;color:#2b684d}
 .success svg{flex:none}
 .success strong{font:700 17px/1.5 Arial,Helvetica,sans-serif}
