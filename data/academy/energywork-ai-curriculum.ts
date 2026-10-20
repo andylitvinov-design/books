@@ -207,7 +207,7 @@ const practiceQuestion: EnergyworkQuestion = {
   help: l("Any response is fine; no result is required.", "Любой ответ подходит, специального результата не требуется."),
   options: [
     { id: "tried", label: l("I tried it in a way that suited me", "Я попробовал(а) в комфортном варианте") },
-    { id: "skipped", label: l("I chose to skip it today", "Сегодня я решил(а) пропустить") },
+    { id: "skipped", label: l("I need more practice", "Мне нужно ещё попрактиковаться") },
   ],
 };
 
@@ -580,12 +580,7 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
 
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    ...withClosingPractices(
-      commonSlides.filter((slide) => slide.phase === "flight" && slide.id !== "flight-save"),
-      ["flight-03"], "flight-done"),
-    // The save-only checkpoint follows practice and congratulations, matching
-    // the server sequence without adding or changing any private answer.
-    commonSlides.find((slide) => slide.id === "flight-save")!,
+    ...withClosingPractices(commonSlides.filter((slide) => slide.phase === "flight"), ["flight-03"], "flight-done"),
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),

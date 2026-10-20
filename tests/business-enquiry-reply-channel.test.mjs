@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {validateBusinessEnquiry} from '../lib/business-consulting/intake-policy.js'
+import {validateBusinessEnquiry,parseBusinessReplyContact} from '../lib/business-consulting/intake-policy.js'
 import {prepareRequestedEnquirySms} from '../lib/business-consulting/reply-policy.js'
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const payload={
@@ -44,8 +44,9 @@ test('responding to a single enquiry never becomes marketing CRM send or vendor 
  const form=source('components/business-website-enquiry.tsx')
  const crm=source('components/app/business-enquiry-sms-reply.jsx')
  const store=source('lib/business-consulting/enquiry-store.js')
- assert.match(form,/replyChannel\?\{replyChannel\}/)
- assert.match(form,/data-business-field="reply-channel"/)
+ assert.match(form,/parseBusinessReplyContact\(contact\)/)
+ assert.match(form,/\.\.\.reply,question:showQuestion\?question:""/)
+ assert.doesNotMatch(form,/data-business-field="reply-channel"/)
  assert.match(store,/replyChannel: input\.replyChannel/)
  assert.match(store,/app_private\.crm_sms_is_opted_out/)
  assert.match(store,/suppressed=true/)
@@ -56,3 +57,17 @@ test('responding to a single enquiry never becomes marketing CRM send or vendor 
  assert.doesNotMatch(crm,/\bfetch\(|sendCrmSms|onAction\(['"]send_sms|sendTwilioSms/)
  assert.match(source('components/app/crm-business-enquiries.jsx'),/BusinessEnquirySmsReply/)
 })
+
+test('one compact field maps to a consented manual email or WhatsApp reply only',()=>{
+ assert.deepEqual(parseBusinessReplyContact('  Friend@Example.org '),{
+  email:'friend@example.org',phone:'',replyChannel:'email'})
+ assert.deepEqual(parseBusinessReplyContact(' +1 (416) 555-1234 '),{
+  email:'',phone:'+14165551234',replyChannel:'whatsapp'})
+ for(const raw of ['', 'friend', 'not@valid', '4165551234', '+1234', 'bad@example.org\nBCC:evil@example.org'])
+  assert.equal(parseBusinessReplyContact(raw),null,raw)
+ const email=parseBusinessReplyContact('lead@example.org')
+ const phone=parseBusinessReplyContact('+14165551234')
+ for(const contact of [email,phone]){
+  assert.equal(validateBusinessEnquiry({...payload,...contact,question:''}).replyChannel,contact.replyChannel)
+ }
+});

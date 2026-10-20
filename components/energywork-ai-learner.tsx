@@ -345,15 +345,15 @@ function meditationReviewText(value: string) {
   return legacy ? legacy[1] : value;
 }
 
-// Older encrypted progress may still contain one of the previous radio options.
-// Show its original meaning without turning it into a claimed Sun sensation.
+// Keep the historic "skipped" choice ID readable in encrypted progress.
+// Use the current supportive wording without claiming any particular sensation.
 function flightPracticeResponse(value: string, locale: EnergyworkLocale) {
   if (value === "tried") return locale === "ru"
     ? "Я попробовал(а) в комфортном варианте"
     : "I tried it in a way that suited me";
   if (value === "skipped") return locale === "ru"
-    ? "Сегодня я решил(а) пропустить"
-    : "I chose to skip it today";
+    ? "Мне нужно ещё попрактиковаться"
+    : "I need more practice";
   return value;
 }
 
@@ -413,11 +413,11 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   if (present("presence-03")) highlights.push(locale === "ru"
     ? "Вы отметили комфорт короткой паузы на " + present("presence-03") + " из 10 — это только ваша самооценка, не медицинская шкала."
     : "You rated the comfort of a short pause " + present("presence-03") + "/10 — a personal check-in, not a medical score.");
-  const skipped = Object.entries(answers).filter(([id, value]) =>
+  const practicesToRevisit = Object.entries(answers).filter(([id, value]) =>
     /^(flight-03|presence-02|intention-04|boundaries-03|ygg-03|tan-03|kun-03)$/.test(id) && value === "skipped").length;
-  if (skipped) highlights.push(locale === "ru"
-    ? "Вы выбрали пропустить практики: " + skipped + ". Это допустимо; участие остаётся добровольным."
-    : "You chose to skip " + skipped + " practice(s). That is a valid choice; participation remains voluntary.");
+  if (practicesToRevisit) highlights.push(locale === "ru"
+    ? "Практики для повторения: " + practicesToRevisit + ". Можно вернуться к ним в удобном темпе."
+    : "Practices to revisit: " + practicesToRevisit + ". Return to them at your own pace.");
   if (reikiInitiationRequestValid(present("end-01"))) {
     const request = readReikiInitiationRequest(present("end-01"));
     const selected = energyworkPathChoices.find((choice) => choice.id === request.freeInitiation)?.title[locale] ?? "";
@@ -692,6 +692,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const t = copy[locale];
   // Referral entrants have already read the course overview; saved account progress still wins.
   const [index, setIndex] = useState(startAtExperience ? 1 : 0);
+  const pageRef = useRef<HTMLElement | null>(null);
   const [programmeOpen, setProgrammeOpen] = useState(false);
   const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
@@ -843,6 +844,50 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     window.addEventListener("pageshow", keepCourseAtTop);
     return () => window.removeEventListener("pageshow", keepCourseAtTop);
   }, [index]);
+  // iOS Safari does not resize 100dvh when its software keyboard opens.
+  // Reposition the whole lesson to the actual visual viewport so the CTA
+  // stays tappable without sacrificing a long-answer textarea's scroll.
+  useEffect(() => {
+    const page = pageRef.current;
+    const viewport = window.visualViewport;
+    if (!page || !viewport) return;
+    const updateKeyboardViewport = () => {
+      const active = document.activeElement;
+      const editing = active instanceof HTMLElement && page.contains(active) &&
+        (active.matches('textarea, input:not([type="checkbox"]):not([type="radio"])') || active.isContentEditable);
+      const obscured = window.innerHeight - viewport.height;
+      // Retain the position during a button tap: blur fires before click and
+      // Safari animates keyboard dismissal afterwards.
+      const keyboardVisible = window.matchMedia("(max-width: 760px)").matches &&
+        viewport.height > 180 && obscured > 100 &&
+        (editing || page.dataset.reikiKeyboardOpen === "true");
+      if (keyboardVisible) {
+        page.dataset.reikiKeyboardOpen = "true";
+        page.style.setProperty("--reiki-visual-height", `${Math.floor(viewport.height)}px`);
+        page.style.setProperty("--reiki-visual-top", `${Math.max(0, Math.floor(viewport.offsetTop))}px`);
+      } else {
+        delete page.dataset.reikiKeyboardOpen;
+        page.style.removeProperty("--reiki-visual-height");
+        page.style.removeProperty("--reiki-visual-top");
+      }
+    };
+    viewport.addEventListener("resize", updateKeyboardViewport);
+    viewport.addEventListener("scroll", updateKeyboardViewport);
+    window.addEventListener("resize", updateKeyboardViewport);
+    document.addEventListener("focusin", updateKeyboardViewport);
+    document.addEventListener("focusout", updateKeyboardViewport);
+    updateKeyboardViewport();
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardViewport);
+      viewport.removeEventListener("scroll", updateKeyboardViewport);
+      window.removeEventListener("resize", updateKeyboardViewport);
+      document.removeEventListener("focusin", updateKeyboardViewport);
+      document.removeEventListener("focusout", updateKeyboardViewport);
+      delete page.dataset.reikiKeyboardOpen;
+      page.style.removeProperty("--reiki-visual-height");
+      page.style.removeProperty("--reiki-visual-top");
+    };
+  }, []);
   async function startSaving() {
     if (!consented || busy) return;
     setBusy(true);
@@ -1130,7 +1175,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main ref={pageRef} className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>

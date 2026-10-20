@@ -4674,3 +4674,47 @@
   }
   .page[data-course-portrait="v3"] .lessonIntroPanel :global(.reiki-intro-audio) { display: none; }
 }
+
+/* REIKI iOS KEYBOARD CTA · 2026-10-20
+   100dvh tracks Safari browser chrome, not the visual viewport above the
+   software keyboard. Keep Continue/Back visible; scroll long answers inside
+   the slide, restore the full course layout when the keyboard closes. */
+@media screen and (max-width: 760px) {
+  .page[data-course-portrait="v3"][data-course-one-screen][data-reiki-keyboard-open="true"] {
+    inset: auto 0 auto 0;
+    top: var(--reiki-visual-top, 0px);
+    height: var(--reiki-visual-height, 100dvh);
+    max-height: var(--reiki-visual-height, 100dvh);
+  }
+  .page[data-course-portrait="v3"][data-reiki-keyboard-open="true"] .shell {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    gap: 4px;
+    padding: 4px 9px 6px;
+  }
+  .page[data-course-portrait="v3"][data-reiki-keyboard-open="true"] :is(.journey, .progressFooter, .programme) {
+    display: none !important;
+  }
+  .page[data-course-portrait="v3"][data-reiki-keyboard-open="true"] .slide {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .page[data-course-portrait="v3"][data-reiki-keyboard-open="true"] .slideMain {
+    justify-content: flex-start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-bottom: 16px;
+  }
+  .page[data-course-portrait="v3"][data-reiki-keyboard-open="true"] .footer {
+    flex: none;
+    order: 5;
+    margin: 0;
+    padding: 0 2px;
+  }
+  .page[data-course-portrait="v3"][data-reiki-keyboard-open="true"] .next {
+    min-height: 48px;
+  }
+}
