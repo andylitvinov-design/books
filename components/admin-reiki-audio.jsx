@@ -157,38 +157,68 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     : null
 
   const select = event => {
-    const next = event.target.files?.[0] || null
-    setError('');setNotice('');setStaged(null)
-    if (!next) {setFile(null);return}
-    if (!reikiIntroMime(next.type,next.name) ||
-      next.size < 512 || next.size > REIKI_INTRO_MAX_BYTES) {
-      setFile(null);setError(copy.invalid);return
+    const next = Array.from(event.target.files || [])
+    setError('');setNotice('');setStaged(null);setProgress('')
+    setFile(null);setPendingFiles([])
+    if (!next.length) return
+    if (next.length > REIKI_AUDIO_MAX_BATCH) {
+      setError(copy.bulkLimit);return
     }
-    setFile(next)
+    if (next.some(item => !reikiIntroMime(item.type,item.name) ||
+      item.size < 512 || item.size > REIKI_INTRO_MAX_BYTES)) {
+      setError(copy.invalid);return
+    }
+    setPendingFiles(next)
+    setFile(next[0])
   }
 
   async function upload() {
-    if (!file || busy) return
+    if (!file || busy || !pendingFiles.length) return
     setOperationBusy(true);setBusy('upload');setError('');setNotice('')
+    cancelAfterCurrent.current = false
+    let saved = 0, metadataFailed = 0, last = null
     try {
-      const mime = reikiIntroMime(file.type,file.name)
-      const {intent} = await ownerRequest({
-        action:'prepare',lesson:lesson.id,locale,filename:file.name,mime,bytes:file.size,
-      })
-      if (!intent || intent.lesson !== lesson.id || intent.locale !== locale ||
-        intent.bytes !== file.size || !intent.token || !intent.publishableKey)
-        throw new Error('INVALID_AUDIO_UPLOAD_INTENT')
-      const storage = createClient(intent.supabaseUrl,intent.publishableKey,{
-        auth:{persistSession:false,autoRefreshToken:false},
-      }).storage.from(intent.bucket)
-      const {error:uploadError} = await storage.uploadToSignedUrl(
-        intent.path,intent.token,file,{contentType:intent.mime,upsert:false})
-      if (uploadError) throw uploadError
-      setStaged({path:intent.path,fileName:file.name,storage:'draft'})
+      for (const item of pendingFiles) {
+        if (cancelAfterCurrent.current) break
+        const mime = reikiIntroMime(item.type,item.name)
+        setProgress(copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length)
+        const {intent} = await ownerRequest({
+          action:'prepare',lesson:lesson.id,locale,filename:item.name,mime,bytes:item.size,
+        })
+        if (!intent || intent.lesson !== lesson.id || intent.locale !== locale ||
+          intent.bytes !== item.size || !intent.token || !intent.publishableKey ||
+          intent.bucket !== 'hh-reiki-audio-drafts')
+          throw new Error('INVALID_AUDIO_UPLOAD_INTENT')
+        const storage = createClient(intent.supabaseUrl,intent.publishableKey,{
+          auth:{persistSession:false,autoRefreshToken:false},
+        }).storage.from(intent.bucket)
+        const {error:uploadError} = await storage.uploadToSignedUrl(
+          intent.path,intent.token,item,{contentType:intent.mime,upsert:false})
+        if (uploadError) throw uploadError
+        saved += 1
+        last = {path:intent.path,fileName:item.name,storage:'draft'}
+        setProgress(copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length)
+        try {
+          await ownerRequest({
+            action:'register',lesson:lesson.id,locale,path:intent.path,
+            title:reikiAudioUploadTitle(item.name) || (locale === 'ru' ? 'Аудиозапись' : 'Audio recording'),
+          })
+        } catch {
+          metadataFailed += 1
+        }
+      }
       await onChanged()
-      setNotice(copy.uploadDone)
-    } catch {setError(copy.failed)}
-    finally {setBusy('');setOperationBusy(false)}
+      if (saved === 1 && pendingFiles.length === 1 && last) setStaged(last)
+      else {setFile(null);setStaged(null);setPendingFiles([])}
+      setNotice((cancelAfterCurrent.current ? copy.uploadStopped : copy.uploadDone) +
+        ' · ' + copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length +
+        (metadataFailed ? ' · ' + copy.metadataWarning : ''))
+    } catch {
+      if (saved) await onChanged().catch(() => {})
+      setError(copy.failed + (saved ? ' · ' + copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length : ''))
+    } finally {
+      setBusy('');setOperationBusy(false);cancelAfterCurrent.current = false
+    }
   }
 
   async function chooseSaved(item) {
