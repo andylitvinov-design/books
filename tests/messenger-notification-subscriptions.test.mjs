@@ -56,7 +56,7 @@ test('future sending is impossible until EVERY authorization and consent gate pa
 test('phase one stays isolated from external sending and enforces owner-scoped SQL',()=>{
  const repository=readFileSync(new URL('../lib/app/messenger-notification-repository.js',import.meta.url),'utf8')
  const route=readFileSync(new URL('../app/api/app/notification-channels/route.js',import.meta.url),'utf8')
- const sql=readFileSync(new URL('../supabase/migrations/20261020140000_hh_messenger_pending_contacts.sql',import.meta.url),'utf8')
+ const sql=readFileSync(new URL('../supabase/migrations/20261020132212_hh_messenger_pending_contacts_20261020.sql',import.meta.url),'utf8')
  assert.match(repository,/destination_ciphertext/)
  assert.match(repository,/seal\(/)
  assert.match(repository,/transaction\(/)
