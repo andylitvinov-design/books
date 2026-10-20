@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { seal, openSealed } from '../lib/app/crypto.js'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
@@ -133,4 +134,19 @@ test('private schema forces row-level security and zero anonymous grants', () =>
   assert.match(sql,/account_id=\(select auth\.uid\(\)\)/i)
   assert.match(sql,/on delete cascade/i)
   assert.doesNotMatch(sql,/grant (?:all|select|insert|delete) on app_private\.lab_reports to (?:public|anon|authenticated)/i)
+})
+
+test('lab reports encryption uses a permitted AAD field and binds ciphertext to the owner', () => {
+  const source=readFileSync(new URL('../lib/app/lab-reports.js',import.meta.url),'utf8')
+  const field=source.match(/field:\\s*'([^']+)'/)?.[1]
+  assert.equal(field,'health.laboratory')
+  const accountId='73d68320-b733-4c2d-b3ae-1c9b1877dfd9'
+  const recordId='7c62f6d8-b92b-45cb-a291-2d164b690b79'
+  const config={ encryptionKey: Buffer.alloc(32,7), encryptionKeyId:'lab-contract-test' }
+  const value={version:1,measuredOn:'2026-10-19',markers:[row()]}
+  const context={accountId,recordId,field}
+  const sealed=seal(value,context,config)
+  assert.equal(typeof sealed,'string')
+  assert.deepEqual(openSealed(sealed,context,config),value)
+  assert.throws(()=>openSealed(sealed,{...context,accountId:'09648bfd-f600-484d-9fd5-2593059809a9'},config),/PRIVATE_DATA_UNAVAILABLE/)
 })
