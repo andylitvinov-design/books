@@ -53,7 +53,7 @@ test('CRM mobile messages entry bridges only navigation, not clinical contact da
   assert.match(practice,/params\.get\('panel'\)==='crm'/)
   assert.match(css,/@media\(max-width:560px\).*messageHubGrid/s)
   assert.match(css,/grid-template-columns:1fr/)
-  assert.match(css,/min-height:39px/)
+  assert.match(css,/min-height:44px/)
 })
 
 test('private messaging and SMS channel provider gates remain separate',()=>{
