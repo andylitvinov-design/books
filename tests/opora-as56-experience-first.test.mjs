@@ -111,15 +111,30 @@ test('day one restores five opening screens while days 2–14 keep their existin
     await click(h,lang==='ru'?'Послушать волны':'Relax with waves')
     assert.match(textOf(h.tree),lang==='ru'?/Две минуты спокойствия/:/Two quiet minutes/)
     await click(h,lang==='ru'?'Посмотреть, что дальше':"See what's next")
-    if(day===1){
-      assert.match(textOf(h.tree),lang==='ru'?/Первая неделя/:/Week 1/)
-      await click(h,d.next)
-      assert.match(textOf(h.tree),lang==='ru'?/Вторая неделя/:/Week 2/)
-      await click(h,d.next)
+    // A single long route replaces the duplicated 3-day teaser and two
+    // disconnected weekly lists. All 14 previews remain visible and read-only.
+    const map=nodes(h.tree).find(n=>n.props?.['data-opora-course-map']==='all-14-days')
+    assert.ok(map,'The whole route must be visible after a confirmed save')
+    const cards=nodes(map).filter(n=>n.props?.['data-opora-journey-day']!==undefined)
+    assert.equal(cards.length,14,'All 14 days in one scrollable path')
+    for(let n=1;n<=14;n++){
+      const card=cards.find(node=>node.props['data-opora-journey-day']===n)
+      assert.ok(card,'Missing day '+n)
+      assert.ok(textOf(card).includes(oporaExperienceDay(n,lang).title))
+      assert.ok(textOf(card).includes(oporaExperienceDay(n,lang).practice))
+      assert.equal(card.props['data-day-status'],
+        n<=day?'completed':n===day+1?'next':'locked')
     }
-    if(day<14)assert.ok(textOf(h.tree).includes(oporaExperienceDay(day+1,lang).title))
-    else assert.match(textOf(h.tree),lang==='ru'?/Ваши 14 дней позади/:/Your 14 days are complete/)
+    assert.ok(textOf(map).includes(lang==='ru'?'Пройдено дней':'Days completed'))
+    if(day===1){
+      assert.equal(cards[0].props['data-day-status'],'completed')
+      assert.equal(cards[1].props['data-day-status'],'next')
+    }
     await click(h,"I'm committed")
+    if(day===1){
+      assert.match(textOf(h.tree),/Keep OPORA close|ОПОРА всегда под рукой/)
+      await click(h,lang==='ru'?'Не сейчас':'Not now')
+    }
     assert.match(textOf(h.tree),day===14
       ?(lang==='ru'?/Ваш курс завершён/:/Your course is complete/)
       :(lang==='ru'?/Увидимся завтра/:/See you tomorrow/))
