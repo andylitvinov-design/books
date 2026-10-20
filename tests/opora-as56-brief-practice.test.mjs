@@ -59,7 +59,7 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
     try{
       // Day 1 now begins with five restored check-in slides and a gentle arrival;
       // the daily practice follows those six screens, not the initial Welcome.
-      for(let i=0;i<(day===1?6:1);i++)await f.click(t.next)
+      for(let i=0;i<(day===1?6:5);i++)await f.click(t.next)
       assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
       assert.ok(textOf(f.h.tree).includes(oporaExperienceGuide(day,locale)))
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
@@ -83,12 +83,12 @@ for(const locale of ['ru','en','es']){
     test(`AS5.7 ${locale}: neutral return from ${source}, hint initially ${priorHelp?'open':'closed'}, remains safe through Back`,async()=>{
       const f=fixture(locale)
       try{
-        await f.click(t.next)
+        for(let i=0;i<5;i++)await f.click(t.next)
         if(priorHelp)await f.click(t.help)
-        if(source!=='practice')await f.click(t.next)
+        if(source!=='practice')for(let i=0;i<2;i++)await f.click(t.next)
         await f.click(source==='discomfort'?t.hard:t.pause)
         await f.click(t.neutral);assertNeutral(f,locale)
-        if(source!=='practice')await f.click(t.previous)
+        if(source!=='practice')for(let i=0;i<2;i++)await f.click(t.previous)
         assertNeutral(f,locale)
         assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],false)
         await f.click(t.help)
@@ -117,7 +117,8 @@ for(const locale of ['ru','en','es']){
   test(`AS5.7 ${locale}: ordinary Go back preserves an explicitly opened hint without saving`,async()=>{
     const f=fixture(locale)
     try{
-      await f.click(t.next);await f.click(t.help);await f.click(t.pause);await f.click(t.back)
+      for(let i=0;i<5;i++)await f.click(t.next)
+      await f.click(t.help);await f.click(t.pause);await f.click(t.back)
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],true)
       await f.click(t.pause);await f.click(t.end)
       assert.equal(f.saves,0);assert.equal(f.closes,1);assert.deepEqual(f.data,f.original)
