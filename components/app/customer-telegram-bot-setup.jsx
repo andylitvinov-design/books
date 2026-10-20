@@ -17,6 +17,9 @@ const TEXT={
   sendingOff:'Automatic client messaging is OFF until a controlled pilot is approved.',
   sendingOn:'Automatic client messaging is enabled. Review the pilot and consent controls.',
   loading:'Checking setup…',
+  test:'Send one test to my Telegram',testAccepted:'Telegram accepted the test request. Check your chat; delivery and reading are not confirmed.',
+  testNotLinked:'Connect your own Telegram in Cabinet Settings before testing.',testRate:'Only one test every ten minutes.',
+  testHelp:'Manual test goes only to your verified Telegram. Client broadcasting remains OFF.',accountSettings:'Open Cabinet Settings',
  },
  ru:{
   title:'Telegram-бот для клиентов',note:'Отдельный бот уведомлений. Существующие боты практики, CRM и Ezohata не затрагиваются.',
@@ -31,6 +34,9 @@ const TEXT={
   sendingOff:'Автоматические сообщения клиентам ВЫКЛЮЧЕНЫ до подтверждённого теста.',
   sendingOn:'Автоматические сообщения клиентам включены. Проверьте согласия и результаты пилота.',
   loading:'Проверяем подключение…',
+  test:'Отправить тест себе в Telegram',testAccepted:'Telegram принял тест. Проверьте чат; доставка и прочтение не подтверждаются.',
+  testNotLinked:'Сначала подключите свой Telegram в настройках кабинета.',testRate:'Один тест разрешён раз в десять минут.',
+  testHelp:'Ручной тест отправляется только на ваш подтверждённый Telegram. Рассылка клиентам остаётся выключенной.',accountSettings:'Открыть настройки кабинета',
  },
  es:{
   title:'Bot Telegram para clientes',note:'Un bot independiente. Los bots de práctica, CRM y Ezohata no cambian.',
@@ -45,6 +51,9 @@ const TEXT={
   sendingOff:'Mensajes automáticos DESACTIVADOS hasta aprobar la prueba.',
   sendingOn:'Mensajes automáticos activados. Revisa el consentimiento y las pruebas.',
   loading:'Comprobando conexión…',
+  test:'Enviar una prueba a mi Telegram',testAccepted:'Telegram aceptó la prueba. Comprueba el chat; no se confirma la entrega ni la lectura.',
+  testNotLinked:'Primero conecta tu Telegram en ajustes de tu cuenta.',testRate:'Solo una prueba cada diez minutos.',
+  testHelp:'La prueba se envía solo a tu Telegram verificado. Los envíos a clientes siguen desactivados.',accountSettings:'Abrir ajustes de cuenta',
  },
 }
 export default function CustomerTelegramBotSetup({locale='en',accountId}){
@@ -95,6 +104,29 @@ export default function CustomerTelegramBotSetup({locale='en',accountId}){
    if(sessionRef.current===session){running.current=false;setBusy(false)}
   }
  }
+ async function sendTest(){
+  const session=sessionRef.current
+  if(running.current||!session||session.accountId!==accountId)return
+  running.current=true;setBusy(true);setFeedback('');setError('')
+  try{
+   const response=await fetch('/api/app/notification-channels/telegram/test',{
+    method:'POST',credentials:'same-origin',cache:'no-store',
+    signal:session.controller.signal,headers:{'X-HH-Account-Id':session.accountId},
+   })
+   const result=await response.json()
+   if(!response.ok){
+    const e=new Error('TEST_NOT_ACCEPTED');e.code=result?.error
+    throw e
+   }
+   if(result?.providerAccepted!==true)throw new Error('TEST_NOT_ACCEPTED')
+   if(sessionRef.current===session)setFeedback(t.testAccepted)
+  }catch(e){
+   if(sessionRef.current===session)setError(e?.code==='RATE_LIMITED'?t.testRate:
+    e?.code==='TELEGRAM_OWNER_NOT_LINKED'?t.testNotLinked:t.error)
+  }finally{
+   if(sessionRef.current===session){running.current=false;setBusy(false)}
+  }
+ }
  if(!accountId)return null
  return <section className={styles.formCard} aria-label={t.title}>
   <h3>{t.title}</h3><p>{t.note}</p>
@@ -111,6 +143,10 @@ export default function CustomerTelegramBotSetup({locale='en',accountId}){
     <li key={key}><code>{key}</code></li>)}</ul>}
    <p role="status">{state.webhookVerified?t.ready:t.notReady}</p>
    <p>{state.sendingEnabled?t.sendingOn:t.sendingOff}</p>
+   {state.configured&&<p>{state.ownerLinked
+     ?t.testHelp
+     :<><span>{t.testNotLinked}</span>{' '}
+       <a href={`/${locale}/app/settings`}>{t.accountSettings}</a></>}</p>}
   </div>}
   <p>
    <button type="button" onClick={()=>run('GET')} disabled={busy}>{busy?t.loading:t.refresh}</button>
@@ -118,6 +154,11 @@ export default function CustomerTelegramBotSetup({locale='en',accountId}){
    <button type="button" onClick={()=>run('POST')}
     disabled={busy||!state?.configured||state?.webhookVerified===true}>
     {t.connect}
+   </button>
+   {' '}
+   <button type="button" onClick={sendTest}
+    disabled={busy||!state?.webhookVerified||!state?.ownerLinked}>
+    {t.test}
    </button>
   </p>
   {feedback&&<p role="status" aria-live="polite">{feedback}</p>}
