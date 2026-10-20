@@ -94,3 +94,21 @@ jobs:
         run: npx eslint lib/crm/sms-text.js lib/crm/sms-setup.js lib/crm/sms-status.js lib/crm/sms.js lib/crm/sms-store.js lib/crm/sms-dispatch.js app/api/app/crm/sms/webhook/route.js components/app/crm-sms-tools.jsx components/app/crm-sms-setup.jsx lib/crm/repository.js lib/practitioners/public-service-enquiry.js lib/practitioners/public-service-enquiry-input.mjs components/contact-channel-chooser.tsx components/app/public-enquiry-contact.jsx lib/crm/email.js lib/crm/email-store.js lib/crm/email-dispatch.js lib/crm/sms.js lib/crm/sms-store.js lib/crm/sms-dispatch.js app/api/app/crm/route.js app/api/app/crm/sms/webhook/route.js components/app/crm-sms-tools.jsx app/api/app/crm/email-token/route.js app/api/app/crm/webhook/route.js components/app/crm-manager.jsx components/app/crm-contact-editor.jsx lib/crm/contact-edit.js lib/crm/contact-pagination.js lib/crm/contact-search.js lib/crm/contact-csv.js lib/crm/contact-operations-store.js app/api/app/crm/search/route.js app/api/app/crm/export/route.js components/app/crm-export-tools.jsx components/app/crm-email-tools.jsx components/app/crm-email-preferences.jsx components/app/crm-workflow.jsx components/app/crm-contact-activity.jsx lib/crm/activity-pagination.js lib/crm/activity-history-store.js app/api/app/crm/activity/route.js lib/crm/workflow.js lib/crm/workflow-store.js lib/crm/followup-pagination.js app/api/app/crm/followups/route.js lib/crm/workday.js app/api/app/crm/contact/route.js lib/crm/messenger-policy.js lib/crm/messenger-provider.js lib/crm/messenger-store.js lib/crm/messenger-webhook.js app/api/app/crm/messenger/route.js 'app/api/app/crm/messenger/webhook/[provider]/route.js' components/app/crm-messenger.jsx lib/business-consulting/intake-policy.js lib/business-consulting/enquiry-store.js app/api/services/business-consulting/route.js components/app/crm-business-enquiries.jsx components/business-website-enquiry.tsx lib/practitioners/client-profile-groups.js lib/practitioners/client-work-queue.js lib/practitioners/conversation-state.js lib/practitioners/repository.js lib/practitioners/client-messages.js app/api/app/practitioner-client-messages/route.js components/app/practitioner-client-profiles.jsx components/app/practice-request-conversation.jsx lib/practitioners/task-policy.js lib/practitioners/request-tasks.js app/api/app/practitioner-request-tasks/route.js components/app/practitioner-request-tasks.jsx lib/app/notification-contract.js lib/app/client-message-push.js lib/app/messenger-notification-policy.js lib/app/messenger-notification-repository.js app/api/app/notification-channels/route.js components/app/messenger-notification-settings.jsx components/app/app-workspace.jsx
       - name: Check notification worker syntax
         run: node --check public/course-notifications-sw.js
+
+  # Run Next production build independently of older application unit suites.
+  # This protects a CRM release even when unrelated app tests are red.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned packages
+        run: npm ci --no-audit --no-fund
+      - name: Production Next.js build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
