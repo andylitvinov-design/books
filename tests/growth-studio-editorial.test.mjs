@@ -123,3 +123,105 @@ test('owner-only server actions, server route and no external dispatcher in firs
   assert.doesNotMatch(action,/fetch\(|sendMessage|publishPost|createScheduledPost/)
   assert.match(page,/storageReady/)
 })
+
+
+test('all private client, assessment, profile, report and payment URL families are forbidden in public campaigns', () => {
+  const privatePaths = [
+    '/en/test-results/secret', '/ru/tests/assessment-42', '/es/test/123',
+    '/en/assessment/finished', '/en/assessments/3',
+    '/ru/results/portrait', '/en/report/123', '/en/my-reports',
+    '/en/profile/account', '/en/settings/security', '/ru/dashboard',
+    '/en/documents/secret', '/en/document-preview/secret',
+    '/en/payments/checkout', '/en/payment/receipt', '/en/invoices/id',
+    '/en/checkout/123', '/en/client-cabinet', '/en/my-tests',
+    '/en/register', '/en/signup', '/en/logout', '/en/auth/callback',
+    '/en/services/andy/reports/file.jpg',
+  ];
+  for (const pathname of privatePaths) {
+    assert.throws(() => normalizePublicSource(pathname, 'holistic_house'), /invalid_post/, pathname)
+    assert.throws(() => normalizePostFields(fields({sourceUrl: pathname})), /invalid_post/, pathname)
+  }
+  for (const pathname of [
+    '/en/test-results/private.jpg', '/ru/profile/avatar.webp',
+    '/en/document-preview/report.png', '/en/payments/receipt.mp4',
+  ]) {
+    assert.throws(() => normalizePostFields(fields({mediaUrl: pathname, mediaAlt:'A photo'})), /invalid_post/, pathname)
+  }
+  for (const [pathname,brand] of [
+    ['/en/services/free-situation-review','holistic_house'],
+    ['/en/academy/reiki/yggdrasil','holistic_house'],
+    ['/en/events/love-magic-tarot-initiations-2026-10-25','holistic_house'],
+    ['/en/toronto','holistic_house'],
+    ['/events','toronto_tantra'],
+    ['/','psitrends'],
+  ]) {
+    assert.doesNotThrow(() => normalizePublicSource(pathname,brand), pathname+' is public')
+  }
+})
+
+test('production-like synthetic Redis REST adapter enforces namespace, CAS, retries and no real network', async () => {
+  const values = new Map()
+  const requestLog = []
+  const environment = {
+    PRESCRIPTIONS_KV_REST_API_URL:'https://synthetic-redis.example',
+    PRESCRIPTIONS_KV_REST_API_TOKEN:'synthetic-test-token',
+  }
+  const fetchFn = async (url,opts) => {
+    assert.equal(url, environment.PRESCRIPTIONS_KV_REST_API_URL)
+    assert.equal(opts.method,'POST')
+    assert.equal(opts.redirect,'error')
+    assert.equal(opts.credentials,'omit')
+    assert.equal(opts.cache,'no-store')
+    assert.equal(opts.headers.Authorization,'Bearer '+environment.PRESCRIPTIONS_KV_REST_API_TOKEN)
+    const command = JSON.parse(opts.body)
+    requestLog.push(command)
+    const [op, ...args] = command
+    if (op==='HGET') return {ok:true,json:async()=>({result:values.get(args[1])??null})}
+    if (op==='HGETALL') return {ok:true,json:async()=>({result:[...values].flat()})}
+    if (op==='EVAL') {
+      const [script, count, key, marker, ...rest] = args
+      assert.equal(count,1)
+      assert.equal(key,'holistic-house:growth-studio:editorial:v1')
+      assert.ok(typeof script === 'string' && script.includes('redis.call'))
+      if (typeof marker === 'number') {
+        // Bulk command uses MAX_RECORDS as first argument after the key.
+        const pairs=rest
+        if(pairs.some((_,i)=>i%2===0&&values.has(pairs[i])))return {ok:true,json:async()=>({result:0})}
+        for(let i=0;i<pairs.length;i+=2)values.set(pairs[i],pairs[i+1])
+        return {ok:true,json:async()=>({result:1})}
+      }
+      const [expected, serialized] = rest
+      const previous=values.get(marker)
+      if ((previous && JSON.parse(previous).revision!==expected)||(!previous&&expected!==0))
+        return {ok:true,json:async()=>({result:0})}
+      values.set(marker,serialized)
+      return {ok:true,json:async()=>({result:1})}
+    }
+    throw new Error('UNEXPECTED_REDIS_COMMAND')
+  }
+  const store=createGrowthStudioStore({environment,fetchFn})
+  assert.ok(store)
+  const first=nextGrowthPost({fields:fields(),action:'save',id:postId(),now:fixedNow})
+  await store.save(first,0)
+  assert.equal((await store.get(first.id)).title,first.title)
+  const approved=nextGrowthPost({current:first,action:'approve',now:fixedNow})
+  await store.save(approved,1)
+  await assert.rejects(store.save(approved,1),/conflict/)
+  const additional=nextGrowthPost({fields:fields({title:'Another public draft'}),action:'save',id:postId(),now:fixedNow})
+  await store.batchCreate([additional])
+  await assert.rejects(store.batchCreate([additional]),/conflict/)
+  assert.deepEqual((await store.list()).map(x=>x.id).sort(),[first.id,additional.id].sort())
+  assert.ok(requestLog.every(cmd=>cmd.includes('holistic-house:growth-studio:editorial:v1')))
+  assert.ok(requestLog.every(cmd=>!cmd.includes('app.crm_contacts')&&!cmd.includes('client')&&!cmd.includes('prescriptions')))
+})
+
+test('Redis connection errors fail closed and never create browser fallback records', async () => {
+  const environment={
+    PRESCRIPTIONS_KV_REST_API_URL:'https://synthetic-redis.example',
+    PRESCRIPTIONS_KV_REST_API_TOKEN:'synthetic-token',
+  }
+  const store=createGrowthStudioStore({environment,fetchFn:async()=>({ok:false,status:401})})
+  await assert.rejects(store.list(),/storage_unavailable/)
+  const malformed=createGrowthStudioStore({environment,fetchFn:async()=>({ok:true,json:async()=>({result:null})})})
+  await assert.rejects(malformed.list(),/storage_unavailable/)
+})
