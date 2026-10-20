@@ -61,7 +61,7 @@ export default async function InstallPage({params}){
         <p>{c.intro}</p>
       </div>
     </section>
-    <InstallHolisticHouse locale={locale}/>
+    <InstallHolisticHouse locale={locale} showGuideLink={false}/>
     <div className={styles.actions}>
       <Link className={styles.primary} href={`/${locale}/app/portrait`}>{c.open}</Link>
       <Link className={styles.link} href={`/${locale}/app/consultations`}>{c.messages}</Link>
