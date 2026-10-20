@@ -66,7 +66,7 @@ test('protected routes, least-privilege migration, no impression pixels and dail
  const [route,owner,migration,cleanup,ui]=await Promise.all([
    read('app/api/client-session-viewer/[selector]/engagement/route.js'),
    read('app/api/admin/clients/[id]/sessions/[sessionId]/engagement/route.js'),
-   read('supabase/migrations/20261020191500_hh_report_engagement_opt_in.sql'),
+   read('supabase/migrations/20261020192118_hh_report_engagement_opt_in_20261020.sql'),
    read('lib/app/maintenance.js'),read('components/client-session-engagement.jsx'),
  ])
  assert.match(route,/authorizeSessionGuest/)
