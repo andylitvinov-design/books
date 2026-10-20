@@ -58,17 +58,21 @@ try {
         locale + '/' + width + ': horizontal overflow ' + JSON.stringify(originalSize))
 
       await page.locator('[data-shop-filter="program"]').click()
+      await page.waitForFunction(() => document.querySelectorAll('[data-shop-product]').length === 3)
       assert.equal(await page.locator('[data-shop-product]').count(), 3)
       assert.equal(await page.locator('[data-shop-add]').count(), 0,
         'Unpriced programmes must never enter the paid cart')
       await page.locator('[data-shop-search]').fill('zzzz-unmatched-shop-phrase')
+      await page.waitForFunction(() => document.querySelectorAll('[data-shop-product]').length === 0)
       assert.equal(await page.locator('[data-shop-product]').count(), 0)
       await page.locator('[data-shop-search]').fill('')
       await page.locator('[data-shop-filter="free"]').click()
+      await page.waitForFunction(() => document.querySelectorAll('[data-shop-product]').length === 2)
       assert.equal(await page.locator('[data-shop-product]').count(), 2)
       assert.equal(await page.locator('[data-shop-add]').count(), 0,
         'Free resources must never charge money')
       await page.locator('[data-shop-filter="session"]').click()
+      await page.waitForFunction(() => document.querySelectorAll('[data-shop-product]').length === 2)
       assert.equal(await page.locator('[data-shop-product]').count(), 2)
 
       const add = page.locator('[data-shop-add="express-consultation-30"]')
