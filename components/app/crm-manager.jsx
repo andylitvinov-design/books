@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmSmsTools from './crm-sms-tools'
@@ -41,6 +41,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const billing = BILLING_COPY[language]
   const [data, setData] = useState(null)
   const sessionRef = useRef(null)
+  const loadVersionRef=useRef(0)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [pageBusy, setPageBusy] = useState(false)
@@ -66,16 +67,23 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const contactAnchorRef=useRef(null)
   const focusAbortRef=useRef(null)
   const focusedIdRef=useRef('')
-  async function load(session) {
-    const response = await fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: session.controller.signal, headers: { 'X-HH-Account-Id': session.accountId } })
-    if (!response.ok) throw new Error('unavailable')
-    const result = await response.json()
-    if (sessionRef.current === session) setData(previous=>{
+  const load=useCallback(async (session)=>{
+    // Only the newest response from this exact account may replace CRM state.
+    // Prevent delayed initial GET from undoing a just-saved follow-up mutation.
+    const version=++loadVersionRef.current
+    const response=await fetch('/api/app/crm',{
+      credentials:'same-origin',cache:'no-store',signal:session.controller.signal,
+      headers:{'X-HH-Account-Id':session.accountId},
+    })
+    if(!response.ok)throw new Error('unavailable')
+    const result=await response.json()
+    if(sessionRef.current!==session||version!==loadVersionRef.current)return
+    setData(previous=>{
       const focused=previous?.contacts?.find(contact=>contact.id===focusedIdRef.current)
       if(!focused||result.contacts?.some(contact=>contact.id===focused.id))return result
       return {...result,contacts:[focused,...result.contacts]}
     })
-  }
+  },[])
   useEffect(() => {
     if (!accountId) return
     const controller = new AbortController()
@@ -85,11 +93,11 @@ export default function CrmManager({ locale = 'en', accountId }) {
     focusedIdRef.current='';setFocusedContactId('');setFocusError('');setFocusBusy(false)
     setTaskPageBusy(false);setTaskPageError(false)
     setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection('overview')
-    fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'X-HH-Account-Id': accountId } })
-      .then(async (response) => { if (!response.ok) throw new Error('unavailable'); const result = await response.json(); if (sessionRef.current === session) setData(result) })
-      .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
+    void load(session).catch(error=>{
+      if(error.name!=='AbortError'&&sessionRef.current===session)setNotice(c.error)
+    })
     return () => { controller.abort();focusAbortRef.current?.abort();taskPageAbortRef.current?.abort(); if (sessionRef.current === session) sessionRef.current = null }
-  }, [c.error, accountId])
+  }, [c.error, accountId, load])
   useEffect(()=>{
     const q=search.trim()
     if(!['contacts','sms'].includes(activeSection)||!accountId||!data||q.length<2) {
@@ -242,7 +250,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
       document.removeEventListener('visibilitychange',check)
       window.removeEventListener('focus',check)
     }
-  },[accountId,data?.overview?.asOf])
+  },[accountId,data?.overview?.asOf,load])
   async function loadMoreFollowups() {
     const session=sessionRef.current
     const cursor=data?.followupsNextCursor
