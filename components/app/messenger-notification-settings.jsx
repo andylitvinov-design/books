@@ -113,7 +113,7 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
  async function act(channel,action){
    const session=sessionRef.current
    if(!session||workingRef.current||session.accountId!==accountId)return
-   const draft=drafts[channel],current=view?.channels?.[channel]
+   const draft=drafts[channel]
    if(action!=='remove'&&!draft.permission)return
    if(action!=='remove'&&action!=='preferences'&&!draft.destination.trim()){
      setError(t.noValue);return
