@@ -1,9 +1,10 @@
 'use client'
+import { isPcPtsd5Definition, assertExactPcPtsd5Definition } from '../../lib/assessments/pc-ptsd5-runtime.js'
 import styles from './trauma-administration.module.css'
-import { traumaContextReady } from '../../lib/assessments/trauma-administration.js'
+import { traumaContextReady, traumaAdministrationPolicy } from '../../lib/assessments/trauma-administration.js'
 
 export function TraumaFrontMatter({ definition, context, onChange, onContinue, onExit, busy, error }) {
-  const administration = definition.administration
+  const administration = traumaAdministrationPolicy(definition)
   const ready = traumaContextReady(definition, context)
   function fieldControl(field) {
     const value = context[field.id] || ''
@@ -36,7 +37,9 @@ export function TraumaFrontMatter({ definition, context, onChange, onContinue, o
     {administration.intro.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
     <div className="hh-form">{administration.fields.map(fieldControl)}</div>
     <fieldset className="hh-form"><legend>Before continuing (Holistic House administration safeguards)</legend>
-      <p>A personal narrative is optional and is not needed for scoring. Context you choose to enter is saved with this attempt in encrypted storage. To change the experience after answering symptom questions, discard this attempt and start a new one.</p>
+      {administration.policyVersion === 'pc-ptsd5-administration-v1'
+        ? <p>No event narrative is requested. These acknowledgements are saved with this attempt; they do not arrange professional care.</p>
+        : <p>A personal narrative is optional and is not needed for scoring. Context you choose to enter is saved with this attempt in encrypted storage. To change the experience after answering symptom questions, discard this attempt and start a new one.</p>}
       {administration.acknowledgements.map(fieldControl)}
     </fieldset>
     {error && <p role="alert">The context could not be saved. Please check your responses and try again.</p>}
@@ -48,4 +51,12 @@ export function TraumaFrontMatter({ definition, context, onChange, onContinue, o
 }
 export function TraumaSectionInstructions({ question }) {
   return question?.sectionInstructions ? <p lang="en" className="hh-runner-instructions" data-trauma-section>{question.sectionInstructions}</p> : null
+}
+
+export function TraumaExposureExamples({ definition }) {
+  if (!isPcPtsd5Definition(definition)) return null
+  assertExactPcPtsd5Definition(definition)
+  return <ul lang="en" data-trauma-exposure-examples>
+    {definition.exposureExamples.map(example => <li key={example}>{example}</li>)}
+  </ul>
 }

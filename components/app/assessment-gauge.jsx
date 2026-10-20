@@ -55,6 +55,12 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
   const model = gaugeModel(dimension, result, locale)
   const ru = locale === 'ru'
   if (!model) return <span className={styles.unavailable}>{ru ? 'Нет достоверной числовой шкалы' : 'No verified numeric scale'}</span>
+  if (model.displayKind === 'response-count') return <figure className={styles.gauge + (compact ? ' ' + styles.compact : '')}
+    data-assessment-gauge="response-count">
+    <strong className={styles.value}>{numeral(dimension.value, locale)} <span>/ {dimension.max}</span></strong>
+    <figcaption>{model.countLabel}</figcaption>
+    {showScaleNote && <small className={styles.scaleNote}>{model.countNote}</small>}
+  </figure>
   if (model.displayKind === 'screening-count') return <figure className={styles.gauge + (compact ? ' ' + styles.compact : '')}
     data-assessment-gauge="screening-count">
     <strong className={styles.value}>{numeral(dimension.value, locale)} <span>/ 6</span></strong>

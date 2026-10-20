@@ -1,5 +1,6 @@
 'use client'
-import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
+import { assessmentAnswerProgress, applicableAssessmentQuestions, mergeAssessmentAnswers, assessmentSaveProgress, isPcPtsd5Definition } from '@/lib/assessments/pc-ptsd5-runtime'
+import { TraumaFrontMatter, TraumaSectionInstructions, TraumaExposureExamples } from './trauma-administration'
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -312,7 +313,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [active, setActive] = useState(null)
   const [run, setRun] = useState(null)
   const [answers, setAnswers] = useState({})
-  const [index, setIndex] = useState(0)
+  const [storedIndex, setIndex] = useState(0)
   const [phase, setPhase] = useState('catalog')
   const [mode, setMode] = useState('quick')
   const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
@@ -339,11 +340,14 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
     return active ? definitionFor(active, locale) : null
   }, [run, active, locale])
-  const question = definition?.questions[index]
+  const answerProgress = assessmentAnswerProgress(definition, answers)
+  const questions = answerProgress.questions
+  const index = definition && isPcPtsd5Definition(definition) ? Math.min(storedIndex, Math.max(0, questions.length - 1)) : storedIndex
+  const question = questions[index]
   const selected = question ? answers[question.id] : undefined
-  const answeredCount = definition ? definition.questions.filter(item => Object.prototype.hasOwnProperty.call(answers, item.id)).length : 0
-  const allAnswered = definition ? answeredCount === definition.questions.length : false
-  const quickMinutes = definition ? Math.max(1, Number(monitoringCatalogItem(definition.key)?.durationMinutes) || Math.ceil(definition.questions.length / 5)) : 1
+  const answeredCount = answerProgress.answeredCount
+  const allAnswered = answerProgress.allAnswered
+  const quickMinutes = definition ? Math.max(1, Number(monitoringCatalogItem(definition.key)?.durationMinutes) || Math.ceil(questions.length / 5)) : 1
   const guidedMinutes = Math.max(quickMinutes + 1, Math.ceil(quickMinutes * 1.4))
   const timeUnit = locale === 'ru' ? 'мин' : 'min'
 
@@ -440,7 +444,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           setRun(existing)
           setAnswers(existing.answers || {})
           setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
-          setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, definition.questions.length - 1)))
+          setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, applicableAssessmentQuestions(definition, existing.answers || {}).length - 1)))
           setMode('quick')
           setPhase('questions')
           return
@@ -459,7 +463,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           setRun(existing)
           setAnswers(existing.answers || {})
           setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
-          setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, nextDefinition.questions.length - 1)))
+          setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, applicableAssessmentQuestions(nextDefinition, existing.answers || {}).length - 1)))
           setPhase('questions')
         } else {
           await startRun(nextDefinition, plan.id)
@@ -527,7 +531,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setContext(created.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     const nextIndex = Math.min(
       Math.max(0, Number(created.progress || 0)),
-      Math.max(0, def.questions.length - 1),
+      Math.max(0, applicableAssessmentQuestions(def, created.answers || {}).length - 1),
     )
     setIndex(nextIndex)
     setMode('quick')
@@ -587,7 +591,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         setIndex(
           Math.min(
             Math.max(0, Number(existing.progress || 0)),
-            Math.max(0, def.questions.length - 1),
+            Math.max(0, applicableAssessmentQuestions(def, existing.answers || {}).length - 1),
           ),
         )
         setMode('quick')
@@ -722,7 +726,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       setRun(fresh)
       setAnswers(fresh.answers || {})
       setContext(fresh.context || {})
-      setIndex(Math.min(fresh.progress || 0, definition.questions.length - 1))
+      setIndex(Math.min(fresh.progress || 0, applicableAssessmentQuestions(definition, fresh.answers || {}).length - 1))
       setSaveState('')
       if (!['draft', 'in_progress'].includes(fresh.status)) resetToCatalog()
     } catch {
@@ -808,10 +812,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   async function choose(value, targetQuestion = question) {
     const epoch = runLifetime.current
     if (!run || !targetQuestion || busy || saving.current || recoveryPending) return
-    const nextAnswers = { ...answers, [targetQuestion.id]: value }
+    const nextAnswers = mergeAssessmentAnswers(definition, answers, { [targetQuestion.id]: value })
     const quick = mode === 'quick'
-    const firstMissing = definition.questions.findIndex(item => !Object.prototype.hasOwnProperty.call(nextAnswers, item.id))
-    const progress = quick ? (firstMissing < 0 ? definition.questions.length : firstMissing) : index
+    const nextProgress = assessmentAnswerProgress(definition, nextAnswers)
+    const progress = quick ? nextProgress.nextIndex : assessmentSaveProgress(definition, nextAnswers, index)
     setAnswers(nextAnswers)
     setBusy(true)
     setSaveState(c.saving)
@@ -865,14 +869,14 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       const saved = await saveGuestRun({
         answers: {},
         context: run.context || {},
-        progress: Math.min(index + 1, definition.questions.length),
+        progress: Math.min(index + 1, questions.length),
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
       if (runLifetime.current !== epoch) return
       setRun(saved)
       setSaveState(c.saved)
-      if (index < definition.questions.length - 1) {
+      if (index < questions.length - 1) {
         setIndex((value) => value + 1)
       } else if (definition.optionalContext?.length > 0) {
         setPhase('context')
@@ -898,7 +902,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       const saved = await saveGuestRun({
         answers: {},
         context,
-        progress: definition.questions.length,
+        progress: questions.length,
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
@@ -1029,16 +1033,16 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <div className="hh-runner-topline">
               <p className="cabinet-test-progress">
                 {mode === 'quick'
-                  ? `${answeredCount} / ${definition.questions.length} ${locale === 'ru' ? 'ответов' : 'answered'}`
-                  : `${c.question} ${index + 1} ${c.of} ${definition.questions.length}`}
+                  ? `${answeredCount} / ${questions.length} ${locale === 'ru' ? 'ответов' : 'answered'}`
+                  : `${c.question} ${index + 1} ${c.of} ${questions.length}`}
               </p>
               <div className="hh-test-mode-toggle" role="group" aria-label={c.modeTitle}>
                 <button type="button" aria-pressed={mode === 'quick'} onClick={() => setMode('quick')}>
                   ⚡ {c.quick}<small>~{quickMinutes} {timeUnit}</small>
                 </button>
                 <button type="button" aria-pressed={mode === 'guided'} onClick={() => {
-                  const missing = definition.questions.findIndex(item => !Object.prototype.hasOwnProperty.call(answers, item.id))
-                  setIndex(missing < 0 ? definition.questions.length - 1 : missing)
+                  const missing = questions.findIndex(item => !Object.prototype.hasOwnProperty.call(answers, item.id))
+                  setIndex(missing < 0 ? questions.length - 1 : missing)
                   setMode('guided')
                 }}>
                   ✦ {c.guided}<small>~{guidedMinutes} {timeUnit}</small>
@@ -1046,9 +1050,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             </div>
             <div className="hh-runner-segments" role="progressbar" aria-label={c.question}
-              aria-valuemin="0" aria-valuemax={definition.questions.length}
+              aria-valuemin="0" aria-valuemax={questions.length}
               aria-valuenow={mode === 'quick' ? answeredCount : index}>
-              {definition.questions.map((item, step) => (
+              {questions.map((item, step) => (
                 <span key={item.id}
                   className={mode === 'quick'
                     ? (Object.prototype.hasOwnProperty.call(answers, item.id) ? 'is-done' : '')
@@ -1059,13 +1063,14 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
             {hasTraumaAdministration(definition) && <p lang="en" className="cabinet-test-note">{definition.safetyText}</p>}
             {definition.instructions && <p className="cabinet-test-note" lang={definition.instrumentLocale}>{definition.instructions}</p>}
+            <TraumaExposureExamples definition={definition} />
             <Asrs6SourceNotice definition={definition} startedAt={run.startedAt} locale={locale} />
             {mode === 'quick' ? (
               <div className="cabinet-quick-form">
-                {definition.questions.map((item, step) => (
+                {questions.map((item, step) => (
                   <fieldset key={item.id} className="cabinet-quick-question" disabled={busy || recoveryPending}>
                     <legend>
-                      <span className="cabinet-question-number">{c.question} {step + 1} / {definition.questions.length}</span>
+                      <span className="cabinet-question-number">{c.question} {step + 1} / {questions.length}</span>
                       <TraumaSectionInstructions question={item} />
                       <h3>{item.text}</h3>
                     </legend>
@@ -1118,13 +1123,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 </button>
               )}
               {mode === 'guided' &&
-                (index !== definition.questions.length - 1 || definition.optionalContext?.length > 0) && (
+                (index !== questions.length - 1 || definition.optionalContext?.length > 0) && (
                 <button type="button" disabled={busy || recoveryPending || selected === undefined} onClick={next}>
                   {c.next}
                 </button>
               )}
             </div>
-            {((mode === 'guided' && index === definition.questions.length - 1 && allAnswered && !definition.optionalContext?.length) ||
+            {((mode === 'guided' && index === questions.length - 1 && allAnswered && !definition.optionalContext?.length) ||
               (mode === 'quick' && allAnswered)) && (
               <TestFinishActions locale={locale} disabled={busy || recoveryPending} temporary guestScaleOnly
                 onReport={() => definition.optionalContext?.length ? saveContextAndFinish('report') : submitResult(run, 'report')}
