@@ -143,3 +143,28 @@ Acceptance: (a) unauthorized actor cannot query or set another phone/consent; (b
 - Before showing the shortcut, the owner-only CRM response checks both the global Twilio STOP fingerprint and suppressed matching CRM contacts via owner-scoped HMAC, with DB failure **fail-closed**. A stale open tab does not guarantee real-time STOP state; owners must refresh/recheck before manually sending. Client-replied STOP on a personal phone requires immediate manual "Do not contact" in CRM.
 - Existing old enquiries with no recorded reply preference **do not** receive implied SMS permission. Owner marketing-SMS queues still require independently evidenced product-update consent; reply-only permission does not qualify.
 - Tests: \`tests/business-enquiry-reply-channel.test.mjs\`, existing \`tests/business-website-enquiry.test.mjs\`, lint and Next production build. Genuine handset and native SMS delivery are not claimed from UI/source tests.
+
+
+## Final no-API reply handoffs and Twilio setup links (20 Oct 2026)
+
+The public business enquiry already asks for an *optional* specific reply channel. In owner My Practice → CRM → Business enquiries, the local reply actions now work for all supported channels:
+
+- **SMS:** copies fixed neutral text, opens iPhone/Android Messages for one requested E.164 number; owner must paste and tap Send. User's mobile plan may charge. A recorded Twilio STOP also blocks this.
+- **Email:** opens the owner's existing mail app using recipient-only, URI-escaped \`mailto:\`; the owner writes and sends a single reply. No Resend service charge or delivery guarantee.
+- **WhatsApp:** opens \`https://wa.me/<digits>\` with only the client-requested phone. The owner writes and sends one message; WhatsApp must be available to both parties. This hands the phone number to WhatsApp on explicit action, not to the website's marketing platform.
+- **Phone call:** opens \`tel:+<E164>\`. The owner's carrier may charge.
+
+Only explicitly chosen reply channels are offered. The owner CRM checks phone **and email** suppression for known CRM contacts and checks global Twilio STOP for SMS before returning enabled handoff controls. Fail-closed on failed checks. The owner must refresh if a STOP arrives later; personal handset replies cannot be read by the website. No automatic sends, no claims of carrier delivery, no clinic/report content in outbound messages and no CRM marketing enrollment.
+
+### Owner click-through for real automated SMS (external steps)
+
+1. **Holistic House app:** https://holistichouse.vercel.app/ru/app/practice → CRM → SMS. The **manual SMS** card works with a personal SIM plan and individually opted-in CRM contacts. Private Cabinet phone management is https://holistichouse.vercel.app/ru/app/settings#hh-client-contact-phone; account phone storage is not verification/marketing opt-in.
+2. **Twilio Console:** https://console.twilio.com/ — register/verify owned messaging account and a two-way sender, create Messaging Service, approve any fees. Trial cannot be used for arbitrary mass marketing and might not support this owner/destination combination.
+3. **Vercel Production environment:** https://vercel.com/super10/codex-public-book-library/settings/environment-variables — add server-only \`HH_CRM_TWILIO_ACCOUNT_SID\`, \`HH_CRM_TWILIO_AUTH_TOKEN\`, \`HH_CRM_TWILIO_MESSAGING_SERVICE_SID\`. Never paste the token in CRM, GitHub or ChatGPT.
+4. **Sender info:** https://holistichouse.vercel.app/en/contact — ensure real legally sufficient business sender identification/contact details, including appropriate postal address and working contact path, before marking \`HH_CRM_SMS_CONTACT_DETAILS_VERIFIED=true\`. Do not publish personal home address as a shortcut.
+5. **Callback:** in Twilio configure signed inbound STOP and status callback \`https://holistichouse.vercel.app/api/app/crm/sms/webhook\` and verify Advanced Opt-Out. Return to CRM → SMS → **Check Twilio connection (no SMS sent)**; then a separate, explicitly authorized pilot to a consented owned number. The read-only probe does not prove a text reached a handset.
+6. **Do not enable live client SMS** until verified handset arrival, status receipt, STOP, sender compliance and expense caps. \`HH_CRM_SMS_LIVE_APPROVED\` remains false unless separately approved. No background bulk send.
+
+Costs and source: https://www.twilio.com/en-us/sms/pricing/ca . For Canada, Twilio currently lists US$0.0083 per outgoing segment plus carrier fees and number rental. Actual carrier routes, taxes and other fees vary.
+
+No provider was provisioned or charged as part of this UI release.
