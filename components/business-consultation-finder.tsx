@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ArrowRight, Check, ClipboardList, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ShieldCheck, Sparkles } from 'lucide-react'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { businessConsultingCopy } from '@/data/business-consulting-copy'
 import { BUSINESS_FINDER_ISSUES, BUSINESS_FINDER_OUTCOMES, BUSINESS_FINDER_FORMATS, suggestBusinessConsultation } from '@/lib/business-consulting/consultation-finder'
@@ -27,9 +27,9 @@ const words: Record<Locale, {
   areas: Record<Area, Choice>; issues: Record<string, Choice>; outcomes: Record<Outcome, Choice>;
 }> = {
   en: {
-    eyebrow: 'YOUR PERSONAL ROUTE · 3 GENTLE QUESTIONS',
-    title: 'What kind of consultation fits your situation?',
-    lead: 'Choose the area, what feels most difficult, and the help you want. You can change your answers and choose a different format at any time.',
+    eyebrow: '3 QUICK QUESTIONS',
+    title: 'Find your consultation in 1 minute',
+    lead: 'Choose a topic and answer two more questions. You can change the suggested format.',
     steps: 'Questions answered', stepOne: 'What is your question mostly about?', stepTwo: 'What feels hardest right now?', stepThree: 'What would help you most?',
     stepOneHelp: 'There is no wrong choice.', stepTwoHelp: 'Choose the closest option; you can explain it in your own words when requesting a session.',
     stepThreeHelp: 'This helps suggest a starting format, not a diagnosis.', awaiting: 'Your suggestion will appear after three short choices.',
@@ -78,9 +78,9 @@ const words: Record<Locale, {
     },
   },
   ru: {
-    eyebrow: 'ВАШ МАРШРУТ · 3 БЕРЕЖНЫХ ВОПРОСА',
-    title: 'Какая консультация подойдёт вашей ситуации?',
-    lead: 'Выберите область, сложность и желаемую помощь. Ответы можно изменить, а формат консультации выбрать самостоятельно.',
+    eyebrow: '3 КОРОТКИХ ВОПРОСА',
+    title: 'Подберите консультацию за минуту',
+    lead: 'Выберите тему и ответьте ещё на два вопроса. Рекомендацию можно изменить.',
     steps: 'Ответов на вопросы', stepOne: 'О чём прежде всего ваш запрос?', stepTwo: 'Что сейчас сложнее всего?', stepThree: 'Какая помощь была бы полезнее?',
     stepOneHelp: 'Здесь нет неправильных ответов.', stepTwoHelp: 'Выберите самое близкое; подробнее можно описать ситуацию в заявке.',
     stepThreeHelp: 'Это помогает подобрать стартовый формат, а не поставить диагноз.', awaiting: 'После трёх коротких ответов появится предложение.',
@@ -129,9 +129,9 @@ const words: Record<Locale, {
     },
   },
   es: {
-    eyebrow: 'TU CAMINO · 3 PREGUNTAS SENCILLAS',
-    title: '¿Qué consulta puede ayudarte a empezar?',
-    lead: 'Elige el área, la dificultad y el tipo de apoyo. Puedes cambiar tus respuestas y elegir otra modalidad.',
+    eyebrow: '3 PREGUNTAS RÁPIDAS',
+    title: 'Encuentra tu consulta en 1 minuto',
+    lead: 'Elige un tema y responde dos preguntas. Podrás cambiar la modalidad sugerida.',
     steps: 'Preguntas respondidas', stepOne: '¿De qué trata tu consulta?', stepTwo: '¿Qué te resulta más difícil?', stepThree: '¿Qué tipo de ayuda deseas?',
     stepOneHelp: 'No hay respuestas incorrectas.', stepTwoHelp: 'Elige la opción más cercana; podrás explicar los detalles en tu solicitud.',
     stepThreeHelp: 'Se trata de orientar, no de diagnosticar.', awaiting: 'Después de tres elecciones verás una sugerencia.',
@@ -203,9 +203,14 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
     t.concern + ': ' + t.issues[issue].label + '; ' +
     t.wanted + ': ' + t.outcomes[outcome].label + '.' : ''
 
+
+  const stage = !area ? 'area' : !issue ? 'issue' : !outcome ? 'outcome' : 'result'
+  const backLabel = locale === 'ru' ? 'Назад' : locale === 'es' ? 'Atrás' : 'Back'
+  const choicesLabel = locale === 'ru' ? 'Другой формат' : locale === 'es' ? 'Otra modalidad' : 'Choose another format'
+
   return <section className={styles.panel} id="hh-business-finder" data-business-consultation-finder aria-labelledby="hh-business-finder-title">
     <div className={styles.heading}>
-      <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true"/>{t.eyebrow}</p>
+      <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true"/>{t.eyebrow}</p>
       <h2 id="hh-business-finder-title">{t.title}</h2>
       <p>{t.lead}</p>
       <div className={styles.progressWrap}>
@@ -216,80 +221,77 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
       </div>
     </div>
 
+    {area && <nav className={styles.trail} aria-label={t.steps}>
+      <button type="button" onClick={() => {setArea(null);setIssue(null);setOutcome(null);setPreferred(null)}}>{t.areas[area].label}</button>
+      {issue && <button type="button" onClick={() => {setIssue(null);setOutcome(null);setPreferred(null)}}>{t.issues[issue].label}</button>}
+      {outcome && <button type="button" onClick={() => {setOutcome(null);setPreferred(null)}}>{t.outcomes[outcome].label}</button>}
+    </nav>}
+
     <div className={styles.questions}>
-      <fieldset className={styles.step} data-business-finder-step="area">
+      {stage === 'area' && <fieldset className={styles.step} data-business-finder-step="area">
         <legend><span className={styles.number}>1</span>{t.stepOne}</legend>
-        <p className={styles.hint}>{t.stepOneHelp}</p>
         <div className={styles.choices}>
           {areas.map(key=><button key={key} type="button" className={styles.choice}
             data-business-area={key} aria-pressed={area===key}
             onClick={()=>{setArea(key);setIssue(null);setOutcome(null);setPreferred(null)}}>
-            <span className={styles.mark}><Check size={17} aria-hidden="true"/></span>
+            <span className={styles.mark}><Check size={16} aria-hidden="true"/></span>
             <span><strong>{t.areas[key].label}</strong><small>{t.areas[key].detail}</small></span>
           </button>)}
         </div>
-      </fieldset>
+      </fieldset>}
 
-      {area && <fieldset className={styles.step} data-business-finder-step="issue">
+      {stage === 'issue' && area && <fieldset className={styles.step} data-business-finder-step="issue">
         <legend><span className={styles.number}>2</span>{t.stepTwo}</legend>
-        <p className={styles.hint}>{t.stepTwoHelp}</p>
         <div className={styles.choices}>
           {BUSINESS_FINDER_ISSUES[area].map((key:string)=><button key={key} type="button" className={styles.choice}
             data-business-issue={key} aria-pressed={issue===key}
             onClick={()=>{setIssue(key);setOutcome(null);setPreferred(null)}}>
-            <span className={styles.mark}><Check size={17} aria-hidden="true"/></span>
+            <span className={styles.mark}><Check size={16} aria-hidden="true"/></span>
             <span><strong>{t.issues[key].label}</strong><small>{t.issues[key].detail}</small></span>
           </button>)}
         </div>
+        <button className={styles.back} type="button" onClick={()=>{setArea(null);setIssue(null);setOutcome(null);setPreferred(null)}}><ArrowLeft size={15} aria-hidden="true"/>{backLabel}</button>
       </fieldset>}
 
-      {area && issue && <fieldset className={styles.step} data-business-finder-step="outcome">
+      {stage === 'outcome' && <fieldset className={styles.step} data-business-finder-step="outcome">
         <legend><span className={styles.number}>3</span>{t.stepThree}</legend>
-        <p className={styles.hint}>{t.stepThreeHelp}</p>
         <div className={styles.choices}>
           {outcomes.map(key=><button key={key} type="button" className={styles.choice}
             data-business-outcome={key} aria-pressed={outcome===key}
             onClick={()=>{setOutcome(key);setPreferred(null)}}>
-            <span className={styles.mark}><Check size={17} aria-hidden="true"/></span>
+            <span className={styles.mark}><Check size={16} aria-hidden="true"/></span>
             <span><strong>{t.outcomes[key].label}</strong><small>{t.outcomes[key].detail}</small></span>
           </button>)}
         </div>
+        <button className={styles.back} type="button" onClick={()=>{setIssue(null);setOutcome(null);setPreferred(null)}}><ArrowLeft size={15} aria-hidden="true"/>{backLabel}</button>
       </fieldset>}
     </div>
 
-    <div className={styles.recommendation} aria-live="polite" aria-atomic="true" data-business-finder-result>
-      {!selected || !area || !issue || !outcome ?
-        <p className={styles.awaiting}><ClipboardList size={21} aria-hidden="true"/>{t.awaiting}</p>
-        : <>
-          <p className={styles.resultEyebrow}>{t.match}</p>
-          <h3>{offerCopy[selected].name}</h3>
-          <p className={styles.selectedPrice}>{offerCopy[selected].price}</p>
-          <p className={styles.reason}>{t.reasons[selected]}</p>
-          <p className={styles.approach}><strong>{t.approach}:</strong> {t.issues[issue].label}</p>
-          <p className={styles.offerDetail}>{offerCopy[selected].description}</p>
-
-          <h4>{t.available}</h4>
-          <div className={styles.formats} role="group" aria-label={t.available}>
-            {formats.map(key=><button key={key} type="button" className={styles.format} aria-pressed={selected===key}
-              data-business-format-choice={key} onClick={()=>setPreferred(key)}>
-              <span>{selected===key ? <Check size={16} aria-hidden="true"/> : null}<strong>{offerCopy[key].name}</strong></span>
-              <small>{offerCopy[key].price}</small>
-            </button>)}
-          </div>
-          <AcquisitionEventLink href="#business-direct-request" event="service_request_start" prefetch={false}
-            className={styles.primary} attributes={{
-              'data-business-direct-option': selected,
-              'data-business-finder-context': context,
-              'data-business-finder-start': 'website-form'
-            }}>
-            {t.request}<ArrowRight size={19} aria-hidden="true"/>
-          </AcquisitionEventLink>
-          <Link className={styles.more} href={'/' + locale + '/services/business-consulting#business-offers'}>
-            {t.detail}<ArrowRight size={16} aria-hidden="true"/>
-          </Link>
-          <p className={styles.noBooking}>{t.noBooking}</p>
-        </>}
-    </div>
-    <p className={styles.privacy}><ShieldCheck size={17} aria-hidden="true"/>{t.privacy}</p>
+    {stage === 'result' && selected && issue && <div className={styles.recommendation} aria-live="polite" aria-atomic="true" data-business-finder-result>
+      <p className={styles.resultEyebrow}>{t.match}</p>
+      <div className={styles.resultTitle}><h3>{offerCopy[selected].name}</h3><strong className={styles.selectedPrice}>{offerCopy[selected].price}</strong></div>
+      <p className={styles.reason}>{t.reasons[selected]}</p>
+      <p className={styles.approach}><strong>{t.approach}:</strong> {t.issues[issue].label}</p>
+      <AcquisitionEventLink href="#business-direct-request" event="service_request_start" prefetch={false}
+        className={styles.primary} attributes={{
+          'data-business-direct-option': selected,
+          'data-business-finder-context': context,
+          'data-business-finder-start': 'website-form'
+        }}>
+        {t.request}<ArrowRight size={18} aria-hidden="true"/>
+      </AcquisitionEventLink>
+      <details className={styles.otherFormats}>
+        <summary>{choicesLabel}</summary>
+        <div className={styles.formats} role="group" aria-label={t.available}>
+          {formats.map(key=><button key={key} type="button" className={styles.format} aria-pressed={selected===key}
+            data-business-format-choice={key} onClick={()=>setPreferred(key)}>
+            <span>{selected===key ? <Check size={16} aria-hidden="true"/> : null}<strong>{offerCopy[key].name}</strong></span>
+            <small>{offerCopy[key].price}</small>
+          </button>)}
+        </div>
+      </details>
+      <p className={styles.noBooking}>{t.noBooking}</p>
+    </div>}
+    <p className={styles.privacy}><ShieldCheck size={15} aria-hidden="true"/>{t.privacy}</p>
   </section>
 }
