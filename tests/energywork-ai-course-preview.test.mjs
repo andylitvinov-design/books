@@ -15,7 +15,7 @@ const videos = read('data/academy/english-guided-meditations.ts')
 
 test('Unified Reiki Practitioner course has 70 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p9"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
   assert.equal(ids.length, 70)
@@ -96,17 +96,19 @@ test('Sun practice uses two optional choices for the one-minute exercise', () =>
   assert.match(css, /\.choices/)
 })
 
-test('Five lessons have separate post-meditation reports and question answers', () => {
+test('Five lesson reports and four sets of study questions gate initiation', () => {
   const assignments = [
     ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-study-04'],
     ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-study-v2-01'],
-    ['initiation','end-01','init-01'],
+
   ]
   for (const [name,report,question] of assignments) {
     assert.ok(curriculum.includes('lesson: "'+name+'", reportId: "'+report+'", questionId: "'+question+'"'))
     assert.ok(curriculum.includes('id: "'+report+'"'))
     assert.ok(curriculum.includes('id: "'+question+'"'))
   }
+  assert.match(curriculum, /lesson: "initiation", reportId: "end-01", questionId: "end-01", questionIds: \[\]/)
+  assert.doesNotMatch(curriculum, /id: "init-01", phase:/)
   assert.match(learner, /const initiationItems = energyworkInitiationRequirements\.map/)
   assert.match(learner, /readyTargetCount/)
   assert.match(learner, /savedInitiationReady = initiationReady && sync === "ready"/)
