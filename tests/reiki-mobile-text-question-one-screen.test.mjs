@@ -12,7 +12,8 @@ test("only written reflection slides use the space-saving mobile question layout
   assert.match(learner, /data-reiki-text-question=\{slide\.kind === "reflection" && slide\.question\?\.type === "text" \? "true" : undefined\}/);
   assert.match(curriculum, /id: "tan-study-04"[\s\S]*?kind: "reflection", image: image\.tantra/);
   assert.match(curriculum, /id: "kun-study-v2-01"[\s\S]*?kind: "reflection", image: image\.kundalini/);
-  assert.match(curriculum, /id: "ygg-study-04"[\s\S]*?kind: "reflection", image: image\.tree/);
+  assert.match(curriculum, /id: "ygg-study-v2-01"[\s\S]*?kind: "reflection", image: image\.tree/);
+  assert.match(curriculum, /id: "ygg-study-v2-07"[\s\S]*?kind: "reflection", image: image\.tree/);
 });
 
 test("question image is hidden only on mobile, leaving text field and study guidance visible", () => {
