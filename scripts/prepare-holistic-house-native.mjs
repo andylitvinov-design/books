@@ -32,15 +32,6 @@ export function beforeSync(){
   if(portable===previous&&!previous.includes('../../node_modules/@capacitor/ios'))
     fail('Unexpected iOS CocoaPods reference')
   write(pod,portable)
-  // The historical Podfile points to one developer's transient npx cache.
-  // Resolve CocoaPods from the checked-out, pinned node_modules instead.
-  const pod='ios/App/Podfile'
-  const current=read(pod)
-  const rewritten=current.replace(/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.npm\/_npx\/[a-z0-9]+\/node_modules\/@capacitor\/ios/g,
-    '../../node_modules/@capacitor/ios')
-  if(rewritten===current&&!current.includes('../../node_modules/@capacitor/ios'))
-    fail('Unknown CocoaPods helper path')
-  write(pod,rewritten)
   write('native-web/index.html','<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Holistic House</title></head><body style="background:#163d38;color:white;font:16px system-ui;text-align:center;padding:30px"><h1>Holistic House</h1><p>Connect to the internet to open your secure cabinet.</p></body></html>')
 }
 function synced(platform){
