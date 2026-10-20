@@ -72,3 +72,30 @@ settlement or unlock service/course access based on the redirect.
 For the full automatic order-confirmation path, first approve the existing
 PayPal Orders v2 financial schema, provider merchant app and signed webhook:
 docs/billing/paypal-commerce-setup.md .
+
+## Holistic House shop storefront (2026-10-20)
+
+The public storefront is now served at /en/shop, /ru/shop and /es/shop.
+Visitors can filter Consultations, Programs and Free resources, search and sort,
+add canonical fixed-price sessions to the shared cart, then select an existing
+approved payment provider. The identical catalog totals are EUR 50 / 30 minutes
+and EUR 100 / 60 minutes (EUR 150 combined).
+
+Other offers (Alchemy, Guided Imagery, Business) are priced by agreement and
+link to the existing service pages; free Situation Review and Wu Xing resources
+remain free and cannot enter a paid checkout. The website does not invent prices
+for courses or automatically book availability.
+
+Shop navigation is in the desktop header and mobile menu and Services hero;
+the empty cart links to Shop. It reuses SERVICE_CART_STORAGE_KEY and
+SERVICE_CART_UPDATED_EVENT, existing PayPal.Me, guarded merchant Orders v2,
+merchant-approved hosted PayPal links, Square, Interac, Wise and ZEN routes.
+
+Isolated WebKit/Chromium browser tests at 320, 390, 430 and 1024 pixels assert
+catalog, filters, safe add/remove, canonical checkout, guarded providers and
+no horizontal overflow. They do not send any financial requests.
+
+PayPal.Me and generic Payment Links still need independently verified funds;
+an external payment redirect does not prove booking, bank deposit, or a
+CRM paid state. Full automatic settlement requires approved provider E2E and
+the protected Orders v2 ledger documented in paypal-commerce-setup.md.

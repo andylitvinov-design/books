@@ -20,9 +20,9 @@ await mkdir(output, { recursive: true });
 const results = [];
 const errors = [];
 const questions = {
-  en: "Describe what you would like help with",
-  ru: "Расскажите, с чем вам нужна помощь",
-  es: "Cuéntanos en qué podemos ayudarte",
+  en: "Leave your contact to enquire or join",
+  ru: "Оставьте контакт, чтобы записаться или узнать подробности",
+  es: "Deja tus datos para consultar o inscribirte",
 };
 const slug = value => value.replace(/[^a-z0-9-]+/gi,"-").replace(/^-|-$/g,"").slice(0,90);
 
@@ -84,6 +84,9 @@ async function verifyChooser(page, chooser, locale, kind, name, screenshot, requ
       const diagnostic = await page.evaluate(collectContactChannelGeometry, { channel, panelId });
       throw new Error("Messenger channel obstructed: " + name + " " + JSON.stringify(diagnostic) + ": " + error.message);
     });
+    // Preserve the owner-requested native actionability check as well as the
+    // stricter viewport/hit assertions above. Trial mode never follows a link.
+    await link.click({ trial: true, timeout: 8000 });
   }
   const dimensions = await page.evaluate(() => ({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(dimensions.scroll <= dimensions.inner + 2, "No mobile horizontal overflow: " + JSON.stringify(dimensions));

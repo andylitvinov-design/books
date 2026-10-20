@@ -1,5 +1,6 @@
 'use client'
 import {useState} from 'react'
+import Link from 'next/link'
 import {Globe2,Link2,ShieldCheck,LoaderCircle,AlertCircle} from 'lucide-react'
 import {previewPublicGrowthSourceAction} from '@/app/admin/growth-studio/actions'
 import styles from './growth-studio.module.css'
@@ -18,6 +19,7 @@ const COPY={
     source_unavailable:'The public source is not available now. Try again later.',
     unauthorized:'Your admin session has expired. Sign in again.',
     preview:'Public source found — review copy before saving.',
+    radar:'Find more public pages automatically',
   },
   ru:{
     button:'Взять текст с сайта',loading:'Проверяем открытую страницу…',
@@ -32,6 +34,7 @@ const COPY={
     source_unavailable:'Источник временно недоступен. Повторите позже.',
     unauthorized:'Сессия администратора истекла. Войдите снова.',
     preview:'Открытая страница найдена. Проверьте текст перед сохранением.',
+    radar:'Автоматически найти открытые материалы',
   },
 }
 export default function GrowthStudioSourcePicker({
@@ -56,6 +59,7 @@ export default function GrowthStudioSourcePicker({
     <button type="button" disabled={disabled||busy||!sourceUrl?.trim()}
       onClick={read}><Globe2 size={16} aria-hidden="true"/>{busy?t.loading:t.button}</button>
     <p><ShieldCheck size={14} aria-hidden="true"/>{t.explanation}</p>
+    <p><Link href="/admin/growth-studio/content-radar">{t.radar} →</Link></p>
     {message&&<p role="status" aria-live="polite">{preview?<Link2 size={15} aria-hidden="true"/>:<AlertCircle size={15} aria-hidden="true"/>}{message}</p>}
     {preview&&<div className={styles.publicSourceResult}>
       <strong>{preview.title}</strong>

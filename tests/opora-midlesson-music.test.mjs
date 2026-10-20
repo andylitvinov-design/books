@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs'
 import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
-import {mount,findButton,textOf} from './helpers/route-pipeline-harness.mjs'
+import {mount,findButton,textOf,nodes} from './helpers/route-pipeline-harness.mjs'
 
 const player=readFileSync(new URL('../components/app/opora-experience-player.jsx',import.meta.url),'utf8')
 const style=readFileSync(new URL('../components/app/opora-experience-player.module.css',import.meta.url),'utf8')
@@ -34,7 +34,8 @@ test('day 2 may enter/leave the musical slide before saving, with no added write
     programme:{id:'stress'},lesson,currentSession:null}
   const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},
     onSession:async()=>{writes++;return true}})
-  const click=async label=>{const b=findButton(h.tree,label)
+  const click=async label=>{const b=findButton(h.tree,label) || nodes(h.tree).find(n =>
+    n.type === 'button' && n.props?.['data-opora-mid-lesson-music'] === 'true' && textOf(n).includes(label))
     assert.ok(b,'Missing '+label+' in '+textOf(h.tree).slice(0,350))
     b.props.onClick()
     await h.settle()}
@@ -46,7 +47,7 @@ test('day 2 may enter/leave the musical slide before saving, with no added write
     assert.match(textOf(h.tree),/There is nothing to achieve/)
     assert.equal(writes,0)
     await click('Back')
-    assert.ok(findButton(h.tree,'Music and a gentle exercise'))
+    assert.ok(nodes(h.tree).some(n => n.type === 'button' && n.props?.['data-opora-mid-lesson-music'] === 'true'))
     assert.equal(writes,0)
     await click('Music and a gentle exercise')
     await click('Continue lesson')

@@ -16,7 +16,7 @@ type Method = "square" | "paypal" | "interac" | "zen" | "wise";
 
 const copy = {
   en: {
-    back: "Services", title: "Your cart", subtitle: "Review your consultations and choose how to pay.",
+    back: "Shop", title: "Your cart", subtitle: "Review your consultations and choose how to pay.",
     empty: "Your cart is empty.", choose: "Choose a consultation", remove: "Remove",
     total: "Total", minute: "min", method: "Payment method", square: "Card · Square", paypal: "PayPal", interac: "Interac · Canada", zen: "ZEN.COM", wise: "Wise",
     squareAction: "Pay by card with Square", interacAction: "Ask for Interac transfer details",
@@ -33,7 +33,7 @@ const copy = {
     free: "Free drawing assessment + written report", secure: "One-time payment, no subscription",
   },
   ru: {
-    back: "Услуги", title: "Корзина", subtitle: "Проверьте услуги и выберите способ оплаты.",
+    back: "Магазин", title: "Корзина", subtitle: "Проверьте услуги и выберите способ оплаты.",
     empty: "Корзина пока пуста.", choose: "Выбрать консультацию", remove: "Убрать",
     total: "Итого", minute: "мин", method: "Способ оплаты", square: "Картой · Square", paypal: "PayPal", interac: "Interac · Канада", zen: "ZEN.COM", wise: "Wise",
     squareAction: "Оплатить картой через Square", interacAction: "Запросить реквизиты Interac",
@@ -50,7 +50,7 @@ const copy = {
     free: "Бесплатный разбор рисунка + письменный отчёт", secure: "Разовая оплата, без подписки",
   },
   es: {
-    back: "Servicios", title: "Tu carrito", subtitle: "Revisa las consultas y elige cómo pagar.",
+    back: "Tienda", title: "Tu carrito", subtitle: "Revisa las consultas y elige cómo pagar.",
     empty: "El carrito está vacío.", choose: "Elegir una consulta", remove: "Quitar",
     total: "Total", minute: "min", method: "Forma de pago", square: "Tarjeta · Square", paypal: "PayPal", interac: "Interac · Canadá", zen: "ZEN.COM", wise: "Wise",
     squareAction: "Pagar con tarjeta mediante Square", interacAction: "Solicitar datos para Interac",
@@ -131,7 +131,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   }
 
   return <section className={styles.cart} lang={locale} data-personal-service-cart>
-    <Link href={`/${locale}/services#consultation`} className={styles.back}>← {t.back}</Link>
+    <Link href={"/" + locale + "/shop"} className={styles.back}>← {t.back}</Link>
     <div className={styles.heading}>
       <div><p className={styles.eyebrow}><ShoppingBasket size={16} aria-hidden="true" /> HOLISTIC HOUSE</p>
         <h1>{t.title}</h1><p>{t.subtitle}</p></div>
@@ -139,7 +139,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     </div>
     {!restored ? <div className={styles.loading} aria-live="polite">…</div> :
       !chosen.length ? <div className={styles.empty} role="status"><p>{t.empty}</p>
-        <Link className={styles.primary} href={`/${locale}/services#consultation`}>{t.choose}<ArrowRight size={17} aria-hidden="true" /></Link></div> :
+        <Link className={styles.primary} href={"/" + locale + "/shop"}>{t.choose}<ArrowRight size={17} aria-hidden="true" /></Link></div> :
       <>
         <ul className={styles.lines} aria-label={t.title}>
           {chosen.map(product => <li key={product.id}>
