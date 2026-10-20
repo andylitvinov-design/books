@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { getRemedy } from '../data/remedies.js'
 import { buildPaymentPdf, buildPrescriptionPdf } from '../lib/prescriptions/pdf.js'
 
 const origin = 'https://example.test'
@@ -26,8 +27,10 @@ test('client PDF uses warm Holistic House styling without losing text, links or 
   for (const locale of ['en', 'ru']) {
     const source = buildPrescriptionPdf(example, locale, origin).toString('latin1')
     assert.match(source, /^%PDF-1\.7/)
-    assert.match(source, /0\.39 0\.21 0\.30 rg/)
-    assert.match(source, /0\.85 0\.91 0\.90 rg/, 'approved lighthouse now has a soft coastal hero without rectangular image fill')
+    assert.match(source, /0\.40 0\.22 0\.32 rg/)
+    assert.ok(/q 200 0 0 135 327 579 cm \/CoastalPhoto Do Q/.test(source) ||
+      /0\.85 0\.91 0\.90 rg/.test(source),
+      'approved coastal hero or vector fallback remains separate from the identity lighthouse')
     assert.match(source, /q 207 0 0 81\.5 83 /, 'wide ink signature rests on white report paper')
     for (const value of [
       'Synthetic Client', 'TEST-2026-10', 'SYNTHETIC-ANALYSIS-VISIBILITY',
@@ -101,8 +104,24 @@ test('remedy appendix is concise and the original PDF photo floats at top right'
   const pdf = buildPrescriptionPdf(report, 'en', origin).toString('latin1')
   assert.match(pdf, /\(APPENDIX\)/)
   assert.doesNotMatch(pdf, /SELECTED REMEDY PROFILES|Original texts and photographs from the Holistic House library/)
-  const photos = [...pdf.matchAll(/q (\d+) 0 0 (\d+) ([\d.]+) ([\d.]+) cm \/RemedyPhoto1 Do Q/g)]
-  assert.ok(photos.length >= 2, 'The same approved image appears in the recommendation and the appendix')
+  const photos = [...pdf.matchAll(/q (\d+(?:\.\d+)?) 0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?) (\d+(?:\.\d+)?) cm \/RemedyPhoto1 Do Q/g)]
+  assert.equal(photos.length, 2, 'The same approved image appears once in the recommendation and once in the appendix')
+  const approved = await readFile('public' + getRemedy('en', 'colchicum-autumnale').primary_image)
+  assert.ok(pdf.includes(approved.toString('latin1')), 'the genuine approved JPEG is embedded unchanged')
+  const resource = pdf.match(/\/RemedyPhoto1 (\d+) 0 R/)
+  assert.ok(resource, 'both placements use the same embedded image resource')
+  const imageObject = pdf.slice(pdf.indexOf(resource[1] + ' 0 obj\n'))
+  const dimensions = imageObject.match(/^\d+ 0 obj\n<< \/Type \/XObject \/Subtype \/Image \/Width (\d+) \/Height (\d+)/)
+  assert.ok(dimensions, 'approved image retains its intrinsic dimensions')
+  const aspectRatio = Number(dimensions[1]) / Number(dimensions[2])
+  for (const photo of photos) {
+    const [width, height, x, y] = photo.slice(1).map(Number)
+    assert.ok(Math.abs(width / height - aspectRatio) < 0.001, 'contain sizing must not distort the original')
+    assert.ok(width > 0 && height > 0 && y >= 0 && y + height <= 841.89)
+    assert.ok(x >= 68 && x + width <= 527.28, 'uncropped image stays inside the A4 content column')
+    assert.ok(x < 180 ? width <= 86 && height <= 86 : width <= 150 && height <= 138,
+      'cover and appendix photos fit their respective reserved frames')
+  }
   assert.ok(photos.some(photo => Number(photo[3]) > 350), 'Appendix photo must float at the upper right')
   assert.ok(photos.some(photo => Number(photo[3]) < 180), 'Cover thumbnail belongs beside the selected remedy')
 

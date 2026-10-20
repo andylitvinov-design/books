@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {oporaExperienceDay} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -23,10 +24,10 @@ async function press(h,label){
   await h.settle()
 }
 const words={
-  en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
+  en:{next:'Continue',save:'Save my practice',
     audio:'Relax with waves',start:"See what's next",week1:'Week 1: Find your supports',week2:'Week 2: Make it your own',
     nextTitle:'Your next small step',map:'My course map',finished:'Your 14 days are complete',habit:'Keep OPORA close',configure:'Set it up',later:'Not now'},
-  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
+  ru:{next:'Продолжить',save:'Сохранить мою практику',
     audio:'Послушать волны',start:'Посмотреть, что дальше',week1:'Первая неделя: найти опору',
     week2:'Вторая неделя: свой опыт',nextTitle:'Следующий маленький шаг',
     map:'К карте курса',finished:'Ваши 14 дней позади',habit:'ОПОРА всегда под рукой',configure:'Настроить',later:'Не сейчас'},
@@ -39,7 +40,9 @@ test('confirmed Day 1 save leads to programme, commitment, optional phone setup,
     await press(f.h,w.save)
     assert.equal(f.saved.length,1)
     assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
-    assert.match(textOf(f.h.tree),new RegExp(w.receipt))
+    assert.ok(textOf(f.h.tree).includes(oporaEndingCopy(locale).congratsTitle.replace('{day}','1')),
+      'Only a confirmed save shows the first-lesson completion receipt')
+    assert.equal(findButton(f.h.tree,w.save),undefined)
     assert.equal(f.finishCount,0)
     await press(f.h,w.audio)
     await press(f.h,w.start)

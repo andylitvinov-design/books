@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { sourceEffect, sourceFunction } from './helpers/source-contract-runtime.mjs'
 import { readFileSync } from 'node:fs'
 import {
   getCourseProgram, ANTISTRESS_REQUIRED_BASELINE_KEY, ANTISTRESS_BASELINE_RECENCY_DAYS,
@@ -67,7 +68,6 @@ test('the private step-2 interface visibly leads through starting tests before t
   assert.match(root,/Weekly Pulse baseline/)
   assert.match(wizard,/data-course-antistress-pretests/)
   assert.match(wizard,/data-course-required-baseline/)
-  assert.match(wizard,/withAntistressRequiredBaseline\(confirmedKeys\.length/)
   assert.match(wizard,/if\(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY\) return/)
   assert.match(wizard,/confirmed && baselineConfirmed && pending\.length===0/)
   assert.match(wizard,/pending\.length===0&&baselineConfirmed/)
@@ -120,4 +120,41 @@ test('actual T0 recency recheck preserves the separate fixed preset battery',()=
  assert.match(block,/where account_id=\$1/)
  assert.match(block,/\[actor.id\]/)
  assert.match(block,/compatibleResult\(before,key,\{requireRecent:true\}\)/)
+})
+
+
+test('actual stage-2 proposal keeps the mandatory baseline, optional choices and fixed batteries', () => {
+  const path='components/app/course-r3-steps.jsx'
+  const starter=['hh-weekly-pulse','gad-7','hh-resource-pulse']
+  function propose(overrides={}) {
+    let selected
+    const scope={stage:2,testsTouched:false,confirmedKeys:[],preset:null,programme:{id:'stress'},
+      ranked:[...starter,'extra'].map(key=>({key})),readCourseEntryIntent:()=>null,
+      getCourseProgram,withAntistressRequiredBaseline,setChosenTests:keys=>{selected=Array.from(keys)},...overrides}
+    sourceEffect(path,'setChosenTests',scope)()
+    return selected
+  }
+  assert.deepEqual(propose(),starter)
+  assert.deepEqual(propose({confirmedKeys:['hh-weekly-pulse','extra']}),['hh-weekly-pulse','extra'])
+  assert.deepEqual(propose({confirmedKeys:['gad-7','extra']}),['hh-weekly-pulse','gad-7','extra'])
+  assert.deepEqual(propose({readCourseEntryIntent:()=>({testKeys:['extra','not-in-server-list']})}),[...starter,'extra'])
+  assert.deepEqual(propose({preset:{testKeys:['fixed-a','fixed-b']},programme:null}),['fixed-a','fixed-b'])
+  assert.deepEqual(propose({programme:{id:'confidence'},confirmedKeys:['extra']}),['extra'])
+  assert.equal(propose({stage:3}),undefined)
+  assert.equal(propose({testsTouched:true}),undefined)
+  // Invoke the real toggle handler even for the disabled baseline checkbox:
+  // a future presentation change cannot remove the required questionnaire.
+  let chosen=[...starter]
+  let touched=false
+  const toggle=sourceFunction(path,'toggleTest',{
+    preset:null,isAntistress:true,ANTISTRESS_REQUIRED_BASELINE_KEY,
+    setTestsTouched:value=>{touched=value},setChosenTests:fn=>{chosen=Array.from(fn(chosen))},
+  })
+  toggle('hh-weekly-pulse')
+  assert.deepEqual(chosen,starter)
+  assert.equal(touched,false)
+  toggle('gad-7')
+  toggle('hh-resource-pulse')
+  assert.deepEqual(chosen,['hh-weekly-pulse'])
+  assert.equal(touched,true)
 })

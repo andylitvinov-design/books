@@ -5,6 +5,7 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -13,20 +14,20 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const t={
   en:{next:'Continue',start:'I will try this step',try:'I tried it',
     unchanged:'About the same',vote:'Not sure yet',plan:'Keep this reminder',
-    save:'Save my practice',saved:'Your moment is saved',noPlan:'No plan today',
+    save:'Save my practice',noPlan:'No plan today',
     pause:'Pause',return:'Go back'},
   ru:{next:'Продолжить',start:'Я попробую этот шаг',try:'Я попробовал(а)',
     unchanged:'Примерно так же',vote:'Пока не уверен(а)',plan:'Хочу запомнить этот вариант',
-    save:'Сохранить мою практику',saved:'Ваш момент сохранён',noPlan:'Пока без плана',
+    save:'Сохранить мою практику',noPlan:'Пока без плана',
     pause:'Пауза',return:'Вернуться'},
 }
-function fixture(locale='en',day=1){
+function fixture(locale='en',day=1,saveResult=async()=>true){
   const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
   const data={cycle:{id:'00000000-0000-4000-8000-000000001056',day,durationDays:14},
     programme:{id:'stress'},lesson,currentSession:null}
   let payload=null,requests=0
   const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},
-    onSession:async value=>{requests++;payload=structuredClone(value);return true}})
+    onSession:async value=>{requests++;payload=structuredClone(value);return saveResult(value)}})
   return {h,lesson,get payload(){return payload},get requests(){return requests}}
 }
 async function click(h,label){
@@ -106,7 +107,10 @@ test('day one restores five opening screens while days 2–14 keep their existin
       // Skipping the optional mood choice is represented as null, never a fabricated feeling.
       assert.equal(f.payload.welcomeFeeling,null)
     }
-    assert.match(textOf(h.tree),new RegExp(d.saved))
+    const ending=oporaEndingCopy(lang)
+    const receiptTitle=day===14?ending.congratsFinal:ending.congratsTitle.replace('{day}',String(day))
+    assert.ok(textOf(h.tree).includes(receiptTitle),'Confirmed save must show this lesson’s completion receipt')
+    assert.equal(findButton(h.tree,d.save),undefined,'Completed receipt must not offer another save')
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
     await click(h,lang==='ru'?'Послушать волны':'Relax with waves')
     assert.match(textOf(h.tree),lang==='ru'?/Две минуты спокойствия/:/Two quiet minutes/)
@@ -120,6 +124,7 @@ test('day one restores five opening screens while days 2–14 keep their existin
     if(day<14)assert.ok(textOf(h.tree).includes(oporaExperienceDay(day+1,lang).title))
     else assert.match(textOf(h.tree),lang==='ru'?/Ваши 14 дней позади/:/Your 14 days are complete/)
     await click(h,"I'm committed")
+    if(day===1)await click(h,lang==='ru'?'Не сейчас':'Not now')
     assert.match(textOf(h.tree),day===14
       ?(lang==='ru'?/Ваш курс завершён/:/Your course is complete/)
       :(lang==='ru'?/Увидимся завтра/:/See you tomorrow/))
@@ -233,5 +238,44 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
     const old=lessonFor('calm_regulation',1,lang,'standard',COURSE_ANTISTRESS_SKILLS_V6)
     assert.equal(buildCourseSlides(old).length,14)
     assert.equal(verifyCourseSlideVisitOrder(buildCourseSlides(old),OPORA_EXPERIENCE_PRE_SAVE_KEYS),false)
+  }
+})
+
+test('pending and failed saves never show completion; retry confirms the same operation once',async()=>{
+  for(const locale of ['en','ru'])for(const day of [1,2,14])for(const failure of ['unconfirmed','rejected']){
+    let release
+    const pending=new Promise(resolve=>{release=resolve})
+    let attempt=0
+    const f=fixture(locale,day,async()=>{
+      if(++attempt>1)return true
+      await pending
+      if(failure==='rejected')throw new Error('Synthetic save rejection')
+      return false
+    }),h=f.h,d=t[locale],ending=oporaEndingCopy(locale)
+    const receiptTitle=day===14?ending.congratsFinal:ending.congratsTitle.replace('{day}',String(day))
+    const noReceipt=()=>{
+      assert.ok(!textOf(h.tree).includes(receiptTitle),'No completion without confirmed persistence')
+      assert.equal(findButton(h.tree,locale==='ru'?'Послушать волны':'Relax with waves'),undefined)
+    }
+    try{
+      for(let i=0;i<(day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS).length;i++)await click(h,d.next)
+      await click(h,locale==='ru'?'Получилось немного':'I managed a little')
+      noReceipt()
+      await click(h,d.save)
+      assert.equal(f.requests,1)
+      const operationId=f.payload.operationId
+      noReceipt()
+      assert.ok(findButton(h.tree,locale==='ru'?'Сохраняем…':'Saving…').props.disabled)
+      release()
+      await h.settle()
+      noReceipt()
+      assert.ok(nodes(h.tree).some(node=>node.props?.role==='alert'))
+      assert.ok(findButton(h.tree,d.save))
+      await click(h,d.save)
+      assert.equal(f.requests,2,'Only the explicit retry sends another request')
+      assert.equal(f.payload.operationId,operationId,'An unconfirmed retry preserves its idempotency key')
+      assert.ok(textOf(h.tree).includes(receiptTitle))
+      assert.equal(findButton(h.tree,d.save),undefined)
+    }finally{release();h.unmount()}
   }
 })

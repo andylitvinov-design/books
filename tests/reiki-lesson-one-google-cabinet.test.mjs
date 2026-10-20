@@ -23,17 +23,23 @@ const guestAnswers = Object.freeze({
   'flight-05': 'A gentle experience.',
 })
 
-test('Lesson 1 ends at flight-done and the Google save cursor opens Lesson 2', () => {
+test('Lesson 1 congratulations lead to the save-only checkpoint before Lesson 2', () => {
   const slides = energyworkSequence()
   const completed = slides.indexOf('flight-done')
-  assert.equal(slides[completed + 1], ENERGYWORK_FIRST_LESSON_NEXT)
+  assert.deepEqual(slides.slice(completed, completed + 3), ['flight-done', 'flight-save', ENERGYWORK_FIRST_LESSON_NEXT])
   assert.equal(ENERGYWORK_FIRST_LESSON_NEXT, 'tan-01')
-  assert.match(learner, /slide\.id === "flight-done" && \["guest", "consent"\]\.includes\(sync\)/)
+  assert.match(learner, /async function saveLessonOneToCabinet\(\) \{\s*if \(busy \|\| !firstLessonConsent \|\| !\["guest", "consent"\]\.includes\(sync\) \|\|\s*slide\.id !== "flight-save"\) return;/)
+  assert.match(learner, /slide\.id === "flight-save" && sync !== "ready"/)
+  assert.match(learner, /slide\.id !== "flight-save" \? \(\s*<button type="button" onClick=\{next\}/)
+  assert.match(learner, /onClick=\{sync === "ready" \? next : saveLessonOneToCabinet\}/)
+  assert.doesNotMatch(learner, /firstSaveGuest:/)
   assert.match(learner, /data-reiki-first-lesson-save/)
   assert.match(learner, /data-reiki-first-lesson-consent/)
   assert.match(learner, /data-reiki-first-lesson-google-save/)
   assert.match(learner, /href="\/privacy"/)
   assert.match(css, /\.firstLessonSaveAction/)
+  assert.match(learner, /!value\.enrolled \|\| !value\.slideId \|\| !Number\.isSafeInteger\(value\.revision\) \|\|\s*!value\.answers\?\.\["flight-04"\]/)
+  assert.match(learner, /setIndex\(energyworkSlides\(\)\.findIndex\(item => item\.id === "flight-save"\)\)/)
 })
 
 test('Handoff retains all first-lesson reflections only in a short-lived same-tab record', () => {

@@ -16,10 +16,21 @@ test('Profile leads with authorized personal reports; category details are secon
   const support = profile.indexOf('<details className="hh-domain-support">')
   const discover = profile.indexOf('<Link className="hh-domain-services-link"')
   assert.ok(hero >= 0 && archive > hero && browse > archive && overview > browse)
-  const earlyActions = profile.indexOf('{!external && footerActions}')
+  const allReports = profile.indexOf('id="hh-account-report-all"')
+  const accountReports = profile.indexOf('{reportsContent}', allReports)
+  const consultation = profile.indexOf('data-profile-free-consultation')
+  const labs = profile.indexOf('data-health-labs-link')
   const legacyActions = profile.indexOf('{external && footerActions}')
   assert.ok(tabs > overview && panel > tabs && support > panel)
-  assert.ok(discover > -1 && earlyActions > archive && earlyActions < browse && legacyActions > support)
+  assert.ok(discover > -1 && legacyActions > support)
+  assert.ok(allReports > archive && accountReports > allReports && consultation > accountReports && labs > consultation && browse > labs,
+    'account reports lead; optional consultation follows the archive, then labs and legacy category details')
+  assert.match(profile, /data-report-archive-always-open/)
+  assert.match(profile, /\{external && <header className="hh-domain-hero">/)
+  assert.match(profile, /\{external && <details className="hh-domain-more"/)
+  assert.doesNotMatch(profile, /\{!external && footerActions\}/,
+    'account Profile must not reintroduce duplicate marketing footer actions')
+  assert.match(profile, /href=\{'\/' \+ locale \+ '\/services\/free-consultation'\}/)
   assert.match(profile, /\{reportsContent\}/)
   assert.match(profile, /data-profile-report-archive/)
   assert.match(profile, /open=\{expanded\}/)
@@ -85,7 +96,7 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     ['portrait', 'Profile', '/portrait'],
     ['tests', 'Tests', '/tests'],
     ['portfolio', 'Reports', '/portfolio'],
-    ['course', 'Courses', '/course'],
+    ['course', 'Courses', '/course?view=courses'],
     ['practice', 'Practice', '/practice'],
   ]) {
     assert.match(navModel, new RegExp("id: '" + id + "'"))
@@ -110,7 +121,7 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
     {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
     {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
-    {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
+    {id:'course',ru:'Курсы',en:'Courses',path:'/course?view=courses'},
     {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
   ])
   assert.doesNotMatch(mobile, />Analysis</)
