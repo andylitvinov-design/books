@@ -72,6 +72,7 @@ export default function CrmFreeEmail({contacts=[],locale='en'}){
   {error&&<p role="alert" className={styles.warning}>{error}</p>}
   {current&&<div className={styles.dispatch}>
    <div className={styles.step}><strong>{index+1}/{queue.length}</strong><span>{current.name} · {current.email}</span></div>
+   <label className={styles.field}>{t.subject}<input readOnly value={current.subject}/></label>
    {stillAllowed&&<><p>{t.ready}</p>
     <label className={styles.field}>{t.body}<textarea className={styles.readonly} readOnly rows={6} value={current.body}/></label>
     <div className={styles.actions}><button type="button" className={styles.primary} onClick={copy}>{t.copy}</button><a className={styles.link} href={current.mailto}>{t.open}</a></div>
