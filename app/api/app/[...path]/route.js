@@ -93,7 +93,7 @@ async function handle(request, { params }) {
         native = body.native === true
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business'].includes(continueTo) &&
-        !['cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['cabinet','my-tests','my-courses','reports','energywork','practitioner','growth-studio'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -135,7 +135,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-tests','my-courses','reports','energywork','practitioner','growth-studio'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -171,6 +171,8 @@ async function handle(request, { params }) {
                     ? `${origin}/${locale}/app/course`
                     : continueTo === 'reports'
                       ? `${origin}/${locale}/app/portrait#personal-reports`
+                      : continueTo === 'growth-studio'
+                        ? `${origin}/admin/login?next=growth-studio`
                       : continueTo === 'practitioner'
                         ? `${origin}/admin/login`
                         : continueTo === 'energywork'
