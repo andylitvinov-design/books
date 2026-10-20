@@ -61,7 +61,7 @@ test('common laboratory classifications never prescribe or diagnose', () => {
   assert.ok(review.focus.some(value=>value.id==='iron'))
   assert.ok(review.focus.some(value=>value.id==='thyroid'))
   const text=JSON.stringify(review.steps)
-  assert.doesNotMatch(text,/1000c|remedy|дозировк|препарат|лечени[ея]|cure|prescribe/i)
+  assert.doesNotMatch(text,/1000c|remedy|дозировк|препарат|назнач(?:ить|ение)|cure|prescribe/i)
 })
 
 test('recognize international lab CSV with digit-comma-digit row contents', () => {
