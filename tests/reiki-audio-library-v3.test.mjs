@@ -114,3 +114,65 @@ test('Mobile UI manages several uploads, cancellation, private title and accessi
   assert.match(styles,/metadataEditor/)
   assert.doesNotMatch(manager,/autoPlay|autoplay/)
 })
+
+
+test('An archived recording cannot be republished through a stale owner browser tab', () => {
+  const start=store.indexOf('export async function reikiIntroAudioPublish')
+  const end=store.indexOf('export async function reikiIntroAudioUnpublish',start)
+  const code=store.slice(start,end)
+  const archived=code.indexOf("metadata.get(source + ':' + path)?.archived === true")
+  const copying=code.indexOf('originStorage.copy(path, publishedPath')
+  const writing=code.indexOf('writeStoredManifest(publicStorage,')
+  assert.ok(start > -1 && end > start && archived > -1)
+  assert.ok(copying > archived, 'Guard before copying any archived private original')
+  assert.ok(writing > archived, 'Guard before writing the learner publication manifest')
+  assert.match(code,/REIKI_AUDIO_ARCHIVED/)
+  assert.match(ownerRoute,/REIKI_AUDIO_ARCHIVED/)
+  assert.match(manager,/copy\.archivePublishBlocked/)
+  assert.match(manager,/disabled=\{!!busy \|\| !stagedUrl \|\| !metadataAvailable\}/)
+})
+
+test('Private deletion only reports success after confirmed Storage 404, not transient server error', () => {
+  const block=store.split('export async function reikiIntroAudioDeleteDraft')[1]
+    .split('export async function reikiIntroAudioPrepare')[0]
+  assert.match(block,/storage\.remove\(\[path\]\)/)
+  assert.match(block,/storage\.info\(path\)/)
+  assert.match(block,/!missingObject\(checkError\)/)
+  assert.ok(block.indexOf('storage.remove([path])') <
+    block.indexOf('storage.info(path)',block.indexOf('storage.remove([path])')))
+  assert.match(block,/failure\('REIKI_AUDIO_REMOVE_FAILED'\)/)
+  assert.doesNotMatch(block,/publicStorage\.remove/)
+  assert.doesNotMatch(block,/client-private-media/)
+})
+
+test('A temporary metadata database failure is visible and disables destructive editing', () => {
+  assert.match(store,/metadataAvailable = false/)
+  assert.match(store,/metadataAvailable,/)
+  assert.match(manager,/setMetadataReady\(answer\.metadataAvailable!==false\)/)
+  assert.match(manager,/metadataAvailable=\{metadataReady\}/)
+  assert.match(manager,/role="alert" className=\{styles\.notice\}>\{t\.metadataUnavailable\}/)
+  assert.match(manager,/className=\{styles\.editRecording\} disabled=\{!!busy \|\| !metadataAvailable\}/)
+  assert.match(manager,/!metadataAvailable \|\| !window\.confirm\(copy\.confirmPublish\)/)
+  assert.match(manager,/copy\.archiveCheckbox/)
+  assert.doesNotMatch(manager,/editing\.archived \? <><RotateCcw/)
+})
+
+test('Approved private audio releases retain teacher titles without affecting student API', () => {
+  const block=store.split('export async function reikiIntroAudioPublish')[1]
+    .split('export async function reikiIntroAudioUnpublish')[0]
+  const manifestWritten=block.indexOf('writeStoredManifest(publicStorage,')
+  const labelSaved=block.indexOf("metadata.get('draft:' + path)?.title")
+  assert.ok(manifestWritten>-1 && labelSaved>manifestWritten)
+  assert.match(block,/storage: 'public', lesson, locale, title: label/)
+  assert.match(block,/catch \{ \/\* publishing already succeeded \*\/ \}/)
+  assert.doesNotMatch(publicRoute,/reiki-audio-metadata|storage\.list|private.*original/)
+})
+
+test('Current canonical Reiki course uses the complete 70-slide sequence', () => {
+  const {energyworkSequence}=await import('../data/academy/energywork-ai-schema.js')
+  const ids=energyworkSequence()
+  assert.equal(ids.length,70)
+  assert.equal(new Set(ids).size,70)
+  for(const id of ['flight-01','tan-01','kun-01','ygg-01','paths-01'])
+    assert.ok(ids.includes(id))
+})
