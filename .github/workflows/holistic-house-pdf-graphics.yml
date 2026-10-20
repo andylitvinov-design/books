@@ -13,6 +13,7 @@ on:
       - "tests/report-illustrations.test.mjs"
       - "tests/report-editorial-grid.test.mjs"
       - "tests/report-progress-geometry-v6.test.mjs"
+      - "tests/report-premium-art-direction-v7.test.mjs"
       - ".github/workflows/holistic-house-pdf-graphics.yml"
   workflow_dispatch:
 
@@ -41,6 +42,7 @@ jobs:
             tests/report-illustrations.test.mjs \
             tests/report-editorial-grid.test.mjs \
             tests/report-progress-geometry-v6.test.mjs \
+            tests/report-premium-art-direction-v7.test.mjs \
             tests/mobile-readable-pdf.test.mjs \
             tests/canonical-pdf.test.mjs \
             tests/document-samples.test.mjs \
