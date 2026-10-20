@@ -22,7 +22,8 @@ const permitted = (body, keys) =>
 export async function GET() {
   if (!await requireAdminRequest()) return result({ error: 'NOT_FOUND' }, 404)
   try {
-    return result({ manifest: await reikiIntroAudioAdminRead(getAppConfig()), configured: true })
+    const config = getAppConfig()
+    return result({ manifest: await reikiIntroAudioAdminRead(config), storageOrigin: config.supabaseUrl, configured: true })
   } catch {
     return result({ manifest: { version: 1, slots: {} }, configured: false }, 503)
   }
