@@ -75,6 +75,36 @@ test('three source photographs fit across two core pages, with no signature-only
   }
 })
 
+test('realistic anonymous report density avoids an orphan signed sheet and preserves full text', () => {
+  for(const locale of ['ru','en']){
+    const ru=locale==='ru'
+    const document={
+      ...threeRemedyLayoutFixture(locale),
+      analysis:ru
+        ? 'Нейтральное наблюдение о повседневной задаче изложено полным абзацем, и все его предложения должны оставаться в отчёте без потерь.\nВторая строка посвящена последовательности действий и проверяет переносы длинных слов на русском языке.\nТретья независимая мысль намеренно занимает ещё несколько строк текста.'
+        : 'This anonymous first observation provides a full paragraph to test how authored sentences wrap in the real PDF document.\nThe second thought concerns only the printed layout and how the narrative follows its natural paragraph boundaries.\nA third longer observation confirms that the source content remains complete.',
+      recommendationsText:ru
+        ? 'Первое пояснение проверяет длинный авторский текст и сохранение исходной последовательности предложений в документе.\nВторое пояснение также остаётся без сокращений и должно завершаться внутри существующего блока.'
+        : 'The first example paragraph exercises long narrative content in the actual editorial column without giving any health advice.\nA second test paragraph ensures that the full text and its ending survive the page-break logic.',
+      additionalNotes:ru
+        ? 'Порядок наблюдений:\n• Первый условный пункт сохраняет полный текст автора и оригинальное расположение информации.\n• Второй условный пункт также не должен отрываться от своей секции.'
+        : 'Order of observations:\n• The first sample bullet stays in the same author-approved order as originally entered.\n• The second sample bullet must remain intact on the signed report.',
+    }
+    const pages=streamsOf(buildPrescriptionPdf(document,locale,'https://example.invalid'))
+    assert.ok(pages.length>=3,'full remedy appendices remain after the two-page core')
+    const signatureIndex=pages.findIndex(page=>page.includes('/Signature Do Q'))
+    assert.equal(signatureIndex,1,
+      locale+': do not produce the owner-reported third page containing only the signature')
+    for(const image of ['/RemedyPhoto1 Do Q','/RemedyPhoto2 Do Q','/RemedyPhoto3 Do Q'])
+      assert.ok(pages.slice(0,2).some(page=>page.includes(image)),
+        locale+': the three original remedy photographs remain in the two-page core')
+    assert.ok(pages.slice(0,signatureIndex+1).some(page=>page.includes(ru
+      ? 'Третья независимая мысль'
+      : 'A third longer observation')),
+      'last source paragraph is not dropped')
+  }
+})
+
 test('cover art is a single approved coastal photograph if the deterministic build has run', () => {
   const pdf=buildPrescriptionPdf(threeRemedyLayoutFixture('en'),'en','https://example.invalid')
   const pages=streamsOf(pdf)
