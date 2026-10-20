@@ -509,3 +509,18 @@
  .themeBar,.hero,.intake,.lessonSaveBar,.lessonSlide,.lessonNavigation,.weekDayNav{display:none!important}
  .reportModule{break-inside:avoid-page}
 }
+
+/* Accessibility and structural elements retained when consolidating themes. */
+.intakeControls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;
+  gap:9px;margin-top:13px}
+.lessonIdentity{display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-width:0}
+.visuallyHidden{position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.root[data-wood-mode=dark] .weekDayNav button[data-day-status=draft]{
+  background:#59412a;color:#f6d3a4;border-color:#bf9565}
+.root[data-wood-mode=dark] .error{background:#4e2c26;color:#ffe9df!important;border-color:#ad725c}
+@media(max-width:620px){
+  .intakeControls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .intakeControls .primary{grid-column:1/-1;width:100%}
+}
