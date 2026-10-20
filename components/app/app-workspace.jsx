@@ -71,6 +71,7 @@ const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
+const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
@@ -515,6 +516,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
   ]
   const navIsActive = (id) => page === id ||
+    (id === 'portrait' && page === 'labs') ||
     (id === 'course' && page === 'business') ||
     (id === 'portfolio' && ['reports', 'history', 'monitoring', 'results'].includes(page))
   const documentReader = Boolean(recordId) &&
@@ -540,6 +542,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <div className="hh-account-menu-secondary">
               <details className="hh-account-more">
                 <summary>{locale === 'ru' ? 'Дополнительно' : 'More options'}</summary>
+                <Link href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</Link>
                 <Link href={root + '/history'} prefetch={false}>{c.history}</Link>
                 <Link href={root + '/monitoring'} prefetch={false}>{c.monitoring}</Link>
                 <Link href={root + '/settings'} prefetch={false}>{c.settings}</Link>
@@ -573,6 +576,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
               reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />} />
           )}
+          {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
