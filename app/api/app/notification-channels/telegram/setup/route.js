@@ -4,7 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {practitionerEmailAllowed} from '@/lib/app/practitioner-access'
 import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {registerClientTelegramWebhook,verifyClientBot} from '@/lib/app/client-telegram-transport'
+import {registerClientTelegramWebhook,verifyClientBot,ownerAiMenuReady} from '@/lib/app/client-telegram-transport'
 import {telegramClientLinkReady,telegramClientSendReady,validClientBotUsername,
   telegramClientBotMode,telegramClientBotUsername} from '@/lib/app/client-telegram-policy'
 import {createMessengerNotificationRepository} from '@/lib/app/messenger-notification-repository'
@@ -35,7 +35,12 @@ function readiness(env=process.env){
  return {configured:telegramClientLinkReady(env),sendingEnabled:telegramClientSendReady(env),
    missingKeys,webhookVerified:false,botMode:mode,
    botUsername:mode?telegramClientBotUsername(env):null,
-   usingExistingPracticeBot:mode==='shared_practice'}
+   usingExistingPracticeBot:mode==='shared_practice',
+   ownerAiEnabled:mode==='shared_practice'&&env.HH_OWNER_AI_TG_ENABLED==='true',
+   ownerAiGeminiReady:Boolean(env.HH_COUNCIL_GEMINI_API_KEY)&&
+     env.HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED==='true',
+   ownerAiMistralReady:Boolean(env.HH_COUNCIL_OPENROUTER_API_KEY),
+   ownerAiCommandsReady:false}
 }
 async function handler(request){
  let auth
@@ -55,7 +60,8 @@ async function handler(request){
    const own=await createMessengerNotificationRepository(config).state(actor)
    state.ownerLinked=own.channels?.telegram?.status==='connected'
    if(state.configured){
-    try{await verifyClientBot(process.env,{requireWebhook:true});state.webhookVerified=true}
+    try{await verifyClientBot(process.env,{requireWebhook:true});state.webhookVerified=true;
+        state.ownerAiCommandsReady=await ownerAiMenuReady(config)}
     catch{/* Genuine external readiness failure; do not reveal bot secrets. */}
    }
    return auth.apply(NextResponse.json(state,{headers:PRIVATE_HEADERS}))
@@ -65,6 +71,8 @@ async function handler(request){
   const status=await registerClientTelegramWebhook(process.env,{config})
   return auth.apply(NextResponse.json({...status,configured:true,
     webhookVerified:true,sendingEnabled:telegramClientSendReady(),missingKeys:[],
+    ownerAiEnabled:process.env.HH_OWNER_AI_TG_ENABLED==='true',
+    ownerAiCommandsReady:status.ownerAiCommandsReady===true,
     botMode:telegramClientBotMode(),usingExistingPracticeBot:telegramClientBotMode()==='shared_practice'},
     {headers:PRIVATE_HEADERS}))
  }catch(error){

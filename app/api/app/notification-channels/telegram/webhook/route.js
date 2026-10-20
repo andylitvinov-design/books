@@ -3,11 +3,12 @@ import {getAppConfig} from '@/lib/app/config'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {verifyClientTelegramSecret} from '@/lib/app/client-telegram-policy'
 import {receiveClientTelegramWebhook} from '@/lib/app/client-telegram-webhook'
+import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
-export const maxDuration=30
+export const maxDuration=60
 
 export async function POST(request){
  if(!verifyClientTelegramSecret(request.headers.get('x-telegram-bot-api-secret-token')))
@@ -21,7 +22,9 @@ export async function POST(request){
   update=JSON.parse(Buffer.from(payload).toString('utf8'))
  }catch{return new NextResponse('Invalid update',{status:400,headers:PRIVATE_HEADERS})}
  try{
-  await receiveClientTelegramWebhook(getAppConfig(),update)
+  const config=getAppConfig()
+  const owner=await receiveOwnerAiTelegramWebhook(config,update)
+  if(!owner.handled)await receiveClientTelegramWebhook(config,update)
   // No account existence, token status, or chat ID is returned to Telegram.
   return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
  }catch{
