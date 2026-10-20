@@ -1,0 +1,11 @@
+Psychometric primary-source bibliography (research-only, 2026-10-20)
+
+csbs-li2026-china23-languagepending | 23 | https://doi.org/10.1111/papt.70085
+bras-depauw2024-ukus25 | 25 | https://doi.org/10.1080/10503307.2024.2301948
+pceps-freire2014-uk15-observer | 15 | https://doi.org/10.1080/14733145.2013.808682
+pcepsyp-ryan2023-enuk9-observer | 9 | https://doi.org/10.1002/capr.12505
+pcepseft-monteiro2025-pt9-observer-languagepending | 9 | https://doi.org/10.1080/10503307.2025.2522386
+gaem-pavlovic2008-croatia80pool | 80 development-pool, not one form | https://hrcak.srce.hr/27035
+bsrfcs-dimmick2025-usobserver-itemcountpending | item count unknown | https://doi.org/10.1037/pst0000602
+
+All reference metadata only. Rights to publish protected questions, translated editions, manuals and scoring in commercial digital products remain unverified. No changes to published tests or client data.
