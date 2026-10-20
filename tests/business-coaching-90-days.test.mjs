@@ -334,11 +334,22 @@ test('One-lesson-at-a-time progression saves to the old encrypted API before con
   assert.ok(ui.includes("course?.days?.[next]?.result||''"))
   assert.ok(ui.includes('disabled={busy||course.status!=='))
   assert.ok(ui.includes('!hasUnsavedDay'))
-  assert.ok(ui.includes('(dayDone&&dayResult.trim().length<6)'))
+  assert.ok(ui.includes('(hasUnsavedDay&&dayDone&&dayResult.trim().length<6)'))
   assert.ok(ui.includes('if(next!==day && course?.status'))
   assert.ok(ui.includes('window.confirm(t.unsavedResult)'))
   assert.ok(repo.includes('BUSINESS_DAILY_RESULT_REQUIRED'))
   assert.ok(repo.includes('business_coaching_programs'))
   assert.ok(repo.includes('resultLabelSnapshot:names||prior.resultLabelSnapshot||null'))
   assert.ok(ui.includes('window.print()'))
+})
+
+
+test('Previously saved lessons have a real Next lesson action without re-saving',()=>{
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  assert.ok(ui.includes("nextLesson:'Next lesson'"))
+  assert.ok(ui.includes("nextLesson:'Следующий урок'"))
+  assert.ok(ui.includes('const savedLessonCanContinue=!hasUnsavedDay && Boolean(savedDay.done) && day<90'))
+  assert.ok(ui.includes('(!hasUnsavedDay&&!savedLessonCanContinue)'))
+  assert.ok(ui.includes("if(savedLessonCanContinue)chooseDay(day+1);else void saveDayAndContinue()"))
+  assert.ok(ui.includes('savedLessonCanContinue?t.nextLesson'))
 })
