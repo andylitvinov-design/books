@@ -5,6 +5,7 @@ on:
     paths:
       - 'lib/practitioners/daily-digest.mjs'
       - 'lib/practitioners/daily-telegram-digest.js'
+      - 'lib/practitioners/daily-telegram-transport.mjs'
       - 'lib/app/housekeeping-cron.js'
       - 'app/api/internal/practice-telegram-digest/route.js'
       - 'supabase/migrations/*practice_telegram_digest*.sql'
@@ -30,6 +31,7 @@ jobs:
         run: |
           node --check lib/practitioners/daily-digest.mjs
           node --check lib/practitioners/daily-telegram-digest.js
+          node --check lib/practitioners/daily-telegram-transport.mjs
           node --check app/api/internal/practice-telegram-digest/route.js
           node -e "JSON.parse(require('node:fs').readFileSync('vercel.json','utf8'))"
       - name: Private digest unit and existing cron regressions
