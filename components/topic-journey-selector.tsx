@@ -97,6 +97,7 @@ const businessPromo = {
   en: {
     kicker: 'WHAT YOU TAKE AWAY',
     title: 'One priority. A practical next step.',
+    points: ['Decision criteria', 'Action in 72 hours', '14-day checkpoint'],
     description: 'Clarify a real decision, choose an action to try within 72 hours and identify what to check after 14 days.',
     price: 'Free written review · 30 min €50 · 60 min €100',
     action: 'Choose a format',
@@ -104,6 +105,7 @@ const businessPromo = {
   ru: {
     kicker: 'КОНКРЕТНЫЙ РЕЗУЛЬТАТ',
     title: 'Один приоритет. Следующий шаг.',
+    points: ['Критерии решения', 'Шаг на 72 часа', 'Проверка через 14 дней'],
     description: 'Определим ключевую задачу, шаг на ближайшие 72 часа и критерий проверки через 14 дней.',
     price: 'Бесплатный разбор · 30 мин €50 · 60 мин €100',
     action: 'Выбрать формат',
@@ -111,6 +113,7 @@ const businessPromo = {
   es: {
     kicker: 'RESULTADOS PRÁCTICOS',
     title: 'Una prioridad. Un próximo paso.',
+    points: ['Criterios de decisión', 'Acción en 72 horas', 'Revisión en 14 días'],
     description: 'Aclara la decisión principal, elige una acción para 72 horas y revisa los avances tras 14 días.',
     price: '30 min · €50  |  60 min · €100',
     action: 'Elegir modalidad',
@@ -455,6 +458,9 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
           <p className={styles.businessPromoKicker}>{businessCallout.kicker}</p>
           <h2 id="hh-business-consultation-title">{businessCallout.title}</h2>
           <p>{businessCallout.description}</p>
+          <ul className={styles.businessBenefitTags}>
+            {businessCallout.points.map((point)=><li key={point}>{point}</li>)}
+          </ul>
         </div>
         <div className={styles.businessPromoSide}>
           <span className={styles.businessPromoPrice}>{businessCallout.price}</span>
