@@ -8,7 +8,7 @@ test("Growth Studio is owner-admin only, not publicly writable",()=>{
  const page=read("app/admin/growth-studio/page.js");
  const actions=read("app/admin/growth-studio/actions.js");
  assert.match(page,/requireAdminRequest\(\)/);
- assert.match(page,/redirect\('\/admin\/login'\)/);
+ assert.match(page,/redirect\('\/admin\/login\?next=growth-studio'\)/);
  assert.match(page,/robots:\{index:false,follow:false\}/);
  for(const action of ["listGrowthStudioPostsAction","updateGrowthStudioPostAction","createGrowthStudioBulkAction","checkGrowthTelegramPublisherAction","publishGrowthTelegramNowAction"]){
   const start=actions.indexOf("export async function "+action);
