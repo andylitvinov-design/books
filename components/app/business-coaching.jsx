@@ -7,8 +7,8 @@ import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronDow
 import { appFetch } from '@/lib/app/client-fetch'
 import {
   BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
-  BUSINESS_RESPONSE_LABELS, BUSINESS_WEEKS, BUSINESS_METRICS,
-  businessSnapshotScores, businessSuggestions, businessProgress, businessDay, businessSurveyChanges, businessMetricChanges,
+  BUSINESS_RESPONSE_LABELS, BUSINESS_METRICS,
+  businessSnapshotScores, businessSuggestions, businessProgress, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
 import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress } from '@/lib/business-coaching/week-modules'
 import styles from './business-coaching.module.css'
@@ -244,7 +244,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   }
   async function saveStart(e){
     e.preventDefault()
-    if(!consent)return
+    if(!consent||startStep!==3)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
     if(yes){setTab('today');setDay(1);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setStartStep(1)}
   }
@@ -498,7 +498,7 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button type="button" className={styles.primary}
           disabled={busy||course.status!=='active'||!hasUnsavedDay||(dayDone&&dayResult.trim().length<6)}
           onClick={saveDayAndContinue}>
-          <CheckCircle2 size={18}/>{dayDone?t.saveContinue:t.draftAction}
+          <CheckCircle2 size={18}/>{dayDone?(day===90?t.saveAction:t.saveContinue):t.draftAction}
           {dayDone&&day<90?<ArrowRight size={18} aria-hidden="true"/>:null}
         </button>
       </div>
