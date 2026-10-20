@@ -85,7 +85,7 @@ try {
       await pause(5000)
     }
   }
-  for (const [target, slot, locale, id, youtubeId] of [
+  for (const [target, slot, locale, , youtubeId] of [
     ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34', 'Y4K4piEwwA8'],
     ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 's30Y42IwPcg'],
     ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a', 'ILyRWyHtJoE'],
