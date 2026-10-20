@@ -287,7 +287,7 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
   }
 
   function editItem(item) {
-    if (busy) return
+    if (busy || !metadataAvailable) return
     setEditing({
       path:item.path, storage:item.storage, title:item.title ||
         (locale === 'ru' ? 'Запись ' : 'Recording ') + item.path.split('/').pop()?.slice(0,8),
@@ -297,7 +297,7 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
   }
   async function saveMetadata(event) {
     event.preventDefault()
-    if (!editing || busy) return
+    if (!editing || busy || !metadataAvailable) return
     setOperationBusy(true);setBusy('metadata');setError('');setNotice('')
     try {
       await ownerRequest({
@@ -305,13 +305,15 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
         title:editing.title,description:editing.description,archived:editing.archived,
       })
       await onChanged()
+      if (editing.archived && staged?.path===editing.path && staged?.storage===editing.storage)
+        setStaged(null)
       setEditing(null);setNotice(copy.saved)
     } catch (error) {
       setError(error?.message==='REIKI_AUDIO_ACTIVE_ON_SLIDE'?copy.activeDenied:copy.failed)
     } finally {setBusy('');setOperationBusy(false)}
   }
   async function deleteDraft(item) {
-    if (busy || item.storage!=='draft' || !item.archived ||
+    if (busy || !metadataAvailable || item.storage!=='draft' || !item.archived ||
         !window.confirm(copy.confirmDelete)) return
     setOperationBusy(true);setBusy('delete');setError('');setNotice('')
     try {
@@ -392,12 +394,12 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       <strong>{copy.edit}</strong>
       <label>{copy.editTitle}
         <input type="text" required maxLength={REIKI_AUDIO_MAX_TITLE}
-          value={editing.title} disabled={!!busy}
+          value={editing.title} disabled={!!busy || !metadataAvailable}
           onChange={event=>setEditing({...editing,title:event.target.value})}/>
       </label>
       <label>{copy.editDescription}
         <textarea rows={2} maxLength={REIKI_AUDIO_MAX_DESCRIPTION}
-          value={editing.description} disabled={!!busy}
+          value={editing.description} disabled={!!busy || !metadataAvailable}
           onChange={event=>setEditing({...editing,description:event.target.value})}/>
       </label>
       <label className={styles.archivedToggle}>
@@ -407,14 +409,14 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       </label>
       <p className={styles.fileHint}>{copy.descriptionHint}</p>
       <div className={styles.editorActions}>
-        <button type="submit" disabled={!!busy || !editing.title.trim()}>
+        <button type="submit" disabled={!!busy || !metadataAvailable || !editing.title.trim()}>
           {busy==='metadata'?copy.saving:copy.save}
         </button>
         <button type="button" disabled={!!busy} onClick={()=>setEditing(null)}>{copy.cancel}</button>
         {editing.storage==='draft' && editing.archived &&
           files.some(item=>item.path===editing.path && item.storage==='draft' && item.archived) ?
           <button type="button" className={styles.dangerButton}
-            disabled={!!busy} onClick={()=>void deleteDraft(editing)}>
+            disabled={!!busy || !metadataAvailable} onClick={()=>void deleteDraft(editing)}>
             <Trash2 size={15} aria-hidden="true"/>{copy.delete}
           </button> : null}
       </div>
