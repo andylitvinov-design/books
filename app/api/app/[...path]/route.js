@@ -139,7 +139,7 @@ async function handle(request, { params }) {
       // THIS SAME callback without native=1. Never transfer session tokens.
       if (url.searchParams.get('native') === '1') {
         const handoff = new URL('holistichouse://auth/callback')
-        for (const key of ['locale','intent','service','continue','program','request']) {
+        for (const key of ['locale','intent','service','continue','program','request','sb_flow_id']) {
           const value = url.searchParams.get(key)
           if (value !== null) handoff.searchParams.set(key,value)
         }
