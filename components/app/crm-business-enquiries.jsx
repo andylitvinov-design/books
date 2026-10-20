@@ -1,6 +1,7 @@
 "use client";
 import styles from "./crm-business-enquiries.module.css";
 import BusinessEnquirySmsReply from "./business-enquiry-sms-reply";
+import BusinessEnquiryOtherReply from "./business-enquiry-other-reply";
 
 const text={
  en:{title:"Business consulting requests",intro:"Private website requests · consent to reply only · not marketing subscribers.",none:"No business website enquiries yet.",free:"Free written review",express:"30 min · €50",full:"60 min · €100",mentoring:"Goals Mentoring",status:"Status",new:"New",contacted:"Contacted",booked:"Booked",closed:"Closed",source:"Campaign",received:"Received",unverified:"Contact details are self-reported, not independently verified.",preferred:"Preferred reply",replies:{email:"Email",sms:"SMS",phone:"Phone call",whatsapp:"WhatsApp"},saveContact:"Save to CRM contacts",saveHint:"Save name and contacts only. This does not verify the number or subscribe the person to marketing."},
@@ -27,6 +28,7 @@ export default function CrmBusinessEnquiries({locale="en",enquiries=[],busy=fals
         </div>
         {item.replyChannel&&<p className={styles.preferred}>{t.preferred}: {t.replies?.[item.replyChannel]||item.replyChannel}</p>}
         <BusinessEnquirySmsReply item={item} locale={locale} />
+        <BusinessEnquiryOtherReply item={item} locale={locale} />
         <p className={styles.question}>{item.question}</p>
         {(item.phone||item.email)&&<div className={styles.importBox}>
           <button type="button" className={styles.importButton} disabled={busy}

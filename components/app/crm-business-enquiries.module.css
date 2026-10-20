@@ -32,3 +32,9 @@
 .smsActions button,.smsActions a{min-height:42px;border:1px solid #276954;border-radius:9px;padding:9px 13px;font:700 12px/1.3 system-ui,sans-serif;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;color:white;background:#276954}
 .smsActions a{color:#276954;background:white}
 @media(max-width:480px){.smsActions>*{flex:1 1 125px}}
+
+.otherReply{display:grid;gap:7px;border-radius:12px;border:1px solid #cbdedc;background:#f7fbfa;padding:11px;justify-items:start}
+.otherReply strong{font:750 12px/1.35 system-ui,sans-serif;color:#2b535a}
+.otherReply a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 13px;border-radius:9px;background:#2b6670;color:white!important;text-decoration:none;font:700 12px/1.3 system-ui,sans-serif}
+.otherReply p,.otherReply small{font:500 11px/1.5 system-ui,sans-serif;color:#60767a;margin:0}
+.otherReply p[role=alert]{color:#934044;font-weight:650}
