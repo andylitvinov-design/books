@@ -26,7 +26,7 @@ const TEXT={
   saved:'Saved. The messenger is not verified for delivery.',changed:'Preferences saved.',
   removed:'Messenger disconnected.',loading:'Loading notification settings…',
   error:'Could not complete this action.',pendingNotice:'Please verify in the Telegram bot.',
-  botUnavailable:'Client Telegram bot is not configured yet. No messages will be sent.',
+  botUnavailable:'Client Telegram bot is not configured yet. No messages will be sent.',sendPaused:'Telegram connected. Automatic notifications are not activated yet.',
   whatsappUnavailable:'WhatsApp automated delivery is not activated.',
   hint:'Saved contact',noValue:'Please enter your international WhatsApp number.',
  },
@@ -47,7 +47,7 @@ const TEXT={
   saved:'Контакт сохранён, но не подтверждён для отправки.',changed:'Настройки сохранены.',
   removed:'Мессенджер отключён.',loading:'Загружаем настройки…',
   error:'Не удалось выполнить действие.',pendingNotice:'Подтвердите подключение в Telegram-боте.',
-  botUnavailable:'Клиентский Telegram-бот пока не настроен. Отправки отключены.',
+  botUnavailable:'Клиентский Telegram-бот пока не настроен. Отправки отключены.',sendPaused:'Telegram подключён, но автоматические уведомления пока выключены.',
   whatsappUnavailable:'Автоматическая отправка WhatsApp пока не активирована.',
   hint:'Сохранённый контакт',noValue:'Введите международный номер WhatsApp.',
  },
@@ -68,7 +68,7 @@ const TEXT={
   saved:'Guardado, pero todavía sin verificar.',changed:'Preferencias guardadas.',
   removed:'Mensajero desconectado.',loading:'Cargando ajustes…',
   error:'No se pudo completar la acción.',pendingNotice:'Confirma el enlace en el bot de Telegram.',
-  botUnavailable:'El bot de Telegram aún no está configurado. No se enviarán avisos.',
+  botUnavailable:'El bot de Telegram aún no está configurado. No se enviarán avisos.',sendPaused:'Telegram conectado. Los avisos automáticos aún no están activados.',
   whatsappUnavailable:'El envío automático de WhatsApp no está activado.',
   hint:'Contacto guardado',noValue:'Introduce tu número internacional.',
  },
@@ -171,7 +171,7 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
         {connected?t.connected:pending?t.pending:t.off}
        </span>
       </div>
-      {hasEntry&&<p className={styles.saved}><CheckCircle2 size={14}/>{t.hint}: {existing.destinationHint}</p>}
+      {hasEntry&&<p className={styles.saved}><CheckCircle2 size={14}/>{t.hint}: {isTelegram?(connected?t.connected:t.pending):existing.destinationHint}</p>}
       {!isTelegram&&<label className={styles.field}>
        <span>{t.whatsappLabel}</span>
        <input type="tel" autoComplete="off" inputMode="tel"
@@ -218,7 +218,7 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
         onClick={()=>perform(channel,'remove')}>{t.remove}</button>}
       </div>
       <p className={styles.disclaimer}>{isTelegram?
-       !ready?t.botUnavailable:connected&&!view.sendingEnabled?t.pendingNotice:
+       !ready?t.botUnavailable:connected&&!view.sendingEnabled?t.sendPaused:
        view.sendingEnabled?t.telegramHelp:t.pendingNotice:t.whatsappUnavailable}</p>
      </article>
     })}
