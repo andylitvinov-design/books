@@ -9,6 +9,10 @@ test('dedicated bot needs explicit setup and dispatch approval',()=>{
  const e={HH_CLIENT_TG_LINK_ENABLED:'true',HH_CLIENT_TG_BOT_TOKEN:'synthetic-secret-for-unit-tests',
  HH_CLIENT_TG_BOT_USERNAME:'HolisticHouseNoticeBot',HH_CLIENT_TG_WEBHOOK_SECRET:'x'.repeat(40)}
  assert.equal(validClientBotUsername(e.HH_CLIENT_TG_BOT_USERNAME),true)
+ assert.equal(validClientBotUsername('Abbot'),true)
+ assert.equal(validClientBotUsername('Abot'),false)
+ assert.equal(validClientBotUsername('A'.repeat(29)+'bot'),true)
+ assert.equal(validClientBotUsername('A'.repeat(30)+'bot'),false)
  assert.equal(telegramClientLinkReady(e),true)
  assert.equal(telegramClientSendReady(e),false)
  assert.equal(telegramClientSendReady({...e,HH_CLIENT_TG_SEND_APPROVED:'true'}),true)
