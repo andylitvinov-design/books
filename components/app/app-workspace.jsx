@@ -242,6 +242,16 @@ export default function AppWorkspace({ locale, path = [] }) {
   async function logout(allDevices = false) {
     setBusy(true)
     try {
+      // Revoke native phone tokens *before* clearing this account's session.
+      // A failed or revoked server session still blocks delivery through the
+      // session-bound native_push_devices lookup.
+      if(isNativeHolisticHouse() && data?.account?.id){
+        try{
+          await appFetch('notifications/native/disable',{},'POST',{accountId:data.account.id})
+          const {registerPlugin}=await import('@capacitor/core')
+          await registerPlugin('PushNotifications').unregister()
+        }catch{/* Sign-out must continue; server also requires a live Auth session. */}
+      }
       // End account-bound Live Activities before clearing the verified session.
       if (isNativePsiAlchemy()) {
         try {
