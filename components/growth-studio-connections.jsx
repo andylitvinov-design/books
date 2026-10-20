@@ -3,7 +3,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {CheckCircle2, AlertCircle, CircleHelp, RefreshCcw, ShieldCheck} from 'lucide-react'
 import {GROWTH_PUBLICATION_NETWORKS,CHANNEL_CAPABILITIES} from '@/lib/growth-studio/channel-capabilities.mjs'
-import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction} from '@/app/admin/growth-studio/actions'
+import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction,checkGrowthStudioProviderReadinessAction} from '@/app/admin/growth-studio/actions'
 import styles from './growth-studio.module.css'
 
 const messages={
@@ -19,6 +19,22 @@ const messages={
     mismatch:'Канал не найден или бот не имеет права публиковать. Проверьте настройки и разрешения.',
     notSet:'Нужны серверные HH_GROWTH_TELEGRAM_ENABLED / BOT_TOKEN / CHAT_ID и права администратора канала.',
     noTests:'Проверка не создаёт и не публикует сообщений.',
+    siteStatusTitle:'Права публикации на сайте',
+    siteStatusHelp:'Это серверная проверка настроек, а не вход в социальные сети. Наличие YouTube OAuth Client ID или Telegram-бота ещё не подтверждает права отправки.',
+    siteStatusCheck:'Перепроверить конфигурацию',
+    siteStatusChecking:'Проверяем конфигурацию…',
+    siteStatusError:'Не удалось прочитать локальные подключения. Ничего не отправлено.',
+    siteStatusPending:'Настройки ещё не проверены',
+    siteConfigured:'Настроено · OAuth/права не подтверждены',
+    siteAbsent:'Не подключено на сайте',
+    siteManual:'Только ручная публикация',
+    siteExternal:'Через отдельный сервис',
+    siteUnavailable:'Хранилище недоступно',
+    siteUploaderConfigured:'YouTube OAuth Client ID: найден; вход Google не подтверждён',
+    siteUploaderMissing:'YouTube OAuth Client ID: не подтверждён',
+    siteUploaderEn:'EN-канал: привязан, но права не проверены',
+    siteUploaderEnMissing:'EN-канал: требует подтверждения',
+    sitePublisherWarning:'Наличие настройки ещё не увеличивает число проверенных каналов публикации.',
     storageTitle:'Хранилище черновиков · Redis',
     storageNotChecked:'Ещё не проверено', storageChecking:'Проверка…',
     storageCheck:'Проверить сохранение',storageRecheck:'Проверить ещё раз',
@@ -60,6 +76,22 @@ const messages={
     mismatch:'The channel is inaccessible or the bot cannot post. Review bot settings and permissions.',
     notSet:'Requires server-side HH_GROWTH_TELEGRAM_ENABLED / BOT_TOKEN / CHAT_ID and channel admin rights.',
     noTests:'This check does not create or publish any message.',
+    siteStatusTitle:'Website publisher access',
+    siteStatusHelp:'This is a server configuration check, not a login to a social network. A YouTube OAuth Client ID or Telegram bot alone does not prove permission to send.',
+    siteStatusCheck:'Recheck configuration',
+    siteStatusChecking:'Checking configuration…',
+    siteStatusError:'Local connection check failed. Nothing was sent.',
+    siteStatusPending:'Not yet checked',
+    siteConfigured:'Configured · OAuth/rights unverified',
+    siteAbsent:'Not connected to site',
+    siteManual:'Manual publishing only',
+    siteExternal:'Separate service',
+    siteUnavailable:'Storage unavailable',
+    siteUploaderConfigured:'YouTube OAuth Client ID exists; Google consent unverified',
+    siteUploaderMissing:'YouTube OAuth Client ID not confirmed',
+    siteUploaderEn:'EN channel paired; rights unverified',
+    siteUploaderEnMissing:'EN channel requires confirmation',
+    sitePublisherWarning:'Configured status does not increase the number of verified publisher channels.',
     storageTitle:'Draft storage · Redis',
     storageNotChecked:'Not yet verified',storageChecking:'Checking…',
     storageCheck:'Test draft storage',storageRecheck:'Test again',
@@ -118,6 +150,10 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [storageState,setStorageState]=useState('untested')
   const [storageChecking,setStorageChecking]=useState(false)
   const storageProbeInFlight=useRef(false)
+  const providerProbeInFlight=useRef(false)
+  const [providerSnapshot,setProviderSnapshot]=useState(null)
+  const [providerChecking,setProviderChecking]=useState(false)
+  const [providerFailed,setProviderFailed]=useState(false)
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
@@ -147,6 +183,28 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   // Executes once when an already-authenticated owner opens this workspace.
   // The server action checks the real admin session first. No provider posts.
   useEffect(()=>{void verifyStorage()},[verifyStorage])
+  const checkProviders=useCallback(async()=>{
+    if(providerProbeInFlight.current)return
+    providerProbeInFlight.current=true
+    setProviderChecking(true)
+    setProviderFailed(false)
+    try {
+      const response=await checkGrowthStudioProviderReadinessAction()
+      if(response?.ok===true&&response.channels){
+        setProviderSnapshot(response.channels)
+      }else{
+        setProviderSnapshot(null)
+        setProviderFailed(true)
+      }
+    }catch{
+      setProviderSnapshot(null)
+      setProviderFailed(true)
+    }finally {
+      setProviderChecking(false)
+      providerProbeInFlight.current=false
+    }
+  },[])
+  useEffect(()=>{void checkProviders()},[checkProviders])
   return <details className={styles.connectionPanel}>
     <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.summary}</span>
       <span className={storageState==='verified'?styles.verifiedText:styles.notVerifiedText} role="status">
@@ -172,6 +230,27 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       </button>
       {storageState==='failed'&&<p role="alert" className={styles.connectionError}><AlertCircle size={15} aria-hidden="true"/>{t.storageError}</p>}
       {storageState==='verified'&&<p role="status" className={styles.verifiedText}>{t.storageOk}</p>}
+    </div>
+    <div className={styles.connectionBox}>
+      <div className={styles.connectionBoxTitle}>
+        <strong>{t.siteStatusTitle}</strong>
+        <button type="button" onClick={checkProviders} disabled={providerChecking}>
+          <RefreshCcw size={15} aria-hidden="true"/>
+          {providerChecking?t.siteStatusChecking:t.siteStatusCheck}
+        </button>
+      </div>
+      <p>{t.siteStatusHelp}</p>
+      {providerChecking&&<p role="status">{t.siteStatusChecking}</p>}
+      {!providerChecking&&!providerSnapshot&&!providerFailed&&<p>{t.siteStatusPending}</p>}
+      {providerFailed&&<p role="alert" className={styles.connectionError}>
+        <AlertCircle size={15} aria-hidden="true"/>{t.siteStatusError}
+      </p>}
+      {providerSnapshot?.youtube&&<p role="status">
+        {providerSnapshot.youtube.oauthClientConfigured?t.siteUploaderConfigured:t.siteUploaderMissing}
+        {' · '}
+        {providerSnapshot.youtube.englishChannelPaired?t.siteUploaderEn:t.siteUploaderEnMissing}
+      </p>}
+      <small>{t.sitePublisherWarning}</small>
     </div>
     <div className={styles.connectionBox}>
       <div className={styles.connectionBoxTitle}>
@@ -262,8 +341,13 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
             return <tr key={item.id}>
               <th scope="row">{item.name}</th>
               <td>{t[modes[item.mode]]}</td>
-              <td>{isTelegram?(verified?t.verified:telegram.ready?t.configured:t.unconfigured)
-                :isYoutube?t.external:t.manualOnly}</td>
+              <td>{isTelegram?(verified?t.verified:
+                  providerSnapshot?.telegram?.state==='configured_unverified'?t.siteConfigured:
+                    telegram.ready?t.configured:t.unconfigured)
+                :isYoutube?(providerSnapshot?.youtube?.state==='configured_unverified'
+                    ?t.siteConfigured:providerSnapshot?.youtube?.state==='unavailable'
+                      ?t.siteUnavailable:t.external)
+                :providerSnapshot?.[item.id]?.state==='external_tool'?t.siteExternal:t.manualOnly}</td>
               <td>{locale==='ru'?RU_REQUIREMENTS[item.id]||item.description:item.description}</td>
             </tr>
           })}
