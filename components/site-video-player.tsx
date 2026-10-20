@@ -168,7 +168,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
     <figure className={["site-video-player", compact && "site-video-player--compact", minimal && "site-video-player--minimal", minimal && styles.minimal, className].filter(Boolean).join(" ")} aria-labelledby={titleId} lang={locale}>
       <div className="site-video-frame">
         {playing ? (
-          <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
+          <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => { setShowRecovery(false); setPlaying(true); }}>
             {!isHeygen && fallbackPoster && !localPosterFailed && (
