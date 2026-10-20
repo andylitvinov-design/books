@@ -14,9 +14,9 @@ await mkdir(output, { recursive: true });
 const results = [];
 const errors = [];
 const questions = {
-  en: "Describe what you would like help with",
-  ru: "Расскажите, с чем вам нужна помощь",
-  es: "Cuéntanos en qué podemos ayudarte",
+  en: "Leave your contact to enquire or join",
+  ru: "Оставьте контакт, чтобы записаться или узнать подробности",
+  es: "Deja tus datos para consultar o inscribirte",
 };
 const slug = value => value.replace(/[^a-z0-9-]+/gi,"-").replace(/^-|-$/g,"").slice(0,90);
 
@@ -43,7 +43,14 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   assert.equal(await button.isDisabled(),true,"Contact+consent are required");
   await form.locator('input[autocomplete="name"]').fill("QA Visitor");
   await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
-  await form.locator('textarea').fill("I want to register for this course or service. Please send the next steps.");
+  // Alternate private note / no-note requests to prove both paths. Neither may
+  // leak personal details into the external messenger deep link.
+  const privateNote = "PRIVATE_QA_NOTE_NOT_FOR_MESSENGER";
+  const hasNote = submissions.length % 2 === 0;
+  if (hasNote) {
+    await form.locator('details.optionalNote, details').first().locator('summary').click();
+    await form.locator('textarea').fill(privateNote);
+  }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
   await form.locator('input[type="checkbox"]').check();
   const priorCount=submissions.length;
@@ -59,7 +66,8 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   assert.equal(request.contact.phone,"");
   assert.ok(request.operationId && /^[a-f0-9-]{36}$/i.test(request.operationId));
   assert.ok(request.sourcePath && request.sourcePath.startsWith("/"+locale+"/"));
-  assert.ok(request.serviceTitle && request.description.length>=10);
+  assert.ok(request.serviceTitle);
+  assert.equal(request.description,hasNote?"PRIVATE_QA_NOTE_NOT_FOR_MESSENGER":"");
   assert.ok(!request.website);
 }
 
@@ -96,6 +104,7 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   assert.ok(waDraft.includes("Holistic House") && /Service|Услуга|Servicio/.test(waDraft));
   assert.doesNotMatch(waDraft,/qa-browser@example.test|QA Visitor/,"Never leak stored contact in messenger URL");
   assert.match(waDraft,/HH-CA5016DE79E4/,"The optional messenger handoff includes the enquiry reference");
+  assert.doesNotMatch(waDraft,/PRIVATE_QA_NOTE_NOT_FOR_MESSENGER/,"Never put visitor notes in external messenger URL");
   const viewportWidth = page.viewportSize().width;
   for (const channel of [wa,tg]) {
     await channel.scrollIntoViewIfNeeded();
