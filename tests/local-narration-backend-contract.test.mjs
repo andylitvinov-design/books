@@ -165,3 +165,11 @@ test('Mac completion rechecks current published text before making audio ready',
   assert.match(UI,/Math\.min\(300000,30000/)
   assert.doesNotMatch(UI,/loadPart\(index\)\},15000\)/)
 })
+
+test('Mac never persists plaintext patient report as an input text file',()=>{
+  const worker=read('scripts/andrey-voice/local_worker.py')
+  assert.match(worker,/--text-file", "\/dev\/stdin"/)
+  assert.match(worker,/input=text\.encode\("utf-8"\)/)
+  assert.doesNotMatch(worker,/report-part\.txt|input_file\.write_text/)
+  assert.match(worker,/TemporaryDirectory/)
+})
