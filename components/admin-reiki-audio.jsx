@@ -135,6 +135,7 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
   const [preview,setPreview] = useState(null)
   const [progress,setProgress] = useState('')
   const cancelAfterCurrent = useRef(false)
+  const fileInputRef = useRef(null)
   const [editing,setEditing] = useState(null)
   const [showArchived,setShowArchived] = useState(false)
   const [staged,setStaged] = useState(null)
@@ -162,10 +163,12 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     setFile(null);setPendingFiles([])
     if (!next.length) return
     if (next.length > REIKI_AUDIO_MAX_BATCH) {
+      if (fileInputRef.current) fileInputRef.current.value=''
       setError(copy.bulkLimit);return
     }
     if (next.some(item => !reikiIntroMime(item.type,item.name) ||
       item.size < 512 || item.size > REIKI_INTRO_MAX_BYTES)) {
+      if (fileInputRef.current) fileInputRef.current.value=''
       setError(copy.invalid);return
     }
     setPendingFiles(next)
@@ -209,7 +212,10 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       }
       await onChanged()
       if (saved === 1 && pendingFiles.length === 1 && last) setStaged(last)
-      else {setFile(null);setStaged(null);setPendingFiles([])}
+      else {
+        setFile(null);setStaged(null);setPendingFiles([])
+        if (fileInputRef.current) fileInputRef.current.value=''
+      }
       setNotice((cancelAfterCurrent.current ? copy.uploadStopped : copy.uploadDone) +
         ' · ' + copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length +
         (metadataFailed ? ' · ' + copy.metadataWarning : ''))
@@ -336,8 +342,8 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       {!visibleFiles.length ? <p className={styles.folderEmpty}>{copy.noFiles}</p> : <div className={styles.files}>
         {visibleFiles.map((item)=>{
           const isActive = item.storage === 'public' && item.path === current?.path
-          const isSelected = item.path === staged?.path
-          return <div key={item.path} className={styles.fileRow + (isSelected? ' '+styles.fileRowSelected:'')}
+          const isSelected = item.path === staged?.path && item.storage === staged?.storage
+          return <div key={item.storage+':'+item.path} className={styles.fileRow + (isSelected? ' '+styles.fileRowSelected:'')}
             data-reiki-audio-file={item.path} data-file-on-slide={isActive?'true':'false'}>
             <span className={styles.fileIcon}><FileAudio size={18} aria-hidden="true"/></span>
             <div className={styles.fileDetails}>
@@ -406,7 +412,7 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     <div className={styles.uploadPanel}>
       <label className={styles.filePicker}>
         <span><UploadCloud size={16} aria-hidden="true"/>{copy.choose}</span>
-        <input type="file" multiple accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
+        <input ref={fileInputRef} type="file" multiple accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
           onChange={select} disabled={!!busy}/>
       </label>
       {preview && !staged ? <div className={styles.player}>
