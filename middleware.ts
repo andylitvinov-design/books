@@ -66,7 +66,8 @@ export function middleware(request: NextRequest) {
   const materialLibraryPage = pathname === '/admin/materials'
   const youtubePhoneUploader = pathname === '/admin/youtube-upload'
   // Separate public Reiki lesson audio and owner-only upload route.
-  const reikiIntroAudioManager = pathname === '/admin/reiki-audio' || pathname === '/admin/reiki-audio/'
+  const reikiIntroAudioManager = pathname === '/admin/reiki-audio' || pathname === '/admin/reiki-audio/' ||
+    /^\/admin\/materials\/audio\/reiki-practitioner\/?$/.test(pathname)
   const reikiLessonAudioPage = /^\/(en|ru|es)\/academy\/principles-of-energywork\/learn\/?$/.test(pathname)
   const reikiIntroAudioOrigin = (() => {
     if (!reikiIntroAudioManager && !reikiLessonAudioPage) return ''
