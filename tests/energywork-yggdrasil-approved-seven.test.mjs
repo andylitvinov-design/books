@@ -43,7 +43,7 @@ test('Approved seven questions match the teacher page in EN/RU/ES and share one 
 })
 
 test('All seven interactive Yggdrasil screens use the matching approved question in order', () => {
-  assert.equal(ENERGYWORK_VERSION,'2026-10-19.p9')
+  assert.equal(ENERGYWORK_VERSION,'2026-10-20.p10')
   assert.equal(ENERGYWORK_P8_VERSION,'2026-10-19.p8')
   assert.equal(ENERGYWORK_P7_VERSION,'2026-10-19.p7')
   assert.equal(ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS.length,7)
