@@ -6,6 +6,7 @@ on:
       - 'app/[locale]/dao/hexagrams/**'
       - 'app/es/dao/hexagrams/**'
       - 'app/[locale]/library/page.tsx'
+      - 'app/ia-v2.css'
       - 'app/es/library/page.tsx'
       - 'components/dao-*'
       - 'components/library-hub.tsx'

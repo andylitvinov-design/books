@@ -45,4 +45,6 @@ test("standalone 64-card catalogue and Library tab link to the same first-party 
   assert.ok(hub.includes('view=dao'));
   assert.ok(panel.includes('/dao/hexagrams/" + item.number'));
   assert.match(panel, /type Locale = "en" \| "ru" \| "es"/);
+  const libraryCss = readFileSync(new URL("../app/ia-v2.css", import.meta.url), "utf8");
+  assert.match(libraryCss, /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
 });
