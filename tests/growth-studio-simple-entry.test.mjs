@@ -8,7 +8,7 @@ test('one direct Growth Studio URL remains owner protected and reuses existing m
   const page=read('app/admin/growth-studio/page.js')
   const actions=read('app/admin/growth-studio/actions.js')
   assert.match(page,/requireAdminRequest\(\)/)
-  assert.match(page,/redirect\('\/admin\/login'\)/)
+  assert.match(page,/redirect\('\/admin\/login\?next=growth-studio'\)/)
   assert.match(page,/robots:\{index:false,follow:false\}/)
   assert.match(page,/<PrescriptionAdminHeader compact initialLocale=\{locale\}/)
   assert.match(page,/<GrowthStudio initialLocale=\{locale\}/)
