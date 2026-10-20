@@ -30,6 +30,11 @@ on:
       - 'components/app/crm-contact-activity.*'
       - 'supabase/migrations/*crm_*'
       - 'components/app/crm-sms-*.jsx'
+      - 'components/app/notification-settings.jsx'
+      - 'tests/notifications-device-onboarding.test.mjs'
+      - 'components/contact-channel-chooser.tsx'
+      - 'lib/practitioners/public-enquiry-submission.js'
+      - 'tests/public-enquiry-*.test.mjs'
       - 'components/app/crm-sms-tools.jsx'
       - 'components/app/crm-sms-setup.jsx'
       - 'components/app/crm-email-*.jsx'
@@ -84,6 +89,8 @@ jobs:
           cache: npm
       - name: Install pinned packages
         run: npm ci --no-audit --no-fund
+      - name: Verify intake lifecycle, device onboarding and recorded SMS consent
+        run: node --conditions=react-server --test tests/notifications-device-onboarding.test.mjs tests/crm-sms-recorded-consent.test.mjs tests/public-enquiry-submission.test.mjs tests/public-enquiry-component-lifecycle.test.mjs tests/crm-public-registration.test.mjs
       - name: Verify consent, ownership, actions and fail-closed client requests
         run: node --test tests/business-enquiry-reply-handoffs.test.mjs tests/business-enquiry-reply-channel.test.mjs tests/client-contact-phone.test.mjs tests/crm-consent.test.mjs tests/crm-security-contract.test.mjs tests/crm-public-registration.test.mjs tests/public-service-enquiries.test.mjs tests/crm-client-request.test.mjs tests/crm-email.test.mjs tests/crm-email-source.test.mjs tests/crm-sms.test.mjs tests/crm-workflow.test.mjs tests/crm-workday.test.mjs tests/crm-workday-ui.test.mjs tests/crm-activity.test.mjs tests/crm-phone.test.mjs tests/crm-contact-maintenance.test.mjs tests/crm-owner-ops.test.mjs tests/crm-messenger.test.mjs tests/business-website-enquiry.test.mjs tests/public-contact-page.test.mjs tests/practitioner-client-crm.test.mjs tests/practitioner-crm-tasks.test.mjs tests/practitioner-client-work-queue.test.mjs tests/practitioner-conversation-state.test.mjs tests/messenger-notification-subscriptions.test.mjs
       - name: Verify UTF-8 envelopes and concurrent in-app message sends

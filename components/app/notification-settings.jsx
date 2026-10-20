@@ -8,8 +8,10 @@ const COPY={
  ru:{title:'Уведомления на телефон',intro:'Напоминания и сообщения мастера — только с вашего разрешения.',
  sample:'Пример оформления',today:'Небольшой шаг на сегодня',course:'МОЙ КУРС · 14 ДНЕЙ',
  mins:'5–12 минут',ready:'Сегодняшнее занятие готово',open:'Открыть мой курс',
- allow:'Включить уведомления',disable:'Отключить на всех устройствах',
- send:'Отправить тестовое уведомление',on:'Push включены',off:'Push выключены',
+ allow:'Подключить этот браузер',disable:'Отключить на всех устройствах',
+ send:'Отправить тестовое уведомление',on:'Push включены для аккаунта',off:'Push выключены для аккаунта',
+ deviceUnknown:'Уведомления подключаются отдельно в каждом браузере. Здесь можно подключить этот браузер или обновить его регистрацию.',
+ deviceReady:'Этот браузер зарегистрирован для вашего аккаунта. Показ уведомлений зависит от настроек устройства.',
  mobile:'На iPhone: Safari → Поделиться → На экран «Домой», затем включите уведомления.',
  unsupported:'Web Push не поддерживается в этом браузере или приложении.',
  blocked:'Уведомления запрещены в настройках браузера или телефона.',
@@ -19,12 +21,14 @@ const COPY={
  reminder:'Напоминать о ежедневной практике',messages:'Уведомлять о новых личных сообщениях',messagePrivacy:'Текст переписки не показывается на экране блокировки.',hour:'Местное время',save:'Сохранить',
  done:'Сервис push принял сообщение. Появление зависит от настроек устройства.',
  saved:'Настройки сохранены',error:'Не удалось выполнить действие. Попробуйте ещё раз.',
- loading:'Загружаем настройки…',devices:'Устройств'},
+ loading:'Загружаем настройки…',devices:'Зарегистрировано устройств'},
  en:{title:'Phone notifications',intro:'Course reminders and private-message alerts — only with your consent.',
  sample:'Design preview',today:'A small step for today',course:'MY COURSE · 14 DAYS',
  mins:'5–12 minutes',ready:'Today’s practice is ready',open:'Open my course',
- allow:'Enable notifications',disable:'Turn off on all devices',
- send:'Send a test notification',on:'Push enabled',off:'Push off',
+ allow:'Enable this browser',disable:'Turn off on all devices',
+ send:'Send a test notification',on:'Push enabled for your account',off:'Push off for your account',
+ deviceUnknown:'Notifications are connected separately in each browser. Enable this browser or refresh its registration here.',
+ deviceReady:'This browser is registered for your account. Notification display depends on your device settings.',
  mobile:'On iPhone: Safari → Share → Add to Home Screen, then enable notifications.',
  unsupported:'Web Push is not supported by this browser or app.',
  blocked:'Notifications are blocked in browser or phone settings.',
@@ -34,7 +38,7 @@ const COPY={
  reminder:'Remind me about daily practice',messages:'Notify me about new private messages',messagePrivacy:'Message contents stay hidden on the Lock Screen.',hour:'Local time',save:'Save',
  done:'The push service accepted the message; display depends on device settings.',
  saved:'Preferences saved',error:'Could not complete the action. Please try again.',
- loading:'Loading settings…',devices:'Devices'},
+ loading:'Loading settings…',devices:'Registered devices'},
 }
 function canPush(){return typeof window!=='undefined'&&window.isSecureContext&&
   'Notification' in window&&'serviceWorker' in navigator&&'PushManager' in window}
@@ -48,10 +52,15 @@ function localZone(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone
 export default function NotificationSettings({locale='en',compact=false,accountId}){
   const c=COPY[locale]||COPY.en
   const [state,setState]=useState(null),[busy,setBusy]=useState(false),
+    [deviceConfirmed,setDeviceConfirmed]=useState(false),
     [error,setError]=useState(''),[notice,setNotice]=useState(''),
     [course,setCourse]=useState(true),[messages,setMessages]=useState(false),[hour,setHour]=useState(19)
   const owner=useRef(null),working=useRef(false)
   const currentAccount=useRef(accountId);currentAccount.current=accountId
+  const belongs=session=>Boolean(session)&&owner.current===session&&session.accountId===currentAccount.current&&
+    !session.controller.signal.aborted
+  const accountCurrent=belongs(owner.current)
+  const thisDeviceConfirmed=deviceConfirmed&&accountCurrent
   async function api(path,body,session=owner.current){
     if(!session||session.accountId!==currentAccount.current||owner.current!==session)throw new Error('ACCOUNT_CHANGED')
     const result=await appFetch(path,body,undefined,{accountId:session.accountId,signal:session.controller.signal})
@@ -60,7 +69,7 @@ export default function NotificationSettings({locale='en',compact=false,accountI
   }
   useEffect(()=>{
     const session={accountId,controller:new AbortController()};owner.current=session;working.current=false
-    setState(null);setBusy(false);setError('');setNotice('')
+    setState(null);setBusy(false);setDeviceConfirmed(false);setError('');setNotice('')
     let mounted=true
     api('notifications',undefined,session).then(value=>{if(mounted){
       setState(value);setCourse(value.courseReminders);setMessages(Boolean(value.messageAlerts));setHour(value.reminderHour)
@@ -68,40 +77,43 @@ export default function NotificationSettings({locale='en',compact=false,accountI
     return ()=>{mounted=false;session.controller.abort();if(owner.current===session)owner.current=null}
   },[accountId,locale,c.error])
   async function run(work){
-    if(working.current||!owner.current)return
+    if(working.current||!belongs(owner.current))return
     const session=owner.current;working.current=true
     setBusy(true);setError('');setNotice('')
-    try{await work(session)}catch(e){if(owner.current!==session)return;setError(e?.code==='PUSH_NOT_CONFIGURED'?c.server:
+    try{await work(session)}catch(e){if(!belongs(session))return;setError(e?.code==='PUSH_NOT_CONFIGURED'?c.server:
       e?.name==='NotAllowedError'?c.blocked:c.error)}
-    finally{if(owner.current===session){working.current=false;setBusy(false)}}
+    finally{if(belongs(session)){working.current=false;setBusy(false)}}
   }
   async function enable(){await run(async(session)=>{
     if(!canPush()){setError(c.unsupported);return}
     if(needsHomeScreen()){setError(c.mobile);return}
     if(!state?.ready||!state.publicKey){setError(c.server);return}
+    if(Notification.permission==='denied'){setError(c.blocked);return}
     const permission=await Notification.requestPermission()
-    if(owner.current!==session)return
+    if(!belongs(session))return
     if(permission!=='granted'){setError(c.blocked);return}
     const worker=await navigator.serviceWorker.ready
-    if(owner.current!==session)return
+    if(!belongs(session))return
     let subscription=await worker.pushManager.getSubscription()
-    if(owner.current!==session)return
+    if(!belongs(session))return
     if(!subscription)subscription=await worker.pushManager.subscribe({
       userVisibleOnly:true,applicationServerKey:keyBytes(state.publicKey)})
     const next=await api('notifications/subscribe',{
       subscription:subscription.toJSON(),locale,timeZone:localZone(),messageAlerts:messages},session)
     setState(next);setCourse(next.courseReminders);setMessages(Boolean(next.messageAlerts));setHour(next.reminderHour)
-    setNotice(c.on)
+    // Account-level counts cannot prove that this browser belongs to the account.
+    // Confirm only after its subscription was accepted by the authenticated API.
+    setDeviceConfirmed(true);setNotice('')
   })}
   async function disable(){await run(async(session)=>{
     const worker=canPush()?await navigator.serviceWorker.ready:null
-    if(owner.current!==session)return
+    if(!belongs(session))return
     const subscription=worker?await worker.pushManager.getSubscription():null
-    if(owner.current!==session)return
+    if(!belongs(session))return
     const next=await api('notifications/unsubscribe',{endpoint:null},session)
     await subscription?.unsubscribe()
-    if(owner.current!==session)return
-    setState(next);setNotice(c.off)
+    if(!belongs(session))return
+    setState(next);setDeviceConfirmed(false);setNotice(c.off)
   })}
   async function save(){await run(async(session)=>{
     const next=await api('notifications/preferences',{
@@ -124,12 +136,14 @@ export default function NotificationSettings({locale='en',compact=false,accountI
         <div className={styles.orb} aria-hidden="true">✦</div></div>
       <div className={styles.bottom}><span>{c.open} →</span><span>{c.sample}</span></div>
     </div>
-    {!state?<p role="status" className={styles.subtle}>{error||c.loading}</p>:<>
+    {!state||!accountCurrent?<p role="status" className={styles.subtle}>{accountCurrent&&error?error:c.loading}</p>:<>
       <div className={styles.status}><span><Sparkles size={17}/>{state.enabled?c.on:c.off}</span>
         <span>{c.devices}: {state.deviceCount}</span></div>
+      <p className={styles.subtle} role="status">{thisDeviceConfirmed?c.deviceReady:c.deviceUnknown}</p>
       {needsHomeScreen()&&<p className={styles.subtle}>{c.mobile}</p>}
       {!canPush()&&<p className={styles.subtle}>{c.unsupported}</p>}
       {!state.ready&&<p className={styles.subtle}>{c.server}</p>}
+      {canPush()&&Notification.permission==='denied'&&<p className={styles.subtle}>{c.blocked}</p>}
       <div className={styles.prefs}>
         <label><input type="checkbox" checked={messages} disabled={busy} onChange={e=>setMessages(e.target.checked)}/>{c.messages}</label>
         <p className={styles.subtle}>{c.messagePrivacy}</p>
@@ -137,16 +151,16 @@ export default function NotificationSettings({locale='en',compact=false,accountI
         {state.enabled&&<label>{c.hour}<select value={hour} onChange={e=>setHour(Number(e.target.value))}>
           {Array.from({length:14},(_,i)=>i+8).map(n=><option key={n} value={n}>{String(n).padStart(2,'0')}:00</option>)}
         </select></label>}</div>
-      <div className={styles.buttons}>{state.enabled?
-        <><button onClick={save} disabled={busy}>{c.save}</button>
+      <div className={styles.buttons}>
+        {!thisDeviceConfirmed&&<button onClick={enable} disabled={busy||!state.ready||!canPush()||needsHomeScreen()}><Bell size={15}/>{c.allow}</button>}
+        {state.enabled&&<><button onClick={save} disabled={busy}>{c.save}</button>
         <button onClick={testPush} disabled={busy}>{c.send}</button>
-        <button className={styles.outline} onClick={disable} disabled={busy}><BellOff size={15}/>{c.disable}</button></>:
-        <button onClick={enable} disabled={busy||!state.ready||!canPush()||needsHomeScreen()}><Bell size={15}/>{c.allow}</button>}
+        <button className={styles.outline} onClick={disable} disabled={busy}><BellOff size={15}/>{c.disable}</button></>}
       </div>
     </>}
-    {notice&&<p role="status" className={styles.success}>{notice}</p>}
-    {error&&state&&<p role="alert" className={styles.subtle}>{error}</p>}
-    <LiveActivityControl key={accountId} accountId={accountId} locale={locale} serverReady={Boolean(state?.liveActivitiesAvailable)} />
+    {notice&&belongs(owner.current)&&<p role="status" className={styles.success}>{notice}</p>}
+    {error&&state&&belongs(owner.current)&&<p role="alert" className={styles.subtle}>{error}</p>}
+    <LiveActivityControl key={accountId} accountId={accountId} locale={locale} serverReady={Boolean(accountCurrent&&state?.liveActivitiesAvailable)} />
     {!compact&&<p className={styles.subtle}>{c.native} {c.planned}</p>}
   </section>
 }

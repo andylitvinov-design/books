@@ -83,7 +83,9 @@ test('shared course/service chooser requires name, contact and opt-in before sav
     assert.ok(view.includes(term),term)
   }
   assert.match(view,/sourcePath: pathname, locale/)
-  assert.match(view,/fetch\("\/api\/service-enquiries"/)
+  assert.match(view,/scope\.submit\(/)
+  const submission=read('lib/practitioners/public-enquiry-submission.js')
+  assert.match(submission,/fetchImpl\('\/api\/service-enquiries'/)
   assert.match(view,/name:\s*"Ваше имя"/)
   assert.match(view,/name:\s*"Tu nombre"/)
   assert.match(styles,/\.honeypot/)
@@ -95,3 +97,4 @@ test('shared course/service chooser requires name, contact and opt-in before sav
   assert.match(contacts,/contact\.enquiry\.referenceCode/)
   assert.match(store,/\.\.\.\(former\.enquiry \? \{enquiry:former\.enquiry\} : \{\}\)/)
 })
+
