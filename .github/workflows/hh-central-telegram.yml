@@ -10,6 +10,11 @@ on:
       - 'app/api/internal/telegram-hub/route.js'
       - 'app/api/internal/council-archive-telegram/route.js'
       - 'tests/practitioner-telegram-hub.test.mjs'
+      - 'tests/practitioner-telegram-owner-ui.test.mjs'
+      - 'app/admin/telegram-setup/**'
+      - 'components/prescription-admin-header.jsx'
+      - 'lib/practitioners/telegram-owner-setup.js'
+      - 'supabase/migrations/*owner_telegram_test_receipt*.sql'
       - 'tests/telegram-owner-discovery.test.mjs'
       - 'tests/telegram-owner-pairing-contract.test.mjs'
       - 'lib/practitioners/telegram-owner-pairing.js'
@@ -36,6 +41,8 @@ jobs:
       - name: Syntax and existing cron regressions
         run: |
           node --check lib/practitioners/telegram-owner-pairing.js
+          node --check lib/practitioners/telegram-owner-setup.js
+          node --check app/admin/telegram-setup/actions.js
           node --check lib/practitioners/telegram-owner-discovery.mjs
           node --check app/api/internal/telegram-owner-discovery/route.js
           node --check lib/practitioners/telegram-hub.mjs
@@ -43,4 +50,4 @@ jobs:
           node --check lib/practitioners/council-telegram-delivery.js
           node --check app/api/internal/telegram-hub/route.js
           node --check app/api/internal/council-archive-telegram/route.js
-          node --test tests/telegram-owner-pairing-contract.test.mjs tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
+          node --test tests/practitioner-telegram-owner-ui.test.mjs tests/telegram-owner-pairing-contract.test.mjs tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
