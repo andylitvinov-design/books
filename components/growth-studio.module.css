@@ -196,3 +196,21 @@
 .manualSlotActions button:disabled{opacity:.55;cursor:not-allowed}
 .manualSlotActions span{font-size:11px;color:#637f82;line-height:1.45}
 .manualSlotConflict{padding:10px 12px;border:1px solid #ebcd94;border-radius:9px;background:#fff5e3;color:#855315;font-size:12px;line-height:1.45;margin:0}
+
+
+/* Growth Studio: source-to-social drafts use metadata from publicly readable pages only. */
+.publicSourcePicker{padding:11px 12px;border:1px solid #d3e7e0;background:#f6fbf9;border-radius:12px;min-width:0}
+.publicSourcePicker>button,.publicSourceResult>button{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:39px;border-radius:9px;border:1px solid #bfddd7;background:#fff;color:#166773;
+  font-size:12px;font-weight:720;padding:7px 12px;cursor:pointer}
+.publicSourcePicker>button:disabled,.publicSourceResult>button:disabled{opacity:.5;cursor:not-allowed}
+.publicSourcePicker>p{display:flex;align-items:flex-start;gap:7px;line-height:1.55;font-size:12px;
+  font-weight:450;color:#536e75;margin:9px 0 0}
+.publicSourcePicker>p svg{flex:none;margin-top:2px}
+.publicSourceResult{border:1px solid #cfe2de;border-radius:11px;margin-top:12px;
+  padding:12px;background:#fff;display:flex;flex-direction:column;gap:9px;min-width:0}
+.publicSourceResult strong{font-size:14px;overflow-wrap:anywhere;color:#20555e}
+.publicSourceResult p{white-space:pre-wrap;line-height:1.55;font-size:13px;overflow-wrap:anywhere;margin:0;color:#4b6870}
+.publicSourceResult small{font-size:11px;color:#758c8e;overflow-wrap:anywhere}
+.publicSourceResult button{align-self:flex-start;background:#087982;color:#fff;border-color:#087982}
+@media(max-width:580px){.publicSourcePicker{padding:10px}.publicSourcePicker>button{width:100%}}
