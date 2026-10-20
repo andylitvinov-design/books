@@ -38,7 +38,6 @@ export default function CrmMessagesNavigation({locale='en',setup,onSms,onIntegra
  const external=setup?.messengers||[]
  const realReady=external.filter(item=>crmIntegrationStage(item.channel,item)==='configured').length
  const pilot=external.filter(item=>crmIntegrationStage(item.channel,item)==='pilot').length
- const count=realReady+pilot
  const providerNote=!setup
    ?locale==='ru'?'Статус внешних каналов ещё не загружен. Откройте «Подключения» для проверки.':
      locale==='es'?'No se ha cargado el estado de proveedores. Abre «Conexiones».':
