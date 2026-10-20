@@ -203,6 +203,7 @@ test('the already-authenticated owner auto-checks storage without posts, public 
   assert.match(ui,/if\(storageProbeInFlight\.current\)return/)
   assert.match(ui,/onClick=\{verifyStorage\}/)
   assert.match(ui,/t\.storagePassShort/)
-  assert.match(ui,/t\.channelCount/)
+  assert.match(ui,/t\.quickReady/)
+  assert.match(ui,/disabled=\{storageState!=='verified'\}/)
   assert.doesNotMatch(ui,/PRESCRIPTIONS_KV_REST_API_TOKEN|client_id|test_scores|accessToken/)
 })
