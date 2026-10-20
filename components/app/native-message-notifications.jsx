@@ -5,7 +5,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 
 const COPY={
   ru:{title:'Уведомления приложения',intro:'Получайте на телефон уведомление, когда мастер отвечает вам в личной переписке.',
-    allow:'Разрешить уведомления',off:'Отключить уведомления',on:'Уведомления включены',
+    allow:'Подключить этот телефон',off:'Отключить уведомления',on:'Уведомления включены',
     disabled:'Уведомления отключены',loading:'Проверяем настройки…',
     unavailable:'Отправка нативных уведомлений пока не настроена на сервере.',
     denied:'Телефон запретил уведомления. Разрешите их в настройках устройства.',
@@ -14,7 +14,7 @@ const COPY={
     saved:'Устройство зарегистрировано для личных уведомлений.',
     revoked:'Регистрация этого аккаунта отозвана на сервере.'},
   en:{title:'App notifications',intro:'Receive a phone notification when a practitioner replies to your private conversation.',
-    allow:'Enable app notifications',off:'Disable notifications',on:'Notifications enabled',
+    allow:'Enable this phone',off:'Disable notifications',on:'Notifications enabled',
     disabled:'Notifications disabled',loading:'Checking settings…',
     unavailable:'Native push delivery has not been configured on the server yet.',
     denied:'Your phone has blocked notifications. Change this in device settings.',
@@ -128,8 +128,8 @@ export default function NativeMessageNotifications({accountId,locale='en'}){
     {state&&<p role="status">{state.enabled?t.on:t.disabled}</p>}
     {state&&!state.ready&&<p>{t.unavailable}</p>}
     {state&&<div className="hh-actions">
-      {state.enabled?<button type="button" disabled={busy} onClick={disable}>{t.off}</button>:
-      <button type="button" className="hh-primary" disabled={busy||!state.ready} onClick={enable}>{t.allow}</button>}
+      <button type="button" className="hh-primary" disabled={busy||!state.ready} onClick={enable}>{t.allow}</button>
+      {state.enabled&&<button type="button" disabled={busy} onClick={disable}>{t.off}</button>}
     </div>}
     {error&&<p role="alert">{error}</p>}
     {notice&&<p role="status">{notice}</p>}
