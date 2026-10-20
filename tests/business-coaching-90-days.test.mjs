@@ -170,8 +170,8 @@ test('weekly plan has 12 independent seven-day modules and six integration days'
 test('every learning day requires a concrete distinct bilingual output and review criterion',()=>{
   const ru=new Set(),en=new Set()
   for(let day=1;day<=90;day++){
-    const module=BUSINESS_WEEK_MODULES[Math.ceil(day/7)-1]
-    const result=module.days.find(d=>d.day===day)
+    const weekModule=BUSINESS_WEEK_MODULES[Math.ceil(day/7)-1]
+    const result=weekModule.days.find(d=>d.day===day)
     assert.ok(result, 'missing day '+day)
     const ruLesson=businessDayResult(day,'ru'),enLesson=businessDayResult(day,'en')
     assert.equal(ruLesson.week,Math.ceil(day/7))

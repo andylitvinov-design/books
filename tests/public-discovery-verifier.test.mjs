@@ -3,6 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
+import postcss from 'postcss'
 import { availableTestCollections, availableTantraTestPaths } from '../lib/assessments/test-collections.js'
 import { assertCompactAccountPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
 import { exercisePortraitRays, assertPublicCollectionChips, assertPublicCollectionMatches } from '../scripts/helpers/public-discovery-verifier.mjs'
@@ -41,6 +42,7 @@ function compile(source, react, modules = {}, browser = {}) {
       if (name === './simple-test-picker') return { SimpleTestPicker: 'SimpleTestPicker' }
       if (name === './test-explorer-visual') return { TestExplorerVisual: 'TestExplorerVisual' }
       if (name === './priority-methods-review') return { PriorityMethodsReview: 'PriorityMethodsReview' }
+      if (name === './research-directory') return { ResearchDirectory: 'ResearchDirectory' }
       if (name === './test-scale-guide') return { TestScaleGuide: 'TestScaleGuide' }
       throw new Error('Unexpected dependency: ' + name)
     },
@@ -87,7 +89,7 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   render()
   const collections = availableTestCollections(pickerProps.catalogEntries)
   assert.deepEqual(collectionCards().map(node => node.props['data-test-collection']), collections.map(item => item.id))
-  const title = locale === 'ru' ? 'Подборки тестов по темам' : locale === 'es' ? 'Colecciones de pruebas por tema' : 'Test collections by topic'
+  const title = locale === 'ru' ? 'Подборки тестов по темам (необязательно)' : locale === 'es' ? 'Colecciones de pruebas por tema (opcional)' : 'Test collections by topic (optional)'
   assert.ok(nodes(tree).some(node => node.type === 'h2' && accessibleText(node) === title))
   const more = () => nodes(tree).find(node => node.props['aria-controls'] === 'hh-test-curated-grid')
   assert.equal(more().props['aria-expanded'], false)
@@ -326,8 +328,38 @@ test('compact account browser proof rejects public variant, missing search and p
   }
 })
 
-function collectionChipHarness(locale, fault = null, width = 390) {
-  const react = hooks(), { SimpleTestPicker } = compile(pickerSource, react, modules)
+// Project the current curated-card display selectors and media widths from source CSS.
+// This is a bounded unit model, not browser layout or a general CSS engine.
+const collectionCss = postcss.parse(read('components/app/simple-test-picker.module.css'))
+const collectionDisplays = new WeakMap()
+function collectionDisplay(index, expanded, width, css = collectionCss) {
+  let cached = collectionDisplays.get(css)
+  if (!cached) { cached = new Map(); collectionDisplays.set(css, cached) }
+  const key = `${index}/${expanded}/${width}`
+  if (cached.has(key)) return cached.get(key)
+  let display
+  css.walkRules(rule => {
+    if (!rule.selector.includes('.curatedCard')) return
+    for (let ancestor = rule.parent; ancestor; ancestor = ancestor.parent) {
+      if (ancestor.type !== 'atrule' || ancestor.name !== 'media') continue
+      for (const [, bound, pixels] of ancestor.params.matchAll(/(min|max)-width:\s*(\d+)px/g))
+        if (bound === 'max' ? width > Number(pixels) : width < Number(pixels)) return
+    }
+    for (const selector of rule.selector.split(',').map(value => value.trim())) {
+      let matches = selector === '.curatedCard'
+      const nth = selector.match(/^\.curatedCard:nth-child\(n\+(\d+)\)$/)
+      if (nth) matches = index + 1 >= Number(nth[1])
+      if (selector === '.curated[data-expanded="true"] .curatedCard') matches = expanded
+      if (!matches) continue
+      rule.walkDecls('display', declaration => { display = declaration.value })
+    }
+  })
+  cached.set(key, display)
+  return display
+}
+
+function collectionChipHarness(locale, fault = null, width = 390, css = collectionCss, source = pickerSource) {
+  const react = hooks(), { SimpleTestPicker } = compile(source, react, modules)
   const catalogEntries = explorerModule.buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience: 'guest' })
   const collections = availableTestCollections(catalogEntries)
   const rawText = node => node == null || typeof node === 'boolean' ? '' : typeof node !== 'object' ? String(node) : Array.isArray(node) ? node.map(rawText).join('') : rawText(node.props.children)
@@ -339,10 +371,12 @@ function collectionChipHarness(locale, fault = null, width = 390) {
     heading = nodes(root).find(node => node.type === 'h2')
     const cards = nodes(root).filter(node => node.props['data-test-collection'])
     const expanded = root.props['data-expanded'] === 'true'
-    const collapsedCount = width <= 760 ? 4 : 8
     // Match accepted CSS: display:none removes a card and its descendants from
-    // the accessibility tree; the offscreen heading remains accessible.
-    for (const [index, card] of cards.entries()) for (const node of nodes(card)) node.cssHidden = !expanded && index >= collapsedCount
+    // the accessibility tree; the visible section heading remains accessible.
+    for (const [index, card] of cards.entries()) {
+      const cssHidden = collectionDisplay(index, expanded, width, css) === 'none'
+      for (const node of nodes(card)) node.cssHidden = cssHidden
+    }
     if (fault === 'missingHeading') heading.type = 'p'
     if (fault === 'hiddenHeading') heading.props['aria-hidden'] = true
     if (fault === 'wrongBinding') root.props['aria-labelledby'] = 'wrong-heading'
@@ -400,7 +434,7 @@ function collectionChipHarness(locale, fault = null, width = 390) {
 }
 for (const locale of ['en', 'ru', 'es']) for (const width of [390, 760, 761, 1280]) test(locale + ' collection disclosure preserves every source chip and verifies visible accessibility at ' + width + 'px', async () => {
   const h = collectionChipHarness(locale, null, width)
-  const hidden = h.root.locator('[data-test-collection]').nth(width <= 760 ? 4 : 8)
+  const hidden = h.root.locator('[data-test-collection]').nth(2)
   await assert.rejects(h.expect(hidden).toHaveAccessibleName('A CSS-hidden chip cannot expose its aria-label'))
   await h.expect(hidden).toHaveAccessibleName('')
   await assertPublicCollectionChips(h.root, h.expect, locale, h.collections, h.width)
@@ -412,15 +446,33 @@ for (const fault of ['missingHeading', 'hiddenHeading', 'wrongBinding', 'wrongNa
   const h = collectionChipHarness('en', fault)
   await assert.rejects(assertPublicCollectionChips(h.root, h.expect, 'en', h.collections, h.width))
 })
-test('collection heading stays accessible offscreen; visible chip rows and real interaction checks remain strict', () => {
-  const css = read('components/app/simple-test-picker.module.css')
-  const rule = css.match(/\.curatedSrOnly\s*\{([^}]+)\}/)?.[1]
-  assert.ok(rule)
-  for (const declaration of [/position:\s*absolute/, /width:\s*1px/, /height:\s*1px/, /clip:\s*rect\(0, 0, 0, 0\)/]) assert.match(rule, declaration)
-  assert.doesNotMatch(rule, /display:\s*none|visibility:\s*hidden/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none/)
+test('visible collection heading and two-card collapsed rows keep accessibility and interaction checks strict', () => {
+  for (const width of [390, 760, 761, 1280]) {
+    assert.deepEqual(Array.from({length: 12}, (_, i) => collectionDisplay(i, false, width)), ['flex', 'flex', ...Array(10).fill('none')])
+    assert.deepEqual(Array.from({length: 12}, (_, i) => collectionDisplay(i, true, width)), Array(12).fill('flex'))
+  }
   const helper = read('scripts/helpers/public-discovery-verifier.mjs')
   assert.match(helper, /await assertPublicCollectionChips\(root, expect, locale, collections, width\)/)
   for (const guard of ["'aria-pressed', 'true'", 'assert.deepEqual(shown,expected', 'readSelection(picker), preserved', 'toHaveURL(currentUrl)', 'assert.deepEqual(writes, []', 'expectedSearch']) assert.ok(helper.includes(guard), guard)
+})
+
+for (const [fault, before, after] of [
+  ['third card exposed', '.curatedCard:nth-child(n+3)', '.curatedCard:nth-child(n+4)'],
+  ['only one collapsed card', '.curatedCard:nth-child(n+3)', '.curatedCard:nth-child(n+2)'],
+  ['expansion cannot expose cards', '.curated[data-expanded="true"] .curatedCard { display: flex; }', '.curated[data-expanded="true"] .curatedCard { display: none; }'],
+]) test('collection acceptance rejects actual CSS mutation: ' + fault, async () => {
+  const original = read('components/app/simple-test-picker.module.css')
+  assert.ok(original.includes(before), 'Exact CSS mutation target exists')
+  const h = collectionChipHarness('en', null, 390, postcss.parse(original.replaceAll(before, after)))
+  await assert.rejects(assertPublicCollectionChips(h.root, h.expect, 'en', h.collections, h.width))
+})
+
+for (const [fault, before, after] of [
+  ['obsolete heading', 'Test collections by topic (optional)', 'Test collections by topic'],
+  ['unbound section name', 'aria-labelledby="hh-test-curated-heading"', 'aria-labelledby="missing-heading"'],
+  ['no-op disclosure', 'setCollectionsOpen((value) => !value)', 'setCollectionsOpen((value) => value)'],
+]) test('collection acceptance rejects actual component mutation: ' + fault, async () => {
+  assert.ok(pickerSource.includes(before), 'Exact component mutation target exists')
+  const h = collectionChipHarness('en', null, 390, collectionCss, pickerSource.replace(before, after))
+  await assert.rejects(assertPublicCollectionChips(h.root, h.expect, 'en', h.collections, h.width))
 })

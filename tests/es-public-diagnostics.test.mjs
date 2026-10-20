@@ -65,10 +65,10 @@ test('integration retains fatal gate, original checks and navigation sequence ex
         await expect(accountMenu).toHaveJSProperty('open', false);
         await click(page.locator('.site-main-menu-trigger'));
         await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
-        await expect(accountMenu.getByRole('link', { name: 'Mi Casa', exact: true })).toHaveCount(1);
+        const accountLink = page.locator('.site-main-menu-grid > a[data-nav-item="house"][href="/en/app"]');
+        await expect(accountMenu.getByRole('link', { name: 'Gabinete', exact: true })).toHaveCount(1);
         await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toHaveAccessibleName('Mi Casa');
+        await expect(accountLink).toHaveAccessibleName('Gabinete');
         await expect(accountLink).toBeVisible();
         await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);`;
