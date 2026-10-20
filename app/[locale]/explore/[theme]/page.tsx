@@ -56,10 +56,13 @@ export default async function TopicJourneyPage({ params }: Props) {
   return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
     <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
     <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale)}/>
+    {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) 18px'}}>
+      <BusinessWebsiteEnquiry locale={locale as 'en'|'ru'|'es'} />
+    </div>}
     {theme === 'business'
       ? <BusinessTestimonials locale={locale as PublicLocale}/>
       : <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>}
-    {theme === 'business' && <aside data-business-free-90-day-plan className={wood.promo}>
+    {theme === 'business' && <aside data-business-free-90-day-plan className={wood.promo} style={{marginBottom:'calc(116px + env(safe-area-inset-bottom))'}}>
       <div className={wood.card}>
         <span className={wood.icon} aria-hidden="true"><BriefcaseBusiness size={26}/></span>
         <div className={wood.copy}>
@@ -88,8 +91,5 @@ export default async function TopicJourneyPage({ params }: Props) {
         </Link>
       </div>
     </aside>}
-    {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) calc(116px + env(safe-area-inset-bottom))'}}>
-      <BusinessWebsiteEnquiry locale={locale as 'en'|'ru'|'es'} />
-    </div>}
   </main>
 }
