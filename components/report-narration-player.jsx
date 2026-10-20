@@ -83,7 +83,7 @@ export function ReportNarrationPlayer({ locale = 'en', access, available = true 
   function toggle() {
     if (!available) {
       setState('unavailable')
-      setError(ru ? 'Озвучка голосом Андрея пока не подключена. Отчёт можно прочитать ниже.' : 'Andrey’s voice narration is not connected yet. You can read the report below.')
+      setError('')
       return
     }
     const player = audio.current
@@ -115,7 +115,9 @@ export function ReportNarrationPlayer({ locale = 'en', access, available = true 
     <button className={styles.primary} type="button" onClick={toggle}
       disabled={state === 'loading'}
       aria-label={state === 'playing' ? (ru ? 'Пауза' : 'Pause') : (ru ? 'Прослушать анализ голосом Андрея' : 'Play the analysis in Andrey’s voice')}
-      title={ru ? 'По нажатию текст анализа передаётся в HeyGen для озвучки AI-копией голоса Андрея.' : 'When pressed, the analysis is sent to HeyGen to synthesize Andrey’s AI-cloned voice.'}>
+      title={!available
+        ? (ru ? 'Озвучка пока не подключена.' : 'Audio narration is not yet connected.')
+        : (ru ? 'По нажатию текст анализа передаётся в HeyGen для озвучки AI-копией голоса Андрея.' : 'When pressed, the analysis is sent to HeyGen to synthesize Andrey’s AI-cloned voice.')}>
       {state === 'loading' ? <LoaderCircle className={styles.spinner} size={18} aria-hidden="true" />
         : state === 'playing' ? <Pause size={18} aria-hidden="true" />
           : state === 'done' ? <RotateCcw size={18} aria-hidden="true" />
@@ -131,6 +133,9 @@ export function ReportNarrationPlayer({ locale = 'en', access, available = true 
       {state === 'loading' && <span className={styles.help} role="status">{ru
         ? 'Создаём аудио с вашим личным голосом…'
         : 'Preparing audio in Andrey’s voice…'}</span>}
+      {state === 'unavailable' && <small className={styles.help} role="status">{ru
+        ? 'Аудиоверсия пока недоступна. Анализ можно прочитать ниже.'
+        : 'Audio narration is not connected yet. The analysis remains available below.'}</small>}
       <audio ref={audio} className={styles.audio} controls preload="none"
         onPlay={() => setState('playing')}
         onPause={() => setState(current => current === 'playing' ? 'paused' : current)}
