@@ -17,7 +17,7 @@ const translations = {
     format:"Consultation",formatNames:{free:"Free written review",express:"30 minutes · €50",full:"60 minutes · €100",mentoring:"Goals Mentoring · by arrangement"},
     name:"Your name",namePlaceholder:"How should I address you?",
     contact:"Email or WhatsApp",contactPlaceholder:"name@example.com or +1 416 555 1234",
-    addNote:"+ Add a question (optional)",question:"Your question (optional)",questionPlaceholder:"What would you like to discuss?",
+    addNote:"+ Add a question (optional)",hideNote:"− Hide question",question:"Your question (optional)",questionPlaceholder:"What would you like to discuss?",
     consent:"I agree to a personal reply about this request. No marketing.",
     send:"Send request",sending:"Sending…",success:"Request saved. Andrey can see it in his private CRM.",
     next:"For a free written review, continue to the short questionnaire and handwritten drawing.",
@@ -33,7 +33,7 @@ const translations = {
     format:"Формат",formatNames:{free:"Бесплатный письменный разбор",express:"30 минут · €50",full:"60 минут · €100",mentoring:"Goals Mentoring · по договорённости"},
     name:"Ваше имя",namePlaceholder:"Как к вам обращаться?",
     contact:"Email или WhatsApp",contactPlaceholder:"name@example.com или +1 416 555 1234",
-    addNote:"+ Добавить вопрос (по желанию)",question:"Ваш вопрос (по желанию)",questionPlaceholder:"Что хотите обсудить?",
+    addNote:"+ Добавить вопрос (по желанию)",hideNote:"− Скрыть вопрос",question:"Ваш вопрос (по желанию)",questionPlaceholder:"Что хотите обсудить?",
     consent:"Согласен(на) получить ответ по этой заявке. Без рассылок.",
     send:"Отправить заявку",sending:"Отправляем…",success:"Заявка сохранена. Андрей увидит её в CRM.",
     next:"Для бесплатного письменного разбора заполните короткую анкету и отправьте рисунок.",
@@ -49,7 +49,7 @@ const translations = {
     format:"Modalidad",formatNames:{free:"Revisión escrita gratuita",express:"30 minutos · €50",full:"60 minutos · €100",mentoring:"Goals Mentoring · por acuerdo"},
     name:"Tu nombre",namePlaceholder:"¿Cómo te llamas?",
     contact:"Correo o WhatsApp",contactPlaceholder:"nombre@ejemplo.com o +1 416 555 1234",
-    addNote:"+ Añadir una pregunta (opcional)",question:"Tu pregunta (opcional)",questionPlaceholder:"¿De qué quieres hablar?",
+    addNote:"+ Añadir una pregunta (opcional)",hideNote:"− Ocultar pregunta",question:"Tu pregunta (opcional)",questionPlaceholder:"¿De qué quieres hablar?",
     consent:"Acepto recibir una respuesta sobre esta solicitud. Sin publicidad.",
     send:"Enviar solicitud",sending:"Enviando…",success:"Solicitud guardada. Andrey la verá en su CRM privado.",
     next:"Para la revisión gratuita, completa el cuestionario y envía un dibujo a mano.",
@@ -116,7 +116,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
       const response=await fetch("/api/services/business-consulting",{
         method:"POST",credentials:"same-origin",cache:"no-store",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({operationId:operation.current,locale,format,name,...reply,question,
+        body:JSON.stringify({operationId:operation.current,locale,format,name,...reply,question:showQuestion?question:"",
           contactConsent:consent,website,attribution}),
       });
       if(!response.ok){
@@ -153,12 +153,16 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
       <label>{t.contact}<input required type="text" autoComplete="on" maxLength={254}
         autoCapitalize="none" spellCheck={false} value={contact} placeholder={t.contactPlaceholder}
         onChange={event=>{setContact(event.target.value);edit();}} /></label>
-      {!showQuestion&&<button type="button" className={styles.detailsToggle}
-        aria-expanded={false} onClick={()=>setShowQuestion(true)}>{t.addNote}</button>}
-      {showQuestion&&<label>{t.question}
-        <textarea maxLength={700} minLength={5} rows={2} value={question}
-          placeholder={t.questionPlaceholder} onChange={event=>{setQuestion(event.target.value);edit();}}/>
-      </label>}
+      <button type="button" className={styles.detailsToggle} aria-expanded={showQuestion}
+        aria-controls="business-request-note" onClick={()=>{setShowQuestion(open=>!open);edit();}}>
+        {showQuestion?t.hideNote:t.addNote}
+      </button>
+      <div id="business-request-note" hidden={!showQuestion}>
+        <label>{t.question}
+          <textarea disabled={!showQuestion} maxLength={700} minLength={5} rows={2} value={question}
+            placeholder={t.questionPlaceholder} onChange={event=>{setQuestion(event.target.value);edit();}}/>
+        </label>
+      </div>}
       <label className={styles.honeypot} aria-hidden="true">Website
         <input type="text" value={website} tabIndex={-1} autoComplete="off" onChange={event=>setWebsite(event.target.value)} />
       </label>

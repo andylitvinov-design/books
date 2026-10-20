@@ -64,9 +64,10 @@ test("mobile enquiry collects a single explicit reply contact, with an optional 
   const form=read("components/business-website-enquiry.tsx");
   const css=read("components/business-website-enquiry.module.css");
   assert.match(form,/parseBusinessReplyContact\(contact\)/);
-  assert.match(form,/\.\.\.reply,question/);
-  assert.match(form,/!showQuestion&&<button/);
+  assert.match(form,/\.\.\.reply,question:showQuestion\?question:""/);
+  assert.match(form,/aria-expanded=\{showQuestion\}/);
   assert.match(form,/setShowQuestion\(true\)/);
+  assert.match(form,/disabled=\{!showQuestion\}/);
   assert.doesNotMatch(form,/setReplyChannel|setEmail|setPhone|data-business-field="reply-channel"/);
   assert.match(css,/font:500 16px/);
   assert.match(css,/@media\(max-width:350px\)/);

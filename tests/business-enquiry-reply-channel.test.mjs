@@ -45,7 +45,7 @@ test('responding to a single enquiry never becomes marketing CRM send or vendor 
  const crm=source('components/app/business-enquiry-sms-reply.jsx')
  const store=source('lib/business-consulting/enquiry-store.js')
  assert.match(form,/parseBusinessReplyContact\(contact\)/)
- assert.match(form,/\.\.\.reply,question/)
+ assert.match(form,/\.\.\.reply,question:showQuestion\?question:""/)
  assert.doesNotMatch(form,/data-business-field="reply-channel"/)
  assert.match(store,/replyChannel: input\.replyChannel/)
  assert.match(store,/app_private\.crm_sms_is_opted_out/)
