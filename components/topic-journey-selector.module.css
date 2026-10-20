@@ -438,3 +438,7 @@
   .businessSelfChecksBody .suggestions{padding:12px}
 }
 @media(prefers-reduced-motion:reduce){.businessSelfChecks>summary svg{transition:none}}
+
+.businessBenefitTags{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 0;padding:0;list-style:none}
+.businessBenefitTags li{padding:5px 9px;border:1px solid #98b4b5;border-radius:99px;color:#f4e1be;background:#ffffff0b;font:700 10px/1.3 system-ui,sans-serif}
+@media(max-width:600px){.businessBenefitTags{gap:5px;margin-top:7px}.businessBenefitTags li{padding:4px 7px;font-size:9px}}
