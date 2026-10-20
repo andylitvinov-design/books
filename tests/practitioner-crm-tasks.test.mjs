@@ -130,3 +130,20 @@ test('fixed-content master alert opens own scoped client request, not another ma
   assert.match(profile,/const actual=groups\.find\(group=>group\.items\.some\(item=>item\.id===focusRequestId\)\)/)
   assert.match(profile,/autoOpen=\{request\.id===focusRequestId\}/)
 })
+
+test('concurrent create and reopen task operations serialize under the exact assigned request lock',()=>{
+  const source=src('lib/practitioners/request-tasks.js')
+  assert.match(source,/async function ownedRequest\(db,actor,requestId,\{lock=false\}=\{\}\)/)
+  assert.match(source,/lock\?' for update of r':''/)
+  const creates=source.slice(source.indexOf('async create(actor,input)'),source.indexOf('async change(actor,input)'))
+  const changes=source.slice(source.indexOf('async change(actor,input)'))
+  assert.match(creates,/ownedRequest\(db,actor,input\.requestId,\{lock:true\}\)/)
+  assert.match(changes,/ownedRequest\(db,actor,input\.requestId,\{lock:true\}\)/)
+  assert.ok(creates.indexOf('ownedRequest(db,actor,input.requestId,{lock:true})')<
+    creates.indexOf('select count(*)::int as n from app.practitioner_request_tasks'),
+    'lock must be acquired BEFORE checking the open-task limit')
+  assert.match(changes,/if\(input\.action==='reopen'\)\{/)
+  assert.match(changes,/open>=PRACTITIONER_TASK_LIMIT_PER_REQUEST/)
+  assert.match(changes,/throw new AppError\('TASK_OPEN_LIMIT',429\)/)
+  assert.doesNotMatch(changes,/delete from app\.practitioner_request_tasks/)
+})
