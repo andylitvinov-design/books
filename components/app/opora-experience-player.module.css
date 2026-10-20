@@ -16,23 +16,23 @@
 .frame::before,.frame::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0}
 .frame::before{
   background:var(--scene-photo) center/cover no-repeat;
-  filter:brightness(1.23) saturate(.93);
-  transform:scale(1.012);
+  filter:brightness(1.04) contrast(1.06) saturate(1.02);
+  transform:scale(1.005);
 }
 .frame::after{
   background:linear-gradient(180deg,
-    rgba(245,253,250,.33) 0%,
+    rgba(245,253,250,.20) 0%,
     rgba(234,249,249,.07) 31%,
     rgba(223,244,244,.16) 58%,
-    rgba(218,241,240,.56) 100%);
+    rgba(218,241,240,.45) 100%);
 }
 .welcome{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
-.baseline{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
-.checkin{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
-.recall{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.baseline{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.checkin{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.recall{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
 .arrive{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 /* Support is an experience of acceptance, not a task or a scored interaction. */
-.support{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.support{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .support::after{background:linear-gradient(180deg,rgba(250,246,236,.50),rgba(237,245,233,.75))}
 .support .stage{align-items:center}
 .support .panel{
@@ -50,27 +50,22 @@
   .supportBody{font-size:17px;line-height:1.47}
 }
 
-.practice{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
-.understand{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
-.story{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
-.options{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
-.repeat{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
-.everyday{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
-.feel{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.practice{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.feel{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
 .affirmation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .ocean{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .ocean::after{background:linear-gradient(180deg,rgba(236,251,249,.30),rgba(217,242,244,.54))}
 .ocean .stage{align-items:center}
 .ocean .panel{margin:auto}
-.save{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
-.frame.receipt{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
-.recap{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
-.invite{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.save{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.frame.receipt{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.recap{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.invite{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .header,.stage,.footer{position:relative;z-index:1}
-/* Opening: blur only the photograph, never the lesson text or controls. */
+/* Crisp full-bleed scenic image; overlays protect the controls and reading panel. */
 .welcome::before, .arrive::before{
-  filter:blur(14px) brightness(1.04) saturate(.84);
-  transform:scale(1.08);
+  filter:brightness(1.04) contrast(1.04) saturate(.96);
+  transform:scale(1.005);
 }
 .welcome::after, .arrive::after{
   background:linear-gradient(180deg,rgba(238,251,248,.54),rgba(222,247,244,.73));
@@ -388,6 +383,11 @@
   .confidenceChoices button{min-height:43px;padding:6px;font-size:13.5px}
   .offerList a{min-height:54px;padding:9px 11px}
 }
+.understand{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.story{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.options{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.repeat{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.everyday{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
 /* Guided learning: one meaningful decision or example per screen, with no
    additional personal data or invented completion signals. */
 .supportMoment,.learningMoment{display:grid;gap:clamp(12px,2vh,18px);min-width:0}
@@ -502,6 +502,7 @@
 }
 
 
+
 .shade{
   position:fixed;inset:0;z-index:3;
   display:grid;place-items:center;padding:20px;
@@ -549,8 +550,8 @@
   .primary,.back{min-height:49px;font-size:16px}
 }
 /* Compact scenic programme pages after a confirmed daily save. */
-.frame.nextStep{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
-.frame.habit{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.frame.nextStep{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.frame.habit{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .habitBenefit{margin:0;padding:14px;border-radius:15px;border:1px solid #b0ded9;color:#235a66;
   background:rgba(222,249,243,.9);font-size:clamp(15px,3.8vw,17px);line-height:1.48;font-weight:600}
 .habitSetup{min-width:0;display:grid;gap:8px}
@@ -615,3 +616,34 @@
 
 @media(max-width:370px){.guidanceAnimal{flex-basis:39px;width:39px;height:39px}.guidanceRow{gap:7px}.linkHint{min-height:43px;padding:8px 10px;font-size:14px}}
 @media(prefers-reduced-motion:reduce){.linkHint svg{transition:none}}
+
+/* A voluntary music-and-grounding detour on every daily practice screen.
+   It is a comfortable 48px+ tap target even in a 320px iPhone viewport. */
+.midPauseButton {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:11px;
+  width:100%;
+  min-height:50px;
+  margin-top:14px;
+  padding:11px 15px;
+  border:1px solid rgba(38,139,149,.45);
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(251,255,251,.95),rgba(212,241,239,.93));
+  color:#1d5c67;
+  font:inherit;
+  font-weight:750;
+  text-align:center;
+  cursor:pointer;
+  box-shadow:0 3px 12px rgba(31,95,103,.10);
+}
+.midPauseButton > span {
+  font-size:22px;
+  line-height:1;
+}
+.midPauseButton:focus-visible {
+  outline:3px solid #166c75;
+  outline-offset:3px;
+}
+.midPauseButton:disabled { cursor:default;opacity:.6 }
