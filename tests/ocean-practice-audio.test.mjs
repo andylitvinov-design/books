@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const audio = read('components/ocean-practice-audio.ts');
@@ -8,7 +9,11 @@ const toggle = read('components/ocean-sound-toggle.tsx');
 const reiki = read('components/energywork-ai-learner.tsx');
 const guided = read('components/app/course-guided-timer.jsx');
 const outro = read('components/app/opora-ocean-outro.jsx');
-const assetPath = 'public/audio/holistic-house-soft-melody-gentle-waves-20s.wav';
+const assetPath = 'public/audio/holistic-house-soft-melody-gentle-waves-96s.wav';
+// The production WAV is generated deterministically before Next build, not checked in.
+if (!existsSync(new URL('../' + assetPath, import.meta.url))) {
+  execFileSync(process.execPath, [new URL('../scripts/generate-soft-ocean-melody.mjs', import.meta.url).pathname]);
+}
 
 test('original, gently mixed melody and light waves have valid and safe WAV dynamics', () => {
   const wav = readFileSync(new URL('../' + assetPath, import.meta.url));
@@ -21,7 +26,10 @@ test('original, gently mixed melody and light waves have valid and safe WAV dyna
   assert.equal(wav.readUInt16LE(34), 16);
   assert.equal(wav.toString('ascii', 36, 40), 'data');
   const frames = wav.readUInt32LE(40) / 2;
-  assert.ok(frames >= 20 * 24000);
+  assert.equal(frames, 96 * 24000, 'Actual playable music is a full 96 seconds, not a short repeated clip');
+  const span = 20 * 24000 * 2;
+  assert.notDeepEqual(wav.subarray(44, 44 + span), wav.subarray(44 + span, 44 + 2 * span),
+    'Twenty-second audio windows must differ: no recycled 20-second sample');
   assert.equal(wav.length, 44 + frames * 2);
   let power = 0, max = 0;
   for (let at = 44; at < wav.length; at += 2) {
