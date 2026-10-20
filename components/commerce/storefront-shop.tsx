@@ -33,7 +33,7 @@ const copy = {
     details: "View details", start: "Start free", openCart: "Open cart",
     empty: "No offers match your search.", reset: "Show all offers",
     quoteNote: "Prices and access for personal courses are confirmed before any payment. They are not charged through the shop.",
-    paymentNote: "Prices are in EUR. PayPal is available for fixed-price sessions; Interac is an enquiry for a separately agreed CAD amount. A booking and payment are confirmed only after verified receipt.",
+    paymentNote: "Prices are in EUR. PayPal is available for fixed-price sessions; Interac is an enquiry for a separately agreed CAD amount. The session time is confirmed personally; payment is confirmed only after verifying the received funds.",
     paymentEvidence: "A redirect or payment screenshot is not proof of receipt.",
   },
   ru: {
@@ -50,7 +50,7 @@ const copy = {
     details: "Подробнее", start: "Начать бесплатно", openCart: "Открыть корзину",
     empty: "Ничего не найдено.", reset: "Показать все услуги",
     quoteNote: "Стоимость и условия индивидуальных программ согласуются до оплаты. Магазин не списывает деньги за них автоматически.",
-    paymentNote: "Цены указаны в EUR. Для фиксированных услуг доступен PayPal; Interac — запрос отдельно согласованной суммы в CAD. Запись и оплата подтверждаются только после проверки поступления средств.",
+    paymentNote: "Цены указаны в EUR. Для фиксированных услуг доступен PayPal; Interac — запрос отдельно согласованной суммы в CAD. Время сессии согласуем лично; оплата подтверждается только после проверки поступления средств.",
     paymentEvidence: "Переход по ссылке или скриншот не подтверждают поступление денег.",
   },
   es: {
@@ -67,7 +67,7 @@ const copy = {
     details: "Ver detalles", start: "Empezar gratis", openCart: "Abrir carrito",
     empty: "No hay resultados.", reset: "Ver todas las ofertas",
     quoteNote: "Los precios y condiciones de los programas personales se acuerdan antes del pago. No se cobran automáticamente aquí.",
-    paymentNote: "Precios en EUR. PayPal está disponible para consultas de precio fijo; Interac solo solicita un importe CAD acordado aparte. La reserva y el pago se confirman solo después de verificar la recepción.",
+    paymentNote: "Precios en EUR. PayPal está disponible para consultas de precio fijo; Interac solo solicita un importe CAD acordado aparte. El horario se acuerda personalmente; el pago se confirma solo después de verificar la recepción.",
     paymentEvidence: "Un enlace o una captura de pantalla no demuestran la recepción del pago.",
   },
 } as const;

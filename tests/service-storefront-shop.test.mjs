@@ -62,7 +62,7 @@ test('only fixed-price approved catalog SKUs can be purchased; courses and free 
  assert.match(shop,/kind: 'program'/)
  assert.match(shop,/kind: 'free'/)
  assert.match(shop,/if \(item\.kind !== 'session'\) return/)
- assert.match(shop,/kind === 'session'/)
+ assert.match(shop,/kind === [\"']session[\"']/)
  assert.doesNotMatch(shop,/markPaid\(|grantAccess\(|paidStatus/)
  assert.deepEqual(restoreServiceCart(JSON.stringify(['express-consultation-30','malicious','express-consultation-30'])),['express-consultation-30'])
 })
