@@ -143,8 +143,13 @@ try {
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
       }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
-      assert.equal(await page.locator("#method-videos").getAttribute("open"), null,
-        "Extended method videos stay collapsed by default");
+      // The approved services studio keeps its two method posters expanded.
+      // Older archived videos remain closed until visitors explicitly opt in.
+      assert.equal(await page.locator("#method-videos").getAttribute("open"), "",
+        "Current method posters are visible by default");
+      if (locale !== "es") assert.equal(
+        await page.locator("#method-videos details").first().getAttribute("open"), null,
+        "Archived method videos remain collapsed until requested");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // Canonical header: Library shortcut; My House keeps cabinet access in the menu.
