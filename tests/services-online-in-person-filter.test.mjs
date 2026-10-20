@@ -33,4 +33,5 @@ test("consented service enquiry records preferred format without an extra system
   assert.match(ui, /requestContext=\{preferredFormat/);
   assert.match(chooser, /description: \[requestContext\?\.trim\(\), description\.trim\(\)\]/);
   assert.match(chooser, /contactConsent: consent/);
+  assert.match(chooser, /maxLength=\{1400 - \(requestContext\?\.trim\(\)\.length/);
 });
