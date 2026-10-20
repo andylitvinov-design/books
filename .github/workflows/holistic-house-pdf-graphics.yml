@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - "lib/prescriptions/pdf.js"
+      - "scripts/build-report-pdf-art.mjs"
+      - "scripts/render-premium-report-samples.mjs"
+      - "tests/report-premium-pagination-v5.test.mjs"
+      - "package.json"
+      - "public/images/holistic-house/report-lighthouse-coast.webp"
       - "tests/report-photo-contain-exif.test.mjs"
       - "tests/report-illustrations.test.mjs"
       - "tests/report-editorial-grid.test.mjs"
@@ -25,9 +30,12 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
-      - name: Verify A4 and mobile PDF photos, EXIF rotations, pagination and signatures
+      - name: Build pinned approved coast image for A4 PDF
+        run: node scripts/build-report-pdf-art.mjs
+      - name: Verify A4/mobile images, narrative, pagination and signatures
         run: |
           node --test \
+            tests/report-premium-pagination-v5.test.mjs \
             tests/report-photo-contain-exif.test.mjs \
             tests/report-illustrations.test.mjs \
             tests/report-editorial-grid.test.mjs \
@@ -35,3 +43,18 @@ jobs:
             tests/canonical-pdf.test.mjs \
             tests/document-samples.test.mjs \
             tests/signed-pdf.test.mjs
+      - name: Render synthetic EN/RU first and second sheets as PNG for visual QA
+        run: |
+          node scripts/render-premium-report-samples.mjs
+          if ! command -v pdftoppm >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils; fi
+          for locale in en ru; do
+            pdftoppm -f 1 -l 2 -scale-to 720 -png "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/$locale"
+          done
+          ls -lh tmp/premium-pdf-qa/
+      - name: Attach anonymous rendered visual comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-pdf-qa-anonymous
+          path: tmp/premium-pdf-qa/
+          retention-days: 7
+
