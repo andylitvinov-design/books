@@ -368,17 +368,17 @@ export default function BusinessCoaching({locale='en',accountId}){
       <p>{t.planIntro}</p>
       <div className={styles.moduleBrowser} data-business-weekly-modules>
         <nav className={styles.moduleIndex} aria-label={t.selectModule}>
-          {BUSINESS_WEEK_MODULES.map(module=>{
-            const numbers=businessWeekProgress(course,module.week)
-            return <button type="button" key={module.id} aria-current={module.week===moduleWeek?'page':undefined}
-              onClick={()=>setModuleWeek(module.week)} className={module.week===moduleWeek?styles.moduleSelected:''}>
-              <span className={styles.moduleNumber}>{module.week===13?'★':String(module.week).padStart(2,'0')}</span>
+          {BUSINESS_WEEK_MODULES.map(weekModule=>{
+            const numbers=businessWeekProgress(course,weekModule.week)
+            return <button type="button" key={weekModule.id} aria-current={weekModule.week===moduleWeek?'page':undefined}
+              onClick={()=>setModuleWeek(weekModule.week)} className={weekModule.week===moduleWeek?styles.moduleSelected:''}>
+              <span className={styles.moduleNumber}>{weekModule.week===13?'★':String(weekModule.week).padStart(2,'0')}</span>
               <span className={styles.moduleIndexCopy}>
-                <strong>{module.week===13?t.finalModule:module.title[lang]}</strong>
-                <small>{module.outcome[lang]}</small>
+                <strong>{weekModule.week===13?t.finalModule:weekModule.title[lang]}</strong>
+                <small>{weekModule.outcome[lang]}</small>
                 <span>{numbers.complete}/{numbers.total} · {t.moduleDocumented}: {numbers.documented}</span>
               </span>
-              <ChevronDown size={16} className={module.week===moduleWeek?styles.moduleArrow:''}/>
+              <ChevronDown size={16} className={weekModule.week===moduleWeek?styles.moduleArrow:''}/>
             </button>
           })}
         </nav>
@@ -485,13 +485,13 @@ export default function BusinessCoaching({locale='en',accountId}){
       </div>}
       <div className={styles.reportBlock} data-business-weekly-report>
         <h3>{t.weeklyResults}</h3>
-        {BUSINESS_WEEK_MODULES.map(module=>{
-          const entries=module.days.map(item=>({day:item.day,record:course.days?.[item.day],spec:item}))
+        {BUSINESS_WEEK_MODULES.map(weekModule=>{
+          const entries=weekModule.days.map(item=>({day:item.day,record:course.days?.[item.day],spec:item}))
             .filter(row=>row.record && (row.record.done || row.record.result || row.record.note))
           if(!entries.length)return null
-          return <section key={module.id} className={styles.reportModule}>
-            <h4>{t.week} {module.week} · {module.title[lang]}</h4>
-            <p><strong>{t.weekArtifact}:</strong> {module.capstone[lang]}</p>
+          return <section key={weekModule.id} className={styles.reportModule}>
+            <h4>{t.week} {weekModule.week} · {weekModule.title[lang]}</h4>
+            <p><strong>{t.weekArtifact}:</strong> {weekModule.capstone[lang]}</p>
             {entries.map(({day:recordDay,record,spec})=><p key={recordDay}>
               <strong>{t.day} {recordDay} · {record.resultLabelSnapshot?.[lang]||spec.result[lang]}</strong>
               {' · '}{record.done?t.completed:t.daySaved}
