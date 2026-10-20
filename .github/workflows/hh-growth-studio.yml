@@ -5,6 +5,8 @@ on:
     branches: [codex/public-book-library]
     paths:
       - 'app/admin/growth-studio/**'
+      - 'app/admin/login/page.js'
+      - 'app/api/app/[...path]/route.js'
       - 'components/growth-studio.*'
       - 'components/growth-studio-bulk.jsx'
       - 'components/growth-studio-connections.jsx'
@@ -12,6 +14,7 @@ on:
       - 'components/growth-studio-evergreen.jsx'
       - 'components/growth-studio-manual-inbox.jsx'
       - 'components/prescription-admin-header.jsx'
+      - 'components/practitioner-auto-entry.jsx'
       - 'components/practitioner-cabinet.jsx'
       - 'components/app/practice-workspace.jsx'
       - 'lib/growth-studio/**'
@@ -27,6 +30,7 @@ on:
       - 'tests/growth-studio-storage-health.test.mjs'
       - 'tests/growth-studio-owner-setup.test.mjs'
       - 'tests/growth-studio-simple-entry.test.mjs'
+      - 'tests/growth-studio-login-return.test.mjs'
       - 'tests/growth-studio-manual-inbox.test.mjs'
       - '.github/workflows/hh-growth-studio.yml'
   workflow_dispatch:
@@ -59,7 +63,7 @@ jobs:
           node --check lib/growth-studio/manual-inbox.mjs
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
-        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-storage-health.test.mjs tests/growth-studio-source-preview.test.mjs tests/growth-studio-evergreen.test.mjs tests/growth-studio-manual-inbox.test.mjs tests/growth-studio-owner-setup.test.mjs tests/growth-studio-simple-entry.test.mjs
+        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-storage-health.test.mjs tests/growth-studio-source-preview.test.mjs tests/growth-studio-evergreen.test.mjs tests/growth-studio-manual-inbox.test.mjs tests/growth-studio-owner-setup.test.mjs tests/growth-studio-simple-entry.test.mjs tests/growth-studio-login-return.test.mjs
 
   next-build:
     name: Next.js production build / Growth Studio
