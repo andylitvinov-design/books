@@ -18,7 +18,7 @@ await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
 assert.equal(expectedSequence.length, 63, "One consecutive course must have 63 screens");
-const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,63]);
+const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
