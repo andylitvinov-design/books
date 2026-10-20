@@ -66,6 +66,7 @@ test('verified Start and STOP remain distinct from client private notifications'
  assert.match(webhook,/confirmGuestNewsFromWebhook/)
  assert.match(webhook,/stopGuestNewsFromWebhook/)
  assert.match(webhook,/notification_tg_stop/)
+ assert.match(webhook,/event\.type==='stop'\?30\*24\*60\*60\*1000/)
  assert.match(service,/verified_at is null and stopped_at is null/)
  assert.match(service,/for update/)
  assert.match(service,/delete from app_private\.notification_telegram_guest_links/)
