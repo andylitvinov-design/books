@@ -415,7 +415,10 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
             <DiscoverySectionTabs locale={locale} active="business" />
           </div>
           <h1>{businessText.title}</h1>
-          <p className={styles.businessHeroLead}>{businessText.lead}</p>
+          <BusinessConsultationFinder locale={language} />
+          <details className={styles.businessExploreMore}>
+            <summary>{language === 'ru' ? 'Другие способы продолжить' : language === 'es' ? 'Otras formas de continuar' : 'More ways to continue'}</summary>
+            <p className={styles.businessHeroLead}>{businessText.lead}</p>
           <details className={styles.businessSearchDisclosure}>
             <summary>{businessText.searchLabel}</summary>
           <form className={styles.businessSearchForm} role="search" onSubmit={findBusinessTopics}>
@@ -430,6 +433,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
             <a href="#hh-business-free-tests" onClick={()=>setTestsOpen(true)}><ClipboardCheck size={16} aria-hidden="true" />{businessText.tests}</a>
             <a href="#business-direct-request"><CalendarDays size={16} aria-hidden="true" />{businessText.sessions}</a>
           </nav>
+          </details>
         </div>
       ) : (
         <>
@@ -449,7 +453,6 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
       )}
     </section>
 
-    {journey.id === 'business' && <BusinessConsultationFinder locale={language} />}
 
     {journey.id === 'business' && (
       <aside className={styles.businessPromo} aria-labelledby="hh-business-consultation-title" data-business-consultation-banner>
