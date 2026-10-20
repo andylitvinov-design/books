@@ -492,6 +492,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 
         {activePanel==='clients'&&
           <PractitionerClientProfiles items={requests} services={services}
+            practitionerTasks={data.practitionerTasks||[]}
             locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
             onRefresh={()=>load()}
