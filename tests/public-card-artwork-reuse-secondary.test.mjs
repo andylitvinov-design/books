@@ -49,7 +49,8 @@ test("source-backed registered cards do not open the optimizer, original reader 
   assert.match(helper, /return images\[source\]\?\.\[size\] \?\? source/);
   assert.match(helper, /return books\[id\] \?\? fallback/);
   assert.doesNotMatch(read("next.config.ts"), /images:\s*\{\s*unoptimized:\s*true/);
-  assert.doesNotMatch(read("components/book-showcase.tsx"), /fetch\(|/api/admin\//);
+  assert.doesNotMatch(read("components/book-showcase.tsx"), /fetch\(/);
+  assert.doesNotMatch(read("components/book-showcase.tsx"), /\/api\/admin\//);
 });
 
 test("Library and Alchemy services reuse source-pinned 256/960px artwork without paid variants", () => {
