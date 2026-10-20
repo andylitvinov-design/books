@@ -8,6 +8,12 @@ import styles from './growth-studio.module.css'
 
 const messages={
   ru:{
+    quickTitle:'Начните здесь',quickIntro:'Одна страница для работы с публикациями. Проверка сохранения выполняется автоматически.',
+    quickReady:'Сохранение проверено · можно создавать черновики',quickChecking:'Проверяем сохранение на сервере…',
+    quickFailed:'Сохранение пока не подтверждено. Ничего не будет потеряно или опубликовано.',
+    quickStart:'Создать публикацию',quickPosts:'Мои материалы',quickRetry:'Повторить проверку',
+    quickExternal:'Размещение в соцсетях — вручную, пока доступы не подтверждены. Ни один пост не отправится сам.',
+    quickDetails:'Подключения и дополнительные настройки (необязательно)',
     summary:'Подключения и способы публикации',
     explanation:'Наличие соцсети в редакторе означает только возможность подготовить черновик. Автопубликация в неё не считается подключённой без OAuth, разрешений и подтверждённого поста.',
     channel:'Канал',mode:'Доставка',connection:'Доступ',what:'Требуется',
@@ -49,6 +55,12 @@ const messages={
     bridgeTitle:'Metricool — отдельный сервис публикации',bridgeNote:'Подключение Metricool к ChatGPT не даёт прав сайту Holistic House. Для прямого API, по текущим правилам Metricool, нужен тариф Advanced/Custom и серверные ключи. Без этого размещение остаётся ручным.',bridgeHelp:'Требования Metricool API',
   },
   en:{
+    quickTitle:'Start here',quickIntro:'One page to manage your posts. Your saved-draft storage is checked automatically.',
+    quickReady:'Storage verified · draft editor available',quickChecking:'Checking saved drafts on the server…',
+    quickFailed:'Storage could not be verified. No post will be lost or published.',
+    quickStart:'Create a post',quickPosts:'My posts',quickRetry:'Retry connection',
+    quickExternal:'Social publishing remains manual until your account permissions are verified. Nothing is posted automatically.',
+    quickDetails:'Connections and advanced setup (optional)',
     summary:'Connections and publishing methods',
     explanation:'Selecting a social network in the editor prepares a draft only. It does not mean publishing access is connected until OAuth, account permissions and provider delivery are verified.',
     channel:'Channel',mode:'Delivery',connection:'Access',what:'Requirements',
@@ -109,7 +121,8 @@ const RU_REQUIREMENTS={
   manual:'Готовый контент копируется владельцем вручную, без автоматической отправки.',
 }
 const modes={telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader',event_adapter:'eventAdapter',manual:'manual'}
-export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{}}){
+export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},
+  onTelegramVerified=()=>{},onStart=()=>{},onShowPosts=()=>{},postCount=0}){
   const t=messages[locale==='ru'?'ru':'en']
   const [tested,setTested]=useState(false)
   const [verified,setVerified]=useState(false)
@@ -147,15 +160,50 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   // Executes once when an already-authenticated owner opens this workspace.
   // The server action checks the real admin session first. No provider posts.
   useEffect(()=>{void verifyStorage()},[verifyStorage])
-  return <details className={styles.connectionPanel}>
-    <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.summary}</span>
+  return <>
+    <section className={styles.quickLaunch} aria-label={t.quickTitle}>
+      <div className={styles.quickLaunchCopy}>
+        <div className={styles.quickLaunchHeading}><CheckCircle2 size={20} aria-hidden="true"/><h3>{t.quickTitle}</h3></div>
+        <p>{t.quickIntro}</p>
+        <p className={storageState==='verified'?styles.quickLaunchVerified:styles.quickLaunchWaiting}
+          role="status" aria-live="polite">
+          {storageChecking||storageState==='untested'?t.quickChecking:
+            storageState==='verified'?t.quickReady:t.quickFailed}
+        </p>
+      </div>
+      <div className={styles.quickLaunchActions}>
+        <button className={styles.quickLaunchPrimary} type="button" onClick={onStart}
+          disabled={storageState!=='verified'}>{t.quickStart}</button>
+        {postCount>0&&<button type="button" className={styles.quickLaunchSecondary} onClick={onShowPosts}>
+          {t.quickPosts} · {postCount}</button>}
+        {storageState==='failed'&&<button type="button" onClick={verifyStorage}
+          disabled={storageChecking} className={styles.quickLaunchSecondary}>{t.quickRetry}</button>}
+      </div>
+      <p className={styles.quickLaunchFootnote}>{t.quickExternal}</p>
+    </section>
+    <details className={styles.connectionPanel}>
+    <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.quickDetails}</span>
       <span className={storageState==='verified'?styles.verifiedText:styles.notVerifiedText} role="status">
         {storageChecking?t.storageRunning:storageState==='verified'?t.storagePassShort:
           storageState==='failed'?t.storageFailShort:t.storageNotChecked}
       </span>
-      <span className={styles.connectionSummaryCount}>{verified?'1':'0'} / {all.length} {t.channelCount}</span>
     </summary>
-    <p>{t.explanation}</p>
+    <div className={styles.connectionAdvanced}>
+    <details className={styles.connectionTechnical}>
+      <summary>{t.summary} · {verified?'1':'0'} / {all.length}</summary>
+      <p>{t.explanation}</p>
+      <div className={styles.connectionBox}>
+        <div className={styles.connectionBoxTitle}><strong>Telegram · Holistic House</strong>
+          <span className={verified?styles.verifiedText:styles.notVerifiedText}>
+            {verified?t.verified:telegram.ready?t.configured:t.unconfigured}
+          </span>
+        </div>
+        <p>{telegram.ready?t.verificationNeeded:t.notSet}</p>
+        <button type="button" onClick={verify} disabled={!telegram.ready||checking}>{checking?t.checking:t.check}</button>
+        {error&&<p className={styles.connectionError} role="alert">{t.mismatch}</p>}
+      </div>
+    </details>
+
     <div className={styles.connectionBox}>
       <div className={styles.connectionBoxTitle}>
         <strong>{t.storageTitle}</strong>
@@ -173,21 +221,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       {storageState==='failed'&&<p role="alert" className={styles.connectionError}><AlertCircle size={15} aria-hidden="true"/>{t.storageError}</p>}
       {storageState==='verified'&&<p role="status" className={styles.verifiedText}>{t.storageOk}</p>}
     </div>
-    <div className={styles.connectionBox}>
-      <div className={styles.connectionBoxTitle}>
-        <strong>Telegram · Holistic House</strong>
-        <span className={verified?styles.verifiedText:styles.notVerifiedText}>
-          {verified?t.verified:telegram.ready?t.configured:t.unconfigured}
-        </span>
-      </div>
-      <p>{telegram.ready?t.verificationNeeded:t.notSet}</p>
-      <button type="button" onClick={verify} disabled={!telegram.ready||checking}>
-        {checking?<RefreshCcw size={16} aria-hidden="true"/>:verified?<CheckCircle2 size={16} aria-hidden="true"/>:<CircleHelp size={16} aria-hidden="true"/>}
-        {checking?t.checking:tested?t.recheck:t.check}
-      </button>
-      {error&&<p className={styles.connectionError} role="alert"><AlertCircle size={15}/>{t.mismatch}</p>}
-      <small>{t.noTests}</small>
-    </div>
+
     <div className={styles.connectionBox}>
       <div className={styles.connectionBoxTitle}><strong>{t.bridgeTitle}</strong><span className={styles.notVerifiedText}>{t.external}</span></div>
       <p>{t.bridgeNote}</p>
@@ -273,5 +307,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
     <p className={styles.connectionNote}>{t.warning}</p>
     <p className={styles.connectionNote}>{t.guidelines}</p>
     <div className={styles.connectionNav}><Link href="/admin/youtube-upload">{t.direct} ↗</Link><Link href="/admin/materials">{t.existing} ↗</Link></div>
-  </details>
+    </div>
+    </details>
+  </>
 }
