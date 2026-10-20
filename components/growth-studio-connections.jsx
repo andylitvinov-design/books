@@ -3,7 +3,7 @@ import {useMemo,useState} from 'react'
 import Link from 'next/link'
 import {CheckCircle2, AlertCircle, CircleHelp, RefreshCcw, ShieldCheck} from 'lucide-react'
 import {GROWTH_PUBLICATION_NETWORKS,CHANNEL_CAPABILITIES} from '@/lib/growth-studio/channel-capabilities.mjs'
-import {checkGrowthTelegramPublisherAction} from '@/app/admin/growth-studio/actions'
+import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction} from '@/app/admin/growth-studio/actions'
 import styles from './growth-studio.module.css'
 
 const messages={
@@ -19,6 +19,12 @@ const messages={
     mismatch:'Канал не найден или бот не имеет права публиковать. Проверьте настройки и разрешения.',
     notSet:'Нужны серверные HH_GROWTH_TELEGRAM_ENABLED / BOT_TOKEN / CHAT_ID и права администратора канала.',
     noTests:'Проверка не создаёт и не публикует сообщений.',
+    storageTitle:'Хранилище черновиков · Redis',
+    storageNotChecked:'Ещё не проверено', storageChecking:'Проверка…',
+    storageCheck:'Проверить сохранение',storageRecheck:'Проверить ещё раз',
+    storageOk:'Запись, чтение и удаление временного ключа подтверждены',
+    storageInfo:'Создаётся один случайный технический ключ со сроком 30 секунд. Мы читаем его и удаляем. Клиентские данные, черновики и публикации не затрагиваются.',
+    storageError:'Не удалось проверить Redis. Сохранение черновиков в этой проверке не подтверждено. Проверьте серверное подключение.',
     direct:'Перейти в YouTube-загрузчик', existing:'Открыть медиатеку',
     guidelines:'Готовность определяется по реальному разрешению и ответу провайдера, а не по наличию кнопки.',
     warning:'Для Instagram/TikTok/YouTube нужен подходящий медиафайл, для Pinterest — доска, для мероприятий — подтверждённые дата и организатор.',
@@ -39,6 +45,12 @@ const messages={
     mismatch:'The channel is inaccessible or the bot cannot post. Review bot settings and permissions.',
     notSet:'Requires server-side HH_GROWTH_TELEGRAM_ENABLED / BOT_TOKEN / CHAT_ID and channel admin rights.',
     noTests:'This check does not create or publish any message.',
+    storageTitle:'Draft storage · Redis',
+    storageNotChecked:'Not yet verified',storageChecking:'Checking…',
+    storageCheck:'Test draft storage',storageRecheck:'Test again',
+    storageOk:'A temporary Redis key was written, read back and deleted',
+    storageInfo:'Creates a single random technical key with a 30-second expiry, then reads and deletes it. No client information, drafts or published posts are touched.',
+    storageError:'Redis could not be verified. Draft persistence is not confirmed by this test. Check the server connection.',
     direct:'Open YouTube uploader',existing:'Open material library',
     guidelines:'Readiness requires real provider permission and delivery evidence, not a button in this app.',
     warning:'Instagram/TikTok/YouTube need media; Pinterest requires a board; event listings need verified dates and organizer.',
@@ -73,6 +85,8 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [verified,setVerified]=useState(false)
   const [checking,setChecking]=useState(false)
   const [error,setError]=useState('')
+  const [storageState,setStorageState]=useState('untested')
+  const [storageChecking,setStorageChecking]=useState(false)
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
@@ -84,9 +98,39 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
     }catch{setError('unverified')}
     finally{setChecking(false)}
   }
+  async function verifyStorage() {
+    if(storageChecking)return
+    setStorageChecking(true)
+    setStorageState('untested')
+    try {
+      const result=await checkGrowthStudioStorageAction()
+      setStorageState(result?.ok===true&&result?.verified===true?'verified':'failed')
+    } catch {
+      setStorageState('failed')
+    } finally {
+      setStorageChecking(false)
+    }
+  }
   return <details className={styles.connectionPanel}>
     <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.summary}</span><span className={styles.connectionSummaryCount}>{verified?'1': '0'} / {all.length}</span></summary>
     <p>{t.explanation}</p>
+    <div className={styles.connectionBox}>
+      <div className={styles.connectionBoxTitle}>
+        <strong>{t.storageTitle}</strong>
+        <span className={storageState==='verified'?styles.verifiedText:styles.notVerifiedText}>
+          {storageState==='verified'?t.storageOk:storageChecking?t.storageChecking:t.storageNotChecked}
+        </span>
+      </div>
+      <p>{t.storageInfo}</p>
+      <button type="button" onClick={verifyStorage} disabled={storageChecking}>
+        {storageChecking?<RefreshCcw size={16} aria-hidden="true"/>:
+          storageState==='verified'?<CheckCircle2 size={16} aria-hidden="true"/>:
+            <CircleHelp size={16} aria-hidden="true"/>}
+        {storageChecking?t.storageChecking:storageState==='untested'?t.storageCheck:t.storageRecheck}
+      </button>
+      {storageState==='failed'&&<p role="alert" className={styles.connectionError}><AlertCircle size={15} aria-hidden="true"/>{t.storageError}</p>}
+      {storageState==='verified'&&<p role="status" className={styles.verifiedText}>{t.storageOk}</p>}
+    </div>
     <div className={styles.connectionBox}>
       <div className={styles.connectionBoxTitle}>
         <strong>Telegram · Holistic House</strong>

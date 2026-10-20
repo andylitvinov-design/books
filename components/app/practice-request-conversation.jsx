@@ -1,5 +1,6 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
+import {createConversationReadScope,latestVisibleParticipantMessage,mergeConversationPage} from '@/lib/practitioners/conversation-state'
 import styles from './practice-request-conversation.module.css'
 
 const COPY={
@@ -36,11 +37,6 @@ const COPY={
     limit:'Límite diario alcanzado.',unknown:'Estado desconocido; no volver a enviar automáticamente.',
     me:'Tú',master:'Profesional',client:'Cliente',privateNote:'Nota privada del profesional',writeNote:'Nota privada',saveNote:'Guardar nota privada',noteSaved:'Nota privada guardada, invisible para el cliente.'},
 }
-const ordered=(older=[],fresh=[])=>{
-  const map=new Map(older.map(message=>[message.id,message]))
-  for(const message of fresh)map.set(message.id,message)
-  return [...map.values()].sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id))
-}
 function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null,onSaved,onViewed}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang]
   const [view,setView]=useState(null),[error,setError]=useState('')
@@ -48,68 +44,64 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
   const [markingViewed,setMarkingViewed]=useState(false)
   const [text,setText]=useState(''),[notice,setNotice]=useState('')
   const [visibility,setVisibility]=useState('participants')
-  const pending=useRef(null),requestRef=useRef(requestId),lastForegroundRefresh=useRef(0)
+  const pending=useRef(null),session=useRef(null),lastForegroundRefresh=useRef(0)
   useEffect(()=>{
-    requestRef.current=requestId
+    const original={requestId,accountId,reads:createConversationReadScope(),controller:new AbortController()}
+    session.current=original
     pending.current=null
     setView(null);setText('');setNotice('');setError('');setVisibility('participants')
-    const controller=new AbortController()
-    fetch('/api/app/practitioner-client-messages?requestId='+encodeURIComponent(requestId),{
-      credentials:'same-origin',cache:'no-store',signal:controller.signal,
-      headers:{'X-HH-Account-Id':accountId},
-    }).then(async response=>{
-      const result=await response.json().catch(()=>({}))
-      if(!response.ok)throw new Error(result.error||'REQUEST_FAILED')
-      if(!controller.signal.aborted&&requestRef.current===requestId)setView(result)
-    }).catch(()=>{
-      if(!controller.signal.aborted&&requestRef.current===requestId)setError(t.error)
-    })
-    return ()=>controller.abort()
+    setBusy(false);setMarkingViewed(false);setPaging(false)
+    void reload()
+    return ()=>{
+      original.reads.close();original.controller.abort()
+      if(session.current===original)session.current=null
+    }
   },[requestId,accountId,lang])
   async function reload(cursor=null){
-    const id=requestId
-    if(cursor)setPaging(true)
+    const id=requestId,original=session.current
+    if(!original||original.requestId!==id||original.accountId!==accountId)return
+    const read=original.reads.begin()
+    if(!read)return
+    const current=()=>session.current===original&&original.reads.accepts(read)
+    setPaging(Boolean(cursor))
     try{
       const params=new URLSearchParams({requestId:id})
       if(cursor)params.set('before',cursor)
       const response=await fetch('/api/app/practitioner-client-messages?'+params.toString(),{
-        credentials:'same-origin',cache:'no-store',headers:{'X-HH-Account-Id':accountId},
+        credentials:'same-origin',cache:'no-store',signal:read.signal,
+        headers:{'X-HH-Account-Id':accountId},
       })
       const result=await response.json().catch(()=>({}))
       if(!response.ok)throw new Error(result.error||'REQUEST_FAILED')
-      if(requestRef.current!==id)return
-      setView(previous=>({
-        ...result,
-        messages:ordered(previous?.messages,result.messages),
-        nextCursor:cursor?result.nextCursor:previous?.messages?.length>result.messages.length
-          ?previous.nextCursor:result.nextCursor,
-      }))
+      if(result.requestId!==id||!Array.isArray(result.messages))throw new Error('REQUEST_FAILED')
+      if(!current())return
+      setView(previous=>current()?mergeConversationPage(previous,result,{olderPage:Boolean(cursor)}):previous)
       setError('')
-    }catch{if(requestRef.current===id)setError(t.error)}
-    finally{if(requestRef.current===id)setPaging(false)}
+    }catch{if(current())setError(t.error)}
+    finally{if(current())setPaging(false)}
   }
   async function markViewed(){
-    const id=requestId
+    const id=requestId,original=session.current
     // Only acknowledge the most recent OTHER participant message actually
     // loaded in this visible history; never an internal master-only note.
-    const latest=[...(view?.messages||[])].reverse().find(
-      item=>item.visibility==='participants'&&!item.mine)
-    if(!latest||!view?.unseenCount||markingViewed||busy)return
+    const latest=latestVisibleParticipantMessage(view?.messages)
+    if(!original||!latest||!view?.unseenCount||markingViewed||busy)return
     setMarkingViewed(true)
     try{
       const response=await fetch('/api/app/practitioner-client-messages',{
-        method:'POST',credentials:'same-origin',
+        method:'POST',credentials:'same-origin',signal:original.controller.signal,
         headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},
         body:JSON.stringify({action:'mark_seen',requestId:id,messageId:latest.id}),
       })
       if(!response.ok)throw new Error('VIEW_UNAVAILABLE')
-      if(requestRef.current!==id)return
+      if(session.current!==original)return
       await reload()
+      if(session.current!==original)return
       onViewed?.()
       setNotice(t.viewed)
     }catch{
-      if(requestRef.current===id)setNotice(t.error)
-    }finally{if(requestRef.current===id)setMarkingViewed(false)}
+      if(session.current===original)setNotice(t.error)
+    }finally{if(session.current===original)setMarkingViewed(false)}
   }
   // A push can refocus this PWA without remounting the conversation.
   // Refresh on foreground return only; avoid automatic background polling.
@@ -129,8 +121,8 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
     }
   },[requestId,accountId,lang])
   async function send(){
-    const body=text.trim(),id=requestId
-    if(!(visibility==='practitioner_note'?view?.canNote:view?.canReply)||!body||busy)return
+    const body=text.trim(),id=requestId,original=session.current
+    if(!original||!(visibility==='practitioner_note'?view?.canNote:view?.canReply)||!body||busy)return
     const old=pending.current
     const operation=old&&old.requestId===id&&old.text===body&&old.visibility===visibility
       ?old:{requestId:id,text:body,visibility,operationId:crypto.randomUUID()}
@@ -138,25 +130,26 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
     setBusy(true);setNotice('')
     try{
       const response=await fetch('/api/app/practitioner-client-messages',{
-        method:'POST',credentials:'same-origin',
+        method:'POST',credentials:'same-origin',signal:original.controller.signal,
         headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},
         body:JSON.stringify(operation),
       })
       const result=await response.json().catch(()=>({}))
       if(!response.ok)throw new Error(result.error||'REQUEST_FAILED')
-      if(requestRef.current!==id)return
+      if(session.current!==original)return
       await reload()
+      if(session.current!==original)return
       pending.current=null;setText('');setNotice(visibility==='practitioner_note'?t.noteSaved:t.saved)
       // Parent master directory refresh is user-action-only; never auto-poll all clients.
       onSaved?.()
     }catch(err){
-      if(requestRef.current===id){
+      if(session.current===original){
         setNotice(err.message==='PRIVATE_CONTENT_BLOCKED'?t.private:
           err.message==='CONVERSATION_CLOSED'?t.closed:
           err.message==='PRACTICE_MESSAGE_DAILY_LIMIT'?t.limit:
           err.message==='CONFLICT'?t.conflict:t.unknown)
       }
-    }finally{if(requestRef.current===id)setBusy(false)}
+    }finally{if(session.current===original)setBusy(false)}
   }
   return <section className={styles.chat} aria-label={t.title}>
     <p className={styles.privacy}>{t.info}</p>
@@ -233,6 +226,6 @@ export default function PracticeRequestConversation(props){
   return <div ref={anchor} className={styles.wrapper}>
     <button type="button" className={styles.toggle} aria-expanded={open}
       onClick={()=>setOpen(value=>!value)}>{open?t.close:t.open}</button>
-    {open&&<MessageConversation {...props}/>}
+    {open&&<MessageConversation key={props.accountId+':'+props.requestId+':'+props.locale} {...props}/>}
   </div>
 }
