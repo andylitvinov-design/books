@@ -13,6 +13,7 @@ on:
       - "tests/report-illustrations.test.mjs"
       - "tests/report-editorial-grid.test.mjs"
       - "tests/report-progress-geometry-v6.test.mjs"
+      - "tests/report-premium-art-direction-v7.test.mjs"
       - ".github/workflows/holistic-house-pdf-graphics.yml"
   workflow_dispatch:
 
@@ -41,23 +42,24 @@ jobs:
             tests/report-illustrations.test.mjs \
             tests/report-editorial-grid.test.mjs \
             tests/report-progress-geometry-v6.test.mjs \
+            tests/report-premium-art-direction-v7.test.mjs \
             tests/mobile-readable-pdf.test.mjs \
             tests/canonical-pdf.test.mjs \
             tests/document-samples.test.mjs \
             tests/signed-pdf.test.mjs
-      - name: Render synthetic EN/RU first and second sheets as PNG for visual QA
+      - name: Render synthetic EN/RU cover, signed core and first appendix as PNG for visual QA
         run: |
           node scripts/render-premium-report-samples.mjs
           if ! command -v pdftoppm >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils; fi
           for locale in en ru; do
-            pdftoppm -f 1 -l 2 -scale-to 720 -png "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/$locale"
+            pdftoppm -f 1 -l 3 -scale-to 720 -png "tmp/premium-pdf-qa/sample-$locale.pdf" "tmp/premium-pdf-qa/$locale"
           done
           ls -lh tmp/premium-pdf-qa/
       - name: Emit small anonymous RU page proofs for visual inspection
         run: |
           python3 - <<'PY'
           import base64, glob
-          for index, filename in enumerate(sorted(glob.glob('tmp/premium-pdf-qa/ru-*.png'))[:2], start=1):
+          for index, filename in enumerate(sorted(glob.glob('tmp/premium-pdf-qa/ru-*.png'))[:3], start=1):
               payload=base64.b64encode(open(filename,'rb').read()).decode('ascii')
               print(f'HH_PDF_PROOF_BEGIN_{index}')
               for start in range(0,len(payload),4096):
