@@ -159,17 +159,17 @@ async function exerciseFreeJourneys(page, engine, width) {
 }
 
 async function verifyHomeTestimonialPosters(page) {
-  // The published compact Home shows the first two EN sources. The full six-source
-  // catalog, three-video Services selection and written story remain independent.
-  const expectedIds = ['Dk0LBmOivQo', 'aUJde6A-9p0'];
+  // The Home public layout shows the first four exact EN originals with archived stills.
+  // Two more originals remain in the expandable archive.
+  const expectedIds = ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk'];
   const testimonials = page.locator('[data-personal-testimonials="home"]');
   await expect(testimonials).toHaveCount(1);
   await expect(testimonials).toHaveAttribute('lang', 'en');
   const cards = testimonials.locator('[data-testimonial-video-id]');
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(expectedIds.length);
   assert.deepEqual(await cards.evaluateAll(items => items.map(item => item.dataset.testimonialVideoId)), expectedIds);
   const videoPosters = testimonials.locator('.site-video-fallback-poster');
-  await expect(videoPosters).toHaveCount(2);
+  await expect(videoPosters).toHaveCount(expectedIds.length);
   await expect(testimonials.locator('blockquote')).toHaveCount(1);
   await expect(testimonials.locator('blockquote')).toBeVisible();
   for (const id of expectedIds) {
