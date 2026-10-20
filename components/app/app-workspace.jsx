@@ -48,7 +48,7 @@ import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/c
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
-import { isNativePsiAlchemy } from '@/lib/native/client'
+import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
@@ -200,8 +200,10 @@ export default function AppWorkspace({ locale, path = [] }) {
     setBusy(true)
     setError(null)
     try {
+      const native = isNativeHolisticHouse()
       const result = await appFetch('auth/start', {
         locale,
+        ...(native ? { native: true } : {}),
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
@@ -209,7 +211,13 @@ export default function AppWorkspace({ locale, path = [] }) {
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
       })
-      window.location.assign(result.redirectUrl)
+      if (native) {
+        // Google OAuth uses Chrome Custom Tabs / Safari View Controller,
+        // not the app's credential-readable embedded WebView.
+        const { Browser } = await import('@capacitor/browser')
+        await Browser.open({ url: result.redirectUrl })
+        setBusy(false)
+      } else window.location.assign(result.redirectUrl)
     } catch (e) {
       setError(e)
       setBusy(false)

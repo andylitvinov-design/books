@@ -1,5 +1,6 @@
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 
 import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
@@ -215,7 +216,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           {yggdrasilModuleLandings.map((module) => (
             <article className="yggdrasil-module-card" key={module.slug}>
               <Link className={"yggdrasil-module-art yggdrasil-module-art--" + module.slug} href={`/${locale}/academy/reiki/yggdrasil/${module.slug}`} aria-label={`${text.open}: ${module.title[locale]}`}>
-                <Image src={module.image} alt={module.title[locale]} fill sizes="(max-width: 680px) 130px, (max-width: 1100px) 240px, 240px" className="yggdrasil-module-art-image" />
+                <Image src={cardArtworkUrl(module.image)} unoptimized={hasCardArtwork(module.image)} alt={module.title[locale]} fill sizes="(max-width: 680px) 130px, (max-width: 1100px) 240px, 240px" className="yggdrasil-module-art-image" />
               </Link>
               <div className="yggdrasil-module-card-copy">
                 <small>{text.module} {module.levelId}</small>

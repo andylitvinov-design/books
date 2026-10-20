@@ -6,6 +6,7 @@ import CrmSmsTools from './crm-sms-tools'
 import CrmSmsSetup from './crm-sms-setup'
 import CrmIntegrationDiagnostics from './crm-integration-diagnostics'
 import CrmFreeSmsPanel from './crm-free-sms'
+import CrmFreeEmail from './crm-free-email'
 import CrmContactEditor from './crm-contact-editor'
 import CrmExportTools from './crm-export-tools'
 import CrmMessengerPanel from './crm-messenger'
@@ -228,6 +229,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     {activeSection==='sms'&&data&&<div className={styles.formCard}>
       <h3>SMS · {language==='ru'?'сообщения клиентам':language==='es'?'mensajes a clientes':'client messages'}</h3>
       <CrmFreeSmsPanel key={accountId+'-manual-sms'} contacts={data.contacts||[]} locale={language} />
+      <CrmFreeEmail key={accountId+'-manual-email'} contacts={data.contacts||[]} locale={language} />
       <CrmSmsSetup locale={language} setup={data.smsSetup} busy={busy} onAction={save} />
       <p className={styles.fine}>{language==='ru'?'Ниже — отдельный платный API Twilio. Для подготовки сообщений из вашего телефона пользуйтесь зелёным бесплатным режимом выше.':language==='es'?'Abajo está el proveedor Twilio por separado. Usa el modo verde con tu teléfono para evitar cargos de API.':'Below is the separate Twilio provider panel. Use the green manual-phone mode above to avoid paid SMS API fees.'}</p>
       <p className={styles.fine}>{data.smsEnabled?

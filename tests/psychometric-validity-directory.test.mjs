@@ -3,9 +3,9 @@ import test from 'node:test'
 import { readFile } from 'node:fs/promises'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { RESEARCH_CATALOGUE, RESEARCH_CATALOGUE_TOTAL, searchResearchCatalogue } from '../lib/assessments/research-directory-2026.js'
-import { calculatePsychometricGrade, assessmentValidity, auditAssessmentCatalog, compareAssessmentValidity, VALIDATION_IMPROVEMENT_PROTOCOL } from '../lib/assessments/psychometric-validity-2026.js'
+import { calculatePsychometricGrade, assessmentValidity, auditAssessmentCatalog, compareAssessmentValidity, assessmentEvidenceGroup, ASSESSMENT_EVIDENCE_GROUPS, VALIDATION_IMPROVEMENT_PROTOCOL } from '../lib/assessments/psychometric-validity-2026.js'
 import { officialQuestionnaireSource } from '../data/assessments/official-questionnaire-sources-2026.js'
-import { buildExplorerEntries, rankExplorerEntries } from '../lib/assessments/test-explorer.js'
+import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries } from '../lib/assessments/test-explorer.js'
 
 test('entire research master becomes discoverable metadata with no key duplicates, executable tests or protected score keys',()=>{
   assert.equal(RESEARCH_CATALOGUE_TOTAL,2978)
@@ -99,11 +99,12 @@ test('all runnable instruments receive evidence audit; unvalidated originals are
 })
 test('grade requires study-linked exact edition, language, population, independent review and every rated domain',()=>{
   assert.equal(calculatePsychometricGrade({}),null)
-  const review={exactEdition:true,respondentLanguageVerified:true,populationDocumented:true,independentReview:true,primarySourceUrl:'https://example.org/study',ratings:{
+  const review={exactEdition:true,respondentLanguageVerified:true,populationDocumented:true,scoringVerified:true,independentReview:true,primarySourceUrl:'https://example.org/study',ratings:{
     contentValidity:2,structuralValidity:2,internalConsistency:2,constructValidity:2,reliability:2,crossCulturalValidity:2,responsiveness:2,scoringAndInterpretation:2
   }}
   assert.deepEqual(calculatePsychometricGrade(review),{score:100,grade:'A',coverage:1})
   assert.equal(calculatePsychometricGrade({...review,respondentLanguageVerified:false}),null)
+  assert.equal(calculatePsychometricGrade({...review,scoringVerified:false}),null)
   assert.equal(calculatePsychometricGrade({...review,ratings:{...review.ratings,constructValidity:null}}),null)
   assert.ok(compareAssessmentValidity({validity:{priority:5}},{validity:{priority:2}})<0)
   assert.equal(VALIDATION_IMPROVEMENT_PROTOCOL.length,8)
@@ -140,4 +141,52 @@ test('research explorer does not unlock new questionnaire items; site displays c
   assert.match(reference,/data-research-directory/)
   assert.match(route,/searchResearchCatalogue/)
   assert.doesNotMatch(reference,/download=\{.*item\.key|startable\s*:\s*true/i)
+})
+
+test('all 150 runnable methods fall into honest, non-clinical evidence-readiness groups',()=>{
+  assert.equal(ASSESSMENT_EVIDENCE_GROUPS.length,5)
+  const active=MONITORING_CATALOG.filter(item=>item.startable===true)
+  assert.equal(active.length,150)
+  const groups=active.map(item=>assessmentValidity(item,{locale:'en'}).group)
+  assert.equal(groups.filter(group=>group==='reviewed_exact_edition').length,0)
+  assert.equal(groups.filter(group=>group==='published_source_pending').length,77)
+  assert.equal(groups.filter(group=>group==='author_self_reflection').length,64)
+  assert.equal(groups.filter(group=>group==='symbolic_typology').length,9)
+  const audit=auditAssessmentCatalog(MONITORING_CATALOG,{locale:'ru'})
+  assert.equal(Object.values(audit.evidenceGroups).reduce((a,b)=>a+b,0),audit.total)
+  assert.equal(audit.evidenceGroups.reviewed_exact_edition,0)
+  assert.equal(audit.evidenceGroups.symbolic_typology,9)
+  assert.equal(audit.evidenceGroups.author_self_reflection,64)
+  assert.equal(audit.evidenceGroups.published_source_pending,77)
+  assert.ok(audit.evidenceGroups.reference_only>=1)
+  const bach=MONITORING_CATALOG.find(item=>item.key==='hh-bach-flower-profile')
+  assert.equal(assessmentEvidenceGroup(bach),'symbolic_typology')
+  assert.equal(assessmentEvidenceGroup({...bach,startable:false}),'reference_only')
+})
+
+test('evidence-stage filter is source-bound and does not unlock unavailable references',()=>{
+  const entries=buildExplorerEntries({locale:'ru',audience:'guest'})
+  const original=filterExplorerEntries(entries,{evidenceGroups:['author_self_reflection']})
+  assert.ok(original.length>10)
+  assert.ok(original.every(entry=>entry.selectable && entry.validity.group==='author_self_reflection'))
+  const symbolic=filterExplorerEntries(entries,{evidenceGroups:['symbolic_typology']})
+  assert.ok(symbolic.length>0)
+  assert.ok(symbolic.every(entry=>entry.validity.group==='symbolic_typology'))
+  assert.equal(filterExplorerEntries(entries,{evidenceGroups:['reviewed_exact_edition']}).length,0)
+  const references=filterExplorerEntries(entries,{availability:'full',evidenceGroups:['reference_only']})
+  assert.ok(references.length>0)
+  assert.ok(references.every(entry=>entry.validity.group==='reference_only'))
+  const selected=entries.find(entry=>entry.key==='hh-current-state')
+  assert.ok(selected)
+  const pinned=filterExplorerEntries(entries,{evidenceGroups:['symbolic_typology'],selectedKeys:[selected.key]})
+  assert.ok(pinned.some(entry=>entry.key===selected.key),'explicit choice stays visible when filters change')
+})
+
+test('the public catalog exposes actual evidence group choice in EN, RU and ES',async()=>{
+  const source=await readFile(new URL('../components/app/test-explorer.jsx',import.meta.url),'utf8')
+  assert.match(source,/data-test-evidence-group-filter/)
+  assert.match(source,/ASSESSMENT_EVIDENCE_GROUPS\.map/)
+  assert.match(source,/setEvidenceGroup\(event\.target\.value\)/)
+  assert.match(source,/data-psychometric-group=\{entry\.validity\.group\}/)
+  assert.doesNotMatch(source,/validated_accuracy_percent|clinical_truth_probability/)
 })
