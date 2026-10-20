@@ -85,7 +85,7 @@ try {
       await pause(5000)
     }
   }
-  for (const [target, slot, locale, id, youtubeId] of [
+  for (const [target, slot, locale, , youtubeId] of [
     ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34', 'Y4K4piEwwA8'],
     ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 's30Y42IwPcg'],
     ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a', 'ILyRWyHtJoE'],
@@ -104,20 +104,13 @@ try {
     const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
     await expect(block).toHaveCount(1)
     assert.equal(await block.locator('iframe').count(), 0)
-    const play = block.getByRole('button', { name: /^(Watch video|Open video|Смотреть видео):/ })
-    if (live) await pause(1200)
-    await play.click()
-    if (live && await block.locator('iframe').count() === 0) {
-      // A very fast synthetic click can land before Next hydration has attached
-      // client handlers to SSR markup. Retry once after hydration rather than
-      // treating that test-timing race as a playback failure.
-      await pause(1200)
-      if (await play.count()) await play.click()
-    }
-    await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
-    await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
+    const direct = block.locator('a.site-video-play')
+    await expect(direct).toHaveCount(1)
+    await expect(direct).toHaveAttribute('href', `https://www.youtube.com/watch?v=${youtubeId}`)
+    await expect(direct).toHaveAttribute('target', '_blank')
+    await expect(block.locator('iframe')).toHaveCount(0)
   }
-  pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos use their exact YouTube mirrors on click`)
+  pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos expose their exact YouTube mirrors without loading an iframe`)
 
   // Regressions reported by the owner: the Services videos were buried inside
   // a collapsed block, while the detailed service pages contained no players.
@@ -145,14 +138,14 @@ try {
     const detailRoutes = [
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube.com/watch?v=Cz6SxXJNZbw'],
+      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube.com/watch?v=Cz6SxXJNZbw'],
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube.com/watch?v=Cz6SxXJNZbw'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
-      ['/ru/services/dao-health-profile', 'overview', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      ['/en/services/free-situation-review', 'overview', 'https://www.youtube.com/watch?v=s30Y42IwPcg'],
+      ['/ru/services/dao-health-profile', 'overview', 'https://www.youtube.com/watch?v=Cz6SxXJNZbw'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
@@ -167,11 +160,16 @@ try {
       const transcript = block.locator('details.site-video-transcript')
       if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
       await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
-      await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
-      assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
+      if (expectedUrl.startsWith('https://www.youtube.com/watch?v=')) {
+        await expect(block.locator('a.site-video-play')).toHaveAttribute('href', expectedUrl)
+        await expect(block.locator('iframe')).toHaveCount(0)
+      } else {
+        await block.locator('button.site-video-play').click()
+        await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
+        assert.equal(await block.locator('.site-video-play').count(), 0, route + ' HeyGen poster remained after Play')
+      }
     }
-    pass('Ten service routes EN/RU/ES have real click-to-play video iframes and original watch links')
+    pass('Ten service routes EN/RU/ES have direct YouTube links or preserved click-to-play HeyGen')
   }
 
   await navigate('/en/about')
@@ -306,9 +304,10 @@ try {
     assert.equal(await page.locator('iframe').count(), 0)
     // Test the edited homepage introduction specifically; unrelated public testimonial
     // videos must not make the selector ambiguous.
-    await page.locator('[data-video-slot="home-intro"] .site-video-play').click()
-    await expect(page.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/OkLEN8Zb-sY\?/)
-    pass('YouTube privacy-enhanced iframe exists only after click')
+    await expect(page.locator('[data-video-slot="home-intro"] a.site-video-play'))
+      .toHaveAttribute('href', 'https://www.youtube.com/watch?v=OkLEN8Zb-sY')
+    await expect(page.locator('[data-video-slot="home-intro"] iframe')).toHaveCount(0)
+    pass('Managed YouTube videos have direct no-iframe links')
     await save('hide', second)
     await navigate('/?lang=en')
     // Hiding a managed intro should leave independently published testimonials intact.

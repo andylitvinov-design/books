@@ -21,8 +21,8 @@ function sourceFixture(source = component) {
     assert.deepEqual(catalog[locale].map(item => item.id), expectedCatalog[locale], 'Preserve all six original sources per locale');
     assert.equal(new Set(catalog[locale].map(item => item.id)).size, 6);
     selected[locale] = { home: select(true, catalog, locale), services: select(false, catalog, locale) };
-    assert.deepEqual(selected[locale].home.map(item => item.id), expectedCatalog[locale].slice(0, 2));
-    assert.deepEqual(selected[locale].services.map(item => item.id), expectedCatalog[locale].slice(0, 3));
+    assert.deepEqual(selected[locale].home.map(item => item.id), expectedCatalog[locale].slice(0, 4));
+    assert.deepEqual(selected[locale].services.map(item => item.id), expectedCatalog[locale].slice(0, 4));
   }
   assert.match(source, /<blockquote[^>]*>“\{current\.storyQuote\}”<\/blockquote>/);
   assert.match(source, /<figcaption[^>]*>\{current\.storySource\}<\/figcaption>/);
@@ -80,32 +80,33 @@ async function posterScenario({
   assert.equal(first, reviews[0], 'Keep the exact first source for the unchanged click-to-play assertions');
 }
 
-test('actual browser helper accepts exactly the two source-selected EN Home cards and matching archived frames', () => posterScenario());
+test('actual browser helper accepts exactly the four source-selected EN Home cards and matching archived frames', () => posterScenario());
 test('actual browser helper accepts Next Image same-origin absolute URL serialization', () => posterScenario({ posterUrl: 'absolute' }));
 for (const [name, options] of Object.entries({
   'foreign poster origin': { posterUrl: 'foreign' }, 'poster query': { posterUrl: 'query' },
   'poster hash': { posterUrl: 'hash' }, 'wrong poster ID': { posterUrl: 'wrongId' }, 'empty poster URL': { posterUrl: 'empty' },
   'zero cards': { ids: [] }, 'one card': { ids: fixture.en.home.slice(0, 1).map(item => item.id) },
-  'three service cards on Home': { ids: fixture.en.services.map(item => item.id) },
+  'three source cards on Home': { ids: fixture.en.home.slice(0, 3).map(item => item.id) },
   'six catalogue cards on Home': { ids: expectedCatalog.en },
   'duplicate source': { ids: ['Dk0LBmOivQo', 'Dk0LBmOivQo'] },
   'wrong second source': { ids: ['Dk0LBmOivQo', 'fE6sD1zr1Js'] },
   'wrong source order': { ids: ['aUJde6A-9p0', 'Dk0LBmOivQo'] },
   'Russian sources on the final English home': { ids: fixture.ru.home.map(item => item.id) },
   'missing section': { sections: 0 }, 'duplicate section': { sections: 2 },
-  'wrong locale': { locale: 'ru' }, 'extra poster': { posterCount: 3 },
+  'wrong locale': { locale: 'ru' }, 'extra poster': { posterCount: 5 },
   'missing poster': { missingPoster: true }, 'hidden poster': { hiddenPoster: true }, 'unrelated poster source': { wrongPoster: true },
   'broken real image': { brokenImage: true }, 'missing watch source': { missingWatch: true },
   'wrong watch source': { wrongWatch: true }, 'missing story': { quoteCount: 0 },
   'hidden story': { hiddenQuote: true }, 'already playing video': { playing: true },
 })) test(`poster contract rejects ${name}`, () => assert.rejects(posterScenario(options)));
 
-test('source fixture retains six catalogue IDs per locale, three Services videos and the permissioned written story', () => {
+test('source fixture retains six catalogue IDs per locale, four Services videos and the permissioned written story', () => {
   sourceFixture();
   for (const [before, after] of [
     ['id: "hYwRNMxIMjc"', 'id: "WRONGSOURCE"'],
-    ['testimonialVideos[locale].slice(0, 2)', 'testimonialVideos[locale].slice(0, 6)'],
-    ['testimonialVideos[locale].slice(0, 3)', 'testimonialVideos[locale].slice(0, 2)'],
+    ['testimonialVideos[locale].slice(0, 4)', 'testimonialVideos[locale].slice(0, 6)'],
+    ['const videos = isHome ? testimonialVideos[locale].slice(0, 4) : testimonialVideos[locale].slice(0, 4);',
+      'const videos = isHome ? testimonialVideos[locale].slice(0, 3) : testimonialVideos[locale].slice(0, 4);'],
     ['{current.storyQuote}', '{current.title}'],
     ['{current.storySource}', '{current.title}'],
   ]) {
@@ -136,13 +137,13 @@ test('remaining free-entry targets still match actual homepage links and destina
 
 test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', () => {
   for (const required of [
-    "await perform('gate', () => gate);", 'await expect(next).toHaveCount(0)', 'frame.evaluate(element => element.isConnected)',
+    "await perform('gate', () => gate);", 'await expect(next).toHaveCount(0)', 'directLink.evaluate(element => element.isConnected)',
     'size.height >= 46 && size.font >= 14', 'const firstReview = await verifyHomeTestimonialPosters(page)',
-    "await firstReview.locator('.site-video-play').click()", 'youtube-nocookie\\.com\\/embed\\/Dk0LBmOivQo\\?',
-    "await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0)",
+    "await expect(firstReview.locator('a.site-video-play')).toHaveAttribute", 'https://www.youtube.com/watch?v=Dk0LBmOivQo',
+    "await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(1)",
     'await page.goBack()', 'await expect(page).toHaveURL(origin + homePath(locale))',
     'assert.deepEqual(unexpectedApiRequests, []', "request.method() === 'GET'", 'APP_UNAVAILABLE',
-    'results.filter(result => result.firstClickRetained).length, 8', 'results.filter(result => result.freeJourney).length, 24',
+    'results.filter(result => result.firstLinkRetained).length, 8', 'results.filter(result => result.freeJourney).length, 24',
     'await exerciseFreeJourneys(page, engine, width)', 'assert.deepEqual(errors, [])',
   ]) assert.ok(verifier.includes(required), required);
   assert.doesNotMatch(verifier, /videoPosters\)\.toHaveCount\(6\)|test\.skip|test\.only|test\.todo/);

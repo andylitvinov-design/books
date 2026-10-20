@@ -17,3 +17,7 @@
 .copy a{color:#8c2448;font-weight:750;font-size:.88rem;text-decoration:none}
 .copy a:hover,.copy a:focus-visible{text-decoration:underline}
 @media(max-width:620px){.section{margin-bottom:2rem}.grid{grid-template-columns:minmax(0,1fr);gap:12px}.copy{padding:12px 14px 15px}.copy h3{font-size:1rem}}
+
+/* Full poster can navigate to the original public YouTube source. */
+.poster{text-decoration:none}
+.poster:hover{text-decoration:none}

@@ -35,7 +35,11 @@ export default function PractitionerPresentationVideo({video,locale='en',service
    <div className={styles.heading}><span className={styles.eyebrow}>Holistic House · Video</span>
      <h2>{service?t.service:t.title}</h2></div>
    <div className={styles.screen}>
-     {!playing?<button type="button" className={styles.poster} onClick={()=>setPlaying(true)}
+     {isExternal&&posterUrl?<a href={url} target="_blank" rel="noopener noreferrer" className={styles.poster}
+       style={{backgroundImage:`linear-gradient(0deg,rgba(6,23,40,.65),rgba(6,23,40,.18)),url("${posterUrl}")`}}
+       aria-label={t.watch+': YouTube'}>
+       <span className={styles.play} aria-hidden="true">▶</span><span>{t.watch} · YouTube ↗</span>
+     </a>:!playing?<button type="button" className={styles.poster} onClick={()=>setPlaying(true)}
        style={posterUrl?{backgroundImage:`linear-gradient(0deg,rgba(6,23,40,.65),rgba(6,23,40,.18)),url("${posterUrl}")`}:undefined}
        aria-label={t.watch}>
        <span className={styles.play} aria-hidden="true">▶</span><span>{t.watch}</span>
