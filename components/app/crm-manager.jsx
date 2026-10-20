@@ -11,6 +11,7 @@ import CrmFreeEmail from './crm-free-email'
 import CrmContactEditor from './crm-contact-editor'
 import CrmExportTools from './crm-export-tools'
 import CrmMessengerPanel from './crm-messenger'
+import CrmMessagesNavigation from './crm-messages-navigation'
 import CrmBusinessEnquiries from './crm-business-enquiries'
 import CrmMarketingPanel from './crm-marketing'
 import { CrmWorkflowOverview, CrmContactWorkflow } from './crm-workflow'
@@ -61,6 +62,21 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [lifecycle, setLifecycle] = useState('lead')
   const [source, setSource] = useState('manual')
   const [activeSection, setActiveSection] = useState('overview')
+  const allowedSections=new Set(['overview','tasks','messages','sms','integrations','contacts'])
+  function switchSection(next){
+    if(!allowedSections.has(next))return
+    setActiveSection(next)
+    if(typeof window==='undefined')return
+    const url=new URL(window.location.href)
+    // Persist a short, nonsensitive navigation state only. No contact or
+    // message identifiers are placed in URL/referrer/analytics.
+    if(url.pathname.endsWith('/app/practice')){
+      url.searchParams.set('panel','crm')
+      if(next==='overview')url.searchParams.delete('crmTab')
+      else url.searchParams.set('crmTab',next)
+      window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+    }
+  }
   const [focusedContactId,setFocusedContactId]=useState('')
   const [focusBusy,setFocusBusy]=useState(false)
   const [focusError,setFocusError]=useState('')
@@ -92,7 +108,8 @@ export default function CrmManager({ locale = 'en', accountId }) {
     focusAbortRef.current?.abort();taskPageAbortRef.current?.abort()
     focusedIdRef.current='';setFocusedContactId('');setFocusError('');setFocusBusy(false)
     setTaskPageBusy(false);setTaskPageError(false)
-    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection('overview')
+    const initialTab=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('crmTab'):null
+    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection(allowedSections.has(initialTab)?initialTab:'overview')
     void load(session).catch(error=>{
       if(error.name!=='AbortError'&&sessionRef.current===session)setNotice(c.error)
     })
@@ -353,7 +370,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
         ['contacts',language==='ru'?'Контакты':language==='es'?'Contactos':'Contacts'],
       ].map(([id,label])=><button key={id} type="button" aria-pressed={activeSection===id}
         className={activeSection===id?styles.sectionTabActive:styles.sectionTab}
-        onClick={()=>{if(id!=='contacts'){focusAbortRef.current?.abort();setFocusBusy(false);focusedIdRef.current='';setFocusedContactId('')}setActiveSection(id)}}>{label}</button>)}
+        onClick={()=>{if(id!=='contacts'){focusAbortRef.current?.abort();setFocusBusy(false);focusedIdRef.current='';setFocusedContactId('')}switchSection(id)}}>{label}</button>)}
     </nav>
     {activeSection!=='messages'&&<div className={styles.privacy}>
       <strong>{language==='ru'?'Только деловые контакты':'Business contacts only'}</strong>
@@ -363,7 +380,11 @@ export default function CrmManager({ locale = 'en', accountId }) {
       <p>{notice||c.loading}</p>
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
-    {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />}
+    {activeSection==='messages'&&<>
+      <CrmMessagesNavigation locale={language} setup={data?.integrationSetup}
+        onSms={()=>switchSection('sms')} onIntegrations={()=>switchSection('integrations')} onOverview={()=>switchSection('overview')}/>
+      <CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />
+    </>}
     {activeSection==='integrations'&&data&&<>
        <CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />
        <CustomerTelegramBotSetup locale={language} accountId={accountId} />
