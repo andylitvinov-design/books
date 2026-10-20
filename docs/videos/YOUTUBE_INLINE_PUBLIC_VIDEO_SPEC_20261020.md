@@ -51,6 +51,8 @@
 | Hypnotherapy method EN | `8c1634ce904434a91931429b6a7eefe1` | Drive source record: source in built-in SiteVideo records | Unlisted, тот же метод |
 | Constellations method EN | `7c6b243f048b9c0581ae29619a4a89fc` | Drive source record: source in built-in SiteVideo records | Unlisted, тот же метод |
 
+**Read-only Drive metadata readback 20.10.2026:** найдено 5/5 оригинальных MP4 в подключённом Google Drive: About EN 12,684,692 B; About RU 12,251,834 B; About ES 15,015,998 B; Hypnotherapy EN 21,609,387 B; Constellations EN 22,430,004 B. Это подтверждает *наличие и MIME/размер*, но **не является** сверкой SHA/видеокадров/звука, разрешением канала или состоявшимся YouTube upload. 0 Drive writes и 0 публикаций.
+
 *Верифицировать размеры, SHA, доступ к мастер-файлам и права перед конкретной загрузкой. Точные Drive ID сверять по актуальному SOP #219 и исходным данным проекта, а не дублировать в ТЗ.*
 
 Дополнительная категория: два исторических **публичных** native MP4 с PsiTrends в разделе `TantraVideoTestimonials`, `data/academy/tantra-native-assets.json`: `video_2024-01-16_11-06-01.mp4` (~46.9 MB) и `video.mp4` (~75.4 MB). До перевода нужно отдельно проверить разрешение участников на дублирование записи в YouTube, проверить файл и канал; нынешнее нативное воспроизведение не ломать. Пользовательские видео других мастеров и Vimeo-источники требуют отдельной проверки прав и не переводятся автоматически.
