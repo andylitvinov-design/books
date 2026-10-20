@@ -369,6 +369,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
   const [showHelp,setShowHelp]=useState(false)
+  const [repeatReport,setRepeatReport]=useState(null)
   const [storyChoice,setStoryChoice]=useState(null)
   const [practiceMode,setPracticeMode]=useState(null)
   const [neutralSupport,setNeutralSupport]=useState(false)
@@ -402,6 +403,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
   const quote=cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
+  const attemptStatus=practiceReport==='tried'||repeatReport==='tried'?'tried':
+    practiceReport==='partly'||repeatReport==='partly'?'simplified':null
   const rating=answers.reflection
   const vote=answers.aphorism
   const chosenFeeling=t.moods.find(item=>item.value===welcomeFeeling)
@@ -487,14 +490,13 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     setSaving(true);setError('')
     try{
       if(!operation.current)operation.current=crypto.randomUUID()
-      const attempted=['tried','partly'].includes(practiceReport)
       const response=await onSession({
         day:cycle.day,lessonId:lesson.id,operationId:operation.current,
         feedback:rating==='uncomfortable'?'uncomfortable':rating==='unchanged'?'neutral':
           rating==='useful'||rating==='partly'?'helped':'skip',
         beforeNow:null,afterNow:null,practiceWindow:'practice_v6',
         aphorismResponse:safe.answers.aphorism||null,
-        practiceAttempt:attempted?(practiceReport==='tried'?'tried':'simplified'):null,
+        practiceAttempt:attemptStatus,
         comfort:rating==='uncomfortable'?'uncomfortable':null,
         transferStage:safe.answers.transfer==='planned'?'plan':null,
         welcomeFeeling:welcomeFeeling||null,
@@ -548,7 +550,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         :lang==='es'?'Elige un recordatorio sencillo o déjalo para otro día.'
         :'Choose one small reminder, or leave it for another day.')
     :null
-  const reportedAttempt=['tried','partly'].includes(practiceReport)
+  const reportedAttempt=Boolean(attemptStatus)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
     data-opora-experience-first="as-5.6" data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
@@ -713,7 +715,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <div className={styles.chips} role="group" aria-label={d.repeatPrompt}>
               {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
                 <button type="button" key={value} disabled={locked}
-                  aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
+                  aria-pressed={repeatReport===value} onClick={()=>setRepeatReport(value)}>{label}</button>)}
             </div>
           </div>}
           {moment==='feel'&&<>
