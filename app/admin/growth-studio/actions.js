@@ -27,6 +27,23 @@ export async function previewPublicGrowthSourceAction(input) {
   }
 }
 
+// An explicit owner click verifies the existing Redis REST connection by
+// writing, reading and deleting ONE random short-lived diagnostic key.
+// No editorial posts or client data are read; no publish, Ads or video APIs.
+export async function checkGrowthStudioStorageAction() {
+  if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
+  try {
+    const store = getGrowthStudioStore()
+    if (!store) return {ok:false,error:'storage_unavailable'}
+    const verified = await store.verifyPersistence()
+    return verified === true
+      ? {ok:true,verified:true}
+      : {ok:false,error:'storage_unavailable'}
+  } catch {
+    return {ok:false,error:'storage_unavailable'}
+  }
+}
+
 export async function listGrowthStudioPostsAction() {
   if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
   try {

@@ -1,5 +1,7 @@
 # Holistic House CRM — практический план улучшения и приёмки v5
 
+> Продолжение: [Программа развития v5.1 — рабочая очередь, надёжная переписка и следующие этапы](./CRM_DEVELOPMENT_PROGRAM_V5_1_20261020.md). Этот файл сохраняет исходный план релиза v5; текущий статус выпуска проверяется в CRM #985.
+
 **Дата:** 20 октября 2026, America/Toronto. **Источник истины:** `andylitvinov-design/books`, production branch `codex/public-book-library`; [общий Messenger tracking #985](https://github.com/andylitvinov-design/books/issues/985).
 
 ## Аудит текущего состояния (до v5)
