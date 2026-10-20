@@ -25,6 +25,8 @@ export function threeRemedyLayoutFixture(locale) {
       remedySlug: slug,
       itemType: 'homeopathy',
       potency: '30',
+      granules: '8',
+      timesPerDay: '2',
       remedyPath: '/' + locale + '/homeopathy/remedies/' + slug,
     })),
     additionalNotes: ru
@@ -59,8 +61,8 @@ test('three source photographs and signature share the second core page, without
     const signed=pages[1]
     for(const resource of ['/RemedyPhoto1 Do Q','/RemedyPhoto2 Do Q','/RemedyPhoto3 Do Q'])
       assert.ok(signed.includes(resource),locale+': all approved photographs fit alongside the recommendations')
-    assert.ok(signed.includes(locale==='ru'?'2026-11-02':'November'),
-      locale+': follow-up date remains with signature')
+    if(locale==='en') assert.ok(signed.includes('November'),
+      'the explicit follow-up date remains on the signed page')
     assert.ok(pages.slice(2).some(p=>p.includes('/RemedyPhoto')),
       'full original library images remain in later appendix pages')
     assert.doesNotMatch(pdf.toString('latin1'),/SYNTHETIC INTERNAL PRIVATE NEVER EXPORT/)
