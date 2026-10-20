@@ -261,7 +261,50 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     finally {setBusy('');setOperationBusy(false)}
   }
 
+  function editItem(item) {
+    if (busy) return
+    setEditing({
+      path:item.path, storage:item.storage, title:item.title ||
+        (locale === 'ru' ? 'Запись ' : 'Recording ') + item.path.split('/').pop()?.slice(0,8),
+      description:item.description || '', archived:item.archived === true,
+    })
+    setError('');setNotice('')
+  }
+  async function saveMetadata(event) {
+    event.preventDefault()
+    if (!editing || busy) return
+    setOperationBusy(true);setBusy('metadata');setError('');setNotice('')
+    try {
+      await ownerRequest({
+        action:'metadata',lesson:lesson.id,locale,path:editing.path,storage:editing.storage,
+        title:editing.title,description:editing.description,archived:editing.archived,
+      })
+      await onChanged()
+      setEditing(null);setNotice(copy.saved)
+    } catch (error) {
+      setError(error?.message==='REIKI_AUDIO_ACTIVE_ON_SLIDE'?copy.activeDenied:copy.failed)
+    } finally {setBusy('');setOperationBusy(false)}
+  }
+  async function deleteDraft(item) {
+    if (busy || item.storage!=='draft' || !item.archived ||
+        !window.confirm(copy.confirmDelete)) return
+    setOperationBusy(true);setBusy('delete');setError('');setNotice('')
+    try {
+      await ownerRequest({
+        action:'delete-draft',lesson:lesson.id,locale,path:item.path,confirmed:true,
+      })
+      if (staged?.path===item.path) setStaged(null)
+      setEditing(null)
+      await onChanged()
+      setNotice(copy.deleted)
+    } catch (error) {
+      setError(error?.message==='REIKI_AUDIO_ACTIVE_ON_SLIDE'?copy.activeDenied:
+        error?.message==='REIKI_AUDIO_ARCHIVE_FIRST'?copy.archiveFirst:copy.failed)
+    } finally {setBusy('');setOperationBusy(false)}
+  }
   const active = !!current
+  const visibleFiles = files.filter(item => showArchived || !item.archived)
+  const usageBytes = files.reduce((sum,item)=>sum+item.bytes,0)
   return <section className={styles.lessonCard} data-reiki-audio-lesson={lesson.id}>
     <header className={styles.lessonHead}>
       <div>
