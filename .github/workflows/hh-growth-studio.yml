@@ -63,7 +63,7 @@ jobs:
           node --check lib/growth-studio/manual-inbox.mjs
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
-        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-storage-health.test.mjs tests/growth-studio-source-preview.test.mjs tests/growth-studio-evergreen.test.mjs tests/growth-studio-manual-inbox.test.mjs tests/growth-studio-owner-setup.test.mjs tests/growth-studio-simple-entry.test.mjs tests/growth-studio-login-return.test.mjs
+        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-storage-health.test.mjs tests/growth-studio-source-preview.test.mjs tests/growth-studio-evergreen.test.mjs tests/growth-studio-manual-inbox.test.mjs tests/growth-studio-owner-setup.test.mjs tests/growth-studio-simple-entry.test.mjs tests/growth-studio-login-return.test.mjs tests/admin-login-security.test.mjs
 
   next-build:
     name: Next.js production build / Growth Studio
@@ -82,5 +82,7 @@ jobs:
           cache: npm
       - name: Install exact dependency lock
         run: npm ci
+      - name: Verify Google OAuth continuation with actual Next Auth SDK
+        run: node --test tests/app-auth-pkce.integration.mjs
       - name: Next.js build
         run: npm run build
