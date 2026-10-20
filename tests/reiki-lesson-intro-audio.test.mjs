@@ -204,7 +204,7 @@ test('A lesson language folder lists safe uploaded audio, never client assets or
 
 test('Several saved audio files can be previewed; only one is assigned to the lesson after consent', () => {
   assert.match(adminUi,/data-reiki-audio-folder-contents/)
-  assert.match(adminUi,/files\.map\(\(item,index\)=>/)
+  assert.match(adminUi,/files\.map\(\(item\)=>/)
   assert.match(adminUi,/data-reiki-audio-file=\{item\.path\}/)
   assert.match(adminUi,/setStaged\(\{path:item\.path,fileName:null\}\)/)
   assert.match(adminUi,/reikiIntroPublicObjectUrl\(origin,staged\.path,lesson\.id,locale\)/)
