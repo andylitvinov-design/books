@@ -35,8 +35,8 @@ test("homepage prioritizes personal enquiry while retaining accessible free revi
   const home = read("components/holistic-house-home.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Ask about a session · from €50"/);
-  assert.match(home, /heroBook: "Запросить личную сессию · от €50"/);
+  assert.match(home, /heroBook: "Request a consultation · from €50"/);
+  assert.match(home, /heroBook: "Запросить консультацию · от €50"/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(home, /className="service-home-button service-home-button--primary"/);
   assert.match(wrapper, /id="home-consultation"/);
@@ -120,10 +120,10 @@ test("hero H1 matches personal-session metadata, and optional free CTA stays cle
   assert.match(seo, /Personal Sessions in Toronto & Online/);
   assert.match(enRu, /heroTitle: "Stuck in relationships, work or an important decision\?"/);
   assert.match(enRu, /heroTitle: "Сложности в отношениях, работе или важном решении\?"/);
-  assert.match(enRu, /heroBook: "Ask about a session · from €50"/);
-  assert.match(enRu, /heroBook: "Запросить личную сессию · от €50"/);
+  assert.match(enRu, /heroBook: "Request a consultation · from €50"/);
+  assert.match(enRu, /heroBook: "Запросить консультацию · от €50"/);
   assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
-  assert.match(es, /Solicitar sesión personal · desde €50/);
+  assert.match(es, /Solicitar una consulta · desde €50/);
   assert.match(es, /href="\/es\/services#consultation"/);
   assert.match(css, /\.house-home--services \.service-home-paid-link \{/);
   assert.match(css, /background: #0a7180/);
