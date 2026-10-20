@@ -66,7 +66,7 @@ const approvedAndyPosters: Readonly<Record<string, string>> = {
 // Approved Unlisted YouTube mirror links for these exact public HeyGen masters.
 // Prefer these identity-verified YouTube copies for public playback when HeyGen embeds fail.
 // Preserve the original HeyGen record, artwork, transcript and owner editor state.
-const existingYouTubeMirrors: Readonly<Record<string, string>> = {
+export const existingYouTubeMirrors: Readonly<Record<string, string>> = {
   ed202847a43a96b918308aa972177b34: "Y4K4piEwwA8",
   "48105a2f2228e7cb3a67391e97acaf8b": "s30Y42IwPcg",
   "34df311e461509433b45929908a9097a": "ILyRWyHtJoE",
@@ -133,10 +133,12 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const audioNotice = locale === "es" && video.language !== "es" ? (video.language === "ru" ? "Audio en ruso" : "Audio en inglés") : "";
   const mirrorId = video.heygenId ? existingYouTubeMirrors[video.heygenId] : undefined;
   const playbackYouTubeId = mirrorId || video.youtubeId;
-  // Direct links avoid loading YouTube's full player on a mobile page.
-  // Keep verified mirrors and original HeyGen-only presentations untouched.
-  const youtubeWatchUrl = playbackYouTubeId ? `https://www.youtube.com/watch?v=${playbackYouTubeId}` : "";
-  const embedUrl = `https://app.heygen.com/embeds/${video.heygenId}`;
+  const playerParams = new URLSearchParams({ autoplay: "1", playsinline: "1", rel: "0", hl: locale, cc_lang_pref: video.language });
+  // Six previously approved public copies avoid the broken HeyGen embed.
+  // Unique method/intro videos without an exact mirror keep their original source.
+  const embedUrl = playbackYouTubeId
+    ? `https://www.youtube-nocookie.com/embed/${playbackYouTubeId}?${playerParams.toString()}`
+    : `https://app.heygen.com/embeds/${video.heygenId}`;
 
   useEffect(() => { if (playing) playerRef.current?.focus(); }, [playing]);
   // Cross-origin frames can load despite inner media failure. Offer help without
@@ -162,8 +164,13 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
     {text.watch}<ExternalLink aria-hidden="true" />
   </a> : null;
 
-  const posterContents = (
-    <>
+  return (
+    <figure className={["site-video-player", compact && "site-video-player--compact", minimal && "site-video-player--minimal", minimal && styles.minimal, className].filter(Boolean).join(" ")} aria-labelledby={titleId} lang={locale}>
+      <div className="site-video-frame">
+        {playing ? (
+          <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
+        ) : (
+          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => { setShowRecovery(false); setPlaying(true); }}>
             {!isHeygen && fallbackPoster && !localPosterFailed && (
               <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
@@ -180,24 +187,8 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
             ) : null}
             <span className="site-video-shade" aria-hidden="true" />
                 <span className="site-video-poster-title" aria-hidden="true" data-title={video.title} />
-            <span className="site-video-play-prompt" aria-hidden="true"><span className="site-video-play-icon"><Play /></span>{!minimal && <span className="site-video-play-label">{playbackYouTubeId ? text.watch : text.play}</span>}</span>
+            <span className="site-video-play-prompt" aria-hidden="true"><span className="site-video-play-icon"><Play /></span>{!minimal && <span className="site-video-play-label">{text.play}</span>}</span>
             {duration && <span className="site-video-duration" aria-hidden="true">{duration.label}</span>}
-    </>
-  );
-
-  return (
-    <figure className={["site-video-player", compact && "site-video-player--compact", minimal && "site-video-player--minimal", minimal && styles.minimal, className].filter(Boolean).join(" ")} aria-labelledby={titleId} lang={locale}>
-      <div className="site-video-frame">
-        {playing && !playbackYouTubeId ? (
-          <iframe ref={playerRef} className="site-video-iframe" data-video-playback="heygen" src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
-        ) : playbackYouTubeId ? (
-          <a className="site-video-play" href={youtubeWatchUrl} target="_blank" rel="noopener noreferrer"
-            aria-label={`${text.watch}: ${video.title} (${text.newTab})`}>
-            {posterContents}
-          </a>
-        ) : (
-          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => { setShowRecovery(false); setPlaying(true); }}>
-            {posterContents}
           </button>
         )}
       </div>

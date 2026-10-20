@@ -6,6 +6,7 @@ import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
 import {registerClientTelegramWebhook,verifyClientBot} from '@/lib/app/client-telegram-transport'
 import {telegramClientLinkReady,telegramClientSendReady,validClientBotUsername} from '@/lib/app/client-telegram-policy'
+import {createMessengerNotificationRepository} from '@/lib/app/messenger-notification-repository'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -42,6 +43,9 @@ async function handler(request){
 
   if(request.method==='GET'){
    const state=readiness()
+   // Only this verified owner's account, never imported CRM recipients.
+   const own=await createMessengerNotificationRepository(config).state(actor)
+   state.ownerLinked=own.channels?.telegram?.status==='connected'
    if(state.configured){
     try{await verifyClientBot(process.env,{requireWebhook:true});state.webhookVerified=true}
     catch{/* Genuine external readiness failure; do not reveal bot secrets. */}

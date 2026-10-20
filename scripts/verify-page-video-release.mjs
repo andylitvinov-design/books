@@ -30,7 +30,7 @@ const approvedYouTubeMirrors = new Map([
 ]);
 function expectedPublicEmbed(videoId) {
   const mirror = approvedYouTubeMirrors.get(videoId);
-  return mirror ? `https://www.youtube.com/watch?v=${mirror}` : `https://app.heygen.com/embeds/${videoId}`;
+  return mirror ? new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${mirror}\\?`) : `https://app.heygen.com/embeds/${videoId}`;
 }
 const results = [];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -84,13 +84,15 @@ async function exercise(engine, browserType) {
     try {
       await page.goto(`${origin}/?lang=en`, { waitUntil: 'commit', timeout: 60000 });
       const cold = page.locator('[data-video-slot="home-intro"][data-video-locale="en"]');
-      const direct = cold.locator('a.site-video-play');
-      await expect(direct).toBeVisible({ timeout: 20000 });
-      await expect(direct).toHaveAttribute('href', expectedPublicEmbed(cases[0][3]));
+      const play = cold.locator('button.site-video-play');
+      await expect(play).toBeVisible({ timeout: 20000 });
+      await expect(play).toBeDisabled();
       assert.equal(await cold.locator('iframe').count(), 0);
       release();
-      await expect(direct).toHaveAttribute('href', expectedPublicEmbed(cases[0][3]));
-      results.push({ engine, test: 'cold public link works without hydration', passed: true });
+      await expect(play).toBeEnabled({ timeout: 30000 });
+      await play.click();
+      await expect(cold.locator('iframe')).toHaveAttribute('src', expectedPublicEmbed(cases[0][3]));
+      results.push({ engine, test: 'cold first click after hydration', passed: true });
     } finally { release(); await page.unroute(scriptPattern); }
 
     for (const width of [1365, 390]) {
@@ -113,10 +115,8 @@ async function exercise(engine, browserType) {
         const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`);
         await expect(block).toHaveCount(1);
         await expect(block.locator('.site-video-player')).toHaveClass(/site-video-player--minimal/);
-        const directYouTube = approvedYouTubeMirrors.has(id);
-        const play = block.locator(directYouTube ? 'a.site-video-play' : 'button.site-video-play');
-        await expect(play).toBeVisible({ timeout: 30000 });
-        if (!directYouTube) await expect(play).toBeEnabled({ timeout: 30000 });
+        const play = block.locator('button.site-video-play');
+        await expect(play).toBeEnabled({ timeout: 30000 });
         assert.equal(await block.locator('iframe').count(), 0);
         const img = block.locator('.site-video-poster');
         await img.scrollIntoViewIfNeeded();
@@ -137,16 +137,11 @@ async function exercise(engine, browserType) {
         // one layout cycle. Require settled geometry, without relaxing the bound.
         await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth), { timeout: 5000 }).toBeLessThanOrEqual(2);
         await block.screenshot({ path: `${evidence}/${label}-${poster}-${engine}-${width}.png` });
-        if (directYouTube) {
-          await expect(play).toHaveAttribute('href', expectedPublicEmbed(id));
-          await expect(block.locator('iframe')).toHaveCount(0);
-        } else {
-          await play.click();
-          await expect(block.locator('iframe')).toHaveAttribute('src', expectedPublicEmbed(id));
-        }
-        results.push({ engine, path, width, posterDecoded: true, exactVideoId: id, directYouTube, firstClick: !directYouTube, compact: true, transcriptLanguage: locale });
+        await play.click();
+        await expect(block.locator('iframe')).toHaveAttribute('src', expectedPublicEmbed(id));
+        results.push({ engine, path, width, posterDecoded: true, exactVideoId: id, firstClick: true, compact: true, transcriptLanguage: locale });
 
-        if (live && width === 390 && !directYouTube) {
+        if (live && width === 390) {
           const video = block.frameLocator('iframe').locator('video');
           await expect(video).toHaveCount(1, { timeout: 60000 });
           await expect.poll(() => video.evaluate(el => Boolean(el.currentSrc) && el.readyState >= 2 && Number.isFinite(el.duration)), { timeout: 60000 }).toBe(true);
@@ -179,14 +174,14 @@ async function exercise(engine, browserType) {
       }
     }
     await page.goto(origin + '/?lang=en', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('[data-video-slot="home-intro"] a.site-video-play'))
-      .toHaveAttribute('href', expectedPublicEmbed(cases[0][3]));
-    await expect(page.locator('[data-video-slot="home-intro"] iframe')).toHaveCount(0);
+    await page.locator('[data-video-slot="home-intro"] .site-video-play').click();
+    await expect(page.locator('[data-video-slot="home-intro"] iframe')).toHaveCount(1);
     await chooseRussianHome(page);
     const russian = page.locator('[data-video-slot="home-intro"][data-video-locale="ru"]');
     await expect(russian).toHaveCount(1);
     await expect(russian.locator('iframe')).toHaveCount(0);
-    await expect(russian.locator('a.site-video-play')).toHaveAttribute('href', expectedPublicEmbed(cases[5][3]));
+    await russian.locator('.site-video-play').click();
+    await expect(russian.locator('iframe')).toHaveAttribute('src', expectedPublicEmbed(cases[5][3]));
     assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors');
     results.push({ engine, languageSwitchResetsPlayer: true, pageJavaScriptErrors: pageErrors });
   } catch (error) {
@@ -201,5 +196,5 @@ try {
   writeFileSync(`${evidence}/${label}-six-page-videos.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), results }, null, 2));
   assert.ok(!results.some(item => item.failure), 'Page-video checks failed; inspect JSON');
   assert.equal(results.filter(item => item.compact).length, 32);
-  if (live) assert.equal(results.filter(item => item.fullPlayback).length, 4);
+  if (live) assert.equal(results.filter(item => item.fullPlayback).length, 16);
 } finally { if (app) app.kill('SIGTERM'); }

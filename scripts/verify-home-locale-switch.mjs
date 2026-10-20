@@ -235,10 +235,10 @@ async function exercise(engine, browserType, width) {
       await expect(page).toHaveURL(origin + homePath(from));
       await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
       const current = page.locator(`[data-video-slot="home-intro"][data-video-locale="${from}"]`);
-      await expect(current.locator('a.site-video-play')).toHaveAttribute('href', from === 'en'
-        ? 'https://www.youtube.com/watch?v=Y4K4piEwwA8'
-        : 'https://www.youtube.com/watch?v=AE8Pelpo424');
       await expect(current.locator('iframe')).toHaveCount(0);
+      await current.locator('button.site-video-play').click();
+      const fromYouTubeId = from === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      await expect(current.locator('iframe')).toHaveAttribute('src', new RegExp('^https://www\\.youtube-nocookie\\.com/embed/' + fromYouTubeId + '\\?'));
       const countBefore = heldRequests;
       delayedRscGate = new Promise(resolve => { releaseHeldRsc = resolve; });
       delayedLocale = to;
@@ -254,17 +254,15 @@ async function exercise(engine, browserType, width) {
       await expect(next).toHaveCount(1, { timeout: 20000 });
       transport.assertHealthy();
       await expect(next.locator('iframe')).toHaveCount(0);
-      const expectedUrl = to === 'en'
-        ? 'https://www.youtube.com/watch?v=Y4K4piEwwA8'
-        : 'https://www.youtube.com/watch?v=AE8Pelpo424';
-      const directLink = next.locator('a.site-video-play');
-      await expect(directLink).toHaveAttribute('href', expectedUrl);
-      await expect(next.locator('iframe')).toHaveCount(0);
+      const toYouTubeId = to === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      await next.locator('button.site-video-play').click();
+      await expect(next.locator('iframe')).toHaveAttribute('src', new RegExp('^https://www\\.youtube-nocookie\\.com/embed/' + toYouTubeId + '\\?'));
+      const frame = await next.locator('iframe').elementHandle();
       await pause(2200);
-      assert.ok(await directLink.evaluate(element => element.isConnected), 'Direct YouTube link was discarded after navigation');
+      assert.ok(await frame.evaluate(element => element.isConnected), 'First-click YouTube iframe was discarded after navigation');
       await expect(page).toHaveURL(origin + homePath(to));
       delayedLocale = null;
-      results.push({ engine, width, from, to, heldRsc: true, firstLinkRetained: true });
+      results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
       phase = 'free-offers';
       await verifyFreeOffers(page, to, engine, width);
       transport.assertHealthy();
@@ -332,10 +330,10 @@ async function exercise(engine, browserType, width) {
     assert.ok(measurements.contactBackground?.includes('linear-gradient'), 'Blue capture gradient must render');
     results.push({ engine, width, homeVisual: true, ...measurements });
     await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-${engine}-${width}.png`, fullPage: true });
-    // The archived real still links to the exact original even without hydration.
-    await expect(firstReview.locator('a.site-video-play')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=Dk0LBmOivQo');
-    await expect(firstReview.locator('iframe')).toHaveCount(0);
-    await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(1);
+    // Poster click must load the exact YouTube original inside this card.
+    await firstReview.locator('button.site-video-play').click();
+    await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
+    await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0);
 
     phase = 'journeys';
     await exerciseFreeJourneys(page, engine, width);
@@ -388,9 +386,9 @@ try {
   }
   const outcomes = await Promise.allSettled([['chromium', chromium], ['webkit', webkit]].flatMap(([name, type]) => [390, 1365].map(width => exercise(name, type, width))));
   assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'Locale-switch regression failed; inspect artifact');
-  assert.equal(results.filter(result => result.firstLinkRetained).length, 8);
+  assert.equal(results.filter(result => result.firstClickRetained).length, 8);
   assert.equal(results.filter(result => result.freeJourney).length, 24);
-  console.log('PASS: eight delayed-RSC EN/RU switches, Chromium/WebKit, mobile/desktop; no lost first click');
+  console.log('PASS: eight delayed-RSC EN/RU switches, Chromium/WebKit, mobile/desktop; no lost inline YouTube playback');
 } finally {
   await writeFile(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ origin, results, fullPlayback: 'Not claimed by this interaction-only test' }, null, 2));
   app?.kill('SIGTERM');
