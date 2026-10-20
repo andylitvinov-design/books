@@ -41,7 +41,7 @@ export async function POST(request){
   const response=reply({status:'pending',linkUrl:result.linkUrl,expiresInMinutes:15})
   response.cookies.set(COOKIE,result.token,{
    path:'/api/public/telegram-subscribe',httpOnly:true,
-   secure:process.env.NODE_ENV!=='development',sameSite:'lax',maxAge:900,
+   secure:process.env.NODE_ENV!=='development',sameSite:'lax',maxAge:172800,
   })
   return response
  }catch(error){
