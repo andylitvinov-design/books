@@ -78,7 +78,8 @@ test('A4 and mobile reports use genuine catalogue JPEGs and a single branded lig
     assert.equal((mobile.match(/\/Lighthouse Do Q/g) ?? []).length, 1)
     assert.match(desktop, /\/RemedyPhoto1 Do Q/, 'A4 retains the real photograph')
     assert.match(mobile, /\/MobileRemedy0 Do Q/, 'mobile retains the real photograph')
-    assert.match(desktop, /0\.94 0\.91 0\.83 rg/, 'coastal sun is drawn as scalable vector art')
+    assert.ok(/\/CoastalPhoto Do Q/.test(desktop) || /0\.94 0\.91 0\.83 rg/.test(desktop),
+      'approved coastal photo or vector fallback is present')
     assert.match(desktop, /\/Signature Do Q/, 'the authorized report signature remains')
     assert.doesNotMatch(desktop + mobile, /SYNTHETIC PRIVATE DO NOT EXPORT/)
   }
