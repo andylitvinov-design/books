@@ -9,6 +9,7 @@ import {randomUUID} from 'node:crypto'
 const code=readFileSync(new URL('../lib/clients/local-narration-redis.js',import.meta.url),'utf8')
 const container='andrey-voice-redis-ci'
 const ttl='1209600'
+const readyTtl='7776000'
 function lua(name) {
   const marker='const '+name+'=`'
   const start=code.indexOf(marker)
@@ -30,13 +31,13 @@ function get(key) {
 }
 const fixture=()=> {
   const prefix='hh:test:voice:'+randomUUID()+':'
-  const id=randomUUID(),key=prefix+'item',queue=prefix+'queue',idKey=prefix+'id',now=5000
+  const id=randomUUID(),key=prefix+'item',queue=prefix+'queue',idKey=prefix+'id',ready=prefix+'ready',now=5000
   const original={
     id,queueKey:'a'.repeat(64),version:'b'.repeat(64),locale:'ru',part:0,
     status:'queued',attempts:0,createdAt:now,nextAttemptAt:now,
     leaseId:null,leaseExpiresAt:null,audio:null,encryptedPayload:'ENCRYPTED_FAKE_ONLY',
   }
-  return {id,key,queue,idKey,now,original}
+  return {id,key,queue,idKey,ready,now,original}
 }
 
 test('atomic enqueue deduplicates same report/locale and cannot create second id mapping',()=>{
@@ -64,13 +65,15 @@ test('lease excludes concurrent worker and completion eliminates encrypted text'
   assert.equal(first.attempts,1)
   assert.equal(evalLua('CLAIM_SCRIPT',[f.queue],
     [now+1,randomUUID(),60000,objectKey,ttl]),'')
-  assert.equal(evalLua('COMPLETE_SCRIPT',[f.key,f.queue],
-    [randomUUID(),now+2,'audio/mpeg',12345,'a'.repeat(64),ttl]),'')
-  const done=JSON.parse(evalLua('COMPLETE_SCRIPT',[f.key,f.queue],
-    [lease,now+2,'audio/mpeg',12345,'a'.repeat(64),ttl]))
+  assert.equal(evalLua('COMPLETE_SCRIPT',[f.key,f.queue,f.ready],
+    [randomUUID(),now+2,'audio/mpeg',12345,'a'.repeat(64),readyTtl,now+7776000*1000]),'')
+  const done=JSON.parse(evalLua('COMPLETE_SCRIPT',[f.key,f.queue,f.ready],
+    [lease,now+2,'audio/mpeg',12345,'a'.repeat(64),readyTtl,now+7776000*1000]))
   assert.equal(done.status,'ready')
   assert.equal(done.encryptedPayload,null)
   assert.equal(done.audio.assetPath,objectKey)
+  assert.equal(evalLua('CLAIM_EXPIRED_AUDIO_SCRIPT',[f.ready],
+    [now+7776000*1000+1,1,600000]),objectKey)
   assert.equal(evalLua('CANCEL_STALE_SCRIPT',[f.key,f.queue,f.idKey],[lease]),'0')
 })
 
