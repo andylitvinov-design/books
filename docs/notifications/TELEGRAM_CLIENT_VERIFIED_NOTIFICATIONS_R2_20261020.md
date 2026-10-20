@@ -11,7 +11,7 @@ Date: 2026-10-20, Toronto. Tracks [#1302](https://github.com/andylitvinov-design
 - All existing Web Push, native notifications, master digest and CRM inbox remain unchanged.
 
 ## Production prerequisites (NOT provisioned by GitHub code)
-A separate, newly created, owner-controlled Holistic House notification bot is required. Do not reuse HH_PRACTICE_TG_BOT_TOKEN, CRM bot, existing webhooks or Ezohata bot.
+Two controlled modes are supported: a dedicated client bot, or explicit reuse of the **already verified Holistic House owner/practice bot** (`@andydotbot`) under `HH_CLIENT_TG_USE_PRACTICE_BOT=true`. Never reuse a CRM, Ezohata, or unrelated webhook. Shared mode is enabled only after the owner chat is safely paired, bot identity is verified and any existing webhook is empty or is exactly the Holistic House client handler.
 
 Server-only Vercel environment variables:
 - HH_CLIENT_TG_BOT_TOKEN — new BotFather bot secret
@@ -46,7 +46,7 @@ Read-only source-of-truth check: the Vercel Production project already has:
 - `HH_CLIENT_TG_LINK_ENABLED=true` — clients can link only after bot credentials and exact callback exist
 - `HH_CLIENT_TG_SEND_APPROVED=false` — automatic sends remain disabled, including after bot creation
 
-Only `HH_CLIENT_TG_BOT_TOKEN` and `HH_CLIENT_TG_BOT_USERNAME` are not provisioned. The existing `HH_PRACTICE_TG_BOT_TOKEN` belongs to another workflow and **must not** be reused.
+For the **dedicated** mode, `HH_CLIENT_TG_BOT_TOKEN` and `HH_CLIENT_TG_BOT_USERNAME` must be set. For the **shared** mode requested by the owner, those two credentials are intentionally unnecessary; `HH_CLIENT_TG_USE_PRACTICE_BOT=true` selects the existing `HH_PRACTICE_TG_BOT_TOKEN` without copying or exposing its value, using the public bot identity `@andydotbot`. No global send flag changes.
 
 **Owner actions**
 
@@ -72,3 +72,21 @@ The pilot API requires a verified owner session, a matching account header, same
 Leave `HH_CLIENT_TG_SEND_APPROVED=false` during pilot: this button works independently and **does not activate messages to customers**. After a successful real pilot, separate two-account privacy testing and owner approval are still required before enabling event-driven notifications for clients. With the two dedicated bot variables missing, the test button correctly stays disabled.
 
 Source: [PR #1388](https://github.com/andylitvinov-design/books/pull/1388).
+
+
+## R3 · Reuse already configured practice Telegram bot without another token (20 Oct 2026)
+
+**Problem fixed:** Production has a protected `HH_PRACTICE_TG_BOT_TOKEN`, `HH_PRACTICE_TG_ENABLED=true`, and a verified, AES-GCM-encrypted master private chat in `app_private.telegram_owner_pairings`. Previous client-only routing unnecessarily required a second BotFather token. The owner explicitly requested reuse of the token already installed.
+
+**Design:** `HH_CLIENT_TG_USE_PRACTICE_BOT=true` opts into using the existing `@andydotbot` token **server-side only**; no copy, decrypt/export, or second environment token is needed. Shared mode requires:
+- Real owner token with the BotFather format and existing practice send enable flag.
+- Independent client webhook header secret `HH_CLIENT_TG_WEBHOOK_SECRET`, existing client link flag, and fixed bot identity matching `@andydotbot`.
+- At **webhook setup time**, independently fetch actual Telegram `getMe`, validate the existing owner `getChat` against the persisted verified owner chat and fixed owner username, then inspect `getWebhookInfo`. **Never overwrite a non-empty webhook except exactly the approved client callback.**
+- Existing owner gateway outbound `sendDocument` continues using the same token; the verified owner pairing row already exists. Telegram prohibits `getUpdates` while a webhook is installed, so shared setup refuses to switch an unpaired owner bot into webhook mode. Future owner pairing repair must be designed for webhook; do not silently use `getUpdates`.
+- Verified client `/start <one-time token>`, `/stop`, opt-in checks, encrypted chat IDs and account-scope permissions are unchanged. `HH_CLIENT_TG_SEND_APPROVED=false` remains a hard server-side stop for event-driven client notifications. A separately owner-clicked and rate-limited neutral test is available only after owner-specific client linking.
+
+**Owner action after shared-mode code is READY:** visit [My Practice → CRM → Integrations](https://holistichouse.vercel.app/ru/app/practice), confirm it shows existing bot `@andydotbot` and tap **«Проверить и подключить webhook»**. If Telegram already reports another webhook, the operation must fail without any changes. Next, in [Cabinet Settings](https://holistichouse.vercel.app/ru/app/settings) opt into your own Telegram, press Start on the short-lived link and refresh. Return to CRM and tap **«Отправить тест себе в Telegram»** to verify real Bot API acceptance and receipt in your chat. Do not set global sends true before a 2-account review and explicit approval.
+
+**Owner does not need to create a new bot, paste the old token again, or supply any new secrets.** If the owner chooses dedicated mode later, set both dedicated client variables and remove the shared-mode flag in a separate reviewed release.
+
+**Rollout status remains conditional:** CI, merge, Vercel READY, verified webhook and actual client /start plus one real delivery must each be recorded separately. No provider sends or marketing are enabled by a database migration, a source merge, or a successful build.
