@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import {useEffect, useMemo, useState} from 'react'
-import {CalendarDays, Check, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
+import {CalendarClock, CalendarDays, Check, CheckCheck, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
 import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
+import GrowthStudioManualInbox from './growth-studio-manual-inbox'
 import GrowthStudioEvergreen from './growth-studio-evergreen'
 import GrowthStudioSourcePicker from './growth-studio-source-picker'
 import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/lib/growth-studio/manual-calendar.mjs'
@@ -23,9 +24,9 @@ const CHANNELS={
 const COPY={
   en:{
     heading:'Content command center',sub:'One place to prepare posts for your channels, with explicit approvals.',
-    draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',
+    draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',manual_done:'Manually marked done · unverified',
     sending:'Sending — do not retry',published:'Published (provider confirmed)',delivery_unknown:'Delivery uncertain — verify in Telegram',
-    pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
+    manualInbox:'To publish',manualDoneConfirm:'Have you actually posted this exact content in your chosen account? This only records your manual statement; Growth Studio CANNOT verify the social post.',manualDoneNotice:'Marked done manually — not verified by a social platform.',manualUndoConfirm:'Restore this item to the manual publishing queue? It will be counted as pending again.',manualUndoNotice:'Restored to manual posting queue.',manualUndo:'Restore manual task',manualDoneTime:'Owner marked done (not provider verified)',pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
     telegramReady:'Telegram channel ready',telegramDisabled:'Telegram is not connected. Add the dedicated bot settings.',
     telegramSend:'Publish now to Telegram',telegramConfirm:'Publish this exact post now to the configured public Telegram channel?',
     telegramSent:'Telegram confirmed publication.',telegram_delivery_unknown:'The result is uncertain. Check your channel before taking further action. Do NOT retry.',telegram_unconfigured:'Telegram is not configured.',telegram_invalid_post:'This Telegram post is not ready.',telegram_media_unsupported:'This media format requires manual publication.',telegram_text_too_long:'Telegram caption is too long.',telegram_permission_unverified:'The bot does not have confirmed posting rights for the configured public channel. Check Connections first.',
@@ -60,9 +61,9 @@ const COPY={
   },
   ru:{
     heading:'Центр управления контентом',sub:'Готовьте публикации для разных площадок и согласовывайте их перед размещением.',
-    draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',
+    draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',manual_done:'Отмечено вручную · не проверено',
     sending:'Отправка — не повторять',published:'Опубликовано (подтверждено)',delivery_unknown:'Доставка неясна — проверьте Telegram',
-    pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
+    manualInbox:'К публикации',manualDoneConfirm:'Вы действительно разместили этот точный материал в нужном аккаунте? Это только ваша отметка; Growth Studio НЕ проверил пост в соцсети.',manualDoneNotice:'Отмечено вручную. Доставка в соцсеть не подтверждена.',manualUndoConfirm:'Вернуть задачу в очередь ручных публикаций? Она снова будет считаться ожидающей.',manualUndoNotice:'Возвращено в очередь ручных публикаций.',manualUndo:'Вернуть задачу',manualDoneTime:'Отмечено вами; провайдер не проверялся',pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
     telegramReady:'Канал Telegram подключён',telegramDisabled:'Telegram не подключён — настройте отдельного бота.',
     telegramSend:'Опубликовать сейчас в Telegram',telegramConfirm:'Опубликовать этот точный текст сейчас в настроенном публичном Telegram-канале?',
     telegramSent:'Telegram подтвердил публикацию.',telegram_delivery_unknown:'Результат неизвестен. Проверьте канал. НЕ повторяйте отправку автоматически.',telegram_unconfigured:'Telegram не настроен.',telegram_invalid_post:'Пост не готов к отправке в Telegram.',telegram_media_unsupported:'Этот формат медиа нужно опубликовать вручную.',telegram_text_too_long:'Слишком длинная подпись для Telegram.',telegram_permission_unverified:'У бота нет подтверждённых прав публикации в заданном канале. Проверьте Подключения.',
@@ -247,7 +248,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           fields:{brand:form.brand,channel:form.channel,locale:form.locale,title:form.title,
             caption:form.caption,sourceUrl:form.sourceUrl,campaign:form.campaign,
             scheduledAt:isoFromLocal(form.scheduledAt),mediaUrl:form.mediaUrl,mediaAlt:form.mediaAlt}}
-        : {action,id:post.id,expectedRevision:post.revision})
+        : {action,id:post.id,expectedRevision:post.revision,
+            ...(action==='complete_manual'?{confirmed:true}:{})})
       if (!result.ok){setNotice(t[result.error]||t.tryAgain);return}
       const saved=result.record
       setRecords(previous=>orderGrowthPosts([...previous.filter(item=>item.id!==saved.id),saved]))
@@ -256,9 +258,18 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         setForm({...saved,scheduledAt:localFromIso(saved.scheduledAt)})
       } else if (editing?.id===saved.id) setEditing({id:saved.id,revision:saved.revision})
       setNotice(action==='save'?t.saved:action==='approve'?t.approvedNotice:
-        action==='plan'?t.plannedNotice:action==='archive'?t.archivedNotice:t.reopened)
+        action==='plan'?t.plannedNotice:action==='complete_manual'?t.manualDoneNotice:
+        action==='undo_manual'?t.manualUndoNotice:action==='archive'?t.archivedNotice:t.reopened)
     } catch {setNotice(t.tryAgain)}
     finally {setBusy(false)}
+  }
+  function markManualDone(post){
+    if(!window.confirm(t.manualDoneConfirm+'\n\n'+post.title+'\n'+CHANNELS[post.channel]))return
+    execute('complete_manual',post)
+  }
+  function undoManualDone(post){
+    if(!window.confirm(t.manualUndoConfirm))return
+    execute('undo_manual',post)
   }
   async function sendTelegram(post){
     if(!telegram.ready||!telegramVerified||busy)return
@@ -330,6 +341,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <button type="button" aria-pressed={tab==='compose'} onClick={()=>setTab('compose')}><Edit3 size={17}/>{t.compose}</button>
         <button type="button" aria-pressed={tab==='bulk'} onClick={()=>setTab('bulk')}><Plus size={17}/>{t.bulk}</button>
         <button type="button" aria-pressed={tab==='calendar'} onClick={()=>setTab('calendar')}><CalendarDays size={17}/>{t.calendar}</button>
+        <button type="button" aria-pressed={tab==='inbox'} onClick={()=>setTab('inbox')}><CalendarClock size={17}/>{t.manualInbox}</button>
         <button type="button" aria-pressed={tab==='posts'} onClick={()=>setTab('posts')}><FileText size={17}/>{t.pending}</button>
         <button type="button" aria-pressed={tab==='library'} onClick={()=>setTab('library')}><FileText size={17}/>{t.library}</button>
       </div>
@@ -428,14 +440,18 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           setEditing(null);setTab('compose');setNotice('')
         }}>{t.edit}</button></article>)}</div>
     </section>}
-    {(tab==='posts'||tab==='calendar')&&<div className={styles.filters}>
+    {(tab==='posts'||tab==='calendar'||tab==='inbox')&&<div className={styles.filters}>
       <label>{t.brand}<select value={brandFilter} onChange={event=>setBrandFilter(event.target.value)}>
         <option value="all">{t.allBrands}</option>{Object.keys(BRANDS).map(key=><option key={key} value={key}>{BRANDS[key]}</option>)}</select></label>
-      <label>{t.filter}<select value={filter} onChange={event=>setFilter(event.target.value)}>
+      {tab!=='inbox'&&<label>{t.filter}<select value={filter} onChange={event=>setFilter(event.target.value)}>
         <option value="active">{t.all}</option><option value="all">{t.all} + {t.archived}</option>
-        {['draft','approved','planned_manual','sending','published','delivery_unknown','archived'].map(status=><option key={status} value={status}>{t[status]}</option>)}
-      </select></label>
+        {['draft','approved','planned_manual','manual_done','sending','published','delivery_unknown','archived'].map(status=><option key={status} value={status}>{t[status]}</option>)}
+      </select></label>}
     </div>}
+    {tab==='inbox'&&<GrowthStudioManualInbox
+      records={records.filter(post=>brandFilter==='all'||post.brand===brandFilter)}
+      locale={locale} ready={ready} busy={busy}
+      onEdit={edit} onMarkDone={markManualDone}/>}
     {tab==='calendar'&&<div className={styles.calendar}>
       <div className={styles.calendarHead}>
         <button type="button" aria-label={t.previous} onClick={()=>shiftMonth(-1)}>‹</button>
@@ -472,7 +488,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{publicationStatusLabel(post.status,locale)}</span>
           <h3>{post.title}</h3><p>{BRANDS[post.brand]} · {CHANNELS[post.channel]} · {post.locale.toUpperCase()}</p>
           {post.scheduledAt&&<small>{formatTime(post.scheduledAt,locale)} · {t.localTime}</small>}</div>
-          {!['sending','published','delivery_unknown'].includes(post.status)
+          {!['sending','published','delivery_unknown','manual_done'].includes(post.status)
             && <button type="button" disabled={busy} onClick={()=>edit(post)}><Edit3 size={15}/>{t.edit}</button>}</div>
         <p className={styles.postExcerpt}>{post.caption||'—'}</p>
         <div className={styles.postButtons}>
@@ -482,6 +498,11 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
             <button type="button" disabled={busy||!ready||!telegramVerified}
               title={telegramVerified?t.telegramSend:locale==='ru'?'Сначала проверьте права бота в разделе подключений':'Verify bot posting rights under Connections first'} onClick={()=>sendTelegram(post)}>
               <Send size={15}/>{t.telegramSend}</button>}
+          {post.status==='planned_manual'&&<button type="button" disabled={busy||!ready}
+            onClick={()=>markManualDone(post)}><CheckCheck size={15}/>{t.manualDoneNotice}</button>}
+          {post.status==='manual_done'&&<button type="button" disabled={busy||!ready}
+            onClick={()=>undoManualDone(post)}><RefreshCcw size={15}/>{t.manualUndo}</button>}
+          {post.status==='manual_done'&&<small className={styles.manualDoneTimestamp}>{t.manualDoneTime}: {formatTime(post.manualDoneAt,locale)}</small>}
           {post.status==='published'&&post.delivery?.url&&
             <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>}
           {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
