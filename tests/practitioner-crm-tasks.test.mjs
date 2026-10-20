@@ -72,7 +72,7 @@ test('client tasks UI has explicit human actions, three languages and an idempot
   const profile=src('components/app/practitioner-client-profiles.jsx')
   const dashboard=src('components/app/practice-workspace.jsx')
   const repository=src('lib/practitioners/repository.js')
-  assert.match(ui,/const pendingCreation=useRef|null,pendingCreation=useRef\(null\)/)
+  assert.match(ui,/pendingCreation=useRef\(null\)/)
   assert.match(ui,/pendingCreation\.current=task/)
   assert.match(ui,/old&&old\.requestId===requestId&&old\.kind===kind&&old\.dueOn===dueOn/)
   assert.match(ui,/min=\{now\}/)
