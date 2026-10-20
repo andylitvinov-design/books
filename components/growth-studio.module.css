@@ -159,3 +159,33 @@
 .status[data-state="published"]{background:#dcf5e7;color:#12644c}
 .status[data-state="sending"],.status[data-state="delivery_unknown"]{background:#fff0db;color:#855119}
 .deliveryLink{display:inline-flex;align-items:center;min-height:34px;padding:7px 10px;border-radius:8px;background:#edfaf3;color:#197154;font-size:12px;font-weight:650}
+
+
+/* Honest connection diagnostics and channel-specific validation (owner-only). */
+.connectionPanel{margin:10px 0 17px;border:1px solid #d3e4e0;border-radius:14px;background:#fff;overflow:hidden}
+.connectionPanel>summary{display:flex;align-items:center;gap:9px;min-height:48px;padding:11px 14px;color:#174c55;cursor:pointer;font-size:14px;font-weight:720;list-style:inside}
+.connectionPanel>summary>span:nth-child(2){flex:1}
+.connectionPanel>p{color:#526e73;font-size:12px;line-height:1.6;padding:0 14px;margin:5px 0 12px}
+.connectionSummaryCount{font-size:12px;font-weight:700;background:#eef4f4;padding:5px 8px;border-radius:30px;color:#465d67}
+.connectionBox{margin:10px 14px 14px;padding:12px 14px;background:#f4faf8;border:1px solid #d4e9e3;border-radius:11px}
+.connectionBoxTitle{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;font-size:13px}
+.connectionBox p,.connectionBox small{font-size:12px;line-height:1.5;color:#5c7379;display:block;margin:8px 0}
+.connectionBox button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 12px;font-size:12px;background:#fff;color:#156369;border:1px solid #c9dfdb;border-radius:9px;font-weight:670;cursor:pointer}
+.connectionBox button:disabled{opacity:.5;cursor:not-allowed}
+.connectionBox p.connectionError{display:flex;align-items:center;gap:6px;color:#965112}
+.verifiedText{color:#196450;font-size:12px;font-weight:700}
+.notVerifiedText{color:#8b5b23;font-size:12px;font-weight:650}
+.connectionScroller{overflow:auto;max-height:350px;margin:0 14px;border:1px solid #e2ece9;border-radius:10px}
+.connectionTable{width:100%;border-collapse:collapse;min-width:670px;table-layout:fixed;text-align:left}
+.connectionTable th,.connectionTable td{font-size:12px;font-weight:450;color:#3f5e64;border-bottom:1px solid #e7efec;padding:10px 11px;line-height:1.45;vertical-align:top;overflow-wrap:anywhere}
+.connectionTable th:first-child{font-weight:690;color:#23505b}
+.connectionTable thead th{position:sticky;top:0;background:#eff7f4;font-weight:750;color:#254e55}
+.connectionTable tr:last-child td,.connectionTable tr:last-child th{border-bottom:none}
+.connectionPanel p.connectionNote{margin:12px 0;font-size:12px}
+.connectionNav{display:flex;gap:10px;flex-wrap:wrap;padding:8px 14px 15px}
+.connectionNav a{display:inline-flex;min-height:35px;align-items:center;padding:7px 12px;border-radius:9px;border:1px solid #d6e8e2;color:#166671;font-size:12px;font-weight:670;text-decoration:none}
+.publisherDiagnostics{padding:12px 14px;border:1px solid #dce7e6;border-radius:12px;background:#f5faf9;line-height:1.5}
+.publisherDiagnostics strong{font-size:12px;color:#1e5d65;display:block}
+.publisherDiagnostics ul{padding-left:20px;margin:7px 0 0;color:#85541b;font-size:12px}
+.publisherDiagnostics li+li{margin-top:3px}
+@media(max-width:580px){.connectionPanel>summary{padding:10px}.connectionScroller{margin:0 8px}.connectionNav{padding:8px 10px 12px}.connectionBox{margin:10px 8px}}
