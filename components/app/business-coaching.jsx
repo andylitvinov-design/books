@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, LockKeyhole, PauseCircle, PlayCircle, Target, TrendingUp } from 'lucide-react'
+import Image from 'next/image'
+import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, PauseCircle, PlayCircle, Target, TrendingUp, Sparkles, ListChecks } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import {
   BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
@@ -15,6 +16,14 @@ import styles from './business-coaching.module.css'
 const copy = {
   en: {
     eyebrow:'BUSINESS & CAREER · MY DEVELOPMENT PATH', title:'My 90-day business journey',
+    courseKicker:'HOLISTIC HOUSE · MY COURSES', pathway:'12 weekly modules · 90 learning days',
+    startStep1:'My direction', startStep2:'My reflection', startStep3:'My private plan',
+    nextStep:'Continue', previousStep:'Back', skipCheck:'Skip self-reflection for now', optionalCheck:'Optional · 18 short questions',
+    overviewLabel:'What happens next', overviewText:'Each day opens one practical lesson. You choose the pace; your results stay in your private Cabinet.',
+    lessonEyebrow:'ONE LESSON · ONE PRACTICAL RESULT', startHeading:'Start with what matters to you',
+    draftAction:'Save draft', saveContinue:'Save and continue', alreadySaved:'All changes saved',
+    unsaved:'Not saved yet', courseMap:'Course map', privateJournal:'Private learning journal',
+    completedDays:'Completed days', moduleDay:'Lesson', modulePace:'One step at a time', finishedDay:'Completed',
     description:'Define an achievable goal, explore your working habits, practise small actions and track real changes privately.',
     begin:'Build my free plan', start:'Start my 90-day programme',
     track:'Where are you now?', goal:'My main goal for 90 days', supporting:'A supporting goal (optional)',
@@ -60,6 +69,14 @@ const copy = {
   },
   ru: {
     eyebrow:'БИЗНЕС И КАРЬЕРА · МОЙ МАРШРУТ РАЗВИТИЯ', title:'Мои 90 дней развития',
+    courseKicker:'HOLISTIC HOUSE · МОИ КУРСЫ', pathway:'12 недельных модулей · 90 учебных дней',
+    startStep1:'Моё направление', startStep2:'Моя самооценка', startStep3:'Личный план',
+    nextStep:'Продолжить', previousStep:'Назад', skipCheck:'Пропустить опрос пока', optionalCheck:'Необязательно · 18 коротких вопросов',
+    overviewLabel:'Как устроен курс', overviewText:'Каждый день — одно практическое задание. Темп выбираете вы; результаты хранятся в личном кабинете.',
+    lessonEyebrow:'ОДИН УРОК · ОДИН КОНКРЕТНЫЙ РЕЗУЛЬТАТ', startHeading:'Начните с того, что важно именно вам',
+    draftAction:'Сохранить черновик', saveContinue:'Сохранить и продолжить', alreadySaved:'Все изменения сохранены',
+    unsaved:'Пока не сохранено', courseMap:'Карта курса', privateJournal:'Личный дневник',
+    completedDays:'Пройдено дней', moduleDay:'Урок', modulePace:'Один шаг за раз', finishedDay:'Завершено',
     description:'Определите реалистичную цель, исследуйте рабочие привычки, выполняйте небольшие задания и сохраняйте реальные результаты.',
     begin:'Создать мой бесплатный план', start:'Начать мою программу',
     track:'Ваша текущая ситуация', goal:'Моя главная цель на 90 дней', supporting:'Дополнительная цель (необязательно)',
@@ -143,6 +160,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   const [state,setState]=useState(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [goal,setGoal]=useState(initialGoal),[consent,setConsent]=useState(false),[answers,setAnswers]=useState({})
+  const [startStep,setStartStep]=useState(1)
   const [tab,setTab]=useState('today'),[day,setDay]=useState(1),[dayNote,setDayNote]=useState(''),[dayDone,setDayDone]=useState(false)
   const [dayResult,setDayResult]=useState(''),[moduleWeek,setModuleWeek]=useState(1)
   const [reviewNote,setReviewNote]=useState(''),[metricForm,setMetricForm]=useState(initialMetric)
@@ -169,6 +187,9 @@ export default function BusinessCoaching({locale='en',accountId}){
     return()=>{active=false}
   },[accountId,t.loadError])
   const progress=useMemo(()=>businessProgress(course),[course])
+  const savedDay=course?.days?.[day]||{}
+  const hasUnsavedDay=dayResult!==(savedDay.result||'')||dayNote!==(savedDay.note||'')||
+    dayDone!==Boolean(savedDay.done)
   const selected=businessDayResult(day,lang)
   const week=selected?.week||1
   const currentModule=businessWeekModule(week,lang)
@@ -218,7 +239,24 @@ export default function BusinessCoaching({locale='en',accountId}){
     e.preventDefault()
     if(!consent)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
-    if(yes){setTab('today');setDay(1);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false)}
+    if(yes){setTab('today');setDay(1);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setStartStep(1)}
+  }
+  async function saveDayAndContinue(){
+    const current=day
+    const advance=dayDone && current<90
+    const ok=await command('day',{
+      day:current,done:dayDone,note:dayNote,result:dayResult,
+      contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
+    })
+    if(ok && advance){
+      const next=current+1
+      setDay(next)
+      setModuleWeek(Math.min(13,Math.ceil(next/7)))
+      setDayNote(course?.days?.[next]?.note||'')
+      setDayResult(course?.days?.[next]?.result||'')
+      setDayDone(Boolean(course?.days?.[next]?.done))
+      setReviewNote(course?.reviews?.[Math.min(13,Math.ceil(next/7))]?.note||'')
+    }
   }
   async function saveMetric(e) {
     e.preventDefault()
@@ -252,31 +290,96 @@ export default function BusinessCoaching({locale='en',accountId}){
   }
   if(loading)return <section className={'hh-panel '+styles.root} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
   if(!state)return <section className={'hh-panel '+styles.root}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
-  if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching>
-    <div className={styles.eyebrow}><Target size={17}/>{t.eyebrow}</div>
-    <header className={styles.hero}><h1>{t.title}</h1><p>{t.description}</p>
-      <span className={styles.heroInfo}><LockKeyhole size={15}/>{t.privacy}</span>
-    </header>
-    <form onSubmit={saveStart} className={styles.startForm}>
-      <h2>{t.begin}</h2>{goalFields()}
-      <Questionnaire lang={lang} t={t} answers={answers} onChange={setAnswers}/>
-      <label className={styles.consent}><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-        <span>{t.consent}</span></label>
-      {error&&<p role="alert" className={styles.error}>{error}</p>}
-      <button className={styles.primary} type="submit" disabled={busy||!consent||goal.primaryGoal.trim().length<4}>
-        <PlayCircle size={18}/>{busy?'…':t.start}<ArrowRight size={16}/></button>
-    </form>
-  </section>
-  return <section className={'hh-panel '+styles.root} data-business-coaching>
-    <div className={styles.eyebrow}><Target size={17}/>{t.eyebrow}</div>
+  if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="holistic-house-scenic-v2">
+    <div className={styles.eyebrow}><BookOpen size={17}/>{t.courseKicker}</div>
     <header className={styles.hero}>
-      <h1>{t.title}</h1><p>{course.goal.primaryGoal}</p>
-      <div className={styles.statRow}>
-        <span><CheckCircle2 size={17}/><strong>{progress.completed} / 90</strong> {t.progress}</span>
-        <span><CalendarDays size={17}/>{dateLabel(course.startedAt,lang)}</span>
-        <span><LockKeyhole size={17}/>{t.private}</span>
+      <div className={styles.heroCopy}>
+        <span className={styles.heroKicker}><Sparkles size={14} aria-hidden="true"/>{t.pathway}</span>
+        <h1>{t.title}</h1><p>{t.description}</p>
+        <span className={styles.heroInfo}><LockKeyhole size={15}/>{t.privacy}</span>
       </div>
-      <div className={styles.overallTrack}><span style={{width:progress.percent+'%'}}/></div>
+      <div className={styles.heroArt} aria-hidden="true">
+        <Image src="/images/holistic-house/course-journey-landscape.svg" width={440} height={190}
+          alt="" unoptimized />
+      </div>
+    </header>
+    <div className={styles.intake}>
+      <div className={styles.intakeHeader}>
+        <div><span className={styles.moduleEyebrow}>{t.begin}</span><h2>{t.startHeading}</h2></div>
+        <span className={styles.intakeCount}>{startStep} / 3</span>
+      </div>
+      <nav className={styles.intakeSteps} aria-label={t.begin}>
+        {[t.startStep1,t.startStep2,t.startStep3].map((name,i)=>
+          <span key={name} aria-current={startStep===i+1?'step':undefined} data-completed={startStep>i+1}>
+            <b>{startStep>i+1?'✓':i+1}</b><small>{name}</small>
+          </span>)}
+      </nav>
+      <form onSubmit={saveStart} className={styles.startForm}>
+        {startStep===1&&<section className={styles.intakeBody} data-coaching-intake-step="goals">
+          <h3>{t.startStep1}</h3>{goalFields()}
+          <div className={styles.intakeControls}>
+            <button type="button" className={styles.primary} disabled={goal.primaryGoal.trim().length<4}
+              onClick={()=>setStartStep(2)}>{t.nextStep}<ArrowRight size={17}/></button>
+          </div>
+        </section>}
+        {startStep===2&&<section className={styles.intakeBody} data-coaching-intake-step="reflection">
+          <p className={styles.intakeOptional}><ClipboardCheck size={18} aria-hidden="true"/>{t.optionalCheck}</p>
+          <Questionnaire lang={lang} t={t} answers={answers} onChange={setAnswers}/>
+          <div className={styles.intakeControls}>
+            <button type="button" className={styles.backButton} onClick={()=>setStartStep(1)}>
+              <ArrowLeft size={17}/>{t.previousStep}</button>
+            <button type="button" className={styles.skipButton} onClick={()=>{setAnswers({});setStartStep(3)}}>
+              {t.skipCheck}</button>
+            <button type="button" className={styles.primary} onClick={()=>setStartStep(3)}>
+              {t.nextStep}<ArrowRight size={17}/></button>
+          </div>
+        </section>}
+        {startStep===3&&<section className={styles.intakeBody} data-coaching-intake-step="consent">
+          <h3>{t.startStep3}</h3>
+          <div className={styles.intakeSummary}>
+            <Target size={20} aria-hidden="true"/>
+            <div><strong>{t.goal}</strong><p>{goal.primaryGoal}</p></div>
+          </div>
+          <div className={styles.intakeSummary}>
+            <ListChecks size={20} aria-hidden="true"/>
+            <div><strong>{t.overviewLabel}</strong><p>{t.overviewText}</p></div>
+          </div>
+          <label className={styles.consent}><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
+            <span>{t.consent}</span></label>
+          {error&&<p role="alert" className={styles.error}>{error}</p>}
+          <div className={styles.intakeControls}>
+            <button type="button" className={styles.backButton} onClick={()=>setStartStep(2)}>
+              <ArrowLeft size={17}/>{t.previousStep}</button>
+            <button className={styles.primary} type="submit" disabled={busy||!consent||goal.primaryGoal.trim().length<4}>
+              <PlayCircle size={18}/>{busy?'…':t.start}<ArrowRight size={16}/></button>
+          </div>
+        </section>}
+      </form>
+    </div>
+  </section>
+  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="holistic-house-scenic-v2">
+    <div className={styles.eyebrow}><BookOpen size={17}/>{t.courseKicker}</div>
+    <header className={styles.hero}>
+      <div className={styles.heroCopy}>
+        <span className={styles.heroKicker}><Sparkles size={14} aria-hidden="true"/>{t.pathway}</span>
+        <h1>{t.title}</h1><p>{course.goal.primaryGoal}</p>
+        <div className={styles.statRow}>
+          <span><CheckCircle2 size={17}/><strong>{progress.completed} / 90</strong> {t.progress}</span>
+          <span><CalendarDays size={17}/>{dateLabel(course.startedAt,lang)}</span>
+          <span><LockKeyhole size={17}/>{t.private}</span>
+        </div>
+        <div className={styles.progressMeta}>
+          <strong>{t.completedDays}</strong><span>{progress.percent}%</span>
+        </div>
+        <div className={styles.overallTrack} role="progressbar" aria-valuemin={0}
+          aria-valuemax={90} aria-valuenow={progress.completed} aria-label={t.progress}>
+          <span style={{width:progress.percent+'%'}}/>
+        </div>
+      </div>
+      <div className={styles.heroArt} aria-hidden="true">
+        <Image src="/images/holistic-house/course-journey-landscape.svg" width={440} height={190}
+          alt="" unoptimized />
+      </div>
     </header>
     {course.status==='active'&&<div className={styles.goalEditor}>
       {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
