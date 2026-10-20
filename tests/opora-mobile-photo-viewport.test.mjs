@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {existsSync,readFileSync} from 'node:fs'
+import {existsSync,readFileSync,statSync} from 'node:fs'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {OPORA54_PRE_SAVE_KEYS} from '../lib/inner-growth/anti-stress-skills-v6.js'
@@ -9,8 +9,8 @@ import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mj
 const read = file => readFileSync(new URL('../'+file,import.meta.url),'utf8')
 const photoPaths = [
  '/images/holistic-house/course-focus-mountain-boy.webp',
- '/images/holistic-house/course-start-heron.webp',
- '/images/holistic-house/reiki-practitioner-sunrise.webp',
+ '/images/holistic-house/report-lighthouse-coast.webp',
+ '/images/holistic-house/reiki-approved-sunrise-v3.webp',
 ]
 
 test('OPORA preserves real locally hosted photos on every compact learning screen', () => {
@@ -18,6 +18,7 @@ test('OPORA preserves real locally hosted photos on every compact learning scree
  const css=read('components/app/opora-v6-slide-player.module.css')
  for(const path of photoPaths){
    assert.ok(existsSync(new URL('../public'+path,import.meta.url)),'Missing real photo '+path)
+   assert.ok(statSync(new URL('../public'+path,import.meta.url)).size>30_000,'Full-bleed photo is a tiny thumbnail '+path)
    assert.ok(source.includes(path),'Photo must be in the versioned player '+path)
  }
  assert.match(source,/data-course-photo-layout="v1"/)

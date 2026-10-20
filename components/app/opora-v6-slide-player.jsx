@@ -202,8 +202,8 @@ const PRACTICE_KINDS=new Set(['notice','act','rehearse'])
 // completion receipt has a photographic anchor; no network image service is used.
 const OPORA_SCREEN_PHOTOS=Object.freeze([
   {src:'/images/holistic-house/course-focus-mountain-boy.webp',position:'center 45%'},
-  {src:'/images/holistic-house/course-start-heron.webp',position:'center 48%'},
-  {src:'/images/holistic-house/reiki-practitioner-sunrise.webp',position:'center 42%'},
+  {src:'/images/holistic-house/report-lighthouse-coast.webp',position:'center 48%'},
+  {src:'/images/holistic-house/reiki-approved-sunrise-v3.webp',position:'center 42%'},
 ])
 // A personal learning receipt must be built ONLY from explicit answers.
 // A chosen exercise is not an attempt; a future plan is not a completed action.
@@ -429,8 +429,8 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
       inert={safety} aria-hidden={safety?'true':undefined}>
       <div className={styles.scenicBackdrop} aria-hidden="true" data-opora-lesson-photo>
         <img className={styles.scenicPhoto}
-          src="/images/holistic-house/course-focus-mountain-boy.webp"
-          alt="" width={705} height={411} decoding="async"/>
+          src="/images/holistic-house/report-lighthouse-coast.webp"
+          alt="" width={1600} height={2394} loading="eager" decoding="async" fetchPriority="high"/>
       </div>
       <header className={styles.header}>
         <button type="button" className={styles.controlIcon} onClick={onClose} disabled={locked}
