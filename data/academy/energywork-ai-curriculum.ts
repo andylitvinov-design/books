@@ -37,6 +37,10 @@ export type EnergyworkSlide = {
   body: Localized;
   image?: string;
   videoKey?: EnglishGuidedMeditation["key"];
+  // A concise "what we'll learn" panel in the existing first slide of each lesson.
+  // Keep the stable slide IDs and all private answers/progress intact.
+  introTopics?: Localized[];
+  introAudioKey?: "flight" | EnergyworkPath;
   question?: EnergyworkQuestion;
   // A second independently saved answer can share one visual slide.
   secondaryQuestion?: { id: string; prompt: Localized };
@@ -242,7 +246,13 @@ const commonSlides: EnergyworkSlide[] = [
 
   { id: "flight-01", phase: "flight", kind: "lesson", image: image.sun,
     title: l("A symbolic flight", "Символический полёт"),
-    body: l("Flight to the Sun is Andrey's guided imagery practice. The sun is used as a symbol for attention and imagination, not as a physical or medical claim.", "«Полёт к Солнцу» — авторская практика с образами. Солнце здесь — символ внимания и воображения, не медицинское утверждение.") },
+    body: l("Flight to the Sun is Andrey's guided imagery practice. The sun is used as a symbol for attention and imagination, not as a physical or medical claim.", "«Полёт к Солнцу» — авторская практика с образами. Солнце здесь — символ внимания и воображения, не медицинское утверждение."),
+    introAudioKey: "flight",
+    introTopics: [
+      l("How guided imagery works as a creative exercise", "Как работает медитация с образами и воображением"),
+      l("Sunlight as a symbol of attention and warmth", "Солнце как образ внимания, света и тепла"),
+      l("What to notice and describe after the meditation", "Что замечать и как описать свой опыт после медитации"),
+    ] },
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
     title: l("Watch Flight to the Sun", "Посмотрите «Полёт к Солнцу»"),
     body: l("Listen to Andrey’s recording, or skip it if you prefer.", "Послушайте запись Андрея или пропустите её, если хотите.") },
@@ -328,7 +338,13 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
   yggdrasil: [
     { id: "ygg-01", phase: "yggdrasil", kind: "lesson", image: image.tree,
       title: l("The roots, trunk and crown", "Корни, ствол и крона"),
-      body: l("The World Tree is an image used for symbolic contemplation. What might roots, trunk and branches mean to you?", "Мировое Древо — образ для символического размышления. Что для вас могут означать корни, ствол и ветви?") },
+      body: l("The World Tree is an image used for symbolic contemplation. What might roots, trunk and branches mean to you?", "Мировое Древо — образ для символического размышления. Что для вас могут означать корни, ствол и ветви?"),
+      introAudioKey: "yggdrasil",
+      introTopics: [
+        l("The World Tree and the place of runes in the tradition", "Мировое Древо и значение рун в традиции"),
+        l("The introductory Runic Reiki streams in the course", "Вводные потоки Рейки Иггдрасиль, о которых рассказывает курс"),
+        l("Meditation on roots, trunk and crown and your impressions", "Медитация с образом дерева и ваши собственные впечатления"),
+      ] },
     { id: "ygg-02", phase: "yggdrasil", kind: "video", videoKey: "reiki-yggdrasil",
       title: l("Original Reiki Yggdrasil meditation", "Оригинальная медитация Рейки Иггдрасиль"),
       body: l("English recording shared by Andrey. Participation is optional.", "Английская запись Андрея. Участие необязательно.") },
@@ -381,7 +397,13 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
   tantra: [
     { id: "tan-01", phase: "tantra", kind: "lesson", image: image.tantra,
       title: l("The Spring of Life", "Источник жизни"),
-      body: l("The first step of Tantra Reiki uses the Spring of Life as a spiritual metaphor. There is no required sensation to achieve.", "Первая ступень Тантра Рейки использует «Источник жизни» как духовный образ. Не нужно достигать какого-либо обязательного ощущения.") },
+      body: l("The first step of Tantra Reiki uses the Spring of Life as a spiritual metaphor. There is no required sensation to achieve.", "Первая ступень Тантра Рейки использует «Источник жизни» как духовный образ. Не нужно достигать какого-либо обязательного ощущения."),
+      introAudioKey: "tantra",
+      introTopics: [
+        l("What Tantra Reiki is and how the tradition is taught", "Что такое Тантра Рейки и как устроено обучение"),
+        l("The Spring of Life, connection and personal boundaries", "Образ Источника жизни, контакт и личные границы"),
+        l("Guided meditation, observations and personal initiation", "Медитация, собственные впечатления и отличие от личной инициации"),
+      ] },
     { id: "tan-02", phase: "tantra", kind: "video", videoKey: "tantra-reiki",
       title: l("Original Tantra Reiki practice", "Оригинальная практика Тантра Рейки"),
       body: l("Watch Andrey's original English practice at your chosen pace.", "Посмотрите оригинальную английскую практику Андрея в комфортном темпе.") },
@@ -423,7 +445,13 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
   kundalini: [
     { id: "kun-01", phase: "kundalini", kind: "lesson", image: image.kundalini,
       title: l("An introduction to Kundalini Reiki", "Знакомство с Кундалини Рейки"),
-      body: l("This is a distinct three-level spiritual teaching. The original Paul Crick manual is available from the public course page.", "Это отдельная трёхступенчатая духовная система. Оригинальная методичка Пола Крика доступна на странице курса.") },
+      body: l("This is a distinct three-level spiritual teaching. The original Paul Crick manual is available from the public course page.", "Это отдельная трёхступенчатая духовная система. Оригинальная методичка Пола Крика доступна на странице курса."),
+      introAudioKey: "kundalini",
+      introTopics: [
+        l("The tradition and its three levels", "Особенности системы и её три ступени"),
+        l("Grounding, intention and relaxed attention", "Опора, намерение и спокойное внимание"),
+        l("First meditation and your own experience", "Знакомство с медитацией и наблюдение за своим опытом"),
+      ] },
     { id: "kun-02", phase: "kundalini", kind: "video", videoKey: "kundalini-reiki",
       title: l("Original Kundalini Reiki meditation", "Оригинальная медитация Кундалини Рейки"),
       body: l("Andrey's English-language source recording. Stop or skip whenever you wish.", "Авторская английская запись Андрея. В любой момент можно остановить или пропустить.") },

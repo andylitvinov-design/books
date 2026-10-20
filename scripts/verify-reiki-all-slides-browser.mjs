@@ -119,7 +119,25 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(data.slideVerticalOverflow <= 2, where + ": practice should fit on one mobile screen: " + JSON.stringify(data));
   }
   if (data.kind === "video") await expect(page.locator('[data-energywork-slide-kind="video"]').locator('div[class*="_video__"]')).toBeVisible();
-  if (data.kind === "reflection") await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('div[class*="_question__"]')).toBeVisible();
+  if (data.kind === "reflection" && id !== "end-01")
+    await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('div[class*="_question__"]')).toBeVisible();
+  // Lesson 5 was upgraded to an interactive application in PR #1280, rather
+  // than a generic single-textarea reflection. It must remain accessible.
+  if (id === "end-01") {
+    const form = page.locator('[data-reiki-initiation-choice-form]');
+    await expect(form).toBeVisible();
+    await expect(form.locator('[data-reiki-free-choices] input[type="radio"]')).toHaveCount(3);
+    await expect(form.locator('input[autocomplete="given-name"]')).toBeVisible();
+    await expect(form.locator('input[autocomplete="family-name"]')).toBeVisible();
+  }
+  // Teacher intro audio loads only after its first slide, never inside the
+  // meditation video. Audio is optional until the author uploads his file.
+  if (["flight-01","tan-01","kun-01","ygg-01"].includes(id)) {
+    await expect(page.locator('[data-reiki-lesson-intro]')).toBeVisible();
+    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toBeVisible();
+    await expect(page.locator('[data-reiki-lesson-intro] li')).toHaveCount(3);
+    await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
+  }
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
   if (data.kind === "voices") {
     await expect(page.locator("[data-meditation-voices]")).toBeVisible();

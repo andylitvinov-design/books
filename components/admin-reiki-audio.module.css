@@ -1,0 +1,100 @@
+.page {
+  width: min(1060px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 18px 0 52px;
+  color: #183f56;
+}
+.intro {
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid #c6e4e0;
+  border-radius: 18px;
+  background: linear-gradient(115deg, #f1fbf8, #f8fbff);
+  box-shadow: 0 7px 26px rgba(26, 96, 108, .07);
+}
+.intro p {
+  margin: 0 0 10px;
+  color: #3a6170;
+  line-height: 1.55;
+  font-size: 14px;
+}
+.intro strong { color: #0a6c75; font-size: 15px; }
+.intro strong + p { margin-top: 8px; font-size: 13px; }
+.localeLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 13px;
+}
+.localeLine > span { font-weight: 750; }
+.localeLine > a, .localeLine > button {
+  border: 1px solid #aadbd6;
+  color: #096d76;
+  font: inherit;
+  font-size: 13px;
+  background: #fff;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.localeToggle { display: inline-flex; padding: 3px; gap: 3px; border: 1px solid #c5e2df; border-radius: 12px; background: #fff; }
+.localeToggle button { min-height: 39px; padding: 7px 15px; border-radius: 9px; border: 0; background: none; color: #3c616d; font-weight: 750; cursor: pointer; }
+.localeToggle button[aria-pressed="true"] { color: #fff; background: #0d8f91; }
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 15px;
+  margin-top: 18px;
+  align-items: stretch;
+}
+.lessonCard {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: clamp(13px, 2.4vw, 21px);
+  border: 1px solid #d3e6e6;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 7px 20px rgba(24, 86, 101, .06);
+  min-width: 0;
+}
+.lessonHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.lessonHead h2 { color: #164f61; margin: 0; font-size: clamp(17px, 2.2vw, 21px); }
+.live, .notLive { padding: 4px 8px; font-size: 11px; line-height: 1.3; font-weight: 750; border-radius: 20px; }
+.live { background: #d7f3ed; color: #0b7869; }
+.notLive { background: #eef2f4; color: #61737e; }
+.filePicker { display: grid; gap: 7px; color: #225767; font-weight: 700; font-size: 13px; }
+.filePicker input { width: 100%; max-width: 100%; padding: 8px; border: 1px solid #c9dadf; border-radius: 10px; background: #f8fcfd; }
+.player { display: grid; gap: 7px; min-width: 0; border-radius: 12px; padding: 10px; background: #f0faf8; }
+.player span { font-size: 12px; font-weight: 750; color: #286d6f; overflow-wrap: anywhere; }
+.player audio { display: block; width: 100%; min-width: 0; height: 43px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions button {
+  cursor: pointer;
+  flex: 1 1 125px;
+  min-height: 43px;
+  padding: 9px 12px;
+  border: 1px solid #9dd6d0;
+  border-radius: 10px;
+  color: #075e68;
+  background: #e8faf7;
+  font-size: 13px;
+  font-weight: 800;
+}
+.actions .publish { color: #fff; border-color: #0f9a91; background: #0c928f; }
+.actions .unpublish { color: #7a5260; border-color: #ead5de; background: #fff9fb; }
+.actions button:disabled, .localeLine button:disabled { opacity: .55; cursor: not-allowed; }
+.pending, .success, .error { padding: 9px 10px; margin: 0; border-radius: 9px; font-size: 12px; line-height: 1.43; }
+.pending { background: #fff6e6; color: #8b5a1c; }
+.success { background: #e9f7f1; color: #0c695f; }
+.error { background: #fff0f3; color: #993948; }
+.page :is(button, input, a):focus-visible { outline: 3px solid #189e9d; outline-offset: 3px; }
+@media (max-width: 720px) {
+  .page { width: calc(100% - 18px); padding-top: 10px; }
+  .cards { grid-template-columns: 1fr; gap: 11px; margin-top: 12px; }
+  .lessonCard { padding: 13px; }
+  .intro { padding: 13px; }
+  .localeLine { gap: 8px; }
+  .localeToggle { order: 0; }
+}

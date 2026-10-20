@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { useOceanPracticeAudio } from "./ocean-practice-audio";
@@ -1157,6 +1158,22 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
+              {slide.introAudioKey && slide.introTopics ? (
+                <section className={styles.lessonIntroPanel} data-reiki-lesson-intro={slide.introAudioKey}
+                  aria-label={locale === "ru" ? "Программа занятия" : "What this lesson covers"}>
+                  <strong className={styles.lessonIntroTitle}>
+                    <BookOpen size={17} aria-hidden="true" />
+                    {locale === "ru" ? "Что мы изучим сегодня" : "What we'll explore in this lesson"}
+                  </strong>
+                  <ul className={styles.lessonIntroTopics}>
+                    {slide.introTopics.map((topic, index) => (
+                      <li key={index}><Check size={15} aria-hidden="true" />{topic[locale]}</li>
+                    ))}
+                  </ul>
+                  <ReikiLessonIntroAudio key={slide.introAudioKey + "-" + locale}
+                    lesson={slide.introAudioKey} locale={locale} />
+                </section>
+              ) : null}
               {slide.id === "tan-05" ? (
                 <Link href={"/" + locale + "/academy/reiki/tantra-reiki"}
                   target="_blank" rel="noopener noreferrer"
