@@ -6,6 +6,10 @@ import {
   BUSINESS_METRICS, BUSINESS_SNAPSHOT_VERSION, businessDay, businessProgress,
   businessSnapshotScores, businessSuggestions, businessSurveyChanges, businessMetricChanges,
 } from '../lib/business-coaching/program.js'
+import {
+  BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule,
+  businessDayResult, businessWeekProgress,
+} from '../lib/business-coaching/week-modules.js'
 
 test('90-day track is complete, bilingual, stable, nonduplicated and bounded',()=>{
   assert.equal(BUSINESS_COURSE_VERSION,1)
@@ -141,7 +145,116 @@ test('approved public business page and auth page point to a real allowed and pr
 test('report print styling respects Next CSS Modules purity and hides cabinet chrome only for report prints',()=>{
   const moduleCss=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
   const globalCss=readFileSync(new URL('../app/[locale]/app/[[...path]]/workspace.css',import.meta.url),'utf8')
-  assert.doesNotMatch(moduleCss,/^\\s*:global\\(/m,'Unscoped :global is forbidden in CSS Modules and blocks production Next builds')
-  assert.match(globalCss,/\\.hh-app:has\\(#hh-business-printable-report\\) \\.hh-header/)
+  assert.doesNotMatch(moduleCss,/^\s*:global\(/m,'Unscoped :global is forbidden in CSS Modules and blocks production Next builds')
+  assert.match(globalCss,/\.hh-app:has\(#hh-business-printable-report\) \.hh-header/)
   assert.match(moduleCss,/@media print/)
+})
+
+test('weekly plan has 12 independent seven-day modules and six integration days',()=>{
+  assert.equal(BUSINESS_WEEK_MODULES.length,13)
+  assert.equal(BUSINESS_WEEKLY_CONTENT_VERSION,'weekly-results-v2')
+  const firstTwelve=BUSINESS_WEEK_MODULES.slice(0,12)
+  assert.ok(firstTwelve.every(m=>m.days.length===7))
+  assert.equal(BUSINESS_WEEK_MODULES[12].days.length,6)
+  const all=BUSINESS_WEEK_MODULES.flatMap(m=>m.days)
+  assert.equal(all.length,90)
+  assert.deepEqual(all.map(d=>d.day),Array.from({length:90},(_,i)=>i+1))
+  assert.equal(new Set(all.map(d=>d.id)).size,90)
+  assert.equal(new Set(BUSINESS_WEEK_MODULES.map(m=>m.id)).size,13)
+  assert.ok(BUSINESS_WEEK_MODULES.every(m=>m.outcome.ru && m.outcome.en && m.capstone.ru && m.capstone.en))
+  assert.equal(businessWeekModule(0),null)
+  assert.equal(businessWeekModule(14),null)
+  assert.equal(businessDayResult(-1),null)
+  assert.equal(businessDayResult(91),null)
+})
+test('every learning day requires a concrete distinct bilingual output and review criterion',()=>{
+  const ru=new Set(),en=new Set()
+  for(let day=1;day<=90;day++){
+    const module=BUSINESS_WEEK_MODULES[Math.ceil(day/7)-1]
+    const result=module.days.find(d=>d.day===day)
+    assert.ok(result, 'missing day '+day)
+    const ruLesson=businessDayResult(day,'ru'),enLesson=businessDayResult(day,'en')
+    assert.equal(ruLesson.week,Math.ceil(day/7))
+    assert.equal(ruLesson.action,businessDay(day,'ru').action)
+    assert.equal(enLesson.action,businessDay(day,'en').action)
+    assert.equal(ruLesson.moduleId,'business-week-'+Math.ceil(day/7))
+    assert.equal(ruLesson.contentVersion,BUSINESS_WEEKLY_CONTENT_VERSION)
+    assert.ok(ruLesson.weeklyCapstone.length>=12)
+    for(const [locale,lesson,uniques] of [['ru',ruLesson,ru],['en',enLesson,en]]){
+      assert.ok(lesson.resultLabel.length>=11, 'vague artifact '+day+' '+locale)
+      assert.ok(lesson.doneWhen.length>=32, 'non-measurable criterion '+day+' '+locale)
+      assert.ok(!uniques.has(lesson.resultLabel),'duplicate deliverable '+lesson.resultLabel)
+      uniques.add(lesson.resultLabel)
+      assert.ok(lesson.weeklyOutcome.length>=50)
+      assert.ok(lesson.moduleTitle.length>=5)
+    }
+  }
+  assert.equal(ru.size,90)
+  assert.equal(en.size,90)
+})
+test('weekly module progress preserves earlier checked-only days without miscounting documented deliverables',()=>{
+  const course={days:{
+    1:{done:true,note:'Earlier note, no separate result'},
+    2:{done:true,result:'Two activities with evidence'},
+    3:{done:false,result:'I mapped my work blocks'},
+    4:{done:false},
+    8:{done:true,result:'Concrete goal'},
+    85:{done:true,result:'Two sustainable habits'},
+  }}
+  assert.deepEqual(businessWeekProgress(course,1),{week:1,complete:2,documented:1,drafts:1,total:7})
+  assert.deepEqual(businessWeekProgress(course,2),{week:2,complete:1,documented:1,drafts:0,total:7})
+  assert.deepEqual(businessWeekProgress(course,13),{week:13,complete:1,documented:1,drafts:0,total:6})
+  assert.deepEqual(businessWeekProgress(null,12),{week:12,complete:0,documented:0,drafts:0,total:7})
+  assert.equal(businessWeekProgress(null,14),null)
+  // Existing overall progress remains unchanged, including historical notes.
+  assert.equal(businessProgress(course).completed,4)
+})
+test('server pins result labels and rejects blank new-version completions while retaining old API compatibility',()=>{
+  const source=readFileSync(new URL('../lib/app/business-coaching.js',import.meta.url),'utf8')
+  assert.match(source,/onlyKeys\(input,\['action','revision','day','done','note','result','contentVersion'\]\)/)
+  assert.match(source,/BUSINESS_WEEKLY_CONTENT_VERSION/)
+  assert.match(source,/BUSINESS_DAILY_RESULT_REQUIRED/)
+  assert.match(source,/input\.done===true && input\.contentVersion===BUSINESS_WEEKLY_CONTENT_VERSION && result\.length<6/)
+  assert.match(source,/resultLabelSnapshot:names\|\|prior\.resultLabelSnapshot\|\|null/)
+  assert.match(source,/const result=input\.result===undefined\?\(prior\.result\|\|''\)/)
+  assert.match(source,/result,contentVersion:version/)
+  assert.match(source,/transaction\(config,actor,async db=>/)
+  assert.match(source,/select payload_ciphertext,revision,updated_at from app_private\.business_coaching_programs/)
+})
+test('mobile learning UX renders only the chosen module days, an authored daily result and grouped private report',()=>{
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
+  assert.match(ui,/data-business-weekly-lesson/)
+  assert.match(ui,/data-business-weekly-modules/)
+  assert.match(ui,/data-selected-business-week/)
+  assert.match(ui,/openedModule\.days\.map/)
+  assert.match(ui,/currentModule\.days\.map/)
+  assert.match(ui,/businessWeekProgress\(course,week\)/)
+  assert.match(ui,/businessWeekProgress\(course,moduleWeek\)/)
+  assert.match(ui,/businessDayResult\(day,lang\)/)
+  assert.match(ui,/dayResult\.trim\(\)\.length<6/)
+  assert.match(ui,/contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION/)
+  assert.match(ui,/record\.resultLabelSnapshot\?\.\[lang\]/)
+  assert.match(ui,/data-business-weekly-report/)
+  assert.match(css,/\.moduleBrowser\{display:grid/)
+  assert.match(css,/@media\(max-width:460px\)/)
+  assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(css,/^\s*:global\(/m)
+})
+
+test('90-day journal capacity extension keeps original RLS/grants unchanged',()=>{
+  const sql=readFileSync(new URL('../supabase/migrations/20261020184500_hh_business_weekly_module_journal_capacity.sql',import.meta.url),'utf8')
+  assert.match(sql,/app_private\.business_coaching_programs/)
+  assert.match(sql,/750000/)
+  assert.match(sql,/drop constraint business_coaching_programs_payload_ciphertext_check/)
+  assert.match(sql,/add constraint business_coaching_programs_payload_ciphertext_check/)
+  const executable=sql.split('\n').filter(line=>!line.trim().startsWith('--')).join('\n')
+  assert.doesNotMatch(executable,/(?:grant|revoke|create policy|drop policy|disable row level security|drop table)/i)
+})
+test('unsaved daily results get explicit EN/RU confirmation before day navigation',()=>{
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  assert.match(ui,/unsavedResult:'Your current day has unsaved changes/)
+  assert.match(ui,/unsavedResult:'В текущем дне остались несохранённые изменения/)
+  assert.ok(ui.includes("dayResult!==(previous.result||'')"))
+  assert.match(ui,/unsaved && !window\.confirm\(t\.unsavedResult\)/)
 })

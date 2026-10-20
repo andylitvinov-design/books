@@ -9,6 +9,7 @@ import {
   BUSINESS_RESPONSE_LABELS, BUSINESS_WEEKS, BUSINESS_METRICS,
   businessSnapshotScores, businessSuggestions, businessProgress, businessDay, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
+import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress } from '@/lib/business-coaching/week-modules'
 import styles from './business-coaching.module.css'
 
 const copy = {
@@ -44,6 +45,14 @@ const copy = {
     inactive:'Resume the programme to make changes.', noSurvey:'No initial survey was saved; nothing is scored as zero.',
     insight:'Your own answers can guide elective skill-practice topics. They are not professional psychometrics.',
     status:'Programme status', saveGoal:'Update my goals', editGoal:'Edit goals', back:'Back',
+    selectModule:'Choose a weekly module', weeklyObjective:'This week’s concrete outcome', weekArtifact:'Final weekly document',
+    dailyArtifact:'Result to save today', doneWhen:'Completion check', myResult:'My actual result (private)',
+    resultPlaceholder:'Write a short, factual result: what you prepared, decided, observed or actually tried. A draft or an honest “not yet” is fine.',
+    resultRequired:'Write at least 6 characters describing the actual result before marking the lesson complete. You may save an unfinished draft instead.',
+    unsavedResult:'Your current day has unsaved changes. Leave this day without saving them?',
+    moduleComplete:'Days done', moduleDocumented:'With saved results', finalModule:'Final integration · 6 days',
+    weeklyResults:'Results saved by module', legacyCompletion:'Previously completed without a written result',
+    optionalNote:'Optional reflections (separate from the concrete result)',
     daySaved:'Saved', checkinDue:'Check-ins may only be repeated after 21 days.', export:'Export all my Cabinet data',
     relatedTests:'Explore other tests in My Tests', describeChange:'Comparable changes', noComparison:'At least two compatible measurements are needed before we can compare outcomes.',
     differenceNote:'Changes below are descriptive, not evidence that the course caused the result.', editCancel:'Cancel',
@@ -81,6 +90,14 @@ const copy = {
     inactive:'Продолжите курс, чтобы вносить изменения.', noSurvey:'Первоначальный опрос не сохранён; пропущенные ответы не считаются нулём.',
     insight:'Ответы могут подсказать добровольные учебные темы, но не заменяют профессиональную психометрию.',
     status:'Статус программы', saveGoal:'Обновить цели', editGoal:'Изменить цели', back:'Назад',
+    selectModule:'Выберите недельный модуль', weeklyObjective:'Конкретный результат недели', weekArtifact:'Итоговый документ недели',
+    dailyArtifact:'Результат, который сохраняем сегодня', doneWhen:'Критерий готовности', myResult:'Мой фактический результат (личная запись)',
+    resultPlaceholder:'Кратко запишите конкретный результат: что подготовили, решили, заметили или действительно попробовали. Черновик или честное «пока нет» тоже подходит.',
+    resultRequired:'Чтобы отметить день завершённым, опишите реальный результат хотя бы шестью символами. Незавершённый черновик можно сохранить без галочки.',
+    unsavedResult:'В текущем дне остались несохранённые изменения. Перейти к другому дню, не сохраняя их?',
+    moduleComplete:'Дней выполнено', moduleDocumented:'С записанным результатом', finalModule:'Закрепление · 6 дней',
+    weeklyResults:'Сохранённые результаты по модулям', legacyCompletion:'Ранее отмечено выполненным без записи результата',
+    optionalNote:'Личные размышления (отдельно от конкретного результата)',
     daySaved:'Сохранено', checkinDue:'Повторный опрос доступен через 21 день.', export:'Экспортировать все данные кабинета',
     relatedTests:'Посмотреть другие тесты в «Моих тестах»', describeChange:'Сопоставимые изменения', noComparison:'Для сравнения необходимы хотя бы два сопоставимых наблюдения.',
     differenceNote:'Изменения носят описательный характер и не доказывают, что их вызвал курс.', editCancel:'Отмена',
@@ -127,6 +144,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [goal,setGoal]=useState(initialGoal),[consent,setConsent]=useState(false),[answers,setAnswers]=useState({})
   const [tab,setTab]=useState('today'),[day,setDay]=useState(1),[dayNote,setDayNote]=useState(''),[dayDone,setDayDone]=useState(false)
+  const [dayResult,setDayResult]=useState(''),[moduleWeek,setModuleWeek]=useState(1)
   const [reviewNote,setReviewNote]=useState(''),[metricForm,setMetricForm]=useState(initialMetric)
   const [retestAnswers,setRetestAnswers]=useState({}),[goalEditing,setGoalEditing]=useState(false)
   const course=state?.course,revision=state?.revision||0
@@ -140,7 +158,9 @@ export default function BusinessCoaching({locale='en',accountId}){
         if(result.course){
           const next=Array.from({length:90},(_,i)=>i+1).find(i=>!result.course.days?.[i]?.done)||90
           setDay(next)
+          setModuleWeek(Math.min(13,Math.ceil(next/7)))
           setDayNote(result.course.days?.[next]?.note||'')
+          setDayResult(result.course.days?.[next]?.result||'')
           setDayDone(Boolean(result.course.days?.[next]?.done))
           setReviewNote(result.course.reviews?.[Math.ceil(next/7)]?.note||'')
         }
@@ -149,8 +169,12 @@ export default function BusinessCoaching({locale='en',accountId}){
     return()=>{active=false}
   },[accountId,t.loadError])
   const progress=useMemo(()=>businessProgress(course),[course])
-  const selected=businessDay(day,lang)
+  const selected=businessDayResult(day,lang)
   const week=selected?.week||1
+  const currentModule=businessWeekModule(week,lang)
+  const currentWeekProgress=businessWeekProgress(course,week)
+  const openedModule=businessWeekModule(moduleWeek,lang)
+  const openedProgress=businessWeekProgress(course,moduleWeek)
   const baseline=course?.surveys?.[0]
   const latest=course?.surveys?.at(-1)
   const surveyChanges=businessSurveyChanges(baseline,latest)
@@ -178,8 +202,14 @@ export default function BusinessCoaching({locale='en',accountId}){
     }finally{setBusy(false)}
   }
   function chooseDay(next){
+    const previous=course?.days?.[day]||{}
+    const unsaved=dayResult!==(previous.result||'') || dayNote!==(previous.note||'') ||
+      dayDone!==Boolean(previous.done)
+    if(next!==day && course?.status==='active' && unsaved && !window.confirm(t.unsavedResult))return
     setDay(next)
+    setModuleWeek(Math.min(13,Math.ceil(next/7)))
     setDayNote(course?.days?.[next]?.note||'')
+    setDayResult(course?.days?.[next]?.result||'')
     setDayDone(Boolean(course?.days?.[next]?.done))
     setReviewNote(course?.reviews?.[next<=84?Math.ceil(next/7):13]?.note||'')
     setTab('today')
@@ -188,7 +218,7 @@ export default function BusinessCoaching({locale='en',accountId}){
     e.preventDefault()
     if(!consent)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
-    if(yes){setTab('today');setDay(1);setDayNote('');setDayDone(false)}
+    if(yes){setTab('today');setDay(1);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false)}
   }
   async function saveMetric(e) {
     e.preventDefault()
@@ -273,24 +303,58 @@ export default function BusinessCoaching({locale='en',accountId}){
     {error&&<p role="alert" className={styles.error}>{error}</p>}
     {notice&&<p role="status" className={styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
     {course.status!=='active'&&<p className={styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
-    {tab==='today'&&<div className={styles.panel}>
+    {tab==='today'&&<div className={styles.panel} data-business-weekly-lesson>
+      <div className={styles.moduleLead}>
+        <span className={styles.moduleEyebrow}>{week===13?t.finalModule:t.week+' '+week+' / 12'}</span>
+        <h2>{currentModule.title}</h2>
+        <p><strong>{t.weeklyObjective}:</strong> {currentModule.outcome}</p>
+        <p><strong>{t.weekArtifact}:</strong> {currentModule.capstone}</p>
+        <small>{t.moduleComplete}: {currentWeekProgress.complete}/{currentWeekProgress.total} · {t.moduleDocumented}: {currentWeekProgress.documented}</small>
+      </div>
+      <label className={styles.moduleChooser}>{t.selectModule}
+        <select value={week} onChange={e=>chooseDay((Number(e.target.value)-1)*7+1)}>
+          {BUSINESS_WEEK_MODULES.map(m=><option key={m.week} value={m.week}>
+            {m.week===13?t.finalModule:t.week+' '+m.week+' · '+m.title[lang]}
+          </option>)}
+        </select>
+      </label>
+      <nav className={styles.weekDayNav} aria-label={t.selectDay}>
+        {currentModule.days.map((item,index)=><button type="button" key={item.day} aria-current={item.day===day?'step':undefined}
+          aria-label={t.day+' '+item.day+': '+item.resultLabel} onClick={()=>chooseDay(item.day)}
+          className={item.day===day?styles.weekDayActive:''}>
+          <span>{course.days?.[item.day]?.done?'✓':index+1}</span>
+        </button>)}
+      </nav>
       <div className={styles.dayHeading}>
-        <div><small>{t.week} {week} · {t.day} {day} / 90</small><h2>{selected.title}</h2><p>{selected.intro}</p></div>
-        <label>{t.selectDay}<select value={day} onChange={e=>chooseDay(Number(e.target.value))}>
-          {Array.from({length:90},(_,i)=>i+1).map(n=><option value={n} key={n}>{t.day} {n}{course.days?.[n]?.done?' ✓':''}</option>)}
-        </select></label>
+        <div><small>{t.day} {day} / 90</small><h2>{selected.resultLabel}</h2><p>{selected.intro}</p></div>
       </div>
       <div className={styles.actionCard}><div className={styles.actionIcon}><Target size={20}/></div>
         <div><strong>{t.practice}</strong><p>{selected.action}</p></div>
       </div>
-      <label className={styles.textareaLabel}>{t.note}
-        <textarea rows={4} value={dayNote} maxLength={900} onChange={e=>setDayNote(e.target.value)}
-          placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
+      <div className={styles.dailyOutcome}>
+        <strong>{t.dailyArtifact}</strong><p>{selected.resultLabel}</p>
+        <small><CheckCircle2 size={15} aria-hidden="true"/><span><b>{t.doneWhen}:</b> {selected.doneWhen}</span></small>
+      </div>
+      <label className={styles.textareaLabel}>{t.myResult}
+        <textarea rows={4} value={dayResult} maxLength={1200} onChange={e=>setDayResult(e.target.value)}
+          placeholder={t.resultPlaceholder} disabled={course.status!=='active'}/>
       </label>
+      <details className={styles.optionalNotes}>
+        <summary>{t.optionalNote}<ChevronDown size={16} aria-hidden="true"/></summary>
+        <label className={styles.textareaLabel}>{t.note}
+          <textarea rows={3} value={dayNote} maxLength={900} onChange={e=>setDayNote(e.target.value)}
+            placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
+        </label>
+      </details>
       <label className={styles.checkbox}><input type="checkbox" checked={dayDone} disabled={course.status!=='active'}
         onChange={e=>setDayDone(e.target.checked)}/>{t.completed}</label>
-      <button type="button" className={styles.primary} disabled={busy||course.status!=='active'}
-        onClick={()=>command('day',{day,done:dayDone,note:dayNote})}><CheckCircle2 size={17}/>{t.saveAction}</button>
+      {dayDone&&dayResult.trim().length<6&&<p className={styles.inlineHelp} role="status">{t.resultRequired}</p>}
+      {course.days?.[day]?.done&&!course.days?.[day]?.result&&<p className={styles.legacyNote}>{t.legacyCompletion}</p>}
+      <button type="button" className={styles.primary}
+        disabled={busy||course.status!=='active'||(dayDone&&dayResult.trim().length<6)}
+        onClick={()=>command('day',{day,done:dayDone,note:dayNote,result:dayResult,contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION})}>
+        <CheckCircle2 size={17}/>{t.saveAction}
+      </button>
       <hr className={styles.divider}/>
       <details className={styles.review} key={week}><summary>{t.weeklyReview} · {t.week} {week}<ChevronDown size={17}/></summary>
         <textarea rows={3} maxLength={1500} value={reviewNote} onChange={e=>setReviewNote(e.target.value)}
@@ -301,23 +365,50 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button disabled={day===90} onClick={()=>chooseDay(day+1)} type="button">{t.day} {day+1} →</button></div>
     </div>}
     {tab==='plan'&&<div className={styles.panel} data-business-plan>
-      <p>{t.planIntro}</p><div className={styles.weekList}>
-        {BUSINESS_WEEKS.map(w=>{
-          const completed=w.tasks.filter(item=>course.days?.[item.day]?.done).length
-          return <details key={w.week} className={styles.week} open={w.week===week||undefined}>
-            <summary><span className={styles.weekNumber}>{String(w.week).padStart(2,'0')}</span>
-              <span className={styles.weekTitle}><strong>{w.title[lang]}</strong><small>{w.introduction[lang]}</small></span>
-              <span className={styles.weekCount}>{completed}/7</span><ChevronDown size={17}/></summary>
-            <div className={styles.tasks}>{w.tasks.map(d=><button key={d.day} type="button" onClick={()=>chooseDay(d.day)}>
-              <span className={course.days?.[d.day]?.done?styles.doneMark:styles.emptyMark}>{course.days?.[d.day]?.done?'✓':d.day}</span>
-              {d[lang]}</button>)}</div>
-          </details>
-        })}
-        <div className={styles.finalWeek}><strong>{lang==='ru'?'Дни 85–90 · Закрепление':'Days 85–90 · Integration'}</strong>
-          <div className={styles.tasks}>{Array.from({length:6},(_,i)=>businessDay(i+85,lang)).map(d=>
-            <button key={d.day} onClick={()=>chooseDay(d.day)} type="button">
-              <span className={course.days?.[d.day]?.done?styles.doneMark:styles.emptyMark}>{course.days?.[d.day]?.done?'✓':d.day}</span>{d.action}
-            </button>)}</div></div>
+      <p>{t.planIntro}</p>
+      <div className={styles.moduleBrowser} data-business-weekly-modules>
+        <nav className={styles.moduleIndex} aria-label={t.selectModule}>
+          {BUSINESS_WEEK_MODULES.map(module=>{
+            const numbers=businessWeekProgress(course,module.week)
+            return <button type="button" key={module.id} aria-current={module.week===moduleWeek?'page':undefined}
+              onClick={()=>setModuleWeek(module.week)} className={module.week===moduleWeek?styles.moduleSelected:''}>
+              <span className={styles.moduleNumber}>{module.week===13?'★':String(module.week).padStart(2,'0')}</span>
+              <span className={styles.moduleIndexCopy}>
+                <strong>{module.week===13?t.finalModule:module.title[lang]}</strong>
+                <small>{module.outcome[lang]}</small>
+                <span>{numbers.complete}/{numbers.total} · {t.moduleDocumented}: {numbers.documented}</span>
+              </span>
+              <ChevronDown size={16} className={module.week===moduleWeek?styles.moduleArrow:''}/>
+            </button>
+          })}
+        </nav>
+        <section className={styles.moduleDetail} data-selected-business-week={moduleWeek}>
+          <span className={styles.moduleEyebrow}>{moduleWeek===13?t.finalModule:t.week+' '+moduleWeek+' / 12'}</span>
+          <h2>{openedModule.title}</h2>
+          <p>{openedModule.intro}</p>
+          <div className={styles.moduleOutcome}>
+            <strong>{t.weeklyObjective}</strong><p>{openedModule.outcome}</p>
+            <strong>{t.weekArtifact}</strong><p>{openedModule.capstone}</p>
+            <small>{t.moduleComplete}: {openedProgress.complete} / {openedProgress.total} · {t.moduleDocumented}: {openedProgress.documented}</small>
+          </div>
+          <div className={styles.moduleDays} role="group" aria-label={t.week+' '+moduleWeek}>
+            {openedModule.days.map((entry,index)=>{
+              const record=course.days?.[entry.day]
+              return <button type="button" key={entry.day} onClick={()=>chooseDay(entry.day)}
+                aria-label={t.day+' '+entry.day+': '+entry.resultLabel}>
+                <span className={record?.done?styles.doneMark:styles.emptyMark}>{record?.done?'✓':index+1}</span>
+                <span className={styles.moduleDayText}>
+                  <strong>{t.day} {entry.day} · {entry.resultLabel}</strong>
+                  <small>{entry.action}</small>
+                  <small><b>{t.doneWhen}:</b> {entry.doneWhen}</small>
+                  {record?.result&&<em>{record.result.length>135?record.result.slice(0,135)+'…':record.result}</em>}
+                  {record?.done&&!record?.result&&<em>{t.legacyCompletion}</em>}
+                </span>
+                <ArrowRight size={15} aria-hidden="true"/>
+              </button>
+            })}
+          </div>
+        </section>
       </div>
     </div>}
     {tab==='survey'&&<div className={styles.panel}>
@@ -392,10 +483,25 @@ export default function BusinessCoaching({locale='en',accountId}){
         {surveyChanges.map(m=><p key={m.id}>{BUSINESS_DOMAINS.find(d=>d.id===m.id)?.[lang]}:
           {' '}{m.previous.toFixed(1)} → {m.latest.toFixed(1)} ({m.delta>0?'+':''}{m.delta.toFixed(1)})</p>)}
       </div>}
-      <div className={styles.reportBlock}><h3>{t.actions}</h3>
-        {Object.entries(course.days).filter(([,d])=>d.done).sort((a,b)=>Number(a[0])-Number(b[0])).map(([k,d])=>
-          <p key={k}><strong>{t.day} {k}.</strong> {businessDay(Number(k),lang)?.action}{d.note?' — '+d.note:''}</p>)}
-        {!progress.completed&&<p>—</p>}
+      <div className={styles.reportBlock} data-business-weekly-report>
+        <h3>{t.weeklyResults}</h3>
+        {BUSINESS_WEEK_MODULES.map(module=>{
+          const entries=module.days.map(item=>({day:item.day,record:course.days?.[item.day],spec:item}))
+            .filter(row=>row.record && (row.record.done || row.record.result || row.record.note))
+          if(!entries.length)return null
+          return <section key={module.id} className={styles.reportModule}>
+            <h4>{t.week} {module.week} · {module.title[lang]}</h4>
+            <p><strong>{t.weekArtifact}:</strong> {module.capstone[lang]}</p>
+            {entries.map(({day:recordDay,record,spec})=><p key={recordDay}>
+              <strong>{t.day} {recordDay} · {record.resultLabelSnapshot?.[lang]||spec.result[lang]}</strong>
+              {' · '}{record.done?t.completed:t.daySaved}
+              {record.result?<span> — {record.result}</span>:
+                record.done?<span> — {t.legacyCompletion}</span>:null}
+              {record.note?<span> · {t.notes}: {record.note}</span>:null}
+            </p>)}
+          </section>
+        })}
+        {!Object.values(course.days).some(item=>item?.done||item?.result||item?.note)&&<p>—</p>}
       </div>
       <div className={styles.reportBlock}><h3>{t.notes}</h3>
         {Object.entries(course.reviews).sort((a,b)=>Number(a[0])-Number(b[0])).map(([k,d])=>
