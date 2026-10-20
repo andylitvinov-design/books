@@ -4,7 +4,7 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {GrowthStudioError, nextGrowthPost} from '@/lib/growth-studio/model.mjs'
 import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
-import {telegramConfig,telegramPayload,verifyTelegramChannel,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
+import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
   ['invalid_post','invalid_action','invalid_transition','not_found','conflict','capacity_reached'].includes(error.code)
@@ -63,6 +63,18 @@ export async function createGrowthStudioBulkAction(input) {
 }
 
 
+// Read-only account readiness. No provider write, no bot secrets returned to UI.
+export async function checkGrowthTelegramPublisherAction(){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!telegramConfig().ready)return {ok:false,error:'telegram_unconfigured'}
+  try{
+    const status=await verifyTelegramPostingPermissions()
+    return {ok:true,verified:status.verified===true,channel:status.channel}
+  }catch{
+    return {ok:false,error:'telegram_permission_unverified'}
+  }
+}
+
 // A *single*, explicitly confirmed owner click. Not an automatic queue or auto-publisher.
 // The atomic in-progress transition prevents duplicate concurrent API sends.
 // If Telegram replies ambiguously, the post is locked for owner investigation.
@@ -86,7 +98,7 @@ export async function publishGrowthTelegramNowAction(input){
     if(source.revision!==input.expectedRevision)return {ok:false,error:'conflict'}
     // Validate full exact content/target before taking the non-repeatable claim.
     telegramPayload(source,config.chatId)
-    await verifyTelegramChannel()
+    await verifyTelegramPostingPermissions()
     claimed={...source,status:'sending',revision:source.revision+1,attemptId:randomUUID(),updatedAt:new Date().toISOString()}
     await store.save(claimed,source.revision)
   }catch(e){return {ok:false,error:e instanceof GrowthStudioError?e.code:'storage_unavailable'}}
