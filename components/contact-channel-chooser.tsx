@@ -21,14 +21,18 @@ const copy = {
     question: "Describe what you would like help with",
     description: "Briefly describe your situation or question",
     placeholder: "I would like to explore...",
-    submit: "Send request to practitioner",
+    name: "Your name", email: "Email", phone: "Phone / WhatsApp (+country code)",
+    contactHelp: "Add an email address, a phone number or both. No account needed.",
+    contactError: "Enter your name and a valid email or international phone number.",
+    consent: "I agree to be contacted personally about this enquiry only. No marketing subscription.",
+    submit: "Register my request",
     sending: "Saving request…",
-    saved: "Request saved",
-    next: "Now message the practitioner yourself. Your enquiry reference will be included.",
+    saved: "Request received in our CRM",
+    next: "Your contact details are saved. If you prefer, you can also start a WhatsApp or Telegram chat using this reference.",
     messengers: "Continue in your preferred messenger",
     error: "We could not save your request. Please try again; no enquiry has been recorded.",
     privateNote: "Please avoid medical records, diagnoses or sensitive personal details in this short enquiry.",
-    note: "Your contact details are not automatically collected from Telegram or WhatsApp. You review the prepared message and press Send in the messenger yourself.",
+    note: "Only the contact details you submit here are stored securely. They are unverified and used for a personal reply, not advertising. Messenger handoff is optional.",
     situation: "Situation",
     reference: "Enquiry",
     again: "New enquiry",
@@ -38,14 +42,18 @@ const copy = {
     question: "Расскажите, с чем вам нужна помощь",
     description: "Кратко опишите ситуацию или ваш запрос",
     placeholder: "Я хотел(а) бы разобраться в...",
-    submit: "Отправить запрос специалисту",
+    name: "Ваше имя", email: "Электронная почта", phone: "Телефон / WhatsApp (+код страны)",
+    contactHelp: "Укажите почту, телефон или оба контакта. Регистрация аккаунта не нужна.",
+    contactError: "Укажите имя и действительный email или телефон в международном формате.",
+    consent: "Согласен(на) на личный ответ по этой заявке. На рекламную рассылку не подписываюсь.",
+    submit: "Оставить заявку",
     sending: "Сохраняем заявку…",
-    saved: "Заявка сохранена",
-    next: "Теперь напишите специалисту сами. Номер заявки добавится в сообщение.",
+    saved: "Заявка поступила в CRM",
+    next: "Ваш контакт сохранён. При желании можете также написать в WhatsApp или Telegram с номером заявки.",
     messengers: "Продолжить в удобном мессенджере",
     error: "Не удалось сохранить заявку. Попробуйте ещё раз; обращение пока не зарегистрировано.",
     privateNote: "Не указывайте здесь диагнозы, медицинские документы и другие чувствительные сведения.",
-    note: "Мы не получаем ваши контакты из Telegram или WhatsApp автоматически. Проверьте подготовленный текст и нажмите «Отправить» в самом мессенджере.",
+    note: "Сохраняем только указанные здесь контакты. Они не подтверждены и используются для ответа, а не для рекламы. Переход в мессенджер необязателен.",
     situation: "Ситуация",
     reference: "Заявка",
     again: "Новый запрос",
@@ -55,14 +63,18 @@ const copy = {
     question: "Cuéntanos en qué podemos ayudarte",
     description: "Describe brevemente tu situación o solicitud",
     placeholder: "Me gustaría hablar sobre...",
-    submit: "Enviar solicitud al especialista",
+    name: "Tu nombre", email: "Correo electrónico", phone: "Teléfono / WhatsApp (+prefijo)",
+    contactHelp: "Deja tu email, teléfono o ambos. No necesitas crear una cuenta.",
+    contactError: "Introduce tu nombre y un correo o teléfono internacional válido.",
+    consent: "Acepto que me contacten solamente sobre esta solicitud. No me suscribo a publicidad.",
+    submit: "Registrar mi solicitud",
     sending: "Guardando solicitud…",
-    saved: "Solicitud guardada",
-    next: "Ahora escribe tú mismo al especialista. Incluiremos el código de solicitud.",
+    saved: "Solicitud recibida en CRM",
+    next: "Guardamos tus datos de contacto. También puedes escribir por WhatsApp o Telegram con esta referencia.",
     messengers: "Continuar por mensajería",
     error: "No pudimos guardar tu solicitud. Inténtalo de nuevo; no se ha registrado.",
     privateNote: "Evita incluir diagnósticos, documentos médicos o datos personales sensibles.",
-    note: "No recibimos automáticamente tus datos de contacto de Telegram o WhatsApp. Revisa el mensaje preparado y pulsa Enviar tú mismo.",
+    note: "Solo guardamos los contactos que introduces aquí; no están verificados y se usan para responder, no para publicidad. El chat es opcional.",
     situation: "Situación",
     reference: "Solicitud",
     again: "Nueva solicitud",
@@ -88,6 +100,11 @@ export function ContactChannelChooser({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [website, setWebsite] = useState("");
   const [saved, setSaved] = useState<SavedEnquiry | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -119,6 +136,11 @@ export function ContactChannelChooser({
   useEffect(() => {
     setOpen(false);
     setDescription("");
+    setDisplayName("");
+    setEmail("");
+    setPhone("");
+    setConsent(false);
+    setWebsite("");
     setSaved(null);
     setError("");
     operationId.current = null;
@@ -142,6 +164,12 @@ export function ContactChannelChooser({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || saved || description.trim().length < 10) return;
+    const cleanedPhone = phone.replace(/[\s().-]/g, "");
+    if (displayName.trim().length < 2 || (!email.trim() && !cleanedPhone) ||
+      (cleanedPhone && !/^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
+      setError(c.contactError);
+      return;
+    }
     const nextId = operationId.current || crypto.randomUUID();
     operationId.current = nextId;
     setBusy(true);
@@ -153,6 +181,8 @@ export function ContactChannelChooser({
         body: JSON.stringify({
           operationId: nextId, serviceTitle, description: description.trim(),
           sourcePath: pathname, locale,
+          contact: { displayName: displayName.trim(), email: email.trim(), phone: cleanedPhone },
+          contactConsent: consent, website,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -190,12 +220,46 @@ export function ContactChannelChooser({
         <p className={styles.question}>{saved ? c.messengers : c.question}</p>
         {!saved ? (
           <form onSubmit={submit} className={styles.enquiryForm}>
+            <div className={styles.contactFields}>
+              <label>{c.name} *
+                <input type="text" autoComplete="name" required minLength={2} maxLength={120}
+                  disabled={busy} value={displayName} onChange={event => {
+                    setDisplayName(event.target.value); setError(""); operationId.current = null;
+                  }} />
+              </label>
+              <label>{c.email}
+                <input type="email" autoComplete="email" maxLength={254} disabled={busy}
+                  value={email} onChange={event => {
+                    setEmail(event.target.value); setError(""); operationId.current = null;
+                  }} />
+              </label>
+              <label>{c.phone}
+                <input type="tel" autoComplete="tel" maxLength={40} placeholder="+14165551234"
+                  disabled={busy} value={phone} onChange={event => {
+                    setPhone(event.target.value); setError(""); operationId.current = null;
+                  }} />
+              </label>
+            </div>
+            <small className={styles.privateNote}>{c.contactHelp}</small>
             <label htmlFor={panelId + "-situation"}>{c.description}</label>
             <textarea id={panelId + "-situation"} required minLength={10} maxLength={1400} rows={3}
               placeholder={c.placeholder} value={description} disabled={busy}
-              onChange={event => { setDescription(event.target.value); setError(""); }} />
+              onChange={event => {
+                setDescription(event.target.value); setError(""); operationId.current = null;
+              }} />
             <small className={styles.privateNote}>{c.privateNote}</small>
-            <button type="submit" className={styles.submit} disabled={busy || description.trim().length < 10}>
+            <label className={styles.consent}>
+              <input type="checkbox" required checked={consent} disabled={busy}
+                onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
+              <span>{c.consent}</span>
+            </label>
+            <label className={styles.honeypot} aria-hidden="true">
+              Website <input type="text" name="website" autoComplete="off" tabIndex={-1}
+                value={website} onChange={event => setWebsite(event.target.value)} />
+            </label>
+            <button type="submit" className={styles.submit}
+              disabled={busy || description.trim().length < 10 || displayName.trim().length < 2 ||
+                (!email.trim() && !phone.trim()) || !consent}>
               <Send size={17} aria-hidden="true" />{busy ? c.sending : c.submit}
             </button>
             {error && <p className={styles.error} role="alert">{error}</p>}
@@ -222,7 +286,8 @@ export function ContactChannelChooser({
               </AcquisitionEventLink>
             </div>
             <button type="button" className={styles.again} onClick={() => {
-              setSaved(null); setDescription(""); setError(""); operationId.current = null;
+              setSaved(null); setDescription(""); setDisplayName(""); setEmail("");
+              setPhone(""); setConsent(false); setWebsite(""); setError(""); operationId.current = null;
             }}>{c.again}</button>
           </>
         )}
