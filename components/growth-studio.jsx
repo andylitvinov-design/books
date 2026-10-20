@@ -339,11 +339,11 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     scheduledByDay.set(day,[...(scheduledByDay.get(day)||[]),post])
   }
   return <section className={styles.studio} aria-label="HH Growth Studio">
-    <div className={styles.intro}>
+    {workspaceOpen&&<div className={styles.intro}>
       <div><p className={styles.eyebrow}>HOLISTIC HOUSE · GROWTH STUDIO</p>
         <h2>{t.heading}</h2><p>{t.sub}</p></div>
       <div className={styles.safetyBadge}><ShieldCheck size={18} aria-hidden="true"/>{t.noAuto}</div>
-    </div>
+    </div>}
     <GrowthStudioConnections locale={locale} telegram={telegram} onTelegramVerified={setTelegramVerified}
       postCount={records.length}
       onStart={()=>openWorkspace('compose')}
