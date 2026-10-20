@@ -63,14 +63,29 @@
   .mainCard .cardHeading h3,.smallCard .cardHeading h3{font-size:17px}
 }
 
-/* Optional business self-coaching uses separate account-owned progress, not
-   the psychotherapeutic course membership quota. */
-.businessTrack{display:flex;gap:13px;align-items:center;margin:13px 0 17px;padding:14px 16px;border:1px solid #a8d2c9;border-radius:15px;background:linear-gradient(115deg,#e9f7f2,#fdfaf2);color:#205a67;text-decoration:none;min-width:0}
-.businessTrackIcon{display:grid;place-items:center;flex:0 0 43px;height:43px;border-radius:12px;background:#d3eee5;color:#246a6a}
-.businessTrack>span:nth-child(2){display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
-.businessTrack strong{font-size:14px;line-height:1.25;color:#205363}
-.businessTrack small{font-size:11px;line-height:1.4;color:#58777b}
-.businessTrack>svg:last-child{flex:0 0 auto;color:#813f57}
-.businessTrack:hover{border-color:#77b7a7;background:#e6f5ef}
-.businessTrack:focus-visible{outline:3px solid #337c84;outline-offset:3px}
-@media(max-width:460px){.businessTrack{padding:11px;gap:9px}.businessTrackIcon{flex-basis:36px;height:36px}.businessTrack strong{font-size:12px}.businessTrack small{font-size:10px}}
+/* Only the Business & Career tile adopts Executive Wood: other courses keep their own style.
+   This route remains free and does NOT affect membership course slots. */
+.businessTrack{position:relative;isolation:isolate;display:flex;gap:13px;align-items:center;
+  min-width:0;margin:13px 0 17px;padding:15px 17px;overflow:hidden;text-decoration:none;
+  border:1px solid #c8ad8a;border-radius:17px;
+  background:linear-gradient(115deg,#fffaf1,#f0dfc7 78%,#e8d0ae);
+  color:#3b2b20;box-shadow:0 8px 22px #60401c1c}
+.businessTrack::before{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 18px,#a9845a07 20px,transparent 23px);
+  border-left:5px solid #664a31}
+.businessTrackIcon{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;
+  border:1px solid #76543a;border-radius:13px;
+  background:linear-gradient(135deg,#805a3b,#462e22);color:#fff4df;
+  box-shadow:0 4px 12px #52331c30}
+.businessTrack>span:nth-child(2){display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.businessTrack strong{font:700 clamp(14px,1.7vw,17px)/1.25 Georgia,serif;color:#3d2a1f}
+.businessTrack small{font-size:11px;line-height:1.48;color:#755740}
+.businessTrack>svg:last-child{flex:0 0 auto;color:#745135}
+.businessTrack:hover{border-color:#976d43;background:linear-gradient(115deg,#fff8ec,#ead5b7)}
+.businessTrack:focus-visible{outline:3px solid #a97942;outline-offset:3px}
+@media(max-width:460px){
+  .businessTrack{padding:12px;gap:9px;border-radius:14px}
+  .businessTrackIcon{flex-basis:40px;width:40px;height:40px}
+  .businessTrack strong{font-size:14px}
+  .businessTrack small{font-size:11px}
+}
