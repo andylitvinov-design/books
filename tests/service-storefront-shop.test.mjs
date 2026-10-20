@@ -38,6 +38,7 @@ test('public shop has one localized catalogue, canonical cart and working produc
  const locales = read('lib/public-locales.ts')
  const sitemap = read('app/sitemap.ts')
  assert.match(page,/StorefrontShop/)
+ assert.match(read('.github/workflows/hh-public-services-production.yml'),/verify-storefront-shop-browser.mjs/)
  assert.match(page,/locale === 'en' \|\| locale === 'ru' \|\| locale === 'es'/)
  assert.match(shop,/publicServiceCatalog\(locale\)/)
  assert.match(shop,/coreServiceOffers\(locale\)/)

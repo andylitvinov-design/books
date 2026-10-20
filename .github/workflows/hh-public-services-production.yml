@@ -44,6 +44,7 @@ jobs:
           node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
           node scripts/verify-service-cart-browser.mjs || status=$?
+          node scripts/verify-storefront-shop-browser.mjs || status=$?
           {
             echo "Production server diagnostic summary (no application secrets are configured for this job)"
             grep -Ei 'ready|started|error|warn|failed|exception' /tmp/hh-public-services-next.log | tail -n 200 || true
@@ -57,5 +58,6 @@ jobs:
             artifacts/public-services-production/
             artifacts/contact-channel-browser/
             artifacts/service-cart/
+            artifacts/storefront-shop/
           retention-days: 7
           if-no-files-found: warn
