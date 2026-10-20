@@ -1,0 +1,8 @@
+"key","family","research_entry_type","reported_item_or_category_count","primary_or_review_source","safety_note"
+"mits-multon1996-enus37","MITS","clinician-rated instrument","37 (negative 25; positive 12)","https://doi.org/10.1037/0022-0167.43.3.243","Research only; original items and commercial SaaS rights unverified"
+"prq-bradley2005-enus90-administered","PRQ","clinician-rated administered item bank","90 administered","https://doi.org/10.1192/bjp.186.4.342","Do not equate 90 administered with 64 mapped factor-score items"
+"prq-bradley2005-enus64-factor-scored","PRQ","nonstandalone factor-scored subset evidence","64 mapped (25+13+12+9+5)","https://doi.org/10.1192/bjp.186.4.342","Subset of 90-item PRQ; NOT separately validated 64-item patient questionnaire"
+"tws-ulberg2014-no-rater26","TWS","observer coding manual","26 coding entries (16 5-point ratings)","https://doi.org/10.1186/s12888-014-0291-y","English publication and Norway sample do not prove validated EN/NO translated edition"
+"pirs-cooperbond1992-observer10categories","PIRS","observer coding taxonomy","10 coding categories; not questions","https://doi.org/10.1002/cpp.70073","2025 systematic review supports 10 categories; original 1992 manual and reuse license pending"
+"vpps-omalley1983-enus80-observer","VPPS","observer coding form","80 in applied account; historical VPPS also cited as 84","https://doi.org/10.1037/0022-006X.51.4.581","Reconciling 80 versus 84 and subscale key required before scores"
+"vppss-smith2003-enus8-patientparticipation","VPPS-S","eight-item subscale of patient short-form","8 patient-participation items; NOT a full 8-item battery","https://doi.org/10.1176/appi.psychotherapy.2003.57.2.195","Revised patient-report scale; permission and full instrument manual pending"
