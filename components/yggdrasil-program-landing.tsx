@@ -199,10 +199,15 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <div className="yggdrasil-program-actions">
             <Link className="yggdrasil-primary-action" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"} <span aria-hidden="true">→</span></Link>
             <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{text.free} <span aria-hidden="true">→</span></Link>
-            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
-            <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
           </div>
-          <Link className="yggdrasil-program-detail-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description} <span aria-hidden="true">↗</span></Link>
+          <details className="reiki-disclosure reiki-disclosure--hero-links">
+            <summary>{locale === "ru" ? "Программа, модули и полное описание" : locale === "es" ? "Programa, módulos y descripción completa" : "Explore modules, full programme & guide"}<span aria-hidden="true">＋</span></summary>
+            <nav className="reiki-hero-links" aria-label={locale === "ru" ? "Дополнительные варианты" : locale === "es" ? "Más opciones" : "More options"}>
+              <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
+              <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
+              <Link className="yggdrasil-program-detail-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description} <span aria-hidden="true">↗</span></Link>
+            </nav>
+          </details>
         </div>
       </section>
 

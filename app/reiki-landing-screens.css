@@ -194,3 +194,9 @@
   .reiki-disclosure > summary > span, .reiki-optional-capture > summary > span,
   .reiki-full-manual > summary > span { transition: none; }
 }
+
+/* Keep first screens calm: advanced navigation stays in a tidy disclosure. */
+.reiki-disclosure--hero-links { max-width: 670px; background: transparent; margin-top: 14px; }
+.reiki-hero-links { display: grid; gap: 10px; padding: 0 16px 17px; }
+.reiki-hero-links > a { display: flex; align-items: center; justify-content: space-between; min-height: 45px; width: 100%; padding: 10px 13px; border: 1px solid #ddd3c4; border-radius: 10px; background: #fffcf7; color: #426755; font-size: 13px; font-weight: 700; text-decoration: none; }
+.reiki-hero-links > a:hover, .reiki-hero-links > a:focus-visible { background: #f1f6ef; border-color: #a7bfa8; }
