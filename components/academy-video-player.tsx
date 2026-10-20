@@ -21,7 +21,8 @@ export function AcademyVideoPlayer({ youtubeId, title }: { youtubeId: string; ti
     );
   }
   return (
-    <button className="academy-video-poster" onClick={() => setPlaying(true)} type="button" aria-label={"Play: " + title}>
+    <div className="academy-video-choice">
+      <button className="academy-video-poster" onClick={() => setPlaying(true)} type="button" aria-label={"Play: " + title}>
       <Image
         alt=""
         height={270}
@@ -31,7 +32,12 @@ export function AcademyVideoPlayer({ youtubeId, title }: { youtubeId: string; ti
         src={"https://i.ytimg.com/vi/" + safeId + "/hqdefault.jpg"}
         width={480}
       />
-      <span><Play aria-hidden="true" />{title}</span>
-    </button>
+        <span><Play aria-hidden="true" />{title}</span>
+      </button>
+      <a className="academy-video-direct-link" href={"https://www.youtube.com/watch?v=" + safeId}
+        target="_blank" rel="noopener noreferrer" aria-label={"Watch on YouTube: " + title}>
+        YouTube ↗
+      </a>
+    </div>
   );
 }
