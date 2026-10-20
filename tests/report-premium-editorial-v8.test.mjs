@@ -68,7 +68,7 @@ test('signature stays in core pages after independent cards gain a measured whit
 
 test('appendix photo has a hairline boundary and subheadings are editorials, not repeated tinted UI boxes',()=>{
   const source=readFileSync('lib/prescriptions/pdf.js','utf8')
-  assert.match(source,/y=cardBottom-13/,'every card gets a small real separating gap')
+  assert.match(source,/y=cardBottom-8/,'independent cards keep a measured 8pt gutter without moving the signature to a third core page')
   assert.match(source,/frameX,frameBottom,frameWidth,frameHeight,'re S Q'/,
     'each uncropped source picture receives a light neutral frame')
   assert.match(source,/Elegant source sections:/)
