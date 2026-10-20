@@ -15,7 +15,7 @@ test('setup page requires owner session and only displays safe status',()=>{
 test('signed admin Server Actions are explicit, guarded, and preview-blocked',()=>{
  const s=read('app/admin/telegram-setup/actions.js')
  assert.match(s,/^'use server'/)
- assert.equal((s.match(/if\(!await requireAdminRequest\(\)\)/g)||[]).length,2)
+ assert.equal((s.match(/if\(!await requireAdminRequest\(\)\)/g)||[]).length,3)
  assert.match(s,/await ensureOwnerTelegramPairing\(config\)/)
  assert.match(s,/await sendOwnerTelegramTest\(config\)/)
  assert.match(s,/process\.env\.VERCEL_ENV==='preview'/)

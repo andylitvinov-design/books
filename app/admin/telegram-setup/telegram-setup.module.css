@@ -85,3 +85,12 @@
 @media(prefers-reduced-motion:reduce){
  .primary,.secondary{transition:none;}
 }
+
+.modelSetup{border-top:1px solid #e0e9e3;margin:20px 0 0;padding-top:18px;}
+.modelSetup h3{font-size:17px;line-height:1.35;color:#214938;margin:0 0 11px;}
+.modelSetup p{font-size:13px;line-height:1.55;color:#485f53;margin:9px 0;}
+.modelSetup strong{color:#255844;overflow-wrap:anywhere;}
+.setupLinks{display:flex;flex-direction:column;align-items:start;gap:10px;margin:12px 0 0;}
+.setupLinks a{font-size:13px;font-weight:650;color:#275d43;line-height:1.5;
+ min-height:35px;display:inline-flex;align-items:center;text-underline-offset:4px;}
+.setupLinks a:focus-visible{outline:3px solid #67a789;outline-offset:2px;}
