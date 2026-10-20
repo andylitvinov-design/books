@@ -16,6 +16,7 @@ const worker=read('scripts/andrey-voice/local_worker.py')
 test('Mac narration is fail-closed behind approval, token and a disabled-by-default flag',()=>{
   assert.match(server,/HH_LOCAL_NARRATION_ENABLED==='true'/)
   assert.match(server,/HH_LOCAL_NARRATION_OWNER_APPROVED==='true'/)
+  assert.match(server,/HH_LOCAL_NARRATION_END_TO_END_VERIFIED==='true'/)
   assert.match(server,/HH_LOCAL_NARRATION_WORKER_TOKEN/)
   assert.match(server,/timingSafeEqual/)
   assert.match(server,/workerToken\(request\)/)
@@ -61,7 +62,7 @@ test('queued report text stays encrypted and worker transport is restricted',()=
   assert.match(redis,/ZRANGEBYSCORE/)
   assert.match(redis,/EVAL/)
   assert.match(storage,/checkPrivateMediaStorage\(config\)/)
-  assert.match(storage,/3000000/)
+  assert.match(storage,/3_000_000/)
   assert.match(worker,/HH_LOCAL_NARRATION_SUPABASE_HOST/)
   assert.match(worker,/HTTPRedirectHandler/)
   assert.match(worker,/TemporaryDirectory/)
@@ -88,4 +89,20 @@ test('worker routes never accept voice content from a browser',()=>{
   assert.doesNotMatch(server,/console\.log\(source\.text\)/)
   assert.match(audio,/sec-fetch-site/)
   assert.match(audio,/new Set\(pairs\.map/)
+})
+
+
+test('worker completion and bounded failure handling require the private worker route', () => {
+  const completed = read('app/api/report-narration/local/worker/complete/route.js')
+  const rejected = read('app/api/report-narration/local/worker/failed/route.js')
+  assert.match(completed, /finalizeLocalNarration/)
+  assert.match(rejected, /failLocalNarration/)
+  assert.match(server, /workerToken\(request\)/)
+  assert.match(server, /verifyLocalVoiceUpload/)
+  assert.match(server, /store\.complete/)
+  assert.match(server, /store\.fail/)
+  for (const source of [completed, rejected]) {
+    assert.match(source, /getAppConfig/)
+    assert.doesNotMatch(source, /export async function GET/)
+  }
 })
