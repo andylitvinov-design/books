@@ -1,0 +1,23 @@
+.wrap{max-width:760px;margin:0 auto;padding:clamp(28px,6vw,72px) 20px 84px;color:#173e38;line-height:1.55}
+.hero{display:flex;align-items:center;gap:24px;background:linear-gradient(135deg,#ebf8f2,#f7fbf8);border:1px solid #d5e9e0;padding:clamp(24px,5vw,44px);border-radius:28px}
+.mark{flex:none;border-radius:21px;box-shadow:0 12px 32px #16463a2b}
+.eyebrow{font-size:11px!important;letter-spacing:.16em;font-weight:800;color:#427e68;margin-bottom:10px}
+.hero h1{font-size:clamp(25px,4.5vw,38px);line-height:1.17;font-weight:750;letter-spacing:-.03em;margin:0 0 12px}
+.hero p{margin:0;color:#3f5f52}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:23px 0}
+.actions a{display:inline-flex;align-items:center;justify-content:center;padding:12px 19px;border-radius:12px;font-weight:650;text-decoration:none;border:1px solid #accfc1}
+.primary{background:#175c4f;color:#fff!important;border-color:#175c4f!important}
+.link{color:#175c4f;background:#fff}
+.steps{border:1px solid #d9e8df;border-radius:24px;padding:25px 26px;background:white}
+.steps h2{margin:0 0 20px;font-size:21px;line-height:1.2;font-weight:700}
+.steps ol{list-style:none;display:grid;gap:16px;margin:0;padding:0}
+.steps li{display:flex;align-items:flex-start;gap:13px}
+.steps li span{display:flex;align-items:center;justify-content:center;background:#d6eee1;color:#165345;flex:none;width:29px;height:29px;border-radius:50%;font-weight:800}
+.steps li p{margin:2px 0 0;color:#34594e}
+.privacy{color:#24584c;background:#e9f6ee;border-radius:16px;padding:18px 20px;margin:18px 0 10px}
+.note{font-size:13px;color:#657b71;margin:0}
+.wrap :global([data-hh-install]){background:#fff;border:1px solid #d9e8df;padding:20px 24px;border-radius:20px;margin-top:20px}
+.wrap :global([data-hh-install] h2){font-size:18px;font-weight:700;margin:0 0 6px}
+.wrap :global([data-hh-install] p){margin:0 0 10px;color:#526f64}
+.wrap :global([data-hh-install] button){color:white;background:#175c4f;border:0;border-radius:12px;padding:12px 18px;font-weight:700;cursor:pointer}
+@media(max-width:560px){.hero{flex-direction:column;text-align:center;align-items:center;gap:17px}.actions{flex-direction:column}.actions a{width:100%}}
