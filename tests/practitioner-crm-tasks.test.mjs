@@ -40,7 +40,7 @@ test('master tasks API validates an actual authenticated assigned practitioner a
   const route=src('app/api/app/practitioner-request-tasks/route.js')
   assert.match(store,/import 'server-only'/)
   assert.match(store,/transaction\(config,actor,async db=>/)
-  assert.match(store,/async function ownedRequest\(db,actor,requestId\)/)
+  assert.match(store,/async function ownedRequest\(db,actor,requestId,\{lock=false\}=\{\}\)/)
   assert.match(store,/where r\.id=\$1 and p\.trusted_auth_user_id=\$2 and p\.active/)
   assert.match(store,/requireUUID\(input\?\.requestId\);requireUUID\(input\?\.taskId\)/)
   assert.match(store,/taskKindAllowed\(input\.kind\)/)
