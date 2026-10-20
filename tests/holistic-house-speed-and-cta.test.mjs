@@ -35,8 +35,8 @@ test("homepage prioritizes personal enquiry while retaining accessible free revi
   const home = read("components/holistic-house-home.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Ask about a session · from €50"/);
-  assert.match(home, /heroBook: "Запросить личную сессию · от €50"/);
+  assert.match(home, /heroBook: "Request a consultation · from €50"/);
+  assert.match(home, /heroBook: "Запросить консультацию · от €50"/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(home, /className="service-home-button service-home-button--primary"/);
   assert.match(wrapper, /id="home-consultation"/);
@@ -50,9 +50,14 @@ test("homepage prioritizes personal enquiry while retaining accessible free revi
   assert.match(home, /звонок не входит\. Личные сессии оплачиваются отдельно/);
   assert.match(home, /not a live call\. One-to-one sessions are separate/);
   const landing = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(landing, /<section className=\{styles\.finalCapture\} id="personal-consultation"/);
-  assert.ok(landing.indexOf('id="personal-consultation"') > landing.indexOf('className={styles.alchemy}'),
-    "Optional paid format choice is deferred until after the free review's benefits and optional deeper-work link");
+  const freeEntry = read("components/free-entry-landing.tsx");
+  // Free review now reuses the approved no-call, no-payment first-party landing;
+  // the former Alchemy panel and paid-format upsell no longer belong here.
+  assert.match(landing, /return <FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
+  assert.match(freeEntry, /"request-free-review"/);
+  assert.match(freeEntry, /id=\{captureId\}/);
+  assert.match(freeEntry, /<FreeSituationReviewForm locale=\{locale\} \/>/);
+  assert.match(freeEntry, /No pressure to book a paid session/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
   const book = home.indexOf('"data-hero-cta": "paid-sessions"');
@@ -120,10 +125,10 @@ test("hero H1 matches personal-session metadata, and optional free CTA stays cle
   assert.match(seo, /Personal Sessions in Toronto & Online/);
   assert.match(enRu, /heroTitle: "Stuck in relationships, work or an important decision\?"/);
   assert.match(enRu, /heroTitle: "Сложности в отношениях, работе или важном решении\?"/);
-  assert.match(enRu, /heroBook: "Ask about a session · from €50"/);
-  assert.match(enRu, /heroBook: "Запросить личную сессию · от €50"/);
+  assert.match(enRu, /heroBook: "Request a consultation · from €50"/);
+  assert.match(enRu, /heroBook: "Запросить консультацию · от €50"/);
   assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
-  assert.match(es, /Solicitar sesión personal · desde €50/);
+  assert.match(es, /Solicitar una consulta · desde €50/);
   assert.match(es, /href="\/es\/services#consultation"/);
   assert.match(css, /\.house-home--services \.service-home-paid-link \{/);
   assert.match(css, /background: #0a7180/);
