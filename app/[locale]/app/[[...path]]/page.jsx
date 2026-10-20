@@ -7,8 +7,12 @@ import '@/components/app/psi-monitoring.css'
 import '@/components/app/refinements.css'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const { locale, path = [] } = await params
+  const query = await searchParams || {}
+  // Only the dedicated OPORA stress entry should offer a separate OPORA install.
+  // Other course/consultation screens all install the SAME Holistic House app.
+  const oporaInstall = path[0] === 'course' && query.program === 'stress'
   const titles = {
     portrait: locale === 'ru' ? 'Мои личные отчёты' : 'My personal reports',
     tests: locale === 'ru' ? 'Мои тесты' : 'My tests',
@@ -18,7 +22,8 @@ export async function generateMetadata({ params }) {
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
-  manifest: path[0] === 'course' ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : '/holistic-house.webmanifest',
+  manifest: oporaInstall ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : (locale === 'ru' ? '/holistic-house-app-ru.webmanifest' : '/holistic-house-app.webmanifest'),
+  icons: { icon: '/icons/holistic-house-teal.svg', apple: '/holistic-house-icon/180' },
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
   }
