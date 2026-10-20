@@ -216,6 +216,33 @@ export default function CrmManager({ locale = 'en', accountId }) {
       if(sessionRef.current===session&&error?.name!=='AbortError')setPageError(true)
     } finally {if(sessionRef.current===session)setPageBusy(false)}
   }
+  // Refresh a paused CRM tab when the Toronto day changes; no polling.
+  const rolloverRef=useRef('')
+  useEffect(()=>{
+    const asOf=data?.overview?.asOf
+    if(!accountId||!asOf)return
+    const check=()=>{
+      if(document.visibilityState==='hidden')return
+      const parts=new Intl.DateTimeFormat('en-US',{
+        timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',
+      }).formatToParts(new Date())
+      const field=kind=>parts.find(item=>item.type===kind)?.value
+      const today=[field('year'),field('month'),field('day')].join('-')
+      if(today===asOf||rolloverRef.current===today)return
+      const session=sessionRef.current
+      if(!session||session.accountId!==accountId)return
+      rolloverRef.current=today
+      void load(session).catch(()=>{}).finally(()=>{
+        if(sessionRef.current===session)rolloverRef.current=''
+      })
+    }
+    document.addEventListener('visibilitychange',check)
+    window.addEventListener('focus',check)
+    return ()=>{
+      document.removeEventListener('visibilitychange',check)
+      window.removeEventListener('focus',check)
+    }
+  },[accountId,data?.overview?.asOf])
   async function loadMoreFollowups() {
     const session=sessionRef.current
     const cursor=data?.followupsNextCursor

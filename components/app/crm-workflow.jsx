@@ -119,7 +119,7 @@ export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=
       </label>
       {board.partial&&<p role="status" className={styles.fine}>{t.incomplete} ({board.loaded}/{board.counts.open})</p>}
       {mode==='overview'&&onViewTasks&&<button type="button" className={styles.viewTasks} onClick={onViewTasks}>{t.viewTasks}</button>}
-      {open.length?<><ol className={styles.actionList}>{open.slice(0,mode==='tasks'||showAll?300:12).map(x=>
+      {open.length?<><ol className={styles.actionList}>{open.slice(0,mode==='tasks'?open.length:(showAll?300:12)).map(x=>
         <Action key={x.id} item={x} t={t} busy={busy} onAction={onAction}
           onOpenContact={onOpenContact} today={board.asOf} />)}</ol>
         {mode!=='tasks'&&open.length>12&&!showAll&&<button
