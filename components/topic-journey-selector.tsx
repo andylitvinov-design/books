@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 import styles from './topic-journey-selector.module.css'
@@ -93,45 +93,37 @@ const personalServiceForJourney: Record<string, string> = {
 
 // A separate, editorial link to Andrey's existing consultation offer.
 // Keep it independent of the voluntary self-check flow and any private test results.
+// Value and published prices stay visible without a second competing CTA.
 const businessPromo = {
   en: {
-    kicker: 'WHAT YOU TAKE AWAY',
-    title: 'One priority. A practical next step.',
-    points: ['Decision criteria', 'Action in 72 hours', '14-day checkpoint'],
-    description: 'Clarify a real decision, choose an action to try within 72 hours and identify what to check after 14 days.',
+    kicker: 'WHAT YOU CAN WORK TOWARD',
+    points: ['Clear priorities', 'Action within 72 hours', '14-day checkpoint'],
     price: 'Free written review · 30 min €50 · 60 min €100',
-    action: 'Choose a format',
   },
   ru: {
-    kicker: 'КОНКРЕТНЫЙ РЕЗУЛЬТАТ',
-    title: 'Один приоритет. Следующий шаг.',
-    points: ['Критерии решения', 'Шаг на 72 часа', 'Проверка через 14 дней'],
-    description: 'Определим ключевую задачу, шаг на ближайшие 72 часа и критерий проверки через 14 дней.',
-    price: 'Бесплатный разбор · 30 мин €50 · 60 мин €100',
-    action: 'Выбрать формат',
+    kicker: 'ЧТО ВЫ ПОЛУЧИТЕ',
+    points: ['Ясные приоритеты', 'Действие за 72 часа', 'Проверка через 14 дней'],
+    price: 'Бесплатный письменный разбор · 30 мин €50 · 60 мин €100',
   },
   es: {
-    kicker: 'RESULTADOS PRÁCTICOS',
-    title: 'Una prioridad. Un próximo paso.',
-    points: ['Criterios de decisión', 'Acción en 72 horas', 'Revisión en 14 días'],
-    description: 'Aclara la decisión principal, elige una acción para 72 horas y revisa los avances tras 14 días.',
-    price: '30 min · €50  |  60 min · €100',
-    action: 'Elegir modalidad',
+    kicker: 'LO QUE PUEDES TRABAJAR',
+    points: ['Prioridades claras', 'Acción en 72 horas', 'Revisión en 14 días'],
+    price: 'Revisión escrita gratuita · 30 min €50 · 60 min €100',
   },
 } as const
 
 const businessDiscoveryCopy = {
-  en: { eyebrow: 'HOLISTIC HOUSE · BUSINESS', title: 'Business clarity & practical next steps',
+  en: { eyebrow: 'HOLISTIC HOUSE · BUSINESS', title: 'Find your business consultation',
     lead: 'Explore one decision about business, income, work or your own project — and find the right way forward.',
     searchLabel: 'Search business topics', placeholder: 'Decisions, focus, work pressure or goals…',
     submit: 'Find my focus', paths: 'Explore business options', match: 'Find a consultation', topics: 'Business topics', tests: 'Free tests', sessions: 'Send a request',
     none: 'No business topics match your search.', reset: 'Show all topics' },
-  ru: { eyebrow: 'HOLISTIC HOUSE · БИЗНЕС', title: 'Бизнес-консультации: ясность и действия',
+  ru: { eyebrow: 'HOLISTIC HOUSE · БИЗНЕС', title: 'Подберите бизнес-консультацию',
     lead: 'Обсудите важное решение о бизнесе, доходе, работе или своём деле и найдите конкретный следующий шаг.',
     searchLabel: 'Поиск тем бизнеса', placeholder: 'Решения, цели, деньги, работа…',
     submit: 'Найти направление', paths: 'Направления бизнеса', match: 'Подобрать консультацию', topics: 'Темы бизнеса', tests: 'Бесплатные тесты', sessions: 'Оставить заявку',
     none: 'По этому запросу темы не найдены.', reset: 'Показать все темы' },
-  es: { eyebrow: 'HOLISTIC HOUSE · NEGOCIOS', title: 'Consultoría: claridad y próximos pasos',
+  es: { eyebrow: 'HOLISTIC HOUSE · NEGOCIOS', title: 'Encuentra tu consulta de negocios',
     lead: 'Explora una decisión sobre tu negocio, ingresos, trabajo o proyecto y encuentra un próximo paso.',
     searchLabel: 'Buscar temas de negocios', placeholder: 'Decisiones, trabajo, dinero o metas…',
     submit: 'Buscar mi enfoque', paths: 'Explorar opciones', match: 'Elegir consulta', topics: 'Temas', tests: 'Pruebas gratis', sessions: 'Enviar solicitud',
@@ -411,11 +403,12 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
       {journey.id === 'business' ? (
         <div className={styles.businessHeroContent}>
           <div className={styles.businessHeroTopline}>
-            <p className={styles.businessHeroEyebrow}><Sparkles size={16} aria-hidden="true" />{businessText.eyebrow}</p>
-            <DiscoverySectionTabs locale={locale} active="business" />
+            <p className={styles.businessHeroEyebrow}><Sparkles size={15} aria-hidden="true" />{businessText.eyebrow}</p>
+            <div className={styles.businessDesktopNav}><DiscoverySectionTabs locale={locale} active="business" /></div>
           </div>
           <h1>{businessText.title}</h1>
-          <BusinessConsultationFinder locale={language} />
+          <div className={styles.businessFinderSlot}><BusinessConsultationFinder locale={language} /></div>
+          <p className={styles.businessPriceLine}>{businessCallout.price}</p>
           <details className={styles.businessExploreMore}>
             <summary>{language === 'ru' ? 'Другие способы продолжить' : language === 'es' ? 'Otras formas de continuar' : 'More ways to continue'}</summary>
             <p className={styles.businessHeroLead}>{businessText.lead}</p>
@@ -455,25 +448,11 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
 
 
     {journey.id === 'business' && (
-      <aside className={styles.businessPromo} aria-labelledby="hh-business-consultation-title" data-business-consultation-banner>
-        <span className={styles.businessPromoIcon} aria-hidden="true"><BriefcaseBusiness size={25} strokeWidth={1.8}/></span>
-        <div className={styles.businessPromoCopy}>
-          <p className={styles.businessPromoKicker}>{businessCallout.kicker}</p>
-          <h2 id="hh-business-consultation-title">{businessCallout.title}</h2>
-          <p>{businessCallout.description}</p>
-          <ul className={styles.businessBenefitTags}>
-            {businessCallout.points.map((point)=><li key={point}>{point}</li>)}
-          </ul>
-        </div>
-        <div className={styles.businessPromoSide}>
-          <span className={styles.businessPromoPrice}>{businessCallout.price}</span>
-          <AcquisitionEventLink onClick={cancelStart}
-            href="#business-direct-request"
-            event="service_request_start" prefetch={false} className={styles.businessPromoLink}
-            attributes={{ 'data-topic-action': 'business-consultation-banner', 'data-topic-service': 'business' }}>
-            {businessCallout.action}<ArrowRight size={17} aria-hidden="true" />
-          </AcquisitionEventLink>
-        </div>
+      <aside className={styles.businessValueStrip} aria-labelledby="hh-business-consultation-title" data-business-consultation-banner>
+        <strong id="hh-business-consultation-title">{businessCallout.kicker}</strong>
+        <ul>
+          {businessCallout.points.map((point)=><li key={point}><Check size={14} aria-hidden="true"/>{point}</li>)}
+        </ul>
       </aside>
     )}
 
