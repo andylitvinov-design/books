@@ -49,14 +49,19 @@ test('legacy ZEN/Stripe configurations remain independently disabled and unchang
   }
 })
 
-test('automatic merchant checkout replaces personal PayPal.Me in both public pages only when enabled',()=>{
+test('verified checkout links keep PayPal.Me fallback and use one checkout component',()=>{
   const payments=read('app/[locale]/payments/page.tsx')
   const cart=read('app/[locale]/cart/page.tsx')
   for(const page of [payments,cart]){
     assert.match(page,/getCommerceConfig\(\)/)
     assert.match(page,/commerce\.provider === "paypal" && commerce\.enabled/)
-    assert.match(page,/verifiedPayPalCheckout \? <ServiceCart locale=\{locale\} \/>/)
+    assert.doesNotMatch(page,/verifiedPayPalCheckout \? <ServiceCart locale=\{locale\} \/>/)
   }
+  assert.match(payments,/data-verified-paypal-checkout/)
+  assert.match(payments,/data-verified-paypal-combined/)
+  assert.match(cart,/verifiedPayPalEnabled=\{verifiedPayPalCheckout\}/)
+  assert.match(read('components/commerce/personal-cart.tsx'),/data-cart-verified-paypal-checkout/)
+  assert.match(read('app/[locale]/services/checkout/page.tsx'),/en", "ru", "es/)
   assert.match(payments,/data-paypal-personal-link/)
   assert.match(payments,/data-paypal-combined-link/)
   assert.match(cart,/<PersonalCart locale=\{locale\}/)
@@ -79,6 +84,7 @@ test('PayPal return only requests authenticated capture with account check: it c
   assert.match(route,/requireCommerceAccount\(request, actor\)/)
   assert.match(route,/serviceCommerceRuntime\(config\)\.capture\(/)
   assert.match(service,/provider\.capture\(order\)/)
+  assert.match(read('lib/commerce/paypal-provider.js'),/\/services\/checkout\?serviceOrder=/)
   assert.doesNotMatch(route,/payment_status\s*=\s*'paid'|request\.json\(\).*paid/)
 })
 
