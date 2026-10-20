@@ -48,3 +48,15 @@
 
 .metrics .alertSettings{display:inline-flex;align-items:center;min-height:40px;padding:8px 10px;background:#fff;border:1px solid #b6d6c4;border-radius:10px;color:#286558;text-decoration:underline;text-underline-offset:2px;font:750 12px/1.3 system-ui,sans-serif}
 .metrics .alertSettings:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+
+/* v5.1: each work queue action opens its exact request/task. */
+.filterCount{display:inline-block;margin-left:3px;font-variant-numeric:tabular-nums;opacity:.8}
+.staleTasks{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0;padding:10px 12px;border:1px solid #e3cea2;border-radius:10px;background:#fff7e5;color:#775724;font:600 12px/1.5 system-ui,sans-serif}
+.staleTasks>span{flex:1 1 220px;min-width:0;overflow-wrap:anywhere}.staleTasks button{padding:8px 12px;background:#fff;border:1px solid #c9b17f;border-radius:9px;color:#775724;font:700 12px/1.4 system-ui,sans-serif;cursor:pointer}.staleTasks button:disabled{opacity:.5}
+.focusedRequest{border-color:#73ac99;box-shadow:0 0 0 1px #c8e5d8}
+.nextActions button{min-width:0;max-width:100%;min-height:44px;flex-direction:column;align-items:flex-start;overflow-wrap:anywhere}
+.nextActions button span{max-width:100%;overflow-wrap:anywhere}
+.panel button,.metrics .refresh,.metrics .alertSettings{min-height:44px;box-sizing:border-box}
+.panel>.searchLabel input{height:44px;font-size:16px}
+.requestHead strong,.requestHead small,.summary small{overflow-wrap:anywhere}
+@media(max-width:420px){.nextActions{padding:10px}.nextActions>strong{flex-basis:100%}.nextActions>div{flex-basis:100%;min-width:0}.nextActions button{width:100%}.facts{grid-template-columns:minmax(0,1fr)}.filters button{max-width:100%;white-space:normal}}
