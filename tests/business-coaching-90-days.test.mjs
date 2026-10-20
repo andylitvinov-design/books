@@ -145,8 +145,8 @@ test('approved public business page and auth page point to a real allowed and pr
 test('report print styling respects Next CSS Modules purity and hides cabinet chrome only for report prints',()=>{
   const moduleCss=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
   const globalCss=readFileSync(new URL('../app/[locale]/app/[[...path]]/workspace.css',import.meta.url),'utf8')
-  assert.doesNotMatch(moduleCss,/^\\s*:global\\(/m,'Unscoped :global is forbidden in CSS Modules and blocks production Next builds')
-  assert.match(globalCss,/\\.hh-app:has\\(#hh-business-printable-report\\) \\.hh-header/)
+  assert.doesNotMatch(moduleCss,/^\s*:global\(/m,'Unscoped :global is forbidden in CSS Modules and blocks production Next builds')
+  assert.match(globalCss,/\.hh-app:has\(#hh-business-printable-report\) \.hh-header/)
   assert.match(moduleCss,/@media print/)
 })
 
