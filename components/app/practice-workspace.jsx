@@ -162,23 +162,19 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[showSignup,setShowSignup]=useState(false)
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
-  useEffect(()=>{
-    if(!showSignup)return undefined
-    if(data?.practiceActivated){
-      setShowSignup(false)
-      window.scrollTo({top:0,behavior:'smooth'})
-      return undefined
-    }
-    const frame=requestAnimationFrame(()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'}))
-    return ()=>cancelAnimationFrame(frame)
-  },[showSignup,data?.practiceActivated])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     if(params.get('panel')==='materials')setActivePanel('materials')
+    if(params.get('panel')==='clients'){
+      setActivePanel('clients')
+      const requested=params.get('requestId')||''
+      if(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requested))
+        setFocusRequestId(requested)
+    }
   },[])
   useEffect(()=>{
     if(!activePanel)return undefined
@@ -240,8 +236,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   </section>
 
   const p=data.practitioner
-  const onboardingService=(data.services||[]).find(item=>item.status==='draft'||item.status==='changes_requested')||null
-  const needsOnboarding=!data.practiceActivated
+  const onboardingService=(data.services||[]).find(item=>item.pricingMode==='free'||item.draftCopy?.pricingMode==='free')||null
+  const needsOnboarding=!p||(!Object.keys(p.profile||{}).length&&['draft','submitted','changes_requested'].includes(p.status))
   const requests=data.requests||[]
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
@@ -255,7 +251,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   // Prefer examples from other masters, but never invent one if only our own are live.
   const recentPublicServices=[
     ...publicServiceExamples.filter(item=>item.practitionerSlug!==p?.slug),
-    ...(!needsOnboarding?publicServiceExamples.filter(item=>item.practitionerSlug===p?.slug):[]),
+    ...publicServiceExamples.filter(item=>item.practitionerSlug===p?.slug),
   ].slice(0,4)
   const marketplaceCopy=ru?{
     kicker:'HOLISTIC HOUSE · СООБЩЕСТВО',
@@ -344,8 +340,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <ChevronRight aria-hidden="true" />
         <strong>{d.breadcrumb}</strong>
       </nav>
-      <h1>{needsOnboarding?(ru?'Практика':locale==='es'?'Práctica':'Practice'):t.title}</h1>
-      <p className="hh-practice-intro">{needsOnboarding?(ru?'Посмотрите новые услуги сообщества и начните свою практику, когда будете готовы.':locale==='es'?'Explora los servicios de la comunidad y empieza tu práctica cuando quieras.':'Explore new community services and start your own practice when you are ready.'):d.subtitle}</p>
+      <h1>{needsOnboarding?t.becomeTitle:t.title}</h1>
+      <p className="hh-practice-intro">{needsOnboarding?t.noProfile:d.subtitle}</p>
       {p&&<div className="hh-practice-status">
         <span className={'hh-practice-status-chip'+(p.status==='approved'?' is-approved':'')}>
           <span className="hh-practice-status-dot" aria-hidden="true" />
@@ -354,16 +350,16 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
-    <section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
+    {!needsOnboarding&&<section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
       <div className="hh-practice-marketplace-heading">
         <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
         <div>
           <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
-          <h2 id="hh-practice-marketplace-title">{needsOnboarding?(ru?'Новые услуги других мастеров':locale==='es'?'Nuevos servicios de otros profesionales':'New services from other practitioners'):marketplaceCopy.title}</h2>
-          <p className="hh-practice-marketplace-intro">{needsOnboarding?(ru?'Посмотрите, что предлагают мастера Holistic House.':locale==='es'?'Descubre los servicios de la comunidad Holistic House.':'See what Holistic House practitioners are offering.'):marketplaceCopy.subtitle}</p>
+          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
+          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
         </div>
       </div>
-      {!needsOnboarding&&<div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
+      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
         <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
           aria-pressed={activePanel==='services'} onClick={addService}>
           <Plus aria-hidden="true" />
@@ -375,7 +371,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <span aria-hidden="true">·</span>
           <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
         </p>
-      </div>}
+      </div>
       <div className="hh-practice-marketplace-latest">
         <div className="hh-practice-marketplace-latest-heading">
           <h3>{marketplaceCopy.latest}</h3>
@@ -402,29 +398,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
         </p>}
       </div>
-      {needsOnboarding&&<div className="hh-practice-join">
-        <h3>{ru?'Готовы предложить свою услугу?':locale==='es'?'¿Listo para ofrecer tu servicio?':'Ready to share your work?'}</h3>
-        <p>{ru?'Короткая регистрация: имя, контакты и первая услуга. Публикация появится после проверки.':locale==='es'?'Un registro breve: tu nombre, contactos y primer servicio. La publicación necesita revisión.':'A short setup with your name, contact details and first service. Listings are reviewed before publication.'}</p>
-        <button type="button" className="hh-practice-start-button" aria-controls="hh-practice-onboarding" aria-expanded={showSignup}
-          onClick={()=>{setShowSignup(current=>!current);setError('')}}>
-          <Plus aria-hidden="true" />
-          {p?(ru?'Продолжить регистрацию мастера':locale==='es'?'Continuar registro':'Continue practitioner registration'):(ru?'Начать свою практику':locale==='es'?'Empezar mi práctica':'Start my practice')}
-          <ChevronRight aria-hidden="true" />
-        </button>
-      </div>}
-    </section>
-    {needsOnboarding&&showSignup&&<div id="hh-practice-onboarding" className="hh-practice-signup">
-      <MasterOnboarding key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
-        data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
-        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload),{rethrow:true})} />
-    </div>}
-    {!needsOnboarding&&<PracticeRequestsOverview requests={requests} services={services} locale={locale}
+    </section>}
+    <PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
       onAddService={needsOnboarding
         ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
         : addService}
-      onViewAll={()=>{setActivePanel('requests');setError('')}} />}
-    {!needsOnboarding&&readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
+      onViewAll={()=>{setActivePanel('requests');setError('')}} />
+    {readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
       <div className="hh-practice-setup-head">
         <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
         <span>{readySteps}/3</span>
@@ -498,7 +479,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         </button>
       </section>
     </>}
-    {!needsOnboarding&&activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
+    {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
+        key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
+        data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
+        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
+      activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
         <div className="hh-practice-form-heading">
           <h2>{activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
@@ -511,9 +496,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 
         {activePanel==='clients'&&
           <PractitionerClientProfiles items={requests} services={services}
+            practitionerTasks={data.practitionerTasks||[]}
             locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
             onRefresh={()=>load()}
+            focusRequestId={focusRequestId}
             onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
         {activePanel==='crm'&&isOwner&&accountId&&
@@ -539,188 +526,92 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
       </section>}
-    {!needsOnboarding&&(ownerTools && <details className="hh-practice-more-tools">
+    {ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
       <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button></div>
-    </details>)}
+    </details>}
     {shareNotice&&<p role="status" className="hh-practice-share-notice">{shareNotice}</p>}
     {error&&<p role="alert" className="hh-practice-error">{error==='SERVICE_LIMIT_REACHED'?(ru?'На бесплатном тарифе Hobby можно сохранить до 10 услуг. Редактирование существующих услуг доступно.':'The free Hobby plan allows up to 10 saved services. You can still edit existing services.'):error}</p>}
   </section>
 }
 
 function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
-  const language=['en','ru','es'].includes(locale)?locale:'en'
-  const ru=locale==='ru'
-  const words=ru?{
-    title:'Начните свою практику',hint:'Укажите основную информацию и добавьте первую услугу. Подробный профиль можно заполнить позже.',
-    about:'О вас',name:'Имя мастера',specialty:'Ваша специализация',bio:'О себе — одним предложением',
-    contacts:'Как с вами связаться',googleEmail:'Email из Google-аккаунта',whatsapp:'WhatsApp (необязательно)',
-    telegram:'Telegram (необязательно)',contactNote:'Email остаётся в вашем аккаунте. Указанные WhatsApp и Telegram будут видны клиентам после одобрения услуги.',
-    service:'Ваша первая услуга',serviceName:'Название услуги',serviceSummary:'Что получит клиент?',area:'Направление',
-    online:'Онлайн',inPerson:'Лично',hybrid:'Онлайн и лично',format:'Формат',city:'Город',country:'Страна',
-    price:'Стоимость',free:'Бесплатно',contact:'По договорённости',fixed:'Фиксированная цена',from:'Цена от',
-    amount:'Сумма',currency:'Валюта',duration:'Продолжительность (минуты)',
-    submit:'Создать кабинет мастера',submitting:'Сохраняем…',incompleteContact:'Укажите WhatsApp или Telegram для связи.',
-    pending:'Модерация профиля или услуги ещё не завершена. Вы сможете работать в кабинете сразу после отправки заявки.',
-  }:locale==='es'?{
-    title:'Empieza tu práctica',hint:'Añade tus datos esenciales y tu primer servicio. Podrás completar tu perfil después.',
-    about:'Sobre ti',name:'Nombre profesional',specialty:'Especialidad',bio:'Sobre ti, en una frase',
-    contacts:'Contacto',googleEmail:'Correo de Google',whatsapp:'WhatsApp (opcional)',telegram:'Telegram (opcional)',
-    contactNote:'Tu correo permanece privado en tu cuenta. WhatsApp y Telegram aparecerán a los clientes cuando se apruebe el servicio.',
-    service:'Tu primer servicio',serviceName:'Nombre del servicio',serviceSummary:'¿Qué recibirá el cliente?',area:'Área',
-    online:'Online',inPerson:'Presencial',hybrid:'Ambos',format:'Modalidad',city:'Ciudad',country:'País',
-    price:'Precio',free:'Gratis',contact:'A consultar',fixed:'Precio fijo',from:'Desde',
-    amount:'Importe',currency:'Moneda',duration:'Duración (minutos)',
-    submit:'Crear mi espacio profesional',submitting:'Guardando…',incompleteContact:'Añade WhatsApp o Telegram para que puedan contactarte.',
-    pending:'Tu perfil y servicio serán revisados antes de publicarse. Podrás usar tu espacio tras enviar el formulario.',
-  }:{
-    title:'Start your practice',hint:'Add the essentials and your first service. You can complete your full profile later.',
-    about:'About you',name:'Practitioner name',specialty:'Your specialty',bio:'About you, in one sentence',
-    contacts:'Contact details',googleEmail:'Google account email',whatsapp:'WhatsApp (optional)',
-    telegram:'Telegram (optional)',contactNote:'Your email stays in your Account. Entered WhatsApp and Telegram will be shown to clients after your service is approved.',
-    service:'Your first service',serviceName:'Service name',serviceSummary:'What will the client receive?',area:'Area',
-    online:'Online',inPerson:'In person',hybrid:'Both',format:'Format',city:'City',country:'Country',
-    price:'Price',free:'Free',contact:'On request',fixed:'Fixed price',from:'Starting from',
-    amount:'Amount',currency:'Currency',duration:'Duration (minutes)',
-    submit:'Create my practitioner workspace',submitting:'Saving…',incompleteContact:'Add WhatsApp or Telegram so clients can contact you.',
-    pending:'Your profile and service are reviewed before they go public. You can use your private workspace as soon as you submit.',
-  }
-  const profileSource={...emptyProfile,...(data.suggestedProfile||{}),...(practitioner?.draftProfile||{})}
-  const serviceSource=service?.draftCopy&&Object.keys(service.draftCopy).length
-    ? service.draftCopy : emptyFreeService
-  const startingCopy=serviceSource.copy||emptyFreeService.copy
-  const localized=startingCopy[language]?.title?startingCopy[language]
-    : Object.values(startingCopy).find(copy=>copy?.title)||{}
-  const [profile,setProfile]=useState(profileSource)
-  const [serviceTitle,setServiceTitle]=useState(localized.title||'')
-  const [serviceSummary,setServiceSummary]=useState(localized.shortDescription||localized.description||'')
-  const [area,setArea]=useState(serviceSource.areaKey||profileSource.areas?.[0]||'personal_development')
-  const [delivery,setDelivery]=useState(serviceSource.deliveryFormat||'online')
-  const [city,setCity]=useState(profileSource.city||'')
-  const [country,setCountry]=useState(profileSource.country||'')
-  const [whatsapp,setWhatsapp]=useState(serviceSource.whatsapp||'')
-  const [telegram,setTelegram]=useState(serviceSource.telegram||'')
-  const [pricingMode,setPricingMode]=useState(serviceSource.pricingMode||'free')
-  const [amount,setAmount]=useState(serviceSource.confirmedPrice==null?'':String(serviceSource.confirmedPrice))
-  const [currency,setCurrency]=useState(serviceSource.currency||'CAD')
-  const [duration,setDuration]=useState(serviceSource.durationMinutes==null?'30':String(serviceSource.durationMinutes))
-  const [localError,setLocalError]=useState('')
-  const contactEmail=data.contactEmail||''
-  const setProfileValue=(key,value)=>setProfile(current=>({...current,[key]:value}))
+  const [step,setStep]=useState(practitioner?.reviewNote?1:practitioner?2:1)
+  const [includeService,setIncludeService]=useState(Boolean(service)||!practitioner)
+  const [profile,setProfile]=useState({...emptyProfile,...(data.suggestedProfile||{}),...(practitioner?.draftProfile||{})})
+  const serviceBase=service?.draftCopy&&Object.keys(service.draftCopy).length
+    ? {...emptyFreeService,...service.draftCopy,pricingMode:'free',confirmedPrice:null,currency:''}
+    : service
+      ? {...emptyFreeService,copy:{en:{...emptyFreeService.copy.en,...(service.localizedCopy?.en||{})},ru:{...emptyFreeService.copy.ru,...(service.localizedCopy?.ru||{})}},areaKey:service.areaKey,offeringType:service.offeringType,deliveryFormat:service.deliveryFormat,locationLabel:service.locationLabel,languages:service.languages,durationMinutes:service.durationMinutes??'',photos:service.photos||[],imagePath:service.imagePath||''}
+      : emptyFreeService
+  const [offer,setOffer]=useState(serviceBase)
+  const setProfileValue=(k,x)=>setProfile(s=>({...s,[k]:x}))
+  const setOfferValue=(k,x)=>setOffer(s=>({...s,[k]:x}))
+  const setOfferCopy=(lang,k,x)=>setOffer(s=>({...s,copy:{...s.copy,[lang]:{...s.copy[lang],[k]:x}}}))
+  const normalizedProfile=()=>({...profile,languages:Array.isArray(profile.languages)?profile.languages:list(profile.languages),methods:Array.isArray(profile.methods)?profile.methods:list(profile.methods),socialUrls:Array.isArray(profile.socialUrls)?profile.socialUrls:list(profile.socialUrls)})
+  const normalizedService=()=>({...offer,languages:Array.isArray(offer.languages)?offer.languages:list(offer.languages),pricingMode:'free',confirmedPrice:null,currency:'',durationMinutes:offer.durationMinutes===''?null:Number(offer.durationMinutes)})
+  const payload=(action,withService=includeService)=>({action,profile:normalizedProfile(),service:withService?normalizedService():null,serviceId:withService?(service?.id||null):null,expectedPractitionerRevision:practitioner?.revision,expectedServiceRevision:withService?service?.revision:undefined})
+  async function continueToService(e){e.preventDefault();await onAction(payload('save',false));setStep(2)}
+  async function submit(e){e.preventDefault();await onAction(payload('submit'))}
+  async function saveDraft(){await onAction(payload('save'))}
 
-  async function submit(event){
-    event.preventDefault()
-    setLocalError('')
-    if(!contactEmail&&!whatsapp.trim()&&!telegram.trim()){
-      setLocalError(words.incompleteContact)
-      return
-    }
-    const profileDraft={
-      ...profile,
-      displayName:profile.displayName.trim(),
-      professionalTitle:profile.professionalTitle.trim(),
-      shortBio:profile.shortBio.trim(),
-      languages:[language],
-      formats:delivery==='online'?['online']:delivery==='in_person'?['in_person']:['online','in_person'],
-      areas:[area],
-      city:city.trim(),
-      country:country.trim(),
-    }
-    const draft={
-      ...emptyFreeService,
-      ...serviceSource,
-      copy:{
-        ...emptyFreeService.copy,
-        ...startingCopy,
-        [language]:{title:serviceTitle.trim(),shortDescription:serviceSummary.trim(),description:serviceSummary.trim()},
-      },
-      areaKey:area,
-      deliveryFormat:delivery,
-      locationLabel:delivery==='online'?'':[city.trim(),country.trim()].filter(Boolean).join(', '),
-      languages:[language],
-      displayLocales:language==='es'?['es']:['en','ru'],
-      pricingMode,
-      confirmedPrice:['fixed','from'].includes(pricingMode)?Number(amount):null,
-      currency:['fixed','from'].includes(pricingMode)?currency:'',
-      durationMinutes:duration===''?null:Number(duration),
-      whatsapp:whatsapp.trim(),
-      telegram:telegram.trim(),
-    }
-    try {
-      await onAction({
-        action:'submit',profile:profileDraft,service:draft,
-        serviceId:service?.id||null,
-        expectedPractitionerRevision:practitioner?.revision,
-        expectedServiceRevision:service?.revision,
-      })
-    } catch(error) {
-      setLocalError(error?.code||error?.message||'REQUEST_FAILED')
-    }
-  }
-
-  return <form className="hh-form hh-panel hh-practice-registration" onSubmit={submit}>
-    <div className="hh-practice-registration-heading">
-      <span className="hh-badge">{ru?'Регистрация мастера':language==='es'?'Registro profesional':'Practitioner registration'}</span>
-      <h2>{words.title}</h2>
-      <p>{words.hint}</p>
-    </div>
+  return <section className="hh-section">
+    <div className="hh-actions" aria-label={t.becomeTitle}><span className="hh-badge">{t.stepAbout}</span><span className="hh-badge">{t.stepService}</span></div>
+    {practitioner?.status==='submitted'&&<p className="hh-notice">{t.submittedTogether}</p>}
     {practitioner?.reviewNote&&<p className="hh-notice">{practitioner.reviewNote}</p>}
     {service?.reviewNote&&<p className="hh-notice">{service.reviewNote}</p>}
-    <fieldset className="hh-practice-registration-section">
-      <legend>{words.about}</legend>
-      <div className="hh-practice-registration-grid">
-        <label>{words.name}<input required maxLength="120" autoComplete="name" value={profile.displayName||''} onChange={e=>setProfileValue('displayName',e.target.value)} /></label>
-        <label>{words.specialty}<input required maxLength="160" value={profile.professionalTitle||''} onChange={e=>setProfileValue('professionalTitle',e.target.value)} /></label>
-      </div>
-      <label>{words.bio}<textarea required rows={2} maxLength="600" value={profile.shortBio||''} onChange={e=>setProfileValue('shortBio',e.target.value)} /></label>
-    </fieldset>
-    <fieldset className="hh-practice-registration-section">
-      <legend>{words.contacts}</legend>
-      <label>{words.googleEmail}<input type="email" readOnly value={contactEmail} placeholder="—" /></label>
-      <div className="hh-practice-registration-grid">
-        <label>{words.whatsapp}<input type="tel" maxLength="18" placeholder="+14165551234" value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} /></label>
-        <label>{words.telegram}<input maxLength="33" placeholder="@username" value={telegram} onChange={e=>setTelegram(e.target.value)} /></label>
-      </div>
-      <p className="hh-practice-registration-note">{words.contactNote}</p>
-    </fieldset>
-    <fieldset className="hh-practice-registration-section">
-      <legend>{words.service}</legend>
-      <label>{words.serviceName}<input required maxLength="160" value={serviceTitle} onChange={e=>setServiceTitle(e.target.value)} /></label>
-      <label>{words.serviceSummary}<textarea required rows={2} maxLength="500" value={serviceSummary} onChange={e=>setServiceSummary(e.target.value)} /></label>
-      <div className="hh-practice-registration-grid">
-        <label>{words.area}<select value={area} onChange={e=>setArea(e.target.value)}>
-          {Object.entries(AREAS).map(([id,labels])=><option key={id} value={id}>{labels[ru?1:0]}</option>)}
-        </select></label>
-        <label>{words.format}<select value={delivery} onChange={e=>setDelivery(e.target.value)}>
-          <option value="online">{words.online}</option><option value="in_person">{words.inPerson}</option><option value="hybrid">{words.hybrid}</option>
-        </select></label>
-      </div>
-      {delivery!=='online'&&<div className="hh-practice-registration-grid">
-        <label>{words.city}<input required maxLength="120" value={city} onChange={e=>setCity(e.target.value)} /></label>
-        <label>{words.country}<input required maxLength="120" value={country} onChange={e=>setCountry(e.target.value)} /></label>
-      </div>}
-      <div className="hh-practice-registration-grid">
-        <label>{words.price}<select value={pricingMode} onChange={e=>setPricingMode(e.target.value)}>
-          <option value="free">{words.free}</option><option value="contact">{words.contact}</option>
-          <option value="fixed">{words.fixed}</option><option value="from">{words.from}</option>
-        </select></label>
-        <label>{words.duration}<input type="number" min="5" max="1440" value={duration} onChange={e=>setDuration(e.target.value)} /></label>
-      </div>
-      {['fixed','from'].includes(pricingMode)&&<div className="hh-practice-registration-grid">
-        <label>{words.amount}<input type="number" min="0" max="100000" step="0.01" required value={amount} onChange={e=>setAmount(e.target.value)} /></label>
-        <label>{words.currency}<select value={currency} onChange={e=>setCurrency(e.target.value)}>
-          {['CAD','USD','EUR','GBP'].map(unit=><option value={unit} key={unit}>{unit}</option>)}
-        </select></label>
-      </div>}
-    </fieldset>
-    <button className="hh-primary hh-practice-registration-submit" disabled={busy} type="submit">
-      {busy?words.submitting:words.submit} <ChevronRight aria-hidden="true"/>
-    </button>
-    <p className="hh-practice-registration-note">{words.pending}</p>
-    <p className="hh-fine">{t.moderation}</p>
-    {localError&&<p className="hh-practice-error" role="alert">{localError}</p>}
-  </form>
+    {step===1?
+      <form className="hh-form hh-panel" onSubmit={continueToService}>
+        <h2>{t.stepAbout}</h2>
+        <PracticePhotoUpload mode="profile" value={profile.photoPath||''} onChange={value=>setProfileValue('photoPath',value)} locale={locale} disabled={busy||!practitioner}/>
+        <label>{t.displayName}<input required maxLength="120" value={profile.displayName||''} onChange={e=>setProfileValue('displayName',e.target.value)}/></label>
+        <label>{t.professionalTitle}<input required maxLength="160" value={profile.professionalTitle||''} onChange={e=>setProfileValue('professionalTitle',e.target.value)}/></label>
+        <label>{t.shortBio}<textarea required maxLength="600" value={profile.shortBio||''} onChange={e=>setProfileValue('shortBio',e.target.value)}/></label>
+        <label>{t.fullBio}<textarea maxLength="5000" value={profile.fullBio||''} onChange={e=>setProfileValue('fullBio',e.target.value)}/></label>
+        <label>{t.languages}<input value={arr(profile.languages)} onChange={e=>setProfileValue('languages',list(e.target.value))}/></label>
+        <fieldset><legend>{t.formats}</legend>{['online','in_person'].map(x=><label className="hh-check" key={x}><input type="checkbox" checked={(profile.formats||[]).includes(x)} onChange={e=>setProfileValue('formats',e.target.checked?[...(profile.formats||[]),x]:(profile.formats||[]).filter(y=>y!==x))}/>{x.replace('_',' ')}</label>)}</fieldset>
+        <fieldset><legend>{t.areas}</legend>{Object.entries(AREAS).map(([x,label])=><label className="hh-check" key={x}><input type="checkbox" checked={(profile.areas||[]).includes(x)} onChange={e=>setProfileValue('areas',e.target.checked?[...(profile.areas||[]),x]:(profile.areas||[]).filter(y=>y!==x))}/>{label[locale==='ru'?1:0]}</label>)}</fieldset>
+        <label>{t.methods}<input value={arr(profile.methods)} onChange={e=>setProfileValue('methods',list(e.target.value))}/></label>
+        <label>{t.city}<input value={profile.city||''} onChange={e=>setProfileValue('city',e.target.value)}/></label>
+        <label>{t.region}<input value={profile.region||''} onChange={e=>setProfileValue('region',e.target.value)}/></label>
+        <label>{t.country}<input value={profile.country||''} onChange={e=>setProfileValue('country',e.target.value)}/></label>
+        <label>{t.years}<input type="number" min="0" max="80" value={profile.yearsExperience??''} onChange={e=>setProfileValue('yearsExperience',e.target.value)}/></label>
+        <label>{t.website}<input type="url" value={profile.websiteUrl||''} onChange={e=>setProfileValue('websiteUrl',e.target.value)}/></label>
+        <label>{locale==='ru'?'Видео о мастере (YouTube/Vimeo)':'Practitioner introduction (YouTube/Vimeo)'}
+          <input type="url" placeholder="https://youtu.be/..." value={profile.videoPresentation?.kind==='external'?profile.videoPresentation.url:''}
+            onChange={e=>setProfileValue('videoPresentation',e.target.value?{kind:'external',url:e.target.value}:null)}/></label>
+        <div className="hh-actions"><button className="hh-primary" disabled={busy}>{t.continueFree}</button><button type="button" disabled={busy} onClick={()=>onAction(payload('save',false))}>{t.saveDraft}</button></div>
+        <p className="hh-fine">{t.moderation}</p>
+      </form>:
+      <form className="hh-form hh-panel" onSubmit={submit}>
+        <div><span className="hh-badge">{t.freePricing}</span><h2>{t.freeTitle}</h2><p>{t.freeLead}</p></div>
+        <PracticePhotoUpload mode="profile" value={profile.photoPath||''} onChange={value=>setProfileValue('photoPath',value)} locale={locale} disabled={busy||!practitioner}/>
+        <label className="hh-check"><input type="checkbox" checked={includeService} onChange={e=>setIncludeService(e.target.checked)}/>{t.includeFree}</label>
+        {includeService&&<>
+          <PracticePhotoUpload mode="service" value={offer.photos||[]} onChange={value=>setOfferValue('photos',value)} locale={locale} disabled={busy||!practitioner}/>
+          <label>{t.serviceTitleEn}<input required value={offer.copy.en.title} onChange={e=>setOfferCopy('en','title',e.target.value)}/></label>
+          <label>{t.serviceTitleRu}<input required value={offer.copy.ru.title} onChange={e=>setOfferCopy('ru','title',e.target.value)}/></label>
+          <label>{t.shortEn}<textarea required value={offer.copy.en.shortDescription||''} onChange={e=>setOfferCopy('en','shortDescription',e.target.value)}/></label>
+          <label>{t.shortRu}<textarea required value={offer.copy.ru.shortDescription||''} onChange={e=>setOfferCopy('ru','shortDescription',e.target.value)}/></label>
+          <label>{t.descEn}<textarea value={offer.copy.en.description||''} onChange={e=>setOfferCopy('en','description',e.target.value)}/></label>
+          <label>{t.descRu}<textarea value={offer.copy.ru.description||''} onChange={e=>setOfferCopy('ru','description',e.target.value)}/></label>
+          <label>{t.area}<select value={offer.areaKey} onChange={e=>setOfferValue('areaKey',e.target.value)}>{Object.entries(AREAS).map(([k,l])=><option value={k} key={k}>{l[locale==='ru'?1:0]}</option>)}</select></label>
+          <label>{t.offeringType}<select value={offer.offeringType} onChange={e=>setOfferValue('offeringType',e.target.value)}><option value="session">Session</option><option value="assessment">Assessment</option></select></label>
+          <label>{t.delivery}<select value={offer.deliveryFormat} onChange={e=>setOfferValue('deliveryFormat',e.target.value)}><option value="online">Online</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></label>
+          <label>{t.location}<input value={offer.locationLabel||''} onChange={e=>setOfferValue('locationLabel',e.target.value)}/></label>
+          <label>{t.languages}<input value={arr(offer.languages)} onChange={e=>setOfferValue('languages',list(e.target.value))}/></label>
+          <label>{t.duration}<input type="number" min="5" max="1440" value={offer.durationMinutes??''} onChange={e=>setOfferValue('durationMinutes',e.target.value)}/></label>
+          <label>{locale==='ru'?'Видео об услуге (YouTube/Vimeo)':'Service video (YouTube/Vimeo)'}
+            <input type="url" placeholder="https://youtu.be/..." value={offer.videoPresentation?.kind==='external'?offer.videoPresentation.url:''}
+              onChange={e=>setOfferValue('videoPresentation',e.target.value?{kind:'external',url:e.target.value}:null)}/></label>
+        </>}
+        {!includeService&&<p className="hh-notice">{t.skipFree}</p>}
+        <div className="hh-actions"><button type="button" disabled={busy} onClick={()=>setStep(1)}>{t.back}</button><button type="button" disabled={busy} onClick={saveDraft}>{t.saveDraft}</button><button className="hh-primary" disabled={busy}>{includeService?t.submitTogether:t.submitProfile}</button></div>
+        <p className="hh-fine">{t.moderation}</p>
+      </form>
+    }
+  </section>
 }
 function ProfileEditor({practitioner,locale,t,busy,onSave,onSubmit}){
   const [videoBusy,setVideoBusy]=useState(false)
