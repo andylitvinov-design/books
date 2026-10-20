@@ -16,7 +16,7 @@ function embedFor(url:string):Embed|null{
   if(parsed.hostname==='www.youtube.com'&&parsed.pathname==='/watch'){
    const id=parsed.searchParams.get('v')
    if(!id||!/^[A-Za-z0-9_-]{11}$/.test(id))return null
-   return {src:'https://www.youtube-nocookie.com/embed/'+id+'?rel=0',poster:'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg'}
+   return {src:'https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&playsinline=1&rel=0',poster:'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg'}
   }
   if(parsed.hostname==='vimeo.com'){
    const id=parsed.pathname.slice(1)
@@ -41,15 +41,8 @@ export default function PractitionerVideoGallery({videos,locale='en'}:{videos:Vi
   </header>
   <div className={styles.grid}>{entries.map(({video,index,embed})=>{
    const id=index+':'+video.url,active=playing===id
-   const directYouTube=video.url.startsWith('https://www.youtube.com/watch?v=')
    return <article className={styles.card} key={id}>
-    <div className={styles.screen}>{directYouTube
-     ?<a className={styles.poster} href={video.url} target="_blank" rel="noopener noreferrer"
-       style={embed.poster?{backgroundImage:'linear-gradient(0deg,rgba(6,24,40,.67),rgba(6,24,40,.1)),url("'+embed.poster+'")'}:undefined}
-       aria-label={t.watch+': '+video.title}>
-       <span className={styles.play} aria-hidden="true">▶</span><span>{t.watch} · YouTube ↗</span>
-      </a>
-     :active
+    <div className={styles.screen}>{active
      ?<iframe title={video.title} src={embed.src} loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/>
      :<button type="button" className={styles.poster} style={embed.poster?{backgroundImage:'linear-gradient(0deg,rgba(6,24,40,.67),rgba(6,24,40,.1)),url("'+embed.poster+'")'}:undefined}
        onClick={()=>setPlaying(id)} aria-label={t.watch+': '+video.title}>
