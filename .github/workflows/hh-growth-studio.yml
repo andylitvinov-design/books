@@ -7,6 +7,7 @@ on:
       - 'app/admin/growth-studio/**'
       - 'components/growth-studio.*'
       - 'components/growth-studio-bulk.jsx'
+      - 'components/growth-studio-connections.jsx'
       - 'components/prescription-admin-header.jsx'
       - 'components/practitioner-cabinet.jsx'
       - 'components/app/practice-workspace.jsx'
@@ -15,6 +16,7 @@ on:
       - 'tests/growth-studio-csv.test.mjs'
       - 'tests/growth-studio-bulk.test.mjs'
       - 'tests/growth-studio-telegram.test.mjs'
+      - 'tests/growth-studio-platforms.test.mjs'
       - '.github/workflows/hh-growth-studio.yml'
   workflow_dispatch:
 
@@ -34,12 +36,13 @@ jobs:
       - name: Validate JS modules
         run: |
           node --check lib/growth-studio/model.mjs
+          node --check lib/growth-studio/channel-capabilities.mjs
           node --check lib/growth-studio/bulk.mjs
           node --check lib/growth-studio/telegram.mjs
           node --check lib/growth-studio/store.js
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
-        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs
+        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs
 
   next-build:
     name: Next.js production build / Growth Studio
