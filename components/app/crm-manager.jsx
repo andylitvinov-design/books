@@ -4,6 +4,7 @@ import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmSmsTools from './crm-sms-tools'
 import CrmSmsSetup from './crm-sms-setup'
+import CrmIntegrationDiagnostics from './crm-integration-diagnostics'
 import CrmFreeSmsPanel from './crm-free-sms'
 import CrmContactEditor from './crm-contact-editor'
 import CrmExportTools from './crm-export-tools'
@@ -208,6 +209,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
         ['overview',language==='ru'?'Обзор':language==='es'?'Resumen':'Overview'],
         ['messages',language==='ru'?'Сообщения':language==='es'?'Mensajes':'Messages'],
         ['sms','SMS'],
+        ['integrations',language==='ru'?'Подключения':language==='es'?'Conexiones':'Connections'],
         ['contacts',language==='ru'?'Контакты':language==='es'?'Contactos':'Contacts'],
       ].map(([id,label])=><button key={id} type="button" aria-pressed={activeSection===id}
         className={activeSection===id?styles.sectionTabActive:styles.sectionTab}
@@ -222,6 +224,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
     {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />}
+    {activeSection==='integrations'&&data&&<CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />}
     {activeSection==='sms'&&data&&<div className={styles.formCard}>
       <h3>SMS · {language==='ru'?'сообщения клиентам':language==='es'?'mensajes a clientes':'client messages'}</h3>
       <CrmFreeSmsPanel key={accountId+'-manual-sms'} contacts={data.contacts||[]} locale={language} />
