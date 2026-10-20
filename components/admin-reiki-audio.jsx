@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { ChevronRight, Check, FileAudio, Folder, FolderOpen, Headphones, RefreshCw, UploadCloud } from 'lucide-react'
+import { ChevronRight, Check, FileAudio, Folder, FolderOpen, Headphones, RefreshCw, UploadCloud, Pencil, Archive, Trash2, RotateCcw } from 'lucide-react'
 import {
-  REIKI_INTRO_MAX_BYTES, reikiIntroMime,
+  REIKI_INTRO_MAX_BYTES, REIKI_AUDIO_MAX_BATCH, REIKI_AUDIO_MAX_TITLE,
+  REIKI_AUDIO_MAX_DESCRIPTION, reikiAudioUploadTitle, reikiIntroMime,
   reikiIntroPublicUrl, reikiIntroPublicObjectUrl, reikiIntroSlot,
 } from '@/lib/academy/reiki-intro-audio-model'
 import styles from './admin-reiki-audio.module.css'
@@ -47,6 +48,19 @@ const copy = {
     publicNote: 'Новые исходные записи остаются приватными. Только после вашего подтверждения создаётся публичная копия. Опубликованные версии доступны по ссылке; никогда не добавляйте данные клиентов.',
     viewCourse: 'Открыть курс', refresh: 'Обновить',
     refreshing: 'Обновляем список…', truncated: 'Показаны первые 100 файлов. Старые файлы остаются в хранилище.',
+    edit: 'Название и описание', editTitle: 'Название записи', editDescription: 'Описание (необязательно)',
+    save: 'Сохранить', saving: 'Сохраняем…', cancel: 'Отмена', saved: 'Название и настройки сохранены.',
+    archive: 'В архив', restore: 'Вернуть из архива', archivedLabel: 'В архиве',
+    showArchived: 'Показывать архив', delete: 'Удалить оригинал навсегда',
+    confirmDelete: 'Удалить этот архивный приватный файл навсегда? Восстановить его будет нельзя. Публичные копии остаются отдельно.',
+    deleted: 'Приватный оригинал удалён.', activeDenied: 'Сначала снимите активную запись со слайда.',
+    archiveFirst: 'Для удаления сначала сохраните запись в архиве.',
+    bulkLimit: 'За один раз можно выбрать до 5 файлов (каждый до 20 МБ).',
+    batchCount: 'Файлов выбрано', uploadProgress: 'Загружено файлов',
+    uploadStopped: 'Загрузка остановлена после текущего файла.',
+    stopBatch: 'Остановить после текущего', metadataWarning: 'Запись загружена, но её название пока не сохранено; можно изменить его позже.',
+    storageUsage: 'В этой папке', incompleteUsage: 'Показаны не все файлы — размер указан только для отображаемых.',
+    descriptionHint: 'Название и описание доступны только мастеру. Публикация аудио происходит отдельно.',
   },
   en: {
     breadcrumbMaterials: 'Materials', breadcrumbAudio: 'Audio', course: 'Reiki Practitioner course',
@@ -77,6 +91,19 @@ const copy = {
     publicNote: 'New originals remain private. Only your explicit approval creates a public copy. Published copies are accessible by direct URL; never upload client details.',
     viewCourse: 'Open the course', refresh: 'Refresh',
     refreshing: 'Refreshing files…', truncated: 'First 100 files shown. Older recordings remain stored.',
+    edit: 'Title and notes', editTitle: 'Recording title', editDescription: 'Notes (optional)',
+    save: 'Save', saving: 'Saving…', cancel: 'Cancel', saved: 'Title and settings saved.',
+    archive: 'Archive', restore: 'Restore from archive', archivedLabel: 'Archived',
+    showArchived: 'Show archived', delete: 'Permanently delete original',
+    confirmDelete: 'Permanently delete this archived private audio file? It cannot be recovered. Public copies are separate.',
+    deleted: 'Private original deleted.', activeDenied: 'Remove the active track from the learner slide first.',
+    archiveFirst: 'Archive and save the original before deleting.',
+    bulkLimit: 'Choose up to 5 files at once (each up to 20 MB).',
+    batchCount: 'Files selected', uploadProgress: 'Files uploaded',
+    uploadStopped: 'Stopped after the current upload.',
+    stopBatch: 'Stop after this file', metadataWarning: 'Audio uploaded, but its title was not saved. You can edit it later.',
+    storageUsage: 'In this folder', incompleteUsage: 'Not all files are shown; size includes only displayed items.',
+    descriptionHint: 'Names and notes are visible only to the owner. Publication is a separate action.',
   },
 }
 
@@ -104,7 +131,12 @@ function formatBytes(bytes) {
 
 function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged,setOperationBusy,copy}) {
   const [file,setFile] = useState(null)
+  const [pendingFiles,setPendingFiles] = useState([])
   const [preview,setPreview] = useState(null)
+  const [progress,setProgress] = useState('')
+  const cancelAfterCurrent = useRef(false)
+  const [editing,setEditing] = useState(null)
+  const [showArchived,setShowArchived] = useState(false)
   const [staged,setStaged] = useState(null)
   const [busy,setBusy] = useState('')
   const [notice,setNotice] = useState('')
