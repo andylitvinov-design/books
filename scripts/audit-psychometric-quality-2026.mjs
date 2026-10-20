@@ -16,6 +16,15 @@ const report={
       independentlyGraded:audit.graded,
       pendingExactVersionReview:audit.reviewPending,
       originalDevelopment:audit.development,
+      evidenceGroups:audit.evidenceGroups,
+      // Every current runnable method gets an explicit review group.
+      // This is a metadata inventory, never a patient accuracy estimate.
+      runnableByGroup:Object.fromEntries(Object.keys(audit.evidenceGroups).map(group=>[
+        group, audit.rows.filter(row=>row.group===group && row.launchEligible).map(row=>({
+          key:row.key,version:row.version,respondentLocale:row.respondentLocale,
+          evidenceUrl:row.evidenceUrl,level:row.level,gaps:row.gaps,
+        })),
+      ])),
       toValidate:audit.rows.filter(row=>row.level==='development').map(row=>({
         key:row.key,version:row.version,respondentLocale:row.respondentLocale,gaps:row.gaps,
       })),

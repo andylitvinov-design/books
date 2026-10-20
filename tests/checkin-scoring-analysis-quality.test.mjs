@@ -61,6 +61,43 @@ test('weekly-pulse keeps eight axes and returns contextual EN follow-up, never a
   assert.equal(result.total,undefined)
 })
 
+test('a low available resource is not ranked as clinically worse than reported tension',()=>{
+  const result=scored('hh-current-state','v2','en',{
+    'state.problem_intensity':0,'state.resource':0,'state.tension':6,
+    'state.fatigue':2,'state.life_impact':3,
+  })
+  const report=buildAssessmentResultReport(result,'en')
+  assert.equal(report.verified,true)
+  assert.equal(report.checkinInsight?.focusKey,'state.tension')
+  assert.equal(report.checkinInsight?.difficultyKey,'state.tension')
+  assert.equal(report.checkinInsight?.resourceKey,'state.resource')
+  assert.equal(report.checkinInsight?.lessAvailableKey,'state.resource')
+  assert.match(report.checkinInsight?.summary,/not a health index|not a clinical/)
+  assert.equal(report.total,undefined)
+})
+
+test('zero on difficulty items does not invent a problem or a clinical all-clear',()=>{
+  const result=scored('hh-current-state','v2','en',{
+    'state.problem_intensity':0,'state.resource':8,'state.tension':0,
+    'state.fatigue':0,'state.life_impact':0,
+  })
+  const report=buildAssessmentResultReport(result,'en')
+  assert.equal(report.verified,true)
+  assert.equal(report.checkinInsight?.focusKey,'state.resource')
+  assert.equal(report.checkinInsight?.difficultyKey,'state.fatigue')
+  assert.match(report.checkinInsight?.reflectionQuestion,/less available/)
+  assert.doesNotMatch(report.checkinInsight?.summary,/diagnosis confirmed|you are healthy/)
+})
+
+test('heterogeneous author scale means are not converted into a cross-construct check-in severity ranking',()=>{
+  const def=getAssessmentDefinition('hh-money-pressure','v2','en')
+  const answer=Object.fromEntries(def.questions.map(q=>[q.id,2]))
+  const result=scoreAssessment(def,answer)
+  const report=buildAssessmentResultReport(result,'en')
+  assert.equal(report.verified,true)
+  assert.equal(report.checkinInsight,null)
+})
+
 test('a falsified stored identity cannot receive check-in synthesis or priority-based reassurance', () => {
   const result = scored('hh-current-state','v2','en',{})
   const tampered = {...result, contentHash:'sha256:invalid-content'}
