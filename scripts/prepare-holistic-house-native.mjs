@@ -23,6 +23,13 @@ export function beforeSync(){
     fail('Refusing to modify a non-PsiAlchemy source checkout')
   write('capacitor.config.json',read('capacitor.holistic-house.config.json'))
   check()
+  // Capacitor CLI resolves plugins from package.json dependencies, not just
+  // their temporary presence in node_modules. This change is CI-checkout-only.
+  const pkg=JSON.parse(read('package.json'))
+  if(pkg.dependencies?.['@capacitor/push-notifications'])
+    fail('Native push plugin must remain Holistic-House-only in source')
+  pkg.dependencies['@capacitor/push-notifications']='7.0.1'
+  write('package.json',JSON.stringify(pkg,null,2)+'\\n')
   // Historical PsiAlchemy Podfile contains an obsolete developer npx cache path.
   // Resolve all Capacitor Pods from this CI checkout's pinned node_modules.
   const pod='ios/App/Podfile'
