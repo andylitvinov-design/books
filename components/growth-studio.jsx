@@ -364,7 +364,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           <button type="button" disabled={!ready||busy} onClick={suggestManualTime}><CalendarDays size={15}/>{t.planNext}</button>
           <span>{locale==='ru'?'Пн–Пт · 10:00/17:00 по Торонто. Не прогноз лучшего времени.':'Mon–Fri · 10:00/17:00 Toronto. Editorial preset, not an analytics-based best time.'}</span>
         </div>
-        {plannedConflict>0&&<p className={styles.manualSlotConflict} role="alert">{t.planCollision}</p>
+        {plannedConflict>0&&<p className={styles.manualSlotConflict} role="alert">{t.planCollision}</p>}
         <div className={styles.publisherDiagnostics} role="status" aria-live="polite">
           <strong>{CHANNEL_CAPABILITIES[form.channel]?.name || form.channel} · {METHOD_LABELS[locale]?.[CHANNEL_CAPABILITIES[form.channel]?.mode] || METHOD_LABELS.en.manual}</strong>
           {reviewGrowthPublication({...form,status:'draft'},{telegramConfigured:telegram.ready,telegramChannelVerified:telegramVerified}).issues.length>0
