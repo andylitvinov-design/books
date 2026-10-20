@@ -124,7 +124,7 @@ test('private API must require owner account and guarded export, never public fi
 })
 
 test('private schema forces row-level security and zero anonymous grants', () => {
-  const sql=readFileSync(new URL('../supabase/migrations/20261020170000_hh_client_lab_reports_private.sql',import.meta.url),'utf8')
+  const sql=readFileSync(new URL('../supabase/migrations/20261020220000_hh_client_lab_reports_private.sql',import.meta.url),'utf8')
   assert.match(sql,/alter table app_private\.lab_reports force row level security/i)
   assert.match(sql,/revoke all on app_private\.lab_reports from public, anon, authenticated/i)
   assert.match(sql,/account_id=\(select auth\.uid\(\)\)/i)
