@@ -147,8 +147,8 @@ for (const locale of ['en','ru','es']) {
     const cta = allNodes(h.tree).find(node => node.props?.attributes?.['data-business-finder-start']==='website-form')
     assert.equal(cta.props.href,'#business-direct-request')
     assert.equal(cta.props.attributes['data-business-direct-option'],'express')
-    assert.ok(cta.props.attributes['data-business-finder-context'].includes('income') ||
-      cta.props.attributes['data-business-finder-context'].includes(locale==='ru'?'доход':'ingresos'))
+    assert.ok(cta.props.attributes['data-business-finder-context'].toLowerCase().includes(
+      locale==='ru' ? 'доход' : locale==='es' ? 'ingresos' : 'income'))
     h.get('data-business-format-choice','free').props.onClick()
     h.render()
     const other=allNodes(h.tree).find(node=>node.props?.attributes?.['data-business-finder-start']==='website-form')
