@@ -106,3 +106,17 @@ test('worker completion and bounded failure handling require the private worker 
     assert.doesNotMatch(source, /export async function GET/)
   }
 })
+
+test('worker request body is size-limited and authorized before buffering', () => {
+  const helper = read('lib/clients/local-narration-worker-request.js')
+  const complete = read('app/api/report-narration/local/worker/complete/route.js')
+  const failed = read('app/api/report-narration/local/worker/failed/route.js')
+  assert.match(helper, /requireLocalWorker\(request\)/)
+  assert.match(helper, /const MAX_BODY = 2048/)
+  assert.match(helper, /request\.body\.getReader\(\)/)
+  assert.match(helper, /reader\.cancel\(\)/)
+  for (const route of [complete, failed]) {
+    assert.match(route, /readAuthenticatedWorkerJson\(request\)/)
+    assert.doesNotMatch(route, /request\.text\(\)/)
+  }
+})
