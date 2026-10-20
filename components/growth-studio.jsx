@@ -162,8 +162,9 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [editing,setEditing]=useState(null)
-  const [form,setForm]=useState(empty)
+  const [form,setForm]=useState(()=>({...empty(),locale:initialLocale==='ru'?'ru':'en'}))
   const [tab,setTab]=useState('compose')
+  const [workspaceOpen,setWorkspaceOpen]=useState(false)
   const [evergreenSource,setEvergreenSource]=useState(null)
   const [filter,setFilter]=useState('active')
   const [brandFilter,setBrandFilter]=useState('all')
@@ -217,7 +218,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   }
   const isEditing=Boolean(editing)
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
-  const reset=()=>{setEditing(null);setForm(empty());setNotice('');setTab('compose')}
+  const reset=()=>{setEditing(null);setForm({...empty(),locale});setNotice('');setTab('compose')}
   const edit=post=>{
     setEditing({id:post.id,revision:post.revision})
     setForm({...post,scheduledAt:localFromIso(post.scheduledAt)})
@@ -325,13 +326,19 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <h2>{t.heading}</h2><p>{t.sub}</p></div>
       <div className={styles.safetyBadge}><ShieldCheck size={18} aria-hidden="true"/>{t.noAuto}</div>
     </div>
+    <GrowthStudioConnections locale={locale} telegram={telegram} onTelegramVerified={setTelegramVerified}
+      postCount={records.length}
+      onStart={()=>{setWorkspaceOpen(true);setTab('compose');setNotice('')}}
+      onShowPosts={()=>{setWorkspaceOpen(true);setTab('posts');setNotice('')}}/>
+    {workspaceOpen&&<>
     {!ready&&<p className={styles.warning} role="alert"><CircleAlert size={18}/>{t.unavailable}</p>}
     <p className={telegramVerified?styles.connectionReady:styles.connectionUnavailable}>
       <ShieldCheck size={15}/>{telegramVerified?(locale==='ru'?'Права бота Telegram подтверждены':'Telegram bot posting permissions verified'):
         telegram.ready?(locale==='ru'?'Настройки Telegram найдены — сначала проверьте права ниже':'Telegram settings found — verify posting permissions below'):t.telegramDisabled}
     </p>
     <p className={styles.privacyNote}><ShieldCheck size={15} aria-hidden="true"/>{t.unsafe}</p>
-    <GrowthStudioConnections locale={locale} telegram={telegram} onTelegramVerified={setTelegramVerified}/>
+    <div className={styles.workspaceClose}><button type="button" onClick={()=>setWorkspaceOpen(false)}>
+      {locale==='ru'?'Свернуть рабочее место':'Collapse workspace'}</button></div>
     <div className={styles.metrics}>
       <div><span>{t.draftCount}</span><strong>{counts.draft}</strong></div>
       <div><span>{t.approvedCount}</span><strong>{counts.approved}</strong></div>
@@ -519,5 +526,6 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         </div>
       </article>)}
     </div>}
+    </>}
   </section>
 }
