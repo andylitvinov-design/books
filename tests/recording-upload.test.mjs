@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {recordingUpload,saveRecording} from '../lib/clients/recording-upload.js'
+import {normalizePhoneAudioFile} from '../lib/clients/phone-audio-file.js'
+import {canProxyOwnerAudio} from '../lib/clients/owner-audio-upload.js'
 const make=()=>recordingUpload({file:{type:'audio/mp4',size:512},clientId:'client-a',sessionId:'session-a',scope:'practitioner',durationSeconds:12.5})
 test('finalize retry preserves private scope and destination and does not upload twice',async()=>{
  const job=make(),calls=[];let uploads=0,finalizes=0
@@ -91,4 +93,88 @@ test('transient finalize error keeps the same intent on retry',async()=>{
   assert.equal(ids.length,2)
   assert.equal(ids[0],ids[1])
   assert.equal(job.uploaded,true)
+})
+
+class SyntheticAudioFile {
+ constructor(parts,name,options){
+   this.parts=parts
+   this.name=name
+   this.type=options.type
+   this.lastModified=options.lastModified
+   this.size=parts.reduce((sum,part)=>sum+part.size,0)
+ }
+}
+const phoneAudio=(name,type,size=1024)=>({name,type,size,lastModified:12345})
+
+test('iPhone Voice Memos exports from Files normalize only known M4A/MP3/WebM aliases without changing bytes',()=>{
+ const cases=[
+   ['Консультация.M4A','', 'audio/mp4'],
+   ['Memo.m4a','application/octet-stream','audio/mp4'],
+   ['Memo.m4a','audio/x-m4a','audio/mp4'],
+   ['Memo.m4a','application/x-m4a','audio/mp4'],
+   ['Memo.MP3','audio/mp3','audio/mpeg'],
+   ['Memo.mp3','', 'audio/mpeg'],
+   ['Memo.webm','application/octet-stream','audio/webm'],
+ ]
+ for(const [name,type,expected] of cases){
+   const original=phoneAudio(name,type)
+   const imported=normalizePhoneAudioFile(original,SyntheticAudioFile)
+   assert.notEqual(imported,original)
+   assert.equal(imported.name,name)
+   assert.equal(imported.type,expected)
+   assert.equal(imported.size,original.size)
+   assert.equal(imported.lastModified,original.lastModified)
+   assert.equal(imported.parts[0],original,'original bytes stay unchanged, no transcoding')
+   assert.equal(canProxyOwnerAudio(imported),true)
+ }
+})
+
+test('do not relabel mismatched video or unsupported audio; already-canonical audio is unchanged',()=>{
+ for(const original of [
+   phoneAudio('Memo.m4a','video/mp4'),
+   phoneAudio('Memo.m4a','audio/wav'),
+   phoneAudio('Memo.wav','audio/wav'),
+   phoneAudio('Memo.constructor',''),
+   phoneAudio('Memo.mov','video/quicktime'),
+   phoneAudio('Memo.webm','video/webm'),
+   phoneAudio('Memo.m4a','audio/mp4'),
+ ]){
+   assert.equal(normalizePhoneAudioFile(original,SyntheticAudioFile),original,original.name+' / '+original.type)
+ }
+ assert.equal(normalizePhoneAudioFile(null,SyntheticAudioFile),null)
+ const noConstructor=phoneAudio('Memo.m4a','')
+ assert.equal(normalizePhoneAudioFile(noConstructor,null),noConstructor)
+})
+
+test('normalized Voice Memos M4A attaches to the correct private consultation via existing upload intent',async()=>{
+ const file=normalizePhoneAudioFile(phoneAudio('My Voice.m4a',''),SyntheticAudioFile)
+ const job=recordingUpload({file,clientId:'client-one',sessionId:'session-one',scope:'client'})
+ const actions=[],uploads=[]
+ await saveRecording(job,{
+   post:async(url,body)=>{
+     actions.push({url,body})
+     if(body.action==='intent')return {assetId:'asset-one',provider:'supabase'}
+     return {attached:true}
+   },
+   upload:async(intent,selected,mime)=>uploads.push({intent,selected,mime}),
+ })
+ assert.equal(actions[0].body.action,'intent')
+ assert.equal(actions[0].body.mime,'audio/mp4')
+ assert.equal(actions[0].body.kind,'audio')
+ assert.equal(actions[0].body.scope,'client')
+ assert.equal(actions[0].body.bytes,file.size)
+ assert.equal(actions[1].body.assetId,'asset-one')
+ assert.ok(actions.every(item=>item.url==='/api/admin/clients/client-one/sessions/session-one/media'))
+ assert.equal(uploads.length,1)
+ assert.equal(uploads[0].selected,file)
+ assert.equal(uploads[0].mime,'audio/mp4')
+})
+
+test('imported audio too large is refused before private upload intent',async()=>{
+ const file=normalizePhoneAudioFile(phoneAudio('Huge.m4a','application/octet-stream',20_000_001),SyntheticAudioFile)
+ const job=recordingUpload({file,clientId:'c',sessionId:'s',scope:'client'})
+ await assert.rejects(saveRecording(job,{
+   post:()=>assert.fail('no oversized audio intent'),
+   upload:()=>assert.fail('no oversized audio upload'),
+ }),/MEDIA_SIZE_NOT_ALLOWED/)
 })

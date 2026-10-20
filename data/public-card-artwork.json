@@ -337,6 +337,27 @@
       "bytes": 77226,
       "thumb": "/images/holistic-house/static-card-media/e04bca8a7b75698d-w256.webp",
       "feature": "/images/holistic-house/static-card-media/e04bca8a7b75698d-w960.webp"
+    },
+    "/images/holistic-house/books-library.webp": {
+      "source": "public/images/holistic-house/books-library.webp",
+      "sha": "cce4a98b2ba7b6a2fd4f129add48d84f2373a1c9",
+      "bytes": 146898,
+      "thumb": "/images/holistic-house/static-card-media/cce4a98b2ba7b6a2-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/cce4a98b2ba7b6a2-w960.webp"
+    },
+    "/images/holistic-house/hero-olive-incense.webp": {
+      "source": "public/images/holistic-house/hero-olive-incense.webp",
+      "sha": "7572d2e4934b183aed1d3cebb4a7caea53240c8f",
+      "bytes": 136960,
+      "thumb": "/images/holistic-house/static-card-media/7572d2e4934b183a-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/7572d2e4934b183a-w960.webp"
+    },
+    "/media/remedies/arnica/message168-1.jpg": {
+      "source": "public/media/remedies/arnica/message168-1.jpg",
+      "sha": "344cbc7acaf7e1a4db3b265d6bed3db68b87b087",
+      "bytes": 242970,
+      "thumb": "/images/holistic-house/static-card-media/344cbc7acaf7e1a4-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/344cbc7acaf7e1a4-w960.webp"
     }
   }
 }

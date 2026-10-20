@@ -50,11 +50,15 @@ test("Review, meditation and enrollment prose is not rendered twice; authentic m
     read("components/tantra-reiki-story.tsx"),
   ]);
   assert.doesNotMatch(reviews, /reviewImages|tantra-review-gallery|tantra-review-archive/);
-  // Labels were removed from repeated Level 1 reviews, but unique restored
-  // English source testimonials need their original participant names.
-  assert.equal((reviews.match(/tantra-review-quote__label/g) ?? []).length, 1);
-  assert.match(reviews, /review.name/);
-  assert.match(reviews, /sourceReviewGroups\.map/);
+  // The full approved learner accounts now come from a single shared archive,
+  // not from the old duplicated quotation snippets.
+  const learnerCards = await read("components/tantra-learner-review-cards.tsx");
+  assert.match(reviews, /import \{ TantraLearnerReviewCards \} from/);
+  assert.equal((reviews.match(/<TantraLearnerReviewCards\b/g) ?? []).length, 1);
+  assert.match(reviews, /headingId="tantra-testimonials-heading"/);
+  assert.match(learnerCards, /tantraVoices\.map\(\(review, index\) =>/);
+  assert.match(learnerCards, /review\.quote\[reviewLanguage\]/);
+  assert.match(learnerCards, /data-tantra-full-learner-reviews/);
   const videoReviews = await readFile("components/tantra-video-testimonials.tsx", "utf8");
   assert.match(reviews, /import \{ TantraVideoTestimonials \} from "@\/components\/tantra-video-testimonials"/);
   assert.equal((reviews.match(/<TantraVideoTestimonials\b/g) ?? []).length, 1);

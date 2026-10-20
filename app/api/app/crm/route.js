@@ -6,8 +6,13 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createCrmRepository, crmEnabled } from '@/lib/crm/repository'
 import { billingRegistryEnabled } from '@/lib/crm/billing-registry'
-import { getCrmEmailConfig } from '@/lib/crm/email'
+import { emailSetupStatus, getCrmEmailConfig } from '@/lib/crm/email'
 import { sendCrmMessage, sendCrmVerification } from '@/lib/crm/email-dispatch'
+import { getSmsConfig, smsSetupStatus } from '@/lib/crm/sms'
+import { probeTwilioSmsConnection } from '@/lib/crm/sms-setup'
+import { sendCrmSms } from '@/lib/crm/sms-dispatch'
+import { refreshCrmSmsStatus } from '@/lib/crm/sms-status'
+import { MESSENGER_CHANNELS, messengerSetupStatus } from '@/lib/crm/messenger-policy'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -26,14 +31,64 @@ async function handle(request) {
     const repo = createCrmRepository(config)
     let data
     if (request.method === 'GET') {
-      data = await repo.withOwner(actor, async (store) => ({ contacts: await store.listContacts(), drafts: await store.listDrafts(), emailMessages: await store.listEmailMessages(), subscribers: await store.listSubscribers(), subscriberRegistryEnabled: billingRegistryEnabled(), sendingEnabled: false, emailEnabled: getCrmEmailConfig().enabled, emailStatus: getCrmEmailConfig().reason || 'ready' }))
+      const url=new URL(request.url)
+      const cursor=url.searchParams.get('contactsCursor')
+      if(cursor!==null) {
+        if([...url.searchParams.keys()].some(key=>key!=='contactsCursor')||
+           url.searchParams.getAll('contactsCursor').length!==1)
+          throw new AppError('INVALID_CONTACT_CURSOR',400)
+        data=await repo.withOwner(actor,async store=>({
+          ...await store.listContactsPage(cursor),pageOnly:true,
+        }))
+      } else {
+        data=await repo.withOwner(actor,async store=>{
+          const page=await store.listContactsPage(null)
+          return {
+            contacts:page.contacts,contactsNextCursor:page.nextCursor,
+            businessEnquiries:await store.listBusinessEnquiries(),
+            overview:await store.overview(),
+            followups:await store.listFollowups(),
+            activity:await store.listRecentActivity(),
+            recentExports:await store.listOwnerExportAudit(),
+            drafts:await store.listDrafts(),
+            emailMessages:await store.listEmailMessages(),
+            smsMessages:await store.listSmsMessages(),
+            subscribers:await store.listSubscribers(),
+            subscriberRegistryEnabled:billingRegistryEnabled(),
+            sendingEnabled:false,
+            emailEnabled:getCrmEmailConfig().enabled,
+            emailStatus:getCrmEmailConfig().reason||'ready',
+            smsEnabled:getSmsConfig().enabled,
+            smsStatus:getSmsConfig().reason||'ready',
+            smsLive:getSmsConfig().live||false,
+            smsSetup:smsSetupStatus(),
+            integrationSetup:{
+              email:emailSetupStatus(),
+              sms:smsSetupStatus(),
+              messengers:MESSENGER_CHANNELS.map(channel=>messengerSetupStatus(channel)),
+            },
+          }
+        })
+      }
     } else {
       const body = await readBody(request, 8192)
       onlyKeys(body, ['action', 'payload'])
-      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
+      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'send_sms', 'check_sms_connection', 'check_sms_status', 'create_followup', 'change_followup', 'log_activity', 'update_business_enquiry', 'edit_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
       if (body.action === 'send_verification') data = await sendCrmVerification({repo,actor,payload:body.payload})
       else if (body.action === 'send_email') data = await sendCrmMessage({repo,actor,payload:body.payload})
+      else if (body.action === 'send_sms') data = await sendCrmSms({repo,actor,payload:body.payload})
+      else if (body.action === 'check_sms_status') data = await refreshCrmSmsStatus({repo,actor,appConfig:config,payload:body.payload})
+      else if (body.action === 'check_sms_connection') {
+        if (!body.payload || typeof body.payload !== 'object' || Array.isArray(body.payload) || Object.keys(body.payload).length)
+          throw new AppError('INVALID_SMS_SETUP_REQUEST',400)
+        data=await probeTwilioSmsConnection()
+      }
       else data = await repo.withOwner(actor, (store) => {
+        if (body.action === 'update_business_enquiry') return store.updateBusinessEnquiry(body.payload)
+        if (body.action === 'create_followup') return store.createFollowup(body.payload)
+        if (body.action === 'change_followup') return store.changeFollowup(body.payload)
+        if (body.action === 'log_activity') return store.logBusinessActivity(body.payload)
+        if (body.action === 'edit_contact') return store.editContact(body.payload)
         if (body.action === 'create_contact') return store.createContact(body.payload)
         if (body.action === 'record_consent') return store.recordConsent(body.payload)
         if (body.action === 'suppress_contact') {

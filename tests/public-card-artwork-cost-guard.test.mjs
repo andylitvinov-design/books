@@ -49,11 +49,11 @@ test("all 23 published book covers have versioned public WebP outputs and unchan
   }
 });
 
-test("all 28 public academy and poster sources are pinned to original bytes and two responsive variants", () => {
-  assert.equal(Object.keys(registry.images).length, 28);
-  assert.equal(entries.length, 51);
+test("all 31 reviewed public academy, Library and poster sources are pinned with two variants", () => {
+  assert.equal(Object.keys(registry.images).length, 31);
+  assert.equal(entries.length, 54);
   for (const [key, item] of Object.entries(registry.images)) {
-    assert.ok(key.startsWith("/academy/") || key.startsWith("/images/holistic-house/") || key.startsWith("/library/"));
+    assert.ok(key.startsWith("/academy/") || key.startsWith("/images/holistic-house/") || key.startsWith("/library/") || key === "/media/remedies/arnica/message168-1.jpg");
     assert.equal(item.source, "public" + key);
     assert.deepEqual(sourceGitHash(item.source), { hash: item.sha, bytes: item.bytes });
     for (const [name, width] of [["thumb", 256], ["feature", 960]]) {
@@ -75,10 +75,13 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(read("components/sitewide-antistress-banner.tsx"), /cardArtworkUrl\("\/images\/holistic-house\/course-focus-mountain-boy\.webp"\)/);
   const generator = read("scripts/build-public-card-artwork.mjs");
   assert.match(generator, /sharp\(original/);
+  assert.match(generator, /Invalid pinned static artwork source/);
+  assert.match(generator, /item\.source/);
+  assert.match(generator, /\{ cause \}/);
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.equal(config.scripts.prebuild, "node scripts/build-public-card-artwork.mjs");
+  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
   assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
@@ -87,5 +90,14 @@ test("source registry does not include private or user-uploaded client material"
   for (const item of entries) {
     assert.doesNotMatch(item.source, /(?:private|client|prescription|session|upload|admin)/i);
     assert.ok(item.bytes > 0 && item.bytes < 2_000_000, "Large image requires separate audit");
+  }
+});
+
+test("every pinned WebP source has a complete declared RIFF body before build-time transcoding", () => {
+  for (const item of entries.filter(entry => entry.source.toLowerCase().endsWith(".webp"))) {
+    const bytes = readFileSync(new URL("../" + item.source, import.meta.url));
+    assert.equal(bytes.subarray(0, 4).toString("ascii"), "RIFF", item.source);
+    assert.equal(bytes.subarray(8, 12).toString("ascii"), "WEBP", item.source);
+    assert.equal(bytes.readUInt32LE(4) + 8, bytes.length, "Incomplete WebP source: " + item.source);
   }
 });

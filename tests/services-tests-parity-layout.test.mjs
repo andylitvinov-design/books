@@ -34,7 +34,8 @@ test('Services EN RU ES uses the Tests-style standalone hero with tabs, then fil
   assert.match(ui, /setHasSelection\(true\)/)
   for (const label of ['Additional filters', 'Дополнительные фильтры', 'Filtros adicionales'])
     assert.ok(ui.includes(label), label)
-  for (const p of [enRu, es]) assert.match(p, /<ServicesSmartDiscovery/)
+  for (const p of [enRu, es]) assert.match(p, /<ServicesStudioOffers/)
+  assert.match(read("components/services-directory-page.tsx"), /<ServicesSmartDiscovery/)
 })
 
 test('Services light topic panel and 320px friendly controls mirror the Tests mobile hierarchy', () => {

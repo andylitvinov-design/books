@@ -57,3 +57,21 @@ test('all public remedy lead images reserve a square layout box and are discover
   assert.match(standard,/supportingImages\.map/);
   assert.match(standard,/loading="lazy" decoding="async"/);
 });
+
+test('public test landing stays indexable and the live auditor no longer expects its former private redirect',()=>{
+  const crawler=read('scripts/verify-live-sitemap.mjs');
+  const workflow=read('.github/workflows/hh-live-seo-audit.yml');
+  const mobile=read('scripts/verify-public-tests-mobile.mjs');
+  assert.match(crawler, /"\/en\/tests", "\/ru\/tests", "\/es\/tests"/);
+  assert.doesNotMatch(crawler, /\["\/en\/tests", "\/en\/client\/tests"\]/);
+  assert.match(crawler, /Public tests unexpectedly noindex/);
+  assert.match(crawler, /Public tests .* hreflang mismatch/);
+  assert.match(crawler, /Public test CTA missing/);
+  assert.match(workflow, /verify-public-tests-mobile\.mjs/);
+  assert.match(workflow, /app\/\[locale\]\/tests/);
+  assert.match(mobile, /widths = \[320, 390, 430\]/);
+  assert.match(mobile, /"x-default"/);
+  assert.match(mobile, /Horizontal overflow/);
+  assert.match(mobile, /primaryHeight >= 44/);
+  assert.match(mobile, /No login/);
+});

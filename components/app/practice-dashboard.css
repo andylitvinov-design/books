@@ -888,3 +888,89 @@
 .hh-practice-presentation-input{display:grid;gap:.5rem}.hh-practice-presentation-input label{display:grid;gap:.5rem}.hh-practice-presentation-input input[type=url],.hh-practice-presentation-input input[type=file]{max-width:100%;box-sizing:border-box;background:#fff;color:#162c3b;border-radius:9px;padding:.6rem;min-width:0}
 .hh-practice-presentation-input p{margin:0;color:#e8d7ad}.hh-practice-presentation-remove{justify-self:start;padding:.4rem .6rem;background:transparent;border:0;color:#f1c9c3;text-decoration:underline;cursor:pointer}
 .hh-practice-presentation .hh-fine{color:#d5dee6;margin:0}.hh-practice-presentation .hh-practice-error{color:#ffcdcd}
+
+
+/* Practice first-service activation: community is open, practitioner tools are gated. */
+.hh-app .hh-practice-join{
+  display:grid;gap:8px;margin:17px 0 0;padding:17px;
+  border:1px solid #deceb9;border-radius:16px;
+  background:linear-gradient(135deg,#f9f2e9,#f7f9f5);
+}
+.hh-app .hh-practice-join h3{
+  margin:0;color:#342a22;font:400 clamp(20px,3vw,26px)/1.2 Georgia,serif;
+}
+.hh-app .hh-practice-join p{
+  margin:0 0 4px;color:#76675a;font:400 12px/1.55 system-ui,sans-serif;
+}
+.hh-app .hh-practice-start-button{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;min-height:52px;padding:11px 15px;border:0;border-radius:12px;
+  background:#812c49;color:#fff;text-align:center;
+  font:750 14px/1.35 system-ui,sans-serif;cursor:pointer;
+}
+.hh-app .hh-practice-start-button:hover{background:#69223c}
+.hh-app .hh-practice-start-button svg{width:18px;height:18px;flex:none}
+.hh-app .hh-practice-start-button svg:last-child{margin-left:auto}
+.hh-app .hh-practice-start-button:focus-visible,
+.hh-app .hh-practice-registration-submit:focus-visible{
+  outline:3px solid #b87d97;outline-offset:3px;
+}
+.hh-app .hh-practice-signup{
+  max-width:740px;margin:14px auto 24px;scroll-margin-top:18px;
+}
+.hh-app .hh-practice-registration{
+  display:grid;gap:13px;background:#fffcf8;
+  border:1px solid #deccba;border-radius:19px;padding:21px;
+  box-shadow:0 4px 18px #58361509;
+}
+.hh-app .hh-practice-registration-heading h2{
+  font:400 clamp(24px,4vw,32px)/1.15 Georgia,serif;
+  margin:7px 0;color:#352921;
+}
+.hh-app .hh-practice-registration-heading p{
+  font:400 12px/1.55 system-ui,sans-serif;color:#77695e;margin:0;
+}
+.hh-app .hh-practice-registration-section{
+  display:grid;gap:10px;margin:0;padding:13px;
+  border:1px solid #e9ddd0;border-radius:14px;min-width:0;
+}
+.hh-app .hh-practice-registration-section legend{
+  padding:0 6px;color:#704a38;font:750 12px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-section label{
+  display:grid;gap:5px;min-width:0;
+  color:#524134;font:650 12px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-section :is(input,select,textarea){
+  width:100%;max-width:100%;min-height:43px;padding:9px 11px;
+  color:#332820;background:#fff;border:1px solid #d9c5b2;
+  border-radius:10px;font:400 14px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-section textarea{min-height:64px;resize:vertical}
+.hh-app .hh-practice-registration-section input[readonly]{
+  background:#f5eee5;color:#685747;
+}
+.hh-app .hh-practice-registration-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px;min-width:0;
+}
+.hh-app .hh-practice-registration-note{
+  margin:0;color:#74685d;font:400 11px/1.5 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-submit{
+  width:100%;min-height:50px;display:flex;align-items:center;justify-content:center;gap:8px;
+  font:750 14px/1.3 system-ui,sans-serif;
+}
+.hh-app .hh-practice-registration-submit svg{width:18px;height:18px}
+@media(max-width:600px){
+  .hh-app .hh-practice-join{padding:12px;margin-top:13px}
+  .hh-app .hh-practice-join h3{font-size:21px}
+  .hh-app .hh-practice-signup{margin:10px 0 18px}
+  .hh-app .hh-practice-registration{padding:12px;gap:10px;border-radius:15px}
+  .hh-app .hh-practice-registration-section{padding:10px}
+  .hh-app .hh-practice-registration-grid{grid-template-columns:minmax(0,1fr);gap:9px}
+  .hh-app .hh-practice-registration-section :is(input,select,textarea){font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hh-app .hh-practice-start-button{transition:none}
+}

@@ -15,7 +15,7 @@ async function request(url,method='GET',body){
   if(!response.ok)throw new Error(data.error||'MATERIAL_UNAVAILABLE')
   return data
 }
-function uploadFile(intent,file,mime,onProgress){
+export function uploadFile(intent,file,mime,onProgress){
   if(intent.provider==='external')return new Promise((resolve,reject)=>{
     if(!intent.uploadUrl?.startsWith('https://'))return reject(new Error('VIDEO_STORAGE_NOT_CONFIGURED'))
     const xhr=new XMLHttpRequest()

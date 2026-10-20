@@ -24,6 +24,38 @@ import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth
 import {traumaPhaseCheckpoints} from '@/lib/inner-growth/trauma-phase-catalog'
 import styles from './course-slide-player.module.css'
 
+// Gentle hints are optional, never scored and never required to advance.
+const GENTLE_TIPS={
+  en:{
+    recall:'If nothing comes to mind, simply notice one ordinary thing around you.',
+    guided:'Keep your eyes open and choose a shorter version if that feels better.',
+    ritual:'Try just one small part of the practice, or read it for now.',
+    transfer:'Imagine one possible next step; you do not have to do it today.',
+    symbol:'You can use one ordinary word instead of picturing an image.',
+    reflection:'If words are difficult, notice one simple detail or continue.',
+    fallback:'Look at one ordinary object nearby if the exercise feels difficult.',
+  },
+  ru:{
+    recall:'Если ничего не вспоминается, посмотрите на один обычный предмет вокруг.',
+    guided:'Можно оставить глаза открытыми и выбрать более короткий вариант.',
+    ritual:'Попробуйте только небольшую часть практики или просто прочитайте её.',
+    transfer:'Представьте один возможный шаг — делать его сегодня необязательно.',
+    symbol:'Можно выбрать одно простое слово вместо мысленного образа.',
+    reflection:'Если трудно подобрать слова, заметьте одну деталь или продолжите.',
+    fallback:'Если упражнение трудно, посмотрите на обычный предмет рядом.',
+  },
+  es:{
+    recall:'Si no recuerdas nada, mira un objeto normal a tu alrededor.',
+    guided:'Puedes mantener los ojos abiertos y elegir una versión más corta.',
+    ritual:'Prueba solo una parte pequeña o lee la práctica por ahora.',
+    transfer:'Imagina un paso posible; no tienes que hacerlo hoy.',
+    symbol:'Puedes usar una palabra sencilla en lugar de una imagen.',
+    reflection:'Si no encuentras palabras, observa un detalle o continúa.',
+    fallback:'Si es difícil, mira un objeto normal que tengas cerca.',
+  },
+}
+const GENTLE_EXERCISE_SLIDES=new Set(['recall','guided','ritual','transfer','symbol','reflection'])
+
 const WORDS = {
   en: {
     day: 'Day', step: 'Step', of: 'of', close: 'Return to my course',
@@ -42,9 +74,9 @@ const WORDS = {
     next: 'Continue', back: 'Back', skip: 'Skip this step', saveNext: 'Save & continue',
     save: 'Save today’s practice', saveError: 'Saving did not work. Nothing was marked complete. Please try again.',
     saved: 'Your observation was saved privately.', retry: 'Try again',
-    checkin: 'Notice your day', checkinQuestion: 'How difficult was this concern during the last 24 hours?',
+    checkin: 'Choose your practice pace', checkinDifficultyTitle: 'How strong was your concern?', checkinQuestion: 'Over the last 24 hours, how strongly did this concern bother you?',
     ratingHint: 'There is no correct number. This voluntary self-rating is not a clinical test.',
-    low: '0 · Not difficult', high: '10 · Very difficult', skipRating: 'Skip this check-in',
+    low: '0 · No concern', high: '10 · Very strong concern', skipRating: 'Skip this check-in',
     idea: 'A thought to take with you', ideaLabel: 'Today’s thought',
     recall: 'Remember a familiar skill', recallHint: 'Try recalling it without pressure, or simply continue.',
     phrase: 'A more flexible thought', phraseHint: 'This is a possible phrase, not something you must believe.',
@@ -134,9 +166,9 @@ const WORDS = {
     next: 'Продолжить', back: 'Назад', skip: 'Пропустить шаг', saveNext: 'Сохранить и продолжить',
     save: 'Сохранить практику дня', saveError: 'Не получилось сохранить. Ничего не отмечено выполненным. Попробуйте ещё раз.',
     saved: 'Наблюдение сохранено приватно.', retry: 'Повторить',
-    checkin: 'Заметьте свой день', checkinQuestion: 'Насколько эта трудность ощущалась за последние 24 часа?',
+    checkin: 'Выберите темп практики', checkinDifficultyTitle: 'Насколько сильным было беспокойство?', checkinQuestion: 'Оцените силу беспокойства за последние 24 часа.',
     ratingHint: 'Правильных чисел нет. Это добровольная самооценка, не клинический тест.',
-    low: '0 · Не беспокоила', high: '10 · Очень сильно', skipRating: 'Пропустить замер',
+    low: '0 · Не беспокоило', high: '10 · Очень сильно', skipRating: 'Пропустить замер',
     idea: 'Мысль, которую можно взять с собой', ideaLabel: 'Мысль дня',
     recall: 'Вспомните знакомый навык', recallHint: 'Попробуйте вспомнить без напряжения — или просто продолжайте.',
     phrase: 'Более гибкая мысль', phraseHint: 'Это возможная формулировка. Не обязательно верить в неё.',
@@ -611,6 +643,7 @@ export default function CourseSlidePlayer({
     :slide?.kind==='course-offer'?words.promoTitle
     :isDayOne&&dayOneTitles[slide.kind]?dayOneTitles[slide.kind]
     :slide.kind==='guided'?(slide.section.kind==='arrive'?words.arrivalTitle:slide.section.title||words.guided)
+    :slide.kind==='checkin' && !(lesson.antiStress||isOporaModule)?words.checkinDifficultyTitle
     :words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
@@ -1255,6 +1288,19 @@ export default function CourseSlidePlayer({
             </details>
           </>}
         </>}
+        {!finished&&(GENTLE_EXERCISE_SLIDES.has(slide.kind)||(isDayOne&&slide.kind.startsWith('day1-')))&&
+          <details className={styles.animalGuidance} key={'guidance-'+index}
+            data-gentle-guidance={slide.kind}>
+            <summary>
+              <img src="/images/holistic-house/gentle-owl.svg" alt="" aria-hidden="true"
+                width={43} height={43}/>
+              <span>{locale==='ru'?'Показать мягкую подсказку'
+                :locale==='es'?'Ver una pista suave':'Show gentle guidance'}</span>
+              <ChevronDown size={16} aria-hidden="true"/>
+            </summary>
+            <p>{(GENTLE_TIPS[locale]||GENTLE_TIPS.en)[slide.kind]||
+              (GENTLE_TIPS[locale]||GENTLE_TIPS.en).fallback}</p>
+          </details>}
         {error && <p className={styles.error} role="alert">{error}</p>}
       </main>
       <footer className={styles.footer}>

@@ -1,0 +1,278 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {groupVerifiedPractitionerClients} from '../lib/practitioners/client-profile-groups.js'
+import {validateMessageText} from '../lib/crm/messenger-policy.js'
+const root=new URL('..',import.meta.url)
+const src=p=>readFileSync(new URL(p,root),'utf8')
+const now='2026-10-19T10:00:00Z'
+const request=(id,key,contact,status='requested')=>({id,clientKey:key,contact,status,createdAt:now})
+test('master clients are grouped by VERIFIED account HMAC, never by matching typed names',()=>{
+  const key='a'.repeat(64),another='b'.repeat(64)
+  const groups=groupVerifiedPractitionerClients([
+    request('one',key,{displayName:'Same Person',email:'a@example.org'}),
+    request('two',key,{displayName:'Updated Person',email:'different@example.org'},'contacted'),
+    request('three',another,{displayName:'Same Person',email:'a@example.org'}),
+  ],'en')
+  assert.equal(groups.length,2)
+  assert.equal(groups.find(group=>group.key===key).items.length,2)
+  assert.equal(groups.find(group=>group.key===another).items.length,1)
+})
+test('missing verified account key never merges contacts that share email or display name',()=>{
+  const result=groupVerifiedPractitionerClients([
+    request('request-a','bad',{displayName:'Anna',email:'same@test.invalid'}),
+    request('request-b','bad',{displayName:'Anna',email:'same@test.invalid'}),
+  ])
+  assert.equal(result.length,2)
+  assert.ok(result.every(x=>x.key.startsWith('request:')))
+})
+test('master client summary shows real requests and actionable statuses',()=>{
+  const key='c'.repeat(64)
+  const result=groupVerifiedPractitionerClients([
+    request('r1',key,'Client contact','requested'),
+    request('r2',key,'Client contact','closed'),
+    request('r3',key,'Client contact','contacted'),
+  ])
+  assert.equal(result.length,1)
+  assert.equal(result[0].open,2)
+  assert.equal(result[0].items.length,3)
+  assert.equal(result[0].name,'Client contact')
+})
+test('master client grouping handles unexpected contact types without disclosing data',()=>{
+  assert.equal(groupVerifiedPractitionerClients(null).length,0)
+  const g=groupVerifiedPractitionerClients([request('first','?',{phone:'+14165550100',displayName:'A'})],'ru')
+  assert.equal(g[0].name,'A')
+  assert.match(g[0].contact,/1416/)
+})
+test('new participant message table requires FORCE RLS and denies direct public/API privileges',()=>{
+  const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
+  assert.match(sql,/ALTER TABLE app\.practitioner_request_messages FORCE ROW LEVEL SECURITY/)
+  assert.match(sql,/REVOKE ALL ON app\.practitioner_request_messages FROM PUBLIC,anon,authenticated/)
+  assert.match(sql,/GRANT SELECT,INSERT ON app\.practitioner_request_messages TO hh_app_backend/)
+  assert.doesNotMatch(sql,/TO authenticated.*USING\s*\(true\)/)
+  assert.doesNotMatch(sql,/SECURITY DEFINER/i)
+  assert.match(sql,/ON DELETE CASCADE/)
+  assert.match(sql,/FOR INSERT TO hh_app_backend/)
+  assert.match(sql,/WITH CHECK/)
+})
+test('only requester or exactly assigned active practitioner can see participant replies',()=>{
+  const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
+  assert.match(sql,/r\.account_id=\(SELECT auth\.uid\(\)\)/)
+  assert.match(sql,/p\.trusted_auth_user_id=\(SELECT auth\.uid\(\)\)/)
+  assert.match(sql,/p\.id=r\.recipient_practitioner_id/)
+  assert.match(sql,/p\.active AND p\.status IN/)
+  assert.match(sql,/app_private\.account_active\(\)/)
+  assert.match(sql,/practitioner_request_messages\.visibility='participants'/)
+})
+test('master-only notes remain invisible to client even when they belong to the same request',()=>{
+  const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
+  assert.match(sql,/visibility IN\('participants','practitioner_note'\)/)
+  assert.match(sql,/visibility='practitioner_note'/)
+  assert.match(sql,/author_role='practitioner'/)
+  assert.match(sql,/practitioner_request_messages\.visibility='participants'\s+AND r\.account_id/)
+  assert.doesNotMatch(sql,/GRANT UPDATE/)
+  assert.doesNotMatch(sql,/GRANT DELETE/)
+})
+test('message send uses real server session, exact request participant and immutable idempotency',()=>{
+  const server=src('lib/practitioners/client-messages.js')
+  const route=src('app/api/app/practitioner-client-messages/route.js')
+  assert.match(server,/transaction\(config,actor,async db=>/)
+  assert.match(server,/requestId\)/)
+  assert.match(server,/r\.account_id/)
+  assert.match(server,/p\.trusted_auth_user_id/)
+  assert.match(server,/const scope=await participant\(db,actor,input\.requestId,\{lock:true\}\)/)
+  assert.match(server,/old!==text/)
+  assert.match(server,/original\.visibility!==visibility/)
+  assert.match(server,/openSealed\(row\.body_ciphertext,bodyContext/)
+  assert.match(server,/seal\(\{text\},bodyContext/)
+  assert.match(server,/PRACTICE_MESSAGE_DAILY_LIMIT/)
+  assert.doesNotMatch(server,/sendOneMessengerMessage|Telegram|WhatsApp|service_role/i)
+  assert.match(route,/requireSameOrigin\(request,config\)/)
+  assert.match(route,/auth\.verified\(\)/)
+  assert.match(route,/x-hh-account-id/)
+  assert.match(route,/onlyKeys\(body,\['requestId','operationId','text','visibility'\]\)/)
+})
+test('only active participant correspondence, not closed requests, may create shared replies',()=>{
+  const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
+  assert.match(sql,/r\.status IN \('requested','contacted'\)/)
+  const store=src('lib/practitioners/client-messages.js')
+  assert.match(store,/if\(visibility==='participants'&&!scope\.canReply\)/)
+  assert.match(store,/CONVERSATION_CLOSED/)
+})
+test('requester and master UI expose private replies without opening other cabinet records',()=>{
+  const master=src('components/app/practice-workspace.jsx')
+  const cabinet=src('components/app/app-workspace.jsx')
+  const profile=src('components/app/practitioner-client-profiles.jsx')
+  const chat=src('components/app/practice-request-conversation.jsx')
+  assert.match(master,/<PractitionerClientProfiles items=\{requests\}/)
+  assert.match(master,/activePanel==='crm'&&isOwner&&accountId/)
+  assert.match(master,/onClick=\{\(\)=>choosePanel\('clients'\)\}/)
+  assert.match(master,/onStatus=\{\(item,status\)=>act/)
+  assert.match(cabinet,/<PracticeRequestConversation key=\{request\.id\}/)
+  assert.match(profile,/groupVerifiedPractitionerClients/)
+  assert.match(chat,/aria-expanded=\{open\}/)
+  assert.match(chat,/\/api\/app\/practitioner-client-messages/)
+  assert.match(chat,/visibility==='practitioner_note'/)
+  assert.match(chat,/no Telegram, WhatsApp or email delivery is implied/)
+  assert.doesNotMatch(profile,/data\.results|savedReports|savedSessions|clinicalRecord/)
+})
+test('sensitive private report links and clinical details are rejected by shared message policy',()=>{
+  assert.throws(()=>validateMessageText('Your prescription is ready'))
+  assert.throws(()=>validateMessageText('https://holistichouse.vercel.app/en/client/a#private-session-token-123456789'))
+  assert.equal(validateMessageText('Please confirm a suitable appointment day.'),'Please confirm a suitable appointment day.')
+})
+
+test('master client profile displays genuine conversation activity counts for each scoped request',()=>{
+  const repo=src('lib/practitioners/repository.js')
+  const ui=src('components/app/practitioner-client-profiles.jsx')
+  assert.match(repo,/select request_id,count\(\*\)::int as message_count,max\(created_at\) as last_message_at/)
+  assert.match(repo,/where request_id=any\(\$1::uuid\[\]\)/)
+  assert.match(repo,/messageCount:byRequest\.get\(row\.id\)\?\.message_count\|\|0/)
+  assert.match(ui,/request\.messageCount>0/)
+  assert.match(ui,/localizedCopy\?\.\[lang\]\?\.title/)
+})
+
+test('client directory opens with the latest five and reveals the next five on demand',()=>{
+  const requests=Array.from({length:12},(_,index)=>({
+    id:'enquiry-'+index,
+    clientKey:index.toString(16).padStart(64,'0'),
+    contact:{displayName:'Client '+index},
+    status:'requested',
+    createdAt:new Date(Date.UTC(2026,9,19,12,index)).toISOString(),
+  }))
+  const groups=groupVerifiedPractitionerClients(requests,'en')
+  assert.equal(groups.length,12)
+  assert.equal(groups[0].name,'Client 11')
+  assert.equal(groups[4].name,'Client 7')
+  assert.equal(groups[9].name,'Client 2')
+  const ui=src('components/app/practitioner-client-profiles.jsx')
+  const css=src('components/app/practitioner-client-profiles.module.css')
+  assert.match(ui,/const CLIENTS_PAGE_SIZE=5/)
+  assert.match(ui,/\[visibleCount,setVisibleCount\]=useState\(CLIENTS_PAGE_SIZE\)/)
+  assert.match(ui,/filtered\.slice\(0,visibleCount\)/)
+  assert.match(ui,/setVisibleCount\(count=>count\+CLIENTS_PAGE_SIZE\)/)
+  assert.match(ui,/Math\.min\(CLIENTS_PAGE_SIZE,remaining\)/)
+  assert.match(ui,/setVisibleCount\(CLIENTS_PAGE_SIZE\);setSelectedKey\(''\)/)
+  assert.match(ui,/groups\.length===0/)
+  assert.match(ui,/styles\.noClients/)
+  assert.match(ui,/visible\.map\(group=>/)
+  assert.match(ui,/more:'Show \{count\} more clients'/)
+  assert.match(ui,/more:'Показать ещё \{count\}'/)
+  assert.match(ui,/more:'Mostrar \{count\} clientes más'/)
+  assert.match(css,/\.withProfile\{grid-template-columns/)
+  assert.match(css,/\.sidebar\{max-height:none;overflow:visible\}/)
+})
+
+test('a returning client with a fresh reply rises above clients with newer original enquiries',()=>{
+  const earlier='2026-10-01T10:00:00Z'
+  const later='2026-10-18T10:00:00Z'
+  const lastReply='2026-10-19T11:00:00Z'
+  const clients=groupVerifiedPractitionerClients([
+    {id:'old',clientKey:'a'.repeat(64),contact:{displayName:'Returning client'},
+      status:'contacted',createdAt:earlier,lastConversationAt:lastReply,needsReply:true},
+    {id:'new',clientKey:'b'.repeat(64),contact:{displayName:'New client'},
+      status:'requested',createdAt:later,lastConversationAt:later,needsReply:true},
+  ],'en')
+  assert.equal(clients.length,2)
+  assert.equal(clients[0].name,'Returning client')
+  assert.equal(clients[0].awaiting,1)
+  assert.equal(clients[1].name,'New client')
+})
+test('private practitioner note does not reorder a client or falsely create a reply task',()=>{
+  const groups=groupVerifiedPractitionerClients([
+    {id:'quiet',clientKey:'a'.repeat(64),contact:'Quiet',
+      createdAt:'2026-10-01T10:00:00Z',lastConversationAt:'2026-10-01T10:00:00Z',
+      messageCount:3,needsReply:false},
+    {id:'active',clientKey:'b'.repeat(64),contact:'Active',
+      createdAt:'2026-10-17T10:00:00Z',lastConversationAt:'2026-10-18T11:00:00Z',
+      needsReply:true},
+  ])
+  assert.equal(groups[0].name,'Active')
+  assert.equal(groups[0].awaiting,1)
+  assert.equal(groups[1].awaiting,0)
+})
+test('master reply queue is owner-scoped, ignores private notes, and stays opt-in refresh-only',()=>{
+  const repo=src('lib/practitioners/repository.js')
+  const ui=src('components/app/practitioner-client-profiles.jsx')
+  const master=src('components/app/practice-workspace.jsx')
+  const chat=src('components/app/practice-request-conversation.jsx')
+  assert.match(repo,/select distinct on \(request_id\) request_id,author_role,created_at/)
+  assert.match(repo,/where request_id=any\(\$1::uuid\[\]\) and visibility='participants'/)
+  assert.match(repo,/lastShared\?\.author_role==='client'/)
+  assert.match(repo,/needsReply:stillOpen/)
+  assert.match(repo,/lastConversationAt:iso\(lastShared\?\.created_at\)/)
+  assert.match(ui,/awaitingCount=groups\.filter/)
+  assert.match(ui,/\['reply',t\.awaiting\]/)
+  assert.match(ui,/group\.awaiting>0/)
+  assert.match(ui,/onRefresh&&<button/)
+  assert.match(master,/onRefresh=\{\(\)=>load\(\)\}/)
+  assert.match(chat,/onSaved\?\.\(\)/)
+  assert.doesNotMatch(ui,/setInterval\(/)
+})
+
+test('new in-app message counts are distinct from pending replies and never inferred from private notes',()=>{
+  const now='2026-10-19T10:00:00Z'
+  const groups=groupVerifiedPractitionerClients([
+    {id:'r1',clientKey:'a'.repeat(64),contact:{displayName:'First'},
+      status:'contacted',needsReply:false,newMessageCount:2,createdAt:now},
+    {id:'r2',clientKey:'a'.repeat(64),contact:{displayName:'First'},
+      status:'requested',needsReply:true,newMessageCount:0,createdAt:now},
+    {id:'r3',clientKey:'b'.repeat(64),contact:{displayName:'Other'},
+      status:'contacted',needsReply:false,newMessageCount:0,createdAt:now},
+  ],'ru')
+  const first=groups.find(group=>group.key==='a'.repeat(64))
+  assert.equal(first.awaiting,1)
+  assert.equal(first.newMessages,2)
+  assert.equal(groups.find(group=>group.key==='b'.repeat(64)).newMessages,0)
+})
+test('read marker migration has strict participant RLS, no direct API grants or plaintext',()=>{
+  const sql=src('supabase/migrations/20261019174312_hh_practitioner_request_read_state_20261019.sql')
+  assert.match(sql,/FORCE ROW LEVEL SECURITY/)
+  assert.match(sql,/REVOKE ALL ON app.practitioner_request_reads FROM PUBLIC, anon, authenticated/)
+  assert.match(sql,/GRANT SELECT, INSERT, UPDATE ON app.practitioner_request_reads TO hh_app_backend/)
+  assert.match(sql,/account_id=\(SELECT auth.uid\(\)\)/)
+  assert.match(sql,/r\.id=practitioner_request_reads\.request_id/)
+  assert.match(sql,/p\.trusted_auth_user_id=\(SELECT auth.uid\(\)\)/)
+  assert.match(sql,/WITH CHECK/)
+  assert.doesNotMatch(sql,/GRANT DELETE|SECURITY DEFINER/i)
+  assert.doesNotMatch(sql,/body_ciphertext|text_body|email|message_id/i)
+})
+test('viewed acknowledgement requires other participant shared message, exact request and monotonic cursor',()=>{
+  const store=src('lib/practitioners/client-messages.js')
+  const route=src('app/api/app/practitioner-client-messages/route.js')
+  assert.match(store,/async markSeen\(actor,input\)/)
+  assert.match(store,/requireUUID\(input\?\.messageId\)/)
+  assert.match(store,/const scope=await participant\(db,actor,input\.requestId\)/)
+  assert.match(store,/where id=\$1 and request_id=\$2 and visibility='participants'/)
+  assert.match(store,/author_account_id<>\$3/)
+  assert.match(store,/last_seen_at=greatest\(app\.practitioner_request_reads\.last_seen_at,excluded\.last_seen_at\)/)
+  assert.match(route,/body\?\.action==='mark_seen'/)
+  assert.match(route,/onlyKeys\(body,\['action','requestId','messageId'\]\)/)
+  assert.match(route,/store\.markSeen\(actor,body\)/)
+  assert.match(route,/requireSameOrigin\(request,config\)/)
+  assert.match(route,/auth\.verified\(\)/)
+})
+test('owner unread counts are requester-originated and exclude master notes and old viewed messages',()=>{
+  const source=src('lib/practitioners/repository.js')
+  const groups=src('lib/practitioners/client-profile-groups.js')
+  assert.match(source,/left join app\.practitioner_request_reads seen/)
+  assert.match(source,/m\.request_id=any\(\$1::uuid\[\]\) and m\.visibility='participants'/)
+  assert.match(source,/m\.author_role='client' and m\.author_account_id<>\$2/)
+  assert.match(source,/seen\.last_seen_at is null or m\.created_at>seen\.last_seen_at/)
+  assert.match(source,/newMessageCount:Number\(unseenByRequest\.get\(row\.id\)\?\.unseen_count\|\|0\)/)
+  assert.match(groups,/group\.newMessages=group\.items\.reduce/)
+})
+test('viewed UI is explicit, scoped to visible messages, not a fake provider read receipt',()=>{
+  const ui=src('components/app/practice-request-conversation.jsx')
+  const master=src('components/app/practitioner-client-profiles.jsx')
+  assert.match(ui,/async function markViewed\(\)/)
+  assert.match(ui,/item\.visibility==='participants'&&!item\.mine/)
+  assert.match(ui,/action:'mark_seen',requestId:id,messageId:latest\.id/)
+  assert.match(ui,/onViewed\?\.\(\)/)
+  assert.match(ui,/view\.unseenCount>0/)
+  assert.match(ui,/t\.markViewed/)
+  assert.match(master,/newMessagesCount=groups\.reduce/)
+  assert.match(master,/group\.newMessages>0/)
+  assert.match(master,/onViewed=\{\(\)=>onRefresh\?\.\(\)\}/)
+  assert.doesNotMatch(ui,/webpush|sendOneMessengerMessage|setInterval\(/i)
+})

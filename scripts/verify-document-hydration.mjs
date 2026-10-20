@@ -42,7 +42,12 @@ try{
    if(message.type()==='error'&&/hydrat(?:e|ed|ion)|server rendered HTML/i.test(message.text()))errors.push({path,message:message.text()})
   })
   await page.goto(origin+path)
-  if(route==='app')await expect(page.getByRole('button',{name:locale==='ru'?'Продолжить с Google':'Continue with Google',exact:true})).toBeVisible()
+  if(route==='app'){
+    // The public /app entry now uses the dedicated Cabinet guest landing.
+    // Pin the real Google handoff, not the retired legacy sign-in copy.
+    await expect(page.locator('[data-cabinet-guest-overview="true"]')).toBeVisible()
+    await expect(page.getByRole('button',{name:locale==='ru'?'Открыть мой кабинет через Google':'Open my Cabinet with Google',exact:true})).toBeVisible()
+   }
   else await expect(page.locator('[data-prelogin-test-picker]')).toBeVisible()
   await page.waitForLoadState('networkidle')
   // Cold Next dev compilation can reload the document. Compare the live DOM

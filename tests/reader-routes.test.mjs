@@ -47,7 +47,8 @@ test('prevents the full media corpus being traced into serverless functions', as
   assert.ok(config.includes('outputFileTracingExcludes'))
   assert.ok(config.includes('"/media/**"'))
   assert.ok(!config.includes('"/media/[series]/[file]": ['))
-  assert.ok(route.includes('mediaSourceUrlFor'))
+  assert.ok(route.includes('getRemoteMediaResponse'))
+  assert.ok(route.includes('if (series === "maya") return getRemoteMediaResponse(series, file, revision)'))
   assert.ok(route.includes('VERCEL_GIT_COMMIT_SHA'))
 })
 

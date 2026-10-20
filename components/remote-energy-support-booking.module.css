@@ -42,3 +42,29 @@
   .formatGroup label { flex-basis:100%; }
   .timeFields { grid-template-columns:1fr; }
 }
+
+
+/* Photo-led remote Reiki landing, retaining the existing confirmed-request workflow. */
+.page{width:min(1080px,calc(100% - 26px));margin:16px auto 48px}
+.intro{position:relative;overflow:hidden;border:1px solid #0f7380;border-radius:25px;background:linear-gradient(115deg,rgba(5,47,64,.96) 0%,rgba(7,80,87,.87) 62%,rgba(9,89,94,.67) 100%),url('/academy/reiki-yggdrasil/source/basic-program.jpg') center/cover;padding:clamp(26px,4.5vw,54px);min-height:265px;box-shadow:0 16px 48px rgba(4,56,72,.15)}
+.eyebrow{color:#b2f0e6;font-size:12px}
+.intro h1{max-width:720px;color:#fffefa;font-size:clamp(36px,4.9vw,60px)}
+.intro>p:not(.eyebrow):not(.steps){color:#e3f7f4;max-width:62ch;font-size:16px;line-height:1.6}
+.introHighlights{display:flex;flex-wrap:wrap;gap:8px;margin-top:19px}
+.introHighlights span{padding:8px 12px;background:rgba(255,255,255,.12);border:1px solid rgba(229,255,249,.35);border-radius:100px;color:#f2fffc;font:750 12px/1.4 system-ui,sans-serif}
+.steps{color:#ffdeb1!important;font-size:12px!important;margin-top:17px!important}
+.form{border-color:#d1e8e2;border-radius:24px;background:#fff;box-shadow:0 15px 43px rgba(8,71,83,.075)}
+.field>label,.formatGroup legend,.durationGroup legend{color:#135764}
+.field select,.field input{border-color:#b4d5d3;border-radius:12px;min-height:50px;font-size:14px}
+.formatGroup label,.durationGroup label{background:#f4fbf9;border-color:#c8e4de;color:#21535e;font-size:13px}
+.formatGroup label.activeFormat,.durationGroup label.activeDuration{background:#e3f6f1;border-color:#078b85;color:#075d63}
+.field select:focus-visible,.field input:focus-visible,.formatGroup input:focus-visible,.durationGroup input:focus-visible,.submit:focus-visible,.empty a:focus-visible{outline:3px solid #e6a979;outline-offset:3px}
+@media(max-width:720px){
+ .page{width:calc(100% - 24px)}
+ .intro{min-height:0;padding:25px 20px;border-radius:21px;background-position:60% center}
+ .intro h1{font-size:clamp(32px,8.7vw,42px)}
+ .intro>p:not(.eyebrow):not(.steps){font-size:14px;line-height:1.55}
+ .introHighlights{margin-top:13px;gap:6px}
+ .introHighlights span{font-size:11px;padding:7px 9px}
+ .form{margin-top:12px}
+}

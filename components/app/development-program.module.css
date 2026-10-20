@@ -245,3 +245,75 @@
 .root .courseCard>a.courseAction{padding:8px 10px;font-size:10.5px}
 }
 @media(prefers-reduced-motion:reduce){.root .sectionLink{transition:none!important}}
+
+
+/* An independent, voluntary profile-building module; never nest test
+   recommendations in the course catalogue or suggest absent scores are zero. */
+.profileInvitation{margin-top:15px;padding:clamp(15px,2.5vw,23px);border:1px solid #cae2db;border-radius:20px;background:linear-gradient(135deg,#edf8f5 0%,#f9fcfa 52%,#fffefa 100%);box-shadow:0 7px 18px rgba(19,85,78,.05)}
+.profileInvitationHeader{display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:start;gap:12px;min-width:0}
+.profileInvitationIcon{width:46px;height:46px;border-radius:14px;background:#d9eee8;color:#207b76;display:grid;place-items:center}
+.profileInvitationHeading{min-width:0}
+.profileInvitationKicker{display:inline-block;margin-bottom:3px;font-size:10px;font-weight:800;line-height:1.25;letter-spacing:.1em;color:#277b71}
+.profileInvitationHeading h3{margin:0!important;font:650 clamp(20px,2.4vw,26px)/1.18 Georgia,serif;color:#153f4d}
+.profileInvitationHeading p{margin:7px 0 0!important;font-size:12px;line-height:1.48;color:#577679;max-width:64ch}
+.profileInvitationProgress{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:81px;padding:8px 10px;border-radius:12px;border:1px solid #d1e7e0;background:#fff;color:#1c6671;font-size:20px;font-weight:790;font-variant-numeric:tabular-nums;white-space:nowrap}
+.profileInvitationProgress small{font-size:9px;line-height:1.3;font-weight:600;text-align:center;white-space:normal;color:#678586}
+.profileInvitationMissing{margin:11px 0 10px!important;color:#6b8182;font-size:11px;line-height:1.5}
+.profileDomainTabs{display:flex;align-items:center;gap:7px;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scroll-padding-inline:5px;padding:12px 1px 7px}
+.root .profileDomainTab{display:inline-flex;justify-content:center;align-items:center;flex:0 0 auto;min-height:36px;padding:7px 13px;border:1px solid #d1e5df;border-radius:999px;background:#fff;color:#336c70;font-size:11px;font-weight:760;line-height:1.2;white-space:nowrap;cursor:pointer;scroll-snap-align:start;transition:background .15s,border-color .15s,color .15s}
+.root .profileDomainTab[aria-pressed="true"]{background:#1a6872;border-color:#1a6872;color:#fff}
+.root .profileDomainTab:hover:not([aria-pressed="true"]){border-color:#72b9ac;background:#ecf7f3}
+.root .profileDomainTab:focus-visible{outline:3px solid #63baad;outline-offset:3px}
+.profileDomainHint{margin:0 0 10px!important;color:#647f80;font-size:10.5px;line-height:1.45}
+.profileTestList{display:grid;gap:9px}
+.profileTestCard{display:grid;grid-template-columns:33px minmax(0,1fr) auto;gap:8px;align-items:center;min-width:0;padding:10px;border:1px solid #d7e8e2;border-radius:14px;background:#fff;color:#194c56!important;text-decoration:none!important;transition:border-color .16s,transform .16s,box-shadow .16s}
+.profileTestCard:hover,.profileTestCard:focus-visible{border-color:#69b5aa;transform:translateY(-1px);box-shadow:0 4px 13px rgba(31,110,101,.11)}
+.profileTestNumber{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#e1f2ed;color:#1e6a71;font-size:12px;font-weight:800}
+.profileTestCopy{display:flex;flex-direction:column;gap:3px;min-width:0;overflow-wrap:anywhere}
+.profileTestCopy strong{font-size:13.5px;line-height:1.33;font-weight:790;color:#184653}
+.profileTestCopy small{font-size:10.5px;line-height:1.35;font-weight:650;color:#547d7f}
+.profileTestCopy>span{font-size:10.5px;line-height:1.4;color:#829597}
+.profileTestAction{display:inline-flex;align-items:center;justify-content:center;justify-self:end;gap:6px;min-height:36px;padding:8px 10px;border-radius:10px;background:#1a6872;color:#fff!important;font-size:11px;font-weight:790;white-space:nowrap;text-decoration:none!important}
+.profileTestAction:hover{background:#13555e}
+.profileTestAction:focus-visible{outline:3px solid #63baad;outline-offset:3px}
+.profileTestMore{margin-top:10px;border:1px solid #cbdedb;border-radius:12px;background:rgba(255,255,255,.85);overflow:hidden}
+.profileTestMore>summary{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:12px 13px;min-height:46px;cursor:pointer;color:#266e74;font-size:11.5px;font-weight:770;list-style:none}
+.profileTestMore>summary::-webkit-details-marker{display:none}
+.profileTestMore>summary>span:last-child{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;color:#607c7e;font-weight:650}
+.profileTestMore>summary svg{transition:transform .16s}
+.profileTestMore[open]>summary svg{transform:rotate(180deg)}
+.profileTestMoreList{display:grid;gap:8px;border-top:1px solid #e5eeeb;padding:10px}
+.profileTestMoreRow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:51px;padding:9px 1px;text-decoration:none!important;color:#1d5761!important;border-bottom:1px solid #e9f0ed}
+.profileTestMoreRow:last-child{border-bottom:0}
+.profileTestMoreRow>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.profileTestMoreRow strong{font-size:12px;line-height:1.35}
+.profileTestMoreRow small{font-size:10.5px;line-height:1.35;color:#778e90}
+.profileTestMoreRow>svg{flex-shrink:0}
+.profileTestMoreRow:hover strong{text-decoration:underline}
+.profileNoTests{padding:12px;background:#fff;border:1px dashed #bddad3;border-radius:11px;color:#607b7d;font-size:11.5px;line-height:1.5}
+.profileInvitationFooter{display:flex;align-items:flex-start;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;margin-top:12px}
+.profileInvitationFooter small{flex:1 1 230px;font-size:10.5px;line-height:1.5;color:#758989}
+.profileInvitationFooter>a{display:inline-flex;align-items:center;gap:5px;min-height:34px;color:#1c6b76!important;text-decoration:none!important;font-size:11px;font-weight:750}
+.profileInvitationFooter>a:hover{text-decoration:underline!important}
+@media(max-width:620px){
+  .profileInvitation{padding:13px;border-radius:17px}
+  .profileInvitationHeader{grid-template-columns:37px minmax(0,1fr);gap:9px}
+  .profileInvitationIcon{width:37px;height:37px;border-radius:10px}
+  .profileInvitationIcon svg{width:21px;height:21px}
+  .profileInvitationHeading h3{font-size:21px}
+  .profileInvitationHeading p{font-size:11.5px}
+  .profileInvitationProgress{grid-column:2;flex-direction:row;align-items:center;gap:8px;justify-self:start;padding:5px 9px;min-width:0;font-size:14px}
+  .profileInvitationProgress small{font-size:10px;text-align:left}
+  .profileInvitationMissing{margin:10px 0 9px!important;font-size:10.5px}
+  .profileDomainTabs{gap:6px;padding-top:10px;padding-bottom:7px}
+  .root .profileDomainTab{min-height:34px;padding:7px 11px;font-size:10.5px}
+  .profileDomainHint{font-size:10px}
+  .profileTestCard{grid-template-columns:25px minmax(0,1fr) auto;gap:7px;padding:9px}
+  .profileTestNumber{width:25px;height:25px;font-size:10px;border-radius:8px}
+  .profileTestCopy strong{font-size:12.5px}
+  .profileTestCopy>span{font-size:10px}
+  .profileTestAction{justify-self:end;grid-column:auto;min-height:34px;padding:7px 9px;font-size:10.5px;margin-top:0}
+  .profileTestMore>summary{font-size:11px;padding:10px}
+  .profileInvitationFooter{margin-top:9px}
+}
+@media(prefers-reduced-motion:reduce){.profileTestCard,.profileTestMore>summary svg,.root .profileDomainTab{transition:none}}

@@ -16,7 +16,7 @@ export async function POST(request) {
   try { parsed=verifyResendWebhook(text,request.headers,secret) }
   catch { return new NextResponse(null,{status:400}) }
   const event=parsed.event
-  if (!['email.bounced','email.complained','email.failed'].includes(event.type))
+  if (!['email.delivered','email.delivery_delayed','email.bounced','email.complained','email.failed','email.suppressed'].includes(event.type))
     return NextResponse.json({ok:true})
   const id=event.data?.email_id
   if (typeof id!=='string'||id.length<8||id.length>120) return new NextResponse(null,{status:400})

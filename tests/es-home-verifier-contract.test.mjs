@@ -70,7 +70,7 @@ function renderNavigation(path, transform = value => value) {
     'next/link': { default: props => jsx('a', props) },
     react: { useEffect() {}, useRef: () => ({ current: null }) },
     'next/navigation': { usePathname: () => path },
-    'lucide-react': { CircleUserRound: () => null, Menu: () => null },
+    'lucide-react': { BookOpen: () => null, Menu: () => null },
     '@/lib/ui-locale': { localePath: (value, locale) => '/' + locale + value, saveUiLocale() {} },
     '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_value, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
     '@/lib/site-navigation-model': navigationModel,
@@ -90,7 +90,8 @@ async function checkSpanishNavigation(path = '/es', fault, transform) {
   if (fault === 'wrong direct destination') direct[0].props.href = '/es'
   if (fault === 'missing direct link') direct.splice(2, 1)
   if (fault === 'extra direct link') direct.push({ type: 'a', props: { href: '/es/library' } })
-  if (fault === 'wrong cabinet destination') direct[3].props.href = '/es/client'
+  if (fault === 'wrong library destination') direct[3].props.href = '/en/library'
+  if (fault === 'wrong cabinet destination') menuNodes.find(node => node.props.href === '/en/app').props.href = '/es/client'
   if (fault === 'wrong menu destination') menuNodes[7].props.href = '/wrong'
   if (fault === 'missing menu destination') menuNodes.splice(2, 1)
   if (fault === 'extra menu destination') menuNodes.push({ type: 'a', props: { href: '/extra', children: 'Extra' } })
@@ -152,7 +153,7 @@ async function checkSpanishNavigation(path = '/es', fault, transform) {
 for (const path of ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client']) {
   test(path + ' actual JSX preserves four direct links and the exact labelled eleven-entry menu', () => checkSpanishNavigation(path))
 }
-for (const fault of ['wrong direct destination', 'missing direct link', 'extra direct link', 'wrong cabinet destination', 'wrong menu destination', 'missing menu destination', 'extra menu destination', 'reordered menu destinations', 'wrong menu label', 'wrong trigger label', 'initially open', 'missing menu', 'cannot open', 'keyboard order', 'escape closure', 'focus return', 'unexpected navigation', 'menu overflow', 'hidden menu link', 'hidden trigger']) {
+for (const fault of ['wrong direct destination', 'missing direct link', 'extra direct link', 'wrong library destination', 'wrong cabinet destination', 'wrong menu destination', 'missing menu destination', 'extra menu destination', 'reordered menu destinations', 'wrong menu label', 'wrong trigger label', 'initially open', 'missing menu', 'cannot open', 'keyboard order', 'escape closure', 'focus return', 'unexpected navigation', 'menu overflow', 'hidden menu link', 'hidden trigger']) {
   test('Spanish navigation verifier rejects ' + fault, () => assert.rejects(checkSpanishNavigation('/es', fault)))
 }
 for (const [name, before, after] of [
@@ -177,3 +178,45 @@ test('navigation disclosure returns closed before screenshots and preserves the 
   assert.match(source, /finally \{await browser\.close\(\);\}/)
   assert.match(source, /finally \{if\(proxy\)\{proxy\.closeAllConnections\(\);proxy\.close\(\);\} if\(app\)app\.kill\('SIGTERM'\);\}/)
 })
+
+test('Spanish account handoff opens the real menu and follows its unique visible My House link', async () => {
+  const start = source.indexOf('        const accountMenu =');
+  const end = source.indexOf("        await expect(page).toHaveURL(origin+'/en/app/portrait');", start);
+  assert.ok(start > 0 && end > start);
+  const handoff = source.slice(start, end);
+  async function run(fault) {
+    const tree = renderNavigation('/es/client');
+    const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
+    const links = treeNodes(menuTree).filter(node => node.type === 'a' && textOf(node) === 'Gabinete');
+    if (fault === 'wrong destination') links[0].props.href = '/es/client';
+    if (fault === 'missing link') links.length = 0;
+    if (fault === 'duplicate link') links.push(links[0]);
+    let open = false, clicked = false;
+    const account = { count: links.length };
+    const menu = { count: 1, locator(selector) {
+      assert.equal(selector, 'summary');
+      return { async click() { open = fault !== 'cannot open'; } };
+    }, getByRole(role, options) {
+      assert.equal(role, 'link'); assert.deepEqual(options, { name: 'Gabinete', exact: true });
+      return account;
+    } };
+    const trigger = { trigger: true };
+    const page = { locator(selector) {
+      if (selector === '.site-navigation details.site-main-menu') return menu;
+      if (selector === '.site-main-menu-trigger') return trigger;
+      assert.equal(selector, '.site-main-menu-panel > a[href="/en/app"]'); return account;
+    } };
+    const expect = actual => ({
+      async toHaveCount(count) { assert.equal(actual.count, count); },
+      async toHaveAccessibleName(name) { assert.equal(actual, account); assert.equal(name, 'Gabinete'); assert.equal(textOf(links[0]), name); },
+      async toHaveJSProperty(name, value) { assert.equal(actual, menu); assert.equal(name, 'open'); assert.equal(open, value); },
+      async toBeVisible() { assert.equal(actual, account); assert.equal(open, true); assert.notEqual(fault, 'hidden link'); },
+      async toHaveAttribute(name, value) { assert.equal(actual, account); assert.equal(name, 'href'); assert.equal(links[0].props.href, value); },
+    });
+    const click = async target => { if (target === trigger) { open = fault !== 'cannot open'; return; } assert.equal(target, account); assert.equal(open, true); clicked = true; };
+    await new Function('page', 'expect', 'click', `return (async()=>{${handoff}})()`)(page, expect, click);
+    assert.equal(clicked, true);
+  }
+  await run();
+  for (const fault of ['wrong destination', 'missing link', 'duplicate link', 'cannot open', 'hidden link']) await assert.rejects(run(fault), fault);
+});

@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Download, FileText, MessageCircle } from "lucide-react";
@@ -69,33 +70,44 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
   const videoCopy = meditationCopy[locale];
 
   return (
-    <main className={styles.page} lang={locale}>
+    <main className={styles.page + " reiki-kundalini-page"} lang={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.wrapper}>
         <AcademyBackLink locale={locale} />
 
-        <section className={styles.hero} aria-labelledby="kundalini-title">
+        <section className={styles.hero + " reiki-screen reiki-screen--hero"} aria-labelledby="kundalini-title">
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>{t.eyebrow}</p>
             <h1 id="kundalini-title">{t.title}</h1>
             <p className={styles.heroLead}>{t.heroLead}</p>
-            <blockquote className={styles.sourceQuote}>
+            <details className="reiki-disclosure reiki-disclosure--quote">
+              <summary>{locale === "ru" ? "Подробнее о традиции и первоисточнике" : locale === "es" ? "Sobre la tradición y sus fuentes" : "More on the tradition & original source"}<span aria-hidden="true">＋</span></summary>
+              <blockquote className={styles.sourceQuote}>
               <p>{t.heroDetail}</p><footer>{t.heroSource}</footer>
             </blockquote>
+            </details>
             <div className={styles.heroMetrics}>
               <span>{t.levelCount}</span>
               <span>{t.manualCount}</span>
             </div>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryAction} href={"/" + locale + "/academy/reiki/kundalini-reiki/free-initiation"}>
+              <Link className={styles.primaryAction} href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>
+                {locale === "ru" ? "ИИ-курс · 3 системы Рейки" : locale === "es" ? "Curso de IA · 3 sistemas Reiki" : "AI course · 3 Reiki systems"}<ArrowRight size={17} aria-hidden="true" />
+              </Link>
+              <Link className={styles.secondaryAction} href={"/" + locale + "/academy/reiki/kundalini-reiki/free-initiation"}>
                 {locale === "ru" ? "Получить 1-ю ступень бесплатно" : locale === "es" ? "Nivel 1 gratis" : "Free Level 1 initiation"}<ArrowRight size={17} aria-hidden="true" />
               </Link>
-              <a className={styles.primaryAction} href="#kundalini-levels">
+              <details className="reiki-disclosure reiki-disclosure--actions">
+                <summary>{locale === "ru" ? "Изучить программу и получить PDF" : locale === "es" ? "Ver el programa y descargar PDF" : "Programme & original PDF"}<span aria-hidden="true">＋</span></summary>
+                <div className="reiki-disclosure__actions">
+                  <a className={styles.primaryAction} href="#kundalini-levels">
                 {t.start}<ArrowDown size={17} aria-hidden="true" />
               </a>
-              <a className={styles.secondaryAction} href={pdf} download={kundaliniOriginalManual.fileName}>
+                  <a className={styles.secondaryAction} href={pdf} download={kundaliniOriginalManual.fileName}>
                 <Download size={18} aria-hidden="true" />{t.download}
               </a>
+                </div>
+              </details>
             </div>
           </div>
           <div className={styles.heroPhoto} aria-label="Kundalini Reiki attunement diagrams from Paul Crick's original manual">
@@ -119,7 +131,7 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
         </section>
 
         {meditation?.youtubeId ? (
-          <section className={styles.meditationFeature} aria-labelledby="kundalini-meditation-title">
+          <section className={styles.meditationFeature + " reiki-screen reiki-screen--media"} aria-labelledby="kundalini-meditation-title">
             <div className={styles.meditationText}>
               <p className={styles.eyebrow}>{videoCopy.eyebrow}</p>
               <h2 id="kundalini-meditation-title">{videoCopy.title}</h2>
@@ -132,14 +144,15 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
           </section>
         ) : null}
 
-        <section className={styles.section} id="kundalini-levels" aria-labelledby="kundalini-levels-title">
+        <section className={styles.section + " reiki-screen reiki-screen--explore"} id="kundalini-levels" aria-labelledby="kundalini-levels-title">
           <header className={styles.sectionHead}>
             <p className={styles.eyebrow}>{t.introduction}</p>
             <h2 id="kundalini-levels-title">{t.levelsTitle}</h2>
           </header>
-          <div className={styles.levels}>
+          <p className="reiki-swipe-cue">{locale === "ru" ? "Листайте ступени горизонтально →" : locale === "es" ? "Desliza entre niveles →" : "Swipe or scroll through the levels →"}</p>
+          <div className={styles.levels + " reiki-card-track reiki-kundalini-levels"} tabIndex={0} aria-label={t.levelsTitle}>
             {kundaliniLessons.map((level) => (
-              <article className={styles.levelCard} key={level.number}>
+              <article className={styles.levelCard + " reiki-kundalini-card"} key={level.number}>
                 <div className={styles.levelArt}>
                   <Image
                     src={level.image}
@@ -172,7 +185,7 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.balanceSection} aria-labelledby="kundalini-balance-title">
+        <section className={styles.balanceSection + " reiki-screen reiki-screen--feature"} aria-labelledby="kundalini-balance-title">
           <div className={styles.balanceHeading}>
             <span className={styles.eyebrow}>PsiMaster · Paul Crick</span>
             <h2 id="kundalini-balance-title">{t.balanceTitle}</h2>
@@ -183,11 +196,11 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.practices} aria-labelledby="kundalini-practices-title">
+        <section className={styles.practices + " reiki-screen reiki-screen--explore"} aria-labelledby="kundalini-practices-title">
           <header className={styles.sectionHead}>
             <h2 id="kundalini-practices-title">{t.practicesTitle}</h2>
           </header>
-          <div className={styles.practiceRows}>
+          <div className={styles.practiceRows + " reiki-card-track"} tabIndex={0} aria-label={t.practicesTitle}>
             {kundaliniEveryday.map((entry, index) => (
               <div className={styles.practiceRow} key={index}>
                 <span className={styles.practiceNumber}>0{index + 1}</span>
@@ -200,18 +213,18 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.section} id="kundalini-extra" aria-labelledby="kundalini-extra-title">
+        <section className={styles.section + " reiki-screen reiki-screen--feature"} id="kundalini-extra" aria-labelledby="kundalini-extra-title">
           <header className={styles.sectionHead}>
             <p className={styles.eyebrow}>Kundalini Reiki 3 · Paul Crick</p>
             <h2 id="kundalini-extra-title">{t.extraAttunementsTitle}</h2>
           </header>
-          <div className={styles.extraTags}>
+          <details className={styles.extraAccordion}>
+            <summary>{t.readLevel}<ChevronDown size={17} aria-hidden="true" /></summary>
+            <div className={styles.extraTags}>
             {kundaliniExtraNames.map((name, index) => (
               <span key={index}>{name[locale]}</span>
             ))}
           </div>
-          <details className={styles.extraAccordion}>
-            <summary>{t.readLevel}<ChevronDown size={17} aria-hidden="true" /></summary>
             <div className={styles.extraList}>
               {kundaliniExtraAttunements.map((entry, index) => (
                 <article key={index}>
@@ -224,12 +237,12 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
           </details>
         </section>
 
-        <section className={styles.section} id="kundalini-extensions" aria-labelledby="kundalini-extensions-title">
+        <section className={styles.section + " reiki-screen reiki-screen--explore"} id="kundalini-extensions" aria-labelledby="kundalini-extensions-title">
           <header className={styles.sectionHead}>
             <h2 id="kundalini-extensions-title">{t.extensionsTitle}</h2>
             <p className={styles.sourceHint}>{t.extensionsSource}</p>
           </header>
-          <div className={styles.extensionGrid}>
+          <div className={styles.extensionGrid + " reiki-card-track"} tabIndex={0} aria-label={t.extensionsTitle}>
             {kundaliniExtensions.map((extension) => (
               <article className={styles.extensionCard} key={extension.id}>
                 <h3>{extension.title[locale]}</h3>
@@ -259,7 +272,7 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.manualFeature} id="kundalini-manual" aria-labelledby="kundalini-manual-title">
+        <section className={styles.manualFeature + " reiki-screen reiki-screen--feature"} id="kundalini-manual" aria-labelledby="kundalini-manual-title">
           <div className={styles.bookPicture} aria-hidden="true">
             <div className={styles.bookCover}>
               <span>Kundalini</span><span>Reiki</span>
@@ -291,7 +304,7 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
 
         <aside className={styles.safetyNote}>{t.caution}</aside>
 
-        <section className={styles.capture} id="kundalini-enquire" aria-labelledby="kundalini-contact-title">
+        <section className={styles.capture + " reiki-screen reiki-screen--cta"} id="kundalini-enquire" aria-labelledby="kundalini-contact-title">
           <div className={styles.captureContent}>
             <p className={styles.eyebrow}>HOLISTIC HOUSE · KUNDALINI REIKI</p>
             <h2 id="kundalini-contact-title">{t.contactTitle}</h2>

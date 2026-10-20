@@ -164,6 +164,40 @@ function assertSelected(h, result, report, section, locale) {
   }
 }
 
+test('verified EN/RU check-in summaries appear visibly before scale tabs, with one contextual follow-up',()=>{
+  for(const [key,version] of [['hh-current-state','v2'],['hh-weekly-pulse','v1']])
+    for(const locale of ['en','ru']){
+      const result=fixture(key,locale,version)
+      const report=buildAssessmentResultReport(result,locale)
+      assert.equal(report.verified,true)
+      assert.equal(report.checkinInsight?.kind,'original-descriptive-checkin')
+      const mounted=mount({result,report,locale})
+      const notes=nodes(mounted.tree).filter(node=>own(node,'data-original-checkin-reflection'))
+      assert.equal(notes.length,1,key+'/'+locale+' must surface its verified synthesis')
+      assert.equal(notes[0].props['data-checkin-focus-key'],report.checkinInsight.focusKey)
+      assert.equal(notes[0].props.role,'note')
+      assert.ok(text(notes[0]).includes(report.checkinInsight.summary))
+      assert.ok(text(notes[0]).includes(report.checkinInsight.reflectionQuestion))
+      assert.equal(nodes(mounted.tree).filter(node=>own(node,'data-unverified-assessment-result')).length,0)
+      assert.deepEqual(triggers(mounted.tree).map(n=>n.props['data-assessment-scale-trigger']),
+        report.sections.map(section=>section.key))
+    }
+})
+
+test('invalid saved check-in or ordinary professional result never gets a credible-looking reflection panel',()=>{
+  const valid=fixture('hh-current-state','en','v2')
+  const tampered={...valid,contentHash:'sha256:altered'}
+  const unverified=buildAssessmentResultReport(tampered,'en')
+  assert.equal(unverified.verified,false)
+  const bad=mount({result:tampered,report:unverified,locale:'en'})
+  assert.equal(nodes(bad.tree).filter(node=>own(node,'data-original-checkin-reflection')).length,0)
+  assert.equal(nodes(bad.tree).filter(node=>own(node,'data-unverified-assessment-result')).length,1)
+  const professional=fixture('phq-4','en')
+  const report=buildAssessmentResultReport(professional,'en')
+  const normal=mount({result:professional,report,locale:'en'})
+  assert.equal(nodes(normal.tree).filter(node=>own(node,'data-original-checkin-reflection')).length,0)
+})
+
 test('actual buttons expose every semantic explanation at min, max and mixed answers in EN/RU', () => {
   const enabled = new Set(MONITORING_CATALOG.filter(item => item.startable).map(item => item.key + ':' + item.version))
   const definitions = ASSESSMENT_DEFINITIONS.filter(definition => enabled.has(definition.key + ':' + definition.version))
@@ -342,12 +376,16 @@ test('review and unverified reports preserve safety precedence over ordinary pri
   }
 })
 
-test('initial scale uses valid within-range position, stable ties, and unchanged safety/Bach precedence', () => {
+test('initial scale uses declared score polarity, neutral source order and unchanged safety/Bach precedence', () => {
   const section = (value, min, max, extra = {}) => ({ value, min, max, bandBasis: 'descriptive', ...extra })
   const choose = sections => initialAssessmentSection({ verified: true, sections })
-  assert.equal(choose([section(30, 10, 50), section(25, 20, 100)]), 1)
+  // Non-normative traits and unknown domains retain source order, regardless
+  // of which number is lowest. Only reliable difficulty/resource direction is
+  // useful for display prioritisation, never a diagnostic severity ranking.
+  assert.equal(choose([section(30, 10, 50), section(25, 20, 100)]), 0)
   assert.equal(choose([section(5, 0, 10), section(10, 0, 20)]), 0)
-  assert.equal(choose([section(0, 0, 100, { direction: 'difficulty' }), section(8, 0, 10, { direction: 'resource' })]), 0)
+  assert.equal(choose([section(9, 0, 10, { presentationDirection: 'difficulty' }), section(8, 0, 10, { presentationDirection: 'resource' })]), 0)
+  assert.equal(choose([section(2, 0, 10, { presentationDirection: 'difficulty' }), section(1, 0, 10, { presentationDirection: 'resource' })]), 1)
   for (const invalid of [section(null, 0, 1), section(NaN, 0, 1), section(Infinity, 0, 1), section(0, 0, 0), section(1, 2, 0), section(-1, 0, 1), section(2, 0, 1), section(0, NaN, 1), section(0, 0, Infinity), section('0', 0, 1), section(0, 0, 1, { bandBasis: 'unavailable' })]) {
     assert.equal(choose([invalid, section(8, 0, 10)]), 1)
     assert.equal(choose([invalid]), 0)
@@ -369,14 +407,14 @@ test('initial selection reaches the rendered panel and resets on return after a 
   const first = { ...result, id: 'first-selection-fixture' }
   const second = { ...result, id: 'second-selection-fixture' }
   const h = mount({ result: first, report })
-  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[0].key)
   h.click(report.sections[3].key)
   h.rerender({ result: { ...first }, report: { ...report }, locale: 'ru' })
   assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[3].key)
   h.rerender({ result: second, report })
-  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[0].key)
   h.rerender({ result: first, report })
-  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[0].key)
   const guest = mount({ result, report })
   guest.click(report.sections[4].key)
   guest.rerender({ result: structuredClone(result), report: { ...report } })

@@ -8,11 +8,42 @@ on:
       - 'components/academy-free-course-banner.tsx'
       - 'components/app/cabinet-free-course-banners.*'
       - 'data/academy/energywork-ai-*'
+      - 'components/academy-hub.tsx'
+      - 'components/academy-video-courses.tsx'
+      - 'app/**/academy/reiki/tantra-reiki/discover/**'
+      - 'public/images/holistic-house/tantra-reiki-yin-yang-*.svg'
+      - 'tests/tantra-reiki-brand-symbol.test.mjs'
+      - 'tests/tantra-reiki-promo-landing.test.mjs'
+      - 'tests/reiki-free-course-cta-routing.test.mjs'
+      - 'tests/energywork-tantra-study-questions.test.mjs'
+      - 'tests/energywork-kundalini-ygg-study.test.mjs'
       - 'lib/academy/energywork-course-repository.js'
+      - 'lib/academy/reiki-course-leads.js'
+      - 'components/admin-reiki-leads.*'
+      - 'components/reiki-my-reviews.*'
+      - 'components/reiki-public-reviews.*'
+      - 'lib/academy/reiki-public-reviews.js'
+      - 'app/api/reiki-course-reviews/**'
+      - 'tests/reiki-course-reviews-public.test.mjs'
+      - 'supabase/migrations/20261019031800_hh_reiki_course_public_reviews.sql'
+      - 'app/admin/reiki-leads/**'
+      - 'tests/reiki-crm-leads.test.mjs'
+      - 'supabase/migrations/20261018215000_hh_reiki_course_private_crm_leads.sql'
       - 'app/api/app/\[...path\]/route.js'
       - 'app/\[locale\]/academy/\[\[...slug\]\]/page.tsx'
       - 'tests/energywork-ai-course-*.test.mjs'
+      - 'tests/reiki-lesson-intro-audio.test.mjs'
+      - 'components/reiki-lesson-intro-audio.tsx'
+      - 'components/admin-reiki-audio.*'
+      - 'lib/academy/reiki-intro-audio-*.js'
+      - 'app/admin/reiki-audio/**'
+      - 'app/admin/materials/**'
+      - 'components/materials-audio-folders.module.css'
+      - 'app/api/reiki-intro-audio/**'
+      - 'middleware.ts'
       - 'tests/reiki-scenic-course-design.test.mjs'
+      - 'tests/reiki-practitioner-portrait-v3.test.mjs'
+      - 'public/images/holistic-house/reiki-approved-sunrise-v3.webp'
       - 'docs/design/REIKI_PRACTITIONER_SCENIC_V1_APPROVED.md'
       - 'public/images/holistic-house/reiki-practitioner-sunrise.webp'
       - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
@@ -35,9 +66,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Source, media, security and route contracts
-        run: node --test tests/energywork-ai-course-preview.test.mjs tests/reiki-scenic-course-design.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs
+        run: node --test tests/energywork-kundalini-ygg-study.test.mjs tests/energywork-ai-course-preview.test.mjs tests/energywork-tantra-study-questions.test.mjs tests/reiki-scenic-course-design.test.mjs tests/reiki-practitioner-portrait-v3.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/reiki-crm-leads.test.mjs tests/reiki-course-reviews-public.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs tests/tantra-reiki-brand-symbol.test.mjs tests/tantra-reiki-promo-landing.test.mjs tests/reiki-referral-landing.test.mjs tests/reiki-free-course-cta-routing.test.mjs tests/reiki-lesson-intro-audio.test.mjs
       - name: Targeted ESLint
-        run: npx eslint components/energywork-ai-learner.tsx components/academy-free-course-banner.tsx components/app/cabinet-free-course-banners.jsx lib/academy/energywork-course-repository.js data/academy/energywork-ai-schema.js data/academy/energywork-ai-curriculum.ts app/api/app/'[...path]'/route.js
+        run: npx eslint components/energywork-ai-learner.tsx components/reiki-my-reviews.jsx components/reiki-public-reviews.jsx components/app/course-entry-selector.jsx components/principles-of-energywork.tsx lib/academy/reiki-public-reviews.js app/api/reiki-course-reviews/route.js components/academy-free-course-banner.tsx components/app/cabinet-free-course-banners.jsx lib/academy/energywork-course-repository.js lib/academy/reiki-course-leads.js components/admin-reiki-leads.jsx components/admin-reiki-audio.jsx components/reiki-lesson-intro-audio.tsx lib/academy/reiki-intro-audio-model.js lib/academy/reiki-intro-audio-store.js app/admin/reiki-audio/page.jsx app/admin/reiki-audio/data/route.js app/api/reiki-intro-audio/route.js app/admin/materials/page.js app/admin/materials/audio/page.jsx app/admin/materials/audio/reiki-practitioner/page.jsx app/admin/reiki-leads/page.jsx app/admin/reiki-leads/data/route.js data/academy/energywork-ai-schema.js data/academy/energywork-ai-curriculum.ts app/api/app/'[...path]'/route.js
       - name: TypeScript verification
         run: npx tsc --noEmit
       - name: Production compile

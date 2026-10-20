@@ -20,6 +20,7 @@ import { OPEN_PROFESSIONAL_2026_CATALOG } from './open-professional-2026.js'
 import { IPIP_VIA_R_COMPLETION_CATALOG } from './ipip-via-r-completion-2026.js'
 import { IPIP_VIA_R_PROFILE_96_CATALOG } from './ipip-via-r-profile-96.js'
 import { CFPB_FINANCIAL_WELLBEING_SHORT_CATALOG } from './cfpb-financial-wellbeing-short-v1.js'
+import { ADDITIONAL_PROFESSIONAL_CATALOG } from './professional-additions-2026.js'
 
 export const MONITORING_AXES = deepFreeze([
   'state',
@@ -156,7 +157,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'energy', weight: 0.85 }, { key: 'relationships', weight: 0.5 }, { key: 'resource', weight: 0.7 },
       { key: 'functioning', weight: 0.65 }, { key: 'emotional_regulation', weight: 0.55 },
     ],
-    title: { en: 'Weekly Psychic Health', ru: 'Психическое состояние за неделю', es: 'Estado psicológico de la semana' },
+    title: { en: 'Weekly Wellbeing Check-in', ru: 'Самочувствие за неделю', es: 'Bienestar de la semana' },
     description: {
       en: 'Original Holistic House weekly self-monitoring across state, symptoms, function and resources.',
       ru: 'Оригинальный еженедельный Holistic House check-in состояния, симптомов, функционирования и ресурсов.',
@@ -732,6 +733,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...IPIP_VIA_R_COMPLETION_CATALOG,
   ...IPIP_VIA_R_PROFILE_96_CATALOG,
   ...CFPB_FINANCIAL_WELLBEING_SHORT_CATALOG,
+  ...ADDITIONAL_PROFESSIONAL_CATALOG,
   {
     key: 'mspss',
     version: 'v1',

@@ -14,8 +14,8 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
-test('public navigation includes the relationship hub on EN/RU and never exposes administration', async () => {
-  const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
+test('public navigation keeps Business as one compact shortcut and never exposes administration', async () => {
+  const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
   assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'events', 'relationships', 'academy', 'courses', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
@@ -23,12 +23,14 @@ test('public navigation includes the relationship hub on EN/RU and never exposes
     assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
     assert.equal(items.find(item => item.id === 'events').href, `/${locale}/events`)
+    assert.equal(items.some(item => item.id === 'business'), false)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
     assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)
     assert.equal(items.find(item => item.id === 'academy').external, false)
     assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/courses`)
     assert.ok(!items.some(item => item.id === 'about'))
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
+    assert.equal(getCompactNavigation(locale).find(item => item.id === 'business').href, `/${locale}/explore/business`)
   }
   for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
     const source = await readFile(path, 'utf8')
@@ -56,7 +58,8 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(page, /redirect\(`\/\$\{requested\}`\)/)
   assert.match(russianPage, /locale="ru"/)
   assert.match(russianPage, /locale !== "ru"\) notFound\(\)/)
-  assert.match(metadata, /Holistic House — free self-checks and personal guidance in Toronto/)
+  assert.match(metadata, /Personal Sessions in Toronto & Online \| Holistic House/)
+  assert.match(metadata, /Личные консультации в Торонто и онлайн \| Holistic House/)
   assert.match(metadata, /languages: \{ en: "\/", ru: "\/ru", es: "\/es", "x-default": "\/" \}/)
 })
 
@@ -67,9 +70,11 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
   ])
 
   assert.match(mobile, /getCompactNavigation/)
-  assert.match(mobile, /HousePlus/)
-  assert.match(mobile, /ClipboardList/)
-  assert.match(mobile, /CalendarDays/)
+  const icons = await readFile('components/compact-navigation-icons.ts', 'utf8')
+  assert.match(mobile, /compactNavigationIcons/)
+  assert.match(icons, /house: LayoutDashboard/)
+  assert.match(icons, /tests: ClipboardList/)
+  assert.match(icons, /business: BriefcaseBusiness/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
   assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)

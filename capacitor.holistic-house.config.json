@@ -1,0 +1,19 @@
+{
+  "appId": "com.holistichouse.app",
+  "appName": "Holistic House",
+  "webDir": "native-web",
+  "server": {
+    "url": "https://holistichouse.vercel.app/en/app/portrait",
+    "cleartext": false,
+    "allowNavigation": [
+      "holistichouse.vercel.app"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#163D38",
+      "showSpinner": false
+    }
+  }
+}

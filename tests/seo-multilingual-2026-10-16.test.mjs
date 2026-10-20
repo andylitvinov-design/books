@@ -61,8 +61,10 @@ test("localized 404 recovery, old campaign aliases and privacy policy remain int
     assert.ok(missing.includes(p), p);
   }
   const nextConfig = read("next.config.ts");
-  for (const old of ["tests", "cabinet", "review"]) {
+  for (const old of ["cabinet", "review"]) {
     assert.match(nextConfig, new RegExp('/:locale\\(en\\|ru\\|es\\)/' + old));
   }
+  assert.ok(!nextConfig.includes('source: "/:locale(en|ru|es)/tests"'), 'Public editorial test landing must not redirect into private interactive tests');
+  assert.match(read("app/[locale]/tests/page.tsx"), /type PublicLocale = "en" \| "ru" \| "es"/);
   assert.match(read("app/robots.ts"), /getRobotsPolicy/);
 });

@@ -1,0 +1,37 @@
+name: Practitioner material previews isolated build
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/practice-material-preview.jsx'
+      - 'components/app/practice-materials.jsx'
+      - 'components/app/practice-materials.module.css'
+      - 'components/app/practice-report-materials.jsx'
+      - 'lib/practitioners/material-preview.js'
+      - 'tests/practice-material-preview-url.test.mjs'
+      - '.github/workflows/practice-material-previews.yml'
+permissions:
+  contents: read
+concurrency:
+  group: practice-material-previews-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit-types-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Thumbnail URL safety and media source allowlist
+        run: node --test tests/practice-material-preview-url.test.mjs
+      - name: TypeScript regression
+        run: npx --no-install tsc --noEmit
+      - name: Production Next.js build
+        run: npm run build

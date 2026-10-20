@@ -7,6 +7,7 @@ import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Langu
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
 import { TEST_KINDS, testKindCardLabel, testKindShortLabel } from '@/lib/assessments/test-kinds'
+import { ASSESSMENT_EVIDENCE_GROUPS } from '@/lib/assessments/psychometric-validity-2026'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { PSYCHOTHERAPY_CORE_CATEGORIES } from '@/data/assessments/psychotherapy-core-100'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, buildPublicStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
@@ -16,6 +17,7 @@ import { TEST_TOPIC_COLLECTIONS } from '@/lib/assessments/test-collections'
 import { SimpleTestPicker } from './simple-test-picker'
 import { TestScaleGuide } from './test-scale-guide'
 import { PriorityMethodsReview } from './priority-methods-review'
+import { ResearchDirectory } from './research-directory'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { compareTestSocialProof } from '@/lib/assessments/test-popularity'
 import styles from './test-explorer.module.css'
@@ -25,6 +27,19 @@ const COPY = {
   ru: { kicker: 'Монитор состояния', title: 'Соберите свой набор тестов', intro: 'Выберите проблемы, которые хотите отслеживать. Список тестов и оси анализа меняются сразу.', available: 'Доступно сейчас', full: 'Вся база', core100: '100 тестов', coreNote: 'Профессиональная подборка: онлайн доступны только тесты с разрешённым использованием.', themes: 'Фильтр тестов по проблемам', style: 'Стиль', length: 'Длина', depth: 'Желаемая глубина', area: 'Область', free: 'Только бесплатные', search: 'Поиск по базе', sort: 'Сортировка', recommended: 'Сначала рекомендуемые', shortest: 'Сначала короткие', deepest: 'Сначала глубокие', alphabetic: 'А–Я', suggested: 'Выбрать оптимальный набор', clear: 'Очистить', selected: 'выбрано', questions: 'вопросов', minutes: 'мин', axes: 'осей', focused: 'Фокусный', balanced: 'Сбалансированный', broad: 'Широкий', start: 'Начать бесплатный мониторинг', choose: 'Выберите хотя бы один тест', availableStatus: 'Доступен', metadata: 'Исследовательская карточка', details: 'Подробнее', warning: 'Больше 8 тестов или 30 минут может быть сложно пройти за один раз.', privacy: 'Выбор и фильтры остаются только на этой странице, пока вы явно не согласитесь начать.', relevance: 'Релевантность подбора', matchNote: 'Это соответствие выбранным темам и формату, а не медицинская вероятность.', best: 'Лучшее совпадение', complements: 'Дополняет набор', filters: 'Дополнительные фильтры', selectedThemes: 'тем выбрано', filterClear: 'Сбросить фильтры', matching: 'подходящих тестов', of: 'из', kept: 'выбранных тестов остаются видны', noMatches: 'По этим фильтрам тестов нет. Уберите тему или другой фильтр.', topicHint: 'Темы сразу отбирают тесты. Отметьте нужные тесты ниже, чтобы создать набор для мониторинга.', topicPreview: 'Оси по выбранным темам', testCoverage: 'Покрытие выбранных тестов', totalAvailable: 'доступно для прохождения' },
   es: { kicker: 'Monitor mente–cuerpo', title: 'Prepara tu selección de pruebas', intro: 'Elige los temas y el formato que más te interesen. Los cuestionarios se realizan en su idioma disponible y los resultados se muestran en la aplicación en inglés.', available: 'Disponibles ahora', full: 'Base completa', core100: '100 pruebas', coreNote: 'Selección profesional: solo las pruebas autorizadas están disponibles en línea.', themes: 'Filtrar pruebas por temas', style: 'Tipo', length: 'Duración', depth: 'Profundidad deseada', area: 'Área', free: 'Solo gratuitas', search: 'Buscar pruebas', sort: 'Ordenar', recommended: 'Recomendadas primero', shortest: 'Más breves primero', deepest: 'Más detalladas primero', alphabetic: 'A–Z', suggested: 'Elegir una selección recomendada', clear: 'Limpiar', selected: 'seleccionadas', questions: 'preguntas', minutes: 'min', axes: 'ejes', focused: 'Enfocada', balanced: 'Equilibrada', broad: 'Amplia', start: 'Iniciar monitoreo gratuito', choose: 'Elige al menos una prueba', availableStatus: 'Disponible', metadata: 'Referencia de investigación', details: 'Detalles', warning: 'Más de 8 pruebas o 30 minutos pueden resultar difíciles de completar en una sola sesión.', privacy: 'Tus selecciones no se guardan hasta que aceptas expresamente iniciar las pruebas.', relevance: 'Coincidencia', matchNote: 'Muestra la afinidad con los temas elegidos, no una probabilidad médica.', best: 'Mejor coincidencia', complements: 'Complementa tu selección', filters: 'Más filtros', selectedThemes: 'temas elegidos', filterClear: 'Limpiar filtros', matching: 'pruebas encontradas', of: 'de', kept: 'pruebas elegidas visibles', noMatches: 'No hay pruebas para estos filtros. Cambia un tema o filtro.', topicHint: 'Los temas filtran al instante; elige las pruebas para construir tu seguimiento.', topicPreview: 'Ejes de los temas elegidos', testCoverage: 'Cobertura de pruebas elegidas', totalAvailable: 'disponibles para empezar' },
 }
+
+
+const VALIDITY_COPY = Object.freeze({
+  en: { label: 'Psychometric evidence', graded: 'Reviewed evidence grade', development: 'Original self-check — independent validation not established', source_documented: 'Source link on record — exact edition and validity not independently audited', unreviewed: 'Evidence review pending', locale: 'Respondent language', open: 'Open owner-hosted questionnaire', direct: 'Open original PDF at the source', caution: 'External document for independent reading only. No digital administration or clinical scoring is licensed here.' },
+  ru: { label: 'Психометрическая доказательность', graded: 'Проверенный ранг доказательности', development: 'Авторская самопроверка — независимая валидация не подтверждена', source_documented: 'Есть ссылка на источник — версия и валидность независимо не проверены', unreviewed: 'Проверка доказательности не завершена', locale: 'Язык вопросов', open: 'Открыть тест у правообладателя', direct: 'Открыть оригинальный PDF у автора', caution: 'Внешний документ только для самостоятельного ознакомления. Это не разрешение на онлайн-тестирование или клиническую интерпретацию.' },
+  es: { label: 'Evidencia psicométrica', graded: 'Nivel de evidencia revisado', development: 'Autoobservación original — sin validación independiente confirmada', source_documented: 'Existe un enlace a la fuente — edición y validez sin revisión independiente', unreviewed: 'Evidencia pendiente de revisión', locale: 'Idioma del cuestionario', open: 'Ver cuestionario en la página del titular', direct: 'Abrir PDF original en la fuente', caution: 'Documento externo solo para consulta personal. No autoriza la administración digital ni la interpretación clínica.' },
+})
+
+const RESEARCH_COUNT_COPY = Object.freeze({
+  en: { coreMatching: 'matches in the existing questionnaire catalogue', coreEmpty: 'No matches in the existing questionnaire catalogue. Scientific research references and their own results are shown above.' },
+  ru: { coreMatching: 'совпадений в основном каталоге опросников', coreEmpty: 'В основном каталоге совпадений нет. Результаты поиска в научном справочнике приведены выше.' },
+  es: { coreMatching: 'coincidencias en el catálogo principal de cuestionarios', coreEmpty: 'Sin coincidencias en el catálogo principal. Consulta arriba los resultados independientes de la biblioteca científica.' },
+})
 
 const SOCIAL_COPY = {
   en: { popular: 'Most popular', rating: 'Top rated', launches: 'started', completed: 'completed', userScore: 'User usefulness rating', votes: 'ratings' },
@@ -205,14 +220,18 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     initialPreferences?.problems ?? [], initialPreferences?.focus ?? [],
   ))
   useEffect(() => {
-    // Never retain hidden concerns once their parent topics are deselected.
+    // Concerns can be suggested by either explicitly selected topics or a chosen collection.
+    // Remove only concerns that neither choice supports.
     setProblems((previous) => {
-      const next = normalizeProblemsForTopics(previous, focus)
+      const next = normalizeProblemsForTopics(previous, selectionFocus)
       return next.length === previous.length ? previous : next
     })
-  }, [focus])
+  }, [selectionFocus])
   const [stylesFilter, setStylesFilter] = useState(() => initialPreferences?.styles ?? [])
   const [kinds, setKinds] = useState(() => initialPreferences?.kinds ?? [])
+  const [evidenceGroup, setEvidenceGroup] = useState(() =>
+    ASSESSMENT_EVIDENCE_GROUPS.some(group => group.key === initialPreferences?.evidenceGroup)
+      ? initialPreferences.evidenceGroup : 'all')
   const [lengths, setLengths] = useState(() => initialPreferences?.lengths ?? [])
   const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
@@ -278,18 +297,20 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     setCustomizeOpen(true)
     setShowAll(true)
   }, [entries])
-  const facets = { availability, focus, problems, styles: stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
-  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const facets = { availability, focus, problems, styles: stylesFilter, kinds,
+    evidenceGroups:evidenceGroup==='all'?[]:[evidenceGroup],
+    lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
+  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active
   // criterion. Exclude the facet's own current selection (multi-choice OR).
-  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
-  const areaCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, areas: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, details, axes, maxMinutes, language, tracking, freeOnly, query])
-  const axisCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, axes: [] }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, maxMinutes, language, tracking, freeOnly, query])
+  const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
+  const areaCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, areas: [] }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, details, axes, maxMinutes, language, tracking, freeOnly, query])
+  const axisCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, axes: [] }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, maxMinutes, language, tracking, freeOnly, query])
   const detailCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_DETAIL_TOPICS.map((item) => [item.key, detailCandidates.filter((entry) => entry.topics.includes(item.key)).length])), [detailCandidates])
   const areaCounts = useMemo(() => Object.fromEntries(MONITOR_AREAS.map((item) => [item.key, areaCandidates.filter((entry) => entry.areas?.includes(item.key)).length])), [areaCandidates])
   const axisCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_AXES.map((key) => [key, axisCandidates.filter((entry) => entry.measurementAxes?.includes(key)).length])), [axisCandidates])
   // A selected test stays visible even if new filters no longer match it.
-  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
+  const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
   const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
   // Keep checked tests above the shortened discovery list. Re-ranking after
   // a checkbox change must never make that same checkbox disappear mid-click.
@@ -314,26 +335,27 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   // Public browsing uses its own match-based order, unaffected by checkbox toggles.
   // Explicitly selected tests stay available across filter changes; discovery
   // ordering itself is not driven by checkbox state or saved health results.
+  // One combined preference model: the visitor's topics, optional collection and
+  // selected concerns determine relevance. Test kind, time and other explicit
+  // filters restrict the eligible pool, independently of topic/concern relevance.
+  // A collection is a soft ranking preference, never a replacement for choices.
+  const simpleRecommendationPool = useMemo(() => filterExplorerEntries(entries, {
+    availability: 'available', styles: stylesFilter, kinds, lengths, areas, details,
+    axes, maxMinutes, language, tracking, freeOnly,
+  }).filter((entry) => entry.selectable), [
+    entries, stylesFilter, kinds, lengths, areas, details, axes,
+    maxMinutes, language, tracking, freeOnly,
+  ])
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
-    // Collections change recommendation weights, not the entire card format.
-    // Remove only the topic/concern hard filter so non-collection tests remain
-    // available further down; respect explicit time, kind and other facets.
-    (activeCollection ? filterExplorerEntries(entries, {
-      availability, styles: stylesFilter, kinds, lengths, areas, details, axes,
-      maxMinutes, language, tracking, freeOnly, search: query, selectedKeys,
-    }) : filtered).filter((entry) => entry.selectable),
+    simpleRecommendationPool,
     { focus: selectionFocus, problems,
       collectionId: activeCollectionId, collectionFocus: activeCollection?.focus || [],
-      details, axes, depth, styles: stylesFilter, lengths },
-  ), [entries, filtered, activeCollection, activeCollectionId, selectionFocus, problems, details, axes, areas,
-      availability, kinds, maxMinutes, language, tracking, freeOnly, query, depth, stylesFilter, lengths, selectedKeys])
-  // Only explicit duration/type options restrict catalog search.
-  // Topic and concern selections still drive recommendations, not searches.
-  const searchRecommendations = useMemo(() => rankPublicTestMatches(
-    filterExplorerEntries(entries, { availability: 'available', kinds, maxMinutes }),
-    { depth, focus: activeCollection?.focus || [], collectionId: activeCollectionId,
-      collectionFocus: activeCollection?.focus || [] },
-  ), [entries, kinds, maxMinutes, depth, activeCollection, activeCollectionId])
+      details, axes, depth, styles: stylesFilter, lengths, kinds },
+  ), [simpleRecommendationPool, selectionFocus, problems, activeCollectionId,
+      activeCollection, details, axes, depth, stylesFilter, lengths, kinds])
+  // Text searches use the same pool and relevance order as the visible cards.
+  // Typing a query does not silently discard any earlier preference.
+  const searchRecommendations = simpleRecommendations
   const simpleAuto = useMemo(() => buildPublicStarterBattery(simpleRecommendations), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
@@ -373,7 +395,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     }
     setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
   }
-  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
+  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setEvidenceGroup('all'); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
@@ -428,10 +450,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       locale={locale} authenticated={authenticated}
       initialMode={initialMode}
       focus={focus}
-      onToggleFocus={(key) => { setActiveCollectionId(null); setFocus((current) => toggle(current, key)); setAvailability('available') }}
+      onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
       problems={problems}
       onToggleProblem={(key) => {
-        const allowed = normalizeProblemsForTopics([key], focus)
+        const allowed = normalizeProblemsForTopics([key], selectionFocus)
         if (!allowed.length) return
         setProblems((current) => current.includes(key)
           ? current.filter((problem) => problem !== key)
@@ -636,26 +658,46 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
           <span>{locale === 'ru' ? 'Найти тест' : locale === 'es' ? 'Buscar pruebas' : 'Search tests'}</span>
       <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.search} aria-label={c.search} />
         </label>
+      <label className={styles.sort}>
+        {locale==='ru'?'Доказательность':locale==='es'?'Estado de evidencia':'Evidence status'}
+        <select data-test-evidence-group-filter value={evidenceGroup}
+          onChange={(event)=>setEvidenceGroup(event.target.value)}>
+          <option value="all">{locale==='ru'?'Все группы':locale==='es'?'Todos los grupos':'All groups'}</option>
+          {ASSESSMENT_EVIDENCE_GROUPS.map(group=>
+            <option key={group.key} value={group.key}>
+              {group.label[locale] || group.label.en}
+            </option>
+          )}
+        </select>
+      </label>
       <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option><option value="type">{locale === "ru" ? "По типу теста" : locale === "es" ? "Por tipo" : "By type"}</option><option value="popular">{socialCopy.popular}</option><option value="rating">{socialCopy.rating}</option></select></label>
       </div>
     </section>
     {availability === 'full' && <PriorityMethodsReview locale={locale} runnableKeys={entries.filter((entry) => entry.selectable).map((entry) => entry.key)} onOpenCfpbShort={() => { setAvailability('available'); setQuery('CFPB'); document.getElementById('hh-test-list')?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }} />}
-    <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : availability === 'core' ? entries.filter((entry) => entry.psychotherapyCore).length : availability === 'pdf' ? pdfResourceCount : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
+    {availability === 'full' && <ResearchDirectory locale={locale} search={query} />}
+    <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {availability === 'full' ? (RESEARCH_COUNT_COPY[locale] || RESEARCH_COUNT_COPY.en).coreMatching : c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : availability === 'core' ? entries.filter((entry) => entry.psychotherapyCore).length : availability === 'pdf' ? pdfResourceCount : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
       {viaStandaloneMatches > 0 && !query.trim() && <div className={styles.viaFamilyNote} data-via-family-collapsed={collapsedViaCount}>
         <span>{locale === 'ru' ? 'IPIP-VIA-R: полный профиль 24 сильных сторон доступен одним тестом на 96 вопросов. Отдельные шкалы сохранены.' : locale === 'es' ? 'IPIP-VIA-R: explora las 24 fortalezas con una prueba de 96 preguntas. Las escalas individuales siguen disponibles.' : 'IPIP-VIA-R: explore 24 strengths in one optional 96-question test. Individual scales remain available.'}</span>
         <button type="button" aria-expanded={showStandaloneVia} onClick={() => setShowStandaloneVia((value) => !value)}>{showStandaloneVia ? (locale === 'ru' ? 'Свернуть отдельные шкалы' : locale === 'es' ? 'Ocultar escalas individuales' : 'Hide individual scales') : (locale === 'ru' ? `Показать отдельные шкалы (${viaStandaloneMatches})` : locale === 'es' ? `Mostrar escalas individuales (${viaStandaloneMatches})` : `Show individual scales (${viaStandaloneMatches})`)}</button>
       </div>}
-      {visibleCatalog.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
+      {visibleCatalog.length === 0 && <p className={styles.emptyState} role="status">{availability === 'full' ? (RESEARCH_COUNT_COPY[locale] || RESEARCH_COUNT_COPY.en).coreEmpty : c.noMatches}</p>}
       <div className={styles.list}>{(showAll ? visibleCatalog : visibleCatalog.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.pdfResource ? 'PDF' : entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
-        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2><TestKindBadge entry={entry} locale={locale} />{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />
+        <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2><TestKindBadge entry={entry} locale={locale} />{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}{entry.validity && <p className={styles.methodology} data-psychometric-evidence={entry.validity.status} data-psychometric-group={entry.validity.group} data-test-evidence-key={entry.validity.key}><strong>{(VALIDITY_COPY[locale] || VALIDITY_COPY.en).label}: </strong>{entry.validity.grade ? (VALIDITY_COPY[locale] || VALIDITY_COPY.en).graded + ' ' + entry.validity.grade : (VALIDITY_COPY[locale] || VALIDITY_COPY.en)[entry.validity.status]} · {ASSESSMENT_EVIDENCE_GROUPS.find(group=>group.key===entry.validity.group)?.label?.[locale] || ASSESSMENT_EVIDENCE_GROUPS.find(group=>group.key===entry.validity.group)?.label?.en || entry.validity.group} · {(VALIDITY_COPY[locale] || VALIDITY_COPY.en).locale}: {entry.validity.respondentLocale}</p>}
+        <TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />
         {!entry.selectable && entry.pdfResource && <div className={styles.pdfResource} data-professional-pdf={entry.key}>
           <div className={styles.pdfResourceActions}>
             <a className={styles.pdfResourcePrimary} href={`/api/assessments/scale-guide/${encodeURIComponent(entry.key)}`} download={`${entry.key}-scale-guide.pdf`}><FileDown size={17} aria-hidden="true" />{locale === 'ru' ? 'Скачать описание шкал (PDF)' : locale === 'es' ? 'Descargar guía de escalas (PDF)' : 'Download scale guide (PDF)'}</a>
-            {entry.key === 'maia-2-37' && <a className={styles.pdfResourceSecondary} href="https://osher.ucsf.edu/sites/osher.ucsf.edu/files/inline-files/MAIA-2.pdf" target="_blank" rel="noopener noreferrer">{locale === 'ru' ? 'Официальный PDF UCSF ↗' : 'Official UCSF PDF ↗'}</a>}
+            
           </div>
           <small>{locale === 'ru' ? 'Содержит названия и назначение шкал, ограничения использования и ссылку на источник. Не содержит закрытых вопросов и не заменяет тест.' : locale === 'es' ? 'Incluye nombres de escalas y condiciones de uso, sin preguntas protegidas. No sustituye la prueba.' : 'Contains scale names, measurement context, rights notes and sources - no restricted test items. Not a substitute for the assessment.'}</small>
+        </div>}
+        {!entry.selectable && entry.officialSource && <div className={styles.pdfResource} data-official-original-source={entry.key}>
+          <a className={styles.pdfResourceSecondary} href={entry.officialSource.url} target="_blank" rel="noopener noreferrer" aria-label={entry.officialSource.owner}>
+            <FileDown size={17} aria-hidden="true" /> {(VALIDITY_COPY[locale] || VALIDITY_COPY.en)[entry.officialSource.directPdf ? 'direct' : 'open']} ↗
+          </a>
+          <small>{(VALIDITY_COPY[locale] || VALIDITY_COPY.en).caution} {entry.officialSource.notice}</small>
         </div>}
         {audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div>
         {entry.selectable && socialStats[entry.key] && (socialStats[entry.key].starts > 0 || socialStats[entry.key].ratingCount > 0) && <div className={styles.socialProof} data-test-social-proof={entry.key}>

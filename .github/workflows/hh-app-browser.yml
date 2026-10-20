@@ -91,6 +91,10 @@ jobs:
             fi
             echo "BROWSER_JOURNEY_PASS $HH_TEST_SUITE $script"
           done
+      - name: Preserve sanitized isolated service diagnostics
+        if: always()
+        run: |
+          node --input-type=module -e "import { preserveIsolatedServiceDiagnostics } from './scripts/helpers/isolated-browser-diagnostics.mjs'; await preserveIsolatedServiceDiagnostics()"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -19,13 +19,15 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
-      - run: npm run test:app
+      - name: Check-in evidence, scoring and report-priority regressions
+        run: node --conditions=react-server --test tests/checkin-scoring-analysis-quality.test.mjs tests/checkin-course-result-integrity.test.mjs tests/author-score-clusters.test.mjs tests/hh-original-review-ledger.test.mjs tests/full-assessment-library-quality.test.mjs tests/professional-test-expansion-2026.test.mjs tests/assessment-selectable-report.test.mjs tests/assessment-interpretation-band-model.test.mjs tests/assessment-report-semantic-summary.test.mjs tests/assessment-interpretation-consumer.test.mjs tests/psychometric-validity-directory.test.mjs tests/public-test-match-paging.test.mjs
+      - run: npm run test:app tests/historical-interpretation-coverage.test.mjs tests/psi-monitoring.test.mjs tests/full-assessment-library-quality.test.mjs
       - name: Profile four domains, truthful scales and compact responsive UI
         run: node --conditions=react-server --test tests/profile-four-domains.test.mjs tests/profile-assessment-overview.test.mjs tests/profile-compact-design.test.mjs tests/profile-integrated-summary.test.mjs tests/personal-analysis-cabinet.test.mjs
       - name: Optional free-course banner render contracts
         run: node --conditions=react-server --test tests/free-course-banner.test.mjs
       - name: Client report HTML/PDF, privacy and long-content regressions
-        run: node --test tests/canonical-pdf.test.mjs tests/client-report-notes-preview.test.mjs tests/distance-homeopathy-report.test.mjs tests/client-report-design.test.mjs tests/consultation-draft-preview.test.mjs tests/consultation-report-language.test.mjs tests/client-report-mobile-layout.test.mjs tests/client-report-premium-v3.test.mjs
+        run: node --test tests/canonical-pdf.test.mjs tests/client-report-notes-preview.test.mjs tests/distance-homeopathy-report.test.mjs tests/client-report-design.test.mjs tests/consultation-draft-preview.test.mjs tests/consultation-report-language.test.mjs tests/client-report-mobile-layout.test.mjs tests/client-report-premium-v3.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs
       - name: Real SDK PKCE and callback cookie regressions
         run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: Lint complete repository including literal App Router paths

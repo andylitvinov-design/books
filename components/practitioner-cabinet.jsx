@@ -1,6 +1,6 @@
 'use client'
 
-import {Archive, BadgeCheck, FileText, Film, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Users} from 'lucide-react'
+import {Archive, BadgeCheck, FileText, Film, Headphones, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Megaphone, Users} from 'lucide-react'
 import Link from 'next/link'
 import {useEffect, useState} from 'react'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
@@ -11,25 +11,35 @@ const copy = {
     title:'Кабинет практика', description:'Клиенты, консультации и документы — в одном рабочем пространстве.', actions:'Основные действия',
     newConsultation:'Новая консультация',newConsultationText:'Выбрать клиента или создать нового и выписать рецепт вместе со счётом.',
     clients:'Клиенты',clientsText:'Открыть историю клиента, документы и доступ к кабинету.',
+     reports:'Отчёты клиентов',reportsText:'Просмотр и редактирование ранее созданных отчётов.',
     legacy:'Старые документы',legacyText:'Разобрать и привязать ранее созданные документы к клиентам.',
     prescription:'Новый рецепт', prescriptionText:'Отдельный документ. Чтобы показать клиенту, привяжите через архив.', invoice:'Новый счёт', manualBilling:'Оплаты подписок', manualBillingText:'Заявки Advanced/Premium, счета и проверка поступлений.', invoiceText:'Отдельный счёт или квитанция. Для передачи привяжите к клиенту.', workflow:'Как передать материалы', step1:'1. Выберите клиента или создайте нового.', step2:'2. Подготовьте рекомендацию и счёт.', step3:'3. Скопируйте приватную ссылку на кабинет клиента.',
     videos:'Видео сайта',videosText:'Добавить видео на страницу, проверить и опубликовать ссылку YouTube.',
     materials:'Материалы',materialsText:'Библиотека фото, видео и YouTube-ссылок для выбора в отчетах клиентов.',
     appRequests:'Заявки из приложения',appRequestsText:'Запросы консультаций и только те резюме, которыми пользователь решил поделиться.',
+    reikiLeads:'Reiki CRM · ученики и инициация',reikiLeadsText:'Лид 1: начало обучения. Лид 2: письмо-заявка и согласованные материалы курса.',
+    reikiAudio:'Аудио · Reiki Practitioner',reikiAudioText:'Материалы → Аудио → Reiki Practitioner. Пять папок уроков, RU / EN, загрузка и публикация записей.',
     network:'Сеть практиков',networkText:'Проверять профили, credentials и услуги мастеров.',
+    acquisition:'Кампании и обращения',acquisitionText:'Счётчики услуг, статус измерений и безопасные ссылки кампаний.',
     seo:'SEO-аналитика',seoText:'Показы, клики, индексация, ошибки сайта и скорость — проверенные данные Google.',
+    growth:'Продвижение',growthText:'Редактор публикаций, согласование и календарь для нескольких проектов. Пока без автопостинга.',
   },
   en: {
     title:'Practitioner Cabinet',description:'Clients, consultations, and documents in one calm workspace.',actions:'Main actions',
     newConsultation:'New consultation',newConsultationText:'Choose or create a client and issue a recommendation together with an invoice.',
     clients:'Clients',clientsText:'Open client history, documents, and private cabinet access.',
+     reports:'Client reports',reportsText:'Browse, preview and edit saved client reports.',
     legacy:'Legacy documents',legacyText:'Review and assign previously created documents to clients.',
     prescription:'New prescription', prescriptionText:'Standalone document. Assign it to a client through Legacy to share.', invoice:'New invoice', manualBilling:'Membership payments', manualBillingText:'Advanced/Premium requests, invoices and verified receipts.', invoiceText:'Standalone invoice or receipt. Assign it to a client before sharing.', workflow:'Send materials in three steps', step1:'1. Choose an existing client or create one.', step2:'2. Prepare the recommendation and invoice.', step3:'3. Copy the client’s private cabinet link.',
     videos:'Website videos',videosText:'Add a video to a page, preview it, and publish its YouTube link.',
     materials:'Materials',materialsText:'Reusable photo, video and YouTube library for attaching to client reports.',
     appRequests:'App consultation requests',appRequestsText:'Requests and only the summaries users explicitly chose to share.',
+    reikiLeads:'Reiki CRM · students & initiation',reikiLeadsText:'Lead 1: course start. Lead 2: initiation letter and consented student materials.',
+    reikiAudio:'Audio · Reiki Practitioner',reikiAudioText:'Materials → Audio → Reiki Practitioner. Five lesson folders, RU / EN, audio uploads and publication.',
     network:'Practitioner network',networkText:'Review practitioner profiles, credentials, and services.',
+    acquisition:'Campaigns & enquiries',acquisitionText:'Service counters, measurement coverage and safe campaign links.',
     seo:'SEO Analytics',seoText:'Search impressions, clicks, indexing, site errors and speed with verified sources.',
+    growth:'Growth Studio',growthText:'Prepare and approve posts, plan your content across brands. No auto-publishing yet.',
   },
 }
 export function PractitionerCabinet({appRequestsEnabled=false}) {
@@ -43,8 +53,13 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
   },[])
   const actions=[
     {href:'/admin/seo',icon:SearchCheck,title:text.seo,body:text.seoText},
+    {href:'/admin/growth-studio',icon:Megaphone,title:text.growth,body:text.growthText},
+    {href:'/admin/acquisition',icon:SearchCheck,title:text.acquisition,body:text.acquisitionText},
     {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
+     {href:'/admin/reports',icon:FileText,title:text.reports,body:text.reportsText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
+    {href:'/admin/reiki-leads',icon:Inbox,title:text.reikiLeads,body:text.reikiLeadsText},
+    {href:'/admin/materials/audio/reiki-practitioner',icon:Headphones,title:text.reikiAudio,body:text.reikiAudioText},
     {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},
     {href:'/admin/prescriptions/new',icon:FileText,title:text.prescription,body:text.prescriptionText},
     {href:'/admin/payments/new',icon:ReceiptText,title:text.invoice,body:text.invoiceText},

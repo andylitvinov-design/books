@@ -16,7 +16,7 @@ const homepageMedia = {
   dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
   alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
   hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-  business: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  business: "/images/holistic-house/andy-about.png",
 } as const;
 
 const copy = {
@@ -27,8 +27,8 @@ const copy = {
     title: "Personal support for your next step",
     homeTitle: "How I can help",
     servicesTitle: "How I can help",
-    lead: "Alchemy of the Soul brings together systemic constellations, guided imagery hypnotherapy and optional psycho-homeopathy. Or explore a separate guided-imagery course or business consultation.",
-    homeLead: "Two free written reviews and two personal-work options. You can also explore free stress and personality tests below.",
+    lead: "Alchemy of the Soul brings together systemic constellations, guided imagery hypnotherapy and optional psycho-homeopathy. Or explore a separate guided-imagery course or practical business strategy and founder coaching.",
+    homeLead: "A free written situation review, a free symbolic Wu Xing profile and personal sessions. Explore self-checks below if you prefer.",
     servicesLead: "Start free or explore Alchemy of the Soul (constellations, hypnotherapy and psycho-homeopathy), individual guided imagery and business sessions.",
     more: "Curious about the methods?",
     moreText: "Systemic constellations, guided imagery and homeopathy are approaches used in specific sessions, not extra services you must choose on this page.",
@@ -46,8 +46,8 @@ const copy = {
     title: "Личная работа для следующего шага",
     homeTitle: "Чем я могу помочь",
     servicesTitle: "Чем я могу помочь",
-    lead: "«Алхимия души» объединяет расстановки, образную гипнотерапию и дополнительную психогомеопатию. Есть также отдельные курсы и бизнес-сессии.",
-    homeLead: "Два бесплатных письменных разбора и два формата личной работы. Ниже также доступны бесплатные тесты стресса и личности.",
+    lead: "«Алхимия души» объединяет расстановки, образную гипнотерапию и дополнительную психогомеопатию. Есть также отдельные курсы, бизнес-стратегия и коучинг предпринимателей.",
+    homeLead: "Бесплатный письменный разбор ситуации, символический профиль У-Син и личные сессии. Ниже — тесты самонаблюдения.",
     servicesLead: "Начните бесплатно или выберите «Алхимию души» (расстановка, гипнотерапия, психогомеопатия), индивидуальную образную работу либо бизнес-сессию.",
     more: "Хотите подробнее о методах?",
     moreText: "Системные расстановки, образная работа и гомеопатия — инструменты отдельных сессий, а не обязательные дополнительные услуги.",
@@ -65,7 +65,7 @@ const copy = {
     title: "Acompañamiento personal para tu siguiente paso",
     homeTitle: "Cómo puedo ayudarte",
     servicesTitle: "Cómo puedo ayudarte",
-    lead: "Alquimia del Alma combina constelaciones sistémicas, hipnoterapia con imágenes guiadas y psicohomeopatía opcional. También puedes explorar cursos de imágenes guiadas o consultoría empresarial.",
+    lead: "Alquimia del Alma combina constelaciones sistémicas, hipnoterapia con imágenes guiadas y psicohomeopatía opcional. También puedes explorar cursos de imágenes guiadas o estrategia y coaching empresarial.",
     homeLead: "Dos revisiones escritas gratuitas y dos opciones de trabajo personal. También puedes realizar pruebas gratuitas de estrés y personalidad.",
     servicesLead: "Empieza gratis o explora Alquimia del Alma, trabajo individual con imágenes guiadas o consultoría de negocios.",
     more: "¿Quieres conocer los métodos?",
@@ -105,12 +105,22 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Pu
               <h3><Link href={offer.href} prefetch={false}>{offer.title}</Link></h3>
               <p className={styles.cardSummary}>{offer.promise}</p>
               <p className={styles.cardBenefit}>{offer.benefit}</p>
+              {(['alchemy', 'hypnotherapy', 'business'] as const).some(id => id === offer.id) ? (
+                <p className={styles.cardPrice} data-personal-session-price>
+                  {locale === "ru" ? "Личная сессия · €50 / 30 мин · €100 / 60 мин"
+                    : locale === "es" ? "Sesión personal · €50 / 30 min · €100 / 60 min"
+                    : "Personal session · €50 / 30 min · €100 / 60 min"}
+                </p>
+              ) : null}
               {(offer.id === "alchemy" || offer.id === "hypnotherapy") && (
-                <a className={styles.cardVideo} href={getServiceVideoWatchUrl(offer.id, locale)}
-                  target="_blank" rel="noopener noreferrer" data-service-card-video={offer.id}
-                  aria-label={locale === "ru" ? "Открыть видео о подходе в новой вкладке" : locale === "es" ? "Ver el vídeo del método en otra pestaña (en inglés)" : "Watch the method video in a new tab"}>
+                <a className={styles.cardVideo}
+                  href={locale === "ru" ? getServiceVideoWatchUrl(offer.id, locale) : `${offer.href}#service-video`}
+                  target={locale === "ru" ? "_blank" : undefined}
+                  rel={locale === "ru" ? "noopener noreferrer" : undefined}
+                  data-service-card-video={offer.id}
+                  aria-label={locale === "ru" ? "Открыть видео о подходе в новой вкладке" : locale === "es" ? "Ver el vídeo y su transcripción en la página del servicio (audio en inglés)" : "Open the original method video and transcript on the service page"}>
                   <PlayCircle size={18} aria-hidden="true" />
-                  {locale === "ru" ? "Смотреть видео о подходе" : locale === "es" ? "Ver vídeo (en inglés)" : "Watch a short video"}
+                  {locale === "ru" ? "Смотреть видео о подходе" : locale === "es" ? "Vídeo y texto (en inglés)" : "Video & transcript"}
                 </a>
               )}
               {offer.id === "alchemy" ? (

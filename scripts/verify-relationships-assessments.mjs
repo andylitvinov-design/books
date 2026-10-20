@@ -391,8 +391,18 @@ try{
   await expect(choices).toHaveCount(4)
   assert.deepEqual(await choices.evaluateAll(nodes=>nodes.map(n=>n.dataset.topicChoice)),['trust','boundaries','conflict','presence'])
   const actions=journey.locator('[data-topic-action]')
-  await expect(actions).toHaveCount(4)
-  assert.deepEqual(await actions.evaluateAll(nodes=>nodes.map(n=>n.dataset.topicAction)),['tests','browse','course','review'])
+  await expect(actions).toHaveCount(5)
+  assert.deepEqual(await actions.evaluateAll(nodes=>nodes.map(n=>n.dataset.topicAction)),['tests','browse','course','review','consultation'])
+  // Owner #996 adds an optional public service action; it does not replace the free paths.
+  const consultationAction=journey.locator('a[data-topic-action="consultation"]')
+  await expect(consultationAction).toHaveCount(1)
+  await expect(consultationAction).toBeVisible()
+  await expect(consultationAction).toHaveAttribute('data-topic-service','relationships')
+  await expect(consultationAction).toHaveAttribute('href','/'+locale+'/services/systemic-constellations')
+  await expect(consultationAction.locator('strong')).toHaveText(locale==='ru'?'Обсудить тему лично с Андреем':'Discuss this topic with Andrey')
+  await expect(consultationAction.locator('small')).toHaveText(locale==='ru'
+   ?'Необязательная сессия независимо от баллов теста: €50 / 30 мин или €100 / 60 мин.'
+   :'Optional personal session, independent of your test scores. €50 / 30 min or €100 / 60 min.')
   const testsAction=journey.locator('button[data-topic-action="tests"]')
   await expect(testsAction).toHaveAttribute('type','button')
   await expect(testsAction).toBeEnabled()

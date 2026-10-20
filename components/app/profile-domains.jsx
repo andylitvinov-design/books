@@ -3,10 +3,10 @@
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Brain, CalendarDays, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
+import { ArrowRight, Brain, CalendarDays, ChevronDown, FileText, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
-import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
+import { availableSavedReports, latestReceivedReport } from '@/lib/profile/report-summary'
 import './profile-domains.css'
 import './profile-refresh.css'
 
@@ -45,8 +45,11 @@ const WORDS = {
     selected: 'selected', emptyLegacyPsy: 'Psychological test reports shared by Andy will appear here. Your Google Cabinet also keeps results from tests you complete yourself.',
     google: 'Open my Google Cabinet',
     archiveTitle: 'My reports and recommendations', archiveHint: 'Read and download reports you have saved from your practitioner.',
+    archivePanelTitle: 'My reports', archivePanelIntro: 'Reports from Andrey · private',
+    archiveLatest: 'Latest report', archiveReceived: 'Received', archiveDated: 'Report date',
+    archiveAll: 'All saved reports', archiveOpen: 'Open report', archiveDefaultTitle: 'Personal report',
     browseTitle: 'Reports by area', browseHint: 'Browse your saved reports by topic.', savedDocumentsLink: 'My saved documents', getReview: 'Request a free written review', noReportsHint: 'Your personal archive starts with a report shared with you.',
-    consultationNote: 'Free introductory request, not an instant booking. Andrey confirms availability personally; full sessions are paid.',
+    consultationNote: 'Choose a free written review, Wu Xing resource profile or self-checks. An introductory conversation can also be requested; availability is confirmed personally.',
     emptyInviteTitle: 'No reports yet? Start with a consultation',
     emptyInviteCopy: 'Discuss your situation with Andrey in a personal session. Choose 30 minutes (€50) or 60 minutes (€100). A free written review is available separately.',
     benefitGuidance: 'Personal guidance', benefitGuidanceHint: 'Discuss your goals',
@@ -85,8 +88,11 @@ const WORDS = {
     selected: 'подобрано', emptyLegacyPsy: 'Здесь будут психологические отчёты от Andy. Результаты самостоятельно пройденных тестов сохраняются в вашем Google-кабинете.',
     google: 'Открыть Google-кабинет',
     archiveTitle: 'Мои отчёты и рекомендации', archiveHint: 'Читать и скачивать сохранённые отчёты специалиста.',
+    archivePanelTitle: 'Мои отчёты', archivePanelIntro: 'Отчёты от Андрея · лично',
+    archiveLatest: 'Последний отчёт', archiveReceived: 'Получен', archiveDated: 'Дата отчёта',
+    archiveAll: 'Все сохранённые отчёты', archiveOpen: 'Открыть отчёт', archiveDefaultTitle: 'Личный отчёт',
     browseTitle: 'Отчёты по направлениям', browseHint: 'Просмотрите сохранённые отчёты по темам.', savedDocumentsLink: 'Сохранённые документы', getReview: 'Заказать бесплатный письменный разбор', noReportsHint: 'Ваш личный архив начнётся с отчёта, которым с вами поделились.',
-    consultationNote: 'Бесплатное ознакомительное обращение, не подтверждённая запись. Андрей согласует время лично; полноценные сессии платные.',
+    consultationNote: 'Выберите бесплатный письменный разбор, профиль У-Син или тесты. Возможность ознакомительного разговора Андрей подтверждает лично.',
     emptyInviteTitle: 'Нет отчётов? Начните с консультации',
     emptyInviteCopy: 'Обсудите свою ситуацию с Андреем лично: 30 минут — €50, 60 минут — €100. Бесплатный письменный разбор можно заказать отдельно.',
     benefitGuidance: 'Личная поддержка', benefitGuidanceHint: 'Обсудите свой запрос',
@@ -94,18 +100,6 @@ const WORDS = {
     benefitPrivate: 'Личный архив', benefitPrivateHint: 'Сохраняйте свои отчёты',
     overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Посмотреть услуги', support: 'Личная поддержка',
   },
-}
-// No report content, client ID, test answers or private URLs enter this enquiry.
-// An owner-approved introductory call is a request pending personal availability confirmation.
-function freeIntroConsultationHref(locale) {
-  const ru = locale === 'ru'
-  return whatsappEnquiryUrl({
-    locale: ru ? 'ru' : 'en',
-    service: ru ? 'Бесплатная ознакомительная консультация' : 'Free introductory consultation',
-    request: ru
-      ? 'Хочу запросить бесплатную ознакомительную консультацию. Подскажите, пожалуйста, возможно ли такое знакомство и доступное время. Понимаю, что это запрос, а не подтверждённая запись; полноценные консультации оплачиваются отдельно.'
-      : 'I would like to request a free introductory consultation. Please confirm whether an introductory conversation is available and suggest a time. I understand this is a request, not a confirmed booking, and longer personal sessions are paid separately.',
-  })
 }
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10))
 function readableDate(value, locale) {
@@ -213,6 +207,9 @@ export function ProfileDomains({
   }, [focusReports, reportsContent])
   useEffect(() => { setInteractive(true) }, [])
   const external = mode === 'legacy'
+  const availableReports = availableSavedReports(savedReports)
+  const latestSavedReport = latestReceivedReport(savedReports)
+  const lastReceivedDate = readableDate(latestSavedReport?.savedAt || latestSavedReport?.occurredOn, locale)
   const reports = external ? assessments : fetchedReports
   const updates = external ? homeopathyUpdates : fetchedDocuments
   const byArea = area => ordered(reports.filter(report => report.profileArea === area && report.available !== false))
@@ -270,7 +267,7 @@ export function ProfileDomains({
   )
 
   return <section className="hh-profile-domains" data-profile-domains data-profile-mode={mode} data-profile-interactive={interactive ? "true" : "false"}>
-    <header className="hh-domain-hero">
+    {external && <header className="hh-domain-hero">
       <div className="hh-domain-title">
         <p className="hh-domain-eyebrow">{t.eyebrow}</p>
         <h1>{t.title}</h1>
@@ -280,25 +277,49 @@ export function ProfileDomains({
         {!external && <Link href={'/' + locale + '/app/history'} prefetch={false}>{t.savedDocumentsLink}</Link>}
       </div>
       </div>
-    </header>
-    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} />}
-    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive" aria-labelledby="hh-analysis-reports-title" data-profile-report-archive>
-      {reportsContent}
-      {!external && savedReports.filter(report => report.available !== false).length === 0 && (
-        <div className="hh-domain-when-empty" data-profile-empty-consultation>
-          <a className="hh-domain-appointment-button" href={freeIntroConsultationHref(locale)}
-            target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp"
-            data-consultation-kind="free-introduction">
-            <CalendarDays size={20} aria-hidden="true" />
-            <span>{t.consultation}</span>
-            <ArrowRight size={20} aria-hidden="true" />
-          </a>
-          <p className="hh-domain-consultation-disclaimer">{t.consultationNote}</p>
+    </header>}
+    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive"
+      aria-labelledby={external ? 'hh-analysis-reports-title' : 'hh-account-report-title'} data-profile-report-archive>
+      {external ? <>{reportsContent}</> : <>
+        <div className="hh-account-report-heading">
+          <span className="hh-account-report-icon" aria-hidden="true"><FileText size={23} /></span>
+          <div className="hh-account-report-heading-copy">
+            <h1 id="hh-account-report-title">{t.archivePanelTitle}</h1>
+            <p>{t.archivePanelIntro}</p>
+          </div>
+          <span className="hh-account-report-private"><LockKeyhole size={12} aria-hidden="true" />{ru ? 'ЛИЧНО' : 'PRIVATE'}</span>
         </div>
-      )}
+        {latestSavedReport && <article className="hh-account-report-latest" data-profile-latest-report>
+          <div className="hh-account-report-latest-copy">
+            <span className="hh-account-report-eyebrow">{t.archiveLatest}</span>
+            <strong>{latestSavedReport.title || t.archiveDefaultTitle}</strong>
+            {lastReceivedDate && <time dateTime={String(latestSavedReport.savedAt || latestSavedReport.occurredOn).slice(0,10)}>
+              {latestSavedReport.savedAt ? t.archiveReceived : t.archiveDated}: {lastReceivedDate}
+            </time>}
+          </div>
+          <Link className="hh-account-report-open" href={'/' + locale + '/app/reports/' + encodeURIComponent(latestSavedReport.id)} prefetch={false}>
+            {t.archiveOpen} <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        </article>}
+        <div id="hh-account-report-all" className="hh-account-report-full" data-report-archive-always-open>
+          {availableReports.length > 0 && <div className="hh-account-report-count">
+            <span>{t.archiveAll}</span><span className="hh-account-report-number">{availableReports.length}</span>
+          </div>}
+          {reportsContent}
+          <div className="hh-domain-when-empty" data-profile-free-consultation>
+            <Link className="hh-domain-appointment-button" href={'/' + locale + '/services/free-consultation'}
+              prefetch={false} data-consultation-kind="free-options">
+              <CalendarDays size={20} aria-hidden="true" />
+              <span>{t.consultation}</span>
+              <ArrowRight size={20} aria-hidden="true" />
+            </Link>
+            <p className="hh-domain-consultation-disclaimer">{t.consultationNote}</p>
+          </div>
+        </div>
+      </>}
     </section>}
-    {!external && footerActions}
-    <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
+    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />}
+    {external && <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
         <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{t.browseHint}</small>
           <span className="hh-domain-topic-pills" aria-hidden="true">{DOMAINS.map(key => <span key={key}>{t[key]}</span>)}</span>
@@ -367,8 +388,8 @@ export function ProfileDomains({
       </details>
     </div>
       </div>
-    </details>
-    <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
+    </details>}
+    {external && <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>}
     {external && footerActions}
   </section>
 }

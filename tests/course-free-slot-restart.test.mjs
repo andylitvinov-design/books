@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { account, course, courseView, findButton, findPart, mount, nodes, textOf } from './helpers/course-ui-harness.mjs'
+import { account, course, courseView, findButton, findPart, mount, textOf } from './helpers/course-ui-harness.mjs'
 
 const free = {
   tier: 'free',
@@ -19,12 +19,7 @@ async function approveStart(h) {
   assert.ok(catalog, 'new course selection must open')
   catalog.props.onPersonal()
   await h.settle()
-  const button = findButton(h.tree, 'Agree & start')
-  assert.equal(button?.props.disabled, true, 'a new course still needs explicit consent')
-  const input = nodes(h.tree).find(node => node.type === 'input' && node.props.type === 'checkbox')
-  input.props.onChange({ target: { checked: true } })
-  await h.settle()
-  await findButton(h.tree, 'Agree & start').props.onClick()
+  assert.equal(findButton(h.tree, 'Agree & start'), undefined, 'signed-in course starts without a second confirmation')
   await h.settle()
 }
 
@@ -45,7 +40,10 @@ test('closing the only free course frees its slot and starts another without par
   assert.equal(dashboard.props.multiCourseEnabled, false, 'free accounts do not need parallel-course entitlement')
   dashboard.props.onNew()
   await h.settle()
+  const staleStart = findPart(h.tree, 'CoursePresetCatalog').props.onPersonal
   await approveStart(h)
+  staleStart() // Even reusing the same course ID must invalidate a retained start callback.
+  await h.settle()
   const writes = h.calls.filter(call => call.body)
   assert.equal(writes.length, 1)
   assert.deepEqual(JSON.parse(JSON.stringify(writes[0].body)), {

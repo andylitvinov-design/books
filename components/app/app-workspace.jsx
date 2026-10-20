@@ -9,6 +9,7 @@ import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
+import PracticeRequestConversation from './practice-request-conversation'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
@@ -46,10 +47,13 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
-import { isNativePsiAlchemy } from '@/lib/native/client'
+import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
+import InstallHolisticHouse from '@/components/app/install-holistic-house'
+import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
+import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -112,6 +116,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   const [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false)
   const quickAuthAttempted = useRef(false)
+  const signinAttempted = useRef(false)
   const page = path[0] || 'portrait',
     recordId = path[1],
     root = `/${locale}/app`
@@ -125,13 +130,18 @@ export default function AppWorkspace({ locale, path = [] }) {
     return () => { lifetime.mounted = false; lifetime.epoch += 1 }
   }, [])
   const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
+  // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
+  const loadEpoch = useRef(0)
   const load = useCallback(async () => {
+    const epoch = ++loadEpoch.current
     setError(null)
     try {
-      const fresh = await appFetch('bootstrap')
+      const fresh = await appFetch(page === 'portrait' ? 'bootstrap?view=portrait' : 'bootstrap')
+      if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
     } catch (e) {
+      if (epoch !== loadEpoch.current) return
       setData(null)
       setError(e)
       setState(
@@ -144,9 +154,11 @@ export default function AppWorkspace({ locale, path = [] }) {
               : 'error',
       )
     }
-  }, [])
+  }, [page])
   useEffect(() => {
-    load()
+    setState('loading')
+    void load()
+    return () => { loadEpoch.current += 1 }
   }, [load])
   useEffect(() => {
     let channel
@@ -184,16 +196,27 @@ export default function AppWorkspace({ locale, path = [] }) {
     }
   }, [load, router])
   async function signin() {
+    signinAttempted.current = true
     setBusy(true)
     setError(null)
     try {
+      const native = isNativeHolisticHouse()
       const result = await appFetch('auth/start', {
         locale,
+        ...(native ? { native: true } : {}),
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
+        ...(page === 'consultations' && searchParams.get('request')
+          ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
       })
-      window.location.assign(result.redirectUrl)
+      if (native) {
+        // Google OAuth uses Chrome Custom Tabs / Safari View Controller,
+        // not the app's credential-readable embedded WebView.
+        const { Browser } = await import('@capacitor/browser')
+        await Browser.open({ url: result.redirectUrl })
+        setBusy(false)
+      } else window.location.assign(result.redirectUrl)
     } catch (e) {
       setError(e)
       setBusy(false)
@@ -226,6 +249,18 @@ export default function AppWorkspace({ locale, path = [] }) {
           }
         } catch { /* Sign-out must still complete even if iOS is offline. */ }
       }
+      // An installed device must not remain subscribed to a previous account
+      // after sign-out or account switching. Keep failures non-blocking.
+      try {
+        const registration = 'serviceWorker' in navigator
+          ? await navigator.serviceWorker.getRegistration('/') : null
+        const subscription = await registration?.pushManager?.getSubscription()
+        if (subscription) {
+          await appFetch('notifications/unsubscribe', { endpoint: subscription.endpoint },
+            'POST', { accountId: data.account.id })
+          await subscription.unsubscribe()
+        }
+      } catch { /* Do not block sign-out for an unavailable push service. */ }
       await appFetch('auth/logout', { allDevices })
     } catch (e) {
       setError(e)
@@ -301,7 +336,12 @@ export default function AppWorkspace({ locale, path = [] }) {
           })
           await refreshCourseOwner()
           if (!isCurrent()) return
-          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=guided&course=1' + courseQuery)
+          // The approved OPORA starter battery stays in quick mode between
+          // all three check-ins. Other course batteries keep guided mode.
+          const oporaStarter=['hh-weekly-pulse','gad-7','hh-resource-pulse']
+          const isOporaStarter=oporaStarter.every(key=>courseState.course?.testKeys?.includes(key))
+          const nextMode=isOporaStarter&&oporaStarter.includes(nextKey)?'quick':'guided'
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=' + nextMode + '&course=1' + courseQuery)
         } else {
           await refreshCourseOwner()
           if (!isCurrent()) return
@@ -392,10 +432,25 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready' && page === 'course' && state !== 'unavailable')
     return (
       <main className="hh-app hh-app--course-guest">
-        <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup}
-          errorMessage={state === 'error' && error ? message(error, c) : undefined}
+        <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
+          errorMessage={error ? message(error, c) : undefined}
           onRetry={state === 'error' ? load : undefined}
           legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
+      </main>
+    )
+  // Public Cabinet entry explains the personal and practitioner spaces only to
+  // signed-out visitors. Authenticated accounts keep their existing workspace.
+  // Course/test deep links retain the dedicated Google handoff flows above.
+  if (state !== 'ready' && page === 'portrait' && !stressSignup)
+    return (
+      <main className="hh-app hh-app--cabinet-guest">
+        <CabinetGuestOverview
+          locale={locale} busy={busy} onSignin={signin}
+          unavailable={state === 'unavailable'}
+          onRetry={state === 'error' ? load : undefined}
+          sessionNotice={state === 'error'}
+          errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
+        />
       </main>
     )
   if (state !== 'ready')
@@ -440,7 +495,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'portrait', label: locale === 'ru' ? 'Профиль' : 'Profile', href: root + '/portrait', icon: UserRound },
     { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
     { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
-    { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course', icon: BookOpen },
+    { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
   ]
   const navIsActive = (id) => page === id ||
@@ -515,11 +570,62 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'tests' && (
             searchParams.get('summary')
               ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(root + '/tests')} />
-              : <AccountTestBattery key={data.account.id + ':' + (searchParams.get('courseId') || '')} data={data} locale={locale}
-                  requestedPlanId={searchParams.get('plan')}
-                  recommendedKey={searchParams.get('suggest')}
-                  initialStatusFilter={searchParams.get('filter')}
-                  reload={load} />
+              : <>
+                  {!searchParams.get('courseId') && (
+                    <details className="hh-tests-mood-disclosure" data-cabinet-mood-checkin>
+                      <summary>
+                        <span className="hh-tests-mood-symbol" aria-hidden="true">🙂</span>
+                        <strong>{locale === 'ru' ? 'Настроение сегодня' : 'Today\u2019s mood'}</strong>
+                        <small>{locale === 'ru' ? 'Отметить самочувствие' : 'Quick check-in'}</small>
+                        <ChevronDown size={18} aria-hidden="true" />
+                      </summary>
+                      <MoodCheckIn
+                        locale={locale}
+                        compact
+                        latestMood={data.moodCheckins?.[0] || null}
+                        onMoodChange={(payload) =>
+                          appFetch('mood', {
+                            ...payload,
+                            timezone: localZone(),
+                            sourceSurface: 'monitoring',
+                          }).then((savedMood) => {
+                            if (savedMood?.id) {
+                              setData((current) => current
+                                ? {
+                                    ...current,
+                                    moodCheckins: [
+                                      savedMood,
+                                      ...(current.moodCheckins || []).filter((item) => item.id !== savedMood.id),
+                                    ],
+                                  }
+                                : current)
+                            }
+                            return savedMood
+                          })
+                        }
+                        onQuickCheckin={async () => {
+                          try {
+                            const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
+                            const run = await appFetch('runs', {
+                              definitionKey: def.key,
+                              definitionVersion: def.version,
+                              instrumentLocale: def.instrumentLocale,
+                              operationId: crypto.randomUUID(),
+                            })
+                            window.location.assign('/' + locale + '/app/runs/' + run.id)
+                          } catch {
+                            window.location.assign(root + '/monitoring/hh-current-state')
+                          }
+                        }}
+                      />
+                    </details>
+                  )}
+                  <AccountTestBattery key={data.account.id + ':' + (searchParams.get('courseId') || '')} data={data} locale={locale}
+                    requestedPlanId={searchParams.get('plan')}
+                    recommendedKey={searchParams.get('suggest')}
+                    initialStatusFilter={searchParams.get('filter')}
+                    reload={load} />
+                </>
           )}
           {page === 'runs' && (
             <Runner
@@ -549,13 +655,15 @@ export default function AppWorkspace({ locale, path = [] }) {
             )
           )}
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} requestedMessageId={searchParams.get('request') || ''} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+              <InstallHolisticHouse locale={locale} />
               <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
+              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
                 logout={logout}
@@ -568,7 +676,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
         </>
       )}
-      {!documentReader && <footer className="hh-footer">
+      {!documentReader && page !== 'portrait' && <footer className="hh-footer">
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
@@ -1212,6 +1320,22 @@ function RunnerAnswerChoices({ definition, question, selected, onChoose, locale,
   const min = question.min ?? definition.answerScale?.min
   const max = question.max ?? definition.answerScale?.max
   const anchors = question.responseAnchors || definition.responseAnchors
+  // ONS4 asks eleven choices; a numeric selector prevents mobile overflow.
+  if (question.inputType === 'scale-select') return (
+    <label className="hh-day-count-select">
+      <span>{locale === 'ru' ? 'Оценка по шкале (0–10)' : 'Rating on a 0–10 scale'}</span>
+      <select aria-label={locale === 'ru' ? 'Оценка от 0 до 10' : 'Rating from 0 to 10'}
+        value={selected ?? ''} disabled={disabled}
+        onChange={event => { if (event.target.value !== '') void onChoose(Number(event.target.value)) }}>
+        <option value="" disabled>{locale === 'ru' ? 'Выберите оценку' : 'Select a rating'}</option>
+        {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(value => (
+          <option value={value} key={value}>
+            {value}{anchors?.[value - min] ? ' — ' + anchors[value - min] : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
   if (question.inputType === 'day-count') return (
     <label className="hh-day-count-select">
       <span>{locale === 'ru' ? 'Количество дней за последние 30 дней (0–30)' : 'Number of days in the past 30 days (0–30)'}</span>
@@ -2657,34 +2781,6 @@ function Portrait({ data, locale }) {
         <summary>{locale === 'ru' ? 'Подробные шкалы, непройденные тесты и инструменты' : 'Detailed scales, pending tests and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
       <ProfileAssessmentOverview data={data} locale={locale} onBeginTest={beginSelectedTest} showPortrait={false}>
         <ProfileActionHub data={data} locale={locale} profile={profile} nextStep={nextStep} />
-        <div className="hh-profile-mood">
-          <MoodCheckIn
-            locale={locale}
-            compact
-            latestMood={data.moodCheckins?.[0] || null}
-            onMoodChange={(payload) =>
-              appFetch('mood', {
-                ...payload,
-                timezone: localZone(),
-                sourceSurface: 'portrait',
-              })
-            }
-            onQuickCheckin={async () => {
-              try {
-                const def = getAssessmentDefinition('hh-current-state', 'v2', locale)
-                const run = await appFetch('runs', {
-                  definitionKey: def.key,
-                  definitionVersion: def.version,
-                  instrumentLocale: def.instrumentLocale,
-                  operationId: crypto.randomUUID(),
-                })
-                window.location.assign('/' + locale + '/app/runs/' + run.id)
-              } catch {
-                window.location.assign(root + '/monitoring/hh-current-state')
-              }
-            }}
-          />
-        </div>
         {data.practitioner && <OwnerTools locale={locale} />}
         <ReportsFromAndy data={data} locale={locale} />
         <ClientMaterialsFromAndy locale={locale} />
@@ -3467,7 +3563,7 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload, initialServiceId = '', source = '' }) {
+function Consultations({ data, locale, reload, initialServiceId = '', source = '', requestedMessageId = '' }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
@@ -3489,6 +3585,11 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
       <div className="hh-heading">
         <h1>{c.consultations}</h1>
         <p>{c.consultationsIntro}</p>
+        <p className="hh-fine">{locale === 'ru' ? 'Чтобы получать сообщения на телефон:' : 'To receive phone alerts for replies:'}{' '}
+          <Link href={`/${locale}/app/settings#hh-phone-notifications`} prefetch={false}>
+            {locale === 'ru' ? 'Включить уведомления' : 'Enable notifications'}
+          </Link>
+        </p>
         {source === 'test-results' && <aside className="hh-panel hh-consult-test-source">
           <h2>{locale === 'ru' ? 'Личные рекомендации по вашим тестам' : 'Personal recommendations about your test results'}</h2>
           <p>{locale === 'ru'
@@ -3499,6 +3600,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
           </Link>
         </aside>}
       </div>
+      <InstallHolisticHouse locale={locale} />
       <div className="hh-grid hh-services">
         {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
         {(data.services || []).map((service) => (
@@ -3530,7 +3632,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
         <h2>{c.requests}</h2>
         {!data.requests.length && <p>{c.emptyRequests}</p>}
         {data.requests.map((request) => (
-          <article className="hh-panel" key={request.id}>
+          <article className="hh-panel" key={request.id} id={'hh-consultation-' + request.id}>
             <span className="hh-badge">{c[request.status]}</span>
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
@@ -3540,6 +3642,11 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
               {dateLabel(request.createdAt, locale)} · {request.contact}
             </p>
             {request.message && <p>{request.message}</p>}
+            <PracticeRequestConversation key={request.id} requestId={request.id}
+              autoOpen={requestedMessageId === request.id}
+              accountId={data.account.id} locale={locale}
+              initialMessage={typeof request.message==='string'?request.message:''}
+              createdAt={request.createdAt}/>
             {request.sharedExcerpt && (
               <>
                 <p>{c.sharingNote}</p>

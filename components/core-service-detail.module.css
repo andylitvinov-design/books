@@ -64,3 +64,41 @@
 .alchemySupportAction:hover{background:#923d49}
 @media(max-width:870px){.alchemySupport{grid-template-columns:1fr}.main[data-core-service-detail="alchemy"] .items{grid-template-columns:1fr}}
 @media(max-width:760px){.alchemySupport{padding:20px 16px;gap:16px;margin-top:16px;border-radius:18px}.alchemySupportCopy p{font-size:13px}.alchemyOptions{padding:16px}.alchemySupportAction{width:100%}}
+
+
+/* Unified high-clarity service detail treatment; signature Alchemy override above
+   retains its approved navy/rose character. */
+.main{color:#153c49}
+.breadcrumb a{color:#087981}
+.hero{background:linear-gradient(135deg,#e9f8f4,#f9fcfa 56%,#fff6ee);border-color:#cfe9e3;box-shadow:0 16px 48px rgba(10,81,90,.09)}
+.eyebrow{color:#087c82}
+.intro h1{color:#123e4d}
+.lead{color:#48626a}
+.benefit{color:#086f6d}
+.primary{background:#087b7d;color:#fff!important;box-shadow:0 9px 21px rgba(4,91,101,.15)}
+.primary:hover{background:#056369}
+.note{color:#577179}
+.quickFacts{display:grid;gap:5px;margin-top:19px;padding:12px 16px;border:1px solid #cde9e3;background:rgba(255,255,255,.72);border-radius:14px;font-family:Arial,Helvetica,sans-serif}
+.quickFacts strong{font-size:13px;line-height:1.45;color:#085a65}
+.quickFacts span{font-size:12px;line-height:1.45;color:#466c70}
+.outcomes h2{color:#133c4d}
+.items article{background:#fff;border-color:#d8eae5;box-shadow:0 8px 25px rgba(5,77,88,.035)}
+.items h3{color:#0c6570}
+.items p{color:#48616a}
+.footer{background:#f0f9f7;border-color:#cde7e1}
+.andrey{background:#f4fcf9;border-color:#36a9a2}
+.andrey strong{color:#0e5961}
+.andrey a,.links a,.freeAlternative a{color:#08787b}
+.footerCta{background:#087b7d!important;border-radius:12px;padding:11px 16px;min-height:45px;color:#fff!important;text-decoration:none!important}
+.footerCta:hover{background:#075e67!important}
+.main a:focus-visible{outline-color:#e0a368}
+@media(max-width:760px){
+  .main{width:calc(100% - 24px)}
+  .hero{border-radius:22px}
+  .intro{padding:14px 10px 5px}
+  .intro h1{font-size:clamp(32px,8.6vw,44px)}
+  .quickFacts{margin-top:15px;padding:12px 13px}
+  .primary{min-height:54px;text-align:center;justify-content:center}
+  .photo{height:185px;min-height:185px}
+  .footerCta{width:100%;justify-content:center}
+}

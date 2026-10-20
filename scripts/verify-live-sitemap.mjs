@@ -108,6 +108,7 @@ const spotlight = [
   "/es/homeopathy/remedies/arnica", "/en/services",
   "/es/services", "/en/services/free-situation-review",
   "/es/services/free-situation-review", "/es/about",
+  "/en/tests", "/ru/tests", "/es/tests",
   "/en/books/alchemy-homeopathy-foundations", "/ru/books/alchemy-homeopathy-foundations",
   "/es/books/alchemy-homeopathy-foundations",
 ];
@@ -133,13 +134,41 @@ for (const path of spotlight) {
       // Existing English canonical root is '/', not the legacy /en.
       logError("Incorrect/missing canonical " + canonical + ": " + path);
     }
+    // Public tests are a deliberate SEO landing, not the guest questionnaire UI.
+    // Validate the production DOM directly: these pages must never redirect or
+    // expose private answers, and their localized links must be crawlable.
+    if (["/en/tests", "/ru/tests", "/es/tests"].includes(path)) {
+      const firstPartyTestUrl = "/" + expectedLocale + "/client/tests";
+      const writtenReviewUrl = "/" + expectedLocale + "/services/free-situation-review";
+      if (!html.includes('href="' + firstPartyTestUrl + '"')) logError("Public test CTA missing: " + path);
+      if (!html.includes('href="' + writtenReviewUrl + '"')) logError("Free written review link missing: " + path);
+      const robots = tags(html, "meta").filter(meta => ["robots", "googlebot"].includes(meta.name));
+      if (robots.some(meta => /\bnoindex\b/i.test(meta.content ?? "")) ||
+          /\bnoindex\b/i.test(response.headers.get("x-robots-tag") ?? "")) {
+        logError("Public tests unexpectedly noindex: " + path);
+      }
+      const alternates = Object.fromEntries(
+        tags(html, "link")
+          .filter(link => link.rel === "alternate" && link.hreflang && link.href)
+          .map(link => [link.hreflang, link.href]),
+      );
+      const sitemapAlternates = byURL.get(origin + path)?.languages ?? {};
+      for (const language of ["en", "ru", "es", "x-default"]) {
+        const expectedUrl = origin + "/" + (language === "x-default" ? "en" : language) + "/tests";
+        if (alternates[language] !== expectedUrl || sitemapAlternates[language] !== expectedUrl) {
+          logError("Public tests " + language + " hreflang mismatch " + path +
+            " (HTML " + (alternates[language] ?? "missing") +
+            ", sitemap " + (sitemapAlternates[language] ?? "missing") + ")");
+        }
+      }
+    }
   } catch (e) { logError("Spotlight request error " + path + ": " + e.message); }
 }
 for (const [old, target] of [
   ["/books/alchemy-homeopathy-foundations", "/en/books/alchemy-homeopathy-foundations"],
   ["/books/alchemy-homeopathy-foundations?lang=ru", "/ru/books/alchemy-homeopathy-foundations"],
   ["/books/alchemy-homeopathy-foundations?lang=en", "/en/books/alchemy-homeopathy-foundations"],
-  ["/en/tests", "/en/client/tests"], ["/ru/cabinet", "/ru/client"],
+  ["/ru/cabinet", "/ru/client"],
   ["/es/review", "/es/services/free-situation-review"],
 ]) {
   const response = await fetchWithTimeout(old, { method: "HEAD" });

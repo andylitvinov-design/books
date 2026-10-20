@@ -1,0 +1,37 @@
+name: HH Central Telegram single-secret hub
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'vercel.json'
+      - 'lib/practitioners/telegram-hub.mjs'
+      - 'lib/practitioners/council-telegram-archive.mjs'
+      - 'lib/practitioners/council-telegram-delivery.js'
+      - 'app/api/internal/telegram-hub/route.js'
+      - 'app/api/internal/council-archive-telegram/route.js'
+      - 'tests/practitioner-telegram-hub.test.mjs'
+      - 'tests/app-housekeeping-cron.test.mjs'
+      - 'tests/practitioner-daily-telegram.test.mjs'
+      - '.github/workflows/hh-central-telegram.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and existing cron regressions
+        run: |
+          node --check lib/practitioners/telegram-hub.mjs
+          node --check lib/practitioners/council-telegram-archive.mjs
+          node --check lib/practitioners/council-telegram-delivery.js
+          node --check app/api/internal/telegram-hub/route.js
+          node --check app/api/internal/council-archive-telegram/route.js
+          node --test tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs

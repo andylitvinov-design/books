@@ -11,6 +11,11 @@ on:
       - 'tests/admin-seo-recommendations.test.mjs'
       - 'lib/seo/actionable-recommendations.mjs'
       - 'components/admin-seo-recommendations.jsx'
+      - 'app/admin/acquisition/**'
+      - 'lib/acquisition/**'
+      - 'components/admin-acquisition-links.jsx'
+      - 'tests/acquisition-report.test.mjs'
+      - 'scripts/verify-acquisition-admin.mjs'
       - '.github/workflows/admin-seo-dashboard.yml'
   push:
     branches: ['codex/public-book-library']
@@ -24,9 +29,17 @@ on:
       - 'tests/admin-seo-recommendations.test.mjs'
       - 'lib/seo/actionable-recommendations.mjs'
       - 'components/admin-seo-recommendations.jsx'
+      - 'app/admin/acquisition/**'
+      - 'lib/acquisition/**'
+      - 'components/admin-acquisition-links.jsx'
+      - 'tests/acquisition-report.test.mjs'
+      - 'scripts/verify-acquisition-admin.mjs'
       - '.github/workflows/admin-seo-dashboard.yml'
 permissions:
   contents: read
+concurrency:
+  group: admin-seo-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   dashboard:
     runs-on: ubuntu-latest
@@ -47,3 +60,5 @@ jobs:
         run: npx tsc --noEmit
       - name: Production build
         run: npm run build
+      - name: Check acquisition source and privacy contract
+        run: node --test tests/acquisition-report.test.mjs

@@ -1,22 +1,29 @@
 import Link from 'next/link'
 import { getRemedy } from '@/data/remedies'
 import { RemedyContent } from './remedy-content'
+import { RemedyReportThumbnail } from './remedy-report-thumbnail'
 import { DistanceHomeopathyGuide } from './distance-homeopathy-guide'
 import { recommendationCopy, recommendationGuidance, recommendationItemType, remedySchedule, reportFollowUpDetails } from '@/lib/documents/recommendation'
 import { DocumentAutoPrint } from './document-auto-print'
 import { ReportAppendixPrintExpander } from './report-appendix-print-expander'
 import { PrescriptionActions } from './prescription-actions'
+import { ReportNarrationPlayer } from './report-narration-player'
+import { DaoStageDisclosure } from './dao-resource-stage'
+import { narrationEnabled } from '@/lib/clients/report-narration-service'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
-import { extractReportProgress } from '@/lib/documents/report-progress'
+import { resolveReportProgress } from '@/lib/documents/report-progress'
+import { resolveRecommendedTests } from '@/lib/consultations/recommended-tests'
 import { clientReportHeading } from '@/lib/documents/report-heading'
 import './consultation-report.css'
 
-export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false }) {
+export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false, narration = null, afterCover = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
-  const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
-  const progress = extractReportProgress(document.analysis)
+  const guidance = (document.additionalNotes || document.recommendationsText) ? undefined : recommendationGuidance(document, locale)
+  const progress = resolveReportProgress(document)
   const reportHeading = clientReportHeading(locale, document.recommendationType)
   const followUpSession = reportFollowUpDetails(document.followUpDate, locale)
+  const recommendedTests = Array.isArray(document.recommendedTests)
+    ? document.recommendedTests : resolveRecommendedTests(document, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
   const seenProfiles = new Set()
   const selectedProfiles = document.items.map(item => ({ item, remedy: item.remedySlug ? getRemedy(locale, item.remedySlug) : undefined }))
@@ -28,8 +35,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   const mixed = document.recommendationType === 'mixed'
   const groups = mixed
     ? [
-        { type: 'homeopathy', title: locale === 'ru' ? 'ГОМЕОПАТИЯ' : 'HOMEOPATHY', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'homeopathy') },
-        { type: 'bach', title: locale === 'ru' ? 'ЭССЕНЦИИ БАХА' : 'BACH ESSENCES', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'bach') },
+        { type: 'homeopathy', title: locale === 'ru' ? 'ГОМЕОПАТИЧЕСКИЕ НАЗНАЧЕНИЯ' : 'HOMEOPATHIC PRESCRIPTIONS', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'homeopathy') },
+        { type: 'bach', title: locale === 'ru' ? 'НАЗНАЧЕНИЯ · ЭССЕНЦИИ БАХА' : 'BACH ESSENCE PRESCRIPTIONS', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'bach') },
       ].filter((group) => group.items.length)
     : [{ type: document.recommendationType, items: document.items }]
 
@@ -44,6 +51,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
     <article className="canonical-document canonical-document--editorial">
       {selectedProfiles.length > 0 && <ReportAppendixPrintExpander />}
       <DocumentAutoPrint enabled={admin && autoPrint} />
+      <div className="canonical-report-cover">
       <div className="canonical-report-brandline">
         <div className="canonical-editorial-brand">
           <strong>HOLISTIC HOUSE</strong>
@@ -67,11 +75,11 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         {!document.analysis && <p className="canonical-intro">{labels.intro}</p>}
         {progress && <section className="canonical-progress" aria-label={locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}>
           <h2>{locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}</h2>
-          <p className="canonical-progress-subtitle">{locale === 'ru' ? 'Оценка клиента до и после консультации' : 'Client-recorded ratings before and after the consultation'}</p>
+          <p className="canonical-progress-subtitle">{locale === 'ru' ? 'Оценки до и после консультации' : 'Before and after consultation scores'}</p>
           <div className="canonical-progress-grid">
             {[
-              { key: 'before', label: locale === 'ru' ? 'Начало' : 'Start', value: progress.before },
-              { key: 'after', label: locale === 'ru' ? 'Конец' : 'End', value: progress.after },
+              { key: 'before', label: locale === 'ru' ? 'Было' : 'Before', value: progress.before },
+              { key: 'after', label: locale === 'ru' ? 'Стало' : 'After', value: progress.after },
             ].map(({ key, label, value }) => <div className={`canonical-progress-item canonical-progress-item--${key}`} key={key}>
               <div className="canonical-progress-dial" aria-hidden="true" style={{ '--progress': `${value * 10}%` }}>
                 <strong>{value}<small>/10</small></strong>
@@ -79,41 +87,92 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
               <span>{label}</span>
             </div>)}
             <aside className="canonical-progress-note">
-              <span>{locale === 'ru' ? 'Движение вперёд — уже результат.' : 'A small step forward still matters.'}</span>
+              <span>{locale === 'ru' ? 'Ваши оценки в два момента времени.' : 'Your ratings at two moments in time.'}</span>
             </aside>
           </div>
         </section>}
       </header>
+      </div>
+      {afterCover}
       {document.analysis && <section className="canonical-general canonical-report-analysis">
-        <h2>{labels.analysis}</h2>
+        <div className="canonical-analysis-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 9, marginBottom: 11 }}>
+          <h2 style={{ margin: 0 }}>{labels.analysis}</h2>
+          {narration && <ReportNarrationPlayer locale={locale} access={narration} available={narrationEnabled()} />}
+        </div>
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
       </section>}
 
+      {document.recommendationsText && <section className="canonical-general canonical-report-analysis canonical-report-recommendations">
+        <h2>{labels.recommendations}</h2>
+        <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.recommendationsText}</p>
+      </section>}
+
       {groups.map((group) => <section className="canonical-remedy-group" key={group.type}>
-        <h2 className="canonical-remedy-group-title">{group.title || (locale === 'ru' ? 'РЕКОМЕНДАЦИИ' : 'RECOMMENDATIONS')}</h2>
+        <div className="canonical-remedy-section-heading">
+          <h2 className="canonical-remedy-group-title">{group.title || (locale === 'ru' ? 'НАЗНАЧЕНИЯ' : 'PRESCRIPTIONS')}</h2>
+          <p className="canonical-remedy-group-caption">{locale === 'ru' ? 'Индивидуальная схема приёма' : 'Individual regimen'}</p>
+        </div>
         {group.items.map((item) => {
           itemNumber += 1
           const number = itemNumber
           const schedule = remedySchedule(item, locale, document.recommendationType)
-          const sourceRemedy = item.remedySlug ? getRemedy(locale, item.remedySlug) : null
-          return <section className="canonical-remedy" key={number}>
-            {sourceRemedy?.primary_image && <figure className="canonical-remedy-card-photo">
-              {/* Reuse the client's selected original library image, never a stock substitute. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={sourceRemedy.primary_image} alt={sourceRemedy.primary_image_alt || sourceRemedy.canonical_latin_name} loading="lazy" decoding="async" />
-            </figure>}
-            <div className="canonical-remedy-heading">
-              <span className="canonical-remedy-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
-              <div className="canonical-remedy-title">
-                <h3>{item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}</h3>
-                {schedule && <p className="canonical-remedy-schedule">{schedule}</p>}
+          // The potency belongs beside the remedy name, not in the administration line.
+          // Preserve practitioner-authored values; never infer a missing potency.
+          const potency = recommendationItemType(item, document.recommendationType) === 'homeopathy'
+            ? String(item.potency ?? '').trim() : ''
+          const administration = potency ? schedule.split(' · ').slice(1).join(' · ') : schedule
+          const detailKeys = ['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key])
+          const remedy = item.remedySlug ? getRemedy(locale, item.remedySlug) : null
+          return <section className="canonical-remedy canonical-remedy--unified" key={number}>
+            <details className="canonical-remedy-profile-disclosure canonical-remedy-unified-disclosure">
+              <summary className="canonical-remedy-unified-summary">
+                <RemedyReportThumbnail src={remedy?.primary_image} number={number} />
+                <span className="canonical-remedy-unified-main">
+                  <span className="canonical-remedy-title">
+                    <strong className="canonical-remedy-unified-name">{item.displayName}{potency && <span
+                      className="canonical-remedy-potency"
+                      aria-label={locale === 'ru' ? `Потенция ${potency}` : `Potency ${potency}`}
+                    >{' '}{potency}</span>}</strong>
+                  </span>
+                  {administration && <span className="canonical-remedy-schedule" aria-label={administration}>
+                    {administration.split(' · ').map((part, index) => <span className="canonical-remedy-schedule-part" key={index}>
+                      {index > 0 && <span className="canonical-remedy-schedule-dot" aria-hidden="true">·</span>}
+                      <span className="canonical-remedy-schedule-chip">{part}</span>
+                    </span>)}
+                  </span>}
+                  {detailKeys.length > 0 && <span className="canonical-remedy-fields canonical-remedy-unified-instructions">
+                    {detailKeys.map((key) => <span className="canonical-remedy-unified-instruction" key={key}>
+                      <strong>{labels[key]}:</strong> {item[key]}
+                    </span>)}
+                  </span>}
+                </span>
+                <span className="canonical-remedy-profile-action canonical-remedy-unified-toggle">
+                  <span className="canonical-remedy-toggle-label-closed">{locale === 'ru' ? 'Описание' : 'Details'}</span>
+                  <span className="canonical-remedy-toggle-label-open">{locale === 'ru' ? 'Свернуть' : 'Close'}</span>
+                  <span className="canonical-remedy-unified-chevron" aria-hidden="true" />
+                </span>
+              </summary>
+              <div className="canonical-remedy-profile-content">
+                {remedy ? <>
+                  <div className="canonical-remedy-unified-profile-heading">
+                    <strong>{remedy.canonical_latin_name}</strong>
+                    <small>{locale === 'ru' ? 'Описание из библиотеки Holistic House' : 'From the Holistic House remedy library'}</small>
+                  </div>
+                  {remedy.primary_image && <figure className="canonical-remedy-profile-photo canonical-remedy-unified-full-photo">
+                    {/* Retain the actual approved library photo, not a generated substitute. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
+                  </figure>}
+                  <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url}
+                    variant="book" showEssence={false} expandSupplementary fullSource />
+                </> : <p className="canonical-remedy-unified-unavailable">
+                  {locale === 'ru' ? 'Описание этого препарата пока не добавлено в библиотеку.' : 'This remedy description is not yet available in the library.'}
+                </p>}
+                {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
+                  {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open the full remedy profile →'}
+                </Link></p>}
               </div>
-            </div>
-            {item.remedyPath && <Link className="canonical-remedy-profile-action" href={item.remedyPath}>
-              <span>{locale === 'ru' ? 'Открыть описание препарата' : 'View remedy description'}</span>
-              <span aria-hidden="true">↗</span>
-            </Link>}
-            <dl className="canonical-remedy-fields">{['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key]).map((key) => <div key={key}><dt>{labels[key]}</dt><dd>{item[key]}</dd></div>)}</dl>
+            </details>
           </section>
         })}
       </section>)}
@@ -137,31 +196,22 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <p>{followUpSession.description}</p>
       </section>}
       {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
-      <DocumentSignature date={document.dateIssued} locale={locale} compact />
-      <p className="canonical-disclaimer">{labels.disclaimer}</p>
-
-      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
-        <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
-        <p className="canonical-remedy-appendix-description">{locale === 'ru' ? 'Полные тексты описаний выбранных препаратов из библиотеки Holistic House' : 'Complete library descriptions of all selected remedies'}</p>
-        {selectedProfiles.map(({ item, remedy }) => <details className="canonical-remedy-profile canonical-remedy-profile-disclosure" key={item.remedySlug}>
-          <summary className="canonical-remedy-profile-summary">
-            <h3>{remedy.canonical_latin_name}</h3>
-          </summary>
-          <div className="canonical-remedy-profile-content">
-          {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">
-            {/* The published original image is retained rather than substituted or generated. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
-          </figure> : <p className="canonical-remedy-photo-unavailable">{locale === 'ru' ? 'Исходная фотография отсутствует в базе.' : 'No source photograph is available in the library.'}</p>}
-          <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url} variant="book" showEssence={false} expandSupplementary fullSource />
-          {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
-            {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open full remedy profile →'}
-          </Link></p>}
-          </div>
-        </details>)}
-      </section>}
 
       {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
+      <DaoStageDisclosure score={document.daoResourceScore} locale={locale}
+        published={document.daoResourcePublished !== false} />
+      <DocumentSignature date={document.dateIssued} locale={locale} compact />
+      <p className="canonical-disclaimer">{labels.disclaimer}</p>
+      {!embedded && recommendedTests.length > 0 && <section className="canonical-recommended-tests" aria-label={locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}>
+        <h2>{locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}</h2>
+        <p>{locale === 'ru'
+          ? 'Отметил для вас тесты, которые можно пройти после консультации. Нажмите на название, чтобы начать.'
+          : 'Your practitioner selected these tests for your next step. Tap a title to begin.'}</p>
+        <ol>{recommendedTests.map(test => <li key={test.key}>
+          <Link href={test.href} prefetch={false}>{test.title} <span aria-hidden="true">↗</span></Link>
+          {test.startLocale !== locale && <small>{locale === 'ru' ? 'Откроется на доступном языке' : 'Opens in the available language'}</small>}
+        </li>)}</ol>
+      </section>}
     </article>
   </Root>
 }

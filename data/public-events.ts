@@ -11,12 +11,24 @@ export type PublicEvent = {
   timeZone: string; // IANA zone such as America/Toronto.
   city?: string;
   location?: string; // Publicly approved venue only.
+  /** Optional organizer-confirmed physical location details for Google Event markup. */
+  structuredLocation?: {
+    venueName?: string; // Never invent a venue name.
+    streetAddress: string;
+    addressLocality: string;
+    addressRegion: string;
+    postalCode?: string;
+    addressCountry: string;
+  };
   relatedCategories?: readonly PublicEventCategory[];
   posterUrl?: string; // Public organizer artwork, served without Vercel transforms.
   highlights?: Record<PublicLocale, readonly string[]>;
   title: Record<PublicLocale, string>;
   description: Record<PublicLocale, string>;
   registrationHref: string; // Approved, publicly accessible booking page.
+  organizerName?: string;
+  organizerHref?: string;
+  priceLabel?: string;
   status: "published";
 };
 
@@ -33,6 +45,13 @@ export const PUBLIC_EVENTS: readonly PublicEvent[] = [
     timeZone: "America/Toronto",
     city: "Toronto, ON",
     location: "665 Dupont Street, Toronto, ON M6G 1Z5",
+    structuredLocation: {
+      streetAddress: "665 Dupont Street",
+      addressLocality: "Toronto",
+      addressRegion: "ON",
+      postalCode: "M6G 1Z5",
+      addressCountry: "CA",
+    },
     title: {
       en: "Love Magic & Tarot Initiations",
       ru: "Магия любви и инициации Таро",
@@ -48,7 +67,7 @@ export const PUBLIC_EVENTS: readonly PublicEvent[] = [
       ru: ["Пробуждение внутренней энергии и интуиции", "Парная практика и развитие энергетической чувствительности", "Инициация в энергии Старших Арканов Таро", "Ритуалы для личных целей и изменений", "Техники для самостоятельной практики"],
       es: ["Despertar de la energía interior y la intuición", "Práctica en pareja y sensibilidad energética", "Iniciación en los Arcanos Mayores del Tarot", "Rituales para metas y transformación personal", "Técnicas para la práctica independiente"],
     },
-    posterUrl: "https://www.eventbrite.ca/e/_next/image?url=https%3A%2F%2Fimg.evbuc.com%2Fhttps%253A%252F%252Fcdn.evbuc.com%252Fimages%252F1194324777%252F2750388550641%252F1%252Foriginal.20260924-225208%3Fcrop%3Dfocalpoint%26fit%3Dcrop%26w%3D940%26auto%3Dformat%252Ccompress%26q%3D75%26sharp%3D10%26fp-x%3D0.522%26fp-y%3D0.32%26s%3Daa8a369eebfb7e197b5e2f28d6b5573f&w=940&q=75",
+    posterUrl: "https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1194324777%2F2750388550641%2F1%2Foriginal.20260924-225208?crop=focalpoint&fit=crop&w=940&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.522&fp-y=0.32&s=aa8a369eebfb7e197b5e2f28d6b5573f",
     registrationHref: "https://www.eventbrite.ca/e/love-magic-tarot-initiations-tickets-2003517510808",
     status: "published",
   }

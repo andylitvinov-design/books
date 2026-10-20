@@ -42,6 +42,12 @@ const COPY = {
     legacy: 'Перейти в прежний кабинет',
     legal: 'Самостоятельное обучение и самонаблюдение. Курс не предназначен для диагностики или замены профессиональной помощи.',
     retry: 'Попробовать снова',
+    inviteTitle: 'Ваш бесплатный курс готов',
+    inviteLead: '8 вопросов для начала, затем 14 коротких занятий по 5–12 минут в день.',
+    inviteProgress: 'Прогресс и выбранные упражнения сохраняются приватно в кабинете.',
+    inviteGoogle: 'Войти через Google и начать',
+    inviteNote: 'После входа откроется этот курс. Можно продолжить позже.',
+    inviteExplore: 'Подробнее о программе',
   },
   en: {
     breadcrumb: 'Courses', eyebrow: 'HOLISTIC HOUSE · OPORA COURSE', free: 'Your first course is free',
@@ -74,6 +80,12 @@ const COPY = {
     legacy: 'Open the previous client cabinet',
     legal: 'Self-guided education and reflection. Not for diagnosis or as a substitute for professional care.',
     retry: 'Try again',
+    inviteTitle: 'Your free course is ready',
+    inviteLead: 'Start with an 8-question check-in, then explore 14 short lessons at your own pace.',
+    inviteProgress: 'Your choices and progress are saved privately in your Cabinet.',
+    inviteGoogle: 'Continue with Google',
+    inviteNote: 'After signing in, you will return to this course and can continue anytime.',
+    inviteExplore: 'Explore the programme',
   },
   es: {
     breadcrumb: 'Cursos', eyebrow: 'HOLISTIC HOUSE · CURSO OPORA', free: 'Tu primer curso es gratis',
@@ -106,17 +118,42 @@ const COPY = {
     legacy: 'Abrir el antiguo espacio privado',
     legal: 'Educación y reflexión personal; no es un diagnóstico ni sustituye la atención profesional.',
     retry: 'Reintentar',
+    inviteTitle: 'Tu curso gratuito está listo',
+    inviteLead: 'Empieza con 8 preguntas y sigue 14 clases breves a tu ritmo.',
+    inviteProgress: 'Tus elecciones y progreso se guardan de forma privada.',
+    inviteGoogle: 'Continuar con Google',
+    inviteNote: 'Tras iniciar sesión, volverás a este curso y podrás continuar después.',
+    inviteExplore: 'Conocer el programa',
   },
 }
 
 const benefitIcons = [Waves, HeartHandshake, Compass]
 
 export default function CourseGuestLanding({
-  locale = 'en', onStart, busy = false, stressSignup = false,
+  locale = 'en', onStart, busy = false, stressSignup = false, compact = false,
   errorMessage, onRetry, legacyText, nonDiagnostic,
 }) {
   const t = COPY[locale] || COPY.en
   const [previewModuleId,setPreviewModuleId]=useState('AS2')
+  if (compact) return (
+    <section className={styles.compactRoot} data-opora-guest-landing data-course-guest-invite aria-labelledby="course-guest-invite-title">
+      <figure className={styles.compactPhoto}>
+        <img src="/images/holistic-house/course-focus-mountain-boy.webp" width="920" height="700" decoding="async" alt={t.imageAlt} />
+      </figure>
+      <div className={styles.compactCopy}>
+        <span className={styles.compactKicker}><Leaf size={15} aria-hidden="true"/>{t.brand} · {t.title}</span>
+        <h1 id="course-guest-invite-title">{t.inviteTitle}</h1>
+        <p className={styles.compactLead}>{t.inviteLead}</p>
+        <p className={styles.compactProgress}><LockKeyhole size={17} aria-hidden="true"/>{t.inviteProgress}</p>
+        <button type="button" className={styles.compactGoogle} disabled={busy} onClick={onStart} data-course-google-signin>
+          {t.inviteGoogle}<ArrowRight size={19} aria-hidden="true"/>
+        </button>
+        <small className={styles.compactNote}>{t.inviteNote}</small>
+        <Link className={styles.compactLink} href={`/${locale}/courses/antistress`}>{t.inviteExplore}<ArrowRight size={14} aria-hidden="true"/></Link>
+        {errorMessage && <p className={styles.compactError} role="alert">{errorMessage} {onRetry && <button type="button" onClick={onRetry}>{t.retry}</button>}</p>}
+      </div>
+    </section>
+  )
   return (
     <div className={styles.root} data-opora-guest-landing>
       <nav className={styles.breadcrumbs} aria-label={locale === 'ru' ? 'Навигация' : 'Breadcrumb'}>

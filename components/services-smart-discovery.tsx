@@ -67,7 +67,7 @@ const COPY = {
     browse:"All practitioners",
     clear:"Reset",
     personal:"Prefer personal guidance?",
-    personalAction:"Explore Andrey's personal services below",
+    personalAction:"Explore Andrey's personal services",
     categoryCount:"offers",
     localMatch:"Topic-based matching",
     aiMatch:"AI-enhanced matching",
@@ -125,7 +125,7 @@ const COPY = {
     browse:"Все мастера",
     clear:"Сбросить",
     personal:"Хотите личную консультацию?",
-    personalAction:"Ниже — личные услуги Андрея",
+    personalAction:"Личные услуги Андрея",
     categoryCount:"предложений",
     localMatch:"Смысловой подбор",
     aiMatch:"Подбор с помощью ИИ",
@@ -183,7 +183,7 @@ const COPY = {
     browse:"Profesionales",
     clear:"Limpiar",
     personal:"¿Prefieres orientación personal?",
-    personalAction:"Más abajo: servicios personales de Andrey",
+    personalAction:"Servicios personales de Andrey",
     categoryCount:"opciones",
     localMatch:"Búsqueda temática",
     aiMatch:"Búsqueda con IA",
@@ -532,8 +532,9 @@ export function ServicesSmartDiscovery({
                   onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
                   {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
                 </button>
-                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>
+                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)} aria-label={locale==="es"?"Solicitar este servicio (formulario en inglés)":undefined}>{t.order}</TrackedServiceLink>
               </div>
+              {locale==="es"&&<small className={styles.intakeNote}>El formulario de solicitud se abre en inglés; se conserva el servicio elegido.</small>}
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
               <div id={"hh-listing-details-"+service.id} hidden={expandedCard!=="listing:"+service.id} className={styles.suggestionDetailPanel}>
                 <p>{service.copy.description || service.copy.shortDescription}</p>

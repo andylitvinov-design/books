@@ -16,7 +16,9 @@ const defFor = (item, locale) => getAssessmentDefinition(item.key,item.version,i
 const allAnswers = d => Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale?.min??0]))
 
 test('every active test has a bilingual short purpose/origin/evidence paragraph without changing scoring hashes',()=>{
-  assert.equal(active.length,145)
+  // New source-cleared scales are additive; coverage must not freeze at the
+  // previous 145-source snapshot or silently omit the five new 2026 forms.
+  assert.ok(active.length>=150)
   for(const locale of ['en','ru']){
     for(const item of active){
       const def=defFor(item,item.instrumentLocale==='dynamic'?locale:'en')

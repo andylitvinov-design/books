@@ -19,7 +19,7 @@ const score = (definition, fraction = 0.5) => {
 
 test('every immutable numeric score has one honest readable interval and a selected characterization in both languages', () => {
   assert.ok(ASSESSMENT_DEFINITIONS.length >= 230)
-  const count = { published: 0, 'source-options': 0, descriptive: 0, ordinal: 0, continuous: 0 }
+  const count = { published: 0, 'source-options': 0, descriptive: 0, ordinal: 0, continuous: 0, 'historical-mixed': 0 }
   for (const definition of ASSESSMENT_DEFINITIONS) for (const fraction of [0, 0.5, 1]) {
     const scored = score(definition, fraction)
     const saved = JSON.stringify(scored)
@@ -40,7 +40,24 @@ test('every immutable numeric score has one honest readable interval and a selec
         row.code && row.label && row.displayRange && row.note.length >= 45),
       context + ' every range explained')
       assert.equal(reading.rows.find(row => row.current)?.code, reading.current.code)
-      if (reading.kind === 'published') {
+      if (reading.clusterBasis === 'historical-mixed-mean-v1') {
+        assert.ok(['hh-money-pressure','hh-overthinking-loop','hh-screen-saturation'].includes(definition.key), context)
+        assert.equal(definition.version, 'v1', context)
+        assert.equal(reading.rows.length, 5, context)
+        assert.equal(reading.sourceQuestions?.length, 6, context)
+        assert.equal(reading.newerVersion, 'v2')
+        assert.equal(model.bands.length, 0, context + ' no invented clinical score bands')
+        assert.match(reading.caution, locale === 'ru' ? /не означает уровень тяжести/ : /None of these intervals indicates severity/)
+      } else if (reading.clusterBasis) {
+        assert.ok(definition.key.startsWith('hh-'), context + ' author-only scoring')
+        assert.ok(['source-answer-anchors','attainable-score-positions'].includes(reading.clusterBasis), context)
+        assert.ok(reading.sourceQuestions?.length > 0, context + ' subscale source items')
+        assert.equal(reading.rows[0].from, dimension.min, context)
+        assert.equal(reading.rows.at(-1).to, dimension.max, context)
+        assert.ok(reading.scoringNote?.length > 50, context)
+        assert.equal(model.bands.length, 0, context + ' no invented clinical sectors')
+        assert.ok(reading.rows.length >= 2 && reading.rows.length <= 7, context)
+      } else if (reading.kind === 'published') {
         assert.equal(reading.rows.length, model.bands.length, context)
         assert.deepEqual(reading.rows.map(row => row.code), model.bands.map(row => row.code))
       } else if (reading.kind === 'source-options') {
@@ -65,6 +82,7 @@ test('every immutable numeric score has one honest readable interval and a selec
   assert.ok(count.descriptive > 0)
   assert.ok(count.ordinal > 0)
   assert.ok(count.continuous > 0)
+  assert.ok(count['historical-mixed'] > 0)
 })
 
 test('published source categories and borderline transitions use exact interval, meaning and scope', () => {
@@ -115,8 +133,10 @@ test('personality typologies expose response-linked traits without asserting a f
       for(const dimension of result.dimensions){
         const reading=gaugeModel(dimension,result,locale).rangeReading
         assert.ok(reading.trait,key+'/'+dimension.key)
-        assert.equal(reading.kind,'descriptive')
+        assert.equal(reading.kind,'source-options')
+        assert.equal(reading.clusterBasis,'source-answer-anchors')
         assert.equal(reading.rows.length,5)
+        assert.ok(reading.sourceQuestions?.length > 0)
         assert.ok(reading.contextual?.length > 90,key+'/'+dimension.key)
         assert.ok(reading.directionNote.includes(locale==='ru'?'личност':'personality'))
       }
@@ -126,9 +146,9 @@ test('personality typologies expose response-linked traits without asserting a f
 
 test('never attach clinical or directional levels to mixed historical totals, counts or calibrated scores',()=>{
   for (const [key,expected] of [
-    ['hh-money-pressure','continuous'],
-    ['hh-overthinking-loop','continuous'],
-    ['hh-screen-saturation','continuous'],
+    ['hh-money-pressure','historical-mixed'],
+    ['hh-overthinking-loop','historical-mixed'],
+    ['hh-screen-saturation','historical-mixed'],
     ['cfpb-financial-wellbeing-5','continuous'],
     ['cdc-healthy-days-symptoms','continuous'],
   ]) {
@@ -137,8 +157,13 @@ test('never attach clinical or directional levels to mixed historical totals, co
     for(const dimension of result.dimensions){
       const reading=gaugeModel(dimension,result,'ru').rangeReading
       assert.equal(reading.kind,expected,key+'/'+dimension.key)
-      assert.equal(reading.rows.length,1)
-      assert.equal(reading.rows[0].current,true)
+      assert.equal(reading.rows.length,expected==='historical-mixed'?5:1)
+      assert.equal(reading.rows.filter(row=>row.current).length,1)
+      if(expected==='historical-mixed') {
+        assert.equal(reading.rows[0].from,0)
+        assert.equal(reading.rows.at(-1).to,4)
+        assert.match(reading.caution,/не означает уровень тяжести/)
+      }
       assert.doesNotMatch(reading.caution,/клинический уровень\s+(сильный|умеренный)/)
     }
   }

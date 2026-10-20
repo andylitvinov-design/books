@@ -1,7 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { SessionMaterialPicker } from './session-material-picker'
+import { SessionSaveFooterVideo } from './session-save-footer-video'
 import { tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
+import { resolveSavedReportLocale } from '@/lib/documents/report-locale'
 import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
 import styles from './client-session.module.css'
 
@@ -30,6 +32,8 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
   const [playerUrls,setPlayerUrls]=useState({})
   const base='/api/admin/clients/'+clientId+'/sessions/'+session.id
   const activeAssets=new Map((session.assets||[]).map(row=>[row.id,row]))
+  const sharedReportLocale=resolveSavedReportLocale(documents.find(doc=>doc.id===(session.published?.reportDocumentId||draft.reportDocumentId)),locale)
+  const previewReportLocale=resolveSavedReportLocale(documents.find(doc=>doc.id===draft.reportDocumentId),locale)
   const plan=draft.plan||{focus:'',nextStep:'',takeaways:[],practices:[],additionalRecommendations:'',resources:[]}
   const updatePlan=patch=>setDraft(current=>({...current,
     plan:{focus:'',nextStep:'',takeaways:[],practices:[],additionalRecommendations:'',resources:[],...(current.plan||{}),...patch}
@@ -49,6 +53,13 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     (plan.practices||[]).some(item=>item.title?.trim()||item.instructions?.trim())
   )
   const changed=JSON.stringify(draft)!==JSON.stringify(session.draft)
+  const sourceDocument=documents.find(doc=>doc.id===draft.reportDocumentId)
+  const sourceHasProgressScores=sourceDocument?.progressBefore!=null&&sourceDocument?.progressAfter!=null
+  const publishedHasProgressScores=session.published?.reportSnapshot?.progressBefore!=null&&session.published?.reportSnapshot?.progressAfter!=null
+  const reportUpdatePending=session.status==='published'&&Boolean(
+    (sourceHasProgressScores&&!publishedHasProgressScores)||
+    (draft.reportDocumentId&&session.published?.reportFingerprint!==session.publicationSource?.reportFingerprint)
+  )
   async function load() {
     const result=await api(base)
     const next=result.session
@@ -86,7 +97,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       }
       const result=await api(base,'POST',{action,days,...publication})
       if(['copy','rotate'].includes(action)&&result.secret) {
-        const url=window.location.origin+'/'+locale+'/client/session/'+result.selector+'#'+result.secret
+        const url=window.location.origin+'/'+sharedReportLocale+'/client/session/'+result.selector+'#'+result.secret
         setLink(url)
         if(await tryCopyOwnerLink(url,navigator.clipboard))
           setMessage(ru?'Ссылка на одну сессию скопирована':'Session-only link copied')
@@ -144,7 +155,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         <select value={draft.reportDocumentId||''}
           onChange={e=>setDraft({...draft,reportDocumentId:e.target.value||null})}>
           <option value="">{ru?'Без документа':'No report attached'}</option>
-          {documents.map(doc=><option key={doc.id} value={doc.id}>{doc.dateIssued} · {doc.kind}</option>)}
+          {documents.map(doc=><option key={doc.id} value={doc.id}>{doc.dateIssued} · {doc.kind} · {doc.languagePreference==='ru'?'RU':doc.languagePreference==='en'?'EN':'EN/RU'}</option>)}
         </select>
       </label>
       <div className={styles.actions}>
@@ -157,6 +168,14 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         </button>
         {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}
       </div>
+    </section>
+    <section className={styles.editorCard} aria-label={ru?'Персональные записи консультации':'Private session recordings'}>
+      <h2>{ru?'Персональные записи консультации':'Private session recordings'}</h2>
+      <p>{ru?'Личные аудио, видео и фото относятся только к этой консультации и хранятся отдельно от общей библиотеки. Их запись и загрузка вынесены в отдельный экран.':
+        'Client-specific audio, video and photos remain private to this consultation. Their recorder/uploader is on a separate screen, not in shared Materials.'}</p>
+      <a className={styles.secondaryButton} href={'/admin/clients/'+encodeURIComponent(clientId)+'/sessions/'+encodeURIComponent(session.id)+'/recordings'}>
+        {ru?'Открыть личные записи →':'Open private recordings →'}
+      </a>
     </section>
     <details className={styles.optionalTextEditor}>
       <summary>{ru?'Личное сопроводительное сообщение (необязательно)':'Personal cover message (optional)'}
@@ -227,31 +246,6 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       </label>
       </div>
     </details>
-    <section className={styles.editorCard} aria-label={ru?'Общие материалы из библиотеки':'Shared library materials'}>
-      <h2>{ru?'Материалы из библиотеки':'Materials from library'}</h2>
-      <p>{ru?'Выбирайте только готовые общие материалы. Загрузить фото, видео или добавить YouTube-ссылку можно в отдельном разделе кабинета мастера «Материалы».':
-        'Attach existing general materials only. Upload photos, videos or YouTube links in the separate practitioner Materials library.'}</p>
-      <SessionMaterialPicker locale={locale}
-        selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
-        disabled={block}
-        onChange={ids=>updatePlan({materialIds:ids})}/>
-      {(plan.resources||[]).length>0&&<p className={styles.ownerMaterialsMuted}>{ru?
-        'Ранее добавленные ссылки этой консультации сохранены без изменений. Новые общие материалы выбираются из библиотеки выше.':
-        'Previously attached session links remain unchanged. Choose new shared resources from the library above.'}</p>}
-      <div className={styles.actions}>
-        <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
-          setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))
-        }}><Save size={17}/>{ru?'Сохранить выбранные материалы':'Save selected materials'}</button>
-      </div>
-    </section>
-    <section className={styles.editorCard} aria-label={ru?'Персональные записи консультации':'Private session recordings'}>
-      <h2>{ru?'Персональные записи консультации':'Private session recordings'}</h2>
-      <p>{ru?'Личные аудио, видео и фото относятся только к этой консультации и хранятся отдельно от общей библиотеки. Их запись и загрузка вынесены в отдельный экран.':
-        'Client-specific audio, video and photos remain private to this consultation. Their recorder/uploader is on a separate screen, not in shared Materials.'}</p>
-      <a className={styles.secondaryButton} href={'/admin/clients/'+encodeURIComponent(clientId)+'/sessions/'+encodeURIComponent(session.id)+'/recordings'}>
-        {ru?'Открыть личные записи →':'Open private recordings →'}
-      </a>
-    </section>
     <section className={styles.editorCard}>
       <h2>{ru?'Сохранённые личные вложения':'Existing private attachments'}</h2>
       <button type="button" disabled={block} onClick={async()=>{setBusy('cleanup');setError('');try{await api(base+'/media','POST',{action:'cleanup'});setMessage(ru?'Незавершённые загрузки старше суток очищены. Сохранённые записи не затронуты.':'Incomplete uploads older than one day cleaned up. Saved recordings are unchanged.')}catch(e){setError(e.message)}finally{setBusy('')}}}>{ru?'Очистить старые незавершённые загрузки':'Clean up old incomplete uploads'}</button>
@@ -277,7 +271,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
               {asset?.kind==='video'&&<option value="instruction">{ru?'Видео: как принимать препараты':'Video: how to follow the recommendations'}</option>}
               <option value="meditation">{ru?'Дополнительная медитация':'Additional meditation'}</option>
               <option value="additional">{asset?.kind==='video'?(ru?'Материалы — в конце отчёта':'Materials — report footer'):(ru?'Другие материалы':'Other materials')}</option>
-              {asset?.kind==='video'&&<option value="hidden">{ru?'Не показывать клиенту':'Do not show to client'}</option>}
+              {['audio','video'].includes(asset?.kind)&&<option value="hidden">{ru?'Не показывать клиенту':'Do not show to client'}</option>}
             </select>
           </label>}
           {asset?.kind!=='image'&&<label className={styles.field}>{ru?'Текст / расшифровка (необязательно)':'Transcript (optional)'}
@@ -295,10 +289,36 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         </div>
       })}
     </section>
+    <section className={styles.editorCard} aria-label={ru?'Общие материалы из библиотеки':'Shared library materials'}>
+      <h2>{ru?'Материалы из библиотеки':'Materials from library'}</h2>
+      <p>{ru?'Выбирайте только готовые общие материалы. Загрузить фото, видео или добавить YouTube-ссылку можно в отдельном разделе кабинета мастера «Материалы».':
+        'Attach existing general materials only. Upload photos, videos or YouTube links in the separate practitioner Materials library.'}</p>
+      <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
+      <SessionMaterialPicker locale={locale}
+        selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
+        disabled={block}
+        onChange={ids=>updatePlan({materialIds:ids})}/>
+      {(plan.resources||[]).length>0&&<p className={styles.ownerMaterialsMuted}>{ru?
+        'Ранее добавленные ссылки этой консультации сохранены без изменений. Новые общие материалы выбираются из библиотеки выше.':
+        'Previously attached session links remain unchanged. Choose new shared resources from the library above.'}</p>}
+      <div className={styles.actions}>
+        <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
+          setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))
+        }}><Save size={17}/>{ru?'Сохранить выбранные материалы':'Save selected materials'}</button>
+      </div>
+    </section>
     <section className={styles.editorCard} id="session-publication">
       <h2>{ru?'Публикация для клиента':'Client publication'}</h2>
+      {reportUpdatePending&&<p className={styles.previewDisclaimer} role="status">
+        <strong>{ru?'В опубликованном отчёте ещё нет последних изменений.':'The published report does not contain your latest saved changes.'}</strong>{' '}
+        {sourceHasProgressScores&&!publishedHasProgressScores
+          ?(ru?'Оценки «Было / Стало» сохранены, но диаграммы появятся по этой же ссылке только после проверки и повторного нажатия «Опубликовать клиенту».':
+            'Before / After scores are saved, but the two charts appear at the existing client link only after you review and select “Publish to client” again.')
+          :(ru?'Проверьте сохранённый отчёт и повторно нажмите «Опубликовать клиенту», чтобы клиент увидел изменения.':
+            'Review the saved report, then select “Publish to client” again to make the changes visible.')}
+      </p>}
       {draft.reportDocumentId&&<p><a className={styles.secondaryButton}
-        href={'/admin/documents/'+encodeURIComponent(draft.reportDocumentId)+'/session-preview?locale='+locale}
+        href={'/admin/documents/'+encodeURIComponent(draft.reportDocumentId)+'/session-preview?locale='+previewReportLocale}
         target="_blank" rel="noopener noreferrer">
         {ru?'Открыть полную страницу клиента с вложениями ↗':'Open full client page with attachments ↗'}
       </a><small>{ru?'Показываются сохранённые изменения. Перед просмотром сохраните черновик.':'Shows saved changes. Save the draft first to preview your latest edits.'}</small></p>}

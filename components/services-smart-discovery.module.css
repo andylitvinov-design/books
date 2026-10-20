@@ -554,3 +554,7 @@
 
 /* Four discovery tabs wrap below the kicker on extra-narrow mobile screens. */
 @media(max-width:400px){.topline{flex-wrap:wrap}.topline .kicker{max-width:100%}}
+
+
+/* Locale handoff is explicit: Spanish discovery keeps the selected service ID. */
+.intakeNote{display:block;grid-column:1/-1;margin:0;color:#476b73;font:11px/1.5 system-ui,sans-serif}

@@ -525,39 +525,39 @@ const levelOneFocus: Record<PublicLocale, {
   en: {
     eyebrow: "BEGIN HERE · LEVEL 1",
     title: "Your first step: Spring of Life",
-    description: "Start with body awareness, gentle sensitivity and a respectful connection with yourself or a partner. The first level is a complete introduction; the other levels can wait until you choose to explore them.",
+    description: "Notice gentle sensations, practise presence and explore respectful connection at your own pace.",
     request: "Get Tantra Reiki Level 1 as a gift",
     tests: "Take free Tantra self-reflection tests",
     note: "The free introductory initiation is confirmed personally by Andrey; tests support self-reflection, not diagnosis.",
     furtherEyebrow: "OPTIONAL · EXPLORE AT YOUR OWN PACE",
     furtherTitle: "Curious about Levels 2–9?",
-    furtherDescription: "The rest of the course stays here without overwhelming the first step. Tap any level to reveal its original description, practices and attunements.",
+    furtherDescription: "Choose a level to explore its original lesson and traditional practices.",
     expand: "Open details",
     exploreNext: "Explore later levels",
   },
   ru: {
     eyebrow: "НАЧНИТЕ ЗДЕСЬ · ПЕРВАЯ СТУПЕНЬ",
     title: "Первый шаг: «Родник жизни»",
-    description: "Начните с внимания к телу, мягкого развития чувствительности и бережного контакта с собой или партнёром. Первая ступень — самостоятельное знакомство с практикой. Остальные можно изучать позже, по желанию.",
+    description: "Замечайте ощущения в теле, развивайте чувствительность и бережный контакт в комфортном темпе.",
     request: "Получить 1-ю ступень Тантра Рейки в подарок",
     tests: "Пройти бесплатные тантрические тесты",
     note: "Бесплатная вводная инициация подтверждается лично Андреем; тесты предназначены для самопознания, не диагностики.",
     furtherEyebrow: "ПРОДОЛЖЕНИЕ · ПО ВАШЕМУ ЖЕЛАНИЮ",
     furtherTitle: "Хотите узнать о ступенях 2–9?",
-    furtherDescription: "Основная информация о первой ступени уже выше. Нажмите на интересующую ступень, чтобы раскрыть её полное авторское описание, настройки и практики.",
+    furtherDescription: "Выберите ступень, чтобы изучить авторские материалы и практики.",
     expand: "Раскрыть описание",
     exploreNext: "Посмотреть следующие ступени",
   },
   es: {
     eyebrow: "EMPIEZA AQUÍ · NIVEL 1",
     title: "Tu primer paso: Manantial de vida",
-    description: "Empieza con la conciencia corporal, la sensibilidad suave y la conexión respetuosa contigo o con otra persona. El primer nivel es una introducción completa; los demás se pueden explorar después.",
+    description: "Observa las sensaciones, practica la presencia y explora una conexión respetuosa a tu ritmo.",
     request: "Recibir Tantra Reiki Nivel 1 de regalo",
     tests: "Hacer los tests tántricos gratuitos",
     note: "La iniciación introductoria gratuita se acuerda con Andrey; los tests son para la reflexión personal, no el diagnóstico.",
     furtherEyebrow: "OPCIONAL · A TU RITMO",
     furtherTitle: "¿Quieres explorar los niveles 2–9?",
-    furtherDescription: "El primer paso es el protagonista. Pulsa cualquier otro nivel para ver su descripción original, las prácticas y las sintonizaciones.",
+    furtherDescription: "Elige una etapa para conocer sus materiales y prácticas originales.",
     expand: "Ver detalles",
     exploreNext: "Ver niveles posteriores",
   },
@@ -575,7 +575,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
 
     const article = (
       <article
-        className={"tantra-journey__level tantra-journey__level--phase-" + phase + (n === 1 ? " tantra-journey__level--first" : "")}
+        className={"tantra-journey__level tantra-journey__level--phase-" + phase + (n === 1 ? " tantra-journey__level--first" : "") + " reiki-screen reiki-screen--chapter"}
         id={n === 1 ? "tantra-level-1" : undefined}
         aria-labelledby={"tantra-heading-" + n}
       >
@@ -585,33 +585,49 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
         </figure>
         <div className="tantra-journey__level-heading">
           <div className="tantra-journey__chapter">
-            <strong className="tantra-journey__level-number">{c.level} {String(n).padStart(2, "0")} <small>/ 09</small></strong>
+            <strong className="tantra-journey__level-number">{n === 1 ? focus.eyebrow : c.level + " " + String(n).padStart(2, "0")}{n === 1 ? null : <small> / 09</small>}</strong>
             <span>{c.phases[phase]}</span>
           </div>
-          <h3 id={"tantra-heading-" + n}>{copy.title}</h3>
+          {n === 1 ? <h2 id={"tantra-heading-" + n}>{focus.title}</h2> : <h3 id={"tantra-heading-" + n}>{copy.title}</h3>}
           <p className="tantra-journey__subtitle">{copy.subtitle}</p>
         </div>
         <div className="tantra-journey__details">
-          {n === 1 ? <p className="tantra-journey__first-description">{copy.intro}</p> : null}
-          <div className="tantra-journey__author-text" lang={locale}>
-            <h4>{c.original}</h4>
-            {originalAuthorDescription(locale, i).map((paragraph, j) => <p key={j}>{paragraph}</p>)}
-          </div>
-          <div className="tantra-journey__practice tantra-journey__practice--restored">
-            <strong>{c.restored}</strong>
-            <p>{originalProgrammeStudyStep(locale, i)}</p>
-          </div>
-          <details className="tantra-journey__extras" open={i === 0}>
-            <summary><span>{c.details}</span><span className="tantra-journey__extras-indicator" aria-hidden="true">+</span></summary>
-            <div className="tantra-journey__extras-body">
-              <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
-              <div className="tantra-journey__settings">
-                <h4>{c.settings}</h4>
-                <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
-                {originalSettingDescription(locale, i) ? <p className="tantra-journey__setting-description">{originalSettingDescription(locale, i)}</p> : null}
+          <p className="tantra-journey__first-description">{n === 1 ? focus.description : copy.intro}</p>
+          <details className="tantra-journey__source">
+            <summary>
+              <span>{locale === "ru" ? "Полное описание и упражнения" : locale === "es" ? "Descripción y ejercicios completos" : "Full lesson & exercises"}</span>
+              <span className="tantra-journey__source-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div className="tantra-journey__source-body">
+              {n === 1 ? <p className="tantra-journey__source-intro">{copy.intro}</p> : null}
+              <div className="tantra-journey__author-text" lang={locale}>
+                <h4>{c.original}</h4>
+                {originalAuthorDescription(locale, i).map((paragraph, j) => <p key={j}>{paragraph}</p>)}
               </div>
+              <div className="tantra-journey__practice tantra-journey__practice--restored">
+                <strong>{c.restored}</strong>
+                <p>{originalProgrammeStudyStep(locale, i)}</p>
+              </div>
+              <details className="tantra-journey__extras">
+                <summary><span>{c.details}</span><span className="tantra-journey__extras-indicator" aria-hidden="true">+</span></summary>
+                <div className="tantra-journey__extras-body">
+                  <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
+                  <div className="tantra-journey__settings">
+                    <h4>{c.settings}</h4>
+                    <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
+                    {originalSettingDescription(locale, i) ? <p className="tantra-journey__setting-description">{originalSettingDescription(locale, i)}</p> : null}
+                  </div>
+                </div>
+              </details>
             </div>
           </details>
+          {n === 1 ? (
+            <div className="tantra-journey__first-cta">
+              <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{focus.request} <span aria-hidden="true">↗</span></Link>
+              <Link className="tantra-journey__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{focus.tests} <span aria-hidden="true">↗</span></Link>
+              <p>{focus.note}</p>
+            </div>
+          ) : null}
           <div className="tantra-journey__actions">
             {n > 1 ? <a href={"#tantra-level-" + (n - 1)} aria-label={c.previous + " " + (n - 1)}>← {c.previous}</a> : <a href="#tantra-course-hero-title">↑ {c.overview}</a>}
             <a className="tantra-journey__next" href={n === 1 ? "#tantra-next-levels" : n < 9 ? "#tantra-level-"+(n+1) : (locale === "en" ? "#english-guided-meditations-tantra-reiki" : "#tantra-testimonials")}>{n === 1 ? focus.exploreNext : n < 9 ? c.next : c.final} →</a>
@@ -634,11 +650,6 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
 
   return (
     <div className="tantra-journey">
-      <header className="tantra-journey__focus-heading">
-        <p className="homeopathy-kicker">{focus.eyebrow}</p>
-        <h2>{focus.title}</h2>
-        <p>{focus.description}</p>
-      </header>
       {stages.map((stage, i) => (
         <Fragment key={i}>
           {i === 1 ? (
@@ -649,13 +660,6 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
             </section>
           ) : null}
           {renderLevel(stage, i)}
-          {i === 0 ? (
-            <div className="tantra-journey__first-cta">
-              <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{focus.request} <span aria-hidden="true">↗</span></Link>
-              <Link className="tantra-journey__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{focus.tests} <span aria-hidden="true">↗</span></Link>
-              <p>{focus.note}</p>
-            </div>
-          ) : null}
         </Fragment>
       ))}
       <p className="tantra-journey__notice">{c.notice}</p>

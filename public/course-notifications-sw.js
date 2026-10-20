@@ -10,16 +10,39 @@
     try { payload = event.data?.json() } catch { payload = null }
     const locale = ['en', 'ru', 'es'].includes(payload?.locale) ? payload.locale : 'en'
     // Never render a supplied title, body, result, diagnosis, URL or record identifier.
-    const href = `/${locale === 'ru' ? 'ru' : 'en'}/app/course`
+    const clientMessage = payload?.kind === 'client-message'
+    const masterMessage = payload?.kind === 'master-message'
+    const message = clientMessage || masterMessage
+    const requestId = payload?.requestId
+    if (message && (typeof requestId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId))) return
+    const root = locale === 'ru' ? 'ru' : 'en'
+    const href = masterMessage
+      ? `/${root}/app/practice?panel=clients&requestId=${requestId.toLowerCase()}`
+      : clientMessage
+        ? `/${root}/app/consultations?request=${requestId.toLowerCase()}`
+        : `/${root}/app/course`
     event.waitUntil(self.registration.showNotification('Holistic House', {
-      body: copy[locale], icon: '/icons/holistic-house-teal.svg', badge: '/icons/holistic-house-teal.svg', renotify: false, tag: 'hh-course-reminder',
+      body: message
+        ? (masterMessage
+          ? (locale === 'ru' ? 'Клиент оставил новое сообщение. Откройте My Practice для просмотра.' :
+            locale === 'es' ? 'Un cliente envió un mensaje. Abre My Practice para verlo.' :
+            'A client has sent a message. Open My Practice to view it.')
+          : (locale === 'ru' ? 'Вам новое личное сообщение. Нажмите, чтобы прочитать его в кабинете.' :
+            locale === 'es' ? 'Tienes un mensaje privado nuevo. Abre Holistic House para leerlo.' :
+            'You have a new private message. Open your cabinet to read it.'))
+        : copy[locale], icon: '/icons/holistic-house-teal.svg', badge: '/icons/holistic-house-teal.svg',
+      renotify: false, ...(message ? {} : {tag: 'hh-course-reminder'}),
       data: { href }, requireInteraction: false,
     }))
   })
   self.addEventListener('notificationclick', event => {
     event.notification.close()
     const requested = event.notification.data?.href
-    const href = /^\/(en|ru)\/app\/course$/.test(requested || '') ? requested : '/en/app/course'
+    const href = /^\/(en|ru)\/app\/course$/.test(requested || '') ||
+      /^\/(en|ru)\/app\/consultations\?request=[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(requested || '')
+      || /^\/(en|ru)\/app\/practice\?panel=clients&requestId=[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(requested || '')
+      ? requested : '/en/app/course'
     const destination = new URL(href, self.location.origin).href
     event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {
       // Do not navigate away from an in-progress assessment in another tab.

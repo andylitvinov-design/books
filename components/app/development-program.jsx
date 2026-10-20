@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, CheckCircle2, ChevronDown, CircleHelp, LockKeyhole, Save, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
-import { PORTRAIT_SECTORS } from '@/lib/assessments/portrait-sectors'
+import { ArrowRight, BookOpen, CheckCircle2, ChevronDown, CircleHelp, ClipboardList, LockKeyhole, Save, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
+import { PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER } from '@/lib/assessments/portrait-sectors'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
+import { buildExplorerEntries } from '@/lib/assessments/test-explorer'
+import { PROFILE_TEST_DOMAINS, recommendProfileTopicTests, recommendUnmeasuredPortraitTests } from '@/lib/profile/portrait-test-suggestions'
 import { TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { buildDevelopmentPlan, DEFAULT_DEVELOPMENT_TARGETS, DEVELOPMENT_GOALS_VERSION } from '@/lib/profile/development-program'
 import { appFetch } from '@/lib/app/client-fetch'
@@ -33,6 +36,23 @@ const words = {
     report: 'Отчёт теста', tests: 'Дополнить замеры',
     noTests: 'Для расчёта ещё недостаточно подходящих недавних результатов. Выберите тесты: нулевые значения мы не подставляем.',
     missing: 'Пока не измерены', missingHint: 'Эти направления не считаются слабыми и не участвуют в подборе.',
+    profileKicker: 'БЕСПЛАТНО · МОЙ ПРОФИЛЬ',
+    profileTitle: 'Узнайте себя лучше',
+    profileIntro: 'Пройдите пару подходящих тестов, чтобы дополнить ваш психологический портрет. Результаты останутся в личном кабинете.',
+    profileProgress: 'направлений исследовано',
+    profileMissing: 'Можно ещё исследовать',
+    profileMinutes: 'мин', profileQuestions: 'вопросов',
+    profileStart: 'Пройти тест',
+    profileFilterLabel: 'Выберите тему тестов',
+    profileComplete: 'Все направления портрета исследованы. Можно выбрать другую интересную тему.',
+    profileFilterEmpty: 'В этой категории сейчас нет других доступных бесплатных тестов. Попробуйте соседнюю вкладку или каталог.',
+    profileTopicHint: 'Показаны доступные тесты, связанные с этой темой. Это фильтр интересов, а не диагноз.',
+    profileBusinessHint: 'Здесь собраны тесты внимания, ресурсов и повседневной активности, которые могут быть полезны для бизнеса, а не тесты финансов компании.',
+    profileShowAll: 'Смотреть все рекомендованные тесты',
+    profileMore: 'ещё',
+    profileBrowse: 'Выбрать другие тесты',
+    profileNoTests: 'Подходящих новых бесплатных тестов сейчас нет. Можно выбрать другие в каталоге.',
+    profileNote: 'Неисследованные стороны не являются недостатками. Вы сами выбираете, какие тесты проходить.',
     noGap: 'По доступным шкалам нет положительного разрыва с выбранными целями. При желании измените цели или уточните измерения.',
     courses: 'Подходящие курсы и программы', courseHint: 'Подбор учебных тем по выбранным целям и результатам, а не медицинское назначение.',
     now: 'Доступен', planned: 'Готовится', start: 'Открыть курс', catalog: 'Посмотреть все курсы',
@@ -65,6 +85,23 @@ const words = {
     report: 'Test report', tests: 'Complete more tests',
     noTests: 'There are not yet enough recent, suitable results to calculate gaps. Choose assessments; missing values are never treated as zero.',
     missing: 'Not measured yet', missingHint: 'These areas are not considered weaknesses and are excluded from the ranking.',
+    profileKicker: 'FREE · MY PROFILE',
+    profileTitle: 'Discover more about yourself',
+    profileIntro: 'Try a couple of relevant questionnaires to build a fuller personal portrait. Your results stay in your private Cabinet.',
+    profileProgress: 'areas explored',
+    profileMissing: 'Still to explore',
+    profileMinutes: 'min', profileQuestions: 'questions',
+    profileStart: 'Take test',
+    profileFilterLabel: 'Choose questionnaire topic',
+    profileComplete: 'All portrait areas have recorded measurements. You can still explore a new topic.',
+    profileFilterEmpty: 'There are no other available free questionnaires in this category. Try another tab or browse the catalog.',
+    profileTopicHint: 'These are available questionnaires related to this topic. Categories are for browsing, not diagnosis.',
+    profileBusinessHint: 'These questionnaires explore focus, resources and daily functioning that may help with business, not company finances.',
+    profileShowAll: 'See all recommended tests',
+    profileMore: 'more',
+    profileBrowse: 'Explore other tests',
+    profileNoTests: 'No new free questionnaires currently match these areas. You can browse the full test catalog.',
+    profileNote: 'Unexplored areas are not weaknesses. You choose which questionnaires feel useful.',
     noGap: 'There is no positive gap among the available suitable results and your selected targets. You can adjust your goals or take a fresh assessment.',
     courses: 'Suggested courses and programmes', courseHint: 'Learning options based on your chosen interests and suitable results, not medical treatment plans.',
     now: 'Available', planned: 'In preparation', start: 'Open course', catalog: 'Explore all courses',
@@ -98,6 +135,23 @@ const percent = n => Number.isFinite(n) ? String(Math.round(n)) + '%' : '—'
 const axisLabel = (axis, locale) => TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] ||
   TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
 
+function ProfileTestCard({ test, index, lang, copy }) {
+  return <article className={styles.profileTestCard} data-recommended-profile-test={test.key}>
+    <span className={styles.profileTestNumber} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+    <span className={styles.profileTestCopy}>
+      <strong>{test.title}</strong>
+      <small>{test.durationMinutes ? '~' + test.durationMinutes + ' ' + copy.profileMinutes : ''}
+        {test.durationMinutes && test.questionCount ? ' · ' : ''}
+        {test.questionCount ? test.questionCount + ' ' + copy.profileQuestions : ''}</small>
+      {test.covers.length > 0 && <span>{test.covers.slice(0, 3).map(axis => axisLabel(axis, lang)).join(' · ')}</span>}
+    </span>
+    <Link href={'/' + lang + '/app/monitoring/' + encodeURIComponent(test.key)}
+      prefetch={false} className={styles.profileTestAction} aria-label={copy.profileStart + ': ' + test.title}>
+      {copy.profileStart}<ArrowRight size={17} aria-hidden="true" />
+    </Link>
+  </article>
+}
+
 function TargetSlider({ title, value, onChange, compact = false }) {
   return <label className={compact ? styles.subSlider : styles.slider}>
     <span className={styles.sliderTitle}>{title}</span>
@@ -108,7 +162,7 @@ function TargetSlider({ title, value, onChange, compact = false }) {
   </label>
 }
 
-export default function DevelopmentProgram({ results = [], accountId, locale = 'en' }) {
+export default function DevelopmentProgram({ results = [], accountId, locale = 'en', hideBottomNotes = false }) {
   const lang = locale === 'ru' ? 'ru' : 'en'
   const t = words[lang]
   const [expanded, setExpanded] = useState(true)
@@ -122,6 +176,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
   const [dirty, setDirty] = useState(false)
   const [detailed, setDetailed] = useState(false)
   const [activePanel, setActivePanel] = useState(null)
+  const [activeDomain, setActiveDomain] = useState('all')
   const [allRows, setAllRows] = useState(false)
 
   useEffect(() => {
@@ -156,7 +211,28 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
   }, [expanded, accountId, loaded, t.loadError])
 
   const plan = useMemo(() => buildDevelopmentPlan({ results, goals, locale: lang }), [results, goals, lang])
-  const missing = plan.missingAxes
+  // Unlike growth-goal eligibility, portrait coverage includes audited descriptive
+  // measurements. Never label an answered, descriptive profile area as missing.
+  const portrait = useMemo(() => activePanel === 'plan' ? buildPsychPortrait(results) : null,
+    [activePanel, results])
+  const missingPortraitAxes = useMemo(() => portrait
+    ? PORTRAIT_AXIS_ORDER.filter(axis => !portrait.axes[axis]) : [], [portrait])
+  const profileTestEntries = useMemo(() => activePanel === 'plan'
+    ? buildExplorerEntries({ locale: lang, audience: 'account' }) : [], [activePanel, lang])
+  const recommendedTests = useMemo(() => missingPortraitAxes.length
+    ? recommendUnmeasuredPortraitTests({
+        entries: profileTestEntries, results, missingAxes: missingPortraitAxes,
+      }) : [], [profileTestEntries, missingPortraitAxes, results])
+  // All includes the complete vetted browse set, with personally missing
+  // dimensions ranked first. A questionnaire is shown only once.
+  const allTopicTests = useMemo(() => recommendProfileTopicTests({
+    entries: profileTestEntries, results, category: 'all', missingAxes: missingPortraitAxes,
+  }), [profileTestEntries, results, missingPortraitAxes])
+  const displayedTests = useMemo(() => activeDomain === 'all'
+    ? [...recommendedTests, ...allTopicTests.filter(test => !recommendedTests.some(item => item.key === test.key))]
+    : recommendProfileTopicTests({
+      entries: profileTestEntries, results, category: activeDomain, missingAxes: missingPortraitAxes,
+    }), [activeDomain, recommendedTests, allTopicTests, profileTestEntries, results, missingPortraitAxes])
   const changeSector = (key, value) => {
     setGoals(previous => ({ ...previous, targets: { ...previous.targets, [key]: value } }))
     setDirty(true)
@@ -308,14 +384,58 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           {allRows ? t.less : t.allScales}<ChevronDown size={15} aria-hidden="true" />
         </button>}
         </div>
+        {portrait && <section className={styles.profileInvitation}
+          aria-labelledby="hh-profile-invitation-title" data-testid="development-profile-tests">
+          <div className={styles.profileInvitationHeader}>
+            <span className={styles.profileInvitationIcon} aria-hidden="true"><ClipboardList size={24} /></span>
+            <div className={styles.profileInvitationHeading}>
+              <span className={styles.profileInvitationKicker}>{t.profileKicker}</span>
+              <h3 id="hh-profile-invitation-title">{t.profileTitle}</h3>
+              <p>{t.profileIntro}</p>
+            </div>
+            <span className={styles.profileInvitationProgress}>{portrait.answeredCount} / {portrait.totalCount}
+              <small>{t.profileProgress}</small>
+            </span>
+          </div>
+          <div className={styles.profileDomainTabs} role="group" aria-label={t.profileFilterLabel} data-profile-test-tabs>
+            {PROFILE_TEST_DOMAINS.map(domain => <button type="button" key={domain.key}
+              className={styles.profileDomainTab} data-profile-test-domain={domain.key}
+              aria-pressed={activeDomain === domain.key} onClick={() => setActiveDomain(domain.key)}>
+              {domain.label[lang]}
+            </button>)}
+          </div>
+          {missingPortraitAxes.length > 0 ? <p className={styles.profileInvitationMissing}>
+            {t.profileMissing}: {missingPortraitAxes.slice(0, 3).map(axis => axisLabel(axis, lang)).join(' · ')}
+            {missingPortraitAxes.length > 3 ? ' · +' + (missingPortraitAxes.length - 3) : ''}
+          </p> : <p className={styles.profileInvitationMissing}>{t.profileComplete}</p>}
+          {activeDomain !== 'all' && <p className={styles.profileDomainHint}>
+            {activeDomain === 'business' ? t.profileBusinessHint : t.profileTopicHint}
+          </p>}
+          {displayedTests.length > 0 ? <div className={styles.profileTestList}>
+            {displayedTests.slice(0, 2).map((test, index) => <ProfileTestCard
+              key={test.key} test={test} index={index} lang={lang} copy={t} />)}
+          </div> : <p className={styles.profileNoTests}>
+            {activeDomain === 'all' ? t.profileNoTests : t.profileFilterEmpty}
+          </p>}
+          {displayedTests.length > 2 && <details key={activeDomain} className={styles.profileTestMore}>
+            <summary>
+              <span>{t.profileShowAll}</span>
+              <span>{displayedTests.length - 2} {t.profileMore}<ChevronDown size={17} aria-hidden="true" /></span>
+            </summary>
+            <div className={styles.profileTestMoreList}>
+              {displayedTests.slice(2).map((test, index) => <ProfileTestCard
+                key={test.key} test={test} index={index + 2} lang={lang} copy={t} />)}
+            </div>
+          </details>}
+          <div className={styles.profileInvitationFooter}>
+            <small>{t.profileNote}</small>
+            <Link href={'/' + lang + '/app/tests?explore=1'} prefetch={false}>
+              {t.profileBrowse}<ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>}
         <div className={styles.courseSection}>
           <div className={styles.sectionHeading}><span className={styles.pill}><BookOpen size={16} aria-hidden="true" />{t.courses}</span><p>{t.courseHint}</p></div>
-          {missing.length > 0 && <div className={styles.missing}>
-            <div><CircleHelp size={17} aria-hidden="true" /><strong>{t.missing} ({missing.length})</strong></div>
-            <p>{missing.map(axis => axisLabel(axis, lang)).join(' · ')}</p>
-            <small>{t.missingHint}</small>
-            <Link href={'/' + lang + '/app/tests?profile=missing'} prefetch={false}>{t.tests}<ArrowRight size={15} aria-hidden="true" /></Link>
-          </div>}
           {(revision > 0 || dirty) && plan.courses.length ? <div className={styles.courses}>
             {plan.courses.map(course => {
               const copy = programmeText[course.id]?.[lang]
@@ -334,12 +454,14 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           </div> : <p className={styles.empty}>{t.missingCourse}</p>}
           <Link className={styles.catalogLink} href={'/' + lang + '/academy'} prefetch={false}>{t.catalog}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
+      {!hideBottomNotes && <>
       <details className={styles.method}>
         <summary><CircleHelp size={16} aria-hidden="true" />{t.methodology}<ChevronDown size={15} aria-hidden="true" /></summary>
         <p>{t.methodText}</p>
       </details>
       <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.private}</p>
       <p className={styles.privacy}>{t.scoreNote}</p>
+      </>}
         </>}
       </div>}
     </div>}

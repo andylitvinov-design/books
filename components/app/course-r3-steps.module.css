@@ -505,3 +505,461 @@
   .compactTests .shortTestExtras button{font-size:10.5px;padding-inline:3px}
 }
 @media(prefers-reduced-motion:reduce){.compactTests .shortTestRow{transition:none}}
+
+
+/* 2026-10-19 · OPORA baseline visual hierarchy.
+   Keep the short, single-screen flow and all original assessment controls:
+   one primary "continue" action, quieter optional test choices, and a
+   distinct saved-state acknowledgement. No clinical score colors. */
+.compactTests[data-course-baseline-one-screen]{
+  --baseline-navy:#123e58;
+  --baseline-teal:#058fa3;
+  border-color:#dde8e8;
+  box-shadow:0 8px 28px rgba(18,62,88,.055);
+}
+.compactTests .baselineHero{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  border-color:#10566b;
+  background:
+    radial-gradient(circle at 95% 0%,rgba(111,228,216,.22),transparent 44%),
+    linear-gradient(118deg,#123c58 0%,#104c65 59%,#087a89 100%);
+  box-shadow:0 4px 13px rgba(18,69,87,.12);
+}
+.compactTests .baselineHero::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:3px;
+  background:linear-gradient(90deg,#a4e8db,#e8cc92 54%,transparent);
+  pointer-events:none;
+}
+.compactTests .baselineHero .compactEyebrow{
+  color:#9fe7e4!important;
+  letter-spacing:.14em;
+}
+.compactTests .baselineHero h2{
+  color:#fff!important;
+  font-weight:600;
+  letter-spacing:-.023em;
+}
+.compactTests .baselineHero .compactLead{
+  color:#e1f2f5!important;
+}
+.compactTests .baselineHero .baselineContext{
+  color:#d4e5ec!important;
+}
+.compactTests .baselineTimeline>span{
+  border-color:rgba(213,244,244,.38);
+  background:rgba(255,255,255,.095);
+  color:#eefcfd;
+}
+.compactTests .baselineTimeline>span:first-child{
+  border-color:#d3e9d9;
+  background:#e4f8ef;
+  color:#165b6a;
+}
+.compactTests .baselineArrow{color:#a7eee4}
+.compactTests .baselineListIntro p{
+  color:#577585;
+  font-weight:600;
+}
+.compactTests .baselineSaved{
+  width:fit-content;
+  max-width:100%;
+  border-color:#b9e5d3;
+  border-radius:999px;
+  background:#eaf8f1;
+  color:#216d57;
+  padding:5px 11px;
+  font-weight:750;
+  font-size:11px;
+}
+.compactTests .baselineSaved svg{color:#148368}
+.compactTests .shortTestRow{
+  border-color:#dae6e8;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(26,67,83,.035);
+}
+.compactTests .shortTestRow[data-checked=true]{
+  border-color:#b2dfe1;
+  background:#f3fbfc;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true]{
+  border:1px solid #8cd2db;
+  border-left:4px solid #06a3b5;
+  padding-left:5px;
+  background:#eaf8fb;
+}
+.compactTests .shortTestRow>input{accent-color:#078fa6}
+.compactTests .shortTestRow[data-course-required-baseline=true]>input:disabled{
+  opacity:1;
+}
+.compactTests .shortTestBody strong{
+  color:#173f59;
+  font-weight:800;
+}
+.compactTests .shortTestBody small{color:#637f8b}
+.compactTests .shortTestCheck{color:#158b77;opacity:.75}
+.compactTests .shortTestRow[data-checked=false] .shortTestCheck{
+  display:none; /* An unselected optional test may still have a saved result. */
+}
+.compactTests .fastTestButton{
+  position:relative;
+  min-height:50px;
+  padding:10px 39px 10px 13px;
+  border:1px solid #0a879e!important;
+  border-bottom:4px solid #0b6579!important;
+  border-radius:13px;
+  background:linear-gradient(108deg,#17b9c5 0%,#0795aa 55%,#08778f 100%)!important;
+  box-shadow:0 6px 14px rgba(5,125,148,.22);
+  color:#fff!important;
+  font-weight:850;
+  letter-spacing:.005em;
+}
+.compactTests .fastTestButton>svg{
+  position:absolute;
+  right:11px;
+  top:50%;
+  box-sizing:content-box;
+  width:17px;
+  height:17px;
+  padding:5px;
+  border-radius:50%;
+  background:rgba(255,255,255,.18);
+  transform:translateY(-50%);
+}
+.compactTests .fastTestButton:not(:disabled):hover{
+  filter:brightness(1.055);
+  box-shadow:0 8px 17px rgba(5,125,148,.28);
+}
+.compactTests .fastTestButton:not(:disabled):active{
+  box-shadow:0 2px 6px rgba(5,125,148,.18);
+}
+.compactTests .shortTestExtras button{
+  font-weight:700;
+  color:#34778a;
+}
+.compactTests .shortTestDetails{
+  border-top-color:#e3ebee;
+}
+@media(max-width:530px){
+  .compactTests .baselineHero{padding:11px 12px}
+  .compactTests .baselineHero h2{font-size:clamp(23px,5.7vw,26px)}
+  .compactTests .baselineSaved{font-size:10.5px;padding:4px 9px}
+  .compactTests .fastTestButton{min-height:48px;font-size:14px}
+}
+@media(max-width:360px){
+  .compactTests .fastTestButton{font-size:12.5px;padding-left:7px;padding-right:34px}
+  .compactTests .fastTestButton>svg{right:5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .compactTests .fastTestButton{transition:none}
+}
+
+
+/* OPORA free pre-course check-ins · approved compact mobile design (2026-10-19).
+   Structural/test state is unchanged; all three appear selected by default
+   through CourseR3Steps, while completed tests remain server-authoritative. */
+.compactTests[data-course-baseline-one-screen]{
+  gap:9px;
+  border-color:#dbe8e9;
+  background:linear-gradient(180deg,#fffcf6 0%,#ffffff 78%);
+}
+.compactTests .baselineHero{
+  position:relative;
+  z-index:0;
+  overflow:hidden;
+  isolation:isolate;
+  gap:6px;
+  padding:17px 17px 13px;
+  border-radius:19px;
+  border:1px solid #0b8492;
+  background:
+    radial-gradient(ellipse 85% 100% at 105% 10%,rgba(102,222,189,.55),transparent 65%),
+    radial-gradient(ellipse 56% 72% at 88% 98%,rgba(0,190,184,.38),transparent 74%),
+    linear-gradient(115deg,#0b3755 0%,#0e516d 64%,#07899b 100%);
+}
+.compactTests .baselineHero::after{
+  content:"";
+  z-index:-1;
+  position:absolute;
+  right:-31px;
+  top:26%;
+  width:136px;
+  height:173px;
+  border-radius:76% 18% 78% 22%;
+  transform:rotate(-37deg);
+  background:linear-gradient(55deg,rgba(39,184,168,.12),rgba(126,234,194,.24) 45%,rgba(203,246,205,.06));
+  border:1px solid rgba(160,232,204,.15);
+  pointer-events:none;
+}
+.compactTests .baselineDecoration{
+  position:absolute;
+  pointer-events:none;
+  right:6px;
+  top:26px;
+  display:grid;
+  place-items:center;
+  width:105px;
+  height:105px;
+  border:1px solid rgba(194,242,224,.28);
+  border-radius:50%;
+  color:rgba(197,248,227,.65);
+  background:radial-gradient(circle,rgba(21,165,151,.18),transparent 73%);
+}
+.compactTests .baselineHero .compactEyebrow{
+  max-width:calc(100% - 45px);
+  color:#a6edf0!important;
+  font-size:10px!important;
+  line-height:1.3;
+  font-weight:900;
+  letter-spacing:.13em;
+}
+.compactTests .baselineHero h2{
+  position:relative;
+  max-width:100%;
+  color:#fff!important;
+  font:600 clamp(23px,4vw,29px)/1.08 Georgia,serif;
+  letter-spacing:-.025em;
+  text-wrap:balance;
+  text-shadow:0 1px 1px rgba(0,0,0,.06);
+}
+.compactTests .baselineHero .compactLead{
+  position:relative;
+  max-width:89%;
+  color:#e9f7f9!important;
+  font-size:12.5px;
+  line-height:1.4;
+  font-weight:500;
+}
+.compactTests .baselineHighlights{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:2px 0 0;
+}
+.compactTests .baselineHighlights>span{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 8px;
+  min-height:27px;
+  border-radius:999px;
+  border:1px solid rgba(231,251,255,.75);
+  background:#dff9fb;
+  color:#12516b;
+  font-size:10.2px;
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+  letter-spacing:.01em;
+}
+.compactTests .baselineHighlights>span:first-child{
+  background:#d9fae6;
+  color:#0a654d;
+  border-color:#abefd5;
+}
+.compactTests .baselineHighlights svg{flex:none}
+.compactTests .baselineTimeline{
+  gap:5px;
+  margin:1px 0 0;
+}
+.compactTests .baselineTimeline>span,
+.compactTests .baselineTimeline>span:first-child{
+  border:1px solid rgba(198,230,238,.36);
+  background:rgba(255,255,255,.1);
+  color:#e6f9fc;
+  border-radius:7px;
+  font-size:9px;
+  padding:3px 6px;
+}
+.compactTests .baselineTimeline>span:first-child{
+  background:#e2faef;
+  border-color:#c3eedc;
+  color:#176573;
+}
+.compactTests .baselineHero .baselineContext{
+  margin-top:2px;
+  padding-top:7px;
+  border-top:1px solid rgba(215,244,244,.26);
+  color:#cee9f0!important;
+  font-size:10px;
+  line-height:1.28;
+}
+.compactTests .baselineListIntro{
+  padding:1px 2px 0;
+  gap:4px;
+}
+.compactTests .baselineListIntro h3{
+  margin:0;
+  color:#143b59;
+  font:600 clamp(19px,3.7vw,24px)/1.18 Georgia,serif;
+  letter-spacing:-.015em;
+}
+.compactTests .baselineListIntro p{
+  color:#587b89;
+  font-size:11px;
+  line-height:1.35;
+  font-weight:550;
+}
+.compactTests .shortTestList{
+  gap:6px;
+  max-height:clamp(158px,31dvh,245px);
+}
+.compactTests .shortTestRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:51px;
+  padding:9px 11px;
+  border:1px solid #d4e5e9;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 1px 4px rgba(32,67,88,.035);
+}
+.compactTests .shortTestRow[data-checked=true]{
+  background:#f0fbfb;
+  border-color:#a6d9de;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true]{
+  border:1px solid #78cbd3;
+  border-left:4px solid #11adba;
+  background:linear-gradient(105deg,#e9f9fa,#f5fdfc);
+  padding-left:7px;
+}
+.compactTests .shortTestIcon{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  flex:none;
+  display:grid;
+  place-items:center;
+  background:#e7f2f8;
+  color:#2c7696;
+}
+.compactTests .shortTestRow[data-course-required-baseline=true] .shortTestIcon{
+  background:#cceff1;
+  color:#048b9d;
+}
+.compactTests .shortTestBody{gap:3px}
+.compactTests .shortTestBody strong{
+  font-size:12.8px;
+  line-height:1.2;
+  color:#113d5a;
+}
+.compactTests .shortTestBody small{
+  font-size:10.6px;
+  line-height:1.25;
+  color:#658294;
+}
+.compactTests .shortTestRow>input{
+  flex:none;
+  position:relative;
+  appearance:none;
+  -webkit-appearance:none;
+  width:23px;
+  height:23px;
+  margin:0;
+  border:2px solid #9aaeb9;
+  background:#fff;
+  border-radius:50%;
+  cursor:pointer;
+}
+.compactTests .shortTestRow>input:checked{
+  border-color:#0795a6;
+  background:#0795a6;
+}
+.compactTests .shortTestRow>input:checked::after{
+  content:"";
+  position:absolute;
+  top:3px;
+  left:6px;
+  width:6px;
+  height:10px;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  transform:rotate(45deg);
+}
+.compactTests .shortTestRow>input:disabled{
+  opacity:1;
+  cursor:default;
+}
+.compactTests .shortTestRow:focus-within{outline:3px solid #e6bf75;outline-offset:2px}
+.compactTests .shortTestRow .baselineSaved,
+.compactTests .shortTestSaved{
+  display:inline-flex;
+  align-items:center;
+  justify-self:start;
+  align-self:start;
+  width:fit-content;
+  max-width:100%;
+  gap:4px;
+  margin:1px 0 0;
+  padding:3px 7px;
+  border-radius:999px;
+  border:1px solid #bce7d4;
+  background:#ddf7e8;
+  color:#147359;
+  font-size:9.8px;
+  font-weight:780;
+  line-height:1.23;
+}
+.compactTests .shortTestSaved{
+  background:#eefaf6;
+  color:#3a7d71;
+  border-color:#d6ece2;
+  padding:2px 6px;
+}
+.compactTests .shortTestRow .baselineSaved svg,
+.compactTests .shortTestSaved svg{flex:none;color:#128265}
+.compactTests .fastTestButton{
+  min-height:48px;
+  font-size:14px;
+  margin-top:2px;
+  box-shadow:0 6px 13px rgba(0,136,153,.20);
+}
+.compactTests .shortTestExtras{
+  justify-content:space-between;
+  gap:4px 8px;
+}
+.compactTests .shortTestExtras button{
+  min-height:28px;
+  padding:2px 4px;
+  color:#267c92;
+  font-size:11px;
+  font-weight:770;
+}
+@media(max-width:530px){
+  .compactTests[data-course-baseline-one-screen]{gap:8px}
+  .compactTests .baselineHero{padding:13px 13px 10px;gap:5px;border-radius:17px}
+  .compactTests .baselineDecoration{right:0;top:24px;width:79px;height:79px;opacity:.66}
+  .compactTests .baselineDecoration svg{width:58px;height:58px}
+  .compactTests .baselineHero .compactEyebrow{font-size:9.6px!important}
+  .compactTests .baselineHero h2{font-size:clamp(22px,5.8vw,26px)}
+  .compactTests .baselineHero .compactLead{max-width:96%;font-size:11.7px}
+  .compactTests .baselineHighlights>span{padding:4px 7px;min-height:25px;font-size:9.6px}
+  .compactTests .baselineListIntro h3{font-size:21px}
+  .compactTests .baselineListIntro p{font-size:10.6px}
+  .compactTests .shortTestRow{padding:7px 8px;gap:8px;min-height:48px}
+  .compactTests .shortTestRow[data-course-required-baseline=true]{padding-left:5px}
+  .compactTests .shortTestIcon{width:33px;height:33px;border-radius:9px}
+  .compactTests .shortTestIcon svg{width:20px;height:20px}
+  .compactTests .shortTestBody strong{font-size:12.4px}
+  .compactTests .shortTestBody small{font-size:10.2px}
+  .compactTests .shortTestRow>input{width:21px;height:21px}
+  .compactTests .shortTestRow>input:checked::after{top:2px;left:5px}
+  .compactTests .shortTestRow .baselineSaved{font-size:9.3px;padding:2px 6px}
+}
+@media(max-width:360px){
+  .compactTests .baselineHero .compactEyebrow{letter-spacing:.075em}
+  .compactTests .baselineHighlights{gap:4px}
+  .compactTests .baselineHighlights>span{font-size:8.6px;padding:4px 6px}
+  .compactTests .baselineListIntro h3{font-size:19px}
+  .compactTests .shortTestIcon{width:30px;height:30px}
+  .compactTests .shortTestBody strong{font-size:11.5px}
+  .compactTests .shortTestRow .baselineSaved{font-size:8.9px}
+}

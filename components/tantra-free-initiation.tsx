@@ -1,6 +1,7 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Check, Feather, ShieldCheck, Video, Flower2, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Check, Feather, ShieldCheck, Video, Flower2, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraInitiationForm, tantraInitiationWhatsAppUrl } from "@/components/tantra-initiation-form";
@@ -19,10 +20,10 @@ import styles from "./tantra-free-initiation.module.css";
  */
 const copy = {
   en: {
-    back: "Back to Tantra Reiki", nav: ["Discover", "Choose", "How to", "Video", "Materials", "Questions", "Apply"],
+    back: "Back to Tantra Reiki", nav: ["Discover", "How to", "Video", "Materials", "Questions", "Choose", "Apply"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · TANTRA REIKI · LEVEL ONE",
     heroTitle: "Free Tantra Reiki Initiation",
-    heroLead: "Start Tantra Reiki Level 1 online with Andrey Litvinov. Watch his original guided practice, explore the learning materials and seven questions, then request a free teacher-guided introduction. Feel the flow and awaken connection.",
+    heroLead: "Discover an inviting practice of presence, aliveness and connection. Begin with Andrey’s original video, explore what resonates with you and take your first step at your own pace.",
     heroTag: "Your first initiation begins here",
     freeCta: "Explore the free initiation", watchCta: "Watch Andrey's practice",
     heroMeta: ["Level 1 · Spring of Life", "Seven simple study questions", "Teacher-guided initiation"],
@@ -34,7 +35,7 @@ const copy = {
       { title: "Connect", text: "Approach relationships and shared practice with openness, choice and consent." },
       { title: "Grow", text: "Follow nine levels that deepen the original stream through different forms of study." },
     ],
-    choiceEyebrow: "02 / BEGIN YOUR JOURNEY", choiceTitle: "Choose your Level 1 path",
+    choiceEyebrow: "07 / CHOOSE YOUR FORMAT", choiceTitle: "Choose your Level 1 path",
     choiceLead: "Three ways to begin Tantra Reiki — from a free introduction to personal guidance with Andrey.",
     choiceMotif: "PRESENCE · LOVE · CONNECTION",
     freeFlag: "FREE INTRODUCTORY OFFER", freeTitle: "Start for free",
@@ -80,16 +81,16 @@ const copy = {
       { title: "Full teaching programme", subtitle: "Attunements, mandalas, artifacts and practice" },
       { title: "Download the Tantra Reiki PDF", subtitle: "Course overview and first-level study guide" },
     ],
-    formEyebrow: "07 / WHATSAPP · TELEGRAM", formTitle: "Ready to begin?",
+    formEyebrow: "08 / WHATSAPP · TELEGRAM", formTitle: "Ready to begin?",
     formLead: "Free introduction, personal initiation, a longer individual session or your seven answers — all directly through WhatsApp or Telegram.",
     disclaimer: "Tantra Reiki is presented here as a spiritual and reflective tradition. Its descriptions of energies or effects are not established medical facts. It does not replace healthcare or guarantee results.",
     footer: "Return to the full Tantra Reiki course",
   },
   ru: {
-    back: "К курсу Тантра Рейки", nav: ["Система", "Выбор", "Как получить", "Видео", "Материалы", "Вопросы", "Заявка"],
+    back: "К курсу Тантра Рейки", nav: ["Система", "Как получить", "Видео", "Материалы", "Вопросы", "Выбор", "Заявка"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · ТАНТРА РЕЙКИ · 1-Я СТУПЕНЬ",
     heroTitle: "Бесплатная инициация Тантра Рейки",
-    heroLead: "Начните изучение 1-й ступени Тантра Рейки онлайн с Андреем Литвиновым: посмотрите его видео, прочитайте материалы, ответьте на 7 вопросов и запросите бесплатную вводную инициацию с преподавателем.",
+    heroLead: "Откройте практику внимания, жизненности и внутренней связи. Посмотрите оригинальное видео Андрея, почувствуйте, что вам близко, и начните знакомство с первой ступенью в своём темпе.",
     heroTag: "Ваша первая инициация начинается здесь",
     freeCta: "Получить первую ступень бесплатно", watchCta: "Смотреть практику Андрея",
     heroMeta: ["1-я ступень · Родник Жизни", "7 простых вопросов", "Инициация с преподавателем"],
@@ -101,7 +102,7 @@ const copy = {
       { title: "Соединяться", text: "Учиться контакту с собой и другими с уважением к выбору и границам." },
       { title: "Развиваться", text: "Последовательно изучать один поток через девять ступеней системы." },
     ],
-    choiceEyebrow: "02 / НАЧАЛО ПУТИ", choiceTitle: "Три пути к первой ступени",
+    choiceEyebrow: "07 / ВЫБОР ФОРМАТА", choiceTitle: "Три пути к первой ступени",
     choiceLead: "Выберите бесплатное знакомство, личную инициацию или занятие с разбором вашей ситуации.",
     choiceMotif: "ПРИСУТСТВИЕ · ЛЮБОВЬ · СВЯЗЬ",
     freeFlag: "БЕСПЛАТНОЕ ЗНАКОМСТВО", freeTitle: "Начните бесплатно",
@@ -147,16 +148,16 @@ const copy = {
       { title: "Полная программа обучения", subtitle: "Настройки, мандалы, артефакты и практика" },
       { title: "Скачать PDF по Тантра Рейки", subtitle: "Описание системы и материалы первой ступени" },
     ],
-    formEyebrow: "07 / WHATSAPP · TELEGRAM", formTitle: "Готовы начать?",
+    formEyebrow: "08 / WHATSAPP · TELEGRAM", formTitle: "Готовы начать?",
     formLead: "Бесплатное знакомство, личная инициация, расширенная сессия или ваши семь ответов — всё через WhatsApp или Telegram.",
     disclaimer: "Тантра Рейки здесь представлена как духовная и созерцательная традиция. Описания потоков и эффектов относятся к учению, не являются доказанными медицинскими фактами и не заменяют медицинскую помощь.",
     footer: "Вернуться к полной программе Тантра Рейки",
   },
   es: {
-    back: "Volver a Tantra Reiki", nav: ["Sistema", "Opciones", "Cómo empezar", "Vídeo", "Materiales", "Preguntas", "Solicitud"],
+    back: "Volver a Tantra Reiki", nav: ["Sistema", "Cómo empezar", "Vídeo", "Materiales", "Preguntas", "Opciones", "Solicitud"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · TANTRA REIKI · NIVEL UNO",
     heroTitle: "Iniciación gratis de Tantra Reiki",
-    heroLead: "Empieza Tantra Reiki Nivel 1 online con Andrey Litvinov: mira su práctica original, lee los materiales, responde siete preguntas y solicita una introducción gratuita guiada por el profesor.",
+    heroLead: "Descubre una práctica amable de presencia, vitalidad y conexión. Empieza con el vídeo original de Andrey y explora el primer nivel a tu propio ritmo.",
     heroTag: "Tu primera iniciación comienza aquí",
     freeCta: "Solicitar la iniciación gratis", watchCta: "Ver la práctica de Andrey",
     heroMeta: ["Nivel 1 · Manantial de vida", "7 preguntas sencillas", "Iniciación con profesor"],
@@ -168,7 +169,7 @@ const copy = {
       { title: "Conectar", text: "Cultivar una relación consciente basada en la elección y el consentimiento." },
       { title: "Crecer", text: "Conocer los nueve niveles que profundizan el mismo flujo." },
     ],
-    choiceEyebrow: "02 / TU COMIENZO", choiceTitle: "Tres caminos al nivel 1",
+    choiceEyebrow: "07 / ELIGE TU FORMATO", choiceTitle: "Tres caminos al nivel 1",
     choiceLead: "Elige entre una introducción gratis, una iniciación personal y una sesión individual con Andrey.",
     choiceMotif: "PRESENCIA · AMOR · CONEXIÓN",
     freeFlag: "INTRODUCCIÓN GRATUITA", freeTitle: "Empieza gratis",
@@ -214,7 +215,7 @@ const copy = {
       { title: "Programa de formación completo", subtitle: "Sintonizaciones, mandalas, artefactos y prácticas" },
       { title: "Descarga la guía PDF", subtitle: "Descripción del sistema y primer nivel" },
     ],
-    formEyebrow: "07 / WHATSAPP · TELEGRAM", formTitle: "¿Listo para comenzar?",
+    formEyebrow: "08 / WHATSAPP · TELEGRAM", formTitle: "¿Listo para comenzar?",
     formLead: "Pide la introducción gratuita, una iniciación personal, la sesión ampliada o envía tus siete respuestas por WhatsApp o Telegram.",
     disclaimer: "Tantra Reiki se presenta como tradición espiritual y reflexiva. Las afirmaciones sobre energía no son hechos médicos demostrados ni sustituyen la atención sanitaria.",
     footer: "Volver al curso completo Tantra Reiki",
@@ -248,7 +249,13 @@ const faqCopy = {
   },
 } as const;
 
-const steps = ["intro", "initiation-choices", "how-to", "tantra-practice-video", "course-materials", "study-questions", "tantra-apply"] as const;
+/* Place real practice and benefits ahead of prices and application questions. */
+const benefitImages = [
+  "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
+  "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  "/images/holistic-house/hero-olive-incense.webp",
+] as const;
+const steps = ["intro", "how-to", "tantra-practice-video", "course-materials", "study-questions", "initiation-choices", "tantra-apply"] as const;
 
 export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
@@ -301,10 +308,14 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
             <h1 id="tantra-landing-title">{t.heroTitle}</h1>
             <p className={styles.heroLead}>{t.heroLead}</p>
             <div className={styles.heroActions}>
-              <a href="#initiation-choices" className={styles.buttonLight}>{t.freeCta}<ArrowRight aria-hidden="true" size={18}/></a>
+              <a href="#how-to" className={styles.buttonLight}>{t.freeCta}<ArrowRight aria-hidden="true" size={18}/></a>
               <a href="#tantra-practice-video" className={styles.buttonGhost}><PlayCircle size={18} aria-hidden="true"/>{t.watchCta}</a>
             </div>
             <div className={styles.heroStats}>{t.heroMeta.map((item) => <span key={item}><Check size={14} aria-hidden="true"/>{item}</span>)}</div>
+            <Link className={styles.freeCourseBridge} href={REIKI_FREE_COURSE_PATH}>
+              {locale === "ru" ? "Хотите сначала попробовать? Бесплатный курс из 5 уроков" : locale === "es" ? "¿Quieres probar primero? Curso gratis de 5 lecciones" : "Want to try it first? Take the free 5-lesson course"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
           <div className={styles.heroArt}>
             <div className={styles.orbitOuter} aria-hidden="true" />
@@ -312,93 +323,41 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
             <div className={styles.portraitFrame}>
               <StaticPortrait src="/images/holistic-house/andy-about.png" alt={locale === "ru" ? "Андрей, преподаватель Тантра Рейки" : locale === "es" ? "Andrey, profesor de Tantra Reiki" : "Andrey, Tantra Reiki teacher"} fill sizes="(max-width: 760px) 74vw, 36vw" priority className={styles.portrait} />
             </div>
-            <div className={styles.artStamp}><Sun size={20} aria-hidden="true"/><span>{t.visualLabel}</span></div>
+            <div className={styles.artStamp}><span className={styles.yinYangSymbol} aria-hidden="true" /><span>{t.visualLabel}</span></div>
             <div className={styles.artLabel}>{t.visualCaption}<span aria-hidden="true">✦</span></div>
           </div>
         </section>
 
         <section className={styles.introduction} aria-labelledby="tantra-about-intro">
           <div className={styles.introHeading}><p className={styles.eyebrow}>{t.introEyebrow}</p><h2 id="tantra-about-intro">{t.introTitle}</h2><p>{t.introLead}</p></div>
-          <div className={styles.pillars}>
-            {t.pillars.map((item, index) => {
-              const Icon = [Feather, Heart, Sparkles][index];
-              return <div className={styles.pillar} key={item.title}><span className={styles.pillarIcon}><Icon size={22} aria-hidden="true"/></span><h3>{item.title}</h3><p>{item.text}</p></div>;
-            })}
-          </div>
-        </section>
-
-        <section id="initiation-choices" className={styles.section + " " + styles.choiceSection} aria-labelledby="tantra-choices-title">
-          <header className={styles.sectionHeading + " " + styles.choiceHeading}>
-            <div>
-              <p className={styles.eyebrow}>{t.choiceEyebrow}</p>
-              <h2 id="tantra-choices-title">{t.choiceTitle}</h2>
-              <p>{t.choiceLead}</p>
-            </div>
-            <div className={styles.choiceOrnament} aria-hidden="true">
-              <Flower2 size={48} strokeWidth={1.15} />
-              <span>{t.choiceMotif}</span>
-            </div>
-          </header>
-          <div className={styles.choiceGrid} data-tantra-three-offers>
-            <article className={styles.choiceFree} data-tantra-offer="free">
-              <div className={styles.offerTop}>
-                <span className={styles.offerIcon}><BookOpen size={23} strokeWidth={1.6} aria-hidden="true" /></span>
-                <div className={styles.offerCopy}>
-                  <span className={styles.offerFlag}>{t.freeFlag}</span>
-                  <h3>{t.freeTitle}</h3>
-                  <p>{t.freeText}</p>
+          <div className={styles.pillarStories}>
+            {t.pillars.map((item, index) => (
+              <article className={styles.pillarStory} key={item.title}>
+                <div className={styles.pillarVisual} style={{ backgroundImage: `url("${benefitImages[index]}")` }} aria-hidden="true" />
+                <div className={styles.pillarStoryCopy}>
+                  <span className={styles.pillarStep}>0{index + 1} / 03</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                  <a href="#tantra-practice-video">{t.watchCta}<PlayCircle size={18} aria-hidden="true"/></a>
                 </div>
-                <span className={styles.pricePill}><strong>{t.freePrice}</strong><small>{t.freeDuration}</small></span>
-              </div>
-              <a className={styles.buttonWine + " " + styles.offerButton} href="#how-to">{t.freeButton}<ArrowRight size={17} aria-hidden="true"/></a>
-            </article>
-            <article className={styles.choicePersonal} data-tantra-offer="personal">
-              <div className={styles.offerTop}>
-                <span className={styles.offerIcon}><Video size={23} strokeWidth={1.6} aria-hidden="true" /></span>
-                <div className={styles.offerCopy}>
-                  <span className={styles.offerFlag}>{t.personalFlag}</span>
-                  <h3>{t.personalTitle}</h3>
-                  <p>{t.personalText}</p>
-                </div>
-                <span className={styles.pricePill} aria-label={formatReikiLevelPrice("tantra", locale)}>
-                  <strong>{formatReikiLevelPrice("tantra", locale).split(" / ")[0]}</strong>
-                  <small>{t.personalDuration}</small>
-                </span>
-              </div>
-              <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "personal")} className={styles.buttonNavy + " " + styles.offerButton} label={t.personalButton}/>
-            </article>
-            <article className={styles.choiceCombined} data-tantra-offer="session">
-              <div className={styles.offerTop}>
-                <span className={styles.offerIcon}><Flower2 size={25} strokeWidth={1.6} aria-hidden="true" /></span>
-                <div className={styles.offerCopy}>
-                  <span className={styles.offerFlag}>{t.combinedFlag}</span>
-                  <h3>{t.combinedTitle}</h3>
-                  <p>{t.combinedText}</p>
-                </div>
-                <span className={styles.pricePill}><strong>{t.combinedPrice}</strong><small>{t.combinedDuration}</small></span>
-              </div>
-              <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "session")} className={styles.buttonCopper + " " + styles.offerButton} label={t.combinedButton}/>
-            </article>
+              </article>
+            ))}
           </div>
-          <div className={styles.choiceBenefits}>
-            {t.benefits.map((item, index) => {
-              const Icon = [ShieldCheck, Feather, Heart][index];
-              return <span key={item}><Icon size={16} aria-hidden="true"/>{item}</span>;
-            })}
-          </div>
-          <p className={styles.availability}><ShieldCheck size={16} aria-hidden="true"/>{t.availability}</p>
         </section>
 
         <section id="how-to" className={styles.howSection} aria-labelledby="tantra-how-title">
           <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.guideEyebrow}</p><h2 id="tantra-how-title">{t.guideTitle}</h2><p>{t.guideLead}</p></header>
-          <div className={styles.howGrid}>
-            {t.guideSteps.map((step, index) => (
-              <a key={step.title} className={styles.howCard} data-personal={index === 4} href={guideLinks[index]}>
-                <span className={styles.howNumber}>{String(index + 1).padStart(2, "0")}</span>
-                <h3>{step.title}</h3><p>{step.text}</p>
-                <ArrowRight size={18} aria-hidden="true" />
-              </a>
-            ))}
+          <div className={styles.guidedJourney}>
+            <div className={styles.journeyVisual} aria-hidden="true" />
+            <div className={styles.howGrid}>
+              {t.guideSteps.map((step, index) => (
+                <a key={step.title} className={styles.howCard} data-personal={index === 4} href={guideLinks[index]}>
+                  <span className={styles.howNumber}>{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{step.title}</h3><p>{step.text}</p>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </a>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -412,16 +371,19 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
 
         <section id="course-materials" className={styles.resourcesSection} aria-labelledby="tantra-materials-title">
           <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.resourcesEyebrow}</p><h2 id="tantra-materials-title">{t.resourcesTitle}</h2><p>{t.resourcesLead}</p></header>
-          <div className={styles.resourceGrid}>
-            {t.resources.map((item, index) => {
-              const href = links[index];
-              const Icon = index === 3 ? ArrowDown : BookOpen;
-              return <Link key={item.title} href={href} className={styles.resourceLink}>
-                <span className={styles.resourceNumber}>{String(index + 1).padStart(2, "0")}</span>
-                <span className={styles.resourceText}><strong>{item.title}</strong><small>{item.subtitle}</small></span>
-                <span className={styles.resourceIcon}><Icon size={19} aria-hidden="true"/></span>
-              </Link>;
-            })}
+          <div className={styles.materialsStory}>
+            <div className={styles.materialVisual} aria-hidden="true" />
+            <div className={styles.resourceGrid}>
+              {t.resources.map((item, index) => {
+                const href = links[index];
+                const Icon = index === 3 ? ArrowDown : BookOpen;
+                return <Link key={item.title} href={href} className={styles.resourceLink}>
+                  <span className={styles.resourceNumber}>{String(index + 1).padStart(2, "0")}</span>
+                  <span className={styles.resourceText}><strong>{item.title}</strong><small>{item.subtitle}</small></span>
+                  <span className={styles.resourceIcon}><Icon size={19} aria-hidden="true"/></span>
+                </Link>;
+              })}
+            </div>
           </div>
         </section>
 
@@ -458,6 +420,80 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
               <div className={styles.questionFooter}><span>{t.questionNote}</span><ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "answers")} className={styles.buttonWine} label={t.questionAction}/></div>
             </div>
           </details>
+        </section>
+
+        <section id="initiation-choices" className={styles.section + " " + styles.choiceSection} aria-labelledby="tantra-choices-title">
+          <div className={styles.choiceStory}>
+            <div className={styles.choiceVisual}>
+              <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 760px) 100vw, 43vw" />
+            </div>
+            <div className={styles.choiceContent}>
+          <header className={styles.sectionHeading + " " + styles.choiceHeading}>
+            <div>
+              <p className={styles.eyebrow}>{t.choiceEyebrow}</p>
+              <h2 id="tantra-choices-title">{t.choiceTitle}</h2>
+              <p>{t.choiceLead}</p>
+            </div>
+            <div className={styles.choiceOrnament} aria-hidden="true">
+              <Flower2 size={48} strokeWidth={1.15} />
+              <span>{t.choiceMotif}</span>
+            </div>
+          </header>
+          <div className={styles.choiceGrid} data-tantra-three-offers>
+            <article className={styles.choiceFree} data-tantra-offer="free">
+              <div className={styles.offerTop}>
+                <span className={styles.offerIcon}><BookOpen size={23} strokeWidth={1.6} aria-hidden="true" /></span>
+                <div className={styles.offerCopy}>
+                  <span className={styles.offerFlag}>{t.freeFlag}</span>
+                  <h3>{t.freeTitle}</h3>
+                  <p>{t.freeText}</p>
+                </div>
+                <span className={styles.pricePill}><strong>{t.freePrice}</strong><small>{t.freeDuration}</small></span>
+              </div>
+              <a className={styles.buttonWine + " " + styles.offerButton} href="#how-to">{t.freeButton}<ArrowRight size={17} aria-hidden="true"/></a>
+            </article>
+            <details className={styles.optionalOffers}>
+              <summary>{locale === "ru" ? "Хотите больше личного сопровождения? Посмотрите варианты" : locale === "es" ? "¿Quieres más atención personal? Ver opciones" : "Prefer personal guidance? Explore optional one-to-one formats"}<ChevronDown size={20} aria-hidden="true" /></summary>
+              <div className={styles.optionalOfferGrid}>
+            <article className={styles.choicePersonal} data-tantra-offer="personal">
+              <div className={styles.offerTop}>
+                <span className={styles.offerIcon}><Video size={23} strokeWidth={1.6} aria-hidden="true" /></span>
+                <div className={styles.offerCopy}>
+                  <span className={styles.offerFlag}>{t.personalFlag}</span>
+                  <h3>{t.personalTitle}</h3>
+                  <p>{t.personalText}</p>
+                </div>
+                <span className={styles.pricePill} aria-label={formatReikiLevelPrice("tantra", locale)}>
+                  <strong>{formatReikiLevelPrice("tantra", locale).split(" / ")[0]}</strong>
+                  <small>{t.personalDuration}</small>
+                </span>
+              </div>
+              <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "personal")} className={styles.buttonNavy + " " + styles.offerButton} label={t.personalButton}/>
+            </article>
+            <article className={styles.choiceCombined} data-tantra-offer="session">
+              <div className={styles.offerTop}>
+                <span className={styles.offerIcon}><Flower2 size={25} strokeWidth={1.6} aria-hidden="true" /></span>
+                <div className={styles.offerCopy}>
+                  <span className={styles.offerFlag}>{t.combinedFlag}</span>
+                  <h3>{t.combinedTitle}</h3>
+                  <p>{t.combinedText}</p>
+                </div>
+                <span className={styles.pricePill}><strong>{t.combinedPrice}</strong><small>{t.combinedDuration}</small></span>
+              </div>
+              <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "session")} className={styles.buttonCopper + " " + styles.offerButton} label={t.combinedButton}/>
+            </article>
+              </div>
+            </details>
+          </div>
+          <div className={styles.choiceBenefits}>
+            {t.benefits.map((item, index) => {
+              const Icon = [ShieldCheck, Feather, Heart][index];
+              return <span key={item}><Icon size={16} aria-hidden="true"/>{item}</span>;
+            })}
+          </div>
+          <p className={styles.availability}><ShieldCheck size={16} aria-hidden="true"/>{t.availability}</p>
+            </div>
+          </div>
         </section>
 
         <section id="tantra-apply" className={styles.application} aria-labelledby="tantra-apply-title">

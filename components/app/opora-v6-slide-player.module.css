@@ -61,10 +61,15 @@
 .feedback{display:flex;align-items:flex-start;gap:9px;padding:12px 13px;border-radius:13px;background:#e8f9f2;
   border:1px solid #c2e8df;color:#246c69;font-size:12px;line-height:1.55;margin:0}
 .feedback svg,.gentle svg{flex:none;margin-top:1px}
-.hintBlock{display:grid;gap:7px}
-.hintToggle{display:flex;align-items:center;gap:8px;background:#f0fbfd;color:#167c93;border:1px solid #cce9ed;
-  padding:11px 13px;border-radius:12px;text-align:left;min-height:43px;font-weight:740;font-size:12px;cursor:pointer}
-.hintToggle svg:last-child{margin-left:auto}
+.hintBlock{display:grid;gap:7px;min-width:0}
+.animalHintRow{display:flex;align-items:center;gap:7px;min-width:0}
+.hintOwl{width:42px;height:42px;flex:0 0 42px;object-fit:contain;filter:drop-shadow(0 3px 5px #25655c22)}
+.hintToggle{display:flex;flex:1;min-width:0;align-items:center;gap:7px;background:#fffbf5;color:#31565a;border:1px solid #e6d8c7;
+  padding:9px 12px;border-radius:13px;text-align:left;min-height:45px;font-weight:740;font-size:12px;cursor:pointer}
+.hintToggle svg{flex:none}
+.hintToggle svg:last-child{margin-left:auto;transition:transform .2s ease}
+.hintToggle[aria-expanded=true] svg:last-child{transform:rotate(180deg)}
+.hintToggle:disabled{opacity:.6;cursor:not-allowed}
 .hint{margin:0;padding:12px 14px;background:#eefafa;color:#3b687d;border-radius:13px;font-size:12px;line-height:1.55}
 .gentle{display:flex;align-items:flex-start;gap:7px;color:#507b8e;font-size:12px;line-height:1.5;margin:0}
 .result{display:grid;gap:9px;padding:14px;border:1px solid #cde9e9;border-radius:15px;
@@ -512,3 +517,15 @@
   .overlay[data-course-photo-layout="v1"] .choiceGrid button {font-size:11px}
   .overlay[data-course-photo-layout="v1"] .safetyButton {padding-inline:8px}
 }
+
+@media(max-width:370px){.hintOwl{width:36px;height:36px;flex-basis:36px}.animalHintRow{gap:5px}.hintToggle{padding:7px 9px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.hintToggle svg:last-child{transition:none}}
+
+/* An optional Home Screen habit after a verified Day 1 save (legacy lessons). */
+.habitOffer{display:grid;gap:8px;min-width:0;padding:11px;border:1px solid rgba(106,204,197,.65);
+  border-radius:15px;background:rgba(233,250,246,.9)}
+.habitOffer > button{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  min-height:46px;padding:10px 12px;border:1px solid #a4d3cb;border-radius:11px;
+  background:#f8fffd;color:#1c5e69;font-size:14px;font-weight:750;cursor:pointer;text-align:left}
+.habitOffer > button:focus-visible{outline:3px solid #18798a;outline-offset:2px}
+.habitOffer > button[aria-expanded=true] svg{transform:rotate(180deg)}

@@ -1,0 +1,20 @@
+.form{box-sizing:border-box;padding:clamp(20px,3vw,34px);border:1px solid #d1e8de;border-radius:21px;background:linear-gradient(140deg,#f4fdf8,#edf8f5 70%,#fffaf2);box-shadow:0 10px 30px rgba(24,80,87,.055);color:#214957}
+.form *{box-sizing:border-box}
+.eyebrow{display:flex;align-items:center;gap:8px;margin:0 0 10px;color:#126c73;font-size:13px;font-weight:800}
+.lead{margin:0 0 18px;color:#587277;font-size:14px;line-height:1.55}
+.fields{display:grid;gap:13px}
+.fields label{display:grid;gap:6px;color:#27565c;font-size:12px;font-weight:750;line-height:1.4}
+.fields input,.fields select,.fields textarea{display:block;width:100%;min-height:47px;max-width:100%;padding:11px 13px;border:1px solid #bfd9d0;border-radius:12px;background:#fff;color:#1d4952;font:14px/1.45 Arial,Helvetica,sans-serif;resize:vertical}
+.fields textarea{min-height:77px}
+.fields input:focus-visible,.fields select:focus-visible,.fields textarea:focus-visible{outline:3px solid #e6ad75;outline-offset:2px}
+.action{width:100%;min-height:52px;margin-top:16px;padding:10px 16px;background:#963d57!important;color:#fff!important;border-radius:12px!important;justify-content:center!important;font-size:14px!important;font-weight:800!important}
+.action:hover{background:#b04a64!important}
+.note{display:flex;gap:9px;align-items:flex-start;margin:14px 0 0;color:#587577;font-size:11px;line-height:1.55}
+.note svg{flex:none}
+@media(max-width:600px){.form{padding:17px 14px;border-radius:15px}.eyebrow{font-size:12px}.lead{font-size:12px;line-height:1.45;margin-bottom:12px}.fields{gap:9px}.fields input,.fields select,.fields textarea{min-height:44px;padding:9px 11px;font-size:13px}.fields textarea{min-height:62px}.action{margin-top:12px;min-height:47px;font-size:12px!important}}
+
+.copyRegion{margin:11px 0 0}
+.copyButton{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 13px;border:1px solid #9ebfb6;border-radius:10px;background:#fff;color:#23666b;font-size:12px;font-weight:750;cursor:pointer}
+.copyButton:hover{background:#e7f5ef}
+.copyStatus{margin:6px 0 0;font-size:11px;color:#226c64;line-height:1.5}
+.copyRegion textarea{width:100%;margin-top:7px;padding:10px;border:1px solid #bdd9d0;border-radius:10px;font:12px/1.5 Arial,sans-serif;color:#1f4a50;background:#fff}

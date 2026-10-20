@@ -1,0 +1,125 @@
+name: Holistic House Native Installers
+
+on:
+  pull_request:
+    paths:
+      - 'capacitor.holistic-house.config.json'
+      - 'scripts/prepare-holistic-house-native.mjs'
+      - 'scripts/brand-hh-native-artwork.mjs'
+      - '.github/workflows/holistic-house-native.yml'
+      - 'tests/holistic-house-native-build.test.mjs'
+      - 'lib/native/**'
+      - 'components/native-link-handler.tsx'
+      - 'components/native-external-links.tsx'
+      - 'android/**'
+      - 'ios/**'
+      - 'native-web/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -eo pipefail {0}
+
+jobs:
+  android-test-installer:
+    name: Holistic House Android installable debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - name: Install Android SDK
+        run: sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+      - run: npm ci
+      - name: Verify native source contracts before staged branding
+        run: node --test tests/holistic-house-native-build.test.mjs
+      - name: Prepare separate Holistic House Capacitor config
+        run: node scripts/prepare-holistic-house-native.mjs before-sync
+      - name: Sync Android Capacitor project
+        run: npx cap sync android 2>&1 | tee hh-cap-sync-android.log
+      - name: Set Android identity and logo after sync
+        run: |
+          node scripts/prepare-holistic-house-native.mjs after-android-sync
+          node scripts/brand-hh-native-artwork.mjs android
+      - name: Build Android debug APK (not a production release)
+        working-directory: android
+        run: ./gradlew assembleDebug --stacktrace 2>&1 | tee ../hh-gradle-android.log
+      - name: Verify real APK package, title and SHA-256
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk > hh-android-badging.txt
+          grep -F "package: name='com.holistichouse.app'" hh-android-badging.txt
+          grep -F "application-label:'Holistic House'" hh-android-badging.txt
+          sha256sum android/app/build/outputs/apk/debug/app-debug.apk > hh-android-sha256.txt
+      - name: Upload Android test installer and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Holistic-House-Android-Test-APK
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            hh-android-sha256.txt
+            hh-android-badging.txt
+            hh-cap-sync-android.log
+            hh-gradle-android.log
+
+  ios-simulator:
+    name: Holistic House iOS unsigned simulator app
+    runs-on: macos-14
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify native source contracts before staged branding
+        run: node --test tests/holistic-house-native-build.test.mjs
+      - name: Prepare separate Holistic House Capacitor config
+        run: node scripts/prepare-holistic-house-native.mjs before-sync
+      - name: Sync iOS Capacitor project
+        run: npx cap sync ios 2>&1 | tee hh-cap-sync-ios.log
+      - name: Set iOS identity and logo after sync
+        run: |
+          node scripts/prepare-holistic-house-native.mjs after-ios-sync
+          node scripts/brand-hh-native-artwork.mjs ios
+      - name: Build unsigned iOS simulator app (not installable on physical iPhone)
+        run: >-
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App
+          -configuration Debug -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath ios-hh-build
+          CODE_SIGNING_ALLOWED=NO build 2>&1 | tee hh-xcodebuild-ios.log
+      - name: Verify Holistic House iOS simulator bundle
+        run: |
+          app="$(find ios-hh-build/Build/Products/Debug-iphonesimulator -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")" = "com.holistichouse.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleDisplayName' "$app/Info.plist")" = "Holistic House"
+      - name: Upload unsigned iOS simulator app and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Holistic-House-iOS-Simulator-Only
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            ios-hh-build/Build/Products/Debug-iphonesimulator/*.app
+            hh-cap-sync-ios.log
+            hh-xcodebuild-ios.log

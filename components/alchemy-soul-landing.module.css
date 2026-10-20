@@ -266,3 +266,51 @@
 .wisePaymentCta:hover{text-decoration:underline;text-underline-offset:3px}
 .wisePaymentCta:focus-visible{outline:3px solid #8a632c;outline-offset:3px}
 .wisePayment small{max-width:510px;color:#4e737c;font-size:12px;line-height:1.5}
+
+/* Conversion clarity: prices and confirmation boundaries next to first action. */
+.heroPricing{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.heroPricing span{display:inline-flex;align-items:center;min-height:34px;padding:6px 12px;border:1px solid rgba(219,255,249,.46);border-radius:100px;background:rgba(242,255,252,.12);color:#fffdf2;font:750 12px/1.3 Arial,Helvetica,sans-serif}
+.heroRequestNote{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 15px;margin-top:11px;color:#d0eeea;font:12px/1.5 Arial,Helvetica,sans-serif}
+.heroRequestNote a{display:inline-flex;align-items:center;gap:6px;color:#ffe4af;text-decoration:underline;text-underline-offset:4px;font-weight:800}
+.heroRequestNote a:focus-visible{outline:3px solid #ffd5a4;outline-offset:3px}
+@media(max-width:680px){
+  .heroPricing{gap:6px;margin-top:11px}
+  .heroPricing span{padding:6px 9px;font-size:11px;min-height:30px}
+  .heroRequestNote{font-size:11px;line-height:1.42;margin-top:9px}
+}
+
+/* Payment is deliberately secondary to arranging an appointment.
+   Keep approved Wise/PayPal/ZEN paths discoverable, but collapsed by default,
+   so the pricing choice fits an ordinary phone screen. */
+.paymentDisclosure{margin:10px 0 0;border:1px solid #cce6e1;border-radius:13px;background:rgba(255,255,255,.82);overflow:clip}
+.paymentDisclosure summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 13px;cursor:pointer;list-style:none;color:#1e6973;font:750 12px/1.45 Arial,Helvetica,sans-serif}
+.paymentDisclosure summary::-webkit-details-marker{display:none}
+.paymentDisclosure summary::after{content:"+";flex:none;color:#0b7a82;font:400 23px/1 Georgia,serif}
+.paymentDisclosure[open] summary::after{content:"−"}
+.paymentDisclosureBody{display:grid;gap:9px;padding:2px 13px 13px;border-top:1px solid #d5e9e5}
+.paymentDisclosure:not([open]) .paymentDisclosureBody{display:none}
+.paymentDisclosureBody .wisePayment{margin:7px 0 0}
+.paymentDisclosureBody .wisePayment small{font-size:11px;line-height:1.5}
+.paymentDisclosure summary:focus-visible{outline:3px solid #bb8a58;outline-offset:3px}
+@media(max-width:680px){
+ .optionsSection{justify-content:flex-start;padding-top:16px;padding-bottom:16px}
+ .optionsSection .sectionHeading{margin-bottom:10px}
+ .optionCard{padding:12px}
+ .optionName{margin-top:7px}
+ .optionDescription{margin-top:5px}
+ .monthlyCard{margin-top:7px;padding-top:10px;padding-bottom:10px}
+ .monthlyText{margin:3px 0}
+ .formatHint{margin-top:8px}
+ .optionsOrder{margin-top:8px}
+ .freeOption{margin-top:8px}
+ .paymentDisclosure{margin-top:7px}
+}
+@media(max-width:350px){
+ .optionsSection{padding-top:14px;padding-bottom:14px}
+ .optionCard{padding:11px 9px}
+ .monthlyCard{padding:10px 11px}
+ .paymentDisclosure summary{padding-inline:11px}
+}
+
+/* Keep every revealed payment link, including terms, comfortably tappable. */
+.paymentDisclosureBody .wisePayment>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px}

@@ -1,4 +1,4 @@
-import { COURSE_ANTISTRESS_SKILLS_V6 } from '../lib/inner-growth/anti-stress-skills-v6.js'
+import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { COURSE_ANTISTRESS_SKILLS_V5, OPORA_SKILL_SLIDE_MODEL } from '../lib/inner-growth/anti-stress-skills-v5.js'
 import { COURSE_ANTISTRESS_OUTCOME_V3 } from '../lib/inner-growth/lesson-library.js'
 import test from 'node:test'
@@ -65,9 +65,9 @@ for(const moduleId of ['AS1','AS2','AS3','AS5','AS6'])for(const locale of ['en',
     assert.equal(cycle.preferences.oporaModuleRouter,router.ANTISTRESS_ROUTER_VERSION)
     assert.equal(cycle.preferences.oporaModuleId,moduleId)
     if(moduleId==='AS2'){
-      assert.equal(cycle.content_version,COURSE_ANTISTRESS_SKILLS_V6,'New factory selects the approved course')
+      assert.equal(cycle.content_version,COURSE_ANTISTRESS_SKILLS_V7,'New factory selects current AS-5.5; the following fixture replays historical V3')
       // Retain the complete previous-version replay contract on a synthetic
-      // historical fixture. New V5 factory/save paths are checked separately below.
+      // historical fixture. Pinned V5 save paths are checked separately below.
       h.cycle.content_version=COURSE_ANTISTRESS_OUTCOME_V3
     }
     h.seedDay(day)
@@ -141,7 +141,7 @@ for(const moduleId of ['AS1','AS3','AS5','AS6'])test(`fresh ${moduleId} day1 rej
 
 for(const locale of ['en','ru'])test(`legacy AS2 ${locale} preserves state-first evidence through owner storage and receipt`,async()=>{
  const h=repositoryHarness({freshPhase:true});await h.create('AS2')
- assert.equal(h.cycle.content_version,COURSE_ANTISTRESS_SKILLS_V6)
+ assert.equal(h.cycle.content_version,COURSE_ANTISTRESS_SKILLS_V7)
  h.cycle.content_version=COURSE_ANTISTRESS_OUTCOME_V3
  const data=await h.read(locale),{submitted}=await traverse(data,locale,{choose:false})
  assert.equal(data.cycle.preferences.oporaModuleRouter,router.ANTISTRESS_ROUTER_VERSION)
@@ -158,7 +158,7 @@ for(const locale of ['en','ru'])test(`legacy AS2 ${locale} preserves state-first
 
 for(const locale of ['en','ru'])for(let day=1;day<=14;day++)test(`version-pinned SKILLS-5 AS2 ${locale} day ${day}: factory, actual compact Player and exact saved lesson`,async()=>{
  const h=repositoryHarness({freshPhase:true});const cycle=await h.create('AS2')
- assert.equal(cycle.content_version,COURSE_ANTISTRESS_SKILLS_V6);h.cycle.content_version=COURSE_ANTISTRESS_SKILLS_V5;h.seedDay(day)
+ assert.equal(cycle.content_version,COURSE_ANTISTRESS_SKILLS_V7);h.cycle.content_version=COURSE_ANTISTRESS_SKILLS_V5;h.seedDay(day)
  const data=await h.read(locale);assert.equal(data.lesson.antiStress.slideModel,OPORA_SKILL_SLIDE_MODEL)
  assert.equal(data.learningSkills.length,7);assert.equal(data.lesson.antiStress.routePlan,undefined)
  const {submitted}=await traverse(data,locale,{choose:false})

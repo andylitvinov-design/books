@@ -7,14 +7,15 @@ import styles from "./services-conversion-hero.module.css";
 const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ РАБОТА",
-    heading: "Больше ясности, опоры и вариантов движения",
-    lead: "Три бесплатных способа начать: мониторинг психологического состояния и внутренних ресурсов, личный разбор ситуации или профиль У-Син. Личная работа — по желанию.",
-    mobileLead: "Начните бесплатно: тесты самочувствия, письменный разбор ситуации или профиль ресурсов У-Син.",
-    benefits: ["3 бесплатных направления", "Личная работа по желанию", "Торонто и онлайн"],
+    heading: "Личная работа с вашим вопросом: отношения, работа и решения",
+    lead: "Начните с бесплатного письменного разбора ситуации, тестов самонаблюдения или символического профиля У-Син. Если нужна личная работа, обсудим индивидуальную сессию с Андреем — от €50 за 30 минут.",
+    mobileLead: "Бесплатный письменный разбор или личная сессия с Андреем — выберите удобный первый шаг.",
+    benefits: ["Бесплатный письменный старт", "Личные сессии от €50 · время согласуем", "Торонто и онлайн"],
     cta: "Получить бесплатный письменный разбор",
-    paidCta: "Алхимия души · Психогомеопатия",
+    freeCta: "Начать бесплатно · 3 варианта",
+    paidCta: "Запросить личную сессию · от €50",
     secondary: "Все три бесплатных варианта",
-    small: "Бесплатно: ваша анкета и рисунок → персональный письменный разбор. Личная встреча — отдельно и по желанию.",
+    small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
     workWith: "Личная работа с Андреем Литвиновым, в Торонто и онлайн",
     solutions: "Личные форматы работы",
     imageLabel: "Лично с Андреем Литвиновым",
@@ -22,14 +23,15 @@ const copy = {
   },
   en: {
     eyebrow: "HOLISTIC HOUSE · PERSONAL SUPPORT",
-    heading: "More clarity, inner resources and choices",
-    lead: "Three free ways to begin: free mental wellbeing and inner resources monitoring, a personal situation review, or a Wu Xing resource profile. Personal sessions are optional.",
-    mobileLead: "Start free with wellbeing tests, a written situation review or a Wu Xing resource profile.",
-    benefits: ["3 free starting points", "Optional one-to-one work", "Toronto & online"],
+    heading: "Personal guidance for relationships, work and life decisions",
+    lead: "Begin with a free written situation review, wellbeing self-checks or a symbolic Wu Xing profile. For personal support, explore a one-to-one session with Andrey — starting at €50 for 30 minutes.",
+    mobileLead: "A free written review or a personal session with Andrey — choose your first step.",
+    benefits: ["Free written first step", "Personal sessions from €50 · time confirmed", "Toronto & online"],
     cta: "Get a free written review",
-    paidCta: "Alchemy of the Soul · Psycho-homeopathy",
+    freeCta: "Start free · 3 options",
+    paidCta: "Ask about a personal session · from €50",
     secondary: "See all three free options",
-    small: "Free: your form and drawing → personal written feedback. A live one-to-one session is separate and optional.",
+    small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
     workWith: "Personal work with Andrey Litvinov, in Toronto and online",
     solutions: "Explore personal work options",
     imageLabel: "Personal work with Andrey Litvinov",
@@ -37,14 +39,15 @@ const copy = {
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · ACOMPAÑAMIENTO PERSONAL",
-    heading: "Más claridad, recursos y caminos para avanzar",
-    lead: "Tres formas gratuitas de empezar: cuestionarios de autoobservación, revisión escrita de tu situación o perfil simbólico Wu Xing. Las sesiones personales son opcionales.",
-    mobileLead: "Empieza gratis: cuestionarios de bienestar, revisión escrita o perfil de recursos Wu Xing.",
-    benefits: ["3 maneras de empezar gratis", "Sesiones individuales opcionales", "Toronto y en línea"],
+    heading: "Acompañamiento personal para relaciones, trabajo y decisiones",
+    lead: "Empieza con una revisión escrita gratuita, cuestionarios de autoobservación o un perfil simbólico Wu Xing. Si prefieres atención personal, explora sesiones con Andrey desde €50 por 30 minutos.",
+    mobileLead: "Revisión escrita gratuita o sesión con Andrey: elige cómo empezar.",
+    benefits: ["Primera revisión escrita gratuita", "Sesiones desde €50 · horario a confirmar", "Toronto y en línea"],
     cta: "Recibir revisión escrita gratuita",
-    paidCta: "Alquimia del Alma · sesión personal",
+    freeCta: "Empezar gratis · 3 opciones",
+    paidCta: "Solicitar sesión personal · desde €50",
     secondary: "Opciones gratuitas y cursos",
-    small: "Gratis: formulario y dibujo → informe personal escrito. La sesión en directo es opcional y de pago.",
+    small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
     workWith: "Trabajo individual con Andrey Litvinov, en Toronto y en línea",
     solutions: "Explorar los servicios personales",
     imageLabel: "Personalmente con Andrey Litvinov",
@@ -62,14 +65,15 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
         <p className={styles.lead}>{t.lead}</p>
         <p className={styles.mobileLead}>{t.mobileLead}</p>
         <div className={styles.actions}>
-          <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
-            {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
+          <Link className={styles.cta} href="#free-insights" data-service-hero-cta="free">
+            {t.freeCta}<ArrowRight size={20} aria-hidden="true" />
           </Link>
-          <Link className={styles.paidLink} href={"/" + locale + "/services/alchemy-of-soul"}>
-            {t.paidCta}<ArrowRight size={17} aria-hidden="true" />
+          <Link className={styles.paidLink} href="#consultation" data-service-hero-cta="paid">
+            {t.paidCta}<ArrowUpRight size={17} aria-hidden="true" />
           </Link>
-          <Link className={styles.secondary} href="#free-insights">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>
-          <Link className={styles.secondary} href="#solutions">{t.solutions}<ArrowRight size={17} aria-hidden="true" /></Link>
+          <Link className={styles.secondary} href="#solutions">
+            {t.solutions}<ArrowRight size={17} aria-hidden="true" />
+          </Link>
         </div>
         <p className={styles.small}>{t.small}</p>
         <p className={styles.small}>{t.workWith}</p>

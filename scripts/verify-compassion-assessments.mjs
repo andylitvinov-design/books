@@ -1,3 +1,4 @@
+import { observeReload } from './helpers/reload-diagnostics.mjs'
 import { advanceSavedGuidedQuestion } from './helpers/guided-progress-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
@@ -89,8 +90,14 @@ try{
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(i?5:1).fill(3))
   await assertAccountScaleReport(page,expect,result,locale)
   await page.waitForLoadState('networkidle')
-  await page.reload()
-  await expect(page.locator('[data-personal-result-report]')).toBeVisible()
+  const reloadDiagnostics = observeReload(page, { origin })
+  try {
+    await page.reload()
+    await expect(page.locator('[data-personal-result-report]')).toBeVisible()
+  } finally {
+    const evidence = reloadDiagnostics.stop()
+    await writeFile(output + '/reload-' + i + '.json', JSON.stringify(evidence, null, 2)).catch(() => {})
+  }
   passed(d.key+' account '+locale+' '+mode+': save, original instructions/items, score, report and reload')
  }
  // Repeat SCS-SF through the real API to exercise compatible history without another full UI battery.

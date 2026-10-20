@@ -34,6 +34,9 @@ test('public reads are scoped and posting requires verified, same-origin members
   assert.match(repository,/reviewer_account_id=\$2/)
   assert.match(repository,/SELF_REVIEW_NOT_ALLOWED/)
   assert.match(repository,/REVIEW_MODERATED/)
+  assert.match(repository,/Array\.from\(body\)\.length<50/)
+  assert.match(component,/minLength=\{50\}/)
+  assert.match(component,/disabled=\{saving\|\|bodyCharacterCount<50\}/)
   assert.match(component,/COPY=\{[\s\S]*en:\{/)
   assert.match(component,/ru:\{/)
   assert.match(component,/es:\{/)
@@ -48,11 +51,13 @@ if(!process.execArgv.includes('--conditions=react-server')){
   })
 }else{
   const {checkReviewInput}=await import('../lib/practitioners/reviews.js')
-  const base={serviceId:'11111111-1111-4111-8111-111111111111',rating:5,displayName:' Example Person ',body:'A detailed first-hand account of the session.'}
+  const base={serviceId:'11111111-1111-4111-8111-111111111111',rating:5,displayName:' Example Person ',body:'A detailed first-hand account of the session and how it felt afterward.'}
   test('validation trims names, keeps display content and rejects spoofed ratings',()=>{
     const clean=checkReviewInput(base)
     assert.equal(clean.displayName,'Example Person')
     assert.equal(clean.rating,5)
+    for(const body of ['x'.repeat(49),'🌱'.repeat(49)])assert.throws(()=>checkReviewInput({...base,body}),/INVALID_REVIEW/)
+    assert.equal(checkReviewInput({...base,body:'🌱'.repeat(50)}).body,'🌱'.repeat(50))
     for(const rating of [0,6,2.2,'5',null]){
       assert.throws(()=>checkReviewInput({...base,rating}),/INVALID_RATING/)
     }

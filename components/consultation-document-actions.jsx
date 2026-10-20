@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { resultCopy } from '@/lib/consultations/result-copy'
 import { createDocumentLinkCache, documentActionUrls } from '@/lib/consultations/result-actions'
 import { reportPdfFilename } from '@/lib/documents/report-filename'
-import { requestOwnerDocumentLink, prepareReportSession, tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
+import { requestOwnerDocumentLink, publishSavedClientReport, tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
 
 export function ConsultationDocumentActions({
   recordId,
@@ -28,7 +28,7 @@ export function ConsultationDocumentActions({
   const [copying, setCopying] = useState(false)
   const [copiedLocale, setCopiedLocale] = useState(null)
   const [shareUrl,setShareUrl]=useState('')
-  const [preparing,setPreparing]=useState(false)
+  const [publishing,setPublishing]=useState(false)
 
   if (!cache.current) cache.current = createDocumentLinkCache(
     () => requestOwnerDocumentLink(recordId, kind),
@@ -68,13 +68,20 @@ export function ConsultationDocumentActions({
     if(await tryCopyOwnerLink(shareUrl,navigator.clipboard))onCopied()
     else setStatus('manual')
   }
-  const prepare=async()=>{
-    if(!clientId||!recordId||preparing)return
-    setPreparing(true)
-    try{const editor=await prepareReportSession(clientId,recordId);window.location.assign(editor)}
-    catch{setStatus('prepare-failed');setPreparing(false)}
+  const publish=async()=>{
+    if(!clientId||!recordId||publishing)return
+    setPublishing(true);setStatus('');setCopiedLocale(null)
+    try{
+      await publishSavedClientReport(clientId,recordId)
+      setStatus('published')
+    }catch(error){
+      const code=error?.code||error?.message
+      setStatus(['SESSION_CHANGED','REPORT_VERSION_CHANGED','REPORT_SESSION_MISMATCH',
+        'PUBLICATION_REVIEW_REQUIRED'].includes(code)?'publish-conflict':
+        code==='SESSION_UNAVAILABLE'?'unavailable':'publish-failed')
+    }finally{setPublishing(false)}
   }
-  const needsPublication=['not-published','changed','expired','prepare-failed'].includes(status)
+  const needsPublication=['not-published','changed','expired','publish-failed','publish-conflict'].includes(status)
 
   return <>
     <div className="consultation-result-actions consultation-document-actions" aria-label={ru ? 'Просмотр и отправка документа' : 'Document preview and sharing'}>
@@ -109,18 +116,19 @@ export function ConsultationDocumentActions({
     </div>}
     <p className="consultation-copy-feedback" role="status" aria-live="polite">
       {status==='manual'?(ru?'Ссылка получена, но Safari запретил автокопирование. Нажмите «Копировать ещё раз» или выделите адрес в поле.':'Link ready, but Safari blocked automatic copying. Tap Copy again or select the URL.'):
-       status==='not-published'?(ru?'Отчёт сохранён, но страница клиента ещё не опубликована. Проверьте её и нажмите «Опубликовать клиенту».':'Report saved, but the client page is not yet published. Review it and explicitly publish.'):
-       status==='changed'?(ru?'Опубликованная версия отчёта устарела. Проверьте и опубликуйте обновлённую страницу.':'The published report is outdated. Review and republish the updated page.'):
+       status==='not-published'?(ru?'Отчёт сохранён, но страница клиента ещё не опубликована. Нажмите «Опубликовать» ниже.':'Report saved, but the client page is not published yet. Tap Publish below.'):
+       status==='changed'?(ru?'Опубликованная версия отчёта устарела. Нажмите «Опубликовать», чтобы обновить страницу клиента.':'The published report is outdated. Tap Publish to update the client page.'):
        status==='expired'?(ru?'Доступ к ссылке истёк или отозван. Обновите приглашение в редакторе сессии.':'Invitation expired or revoked. Renew it in the session editor.'):
        status==='unavailable'?(ru?'Сервис защищённых ссылок недоступен либо требуется повторный вход в кабинет специалиста.':'Private session links unavailable or practitioner sign-in expired.'):
-       status==='prepare-failed'?(ru?'Не удалось открыть редактор клиентской сессии. Проверьте авторизацию и повторите.':'Could not open the session editor. Check your sign-in and retry.'):
+       status==='published'?(ru?'Страница клиента опубликована. Теперь можно скопировать приватную ссылку.':'Client page published. You can now copy the private link.'):
+       status==='publish-conflict'?(ru?'Отчёт или черновик изменился либо к этой сессии привязан другой отчёт. Проверьте сохранённую версию перед повторной публикацией.':'The report or draft changed, or another report is attached to this session. Check the saved version before publishing again.'):
+       status==='publish-failed'?(ru?'Не удалось опубликовать страницу клиента. Проверьте соединение и повторите.':'Could not publish the client page. Check your connection and try again.'):
        status==='failed'?(ru?'Не удалось получить ссылку. Попробуйте ещё раз.':'Could not retrieve the link. Try again.'):
        copiedLocale===locale?labels.copiedFeedback:!active?labels.disabled:''}
     </p>
     {kind!=='payment'&&active&&clientId&&
-      <button className="consultation-prepare-session" type="button" disabled={preparing} onClick={prepare}>
-        {preparing?(ru?'Открываем редактор…':'Opening editor…'):
-          (ru?'Проверить и опубликовать страницу клиента →':'Review and publish client page →')}
+      <button className="consultation-prepare-session" type="button" disabled={publishing || copying} onClick={publish}>
+        {publishing?(ru?'Публикуем…':'Publishing…'):(ru?'Опубликовать':'Publish')}
       </button>}
     {needsPublication&&kind!=='payment'&&!clientId&&<p className="consultation-copy-feedback">
       {ru?'Отчёт не связан с клиентом. Сначала укажите клиента в редакторе.':'Assign the report to a client before private sharing.'}

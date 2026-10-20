@@ -1,4 +1,6 @@
 import test from 'node:test';
+import ts from 'typescript';
+import { TOPIC_JOURNEYS } from '../lib/assessments/topic-journeys.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { localizeScaleGuideSpanish, SPANISH_SCALE_AXES } from '../lib/assessments/spanish-scale-guide.js';
@@ -20,5 +22,12 @@ test('All named axes have Spanish labels and published service pages',()=>{
  assert.equal(Object.keys(SPANISH_SCALE_AXES).length,18);
  for(const path of ['dao-health-profile','alchemy-of-soul','hypnotherapy-course']) assert.match(read('app/es/services/'+path+'/page.tsx'),/locale="es"/);
  assert.match(read('app/[locale]/explore/[theme]/page.tsx'),/\['en','ru','es'\]/);
- assert.match(read('app/sitemap.ts'),/const spanishJourneys/);
+ const sitemap = read('app/sitemap.ts');
+ const statement = sitemap.match(/const topicJourneys = ([^;]+);/);
+ assert.ok(statement, 'Sitemap derives localized journey URLs from the canonical topic registry');
+ const compiled = ts.transpileModule('const paths = ' + statement[1] + ';', {}).outputText;
+ const paths = new Function('TOPIC_JOURNEYS', compiled + '; return paths;')(TOPIC_JOURNEYS);
+ assert.deepEqual(paths, ['en', 'ru', 'es'].flatMap(locale => TOPIC_JOURNEYS.map(journey => `/${locale}/explore/${journey.id}`)));
+ assert.equal(paths.length, TOPIC_JOURNEYS.length * 3);
+ assert.match(sitemap, /const publicPaths = [^;]*\.\.\.topicJourneys/);
 });

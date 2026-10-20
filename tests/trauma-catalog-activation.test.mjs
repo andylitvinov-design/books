@@ -59,7 +59,19 @@ test('trauma remains manually selectable but never enters automatic recommendati
   assert.equal(hasTrauma(courseRecommendedTests({locale,focusTags:['stress'],count:10000})),false)
   assert.equal(hasTrauma(profileCompletionRecommendations({locale,limit:10000}).recommendations),false)
   const now='2026-10-14T12:00:00.000Z'
-  const results=MONITORING_CATALOG.filter(item=>item.startable&&!keys.has(item.key)).map(item=>({definitionKey:item.key,definitionVersion:item.version,instrumentLocale:item.instrumentLocale==='dynamic'?locale:item.instrumentLocale,measurementAt:now}))
+  // Verified scoring fixtures rather than unfinished metadata stubs: the
+  // monitoring engine must reject a bare test key as proof of completion.
+  const {getAssessmentDefinition}=await import('../lib/assessments/definitions.js')
+  const {scoreAssessment}=await import('../lib/assessments/scoring.js')
+  const {syntheticTraumaContext}=await import('./helpers/trauma-context-fixtures.mjs')
+  const results=MONITORING_CATALOG.filter(item=>item.startable&&!keys.has(item.key)).map((item,index)=>{
+    const instrumentLocale=item.instrumentLocale==='dynamic'?locale:item.instrumentLocale
+    const def=getAssessmentDefinition(item.key,item.version,instrumentLocale)
+    const answers=Object.fromEntries(def.questions.map(q=>[q.id,q.min??def.answerScale?.min]))
+    const scored=scoreAssessment(def,answers,syntheticTraumaContext(def))
+    return { ...scored,id:'verified-synthetic-'+locale+'-'+index,
+      accountId:'10000000-0000-4000-8000-000000000001',measurementAt:now }
+  })
   assert.equal(recommendMonitoring({results,locale,now}),null,'completed ordinary forms must never trigger trauma screening')
   const runs=TRAUMA_SCREENING_DEFINITIONS.map(d=>({definitionId:d.id}))
   assert.equal(recommendMonitoring({results,runs,locale,now}),null,'even a previous opt-in does not create an automatic screening recommendation')

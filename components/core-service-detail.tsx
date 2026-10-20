@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import Link from "next/link";
@@ -248,6 +249,26 @@ export function coreOfferDetailData(locale: PublicLocale, kind: DetailKind) {
 export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind: DetailKind }) {
   const t = copy[locale][kind];
   const serviceSlug = { dao: "dao-health-profile", alchemy: "alchemy-of-soul", hypnotherapy: "hypnotherapy-course" }[kind];
+  const pathFacts = {
+    ru: {
+      free: "Бесплатно · Символический профиль",
+      session: "Индивидуальные сессии · Стоимость согласуем до записи",
+      alchemy: "30 мин · €50 / 60 мин · €100",
+      noPayment: "Вы отправляете запрос, а не оплачиваете и не подтверждаете запись",
+    },
+    en: {
+      free: "Free · Symbolic resource profile",
+      session: "Personal sessions · Price agreed before booking",
+      alchemy: "30 min · €50 / 60 min · €100",
+      noPayment: "Send an enquiry first; no payment or automatic booking",
+    },
+    es: {
+      free: "Gratis · Perfil simbólico de recursos",
+      session: "Sesiones personales · Precio confirmado antes de reservar",
+      alchemy: "30 min · €50 / 60 min · €100",
+      noPayment: "Primero envías una solicitud; no hay pago ni reserva automática",
+    },
+  }[locale];
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
     service: t.title,
@@ -264,7 +285,11 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
           <h1>{t.title}</h1>
           <p className={styles.lead}>{t.lead}</p>
           <p className={styles.benefit}><Check size={17} aria-hidden="true"/>{t.benefit}</p>
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.primary} id={kind === "dao" ? "request-free-wu-xing" : undefined} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+          <div className={styles.quickFacts} aria-label={locale === "ru" ? "Условия" : locale === "es" ? "Condiciones" : "Session details"}>
+            <strong>{kind === "dao" ? pathFacts.free : kind === "alchemy" ? pathFacts.alchemy : pathFacts.session}</strong>
+            <span>{pathFacts.noPayment}</span>
+          </div>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.primary} id={kind === "dao" ? "request-free-wu-xing" : undefined} event="service_request_start" attributes={{ "data-service-request": kind }}/>
           <p className={styles.note}>{t.note}</p>
           <aside className={styles.andrey}>
             <strong>{locale === "ru" ? "С Андреем Литвиновым" : locale === "es" ? "Con Andrey Litvinov" : "With Andrey Litvinov"}</strong>
@@ -272,7 +297,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
             <Link href={"/" + locale + "/about"}>{locale === "ru" ? "Об Андрее" : locale === "es" ? "Sobre Andrey" : "About Andrey"}<ArrowUpRight size={14} aria-hidden="true"/></Link>
           </aside>
         </div>
-        <div className={styles.photo}><Image src={t.image} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
+        <div className={styles.photo}><Image src={cardArtworkUrl(t.image, "feature")} unoptimized={hasCardArtwork(t.image)} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
       </section>
       <ServiceVideoShowcase topic={kind === "dao" ? "overview" : kind} locale={locale} id="service-video" />
       <section className={styles.outcomes} aria-labelledby="core-service-process-heading">
@@ -299,7 +324,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
         <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true"/>{t.safety}</p>
         <div className={styles.links}>
           <Link href={t.secondaryHref}>{t.secondary}<ArrowUpRight size={16} aria-hidden="true"/></Link>
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
         </div>
         <details className={styles.freeAlternative}>
           <summary>{locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : locale === "es" ? "¿Prefieres comenzar con una revisión gratuita por escrito?" : "Prefer to start with a free written situation review?"}</summary>

@@ -16,7 +16,7 @@ test("Genuine Tantra festival photos remain and duplicated review screenshots ar
   assert.match(festival, /TantraReikiFestivalMoments/);
   assert.match(page, /<TantraReikiFestivalMoments locale=\{locale\} \/>/);
   assert.doesNotMatch(reviews, /reviewImages|tantra-review-gallery|tantra-review-archive|images\.ru\[2\]|images\.ru\[3\]/);
-  assert.match(reviews, /sourceReviewGroups\.map/);
+  assert.match(reviews, /<TantraLearnerReviewCards locale=\{locale\} headingId="tantra-testimonials-heading" \/>/);
 });
 
 test("Testimonials restore original 2 MP4 videos and the correctly identified Alena YouTube review", async () => {
@@ -41,16 +41,22 @@ test("Testimonials restore original 2 MP4 videos and the correctly identified Al
   assert.match(videoReviews, /controls playsInline preload="none"/);
 });
 
-test("English reviews use authored English copy and display no untranslated Russian screenshot gallery", async () => {
-  const [reviews, translated] = await Promise.all([
+test("Full EN/RU learner reports are shared with the Reiki Practitioner landing, without screenshots", async () => {
+  const [reviews, cards, course, translated] = await Promise.all([
     readFile("components/tantra-reiki-testimonials.tsx", "utf8"),
+    readFile("components/tantra-learner-review-cards.tsx", "utf8"),
+    readFile("data/academy/energywork-ai-curriculum.ts", "utf8"),
     readFile("data/academy/tantra-reiki-ru-en.generated.json", "utf8"),
   ]);
   const archive = JSON.parse(translated);
   for (const index of [56, 57, 61, 62, 63, 64]) assert.ok(archive.blocks[index].text.length > 15);
-  assert.match(reviews, /englishSource\.blocks\[sourceIndex\]\.text/);
-  assert.match(reviews, /tantraReikiArchive\.blocks\.ru\[sourceIndex\]\.text/);
-  assert.match(reviews, /locale === "en"/);
+  assert.match(reviews, /<TantraLearnerReviewCards locale=\{locale\}/);
+  assert.match(cards, /tantraVoices\.map\(\(review, index\) =>/);
+  assert.match(cards, /review\.quote\[reviewLanguage\]/);
+  assert.match(cards, /review\.attribution\[reviewLanguage\]/);
+  assert.match(cards, /locale === "es" \? "en" : locale/);
+  assert.match(course, /export const tantraVoices: EnergyworkTestimonial\[\] = \[/);
+  assert.doesNotMatch(reviews, /reviewImages|tantra-review-gallery|tantra-review-archive/);
 });
 
 test("Nine course levels emphasize their number and omit technical translation commentary", async () => {

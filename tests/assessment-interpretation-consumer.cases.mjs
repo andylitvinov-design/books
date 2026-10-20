@@ -80,7 +80,9 @@ test('projection rejects score, sibling signature, locale and version reuse', as
 test('authenticated and guest bootstrap, submit, replay and result reads enrich response DTOs', () => {
   for (const file of ['repository', 'guest-repository']) {
     const source = readFileSync(new URL(`../lib/app/${file}.js`, import.meta.url), 'utf8')
-    assert.match(source, /results: await withResultInterpretations\(db, results\)/)
+    if (file === 'repository') assert.match(source,
+      /results: portraitOnly \? results : await withResultInterpretations\(db, results\)/)
+    else assert.match(source, /results: await withResultInterpretations\(db, results\)/)
     assert.match(source, /return withResultInterpretation\(db, (?:guestResultView|resultView)\(existing\)\)/)
     assert.ok((source.match(/return withResultInterpretation\(db,/g) || []).length >= 3)
   }

@@ -38,14 +38,19 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
     'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open}',
-    'Куда отправить вашу заявку?', 'Where would you like to send your request?',
-    '¿Dónde quieres enviar tu solicitud?', 'WhatsApp', 'Telegram',
+    'Расскажите, с чем вам нужна помощь', 'Describe what you would like help with',
+    'Cuéntanos en qué podemos ayudarte', 'WhatsApp', 'Telegram',
     'data-contact-channel-chooser', 'data-contact-order',
     'telegramEnquiryUrlFromWhatsApp', 'role="group"',
   ]) assert.ok(src.includes(text), text);
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.doesNotMatch(src, /<input|<textarea|<form|fetch\(|localStorage|sendBeacon|autoSubmit/i);
+  assert.match(src, /<textarea[\s\S]*?required minLength=\{10\} maxLength=\{1400\}/);
+  assert.match(src, /<form onSubmit=\{submit\}/);
+  assert.match(src, /fetch\("\/api\/service-enquiries"/);
+  assert.match(src, /if \(!response\.ok \|\| data\.saved !== true/);
+  assert.match(src, /\{!saved \? \(/);
+  assert.doesNotMatch(src, /localStorage|sendBeacon|autoSubmit/i);
   assert.match(css, /\.trigger/);
   assert.match(css, /min-height:56px/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);

@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
@@ -106,7 +107,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
 
         {isBasic ? (
           <>
-            <header className={styles.hero} aria-labelledby="basic-yggdrasil-title">
+            <header className={styles.hero + " reiki-screen reiki-screen--hero"} aria-labelledby="basic-yggdrasil-title">
               <div className={styles.heroCopy}>
                 <p className={styles.kicker}>{b.kicker}</p>
                 <h1 id="basic-yggdrasil-title">{module.title[locale]}</h1>
@@ -117,7 +118,8 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
                   <span><strong>{videos}</strong>{copy.videos}</span>
                 </div>
                 <div className={styles.heroActions}>
-                  <Link href={baseUrl + "/free-initiation"} className={styles.heroPrimary}>{b.free}<ArrowRight size={19} aria-hidden="true" /></Link>
+                  <Link href={REIKI_FREE_COURSE_PATH} className={styles.heroPrimary} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"}<ArrowRight size={19} aria-hidden="true" /></Link>
+                  <Link href={baseUrl + "/free-initiation"} className={styles.heroSecondary}>{b.free}<ArrowRight size={19} aria-hidden="true" /></Link>
                   <a href="#basic-yggdrasil-roadmap" className={styles.heroSecondary}>{b.explore}<ArrowDown size={18} aria-hidden="true" /></a>
                 </div>
               </div>
@@ -127,7 +129,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
               </div>
             </header>
 
-            <section className={styles.roadmap} id="basic-yggdrasil-roadmap" aria-labelledby="basic-roadmap-title">
+            <section className={styles.roadmap + " reiki-screen reiki-screen--explore"} id="basic-yggdrasil-roadmap" aria-labelledby="basic-roadmap-title">
               <div className={styles.roadmapHead}>
                 <div>
                   <p className={styles.sectionKicker}>{b.pathKicker}</p>
@@ -136,9 +138,9 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
                 </div>
                 <Link className={styles.bookLink} href={baseUrl + "/basic-course/description"}><BookOpen size={17} aria-hidden="true" />{copy.description}<ArrowRight size={16} aria-hidden="true" /></Link>
               </div>
-              <nav className={styles.roadmapGrid} aria-label={b.pathTitle}>
+              <nav className={styles.roadmapGrid + " reiki-roadmap-track"} aria-label={b.pathTitle} tabIndex={0}>
                 {level.steps.map((step) => (
-                  <a key={step.id} href={"#" + step.id.toLowerCase()} className={styles.roadmapCard}>
+                  <a key={step.id} href={"#" + step.id.toLowerCase()} className={styles.roadmapCard + " reiki-roadmap-card"}>
                     <span className={styles.roadmapNumber}>{String(step.number).padStart(2,"0")}</span>
                     <strong>{step.title[locale]}</strong>
                     <p className={styles.roadmapSynopsis}>{basicLevelIntroductions[locale][step.number]}</p>
@@ -152,7 +154,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
           </>
         ) : (
           <>
-            <header className="yggdrasil-module-hero">
+            <header className="yggdrasil-module-hero reiki-screen reiki-screen--hero">
               <div className="yggdrasil-module-hero-copy">
                 <p className="homeopathy-kicker">{module.eyebrow[locale]}</p>
                 <h1>{module.title[locale]}</h1>
@@ -173,11 +175,11 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
 
         <YggdrasilCurriculum locale={locale} levelId={module.levelId} showSupport={module.levelId === 1} visualTheme={isBasic ? "navy" : undefined} />
 
-        {module.levelId === 1 ? <YggdrasilEnglishVideoGuide locale={locale} scope="basic" /> : null}
-        {module.levelId === 2 ? <YggdrasilEnglishVideoGuide locale={locale} scope="instructor" /> : null}
+        {module.levelId === 1 ? <details className="reiki-disclosure reiki-disclosure--archive"><summary>{locale === "ru" ? "Видео и дополнительные материалы базового курса" : locale === "es" ? "Vídeos y materiales del curso básico" : "Basic course videos & further material"}<span aria-hidden="true">＋</span></summary><YggdrasilEnglishVideoGuide locale={locale} scope="basic" /></details> : null}
+        {module.levelId === 2 ? <details className="reiki-disclosure reiki-disclosure--archive"><summary>{locale === "ru" ? "Видео и материалы курса инструктора" : locale === "es" ? "Vídeos y materiales de instructor" : "Instructor videos & further material"}<span aria-hidden="true">＋</span></summary><YggdrasilEnglishVideoGuide locale={locale} scope="instructor" /></details> : null}
 
         {isBasic ? (
-          <section className={styles.endCta} aria-labelledby="basic-yggdrasil-join-title">
+          <section className={styles.endCta + " reiki-screen reiki-screen--feature"} aria-labelledby="basic-yggdrasil-join-title">
             <div>
               <p className={styles.sectionKicker}>{b.readyKicker}</p>
               <h2 id="basic-yggdrasil-join-title">{b.readyTitle}</h2>

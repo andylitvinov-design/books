@@ -166,13 +166,13 @@ export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : t
   : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
 export const findPart = (tree, name) => nodes(tree).find(n => n.type?.testName === name)
 export const findButton = (tree, label) => nodes(tree).find(n => n.type === 'button' && textOf(n).trim() === label)
-const uiNames = ['course-slide-player', 'opora-v6-slide-player', 'opora-module-activity', 'opora-state-journey', 'anti-stress-method-activity', 'anti-stress-practice-lab', 'course-lesson-result', 'anti-stress-day-one']
+const uiNames = ['course-slide-player', 'opora-v6-slide-player', 'opora-experience-player', 'opora-module-activity', 'opora-state-journey', 'anti-stress-method-activity', 'anti-stress-practice-lab', 'course-lesson-result', 'anti-stress-day-one']
 const compiledUI = Object.fromEntries(uiNames.map(name => [name, ts.transpileModule(readFileSync(resolve(root, 'components/app', name + '.jsx'), 'utf8'), {
   fileName: name + '.jsx', compilerOptions: { allowJs: true, jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText]))
 const pureUI = Object.fromEntries(await Promise.all(['anti-stress-skills-v5', 'anti-stress-day-one', 'course-moment-trends', 'course-adaptation',
   'course-welcome', 'anti-stress-method-activities', 'anti-stress-practice-lab', 'opora-module-exercise', 'course-single-lesson-outcome',
-  'course-slide-sequence', 'course-membership', 'anti-stress-skills-v5', 'anti-stress-skills-v6', 'opora-state-journey','trauma-phase-catalog'].map(async name =>
+  'course-slide-sequence', 'course-membership', 'opora-as56-experience-guides', 'opora-lesson-outro', 'anti-stress-skills-v5', 'anti-stress-skills-v6', 'opora-state-journey','trauma-phase-catalog'].map(async name =>
   ['@/lib/inner-growth/' + name, await loadModule('lib/inner-growth/' + name + '.js')])) )
 
 // Executes real JSX component functions with isolated state/effect slots.
@@ -198,7 +198,7 @@ export function mount(name, props, { exportName = 'default' } = {}) {
   const jsx = (type, props, key) => ({ type, props, key })
   const modules = { ...pureUI, react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     'lucide-react': new Proxy({}, { get: (_, name) => stub(String(name)) }),
-    './opora-v6-slide-player': child('OporaV6SlidePlayer'), './course-guided-timer': child('CourseGuidedTimer'), './course-practice-voice': child('CoursePracticeVoice'),
+    './opora-v6-slide-player': child('OporaV6SlidePlayer'), './opora-ocean-outro': child('OporaOceanOutro'), './course-guided-timer': child('CourseGuidedTimer'), './course-practice-voice': child('CoursePracticeVoice'),
     './anti-stress-method-activity': child('AntiStressMethodActivity'), './anti-stress-practice-lab': child('AntiStressPracticeLab'),
     './course-lesson-result': child('CourseLessonResult'), './anti-stress-day-one': {
       __esModule: true, default: stub('DayOneExercise'), DayOneChoices: stub('DayOneChoices'), DayOneFocusPicker: stub('DayOneFocusPicker'),
@@ -236,7 +236,7 @@ export function mount(name, props, { exportName = 'default' } = {}) {
     const previous = active; active = context
     try { return fn(nextProps) } finally { active = previous }
   }
-  const recursiveComponents = new Set(['RouteMethodActivity', 'RoutePracticeLab', 'OporaModuleActivity','OporaStateJourney','ChoiceRow'])
+  const recursiveComponents = new Set(['RouteMethodActivity', 'RoutePracticeLab', 'OporaModuleActivity','OporaStateJourney','ChoiceRow','OpeningRating'])
   const expand = (value, path) => {
     if (Array.isArray(value)) return value.map((child, index) => expand(child, path + '/' + (child?.key ?? index)))
     if (!value || typeof value !== 'object') return value

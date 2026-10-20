@@ -1,0 +1,72 @@
+name: Holistic House private audio synthetic end-to-end
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/session-audio-recorder.jsx'
+      - 'components/session-photo-uploader.jsx'
+      - 'components/report-video-materials-editor.jsx'
+      - 'lib/clients/phone-audio-file.js'
+      - 'lib/clients/recording-upload.js'
+      - 'components/session-recording-review.jsx'
+      - 'tests/client-session-take-selection.test.mjs'
+      - 'lib/clients/owner-audio-upload.js'
+      - 'lib/clients/owner-photo-upload.js'
+      - 'lib/clients/session-delivery-*.js'
+      - 'app/api/admin/clients/**/media/**'
+      - 'app/api/client-session-viewer/**'
+      - 'tests/client-session-audio-synthetic-e2e.test.mjs'
+      - 'tests/client-session-photos.test.mjs'
+      - 'tests/client-session-owner-photo-upload.test.mjs'
+      - 'tests/fixtures/synthetic-440hz-voice.m4a.base64'
+      - '.github/workflows/hh-private-audio-e2e.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/session-audio-recorder.jsx'
+      - 'components/session-photo-uploader.jsx'
+      - 'components/report-video-materials-editor.jsx'
+      - 'lib/clients/phone-audio-file.js'
+      - 'lib/clients/recording-upload.js'
+      - 'components/session-recording-review.jsx'
+      - 'tests/client-session-take-selection.test.mjs'
+      - 'lib/clients/owner-audio-upload.js'
+      - 'lib/clients/owner-photo-upload.js'
+      - 'lib/clients/session-delivery-*.js'
+      - 'app/api/admin/clients/**/media/**'
+      - 'app/api/client-session-viewer/**'
+      - 'tests/client-session-audio-synthetic-e2e.test.mjs'
+      - 'tests/client-session-photos.test.mjs'
+      - 'tests/client-session-owner-photo-upload.test.mjs'
+      - 'tests/fixtures/synthetic-440hz-voice.m4a.base64'
+      - '.github/workflows/hh-private-audio-e2e.yml'
+permissions:
+  contents: read
+jobs:
+  private-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Actual synthetic AAC bytes through owner intent/upload/finalization/guest Range playback and privacy
+        run: |
+          node --test tests/client-session-take-selection.test.mjs \
+            tests/client-session-audio-synthetic-e2e.test.mjs \
+            tests/client-session-owner-photo-upload.test.mjs \
+            tests/client-session-photos.test.mjs \
+            tests/client-session-owner-audio-upload.test.mjs \
+            tests/client-session-recorder-auth.test.mjs \
+            tests/recording-upload.test.mjs \
+            tests/session-delivery-security.test.mjs \
+            tests/session-recorder-wiring.test.mjs \
+            tests/client-session-mov-iphone.test.mjs
+      - name: Check new test syntax
+        run: |
+          node --check tests/client-session-audio-synthetic-e2e.test.mjs
+          node --check tests/client-session-owner-photo-upload.test.mjs

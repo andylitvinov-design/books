@@ -1,3 +1,6 @@
+import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
+import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
+import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
@@ -44,6 +47,7 @@ const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due
 page.on('pageerror',capturePageError)
 const testPlanDiagnostics=await installTestPlanNavigationDiagnostics(page,origin,event=>console.log('SYNTHETIC_TEST_PLAN_NAVIGATION',JSON.stringify(event)))
 const checks=[]
+let historyDiagnosticStage=null, historyDiagnosticStartedAt=null, primaryFailure=false, historyNavigationDiagnostics=null
 function passed(name){checks.push(name);console.log('PASS '+name)}
 /**
  * Playwright/WebKit cannot screenshot a full page taller than 32767 device pixels.
@@ -441,11 +445,14 @@ async function verifyPublicServiceConversionJourneys(){
      assert.equal(await guide.evaluate(node=>node.open),false,'Long guide stays collapsed')
      await expect(servicePage.locator('[data-alchemy-lead-form="single"]')).toHaveCount(1)
      await expect(servicePage.locator('[data-sitewide-capture="core-service"]')).toHaveCount(0)
+     assert.equal(await servicePage.locator('details[data-alchemy-payment-disclosure]').evaluate(node=>node.open),false,
+      'Default payment details are collapsed before geometry measurement')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
      assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
       'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
       const guideHeading=guide.locator('#distance-homeopathy-guide h1')
@@ -1022,6 +1029,8 @@ try {
  let data=(await api('bootstrap')).data;assert.equal(data.results.length,2);assert.equal(data.results[0].id,first.id);assert.equal(new Set(data.snapshot.dimensions.map(d=>d.key)).size,5);passed('second run keeps original baseline and unique profile axes')
  // Use an isolated context so the real service worker cannot bypass route
  // interception. The main journey keeps its worker and private-cache checks.
+ historyNavigationDiagnostics=observeHistoryNavigation(page,browser,{origin,log:(name,evidence)=>console.log(name,JSON.stringify(evidence))})
+ historyNavigationDiagnostics.mark('recovery-start')
  const recoveryContext=await browser.newContext({storageState:await context.storageState(),serviceWorkers:'block',viewport:{width:390,height:844}})
  const recoveryPage=await recoveryContext.newPage()
  recoveryPage.on('pageerror',capturePageError)
@@ -1044,9 +1053,32 @@ try {
    await expect(recoveryPage.locator('.hh-change')).toContainText('7 → 4')
    assert.deepEqual(errors,[])
   }
- } finally { await recoveryContext.close() }
+ } finally {
+  historyNavigationDiagnostics.mark('recovery-teardown-start')
+  await recoveryContext.close()
+  historyNavigationDiagnostics.mark('recovery-teardown-complete')
+ }
  passed('invalid HTTP 200 bootstrap bodies show retry and recover without uncaught browser errors')
- await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await screenshotEvidence(page,{path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
+ // Technical-only markers isolate the existing history wait without changing it.
+ historyDiagnosticStartedAt=performance.now()
+ const historyDiagnostic=stage=>{historyDiagnosticStage=stage;historyNavigationDiagnostics.mark(stage);console.log('SYNTHETIC_HISTORY_STAGE',JSON.stringify({stage,elapsedMs:Math.max(0,Math.round(performance.now()-historyDiagnosticStartedAt))}))}
+ historyDiagnostic('goto-start')
+ await page.goto(origin+'/en/app/history')
+ historyDiagnostic('goto-complete')
+ historyDiagnostic('ready-start')
+ await ready()
+ historyDiagnostic('ready-complete')
+ historyDiagnostic('assertion-start')
+ await expect(page.locator('.hh-change')).toContainText('7 → 4')
+ historyDiagnostic('assertion-complete')
+ historyDiagnostic('screenshot-start')
+ await screenshotEvidence(page,{path:output+'/history-en.png',fullPage:true})
+ historyDiagnostic('screenshot-complete')
+ passed('history compares real results and exact point differences')
+ const historyNetworkEvidence=collectHistoryNavigationEvidence(historyNavigationDiagnostics)
+ await boundedBestEffort(()=>writeFile(output+'/history-navigation.json',JSON.stringify(historyNetworkEvidence,null,2)))
+ historyNavigationDiagnostics=null
+ historyDiagnosticStage=null;historyDiagnosticStartedAt=null
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
  await enterTest('Personality Baseline');await expect(page.getByText('In general, not only today',{exact:false})).toBeVisible()
  await screenshotEvidence(page,{path:output+'/personality-runner.png',fullPage:true})
@@ -1458,7 +1490,19 @@ try {
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
-} catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
-finally{await browser.close()}
-
-
+ } catch(error){
+ primaryFailure=true
+ try {
+ const historyNavigationEvidence=collectHistoryNavigationEvidence(historyNavigationDiagnostics,true)
+ await preserveBrowserFailure({
+  error, stage:historyDiagnosticStage,
+  elapsedMs:historyDiagnosticStartedAt===null?null:performance.now()-historyDiagnosticStartedAt,
+  log:(name,evidence)=>console.log(name,JSON.stringify(evidence)),
+  write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
+  screenshot:()=>screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}),
+ }) } finally { throw error }
+} finally {
+ const outcome=await boundedBestEffort(()=>browser.close())
+ console.log('SYNTHETIC_BROWSER_CLEANUP',JSON.stringify({outcome}))
+ if(outcome!=='completed'&&!primaryFailure)throw new Error('Synthetic browser cleanup did not complete')
+}

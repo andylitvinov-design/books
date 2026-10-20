@@ -30,7 +30,7 @@ const copy = {
     headline: "Найти то, что удерживает проблему — и наметить путь к изменениям.",
     intro: "Сначала исследуем ситуацию через расстановку, затем через образную гипнотерапию — возможный внутренний корень. Дополнительные ресурсы подбираем индивидуально.",
     chips: ["Расстановка", "Гипнотерапия", "Ресурсная поддержка"],
-    cta: "Заказать сеанс",
+    cta: "Запросить сеанс",
     freeStart: "Начать с бесплатного письменного разбора",
     practitioner: "С Андреем Литвиновым",
     place: "Онлайн · Торонто по договорённости",
@@ -107,7 +107,7 @@ const copy = {
     headline: "Explore what keeps a problem in place — and find a possible way forward.",
     intro: "We first map the situation through a constellation, then explore the possible inner root through guided-imagery hypnotherapy. Additional resources are chosen individually.",
     chips: ["Constellations", "Hypnotherapy", "Personal resources"],
-    cta: "Book a session",
+    cta: "Request a session",
     freeStart: "Start with a free written situation review",
     practitioner: "With Andrey Litvinov",
     place: "Online · Toronto by arrangement",
@@ -312,10 +312,18 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           </div>
           <p className={styles.heroLead}>{t.intro}</p>
           <div className={styles.chips}>{t.chips.map((chip) => <span key={chip}><Check size={13} aria-hidden="true" />{chip}</span>)}</div>
+          <div className={styles.heroPricing}>
+            <span>{locale === "ru" ? "Экспресс · 30 мин · €50" : locale === "es" ? "Exprés · 30 min · €50" : "Express · 30 min · €50"}</span>
+            <span>{locale === "ru" ? "Личная сессия · 60 мин · €100" : locale === "es" ? "Sesión personal · 60 min · €100" : "Personal session · 60 min · €100"}</span>
+          </div>
           <div className={styles.heroOrder}>
             <ContactChannelChooser locale={locale} whatsappUrl={heroWhatsApp} label={t.cta}
               className={styles.heroOrderButton} event="service_request_start"
               attributes={{ "data-alchemy-booking": "hero" }} />
+          </div>
+          <div className={styles.heroRequestNote}>
+            <span>{locale === "ru" ? "Запрос не списывает оплату и не подтверждает запись." : locale === "es" ? "Enviar una solicitud no cobra ni confirma una reserva." : "An enquiry does not charge you or confirm a booking."}</span>
+            <a href="#alchemy-options-title">{locale === "ru" ? "Сравнить форматы" : locale === "es" ? "Comparar formatos" : "Compare formats"}<ArrowRight size={14} aria-hidden="true" /></a>
           </div>
           <div className={styles.heroBottom}><span>{t.place}</span><Link href={freeReview}>{t.freeStart}<ArrowUpRight size={14} aria-hidden="true" /></Link></div>
         </section>

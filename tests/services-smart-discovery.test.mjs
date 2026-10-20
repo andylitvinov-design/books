@@ -132,21 +132,26 @@ test('editorial fallback points only to source-backed known routes, never a synt
   assert.equal(rankEditorialDiscovery('что-то',curated,{category:'business_money'}).length,0)
 })
 
-test('Services: booking-style search and category selector appear above untouched personal Services hero in all three locales',async()=>{
-  const [main,es,ui,css,api]=await Promise.all([
+test('Services: optional booking-style search lives in the dedicated directory for all locales',async()=>{
+  const [main,es,directory,ui,css,api]=await Promise.all([
     readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../app/es/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-directory-page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
     readFile(new URL('../app/api/marketplace/intent-match/route.ts',import.meta.url),'utf8'),
   ])
   for(const page of [main,es]){
-    assert.ok(page.indexOf('<ServicesSmartDiscovery')>page.indexOf('<PublicSiteHeader'))
-    assert.ok(page.indexOf('<ServicesSmartDiscovery')<page.indexOf('<ServicesConversionHero'))
-    assert.match(page,/<ServicesTestsIntro/)
-    assert.match(page,/<ServicesAboutEntry/)
-    assert.match(page,/<PublicConsultationCta/)
+    assert.ok(page.indexOf('<ServicesStudioOffers')>page.indexOf('<ServicesConversionHero'))
+    assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesStudioOffers'))
+    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<PersonalTestimonials'))
+    assert.match(page,/<ServicesIntroMedia/)
+    assert.match(page,/<ServicesMethodVideos/)
+    assert.doesNotMatch(page,/<ServicesSmartDiscovery|<ServiceCart/)
   }
+  assert.match(directory,/<ServicesSmartDiscovery/)
+  assert.match(directory,/<MarketplaceServiceFinder/)
+  assert.match(directory,/createPractitionerRepository/)
   assert.match(ui,/rankDiscoveryServices/)
   assert.match(ui,/rankEditorialDiscovery/)
   assert.match(ui,/onClick=\{\(\)=>chooseCategory\(area\.key\)\}/)
@@ -162,7 +167,6 @@ test('Services: booking-style search and category selector appear above untouche
   assert.match(api,/candidates\.has\(id\)/)
   assert.match(api,/MAX_ATTEMPTS_PER_WINDOW/)
   assert.doesNotMatch(api,/console\.log|analytics|saveGuestResult|logVisitorText/)
-  assert.doesNotMatch(main,/<ServiceCart/)
 })
 
 test('Service discovery scrolls to submitted and category results on mobile and desktop',async()=>{
@@ -224,8 +228,9 @@ test('service match results use full-width orderable cards with accessible detai
   assert.ok(ui.includes('className={styles.editorialChannels}'))
   assert.ok(ui.includes('id={"hh-listing-details-"+service.id}'))
   assert.ok(ui.includes('service.copy.description || service.copy.shortDescription'))
-  assert.ok(ui.includes('href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}'))
-  const requestLink='<TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>'
+  assert.ok(ui.includes('href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)}'))
+  assert.ok(ui.includes('El formulario de solicitud se abre en inglés; se conserva el servicio elegido.'))
+  const requestLink='<TrackedServiceLink serviceId={service.id} event="order" href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)} aria-label={locale==="es"?"Solicitar este servicio (formulario en inglés)":undefined}>{t.order}</TrackedServiceLink>'
   const detailsToggle='<button type="button" className={styles.suggestionDetailsToggle}'
   const assertActionOrder=source=>{
     const requestIndex=source.indexOf(requestLink)

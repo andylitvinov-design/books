@@ -21,7 +21,7 @@ const COPY={
     write:"Write a review",edit:"Edit my review",signin:"Sign in to leave a review",
     owner:"Practitioners cannot review their own services.",inactive:"Complete your member profile to leave a review.",
     publicName:"Public display name",rating:"Your rating",experience:"Your experience",
-    experienceHint:"20–1200 characters. Please avoid personal, medical or contact details.",
+    experienceHint:"50–1200 characters. Please avoid personal, medical or contact details.",
     publish:"Publish review",save:"Save changes",cancel:"Cancel",delete:"Delete my review",
     confirmDelete:"Delete your review of this service?",saved:"Your review has been saved.",
     deleted:"Your review has been deleted.",hidden:"Your review is under moderation and is not shown publicly.",
@@ -29,7 +29,7 @@ const COPY={
     genericError:"We couldn't complete this request. Please try again.",
     errorSignin:"Please sign in again to post a review.",
     errorRate:"Too many changes. Please try again later.",
-    errorInvalid:"Please enter 1–5 stars, a public name (2–60 characters), and a review of 20–1200 characters.",
+    errorInvalid:"Please enter 1–5 stars, a public name (2–60 characters), and a review of 50–1200 characters.",
     errorPersonal:"Please remove email addresses, phone numbers and other private contact details.",
     member:"Member review",edited:"Edited",stars:"stars out of 5",
   },
@@ -40,7 +40,7 @@ const COPY={
     write:"Оставить отзыв",edit:"Редактировать мой отзыв",signin:"Войти, чтобы оставить отзыв",
     owner:"Мастер не может оценивать собственные услуги.",inactive:"Завершите оформление профиля, чтобы оставить отзыв.",
     publicName:"Публичное имя",rating:"Ваша оценка",experience:"Ваш опыт",
-    experienceHint:"20–1200 символов. Не добавляйте личные, медицинские данные и контакты.",
+    experienceHint:"50–1200 символов. Не добавляйте личные, медицинские данные и контакты.",
     publish:"Опубликовать отзыв",save:"Сохранить изменения",cancel:"Отмена",delete:"Удалить мой отзыв",
     confirmDelete:"Удалить ваш отзыв об этой услуге?",saved:"Отзыв сохранён.",
     deleted:"Отзыв удалён.",hidden:"Ваш отзыв скрыт на модерации и не виден другим.",
@@ -48,7 +48,7 @@ const COPY={
     genericError:"Не получилось выполнить действие. Попробуйте ещё раз.",
     errorSignin:"Войдите в аккаунт заново, чтобы оставить отзыв.",
     errorRate:"Слишком много изменений. Попробуйте позже.",
-    errorInvalid:"Укажите 1–5 звёзд, публичное имя (2–60 символов) и отзыв длиной 20–1200 символов.",
+    errorInvalid:"Укажите 1–5 звёзд, публичное имя (2–60 символов) и отзыв длиной 50–1200 символов.",
     errorPersonal:"Удалите email, номера телефонов и контактные данные.",
     member:"Отзыв участника",edited:"Изменён",stars:"звёзд из 5",
   },
@@ -59,7 +59,7 @@ const COPY={
     write:"Escribir opinión",edit:"Editar mi opinión",signin:"Inicia sesión para opinar",
     owner:"Los profesionales no pueden valorar sus propios servicios.",inactive:"Completa tu perfil para escribir una opinión.",
     publicName:"Nombre público",rating:"Tu valoración",experience:"Tu experiencia",
-    experienceHint:"Entre 20 y 1200 caracteres. Evita datos personales, médicos o de contacto.",
+    experienceHint:"Entre 50 y 1200 caracteres. Evita datos personales, médicos o de contacto.",
     publish:"Publicar opinión",save:"Guardar cambios",cancel:"Cancelar",delete:"Eliminar mi opinión",
     confirmDelete:"¿Eliminar tu opinión sobre este servicio?",saved:"Opinión guardada.",
     deleted:"Opinión eliminada.",hidden:"Tu opinión está oculta por moderación.",
@@ -67,7 +67,7 @@ const COPY={
     genericError:"No se pudo completar la solicitud. Inténtalo de nuevo.",
     errorSignin:"Inicia sesión de nuevo para publicar una opinión.",
     errorRate:"Demasiados cambios. Inténtalo más tarde.",
-    errorInvalid:"Indica entre 1 y 5 estrellas, un nombre (2–60 caracteres) y una opinión (20–1200 caracteres).",
+    errorInvalid:"Indica entre 1 y 5 estrellas, un nombre (2–60 caracteres) y una opinión (50–1200 caracteres).",
     errorPersonal:"Elimina correos electrónicos, teléfonos y datos de contacto.",
     member:"Opinión de miembro",edited:"Editada",stars:"estrellas de 5",
   },
@@ -112,6 +112,7 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
 
   const mine=data?.viewer.mine;
   const canReview=Boolean(data?.viewer.canReview);
+  const bodyCharacterCount=Array.from(body.trim()).length;
   function openEditor(){
     setDisplayName(mine?.displayName||data?.viewer.suggestedName||"");
     setRating(mine?.rating||5);
@@ -122,7 +123,7 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
   }
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
-    if(saving)return;
+    if(saving||Array.from(body.trim()).length<50)return;
     setSaving(true);setError("");setNotice("");
     try{
       const response=await fetch("/api/marketplace/reviews",{
@@ -187,10 +188,10 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
             onClick={()=>setRating(value)} className={value<=rating?styles.starActive:styles.starEmpty}>★</button>)}
         </fieldset>
         <label>{t.experience}<textarea value={body} onChange={event=>setBody(event.target.value)}
-          required minLength={20} maxLength={1200} rows={4}/></label>
-        <p className={styles.note}>{t.experienceHint}</p>
+          required minLength={50} maxLength={1200} rows={4}/></label>
+        <p className={styles.note} aria-live="polite">{bodyCharacterCount} / 50 · {t.experienceHint}</p>
         <div className={styles.actions}>
-          <button type="submit" className={styles.primary} disabled={saving}>{saving?t.loading:(mine?t.save:t.publish)}</button>
+          <button type="submit" className={styles.primary} disabled={saving||bodyCharacterCount<50}>{saving?t.loading:(mine?t.save:t.publish)}</button>
           <button type="button" className={styles.secondary} disabled={saving} onClick={()=>setFormOpen(false)}>{t.cancel}</button>
         </div>
       </form>}

@@ -37,10 +37,11 @@ test("dedicated Services always exposes paid and express booking choices at the 
   const cta = read("components", "public-consultation-cta.tsx");
   assert.match(home, /\/services#consultation/);
   assert.match(home, /services\/free-situation-review/);
-  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} \/>/);
+  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
   assert.match(read("app", "es", "page.tsx"), /href="\/es\/services#consultation"/);
-  assert.match(read("app", "es", "services", "page.tsx"), /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} \/>/);
+  assert.match(read("app", "es", "services", "page.tsx"), /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
   assert.match(cta, /serviceBooking = false/);
-  assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} wiseEnabled=\{wiseEnabled\} \/>/);
-  assert.match(read("components", "consultation-choice-capture.tsx"), /serviceChoices: ServiceChoice\[\] = \["session", "questions", "free"\]/);
+  assert.match(cta, /if \(serviceBooking\) return <ConsultationCartEntry locale=\{locale\} id=\{id\} \/>/);
+  assert.match(read("components", "commerce", "consultation-cart-entry.tsx"), /publicServiceCatalog\(locale\)/);
+  assert.match(read("components", "commerce", "consultation-cart-entry.tsx"), /data-service-product=/);
 });

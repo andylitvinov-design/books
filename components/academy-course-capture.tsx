@@ -18,7 +18,7 @@ const courses: Record<CourseId, { title: string; path: string; image: string }> 
   tantra: {
     title: "Tantra Reiki",
     path: "tantra-reiki",
-    image: "/library/maya-mysteries/media/post-217-1.jpg",
+    image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
   },
   kundalini: {
     title: "Kundalini Reiki",

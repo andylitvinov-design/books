@@ -31,7 +31,7 @@ test('SQL is unapplied, restricted, ownership-scoped and grants no clinical acce
   assert.match(sql, /with check\(owner_id=\(select auth\.uid\(\)\) and suppressed=true\)/)
 })
 test('campaign endpoint cannot dispatch and self-preferences use verified actor only', () => {
-  assert.match(read('app/api/app/crm/route.js'), /sendingEnabled: false/)
+  assertSendingDisabled(read('app/api/app/crm/route.js'))
   const pref = read('app/api/app/communication-preferences/route.js')
   assert.match(pref, /repo\.withOwner\(actor/)
   assert.match(pref, /deliveryEnabled: false/)
@@ -82,8 +82,23 @@ test('CRM lifecycle updates are owner-scoped and suppression remains immutable',
  assert.match(repo,/set lifecycle=\$1,revision=revision\+1 where id=\$2 and owner_id=\$3/)
  assert.match(ui,/save\('set_lifecycle',\{id:contact\.id,lifecycle:event\.target\.value,expectedRevision:contact\.revision\}\)/)
  assert.match(practice,/isOwner&&<PracticeTile Icon=\{UsersRound\}/)
- assert.match(practice,/onClick=\{\(\)=>isOwner\?openOwner\('clients'\):choosePanel\('clients'\)\}/)
+ assert.match(practice,/onClick=\{\(\)=>choosePanel\('clients'\)\}/)
+ assert.match(practice,/<PractitionerClientProfiles items=\{requests\}/)
+ assert.match(practice,/\{ownerTools && <details className="hh-practice-more-tools">/)
  assert.match(migration,/OLD\.suppressed AND NOT NEW\.suppressed/)
  assert.match(migration,/force row level security/i)
  assert.doesNotMatch(route,/sendMail|sendMessage/)
+})
+
+function assertSendingDisabled(source) {
+  assert.match(source, /sendingEnabled:\s*false\s*[,}]/)
+}
+test('CRM sending gate remains literal false regardless of owner formatting', () => {
+  const source = read('app/api/app/crm/route.js')
+  const gate = source.match(/sendingEnabled:\s*false\s*[,}]/)?.[0]
+  assert.ok(gate)
+  for (const spacing of ['', ' ', '\n  '])
+    assertSendingDisabled(source.replace(gate, 'sendingEnabled:' + spacing + 'false,'))
+  for (const replacement of ['', 'sendingEnabled:true,', 'sendingEnabled:config.enabled,', 'sendingEnabled:false || true,', 'other:false,'])
+    assert.throws(() => assertSendingDisabled(source.replace(gate, replacement)))
 })

@@ -38,6 +38,7 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/lib/ui-locale': { localePath: (path, locale) => '/' + locale + path, saveUiLocale() {} },
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
+  './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
 });
 const { AcquisitionEventLink } = loadComponent('components/acquisition-event-link.tsx', { ...common, '@/data/local-acquisition': acquisition });
@@ -80,18 +81,18 @@ test('CSP history clicks the unique body About CTA despite the real header dupli
 });
 
 const homeLabels = {
-  en: ['Get a free written review', 'Take free self-checks', 'Personal sessions · from €50'],
-  ru: ['Получить бесплатный разбор', 'Пройти бесплатные тесты', 'Личная сессия · от €50'],
+  en: ['Get a free written review', 'Take free self-checks', 'Ask about a session · from €50'],
+  ru: ['Получить бесплатный разбор', 'Пройти бесплатные тесты', 'Запросить личную сессию · от €50'],
 };
 function assertHomeRoutes(tree, locale) {
   const nodes = treeNodes(tree);
   const actions = nodes.filter(node => node.type === 'a' && node.props['data-hero-cta']);
   assert.deepEqual(actions.map(node => [node.props['data-hero-cta'], node.props.href, node.props.children[0]]), [
+    ['paid-sessions', '/' + locale + '/services#consultation', homeLabels[locale][2]],
     ['free-written-review', '/' + locale + '/services/free-situation-review', homeLabels[locale][0]],
     ['free-tests', '/' + locale + '/client/tests', homeLabels[locale][1]],
-    ['paid-sessions', '/' + locale + '/services#consultation', homeLabels[locale][2]],
   ]);
-  assert.deepEqual(actions.map(node => node.props.className), ['service-home-button service-home-button--primary', 'service-home-button service-home-button--secondary', 'service-home-paid-link']);
+  assert.deepEqual(actions.map(node => node.props.className), ['service-home-button service-home-button--primary', 'service-home-button service-home-button--secondary', 'service-home-selfcheck-link']);
   const freeStart = nodes.filter(node => node.props.id === 'free-start');
   assert.equal(freeStart.length, 1, 'Start free resolves to the actual photo service heading');
   const services = nodes.filter(node => node.props['data-core-service-offers'] === 'home');
@@ -115,7 +116,7 @@ function assertPhotoServices(section, locale) {
   });
 }
 for (const locale of ['en', 'ru']) {
-  test(locale + ' homepage renders exact free review, tests and optional paid text-link routes in order', () => assertHomeRoutes(HolisticHouseHome({ locale }), locale));
+  test(locale + ' homepage renders exact personal-session, free-review and self-check routes in owner-approved order', () => assertHomeRoutes(HolisticHouseHome({ locale }), locale));
 }
 for (const locale of ['en', 'ru']) {
   test(locale + ' existing photo cards keep both free services and two personal-work options', () => assertPhotoServices(ServicesSolutions({ locale, variant: 'home' }), locale));
@@ -127,11 +128,12 @@ for (const action of ['free-written-review', 'free-tests', 'paid-sessions']) {
     assert.throws(() => assertHomeRoutes(tree, 'en'));
   });
 }
-for (const fault of ['wrong paid label', 'missing free target', 'wrong Wu Xing route']) {
+for (const fault of ['wrong paid label', 'missing primary consultation class', 'missing free target', 'wrong Wu Xing route']) {
   test('homepage contract rejects ' + fault, () => {
     const tree = HolisticHouseHome({ locale: 'en' });
     const nodes = treeNodes(tree);
     if (fault === 'wrong paid label') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.children[0] = 'Free call';
+    if (fault === 'missing primary consultation class') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.className = 'service-home-paid-link';
     if (fault === 'missing free target') nodes.find(node => node.props.id === 'free-start').props.id = 'missing';
     if (fault === 'wrong Wu Xing route') {
       const dao = nodes.find(node => node.props['data-core-service-id'] === 'dao');
@@ -151,7 +153,7 @@ test('header matrix preserves all widths and tests direct links against the actu
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
+  const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
@@ -180,7 +182,7 @@ async function menuScenario(locale, surface, fault) {
   const menu = { count: fault === 'missing menu' ? 0 : 1, locator(selector) {
     if (selector === 'summary') return trigger;
     if (selector === 'a[aria-current="page"]') return { count: current.length, href: current[0]?.props.href };
-    if (selector === '.site-main-menu-panel > a') return {
+    if (selector === '.site-main-menu-panel a') return {
       evaluateAll: async callback => callback(actualHrefs.map(href => ({ getAttribute: () => href }))),
       all: async () => links, first: () => links[0],
     };
@@ -258,7 +260,7 @@ for (const fault of ['wrong free hash', 'wrong services route', 'wrong About rou
 
 test('library audit checks the menu active link while preserving exact six-slot bottom navigation', () => {
   assert.match(ia, /verifyDirectNavigation\(nav, \{ locale, surface: 'library', expected, label:/);
-  assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel > a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
+  assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
   assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/library'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(6\)/);
   assert.match(ia, /const libraryEntry = header\.locator\('a\.site-library-entry'\)/);

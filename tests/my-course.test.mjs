@@ -6,7 +6,7 @@ import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.j
 import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
 import { COURSE_PRE_ENROLMENT_PHASES, coursePreEnrolmentPlan } from '../lib/inner-growth/course-pre-enrolment.js'
 import { SHARED_DAYS } from '../data/inner-growth/shared-days.js'
-import { TRACKS, lessonFor, isCompleteLibrary, COURSE_CONTENT_VERSION, COURSE_WORKBOOK_VERSION } from '../lib/inner-growth/lesson-library.js'
+import { TRACKS, lessonFor, isCompleteLibrary, COURSE_CONTENT_VERSION, COURSE_WORKBOOK_VERSION, COURSE_ANTISTRESS_OUTCOME_V3, COURSE_ANTISTRESS_SKILLS_V5, COURSE_ANTISTRESS_SKILLS_V6, COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/lesson-library.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -145,7 +145,7 @@ test('course state is authenticated, encrypted, owner-scoped and not copied to b
   assert.doesNotMatch(service, /select \* from app\.assessment_runs(?! where account_id)/)
 })
 
-test('first-screen preset and personal choices require consent before account-owned intake', () => {
+test('first-screen preset and personal choices use one deliberate click before account-owned intake', () => {
   const ui = read('components/app/my-course.jsx')
   const r3 = read('components/app/course-r3-steps.jsx')
   const css = read('components/app/my-course.module.css')
@@ -160,14 +160,14 @@ test('first-screen preset and personal choices require consent before account-ow
   const catalog = read('components/app/course-preset-catalog.jsx')
   assert.match(catalog, /onClick=\{\(\)=>onPreset\(preset\.id\)\}/)
   assert.match(catalog, /onClick=\{onPersonal\}/)
-  assert.match(ui, /if \(!optIn \|\| busy\) return/)
+  assert.match(ui, /function startSelectedCourse\(presetId = null, programId = null\)/)
+  assert.match(ui, /if \(busy \|\| actionLock\.current/)
   assert.match(ui, /newCourse: access\?\.multiCourseEnabled === true/)
-  assert.match(ui, /ref=\{startDialogRef\}/)
-  assert.match(ui, /startDialogRef\.current\?\.showModal\(\)/)
-  assert.match(ui, /disabled=\{!optIn \|\| busy\}/)
-  assert.match(ui, /await act\('start', \{ consent: true,/)
-  assert.match(ui, /presetId: intent\.presetId/)
-  assert.match(ui, /onClick=\{\(\) => void confirmStart\(\)\}/)
+  assert.match(ui, /const values = \{ consent: true,/)
+  assert.match(ui, /void act\('start', values\)/)
+  assert.match(ui, /presetId \? \{ presetId \} : \{\}/)
+  assert.doesNotMatch(ui, /ref=\{startDialogRef\}|showModal\(\)/)
+  assert.doesNotMatch(ui, /disabled=\{!optIn \|\| busy\}/)
   assert.match(ui, /requestedCourseId=restartingClosed \? state\.course\.id : newCourseId\.current/)
   assert.match(ui, /expectedRevision: started\.course\.revision/)
   assert.match(css, /\.heroActions/)
@@ -569,15 +569,27 @@ test('V3 re-entry hints are nonclinical, optional and do not misrepresent missin
   assert.equal(v3ReturnSuggestion({day:17,sessions:[]}),null)
 })
 
-test('V3 persists the chosen content version and uses the exact same lesson ID for display and authenticated save', () => {
+test('stored content versions are preserved and use the exact same lesson ID for display and authenticated save', async () => {
   const service=read('lib/app/growth-daily.js')
   const component=read('components/app/course-today.jsx')
   const css=read('components/app/course-today.module.css')
   assert.match(service,/goal,nextContentVersion,local,zone/)
   assert.match(service,/nextContentVersion=courseProgramFromTopics/)
-  assert.match(service,/COURSE_ANTISTRESS_SKILLS_V7 : COURSE_CONTENT_V4/)
-  assert.match(service,/const resolveCycleVersion = value => value === COURSE_ANTISTRESS_SKILLS_V7/)
-  assert.match(service,/value === COURSE_CONTENT_V4/)
+  const {repositoryHarness}=await import('./helpers/route-pipeline-harness.mjs')
+  for(const version of [COURSE_CONTENT_V3,COURSE_CONTENT_V4,COURSE_ANTISTRESS_OUTCOME_V3,
+    COURSE_ANTISTRESS_SKILLS_V5,COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7]){
+    const owner=repositoryHarness({freshPhase:true}),created=await owner.create('AS2')
+    assert.equal(created.content_version,COURSE_ANTISTRESS_SKILLS_V7,'Only new AS2 selects the current V7')
+    // Model an already-persisted cycle before exercising the real read resolver.
+    owner.cycle.content_version=version
+    owner.seedDay(2)
+    const writesBefore=owner.writes.length
+    const daily=await owner.read('en')
+    assert.equal(daily.lesson.version,version)
+    assert.equal(daily.lesson.id,lessonFor('calm_regulation',2,'en','standard',version).id)
+    assert.equal(owner.cycle.content_version,version)
+    assert.equal(owner.writes.length,writesBefore,'A read never migrates historical content')
+  }
   assert.match(service,/const contentVersion=resolveCycleVersion\(cycle\.content_version\)/)
   assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,dayInfo\.day,locale,contentVersion\)/)
   assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale,contentVersion\)/)
@@ -701,22 +713,27 @@ test('pre-enrolment preview covers all 14 source-of-truth days in four concise b
   assert.notDeepEqual(coursePreEnrolmentPlan('en')[0].title,coursePreEnrolmentPlan('ru')[0].title)
 })
 
-test('guests can inspect course plan before Google login and signed-in clients before consent', () => {
+test('guests get a brief Google course invitation, while signed-in clients can inspect the full plan before starting', () => {
   const landing=read('components/app/my-course.jsx')
   const app=read('components/app/app-workspace.jsx')
+  const guest=read('components/app/course-guest-landing.jsx')
   const preview=read('components/app/course-14-day-overview.jsx')
   const css=read('components/app/course-14-day-overview.module.css')
   assert.match(app, /<Course14DayOverview locale=\{locale\} programId="stress" compact \/>/)
   assert.match(app, /<Course14DayOverview locale=\{locale\} compact \/>/)
   assert.match(app, /const stressSignup = page === 'course' && searchParams\.get\('program'\) === 'stress'/)
-  assert.match(app, /Войти и перейти к стартовым тестам/)
+  assert.match(app, /<CourseGuestLanding locale=\{locale\} onStart=\{signin\} busy=\{busy\} stressSignup=\{stressSignup\} compact/)
+  assert.match(guest, /if \(compact\) return/)
+  assert.match(guest, /inviteLead/)
+  assert.match(guest, /data-course-google-signin/)
+  assert.match(guest, /href=\{`\/\$\{locale\}\/courses\/antistress`\}/)
   assert.match(landing, /stage === 0 && <details className=\{styles\.overviewDisclosure\}>/)
   assert.match(landing, /<Course14DayOverview locale=\{locale\} \/>/)
   const beforeConsent=landing.indexOf('stage === 0 && <details className={styles.overviewDisclosure}')
   const afterHero=landing.indexOf('stage === 0 && <header')
-  const consent=landing.indexOf('ref={startDialogRef}')
-  assert.ok(afterHero>=0 && beforeConsent>afterHero && consent>beforeConsent,
-    'the preview appears after the main CTA and before course registration')
+  assert.ok(afterHero>=0 && beforeConsent>afterHero,
+    'the full programme remains available after the signed-in main CTA')
+  assert.doesNotMatch(landing, /ref=\{startDialogRef\}/)
   assert.match(preview, /data-course-14-day-overview/)
   assert.match(preview, /data-course-before-signup/)
   assert.match(preview, /data-course-phase/)
