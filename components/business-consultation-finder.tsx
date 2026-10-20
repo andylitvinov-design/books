@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ArrowRight, Check, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, Compass, Rocket, ShieldCheck, Sparkles, WalletCards } from 'lucide-react'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { businessConsultingCopy } from '@/data/business-consulting-copy'
 import { BUSINESS_FINDER_ISSUES, BUSINESS_FINDER_FORMATS, suggestBusinessConsultation } from '@/lib/business-consulting/consultation-finder'
@@ -16,7 +16,7 @@ const areas: Area[] = ['business', 'money', 'personal', 'project']
 const formats = BUSINESS_FINDER_FORMATS as readonly Format[]
 
 const words: Record<Locale, {
-  eyebrow: string; title: string; lead: string; steps: string; stepOne: string; stepTwo: string;
+  eyebrow: string; title: string; lead: string; steps: string; done: string; stepOne: string; stepTwo: string;
   match: string; approach: string; available: string; request: string;
   privacy: string; noBooking: string; context: string; concern: string;
   mentoringFee: string; reasons: Record<Format, string>;
@@ -26,10 +26,10 @@ const words: Record<Locale, {
     eyebrow: '2 QUICK QUESTIONS',
     title: 'Find your consultation in 30 seconds',
     lead: 'Choose a topic and a challenge. We suggest a format that you can change.',
-    steps: 'Questions answered', stepOne: 'What is your question mostly about?', stepTwo: 'What feels hardest right now?',
+    steps: 'STEP', done: 'YOUR MATCH', stepOne: 'Where do you need clarity?', stepTwo: 'What is the main challenge?',
     match: 'A possible starting point',
     approach: 'Focus for your conversation', available: 'Other available formats',
-    request: 'Enquire about this consultation',
+    request: 'Continue to request',
     privacy: 'Your answers stay here until you send an enquiry with consent.',
     noBooking: 'An enquiry is not a confirmed appointment or payment. Andrey confirms details personally. No financial results are promised.',
     context: 'Area', concern: 'Question',
@@ -44,7 +44,7 @@ const words: Record<Locale, {
       business: {label: 'Business & work', detail: 'Strategy, clients, leadership, decisions'},
       money: {label: 'Money & income', detail: 'Pricing, uncertainty, money-related choices'},
       personal: {label: 'For myself', detail: 'Confidence, focus, motivation, balance'},
-      project: {label: 'My project / own venture', detail: 'Starting, building, collaborating, moving forward'},
+      project: {label: 'My own project', detail: 'Starting, building, collaborating, moving forward'},
     },
     issues: {
       strategy: {label: 'Where to take the business',detail: 'Too many directions or a difficult decision'},
@@ -69,10 +69,10 @@ const words: Record<Locale, {
     eyebrow: '2 КОРОТКИХ ВОПРОСА',
     title: 'Подберите консультацию за 30 секунд',
     lead: 'Выберите сферу и проблему — сразу увидите формат. Его можно изменить.',
-    steps: 'Ответов на вопросы', stepOne: 'О чём прежде всего ваш запрос?', stepTwo: 'Что сейчас сложнее всего?',
+    steps: 'ШАГ', done: 'ВАШ ВАРИАНТ', stepOne: 'С чем нужен совет?', stepTwo: 'Что сейчас сложнее всего?',
     match: 'Возможный формат для начала',
     approach: 'Тема вашей консультации', available: 'Другие доступные форматы',
-    request: 'Оставить заявку на консультацию',
+    request: 'Продолжить к заявке',
     privacy: 'Ответы остаются здесь до отправки заявки с вашим согласием.',
     noBooking: 'Заявка ещё не означает запись или оплату. Андрей согласует детали лично. Финансовые результаты не гарантируются.',
     context: 'Сфера', concern: 'Вопрос',
@@ -87,7 +87,7 @@ const words: Record<Locale, {
       business: {label: 'Бизнес и работа',detail: 'Стратегия, клиенты, руководство, решения'},
       money: {label: 'Деньги и доход',detail: 'Цена, неопределённость, финансовый выбор'},
       personal: {label: 'Для себя',detail: 'Уверенность, концентрация, мотивация, баланс'},
-      project: {label: 'Для своего дела',detail: 'Запуск, развитие, партнёрство, движение вперёд'},
+      project: {label: 'Мой проект',detail: 'Запуск, развитие, партнёрство, движение вперёд'},
     },
     issues: {
       strategy: {label: 'Куда развивать бизнес',detail: 'Много направлений или сложный выбор'},
@@ -112,10 +112,10 @@ const words: Record<Locale, {
     eyebrow: '2 PREGUNTAS RÁPIDAS',
     title: 'Encuentra tu consulta en 30 segundos',
     lead: 'Elige un tema y tu reto. Verás una sugerencia que puedes cambiar.',
-    steps: 'Preguntas respondidas', stepOne: '¿De qué trata tu consulta?', stepTwo: '¿Qué te resulta más difícil?',
+    steps: 'PASO', done: 'TU OPCIÓN', stepOne: '¿En qué necesitas claridad?', stepTwo: '¿Cuál es el mayor reto?',
     match: 'Una opción para empezar',
     approach: 'Tema de tu conversación', available: 'Otras modalidades disponibles',
-    request: 'Solicitar esta consulta',
+    request: 'Continuar a la solicitud',
     privacy: 'Tus respuestas quedan aquí hasta enviar una solicitud con consentimiento.',
     noBooking: 'Enviar una solicitud no confirma una cita ni un pago. Andrey acuerda los detalles personalmente. No se garantizan resultados económicos.',
     context: 'Área', concern: 'Pregunta',
@@ -130,7 +130,7 @@ const words: Record<Locale, {
       business: {label: 'Negocios y trabajo',detail: 'Estrategia, clientes, liderazgo y decisiones'},
       money: {label: 'Dinero e ingresos',detail: 'Precios, incertidumbre y decisiones económicas'},
       personal: {label: 'Para mí',detail: 'Confianza, concentración, motivación y equilibrio'},
-      project: {label: 'Mi propio proyecto',detail: 'Inicio, crecimiento, equipo y progreso'},
+      project: {label: 'Mi proyecto',detail: 'Inicio, crecimiento, equipo y progreso'},
     },
     issues: {
       strategy: {label: 'Hacia dónde llevar mi negocio',detail: 'Demasiadas opciones o una decisión difícil'},
@@ -175,24 +175,22 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
 
 
   const stage = !area ? 'area' : !issue ? 'issue' : 'result'
-  const backLabel = locale === 'ru' ? 'Назад' : locale === 'es' ? 'Atrás' : 'Back'
   const choicesLabel = locale === 'ru' ? 'Другой формат' : locale === 'es' ? 'Otra modalidad' : 'Choose another format'
 
   return <section className={styles.panel} id="hh-business-finder" data-business-consultation-finder aria-labelledby="hh-business-finder-title">
     <div className={styles.heading}>
-      <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true"/>{t.eyebrow}</p>
-      <h2 id="hh-business-finder-title">{t.title}</h2>
-      <p>{t.lead}</p>
+      <h2 className={styles.srOnly} id="hh-business-finder-title">{t.title}</h2>
       <div className={styles.progressWrap}>
-        <span>{t.steps}: {answered}/2</span>
-        <div className={styles.progress} role="progressbar" aria-label={t.steps} aria-valuemin={0} aria-valuemax={2} aria-valuenow={answered}>
-          <span style={{width:(answered / 2 * 100) + '%'}}/>
-        </div>
+        <span className={styles.eyebrow}><Sparkles size={15} aria-hidden="true"/>{t.eyebrow}</span>
+        <span className={styles.stageLabel}>{stage === 'result' ? t.done : t.steps + ' ' + (answered + 1) + ' / 2'}</span>
+      </div>
+      <div className={styles.progress} role="progressbar" aria-label={t.steps} aria-valuemin={0} aria-valuemax={2} aria-valuenow={answered}>
+        <span style={{width:(answered / 2 * 100) + '%'}}/>
       </div>
     </div>
 
     {area && <nav className={styles.trail} aria-label={t.steps}>
-      <button type="button" onClick={() => {setArea(null);setIssue(null);setPreferred(null)}}>{t.areas[area].label}</button>
+      <button type="button" onClick={() => {setArea(null);setIssue(null);setPreferred(null)}}><ArrowLeft size={13} aria-hidden="true"/>{t.areas[area].label}</button>
       {issue && <button type="button" onClick={() => {setIssue(null);setPreferred(null)}}>{t.issues[issue].label}</button>}
     </nav>}
 
@@ -203,7 +201,11 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
           {areas.map(key=><button key={key} type="button" className={styles.choice}
             data-business-area={key} aria-pressed={area===key}
             onClick={()=>{setArea(key);setIssue(null);setPreferred(null)}}>
-            <span className={styles.mark}><Check size={16} aria-hidden="true"/></span>
+            <span className={styles.choiceIcon} aria-hidden="true">
+              {key === 'business' ? <BriefcaseBusiness size={18}/> :
+                key === 'money' ? <WalletCards size={18}/> :
+                key === 'personal' ? <Compass size={18}/> : <Rocket size={18}/>}
+            </span>
             <span><strong>{t.areas[key].label}</strong><small>{t.areas[key].detail}</small></span>
           </button>)}
         </div>
@@ -212,14 +214,13 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
       {stage === 'issue' && area && <fieldset className={styles.step} data-business-finder-step="issue">
         <legend><span className={styles.number}>2</span>{t.stepTwo}</legend>
         <div className={styles.choices}>
-          {BUSINESS_FINDER_ISSUES[area].map((key:string)=><button key={key} type="button" className={styles.choice}
+          {BUSINESS_FINDER_ISSUES[area].map((key:string, index:number)=><button key={key} type="button" className={styles.choice}
             data-business-issue={key} aria-pressed={issue===key}
             onClick={()=>{setIssue(key);setPreferred(null)}}>
-            <span className={styles.mark}><Check size={16} aria-hidden="true"/></span>
+            <span className={styles.choiceIndex} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
             <span><strong>{t.issues[key].label}</strong><small>{t.issues[key].detail}</small></span>
           </button>)}
         </div>
-        <button className={styles.back} type="button" onClick={()=>{setArea(null);setIssue(null);setPreferred(null)}}><ArrowLeft size={15} aria-hidden="true"/>{backLabel}</button>
       </fieldset>}
     </div>
 
@@ -248,6 +249,6 @@ export function BusinessConsultationFinder({ locale }: { locale: Locale }) {
       </details>
       <p className={styles.noBooking}>{t.noBooking}</p>
     </div>}
-    <p className={styles.privacy}><ShieldCheck size={15} aria-hidden="true"/>{t.privacy}</p>
+    {stage !== 'result' && <p className={styles.privacy}><ShieldCheck size={15} aria-hidden="true"/>{t.privacy}</p>}
   </section>
 }
