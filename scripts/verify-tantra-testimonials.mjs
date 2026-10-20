@@ -430,15 +430,18 @@ try {
             assert.equal(response.status(), 200);
             const csp = response.headers()['content-security-policy'];
             assert.match(csp, /(?:^|;)\s*media-src 'self' https:\/\/psitrends\.com(?:;|$)/);
-            const english = page.locator('#tantra-original-english-testimonials');
+            const written = page.locator('#tantra-testimonials [data-tantra-full-learner-reviews]');
             const russian = page.locator('#tantra-russian-video-testimonials');
-            assert.equal(await english.evaluate(el => el.open), locale === 'en');
+            await expect(written.locator('[data-tantra-review-id]')).toHaveCount(4);
+            await expect(written).toContainText(locale === 'ru' ? 'Литтен' : 'Litten');
+            await expect(written).toContainText(locale === 'ru' ? 'Маргарет' : 'Margaret');
+            await expect(written).toContainText(locale === 'ru' ? 'Ольга' : 'Olga');
+            await expect(written.locator('[data-tantra-review-id="litten"]')).toContainText(locale === 'ru' ? 'Я ещё буду практиковать' : 'Will still practice with attuned partner');
+            await expect(written.locator('[data-tantra-review-id="tantra-level-1"]')).toContainText(locale === 'ru' ? 'Благодарю Андрей!' : 'Thank you, Andrey! As beautiful as always :)');
             assert.equal(await russian.evaluate(el => el.open), locale !== 'en');
             assert.deepEqual(await russian.locator('video source').evaluateAll(items => items.map(el => el.src)), sources);
             assert.deepEqual(await russian.locator('video').evaluateAll(items => items.map(el => el.poster)), posters);
             if (locale === 'en') {
-              await expect(english).toContainText('Litten');
-              await expect(english).toContainText('Margaret');
               await expect(russian.locator('summary')).toContainText('Russian audio');
               await expect(russian.locator('video').first()).not.toBeVisible();
               await russian.locator('summary').click();

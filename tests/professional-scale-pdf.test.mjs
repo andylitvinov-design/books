@@ -52,3 +52,24 @@ test('gated guide entries are visible in PDF filter but cannot enter the test ba
   assert.ok(available.every((entry) => entry.selectable))
   assert.ok(!available.some((item) => item.key === 'bfne-12'))
 })
+
+ test('Accepted canonical RAS reference remains unique and disabled while retaining its educational PDF', () => {
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 168)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(row => row.key)).size, 168)
+  assert.deepEqual(MIND_BODY_MONITOR_REGISTRY.filter(row => row.key === 'ras-7'), [{
+    key: 'ras-7', category: 'relationship_satisfaction', area: 'relationships', priority: 'A',
+    instrument: 'Relationship Assessment Scale', acronym: 'RAS', items: 7, duration: '2 min',
+    rightsStatus: 'rights_review', access: 'research', enabled: false,
+    rightsNote: 'Only research metadata; verify permission before public self-administration.',
+  }])
+  assert.equal(getProfessionalScaleResource('ras-7').downloadType, 'educational_scale_guide_only')
+  for (const audience of ['guest', 'account']) {
+    const entries = buildExplorerEntries({ locale: 'en', audience })
+    assert.equal(entries.length, 290)
+    assert.equal(new Set(entries.map(row => row.key)).size, 290)
+    const ras = entries.filter(row => row.key === 'ras-7')
+    assert.equal(ras.length, 1)
+    assert.equal(ras[0].selectable, false)
+    assert.equal(ras[0].startable, false)
+  }
+})

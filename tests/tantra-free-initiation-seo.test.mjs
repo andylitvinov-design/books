@@ -20,7 +20,14 @@ test("free Tantra Reiki has dedicated search-intent metadata in EN, RU and ES", 
   assert.match(route, /"x-default": "\/en\/academy" \+ languageSuffix/);
   assert.match(route, /openGraph: \{/);
   assert.match(route, /twitter: \{/);
-  assert.match(route, /sharingImage = "\/images\/holistic-house\/andy-about.png"/);
+  assert.match(route, /const referralLanding = routeKey\(slug\) === "reiki\/free-practitioner-course"/);
+  const sharingImageExpression = route.match(/const sharingImage = ([^;]+);/)?.[1];
+  assert.ok(sharingImageExpression, "Shared metadata exposes an explicit cover expression");
+  const coverFor = new Function("referralLanding", "return (" + sharingImageExpression + ")");
+  assert.equal(coverFor(false), "/images/holistic-house/andy-about.png", "Tantra keeps its teacher portrait");
+  assert.equal(coverFor(true), "/images/holistic-house/reiki-approved-sunrise-v3.webp", "Only the referral course receives its approved cover");
+  assert.match(route, /images: \[\{ url: sharingImage, alt: sharingImageAlt \}\]/);
+  assert.match(route, /images: \[sharingImage\]/);
   assert.match(route, /alternates: \{[\s\S]*?canonical: path/);
 });
 

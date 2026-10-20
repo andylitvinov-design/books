@@ -21,6 +21,12 @@ const practitionerRecordingSources = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The idle Next badge covers fixed mobile navigation in isolated browser CI.
+  // This supported option preserves compile/runtime error badges and overlays.
+  devIndicators: process.env.CI === "true" &&
+    process.env.HH_APP_TEST_RUNTIME === "isolated" &&
+    process.env.NODE_ENV === "development" && !process.env.VERCEL
+    ? false : undefined,
   poweredByHeader: false,
   // Keep optimization for existing book/media redirect paths.
   // Verified static course photographs and the hot-path portrait opt out locally.
@@ -31,7 +37,14 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 828, 1080, 1440, 1920, 2560],
     imageSizes: [32, 64, 96, 160, 256, 384],
     formats: ["image/webp"],
-    minimumCacheTTL: 86400,
+    // Prevent arbitrary quality parameters from multiplying billed variants.
+    // The site uses the Next.js default (75) for transformed book covers.
+    qualities: [75],
+    // This corpus is mostly immutable-by-path book/media assets. Cache resized
+    // originals for 31 days instead of regenerating billed MISS/STALE variants
+    // every 24 hours. For changed source bytes, change the image URL/path too.
+    // User-uploaded master/service photos already bypass Next's optimizer.
+    minimumCacheTTL: 2678400,
     remotePatterns: [
     { protocol: "https", hostname: "i.ytimg.com" },
     // The site owns the original course photographs; proxy them same-origin
@@ -46,6 +59,12 @@ const nextConfig: NextConfig = {
       // Immutable caching saves repeated bytes without Vercel image transforms.
       {
         source: "/images/holistic-house/portrait-static/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      // Build-generated public artwork is content-addressed and never requests
+      // paid Vercel /_next/image transformations. Not applied to client files.
+      {
+        source: "/images/holistic-house/static-card-media/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
       // Versioned public video artwork is safe to cache; never apply this policy
@@ -78,7 +97,6 @@ const nextConfig: NextConfig = {
       // English has one canonical root. Russian is served at its own /ru URL.
       { source: "/en", destination: "/", permanent: true },
       // Old campaign/CTA links should always reach the public tool or cabinet.
-      { source: "/:locale(en|ru|es)/tests", destination: "/:locale/client/tests", permanent: true },
       { source: "/:locale(en|ru|es)/cabinet", destination: "/:locale/client", permanent: true },
       { source: "/:locale(en|ru|es)/review", destination: "/:locale/services/free-situation-review", permanent: true },
       { source: "/book", destination: "/books", permanent: true },
@@ -91,7 +109,7 @@ const nextConfig: NextConfig = {
   // the ~211 MB original corpus into each retained Function deployment.
   outputFileTracingExcludes: {
     // Public-only artwork is served statically, never read by document PDFs.
-    "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*"],
+    "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*", "./public/images/holistic-house/static-card-media/**/*"],
     "/media/**": [
       "./source-books/book-1-alchemy-soul/media/**/*",
       "./source-books/book-2-dao-books/photos/**/*",
@@ -106,12 +124,14 @@ const nextConfig: NextConfig = {
     "/document-preview/[kind]": ["./assets/documents/andrii-signature-left-90.png"],
     // Tracing keys are route globs, not literal Next.js dynamic-segment names.
     // Readers load these existing HTML files dynamically at request time.
-    "/books/*": [
+    ...["/books/*", "/[locale]/books/*"].map((route) => [route, [
       "./source-books/book-1-alchemy-soul/*.html",
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
-    ],
+    ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
+      all[route] = [...files]; return all;
+    }, {}),
     "/[locale]/homeopathy/remedies/[slug]": ["./content/remedies/**/*.md"],
     "/api/prescriptions/[selector]/pdf": reportPdfAssets,
     "/document-preview/[kind]/pdf": reportPdfAssets,

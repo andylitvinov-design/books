@@ -22,6 +22,24 @@
 .band{font-size:.98rem!important;line-height:1.33!important;font-weight:750;color:#2c7159;margin:0!important}
 .scale{font-size:.83rem!important;line-height:1.4!important;color:#696358;margin:0!important}
 .explanation{font-size:.93rem!important;line-height:1.48!important;color:#44564b;margin:11px 0 0!important}
+
+/* Show real questionnaire endpoints, not fictitious clinical bands. */
+.responseEndpoints{display:flex;justify-content:space-between;align-items:start;gap:9px;margin:12px 0 5px;
+  padding:9px 12px;border:1px solid #d7e6df;border-radius:11px;background:#f5faf7;
+  font-size:.79rem;line-height:1.44;color:#496358}
+.responseEndpoints span{display:flex;gap:7px;flex:1 1 120px;min-width:0;overflow-wrap:anywhere}
+.responseEndpoints span:last-child{justify-content:flex-end;text-align:right}
+.responseEndpoints strong{font-weight:850;white-space:nowrap;color:#286956}
+.interpretation{margin:12px 0 3px;min-width:0}
+.interpretation h4{margin:0!important;font:780 .87rem/1.32 system-ui,-apple-system,sans-serif!important;color:#285d4e}
+.interpretation .explanation{margin:7px 0 0!important}
+/* The source-wide caution remains in the markup for auditability; original
+   HH cards show a concise nonclinical footer instead of repeating boilerplate. */
+.quietGauge figure > small{display:none}
+.technicalBand{font-size:.78rem!important;line-height:1.35!important;color:#617269}
+
+@media(max-width:460px){.responseEndpoints{padding:9px 10px;gap:8px}.responseEndpoints span{flex:1 1 44%;font-size:.77rem}}
+
 .recommendations{margin:12px 0 0;padding:12px 14px;background:#f3f8f3;border-radius:13px}
 .recommendations h4{font:750 .91rem/1.3 system-ui,sans-serif!important;margin:0 0 7px!important;color:#2d5f4d}
 .recommendations ol{display:grid;gap:7px;margin:0;padding-left:22px}
@@ -109,3 +127,214 @@
   .answerRanges .rangeList li:last-child:nth-child(odd){grid-column:auto}
   .answerRanges .rangeHeading{justify-content:flex-start}
 }
+
+
+/* Report containment: scrolling is limited to the scale picker, never the whole page. */
+.report{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere}
+.report :where(*){box-sizing:border-box}
+.picker,.card{width:100%;max-width:100%;min-width:0}
+.scaleTabs{display:flex;grid-auto-flow:unset;grid-auto-columns:unset;width:100%;max-width:100%;min-width:0;
+  overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.picker .scaleTab{flex:0 0 180px;max-width:75%;min-width:0}
+.phq4ScaleTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;overflow:visible;
+  padding:1px 0 3px;max-width:100%}
+.picker .phq4ScaleTabs .scaleTab{flex:none;width:100%;max-width:100%;min-width:0;min-height:69px;
+  padding:9px 10px!important}
+.phq4ScaleTabs .tabName{font-weight:800;line-height:1.2;white-space:normal}
+.phq4Overview{padding:11px 14px;margin:0 0 11px;border-radius:12px;border:1px solid #cddfd4;
+  background:linear-gradient(110deg,#f0f9f4,#fffdf8);min-width:0}
+.phq4Overview strong{display:block;color:#265e4b;font-size:.9rem;line-height:1.3}
+.phq4Overview p{margin:5px 0 0!important;color:#405c4c;font-size:.84rem!important;
+  line-height:1.49!important;overflow-wrap:anywhere}
+.measure{display:grid;grid-template-columns:minmax(0,155px) minmax(0,1fr);align-items:start;gap:19px}
+.card :global([data-assessment-gauge]){width:100%;max-width:100%;min-width:0}
+.bandNeedsReview{color:#934631!important}
+.summary{align-content:start}
+.summary h3,.summary p{max-width:100%;min-width:0;overflow-wrap:anywhere}
+.bandStrip{display:flex;flex-wrap:wrap;gap:7px;width:100%;min-width:0;margin:12px 0 0}
+.bandStrip>span{flex:1 1 130px;min-width:0;padding:8px 10px;border:1px solid #dce6df;
+  border-radius:10px;color:#4d6255;background:#f8faf7;font:.75rem/1.37 system-ui,-apple-system,sans-serif;
+  overflow-wrap:anywhere}
+.bandStrip b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bandStrip .currentInterval{border-color:#82ad9a;background:#eaf5ed;color:#255b47}
+.bandStrip .reviewInterval{border-color:#daa48e;background:#fff2e9;color:#84482f}
+@media(max-width:570px){
+  .phq4Overview{padding:10px 11px;margin-bottom:9px}
+  .phq4Overview p{font-size:.81rem!important;line-height:1.43!important}
+  .phq4ScaleTabs{gap:5px}
+  .picker .phq4ScaleTabs .scaleTab{min-height:58px;padding:7px 7px!important;border-radius:10px}
+  .phq4ScaleTabs .tabName{font-size:.77rem;line-height:1.17}
+  .phq4ScaleTabs .tabMeta{font-size:.74rem;gap:4px}
+  .measure{grid-template-columns:minmax(0,106px) minmax(0,1fr);gap:12px;align-items:start}
+  .card :global([data-assessment-gauge]){width:100%;max-width:100%}
+  .bandStrip>span{flex:1 1 112px;padding:7px 8px;font-size:.72rem}
+  .summary h3{font-size:1.1rem!important;line-height:1.2!important}
+}
+@media(max-width:350px){
+  .measure{grid-template-columns:minmax(0,84px) minmax(0,1fr);gap:9px}
+  .phq4ScaleTabs .tabName{font-size:.71rem}
+  .picker .phq4ScaleTabs .scaleTab{padding:7px 5px!important}
+}
+
+/* Accessible source-safe interpretation levels for continuous measures.
+   Levels are equal score intervals, never clinical cutoffs. */
+.levelGuide{margin:14px 0 12px;padding:clamp(12px,2.2vw,18px);min-width:0;max-width:100%;
+  background:#f7faf8;border:1px solid #d4e2da;border-radius:15px;color:#3b5348;overflow-wrap:anywhere}
+.levelEyebrow{margin:0 0 5px!important;font:800 .7rem/1.3 system-ui,sans-serif!important;
+  letter-spacing:.065em;color:#37705c}
+.levelTitle{margin:0 0 8px!important;font:760 clamp(1.02rem,2.7vw,1.2rem)/1.28 system-ui,sans-serif!important;
+  color:#245b49;overflow-wrap:anywhere}
+.levelLead{margin:0 0 9px!important;font-size:.92rem!important;line-height:1.53!important;color:#365a49;font-weight:600}
+.levelOverview{margin:0 0 12px!important;font-size:.85rem!important;line-height:1.5!important;color:#4b6156}
+.levelMeter{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%;margin:0 0 14px}
+.levelMeter span{height:9px;border-radius:3px;background:#c6dacf;min-width:0}
+.levelMeter span:nth-child(1){background:#bad7c9}
+.levelMeter span:nth-child(2){background:#9dc7b8}
+.levelMeter span:nth-child(3){background:#82b6a1}
+.levelMeter span:nth-child(4){background:#68a68e}
+.levelMeter span:nth-child(5){background:#448c73}
+.levelMeter span[data-current-position]{height:13px;margin-top:-2px;outline:2px solid #1c5c49;outline-offset:2px}
+.levelSubheading{margin:0 0 8px!important;font:750 .91rem/1.35 system-ui,sans-serif!important;color:#315a4b}
+.levelList{list-style:none;display:grid;grid-template-columns:minmax(0,1fr);gap:7px;padding:0;margin:0;min-width:0}
+.levelList li{display:grid;grid-template-columns:25px minmax(0,1fr);gap:10px;min-width:0;
+  padding:10px 11px;border:1px solid #e0e9e3;border-radius:11px;background:#fff}
+.levelList li[data-current-position]{background:#edf7f1;border-color:#6cae8b;
+  box-shadow:inset 0 0 0 1px #a9caba}
+.levelIndex{display:grid;place-items:center;align-self:start;width:25px;height:25px;border-radius:50%;
+  background:#e5efe9;color:#42725e;font-size:.77rem;font-weight:850}
+.levelList li[data-current-position] .levelIndex{background:#286c53;color:#fff}
+.levelBody{min-width:0;max-width:100%}
+.levelHeading{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px}
+.levelHeading strong{font-size:.85rem;font-weight:780;line-height:1.36;color:#2e5f4d}
+.levelHeading span{font-size:.78rem;line-height:1.36;color:#597569;font-variant-numeric:tabular-nums;white-space:nowrap}
+.levelBody p{margin:4px 0 0!important;font-size:.81rem!important;line-height:1.48!important;color:#4f6155}
+.levelBody small{display:inline-block;margin-top:5px;color:#1c6c4c;font-size:.72rem;font-weight:800}
+.levelCaveat{margin:11px 0 0!important;font-size:.75rem!important;line-height:1.47!important;color:#5f6b63;
+  border-top:1px solid #d7e4dc;padding-top:9px}
+@media(max-width:570px){
+  .levelGuide{padding:12px 10px}
+  .levelTitle{font-size:1.02rem!important}
+  .levelList li{padding:9px 8px;gap:8px}
+  .levelHeading{gap:3px 8px}
+  .levelBody p{font-size:.8rem!important}
+}
+@media(max-width:350px){
+  .levelHeading{display:grid;grid-template-columns:minmax(0,1fr)}
+  .levelHeading span{white-space:normal}
+}
+@media print{.levelGuide{break-inside:avoid}.levelList li{break-inside:avoid}}
+
+.bandStrip small{display:block;margin-top:5px;font-size:.76rem!important;line-height:1.43!important;color:#52675b;overflow-wrap:anywhere}
+
+/* Low-to-high follows the numeric instrument, not a health/goodness index. */
+.levelMeter[data-level-direction="difficulty"] span:nth-child(1){background:#c8ded3}
+.levelMeter[data-level-direction="difficulty"] span:nth-child(2){background:#bdcbb0}
+.levelMeter[data-level-direction="difficulty"] span:nth-child(3){background:#d5bc83}
+.levelMeter[data-level-direction="difficulty"] span:nth-child(4){background:#d29b77}
+.levelMeter[data-level-direction="difficulty"] span:nth-child(5){background:#b76c66}
+.levelMeter[data-level-direction="difficulty"] span[data-current-position]{outline-color:#9c524a}
+.levelMeter[data-level-direction="neutral"] span:nth-child(1){background:#d8e4e8}
+.levelMeter[data-level-direction="neutral"] span:nth-child(2){background:#bdced6}
+.levelMeter[data-level-direction="neutral"] span:nth-child(3){background:#a5bdc8}
+.levelMeter[data-level-direction="neutral"] span:nth-child(4){background:#86a9b8}
+.levelMeter[data-level-direction="neutral"] span:nth-child(5){background:#648fa5}
+.levelMeter[data-level-direction="neutral"] span[data-current-position]{outline-color:#4e7891}
+
+/* Situational results show one useful interpretation first.
+   Full nonclinical response ranges and technical notes are opt-in. */
+.levelObservation{margin:10px 0 12px!important;padding:9px 11px;border-left:3px solid #478977;
+  background:#e9f3ee;border-radius:8px;font-size:.84rem!important;
+  line-height:1.49!important;color:#355849;overflow-wrap:anywhere}
+.levelObservation strong{font-weight:800;color:#226951}
+.levelDisclosure{width:100%;max-width:100%;min-width:0;margin:8px 0 0;border-top:1px solid #d9e8de}
+.levelDisclosure>summary{display:flex;align-items:center;cursor:pointer;min-height:40px;
+  font:760 .86rem/1.4 system-ui,sans-serif;color:#286f58;list-style:revert;
+  outline-offset:3px}
+.levelDisclosure>summary:focus-visible,.measureDetails>summary:focus-visible{outline:2px solid #468c74}
+.levelDisclosure[open]{padding-bottom:5px}
+.measureDetails{margin:12px 0 5px;max-width:100%;min-width:0;border-top:1px solid #e3e9e3}
+.measureDetails>summary{cursor:pointer;color:#536d61;font:750 .84rem/1.4 system-ui,sans-serif;min-height:36px}
+.measureDetails p{font-size:.83rem!important;line-height:1.46!important;
+  color:#53655c;margin:6px 0 0!important;overflow-wrap:anywhere}
+@media(max-width:460px){
+  .levelGuide,.answerReading,.answerRanges,.measureDetails{width:100%;max-width:100%;min-width:0}
+  .levelObservation{font-size:.82rem!important;padding:9px 10px}
+  .levelDisclosure>summary{font-size:.83rem}
+}
+
+
+/* All-assessment scored-range contract: visible selected range, readable
+   source/editiorial intervals and one actual response-linked description. */
+.currentScoreRange{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:baseline;
+  min-width:0;max-width:100%;margin:0!important;font:700 .85rem/1.36 system-ui,sans-serif!important;
+  color:#255d57;overflow-wrap:anywhere}
+.currentScoreRange strong{color:#305a62}
+.currentScoreRange span{display:inline-flex;max-width:100%;padding:2px 7px;
+  border-radius:7px;background:#f5edf0;color:#7b4053;font-size:.78rem;
+  font-weight:780;font-variant-numeric:tabular-nums;white-space:normal}
+.evidenceStatus{box-sizing:border-box;max-width:100%;margin:8px 0 10px;padding:9px 11px;border-left:3px solid #89aca7;border-radius:8px;background:#f1f6f3;color:#425c59;font:500 .8rem/1.45 system-ui,-apple-system,sans-serif;overflow-wrap:anywhere}
+.evidenceStatus strong{font-weight:760;color:#335e5d}
+.evidenceStatus[data-assessment-evidence-status="unverified"]{border-left-color:#b77b63;background:#fbf4ef;color:#765446}
+.rangeReport{box-sizing:border-box;max-width:100%;min-width:0;margin:12px 0;padding:clamp(11px,2.2vw,16px);
+  border-radius:15px;border:1px solid #d3e2df;background:#fafcfb;color:#31545a;overflow-wrap:anywhere}
+.rangeReport :where(*){box-sizing:border-box;min-width:0}
+.rangeEyebrow{margin:0 0 6px!important;font:800 .7rem/1.3 system-ui,sans-serif!important;
+  color:#477674;letter-spacing:.06em}
+.rangeHeading{margin:0 0 7px!important;color:#1e4659;
+  font:760 clamp(.98rem,2.4vw,1.13rem)/1.34 system-ui,sans-serif!important;overflow-wrap:anywhere}
+.rangeNarrative{margin:0 0 10px!important;color:#2c4e55;font-size:.9rem!important;
+  line-height:1.53!important;font-weight:540;overflow-wrap:anywhere}
+.rangeContext,.traitReading{margin:8px 0!important;padding:9px 11px;
+  border-left:3px solid #468d89;border-radius:8px;background:#f0f7f6;
+  color:#3f6063;font-size:.83rem!important;line-height:1.5!important;overflow-wrap:anywhere}
+.rangeContext strong,.traitReading strong{font-weight:800;color:#255c60}
+.traitReading{border-left-color:#84647d;background:#f7f3f7}
+.rangeHeader{display:flex;justify-content:space-between;align-items:baseline;gap:7px 12px;
+  flex-wrap:wrap;margin:13px 0 9px}
+.rangeHeader h5{margin:0!important;font:780 .85rem/1.35 system-ui,sans-serif!important;color:#22545c}
+.rangeHeader span{font:.72rem/1.3 system-ui,sans-serif;color:#647576}
+.rangeMap{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,115px),1fr));
+  list-style:none;margin:0;padding:0;gap:7px;width:100%;max-width:100%;min-width:0}
+.rangeMap li{position:relative;display:flex;flex-direction:column;gap:4px;min-width:0;
+  padding:9px 9px 10px;border:1px solid #d7e3e2;border-radius:11px;background:#fff;
+  line-height:1.27;overflow-wrap:anywhere}
+.rangePosition{font:.67rem/1.2 system-ui,sans-serif!important;color:#7c9090;letter-spacing:.02em}
+.rangeMap b{font:.82rem/1.26 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#244e60;
+  font-weight:800;overflow-wrap:anywhere}
+.rangeMap li>span{font:.76rem/1.35 system-ui,sans-serif;color:#526b70;overflow-wrap:anywhere}
+.rangeMap li[data-selected-score-range]{border:2px solid #914c65;background:#fff8fa;
+  padding:8px 8px 9px;box-shadow:0 1px 5px #77344b19}
+.rangeMap li[data-selected-score-range] b,.rangeMap li[data-selected-score-range]>span{color:#713c50}
+.rangeMap em{font:800 .69rem/1.3 system-ui,sans-serif;color:#873f59;font-style:normal;align-self:start}
+.rangeDescriptions{margin:10px 0 0;max-width:100%;min-width:0;border-top:1px solid #e3e9e7}
+.rangeDescriptions>summary{min-height:40px;display:flex;align-items:center;cursor:pointer;
+  color:#2a6a65;font:750 .84rem/1.35 system-ui,sans-serif;outline-offset:2px}
+.rangeDescriptions>summary:focus-visible{outline:2px solid #327c70}
+.rangeDetailsList{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:7px}
+.rangeDetailsList li{padding:9px 11px;border:1px solid #e0e8e7;border-radius:10px;background:white;min-width:0}
+.rangeDetailsList li[data-selected-score-description]{background:#fcf5f7;border-color:#ad8596}
+.rangeDetailsList strong{font-size:.83rem;color:#234d5c;font-variant-numeric:tabular-nums}
+.rangeDetailsList p{margin:4px 0 0!important;color:#526365;font:.8rem/1.5 system-ui,sans-serif!important;
+  overflow-wrap:anywhere}
+.rangeDetailsList small{display:inline-block;margin-top:5px;color:#86445b;font-weight:780}
+.rangeCaveat{margin:10px 0 0!important;color:#617477;font:.74rem/1.42 system-ui,sans-serif!important}
+.typeSummary{margin-top:13px}
+.typeSummary .rangeEyebrow{margin:0 0 7px!important}
+.typeSummary h3{margin:0 0 6px!important;font:770 1.06rem/1.4 system-ui,sans-serif!important}
+.typeSummary>p:not(.rangeEyebrow){margin:5px 0!important;font-size:.86rem!important;line-height:1.45!important}
+.typeSummary details>summary{cursor:pointer;font-weight:730;font-size:.82rem;padding:8px 0}
+.typeSummary>small{display:block;margin-top:6px;font-size:.76rem;line-height:1.45}
+@media(max-width:570px){
+ .rangeReport{padding:11px 10px}
+ .rangeMap{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .rangeMap li{padding:8px 7px}
+ .rangeMap li[data-selected-score-range]{padding:7px 6px}
+ .rangeNarrative{font-size:.86rem!important;line-height:1.47!important}
+ .rangeContext,.traitReading{padding:8px 9px;font-size:.81rem!important}
+}
+@media(max-width:330px){
+ .rangeMap{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .rangeMap li>span{font-size:.73rem}
+ .currentScoreRange{font-size:.79rem!important}
+}
+@media print{.rangeReport,.rangeMap li{break-inside:avoid}.rangeDetailsList li{break-inside:avoid}}

@@ -1,0 +1,70 @@
+.page { box-sizing:border-box; width:min(960px,100%); margin:16px auto 40px; color:#26334a; }
+.intro { border:1px solid #e5d4c7; border-radius:22px; background:linear-gradient(120deg,#f8efe6,#fffaf5); padding:clamp(19px,3vw,29px); margin-bottom:15px; }
+.eyebrow { font:750 10px/1.3 system-ui,sans-serif; letter-spacing:.15em; color:#935d43; margin:0 0 9px; }
+.intro h1 { color:#342922; font:400 clamp(34px,5vw,54px)/1.08 Georgia,serif; letter-spacing:-.04em; margin:0 0 10px; }
+.intro>p:not(.eyebrow):not(.steps) { margin:0; max-width:65ch; font:14px/1.5 system-ui,sans-serif; color:#665a52; }
+.steps { margin:13px 0 0; font:650 11px/1.5 system-ui,sans-serif; color:#85513e; }
+.form { border:1px solid #e0d8d2; border-radius:22px; background:#fffefd; padding:clamp(18px,3vw,29px); display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px 19px; box-shadow:0 8px 30px rgba(26,43,63,.06); }
+.field { display:grid; gap:7px; min-width:0; }
+.field>label,.formatGroup legend,.durationGroup legend { display:block; padding:0; color:#33455c; font:750 12px/1.35 system-ui,sans-serif; }
+.field select,.field input { width:100%; min-width:0; min-height:47px; box-sizing:border-box; padding:9px 12px; border:1px solid #becbdb; border-radius:12px; background:white; color:#233650; font:500 13px/1.35 system-ui,sans-serif; }
+.formatGroup,.durationGroup { min-width:0; border:0; padding:0; margin:0; display:flex; flex-wrap:wrap; gap:8px; align-content:start; }
+.formatGroup legend,.durationGroup legend { width:100%; margin-bottom:7px; }
+.formatGroup label,.durationGroup label { display:inline-flex; align-items:center; gap:8px; border:1px solid #c9d5e1; border-radius:14px; background:#f5f7fa; min-height:44px; padding:9px 12px; cursor:pointer; color:#344760; font:650 12px/1.25 system-ui,sans-serif; }
+.formatGroup label { flex:1 0 45%; }
+.formatGroup label.activeFormat,.durationGroup label.activeDuration { background:#f4e9ed; border-color:#a35269; color:#79273f; }
+.formatGroup input,.durationGroup input { accent-color:#872f4a; }
+.timeGroup { min-width:0; grid-column:1 / -1; }
+.timeTitle { margin:0 0 8px; font:750 12px/1.4 system-ui,sans-serif; color:#31455e; }
+.timeTitle span { font-weight:500; font-size:11px; color:#727b85; }
+.timeFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.review { display:grid; grid-column:1 / -1; gap:4px; border:1px solid #eadfd6; background:#fbf5ee; padding:10px 13px; border-radius:12px; }
+.review p { margin:0; color:#705948; font:500 11px/1.45 system-ui,sans-serif; }
+.submit { grid-column:1 / -1; display:flex; justify-content:center; align-items:center; gap:12px; min-height:50px; border:0; border-radius:99px; background:#872f4a; color:#fff; cursor:pointer; font:750 14px/1.3 system-ui,sans-serif; }
+.submit:hover { background:#72253c; }
+.error { grid-column:1 / -1; margin:0; color:#a32343; font:650 12px/1.4 system-ui,sans-serif; }
+.disclaimer { margin:15px 6px; color:#76716e; font:11px/1.5 system-ui,sans-serif; }
+.empty { border:1px dashed #d4c7bf; background:#fffbf6; border-radius:18px; padding:25px; }
+.empty p { color:#645950; font:13px/1.55 system-ui,sans-serif; }
+.empty a { display:inline-flex; min-height:42px; align-items:center; font:700 13px/1.3 system-ui,sans-serif; color:#872f4a; }
+.page :is(input,select,button,a):focus-visible { outline:3px solid #bb6a7d; outline-offset:3px; }
+@media(max-width:650px) {
+  .page { margin-top:10px; }
+  .intro { border-radius:17px; padding:17px; margin-bottom:10px; }
+  .intro h1 { font-size:34px; }
+  .intro>p:not(.eyebrow):not(.steps) { font-size:12px; }
+  .form { grid-template-columns:1fr; gap:13px; padding:16px; border-radius:18px; }
+  .timeFields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .formatGroup label { font-size:11px; }
+  .field select,.field input { min-height:46px; }
+}
+@media(max-width:365px) {
+  .formatGroup label { flex-basis:100%; }
+  .timeFields { grid-template-columns:1fr; }
+}
+
+
+/* Photo-led remote Reiki landing, retaining the existing confirmed-request workflow. */
+.page{width:min(1080px,calc(100% - 26px));margin:16px auto 48px}
+.intro{position:relative;overflow:hidden;border:1px solid #0f7380;border-radius:25px;background:linear-gradient(115deg,rgba(5,47,64,.96) 0%,rgba(7,80,87,.87) 62%,rgba(9,89,94,.67) 100%),url('/academy/reiki-yggdrasil/source/basic-program.jpg') center/cover;padding:clamp(26px,4.5vw,54px);min-height:265px;box-shadow:0 16px 48px rgba(4,56,72,.15)}
+.eyebrow{color:#b2f0e6;font-size:12px}
+.intro h1{max-width:720px;color:#fffefa;font-size:clamp(36px,4.9vw,60px)}
+.intro>p:not(.eyebrow):not(.steps){color:#e3f7f4;max-width:62ch;font-size:16px;line-height:1.6}
+.introHighlights{display:flex;flex-wrap:wrap;gap:8px;margin-top:19px}
+.introHighlights span{padding:8px 12px;background:rgba(255,255,255,.12);border:1px solid rgba(229,255,249,.35);border-radius:100px;color:#f2fffc;font:750 12px/1.4 system-ui,sans-serif}
+.steps{color:#ffdeb1!important;font-size:12px!important;margin-top:17px!important}
+.form{border-color:#d1e8e2;border-radius:24px;background:#fff;box-shadow:0 15px 43px rgba(8,71,83,.075)}
+.field>label,.formatGroup legend,.durationGroup legend{color:#135764}
+.field select,.field input{border-color:#b4d5d3;border-radius:12px;min-height:50px;font-size:14px}
+.formatGroup label,.durationGroup label{background:#f4fbf9;border-color:#c8e4de;color:#21535e;font-size:13px}
+.formatGroup label.activeFormat,.durationGroup label.activeDuration{background:#e3f6f1;border-color:#078b85;color:#075d63}
+.field select:focus-visible,.field input:focus-visible,.formatGroup input:focus-visible,.durationGroup input:focus-visible,.submit:focus-visible,.empty a:focus-visible{outline:3px solid #e6a979;outline-offset:3px}
+@media(max-width:720px){
+ .page{width:calc(100% - 24px)}
+ .intro{min-height:0;padding:25px 20px;border-radius:21px;background-position:60% center}
+ .intro h1{font-size:clamp(32px,8.7vw,42px)}
+ .intro>p:not(.eyebrow):not(.steps){font-size:14px;line-height:1.55}
+ .introHighlights{margin-top:13px;gap:6px}
+ .introHighlights span{font-size:11px;padding:7px 9px}
+ .form{margin-top:12px}
+}

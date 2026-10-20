@@ -12,28 +12,214 @@
 
 .name{text-decoration:none!important}.name:hover{color:#fff;text-decoration:underline!important;text-underline-offset:3px}.name:focus-visible{outline:3px solid #f3b5a4;outline-offset:3px}
 
-/* Responsive, non-sticky promotion after the public test chooser. */
-.courseCard{position:relative;box-sizing:border-box;isolation:isolate;width:min(1120px,calc(100% - 28px));margin:24px auto 40px;border:1px solid #c8dfe2;border-radius:24px;background:linear-gradient(115deg,#f4fcfb 0%,#eef8f8 50%,#fffbf6 100%);color:#1b394f;box-shadow:0 13px 32px rgba(25,65,78,.10);overflow:hidden}
-.courseCardInner{box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(190px,.62fr);align-items:center;gap:clamp(12px,2.5vw,32px);padding:clamp(22px,3.4vw,38px);min-width:0}
-.courseContent{min-width:0}
-.courseEyebrow{display:flex;align-items:center;gap:7px;margin:0 0 11px!important;color:#247f82;font-size:.76rem!important;font-weight:850;letter-spacing:.065em;line-height:1.4;text-transform:uppercase}
-.courseEyebrow svg{flex:none}
-.courseTitle{margin:0 0 12px!important;max-width:23ch;font:700 clamp(1.6rem,3vw,2.25rem)/1.14 Georgia,serif!important;letter-spacing:-.025em;color:#18364e!important}
-.courseIntro{margin:0 0 16px!important;max-width:60ch;font-size:clamp(.93rem,1.25vw,1.02rem)!important;line-height:1.58!important;color:#456576}
-.courseBenefits{list-style:none;display:flex;flex-wrap:wrap;gap:7px;margin:0 0 20px!important;padding:0!important}
-.courseBenefits li{margin:0;padding:7px 11px;border:1px solid #d1e3e2;border-radius:99px;background:#fff9;color:#326b70;font-size:.78rem;font-weight:700;line-height:1.3}
-.courseActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
-.coursePrimary,.courseSecondary{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;max-width:100%;padding:12px 19px;border-radius:13px;font-size:.94rem;font-weight:800;line-height:1.4;text-align:center;text-decoration:none!important;white-space:normal}
-.coursePrimary{background:#873d55;border:1px solid #873d55;color:#fff!important;box-shadow:0 5px 11px rgba(100,44,64,.16)}
-.coursePrimary:hover{background:#6d2e44;color:#fff!important}
-.coursePrimary svg{flex:none}
-.courseSecondary{color:#285569!important;border:1px solid #b4ced3;background:#ffffffbd}
-.courseSecondary:hover{background:#fff;color:#173b51!important;border-color:#639cac}
-.coursePrimary:focus-visible,.courseSecondary:focus-visible{outline:3px solid #247f82;outline-offset:3px}
-.courseLanguageNote{margin:9px 0 0!important;color:#315e6d;font-size:.79rem!important;line-height:1.4!important}
-.courseNote{margin:13px 0 0!important;color:#657f8a;font-size:.75rem!important;line-height:1.45!important}
-.courseVisual{align-self:stretch;display:flex;align-items:center;justify-content:center;min-width:0;min-height:232px;border-radius:20px;background:radial-gradient(circle at 50% 53%,#d5f2ed 0%,#e7f7f4 60%,transparent 74%)}
-.courseVisual img{display:block;max-width:100%;height:255px;width:auto;object-fit:contain}
-@media(max-width:680px){.courseCard{width:calc(100% - 24px);margin:18px auto 27px;border-radius:18px}.courseCardInner{grid-template-columns:minmax(0,1fr);gap:0;padding:20px 18px}.courseTitle{font-size:clamp(1.5rem,6vw,1.85rem)!important}.courseIntro{font-size:.94rem!important}.courseVisual{display:none}.courseActions{flex-direction:column;align-items:stretch}.coursePrimary,.courseSecondary{width:100%;min-height:48px}.courseBenefits{margin-bottom:18px!important}}
-@media(max-width:350px){.courseCardInner{padding:17px 14px}.courseBenefits li{font-size:.73rem;padding:7px 9px}.coursePrimary,.courseSecondary{font-size:.88rem}}
-@media print{.courseCard{display:none!important}}
+
+/* Public Tests next-step offers reuse the white, photo-left Academy card pattern. */
+.testOffers {
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+  width: min(1120px, 100%);
+  margin: 18px auto 30px;
+  padding: 0 clamp(12px, 2.5vw, 24px);
+}
+.testOffersPair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.courseCard, .reviewCard {
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #c9dce5;
+  border-radius: 18px;
+  background: #fffefa;
+  box-shadow: 0 6px 19px rgb(33 61 85 / 7%);
+  color: #203e59;
+}
+.courseCardInner {
+  display: grid;
+  grid-template-columns: minmax(122px, 31%) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 178px;
+}
+.courseVisual {
+  position: relative;
+  display: block;
+  min-width: 0;
+  min-height: 178px;
+  overflow: hidden;
+  background: #dcebee;
+}
+.courseVisual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform .2s ease;
+}
+.reviewCard .courseVisual img { object-position: 50% 29%; }
+.courseVisual:hover img { transform: scale(1.035); }
+.courseContent {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 6px;
+  padding: 15px;
+}
+.courseTopline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+}
+.courseEyebrow {
+  margin: 0 !important;
+  color: #597786 !important;
+  font: 800 9px/1.4 system-ui, sans-serif !important;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.freeBadge {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: linear-gradient(115deg, #a23762, #db527c);
+  color: #fff;
+  font: 900 10px/1 system-ui, sans-serif;
+  letter-spacing: .055em;
+  box-shadow: 0 3px 7px rgb(162 55 98 / 18%);
+}
+.courseTitle {
+  margin: 0 !important;
+  max-width: none;
+  color: #193852 !important;
+  font: 750 clamp(16px, 1.8vw, 21px)/1.23 system-ui, sans-serif !important;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+.courseTitle a { color: inherit; text-decoration: none; }
+.courseTitle a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.courseIntro {
+  display: -webkit-box;
+  margin: 0 !important;
+  color: #5d7180 !important;
+  font: 450 12px/1.45 system-ui, sans-serif !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.courseActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.courseSecondary {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  min-height: 36px;
+  padding: 6px 0;
+  border: 0;
+  appearance: none;
+  background: transparent;
+  color: #7d3759 !important;
+  font: 750 12px/1.35 system-ui, sans-serif !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.chevron, .chevronOpen { flex: none; transition: transform .2s ease; }
+.chevronOpen { transform: rotate(180deg); }
+.coursePrimary {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 37px;
+  max-width: 100%;
+  margin-left: auto;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(105deg, #087f99, #255789);
+  color: #fff !important;
+  font: 790 12px/1.25 system-ui, sans-serif !important;
+  text-align: center;
+  text-decoration: none !important;
+  box-shadow: 0 4px 9px rgb(22 84 120 / 13%);
+}
+.coursePrimary:hover { background: linear-gradient(105deg, #006b88, #1a4d7e); }
+.coursePrimary svg { flex: none; }
+.courseHint {
+  padding: 11px 15px 13px;
+  border-top: 1px solid #d9e7ed;
+  background: #f3f9fa;
+}
+.courseHint[hidden] { display: none; }
+.courseHint p {
+  margin: 0 0 7px !important;
+  color: #526d79 !important;
+  font: 500 12px/1.5 system-ui, sans-serif !important;
+}
+.courseLanding {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #17778d !important;
+  font: 750 12px/1.45 system-ui, sans-serif !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+.courseCard :is(.courseVisual,.courseTitle a,.courseSecondary,.coursePrimary,.courseLanding):focus-visible,
+.reviewCard :is(.courseVisual,.courseTitle a,.courseSecondary,.coursePrimary,.courseLanding):focus-visible {
+  outline: 3px solid #c05680;
+  outline-offset: -2px;
+}
+@media (max-width: 1040px) {
+  .testOffersPair { grid-template-columns: minmax(0, 1fr); }
+  .testOffersPair .courseCardInner { grid-template-columns: 152px minmax(0, 1fr); min-height: 158px; }
+  .testOffersPair .courseVisual { min-height: 158px; }
+}
+@media (max-width: 560px) {
+  .testOffers { gap: 10px; margin: 16px auto 26px; padding: 0 12px; }
+  .courseCard, .reviewCard { border-radius: 15px; }
+  .courseCardInner, .testOffersPair .courseCardInner {
+    grid-template-columns: minmax(98px, 30%) minmax(0, 1fr);
+    min-height: 154px;
+  }
+  .courseVisual, .testOffersPair .courseVisual { min-height: 154px; }
+  .courseContent { gap: 4px; padding: 10px 11px; }
+  .courseEyebrow { font-size: 8px !important; letter-spacing: .025em; }
+  .freeBadge { font-size: 9px; padding: 4px 6px; }
+  .courseTitle { font-size: 16px !important; }
+  .courseIntro { font-size: 11px !important; -webkit-line-clamp: 3; }
+  .courseActions { gap: 4px; padding-top: 4px; }
+  .courseSecondary { min-height: 34px; font-size: 11px !important; }
+  .coursePrimary { min-height: 36px; gap: 4px; padding: 7px 9px; font-size: 11px !important; border-radius: 9px; }
+  .coursePrimary svg { width: 14px; height: 14px; }
+  .courseHint { padding: 9px 11px 11px; }
+  .courseHint p, .courseLanding { font-size: 11px !important; }
+}
+@media (max-width: 360px) {
+  .courseContent { padding: 9px 8px; }
+  .courseCardInner, .testOffersPair .courseCardInner { grid-template-columns: 90px minmax(0, 1fr); }
+  .coursePrimary { padding-inline: 7px; }
+  .freeBadge { padding-inline: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .courseVisual img, .chevron, .chevronOpen { transition: none; }
+}
+@media print { .testOffers { display: none !important; } }

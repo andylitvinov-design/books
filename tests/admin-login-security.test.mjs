@@ -32,21 +32,29 @@ test('a successful login clears only its anonymous bucket and does not retain cr
   assert.equal(limiter.canAttempt('ip-hash-b', now), true)
 })
 
-test('admin sign-in uses Holistic House practitioner copy and a documented twelve-hour throttled session policy', async () => {
-  const [page, admin, adminSession] = await Promise.all([
+test('practitioner sign-in uses verified Google instead of the old access-code page', async () => {
+  const [page, entry, route, admin, adminSession] = await Promise.all([
     readFile('app/admin/login/page.js', 'utf8'),
+    readFile('components/practitioner-auto-entry.jsx', 'utf8'),
+    readFile('app/api/app/[...path]/route.js', 'utf8'),
     readFile('lib/prescriptions/admin.js', 'utf8'),
     readFile('lib/prescriptions/admin-session.js', 'utf8'),
   ])
-
-  assert.match(page, /Practitioner Cabinet/)
-  assert.match(page, /Private access for practitioner tools and client records/)
-  assert.match(page, /Access code/)
+  assert.match(page, /PractitionerAutoEntry/)
+  assert.match(page, /requireAdminRequest/)
+  assert.doesNotMatch(page, /accessCode|type=["']password["']|<form\b/)
+  assert.match(entry, /appFetch\('practitioner\/open', \{ destination: 'cabinet' \}\)/)
+  assert.match(entry, /response\.redirectUrl !== '\/admin'/)
+  assert.match(entry, /appFetch\('auth\/start', \{ locale, continueTo: 'practitioner' \}\)/)
+  assert.match(entry, /authFailed \|\| started\.current/)
+  assert.doesNotMatch(entry, /PRESCRIPTIONS_ADMIN_(?:PIN|TOKEN)|accessCode|type=["']password["']/)
+  assert.match(route, /'energywork','practitioner'\]/)
+  assert.match(route, /continueTo === 'practitioner'/)
+  assert.ok(route.includes('/admin/login'))
+  assert.match(route, /!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)/)
   assert.match(adminSession, /maxAge: 60 \* 60 \* 12/)
   assert.match(admin, /maxAttempts: 5/)
-  assert.match(admin, /getPrescriptionStore/)
   assert.match(admin, /consumeAccessAttempt/)
-  assert.doesNotMatch(page, /Prescription admin/)
 })
 
 test('practitioner Logout clears the session and opens the public Holistic House homepage', async () => {

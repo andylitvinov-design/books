@@ -122,12 +122,12 @@ test('route or active-locale changes close both disclosures without stealing foc
 test('locale selection and site-menu links close their own disclosures immediately', () => {
   assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
   assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
-  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 3);
+  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 5);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');
   assert.match(hub, /localizedBookText\(volume, locale\)/);
-  assert.match(hub, /lang=\$\{locale\}/);
+  assert.ok(hub.includes('href={`/${locale}/books/${volume.id}`}'));
   assert.match(hub, /generateMetadata/);
   assert.match(read('components/site-navigation.tsx'), /pathname === "\/books\/maya-tradition"/);
 });
@@ -218,7 +218,7 @@ test('long Maya readers wait for rendered content instead of global network idle
 test('release browser audit preserves separate free-topic and paid-service safety contracts', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   assert.match(verifier, /check\('consultation-safe-handoff'/);
-  assert.match(verifier, /check\('paid-consultation-safe-handoff'/);
+  assert.match(verifier, /check\('paid-imagery-consultation-safe-handoff'/);
   assert.match(verifier, /data-consultation-action/);
   assert.match(verifier, /searchParams\.get\('topic'\)/);
   assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);

@@ -43,11 +43,11 @@ export function SpanishBookShowcase({ books }: { books: Book[] }) {
         return (
           <a
             className="catalog-card remedies-book-card"
-            href={`/books/${book.id}?lang=en`}
+            href={`/es/books/${book.id}`}
             key={book.id}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`${copy.title}: abrir edición original en otra pestaña`}
+            aria-label={`${copy.title}: abrir ficha en español`}
           >
             <figure className="catalog-cover">
               <Image alt={`Portada: ${copy.title}`} height={600} width={800} priority={index < 1 && !showFeatured} src={`/media/${book.mediaSeries}/${book.cover}`} />

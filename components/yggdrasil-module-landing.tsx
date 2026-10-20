@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
@@ -117,12 +118,13 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
                   <span><strong>{videos}</strong>{copy.videos}</span>
                 </div>
                 <div className={styles.heroActions}>
-                  <Link href={baseUrl + "/free-initiation"} className={styles.heroPrimary}>{b.free}<ArrowRight size={19} aria-hidden="true" /></Link>
+                  <Link href={REIKI_FREE_COURSE_PATH} className={styles.heroPrimary} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"}<ArrowRight size={19} aria-hidden="true" /></Link>
+                  <Link href={baseUrl + "/free-initiation"} className={styles.heroSecondary}>{b.free}<ArrowRight size={19} aria-hidden="true" /></Link>
                   <a href="#basic-yggdrasil-roadmap" className={styles.heroSecondary}>{b.explore}<ArrowDown size={18} aria-hidden="true" /></a>
                 </div>
               </div>
               <div className={styles.heroArt}>
-                <Image src={module.image} alt="" fill sizes="(max-width: 760px) 100vw, 35vw" priority />
+                <Image unoptimized src={module.image} alt="" fill sizes="(max-width: 760px) 100vw, 35vw" priority />
                 <div className={styles.imageCaption}><CheckCircle2 size={17} aria-hidden="true" />{b.five}</div>
               </div>
             </header>
@@ -164,7 +166,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
                 </div>
               </div>
               <div className="yggdrasil-module-hero-image">
-                <Image src={module.image} alt="" fill sizes="(max-width: 800px) 100vw, 42vw" priority />
+                <Image unoptimized src={module.image} alt="" fill sizes="(max-width: 800px) 100vw, 42vw" priority />
               </div>
             </header>
             <aside className="academy-archive-notice">{copy.notice}</aside>

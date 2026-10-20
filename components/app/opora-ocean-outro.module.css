@@ -1,0 +1,49 @@
+.outro{width:100%;min-width:0;display:grid;gap:clamp(9px,1.5vh,14px)}
+.sea{
+  min-height:clamp(100px,20vh,180px);
+  display:grid;place-items:center;overflow:hidden;border-radius:19px;
+  border:1px solid rgba(255,255,255,.89);
+  background:linear-gradient(180deg,rgba(18,89,118,.08),rgba(21,131,147,.39)),
+    url('/images/holistic-house/report-lighthouse-coast.webp') center 55%/cover no-repeat;
+}
+.seaCircle{width:80px;height:80px;display:grid;place-items:center;border-radius:50%;
+  color:white;background:rgba(15,109,133,.70);border:1px solid rgba(255,255,255,.82);
+  box-shadow:0 6px 24px rgba(7,71,93,.20)}
+.sea[data-playing=true] .seaCircle{animation:ocean-breathe 4s ease-in-out infinite}
+@keyframes ocean-breathe{50%{transform:scale(1.07)}}
+.instruction{margin:0;color:#204e61;font-size:clamp(18px,4.65vw,21px);
+  font-weight:650;line-height:1.35;text-align:center}
+.player{display:flex;align-items:center;gap:9px}
+.counter{font-size:clamp(27px,7.7vw,36px);font-weight:820;letter-spacing:.015em;
+  font-variant-numeric:tabular-nums;color:#20586d;white-space:nowrap}
+.play,.restart{display:flex;align-items:center;justify-content:center;gap:7px;
+  min-height:52px;padding:10px 12px;border-radius:15px;font-size:clamp(15px,4vw,17px);
+  font-weight:760;cursor:pointer}
+.play{flex:1;min-width:0;border:1px solid #188f9b;background:#0e8c9e;color:white}
+.restart{flex:0 0 50px;border:1px solid #b1d5d6;background:rgba(255,255,255,.88);color:#245c6f}
+.play:disabled,.restart:disabled,.soundToggle:disabled{opacity:.55;cursor:not-allowed}
+.track{height:7px;overflow:hidden;border-radius:999px;background:rgba(47,126,144,.17)}
+.track span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#74d7c8,#1896a7);
+  transition:width .3s linear}
+.underPlayer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.soundToggle{display:inline-flex;align-items:center;gap:6px;min-height:38px;
+  border:1px solid #b3d5d6;border-radius:11px;padding:7px 10px;
+  background:rgba(246,255,252,.88);color:#235c6d;font-size:13px;font-weight:750;cursor:pointer}
+.soundToggle[aria-pressed=false]{color:#596b71}
+.optional{display:inline-flex;align-items:center;gap:5px;flex:1;min-width:150px;
+  color:#526d76;font-size:clamp(12px,3vw,14px);line-height:1.35}
+.status{margin:0;min-height:1.1em;color:#47707b;font-size:13px;line-height:1.25;text-align:center}
+.play:focus-visible,.restart:focus-visible,.soundToggle:focus-visible{outline:3px solid #096d89;outline-offset:3px}
+@media(max-height:680px){
+ .sea{min-height:82px;max-height:118px}.seaCircle{height:60px;width:60px}
+ .instruction{font-size:17px}.play,.restart{min-height:47px}
+ .outro{gap:8px}
+}
+@media(max-width:370px){
+ .player{gap:6px}.play{font-size:14px;padding:8px}.restart{flex-basis:42px;padding:8px}
+ .counter{font-size:27px}
+}
+@media(prefers-reduced-motion:reduce){
+ .sea[data-playing=true] .seaCircle{animation:none}
+ .track span{transition:none}
+}

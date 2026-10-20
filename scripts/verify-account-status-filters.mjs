@@ -1,3 +1,4 @@
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 // Synthetic loopback-only native disclosure and keyboard regression.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -19,13 +20,14 @@ const passed = name => { checks.push(name); console.log('PASS ' + name) }
 try {
   await page.goto(origin + '/en/app')
   await page.getByRole('button', { name: 'Continue with Google', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Create my private space', exact: true }).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({ timeout: 60000 })
+  await expect(page.getByRole('heading', { name: 'Create my private space', exact: true }).or(page.locator('[data-profile-domains]')).first()).toBeVisible({ timeout: 60000 })
   if (await page.getByRole('heading', { name: 'Create my private space', exact: true }).isVisible()) {
     await page.getByLabel('I am 18 or older.').check()
     await page.getByLabel('I agree to private processing', { exact: false }).check()
     await page.getByRole('button', { name: 'Create my private space', exact: true }).click()
   }
-  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({ timeout: 30000 })
+  await assertCabinetPortrait(page, expect, { origin })
+  await openCabinetMyTests(page, expect, { origin })
   await page.waitForLoadState('networkidle')
   // The unsigned bootstrap's expected 401 precedes this authenticated scope.
   page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })

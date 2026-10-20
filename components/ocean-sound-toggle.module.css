@@ -1,0 +1,31 @@
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-inline-start: auto;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  min-height: 32px;
+  border: 1px solid #9bcfcf;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: rgba(255, 255, 255, .88);
+  color: #126875;
+  font: 700 12px/1.1 system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.toggle[aria-pressed="true"] {
+  border-color: #66bdc7;
+  background: #d8f4f3;
+}
+.toggle:hover { background: #eefbf9; }
+.toggle:disabled { cursor: not-allowed; opacity: .6; }
+.toggle:focus-visible { outline: 3px solid #13a7b4; outline-offset: 2px; }
+@media (max-width: 360px) {
+  .toggle { padding: 5px 8px; }
+  .toggle span { display: none; }
+}
+@media print { .toggle { display: none; } }

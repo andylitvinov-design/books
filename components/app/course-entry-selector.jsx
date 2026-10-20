@@ -10,6 +10,7 @@ import ManualBillingRequest from './manual-billing-request'
 import { appFetch } from '@/lib/app/client-fetch'
 import Course14DayOverview from './course-14-day-overview'
 import CabinetFreeCourseBanners from './cabinet-free-course-banners'
+import { ReikiMyReviews } from '@/components/reiki-my-reviews'
 import { antistressModuleTitle, ANTISTRESS_MODULE_IDS } from '@/lib/inner-growth/antistress-module-router'
 import styles from './course-entry-selector.module.css'
 
@@ -206,10 +207,8 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
       <p>{t.intro}</p>
     </header>
 
-    <CabinetFreeCourseBanners locale={locale}/>
-
-    <section className={styles.tiles} aria-label={t.title}>
-      {hasCourse && <article className={styles.current} data-current-course-card>
+    {hasCourse && <section className={styles.startedTiles} aria-label={t.current} data-started-courses>
+      <article className={styles.current} data-current-course-card>
         <div className={styles.courseMenu} ref={menuRef} data-course-actions>
           <button type="button" className={styles.courseMenuTrigger} data-course-menu-trigger
             aria-label={t.courseOptions} aria-expanded={menuOpen} aria-controls="my-course-actions-menu"
@@ -265,8 +264,12 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
             moduleId={course?.moduleChoice?.id||null}
             routerVersion={course?.moduleChoice?.version||null}/>
         </div>}
-      </article>}
+      </article>
+    </section>}
 
+    <CabinetFreeCourseBanners locale={locale}/>
+
+    <section className={styles.tiles} aria-label={t.title}>
       <button type="button" className={styles.addTile} onClick={addCourse} data-add-course>
         <span className={styles.addTileMedia} aria-hidden="true">
           <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
@@ -284,6 +287,8 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
         </span>
       </button>
     </section>
+
+    <ReikiMyReviews locale={locale} accountId={accountId} />
 
     <section className={styles.benefits} aria-labelledby="course-benefits-title">
       <div className={styles.benefitHeading}>

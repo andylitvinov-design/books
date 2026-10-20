@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowRight, CheckCircle2, MessageCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
@@ -14,6 +15,14 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "./review.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
+
+/* Existing approved public assets, displayed as full-bleed scenes rather than small cards. */
+const situationImages = [
+  "/images/holistic-house/hero-olive-incense.webp",
+  "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  "/images/holistic-house/report-lighthouse-coast.webp",
+] as const;
 
 const copy = {
   ru: {
@@ -28,31 +37,23 @@ const copy = {
     title: "Бесплатная диагностика ситуации и личная консультация",
     description: "Бесплатно: коучинг-форма, рисунок от руки «Я, цель, проблема» и персональный письменный отчёт от Андрея Литвинова. Не звонок и не медицинская диагностика.",
     eyebrow: "БЕСПЛАТНЫЙ РАЗБОР · АНДРЕЙ ЛИТВИНОВ",
-    heading: "Разберитесь в ситуации и найдите следующий шаг.",
-    lead: "Опишите ваш запрос. После короткой анкеты и рисунка от руки я лично пришлю письменный разбор, чтобы вы могли увидеть ситуацию с другой стороны и наметить следующие шаги.",
-    bullets: ["Лучше понять суть проблемы и свой настоящий запрос", "Увидеть повторяющиеся сценарии и точки опоры", "Получить личный письменный разбор и направления для дальнейших шагов"],
-    free: "€0 · Личный письменный разбор · Без платного созвона",
+    heading: "Разберём отношения, бизнес и личные вопросы.",
+    lead: "По рисунку «Я — цель — проблема» я делаю символическую мини-расстановку, блиц-анализ ситуации и письменные рекомендации: какие связи, препятствия и ресурсы стоит рассмотреть.",
+    bullets: ["Посмотреть на проблему со стороны и увидеть скрытые связи", "Разобраться с отношениями, делами или переживаниями о здоровье", "Получить личный анализ рисунка и практические ориентиры"],
+    free: "Бесплатный письменный разбор по рисунку · без видеозвонка",
     request: "Начать бесплатный разбор",
-    paidQuick: "Личная консультация · от €50",
+    paidQuick: "С какими вопросами я работаю",
     practitioner: "Андрей Литвинов",
     experience: "Личная и групповая практика с 2002 года",
     transparency: "Диагностика — в смысле символического анализа рисунка и ситуации. Не является медицинским диагнозом или гарантией результата.",
     stepsEyebrow: "КАК ЭТО РАБОТАЕТ",
-    stepsHeading: "Три простых шага",
-    stepsLead: "Сначала короткая заявка. Подробные материалы нужны только для подготовки самого письменного отчёта.",
+    stepsHeading: "От вашего рисунка к рекомендациям",
+    stepsLead: "Это символическая мини-расстановка по рисунку, а не очная расстановочная сессия или медицинский диагноз. Сначала достаточно короткого сообщения.",
     steps: [
       { title: "Короткое обращение", text: "Напишите пару слов о запросе через WhatsApp или Telegram. Анкету заранее заполнять не нужно." },
       { title: "Материалы для анализа", text: "Для полного письменного отчёта заполните короткую анкету и пришлите рисунок «Я — цель — проблема» от руки." },
-      { title: "Ваш письменный отчёт", text: "Я изучаю ответы и рисунок и лично высылаю интерпретацию ситуации." },
+      { title: "Блиц-анализ и рекомендации", text: "Я рассматриваю элементы рисунка как символическую мини-расстановку, отмечаю возможные связи, затруднения и ресурсы, затем отправляю индивидуальный письменный разбор." },
     ],
-    paidEyebrow: "ОТДЕЛЬНАЯ ПЛАТНАЯ УСЛУГА",
-    paidTitle: "Хотите обсудить ситуацию лично?",
-    paidLead: "На встрече мы вместе исследуем вашу ситуацию, отношения или решение, а я предложу подходящий формат работы. Онлайн или в Торонто. Это отдельная платная услуга; бесплатный письменный разбор доступен без неё.",
-    paidOptions: [
-      { label: "Экспресс-консультация · 30 минут", price: "€50", message: "Услуга: Личная экспресс-консультация с Андреем Литвиновым\nЗапрос: хочу записаться на платную экспресс-сессию 30 минут за €50. Подскажите доступное время." },
-      { label: "Полная личная сессия · 60 минут", price: "€100", message: "Услуга: Полная личная консультация с Андреем Литвиновым\nЗапрос: хочу записаться на платную личную сессию 60 минут за €100. Подскажите доступное время." },
-    ],
-    paidNote: "Напишите в WhatsApp, чтобы согласовать время. Запрос не является оплатой или подтверждением записи.",
     directionsTitle: "Какие методы можно использовать дальше",
     directionsLead: "При желании вы можете отдельно заказать личную сессию. Методы ниже — пояснение возможных направлений, а не часть бесплатного письменного отчёта.",
     directions: [
@@ -61,14 +62,14 @@ const copy = {
       { title: "Системные расстановки и архетипы", text: "Символическое исследование отношений, жизненных и деловых решений.", href: "systemic-constellations" },
     ],
     aboutHeading: "Давайте начнём с вашего вопроса",
-    aboutText: "Моя цель — помочь вам яснее увидеть свой запрос и возможные направления работы. После первого сообщения для подробного письменного разбора я попрошу анкету и рисунок; разговор в формате личной сессии остаётся отдельной платной услугой.",
+    aboutText: "Я помогаю взглянуть на жизненную или деловую ситуацию через связи между человеком, целью и препятствием. Для письменного блиц-разбора мне нужны короткая анкета и рисунок; полноценная расстановка проводится отдельно в личной сессии.",
     aboutLink: "Подробнее обо мне",
     faqTitle: "Частые вопросы",
     faqs: [
       { q: "Что именно бесплатно?", a: "Анализ заполненной коучинг-формы и рисунка от руки с персональным письменным отчётом. Бесплатного созвона в этот формат не входит." },
       { q: "Что нужно нарисовать?", a: "На листе бумаги ручкой изобразите три элемента: «Я», «Цель», «Проблема». Нет правильного или неправильного художественного способа." },
       { q: "Как отправить материалы?", a: "Сначала отправьте короткую заявку через WhatsApp или Telegram. Анкета и рисунок нужны уже для самого письменного разбора. Подробную анкету можно открыть дополнительно на этой странице." },
-      { q: "Сколько стоит личная сессия?", a: "Отдельная экспресс-консультация 30 минут стоит €50. Полная личная сессия 60 минут — €100." },
+      { q: "Можно ли продолжить работу лично?", a: "Да. После письменного разбора при желании можно выбрать отдельную личную сессию или «Алхимию души». Форматы и условия указаны в самом конце страницы." },
       { q: "Это медицинская или психологическая диагностика?", a: "Нет. Это символический разбор ситуации, а не медицинский или психиатрический диагноз или назначение лечения. При симптомах обратитесь к квалифицированному специалисту." },
     ],
     finalTitle: "Готовы разобраться в своей ситуации?",
@@ -87,31 +88,23 @@ const copy = {
     title: "Free Situation Review & Personal Consultation",
     description: "Free coaching questionnaire + hand-drawn ME / GOAL / PROBLEM drawing, with a personal written report from Andrey Litvinov. No free call or medical diagnosis.",
     eyebrow: "FREE PERSONAL REVIEW · ANDREY LITVINOV",
-    heading: "Find clarity in your situation — and a way forward.",
-    lead: "Tell me what you are facing. After a short questionnaire and hand drawing, I will personally prepare a written perspective on your situation, resources and possible next steps.",
-    bullets: ["Clarify the problem and what matters most to you", "Explore patterns, strengths and overlooked options", "Receive personal written reflections and possible next steps"],
-    free: "€0 · Personal written review · No paid call required",
+    heading: "Clarity for work, relationships and personal challenges.",
+    lead: "Draw ME, GOAL and PROBLEM. I interpret it as a symbolic mini-constellation and send a personal written review of possible connections, obstacles, resources and next steps.",
+    bullets: ["Look at the problem from a different angle and map connections", "Explore questions about work, relationships or wellbeing", "Receive a personal drawing analysis and thoughtful next steps"],
+    free: "Free written drawing-based review · no live call",
     request: "Get my free written review",
-    paidQuick: "Personal consultation · from €50",
+    paidQuick: "Questions we can explore",
     practitioner: "Andrey Litvinov",
     experience: "Facilitating personal and group development since 2002",
     transparency: "The word assessment refers to symbolic reflection on a drawing and situation, not a medical diagnosis or a promised result.",
     stepsEyebrow: "HOW IT WORKS",
-    stepsHeading: "Three simple steps",
-    stepsLead: "Start with a simple message. Detailed materials come later, to prepare your written report.",
+    stepsHeading: "From your drawing to personal recommendations",
+    stepsLead: "A small symbolic drawing-based constellation, not a live constellation session or clinical diagnosis. A short message is enough to begin.",
     steps: [
       { title: "A short enquiry", text: "Send a few words about your situation via WhatsApp or Telegram. No long intake form up front." },
       { title: "Material for your review", text: "For the complete written report, fill in the short questionnaire and send a paper drawing of ME, GOAL and PROBLEM." },
-      { title: "Your written report", text: "I review your questionnaire and drawing and send my personal interpretation in writing." },
+      { title: "Brief analysis and recommendations", text: "I read the drawing as a symbolic mini-constellation, explore possible connections, obstacles and resources, and send a personal written situation review." },
     ],
-    paidEyebrow: "SEPARATE PAID SERVICE",
-    paidTitle: "Prefer to explore your question together?",
-    paidLead: "In a one-to-one session we explore your situation, relationships or decisions together, using a method that fits your question. Online or in Toronto. This is optional; the free written review does not require a session.",
-    paidOptions: [
-      { label: "Express consultation · 30 minutes", price: "€50", message: "Service: Personal express consultation with Andrey Litvinov\nRequest: I'd like to book a paid 30-minute express session for €50. Please let me know availability." },
-      { label: "Full personal session · 60 minutes", price: "€100", message: "Service: Full personal consultation with Andrey Litvinov\nRequest: I'd like to book a paid 60-minute personal session for €100. Please let me know availability." },
-    ],
-    paidNote: "WhatsApp opens an enquiry to arrange availability, not a confirmed booking or payment.",
     directionsTitle: "Optional approaches for further work",
     directionsLead: "A separate personal session is your choice. The methods below are explanations of possible approaches, not part of the free written report.",
     directions: [
@@ -120,14 +113,14 @@ const copy = {
       { title: "Systemic & archetypal constellations", text: "Explore relationships, life decisions and business situations symbolically.", href: "systemic-constellations" },
     ],
     aboutHeading: "Let’s begin with your question",
-    aboutText: "I help you explore your situation and possible directions with care. After your first message, I will ask for the questionnaire and hand drawing needed for the full written report. Live sessions are available separately.",
+    aboutText: "I help you explore personal or business challenges through the relationships between you, your goal and your obstacle. A brief questionnaire and drawing are enough for the written review; a full constellation session is a separate service.",
     aboutLink: "Read about my work",
     faqTitle: "Questions before you begin",
     faqs: [
       { q: "What exactly is free?", a: "The review of your completed coaching questionnaire and handwritten drawing, plus a personal written report. The free offer does not include a live call." },
       { q: "What should I draw?", a: "On one sheet of paper, use a pen to draw three elements: ME, MY GOAL and MY PROBLEM. There is no artistic right or wrong way." },
       { q: "How do I send the materials?", a: "First send a short enquiry via WhatsApp or Telegram. The questionnaire and paper drawing are follow-up materials for the written review. You can also open the optional detailed questionnaire on this page." },
-      { q: "How much does a personal consultation cost?", a: "A separate 30-minute express consultation is €50; a full 60-minute personal session is €100." },
+      { q: "Can we continue with a personal session?", a: "Yes, if you wish. After the written review, you can choose a separate live session or Alchemy of the Soul. Available formats are shown at the end of this page." },
       { q: "Is this a medical or mental-health assessment?", a: "No. It is an interpretive situation review, not a medical diagnosis, psychiatric diagnosis or prescription. Seek a qualified healthcare professional for medical concerns." },
     ],
     finalTitle: "Ready to see your situation more clearly?",
@@ -146,31 +139,23 @@ const copy = {
     title: "Revisión gratuita y consulta personal",
     description: "Formulario de coaching y dibujo a mano (YO, META, PROBLEMA) con un informe personal escrito de Andrey Litvinov. Sin llamada gratuita ni diagnóstico médico.",
     eyebrow: "REVISIÓN GRATUITA · ANDREY LITVINOV",
-    heading: "Aclara tu situación y encuentra el siguiente paso.",
-    lead: "Cuéntame qué te preocupa. Después de un formulario breve y un dibujo a mano, prepararé personalmente una reflexión escrita sobre tu situación y posibles pasos.",
-    bullets: ["Aclarar qué está pasando y qué importa más", "Explorar patrones, recursos y nuevas opciones", "Recibir observaciones personales por escrito y posibles siguientes pasos"],
-    free: "€0 · Informe personal escrito · Sin llamada de pago",
+    heading: "Aclara tus relaciones, trabajo y retos personales.",
+    lead: "Dibuja YO, META y PROBLEMA. Lo interpreto como una mini constelación simbólica y te envío un análisis escrito de posibles conexiones, obstáculos, recursos y siguientes pasos.",
+    bullets: ["Observar el problema desde otra perspectiva y reconocer conexiones", "Explorar temas de trabajo, relaciones o bienestar", "Recibir un análisis personal del dibujo y pasos posibles"],
+    free: "Revisión gratuita por escrito basada en tu dibujo · sin llamada",
     request: "Recibir revisión escrita gratuita",
-    paidQuick: "Consulta personal · desde €50",
+    paidQuick: "Situaciones que podemos explorar",
     practitioner: "Andrey Litvinov",
     experience: "Experiencia en desarrollo personal y trabajo grupal desde 2002",
     transparency: "La evaluación es un análisis simbólico, no un diagnóstico médico ni una promesa de resultados.",
     stepsEyebrow: "CÓMO FUNCIONA",
-    stepsHeading: "Tres pasos sencillos",
-    stepsLead: "Primero envía un mensaje breve. Los materiales detallados se preparan después.",
+    stepsHeading: "De tu dibujo a las recomendaciones",
+    stepsLead: "Una pequeña constelación simbólica basada en el dibujo, no una sesión presencial ni un diagnóstico clínico. Basta un mensaje breve para empezar.",
     steps: [
       { title: "Solicitud breve", text: "Describe en pocas palabras tu situación por WhatsApp o Telegram." },
       { title: "Material para el informe", text: "Para el informe escrito completo, rellena el formulario breve y envía un dibujo en papel de YO, META y PROBLEMA." },
-      { title: "Tu informe escrito", text: "Reviso ambos materiales y te envío una interpretación personal por escrito." },
+      { title: "Análisis breve y recomendaciones", text: "Interpreto el dibujo como una mini constelación simbólica, observo posibles conexiones, obstáculos y recursos y envío un informe personal por escrito." },
     ],
-    paidEyebrow: "SERVICIO DE PAGO APARTE",
-    paidTitle: "¿Prefieres conversar en una sesión personal?",
-    paidLead: "En una sesión individual exploramos juntos tu situación, relaciones o decisiones. Online o en Toronto. Es una opción de pago independiente; no necesitas reservarla para obtener la revisión escrita gratuita.",
-    paidOptions: [
-      { label: "Consulta exprés · 30 minutos", price: "€50", message: "Servicio: Consulta exprés personal con Andrey Litvinov\nSolicitud: quisiera reservar una consulta de pago de 30 minutos por €50. Indícame la disponibilidad." },
-      { label: "Sesión personal completa · 60 minutos", price: "€100", message: "Servicio: Sesión personal completa con Andrey Litvinov\nSolicitud: quisiera reservar una sesión de pago de 60 minutos por €100. Indícame la disponibilidad." },
-    ],
-    paidNote: "El mensaje de WhatsApp no es una reserva confirmada ni un pago.",
     directionsTitle: "Enfoques opcionales para continuar",
     directionsLead: "Las sesiones personales se contratan por separado. Los métodos siguientes son explicaciones, no parte del informe gratuito.",
     directions: [
@@ -179,14 +164,14 @@ const copy = {
       { title: "Constelaciones sistémicas y arquetípicas", text: "Explorar de modo simbólico relaciones y decisiones personales o laborales.", href: "systemic-constellations" },
     ],
     aboutHeading: "Empecemos por tu pregunta",
-    aboutText: "Exploramos tu situación y las posibles opciones. Tras tu primer mensaje, solicitaré el formulario y el dibujo necesarios para preparar el informe escrito. Las sesiones en directo se contratan por separado.",
+    aboutText: "Exploramos cuestiones personales o profesionales y las relaciones entre tú, tu objetivo y el obstáculo. El formulario y el dibujo sirven para el informe escrito; una constelación completa es una sesión aparte.",
     aboutLink: "Conoce mi trabajo",
     faqTitle: "Preguntas frecuentes",
     faqs: [
       { q: "¿Qué es exactamente gratis?", a: "El análisis del formulario de coaching y dibujo a mano con un informe escrito personal. No incluye una llamada en directo." },
       { q: "¿Qué debo dibujar?", a: "En una hoja, dibuja con bolígrafo YO, MI META y MI PROBLEMA. No necesitas habilidades artísticas." },
       { q: "¿Cómo envío el material?", a: "Empieza con una solicitud breve por WhatsApp o Telegram. El formulario y el dibujo son materiales posteriores para el informe escrito; puedes abrir el cuestionario detallado de esta página si lo prefieres." },
-      { q: "¿Cuánto cuesta una sesión personal?", a: "La consulta exprés de 30 minutos cuesta €50; la sesión completa de 60 minutos cuesta €100." },
+      { q: "¿Podemos continuar con una sesión personal?", a: "Sí, si lo deseas. Después del informe puedes elegir una sesión personal o Alquimia del Alma. Los formatos se muestran al final de la página." },
       { q: "¿Es un diagnóstico médico o psicológico?", a: "No. Es una revisión simbólica de la situación, sin diagnósticos médicos o psiquiátricos ni recetas. Consulta a profesionales sanitarios para cuestiones médicas." },
     ],
     finalTitle: "¿Listo para explorar tu situación?",
@@ -286,11 +271,71 @@ const outcomes = {
   },
 } as const;
 
+
+const situations = {
+  ru: {
+    eyebrow: "С КАКИМИ СИТУАЦИЯМИ МОЖНО ПРИЙТИ",
+    title: "Один рисунок — разные жизненные вопросы",
+    lead: "Не обязательно уметь объяснять всё словами. Начните с того, что сейчас волнует больше всего.",
+    cards: [
+      { title: "Работа и бизнес", text: "Сложный выбор, партнёрство, конфликты в команде, деньги, развитие своего дела." },
+      { title: "Отношения и семья", text: "Непонимание, повторяющиеся конфликты, границы, близость и семейные сценарии." },
+      { title: "Самочувствие и стресс", text: "Переживания о здоровье, напряжение, усталость и поиск личных ресурсов. Без медицинских диагнозов." },
+      { title: "Личный путь", text: "Чувство тупика, страх перемен, поиск направления, цели и внутренней опоры." },
+    ],
+  },
+  en: {
+    eyebrow: "WHAT YOU CAN BRING",
+    title: "One drawing, many kinds of life questions",
+    lead: "You do not need to explain everything perfectly. Start with the question that feels most important today.",
+    cards: [
+      { title: "Work & business", text: "Difficult choices, partnerships, team conflict, money questions and business direction." },
+      { title: "Relationships & family", text: "Misunderstandings, recurring conflicts, boundaries, intimacy and family patterns." },
+      { title: "Wellbeing & stress", text: "Concerns about health, tension, fatigue and personal resources — without medical diagnosis." },
+      { title: "Life direction", text: "Feeling stuck, fear of change, goals, transitions and finding inner support." },
+    ],
+  },
+  es: {
+    eyebrow: "CON QUÉ SITUACIONES PUEDES VENIR",
+    title: "Un dibujo, muchas preguntas de la vida",
+    lead: "No necesitas explicarlo todo perfectamente. Empieza por lo que más te preocupa hoy.",
+    cards: [
+      { title: "Trabajo y negocios", text: "Decisiones difíciles, socios, conflictos de equipo, dinero y rumbo profesional." },
+      { title: "Relaciones y familia", text: "Malentendidos, conflictos repetidos, límites, cercanía y patrones familiares." },
+      { title: "Bienestar y estrés", text: "Preocupaciones de salud, tensión, cansancio y recursos personales, sin diagnóstico médico." },
+      { title: "Camino personal", text: "Bloqueos, miedo al cambio, objetivos, transiciones y apoyo interior." },
+    ],
+  },
+} as const;
+
+const deeperWork = {
+  ru: {
+    eyebrow: "КОГДА ХОЧЕТСЯ ПОЙТИ ГЛУБЖЕ",
+    title: "После разбора — сессия «Алхимия души»",
+    description: "Если мини-расстановочного анализа недостаточно, мы можем отдельно провести полноценную личную сессию: системную расстановку, исследование внутренних образов, отношений и ресурсов. Это необязательное продолжение, а не условие получения бесплатного отчёта.",
+    action: "Подробнее об «Алхимии души»",
+  },
+  en: {
+    eyebrow: "IF YOU WANT TO GO DEEPER",
+    title: "After the review: Alchemy of the Soul",
+    description: "If a brief drawing-based review is not enough, we can explore your question in a separate personal session using systemic constellation work, inner imagery and resources. This is optional, never a requirement for your free written review.",
+    action: "Explore Alchemy of the Soul",
+  },
+  es: {
+    eyebrow: "SI QUIERES PROFUNDIZAR",
+    title: "Después del informe: Alquimia del Alma",
+    description: "Si el análisis breve del dibujo no es suficiente, podemos profundizar en una sesión personal aparte mediante constelaciones sistémicas, imágenes interiores y recursos. Es opcional y no condiciona el informe gratuito.",
+    action: "Conocer Alquimia del Alma",
+  },
+} as const;
+
 export default async function FreeSituationReviewPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
   const outcome = outcomes[locale];
+  const topic = situations[locale];
+  const deeper = deeperWork[locale];
   return (
     <main className={styles.page} lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
@@ -306,49 +351,76 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           <p className={styles.freeLine}>{t.free}</p>
           <div className={styles.heroActions}>
             <a className={styles.heroPrimary} href="#request-free-review">{t.request} <ArrowRight size={18} aria-hidden="true" /></a>
-            <a className={styles.heroSecondary} href="#personal-consultation">{t.paidQuick} <ArrowRight size={17} aria-hidden="true" /></a>
-          </div>
-          <div className={styles.introContact}>
-            <div className={styles.photo}>
-              <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="88px" />
-            </div>
-            <div><strong>{t.practitioner}</strong><span>{t.experience}</span></div>
+            <a className={styles.heroSecondary} href="#situations">{t.paidQuick} <ArrowRight size={17} aria-hidden="true" /></a>
           </div>
           <p className={styles.safety}>{t.transparency}</p>
         </div>
+        <div className={styles.heroScene}>
+          <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 767px) 100vw, 44vw" />
+          <div className={styles.heroSceneCaption}><strong>{t.practitioner}</strong><span>{t.experience}</span></div>
+        </div>
       </section>
 
-      <section className={styles.capturePanel} id="request-free-review" aria-label={t.request}>
-        <FreeReviewQuickRequest locale={locale} />
+      <section className={styles.situations} id="situations" aria-labelledby="review-situations-title">
+        <p className={styles.eyebrow}>{topic.eyebrow}</p>
+        <h2 id="review-situations-title">{topic.title}</h2>
+        <p className={styles.situationsLead}>{topic.lead}</p>
+        <div className={styles.situationGrid}>
+          {topic.cards.map((card, index) => (
+            <article className={styles.situationScene} key={card.title}>
+              <div className={styles.sceneImage}>
+                <Image unoptimized src={situationImages[index]} alt="" fill sizes="(max-width: 767px) 100vw, 52vw" />
+              </div>
+              <div className={styles.sceneCopy}>
+                <span className={styles.sceneNumber}>{String(index + 1).padStart(2, "0")} / 04</span>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+                <a href="#request-free-review">{t.request}<ArrowRight size={18} aria-hidden="true" /></a>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className={styles.outcomes} aria-labelledby="review-outcomes-title">
         <p className={styles.eyebrow}>{outcome.eyebrow}</p>
         <h2 id="review-outcomes-title">{outcome.title}</h2>
         <p className={styles.outcomeIntro}>{outcome.intro}</p>
-        <div className={styles.outcomeGrid}>
-          {outcome.cards.map((card, index) => <article key={card.title}>
-            <span>0{index + 1}</span><h3>{card.title}</h3><p>{card.text}</p>
-          </article>)}
+        <div className={styles.outcomeScene}>
+          <div className={styles.outcomeImage}>
+            <Image unoptimized src="/images/holistic-house/course-focus-mountain-boy.webp" alt="" fill sizes="(max-width: 767px) 100vw, 48vw" />
+          </div>
+          <div className={styles.outcomeGrid}>
+            {outcome.cards.map((card, index) => <article key={card.title}>
+              <span>0{index + 1}</span><h3>{card.title}</h3><p>{card.text}</p>
+            </article>)}
+          </div>
         </div>
       </section>
 
-      <section className={styles.paid} id="personal-consultation" aria-labelledby="review-paid-title">
-        <div>
-          <p className={styles.eyebrow}>{t.paidEyebrow}</p>
-          <h2 id="review-paid-title">{t.paidTitle}</h2>
-          <p>{t.paidLead}</p>
+      <section className={styles.details} id="how-it-works" aria-labelledby="review-steps-title">
+        <header className={styles.sectionIntro}>
+          <p className={styles.eyebrow}>{t.stepsEyebrow}</p>
+          <h2 id="review-steps-title">{t.stepsHeading}</h2>
+          <p>{t.stepsLead}</p>
+        </header>
+        <div className={styles.stepsScene}>
+          <div className={styles.stepsImage}>
+            <Image unoptimized src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width: 767px) 100vw, 44vw" />
+          </div>
+          <ol className={styles.steps}>
+            {t.steps.map((step, index) => (
+              <li key={step.title}>
+                <span className={styles.stepNumber}>0{index + 1}</span>
+                <div><h3>{step.title}</h3><p>{step.text}</p></div>
+              </li>
+            ))}
+          </ol>
         </div>
-        <div className={styles.paidOptions}>
-          {t.paidOptions.map((option) => (
-            <a key={option.label}
-              href={"https://wa.me/14376066502?text=" + encodeURIComponent(option.message)}
-              target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp">
-              <span>{option.label}</span><strong>{option.price}</strong><MessageCircle size={18} aria-hidden="true" />
-            </a>
-          ))}
-          <p>{t.paidNote}</p>
-        </div>
+        <details className={styles.advancedIntake}>
+          <summary>{outcome.advanced}</summary>
+          <FreeSituationReviewForm locale={locale} />
+        </details>
       </section>
 
       <ServiceVideoShowcase topic="overview" locale={locale} id="service-video" />
@@ -400,31 +472,22 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         </div>
       </section>
 
-      <section className={styles.details} id="how-it-works" aria-labelledby="review-steps-title">
-        <header className={styles.sectionIntro}>
-          <p className={styles.eyebrow}>{t.stepsEyebrow}</p>
-          <h2 id="review-steps-title">{t.stepsHeading}</h2>
-          <p>{t.stepsLead}</p>
-        </header>
-        <ol className={styles.steps}>
-          {t.steps.map((step, index) => (
-            <li key={step.title}>
-              <span className={styles.stepNumber}>0{index + 1}</span>
-              <div><h3>{step.title}</h3><p>{step.text}</p></div>
-            </li>
-          ))}
-        </ol>
-        <details className={styles.advancedIntake}>
-          <summary>{outcome.advanced}</summary>
-          <FreeSituationReviewForm locale={locale} />
-        </details>
+      <section className={styles.alchemy} aria-labelledby="review-alchemy-title">
+        <div>
+          <p className={styles.eyebrow}>{deeper.eyebrow}</p>
+          <h2 id="review-alchemy-title">{deeper.title}</h2>
+          <p>{deeper.description}</p>
+        </div>
+        <Link className={styles.alchemyLink} href={"/" + locale + "/services/alchemy-of-soul"}>
+          {deeper.action} <ArrowRight size={18} aria-hidden="true" />
+        </Link>
       </section>
 
-      <section className={styles.finalCapture} aria-labelledby="review-final-title">
+      <section className={styles.finalCapture} id="personal-consultation" aria-labelledby="review-final-title">
         <div className={styles.finalIntro}>
           <h2 id="review-final-title">{t.finalTitle}</h2>
         </div>
-        <FreeReviewQuickRequest locale={locale} />
+        <div className={styles.finalRequest} id="request-free-review"><FreeReviewQuickRequest locale={locale} /></div>
       </section>
       <div className={styles.bottomServices}>
         <Link href={"/" + locale + "/services"} className={styles.backToServices}>{t.back} <ArrowRight size={15} aria-hidden="true" /></Link>

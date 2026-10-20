@@ -2,39 +2,49 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { DistanceHomeopathyGuide } from "@/components/distance-homeopathy-guide";
-import { CoreServiceDetail, coreOfferDetailData } from "@/components/core-service-detail";
+import { AlchemySoulLanding } from "@/components/alchemy-soul-landing";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import styles from "@/components/alchemy-soul-landing.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
-const kind = "alchemy" as const;
-
 export function generateStaticParams() { return [{ locale: "en" }, { locale: "ru" }]; }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) return { title: "Not found", robots: { index: false } };
-  const t = coreOfferDetailData(locale as Locale, kind);
+  const ru = locale === "ru";
+  const description = ru
+    ? "Алхимия души: расстановочная диагностика, образная гипнотерапия, дополнительная психогомеопатия. Личные сессии с Андреем Литвиновым."
+    : "Alchemy of the Soul: systemic constellations, guided-imagery hypnotherapy and optional psycho-homeopathy. Personal sessions with Andrey Litvinov.";
   return {
     metadataBase: metadataBaseFor(),
-    title: t.title + " — Holistic House",
-    description: t.lead,
+    title: (ru ? "Алхимия души · Психогомеопатия" : "Alchemy of the Soul · Psycho-homeopathy") + " — Holistic House",
+    description,
     alternates: {
       canonical: "/" + locale + "/services/alchemy-of-soul",
-      languages: { en: "/en/services/alchemy-of-soul", ru: "/ru/services/alchemy-of-soul" },
+      languages: { en: "/en/services/alchemy-of-soul", ru: "/ru/services/alchemy-of-soul", es: "/es/services/alchemy-of-soul" },
+    },
+    openGraph: {
+      title: ru ? "Алхимия души · Психогомеопатия" : "Alchemy of the Soul · Psycho-homeopathy",
+      description,
+      images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }],
     },
   };
 }
 
-export default async function CoreServicePage({ params }: Props) {
+export default async function AlchemyOfTheSoulPage({ params }: Props) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   return (
     <>
       <PublicSiteHeader locale={locale as Locale} />
-      <CoreServiceDetail locale={locale as Locale} kind={kind} />
-      <DistanceHomeopathyGuide locale={locale as Locale} embedded />
+      <AlchemySoulLanding locale={locale as Locale} />
+      <details className={styles.guideDisclosure} data-alchemy-extended-guide>
+        <summary>{locale === "ru" ? "Дополнительно: полная статья о дистанционной гомеопатии" : "Optional reading: full distance-homeopathy guide"}</summary>
+        <DistanceHomeopathyGuide locale={locale as Locale} embedded />
+      </details>
     </>
   );
 }

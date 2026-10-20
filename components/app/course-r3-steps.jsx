@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { appFetch } from '@/lib/app/client-fetch'
 import { startCourseWithRecovery } from '@/lib/inner-growth/course-start-recovery'
 import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
-import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
+import { ArrowRight, Brain, Check, ClipboardList, Clock3, Flower2, Gift, Heart, ListChecks, Plus, Sprout } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
 import { getCoursePreset, coursePresetSuggestedScales } from '@/lib/inner-growth/course-presets'
@@ -13,8 +13,7 @@ import { courseProgramFromTopics, getCourseProgram, orderCourseProgramTests, sug
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
 import AntiStressModuleFinder from './antistress-module-finder'
-import {phaseOutcomeContext} from '@/lib/inner-growth/trauma-phase-outcomes'
-import { ANTISTRESS_MODULE_FINDER_ITEMS, ANTISTRESS_ROUTER_VERSION, ANTISTRESS_MODULE_GOALS } from '@/lib/inner-growth/antistress-module-router'
+import { ANTISTRESS_MODULE_GOALS } from '@/lib/inner-growth/antistress-module-router'
 import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
 
@@ -150,6 +149,67 @@ const UI = {
     relativePriority: 'приоритет внутри шкалы', noMedical: 'Для обучения и самонаблюдения, не диагноз и не замена психотерапии.',
   },
 }
+
+const BASELINE_COPY = {
+  en: {
+    eyebrow: 'OPORA · FREE PRE-COURSE CHECK-IN',
+    title: 'Understand your state before the course',
+    lead: 'We offer 3 free short tests. Just a few minutes to notice how you feel before lesson 1.',
+    beforeTag: 'BEFORE LESSON 1', beforeTitle: 'My starting point', beforeDetail: 'Record how I feel now',
+    afterTag: 'AFTER LESSON 14', afterTitle: 'My progress', afterDetail: 'Compare the same scales',
+    context: 'For self-reflection only — not a diagnosis or proof that the course caused changes.',
+    listTitle: 'Your free starting check-ins',
+    listIntro: 'All 3 are selected to start. Take any missing tests in order; recent saved results count.',
+    freeBadge: 'FREE', testsBadge: '3 TESTS', durationBadge: 'MIN',
+    alreadySaved: 'Weekly Pulse saved — you do not need to repeat it.',
+    required: 'Required · 8 questions', anxiety: 'Optional · 7 questions', resources: 'Optional · 6 questions',
+    optional: 'Optional', saved: 'Result saved', repeat: 'Needs a newer starting result',
+    duration: 'min', preparing: 'Preparing…',
+    start: 'Start my 3 free check-ins', continueTests: 'Continue my check-ins',
+    reuse: 'Use saved results & continue',
+    next: 'Continue to my course',
+    privacy: 'About these tests and privacy',
+  },
+  ru: {
+    eyebrow: 'ОПОРА · БЕСПЛАТНЫЕ ТЕСТЫ ПЕРЕД КУРСОМ',
+    title: 'Узнайте своё состояние перед курсом',
+    lead: 'Предлагаем бесплатно пройти 3 коротких теста — всего несколько минут, чтобы понять, как вы себя чувствуете до первого урока.',
+    beforeTag: 'ДО ПЕРВОГО УРОКА', beforeTitle: 'Точка отсчёта', beforeDetail: 'Зафиксировать своё состояние',
+    afterTag: 'ПОСЛЕ 14 УРОКОВ', afterTitle: 'Мои изменения', afterDetail: 'Сравнить те же шкалы',
+    context: 'Только для самонаблюдения: не является диагнозом и не доказывает влияние курса.',
+    listTitle: 'Ваши 3 бесплатных теста',
+    listIntro: 'Все 3 отмечены заранее. Непройденные откроются по очереди; свежие результаты сохраним без повтора.',
+    freeBadge: 'БЕСПЛАТНО', testsBadge: '3 ТЕСТА', durationBadge: 'МИН',
+    alreadySaved: 'Weekly Pulse сохранён — повторять его не нужно.',
+    required: 'Обязательный · 8 вопросов', anxiety: 'По желанию · 7 вопросов', resources: 'По желанию · 6 вопросов',
+    optional: 'По желанию', saved: 'Результат сохранён', repeat: 'Нужен более свежий замер',
+    duration: 'мин', preparing: 'Подготавливаем…',
+    start: 'Начать 3 бесплатных теста', continueTests: 'Продолжить тестирование',
+    reuse: 'Использовать сохранённые результаты',
+    next: 'Продолжить курс',
+    privacy: 'О тестах и конфиденциальности',
+  },
+  es: {
+    eyebrow: 'OPORA · EVALUACIÓN GRATUITA INICIAL',
+    title: 'Conoce tu estado antes del curso',
+    lead: 'Te ofrecemos 3 pruebas breves y gratuitas: solo unos minutos para saber cómo te sientes antes de la primera lección.',
+    beforeTag: 'ANTES DE LA LECCIÓN 1', beforeTitle: 'Punto de partida', beforeDetail: 'Registrar mi estado actual',
+    afterTag: 'DESPUÉS DE 14 LECCIONES', afterTitle: 'Mi evolución', afterDetail: 'Comparar las mismas escalas',
+    context: 'Solo para reflexionar: no es un diagnóstico ni demuestra un efecto causado por el curso.',
+    listTitle: 'Tus 3 pruebas gratuitas',
+    listIntro: 'Las 3 están seleccionadas. Completa las pendientes por orden; reutilizamos los resultados recientes.',
+    freeBadge: 'GRATIS', testsBadge: '3 PRUEBAS', durationBadge: 'MIN',
+    alreadySaved: 'Weekly Pulse guardado — no hace falta repetirlo.',
+    required: 'Obligatorio · 8 preguntas', anxiety: 'Opcional · 7 preguntas', resources: 'Opcional · 6 preguntas',
+    optional: 'Opcional', saved: 'Resultado guardado', repeat: 'Se necesita un resultado más reciente',
+    duration: 'min', preparing: 'Preparando…',
+    start: 'Empezar mis 3 pruebas gratis', continueTests: 'Continuar las evaluaciones',
+    reuse: 'Usar mis resultados y continuar',
+    next: 'Continuar con mi curso',
+    privacy: 'Sobre las pruebas y la privacidad',
+  },
+}
+
 const formatDate=(date,locale)=>{
   try { return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':'en-CA',{dateStyle:'medium'}).format(new Date(date)) }
   catch { return '' }
@@ -165,7 +225,7 @@ async function saveExistingAccountPlan(items, accountId) {
   return result
 }
 
-export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onCourseRead,isCourseCurrent,onState,onError,root,quickEntry=false}) {
+export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onCourseRead,isCourseCurrent,onState,onLaunchReady,onError,root,quickEntry=false}) {
   const t=UI[locale]||UI.en,ru=locale==='ru'
   const router=useRouter()
   const current=state.course||{}, assessment=state.assessments||{}
@@ -177,7 +237,6 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [showAll,setShowAll]=useState(false)
   const [chosenScales,setChosenScales]=useState([])
   const [scaleView,setScaleView]=useState('recommended')
-  const [moduleSelection,setModuleSelection]=useState(null)
   const actionLock=useRef(false)
   const [fallbackGoals,setFallbackGoals]=useState([])
   const [problemLabel,setProblemLabel]=useState((current.concerns||'').trim().slice(0,160))
@@ -283,6 +342,9 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         return ensureCourseResponse(response)
       },payload)
       ensureCourseResponse(result)
+      // Only after a confirmed server commit may the single welcome CTA open lesson 1.
+      // The parent keeps this navigation intent in React state; never persist client data here.
+      if (moduleSelection && result.course.stage === 4) onLaunchReady?.(courseId)
       onState(result)
     } catch(error) {
       if(isCourseCurrent()) onError(error.message || 'COURSE_GOALS_UNAVAILABLE')
@@ -293,26 +355,6 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       }
     }
   }
-
-  function reviewModuleScales(selection) {
-    if (actionLock.current || busy || localBusy || !isCourseCurrent()) return
-    if (!selection || !ANTISTRESS_MODULE_GOALS.some(item=>item.id===selection.moduleId&&!item.clinicalOnly) ||
-      !selection.answers || typeof selection.answers !== 'object') {
-      onError('COURSE_MODULE_FINDER_INVALID')
-      return
-    }
-    // This is only a draft in this component. No course is started and no
-    // goals are written until the user confirms suggested or edited scales.
-    setModuleSelection({moduleId:selection.moduleId,goal:selection.goal,answers:{...selection.answers}})
-    setChosenScales(suggestedScales.map(item=>item.id))
-    setFallbackGoals([])
-    setScaleView('recommended')
-    onError('')
-  }
-
-  useEffect(()=>{
-    if(stage!==3)setModuleSelection(null)
-  },[stage])
 
   async function openManualFocus() {
     if(actionLock.current || busy || localBusy) return
@@ -359,11 +401,17 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       preferred = intent.testKeys.filter(key=>available.has(key))
     }
     const starter=programme?.id==='stress'
-      ? ['hh-weekly-pulse'].filter(key=>ranked.some(item=>item.key===key))
+      ? getCourseProgram('stress').starterKeys.filter(key=>ranked.some(item=>item.key===key))
       : ranked.slice(0,5).map(item=>item.key)
-    // Weekly Pulse is the only compulsory existing questionnaire.
-    // The short skill finder follows; GAD-7/Resource remain opt-in.
-    setChosenTests(preset ? [...preset.testKeys] : withAntistressRequiredBaseline(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter,programme?.id))
+    // OPORA begins with all three short, free check-ins preselected. This is
+    // only a client-side proposal until the learner explicitly continues.
+    // Retain any previously chosen extras without changing a server-owned plan.
+    const preferredKeys=confirmedKeys.length ? confirmedKeys : preferred
+    const initial=programme?.id==='stress'
+      ? confirmedKeys.length>=2 ? [...confirmedKeys]
+        : [...new Set([...starter,...preferredKeys])].slice(0,12)
+      : preferredKeys.length ? preferredKeys : starter
+    setChosenTests(preset ? [...preset.testKeys] : withAntistressRequiredBaseline(initial,programme?.id))
   },[stage,testsTouched,confirmedKeys,ranked,preset,programme?.id])
   function toggleTest(key) {
     if (preset) return
@@ -414,8 +462,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
 
-  // The short course CTA owns the starter battery: one mandatory HH Weekly
-  // Pulse, two genuinely optional questionnaires. One button performs the
+  // The short course CTA proposes all 3 starter check-ins (Weekly Pulse is
+  // mandatory; GAD-7/Resource Pulse can be unchecked). One button performs the
   // existing plan-save + course confirmation and opens the first *missing*
   // owner-scoped run. Never use a query parameter as proof of completion.
   async function startCompactTests() {
@@ -525,49 +573,86 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   // Default compact Anti-Stress battery; general test discovery stays in My Tests.
   // Existing confirmed extras are retained and can still be seen and edited.
   if(stage===2 && isAntistress) {
-    const defaultKeys = new Set(['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse'])
-    const visible = ranked.filter((item,index) => defaultKeys.has(item.key) ||
-      chosenTests.includes(item.key) || (showAll && index < 10))
-    const hasPending = !confirmed || pending.length > 0
-    return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-course-tests data-antistress-compact-picker>
-      <p className={styles.compactEyebrow}>{ru?'ОПОРА · СТАРТОВАЯ ДИАГНОСТИКА':'OPORA · STARTING ASSESSMENT'}</p>
-      <h2>{ru?'Начните с Weekly Pulse':'Start with Weekly Pulse'}</h2>
-      <p className={styles.compactLead}>{ru
-        ? '8 вопросов · около 2 минут. Результат поможет выбрать один из 5 уровней программы.'
-        : '8 questions · about 2 minutes. Your answers help suggest one of five learning levels.'}</p>
+    const c=BASELINE_COPY[locale]||BASELINE_COPY.en
+    const defaultKeys=new Set(['hh-weekly-pulse','gad-7','hh-resource-pulse'])
+    const visible=ranked.filter((item,index)=>defaultKeys.has(item.key)||
+      chosenTests.includes(item.key)||(showAll&&index<10))
+    const isFreshlyCompleted=item=>{
+      const status=confirmedStatuses.find(row=>row.key===item.key)
+      const days=ANTISTRESS_BASELINE_RECENCY_DAYS[item.key]
+      return status?Boolean(status.completed):
+        Boolean(item.completed&&(!days||isAntistressBaselineRecent(item.key,item.completedAt)))
+    }
+    const baselineSaved=visible.some(item=>item.key===ANTISTRESS_REQUIRED_BASELINE_KEY&&isFreshlyCompleted(item))
+    const allSelectedReady=chosenTests.length>0&&chosenTests.every(key=>{
+      const item=optionByKey.get(key)
+      return Boolean(item&&isFreshlyCompleted(item))
+    })
+    const starterDuration=ranked.filter(item=>defaultKeys.has(item.key))
+      .reduce((total,item)=>total+(item.durationMinutes||2),0)
+    const reusedCount=chosenTests.filter(key=>{
+      const item=optionByKey.get(key)
+      return item&&isFreshlyCompleted(item)
+    }).length
+    const actionLabel=allSelectedReady ? (confirmed?c.next:c.reuse)
+      : reusedCount>0 ? c.reuse : c.start
+    return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-course-tests data-antistress-compact-picker data-course-baseline-one-screen>
+      <header className={styles.baselineHero} data-course-baseline-explanation>
+        <span className={styles.baselineDecoration} aria-hidden="true"><Flower2 size={78} strokeWidth={1.05}/></span>
+        <p className={styles.compactEyebrow}>{c.eyebrow}</p>
+        <h2>{c.title}</h2>
+        <p className={styles.compactLead}>{c.lead}</p>
+        <div className={styles.baselineHighlights}>
+          <span><Gift size={15} aria-hidden="true"/>{c.freeBadge}</span>
+          <span><ListChecks size={15} aria-hidden="true"/>{c.testsBadge}</span>
+          <span><Clock3 size={15} aria-hidden="true"/>{'~'+starterDuration+' '+c.durationBadge}</span>
+        </div>
+        <div className={styles.baselineTimeline}>
+          <span>{c.beforeTag}</span>
+          <ArrowRight className={styles.baselineArrow} size={14} aria-hidden="true"/>
+          <span>{c.afterTag}</span>
+        </div>
+        <p className={styles.baselineContext}>{c.context}</p>
+      </header>
+      <div className={styles.baselineListIntro}>
+        <h3>{c.listTitle}</h3>
+        <p>{c.listIntro}</p>
+      </div>
       <div className={styles.shortTestList} data-course-antistress-pretests aria-label={t.stressTestsTitle}>
         {visible.map(item=>{
           const required=item.key===ANTISTRESS_REQUIRED_BASELINE_KEY
-          const status=confirmedStatuses.find(row=>row.key===item.key)
-          const days=ANTISTRESS_BASELINE_RECENCY_DAYS[item.key]
-          const completed=status ? Boolean(status.completed) :
-            Boolean(item.completed && (!days || isAntistressBaselineRecent(item.key,item.completedAt)))
+          const completed=isFreshlyCompleted(item)
           const outdated=Boolean(item.completed&&!completed)
+          const testLabel=required?c.required:item.key==='gad-7'?c.anxiety:
+            item.key==='hh-resource-pulse'?c.resources:c.optional
+          const TestIcon=required?Heart:item.key==='gad-7'?Brain:Sprout
           return <label key={item.key} className={styles.shortTestRow}
             data-checked={chosenTests.includes(item.key)}
+            data-completed={completed?'true':'false'}
             data-course-required-baseline={required?'true':undefined}>
-            <input type="checkbox" checked={chosenTests.includes(item.key)}
-              disabled={busy||localBusy||required||(!chosenTests.includes(item.key)&&chosenTests.length>=12)}
-              onChange={()=>toggleTest(item.key)}/>
+            <span className={styles.shortTestIcon} aria-hidden="true"><TestIcon size={22} strokeWidth={1.8}/></span>
             <span className={styles.shortTestBody}>
               <strong>{item.title}</strong>
-              <small>{required?(ru?'Обязательный · 8 вопросов':'Required · 8 questions')
-                :item.key==='gad-7'?(ru?'По желанию · 7 вопросов':'Optional · 7 questions')
-                :item.key==='hh-resource-pulse'?(ru?'По желанию · 6 вопросов':'Optional · 6 questions')
-                :t.stressOptional}
-                {' · '}{completed ? t.completed : outdated ? t.stressRetake : ('~'+(item.durationMinutes||2)+' min')}
+              <small>{testLabel}{' · '}
+                {outdated?c.repeat:('~'+(item.durationMinutes||2)+' '+c.duration)}
               </small>
+              {required&&baselineSaved&&<span className={styles.baselineSaved} data-course-baseline-reused role="status">
+                <Check size={13} aria-hidden="true"/>{c.alreadySaved}
+              </span>}
+              {!required&&completed&&<span className={styles.shortTestSaved}>
+                <Check size={12} aria-hidden="true"/>{c.saved}
+              </span>}
             </span>
-            {completed && <Check size={18} className={styles.shortTestCheck} aria-label={t.completed}/>}
+            <input type="checkbox" checked={chosenTests.includes(item.key)}
+              disabled={busy||localBusy||required||(!chosenTests.includes(item.key)&&chosenTests.length>=12)}
+              onChange={()=>toggleTest(item.key)} aria-label={item.title}/>
           </label>
         })}
       </div>
       <button type="button" className={'hh-primary '+styles.fastTestButton}
         disabled={busy||localBusy||openingTest||!chosenTests.length} onClick={startCompactTests}
         data-antistress-start-first-test>
-        {localBusy||openingTest?(ru?'Подготавливаем…':'Preparing…')
-          :hasPending?(ru?'Начать тестирование':'Start my assessment')
-            :(ru?'Подобрать мой уровень':'Find my learning level')}
+        {localBusy||openingTest?c.preparing:actionLabel}
         <ArrowRight size={19} aria-hidden="true"/>
       </button>
       <div className={styles.shortTestExtras}>
@@ -577,7 +662,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           {t.editAreas}</button>
       </div>
       <details className={styles.shortTestDetails}>
-        <summary>{ru?'О тестах и конфиденциальности':'About these tests and privacy'}</summary>
+        <summary>{c.privacy}</summary>
         <p>{t.stressBaselineText} {t.stressExtraNote}</p>
         <p>{t.saveNotice}</p>
         <Link href={root+'/tests?explore=1&course=1&filters=topics'}>{t.returnTests}</Link>
@@ -664,49 +749,22 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
   if(stage===3 && isAntistress) {
-    if(!moduleSelection) {
-      return <AntiStressModuleFinder locale={locale} profile={profile} busy={busy||localBusy}
-        nextIsScaleReview onStart={reviewModuleScales}/>
-    }
-    const chosenModule=ANTISTRESS_MODULE_GOALS.find(item=>item.id===moduleSelection.moduleId)
-    const phase=phaseOutcomeContext(moduleSelection.moduleId,ANTISTRESS_ROUTER_VERSION)
-    const primaryLabel=phase?.primaryTestKey==='hh-module-finder'
-      ?ANTISTRESS_MODULE_FINDER_ITEMS.find(item=>item.id===phase.primaryScaleKey)?.text[ru?'ru':'en']
-      :profile.scales.find(item=>item.id===phase?.primaryMetric)?.label||phase?.primaryScaleKey
-    const focusWords={...t,mainSkillTitle:ru?'Приоритет среди дополнительных фокусов':'Priority among supporting focus areas',mainSkillHelp:ru?'Этот порядок задаёт фокус практики и не меняет основной показатель курса.':'This order sets your practice focus and does not change the course primary measure.'}
-
-    return <div className={styles.scaleConfirmationJourney} data-course-scale-confirmation>
-      <section className={'hh-panel '+styles.selectedModuleBar} data-course-module-draft>
-        <div>
-          <small>{t.moduleChosen}: {moduleSelection.moduleId}</small>
-          <h2>{t.scaleGateTitle}</h2>
-          <p>{t.scaleGateHelp}</p>
-          {chosenModule&&<strong>{chosenModule.title[ru?'ru':'en']}</strong>}
-          <p data-course-module-primary>{ru?'Основной показатель самооценки курса':'Course primary self-rating measure'}: {primaryLabel}</p>
-        </div>
-        <button type="button" className={styles.whiteSecondary} disabled={busy||localBusy}
-          data-course-change-module onClick={()=>{setModuleSelection(null);setScaleView('recommended')}}>{t.changeModule}</button>
-      </section>
-      {scaleView==='manual'
-        ? <CourseFocusPicker
-          t={focusWords} locale={locale} profile={profile} suggested={suggestedScales}
-          chosenScales={chosenScales} chosenGoals={fallbackGoals}
-          onToggleScale={toggleScale}
-          onSetPrimaryScale={key=>setChosenScales(previous=>previous.includes(key)?[key,...previous.filter(item=>item!==key)]:previous)}
-          onToggleGoal={key=>setFallbackGoals(previous=>previous.includes(key)
-            ?previous.filter(x=>x!==key):previous.length<3?[...previous,key]:previous)}
-          problemLabel={problemLabel} onProblemLabel={setProblemLabel}
-          minScales={minScales} busy={busy||localBusy}
-          onContinue={()=>submitFocusSelection(chosenScales,profile.eligible.length>0,moduleSelection)}
-          onBack={()=>setScaleView('recommended')}/>
-        : <CourseCompletionReview
-          t={focusWords} root={root} moduleId={moduleSelection.moduleId} routerVersion={ANTISTRESS_ROUTER_VERSION} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
-          optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
-          busy={busy||localBusy} compactResults
-          onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id),true,moduleSelection)}
-          onAlternative={openManualFocus}/>
+    // The post-test celebration is the sole consent/launch screen.
+    // Keep the saved measured scales and their primary outcome intact; no
+    // second forced scale-review step between "Let's go" and Day 1.
+    const startChosenModule = selection => {
+      if (actionLock.current || busy || localBusy || !isCourseCurrent()) return
+      if (!selection || !ANTISTRESS_MODULE_GOALS.some(item => item.id === selection.moduleId && !item.clinicalOnly) ||
+          !selection.answers || typeof selection.answers !== 'object') {
+        onError('COURSE_MODULE_FINDER_INVALID')
+        return
       }
-    </div>
+      const selected = suggestedScales.map(scale => scale.id)
+      const useMeasuredScales = profile.eligible.length > 0 && selected.length >= minScales
+      return submitFocusSelection(useMeasuredScales ? selected : [], useMeasuredScales, selection)
+    }
+    return <AntiStressModuleFinder locale={locale} profile={profile}
+      busy={busy||localBusy} onStart={startChosenModule}/>
   }
 
   if(stage===3) {

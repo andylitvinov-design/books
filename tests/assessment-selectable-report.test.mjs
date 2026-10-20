@@ -9,6 +9,9 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeModel, gaugeChange } from '../lib/assessments/dashboard-gauges.js'
+import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
+import { scoreChangeReading } from '../lib/assessments/score-change-reading.js'
+import { SITUATION_OBSERVATION } from '../lib/assessments/situational-score-context.js'
 import { assessmentResultOverview, initialAssessmentSection } from '../lib/assessments/result-overview.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 
@@ -29,7 +32,8 @@ const load = (code, imports) => {
   } })
   return compiledModule.exports
 }
-const gauges = load(gaugeCode, { '@/lib/assessments/dashboard-gauges': { gaugeModel, gaugeChange } })
+const gauges = load(gaugeCode, { '@/lib/assessments/dashboard-gauges': { gaugeModel, gaugeChange },
+  '@/lib/assessments/score-change-reading': { scoreChangeReading } })
 const expand = node => node == null || typeof node !== 'object' ? node
   : Array.isArray(node) ? node.map(expand)
     : typeof node.type === 'function' ? expand(node.type(node.props))
@@ -64,7 +68,9 @@ function mount(props) {
     './free-course-banner': { FreeCourseBanner: p => jsx('aside', { 'data-optional-course': true, ...p }) },
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },
+    '@/lib/assessments/situational-score-context': { SITUATION_OBSERVATION },
     '@/lib/assessments/result-overview': { assessmentResultOverview },
+    '@/lib/assessments/assessment-evidence-status': { assessmentEvidenceStatus },
   })
   const render = () => { cursor = 0; tree = expand(CompactAssessmentReport(props)); return tree }
   render()
@@ -100,20 +106,28 @@ function assertSelected(h, result, report, section, locale) {
   assert.equal(pressed[0].props['data-assessment-scale-trigger'], section.key)
   assert.equal(pressed[0].props['aria-controls'], panel.props.id)
   assert.ok(text(panel).includes(section.meaning), 'Full source meaning remains available')
-  assert.ok(visibleText(panel).includes(section.summary || section.meaning),
-    'The semantic explanation must be visible without expanding details, not just its numeric prefix')
+  const plainGuide = nodes(panel).some(node => own(node, 'data-current-score-position') ||
+    own(node, 'data-answer-interpretation'))
+  assert.ok(visibleText(panel).includes(section.summary || section.meaning) ||
+    (plainGuide && text(panel).includes(section.summary || section.meaning)),
+    'The full source interpretation remains accessible, while a clear current-level reading is visible')
   for (const step of section.steps || []) assert.ok(text(panel).includes(step), 'Every approved step remains available')
   const scoreDimension = section.bandBasis === 'unavailable' ? null : result.dimensions.find(item => item.key === section.key)
   const scoreModel = gaugeModel(scoreDimension, result, locale)
+  const critical = section.limitations?.some(note =>
+    /translation|unvalidated|russian form|without reversing|перевод|английск|русск|без разворота/i.test(note))
+  const originalBoilerplate = result.definitionKey?.startsWith('hh-') &&
+    section.bandBasis === 'descriptive' && !critical
   for (const limit of section.limitations || []) {
-    if (scoreModel?.currentAnswerBand) {
-      // On original, non-clinical self-reflections the long methodological
-      // caveats are in disclosure; a plain-language nonclinical warning stays visible.
-      assert.ok(text(panel).includes(limit), 'Detailed caveat remains available')
-      assert.match(visibleText(panel), locale === 'ru' ? /не медицинские нормы/ : /not clinical norms/,
-        'The interpretation must visibly distinguish answer anchors from clinical norms')
+    if (scoreModel?.currentAnswerBand || originalBoilerplate) {
+      // Only repetitive methodological notes on supported original reflections
+      // may live in disclosure. Integrity and translation warnings must be visible.
+      assert.ok(text(panel).includes(limit), 'Detailed caveat remains accessible')
+      if (scoreModel?.currentAnswerBand) assert.match(visibleText(panel),
+        locale === 'ru' ? /не медицинские нормы/ : /not clinical norms/,
+        'Answer anchors cannot be mistaken for published clinical cutoffs')
     } else assert.ok(visibleText(panel).includes(limit),
-      'Screening, non-authorial and unverified warnings remain visible without expansion')
+      'Screening, translation, mixed-polarity or unverified warnings must remain visible')
   }
   if (section.followUp) assert.ok(text(panel).includes(section.followUp))
   if (section.source) assert.ok(nodes(h.tree).some(node => node.type === 'a' && node.props.href === section.source))
@@ -126,15 +140,23 @@ function assertSelected(h, result, report, section, locale) {
   if (!model) return
   const gauge = renderedGauges[0]
   assert.equal(gauge.props['data-assessment-gauge'], model.displayKind === 'screening-count' ? model.displayKind : model.orientation)
-  const legend = nodes(gauge).filter(node => node.type === 'li')
-  assert.equal(legend.length, model.bands.length)
+  // The compact dial intentionally hides its internal list; the readable
+  // source-aware report must expose the exact intervals with one selection.
+  assert.equal(nodes(gauge).filter(node => node.type === 'li').length, 0)
+  const rangeRows = nodes(panel).filter(node => own(node, 'data-score-range'))
+  assert.equal(rangeRows.length, model.rangeReading?.rows.length || 0)
+  const reading = model.rangeReading
+  if (reading) {
+    assert.equal(rangeRows.filter(row => row.props['aria-current'] === 'true').length, 1)
+    reading.rows.forEach((band, index) => {
+      assert.equal(rangeRows[index].props['data-score-range'], band.code)
+      assert.ok(text(rangeRows[index]).includes(band.displayRange),
+        result.definitionKey + ': exact displayed source/response range')
+      assert.ok(text(rangeRows[index]).includes(band.label))
+      assert.equal(rangeRows[index].props['aria-current'] === 'true', band.current)
+    })
+  }
   const numeral = value => new Intl.NumberFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }).format(value)
-  model.bands.forEach((band, index) => {
-    assert.ok(text(legend[index]).replace(/\s*–\s*/g, '–').includes(`${numeral(band.from)}–${numeral(band.to)}`), result.definitionKey + ': exact legend interval')
-    assert.ok(text(legend[index]).includes(band.label))
-    assert.equal(legend[index].props['aria-current'] === 'true', band.code === model.currentBand?.code)
-  })
-  assert.equal(nodes(gauge).filter(node => node.props['aria-current'] === 'true').length, model.currentBand ? 1 : 0)
   if (model.displayKind !== 'screening-count') {
     assert.ok(gauge.props['aria-label'].includes(`${numeral(dimension.min)}–${numeral(dimension.max)}`))
     assert.equal(gauge.props['data-gauge-scale'], model.continuous ? 'continuous' : 'published-bands')
@@ -320,12 +342,16 @@ test('review and unverified reports preserve safety precedence over ordinary pri
   }
 })
 
-test('initial scale uses valid within-range position, stable ties, and unchanged safety/Bach precedence', () => {
+test('initial scale uses declared score polarity, neutral source order and unchanged safety/Bach precedence', () => {
   const section = (value, min, max, extra = {}) => ({ value, min, max, bandBasis: 'descriptive', ...extra })
   const choose = sections => initialAssessmentSection({ verified: true, sections })
-  assert.equal(choose([section(30, 10, 50), section(25, 20, 100)]), 1)
+  // Non-normative traits and unknown domains retain source order, regardless
+  // of which number is lowest. Only reliable difficulty/resource direction is
+  // useful for display prioritisation, never a diagnostic severity ranking.
+  assert.equal(choose([section(30, 10, 50), section(25, 20, 100)]), 0)
   assert.equal(choose([section(5, 0, 10), section(10, 0, 20)]), 0)
-  assert.equal(choose([section(0, 0, 100, { direction: 'difficulty' }), section(8, 0, 10, { direction: 'resource' })]), 0)
+  assert.equal(choose([section(9, 0, 10, { presentationDirection: 'difficulty' }), section(8, 0, 10, { presentationDirection: 'resource' })]), 0)
+  assert.equal(choose([section(2, 0, 10, { presentationDirection: 'difficulty' }), section(1, 0, 10, { presentationDirection: 'resource' })]), 1)
   for (const invalid of [section(null, 0, 1), section(NaN, 0, 1), section(Infinity, 0, 1), section(0, 0, 0), section(1, 2, 0), section(-1, 0, 1), section(2, 0, 1), section(0, NaN, 1), section(0, 0, Infinity), section('0', 0, 1), section(0, 0, 1, { bandBasis: 'unavailable' })]) {
     assert.equal(choose([invalid, section(8, 0, 10)]), 1)
     assert.equal(choose([invalid]), 0)
@@ -347,14 +373,14 @@ test('initial selection reaches the rendered panel and resets on return after a 
   const first = { ...result, id: 'first-selection-fixture' }
   const second = { ...result, id: 'second-selection-fixture' }
   const h = mount({ result: first, report })
-  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[0].key)
   h.click(report.sections[3].key)
   h.rerender({ result: { ...first }, report: { ...report }, locale: 'ru' })
   assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[3].key)
   h.rerender({ result: second, report })
-  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[0].key)
   h.rerender({ result: first, report })
-  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[0].key)
   const guest = mount({ result, report })
   guest.click(report.sections[4].key)
   guest.rerender({ result: structuredClone(result), report: { ...report } })

@@ -22,7 +22,11 @@ function approvedBuiltInVideos(): Record<string, PublishedSiteVideo> {
 const readStoredPublishedVideos = unstable_cache(
   async (): Promise<Record<string, PublishedSiteVideo>> => {
     const store = getSiteVideoStore() as SiteVideoStore | undefined;
-    if (!store) throw new Error('Public video storage was disabled before cache fill');
+    // Cached snapshots can still revalidate after a deployment switched to
+    // the supported storage-off mode. Return an empty stored snapshot rather
+    // than throwing (and retrying) during background revalidation. The actual
+    // public request uses the approved built-in records in storage-off mode.
+    if (!store) return {};
     const videos: Record<string, PublishedSiteVideo> = {};
     try {
       // Video placements are optional content. Do not block public HTML for
@@ -50,7 +54,6 @@ export const getPublishedSiteVideos = cache(async (): Promise<Record<string, Pub
   // The document's CSP nonce and locale can change on every request.
   noStore();
   if (!getSiteVideoStore()) {
-    console.warn('[site-videos] Public video storage is not configured.');
     return approvedBuiltInVideos();
   }
   try {

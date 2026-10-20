@@ -103,6 +103,7 @@ test('guest bootstrap returns the verified session expiry even before any runs e
  const expiresAt=new Date('2026-10-23T12:00:00.000Z')
  const db={async query(sql,params){calls.push(sql);assert.deepEqual(Array.from(params),[credential.id]);return{rows:[]}}}
  const ctx={config,iso:value=>value.toISOString(),
+  async withResultInterpretations(actualDb,results){assert.equal(actualDb,db);assert.equal(results.length,0);return results},
   async sessionRow(actualDb,actualCredential){assert.equal(actualDb,db);assert.equal(actualCredential,credential);return{id:credential.id,expires_at:expiresAt}},
   async transaction(actualConfig,accountId,read,options){assert.equal(actualConfig,config);assert.equal(accountId,null);assert.equal(options.server,true);return read(db)},
   guestRunView(){assert.fail('No synthetic run exists')},guestResultView(){assert.fail('No synthetic result exists')},moodView(){assert.fail('No synthetic mood exists')},testPlanView(){assert.fail('No synthetic plan exists')},

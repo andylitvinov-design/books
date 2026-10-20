@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { layoutPortraitRayLabels, portraitLabelLines } from '../lib/assessments/portrait-ray-labels.js'
+import { PORTRAIT_AXIS_ORDER, portraitAngleForAxis } from '../lib/assessments/portrait-sectors.js'
 
 const axes = [
   'Stress', 'Anxiety', 'Mood', 'Sleep', 'Energy', 'Clarity', 'Focus',
@@ -66,4 +67,67 @@ test('changing selected scales labels only selected rays and preserves measured 
   assert.deepEqual(labels.map((item) => item.axis), ['1', '6', '15'])
   assert.deepEqual(labels.map((item) => item.measured), [false, true, false])
   assert.deepEqual(layoutPortraitRayLabels([]), [])
+})
+
+test('all four quadrants can show all 17 measured dot labels without collision or clipping', () => {
+  const localized = {
+    stress: 'Стресс', anxiety: 'Тревога', sleep: 'Сон', energy: 'Энергия',
+    embodiment: 'Телесное присутствие', clarity: 'Ясность мышления',
+    focus: 'Фокус', functioning: 'Функционирование', relationships: 'Отношения',
+    intimacy: 'Близость', boundaries: 'Границы и согласие',
+    sexual_wellbeing: 'Сексуальное благополучие', mood: 'Настроение',
+    emotional_regulation: 'Эмоциональная регуляция', resource: 'Ресурс',
+    self_support: 'Внутренняя опора', meaning: 'Смысл и направление',
+  }
+  const items = PORTRAIT_AXIS_ORDER.map((axis, index) => {
+    const angle = portraitAngleForAxis(axis)
+    const percent = 22 + (index * 11) % 70
+    const measureRadius = 12 + (percent / 100) * 119
+    return {
+      axis, label: localized[axis], measured: true,
+      ideal: { x: 180 + Math.cos(angle) * 131, y: 182 + Math.sin(angle) * 131 },
+      end: { x: 180 + Math.cos(angle) * measureRadius, y: 182 + Math.sin(angle) * measureRadius },
+    }
+  })
+  const labels = layoutPortraitRayLabels(items)
+  assert.equal(labels.length, 17)
+  assertNoOverlaps(labels)
+  for (let index = 0; index < labels.length; index += 1) {
+    const item = labels[index]
+    assert.equal(item.axis, items[index].axis)
+    assert.deepEqual(item.tip, items[index].end)
+    assert.ok(Math.abs(item.y + item.height / 2 - item.tip.y) <= 120, item.axis)
+  }
+})
+
+test('mobile SVG captions use exact per-line widths and safe painted bounds', () => {
+  const names = {
+    stress:'Стресс', anxiety:'Тревога', sleep:'Сон',
+    energy:'Энергия', embodiment:'Телесное присутствие',
+    relationships:'Отношения', intimacy:'Близость',
+    boundaries:'Границы и согласие', sexual_wellbeing:'Сексуальное благополучие',
+    mood:'Настроение', emotional_regulation:'Эмоциональная регуляция',
+    resource:'Ресурс', self_support:'Внутренняя опора', meaning:'Смысл и направление',
+  }
+  for (const keys of [
+    ['stress','anxiety','sleep','energy','embodiment'],
+    ['relationships','intimacy','boundaries','sexual_wellbeing'],
+    ['mood','emotional_regulation','resource','self_support','meaning'],
+  ]) {
+    const list = layoutPortraitRayLabels(keys.map((axis,index) => {
+      const angle = -Math.PI/2 + index*2*Math.PI/keys.length
+      return {
+        axis,label:names[axis],measured:index%2===0,
+        ideal:{x:180+146*Math.cos(angle),y:182+146*Math.sin(angle)},
+      }
+    }))
+    assert.equal(list.length,keys.length)
+    for (const ray of list) {
+      assert.ok(ray.x>=14 && ray.x+ray.width<=346,ray.label+' outside x inset')
+      assert.ok(ray.y>=13 && ray.y+ray.height<=377,ray.label+' outside y inset')
+      assert.equal(ray.lineWidths.length,ray.lines.length)
+      assert.ok(ray.lineWidths.every(width=>width>=19 && width<=128))
+      assert.ok(Math.max(...ray.lineWidths)<=ray.width)
+    }
+  }
 })

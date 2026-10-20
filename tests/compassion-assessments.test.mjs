@@ -105,7 +105,7 @@ for(const f of fixtures){
 }
 
 test('two distinct professional instruments are selectable once in both languages/audiences and correct filters',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,145)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,150)
  for(const locale of ['en','ru'])for(const audience of ['guest','account']){
   const entries=buildExplorerEntries({locale,audience})
   for(const f of fixtures){

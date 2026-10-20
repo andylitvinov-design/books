@@ -121,8 +121,8 @@ test('the public Tests first screen uses the Academy discovery hero and preserve
   assert.match(picker, /className=\{authenticated \? styles\.accountFinder : academyStyles\.hero\} data-client-tests-hero/)
   assert.match(picker, /className=\{academyStyles\.topline\}/)
   assert.match(picker, /className=\{authenticated \? styles\.accountFinderSearch : academyStyles\.form\} role="search"/)
-  assert.match(picker, /className=\{authenticated \? styles\.accountFinderFilters : academyStyles\.filters\}/)
-  assert.match(picker, /className=\{academyStyles\.tabs\}/)
+  assert.match(picker, /\{authenticated && <div className=\{styles\.accountFinderFilters\}>/)
+  assert.match(picker, /<DiscoverySectionTabs locale=\{locale\} active="tests"/)
   assert.match(picker, /className=\{authenticated \? styles\.accountFinderSubmit : academyStyles\.submit\}/)
   assert.match(academyCss, /linear-gradient\(121deg, #203450/)
   assert.match(css, /\.shell\[data-public-test-picker="true"\]/)
@@ -132,14 +132,14 @@ test('the public Tests first screen uses the Academy discovery hero and preserve
   assert.ok(picker.includes('id="hh-simple-recommendations"'))
 })
 
-test('Academy-style hero search and topic chips actually refine existing recommendations', () => {
+test('Academy-style hero search and detailed topic chooser refine recommendations', () => {
   assert.match(picker, /\[heroSearch, setHeroSearch\] = useState\(''\)/)
   assert.match(picker, /const browseRecommendations = heroSearchTerm/)
   assert.match(picker, /searchPublicTestEntries\(/)
   assert.match(picker, /setSubmittedHeroSearch\(heroSearch\.trim\(\)\)/)
   assert.match(picker, /onToggleFocus\(key\)/)
   assert.match(picker, /onSelectTestKind\?\.\(event\.target\.value/)
-  assert.match(picker, /aria-pressed=\{focus\.includes\(key\)\}/)
+  assert.match(picker, /onToggleFocus\(key\)/)
   assert.match(picker, /setSubmittedHeroSearch\(''\)/)
   assert.match(picker, /scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\)/)
 })
@@ -177,18 +177,17 @@ test('mobile cards show questions and time under the photo, Type by match, and a
   assert.match(card, /<details className=\{styles\.researchDetails\}>/)
 })
 
-test('free test hero is localized, and both actions jump to real content', () => {
-  assert.ok(picker.includes("heroPrimary:'Choose my topics'"))
-  assert.ok(picker.includes("heroPrimary:'Выбрать темы'"))
-  assert.ok(picker.includes("heroPrimary:'Elegir temas'"))
-  assert.ok(picker.includes("heroSecondary:'Browse free tests'"))
-  assert.ok(picker.includes('href="#hh-simple-topic-title"'))
-  assert.ok(picker.includes('href="#hh-simple-recommendations"'))
+test('public finder has four localized working destinations and retains test selection', () => {
+  const tabs = read('components/discovery-section-tabs.tsx')
+  for (const lang of ['en','ru','es']) assert.ok(tabs.includes(lang + ':'))
+  assert.match(picker, /<DiscoverySectionTabs locale=\{locale\} active="tests"/)
+  assert.match(tabs, /"tests", "services", "business", "courses"/)
+  for (const destination of ['client/tests', 'services', 'explore/business', 'academy/free-ai-courses']) assert.ok(tabs.includes(destination))
+  for (const title of ['Tests', 'Services', 'Business', 'Courses', 'Тесты', 'Услуги', 'Бизнес', 'Курсы', 'Pruebas', 'Servicios', 'Negocios', 'Cursos']) assert.ok(tabs.includes(title), title)
   assert.ok(picker.includes('aria-pressed={checked}'))
   assert.ok(picker.includes('onToggleFocus(key)'))
   assert.ok(picker.includes('data-test-start-mode={journeyMode}'))
 })
-
 
 test('the existing two-column mobile topic chooser is untouched by the warm hero', () => {
   assert.ok(picker.includes('const TOPICS = [...HOME_TEST_TOPICS'))
@@ -207,17 +206,21 @@ test('the first mobile step follows the hero immediately, without redundant prom
   const topics = picker.indexOf('id="hh-simple-topic-title"')
   assert.ok(hero > 0 && topics > hero)
   assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo|data-prelogin-google-notice/)
-  assert.ok(picker.includes('!authenticated && <p className={academyStyles.subnote}'))
+  const header = picker.slice(hero, picker.indexOf('    </header>', hero))
+  assert.doesNotMatch(header, /academyStyles\.filters|academyStyles\.suggestions|academyStyles\.subnote|heroQuickPicks/)
+  assert.match(header, /\{authenticated && <div className=\{styles\.accountFinderFilters\}>/)
+  assert.match(header, /role="search"/)
+  assert.equal((header.match(/<DiscoverySectionTabs /g) || []).length, 1)
   assert.ok(picker.includes('c.privacy'))
 })
 
 test('problems search and optional skip use the existing topic-derived concerns', () => {
-  assert.match(picker, /const allProblems = problemsForTopics\(focus\)/)
+  assert.match(picker, /const allProblems = problemsForTopics\(concernFocus\)/)
   assert.match(picker, /problemQuery, setProblemQuery/)
   assert.match(picker, /const matchingProblems = queryText/)
   assert.match(picker, /onToggleProblem\(problem\.key\)/)
   assert.match(picker, /className=\{styles\.problemSearch\}/)
-  assert.match(picker, /disabled=\{!focus\.length\}/)
+  assert.match(picker, /disabled=\{!concernFocus\.length\}/)
   assert.match(picker, /className=\{styles\.skipProblems\}/)
   assert.match(picker, /getElementById\('hh-simple-recommendations'\)/)
 })

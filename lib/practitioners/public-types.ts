@@ -1,3 +1,5 @@
+export type VideoPresentation = {kind:'external';url:string}|{kind:'upload';assetId:string;path:string}
+
 export type PractitionerCredentialPublic = {
   id: string
   title: string
@@ -27,6 +29,8 @@ export type PractitionerPublicProfile = {
   websiteUrl?: string
   socialUrls?: string[]
   photoPath?: string
+  videoPresentation?: VideoPresentation | null
+  videoMaterials?: {title:string;description:string;locale:'en'|'ru'|'es';url:string}[]
 }
 
 export type PublicService = {
@@ -48,6 +52,9 @@ export type PublicService = {
   currency: string
   durationMinutes: number | null
   imagePath: string
+  videoPresentation?: VideoPresentation | null
+  photos?: string[]
+  practitionerPhoto?: string
   goals?: string[]
   methods?: string[]
   benefits?: string[]

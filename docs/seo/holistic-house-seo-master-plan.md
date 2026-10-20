@@ -6,6 +6,63 @@
 
 > **Single source of truth:** этот живой документ хранит согласованные SEO-акценты, стратегию, дорожную карту и проверяемое ТЗ. Issue #306 хранит историю, решения и статус задач; `data/seo-demand-map.json` хранит структурированные ключевые слова с provenance. Датированные старые аудиты — архив на дату, не сегодняшнее состояние. При каждом изменении обновлять документ + манифест + комментарий в #306, не плодить стратегические дубликаты.
 
+## 0. Решение от 18.10.2026 — SEO v3.1: качество поиска → подтверждённый лид → запись
+
+**Статус 18.10.2026:** первый SEO-спринт [PR #992](https://github.com/andylitvinov-design/books/pull/992) **merged и LIVE** (`c834aee16d71c5e83e2ebd049d8aa837ff398ced`, Vercel READY `dpl_DAJ1xJsexeWw3ohP8WdZX3zxRRPF` в проверенном временном окне). Следующий отдельный спринт: исправление старого аудитора, релевантная перелинковка Home → /tests, содержательные объяснения/FAQ и воспроизводимое мобильное QA через GitHub Actions. **Published URL ≠ Google indexed URL**; реальные заявки/оплаты не выдумывать.
+
+### Пересмотр концепции
+
+- **North star:** реальные квалифицированные обращения, подтверждённые заявки на инициацию, записи и оплаты, а не число SEO URL. Анализировать organic non-brand/brand, landing page, language, topic, cohort; сравнивать только проверенные GSC и CRM события. Не приписывать органике незаслуженные конверсии.
+- **Три понятных бесплатных входа:** публичный каталог self-check tests → частный интерфейс прохождения; Free Situation Review (анкета + рисунок «Я — цель — проблема» → письменный разбор, без обещания бесплатного звонка); бесплатная диагностика ресурсов Wu Xing. Платные консультации только по добровольной отдельной заявке.
+- **Курс Reiki:** SEO landing → добровольный Start Course (лид стадии 1 лишь при подтверждённой записи/действии, не при просмотре) → выполнение модулей → письменный запрос на персональную инициацию (лид стадии 2) → подтверждение преподавателем. Tantra free introduction и полный 9-level course имеют отдельные канонические темы и страницы.
+- **Local vs worldwide:** EN/P1 — systemic/business constellations и консультации Toronto/Ontario; EN worldwide — Reiki courses/free introductory sessions; RU/ES — полноценный, не механически дублированный перевод действительных услуг. Не вводить вымышленные адреса, лицензии, отзывы, события или гарантии результата.
+- **Privacy/health:** рекламная аналитика хранит только безопасную техническую атрибуцию и факты получения согласия/регистрации, без ответов тестов, причин обращения, симптомов, рисунков и персональных рекомендаций. Client Cabinet, test explorer/results, приватные документы — noindex/авторизация. Homeopathy — education, без заявлений о лечении заболеваний.
+
+### Карта «интент → URL → микроконверсия → CRM»
+
+| Priority | Intent / topic | Один основной URL / family | Проверяемая конверсия |
+| --- | --- | --- | --- |
+| P0 | free psychological self-checks / бесплатные тесты / tests de autoevaluación | `/{en,ru,es}/tests` → приватный `/{locale}/client/tests` | Открытие каталога → начало теста → сохранение (отдельно, без текста ответов) |
+| P0 | free written situation review | `/{locale}/services/free-situation-review` | Успешно принята заявка и сохранена в CRM, а не только клик |
+| P0 | Toronto constellations / personal and business sessions | существующие опубликованные страницы Services/Andy | Подтверждённый лид и запись |
+| P0 | Tantra Reiki free introduction | `/{locale}/academy/reiki/tantra-reiki/free-initiation` | Заявка на доступ/инициацию после указанного процесса, без обещаний автоматики |
+| P1 | Reiki Yggdrasil, Tantra 9-level, Kundalini, Temple | существующие Academy routes | Start course, завершённый курс, инициатива на персональную инициацию |
+| P1 | free Wu Xing resource profile | `/{locale}/wu-xing` / реально существующая форма | Подтверждённое прохождение/запрос; не передавать персональный профиль в GA4 |
+| P1 | branded trust / about Andrey | `/{locale}/about` / `/` | Переход на услугу и подтверждённая заявка |
+| P2 | quality education/library | существующие страницы, без массовых thin URL | Контекстные переходы на релевантную услугу |
+
+### 90-дневная программа (18.10.2026–15.01.2027)
+
+**Спринт A · 18–25 октября — P0 / crawl и доступность.** Убрать `/en|ru|es/tests` → приватный редирект, создать уникальные indexable публичные страницы с EN/RU/ES контентом и прямым CTA на существующий noindex explorer. Добавить sitemap/hreflang/self-canonical/OG, source regression и browser проверку 320/390/430 px. Перепроверить фактические 200/404, ошибочные редиректы, H1 на /es, untranslated labels, broken media, IA v2, production acceptance и ветку release. Исправлять source bug, не отключать CI.
+
+**Спринт B · 26 октября–8 ноября — P0 / conversion.** Публичные Home, Free Review, личные/бизнес-расстановки, Reiki L1: уникальные value propositions, первое действие в видимой области, ясные ограничения и реальные цены, смысловые текстовые ссылки; никакого дубля «бесплатный звонок». CRM `source/medium/campaign/landing/locale/first-touch/last-touch` с consent gating, dedupe и server-confirmed events `lead_created`, `course_started`, `initiation_requested`, `booking_confirmed`, `payment_confirmed`. Трекать отдельно клик, submit и реально принятый лид; без медицинских/психологических ответов и без искусственной атрибуции.
+
+**Спринт C · 9 ноября–6 декабря — P1 / полезный контент и доверие.** На базе верифицированных поисковых тем обновить 6–8 *оригинальных* образовательных материалов, не генерировать сотни одинаковых страниц: сравнение трёх Reiki-систем, что входит в бесплатную инициацию, безопасная первая практика, личная расстановка, письменная Free Review, осторожное чтение баллов тестов, Toronto FAQ, процесс онлайн-консультации. Каждому материалу — автор, дата/пересмотр, проверяемые источники, внутренние ссылки к одному реальному посадочному URL. Только легитимные упоминания и ссылки партнёров; никаких покупных ссылок или вымышленных отзывов.
+
+**Спринт D · 7 декабря–15 января — P1/P2 / эффективность.** Еженедельные GSC queries/pages/country/device, index coverage/public URLs, duplicate titles, source-verified Lighthouse mobile and CWV when available; каждые 28 дней анализ landing → real lead → service → sale by source. Перенаправлять усилия лишь на проверенные кластеры. Реклама/бюджет отдельно в #323, не запускать без авторизации.
+
+### ТЗ SEO-18 с критериями приёмки
+
+1. **SEO-18-01 Public tests landing (P0, started):** EN/RU/ES `/{locale}/tests` должны возвращать 200, собственные Title/H1/Description, absolute self-canonical и взаимные hreflang; никаких редиректов в `/client/tests`; в sitemap ровно 3 этих публичных URL без query strings; интерактивный `/{locale}/client/tests` остаётся `noindex,follow:false` и закрыт в robots. CTA должен вести в существующий интерактивный каталог, без изменения учётных записей/результатов; mobile 320/390/430 без горизонтального скролла.
+2. **SEO-18-02 Crawling/IA (P0):** для всех публичных URL sitemap HTTP 200 либо объяснённый canonical redirect, H1 (не дублированный), теги, noindex/private, media links; QA — machine-readable report по timestamp/точному deployment SHA. Прогон `npm run verify:seo`, `npm run verify:ia-v2`, `npm run lint`, `npx tsc --noEmit`, `npm run build` и релевантный browser; регрессии не скрывать.
+3. **SEO-18-03 Lead attribution (P0):** безопасные `first_touch`, `last_touch`, `source/medium/campaign`, `landing_path`, `locale`, `consent_status`, `event_id` с дедупликацией и согласованием CRM; переходы и клики не считать оплатами/лидами. Не пересылать чувствительные данные в GA4/Ads; проверка GDPR/PIPEDA/consent и ролей admin.
+4. **SEO-18-04 Service links & trust (P1):** уникальное поле Title/H1, индексируемый смысловой текст на ключевых Services/Academy, понятный путь до действия, фактический автор/подтверждённый опыт, корректный legal scope. JSON-LD только для реального видимого контента.
+5. **SEO-18-05 Analytics (P1):** `/admin/seo` должен указывать дату и провайдера, явно показывать offline/stale, не выводить фиктивные CTR/revenue. На 18.10 прямой доступ GSC Wizard **blocked: subscription_required**; Google ownership не аннулируется этим сообщением. Сервисный аккаунт для real-time админки подключать только в server env с ограниченными правами и отдельно после согласования. Измерения индексации, CTR и дохода не выдумывать.
+6. **SEO-18-06 Release gate:** от актуальной `codex/public-book-library`, проверка чужих активных PR, source/build/browser/public SEO, merge только с зелёным gate; Vercel READY + canonical alias + exact source SHA + live 200/metadata/privacy. При ошибке — не называть Published/Live.
+
+**Факт на 18.10:** GitHub source подтвердил P0 redirect из `next.config.ts` на `/{locale}/client/tests`; privacy explorer задана `robots: { index:false, follow:false }`. PR branch `seo/public-test-discovery-20261018` содержит начатое исправление и source tests. Сам production не изменён, пока PR не принят и не проверен. Google baseline 601 sitemap URL, Google crawl и 1/19 tracked indexed из 17.10 — исторический датированный snapshot, не текущие результаты.
+
+
+### 18 октября — SEO-18-07: дополнительная техническая приёмка и навигация
+
+**Обнаруженный регресс в собственном SEO-контроле:** `scripts/verify-live-sitemap.mjs` ошибочно продолжал требовать 301/308 для `/en/tests → /en/client/tests`, хотя #992 заменил устаревший redirect на публичную indexable EN-страницу. Исправить контракт и добавить `/en/tests`, `/ru/tests`, `/es/tests` в spotlight: HTTP 200, один H1, точный self-canonical, reciprocal `hreflang` EN/RU/ES/x-default, неблокирующий robots, OG/Twitter, реальные CTA, отсутствие личных ответов. Не обходить ошибки — разрешать только каноническую публичную страницу.
+
+**Пользовательская перелинковка:** Home EN/RU/ES должна иметь отдельную текстовую ссылку на `/{locale}/tests` рядом с блоком бесплатного мониторинга, при этом прямой guest-start `/{locale}/client/tests` остаётся без лишнего шага. Не изменять авторизацию, результаты/баллы и внутреннюю конверсионную логику. Публичная страница тестов объясняет 3 реальные темы, ограничения методик, возможность гостевого старта и приватность; текст без медицинских диагнозов и гарантий.
+
+**Экономное независимое mobile/browser QA:** существующий GitHub workflow `hh-live-seo-audit.yml` после production push запускает public-only Chromium 320/390/430 px × EN/RU/ES (9 сценариев), проверяет горизонтальный скролл, H1 ≥28px, вводный текст ≥15px, CTA ≥44px, title/description/canonical/hreflang/noindex и сохраняет PNG+JSON на 14 дней. Никаких логинов, тестовых ответов, писем или платных браузерных сервисов. **Это имитация мобильного Chromium, не физический iPhone и не данные GSC/CrUX.**
+
+**Гейт:** `node --test tests/seo-nightly-crawl.test.mjs tests/public-tests-seo-landing.test.mjs`, `npm run verify:seo`, `npx tsc --noEmit`, `npm run build`, PR CI, READY exact SHA, фактический live JSON/PNG. Если общий CI падает в других одновременно меняющихся модулях — документировать без ослабления проверок. В GSC Wizard на 18.10 `subscription_required`; не пытаться обойти оплату или пере-верифицировать Google.
+
 ## 1. North star и продуктовые воронки
 
 **Цель SEO — подтверждённые обращения и продажи, не количество страниц/позиций.** Английский EN — основное продвижение; RU и ES — полные, честные локализации, каждая со своим каноническим URL. Локальные услуги ориентированы на Toronto/Ontario, дистанционные программы Reiki — Canada/международный англоязычный поиск.

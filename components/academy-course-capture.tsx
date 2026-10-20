@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import { ArrowRight, Check, GraduationCap } from "lucide-react";
 
@@ -17,7 +18,7 @@ const courses: Record<CourseId, { title: string; path: string; image: string }> 
   tantra: {
     title: "Tantra Reiki",
     path: "tantra-reiki",
-    image: "/library/maya-mysteries/media/post-217-1.jpg",
+    image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
   },
   kundalini: {
     title: "Kundalini Reiki",
@@ -141,7 +142,7 @@ export function AcademyCourseCapture({ locale }: { locale: PublicLocale }) {
               key={id}
               onClick={() => setSelected(id)}
             >
-              <span className={styles.photo}><Image src={item.image} alt="" fill sizes="64px" /></span>
+              <span className={styles.photo}><Image src={cardArtworkUrl(item.image)} unoptimized={hasCardArtwork(item.image)} alt="" fill sizes="64px" /></span>
               <span className={styles.choiceCopy}>
                 <strong>{item.title}</strong>
                 <small>{c.descriptions[id]}</small>

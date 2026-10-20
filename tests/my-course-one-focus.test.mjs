@@ -42,7 +42,8 @@ test('route, detailed reading, self monitoring and pause stay reachable but off 
   assert.match(today,/isFinished/)
   assert.match(quest,/const \[selected, setSelected\] = useState\(null\)/)
   assert.match(quest,/setSelected\(null\)/)
-  assert.match(course, /\{stage !== 4 && <footer/)
+  assert.match(course, /\{stage !== 4 && !stressWelcome && !compactBaselineNav && <footer/)
+  assert.match(course, /data-opora-baseline-compact-nav/)
   assert.match(theme,/\.hh-app:has\(\[data-my-course\]\) > \.hh-footer\{display:none!important\}/)
 })
 

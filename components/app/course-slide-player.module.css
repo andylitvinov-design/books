@@ -709,3 +709,309 @@
 .phaseCheckpoints fieldset { min-inline-size:0; min-width:0; width:100%; max-width:100%; box-sizing:border-box; }
 .phaseCheckpoints select { box-sizing:border-box; width:100%; min-width:0; max-width:100%; min-height:44px; white-space:normal; }
 .phaseCheckpoints p { overflow-wrap:anywhere; }
+
+
+/* HH ONE SCREEN COURSE 2026-10-17
+   Mobile-first course card design: one primary action per screen, compact
+   progress, friendly teal surfaces and opt-in secondary explanations.
+   Never use overflow:hidden on the lesson body: dense medical/safety content,
+   zoom and small viewports must remain accessible through inner scrolling. */
+.overlay[data-course-one-screen] {
+  --course-navy:#10394f; --course-cyan:#08b9b7;
+  --course-line:#c8e7e8;
+  background:#e8fafb;
+}
+.overlay[data-course-one-screen] .frame {
+  width:min(100%,700px);
+  background:radial-gradient(circle at 94% 14%,#d0f7f1 0,transparent 27%),
+    linear-gradient(180deg,#f1ffff 0%,#ffffff 54%,#eaf9f9 100%);
+}
+.overlay[data-course-one-screen] .header {
+  border-bottom:1px solid #cfe8ec;
+  background:#f2ffffed!important;
+}
+.overlay[data-course-one-screen] .progressValue {
+  background:linear-gradient(90deg,#13b9b0,#087b9b);
+}
+.overlay[data-course-one-screen] .slideTitle {
+  font-family:system-ui,-apple-system,sans-serif;
+  font-weight:870;letter-spacing:-.045em;
+}
+.overlay[data-course-one-screen] .primary {
+  background:linear-gradient(100deg,#137390,#05b8aa)!important;
+  border:1px solid #078d93!important;
+  border-bottom:5px solid #086779!important;
+  color:#fff!important;
+  border-radius:18px!important;
+  font-size:16px!important;
+  box-shadow:0 7px 14px #086d8221;
+}
+.overlay[data-course-one-screen] .footer {
+  display:flex;flex-direction:column;
+}
+.overlay[data-course-one-screen] .primary {order:1;}
+.overlay[data-course-one-screen] .subactions {order:2;}
+.overlay[data-course-one-screen] .footer>p {order:3;}
+.overlay[data-course-one-screen] .preferenceRow button,
+.overlay[data-course-one-screen] .modeTabs button {
+  background:#fff!important;border:1.5px solid #c5e4e7!important;
+  border-bottom:3px solid #b1d6d9!important;border-radius:14px!important;
+}
+.overlay[data-course-one-screen] .preferenceRow button[aria-pressed=true],
+.overlay[data-course-one-screen] .modeTabs button[aria-pressed=true] {
+  color:#077c86!important;background:#d9f7f3!important;
+  border-color:#0b9daa!important;border-bottom-color:#087f88!important;
+}
+.overlay[data-course-one-screen] .supportDetails {
+  margin:0;padding:0;border:1px solid #d2ebea;
+  border-radius:12px;background:#f5fdfc;
+  font-size:12px;line-height:1.4;color:#507483;
+}
+.overlay[data-course-one-screen] .supportDetails summary {
+  list-style:none;cursor:pointer;display:flex;
+  align-items:center;gap:8px;min-height:35px;
+  padding:7px 12px;font-weight:760;color:#277182;
+}
+.overlay[data-course-one-screen] .supportDetails summary::-webkit-details-marker{display:none}
+.overlay[data-course-one-screen] .supportDetails p {
+  margin:0;padding:7px 12px;line-height:1.5;
+}
+.overlay[data-course-one-screen] .supportDetails[open] {
+  background:#effbf9;
+}
+.overlay[data-course-one-screen] .rewardStage,
+.overlay[data-course-one-screen] .finished {
+  border-radius:22px;
+  align-content:center;
+}
+.overlay[data-course-one-screen] .content:has([data-course-slide-completion]) {
+  background:radial-gradient(circle at 50% 19%,#206b79 0,#0e3446 49%,#0b2734 100%);
+  color:#f3ffff;
+}
+.overlay[data-course-one-screen] .finished h2,
+.overlay[data-course-one-screen] .rewardStage h2 {
+  color:#e9ffff!important;letter-spacing:-.04em;
+}
+.overlay[data-course-one-screen] .rewardStage>p,
+.overlay[data-course-one-screen] .finished>p,
+.overlay[data-course-one-screen] .finished>small {
+  color:#d7eff2;
+}
+.overlay[data-course-one-screen] .rewardKicker{color:#75eadd}
+.overlay[data-course-one-screen] .momentResult{
+  background:#e7faf8;color:#245568;
+}
+.overlay[data-course-one-screen] .rewardStats>div {
+  background:#e3fbfa;color:#087c87;
+}
+.overlay[data-course-one-screen] .xpReward{
+  background:linear-gradient(105deg,#fff6c4,#ffe9a0);color:#a06c25;
+}
+.overlay[data-course-one-screen] .finalTiles span{background:#e5f8f8}
+.overlay[data-course-one-screen] .textAction{color:#91efee!important;}
+@media(max-width:700px){
+  .overlay[data-course-one-screen] .header{
+    min-height:56px;gap:9px;
+    padding:calc(7px + env(safe-area-inset-top)) 13px 7px;
+  }
+  .overlay[data-course-one-screen] .close{
+    width:39px;height:39px;min-width:39px!important;min-height:39px!important;
+  }
+  .overlay[data-course-one-screen] .progressWrap{gap:4px}
+  .overlay[data-course-one-screen] .progressTrack{height:8px}
+  .overlay[data-course-one-screen] .progressWrap small{font-size:11px;line-height:1.2}
+  .overlay[data-course-one-screen] .dayPill{padding:7px 10px;font-size:12px}
+  .overlay[data-course-one-screen] .content,
+  .overlay[data-opora-first-lesson][data-course-one-screen] .content,
+  .overlay[data-opora-module][data-course-one-screen] .content {
+    padding:10px 15px 7px;gap:8px;min-width:0;
+    overflow-y:auto;overflow-x:hidden;
+  }
+  .overlay[data-course-one-screen] .slideIdentity{min-height:26px}
+  .overlay[data-course-one-screen] .identityTag{
+    min-height:27px;padding:5px 9px;font-size:11px;
+  }
+  .overlay[data-course-one-screen] .identityLabel{font-size:11px}
+  .overlay[data-course-one-screen] .slideTitle,
+  .overlay[data-opora-module][data-course-one-screen] .slideTitle {
+    font-size:clamp(21px,5.6vw,28px);line-height:1.12;
+  }
+  .overlay[data-course-one-screen] .prompt {
+    font-size:clamp(15px,4.2vw,18px);line-height:1.34;
+  }
+  .overlay[data-course-one-screen] .instruction {
+    font-size:13px;line-height:1.4;
+  }
+  .overlay[data-course-one-screen] .helper {
+    font-size:11px;line-height:1.36;
+  }
+  .overlay[data-course-one-screen] .content[data-slide-kind] .illustration[data-art=scenic],
+  .overlay[data-course-one-screen] .content[data-slide-kind] .photoMoment,
+  .overlay[data-course-one-screen] .content[data-slide-kind=pace] .illustration {
+    width:100%;height:clamp(110px,23dvh,177px)!important;
+    aspect-ratio:auto!important;min-height:0!important;
+    margin:1px 0!important;border-radius:18px;
+    box-shadow:0 5px 14px #126b8020;
+  }
+  .overlay[data-course-one-screen] .scenicImage{
+    width:100%;height:100%;object-fit:contain;object-position:center;
+  }
+  .overlay[data-course-one-screen] .photoSparkle{
+    width:32px;height:32px;right:8px;top:8px;border-radius:10px;
+  }
+  .overlay[data-course-one-screen] .photoSparkle svg{width:18px;height:18px}
+  .overlay[data-course-one-screen] .preferenceRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .overlay[data-course-one-screen] .preferenceRow button{
+    min-width:0;min-height:43px;padding:7px 4px!important;
+    font-size:clamp(10px,2.9vw,12px)!important;white-space:normal;
+  }
+  .overlay[data-course-one-screen] .feedbackOptions{gap:6px}
+  .overlay[data-course-one-screen] .feedbackOptions button{
+    min-height:43px;padding:9px 11px!important;font-size:13px!important;
+    border-radius:13px!important;line-height:1.3;
+  }
+  .overlay[data-course-one-screen] .numberGrid{gap:5px}
+  .overlay[data-course-one-screen] .numberGrid button{
+    min-height:40px!important;border-radius:11px!important;font-size:14px!important;
+  }
+  .overlay[data-course-one-screen] .noteField textarea{
+    min-height:72px;padding:9px 11px;font-size:14px;
+  }
+  .overlay[data-course-one-screen] .focusName{padding:7px 10px;font-size:12px}
+  .overlay[data-course-one-screen] .quote{
+    font-size:clamp(16px,4.3vw,19px);line-height:1.42;padding:12px 13px;
+  }
+  .overlay[data-course-one-screen] .arrivalExercise{padding:10px;gap:8px}
+  .overlay[data-course-one-screen] .practiceRating{gap:7px;padding:9px}
+  .overlay[data-course-one-screen] .footer,
+  .overlay[data-opora-first-lesson][data-course-one-screen] .footer,
+  .overlay[data-opora-module][data-course-one-screen] .footer{
+    gap:5px;padding:7px 15px calc(6px + env(safe-area-inset-bottom));
+  }
+  .overlay[data-course-one-screen] .primary{
+    width:100%;min-height:49px;font-size:16px!important;
+  }
+  .overlay[data-course-one-screen] .subactions{min-height:24px}
+  .overlay[data-course-one-screen] .back,
+  .overlay[data-course-one-screen] .skip{font-size:11px!important;padding:3px!important}
+  .overlay[data-course-one-screen] .footer>p{
+    font-size:10px;line-height:1.25;margin:0;
+  }
+  /* One-screen welcome: full photo retained without stretching,
+     four choices fit in two rows rather than a tall single column. */
+  .overlay[data-course-one-screen] .content[data-slide-kind=welcome] {
+    padding:0!important;gap:0!important;
+  }
+  .overlay[data-course-one-screen] .welcomeScreen {
+    padding:clamp(117px,20dvh,166px) 14px 8px!important;
+    min-height:100%;
+  }
+  .overlay[data-course-one-screen] .welcomeBackgroundImage{
+    width:100%;height:clamp(117px,20dvh,166px);
+    object-fit:contain;object-position:center top;
+  }
+  .overlay[data-course-one-screen] .welcomeContent{gap:7px}
+  .overlay[data-course-one-screen] .welcomeContent .slideTitle{font-size:clamp(23px,6vw,29px)}
+  .overlay[data-course-one-screen] .welcomePrompt{font-size:13px;line-height:1.35}
+  .overlay[data-course-one-screen] .welcomeChoices{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
+  }
+  .overlay[data-course-one-screen] .welcomeChoices button{
+    min-height:47px;padding:6px 8px!important;gap:5px;
+    font-size:12px!important;line-height:1.2;border-radius:13px!important;
+  }
+  .overlay[data-course-one-screen] .welcomeChoiceIcon{width:27px;height:27px;border-radius:8px}
+  .overlay[data-course-one-screen] .welcomeChoiceIcon svg{width:17px;height:17px}
+  .overlay[data-course-one-screen] .welcomeChoices button>svg:last-child{width:15px;height:15px}
+  .overlay[data-course-one-screen] .welcomeNote{font-size:11px;line-height:1.28}
+  .overlay[data-course-one-screen] .welcomeResponse{font-size:12px;line-height:1.34;padding:7px 9px}
+  .overlay[data-course-one-screen] .finished,
+  .overlay[data-course-one-screen] .rewardStage{min-height:0;gap:9px;padding:7px 0}
+  .overlay[data-course-one-screen] .finished .illustration{
+    height:clamp(90px,17dvh,145px)!important;
+  }
+  .overlay[data-course-one-screen] .rewardMedal{width:88px;height:88px}
+  .overlay[data-course-one-screen] .rewardMedal svg{width:50px;height:50px}
+  .overlay[data-course-one-screen] .rewardStage h2{font-size:clamp(29px,8vw,43px)}
+  .overlay[data-course-one-screen] .rewardStats>div{min-height:65px;padding:6px}
+  .overlay[data-course-one-screen] .finalTiles span{min-height:57px;padding:7px}
+  .overlay[data-course-one-screen] .finished>p{font-size:12px;line-height:1.4}
+}
+@media(max-width:700px) and (max-height:740px){
+  .overlay[data-course-one-screen] .content{gap:6px!important;padding-top:7px}
+  .overlay[data-course-one-screen] .content[data-slide-kind] .illustration[data-art=scenic],
+  .overlay[data-course-one-screen] .content[data-slide-kind] .photoMoment{
+    height:clamp(90px,19dvh,136px)!important;
+  }
+  .overlay[data-course-one-screen] .welcomeScreen{
+    padding-top:clamp(95px,16dvh,126px)!important;
+  }
+  .overlay[data-course-one-screen] .welcomeBackgroundImage{
+    height:clamp(95px,16dvh,126px);
+  }
+  .overlay[data-course-one-screen] .welcomeChoices button{min-height:42px}
+  .overlay[data-course-one-screen] .supportDetails summary{min-height:30px}
+  .overlay[data-course-one-screen] .footer>p{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .overlay[data-course-one-screen] .primary,
+  .overlay[data-course-one-screen] .progressValue{transition:none!important}
+}
+
+
+/* AS-5.0: one actionable, mobile-first screen at a time.
+   Never hide important content or disable scrolling with large text settings. */
+.overlay[data-course-skills-v5="true"] .content{gap:10px;padding:14px clamp(13px,3.5vw,25px) 16px}
+.overlay[data-course-skills-v5="true"] .header{min-height:58px;padding-block:calc(7px + env(safe-area-inset-top)) 7px}
+.overlay[data-course-skills-v5="true"] .footer{padding:9px clamp(13px,3.5vw,25px) calc(9px + env(safe-area-inset-bottom));gap:5px}
+.overlay[data-course-skills-v5="true"] .slideTitle{font-size:clamp(21px,4.6vw,29px);line-height:1.18}
+.overlay[data-course-skills-v5="true"] .instruction,.overlay[data-course-skills-v5="true"] .prompt{font-size:clamp(14px,2.5vw,17px);line-height:1.4}
+.overlay[data-course-skills-v5="true"] .feedbackOptions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.overlay[data-course-skills-v5="true"] .feedbackOptions button{min-height:48px!important;padding:9px 10px!important;font-size:12px!important}
+.overlay[data-course-skills-v5="true"] .timerDetails>summary{min-height:36px;padding:8px 10px}
+.overlay[data-course-skills-v5="true"] .welcomeScreen{padding:clamp(130px,26vh,210px) 15px 12px!important}
+.overlay[data-course-skills-v5="true"] .welcomeBackgroundImage{height:clamp(125px,25vh,200px);object-fit:contain}
+.overlay[data-course-skills-v5="true"] .welcomeContent{gap:7px}
+.overlay[data-course-skills-v5="true"] .welcomeContent .slideTitle{font-size:clamp(22px,5.5vw,30px)}
+.overlay[data-course-skills-v5="true"] .welcomeChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.overlay[data-course-skills-v5="true"] .welcomeChoices button{min-height:53px;padding:7px!important;font-size:12px!important;gap:5px}
+.overlay[data-course-skills-v5="true"] .welcomeChoiceIcon{width:30px;height:30px;border-radius:9px}
+.overlay[data-course-skills-v5="true"] .welcomeChoiceIcon svg{width:16px;height:16px}
+.overlay[data-course-skills-v5="true"] .welcomeNote{font-size:11px}
+.overlay[data-course-skills-v5="true"] .welcomePrompt{font-size:13px}
+.overlay[data-course-skills-v5="true"] .noteField textarea{min-height:86px}
+.overlay[data-course-skills-v5="true"] .practiceRating{padding:10px;gap:8px}
+.skillPracticeCard{display:grid;gap:12px;padding:clamp(14px,3vw,23px);border-radius:19px;border:1px solid #b9e5e1;background:linear-gradient(140deg,#effefb,#f7fcff);box-shadow:0 6px 16px #0d768515}
+.skillStepCount{font-size:11px;letter-spacing:.045em;text-transform:uppercase;color:#067c87;font-weight:800}
+.skillStepText{font-size:clamp(17px,3vw,22px);font-weight:650;color:#164866;line-height:1.48;margin:0;min-height:90px}
+.skillStepActions{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.skillStepActions button{display:inline-flex;gap:6px;align-items:center;justify-content:center;padding:9px 12px!important;border-radius:12px!important;border:1px solid #aad6d9!important;color:#125b78!important;background:#fff!important;font-weight:750!important;min-height:43px}
+.skillStepDone{display:inline-flex;gap:7px;align-items:center;font-size:12px;color:#236b66;line-height:1.35}
+.skillMapDisclosure{border:1px solid #b6e4e2;border-radius:12px;background:#f5fffe;padding:8px 10px;color:#186579;font-size:12px}
+.skillMapDisclosure>summary{display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:780}
+.skillMapDisclosure>summary svg{margin-left:auto}
+.skillMapDisclosure ol{margin:8px 0 4px;padding-left:22px;line-height:1.55}
+@media(max-width:380px){
+ .overlay[data-course-skills-v5="true"] .welcomeScreen{padding-top:clamp(105px,22vh,155px)!important}
+ .overlay[data-course-skills-v5="true"] .welcomeBackgroundImage{height:clamp(105px,21vh,155px)}
+ .overlay[data-course-skills-v5="true"] .welcomeChoices button{min-height:46px!important;font-size:11px!important}
+ .overlay[data-course-skills-v5="true"] .footer>p{font-size:9px}
+ .skillPracticeCard{padding:12px}
+}
+@media(max-height:640px){
+ .overlay[data-course-skills-v5="true"] .welcomeScreen{padding-top:110px!important}
+ .overlay[data-course-skills-v5="true"] .welcomeBackgroundImage{height:110px}
+}
+
+/* One reusable optional owl-assisted hint on the legacy/alternate exercise slides. */
+.animalGuidance{margin:2px 0 4px;min-width:0;border:0;color:#24556a}
+.animalGuidance summary{display:flex;align-items:center;gap:9px;min-height:47px;list-style:none;cursor:pointer}
+.animalGuidance summary::-webkit-details-marker{display:none}
+.animalGuidance summary img{flex:0 0 43px;width:43px;height:43px;object-fit:contain;filter:drop-shadow(0 3px 5px #286c5d22)}
+.animalGuidance summary span{display:flex;align-items:center;min-height:45px;flex:1;min-width:0;padding:10px 12px;border:1px solid #e6d8c7;border-radius:13px;background:#fffbf5;font-weight:720;font-size:13px;box-shadow:0 2px 7px #346b6d14}
+.animalGuidance summary > svg{margin-left:-34px;margin-right:13px;flex:none;pointer-events:none;transition:transform .2s ease}
+.animalGuidance[open] summary > svg{transform:rotate(180deg)}
+.animalGuidance summary:focus-visible{outline:3px solid #0c728c;outline-offset:2px;border-radius:14px}
+.animalGuidance p{margin:5px 0 0;padding:11px 13px;border:1px solid #d0e9e3;border-radius:13px;background:#f2fbf7;font-size:13px;line-height:1.45;color:#335e6c}
+@media(max-width:370px){.animalGuidance summary{gap:6px}.animalGuidance summary img{width:37px;height:37px;flex-basis:37px}.animalGuidance summary span{font-size:12px;padding:9px 10px}}
+@media(prefers-reduced-motion:reduce){.animalGuidance summary > svg{transition:none}}

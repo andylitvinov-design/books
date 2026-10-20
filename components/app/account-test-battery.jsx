@@ -9,7 +9,8 @@ import { MyTestsDashboard } from './my-tests-dashboard'
 import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
-import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
+import { profileCompletionRecommendations } from '@/lib/profile/summary'
+import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { INSIGHTS_TEST_CATEGORIES } from '@/lib/assessments/insights-categories'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
@@ -116,12 +117,20 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const c = COPY[locale] || COPY.en
   const router = useRouter()
   const searchParams = useSearchParams()
+  const requestedProfileCompletion = searchParams.get('profile') === 'missing'
+  const profileCompletion = requestedProfileCompletion
+    ? profileCompletionRecommendations({
+        snapshot: data.snapshot, results: data.results, locale, limit: 5,
+      })
+    : null
   // Old saved deep links continue to reach dynamics in its new Results home.
   const legacyDynamics = searchParams.get('tab') === 'dynamics'
   useEffect(() => {
     if (legacyDynamics) router.replace('/' + locale + '/app/portfolio?tab=dynamics', { scroll: false })
   }, [legacyDynamics, locale, router])
-  const openFromInsights = searchParams.get('explore') === '1'
+  const rayParam = searchParams.get('axis')
+  const portraitAxis = rayParam && rayParam !== 'personality' && TEST_EXPLORER_AXES.includes(rayParam) ? rayParam : null
+  const openFromInsights = searchParams.get('explore') === '1' || Boolean(portraitAxis)
   const fromCourse = searchParams.get('course') === '1'
   const requestedCourseId = searchParams.get('courseId') || null
   const accountId = data.account?.id
@@ -166,14 +175,14 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     let childFrame
     const frame = window.requestAnimationFrame(() => {
       childFrame = window.requestAnimationFrame(() => {
-        document.getElementById('hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        document.getElementById(portraitAxis ? 'hh-test-list' : 'hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
     })
     return () => {
       window.cancelAnimationFrame(frame)
       if (childFrame !== undefined) window.cancelAnimationFrame(childFrame)
     }
-  }, [openFromInsights, insightsCategory])
+  }, [openFromInsights, insightsCategory, portraitAxis])
   const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
   const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
   const [statusFiltersOpen, setStatusFiltersOpen] = useState(Boolean(requestedFilter))
@@ -248,10 +257,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   // A category-scoped invitation starts a fresh *filter view*, never modifies
   // stored selections. Saving uses the existing appendActive flow.
   const categoryFocus = TEST_RECOMMENDATION_FOCUS.some((item) => item.key === insightsCategory) ? [insightsCategory] : []
-  const explorerPreferences = openFromInsights
-    ? { focus: categoryFocus, areas: insightsCategory === 'wu-xing' ? ['wu-xing'] : [] }
-    : selectionPreferences
-  const initialFilterGroup = !openFromInsights || !insightsCategory ? null
+  const explorerPreferences = portraitAxis
+    ? { axes: [portraitAxis], focus: [] }
+    : openFromInsights
+      ? { focus: categoryFocus, areas: insightsCategory === 'wu-xing' ? ['wu-xing'] : [] }
+      : selectionPreferences
+  const initialFilterGroup = portraitAxis ? 'scales' : !openFromInsights || !insightsCategory ? null
     : insightsCategory === 'wu-xing' ? 'areas' : categoryFocus.length ? 'topics' : null
   const priorityLabels = (selectionPreferences.focus || []).map((key) => TEST_RECOMMENDATION_FOCUS.find((item) => item.key === key)?.label?.[locale] || key)
   const axisLabels = (selectionPreferences.axes || []).map((key) => TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key)
@@ -596,10 +607,10 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
           </div>
         </aside>}
-        <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
+        <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', portraitAxis || '', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
           audience="account" onStart={choose} onStartSingle={!fromCourse ? chooseAndStart : null} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
           simpleMode={!fromCourse && !recommendedKey && !openFromInsights} initialBrowseFull={openFromInsights} preserveScaleFilters authenticated
-          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
+          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup} initialAxis={portraitAxis}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
           onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
@@ -608,6 +619,54 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   )
 
   return <>
+    {profileCompletion && <section className={styles.profileCompletion}
+      aria-labelledby="hh-profile-missing-tests-title" data-testid="profile-missing-tests">
+      <header className={styles.profileCompletionHeading}>
+        <p>{locale === 'ru' ? 'МОЙ ПСИХОЛОГИЧЕСКИЙ ПРОФИЛЬ' : 'MY PSYCHOLOGICAL PROFILE'}</p>
+        <h1 id="hh-profile-missing-tests-title">
+          {locale === 'ru' ? 'Ключевые тесты для завершения профиля' : 'Key tests to complete your profile'}
+        </h1>
+        <p>{profileCompletion.verificationRequired
+          ? (locale === 'ru'
+            ? 'Некоторые результаты не подтверждены. Проверьте сохранённые отчёты: автоматически подбирать тесты по непроверенным данным нельзя.'
+            : 'Some saved results could not be verified. Check your existing reports before building a new profile test set.')
+          : profileCompletion.complete
+            ? (locale === 'ru'
+              ? 'Основные области профиля уже измерены. Повторное тестирование не требуется для заполнения пробелов.'
+              : 'Your core profile areas are measured. There are no required tests to fill missing layers.')
+            : (locale === 'ru'
+              ? 'Рекомендации учитывают уже пройденные тесты и отдают приоритет тем, которые добавят недостающие стороны профиля. Повторно проходить завершённые тесты не нужно.'
+              : 'These recommendations exclude completed tests and prioritize missing profile layers. You do not need to repeat completed tests.')}
+        </p>
+      </header>
+      {!profileCompletion.verificationRequired && profileCompletion.recommendations.length > 0 &&
+        <ol className={styles.profileCompletionList}>
+          {profileCompletion.recommendations.map((recommendation, index) => (
+            <li key={recommendation.key} className={styles.profileCompletionItem}>
+              <span className={styles.profileCompletionRank} aria-label={locale === 'ru' ? 'Приоритет ' + (index + 1) : 'Priority ' + (index + 1)}>
+                {index + 1}
+              </span>
+              <div>
+                <h2>{recommendation.item.title[locale] || recommendation.item.title.en}</h2>
+                <p>{recommendation.reason}</p>
+                <small>{recommendation.item.questionCount} {locale === 'ru' ? 'вопросов' : 'questions'} · ~{recommendation.item.durationMinutes} {locale === 'ru' ? 'мин' : 'min'}{recommendation.item.instrumentLocale === 'en' && locale === 'ru' ? ' · EN' : ''}</small>
+              </div>
+              <Link href={`/${locale}/app/monitoring/${encodeURIComponent(recommendation.key)}`}
+                prefetch={false} className={styles.profileCompletionStart}>
+                {locale === 'ru' ? 'Пройти тест' : 'Start test'} <ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ol>}
+      {!profileCompletion.verificationRequired && !profileCompletion.complete &&
+        profileCompletion.recommendations.length === 0 &&
+        <p className={styles.profileCompletionEmpty}>{locale === 'ru'
+          ? 'Пока нет доступных ключевых тестов для оставшихся областей. Можно выбрать другие тесты ниже.'
+          : 'No additional key tests are currently available for these areas. You can explore other tests below.'}</p>}
+      <Link className={styles.profileCompletionBack} href={`/${locale}/app/portfolio`} prefetch={false}>
+        {locale === 'ru' ? '← Вернуться к моим отчётам' : '← Back to my reports'}
+      </Link>
+    </section>}
     <div className={styles.batteryLayout}>
       <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
         <MyTestsDashboard

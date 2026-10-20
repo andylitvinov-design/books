@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, ShoppingBag, Trash2 } from "lucide-react";
 import { formatServiceAmount, publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
 import { restoreServiceCart, SERVICE_CART_STORAGE_KEY } from "@/lib/commerce/cart";
+import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import { createCommerceAccountGuard, commerceIdentityError, verifyCommerceIdentity } from "@/lib/commerce/client-account";
 import styles from "./service-cart.module.css";
 
@@ -20,6 +21,8 @@ const copy = {
     secure: "A secure payment page will open. This is a one-time payment; the session time is agreed personally.", signIn: "Sign in to your account, then reload this page to verify your account before paying.", login: "Open my account", confirmed: "Payment confirmed. We will agree your session time personally.", checking: "Payment confirmation is pending. This page checks the order securely.", held: "This order needs a payment or refund review. Please contact us before booking.", retry: "Check payment status",
     repeatNotice: "An existing paid order already contains these services. Confirm only if you want to buy an additional session, even if the first is awaiting scheduling.", repeatConfirm: "Buy these services again", keepExisting: "Keep my existing order",
     pending: "Opening payment…", error: "Payment is unavailable. Your selection is saved; no payment has been confirmed.",
+    zenRequest: "ZEN.COM · request transfer details",
+    zenNote: "This only asks whether a ZEN EUR transfer can be arranged. It is not a checkout; do not send money before the verified recipient details and amount are confirmed.",
     request: "Ask about availability and payment", requestTitle: "Hello Andrey! I would like to ask about these services:",
     requestEnd: "Please confirm the time and payment arrangements.",
     requestNote: "WhatsApp opens a prepared enquiry. Nothing is sent until you press Send.",
@@ -37,6 +40,8 @@ const copy = {
     secure: "Откроется защищённая страница разовой оплаты. Время сессии согласуем лично.", signIn: "Войдите в личный кабинет, затем обновите эту страницу для проверки аккаунта перед оплатой.", login: "Открыть личный кабинет", confirmed: "Оплата подтверждена. Время сессии согласуем лично.", checking: "Ожидаем подтверждения оплаты. Статус заказа проверяется на сервере.", held: "Заказ требует проверки оплаты или возврата. Свяжитесь с нами до записи.", retry: "Проверить оплату",
     repeatNotice: "Эти услуги уже есть в оплаченном заказе. Подтвердите только если хотите купить дополнительную сессию, даже если первая ещё ожидает записи.", repeatConfirm: "Купить эти услуги ещё раз", keepExisting: "Оставить существующий заказ",
     pending: "Открываем оплату…", error: "Оплата недоступна. Ваш выбор сохранён; оплата не подтверждена.",
+    zenRequest: "ZEN.COM · запросить перевод",
+    zenNote: "Это запрос доступности перевода в EUR, а не платёж. Не отправляйте деньги до подтверждения получателя, суммы и реквизитов.",
     request: "Уточнить время и оплату", requestTitle: "Здравствуйте, Андрей! Меня интересуют услуги:",
     requestEnd: "Подскажите доступное время и порядок оплаты.",
     requestNote: "WhatsApp откроет подготовленный запрос. Сообщение отправится, только когда вы нажмёте «Отправить».",
@@ -54,6 +59,8 @@ const copy = {
     secure: "Se abrirá una página de pago seguro. Es un pago único; acordaremos el horario personalmente.", signIn: "Inicia sesión y recarga esta página para verificar tu cuenta antes de pagar.", login: "Abrir mi cuenta", confirmed: "Pago confirmado. Acordaremos personalmente el horario de la sesión.", checking: "Esperando la confirmación del pago. Comprobamos el pedido en el servidor.", held: "Este pedido necesita una revisión del pago o reembolso. Contacta con nosotros antes de reservar.", retry: "Comprobar el pago",
     repeatNotice: "Ya existe un pedido pagado con estos servicios. Confirma solo si quieres comprar otra sesión, aunque la primera siga pendiente de horario.", repeatConfirm: "Comprar estos servicios otra vez", keepExisting: "Conservar mi pedido actual",
     pending: "Abriendo el pago…", error: "El pago no está disponible. Tu selección se conserva; no se ha confirmado ningún pago.",
+    zenRequest: "ZEN.COM · solicitar transferencia",
+    zenNote: "Solo es una consulta para una posible transferencia en EUR, no un pago. No envíes dinero antes de confirmar el destinatario y el importe.",
     request: "Consultar disponibilidad y pago", requestTitle: "¡Hola, Andrey! Me interesan estos servicios:",
     requestEnd: "Por favor, confirma el horario y la forma de pago.",
     requestNote: "WhatsApp abre una consulta preparada. No se envía nada hasta que pulses Enviar.",
@@ -69,6 +76,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
   const [available, setAvailable] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<"zen" | "stripe" | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [signInRequired, setSignInRequired] = useState(false);
@@ -81,7 +89,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
   const [accountId, setAccountId] = useState<string | null>(null);
   const invalidateAccount = useCallback(() => {
     accountGuard.current.invalidate();
-    setAccountId(null); setAvailable(false); setOrderId(null); setOrderStatus("");
+    setAccountId(null); setPaymentProvider(null); setAvailable(false); setOrderId(null); setOrderStatus("");
     setPending(false); setError(""); setSignInRequired(true); setRepeatOrderId(null);
     operationId.current = null; inFlight.current = false;
   }, []);
@@ -90,8 +98,11 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     const guard = accountGuard.current;
     const generation = guard.mount();
     let mounted = true;
-    try { setSelected(restoreServiceCart(window.sessionStorage.getItem(SERVICE_CART_STORAGE_KEY))); }
+    let restoredItems: string[] = [];
+    try { restoredItems = restoreServiceCart(window.sessionStorage.getItem(SERVICE_CART_STORAGE_KEY)); }
     catch { /* Storage can be disabled; the cart still works in this page. */ }
+    const requestedService = new URLSearchParams(window.location.search).get("service");
+    setSelected(requestedService && products.some((product) => product.id === requestedService) ? [requestedService] : restoredItems);
     setRestored(true);
     const abort = new AbortController();
     fetch("/api/app/commerce/status", { credentials: "same-origin", cache: "no-store", signal: abort.signal })
@@ -104,6 +115,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
         if (status.accountId && guard.bindInitial(status.accountId, generation)) {
           setAccountId(status.accountId);
           setAvailable(status.available === true);
+          setPaymentProvider(status.provider === "zen" || status.provider === "stripe" ? status.provider : null);
         }
       }).catch(() => {});
     const returnedId = new URLSearchParams(window.location.search).get("serviceOrder");
@@ -141,7 +153,10 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     async function check() {
       try {
         if (!guard.current(ticket)) return;
-        const response = await fetch(`/api/app/commerce/orders/${encodeURIComponent(orderId!)}`, {
+        const zen = paymentProvider === "zen";
+        const route = `/api/app/commerce/orders/${encodeURIComponent(orderId!)}`;
+        const response = await fetch(zen ? route + "/refresh" : route, {
+          method: zen ? "POST" : "GET",
           credentials: "same-origin", cache: "no-store", signal: abort.signal,
           headers: { "X-HH-Account-ID": ticket!.accountId },
         });
@@ -159,7 +174,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
         if (order.status === "paid") {
           const paidIds = new Set((order.items || []).map((item: { serviceId: string }) => item.serviceId));
           setSelected((current) => current.filter((value) => !paidIds.has(value)));
-        } else if (["pending", "open", "processing"].includes(order.status)) timer = setTimeout(check, 5000);
+        } else if (["pending", "open", "processing"].includes(order.status)) timer = setTimeout(check, paymentProvider === "zen" ? 12000 : 5000);
       } catch (error) {
         if (cancelled) return;
         if (error instanceof Error && error.message === "ACCOUNT_CHANGED") { invalidateAccount(); return; }
@@ -168,12 +183,13 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     }
     check();
     return () => { cancelled = true; clearTimeout(timer); abort.abort(); };
-  }, [orderId, accountId, repeatOrderId, t.error, invalidateAccount]);
+  }, [orderId, accountId, repeatOrderId, paymentProvider, t.error, invalidateAccount]);
 
   const chosen = products.filter((product) => selected.includes(product.id));
   const total = chosen.reduce((value, product) => value + product.amountMinor, 0);
   const enquiry = [t.requestTitle, ...chosen.map((product) => `${product.title} · ${product.durationMinutes} ${t.minute} · ${formatServiceAmount(product.amountMinor, locale)}`), t.requestEnd].join("\n");
   const requestUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(enquiry);
+  const zenRequestUrl = buildZenTransferInquiry(chosen.map((product) => product.id), locale);
 
   function changeSelection(productId: string, add: boolean) {
     if (inFlight.current) return;
@@ -218,7 +234,10 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
       }
       if (result.redirectUrl) {
         const url = new URL(result.redirectUrl);
-        if (url.protocol !== "https:" || url.hostname !== "checkout.stripe.com" || url.username || url.password || url.port) throw new Error("invalid-redirect");
+        const allowedHost = paymentProvider === "zen"
+          ? ["secure.zen.com", "secure.zen-test.com"].includes(url.hostname)
+          : url.hostname === "checkout.stripe.com";
+        if (url.protocol !== "https:" || !allowedHost || url.username || url.password || url.port) throw new Error("invalid-redirect");
         if (guard.current(ticket)) window.location.assign(url.href);
       }
     } catch (error) {
@@ -258,7 +277,10 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
             </li>)}</ul>
             <p className={styles.total}><span>{t.total}</span><strong>{formatServiceAmount(total, locale)}</strong></p>
             <p className={styles.notice} id={`${id}-payment-note`}>{available ? t.secure : t.unavailable}</p>
-            <button type="button" className={styles.pay} disabled={!available || pending || Boolean(repeatOrderId)} onClick={() => checkout()} aria-describedby={`${id}-payment-note`}>{pending ? t.pending : t.pay}</button>
+            <button type="button" className={styles.pay} disabled={!available || pending || Boolean(repeatOrderId)} onClick={() => checkout()} aria-describedby={`${id}-payment-note`}>{pending ? t.pending : paymentProvider === "zen" ? `${t.pay} · ZEN.COM` : t.pay}</button>
+            {zenRequestUrl ? <a className={styles.request} href={zenRequestUrl} target="_blank"
+              rel="noopener noreferrer" data-zen-transfer-inquiry="service-cart">{t.zenRequest}</a> : null}
+            {zenRequestUrl ? <p className={styles.fine}>{t.zenNote}</p> : null}
             <a className={styles.request} href={requestUrl} target="_blank" rel="noopener noreferrer">{t.request}</a>
             <p className={styles.fine}>{t.requestNote}</p>
           </> : <p className={styles.empty} role="status">{t.empty}</p>}

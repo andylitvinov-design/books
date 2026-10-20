@@ -34,7 +34,7 @@ export default async function ClientPrescriptionPage({ params, searchParams }) {
     : null
   const viewer = record.kind === 'payment'
     ? <PaymentDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} />
-    : <PrescriptionDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} />
+    : <PrescriptionDocument document={document} locale={locale} selector={selector} autoPrint={print === '1'} cabinetAction={cabinetAction} narration={print === '1' ? null : {scope:'legacy-document',selector}} />
   // Print is an already-authorized, explicit action from the document toolbar.
   if (print === '1') return viewer
   return (

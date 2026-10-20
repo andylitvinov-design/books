@@ -6,12 +6,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
-import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
 import { GuestScaleInterpretation } from '@/components/app/guest-scale-interpretation'
 import guestActions from './guest-result-actions.module.css'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
+import { TestRatingCard } from '@/components/app/test-rating-card'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
@@ -321,8 +321,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [planResults, setPlanResults] = useState([])
   const initialLaunchRef = useRef(null)
   const [sessionExpires, setSessionExpires] = useState(null)
-  const [pendingMood, setPendingMood] = useState(null)
-  const [latestGuestMood, setLatestGuestMood] = useState(null)
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState('')
   const [error, setError] = useState('')
@@ -403,7 +401,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       .then(async (bootstrap) => {
         if (!live || runLifetime.current !== epoch) return
         setSessionExpires(bootstrap.expiresAt)
-        setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
         const plan = planId
           ? await guestFetch('guest/test-plans/' + encodeURIComponent(planId))
           : bootstrap.activeTestPlan
@@ -511,40 +508,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function handleGuestMoodChange(payload) {
-    setPendingMood(payload)
-    try {
-      const saved = await guestFetch('guest/mood', {
-        ...payload,
-        timezone: localZone(),
-        sourceSurface: 'cabinet_landing',
-      })
-      setLatestGuestMood(saved)
-      setPendingMood(null)
-      return saved
-    } catch (e) {
-      if (e.status === 401 || e.code === 'GUEST_SESSION_REQUIRED') return null
-      setError(c.error)
-      return null
-    }
-  }
-
-  async function persistGuestMood(payload = pendingMood) {
-    if (!payload) return null
-    try {
-      const saved = await guestFetch('guest/mood', {
-        ...payload,
-        timezone: localZone(),
-        sourceSurface: 'cabinet_landing',
-      })
-      setLatestGuestMood(saved)
-      setPendingMood(null)
-      return saved
-    } catch {
-      return null
-    }
-  }
-
   async function startRun(def, owningPlanId = null) {
     const epoch = runLifetime.current
     const created = await guestFetch('guest/runs', {
@@ -592,7 +555,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function begin(id, moodPayload = pendingMood, pinnedDefinition = null) {
+  async function begin(id, pinnedDefinition = null) {
     const def = pinnedDefinition || definitionFor(id, locale)
     if (!def) {
       setError(c.error)
@@ -614,8 +577,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       const bootstrap = await bootstrapForStartedTest()
       if (runLifetime.current !== epoch) return
       setSessionExpires(bootstrap.expiresAt)
-      setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
-      if (moodPayload) await persistGuestMood(moodPayload)
       if (runLifetime.current !== epoch) return
       const currentPlan = pinnedDefinition && activePlan?.status === 'active' && activePlan.definitionIds?.[activePlan.currentIndex] === def.id ? activePlan : null
       const existing = bootstrap.runs.find((item) => item.definitionId === def.id)
@@ -659,7 +620,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
     if (definitions.length === 1) {
       setActivePlan(null)
-      return begin(definitions[0].key, null)
+      return begin(definitions[0].key)
     }
 
     const epoch = ++runLifetime.current
@@ -1017,7 +978,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     try { definition = getDefinitionById(activePlan.definitionIds[activePlan.currentIndex]) } catch { setError(c.error); return }
     if (!definition) { setError(c.error); return }
     replaceGuestRoute({planId: activePlan.id})
-    await begin(definition.key, null, definition)
+    await begin(definition.key, definition)
   }
 
   return (
@@ -1039,19 +1000,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       </section>
       )}
 
-      <MoodCheckIn
-        locale={locale}
-        latestMood={latestGuestMood}
-        onMoodChange={handleGuestMoodChange}
-        onDismiss={(payload) => {
-          if (pendingMood?.operationId === payload.operationId) setPendingMood(null)
-        }}
-        onQuickCheckin={(payload) => {
-          setPendingMood(payload)
-          begin('state', payload)
-        }}
-        disabled={busy}
-      />
 
       {phase !== 'catalog' && <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
         {phase === 'questions' && definition ? (
@@ -1217,6 +1165,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             </header>
 
             <GuestScaleInterpretation result={guestResult} locale={locale} />
+            <TestRatingCard locale={locale} definitionKey={guestResult.definitionKey} guest />
             <section className={guestActions.capture} data-guest-analysis-gate aria-label={locale === 'ru' ? 'Бесплатные пояснения к тесту' : 'Free test explanations'}>
               <p className={guestActions.kicker}>{locale === 'ru' ? 'БЕСПЛАТНО · ЧЕРЕЗ GOOGLE' : 'FREE · WITH GOOGLE'}</p>
               <h4 className={guestActions.heading}>{locale === 'ru' ? 'Что означают ваши результаты?' : 'What do your scores mean?'}</h4>

@@ -32,11 +32,12 @@ const WORDS = {
     free: 'БЕСПЛАТНО',
     reportsTitle: 'Мои отчёты',
     reportsIntro: 'Ваши персональные разборы и документы от Andy.',
+    reportsIntroCompact: 'Отчёты от Андрея.',
     private: 'ЛИЧНОЕ',
     empty: 'Отчётов пока нет',
     emptyGoogle: 'Когда Андрей поделится личным отчётом, откройте приватную ссылку и сохраните его здесь. Начать также можно с консультации или бесплатного письменного разбора.',
     emptyLegacy: 'Когда Andy поделится отчётом, он появится здесь.',
-    emptyCompact: 'Когда Андрей поделится отчётом, откройте ссылку и сохраните его здесь.',
+    emptyCompact: 'Откройте ссылку на отчёт Андрея и сохраните его здесь.',
     report: 'Персональный отчёт',
     open: 'Открыть',
     download: 'Скачать PDF',
@@ -75,11 +76,12 @@ const WORDS = {
     free: 'FREE',
     reportsTitle: 'My reports',
     reportsIntro: 'Personal reflections and documents Andy has shared with you.',
+    reportsIntroCompact: 'Reports from Andrey.',
     private: 'PRIVATE',
     empty: 'No reports yet',
     emptyGoogle: 'When Andrey shares a private report, open its link and save it here. You can also start with a consultation or a free written review.',
     emptyLegacy: 'When Andy shares a report with you, it will appear here.',
-    emptyCompact: 'When Andrey shares a private report, open its link and save it here.',
+    emptyCompact: 'Open a report link from Andrey to save it here.',
     report: 'Personal report',
     open: 'Open report',
     download: 'Download PDF',
@@ -196,7 +198,7 @@ export function PersonalAnalysisReportList({ locale = 'en', reports = [], select
       : ''
   }
   return <section className="hh-analysis-reports" aria-labelledby="hh-analysis-reports-title">
-    <div className="hh-analysis-reports-head"><span className="hh-analysis-reports-pin"><Pin size={19} aria-hidden="true" /></span><div><h2 id="hh-analysis-reports-title">{t.reportsTitle}</h2><p>{t.reportsIntro}</p></div><span className="hh-analysis-reports-count">{items.length || t.private}</span></div>
+    <div className="hh-analysis-reports-head"><span className="hh-analysis-reports-pin"><Pin size={19} aria-hidden="true" /></span><div><h2 id="hh-analysis-reports-title">{t.reportsTitle}</h2><p>{compact ? t.reportsIntroCompact : t.reportsIntro}</p></div><span className="hh-analysis-reports-count">{items.length || t.private}</span></div>
     {items.length ? <div className="hh-analysis-report-list">{items.map(item => {
       const unavailable = item.available === false || item.legacy === true
       const href = selector

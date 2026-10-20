@@ -31,7 +31,7 @@ test("three free paths and two personal cards retain all core service detail pag
   assert.match(services, /<ServicesSolutions locale=/);
   for(const slug of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + slug + '"'));
-  for(const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"])
+  for(const slug of ["alchemy-of-soul","imagery-therapy","systemic-constellations"])
     assert.ok(ui.includes('href:"' + slug + '"') || ui.includes('href: "' + slug + '"'));
   const freePaths = read("components/free-insights-paths.tsx");
   assert.match(freePaths, /free-situation-review/);
@@ -53,8 +53,11 @@ test("free diagnostic renders scope and safety in its steps and FAQ without a du
     "не медицинский или психиатрический диагноз или назначение лечения",
     "sin diagnósticos médicos o psiquiátricos ni recetas",
   ]) assert.ok(s.includes(phrase), phrase);
-  assert.match(s, /<p>\{t\.paidLead\}<\/p>/);
-  assert.match(s, /the free written review does not require a session/);
+  assert.match(s, /className=\{styles\.finalCapture\} id="personal-consultation"/);
+  assert.match(s, /className=\{styles\.finalRequest\} id="request-free-review"/);
+  assert.match(s, /<FreeReviewQuickRequest locale=\{locale\} \/>/);
+  assert.match(s, /This is optional, never a requirement for your free written review/);
+  assert.ok(s.indexOf('id="personal-consultation"') > s.indexOf("className={styles.details}"));
   assert.doesNotMatch(s, /className=\{styles\.scope\}/);
   const css = read("app/[locale]/services/free-situation-review/review.module.css");
   assert.match(css, /\.steps\{grid-template-columns:1fr/);

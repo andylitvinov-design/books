@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { buildAssessmentResultReport } from '../../lib/assessments/result-report.js'
+import { gaugeModel } from '../../lib/assessments/dashboard-gauges.js'
 import { interpretationBandModel } from '../../lib/assessments/interpretation-registry.js'
 
 const normalized = value => String(value ?? '').replace(/\s+/g, ' ').trim()
@@ -23,11 +24,35 @@ function assertScoredGaugeSnapshot(actual, result, section, locale, account = fa
   assert.equal(actual.progressCount, 0, 'Scores must not be presented as progress or health percentages')
   const model = interpretationBandModel(result, dimension, locale)
   assert.notEqual(model.basis, 'unavailable', 'Scale verifier requires exact source-scored provenance')
+  const answerBands = account ? model.answerBands || [] : []
+  assert.equal(actual.answerScale, answerBands.length ? 'source-responses' : undefined,
+    'Original response anchors remain separate from published screening intervals and guest scores')
+  assert.equal(actual.answerSegments.length, answerBands.length, 'Exact original response-anchor sector count')
+  for (const [index, band] of answerBands.entries()) {
+    const segment = actual.answerSegments[index]
+    assert.equal(segment.code, band.code, 'Exact ordered original response anchor')
+    assert.equal(segment.width, band.code === model.currentAnswerBand?.code ? '16' : '12', 'Only the closest original response is emphasized')
+    const direction = dimension.dimensionClass === 'trait' || dimension.direction === 'non-normative'
+      ? 'neutral' : model.presentationDirection
+    const orient = value => direction === 'difficulty' ? 1 - value : value
+    const start = orient((band.from - section.min) / (section.max - section.min))
+    const end = orient((band.to - section.min) / (section.max - section.min))
+    const coordinate = fraction => [100 + 78 * Math.cos(Math.PI * (1 - fraction)), 98 - 78 * Math.sin(Math.PI * (1 - fraction))]
+    const expected = [...coordinate(Math.min(start, end)), ...coordinate(Math.max(start, end))]
+    const tokens = typeof segment.path === 'string' ? segment.path.trim().split(/\s+/) : []
+    assert.equal(tokens.length, 11, 'One move and one arc per response anchor')
+    assert.deepEqual([tokens[0], tokens[3], ...tokens.slice(4, 9)], ['M', 'A', '78', '78', '0', '0', '1'])
+    for (const [coordinateIndex, tokenIndex] of [1, 2, 9, 10].entries()) {
+      assert.match(tokens[tokenIndex], /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/)
+      assert.ok(Number.isFinite(Number(tokens[tokenIndex])) && Math.abs(Number(tokens[tokenIndex]) - expected[coordinateIndex]) < 1e-6,
+        'Exact source-derived response-anchor geometry: ' + band.code)
+    }
+  }
   const expectedIntervals = model.bands.map(band => ({
     text: normalized(`${numeral(band.from, locale)}–${numeral(band.to, locale)} ${band.label}${band.code === model.currentBand?.code ? ru ? ' · Ваш диапазон' : ' · Your range' : ''}`),
     current: band.code === model.currentBand?.code, markedCurrent: band.code === model.currentBand?.code,
   }))
-  assert.deepEqual(actual.intervals, expectedIntervals, 'Exact published endpoints, labels and current range; none on continuous scales')
+  assert.deepEqual(actual.intervals, account ? [] : expectedIntervals, 'Exact published endpoints, labels and current range; none on continuous scales')
   if (dimension.key === 'symptoms.asrs6.shaded_count') {
     assert.equal(dimension.displayKind, 'screening-count')
     assert.equal(dimension.min, 0); assert.equal(dimension.max, 6)
@@ -42,7 +67,7 @@ function assertScoredGaugeSnapshot(actual, result, section, locale, account = fa
     assert.equal(normalized(actual.caption), dimension.value >= 4
       ? ru ? 'На уровне или выше скринингового порога (4)' : 'At or above screening threshold (4)'
       : ru ? 'Ниже скринингового порога (4)' : 'Below screening threshold (4)')
-    assert.equal(normalized(actual.caution), ru ? 'Скрининг, не диагноз и не шкала тяжести' : 'Screening, not a diagnosis or severity scale')
+    assert.equal(normalized(actual.caution), account ? '' : ru ? 'Скрининг, не диагноз и не шкала тяжести' : 'Screening, not a diagnosis or severity scale')
   } else {
     const kind = dimension.dimensionClass === 'trait' || dimension.direction === 'non-normative' ? 'neutral'
       : model.presentationDirection
@@ -87,7 +112,7 @@ function assertScoredGaugeSnapshot(actual, result, section, locale, account = fa
       }
     }
     assert.equal(normalized(actual.caption), displayedCaption)
-    assert.equal(normalized(actual.caution), caution)
+    assert.equal(normalized(actual.caution), account ? '' : caution)
     const left = kind === 'difficulty' ? section.max : section.min
     const right = kind === 'difficulty' ? section.min : section.max
     assert.equal(normalized(actual.endpoints), numeral(left, locale) + numeral(right, locale), 'Both exact axis endpoints')
@@ -144,8 +169,41 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     assert.equal(actual.activeCount, 1, 'Only one selected account panel is rendered')
     assert.deepEqual(actual.pressedKeys, [section.key], 'The selected scale alone is pressed and reachable')
     assert.equal(actual.rootGaugeCount, 1, 'The account report renders only its selected instrument gauge')
-    assert.equal(normalized(actual.title), normalized(section.construct || section.title))
+    const phqTitle = result.definitionKey === 'phq-4' ? { 'symptoms.phq4.total': ru ? 'Общий результат' : 'Overall', 'symptoms.phq4.depression': ru ? 'Настроение' : 'Mood', 'symptoms.phq4.anxiety': ru ? 'Тревога' : 'Anxiety' }[section.key] : null
+    assert.equal(normalized(actual.title), normalized(phqTitle || section.construct || section.title))
     assertScoredGaugeSnapshot(actual, result, section, locale, true)
+    const dimension = result.dimensions.find(item => item.key === section.key)
+    const model = interpretationBandModel(result, dimension, locale)
+    const reading = gaugeModel(dimension, result, locale)?.rangeReading
+    assert.deepEqual(actual.publishedBands, reading ? reading.rows.map(band => ({
+      range: band.displayRange, label: band.label, current: band.current,
+    })) : model.bands.map(band => ({range: `${band.from}–${band.to}`,label: band.label,current: band.code === model.currentBand?.code})), 'Exact source-aware range rows and current selection')
+    if (reading) {
+      assert.equal(normalized(actual.rangeHeading), normalized(reading.heading))
+      assert.equal(normalized(actual.rangeNarrative), normalized(reading.narrative))
+      assert.deepEqual(actual.rangeDetails, reading.rows.length > 1 ? reading.rows.map(row => ({code:row.code,heading:row.displayRange+' — '+row.label,note:row.note,current:row.current})) : [], 'Exact complete explanation of every source-aware interval')
+      for (const text of [reading.narrative, reading.caution, ...reading.rows.map(row => row.note)]) assert.ok(normalized(actual.text).includes(normalized(text)), 'Every range explanation remains available')
+    }
+    const anchor = reading ? null : model.currentAnswerBand
+    assert.equal(actual.answerReadingCount, anchor ? 1 : 0)
+    assert.equal(actual.answerRangesCount, anchor ? 1 : 0)
+    assert.deepEqual(actual.answerRanges, (anchor ? model.answerBands : []).map((band, index) => ({
+      level: String(index + 1), range: band.displayRange,
+      levelLabel: band.levelLabel || band.label, label: band.label, note: band.note,
+      current: band.code === anchor.code, markedCurrent: band.code === anchor.code,
+      marker: band.code === anchor.code ? ru ? 'Ваш диапазон' : 'Your range' : '',
+    })), 'Exact ordered response levels, original ranges, labels, narratives and single current range')
+    if (anchor) {
+      assert.equal(normalized(actual.answerReadingLabel), ru ? 'Что означает ваш результат' : 'What your result means')
+      assert.equal(normalized(actual.answerReadingTitle), normalized((anchor.levelLabel ? anchor.levelLabel + ' · ' : '') + anchor.label),
+        'Exact source-bound descriptive level and original response label')
+      assert.equal(normalized(actual.answerRangesHeading), ru ? 'Пять описательных диапазонов' : 'Five descriptive response ranges')
+      assert.ok(normalized(actual.answerReading).includes(normalized(actual.answerReadingTitle)), 'The selected response title remains in its visible interpretation')
+      assert.ok(normalized(actual.answerReading).includes(normalized(anchor.note)), 'Source-bound response interpretation remains available')
+      assert.equal(normalized(actual.answerCaveat), ru
+        ? 'Диапазоны показывают, к какому исходному варианту ответа ближе средний балл. Это ориентир для самонаблюдения, не медицинские нормы и не оценка «хорошо/плохо».'
+        : 'These ranges show which original answer option is closest to your average. They guide self-reflection, not clinical norms or a pass/fail judgement.')
+    }
     assert.ok(normalized(actual.text).includes(`${ru ? 'Баллы' : 'Score'}: ${section.value} · ${ru ? 'шкала' : 'range'} ${section.min}–${section.max}`), 'Exact account score and complete range')
     for (const text of [section.band, section.meaning, section.followUp, ...(section.steps || []), ...(section.limitations || [])].filter(Boolean))
       assert.ok(normalized(actual.text).includes(normalized(text)), 'Exact account explanation/advice: ' + section.key)
@@ -179,6 +237,24 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
     await expect(card).toHaveCount(1)
     await expect(card).toBeVisible()
     await expect(card).toHaveAttribute('data-active-scale', section.key)
+    const dimension = result.dimensions.find(item => item.key === section.key)
+    const reading = gaugeModel(dimension, result, locale)?.rangeReading
+    const anchor = reading ? null : interpretationBandModel(result, dimension, locale).currentAnswerBand
+    if (reading) {
+      await expect(card.locator('[data-assessment-range-report]')).toBeVisible()
+      await expect(card.locator('[data-range-characterization]')).toBeVisible()
+      await expect(card.locator('[data-all-score-ranges] > li')).toHaveCount(reading.rows.length)
+      for (const row of await card.locator('[data-all-score-ranges] > li').all()) await expect(row).toBeVisible()
+      await expect(card.locator('[data-range-evidence-status]')).toBeVisible()
+    }
+    if (anchor) {
+      await expect(card.locator('[data-answer-interpretation]')).toBeVisible()
+      await expect(card.locator('[data-answer-ranges]')).toBeVisible()
+      await expect(card.locator('[data-answer-ranges] > p')).toBeVisible()
+      await expect(card.locator('[data-answer-interpretation] > p').nth(1)).toBeVisible()
+      await expect(card.locator('[data-answer-ranges] > h4')).toBeVisible()
+      for (const range of await card.locator('[data-answer-ranges] li').all()) await expect(range).toBeVisible()
+    }
     for (const detail of await card.locator('details').all())
       if (await detail.getAttribute('open') === null) await detail.locator(':scope > summary').click()
     const methodology = root.locator('[data-assessment-methodology]')
@@ -207,12 +283,38 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
         activeCount: root.querySelectorAll('[data-active-scale]').length,
         pressedKeys: [...root.querySelectorAll('[data-assessment-scale-trigger][aria-pressed="true"]')].map(node => node.getAttribute('data-assessment-scale-trigger')),
         rootGaugeCount: root.querySelectorAll('[data-assessment-gauge]').length,
+        rangeHeading: element.querySelector('[data-assessment-range-report] > h4')?.textContent,
+        rangeNarrative: element.querySelector('[data-range-characterization]')?.textContent,
+        rangeDetails: [...element.querySelectorAll('[data-score-range-description]')].map(node => ({code:node.getAttribute('data-score-range-description'),heading:node.querySelector('strong')?.textContent,note:node.querySelector('p')?.textContent,current:node.hasAttribute('data-selected-score-description')})),
+        publishedBands: [...element.querySelectorAll('[data-all-score-ranges] > li, [data-score-band-strip] > span')].map(node => ({
+          range: node.querySelector('b')?.textContent,
+          label: node.querySelector(':scope > span')?.textContent.trim() || [...node.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').replace(/ · (?:ваш|yours)$/, '').trim(),
+          current: node.getAttribute('aria-current') === 'true',
+        })),
         primaryCount: element.querySelectorAll('[data-primary-support]').length,
         primaryText: element.querySelector('[data-primary-support]')?.textContent,
         sources: [...root.querySelectorAll('[data-assessment-methodology] a[href]')].map(node => node.getAttribute('href')),
+        answerReadingCount: element.querySelectorAll('[data-answer-interpretation]').length,
+        answerRangesCount: element.querySelectorAll('[data-answer-ranges]').length,
+        answerReading: element.querySelector('[data-answer-interpretation]')?.textContent,
+        answerReadingLabel: element.querySelector('[data-answer-interpretation] > p:first-of-type')?.textContent,
+        answerReadingTitle: element.querySelector('[data-answer-interpretation] > p:nth-of-type(2)')?.textContent,
+        answerRangesHeading: element.querySelector('[data-answer-ranges] > h4')?.textContent,
+        answerCaveat: element.querySelector('[data-answer-ranges] > p')?.textContent,
+        answerRanges: [...element.querySelectorAll('[data-answer-ranges] li')].map(node => ({
+          level: node.getAttribute('data-answer-level'),
+          range: node.querySelector('strong')?.textContent,
+          levelLabel: node.querySelector('b')?.textContent,
+          label: (node.querySelector('small') || node.querySelector('b'))?.textContent,
+          note: node.querySelector(':scope > span:not([aria-hidden]) > span:last-of-type')?.textContent,
+          current: node.getAttribute('aria-current') === 'true', markedCurrent: node.hasAttribute('data-active-answer-range'),
+          marker: node.querySelector('em')?.textContent || '',
+        })),
         numeric: gauge?.querySelector('strong')?.textContent,
         gaugeCount: element.querySelectorAll('[data-assessment-gauge]').length,
         gaugeScale: gauge?.dataset.gaugeScale,
+        answerScale: gauge?.dataset.answerAnchorScale,
+        answerSegments: [...(gauge?.querySelectorAll('path[data-answer-anchor]') || [])].map(node => ({ code: node.dataset.answerAnchor, path: node.getAttribute('d'), width: node.getAttribute('stroke-width') })),
         segmentCodes: [...(gauge?.querySelectorAll('path[data-band-code]') || [])].map(node => node.dataset.bandCode),
         segments: [...(gauge?.querySelectorAll('path[data-band-code]') || [])].map(node => ({ code: node.dataset.bandCode, path: node.getAttribute('d'), width: node.getAttribute('stroke-width') })),
         endpoints: gauge?.querySelector(':scope > div[aria-hidden="true"]')?.textContent,
@@ -273,6 +375,8 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
           band: card.querySelector(':scope > p')?.textContent,
           gaugeCount: card.querySelectorAll('[data-assessment-gauge]').length,
           gaugeScale: gauge?.dataset.gaugeScale,
+          answerScale: gauge?.dataset.answerAnchorScale,
+          answerSegments: [...(gauge?.querySelectorAll('path[data-answer-anchor]') || [])].map(node => ({ code: node.dataset.answerAnchor, path: node.getAttribute('d'), width: node.getAttribute('stroke-width') })),
           segmentCodes: [...(gauge?.querySelectorAll('path[data-band-code]') || [])].map(node => node.dataset.bandCode),
           segments: [...(gauge?.querySelectorAll('path[data-band-code]') || [])].map(node => ({ code: node.dataset.bandCode, path: node.getAttribute('d'), width: node.getAttribute('stroke-width') })),
           endpoints: gauge?.querySelector(':scope > div[aria-hidden="true"]')?.textContent,
@@ -289,7 +393,7 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
       source: resultCard.querySelector(':scope > details')?.textContent,
       analysisCtaCount: gate?.querySelectorAll('button, a').length || 0,
       analysisLabel: label?.textContent.trim(),
-      accountAnalysisCount: document.querySelectorAll('[data-personal-result-report], [data-personality-type-summary], [data-assessment-context], [data-assessment-methodology], [data-free-course-banner], [data-report-scale]').length,
+      accountAnalysisCount: document.querySelectorAll('[data-personal-result-report], [data-personality-type-summary], [data-assessment-context], [data-assessment-methodology], [data-free-course-banner], [data-report-scale], [data-answer-interpretation], [data-answer-ranges]').length,
     }
   })
   assertGuestSnapshot(snapshot, result, locale)

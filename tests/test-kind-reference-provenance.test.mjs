@@ -25,7 +25,7 @@ test('all 290 reviewed entries retain their purpose, with 145 active instruments
     const active = entries.filter(entry => entry.selectable)
     assert.equal(active.length, 145)
     assert.deepEqual(['monitoring', 'professional', 'hobby'].map(kind =>
-      active.filter(entry => entry.testKind === kind).length), [68, 72, 5])
+      active.filter(entry => entry.testKind === kind).length), [67, 72, 6])
     for (const entry of entries) {
       const expected = HOBBY_TEST_KEYS.includes(entry.key) ? 'hobby'
         : entry.key.startsWith('hh-') || entry.key === 'functioning-review' ? 'monitoring' : 'professional'

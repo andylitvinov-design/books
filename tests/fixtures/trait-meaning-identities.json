@@ -1,0 +1,954 @@
+[
+  {
+    "key": "mini-ipip-20",
+    "assessment_version_id": "921c3ba9-2c20-5763-867f-29553cd491cd",
+    "dimension": {
+      "key": "trait.extraversion",
+      "min": 4,
+      "max": 20,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Extraversion"
+    }
+  },
+  {
+    "key": "mini-ipip-20",
+    "assessment_version_id": "921c3ba9-2c20-5763-867f-29553cd491cd",
+    "dimension": {
+      "key": "trait.agreeableness",
+      "min": 4,
+      "max": 20,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Agreeableness"
+    }
+  },
+  {
+    "key": "mini-ipip-20",
+    "assessment_version_id": "921c3ba9-2c20-5763-867f-29553cd491cd",
+    "dimension": {
+      "key": "trait.conscientiousness",
+      "min": 4,
+      "max": 20,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Conscientiousness"
+    }
+  },
+  {
+    "key": "mini-ipip-20",
+    "assessment_version_id": "921c3ba9-2c20-5763-867f-29553cd491cd",
+    "dimension": {
+      "key": "trait.neuroticism",
+      "min": 4,
+      "max": 20,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Neuroticism"
+    }
+  },
+  {
+    "key": "mini-ipip-20",
+    "assessment_version_id": "921c3ba9-2c20-5763-867f-29553cd491cd",
+    "dimension": {
+      "key": "trait.intellect_imagination",
+      "min": 4,
+      "max": 20,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Intellect / Imagination"
+    }
+  },
+  {
+    "key": "ipip-aspect-volatility-10",
+    "assessment_version_id": "d6277cc3-f343-5576-afc4-2a4717387448",
+    "dimension": {
+      "key": "trait.bfas.volatility",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Emotional volatility"
+    }
+  },
+  {
+    "key": "ipip-aspect-withdrawal-10",
+    "assessment_version_id": "47f0cced-c738-560f-a260-f5c93c17042c",
+    "dimension": {
+      "key": "trait.bfas.withdrawal",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Tendency toward withdrawal"
+    }
+  },
+  {
+    "key": "ipip-aspect-compassion-10",
+    "assessment_version_id": "03b38216-fe2a-520a-a9c0-f74e8d204a28",
+    "dimension": {
+      "key": "trait.bfas.compassion",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Compassion / empathy"
+    }
+  },
+  {
+    "key": "ipip-aspect-industriousness-10",
+    "assessment_version_id": "674407f4-04f2-5cfc-a9a1-2ba8702fe8a4",
+    "dimension": {
+      "key": "trait.bfas.industriousness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Industriousness"
+    }
+  },
+  {
+    "key": "ipip-aspect-orderliness-10",
+    "assessment_version_id": "918240af-eb81-514b-ad1f-a7d9d6f60bff",
+    "dimension": {
+      "key": "trait.bfas.orderliness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Orderliness"
+    }
+  },
+  {
+    "key": "ipip-aspect-intellect-10",
+    "assessment_version_id": "fc6dc5c8-3642-53c8-a118-4435f2c9aa6a",
+    "dimension": {
+      "key": "trait.bfas.intellect",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Intellectual engagement"
+    }
+  },
+  {
+    "key": "ipip-aspect-openness-10",
+    "assessment_version_id": "0934a6ef-65e8-58ff-a897-ff021e4a863d",
+    "dimension": {
+      "key": "trait.bfas.openness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Openness to experience"
+    }
+  },
+  {
+    "key": "ipip-via-r-capacity-for-love-4",
+    "assessment_version_id": "ac69dd83-0fa4-5ffd-ae46-f86e48edd369",
+    "dimension": {
+      "key": "trait.via.capacity_for_love",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Capacity for love"
+    }
+  },
+  {
+    "key": "ipip-via-r-curiosity-4",
+    "assessment_version_id": "a73591ea-aa21-5dbd-a524-ed04ecbe688f",
+    "dimension": {
+      "key": "trait.via.curiosity",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Curiosity"
+    }
+  },
+  {
+    "key": "ipip-via-r-forgiveness-4",
+    "assessment_version_id": "4599d220-c3c1-5a32-acbb-3fce95d4bb4c",
+    "dimension": {
+      "key": "trait.via.forgiveness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Forgiveness / mercy"
+    }
+  },
+  {
+    "key": "ipip-via-r-gratitude-4",
+    "assessment_version_id": "7d57d976-9ac3-5f0f-a1c0-dc6c6ff4cde9",
+    "dimension": {
+      "key": "trait.via.gratitude",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Gratitude"
+    }
+  },
+  {
+    "key": "ipip-via-r-hope-4",
+    "assessment_version_id": "6b803c55-e713-5110-a125-b8bb7e613914",
+    "dimension": {
+      "key": "trait.via.hope",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Hope / optimism"
+    }
+  },
+  {
+    "key": "ipip-via-r-humor-4",
+    "assessment_version_id": "972393f1-2f84-510b-aeac-b97fe99dd69c",
+    "dimension": {
+      "key": "trait.via.humor",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Humor / playfulness"
+    }
+  },
+  {
+    "key": "ipip-via-r-perseverance-4",
+    "assessment_version_id": "39bc7056-3b0e-5377-aac8-34f30bb26676",
+    "dimension": {
+      "key": "trait.via.perseverance",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Perseverance"
+    }
+  },
+  {
+    "key": "ipip-via-r-creativity-4",
+    "assessment_version_id": "1833e942-2887-54cf-a1db-270e6c566b05",
+    "dimension": {
+      "key": "trait.via.creativity",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Originality / creativity"
+    }
+  },
+  {
+    "key": "ipip-via-r-social-intelligence-4",
+    "assessment_version_id": "c1d1b8f4-7e06-53e2-a5f8-539874959f6d",
+    "dimension": {
+      "key": "trait.via.social_intelligence",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Social / emotional awareness"
+    }
+  },
+  {
+    "key": "ipip-via-r-zest-4",
+    "assessment_version_id": "c7da129b-23b9-5b9d-a92b-b8b13e6cf482",
+    "dimension": {
+      "key": "trait.via.zest",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Vitality / zest"
+    }
+  },
+  {
+    "key": "tipi-10",
+    "assessment_version_id": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
+    "dimension": {
+      "key": "trait.tipi.extraversion",
+      "min": 1,
+      "max": 7,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Extraversion"
+    }
+  },
+  {
+    "key": "tipi-10",
+    "assessment_version_id": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
+    "dimension": {
+      "key": "trait.tipi.agreeableness",
+      "min": 1,
+      "max": 7,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Agreeableness"
+    }
+  },
+  {
+    "key": "tipi-10",
+    "assessment_version_id": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
+    "dimension": {
+      "key": "trait.tipi.conscientiousness",
+      "min": 1,
+      "max": 7,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Conscientiousness"
+    }
+  },
+  {
+    "key": "tipi-10",
+    "assessment_version_id": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
+    "dimension": {
+      "key": "trait.tipi.emotional_stability",
+      "min": 1,
+      "max": 7,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Emotional stability"
+    }
+  },
+  {
+    "key": "tipi-10",
+    "assessment_version_id": "6fa6fd5a-0e86-5164-a898-3674a54435e1",
+    "dimension": {
+      "key": "trait.tipi.openness",
+      "min": 1,
+      "max": 7,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Openness to experience"
+    }
+  },
+  {
+    "key": "ipip-via-r-appreciation-beauty-4",
+    "assessment_version_id": "4282c169-808a-5a23-9c3e-bac9d2696a8d",
+    "dimension": {
+      "key": "trait.via.appreciation_beauty",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Appreciation of beauty"
+    }
+  },
+  {
+    "key": "ipip-via-r-teamwork-4",
+    "assessment_version_id": "2aab919b-5283-586d-a2e5-380c8267812c",
+    "dimension": {
+      "key": "trait.via.teamwork",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Teamwork and loyalty"
+    }
+  },
+  {
+    "key": "ipip-via-r-fairness-4",
+    "assessment_version_id": "25d4624c-2830-5180-adfc-a35c3215c638",
+    "dimension": {
+      "key": "trait.via.fairness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Fairness"
+    }
+  },
+  {
+    "key": "ipip-via-r-honesty-4",
+    "assessment_version_id": "706d25e1-bab7-564c-8807-f11bd01d0dca",
+    "dimension": {
+      "key": "trait.via.honesty",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Honesty and integrity"
+    }
+  },
+  {
+    "key": "ipip-via-r-judgment-4",
+    "assessment_version_id": "ac939bcb-bfb1-51ba-bd84-ba22f6e45aa1",
+    "dimension": {
+      "key": "trait.via.judgment",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Judgment and open-mindedness"
+    }
+  },
+  {
+    "key": "ipip-via-r-kindness-4",
+    "assessment_version_id": "bebfef64-55f3-5bc7-81b9-058149ceb837",
+    "dimension": {
+      "key": "trait.via.kindness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Kindness and generosity"
+    }
+  },
+  {
+    "key": "ipip-via-r-leadership-4",
+    "assessment_version_id": "cff96f74-e0b3-5ccb-a648-cb004d993ec7",
+    "dimension": {
+      "key": "trait.via.leadership",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Leadership"
+    }
+  },
+  {
+    "key": "ipip-via-r-love-of-learning-4",
+    "assessment_version_id": "e374c379-af17-5668-a535-2b0c5b0800a7",
+    "dimension": {
+      "key": "trait.via.love_of_learning",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Love of learning"
+    }
+  },
+  {
+    "key": "ipip-via-r-humility-4",
+    "assessment_version_id": "8a90f626-0a76-5f05-833f-8bf0ce92e104",
+    "dimension": {
+      "key": "trait.via.humility",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Modesty and humility"
+    }
+  },
+  {
+    "key": "ipip-via-r-perspective-4",
+    "assessment_version_id": "11ebb81e-c150-5168-a235-c8d6ac948a0f",
+    "dimension": {
+      "key": "trait.via.perspective",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Perspective and wisdom"
+    }
+  },
+  {
+    "key": "ipip-via-r-prudence-4",
+    "assessment_version_id": "b0911a40-a3fc-5312-b6ab-d367fd5d40fc",
+    "dimension": {
+      "key": "trait.via.prudence",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Prudence"
+    }
+  },
+  {
+    "key": "ipip-via-r-self-regulation-4",
+    "assessment_version_id": "01939380-b360-5430-956d-bb2a198621cd",
+    "dimension": {
+      "key": "trait.via.self_regulation",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Self-regulation"
+    }
+  },
+  {
+    "key": "ipip-via-r-spirituality-4",
+    "assessment_version_id": "35c3a856-68dd-5d69-9e0e-b9e49cf50a2b",
+    "dimension": {
+      "key": "trait.via.spirituality",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Spirituality and religiousness"
+    }
+  },
+  {
+    "key": "ipip-via-r-bravery-4",
+    "assessment_version_id": "c239828d-da4c-5de2-9e50-aa38fad4ad32",
+    "dimension": {
+      "key": "trait.via.bravery",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Bravery and courage"
+    }
+  },
+  {
+    "key": "ipip-via-r-core-positivity-6",
+    "assessment_version_id": "24df183a-da18-5e99-bba8-d4f1210e7964",
+    "dimension": {
+      "key": "trait.via.core.positivity",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Global core strength: positivity"
+    }
+  },
+  {
+    "key": "ipip-via-r-core-dependability-6",
+    "assessment_version_id": "3d81667e-f088-5fb5-b253-8543562759bc",
+    "dimension": {
+      "key": "trait.via.core.dependability",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Global core strength: dependability"
+    }
+  },
+  {
+    "key": "ipip-via-r-core-mastery-6",
+    "assessment_version_id": "6cd07c7d-775a-5b0b-abc9-0c22d7cec774",
+    "dimension": {
+      "key": "trait.via.core.mastery",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Global core strength: mastery"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.appreciation_beauty",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Appreciation of beauty"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.bravery",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Bravery and courage"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.capacity_for_love",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Capacity for love"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.creativity",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Originality / creativity"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.curiosity",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Curiosity"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.fairness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Fairness"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.forgiveness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Forgiveness / mercy"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.gratitude",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Gratitude"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.honesty",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Honesty and integrity"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.hope",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Hope / optimism"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.humility",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Modesty and humility"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.humor",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Humor / playfulness"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.judgment",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Judgment and open-mindedness"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.kindness",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Kindness and generosity"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.leadership",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Leadership"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.love_of_learning",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Love of learning"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.perseverance",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Perseverance"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.perspective",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Perspective and wisdom"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.prudence",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Prudence"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.self_regulation",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Self-regulation"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.social_intelligence",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Social / emotional awareness"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.spirituality",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Spirituality and religiousness"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.teamwork",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Teamwork and loyalty"
+    }
+  },
+  {
+    "key": "ipip-via-r-strengths-96",
+    "assessment_version_id": "a72fd3a8-343c-5499-a9af-3ab45f1633e6",
+    "dimension": {
+      "key": "trait.via.zest",
+      "min": 1,
+      "max": 5,
+      "unit": "points",
+      "timeframe": "general-self-description",
+      "direction": "non-normative",
+      "dimensionClass": "trait",
+      "sourceConstruct": "Vitality / zest"
+    }
+  }
+]

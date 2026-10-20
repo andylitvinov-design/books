@@ -4,14 +4,17 @@ import {readFileSync} from 'node:fs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('global review banner is separate from the quick-entry OPORA course banner below tests', () => {
+test('screenshot-matched free-review banner stays separate from the quick-entry OPORA course card', () => {
   const banner = read('components/sitewide-antistress-banner.tsx')
   const globalRibbon = banner.slice(0, banner.indexOf('export function TestSelectionCourseBanner'))
   const lowerRibbon = banner.slice(banner.indexOf('export function TestSelectionCourseBanner'))
   const entry = read('components/app/my-course.jsx')
+  assert.ok(globalRibbon.includes('data-sitewide-personal-review-banner'))
+  assert.ok(read('app/layout.tsx').includes('SitewideAntistressBanner'))
+  assert.ok(globalRibbon.includes('Get free review'))
   assert.ok(globalRibbon.includes('services/free-situation-review'))
-  assert.ok(!globalRibbon.includes('app/course?program=stress'))
   assert.ok(lowerRibbon.includes('data-tests-course-banner'))
+  assert.ok(lowerRibbon.includes('data-tests-review-banner'))
   assert.ok(lowerRibbon.includes('app/course?program=stress&entry=quick'))
   const app = read('components/app/app-workspace.jsx')
   assert.match(app, /quickAuthAttempted = useRef\(false\)/)
@@ -34,7 +37,7 @@ test('Anti-Stress baseline uses three compact options, one save-and-start click 
   const runner = read('components/app/app-workspace.jsx')
   const flow = read('lib/app/course-test-flow.js')
   assert.match(picker, /data-antistress-compact-picker/)
-  assert.match(picker, /const defaultKeys = new Set\(\['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse'\]\)/)
+  assert.match(picker, /const defaultKeys\s*=\s*new Set\(\[\s*'hh-weekly-pulse',\s*'gad-7',\s*'hh-resource-pulse'\s*\]\)/)
   assert.match(picker, /if\(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY\) return/)
   assert.match(picker, /data-course-required-baseline/)
   assert.match(picker, /async function startCompactTests\(\)/)

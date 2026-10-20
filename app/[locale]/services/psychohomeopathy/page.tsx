@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { PersonalServiceLanding } from "@/components/personal-service-landing";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -28,5 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ServicePage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
+  // All three public languages use ONE canonical Alchemy landing and booking flow.
+  permanentRedirect("/" + locale + "/services/alchemy-of-soul");
   return <PersonalServiceLanding locale={locale as ServicePageLocale} service={service} />;
 }

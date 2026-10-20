@@ -56,6 +56,6 @@ export function PublicTestExplorer({ locale, embedded = false, initialPreference
       key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode + ':' + String(initialBrowseFull)}
       initialPreferences={initialPreferences} initialMode={initialMode} initialBrowseFull={initialBrowseFull} onStart={submit} onStartCourse={launchCourse} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
-    <TestSelectionCourseBanner locale={locale} />
+    <TestSelectionCourseBanner locale={locale} showReview />
   </>
 }

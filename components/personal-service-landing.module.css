@@ -72,3 +72,80 @@
 .page[data-personal-service="business-consulting"] .secondary{color:#f1d9e4}
 .page[data-personal-service="business-consulting"] .questions li svg,.page[data-personal-service="business-consulting"] .number{color:#8c3554}
 .page[data-personal-service="business-consulting"] .safety{background:#eaf0f8;border-color:#cdd9e9}
+
+
+/* 2026 services conversion system: clearer hierarchy, shared teal identity, and
+   differentiated free-vs-paid actions. Keep the business page's approved navy palette. */
+.page{background:linear-gradient(180deg,#eaf7f4 0,#f8fbfa 570px,#fff 100%);color:#173d47}
+.breadcrumb a{color:#176b72}
+.hero{background:radial-gradient(circle at 10% 10%,rgba(40,145,149,.23),transparent 51%),linear-gradient(125deg,#073c51,#075d68 77%,#0a7c81);box-shadow:0 20px 65px rgba(5,52,67,.18)}
+.hero h1{color:#fffefa}
+.hero .eyebrow{color:#9ee4db}
+.lead{color:#e4f3f1;line-height:1.65}
+.practitioner{color:#c9ece7;margin:15px 0 18px}
+.heroFacts{display:grid;gap:7px;margin-top:20px;color:#e8f8f5;font:700 13px/1.45 Arial,Helvetica,sans-serif}
+.heroFacts>span{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.heroFacts svg{flex:none;color:#f8c698}
+.factSeparator{opacity:.65;margin:0 3px}
+.primary{background:#f4c494;color:#173b46;font-size:15px;box-shadow:0 8px 22px rgba(0,0,0,.14)}
+.primary:hover{background:#ffd5a6}
+.secondary{color:#e4f8f1;text-decoration-thickness:1px}
+.heroMedia{background:#13626b}
+.heroMedia::after{background:linear-gradient(transparent,rgba(4,46,58,.78))}
+.mainColumns{gap:clamp(22px,4vw,54px);margin-top:40px}
+.section{padding:clamp(21px,3vw,32px);border:1px solid #dcebe7;border-radius:22px;background:#fff;box-shadow:0 9px 29px rgba(6,69,77,.035);margin-bottom:18px}
+.section h2,.faq h2{color:#133e4b}
+.smallEyebrow{color:#0f7f82}
+.questions li,.steps li{border-color:#e0eeea}
+.questions li:first-child,.steps li:first-child{border-color:#e0eeea}
+.questions li svg,.number{color:#078b88}
+.steps h3{color:#124d59}
+.takeaways li::before{color:#0d9088}
+.safety{border-color:#d4e7e2;background:#f2f9f7}
+.safety h3{color:#255d62}
+.orderCard{border:1px solid #d8ebe6;border-radius:23px;padding:13px;background:#fff;box-shadow:0 14px 40px rgba(8,62,72,.07)}
+.bookingIdentity{display:flex;align-items:center;gap:13px;padding:12px 10px 17px}
+.bookingIdentity img{flex:none;width:54px;height:54px;object-fit:cover;border-radius:50%;border:3px solid #ddf4ed}
+.bookingIdentity div{display:grid;gap:4px;min-width:0}
+.bookingIdentity strong{color:#12545d;font:800 14px/1.35 Arial,Helvetica,sans-serif}
+.bookingIdentity span{color:#536f72;font:12px/1.5 Arial,Helvetica,sans-serif}
+.faq details{border-color:#d7e8e3}
+.faq summary{color:#174451}
+.faq summary::after{color:#078a88}
+.closing{background:radial-gradient(circle at top right,rgba(44,149,151,.4),transparent 50%),linear-gradient(135deg,#093c50,#096e73);box-shadow:0 20px 45px rgba(5,61,71,.12)}
+.closingActions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:100%;margin-top:8px}
+.closing .closingPrimary,.closing .closingSecondary{margin:0;min-height:50px;max-width:100%;text-align:center}
+.closing .closingPrimary{background:#f3c593;color:#173943}
+.closing .closingSecondary{background:transparent;color:#f2ffff;border:1px solid rgba(236,255,252,.57)}
+.page a:focus-visible,.page summary:focus-visible{outline-color:#efb577}
+@media(max-width:900px){.mainColumns{gap:19px}.heroFacts{font-size:12px}}
+@media(max-width:767px){
+  .page{padding-bottom:30px}
+  .hero{border-radius:22px}
+  .heroContent{padding:22px 20px 23px}
+  .hero h1{font-size:clamp(32px,8vw,42px);margin-bottom:12px}
+  .lead{font-size:14px;line-height:1.55}
+  .heroFacts{margin-top:15px;gap:8px}
+  .heroMedia{min-height:170px;height:170px}
+  .heroActions{gap:6px}
+  .heroActions .primary{min-height:54px}
+  .heroActions .secondary{min-height:42px}
+  .mainColumns{margin-top:22px}
+  .section{padding:20px 17px;margin-bottom:13px;border-radius:17px}
+  .orderCard{padding:10px;border-radius:19px}
+  .bookingIdentity{padding:10px 8px 12px}
+  .closingActions{display:grid}
+  .closing .closingPrimary,.closing .closingSecondary{width:100%;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.primary{transition:none}}
+
+/* Keep the consultation choice in view alongside the educational content
+   on tall desktop screens; short laptops/mobile retain natural scroll. */
+@media(min-width:901px) and (min-height:820px){
+ .order{position:sticky;top:82px;align-self:start}
+ .orderCard{position:static}
+}
+@media(max-width:767px){
+ .order{position:static}
+ .orderCard{position:static}
+}

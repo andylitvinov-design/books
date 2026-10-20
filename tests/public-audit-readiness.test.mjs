@@ -1,3 +1,4 @@
+import { attachCatalogStatsResponseDiagnostic } from '../scripts/catalog-stats-request-diagnostics.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -50,9 +51,9 @@ test('actual page collector isolates late retired requests, but new pending requ
   const end = source.indexOf('  let publicPageState = await createPublicPage();', start);
   assert.ok(start >= 0 && end > start);
   const pages = [];
-  const diagnostics = { requests: [], responses: [], failedRequests: [], pageErrors: [] };
+  const diagnostics = { requests: [], responses: [], statsResponses: [], failedRequests: [], pageErrors: [] };
   const context = { newPage: async () => { const events = {}; const page = { on: (type, fn) => { events[type] = fn; }, url: () => 'http://127.0.0.1:3123/', events }; pages.push(page); return page; } };
-  const make = new Function('context', 'publicDiagnostics', 'origin', `let errors=[];let publicPhase='test';${source.slice(start,end)};return createPublicPage;`)(context, diagnostics, 'http://127.0.0.1:3123');
+  const make = new Function('context', 'publicDiagnostics', 'origin', 'attachCatalogStatsResponseDiagnostic', `let errors=[];let publicPhase='test';${source.slice(start,end)};return createPublicPage;`)(context, diagnostics, 'http://127.0.0.1:3123', attachCatalogStatsResponseDiagnostic);
   const old = await make(); const next = await make();
   const request = path => ({ url: () => 'http://127.0.0.1:3123/' + path, frame: () => ({ url: () => 'old-document' }), method: () => 'GET', resourceType: () => 'fetch', failure: () => ({ errorText: 'aborted' }) });
   pages[0].events.request(request('late-old'));

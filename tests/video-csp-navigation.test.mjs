@@ -124,7 +124,12 @@ test('parser-time history guard pins the destination before hydration and can ha
   assert.equal(window.__cspPreHydration.destination, 'https://example.test/en/about');
   assert.deepEqual(replacements, ['https://example.test/en/about']);
   window.__cspPreHydration.dispose();
-  assert.equal(listeners.size, 0);
+  assert.equal(listeners.has('popstate'), false);
+  assert.equal(window.__hhOptionalReadsDeparting, true);
+  listeners.get('pageshow').handler();
+  assert.equal(window.__hhOptionalReadsDeparting, false);
+  listeners.get('pagehide').handler();
+  assert.equal(window.__hhOptionalReadsDeparting, true);
   const { readFileSync } = await import('node:fs');
   const layout = readFileSync(new URL('../app/layout.tsx', import.meta.url), 'utf8');
   assert.match(layout, /nonce=\{nonce\}[^>]*dangerouslySetInnerHTML=\{\{ __html: CSP_PREHYDRATION_SCRIPT \}\}/);
@@ -150,15 +155,44 @@ test("Tantra videos use canonical originals and posters match first-party hashes
   assert.match(middleware, /tantraReikiPage \? "media-src 'self' https:\/\/psitrends\.com" : "media-src 'self'"/);
 });
 
-test("English Tantra testimonials prioritize Litten and Margaret and disclose Russian video audio", async () => {
+test("Full Tantra learner reports appear ahead of the clearly labeled original Russian videos", async () => {
   const component = await source("components/tantra-reiki-testimonials.tsx");
-  assert.match(component, /id="tantra-original-english-testimonials" open=\{locale === "en"\}/);
+  const cards = await source("components/tantra-learner-review-cards.tsx");
+  const curriculum = await source("data/academy/energywork-ai-curriculum.ts");
+  assert.match(component, /<TantraLearnerReviewCards locale=\{locale\} headingId="tantra-testimonials-heading" \/>/);
+  assert.match(cards, /tantraVoices\.map\(\(review, index\) =>/);
+  assert.match(curriculum, /export const tantraVoices: EnergyworkTestimonial\[\] = \[/);
+  for (const name of ['margaret', 'olga', 'litten', 'tantra-level-1']) {
+    assert.ok(curriculum.includes('id: "' + name + '"'));
+  }
   assert.match(component, /initiallyOpen=\{locale !== "en"\}/);
   const disclosure = await source("components/tantra-video-testimonials.tsx");
   assert.match(disclosure, /id="tantra-russian-video-testimonials"/);
-  assert.match(component, /summary=\{`\$\{l.video\} · \$\{l.language\}`\}/);
+  assert.match(component, /summary=\{v\.title\}/);
   assert.match(component, /Alena · Tantra Reiki testimonial · Russian audio/);
   assert.match(component, /locale === "en" \? " · Russian audio" : ""/);
-  assert.ok(component.indexOf('id="tantra-original-english-testimonials"') < component.indexOf('<TantraVideoTestimonials'));
+  assert.ok(component.indexOf("<TantraLearnerReviewCards") < component.indexOf("<TantraVideoTestimonials"));
 });
 
+
+
+test('parser-time optional reads stop on the real NavigationDestination API shape', async () => {
+  const { runInNewContext } = await import('node:vm');
+  const { CSP_PREHYDRATION_SCRIPT } = await import('../lib/csp-prehydration.js');
+  const navigation = new Map(), events = new Map();
+  const window = {
+    navigation: { addEventListener: (name, fn) => navigation.set(name, fn) },
+    addEventListener: (name, fn) => events.set(name, fn), removeEventListener() {},
+    location: { href: 'https://example.test/en/client/tests', replace() {} },
+  };
+  runInNewContext(CSP_PREHYDRATION_SCRIPT, { window });
+  navigation.get('navigate')({ destination: { sameDocument: true } });
+  assert.equal(window.__hhOptionalReadsDeparting, false);
+  navigation.get('navigate')({ destination: { sameDocument: false } });
+  assert.equal(window.__hhOptionalReadsDeparting, true);
+  // A later router replace cannot erase an already departing document.
+  navigation.get('navigate')({ destination: { sameDocument: true } });
+  assert.equal(window.__hhOptionalReadsDeparting, true);
+  events.get('pageshow')();
+  assert.equal(window.__hhOptionalReadsDeparting, false);
+});

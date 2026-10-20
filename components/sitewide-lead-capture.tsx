@@ -130,7 +130,9 @@ export function SitewideLeadCapture() {
   const coreMatch = relative.match(/^\/services\/(dao-health-profile|alchemy-of-soul|hypnotherapy-course)\/?$/);
   const coreSlugToKind: Record<string, DetailKind> = { "dao-health-profile": "dao", "alchemy-of-soul": "alchemy", "hypnotherapy-course": "hypnotherapy" };
   const coreKind = coreMatch ? coreSlugToKind[coreMatch[1]] || null : null;
-  const coreDetail = coreKind && locale !== "es" ? coreOfferDetailData(locale, coreKind) : null;
+  // Dedicated Alchemy landing has exactly one enquiry form: do not append another global CTA.
+  if (coreKind === "alchemy") return null;
+  const coreDetail = coreKind ? coreOfferDetailData(locale, coreKind) : null;
   const networkService = kind === "network" && /^\/services\/[a-z0-9-]+\/[a-z0-9-]+/.test(relative);
   const networkMaster = kind === "network" && /^\/masters\/[a-z0-9-]+/.test(relative);
   const primary = kind === "training" ? trainingEnquiryUrl(locale, pathname)

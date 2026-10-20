@@ -1,3 +1,4 @@
+import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
 import {IPIP_VIA_R_COMPLETION_DEFINITIONS} from '../data/assessments/ipip-via-r-completion-2026.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -108,7 +109,7 @@ test('five additive versions: 145 runnable, 72 source-backed, 73 HH after exact 
  // The separately approved Bach pair is additive; no historical ID is excluded.
  const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
- const prior=ASSESSMENT_DEFINITIONS.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>!added.some(n=>n.id===d.id))
+ const prior=ASSESSMENT_DEFINITIONS.filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key)).filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>!added.some(n=>n.id===d.id))
  assert.equal(createHash('sha256').update(canonicalJSON(prior)).digest('hex'),'fd0dc830f8414ae6ab5358a6623ff7584d2465a9e2b0eeb2d527ad5c6f8a2625')
 })
 

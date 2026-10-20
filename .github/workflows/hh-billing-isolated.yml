@@ -34,5 +34,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: ZEN checkout signatures, IPN, merchant readback and legacy Stripe regression
+        run: node --test tests/service-zen-transfer-inquiry.test.mjs tests/service-commerce-zen.test.mjs tests/service-cart.test.mjs tests/service-commerce-flow.test.mjs tests/service-commerce-stripe.test.mjs tests/service-commerce-repository.test.mjs tests/service-commerce-account-binding.test.mjs
       - name: Billing, commerce, CRM and push SQL/RLS with real concurrent transactions
         run: npm run test:billing:db

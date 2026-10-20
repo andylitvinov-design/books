@@ -8,6 +8,11 @@ on:
       - 'lib/public-locales.ts'
       - 'lib/spanish-metadata.ts'
       - 'components/site-video-*'
+      - 'components/services-studio-extras.tsx'
+      - 'components/personal-testimonials.tsx'
+      - 'components/home-testimonial-more.tsx'
+      - 'tests/home-testimonial-lazy-disclosure.test.mjs'
+      - 'tests/personal-testimonials*.test.mjs'
       - 'components/spanish-*'
       - 'components/page-video.tsx'
       - 'components/psychic-alchemy-intro-video*'
@@ -45,6 +50,11 @@ on:
       - 'lib/public-locales.ts'
       - 'lib/spanish-metadata.ts'
       - 'components/site-video-*'
+      - 'components/services-studio-extras.tsx'
+      - 'components/personal-testimonials.tsx'
+      - 'components/home-testimonial-more.tsx'
+      - 'tests/home-testimonial-lazy-disclosure.test.mjs'
+      - 'tests/personal-testimonials*.test.mjs'
       - 'components/spanish-*'
       - 'components/site-navigation.tsx'
       - 'components/public-site-header.tsx'
@@ -71,6 +81,9 @@ on:
       - '.github/workflows/site-video-browser.yml'
 permissions:
   contents: read
+concurrency:
+  group: site-video-browser-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   browser:
     runs-on: ubuntu-latest
@@ -96,7 +109,8 @@ jobs:
       - name: Check Spanish translation and affected components
         run: |
           node --test tests/es-about.test.mjs tests/es-public-site.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
-          npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
+          node --test tests/personal-testimonials.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/home-testimonial-lazy-disclosure.test.mjs
+          npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx components/home-testimonial-more.tsx components/personal-testimonials.tsx components/services-studio-extras.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
           npx tsc --noEmit
       - name: Install isolated browser test dependencies without changing the app lockfile
         timeout-minutes: 12

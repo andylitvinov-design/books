@@ -6,7 +6,7 @@ import test from "node:test";
 const root = process.cwd();
 const read = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("Library opens as compact material blocks with Books and Videos switch", () => {
+test("Library opens as a compact news feed with Books and Videos switch", () => {
   const hub = read("components", "library-hub.tsx");
   const page = read("app", "[locale]", "library", "page.tsx");
 
@@ -15,7 +15,8 @@ test("Library opens as compact material blocks with Books and Videos switch", ()
   assert.match(hub, /All books & guides|Все книги и методички/);
   assert.match(hub, /homeopathy\/remedies/);
   assert.match(hub, /wu-xing/);
-  assert.match(hub, /CatalogShowcase/);
+  assert.match(hub, /LibraryFeed/);
+  assert.match(hub, /guidesOnly=\{view === "books"\}/);
   assert.doesNotMatch(hub, /section=\$\{section\}/);
   assert.match(page, /rawView === "videos"/);
 });

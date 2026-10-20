@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
+import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
 import styles from "./master-network-explorer.module.css";
 
 const AREAS = [
@@ -17,6 +17,15 @@ const AREAS = [
   ["homeopathy_holistic", "Holistic & Wu Xing", "Холистический подход и У-Син", "Bienestar holístico"],
   ["career_purpose", "Career & purpose", "Призвание и карьера", "Vocación y carrera"],
   ["business_money", "Goals & business", "Цели и бизнес", "Metas y negocios"],
+] as const;
+
+// Five immediately visible topics; specific catalogue areas stay under More filters.
+const MASTER_TOPICS = [
+  { id: "body_energy", areas: ["body_somatic", "energy_spiritual", "homeopathy_holistic"], keywords: /reiki|energy|somatic|body/i, en: "Body & energy", ru: "Тело и энергия", es: "Cuerpo y energía" },
+  { id: "stress_anxiety", areas: ["emotional_psychological"], keywords: /stress|anxiety|emotional|somatic/i, en: "Stress & anxiety", ru: "Стресс и тревога", es: "Estrés y ansiedad" },
+  { id: "relationships", areas: ["relationships"], keywords: /relationship|constellation|family/i, en: "Relationships", ru: "Отношения", es: "Relaciones" },
+  { id: "business_money", areas: ["business_money"], keywords: /business|career|money/i, en: "Business & money", ru: "Бизнес и деньги", es: "Negocios y dinero" },
+  { id: "goals_purpose", areas: ["career_purpose", "personal_development"], keywords: /purpose|goal|growth|imagery|archetyp/i, en: "Goals & meaning", ru: "Цели и смыслы", es: "Metas y propósito" },
 ] as const;
 
 const COPY = {
@@ -201,7 +210,18 @@ function masterMatches(master: PublicPractitioner, f: FilterState) {
     profile.fullBio, profile.city, profile.country, ...(profile.methods || []),
     ...allServices.flatMap((service) => [service.copy.title, service.copy.shortDescription]),
   ].join(" ")).includes(clean(f.query))) return false;
-  if (f.area && !(profile.areas || []).includes(f.area) && !allServices.some((service) => service.areaKey === f.area)) return false;
+
+  if (f.area) {
+    const quickTopic = MASTER_TOPICS.find((topic) => topic.id === f.area);
+    const areas: readonly string[] = quickTopic ? quickTopic.areas : [f.area];
+    const hasMatchingArea = (profile.areas || []).some((area) => areas.includes(area)) ||
+      allServices.some((service) => areas.includes(service.areaKey));
+    const practitionerText = [
+      ...(profile.methods || []), profile.professionalTitle, profile.shortBio,
+      ...allServices.map((service) => service.copy.title),
+    ].join(" ");
+    if (!hasMatchingArea && !(quickTopic && quickTopic.keywords.test(practitionerText))) return false;
+  }
   if (f.format && !(profile.formats || []).includes(f.format) &&
       !(f.format === "online" && (profile.formats || []).includes("online")) &&
       !allServices.some((s) => s.deliveryFormat === f.format || s.deliveryFormat === "hybrid")) return false;
@@ -225,24 +245,8 @@ function Filters({
   const t = COPY[locale];
   const set = (field: keyof FilterState, value: string) => setState({ ...state, [field]: value });
   const active = state.query || state.area || state.format || state.language || state.pricing !== "all" || state.goal || state.method || state.maxPrice || state.sort !== "default";
-  return (
-    <section className={styles.filters} aria-label={t.filterTitle}>
-      <div className={styles.heading}>
-        <h2>{t.filterTitle}</h2>
-        <span className={styles.count} role="status" aria-live="polite">{count} {mode === "masters" ? t.masters : t.services}</span>
-      </div>
-      <div className={styles.searchRow} role="search">
-        <label htmlFor={"master-finder-query-" + mode} className={styles.srOnly}>{mode === "masters" ? t.mastersSearch : t.search}</label>
-        <input
-          id={"master-finder-query-" + mode}
-          type="search"
-          className={styles.search}
-          autoComplete="off"
-          placeholder={mode === "masters" ? t.mastersSearch : t.search}
-          value={state.query}
-          onChange={(event) => set("query", event.target.value)}
-        />
-      </div>
+  const detailedFilters = (
+    <>
       <fieldset className={styles.categories}>
         <legend className={styles.legend}>{t.all}</legend>
         <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
@@ -282,6 +286,42 @@ function Filters({
           </select>
         </label>
       </div>
+    </>
+  );
+  return (
+    <section className={styles.filters} aria-label={t.filterTitle}>
+      <div className={styles.heading}>
+        <h2>{mode === "masters" ? (locale === "ru" ? "Выберите практика" : locale === "es" ? "Elige un profesional" : "Choose a practitioner") : t.filterTitle}</h2>
+        <span className={styles.count} role="status" aria-live="polite">{count} {mode === "masters" && count === 1 ? (locale === "ru" ? "мастер" : locale === "es" ? "profesional" : "practitioner") : mode === "masters" ? t.masters : t.services}</span>
+      </div>
+      <div className={styles.searchRow} role="search">
+        <label htmlFor={"master-finder-query-" + mode} className={styles.srOnly}>{mode === "masters" ? t.mastersSearch : t.search}</label>
+        <input
+          id={"master-finder-query-" + mode}
+          type="search"
+          className={styles.search}
+          autoComplete="off"
+          placeholder={mode === "masters" ? t.mastersSearch : t.search}
+          value={state.query}
+          onChange={(event) => set("query", event.target.value)}
+        />
+      </div>
+      {mode === "masters" && (
+        <div className={styles.masterQuickBar} role="group" aria-label={locale === "ru" ? "Основные направления" : locale === "es" ? "Temas principales" : "Main topics"}>
+          <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
+          {MASTER_TOPICS.map((topic) => (
+            <button key={topic.id} type="button" className={state.area === topic.id ? styles.selected : ""} aria-pressed={state.area === topic.id} onClick={() => set("area", topic.id)}>
+              {topic[locale]}
+            </button>
+          ))}
+        </div>
+      )}
+      {mode === "masters" ? (
+        <details className={styles.masterExtra}>
+          <summary>{locale === "ru" ? "Больше фильтров" : locale === "es" ? "Más filtros" : "More filters"} <span aria-hidden="true">⌄</span></summary>
+          {detailedFilters}
+        </details>
+      ) : detailedFilters}
       {mode==="services"&&<details className={styles.advanced}><summary>{locale==="ru"?"Цель, метод и бюджет":locale==="es"?"Objetivo, método y presupuesto":"Goal, method & budget"}</summary>
         <div className={styles.selectGrid}>
           <label>{locale==="ru"?"Желаемая цель":"Desired goal"}
@@ -308,31 +348,93 @@ function Filters({
   );
 }
 
-function ServiceCard({ service, locale }: { service: PublicService; locale: Locale }) {
+function ServiceCard({
+  service,
+  locale,
+  profileView = false,
+}: {
+  service: PublicService;
+  locale: Locale;
+  profileView?: boolean;
+}) {
   const t = COPY[locale];
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
+  const detailsHref = getPublicServiceDetailHref(locale, service.practitionerSlug, service.slug);
+  const requestHref = service.slug === "remote-energy-support"
+    ? "/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(service.practitionerSlug)
+    : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id);
+  const coverImage = service.photos?.[0] || service.imagePath;
+  const requestText = profileView
+    ? (isFree(service)
+      ? locale === "ru" ? "Получить бесплатно" : locale === "es" ? "Solicitar gratis" : "Get free"
+      : locale === "ru" ? "Заказать" : locale === "es" ? "Solicitar" : "Order")
+    : (isFree(service) ? t.requestFree : t.request);
+
   return (
-    <article className={styles.serviceCard} data-service-funnel-card>
+    <article className={profileView ? styles.serviceCard + " " + styles.profileServiceCard : styles.serviceCard}
+      data-service-funnel-card>
       <ServiceFunnelImpression serviceId={service.id} />
-      <div className={styles.cardTop}>
-        <Link href={"/" + locale + "/masters/" + service.practitionerSlug} className={styles.masterLink}>
-          <span className={styles.avatar} aria-hidden="true">{(service.practitionerName || "H").slice(0, 1).toUpperCase()}</span>
-          <span><small>{t.practitioner}</small><strong>{service.practitionerName}</strong></span>
+      {coverImage ? (
+        <Link href={detailsHref} className={styles.serviceCover}>
+          <img src={coverImage} alt={service.copy.title} loading="lazy" />
         </Link>
+      ) : profileView ? (
+        <div className={styles.profileCoverFallback} aria-hidden="true"><span>✦</span></div>
+      ) : null}
+      <div className={styles.cardTop}>
+        {!profileView && (
+          <Link href={"/" + locale + "/masters/" + service.practitionerSlug} className={styles.masterLink}>
+            {service.practitionerPhoto ? (
+              <img className={styles.avatar} src={service.practitionerPhoto} alt="" loading="lazy" />
+            ) : (
+              <span className={styles.avatar} aria-hidden="true">
+                {(service.practitionerName || "H").slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span><small>{t.practitioner}</small><strong>{service.practitionerName}</strong></span>
+          </Link>
+        )}
         <span className={isFree(service) ? styles.freePrice : styles.price}>{servicePrice(service, locale)}</span>
       </div>
       <p className={styles.area}>{areaName(service.areaKey, locale)}</p>
       <h3>{service.copy.title}</h3>
       <p className={styles.description}>{service.copy.shortDescription}</p>
-      <div className={styles.meta}><span>{format}</span>{service.locationLabel && service.deliveryFormat !== "online" ? <span>{service.locationLabel}</span> : null}{service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}</div>
+      <div className={styles.meta}>
+        <span>{format}</span>
+        {!profileView && service.locationLabel && service.deliveryFormat !== "online"
+          ? <span>{service.locationLabel}</span> : null}
+        {service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}
+      </div>
       <div className={styles.actions}>
-        <TrackedServiceLink serviceId={service.id} event="order" className={styles.primary} href={"/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id)}>
-          {isFree(service) ? t.requestFree : t.request}<span aria-hidden="true">→</span>
+        <Link className={styles.secondary} href={detailsHref}>{t.details}</Link>
+        {!profileView && (
+          <Link className={styles.secondary} href={detailsHref + "#reviews"}>
+            {locale === "ru" ? "Отзывы" : locale === "es" ? "Opiniones" : "Reviews"} ★
+          </Link>
+        )}
+        <TrackedServiceLink serviceId={service.id} event="order"
+          className={styles.primary} href={requestHref}
+          aria-label={requestText + ": " + service.copy.title}>
+          {requestText}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
-        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
       </div>
     </article>
+  );
+}
+
+/** Reuse the exact Services marketplace card, with a tighter practitioner-profile presentation. */
+export function PractitionerServicesGrid({ services, locale: pageLocale }: {
+  services: PublicService[];
+  locale: string;
+}) {
+  const locale = localized(pageLocale);
+  return (
+    <div className={styles.cardGrid + " " + styles.practitionerServicesGrid}>
+      {services.map(service => (
+        <ServiceCard key={service.id} service={service} locale={locale} profileView />
+      ))}
+    </div>
   );
 }
 
@@ -371,17 +473,18 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
   }, [practitioners, state, pageLocale]);
   const t = COPY[locale];
   return (
-    <div className={styles.explorer}>
+    <div className={practitioners.length === 1 ? `${styles.explorer} ${styles.singleMaster}` : styles.explorer}>
       <Filters locale={locale} mode="masters" state={state} setState={setState} count={visible.length} languages={languages} methods={[]} />
       {visible.length ? <div className={styles.cardGrid}>
         {visible.map((master) => {
           const profile = master.profile || {};
           const name = profile.displayName || profile.name || t.practitioner;
           const certified = master.credentials?.some((c) => c.public && c.verificationStatus === "verified" && (!c.expiresOn || c.expiresOn >= new Date().toISOString().slice(0, 10)));
+          const canRequestEnergy = (master.services || []).some((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual");
           return (
-            <article className={styles.masterCard} key={master.id}>
+            <article className={`${styles.masterCard} ${styles.compactMaster}`} key={master.id}>
               <div className={styles.masterHeading}>
-                {profile.photoPath ? <Image src={profile.photoPath} width={78} height={78} alt={name} className={styles.portrait} /> :
+                {profile.photoPath ? <img src={profile.photoPath} width={78} height={78} alt={name} className={styles.portrait} loading="lazy" /> :
                   <div className={styles.portraitInitials} aria-hidden="true">{name.charAt(0).toUpperCase()}</div>}
                 <div><p className={styles.area}>{[profile.city, profile.country].filter(Boolean).join(", ") || t.online}</p>
                   <h3>{name}</h3><p className={styles.role}>{profile.professionalTitle || ""}</p></div>
@@ -394,8 +497,9 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
               </div>
               {(master.services || []).length ? <p className={styles.offerPreview}>{master.services.length} {t.services} · {master.services[0]?.copy?.title}</p> : null}
               <div className={styles.actions}>
-                <Link className={styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
-                {(master.services || []).length ? <Link className={styles.secondary} href={"/" + locale + "/services/" + master.slug + "/" + master.services[0].slug}>{t.viewService}</Link> : null}
+                {!canRequestEnergy && (master.services || []).length ? <Link className={styles.secondary} href={getPublicServiceDetailHref(locale, master.slug, master.services[0].slug)}>{t.viewService}</Link> : null}
+                <Link className={canRequestEnergy ? styles.secondary : styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
+                {canRequestEnergy ? <Link className={styles.energyButton} href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(master.slug)}`}>{locale === "ru" ? "Заказать энергоподдержку" : locale === "es" ? "Solicitar apoyo energético" : "Request energy support"} <span aria-hidden="true">→</span></Link> : null}
               </div>
             </article>
           );

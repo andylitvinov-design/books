@@ -19,15 +19,15 @@ const COPY = {
     reward: 'Learning XP', rewardNote: 'For saved participation only, never for how you feel or answer.',
     progress: 'Lessons saved', chapter1: 'Discover your patterns', chapter2: 'Make room for choice',
     chapter3: 'Bring it into life', chapter4: 'Make it yours', preview: 'A small takeaway',
-    close: 'Close lesson', checkin: 'Notice your day', insight: 'A useful idea',
+    close: 'Close lesson', checkin: 'How strong was your concern?', insight: 'A useful idea',
     practice: 'Try a guided practice', action: 'Take it into life',
     reflection: 'Keep one insight', complete: 'You showed up today!',
     completeOld: 'You have already completed this day',
     completeBody: 'Your lesson is safely saved in your private course history.',
     xpEarned: '+20 learning XP', backMap: 'Back to my path', replay: 'Read the lesson again',
-    checkinPrompt: 'Over the last 24 hours, how difficult was this concern?',
+    checkinPrompt: 'Over the last 24 hours, how strongly did this concern bother you?',
     checkinOptional: 'This check-in is optional. There is no right or wrong number.',
-    from: '0 · Not difficult', to: '10 · Very difficult',
+    from: '0 · No concern', to: '10 · Very strong concern',
     extraCheckin: 'More observations (optional)', interference: 'How much did it interrupt your day?',
     resource: 'How much support did you feel?', note: 'Private note (optional)',
     saveNext: 'Save & continue', skip: 'Skip for today', next: 'Continue',
@@ -43,8 +43,8 @@ const COPY = {
     journal: 'One honest sentence is enough. You can leave this blank.',
     feedback: 'How did the practice feel?', helped: 'Helpful', neutral: 'Neutral',
     uncomfortable: 'Uncomfortable', noAnswer: 'Prefer not to say',
-    extraReflection: 'Before/after ratings (optional)', before: 'Feeling just before',
-    after: 'Feeling just after', notRated: 'Not rated',
+    extraReflection: 'Before/after ratings (optional)', before: 'Concern difficulty just before practice (0 = none, 10 = very difficult)',
+    after: 'Concern difficulty just after practice (0 = none, 10 = very difficult)', notRated: 'Not rated',
     finish: 'Complete today’s lesson', finished: 'Saved to My Course',
     skipPractice: 'Skip the guided practice', private: 'Saved privately when you finish',
     pointsNotGrades: 'XP rewards participation, not symptom scores or “correct” answers.',
@@ -63,15 +63,15 @@ const COPY = {
     reward: 'Баллы участия', rewardNote: 'Только за сохранённые действия, не за самочувствие и ответы.',
     progress: 'Сохранено уроков', chapter1: 'Замечаем свои реакции', chapter2: 'Находим свободу выбора',
     chapter3: 'Переносим в жизнь', chapter4: 'Создаём свой способ', preview: 'Результат дня',
-    close: 'Закрыть урок', checkin: 'Заметьте своё состояние', insight: 'Идея на сегодня',
+    close: 'Закрыть урок', checkin: 'Насколько сильным было беспокойство?', insight: 'Идея на сегодня',
     practice: 'Попробуйте практику', action: 'Примените в жизни',
     reflection: 'Сохраните один вывод', complete: 'Сегодня вы сделали шаг!',
     completeOld: 'Этот день уже завершён',
     completeBody: 'Ваш урок надёжно сохранён в личной истории курса.',
     xpEarned: '+20 баллов участия', backMap: 'Вернуться на карту', replay: 'Прочитать урок ещё раз',
-    checkinPrompt: 'Насколько эта трудность ощущалась за последние 24 часа?',
+    checkinPrompt: 'Оцените силу беспокойства за последние 24 часа.',
     checkinOptional: 'Этот замер необязателен. Здесь нет правильных и неправильных чисел.',
-    from: '0 · Не беспокоила', to: '10 · Очень сильно',
+    from: '0 · Не беспокоило', to: '10 · Очень сильно',
     extraCheckin: 'Дополнительные наблюдения (по желанию)', interference: 'Насколько это мешало вашим делам?',
     resource: 'Насколько ощущалась поддержка?', note: 'Личная заметка (по желанию)',
     saveNext: 'Сохранить и продолжить', skip: 'Пропустить сегодня', next: 'Продолжить',
@@ -88,8 +88,8 @@ const COPY = {
     journal: 'Достаточно одного честного предложения. Поле можно оставить пустым.',
     feedback: 'Как прошла практика?', helped: 'Помогло', neutral: 'Нейтрально',
     uncomfortable: 'Было некомфортно', noAnswer: 'Не хочу отвечать',
-    extraReflection: 'Оценки до/после (по желанию)', before: 'Ощущение перед практикой',
-    after: 'Ощущение после практики', notRated: 'Не оценивалось',
+    extraReflection: 'Оценки до/после (по желанию)', before: 'Трудность до практики (0 — не беспокоит, 10 — очень сильно)',
+    after: 'Трудность после практики (0 — не беспокоит, 10 — очень сильно)', notRated: 'Не оценивалось',
     finish: 'Завершить сегодняшний урок', finished: 'Сохранено в My Course',
     skipPractice: 'Пропустить практику', private: 'Сохранится приватно после завершения',
     pointsNotGrades: 'Баллы — за участие, не за симптомы или «правильные» ответы.',
@@ -130,10 +130,14 @@ function OptionalNumber({ label, value, onChange, t }) {
 export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], paused, finished, onPlay }) {
   const t = COPY[locale] || COPY.en
   const [selected, setSelected] = useState(null)
-  useEffect(() => { setSelected(null) }, [cycle.id, cycle.day])
+  const [showAllDays, setShowAllDays] = useState(false)
+  useEffect(() => { setSelected(null); setShowAllDays(false) }, [cycle.id, cycle.day])
   const count = Number(progress.practiceCount) || 0
   // Do not incentivize recording sensitive symptoms: only saved lessons earn XP.
   const xp = 20 * count
+  const journeyLength = cycle.durationDays || 14
+  const firstVisibleDay = Math.min(Math.max(1, cycle.day - 1), Math.max(1, journeyLength - 4))
+  const visibleRoadmap = showAllDays ? roadmap : roadmap.filter(item => item.day >= firstVisibleDay && item.day < firstVisibleDay + 5)
 
   return <section className={styles.mapShell} data-course-quest-map aria-label={t.map}>
     <header className={styles.mapHeader}>
@@ -146,7 +150,8 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
     <div className={styles.mapProgress}><span>{t.progress}: <strong>{count}/{cycle.durationDays || 14}</strong></span>
       <progress max={cycle.durationDays || 14} value={count} aria-label={t.progress}/></div>
     <ol className={styles.path}>
-      {roadmap.map((item, index) => {
+      {visibleRoadmap.map((item) => {
+        const index = roadmap.findIndex(day => day.day === item.day)
         const Icon = ICONS[index % ICONS.length]
         const active = item.status === 'today' && !finished
         const complete = item.status === 'completed'
@@ -180,6 +185,11 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
         </li>
       })}
     </ol>
+    {roadmap.length > 5 && <button className={styles.pathToggle} type="button"
+      aria-expanded={showAllDays} onClick={() => { setShowAllDays(value => !value); setSelected(null) }}>
+      {showAllDays ? (locale === 'ru' ? 'Свернуть путь' : 'Show fewer lessons')
+        : (locale === 'ru' ? 'Все 14 уроков' : 'View all 14 lessons')}
+    </button>}
     <img className={styles.journeyScene} src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
       width={860} height={245} loading="lazy" aria-hidden="true"/>
     <p className={styles.mapFootnote}><LockKeyhole size={14} aria-hidden="true"/>{t.rewardNote}</p>
@@ -293,7 +303,7 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
 
   return <div className={styles.playerOverlay} role="dialog" aria-modal="true"
     aria-label={t.lesson + ' ' + cycle.day + ': ' + headline}
-    ref={containerRef} data-course-quest-player>
+    ref={containerRef} data-course-quest-player data-course-quest-one-screen="v1">
     <div className={styles.playerFrame}>
       <header className={styles.playerHeader}>
         <button className={styles.iconButton} type="button" aria-label={t.close}

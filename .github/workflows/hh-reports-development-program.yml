@@ -1,0 +1,49 @@
+name: Reports development programme isolated verification
+on:
+  push:
+    branches: ['codex/reports-development-program-20261017']
+    paths:
+      - '.github/workflows/hh-reports-development-program.yml'
+      - 'components/app/development-program*'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/profile-domains.jsx'
+      - 'lib/profile/development-program.js'
+      - 'lib/app/development-goals.js'
+      - 'app/api/app/**'
+      - 'tests/reports-development-program.test.mjs'
+      - 'tests/profile-portrait-test-suggestions.test.mjs'
+      - 'lib/profile/portrait-test-suggestions.js'
+      - 'package.json'
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/development-program*'
+      - 'lib/profile/development-program.js'
+      - 'lib/app/development-goals.js'
+      - 'tests/reports-development-program.test.mjs'
+      - 'tests/profile-portrait-test-suggestions.test.mjs'
+      - 'lib/profile/portrait-test-suggestions.js'
+permissions:
+  contents: read
+concurrency:
+  group: hh-development-program-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  isolated-unit-lint-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install dependencies from lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Test development programme and canonical sector calculations
+        run: node --conditions=react-server --test tests/reports-development-program.test.mjs tests/profile-portrait-test-suggestions.test.mjs tests/portrait-sectors.test.mjs tests/psych-portrait.test.mjs tests/my-course-programs.test.mjs
+      - name: Lint newly created feature files
+        run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/profile/portrait-test-suggestions.js lib/app/development-goals.js tests/profile-portrait-test-suggestions.test.mjs
+      - name: Verify production Next.js build without preview deployment
+        run: npm run build

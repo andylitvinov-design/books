@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { bookCoverArtworkUrl, hasBookCoverArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import { BookOpen, Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
@@ -128,7 +129,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
               if (!book) return null;
               const display = localizedBookText(book, locale);
               return (
-                <Link href={"/books/" + book.id + (locale === "en" ? "?lang=en" : "")} key={book.id}>
+                <Link href={"/" + locale + "/books/" + book.id} key={book.id}>
                   <small>{readingStepLabel(locale, index)}</small>
                   <strong>{display.title}</strong>
                 </Link>
@@ -150,6 +151,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
             >
               <figure className="catalog-cover">
                 <Image
+                  unoptimized
                   alt={locale === "ru" ? "Обложка: " + text.featuredTitle : "Cover: " + text.featuredTitle}
                   height={600}
                   priority
@@ -173,13 +175,14 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
             const display = localizedBookText(book, locale);
             const role = materialRoleLabel(locale, getBookMaterialRole(book.id));
             return (
-              <Link className="catalog-card" href={"/books/" + book.id + (locale === "en" ? "?lang=en" : "")} key={book.id}>
+              <Link className="catalog-card" href={"/" + locale + "/books/" + book.id} key={book.id}>
                 <figure className="catalog-cover">
                   <Image
                     alt={locale === "ru" ? "Обложка: " + display.title : "Cover: " + display.title}
                     height={600}
                     priority={!showFeatured && index === 0}
-                    src={"/media/" + book.mediaSeries + "/" + book.cover}
+                    src={bookCoverArtworkUrl(book.id, "/media/" + book.mediaSeries + "/" + book.cover)}
+                    unoptimized={hasBookCoverArtwork(book.id)}
                     width={800}
                   />
                 </figure>

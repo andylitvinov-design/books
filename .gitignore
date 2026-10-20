@@ -12,3 +12,9 @@ node_modules
 
 tmp/
 output/
+
+# Generated from verified originals by scripts/build-public-card-artwork.mjs
+/public/images/holistic-house/static-card-media/
+
+# The approved PDF art is deterministically rendered from the checked-in public image.
+assets/documents/report-coast-cover.jpg

@@ -24,11 +24,11 @@ test("all approved service videos reuse exactly reviewed EN/RU sources, never ge
   }
 });
 
-test("the Services video gallery is expanded by default and appears before testimonials", () => {
+test("the Services video gallery is expanded by default after booking and testimonials", () => {
   const page = read("app/[locale]/services/page.tsx");
   const begin = page.indexOf('id="method-videos" open');
   const testimonials = page.indexOf('<PersonalTestimonials locale={locale as Locale} variant="services"');
-  assert.ok(begin > 0 && begin < testimonials, "Visible videos should be before testimonials");
+  assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials, "Owner #996 keeps visible method videos after booking and testimonials");
   assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
   assert.match(page, /<PageVideo slot="method-hypnotherapy" locale="en" \/>/);
   assert.match(page, /<PageVideo slot="method-constellations" locale="en" \/>/);
@@ -39,12 +39,15 @@ test("the Services video gallery is expanded by default and appears before testi
   assert.match(browser, /getAttribute\('open'\) === null/);
 });
 
-test("Services cards offer direct one-tap media source without breaking the small photo-left layout", () => {
+test("Services cards keep exact method media accessible on-page with transcript if the HeyGen player fails", () => {
   const cards = read("components/services-solutions.tsx");
   const css = read("components/services-solutions.module.css");
   assert.match(cards, /getServiceVideoWatchUrl\(offer\.id, locale\)/);
   assert.match(cards, /data-service-card-video=\{offer\.id\}/);
-  assert.match(cards, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(cards, /locale === "ru" \? getServiceVideoWatchUrl\(offer\.id, locale\) :/);
+  assert.match(cards, /\$\{offer\.href\}#service-video/);
+  assert.match(cards, /Video & transcript/);
+  assert.match(cards, /target=\{locale === "ru" \? "_blank" : undefined\}/);
   assert.match(cards, /isHome \? homepageMedia\[offer\.id\] : offer\.image/);
   assert.match(css, /\.cardVideo/);
   assert.match(css, /\.card\{position:relative/);
@@ -73,7 +76,7 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   assert.match(css, /@media \(max-width: 767px\)/);
 });
 
-test("original public intro player retains HeyGen while exposing a visible YouTube fallback for six approved copies", () => {
+test("six identity-verified public intro videos use YouTube on Play while retaining original HeyGen source", () => {
   const player = read("components/site-video-player.tsx");
   const minimal = read("components/site-video-minimal.module.css");
   for (const id of ["Y4K4piEwwA8", "s30Y42IwPcg", "ILyRWyHtJoE", "AE8Pelpo424", "Cz6SxXJNZbw", "Q9NvYECKWuc"]) {
@@ -81,9 +84,15 @@ test("original public intro player retains HeyGen while exposing a visible YouTu
   }
   assert.match(player, /existingYouTubeMirrors/);
   assert.ok(player.includes("{mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}"));
+  assert.match(player, /const playbackYouTubeId = mirrorId \|\| video\.youtubeId/);
+  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
-  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
+  assert.match(player, /data-video-playback=\{playbackYouTubeId \? "youtube" : "heygen"\}/);
+  assert.match(player, /!playbackYouTubeId && showRecovery/);
+  assert.match(player, /data-video-recovery="heygen"/);
+  assert.match(player, /transcriptRef\.current\.open = true/);
   assert.match(minimal, /\.quickWatch/);
+  assert.match(minimal, /\.recovery/);
 });
 
 test("method showcases expose direct original HeyGen fallback and release tests handle open galleries", () => {

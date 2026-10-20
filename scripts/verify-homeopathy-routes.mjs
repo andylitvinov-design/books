@@ -29,9 +29,9 @@ for (const { locale, slug } of localizedRouteParams) {
 }
 
 for (const book of books) {
-  const response = await request(`/books/${book.id}`)
+  const response = await request(`/ru/books/${book.id}`)
   const body = await response.text()
-  if (!body.includes(book.title)) throw new Error(`/books/${book.id} does not contain its title`)
+  if (!body.includes(book.title)) throw new Error(`/ru/books/${book.id} does not contain its title`)
 }
 
 await request('/ru/homeopathy/remedies/not-a-remedy', 404)

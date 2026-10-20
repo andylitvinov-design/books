@@ -73,7 +73,7 @@ test('category selector cannot manufacture masters, offers or prices, and respec
   assert.equal(normalizeDiscoveryInput('У-Син, Ёлка'), 'у син елка')
 })
 
-test('one-tap free discovery includes all eligible free areas, without surfacing paid offers',()=>{
+test('free-only price facet includes all eligible free areas without surfacing paid offers',()=>{
   const freeWuXing={...offering('free-wuxing','homeopathy_holistic','Free Wu Xing profile','Personal resource map'),pricingMode:'free'};
   const freeSomatic={...offering('free-somatic','body_somatic','Free somatic introduction','Body awareness'),pricingMode:'free'};
   const paid=offering('paid-reiki','energy_spiritual','Paid Reiki session','Individual session');
@@ -86,21 +86,39 @@ test('one-tap free discovery includes all eligible free areas, without surfacing
   assert.ok(rankDiscoveryServices('',freeOnline,{limit:10}).every(row=>row.service.areaKey!=='homeopathy_holistic'));
 });
 
-test('Find free services CTA is translated, works with empty query and shows free results',async()=>{
+test('Free Services Only is an initially unchecked compact filter below the restored full-width search CTA',async()=>{
   const [ui,css]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
   ]);
-  for(const phrase of ['Find free services','Найти бесплатные услуги','Encontrar servicios gratis'])
+  for(const phrase of ['Free Services Only','Только бесплатные услуги','Solo servicios gratuitos'])
     assert.ok(ui.includes(phrase),phrase);
-  assert.match(ui,/<button type="button" className=\{styles\.freeSubmit\} onClick=\{findFreeServices\}>/);
-  assert.match(ui,/function findFreeServices\(\) \{[\s\S]*?setBudget\("free"\);[\s\S]*?setHasSelection\(true\)/);
-  assert.match(ui,/includeAllAreas:budget==="free"/);
-  assert.match(ui,/budget==="free"\?10:suggestions\.length\?2:4/);
-  assert.match(ui,/budget==="free"\?t\.freeResultTitle:t\.resultTitle/);
-  assert.match(css,/\.freeSubmit\{display:inline-flex;/);
-  assert.match(css,/\.form\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(css,/@media\(max-width:350px\)\{\s*\.form\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.ok(ui.includes('const [budget,setBudget] = useState("")'),'free is off by default');
+  assert.ok(ui.includes('checked={budget === "free"}'),'checkbox and Price select share one state');
+  assert.ok(ui.includes('data-free-services-only'),'free checkbox has a stable interactive target');
+  assert.ok(ui.includes('setBudget(event.target.checked ? "free" : "")'),'checkbox switches free facet on and off');
+  assert.ok(ui.includes('value={budget} onChange={e=>{setBudget(e.target.value);setHasSelection(true)}}'),'changing Price also changes checkbox');
+  assert.ok(ui.includes('disabled={(!query.trim() && budget!=="free") || aiStatus==="loading"}'),
+    'the original search button becomes actionable even without text when free is selected');
+  assert.ok(ui.includes('if (!text && budget !== "free") return;'),'empty free-only searches reach results');
+  assert.ok(ui.includes('if (!text || !aiAvailable || !useExternalAi) return;'),'empty query never requests external AI');
+  assert.ok(ui.includes('includeAllAreas:budget==="free"'),'free matching covers every service category');
+  assert.ok(ui.includes('budget==="free"?10:suggestions.length?2:4'),'free editorial matches are not unnecessarily hidden');
+  assert.ok(ui.includes('budget==="free"?t.freeResultTitle:t.resultTitle'));
+  const formIndex=ui.indexOf('<form className={styles.form}');
+  const endForm=ui.indexOf('</form>',formIndex);
+  const checkbox=ui.indexOf('className={styles.freeOnlyToggle}');
+  const facets=ui.indexOf('className={styles.quickFacets}');
+  assert.ok(formIndex>=0 && endForm<formIndex+1000 && endForm<checkbox && checkbox<facets,
+    'the small checkbox follows, not splits, the primary search form');
+  assert.ok(css.includes('.freeOnlyToggle{display:inline-flex;'),'checkbox is an understated compact row');
+  assert.ok(css.includes('.form{display:grid;gap:6px;padding:6px;border-radius:14px}'),
+    'phone form restores a single full-width submit');
+  assert.ok(css.includes('.submit{width:100%;min-width:0;min-height:44px'),
+    'phone submit spans full search width');
+  assert.ok(!ui.includes('freeSubmit') && !ui.includes('findFreeServices') && !ui.includes('Gift size={19}'),
+    'extra Find free services button is gone');
+  assert.ok(!css.includes('.freeSubmit'),'removed CTA styles cannot override the restored single-button layout');
 });
 
 test('editorial fallback points only to source-backed known routes, never a synthetic booking',()=>{
@@ -114,21 +132,26 @@ test('editorial fallback points only to source-backed known routes, never a synt
   assert.equal(rankEditorialDiscovery('что-то',curated,{category:'business_money'}).length,0)
 })
 
-test('Services: booking-style search and category selector appear above untouched personal Services hero in all three locales',async()=>{
-  const [main,es,ui,css,api]=await Promise.all([
+test('Services: optional booking-style search lives in the dedicated directory for all locales',async()=>{
+  const [main,es,directory,ui,css,api]=await Promise.all([
     readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../app/es/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-directory-page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
     readFile(new URL('../app/api/marketplace/intent-match/route.ts',import.meta.url),'utf8'),
   ])
   for(const page of [main,es]){
-    assert.ok(page.indexOf('<ServicesSmartDiscovery')>page.indexOf('<PublicSiteHeader'))
-    assert.ok(page.indexOf('<ServicesSmartDiscovery')<page.indexOf('<ServicesConversionHero'))
-    assert.match(page,/<ServicesTestsIntro/)
-    assert.match(page,/<ServicesAboutEntry/)
-    assert.match(page,/<PublicConsultationCta/)
+    assert.ok(page.indexOf('<ServicesStudioOffers')>page.indexOf('<ServicesConversionHero'))
+    assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesStudioOffers'))
+    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<PersonalTestimonials'))
+    assert.match(page,/<ServicesIntroMedia/)
+    assert.match(page,/<ServicesMethodVideos/)
+    assert.doesNotMatch(page,/<ServicesSmartDiscovery|<ServiceCart/)
   }
+  assert.match(directory,/<ServicesSmartDiscovery/)
+  assert.match(directory,/<MarketplaceServiceFinder/)
+  assert.match(directory,/createPractitionerRepository/)
   assert.match(ui,/rankDiscoveryServices/)
   assert.match(ui,/rankEditorialDiscovery/)
   assert.match(ui,/onClick=\{\(\)=>chooseCategory\(area\.key\)\}/)
@@ -144,7 +167,6 @@ test('Services: booking-style search and category selector appear above untouche
   assert.match(api,/candidates\.has\(id\)/)
   assert.match(api,/MAX_ATTEMPTS_PER_WINDOW/)
   assert.doesNotMatch(api,/console\.log|analytics|saveGuestResult|logVisitorText/)
-  assert.doesNotMatch(main,/<ServiceCart/)
 })
 
 test('Service discovery scrolls to submitted and category results on mobile and desktop',async()=>{
@@ -158,7 +180,7 @@ test('Service discovery scrolls to submitted and category results on mobile and 
   assert.match(ui,/window\.requestAnimationFrame/)
   assert.match(ui,/ref=\{resultsRef\} tabIndex=\{-1\}/)
   assert.match(ui,/aria-labelledby="hh-service-discovery-results-title"/)
-  assert.equal((ui.match(/setScrollRequest\(\(count\) => count \+ 1\)/g)||[]).length,3)
+  assert.equal((ui.match(/setScrollRequest\(\(count\) => count \+ 1\)/g)||[]).length,2)
   assert.match(css,/\.results\{[^}]*scroll-margin-top:110px\}/)
   assert.match(css,/@media\(max-width:767px\)\{\.results\{scroll-margin-top:16px\}\}/)
 })
@@ -206,16 +228,17 @@ test('service match results use full-width orderable cards with accessible detai
   assert.ok(ui.includes('className={styles.editorialChannels}'))
   assert.ok(ui.includes('id={"hh-listing-details-"+service.id}'))
   assert.ok(ui.includes('service.copy.description || service.copy.shortDescription'))
-  assert.ok(ui.includes('href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}'))
-  const requestLink='<TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>'
+  assert.ok(ui.includes('href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)}'))
+  assert.ok(ui.includes('El formulario de solicitud se abre en inglés; se conserva el servicio elegido.'))
+  const requestLink='<TrackedServiceLink serviceId={service.id} event="order" href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)} aria-label={locale==="es"?"Solicitar este servicio (formulario en inglés)":undefined}>{t.order}</TrackedServiceLink>'
   const detailsToggle='<button type="button" className={styles.suggestionDetailsToggle}'
   const assertActionOrder=source=>{
     const requestIndex=source.indexOf(requestLink)
     const detailsIndex=source.indexOf(detailsToggle)
-    assert.ok(requestIndex>0 && detailsIndex>requestIndex,'Tracked Order action must precede the expandable details button')
+    assert.ok(detailsIndex>0 && requestIndex>detailsIndex,'Details must precede the tracked Order action, as approved by the owner')
   }
   assertActionOrder(ui)
-  assert.throws(()=>assertActionOrder('<div>'+detailsToggle+'>{t.details}</button>'+requestLink+'</div>'))
+  assert.throws(()=>assertActionOrder('<div>'+requestLink+detailsToggle+'>{t.details}</button></div>'))
   assert.throws(()=>assertActionOrder(ui.replace(requestLink,'')))
   assert.throws(()=>assertActionOrder(ui.replace(detailsToggle,'')))
   assert.ok(matcher.includes('safePublicWhatsAppPath(pagePath)'))
@@ -293,13 +316,26 @@ test('mobile result requirements cannot be supplied by hero rules or other break
 })
 
 
-test('Services first fold on mobile uses concise search copy, four action chips and safe 16px input',async()=>{
+test('Services first fold on mobile uses concise search copy, five action chips and safe 16px input',async()=>{
   const [ui,css]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
   ])
   for(const marker of ['Find the right support','Подберите помощь под свой запрос','Encuentra el apoyo que buscas']) assert.ok(ui.includes(marker))
   assert.equal((ui.match(/quickExamples:\[/g)||[]).length,3)
+  const samples=[...ui.matchAll(/exampleList:\[(.*?)\],/g)].map(match=>JSON.parse("["+match[1]+"]"))
+  const chips=[...ui.matchAll(/quickExamples:\[(.*?)\],/g)].map(match=>JSON.parse("["+match[1]+"]"))
+  const expectedAreas=['body_somatic','emotional_psychological','relationships','business_money','personal_development']
+  assert.equal(samples.length,3)
+  assert.deepEqual(chips,[["Body & Energy","Stress & Anxiety","Relationships","Business & Money","Goals, Meaning & Growth"],["Тело и энергия","Стресс и тревога","Отношения","Бизнес и деньги","Цели, смыслы и развитие"],["Cuerpo y energía","Estrés y ansiedad","Relaciones","Negocios y dinero","Metas, sentido y desarrollo"]])
+  for(const [localeIndex,examples] of samples.entries()){
+    assert.equal(examples.length,5,'each locale has exactly five searchable themes')
+    assert.equal(chips[localeIndex].length,examples.length)
+    for(const [themeIndex,query] of examples.entries()){
+      const matchingAreas=classifyDiscoveryIntent(query).map(item=>item.key)
+      assert.ok(matchingAreas.includes(expectedAreas[themeIndex]),`theme ${themeIndex+1} not matched: ${query}`)
+    }
+  }
   assert.equal((ui.match(/mobilePrivacy:/g)||[]).length,3)
   assert.match(ui,/className=\{styles\.exampleShort\}/)
   assert.match(ui,/className=\{styles\.privacyCompact\}/)
@@ -311,6 +347,7 @@ test('Services first fold on mobile uses concise search copy, four action chips 
   assert.ok(mobile.includes('@media(max-width:620px)'))
   assert.match(mobile,/\.textarea\{[^}]*font-size:16px/)
   assert.match(mobile,/\.examples\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(mobile,/\.examples button:last-child\{grid-column:1\/-1;min-height:42px\}/)
   assert.match(mobile,/\.submit\{[^}]*min-height:44px/)
   assert.ok(mobile.includes('.exampleLong,.privacyFull{display:none}'))
 })

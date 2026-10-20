@@ -26,7 +26,7 @@ test('Books stay one flat searchable catalog without mandatory series folders', 
   assert.match(hub, /\/books/);
   assert.match(hub, /\/homeopathy\/remedies/);
   assert.match(hub, /\/wu-xing/);
-  assert.match(hub, /CatalogShowcase/);
+  assert.match(hub, /LibraryFeed/);
 
   assert.match(home, /\$\{locale\}\/library/);
   assert.match(home, /Courses & Library/);

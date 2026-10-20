@@ -45,11 +45,11 @@ test('no ordinary Save or retry shortcut can invoke publisher; only read-only st
   assert.match(src('lib/clients/report-auto-publish.js'),/inspectSavedClientReportPublication/)
   assert.doesNotMatch(src('components/consultation-form.jsx'),/Save & publish|Сохранить и опубликовать/)
   assert.match(src('components/consultation-form.jsx'),/Saving does not publish changes/)
-  assert.match(src('components/consultation-document-actions.jsx'),/prepareReportSession/)
+  assert.match(src('components/consultation-document-actions.jsx'),/publishSavedClientReport/)
   assert.match(src('app/[locale]/client/session/[shareSelector]/page.js'),/authorizeSessionGuest/)
 })
 
-test('review entry is immediately available and prepares only the exact owner draft',async()=>{
+test('materials editor retains a draft-only entry while report preview offers direct publication',async()=>{
   const {prepareReportSession}=await import('../lib/consultations/owner-report-sharing.js')
   const calls=[];const session='a18b8d2a-e6e3-4b11-baad-f9401a2c16a3'
   const url=await prepareReportSession('client-1','report-1',async(path,options)=>{
@@ -58,12 +58,70 @@ test('review entry is immediately available and prepares only the exact owner dr
   assert.equal(url,`/admin/clients/client-1/sessions/${session}`)
   assert.equal(calls.length,1);assert.equal(calls[0].path,'/api/admin/clients/client-1/sessions')
   assert.deepEqual(JSON.parse(calls[0].body),{documentId:'report-1'})
-  assert.equal(calls[0].credentials,'same-origin');assert.equal(calls[0].method,'POST')
   const action=src('components/consultation-document-actions.jsx')
+  assert.match(action,/await publishSavedClientReport\(clientId,recordId\)/)
   assert.match(action,/\{kind!=='payment'&&active&&clientId&&\s*<button[^>]*className="consultation-prepare-session"/)
-  assert.match(action,/await prepareReportSession\(clientId,recordId\)/)
+  assert.match(action,/ru\?'Опубликовать':'Publish'/)
+  assert.doesNotMatch(action,/Review and publish client page|Проверить и опубликовать страницу клиента|window\.location\.assign/)
   const editor=src('components/report-video-materials-editor.jsx')
   assert.match(editor,/!editorUrl&&<button/)
   assert.match(editor,/window\.location\.assign\(await prepareReportSession\(clientId,documentId\)\)/)
   assert.doesNotMatch(editor,/action:['"]publish|publishClientSession/)
+})
+
+const SESSION_ID='a18b8d2a-e6e3-4b11-baad-f9401a2c16a3'
+const HASH='f'.repeat(64)
+function ownerPublishFixture({reportId='report-1',sourceId='report-1',revision=4,postStatus=200}={}) {
+  const calls=[]
+  const fetcher=async(path,options={})=>{
+    calls.push({path,...options})
+    if(path==='/api/admin/clients/client-1/sessions')return {
+      ok:true,status:201,json:async()=>({id:SESSION_ID}),
+    }
+    if(path===`/api/admin/clients/client-1/sessions/${SESSION_ID}` && options.method==='GET')return {
+      ok:true,status:200,json:async()=>({session:{
+        draftRevision:revision,draft:{reportDocumentId:reportId},
+        publicationSource:{reportDocumentId:sourceId,reportFingerprint:HASH},
+      }}),
+    }
+    if(path===`/api/admin/clients/client-1/sessions/${SESSION_ID}` && options.method==='POST')return {
+      ok:postStatus===200,status:postStatus,json:async()=>postStatus===200?
+        ({id:SESSION_ID,revision}):({error:'REPORT_VERSION_CHANGED'}),
+    }
+    throw new Error('Unexpected fetch: '+path)
+  }
+  return {calls,fetcher}
+}
+
+test('one tap publishes directly using the exact owner report fingerprint and draft revision',async()=>{
+  const {publishSavedClientReport}=await import('../lib/consultations/owner-report-sharing.js')
+  const f=ownerPublishFixture()
+  const result=await publishSavedClientReport('client-1','report-1',f.fetcher)
+  assert.deepEqual(result,{sessionId:SESSION_ID,revision:4})
+  assert.deepEqual(f.calls.map(x=>x.method),['POST','GET','POST'])
+  assert.equal(f.calls[0].credentials,'same-origin')
+  assert.equal(f.calls[1].cache,'no-store')
+  const request=JSON.parse(f.calls[2].body)
+  assert.deepEqual(request,{action:'publish',expectedRevision:4,
+    expectedReportDocumentId:'report-1',expectedReportFingerprint:HASH})
+  assert.equal(f.calls[2].credentials,'same-origin')
+  assert.equal(f.calls[2].cache,'no-store')
+})
+
+test('one tap refuses to publish a different report attached to the same session',async()=>{
+  const {publishSavedClientReport}=await import('../lib/consultations/owner-report-sharing.js')
+  for(const options of [{reportId:'other-report'},{sourceId:'other-report'},{revision:0}]){
+    const f=ownerPublishFixture(options)
+    await assert.rejects(publishSavedClientReport('client-1','report-1',f.fetcher),
+      /REPORT_SESSION_MISMATCH|PUBLICATION_REVIEW_REQUIRED/)
+    assert.deepEqual(f.calls.map(x=>x.method),['POST','GET'])
+  }
+})
+
+test('concurrent report edit blocks publication and surfaces its version conflict',async()=>{
+  const {publishSavedClientReport}=await import('../lib/consultations/owner-report-sharing.js')
+  const f=ownerPublishFixture({postStatus:409})
+  await assert.rejects(publishSavedClientReport('client-1','report-1',f.fetcher),
+    e=>e.code==='REPORT_VERSION_CHANGED'&&e.status===409)
+  assert.deepEqual(f.calls.map(x=>x.method),['POST','GET','POST'])
 })

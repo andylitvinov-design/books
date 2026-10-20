@@ -72,7 +72,10 @@ test("Vercel source controls contain the known spend guards", () => {
   assert.equal(v.ignoreCommand, "node scripts/vercel-ignore-build.mjs");
   assert.equal(v.git.deploymentEnabled["codex/public-book-library"], true);
   assert.match(n, /deviceSizes:\s*\[640, 828, 1080, 1440, 1920, 2560\]/);
-  assert.match(n, /minimumCacheTTL:\s*86400/);
+  assert.match(n, /minimumCacheTTL:\s*2678400/);
+  assert.match(n, /formats:\s*\["image\/webp"\]/);
+  assert.match(n, /qualities:\s*\[75\]/);
+  assert.ok(n.includes("static-card-media"));
   assert.doesNotMatch(n, /images:\s*\{\s*unoptimized:\s*true/);
   assert.match(n, /outputFileTracingExcludes/);
 });

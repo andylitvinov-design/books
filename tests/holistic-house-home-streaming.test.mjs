@@ -25,10 +25,10 @@ test("EN/RU/ES first screen clearly distinguishes free written review, tests and
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx"), esServices = read("app/es/services/page.tsx");
   const seo = read("lib/home-seo.ts"), css = read("app/holistic-house-home.css");
-  assert.match(home, /heroTitle: "Understand your situation\. Find your next step\."/);
-  assert.match(home, /heroTitle: "Разберитесь в ситуации/);
-  assert.match(es, /Comprende tu situación/);
-  assert.match(seo, /free self-checks and personal guidance in Toronto/);
+  assert.match(home, /heroTitle: "Stuck in relationships, work or an important decision\?"/);
+  assert.match(home, /heroTitle: "Сложности в отношениях, работе или важном решении\?"/);
+  assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
+  assert.match(seo, /Personal Sessions in Toronto & Online/);
   assert.match(seo, /openGraph:/);
   assert.match(seo, /twitter:/);
   for (const page of [home, es]) {
@@ -40,7 +40,7 @@ test("EN/RU/ES first screen clearly distinguishes free written review, tests and
   }
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(es, /href="\/es\/services#consultation"/);
-  assert.match(esServices, /<PublicConsultationCta locale="es" id="consultation" serviceBooking \/>/);
+  assert.match(esServices, /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
   assert.match(css, /\.house-home--services \.service-home-button--primary \{/);
   assert.match(css, /\.house-home--services \.service-home-button--secondary \{ display: inline-flex; \}/);
 });

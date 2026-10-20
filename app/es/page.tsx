@@ -2,15 +2,16 @@ import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import Link from 'next/link';
 import { BriefcaseBusiness, ClipboardCheck, Flower2, GraduationCap, Sparkles } from 'lucide-react';
-import { SiteVideoPlayer } from '@/components/site-video-player';
+import { PersonalTestimonials } from '@/components/personal-testimonials';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { PublicSiteHeader } from '@/components/public-site-header';
+import { AcquisitionEventLink } from '@/components/acquisition-event-link';
 import { spanishMetadata } from '@/lib/spanish-metadata';
-export const metadata = spanishMetadata('/es', 'Holistic House — autoevaluaciones gratuitas y acompañamiento personal', 'Empieza con una revisión escrita de tu situación, una guía simbólica Wu Xing o pruebas de autoobservación. Sesiones personales opcionales en Toronto y en línea.');
+export const metadata = spanishMetadata('/es', 'Sesiones personales en Toronto y en línea | Holistic House', 'Explora tus preguntas sobre relaciones, trabajo y decisiones con Andrey Litvinov. Sesiones personales desde €50 y revisión escrita gratuita opcional.');
 const cards = [
   { icon: BriefcaseBusiness, image: '/images/holistic-house/video-posters/constellations-en-v1.webp', title: 'Constelaciones y apoyo arquetípico', text: 'Explora obstáculos y nuevas posibilidades para avanzar hacia tus objetivos.', href: '/es/services/systemic-constellations' },
   { icon: Flower2, image: '/images/holistic-house/distance-homeopathy.webp', title: 'Psicohomeopatía', text: 'Explora tu bienestar y tus recursos a través de un enfoque simbólico; las sesiones personales son de pago.', href: '/es/services/psychohomeopathy' },
-  { icon: Sparkles, image: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp', title: 'Psicoterapia con imágenes', text: 'Comprende las emociones y patrones que se repiten; construye claridad y apoyo interior.', href: '/es/services/imagery-therapy' },
+  { icon: Sparkles, image: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp', title: 'Trabajo con imágenes guiadas', text: 'Comprende las emociones y patrones que se repiten; construye claridad y apoyo interior.', href: '/es/services/imagery-therapy' },
 ];
 export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
@@ -19,13 +20,25 @@ export default function SpanishHomePage() {
       <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
       <div className="service-home-hero-copy">
         <p className="service-home-kicker">Acompañamiento personal · Toronto y en línea</p>
-        <h1 id="house-title"><span>Comprende tu situación.</span><span>Elige tu próximo paso.</span></h1>
-        <p className="service-home-intro">Pruebas gratuitas y una revisión personal por escrito. Si lo deseas, sesiones individuales de pago con Andrey Litvinov.</p>
+        <h1 id="house-title"><span>¿Dudas en tus relaciones, tu trabajo o una decisión importante?</span></h1>
+        <p className="service-home-intro">Explora una pregunta personal con Andrey Litvinov mediante constelaciones sistémicas y trabajo con imágenes. Sesiones en Toronto y en línea; también puedes comenzar con una revisión escrita gratuita.</p>
         <div className="service-home-actions" id="free-start">
-          <Link className="service-home-button service-home-button--primary" href="/es/services/free-situation-review" data-hero-cta="free-written-review">Solicitar revisión gratuita<span aria-hidden="true">→</span></Link>
-          <Link className="service-home-button service-home-button--secondary" href="/es/client/tests" data-hero-cta="free-tests">Hacer pruebas gratuitas<span aria-hidden="true">→</span></Link>
+          <AcquisitionEventLink className="service-home-button service-home-button--primary"
+            href="/es/services#consultation" event="service_view"
+            attributes={{ "data-hero-cta": "paid-sessions" }} prefetch={false}>
+            Solicitar sesión personal · desde €50<span aria-hidden="true">→</span>
+          </AcquisitionEventLink>
+          <AcquisitionEventLink className="service-home-button service-home-button--secondary"
+            href="/es/services/free-situation-review" event="service_request_start"
+            attributes={{ "data-hero-cta": "free-written-review" }} prefetch={false}>
+            Solicitar revisión gratuita<span aria-hidden="true">→</span>
+          </AcquisitionEventLink>
         </div>
-        <Link className="service-home-paid-link" href="/es/services#consultation" data-hero-cta="paid-sessions">Sesiones personales · desde €50 <span aria-hidden="true">→</span></Link>
+        <AcquisitionEventLink className="service-home-selfcheck-link"
+          href="/es/client/tests" event="self_check_start"
+          attributes={{ "data-hero-cta": "free-tests" }} prefetch={false}>
+          Hacer pruebas gratuitas<span aria-hidden="true">→</span>
+        </AcquisitionEventLink>
         <p className="service-home-offer-note">La revisión gratuita es un informe escrito, no una llamada. Las consultas individuales son de pago.</p>
       </div>
     </section>
@@ -56,20 +69,9 @@ export default function SpanishHomePage() {
           </div>
         </article>
       </div>
-      <p className="service-home-start__returning">¿Ya tienes resultados o un perfil? <Link href="/es/client">Abrir mi espacio <span aria-hidden="true">→</span></Link></p>
+      <p className="service-home-start__returning"><Link href="/es/tests">Cómo funcionan las pruebas gratuitas <span aria-hidden="true">→</span></Link><span aria-hidden="true"> · </span>¿Ya tienes resultados o un perfil? <Link href="/es/client">Abrir mi espacio <span aria-hidden="true">→</span></Link></p>
     </section>
-    <section className="about-testimonials" aria-labelledby="home-es-testimonials-title">
-      <div className="about-section-heading">
-        <p className="homeopathy-kicker">Experiencias de participantes</p>
-        <h2 id="home-es-testimonials-title">Testimonios en vídeo</h2>
-        <p>Testimonios anteriores de participantes, grabados originalmente en ruso. Puedes consultar más testimonios y el contexto de los archivos en la página Sobre mí.</p>
-        <Link href="/es/about#testimonials-title">Ver todos los testimonios <span aria-hidden="true">→</span></Link>
-      </div>
-      <div className="about-video-grid">
-        <SiteVideoPlayer video={{ youtubeId: 'm9RfDgK76PU', title: 'Anton Korchinsky — testimonio sobre nuestro trabajo', language: 'ru' }} locale="es" textLanguage="es" compact />
-        <SiteVideoPlayer video={{ youtubeId: '5oj0BIbLT4w', title: 'Elena Bakhtina — testimonio de una clienta', language: 'ru' }} locale="es" textLanguage="es" compact />
-      </div>
-    </section>
+    <PersonalTestimonials locale="es" variant="home" />
     <section className="service-home-about" aria-labelledby="service-home-about-title"><div><p className="service-home-kicker">Sobre mí</p><h2 id="service-home-about-title">Andrey Litvinov</h2></div><div><p>Consultor, facilitador y docente. Llevo más de 20 años trabajando con grupos y prácticas de desarrollo interior, combinando constelaciones sistémicas, trabajo con imágenes, enfoques corporales y exploración arquetípica.</p><Link href="/es/about">Conoce mi trabajo<span aria-hidden="true">→</span></Link></div></section>
     <section className="service-home-library" aria-labelledby="service-home-library-title"><Image unoptimized src="/images/holistic-house/books-library.webp" alt="" fill sizes="(max-width: 767px) 100vw, 1200px" className="service-home-library-photo" /><div className="service-home-library-copy"><p className="service-home-kicker">Libro del autor</p><h2 id="service-home-library-title">El poder de la vida</h2><p className="service-home-library-intro">Mi libro sobre desarrollo interior, psicohomeopatía y un enfoque integrador del trabajo con los estados humanos.</p><Link href="/es/books">Explorar la biblioteca<span aria-hidden="true">→</span></Link></div></section>
     <PublicConsultationCta locale="es" />

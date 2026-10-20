@@ -22,6 +22,17 @@ on:
       - 'docs/billing/proposed-concurrent-course-schema.sql'
       - 'tests/course-dashboard-integration.test.mjs'
       - 'tests/cabinet-free-energy-courses.test.mjs'
+      - 'tests/energywork-ai-course-preview.test.mjs'
+      - 'tests/energywork-ai-course-private-save.test.mjs'
+      - 'data/academy/energywork-ai-schema.js'
+      - 'lib/academy/energywork-course-repository.js'
+      - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
+      - 'app/api/app/\[...path\]/route.js'
+      - 'data/academy/energywork-ai-curriculum.ts'
+      - 'components/energywork-ai-learner.*'
+      - 'components/principles-of-energywork.tsx'
+      - 'components/academy-free-course-banner.tsx'
+      - 'app/\[locale\]/academy/\[\[...slug\]\]/page.tsx'
       - 'tests/helpers/course-ui-harness.mjs'
       - 'tests/course-concurrency-ui.test.mjs'
       - 'tests/course-free-slot-restart.test.mjs'
@@ -45,8 +56,10 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Test exact five-test fixed curricula, old R3 and multicourse
-        run: node --conditions=react-server --test tests/course-presets.test.mjs tests/my-course.test.mjs tests/course-plans.test.mjs tests/multi-courses-architecture.test.mjs tests/course-concurrency-ui.test.mjs tests/course-dashboard-integration.test.mjs tests/course-free-slot-restart.test.mjs tests/cabinet-free-energy-courses.test.mjs
+        run: node --conditions=react-server --test tests/course-presets.test.mjs tests/my-course.test.mjs tests/course-plans.test.mjs tests/multi-courses-architecture.test.mjs tests/course-concurrency-ui.test.mjs tests/course-dashboard-integration.test.mjs tests/course-free-slot-restart.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/energywork-ai-course-preview.test.mjs tests/energywork-ai-course-private-save.test.mjs
       - name: Lint course code
         run: npx eslint components/app/course-preset-catalog.jsx components/app/my-course.jsx components/app/course-r3-steps.jsx components/app/my-courses-dashboard.jsx components/app/course-entry-selector.jsx components/app/cabinet-free-course-banners.jsx lib/inner-growth/course-presets.js lib/app/growth-course.js
+      - name: Lint Energywork learner
+        run: npx eslint components/energywork-ai-learner.tsx data/academy/energywork-ai-curriculum.ts components/principles-of-energywork.tsx components/academy-free-course-banner.tsx lib/academy/energywork-course-repository.js data/academy/energywork-ai-schema.js
       - name: Next production compile
         run: npm run build

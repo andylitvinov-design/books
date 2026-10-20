@@ -15,7 +15,7 @@ async function request(url,method='GET',body){
   if(!response.ok)throw new Error(data.error||'MATERIAL_UNAVAILABLE')
   return data
 }
-function uploadFile(intent,file,mime,onProgress){
+export function uploadFile(intent,file,mime,onProgress){
   if(intent.provider==='external')return new Promise((resolve,reject)=>{
     if(!intent.uploadUrl?.startsWith('https://'))return reject(new Error('VIDEO_STORAGE_NOT_CONFIGURED'))
     const xhr=new XMLHttpRequest()
@@ -51,6 +51,8 @@ export function PractitionerMaterialsCabinet(){
   const [files,setFiles]=useState([])
   const [materials,setMaterials]=useState([])
   const [filter,setFilter]=useState('all')
+  const [publicLocales,setPublicLocales]=useState({})
+  const [publishing,setPublishing]=useState('')
   const [loading,setLoading]=useState(true)
   const [busy,setBusy]=useState(false)
   const [progress,setProgress]=useState('')
@@ -117,6 +119,24 @@ export function PractitionerMaterialsCabinet(){
       }
       setError(messages[e.message]||e.message)
     }finally{setBusy(false)}
+  }
+  async function changePublication(item,publish){
+    if(publishing)return
+    const nextLocale=publicLocales[item.id]||item.publicLocale||locale
+    if(publish&&!window.confirm(ru?
+      'Опубликовать это обучающее видео в открытой библиотеке? Подтвердите, что в нём нет данных клиентов и оно доступно всем по ссылке.':
+      'Publish this educational video in the public Library? Confirm it contains no client information and can be watched by anyone with the link.'))return
+    setPublishing(item.id);setError('');setFeedback('')
+    try{
+      await request('/api/admin/materials/'+item.id,'POST',{
+        action:publish?'publish-library':'unpublish-library',
+        locale:nextLocale,reviewed:publish,
+      })
+      await reload()
+      setFeedback(publish?(ru?'Видео появилось в публичной библиотеке.':'Video is now in the public Library.'):
+        (ru?'Видео скрыто из публичной библиотеки.':'Video removed from the public Library.'))
+    }catch(e){setError(e.message||'PUBLICATION_UNAVAILABLE')}
+    finally{setPublishing('')}
   }
   const visible=materials.filter(item=>filter==='all'||item.kind===filter)
   return <div className={styles.shell}>
@@ -206,6 +226,28 @@ export function PractitionerMaterialsCabinet(){
           :<video className={styles.mediaPreview} controls playsInline preload="none"
             src={'/api/admin/materials/'+item.id+'/media'}/>}
         {item.description&&<p>{item.description}</p>}
+        {item.kind==='youtube'&&<div className={styles.publication}>
+          {item.publishedAt?<div className={styles.published}>
+            {ru?'Опубликовано в библиотеке':'Published in Library'}
+            {' · '}<a href={'/'+(item.publicLocale||'en')+'/library'} target="_blank" rel="noopener noreferrer">
+              {ru?'Открыть ↗':'View ↗'}</a>
+          </div>:<p className={styles.privateLabel}>{ru?'Только внутренние материалы':'Owner materials only'}</p>}
+          <div className={styles.publishActions}>
+            <select aria-label={ru?'Язык публикации':'Publication language'}
+              value={publicLocales[item.id]||item.publicLocale||locale}
+              onChange={e=>setPublicLocales(prev=>({...prev,[item.id]:e.target.value}))}>
+              <option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option>
+            </select>
+            <button type="button" disabled={!!publishing} onClick={()=>void changePublication(item,!item.publishedAt)}
+              className={item.publishedAt?styles.unpublish:styles.publish}>
+              {publishing===item.id?(ru?'Сохранение…':'Saving…'):item.publishedAt?
+                (ru?'Снять с публикации':'Unpublish'):(ru?'Опубликовать в Library':'Publish to Library')}
+            </button>
+          </div>
+        </div>}
+        {item.kind==='video'&&<p className={styles.privateLabel}>{ru?
+          'Исходный файл остаётся закрытым. Для публичной библиотеки добавьте отдельную ссылку YouTube (Unlisted).':
+          'This original file stays private. To publish it in the Library, add an Unlisted YouTube link separately.'}</p>}
         <div className={styles.itemFooter}>{ru?'Доступно для клиентских отчётов':'Available for client reports'}</div>
       </article>)}
     </div>

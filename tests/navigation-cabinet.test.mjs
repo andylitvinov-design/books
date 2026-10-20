@@ -14,24 +14,27 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
-test('public navigation includes the relationship hub on EN/RU and never exposes administration', async () => {
-  const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'relationships', 'academy', 'courses', 'cabinet'])
+test('public navigation keeps Business as one compact shortcut and never exposes administration', async () => {
+  const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'events', 'relationships', 'academy', 'courses', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
-    assert.equal(items.length, locale === 'es' ? 6 : 7)
-    if (locale !== 'es') assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
+    assert.equal(items.length, 8)
+    assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
+    assert.equal(items.find(item => item.id === 'events').href, `/${locale}/events`)
+    assert.equal(items.some(item => item.id === 'business'), false)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
     assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)
     assert.equal(items.find(item => item.id === 'academy').external, false)
     assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/courses`)
     assert.ok(!items.some(item => item.id === 'about'))
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
+    assert.equal(getCompactNavigation(locale).find(item => item.id === 'business').href, `/${locale}/explore/business`)
   }
   for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
     const source = await readFile(path, 'utf8')
-    assert.match(source, /getSiteNavigation/)
+    assert.match(source, /getCompactNavigation/)
     assert.match(source, /prefetch=\{false\}/)
   }
 })
@@ -55,7 +58,8 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(page, /redirect\(`\/\$\{requested\}`\)/)
   assert.match(russianPage, /locale="ru"/)
   assert.match(russianPage, /locale !== "ru"\) notFound\(\)/)
-  assert.match(metadata, /Holistic House — free self-checks and personal guidance in Toronto/)
+  assert.match(metadata, /Personal Sessions in Toronto & Online \| Holistic House/)
+  assert.match(metadata, /Личные консультации в Торонто и онлайн \| Holistic House/)
   assert.match(metadata, /languages: \{ en: "\/", ru: "\/ru", es: "\/es", "x-default": "\/" \}/)
 })
 
@@ -65,13 +69,20 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
     readFile('app/ia-v2.css', 'utf8'),
   ])
 
-  assert.match(mobile, /getSiteNavigation/)
-  assert.match(mobile, /CircleUserRound/)
-  assert.match(mobile, /NotebookPen/)
+  assert.match(mobile, /getCompactNavigation/)
+  const icons = await readFile('components/compact-navigation-icons.ts', 'utf8')
+  assert.match(mobile, /compactNavigationIcons/)
+  assert.match(icons, /house: LayoutDashboard/)
+  assert.match(icons, /tests: ClipboardList/)
+  assert.match(icons, /business: BriefcaseBusiness/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
   assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)
-  assert.doesNotMatch(styles, /repeat\(3,minmax\(0,1fr\)\)/)
+  const bottomRules = [...styles.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(([, selector]) => /\.ia222-bottom-navigation(?![\w-])/.test(selector))
+    .map(([, , declarations]) => declarations).join('\n')
+  assert.match(bottomRules, /grid-template-columns:\s*repeat\(6,\s*minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(bottomRules, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,1fr\)\)/)
   assert.match(styles, /white-space: nowrap/)
   assert.match(styles, /--ia222-bottom-height,76px/)
   assert.match(styles, /safe-area-inset-bottom/)
@@ -186,7 +197,7 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
     readFile('components/academy-record-page.tsx', 'utf8'),
     readFile('app/[locale]/homeopathy/remedies/page.tsx', 'utf8'),
     readFile('components/remedy-page.tsx', 'utf8'),
-    readFile('app/books/[bookId]/page.tsx', 'utf8'),
+    readFile('app/[locale]/books/[bookId]/page.tsx', 'utf8'),
   ])
 
   assert.match(cta, /data-consultation-cta/)
@@ -235,7 +246,7 @@ test('compact language menu and cabinet next-step remain available after IA inte
   assert.match(esPublicVerifier, /site-language-menu-trigger/)
 })
 
-test('top site header keeps a visible direct link to the private personal app on mobile', async () => {
+test('top site header puts Library next to language while My House retains cabinet access', async () => {
   const [nav, home, header, styles] = await Promise.all([
     readFile('components/site-navigation.tsx', 'utf8'),
     readFile('components/holistic-house-home.tsx', 'utf8'),
@@ -248,13 +259,13 @@ test('top site header keeps a visible direct link to the private personal app on
   assert.match(nav, /filter\(item => item\.id === 'services'\)/)
   assert.match(nav, /site-nav-free-entry/)
   assert.match(nav, /site-nav-about-entry/)
-  assert.match(nav, /className="site-cabinet-entry"/)
-  assert.match(nav, /href=\{\`\/\$\{activeLocale === 'es' \? 'en' : activeLocale\}\/app\`\}/)
-  assert.match(nav, /data-nav-item="cabinet"/)
-  for (const localeCopy of ['My cabinet', 'Личный кабинет', 'Mi espacio']) assert.ok(nav.includes(localeCopy))
-  assert.match(styles, /\.house-header--services \.site-navigation > \.site-cabinet-entry/)
+  assert.match(nav, /className="site-library-entry"/)
+  assert.match(nav, /href=\{\`\/\$\{activeLocale\}\/library\`\}/)
+  assert.match(nav, /data-nav-item="library"/)
+  for (const localeCopy of ['Library', 'Библиотека', 'Biblioteca']) assert.ok(nav.includes(localeCopy))
+  assert.match(styles, /\.house-header--services \.site-navigation > \.site-library-entry/)
   assert.match(styles, /\.house-header--services \.site-navigation > a \{ display: none; \}/)
-  assert.match(styles, /\.house-header--services \.site-cabinet-entry__compact/)
+  assert.match(styles, /\.house-header--services \.site-library-entry__compact/)
   assert.match(styles, /@media \(max-width: 374px\)/)
 })
 

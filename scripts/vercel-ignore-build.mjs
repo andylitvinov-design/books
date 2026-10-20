@@ -65,7 +65,18 @@ export async function changedFilesViaGithub(previous, current, fetcher = fetch) 
   }
 }
 
+// Pro credit guard: GitHub Actions verifies PRs, and only the production
+// branch needs a Vercel build. Ignore all Preview builds as a defense-in-depth
+// in case Git branch rules are bypassed by a branch created before this policy.
+export function shouldSkipPreviewBuild(environment = process.env) {
+  return environment.VERCEL_ENV === "preview";
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (shouldSkipPreviewBuild()) {
+    console.log("Skip Vercel Preview build; automatic production deploys remain enabled.");
+    process.exit(0);
+  }
   const previous = process.env.VERCEL_GIT_PREVIOUS_SHA;
   const current = process.env.VERCEL_GIT_COMMIT_SHA;
   const local = changedFilesBetween(previous, current);

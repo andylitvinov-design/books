@@ -9,6 +9,7 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { interpretationBandModel } from '../lib/assessments/interpretation-registry.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { gaugeModel, gaugeChange, periodComparison } from '../lib/assessments/dashboard-gauges.js'
+import { scoreChangeReading } from '../lib/assessments/score-change-reading.js'
 
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -27,6 +28,7 @@ const load = (path, imports) => {
 }
 const gauges = load('components/app/assessment-gauge.jsx', {
   '@/lib/assessments/dashboard-gauges': { gaugeModel, gaugeChange },
+  '@/lib/assessments/score-change-reading': { scoreChangeReading },
 })
 const { GuestScaleInterpretation } = load('components/app/guest-scale-interpretation.jsx', {
   '@/lib/assessments/result-report': { buildAssessmentResultReport }, './assessment-gauge': gauges,

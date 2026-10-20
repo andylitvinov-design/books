@@ -1,3 +1,6 @@
+import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
+import { COURSE_ANTISTRESS_SKILLS_V5, OPORA_SKILL_SLIDE_MODEL } from '../lib/inner-growth/anti-stress-skills-v5.js'
+import { COURSE_ANTISTRESS_OUTCOME_V3 } from '../lib/inner-growth/lesson-library.js'
 import test from 'node:test'
 import {courseSingleLessonOutcome} from '../lib/inner-growth/course-single-lesson-outcome.js'
 import assert from 'node:assert/strict'
@@ -50,17 +53,23 @@ async function traverse(data,locale,{choose=true,checkpoints=false}={}){
     assert.ok(next);assert.equal(Boolean(next.props.disabled),false);next.props.onClick();await player.settle()
   }
   assert.ok(submitted)
-  const expected=data.cycle.day===1&&!data.lesson.antiStress?.routePlan?dayOne.DAY_ONE_SLIDES:slideSequence.buildCourseSlides(data.lesson)
+  const expected=data.cycle.day===1&&!data.lesson.antiStress?.routePlan&&data.lesson.antiStress?.slideModel!==OPORA_SKILL_SLIDE_MODEL?dayOne.DAY_ONE_SLIDES:slideSequence.buildCourseSlides(data.lesson)
   assert.deepEqual(visited,expected.map(item=>item.key))
   assert.deepEqual(submitted.visitedSlideKeys,visited)
   player.unmount()
   return {submitted,seen}
 }
 for(const moduleId of ['AS1','AS2','AS3','AS5','AS6'])for(const locale of ['en','ru'])for(let day=1;day<=14;day++){
-  test(`fresh ${moduleId} ${locale} day ${day}: exact factory → real Player → owner storage`,async()=>{
+  test(`${moduleId==='AS2'?'version-pinned legacy':'fresh'} ${moduleId} ${locale} day ${day}: exact factory → real Player → owner storage`,async()=>{
     const h=repositoryHarness({freshPhase:true}),cycle=await h.create(moduleId)
     assert.equal(cycle.preferences.oporaModuleRouter,router.ANTISTRESS_ROUTER_VERSION)
     assert.equal(cycle.preferences.oporaModuleId,moduleId)
+    if(moduleId==='AS2'){
+      assert.equal(cycle.content_version,COURSE_ANTISTRESS_SKILLS_V7,'New factory selects current AS-5.5; the following fixture replays historical V3')
+      // Retain the complete previous-version replay contract on a synthetic
+      // historical fixture. Pinned V5 save paths are checked separately below.
+      h.cycle.content_version=COURSE_ANTISTRESS_OUTCOME_V3
+    }
     h.seedDay(day)
     const data=await h.read(locale)
     if(moduleId!=='AS2'){
@@ -130,8 +139,10 @@ for(const moduleId of ['AS1','AS3','AS5','AS6'])test(`fresh ${moduleId} day1 rej
  assert.equal(receipt.anchor,null)
 })
 
-for(const locale of ['en','ru'])test(`fresh AS2 ${locale} preserves state-first evidence through owner storage and receipt`,async()=>{
+for(const locale of ['en','ru'])test(`legacy AS2 ${locale} preserves state-first evidence through owner storage and receipt`,async()=>{
  const h=repositoryHarness({freshPhase:true});await h.create('AS2')
+ assert.equal(h.cycle.content_version,COURSE_ANTISTRESS_SKILLS_V7)
+ h.cycle.content_version=COURSE_ANTISTRESS_OUTCOME_V3
  const data=await h.read(locale),{submitted}=await traverse(data,locale,{choose:false})
  assert.equal(data.cycle.preferences.oporaModuleRouter,router.ANTISTRESS_ROUTER_VERSION)
  assert.equal(data.lesson.antiStress?.routePlan,undefined)
@@ -143,4 +154,25 @@ for(const locale of ['en','ru'])test(`fresh AS2 ${locale} preserves state-first 
  assert.equal(receipt.innerObservation.need,locale==='ru'?'Отдых':'Rest')
  assert.equal(receipt.innerObservation.selectedAction,locale==='ru'?'Пауза':'A pause')
  assert.equal(receipt.state,null)
+})
+
+for(const locale of ['en','ru'])for(let day=1;day<=14;day++)test(`version-pinned SKILLS-5 AS2 ${locale} day ${day}: factory, actual compact Player and exact saved lesson`,async()=>{
+ const h=repositoryHarness({freshPhase:true});const cycle=await h.create('AS2')
+ assert.equal(cycle.content_version,COURSE_ANTISTRESS_SKILLS_V7);h.cycle.content_version=COURSE_ANTISTRESS_SKILLS_V5;h.seedDay(day)
+ const data=await h.read(locale);assert.equal(data.lesson.antiStress.slideModel,OPORA_SKILL_SLIDE_MODEL)
+ assert.equal(data.learningSkills.length,7);assert.equal(data.lesson.antiStress.routePlan,undefined)
+ const {submitted}=await traverse(data,locale,{choose:false})
+ assert.ok(!submitted.stateJourney,'A new compact course must not invent legacy phase evidence')
+ assert.equal(submitted.dailyMethodChoice,undefined)
+ assert.equal(submitted.dailyMethodHintUsed,undefined)
+ if(day===2){
+   await assert.rejects(()=>h.command({...submitted,dailyMethodChoice:'skip'},locale),/INVALID_OPORA_METHOD_DAY/)
+   assert.equal(h.sessions.length,day-1,'A rejected legacy payload cannot complete the new lesson')
+ }
+ const saved=await h.command(submitted,locale)
+ assert.equal(h.sessions.at(-1).lesson_id,data.lesson.id)
+ assert.equal(h.sessions.at(-1).signals.skillId,data.lesson.antiStress.skillId)
+ assert.equal(h.cycle.content_version,COURSE_ANTISTRESS_SKILLS_V5)
+ assert.equal(h.sessions.at(-1).signals.practiceAttempt??null,submitted.practiceAttempt??null)
+ if(day===14)assert.equal(saved.cycle.status,'completed')
 })

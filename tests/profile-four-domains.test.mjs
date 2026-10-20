@@ -61,7 +61,7 @@ test('Google and private cabinets both select four areas without auto-linking pr
   assert.match(domain, /credentials: 'same-origin'/)
   assert.match(domain, /cache: 'no-store'/)
   assert.match(domain, /recommendationItemType\(item, document\.recommendationType\)/)
-  assert.match(domain, /defaultOpen=\{external\}/)
+  assert.match(domain, /open=\{expanded\}/)
   assert.match(domain, /\/app\/portfolio\?tab=dynamics/)
   assert.match(domain, /<ProfileServiceOffer area={active} locale={locale} \/>/)
   assert.match(domain, /data-profile-service-cta={area}/)

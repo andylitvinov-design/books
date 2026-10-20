@@ -1,64 +1,72 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
-import {recommendAntistressModule} from '../lib/inner-growth/antistress-module-router.js'
+import { readFileSync } from 'node:fs'
+import { recommendAntistressModule } from '../lib/inner-growth/antistress-module-router.js'
 
-const read = path => readFileSync(new URL('../'+path, import.meta.url), 'utf8')
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('the first post-test viewport is a recommendation that requires explicit scale confirmation before Day 1',()=>{
-  const ui=read('components/app/antistress-module-finder.jsx')
-  const root=read('components/app/my-course.jsx')
-  const steps=read('components/app/course-r3-steps.jsx')
-  const sections=['data-module-recommendation','data-opora-route-picker',
-    'data-opora-results','data-opora-skills','data-opora-bottom-start']
-  for(let i=1;i<sections.length;i++){
-    assert.ok(ui.indexOf(sections[i-1]) < ui.indexOf(sections[i]),
-      sections[i-1]+' should come before '+sections[i])
-  }
-  assert.match(ui,/Start course · Day 1/)
-  assert.match(ui,/Начать курс · День 1/)
-  assert.match(ui,/Comenzar curso · Día 1/)
-  assert.equal((ui.match(/onClick=\{startDayOne\}/g)||[]).length,2)
-  assert.match(ui,/data-course-consent-module/)
-  assert.match(ui,/nextIsScaleReview/)
-  assert.match(steps,/nextIsScaleReview onStart=\{reviewModuleScales\}/)
-  assert.match(steps,/data-course-scale-confirmation/)
-  assert.match(steps,/compactResults/)
-  assert.doesNotMatch(steps,/onStart=\{selection=>submitFocusSelection/)
-  assert.match(ui,/disabled=\{!canStart\}/)
-  assert.match(ui,/Boolean\(weekly\)/)
-  assert.match(ui,/onStart\(\{/)
-  assert.match(ui,/moduleId:chosen/)
-  assert.match(root,/stage >= 1 && stage <= 2 && !fastAntistressEntry/)
-  assert.match(root,/stage >= 1 && stage <= 3 && <CourseR3Steps/)
+test('post-test OPORA screen is one approved course welcome with a single direct start action', () => {
+  const ui = read('components/app/antistress-module-finder.jsx')
+  const steps = read('components/app/course-r3-steps.jsx')
+  const root = read('components/app/my-course.jsx')
+  assert.match(ui, /data-course-welcome-screen/)
+  assert.match(ui, /data-course-unified-entry/)
+  assert.match(ui, /data-course-first-lesson-preview/)
+  assert.match(ui, /data-opora-route-picker/)
+  assert.match(ui, /0\/14 completed/)
+  assert.match(ui, /<progress className=\{styles\.courseProgress\} value=\{0\} max=\{14\}/)
+  assert.match(ui, /Your course is ready/)
+  assert.match(ui, /Ваш курс готов!/)
+  assert.match(ui, /¡Tu curso está listo!/)
+  assert.match(ui, /course-focus-mountain-boy\.webp/)
+  assert.match(ui, /Based on your test results/)
+  assert.match(ui, /Start my first lesson/)
+  assert.match(ui, /Начать первый урок/)
+  assert.match(ui, /Empezar mi primera lección/)
+  assert.match(ui, /data-course-consent-module/)
+  assert.match(ui, /onClick=\{startDayOne\}/)
+  assert.match(steps, /onStart=\{startChosenModule\}/)
+  assert.match(steps, /onLaunchReady\?\.\(courseId\)/)
+  assert.match(root, /onLaunchReady=\{id=>/)
+  assert.match(root, /launchDirectly=\{directLaunchCourseId===state\.course\.id\}/)
+  const today = read('components/app/course-today.jsx')
+  assert.match(today, /setQuestOpen\(true\)/)
+  assert.match(today, /if\(firstLessonIntent\.current&&!firstLessonConsumed\.current/)
+  assert.match(today, /focusOpen&&data\.programme\?\.id!=='stress'/)
+  assert.match(steps, /submitFocusSelection\(useMeasuredScales \? selected : \[\], useMeasuredScales, selection\)/)
+  assert.doesNotMatch(steps, /if\(stage===3 && isAntistress\) \{\s*if\(!moduleSelection\)/)
+  assert.match(root, /const stressWelcome = stage === 3/)
+  assert.match(root, /!stressWelcome && !isHistory/)
 })
 
-test('all six visible course phases fit small screens without vertical words',()=>{
-  const ui=read('components/app/antistress-module-finder.jsx')
-  const css=read('components/app/antistress-module-finder.module.css')
-  assert.match(ui,/ANTISTRESS_MODULE_GOALS\.map/)
-  assert.match(ui,/aria-pressed=\{chosen===item\.id\}/)
-  assert.match(ui,/onClick=\{\(\)=>setChosenRoute\(item\.id\)\}/)
-  assert.match(ui,/setChosenRoute\(null\)/)
-  assert.match(css,/@media\(max-width:520px\)/)
-  assert.match(css,/@media\(max-width:390px\)/)
-  assert.match(css,/grid-template-columns:30px minmax\(0,1fr\)/)
-  assert.match(css,/grid-column:2;grid-row:2/)
-  assert.match(css,/overflow-wrap:break-word/)
-  assert.doesNotMatch(css,/word-break:break-all/)
+test('six blocks are available in a closed-by-default compact disclosure', () => {
+  const ui = read('components/app/antistress-module-finder.jsx')
+  const css = read('components/app/antistress-module-finder.module.css')
+  assert.match(ui, /<details className=\{styles\.routeDisclosure\} data-opora-route-picker>/)
+  assert.doesNotMatch(ui, /<details className=\{styles\.routeDisclosure\} data-opora-route-picker open>/)
+  assert.match(ui, /ANTISTRESS_MODULE_GOALS\.map/)
+  assert.match(ui, /aria-pressed=\{chosen === item\.id\}/)
+  assert.match(ui, /onClick=\{\(\) => setChosenRoute\(item\.id\)\}/)
+  assert.match(ui, /setChosenRoute\(null\)/)
+  assert.match(css, /@media\(max-width:520px\)/)
+  assert.match(css, /@media\(max-width:390px\)/)
+  assert.match(css, /grid-template-columns:34px minmax\(0,1fr\)/)
+  assert.match(css, /overflow-wrap:break-word/)
+  assert.doesNotMatch(css, /word-break:break-all/)
 })
 
-test('assessment data remain collapsed while skill questions are offered openly',()=>{
-  const ui=read('components/app/antistress-module-finder.jsx')
-  assert.match(ui,/<details className=\{styles\.results\} data-opora-results>/)
-  assert.match(ui,/<details className=\{styles\.skills\} data-opora-skills open>/)
-  assert.match(ui,/ANTISTRESS_MODULE_FINDER_ITEMS\.map/)
-  assert.match(ui,/answers\[item\.id\]\?\?null/)
-  assert.match(ui,/item\.recent&&Number\.isFinite\(item\.score\)/)
-  assert.doesNotMatch(ui,/localStorage|sessionStorage/)
-  const sample=recommendAntistressModule({
-    weekly:{'weekly.load':6,'weekly.tension':7,'weekly.functioning':5},answers:{},
+test('test results are already saved; recommendation is educational and clinical-only AS4 is not self-started', () => {
+  const ui = read('components/app/antistress-module-finder.jsx')
+  assert.match(ui, /useMemo\(\(\) => savedWeekly\(profile\)/)
+  assert.match(ui, /recommendAntistressModule\(\{ weekly: weekly \|\| \{\}, answers: \{\} \}\)/)
+  assert.match(ui, /!isClinicianOnly/)
+  assert.match(ui, /disabled=\{!canStart\}/)
+  assert.match(ui, /Boolean\(weekly\)/)
+  assert.match(ui, /moduleId: chosen/)
+  assert.doesNotMatch(ui, /localStorage|sessionStorage/)
+  const suggested = recommendAntistressModule({
+    weekly: { 'weekly.load':6, 'weekly.tension':7, 'weekly.functioning':5 }, answers: {},
   })
-  assert.equal(sample.moduleId,'AS2')
-  assert.equal(sample.reason,'reported_overload')
+  assert.equal(suggested.moduleId,'AS2')
+  assert.equal(suggested.reason,'reported_overload')
 })

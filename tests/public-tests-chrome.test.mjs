@@ -11,7 +11,7 @@ test('guest test-selection routes reuse public site chrome in EN and RU', () => 
       assert.equal(isPublicTestDiscoveryPath(route), true, route)
       assert.equal(activeNavigationId(route), 'cabinet', route)
     }
-    assert.equal(getSiteNavigation(locale).filter(item => item.id !== 'relationships').length, 6)
+    assert.equal(getSiteNavigation(locale).filter(item => item.id !== 'relationships').length, 7)
   }
 })
 
@@ -23,7 +23,7 @@ test('private client routes are not mistaken for public test discovery', () => {
   ]) assert.equal(isPublicTestDiscoveryPath(route), false, route)
 })
 
-test('Academy and My Tests use the same sitewide banner and bottom navigation', () => {
+test('Academy and My Tests keep navigation and the restored top consultation banner', () => {
   const root = source('app/layout.tsx')
   const ribbon = source('components/sitewide-antistress-banner.tsx')
   const bottom = source('components/mobile-bottom-navigation.tsx')
@@ -31,16 +31,19 @@ test('Academy and My Tests use the same sitewide banner and bottom navigation', 
   const explorer = source('app/[locale]/client/tests/page.tsx')
   assert.match(root, /<SitewideAntistressBanner initialLocale=\{lang\}/)
   assert.match(root, /<MobileBottomNavigation initialLocale=\{lang\}/)
-  assert.ok(ribbon.includes('client(?:\\/tests)?'))
+  assert.match(ribbon, /export function SitewideAntistressBanner/)
   assert.match(bottom, /!isPublicTestDiscoveryPath\(pathname\)/)
   assert.match(ribbon, /data-sitewide-personal-review-banner/)
-  assert.match(bottom, /getSiteNavigation\(locale\)\.filter\(item => item.id !== 'relationships'\)/)
+  assert.match(bottom, /getCompactNavigation\(locale\)/)
+  const model = source('lib/site-navigation-model.js')
+  assert.ok(model.includes('/client/tests'))
+  assert.ok(model.includes("selected === 'es' ? 'en' : selected"))
   assert.match(landing, /<PublicSiteHeader locale=\{typedLocale\}/)
   assert.match(explorer, /<PublicSiteHeader locale=\{locale as Locale\}/)
   assert.match(bottom, /aria-current=\{current === item.id \? 'page'/)
 })
 
-test('guest questionnaires and results hide promotional chrome without hiding the catalog', () => {
+test('guest questionnaires and results hide mobile navigation without hiding the catalog', () => {
   const landing = source('components/app/cabinet-landing.jsx')
   const styles = source('app/ia-v2.css')
   assert.match(landing, /phase === 'catalog' && <div id="cabinet-tests">/)

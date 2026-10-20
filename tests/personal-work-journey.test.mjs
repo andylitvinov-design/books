@@ -17,7 +17,7 @@ test("home presents four photo-left offer cards before videos", () => {
   assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
 });
 
-test("Services leads with free-test banner and five compact photo offers, with a separately priced optional consultation action", () => {
+test("Services leads with five compact photo offers and enquiry, retaining optional free tests", () => {
   const page = source("app", "[locale]", "services", "page.tsx");
   const offers = source("data", "core-service-offers.ts");
   const ui = source("components", "services-solutions.tsx");
@@ -41,7 +41,7 @@ test("Services leads with free-test banner and five compact photo offers, with a
   const renderStart = page.indexOf("  return (");
   assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
   assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
-  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Paid prices belong in explicit offer metadata, not the free overview layout");
+  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Editorial prices remain in metadata; paid card prices are rendered in ServicesSolutions");
 });
 
 test("three service directions link to real pages, not implied stages", () => {
@@ -67,7 +67,7 @@ test("free review and imagery therapy have real EN/RU/ES pages and honest contac
   const intake = source("components", "free-drawing-intake.tsx");
   const consultation = source("components", "personal-consultation-form.tsx");
   for (const phrase of ["Бесплатная диагностика ситуации", "Free Situation Review & Personal Consultation",
-    "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "paidOptions"]) {
+    "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "topic.cards.map", "deeper.title"]) {
     assert.ok(free.includes(phrase), phrase);
   }
   for (const phrase of ["PersonalServiceLanding", "imagery-therapy", "service={service}"]) assert.ok(imagery.includes(phrase), phrase);
@@ -96,19 +96,62 @@ test("service links remain tappable, mobile-safe and keyboard accessible", () =>
   assert.match(detailCss, /grid-template-columns:1fr/);
 });
 
-test("Services hero sells the options and points to free review without diagnostic steps", () => {
+test("Services hero separates paid enquiry from free written review without diagnostic steps", () => {
   const hero = source("components", "services-conversion-hero.tsx");
   const css = source("components", "services-conversion-hero.module.css");
-  assert.match(hero, /Three free ways to begin/);
-  assert.match(hero, /Больше ясности, опоры и вариантов движения/);
-  assert.match(hero, /free-situation-review/);
-  assert.match(hero, /See all three free options/);
-  assert.match(hero, /href="#free-insights"/);
-  for (const label of ["Personal consultation · from €50", "Личная консультация · от €50", "Consulta personal · desde €50"]) assert.ok(hero.includes(label), label);
-  assert.match(hero, /className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review#personal-consultation"\}/);
-  assert.match(hero, /A live one-to-one session is separate and optional/);
-  assert.match(hero, /Личная встреча — отдельно и по желанию/);
-  assert.match(hero, /La sesión en directo es opcional y de pago/);
+  // Owner #996 (f3b6edefc) deliberately rewrote headings and paid enquiry labels.
+  // Keep the free written path, optional paid support and prior agreement explicit.
+  const approvedCopy = {
+    ru: {
+      heading: "Личная работа с вашим вопросом: отношения, работа и решения",
+      lead: "Начните с бесплатного письменного разбора ситуации, тестов самонаблюдения или символического профиля У-Син. Если нужна личная работа, обсудим индивидуальную сессию с Андреем — от €50 за 30 минут.",
+      paidCta: "Запросить личную сессию · от €50",
+      small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
+    },
+    en: {
+      heading: "Personal guidance for relationships, work and life decisions",
+      lead: "Begin with a free written situation review, wellbeing self-checks or a symbolic Wu Xing profile. For personal support, explore a one-to-one session with Andrey — starting at €50 for 30 minutes.",
+      paidCta: "Ask about a personal session · from €50",
+      small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
+    },
+    es: {
+      heading: "Acompañamiento personal para relaciones, trabajo y decisiones",
+      lead: "Empieza con una revisión escrita gratuita, cuestionarios de autoobservación o un perfil simbólico Wu Xing. Si prefieres atención personal, explora sesiones con Andrey desde €50 por 30 minutos.",
+      paidCta: "Solicitar sesión personal · desde €50",
+      small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
+    },
+  };
+  const assertHeroContract = input => {
+    for (const [locale, fields] of Object.entries(approvedCopy)) {
+      const block = input.match(new RegExp("\\b" + locale + ": \\{([\\s\\S]*?)\\n  \\}"))?.[1];
+      assert.ok(block, locale + " copy block");
+      for (const [field, value] of Object.entries(fields)) {
+        assert.ok(block.includes(field + ": " + JSON.stringify(value)), locale + "." + field);
+      }
+    }
+    assert.match(input, /<Link className=\{styles\.cta\} href="#consultation" data-service-hero-cta="paid">\s*\{t\.paidCta\}/);
+    assert.match(input, /<Link className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review"\} data-service-hero-cta="free-written-review">\s*\{t\.cta\}/);
+    assert.ok(input.indexOf('data-service-hero-cta="paid"') < input.indexOf('data-service-hero-cta="free-written-review"'));
+    assert.match(input, /See all three free options/);
+    assert.match(input, /href="#free-insights"/);
+    assert.match(input, /<p className=\{styles\.small\}>\{t\.small\}<\/p>/);
+    assert.doesNotMatch(input, /coaching form|ME, GOAL|Draw by hand on paper/);
+  };
+  assertHeroContract(hero);
+  for (const [before, after] of [
+    ["/services/free-situation-review", "/services/alchemy-of-soul"],
+    ['href="#consultation"', 'href="/en/services/free-situation-review"'],
+    ["{t.paidCta}", "{t.cta}"],
+    ["{t.cta}", "{t.paidCta}"],
+    ["Session time and payment are agreed separately.", "Session time is automatically confirmed."],
+    ["Личная запись и оплата только после согласования.", "Запись подтверждается автоматически."],
+    ["Las sesiones se acuerdan por separado.", "La sesión se confirma automáticamente."],
+    ["{t.small}", ""],
+    ['href="#free-insights"', 'href="#solutions"'],
+  ]) {
+    assert.ok(hero.includes(before), before);
+    assert.throws(() => assertHeroContract(hero.replace(before, after)), undefined, before);
+  }
   assert.match(css, /\.paidLink:focus-visible/);
   assert.match(css, /\.actions \.paidLink\{[\s\S]*?min-height:44px/);
   assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper/);

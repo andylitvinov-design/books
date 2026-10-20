@@ -32,7 +32,8 @@ function shouldHoldHomeRsc(request, delayedLocale) {
 async function chooseHomeLocale(page, locale) {
   const menu = page.locator('.site-language-menu');
   await expect(menu).toHaveCount(1);
-  await menu.locator('.site-language-menu-trigger').click();
+  if (!(await menu.evaluate(node => node.open))) await menu.locator('.site-language-menu-trigger').click();
+  await expect(menu).toHaveAttribute('open', '');
   const link = menu.locator(`a[lang="${locale}"]`);
   await expect(link).toHaveCount(1);
   await expect(link).toHaveAttribute('href', homePath(locale));
@@ -89,8 +90,8 @@ async function verifyFreeOffers(page, locale, engine, width) {
   const capture = page.locator('[data-home-contact-capture] [data-home-free-capture]');
   await expect(capture).toHaveCount(1);
   const options = capture.locator('[data-home-free-option]');
-  assert.deepEqual(await options.evaluateAll(items => items.map(item => item.dataset.homeFreeOption)), ['situation', 'wu', 'stress']);
-  for (const [id, suffix] of [['situation', '/services/free-situation-review'], ['wu', '/services/dao-health-profile'], ['stress', '/client#cabinet-tests']]) {
+  assert.deepEqual(await options.evaluateAll(items => items.map(item => item.dataset.homeFreeOption)), ['selfTest', 'analysis', 'reiki']);
+  for (const [id, suffix] of [['selfTest', '/client/tests'], ['analysis', '/services/free-situation-review'], ['reiki', '/academy/principles-of-energywork/learn']]) {
     const option = capture.locator('button[data-home-free-option="' + id + '"]');
     await expect(option).toBeVisible();
     await option.click();
@@ -106,8 +107,8 @@ async function verifyFreeOffers(page, locale, engine, width) {
     return services && (services.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
   });
   assert.equal(captureAfterServices, true, 'Free chooser must be in the bottom capture after the existing service cards');
-  await capture.locator('button[data-home-free-option="situation"]').click();
-  results.push({ engine, width, locale, freeOffersInBottomCapture: ['situation', 'wu', 'stress'], touchTargets: true });
+  await capture.locator('button[data-home-free-option="selfTest"]').click();
+  results.push({ engine, width, locale, freeOffersInBottomCapture: ['selfTest', 'analysis', 'reiki'], touchTargets: true });
 }
 
 async function exerciseFreeJourneys(page, engine, width) {
@@ -118,25 +119,24 @@ async function exerciseFreeJourneys(page, engine, width) {
     if (request.method() === 'GET' && new URL(request.url()).pathname === '/api/app/guest/bootstrap') {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"expiresAt":null,"moodCheckins":[],"results":[]}' });
     }
+    // Read-only status checks may occur in the test picker and Reiki guest course;
+    // block them without confusing navigation QA with a private-data submission.
+    if (request.method() === 'GET') {
+      return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"APP_UNAVAILABLE"}' });
+    }
     unexpectedApiRequests.push({ method: request.method(), path: new URL(request.url()).pathname });
     return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"APP_UNAVAILABLE"}' });
   });
   for (const locale of ['en', 'ru']) {
     for (const [id, suffix, target] of [
-      ['situation', '/services/free-situation-review', '#review-hero-title'],
-      ['wu', '/services/dao-health-profile', '[data-core-service-detail="dao"] h1'],
-      ['stress', '/client#cabinet-tests', '#cabinet-tests [data-prelogin-test-picker]'],
+      ['selfTest', '/client/tests', '[data-prelogin-test-picker]'],
+      ['analysis', '/services/free-situation-review', '#review-hero-title'],
+      ['reiki', '/academy/principles-of-energywork/learn', '[data-energywork-ai-learner]'],
     ]) {
       await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });
       await expect(page).toHaveURL(origin + homePath(locale));
       // Let homepage prefetches settle before intentionally replacing its document.
       await page.waitForLoadState('networkidle');
-      const bootstrapFinished = id === 'stress'
-        ? page.waitForResponse(response => response.request().method() === 'GET' && response.url() === `${origin}/api/app/guest/bootstrap`).then(async response => {
-          assert.equal(response.status(), 200);
-          assert.deepEqual(await response.json(), { expiresAt: null, moodCheckins: [], results: [] });
-        })
-        : Promise.resolve();
       const chooser = page.locator('[data-home-free-capture]');
       await chooser.locator('button[data-home-free-option="' + id + '"]').click();
       const cta = chooser.locator('a[data-home-free-action="' + id + '"]');
@@ -145,8 +145,6 @@ async function exerciseFreeJourneys(page, engine, width) {
       await cta.click();
       await expect(page).toHaveURL(`${origin}/${locale}${suffix}`);
       await expect(page.locator(target)).toBeVisible();
-      if (id === 'stress') await expect(page.locator('#cabinet-tests')).toHaveCount(1);
-      await bootstrapFinished;
       // In WebKit, tearing down an in-flight fetch reports an access-control error.
       // Complete the synthetic bootstrap/prefetches; retain the strict pageerror check.
       await page.waitForLoadState('networkidle');
@@ -276,8 +274,8 @@ async function exercise(engine, browserType, width) {
     await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
     const bottomFree = page.locator('[data-home-contact-capture] [data-home-free-capture]');
     await expect(bottomFree).toHaveCount(1);
-    assert.deepEqual(await bottomFree.locator('[data-home-free-option]').evaluateAll(buttons => buttons.map(button => button.dataset.homeFreeOption)), ['situation', 'wu', 'stress']);
-    await expect(bottomFree.locator('a[data-home-free-action="situation"]')).toHaveAttribute('href', '/en/services/free-situation-review');
+    assert.deepEqual(await bottomFree.locator('[data-home-free-option]').evaluateAll(buttons => buttons.map(button => button.dataset.homeFreeOption)), ['selfTest', 'analysis', 'reiki']);
+    await expect(bottomFree.locator('a[data-home-free-action="selfTest"]')).toHaveAttribute('href', '/en/client/tests');
     await expect(offers.locator('[data-core-service-id]')).toHaveCount(4);
     for (const id of ['situation', 'dao', 'alchemy', 'hypnotherapy']) {
       await expect(offers.locator('[data-core-service-id="' + id + '"]')).toHaveCount(1);
@@ -289,11 +287,11 @@ async function exercise(engine, browserType, width) {
     const capture = page.locator('[data-home-contact-capture] [data-consultation-capture="home-free"]');
     await expect(capture).toBeVisible();
     await expect(capture.locator('[data-choice-layout="home-free"] button')).toHaveCount(3);
-    await capture.locator('button[data-home-free-option="wu"]').click();
-    await expect(capture.locator('a[data-home-free-action="wu"]')).toHaveAttribute('href', '/en/services/dao-health-profile');
-    await capture.locator('button[data-home-free-option="stress"]').click();
-    await expect(capture.locator('a[data-home-free-action="stress"]')).toHaveAttribute('href', '/en/client#cabinet-tests');
-    await capture.locator('button[data-home-free-option="situation"]').click();
+    await capture.locator('button[data-home-free-option="analysis"]').click();
+    await expect(capture.locator('a[data-home-free-action="analysis"]')).toHaveAttribute('href', '/en/services/free-situation-review');
+    await capture.locator('button[data-home-free-option="reiki"]').click();
+    await expect(capture.locator('a[data-home-free-action="reiki"]')).toHaveAttribute('href', '/en/academy/principles-of-energywork/learn');
+    await capture.locator('button[data-home-free-option="selfTest"]').click();
     const firstReview = await verifyHomeTestimonialPosters(page);
     const portrait = page.locator('.service-home-about__image');
     await portrait.scrollIntoViewIfNeeded();

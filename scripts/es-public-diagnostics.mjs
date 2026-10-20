@@ -1,5 +1,5 @@
 // Passive evidence only. No event here is used to allow an error or delay navigation.
-const publicPaths = new Set(['/', '/ru', ...['es', 'en'].flatMap(locale => ['', '/library', '/services', '/masters', '/academy', '/books', '/about', '/courses', '/homeopathy', '/homeopathy/remedies', '/homeopathy/remedies/aconitum'].map(path => `/${locale}${path}`))]);
+const publicPaths = new Set(['/', '/ru', ...['en', 'ru', 'es'].map(locale => `/${locale}/academy/free-ai-courses`), ...['es', 'en'].flatMap(locale => ['', '/library', '/services', '/masters', '/academy', '/books', '/about', '/courses', '/homeopathy', '/homeopathy/remedies', '/homeopathy/remedies/aconitum'].map(path => `/${locale}${path}`))]);
 export function publicRoute(input, origin) {
   try {
     if (typeof input !== 'string' || !input) return null;

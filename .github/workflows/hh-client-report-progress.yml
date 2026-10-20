@@ -1,0 +1,42 @@
+name: Holistic House client report progress diagrams
+
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'lib/clients/session-delivery-service.js'
+      - 'lib/documents/report-progress.js'
+      - 'components/prescription-document.jsx'
+      - 'components/admin-session-studio.jsx'
+      - 'tests/client-report-before-after-rings.test.mjs'
+      - 'tests/report-progress-before-after.test.mjs'
+      - 'tests/session-publication-review.test.mjs'
+      - '.github/workflows/hh-client-report-progress.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'lib/clients/session-delivery-service.js'
+      - 'lib/documents/report-progress.js'
+      - 'components/prescription-document.jsx'
+      - 'components/admin-session-studio.jsx'
+      - 'tests/client-report-before-after-rings.test.mjs'
+      - 'tests/report-progress-before-after.test.mjs'
+      - 'tests/session-publication-review.test.mjs'
+      - '.github/workflows/hh-client-report-progress.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report-progress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Verify two numeric charts, immutability, republish and document rendering
+        run: node --test tests/report-progress-before-after.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs

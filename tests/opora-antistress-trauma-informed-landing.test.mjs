@@ -12,7 +12,7 @@ test('Anti-Stress public course presents seven two-lesson skills in Russian, Eng
   assert.match(landing, /14 lessons/)
   assert.match(landing, /14 lecciones/)
   assert.match(landing, /t\.stressSkills\.skills\.map/)
-  assert.match(landing, /index \* 2 \+ 1/)
+  assert.match(landing, /index \+ 8/)
   assert.equal((landing.match(/stressSkills:/g)||[]).length, 3)
   assert.match(landing, /\?program=stress/)
   assert.match(landing, /not shock-trauma or PTSD treatment/)

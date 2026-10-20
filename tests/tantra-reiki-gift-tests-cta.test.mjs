@@ -53,7 +53,7 @@ test('the linked public Tantra selection is real and preserves guest opt-in', ()
   assert.deepEqual(normalizeJourneyFocus('tantra'), ['tantra'])
   assert.deepEqual(normalizeJourneyFocus('unlisted,unsafe,unknown'), [])
   assert.match(spanishRoute, /normalizeJourneyFocus\(typeof query\.focus === "string" \? query\.focus : ""\)/)
-  assert.match(spanishRoute, /initialPreferences=\{focus\.length \? \{ focus, problems: \[\] \} : null\}/)
+  assert.match(spanishRoute, /initialPreferences=\{focus\.length \? \{ focus, problems \} : null\}/)
 
   for (const locale of ['en', 'ru']) {
     const entries = buildExplorerEntries({ locale, audience: 'guest' })

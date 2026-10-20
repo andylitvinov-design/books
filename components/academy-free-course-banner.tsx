@@ -1,90 +1,205 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
+import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Clock3, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-free-course-banner.module.css";
 
 const copy = {
   en: {
-    eyebrow: "HOLISTIC HOUSE · FREE AI COURSES",
-    title: "OPORA Stress Relief — free 14-day course",
-    description: "Fourteen gentle lessons and seven practical skills for managing everyday stress. Optional check-ins and short exercises, at your own pace.",
-    duration: "14 days",
-    daily: "5–12 min a day",
-    cta: "Start my free course", learn: "Learn about the course", myCourses: "My courses",
-    note: "Your choices and progress are only saved with your consent.",
-    caution: "Self-guided education and support, not a diagnosis, psychotherapy or emergency care.",
-    visualTitle: "A small step every day",
-    visualDays: "DAYS",
-    visualSteps: ["Check in gently", "Choose your focus", "Practise each day"],
+    eyebrow: "HOLISTIC HOUSE · FREE LEARNING",
+    title: "Free AI courses & introductions",
+    subtitle: "Two guided courses (one preview) and two free Reiki introductions.",
+    count: "4 courses",
+    open: "Choose a course",
+    start: "Start course",
+    details: "Details",
+    note: "The Reiki introductions are free to explore; personal initiations need teacher confirmation. Stress Relief is education and support, not a substitute for professional care.",
   },
   ru: {
-    eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНЫЕ ИИ-КУРСЫ",
-    title: "ОПОРА — Антистресс · бесплатный курс на 14 дней",
-    description: "Четырнадцать занятий и семь навыков саморегуляции повседневного стресса. Необязательные замеры и короткие упражнения в вашем темпе.",
-    duration: "14 дней",
-    daily: "5–12 мин в день",
-    cta: "Начать бесплатный курс", learn: "Подробнее о курсе", myCourses: "Мои курсы",
-    note: "Ваш выбор и прогресс сохраняются только с вашего согласия.",
-    caution: "Самостоятельная программа поддержки, не диагностика, психотерапия или экстренная помощь.",
-    visualTitle: "Маленький шаг каждый день",
-    visualDays: "ДНЕЙ",
-    visualSteps: ["Отметить своё состояние", "Выбрать личный фокус", "Практиковать ежедневно"],
+    eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНОЕ ОБУЧЕНИЕ",
+    title: "Бесплатные ИИ-курсы и вводные программы",
+    subtitle: "Два интерактивных курса (один в предварительной версии) и два знакомства с Рейки.",
+    count: "4 курса",
+    open: "Выбрать курс",
+    start: "Пройти",
+    details: "Детали",
+    note: "Вводные материалы Рейки бесплатны, личная инициация — по согласованию. «ОПОРА» — образовательная поддержка, не замена профессиональной помощи.",
   },
   es: {
-    eyebrow: "HOLISTIC HOUSE · CURSOS DE IA GRATUITOS",
-    title: "OPORA Antiestrés — curso gratuito de 14 días",
-    description: "Catorce lecciones y siete habilidades para afrontar el estrés cotidiano, con cuestionarios opcionales y prácticas breves a tu ritmo.",
-    duration: "14 días",
-    daily: "5–12 min al día",
-    cta: "Empezar gratis", learn: "Conocer el curso", myCourses: "Mis cursos",
-    note: "El curso se abrirá en inglés. Tus datos solo se guardan con tu consentimiento.",
-    caution: "Aprendizaje y apoyo autónomo; no sustituye el diagnóstico, la psicoterapia ni la atención urgente.",
-    visualTitle: "Un pequeño paso cada día",
-    visualDays: "DÍAS",
-    visualSteps: ["Observar tu estado", "Elegir tu enfoque", "Practicar cada día"],
+    eyebrow: "HOLISTIC HOUSE · APRENDIZAJE GRATIS",
+    title: "Cursos de IA e introducciones gratis",
+    subtitle: "Dos cursos interactivos (uno preliminar) y dos introducciones a Reiki.",
+    count: "4 cursos",
+    open: "Elegir un curso",
+    start: "Empezar",
+    details: "Detalles",
+    note: "Las introducciones a Reiki son gratuitas; las iniciaciones personales requieren confirmación. OPORA se abre en inglés y ofrece apoyo educativo, no atención clínica.",
   },
 } as const;
 
+// Reuse published learning paths. OPORA is the account-saved course; Energywork
+// is an educational preview without durable answers until the secure API ships.
+const courses = [
+  {
+    id: "stress",
+    image: "/images/holistic-house/course-focus-mountain-boy.webp",
+    path: "app/course?program=stress",
+    detailsPath: "courses/antistress",
+    en: {
+      type: "INTERACTIVE AI COURSE · FREE",
+      title: "OPORA · Stress Relief",
+      description: "14 gentle lessons and seven everyday stress-management skills.",
+      duration: "14 days · 5–12 min/day",
+    },
+    ru: {
+      type: "ИНТЕРАКТИВНЫЙ ИИ-КУРС · БЕСПЛАТНО",
+      title: "ОПОРА · Антистресс",
+      description: "14 коротких занятий и семь навыков работы с повседневным стрессом.",
+      duration: "14 дней · 5–12 мин/день",
+    },
+    es: {
+      type: "CURSO INTERACTIVO DE IA · GRATIS",
+      title: "OPORA · Antiestrés",
+      description: "14 lecciones breves y siete habilidades para el estrés cotidiano.",
+      duration: "14 días · 5–12 min/día",
+    },
+  },
+  {
+    id: "energywork",
+    image: "/academy/reiki-yggdrasil/source/program-overview.jpg",
+    path: "principles-of-energywork/learn",
+    detailsPath: "academy/principles-of-energywork",
+    en: {
+      type: "INTERACTIVE COURSE · PREVIEW",
+      title: "Principles of Energywork",
+      description: "Guided slides, original videos and reflections. Private save and resume after Google sign-in.",
+      duration: "At your own pace",
+    },
+    ru: {
+      type: "ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ",
+      title: "Основы энергетики",
+      description: "Слайды, авторские видео и рефлексия. Сохранение и продолжение после входа через Google.",
+      duration: "В своём темпе",
+    },
+    es: {
+      type: "CURSO INTERACTIVO · VISTA PREVIA EN INGLÉS",
+      title: "Principios del trabajo energético",
+      description: "Lecciones, vídeos originales y reflexiones. Guardado privado tras iniciar sesión.",
+      duration: "A tu ritmo",
+    },
+  },
+  {
+    id: "tantra-reiki",
+    image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
+    path: "reiki/tantra-reiki/free-initiation",
+    detailsPath: "academy/reiki/tantra-reiki/free-initiation",
+    en: {
+      type: "FREE LEVEL 1 INTRODUCTION",
+      title: "Tantra Reiki",
+      description: "Explore the first-level materials and practices. Initiation is arranged separately.",
+      duration: "First-level materials",
+    },
+    ru: {
+      type: "БЕСПЛАТНОЕ ВВЕДЕНИЕ · 1 СТУПЕНЬ",
+      title: "Тантра Рейки",
+      description: "Материалы и практики первой ступени. Инициация — по согласованию.",
+      duration: "Материалы первой ступени",
+    },
+    es: {
+      type: "INTRODUCCIÓN GRATIS · NIVEL 1",
+      title: "Tantra Reiki",
+      description: "Materiales y prácticas del primer nivel. Iniciación previa confirmación.",
+      duration: "Materiales del nivel 1",
+    },
+  },
+  {
+    id: "reiki-yggdrasil",
+    image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
+    path: "reiki/yggdrasil/free-initiation",
+    detailsPath: "academy/reiki/yggdrasil/free-initiation",
+    en: {
+      type: "FREE LEVEL 1 INTRODUCTION",
+      title: "Reiki Yggdrasil",
+      description: "Discover the first-level lessons and preparation. Initiation is arranged separately.",
+      duration: "First-level materials",
+    },
+    ru: {
+      type: "БЕСПЛАТНОЕ ВВЕДЕНИЕ · 1 СТУПЕНЬ",
+      title: "Рейки Иггдрасиль",
+      description: "Уроки и подготовка к первой ступени. Инициация — по согласованию.",
+      duration: "Материалы первой ступени",
+    },
+    es: {
+      type: "INTRODUCCIÓN GRATIS · NIVEL 1",
+      title: "Reiki Yggdrasil",
+      description: "Lecciones y preparación del nivel 1. Iniciación previa confirmación.",
+      duration: "Materiales del nivel 1",
+    },
+  },
+] as const;
+
 export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  // The personal-course workspace currently supports en/ru only.
+  // The personal AI-course workspace is currently available only in EN/RU.
   const courseLocale = locale === "es" ? "en" : locale;
 
   return (
-    <section className={styles.banner} aria-labelledby="academy-free-course-title">
-      <div className={styles.content}>
-        <p className={styles.eyebrow}><Sparkles aria-hidden="true" size={15} />{t.eyebrow}</p>
-        <h2 id="academy-free-course-title" className={styles.title}>{t.title}</h2>
-        <p className={styles.description}>{t.description}</p>
-        <div className={styles.facts}>
-          <span><CalendarDays aria-hidden="true" size={17} />{t.duration}</span>
-          <span><Clock3 aria-hidden="true" size={17} />{t.daily}</span>
+    <section className={styles.banner} aria-labelledby="academy-free-course-title" data-academy-free-course-list>
+      <details className={styles.disclosure}>
+        <summary className={styles.summary}>
+          <span className={styles.icon}><Sparkles size={21} aria-hidden="true" /></span>
+          <span className={styles.heading}>
+            <span className={styles.eyebrow}>{t.eyebrow}</span>
+            <span className={styles.title} id="academy-free-course-title">{t.title}</span>
+            <span className={styles.subtitle}>{t.subtitle}</span>
+          </span>
+          <span className={styles.toggle}>
+            <span className={styles.count}>{t.count}</span>
+            <span className={styles.toggleHint}>{t.open}</span>
+            <ChevronDown className={styles.chevron} size={22} aria-hidden="true" />
+          </span>
+        </summary>
+        <div className={styles.body}>
+          <div className={styles.courses}>
+            {courses.map((course) => {
+              const info = course[locale];
+              // Every Reiki "Start course" CTA opens the same interactive course.
+              // Separate "Details" links preserve each Level 1 initiation guide.
+              const href = course.id === "stress"
+                ? `/${courseLocale}/${course.path}`
+                : REIKI_FREE_COURSE_PATH;
+              return (
+                <article className={styles.course} key={course.id} data-free-course-id={course.id}>
+                  <span className={styles.photo}>
+                    <Image src={cardArtworkUrl(course.image)} unoptimized={hasCardArtwork(course.image)} alt="" fill sizes="(max-width: 540px) 96px, 132px" />
+                  </span>
+                  <div className={styles.courseContent}>
+                    <span className={styles.courseType}>{info.type}</span>
+                    <h3>{info.title}</h3>
+                    <p>{info.description}</p>
+                    <div className={styles.courseFooter}>
+                      <span className={styles.duration}>{info.duration}</span>
+                      <span className={styles.actions}>
+                        {course.detailsPath && (
+                          <Link className={styles.details} href={`/${locale}/${course.detailsPath}`}>
+                            {t.details}
+                          </Link>
+                        )}
+                        <Link className={styles.start} href={href} prefetch={false}>
+                          {t.start}<ArrowRight size={17} aria-hidden="true" />
+                        </Link>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <p className={styles.note}>{t.note}</p>
         </div>
-        <div className={styles.actions}>
-          <Link href={`/${courseLocale}/app/course?program=stress`} prefetch={false} className={styles.cta}>
-            {t.cta}<ArrowRight aria-hidden="true" size={19} />
-          </Link>
-          <Link href={"/" + locale + "/courses/antistress"} className={styles.learn}>{t.learn}<ArrowRight aria-hidden="true" size={16} /></Link>
-          <Link href={"/" + locale + "/academy/free-ai-courses#my-courses"} className={styles.learn}>{t.myCourses}<ArrowRight aria-hidden="true" size={16} /></Link>
-          <span className={styles.note}>{t.note}</span>
-        </div>
-        <p className={styles.caution}>{t.caution}</p>
-      </div>
-      <div className={styles.visual} aria-hidden="true">
-        <div className={styles.orbit}>
-          <span className={styles.orbitNumber}>14</span>
-          <span className={styles.orbitDays}>{t.visualDays}</span>
-        </div>
-        <div className={styles.visualCaption}>{t.visualTitle}</div>
-        <div className={styles.steps}>
-          {t.visualSteps.map((step, index) => (
-            <span className={styles.step} key={step}>
-              <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
-              {step}
-            </span>
-          ))}
-        </div>
-      </div>
+      </details>
     </section>
   );
 }

@@ -4,12 +4,19 @@
     {
       "path": "/api/internal/housekeeping",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/internal/practice-telegram-digest",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/internal/council-archive-telegram",
+      "schedule": "0 15 * * *"
     }
   ],
   "git": {
     "deploymentEnabled": {
-      "codex/**": false,
-      "chatgpt/**": false,
+      "**": false,
       "codex/public-book-library": true
     }
   },

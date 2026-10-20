@@ -941,3 +941,4 @@ export const TANTRIC_CONTEXT_COPY=deepFreeze({
   en:'Original experimental Holistic House tantra-themed self-reflections for adults (2026). Not clinically validated, diagnostic or normed. Colours represent descriptive answer positions only. Chakra and kundalini themes are symbolic, not measured energies. Scores do not evaluate sexual functioning, spiritual worth, consent or another person; participation and all practices are optional.',
   ru:'Экспериментальные авторские тантрические анкеты Holistic House для взрослых (2026). Не прошли клиническую валидацию, не являются диагностикой и не имеют нормативных порогов. Цвета отражают только положение ответов на шкале. Чакры и кундалини здесь — символические темы, не измерение энергии. Баллы не оценивают сексуальную функцию, духовную ценность, согласие или другого человека; участие и практики добровольны.'
 })
+

@@ -60,15 +60,17 @@ test("EN, RU, ES free offer is a handwritten drawing diagnostic with a written r
   assert.ok(landing.includes('id="request-free-review"'));
 });
 
-test("landing explains precisely three free steps and two optional priced live sessions", () => {
-  for (const key of ["t.steps.map", "t.directions.map", "t.faqs.map", "t.paidOptions.map"]) assert.ok(landing.includes(key));
-  for (const price of ["€50", "€100"]) assert.ok(landing.includes(price));
-  for (const mins of ["30 minutes", "60 minutes", "30 минут", "60 минут"]) assert.ok(landing.includes(mins));
-  assert.ok(landing.includes("encodeURIComponent(option.message)"));
+test("landing explains the symbolic drawing review and introduces prices only at final selection", () => {
+  for (const key of ["t.steps.map", "t.directions.map", "t.faqs.map", "topic.cards.map"]) assert.ok(landing.includes(key));
+  for (const topic of ["Работа и бизнес", "Relationships & family", "Bienestar y estrés"]) assert.ok(landing.includes(topic));
+  assert.ok(landing.includes("/services/alchemy-of-soul"));
   assert.ok(landing.includes('href="#request-free-review"'));
+  assert.ok(landing.includes('href="#situations"'));
+  assert.ok(landing.includes('id="personal-consultation"'));
   assert.ok(landing.includes("getHomeopathyLocaleParams"));
   assert.ok(landing.includes("isPublicLocale"));
-  assert.ok(landing.includes('className={styles.paid}'));
+  assert.doesNotMatch(landing, /€0|€50|€100/, "Monetary amounts must be in the final selector, not editorial copy");
+  assert.equal((landing.match(/<FreeReviewQuickRequest locale=\{locale\} \/>/g) ?? []).length, 1);
 });
 
 test("coaching form is real, ephemeral, mobile-friendly and does not leak responses in WhatsApp URL", () => {
@@ -93,22 +95,23 @@ test("coaching form is real, ephemeral, mobile-friendly and does not leak respon
   assert.match(intakeCss, /focus-visible/);
 });
 
-test("first contact stays compact, with messenger handoff and no drawing requirement", () => {
+test("first contact highlights benefits and the only messenger selector appears at the end", () => {
   assert.match(quickRequest, /<ContactChannelChooser/);
   assert.match(quickRequest, /namePlaceholder/);
   assert.match(quickRequest, /questionPlaceholder/);
   assert.match(quickRequest, /whatsappEnquiryUrl\(\{/);
   assert.match(quickRequest, /service_request_start/);
   assert.doesNotMatch(quickRequest, /<FreeDrawingIntake|fetch\(|localStorage|sessionStorage/);
-  const hero = landing.slice(landing.indexOf('className={styles.capturePanel}'), landing.indexOf('</section>', landing.indexOf('className={styles.capturePanel}')));
-  assert.ok(hero.includes('<FreeReviewQuickRequest'));
-  assert.ok(!hero.includes('<FreeSituationReviewForm'), "Detailed questionnaire must not be in the first capture");
-  assert.ok(landing.includes('variant="all"'), "Full archived testimonials must appear on this landing");
-  assert.ok(landing.indexOf('variant="all"') < landing.lastIndexOf('className={styles.details}'));
-  assert.ok(landing.includes('className={styles.finalCapture}'));
+  const hero = landing.slice(landing.indexOf('className={styles.contentGrid}'), landing.indexOf('</section>', landing.indexOf('className={styles.contentGrid}')));
+  assert.ok(!hero.includes('<FreeReviewQuickRequest'), "Hero explains the value before format selection");
+  assert.ok(!hero.includes('€50') && !hero.includes('€100'));
+  assert.ok(landing.includes('variant="all"'), "Preserve all sourced video testimonials");
+  assert.ok(landing.indexOf('className={styles.details}') < landing.indexOf('variant="all"'), "Explain drawing process before testimonials");
+  assert.ok(landing.includes('className={styles.finalRequest} id="request-free-review"'));
+  assert.ok(landing.includes('className={styles.finalCapture} id="personal-consultation"'));
 });
 
-test("both capture placements offer all three localized consultation formats with an exact message handoff", () => {
+test("the final capture offers all three localized consultation formats with exact message handoff", () => {
   for (const marker of ['type ConsultationFormat = "free" | "mini" | "full"', 'const formats: ConsultationFormat[] = ["free", "mini", "full"]',
     'type="radio"', 'checked={format === value}', 'onChange={() => setFormat(value)}',
     'option: [selected.label, selected.detail, selected.price].join(" · ")',
@@ -128,18 +131,17 @@ test("both capture placements offer all three localized consultation formats wit
   assert.match(quickRequest, /sin llamada/i);
   assert.match(quickRequest, /No booking or payment is made automatically/);
   assert.doesNotMatch(quickRequest, /localStorage|sessionStorage|fetch\(|sendBeacon|checkout\/api/);
-  assert.equal((landing.match(/<FreeReviewQuickRequest locale=\{locale\} \/>/g) ?? []).length, 2,
-    "Both top and bottom capture forms must share the same three consultation choices");
+  assert.equal((landing.match(/<FreeReviewQuickRequest locale=\{locale\} \/>/g) ?? []).length, 1,
+    "Pricing and format selection belongs in a single final request form");
 });
 
-test("mobile design keeps a clear first-step form and separates paid plans", () => {
-  for (const value of [".contentGrid", ".capturePanel", ".steps", ".paid", ".directions", ".about", ".faq", ".closing"]) assert.ok(css.includes(value));
+test("mobile design presents topic cards, deeper-work link and one final selector", () => {
+  for (const value of [".contentGrid", ".situations", ".situationGrid", ".outcomes", ".steps", ".alchemy", ".finalRequest", ".directions", ".about", ".faq"]) assert.ok(css.includes(value));
   assert.ok(css.includes("@media(max-width:767px)"));
   assert.match(landing, /className=\{styles\.heroActions\}/);
   assert.match(css, /\.heroActions\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
   assert.match(css, /\.heroActions a\{min-height:48px/);
-  assert.match(css, /\.paid\{grid-template-columns:minmax\(0,1fr\)/);
-  assert.match(css, /\.paidOptions a\{min-height:64px/);
+  assert.match(css, /\.situationGrid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.ok(css.includes("grid-template-columns:minmax(0,1fr)"));
   assert.ok(css.includes(":focus-visible"));
   assert.ok(css.includes("prefers-reduced-motion"));
@@ -179,31 +181,29 @@ function assertLandingContract(tree, locale) {
   const all = nodes(tree);
   const byClass = name => all.find(node => node.props?.className === name);
   assert.equal(byClass("heroPrimary")?.props.href, "#request-free-review");
-  assert.equal(byClass("heroSecondary")?.props.href, "#personal-consultation");
-  assert.equal(byClass("capturePanel")?.props.id, "request-free-review");
-  assert.ok(nodes(byClass("capturePanel")).some(node => node.type === "FreeReviewQuickRequest" && node.props.locale === locale), "First enquiry must be compact");
-  assert.ok(!nodes(byClass("capturePanel")).some(node => node.type === "FreeSituationReviewForm"), "Do not force questionnaire in first capture");
-  assert.ok(all.some(node => node.type === "FreeSituationReviewForm" && node.props.locale === locale), "Keep detailed form only after process");
+  assert.equal(byClass("heroSecondary")?.props.href, "#situations");
+  assert.equal(byClass("situations")?.props.id, "situations");
+  assert.equal(nodes(byClass("situationGrid")).filter(node => node.type === "article").length, 4);
+  assert.ok(all.some(node => node.type === "FreeSituationReviewForm" && node.props.locale === locale), "Keep the optional drawing questionnaire");
   const finalCapture = byClass("finalCapture");
-  assert.ok(finalCapture && nodes(finalCapture).some(node => node.type === "FreeReviewQuickRequest"), "Repeat compact capture at the end");
-  assert.ok(all.indexOf(byClass("outcomes")) < all.indexOf(byClass("paid")), "Client outcomes must come before the offer");
-  assert.ok(all.indexOf(byClass("faq")) < all.indexOf(byClass("details")), "Explain the process near the bottom");
-  assert.ok(all.indexOf(byClass("details")) < all.indexOf(finalCapture), "Repeat enquiry after process");
-  const paid = byClass("paid");
-  assert.equal(paid?.props.id, "personal-consultation");
+  assert.equal(finalCapture?.props.id, "personal-consultation", "Keep original incoming service links working");
+  assert.equal(byClass("finalRequest")?.props.id, "request-free-review");
+  assert.ok(finalCapture && nodes(finalCapture).filter(node => node.type === "FreeReviewQuickRequest").length === 1,
+    "Only the final section offers format selection");
+  assert.equal(all.filter(node => node.type === "FreeReviewQuickRequest").length, 1);
+  assert.ok(all.indexOf(byClass("situations")) < all.indexOf(byClass("outcomes")), "Questions precede benefit cards");
+  assert.ok(all.indexOf(byClass("outcomes")) < all.indexOf(byClass("details")), "Explain the drawing process early");
   const videoIndex = all.findIndex(node => node.type === "ServiceVideoShowcase");
-  assert.ok(videoIndex > all.indexOf(paid), "Separate paid offer must precede the general video");
-  assert.equal(byClass("scope"), undefined, "The repeated free scope section stays removed");
+  assert.ok(videoIndex > all.indexOf(byClass("details")), "Process precedes the video");
+  assert.ok(all.indexOf(byClass("alchemy")) < all.indexOf(finalCapture), "Deeper work precedes the final selection");
+  assert.ok(all.indexOf(byClass("faq")) < all.indexOf(byClass("alchemy")), "Pricing remains after FAQs");
+  assert.equal(byClass("paid"), undefined, "No separate early price panel");
+  assert.equal(byClass("capturePanel"), undefined, "No format chooser before the value explanation");
+  assert.equal(byClass("scope"), undefined, "No duplicated free scope");
   assert.equal(byClass("directions")?.type, "details");
-  const options = nodes(paid).filter(node => node.type === "a");
-  assert.equal(options.length, 2);
-  for (const [index, price] of ["€50", "€100"].entries()) {
-    assert.ok(textOf(options[index]).includes(price));
-    const url = new URL(options[index].props.href);
-    assert.equal(url.origin + url.pathname, "https://wa.me/14376066502");
-    assert.ok(url.searchParams.get("text").includes(price));
-    assert.ok(url.searchParams.get("text").includes(index === 0 ? "30" : "60"));
-  }
+  const alchemyLink = nodes(byClass("alchemy")).find(node => typeof node.props?.href === "string" && node.props.href.endsWith("/services/alchemy-of-soul"));
+  assert.equal(alchemyLink?.props.href, "/" + locale + "/services/alchemy-of-soul");
+  assert.ok(!textOf(tree).includes("€50") && !textOf(tree).includes("€100"), "No paid prices in editorial content");
   const faq = textOf(byClass("faq"));
   const clauses = {
     en: ["does not include a live call", "not a medical diagnosis, psychiatric diagnosis or prescription"],
@@ -211,7 +211,7 @@ function assertLandingContract(tree, locale) {
     es: ["No incluye una llamada en directo", "sin diagnósticos médicos o psiquiátricos ni recetas"],
   };
   for (const clause of clauses[locale]) assert.ok(faq.includes(clause), clause);
-  assert.ok(textOf(byClass("safety")).length > 50, "Visible safety explanation must remain");
+  assert.ok(textOf(byClass("safety")).length > 50, "Visible safety explanation remains");
 }
 
 for (const locale of ["en", "ru", "es"]) {
@@ -220,10 +220,11 @@ for (const locale of ["en", "ru", "es"]) {
   });
 }
 
-test("landing contract rejects broken paid anchors, mixed free/paid navigation and hidden safety copy", async () => {
+test("landing contract rejects a missing final anchor, misrouted CTA and hidden safety copy", async () => {
   for (const [before, after] of [
     ['id="personal-consultation"', 'id="missing-paid-anchor"'],
     ['className={styles.heroPrimary} href="#request-free-review"', 'className={styles.heroPrimary} href="#personal-consultation"'],
+    ['id="request-free-review"', 'id="missing-review-anchor"'],
     ["{item.a}", "{null}"],
     ["{t.transparency}", "{null}"],
   ]) {

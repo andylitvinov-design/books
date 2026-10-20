@@ -26,11 +26,11 @@ test('external symptom screens never become personality traits or course skill t
 test('neutral ERQ remains descriptive; real TIPI traits and HH self-ratings keep their semantics', () => {
   assert.ok(getTestScaleGuide('erq').scales.every(s => s.type === 'descriptive' && !s.canChooseSkill))
   assert.ok(getTestScaleGuide('tipi-10').scales.every(s => s.type === 'trait' && !s.canChooseSkill))
-  assert.ok(getTestScaleGuide('hh-weekly-pulse').scales.every(s => s.canChooseSkill))
+  assert.deepEqual(getTestScaleGuide('hh-weekly-pulse').scales.filter(s => !s.canChooseSkill).map(s=>s.key),['weekly.mood','weekly.connection'])
 })
 test('course profile fails closed for every changed or omitted provenance field', () => {
   const r = result(), fields = Object.keys(provenance(getAssessmentDefinition('hh-weekly-pulse', 'v1', 'en')))
-  assert.equal(courseMeasuredProfile({ results: [r], testKeys: ['hh-weekly-pulse'], now }).eligible.length, 8)
+  assert.equal(courseMeasuredProfile({ results: [r], testKeys: ['hh-weekly-pulse'], now }).eligible.length, 6)
   for (const key of fields) {
     for (const omit of [false, true]) {
       const changed = { ...r, [key]: 'mismatched' }
@@ -41,7 +41,7 @@ test('course profile fails closed for every changed or omitted provenance field'
 })
 test('valid Russian runs are independent of display locale; registered historical runs remain pinned', () => {
   const r = result('hh-weekly-pulse', 'v1', 'ru')
-  assert.equal(courseMeasuredProfile({ results: [r], testKeys: ['hh-weekly-pulse'], locale: 'en', now }).eligible.length, 8)
+  assert.equal(courseMeasuredProfile({ results: [r], testKeys: ['hh-weekly-pulse'], locale: 'en', now }).eligible.length, 6)
   const historic = result('hh-current-state', 'v1', 'en')
   assert.equal(validateProvenance(historic).version, 'v1')
   assert.equal(historic.definitionVersion, 'v1')

@@ -11,6 +11,10 @@ on:
       - 'components/admin-acquisition-links.jsx'
       - 'components/practitioner-cabinet.jsx'
       - 'tests/acquisition-report.test.mjs'
+      - 'lib/paid-ad-referrals.js'
+      - 'tests/paid-ad-referrals.test.mjs'
+      - 'data/meta-ads-pilot-draft.json'
+      - 'data/google-ads-pilot-draft.json'
       - '.github/workflows/hh-event-referral-contract.yml'
   push:
     branches: [codex/public-book-library]
@@ -23,6 +27,10 @@ on:
       - 'components/admin-acquisition-links.jsx'
       - 'components/practitioner-cabinet.jsx'
       - 'tests/acquisition-report.test.mjs'
+      - 'lib/paid-ad-referrals.js'
+      - 'tests/paid-ad-referrals.test.mjs'
+      - 'data/meta-ads-pilot-draft.json'
+      - 'data/google-ads-pilot-draft.json'
       - '.github/workflows/hh-event-referral-contract.yml'
 
 permissions:
@@ -43,6 +51,6 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
       - name: Event referral, messenger and privacy contracts
-        run: node --test tests/organic-event-referrals.test.mjs tests/contact-channel-chooser.test.mjs tests/ga4-analytics.test.mjs tests/whatsapp-enquiries.test.mjs tests/free-review-conversion.test.mjs tests/acquisition-report.test.mjs tests/practitioner-service-analytics.test.mjs
+        run: node --test tests/organic-event-referrals.test.mjs tests/paid-ad-referrals.test.mjs tests/contact-channel-chooser.test.mjs tests/ga4-analytics.test.mjs tests/whatsapp-enquiries.test.mjs tests/free-review-conversion.test.mjs tests/acquisition-report.test.mjs tests/practitioner-service-analytics.test.mjs
       - name: Check TypeScript without publishing
         run: npx tsc --noEmit

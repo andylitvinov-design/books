@@ -729,8 +729,11 @@
   .remedy-page-actions a:first-child { @apply inline-flex min-h-11 items-center underline decoration-[#bf9473] underline-offset-4; }
   .remedy-page h1 { @apply mt-3 font-serif text-[30px] leading-[1.04] text-[#2c2119] sm:text-[38px] lg:text-[42px]; }
   .remedy-common-name { @apply mt-3 text-[15px] italic leading-6 text-[#6d5d51]; }
-  .remedy-primary-image { @apply mt-5 overflow-hidden rounded-md border border-[#cdbda5] bg-[#f6f0e7] p-2; }
-  .remedy-primary-image img { @apply mx-auto block w-full object-contain; }
+  /* Reserve the lead educational artwork's box before its remote image arrives.
+     On mobile the old unsized image caused ~0.192 CLS (Lighthouse 2026-10-18).
+     Contain preserves every original illustration without cropping it. */
+  .remedy-primary-image { @apply mt-5 overflow-hidden rounded-md border border-[#cdbda5] bg-[#f6f0e7] p-2; aspect-ratio: 1 / 1; }
+  .remedy-primary-image img { @apply mx-auto block w-full object-contain; width: 100%; height: 100%; aspect-ratio: 1 / 1; }
   .remedy-content-body { margin-top: 1rem; color: #382d26; font-family: var(--font-serif); font-size: 18px; line-height: 1.5; }
   .remedy-content-body p { margin: 0.5em 0 0; }
   .remedy-content-body p:first-child { margin-top: 0; }
@@ -5860,5 +5863,21 @@
   body:has([data-contact-order][aria-expanded="true"]) .mobile-bottom-navigation {
     visibility: hidden;
     pointer-events: none;
+  }
+}
+
+
+/* iOS Safari: keep the immersive Reiki lesson anchored to the visible viewport.
+   Never allow browser history/overscroll to move the underlying beige page;
+   other pages and the independently scrollable lesson card are unaffected. */
+@media screen and (max-width: 760px) {
+  html:has(main[data-energywork-ai-learner]),
+  body:has(main[data-energywork-ai-learner]) {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  html:has(main[data-energywork-ai-learner]) {
+    scroll-behavior: auto;
   }
 }

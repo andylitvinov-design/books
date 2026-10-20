@@ -336,3 +336,23 @@
 /* Exact exercises/results for all fourteen Anti-Stress days, responsive. */
 .dailyPlanPreview{margin:19px 0 14px;min-width:0}
 @media(max-width:700px){.dailyPlanPreview{margin-top:12px}}
+
+/* The shared four-part finder also appears on the final Courses destination. */
+.discoveryTopline {
+  grid-column: 1/-1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  border-radius: 19px;
+  background: linear-gradient(121deg,#203450 0%,#283d5c 58%,#483a52 100%);
+  color: #fff;
+}
+.discoveryKicker { display: inline-flex; align-items: center; gap: 8px; color: #d7c4cd; font: 750 11px/1.4 system-ui,sans-serif; letter-spacing: .09em; }
+.discoveryKicker svg { flex: none; }
+@media(max-width:700px){
+  .discoveryTopline { flex-wrap:wrap; gap: 7px; padding: 12px; }
+  .discoveryKicker { font-size: 10px; }
+}
+@media(max-width:400px){.discoveryKicker{width:100%}}

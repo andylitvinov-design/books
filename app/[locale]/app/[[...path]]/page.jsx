@@ -17,10 +17,9 @@ export async function generateMetadata({ params }) {
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
-  manifest: locale === 'ru' ? '/course-ru.webmanifest' : '/course.webmanifest',
+  manifest: path[0] === 'course' ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : '/holistic-house.webmanifest',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
-  manifest: '/holistic-house.webmanifest',
   }
 }
 export default async function AppPage({ params }) {
@@ -40,5 +39,7 @@ export default async function AppPage({ params }) {
   if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course'].includes(path[0]) && path.length)) notFound()
   // Existing Analysis bookmarks are permanently useful: open the merged report archive.
   if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait#personal-reports')
-  return <AppWorkspace locale={locale} path={path} />
+  // A tab-specific workspace cannot briefly render full screens with a
+  // previous tab's reduced Profile data while the next bootstrap is loading.
+  return <AppWorkspace key={path[0]} locale={locale} path={path} />
 }
