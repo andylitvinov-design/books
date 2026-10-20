@@ -7,9 +7,16 @@ import * as whatsappEnquiry from '../lib/whatsapp-enquiry.js'
 import { availableSavedReports, latestReceivedReport } from '../lib/profile/report-summary.js'
 
 const source = readFileSync(new URL('../components/app/profile-domains.jsx', import.meta.url), 'utf8')
-const compiled = ts.transpileModule(source, { fileName: 'profile-domains.jsx', compilerOptions: {
+const transpiled = ts.transpileModule(source, { fileName: 'profile-domains.jsx', reportDiagnostics: true, compilerOptions: {
   jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
-} }).outputText
+} })
+assert.deepEqual(
+  (transpiled.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error)
+    .map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n')),
+  [],
+  'Profile JSX must compile without syntax errors',
+)
+const compiled = transpiled.outputText
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree)
   ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
 
@@ -72,6 +79,7 @@ function mount(mode, locale) {
   }
   render()
   return { calls, render, settle,
+    elements: () => nodes(tree),
     disclosure: () => nodes(tree).find(node => node.type === 'details' && node.props.className === 'hh-domain-more'),
     tab: area => nodes(tree).find(node => node.props?.id === 'hh-domain-tab-' + area),
     toggle: open => nodes(tree).find(node => node.props?.className === 'hh-domain-more').props.onToggle({ currentTarget: { open } }),
@@ -79,25 +87,17 @@ function mount(mode, locale) {
 }
 
 for (const locale of ['en', 'ru']) {
-  test(locale + ' account area disclosure is initially collapsed and preserves native toggles and lazy reads', async () => {
+  test(locale + ' account Profile omits obsolete lower panels and does not fetch their records', async () => {
     const h = mount('account', locale)
     await h.settle()
-    assert.equal(h.disclosure().props.open, false)
-    assert.equal(Object.hasOwn(h.disclosure().props, 'defaultOpen'), false)
-    assert.equal(h.calls.length, 0, 'collapsed optional areas do not read saved records')
-    h.toggle(true); await h.settle()
-    assert.equal(h.disclosure().props.open, true)
-    assert.deepEqual(h.calls.map(call => call.path), [
-      '/api/app/reports/synthetic-report', '/api/app/documents/synthetic-document?locale=' + locale,
-    ])
-    assert.ok(h.calls.every(({ options }) => options.credentials === 'same-origin' && options.cache === 'no-store'))
-    h.tab('homeopathy').props.onClick(); await h.settle()
-    assert.equal(h.disclosure().props.open, true, 'a tab/state rerender does not reset expansion')
-    h.toggle(false); await h.settle(); h.render(); await h.settle()
-    assert.equal(h.disclosure().props.open, false, 'user collapse survives subsequent rerenders')
-    h.toggle(true); await h.settle()
-    assert.equal(h.disclosure().props.open, true)
-    assert.equal(h.calls.length, 2, 'reopening does not duplicate the completed saved-record reads')
+    assert.equal(h.disclosure(), undefined, 'area disclosure remains on legacy cabinets only')
+    assert.equal(h.calls.length, 0, 'removed panels trigger no account report/document reads')
+    assert.equal(h.elements().some(node =>
+      typeof node.props?.className === 'string' &&
+      /hh-domain-(more|footer-actions|private)/.test(node.props.className)
+    ), false, 'account Profile has no legacy lower actions or repeated privacy line')
+    h.render(); await h.settle()
+    assert.equal(h.calls.length, 0, 'rerender must not reintroduce hidden data reads')
   })
 
   test(locale + ' legacy area disclosure starts open and remains user-toggleable without account requests', async () => {

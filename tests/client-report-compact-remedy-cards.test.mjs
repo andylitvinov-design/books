@@ -2,42 +2,49 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-test('report recommendations show a compact image-free card without changing authored fields', async () => {
+test('one inline remedy card combines photo, name, actual regimen and full library disclosure', async () => {
   const source = await readFile('components/prescription-document.jsx', 'utf8')
-  const start = source.indexOf('return <section className="canonical-remedy" key={number}>')
+  const start = source.indexOf('return <section className="canonical-remedy canonical-remedy--unified" key={number}>')
   const end = source.indexOf('</section>\n        })}', start)
-  assert.ok(start > 0 && end > start, 'the real prescription card must be present')
+  assert.ok(start >= 0 && end > start, 'unified card renders within the actual prescriptions loop')
   const card = source.slice(start, end)
+  const summary = card.slice(card.indexOf('<summary'), card.indexOf('</summary>'))
 
-  assert.doesNotMatch(card, /<img|canonical-remedy-card-photo|primary_image/)
-  assert.match(card, /item\.displayName/)
+  assert.match(summary, /RemedyReportThumbnail src=\{remedy\?\.primary_image\} number=\{number\}/)
+  assert.match(summary, /item\.displayName/)
+  assert.match(summary, /canonical-remedy-potency/)
   assert.match(source, /remedySchedule\(item, locale, document\.recommendationType\)/)
-  assert.match(card, /canonical-remedy-schedule/)
-  assert.match(card, /href=\{item\.remedyPath\}/)
-  assert.match(card, /Описание препарата/)
-  assert.match(card, /Remedy description/)
-  assert.match(card, /canonical-remedy-fields/)
-  assert.match(card, /item\[key\]/)
-  assert.match(card, /aria-label=\{locale === 'ru'/)
-
-  // Images remain available in the separate, full general-library appendix.
-  assert.match(source, /canonical-remedy-profile-photo/)
-  assert.match(source, /selectedProfiles\.map/)
+  assert.match(summary, /canonical-remedy-schedule/)
+  assert.match(summary, /administration\.split\(' · '\)/)
+  assert.match(summary, /detailKeys\.map\(\(key\) => <span/)
+  assert.match(summary, /item\[key\]/)
+  assert.match(summary, /Описание/)
+  assert.match(summary, /Details/)
+  assert.match(card, /<RemedyContent locale=\{locale\} remedy=\{remedy\}/)
+  assert.match(card, /expandSupplementary fullSource/)
+  assert.match(card, /item\.remedyPath/)
+  assert.doesNotMatch(summary, /<Link|<a\b/, 'summary toggles inline instead of navigating away')
+  assert.doesNotMatch(source, /className="canonical-remedy-profiles"/, 'no repeated standalone appendix')
+  assert.doesNotMatch(source, /Приложение\./)
 })
 
-test('compact cards keep responsive width, readable instructions, a text link and print behavior', async () => {
-  const css = await readFile('components/consultation-report.css', 'utf8')
-  const anchor = css.indexOf('Compact image-free recommendation cards — owner approved')
-  assert.ok(anchor > 0, 'report card styles must be present')
-  const compact = css.slice(anchor)
-  assert.match(compact, /max-width:\s*680px/)
-  assert.match(compact, /\.canonical-remedy-group\s*\{/)
-  assert.match(compact, /\.canonical-remedy-title h3\s*\{/)
-  assert.match(compact, /\.canonical-remedy-schedule\s*\{/)
-  assert.match(compact, /\.canonical-remedy\s*>\s*a\.canonical-remedy-profile-action\s*\{/)
-  assert.match(compact, /text-decoration:\s*underline/)
-  assert.match(compact, /\.canonical-remedy-fields\s*>\s*div/)
-  assert.match(compact, /@media screen and \(max-width:\s*700px\)/)
-  assert.match(compact, /@media print/)
-  assert.doesNotMatch(compact, /\.canonical-remedy-card-photo/)
+test('photos have an error fallback, and compact three-column cards work on phones and paper', async () => {
+  const [css, thumbnail, expander] = await Promise.all([
+    readFile('components/consultation-report.css', 'utf8'),
+    readFile('components/remedy-report-thumbnail.jsx', 'utf8'),
+    readFile('components/report-appendix-print-expander.jsx', 'utf8'),
+  ])
+  assert.match(thumbnail, /onError=\{\(\) => setFailedSource\(source\)\}/)
+  assert.match(thumbnail, /canonical-remedy-unified-photo-fallback/)
+  assert.match(thumbnail, /alt=""/)
+  const start = css.indexOf('Unified prescription + remedy library cards — 2026-10-19')
+  assert.ok(start >= 0, 'latest unified styles should override the old appendix layout')
+  const unified = css.slice(start)
+  assert.match(unified, /grid-template-columns: 65px minmax\(0, 1fr\) auto/)
+  assert.match(unified, /\.canonical-remedy-unified-instruction/)
+  assert.match(unified, /\[open\].*canonical-remedy-unified-chevron/)
+  assert.match(unified, /@media screen and \(max-width: 700px\)/)
+  assert.match(unified, /@media screen and \(max-width: 360px\)/)
+  assert.match(unified, /@media print/)
+  assert.match(expander, /querySelectorAll\('details\.canonical-remedy-profile-disclosure'\)/)
 })

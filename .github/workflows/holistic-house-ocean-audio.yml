@@ -1,0 +1,46 @@
+name: Holistic House Ocean Audio
+
+on:
+  pull_request:
+    paths:
+      - 'components/ocean-practice-audio.ts'
+      - 'components/app/opora-ocean-outro.jsx'
+      - 'components/app/course-guided-timer.jsx'
+      - 'components/energywork-ai-learner.tsx'
+      - 'public/audio/**'
+      - 'tests/ocean-practice-audio*.test.mjs'
+      - '.github/workflows/holistic-house-ocean-audio.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/ocean-practice-audio.ts'
+      - 'components/app/opora-ocean-outro.jsx'
+      - 'components/app/course-guided-timer.jsx'
+      - 'components/energywork-ai-learner.tsx'
+      - 'public/audio/**'
+      - 'tests/ocean-practice-audio*.test.mjs'
+      - '.github/workflows/holistic-house-ocean-audio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: holistic-house-ocean-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-ocean-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      # Course-navigation/receipt tests have a separate 17-slide migration lifecycle.
+      # Here only the shared sound engine and the three audio consumers are gated.
+      - name: Verify audible WAV and native media lifecycle across practice timers
+        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs

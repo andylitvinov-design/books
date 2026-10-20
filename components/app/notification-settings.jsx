@@ -49,7 +49,7 @@ export default function NotificationSettings({locale='en',compact=false,accountI
   const c=COPY[locale]||COPY.en
   const [state,setState]=useState(null),[busy,setBusy]=useState(false),
     [error,setError]=useState(''),[notice,setNotice]=useState(''),
-    [course,setCourse]=useState(true),[messages,setMessages]=useState(true),[hour,setHour]=useState(19)
+    [course,setCourse]=useState(true),[messages,setMessages]=useState(false),[hour,setHour]=useState(19)
   const owner=useRef(null),working=useRef(false)
   const currentAccount=useRef(accountId);currentAccount.current=accountId
   async function api(path,body,session=owner.current){
@@ -63,7 +63,7 @@ export default function NotificationSettings({locale='en',compact=false,accountI
     setState(null);setBusy(false);setError('');setNotice('')
     let mounted=true
     api('notifications',undefined,session).then(value=>{if(mounted){
-      setState(value);setCourse(value.courseReminders);setMessages(value.enabled?Boolean(value.messageAlerts):true);setHour(value.reminderHour)
+      setState(value);setCourse(value.courseReminders);setMessages(Boolean(value.messageAlerts));setHour(value.reminderHour)
     }}).catch(()=>{if(mounted)setError(c.error)})
     return ()=>{mounted=false;session.controller.abort();if(owner.current===session)owner.current=null}
   },[accountId,locale,c.error])
@@ -113,7 +113,7 @@ export default function NotificationSettings({locale='en',compact=false,accountI
     await api('notifications/test',{},session)
     setNotice(c.done)
   })}
-  return <section className={styles.root} aria-label={c.title}>
+  return <section id="hh-phone-notifications" className={styles.root} aria-label={c.title}>
     <div className={styles.heading}><span className={styles.kicker}><Bell size={15}/> HOLISTIC HOUSE</span>
       <h2>{c.title}</h2><p>{c.intro}</p></div>
     <div className={styles.preview} aria-label={c.sample}>

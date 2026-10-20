@@ -450,7 +450,7 @@ async function handle(request, { params }) {
         throw new AppError('ACCOUNT_CHANGED',409)
       const energywork=createEnergyworkCourseRepository(config)
       if (method === 'GET') return json({ accountId:actor.id, ...await energywork.read(actor) })
-      if (method === 'POST') return json({ accountId:actor.id, ...await energywork.command(actor,await readBody(request,8192)) })
+      if (method === 'POST') return json({ accountId:actor.id, ...await energywork.command(actor,await readBody(request,32768)) })
       throw new AppError('NOT_FOUND',404)
     }
     if (path[0] === 'course' && request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
@@ -602,8 +602,14 @@ async function handle(request, { params }) {
       }
       return json({ ...workspace, newServices })
     }
-    if (joined === 'practice/articles' && method === 'GET') return json(await articleRepo.library(actor))
-    if (joined === 'practice/events' && method === 'GET') return json({items:await eventsRepo.mine(actor)})
+    if (joined === 'practice/articles' && method === 'GET') {
+      await practiceRepo.requireActivated(actor)
+      return json(await articleRepo.library(actor))
+    }
+    if (joined === 'practice/events' && method === 'GET') {
+      await practiceRepo.requireActivated(actor)
+      return json({items:await eventsRepo.mine(actor)})
+    }
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
       const store = getPrescriptionStore()
@@ -709,6 +715,10 @@ async function handle(request, { params }) {
     if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
     if (path[0] === 'requests' && path.length === 2)
       return json(await repo.updateRequest(actor, path[1], body))
+    // Keep onboarding and own profile/service drafts available during signup.
+    // All other master tools require a submitted profile and first offering.
+    if (path[0] === 'practice' && !['onboarding','profile','services'].includes(path[1]))
+      await practiceRepo.requireActivated(actor)
     if (joined === 'practice/video-upload/intent') return json(await createPresentationUploadIntent(config, actor, body), 201)
     if (joined === 'practice/video-upload/complete') return json(await completePresentationUpload(config, actor, body))
     if (joined === 'practice/onboarding') return json(await practiceRepo.onboarding(actor, body))

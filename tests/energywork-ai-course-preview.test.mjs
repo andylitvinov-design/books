@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { energyworkSequence } from '../data/academy/energywork-ai-schema.js'
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 const curriculum = read('data/academy/energywork-ai-curriculum.ts')
@@ -12,12 +13,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 70 stable editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 69 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p7"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p9"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 70)
+  assert.equal(ids.length, 69)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -25,12 +26,12 @@ test('Unified Reiki Practitioner course has 70 stable editorial screens and five
     assert.ok(curriculum.includes('phase: "' + phases[i] + '"'), 'Missing '+phases[i])
     assert.ok(curriculum.includes('firstSlideId: "' + expected[i] + '"'), 'Missing lesson entry '+expected[i])
   }
-  assert.match(curriculum, /\.\.\.pathSlides\.tantra\.slice\(0, 2\),/)
-  assert.match(curriculum, /\.\.\.pathSlides\.kundalini,/)
-  assert.match(curriculum, /\.\.\.pathSlides\.yggdrasil,/)
+  assert.match(curriculum, /\.\.\.pathSlides\.tantra,/)
+  assert.match(curriculum, /withClosingPractices\(pathSlides\.kundalini, \["kun-03"\], "kun-done"\)/)
+  assert.match(curriculum, /withClosingPractices\(pathSlides\.yggdrasil, \["ygg-03"\], "ygg-done"\)/)
   assert.match(curriculum, /_legacyPath: EnergyworkPath \| null = null/)
   assert.doesNotMatch(curriculum, /\.\.\.\(path \? pathSlides\[path\]/)
-  assert.match(curriculum, /slide\.id !== "paths-04"/)
+  assert.match(curriculum, /slide\.id !== "paths-01" && slide\.id !== "paths-04"/)
   assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "paths-04"\)/)
 })
 
@@ -58,15 +59,26 @@ test('Videos reuse the four approved original source recordings; no render or au
   assert.match(learner, /t\.unavailable/)
 })
 
-test('Sun meditation is followed by the gentle pause before reflections', () => {
+test('Lesson 1 Sun meditation review uses the approved two questions and one answer field', () => {
+  const review = curriculum.split('id: "flight-04"')[1]?.split('id: "flight-done"')[0] ?? ''
+  assert.match(review, /body: l\("Did you manage to fly up to the Sun during the Sun meditation\?"/)
+  assert.match(review, /prompt: l\("Describe please how was the Sun energy flow\?"/)
+  assert.match(review, /type: "text"/)
+  assert.match(review, /Удалось ли вам подняться к Солнцу/)
+  assert.match(learner, /isMeditationFeedback \? meditationReview/)
+  assert.match(learner, /textarea id=\{"answer-" \+ slide\.id\}/)
+})
+
+test('Lesson 1 practice with music comes after reflections, immediately before congratulations', () => {
+  assert.deepEqual(energyworkSequence().slice(2, 9), [
+    'flight-01', 'flight-02', 'flight-voices', 'flight-05',
+    'flight-04', 'flight-03', 'flight-done',
+  ])
   const lesson = curriculum.split('id: "flight-01"')[1].split('id: "presence-01"')[0]
-  assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-03"'))
-  assert.ok(lesson.indexOf('id: "flight-03"') < lesson.indexOf('id: "flight-voices"'))
-  assert.ok(lesson.indexOf('id: "flight-voices"') < lesson.indexOf('id: "flight-05"'))
-  assert.ok(lesson.indexOf('id: "flight-05"') < lesson.indexOf('id: "flight-04"'))
   assert.match(lesson, /Sun’s light and warmth/)
-  assert.match(lesson, /Ваш опыт важен/)
+  assert.match(lesson, /Удалось ли вам подняться к Солнцу во время медитации/)
   assert.match(lesson, /question: \{ type: "text"/)
+  assert.match(curriculum, /withClosingPractices\(commonSlides\.filter\(\(slide\) => slide\.phase === "flight"\), \["flight-03"\], "flight-done"\)/)
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
 
@@ -86,8 +98,8 @@ test('Sun practice uses two optional choices for the one-minute exercise', () =>
 
 test('Five lessons have separate post-meditation reports and question answers', () => {
   const assignments = [
-    ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-06'],
-    ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-06'],
+    ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-study-04'],
+    ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-study-v2-01'],
     ['initiation','end-01','init-01'],
   ]
   for (const [name,report,question] of assignments) {
@@ -115,7 +127,9 @@ test('Guest answers stay unsaved; consented Google learners use private versione
   assert.match(learner, /950\)/)
   assert.match(learner, /const \[answers, setAnswers\] = useState<AnswerMap>\(\{\}\)/)
   assert.match(learner, /navigator\.clipboard\.writeText\(notes\)/)
-  assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
+  // Explicit, time-limited OAuth handoff is permitted; no client-side persistent answer store.
+  assert.doesNotMatch(learner, /localStorage\s*[.\[]|(?<!app)fetch\(|XMLHttpRequest|sendBeacon/)
+  assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
   assert.match(learner, /maxLength=\{isMeditationFeedback \? undefined : 1600\}/)
   assert.doesNotMatch(learner, /aria-pressed=\{path === choice\.id\}|choosePath\(/)
   assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing \|\| otherStudyMissing\}/)
@@ -170,4 +184,30 @@ test('Initial interactive screen asks four prior Reiki experience options in EN/
   assert.match(learner, /experienceMissing = slide\.id === "welcome-02"/)
   assert.match(learner, /role="status">\{experienceGuidance\[locale\]/)
   assert.match(css, /\.experienceChoice:has\(input:focus-visible\)/)
+})
+
+test('Kundalini slide includes all three screenshot-supplied reflections in English and Russian', () => {
+  const examples = curriculum.split('export const kundaliniVoices: EnergyworkTestimonial[] = [')[1]?.split('\n];')[0] ?? ''
+  assert.ok(examples, 'The Kundalini review collection must exist')
+  for (const id of ['kundalini-example-01', 'kundalini-example-02', 'kundalini-example-03']) {
+    assert.ok(examples.includes('id: "' + id + '"'), id)
+  }
+  assert.equal((examples.match(/quote: l\(/g) || []).length, 3)
+  assert.equal((examples.match(/attribution: l\(/g) || []).length, 3)
+  for (const name of ['Breanna', 'Ritu', 'Aesthesia']) {
+    assert.ok(examples.includes(name), 'Keep the facilitator reference ' + name)
+  }
+  for (const phrase of ['Бреанной', 'Риту', 'Во время практики с Aesthesia']) {
+    assert.ok(examples.includes(phrase), 'Missing Russian translation detail: ' + phrase)
+  }
+  assert.ok(examples.includes('felt like healing'), 'Keep reported experiences subjective')
+  assert.doesNotMatch(examples, /sourcePath:/, 'Screenshots are not verified source URLs')
+  const slide = curriculum.split('id: "kun-voices"')[1]?.split('id: "kun-04"')[0] ?? ''
+  assert.match(slide, /testimonials: kundaliniVoices/)
+  assert.match(slide, /not reviews of this exact video/)
+  assert.match(slide, /а не отзывы об этом конкретном видео/)
+  assert.match(learner, /currentReview\?\.sourcePath/)
+  assert.match(learner, /data-review-next/)
+  assert.match(learner, /data-review-prev/)
+  assert.match(css, /\.voiceQuote p \{[\s\S]*?overflow-y:auto;[\s\S]*?max-height:175px;/)
 })

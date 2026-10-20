@@ -14,22 +14,23 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
-test('public navigation includes the relationship hub on EN/RU and never exposes administration', async () => {
-  const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'events', 'business', 'relationships', 'academy', 'courses', 'cabinet'])
+test('public navigation keeps Business as one compact shortcut and never exposes administration', async () => {
+  const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'events', 'relationships', 'academy', 'courses', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
-    assert.equal(items.length, 9)
+    assert.equal(items.length, 8)
     assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
     assert.equal(items.find(item => item.id === 'events').href, `/${locale}/events`)
-    assert.equal(items.find(item => item.id === 'business').href, `/${locale}/explore/business`)
+    assert.equal(items.some(item => item.id === 'business'), false)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
     assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)
     assert.equal(items.find(item => item.id === 'academy').external, false)
     assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/courses`)
     assert.ok(!items.some(item => item.id === 'about'))
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
+    assert.equal(getCompactNavigation(locale).find(item => item.id === 'business').href, `/${locale}/explore/business`)
   }
   for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
     const source = await readFile(path, 'utf8')

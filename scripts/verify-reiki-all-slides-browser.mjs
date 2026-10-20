@@ -16,8 +16,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 70, "One consecutive course must have 70 screens");
-const milestones = new Set([1,2,4,5,6,8,11,12,14,15,16,19,21,24,25,26,34,41,49,56,64,70]);
+assert.equal(expectedSequence.length, 69, "One consecutive course must have 70 screens");
+const milestones = new Set([1,2,4,5,6,8,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,69]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -119,7 +119,25 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(data.slideVerticalOverflow <= 2, where + ": practice should fit on one mobile screen: " + JSON.stringify(data));
   }
   if (data.kind === "video") await expect(page.locator('[data-energywork-slide-kind="video"]').locator('div[class*="_video__"]')).toBeVisible();
-  if (data.kind === "reflection") await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('div[class*="_question__"]')).toBeVisible();
+  if (data.kind === "reflection" && id !== "end-01")
+    await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('div[class*="_question__"]')).toBeVisible();
+  // Lesson 5 was upgraded to an interactive application in PR #1280, rather
+  // than a generic single-textarea reflection. It must remain accessible.
+  if (id === "end-01") {
+    const form = page.locator('[data-reiki-initiation-choice-form]');
+    await expect(form).toBeVisible();
+    await expect(form.locator('[data-reiki-free-choices] input[type="radio"]')).toHaveCount(3);
+    await expect(form.locator('input[autocomplete="given-name"]')).toBeVisible();
+    await expect(form.locator('input[autocomplete="family-name"]')).toBeVisible();
+  }
+  // Teacher intro audio loads only after its first slide, never inside the
+  // meditation video. Audio is optional until the author uploads his file.
+  if (["flight-01","tan-01","kun-01","ygg-01"].includes(id)) {
+    await expect(page.locator('[data-reiki-lesson-intro]')).toBeVisible();
+    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toBeVisible();
+    await expect(page.locator('[data-reiki-lesson-intro] li')).toHaveCount(3);
+    await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
+  }
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
   if (data.kind === "voices") {
     await expect(page.locator("[data-meditation-voices]")).toBeVisible();
@@ -129,17 +147,41 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(portrait).toHaveJSProperty("complete", true);
     const loaded = await portrait.evaluate((image) => image.naturalWidth);
     assert.ok(loaded > 0, where + ": the approved human portrait loads");
-    const expectedReviews = id === "ygg-voices" ? 5 : id === "tan-voices" ? 4 : 0;
+    // All four meditation review screens have learner examples.
+    // Screenshot-supplied Sun/Kundalini reports have no verified original review URL.
+    const expectedReviewsBySlide = {
+      "flight-voices": 4,
+      "tan-voices": 4,
+      "kun-voices": 3,
+      "ygg-voices": 5,
+    };
+    const expectedReviews = expectedReviewsBySlide[id] ?? 0;
     const carousel = page.locator("[data-meditation-review-carousel]");
     if (expectedReviews) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
-      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(2);
+      const screenshotExamples = id === "flight-voices" || id === "kun-voices";
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(screenshotExamples ? 1 : 2);
+      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
       const first = await carousel.locator("blockquote p").innerText();
+      if (id === "kun-voices") {
+        assert.ok(first.includes(locale === "ru" ? "Бреанной" : "Breanna"), where + ": Breanna review is first");
+      }
       await page.locator("button[data-review-next]").click();
       await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('02 / 0' + expectedReviews);
-      assert.notEqual(await carousel.locator("blockquote p").innerText(), first, where + ": Next switches quote in place");
+      const second = await carousel.locator("blockquote p").innerText();
+      assert.notEqual(second, first, where + ": Next switches quote in place");
+      if (id === "kun-voices") {
+        assert.ok(second.includes(locale === "ru" ? "Риту" : "Ritu"), where + ": Ritu review is second");
+        await page.locator("button[data-review-next]").click();
+        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText("03 / 03");
+        const third = await carousel.locator("blockquote p").innerText();
+        assert.ok(third.includes("Aesthesia"), where + ": Aesthesia review is third");
+        assert.notEqual(third, second, where + ": third review is distinct");
+        await page.locator("button[data-review-prev]").click();
+        await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText("02 / 03");
+      }
       await page.locator("button[data-review-prev]").click();
       assert.equal(await carousel.locator("blockquote p").innerText(), first, where + ": Previous restores quote");
     } else {
@@ -170,7 +212,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p7");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p9");
 
   // Opening the bottom hint should consume height in the flex column,
   // shrinking the slide instead of overlaying its contents.
@@ -246,10 +288,10 @@ async function exerciseJourney(page, locale, width) {
         ? "Я заметил(а), что дыхание стало спокойнее и появилось тепло." : "I noticed my breathing became calmer and I felt warmth and ease.");
       await expect(reviewButton).toBeEnabled();
     }
-    if (id === "kun-study-v2-01" || id.startsWith("kun-study-") || id === "ygg-06" || id.startsWith("ygg-study-")) {
+    if (id === "kun-study-v2-01" || id.startsWith("kun-study-") || id === "ygg-study-v2-01" || id.startsWith("ygg-study-")) {
       const nextButton = page.locator("button[data-energywork-next]");
       const hint = page.locator("[data-reiki-study-hint]");
-      const source = id.startsWith("kun") ? "kundalini-reiki" : "yggdrasil";
+      const source = id.startsWith("kun") ? "kundalini-reiki" : "yggdrasil/free-initiation";
       await expect(hint).toHaveAttribute("href", "/" + locale + "/academy/reiki/" + source);
       await expect(hint).toHaveAttribute("target", "_blank");
       const answer = page.locator('textarea[id="answer-' + id + '"]');
@@ -280,13 +322,8 @@ async function exerciseJourney(page, locale, width) {
       await expect(nextButton).toBeDisabled();
       await answer.fill(locale === "ru" ? "Мой короткий ответ по материалу." : "My short answer from the guide.");
       if (id === "tan-study-02") {
-        const second = page.locator('textarea[id="answer-tan-study-03"]');
-        await expect(page.locator("[data-tantra-study-combined]")).toHaveCount(1);
-        await expect(second).toHaveAttribute("required", "");
-        await expect(nextButton).toBeDisabled();
-        await second.fill("   ");
-        await expect(nextButton).toBeDisabled();
-        await second.fill(locale === "ru" ? "Применение системы из материала." : "Uses of the system from the guide.");
+        await expect(page.locator("[data-tantra-study-combined]")).toHaveCount(0);
+        await expect(page.locator('textarea[id="answer-tan-study-03"]')).toHaveCount(0);
       }
       await expect(nextButton).toBeEnabled();
     }
@@ -295,7 +332,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 70 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 69 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
@@ -385,8 +422,6 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-02"); // video poster remains visible without autoplay
   await page.locator("button[data-energywork-next]").click();
-  await expectFits("flight-03"); // one-minute light and warmth practice on slide 3
-  await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-voices");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-05"); // slide 5: optional Sun symbolism thought
@@ -398,6 +433,8 @@ async function verifyShortViewport(page,locale) {
     ? "Я заметил(а), что дыхание стало спокойнее и появилось тепло."
     : "I noticed my breathing became calmer and I felt warmth and ease.");
   await expect(page.locator("button[data-energywork-next]")).toBeEnabled();
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-03"); // one-minute music-assisted practice before congratulations
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');

@@ -11,9 +11,9 @@ test('potency is rendered beside the remedy title, not repeated in the regimen',
   assert.match(html, /const administration = potency \? schedule\.split\(' · '\)\.slice\(1\)\.join\(' · '\) : schedule/)
   assert.match(html, /className="canonical-remedy-potency"/)
   assert.match(html, />\{' '\}\{potency\}<\/span>/)
-  assert.match(html, /\{administration && <p className="canonical-remedy-schedule"/)
+  assert.match(html, /\{administration && <span className="canonical-remedy-schedule"/)
   assert.doesNotMatch(html, /\{schedule && <p className="canonical-remedy-schedule"/)
-  assert.match(html, /\{detailKeys\.map\(\(key\) => <div key=\{key\}>/)
+  assert.match(html, /\{detailKeys\.map\(\(key\) => <span className="canonical-remedy-unified-instruction" key=\{key\}>/)
   assert.match(html, /item\[key\]/)
 })
 

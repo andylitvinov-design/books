@@ -3,9 +3,10 @@
 // private storage, consent, and migrations are separately implemented and verified.
 import type { EnglishGuidedMeditation } from "./english-guided-meditations";
 import { yggdrasilTextTestimonials } from "./yggdrasil-testimonials";
+import { yggdrasilPreparationQuestions } from "./yggdrasil-preparation-questions";
 
 export const ENERGYWORK_COURSE_ID = "academy-energywork-principles";
-export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p7";
+export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p9";
 
 export type EnergyworkLocale = "en" | "ru";
 export type Localized = { en: string; ru: string };
@@ -24,7 +25,8 @@ export type EnergyworkTestimonial = {
   id: string;
   quote: Localized;
   attribution: Localized;
-  sourcePath: string;
+  // Only verified public reviews have a source page. Screenshot-only examples do not.
+  sourcePath?: string;
 };
 export type EnergyworkSlide = {
   id: string;
@@ -35,6 +37,10 @@ export type EnergyworkSlide = {
   body: Localized;
   image?: string;
   videoKey?: EnglishGuidedMeditation["key"];
+  // A concise "what we'll learn" panel in the existing first slide of each lesson.
+  // Keep the stable slide IDs and all private answers/progress intact.
+  introTopics?: Localized[];
+  introAudioKey?: "flight" | EnergyworkPath | "initiation";
   question?: EnergyworkQuestion;
   // A second independently saved answer can share one visual slide.
   secondaryQuestion?: { id: string; prompt: Localized };
@@ -48,6 +54,53 @@ const image = {
   kundalini: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
 };
 
+
+// Four anonymized reflections transcribed from the course author's screenshots.
+// These are supplied examples, not independently verified YouTube comments.
+// Keep each complete reflection available in the existing scrollable review carousel.
+export const sunVoices: EnergyworkTestimonial[] = [
+  {
+    id: "sun-example-01",
+    quote: l("Yes, I managed to play with the Sun, as an energy flow and a song. I connected with an inner spark, called to the Sun, rode the light and danced with it. There was a pulse and flow until I was surrounded by the Sun. Then it became play — energy shifting in the cells and opening. I used sexual energy as a grounding point in the physical world, in resonance with the frequency of light codes. For me, it felt more like an ignition switch for something already within all of us: to ground and rise at the same time.", "Да, мне удалось поиграть с Солнцем — словно с потоком энергии и песней. Я почувствовал(а) связь с внутренней искрой, позвал(а) Солнце, словно оседлал(а) свет и танцевал(а) с ним. Были пульсация и поток, пока Солнце не окружило меня. Затем всё превратилось в игру: словно энергия двигалась в клетках и что-то раскрывалось. Сексуальная энергия стала для меня точкой заземления в физическом мире, в резонансе с частотой световых кодов. Это было похоже на включение того, что уже есть в каждом из нас: одновременно заземляться и подниматься."),
+    attribution: l("Anonymous reflection · supplied example", "Анонимный отзыв · предоставленный пример"),
+  },
+  {
+    id: "sun-example-02",
+    quote: l("Yes, I was able to fly out. First it was bright, then it turned dark like night, but I could still see the light — almost like an eclipse.", "Да, мне удалось взлететь. Сначала было светло, потом стало темно, словно ночью, но свет всё ещё был виден — почти как во время затмения."),
+    attribution: l("Anonymous reflection · supplied example", "Анонимный отзыв · предоставленный пример"),
+  },
+  {
+    id: "sun-example-03",
+    quote: l("I did. The Sun’s energy seemed to flow directly into a glowing sun in my chest. It felt as though it nourished a wound I imagined or sensed in my chest.", "Да. Казалось, что солнечный поток направляется прямо к светящемуся Солнцу в моей груди. Было ощущение, будто он питает рану, которую я представлял(а) или чувствовал(а) внутри груди."),
+    attribution: l("Anonymous reflection · supplied example", "Анонимный отзыв · предоставленный пример"),
+  },
+  {
+    id: "sun-example-04",
+    quote: l("Every time I come into contact with the energy of the Sun, the first wave brings goosebumps. The energy seems to roll along my body as if awakening it, followed by a wave of emotions depending on how my body feels. I was tired, and aggression arose, but I chose to use this energy for myself. It felt as if I had drunk many cups of coffee — my body was shaking. When I accepted this state, the energy calmed down.", "Каждый раз, когда я соприкасаюсь с энергией Солнца, первая волна вызывает мурашки. Кажется, энергия проходит по телу, пробуждая его, а затем, в зависимости от физического состояния, приходит волна эмоций. Я устал(а), поэтому появилась агрессия, но я решил(а) использовать эту энергию для себя. Было ощущение, будто я выпил(а) много чашек кофе: тело дрожало. Когда я принял(а) это состояние, энергия успокоилась."),
+    attribution: l("Anonymous reflection · supplied example", "Анонимный отзыв · предоставленный пример"),
+  },
+];
+
+// Three anonymized Kundalini Reiki experiences from screenshots supplied by the course author.
+// The sessions involved Breanna, Ritu and Aesthesia, not Andrey's exact course video.
+// Personal sensations are quoted as experiences, not evidence of medical efficacy.
+export const kundaliniVoices: EnergyworkTestimonial[] = [
+  {
+    id: "kundalini-example-01",
+    quote: l("During Kundalini Reiki work with Breanna, I felt a strong current of energy circulating through my body while tension seemed to release throughout it at the same time.", "Во время практики Кундалини Рейки вместе с Бреанной я почувствовал(а), как сильный поток энергии циркулирует по телу, и одновременно ощутил(а), что напряжение во всём теле ослабевает."),
+    attribution: l("Anonymous Kundalini Reiki experience · supplied example", "Анонимный опыт практики Кундалини Рейки · предоставленный пример"),
+  },
+  {
+    id: "kundalini-example-02",
+    quote: l("Ritu showed me how to feel the two flows more naturally, distinguish between them, and use them when working with the body or a situation. I felt a very strong Kundalini stream that I could direct toward a particular object during the practice. I also sensed what felt like healing from Ritu in areas of my body that had long felt weak.", "Риту показала мне, как естественнее чувствовать два потока, различать их и использовать при работе с телом или ситуацией. Я ощутил(а) очень сильный поток Кундалини, который удалось направить на определённый объект во время практики. Я также почувствовал(а) то, что воспринимал(а) как исцеляющее воздействие Риту, в тех областях тела, где давно ощущалась слабость."),
+    attribution: l("Anonymous Kundalini Reiki experience · supplied example", "Анонимный опыт практики Кундалини Рейки · предоставленный пример"),
+  },
+  {
+    id: "kundalini-example-03",
+    quote: l("With Aesthesia, I experienced what felt like an accurate body scan. I sensed a very precise stream of healing energy moving through the weaker areas of my body. To me, it felt like light moving upward through my chakras to the top of my head.", "Во время практики с Aesthesia у меня было ощущение точного сканирования тела. Я почувствовал(а) очень направленный поток целительной энергии в тех областях, где ощущалась слабость. Для меня это было похоже на свет, который поднимается через чакры к макушке."),
+    attribution: l("Anonymous Kundalini Reiki experience · supplied example", "Анонимный опыт практики Кундалини Рейки · предоставленный пример"),
+  },
+];
 
 /** Published Reiki Yggdrasil feedback reused from the original testimonial archive. */
 const yggdrasilVoices: EnergyworkTestimonial[] = yggdrasilTextTestimonials.map((entry) => ({
@@ -107,7 +160,7 @@ export const energyworkLessons: Array<{ phase: EnergyworkPhase; firstSlideId: st
   { phase: "initiation", firstSlideId: "paths-01", title: energyworkPhases.initiation },
 ];
 
-// A written meditation reflection follows each practice. Seven short study
+// A written meditation reflection follows each practice. Five short study
 // questions in Tantra Reiki require a brief written answer before advancing.
 // The personal-initiation review also checks all five lesson journals.
 export const energyworkInitiationRequirements: ReadonlyArray<{
@@ -117,9 +170,9 @@ export const energyworkInitiationRequirements: ReadonlyArray<{
   questionIds: readonly string[];
 }> = [
   { lesson: "flight", reportId: "flight-04", questionId: "flight-05", questionIds: ["flight-05"] },
-  { lesson: "tantra", reportId: "tan-04", questionId: "tan-06", questionIds: ["tan-study-04", "tan-06", "tan-study-05", "tan-study-06", "tan-study-07", "tan-study-02", "tan-study-03"] },
+  { lesson: "tantra", reportId: "tan-04", questionId: "tan-study-04", questionIds: ["tan-study-04", "tan-06", "tan-study-06", "tan-study-07", "tan-study-02"] },
   { lesson: "kundalini", reportId: "kun-04", questionId: "kun-study-v2-01", questionIds: ["kun-study-v2-01", "kun-study-v2-02", "kun-study-v2-03", "kun-study-v2-04", "kun-study-v2-05", "kun-study-v2-06", "kun-study-v2-07", "kun-study-v2-08", "kun-study-v2-09"] },
-  { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-06", questionIds: ["ygg-06", "ygg-study-02", "ygg-study-03", "ygg-study-04", "ygg-study-05", "ygg-study-06", "ygg-study-07"] },
+  { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-study-v2-01", questionIds: ["ygg-study-v2-01", "ygg-study-v2-02", "ygg-study-v2-03", "ygg-study-v2-04", "ygg-study-v2-05", "ygg-study-v2-06", "ygg-study-v2-07"] },
   { lesson: "initiation", reportId: "end-01", questionId: "init-01", questionIds: ["init-01"] },
 ];
 
@@ -193,7 +246,13 @@ const commonSlides: EnergyworkSlide[] = [
 
   { id: "flight-01", phase: "flight", kind: "lesson", image: image.sun,
     title: l("A symbolic flight", "Символический полёт"),
-    body: l("Flight to the Sun is Andrey's guided imagery practice. The sun is used as a symbol for attention and imagination, not as a physical or medical claim.", "«Полёт к Солнцу» — авторская практика с образами. Солнце здесь — символ внимания и воображения, не медицинское утверждение.") },
+    body: l("Flight to the Sun is Andrey's guided imagery practice. The sun is used as a symbol for attention and imagination, not as a physical or medical claim.", "«Полёт к Солнцу» — авторская практика с образами. Солнце здесь — символ внимания и воображения, не медицинское утверждение."),
+    introAudioKey: "flight",
+    introTopics: [
+      l("How guided imagery works as a creative exercise", "Как работает медитация с образами и воображением"),
+      l("Sunlight as a symbol of attention and warmth", "Солнце как образ внимания, света и тепла"),
+      l("What to notice and describe after the meditation", "Что замечать и как описать свой опыт после медитации"),
+    ] },
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
     title: l("Watch Flight to the Sun", "Посмотрите «Полёт к Солнцу»"),
     body: l("Listen to Andrey’s recording, or skip it if you prefer.", "Послушайте запись Андрея или пропустите её, если хотите.") },
@@ -202,16 +261,17 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("For one minute, notice the Sun’s light and warmth within and around you.",
       "Одну минуту замечайте свет и тепло Солнца внутри себя и вокруг.") },
   { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
-    title: l("What do other viewers say?", "Что пишут другие?"),
-    body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
+    title: l("How others described their journey to the Sun", "Как другие описывают свой полёт к Солнцу"),
+    body: l("Four anonymous examples of personal reflections. Your own experience may be different.", "Четыре анонимных примера личных впечатлений. Ваш опыт может быть другим."),
+    testimonials: sunVoices },
   { id: "flight-05", phase: "flight", kind: "reflection",
     title: l("What did the Sun mean to you?", "Что для вас означает Солнце?"),
     body: l("Write one thought about the Sun as a symbol.", "Запишите одну мысль об образе Солнца."),
     question: { type: "text", prompt: l("Your thought…", "Ваша мысль…") } },
   { id: "flight-04", phase: "flight", kind: "reflection",
     title: l("Your meditation feedback", "Ваш отзыв о медитации"),
-    body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
-    question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
+    body: l("Did you manage to fly up to the Sun during the Sun meditation?", "Удалось ли вам подняться к Солнцу во время медитации «Полёт к Солнцу»?"),
+    question: { type: "text", prompt: l("Describe please how was the Sun energy flow?", "Опишите, пожалуйста, каким был поток солнечной энергии.") } },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
@@ -262,7 +322,13 @@ const commonSlides: EnergyworkSlide[] = [
 
   { id: "paths-01", phase: "initiation", kind: "lesson",
     title: l("Personal initiation: what comes next?", "Личная инициация: что дальше?"),
-    body: l("You have learned about all three Reiki systems within one course. Personal Level 1 initiation is a separate, teacher-led process that requires your informed choice and Andrey's confirmation.", "Вы познакомились со всеми тремя системами в одном курсе. Личная инициация первой ступени — отдельный процесс с преподавателем: нужен ваш осознанный выбор и подтверждение Андрея.") },
+    body: l("You have learned about all three Reiki systems within one course. Personal Level 1 initiation is a separate, teacher-led process that requires your informed choice and Andrey's confirmation.", "Вы познакомились со всеми тремя системами в одном курсе. Личная инициация первой ступени — отдельный процесс с преподавателем: нужен ваш осознанный выбор и подтверждение Андрея."),
+    introAudioKey: "initiation",
+    introTopics: [
+      l("How personal initiation differs from listening to a meditation", "Чем личная инициация отличается от прослушивания медитации"),
+      l("Choosing one gift initiation and optional additional traditions", "Как выбрать одну бесплатную инициацию и дополнительные варианты"),
+      l("Preparing your motivation and arranging a time with Andrey in chat", "Как описать мотивацию и согласовать время в чате с Андреем"),
+    ] },
   { id: "paths-02", phase: "initiation", kind: "lesson", image: image.tree,
     title: l("What your learning journal needs", "Что нужно для учебного дневника"),
     body: l("After each meditation, add a short review to continue. You may return to the separate lesson questions later; all five are needed before personal initiation review.", "После каждой медитации оставьте короткий отзыв для продолжения. К отдельным вопросам уроков можно вернуться позже — все пять понадобятся перед рассмотрением личной инициации.") },
@@ -278,7 +344,13 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
   yggdrasil: [
     { id: "ygg-01", phase: "yggdrasil", kind: "lesson", image: image.tree,
       title: l("The roots, trunk and crown", "Корни, ствол и крона"),
-      body: l("The World Tree is an image used for symbolic contemplation. What might roots, trunk and branches mean to you?", "Мировое Древо — образ для символического размышления. Что для вас могут означать корни, ствол и ветви?") },
+      body: l("The World Tree is an image used for symbolic contemplation. What might roots, trunk and branches mean to you?", "Мировое Древо — образ для символического размышления. Что для вас могут означать корни, ствол и ветви?"),
+      introAudioKey: "yggdrasil",
+      introTopics: [
+        l("The World Tree and the place of runes in the tradition", "Мировое Древо и значение рун в традиции"),
+        l("The introductory Runic Reiki streams in the course", "Вводные потоки Рейки Иггдрасиль, о которых рассказывает курс"),
+        l("Meditation on roots, trunk and crown and your impressions", "Медитация с образом дерева и ваши собственные впечатления"),
+      ] },
     { id: "ygg-02", phase: "yggdrasil", kind: "video", videoKey: "reiki-yggdrasil",
       title: l("Original Reiki Yggdrasil meditation", "Оригинальная медитация Рейки Иггдрасиль"),
       body: l("English recording shared by Andrey. Participation is optional.", "Английская запись Андрея. Участие необязательно.") },
@@ -296,34 +368,34 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "ygg-05", phase: "yggdrasil", kind: "lesson",
       title: l("Explore the Reiki Yggdrasil guide", "Изучите материалы Рейки Иггдрасиль"),
       body: l("Read the World Tree story and the five-level Basic Course guide. Seven short study questions follow.", "Прочитайте историю Мирового Древа и описание пяти ступеней курса. Затем ответьте на семь коротких вопросов.") },
-    { id: "ygg-06", phase: "yggdrasil", kind: "reflection",
-      title: l("Question 1 of 7 · The World Tree", "Вопрос 1 из 7 · Мировое Древо"),
-      body: l("Describe the World Tree as a personal symbol.", "Кратко опишите Мировое Древо как символ."),
-      question: { type: "text", prompt: l("How can the World Tree support reflection without promising a medical result?", "Как образ Мирового Древа помогает размышлять без обещаний лечебного результата?") } },
-    { id: "ygg-study-02", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 2 of 7 · World Tree origins","Вопрос 2 из 7 · Происхождение Древа"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("Which mythology features Yggdrasil, and what does the World Tree connect in its stories?","К какой мифологии относится Иггдрасиль и что соединяет Мировое Древо в преданиях?") } },
-    { id: "ygg-study-03", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 3 of 7 · System origin","Вопрос 3 из 7 · Происхождение системы"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("Who is named as the founder of Reiki Yggdrasil in the original materials?","Кто назван создателем системы Рейки Иггдрасиль в исходных материалах?") } },
-    { id: "ygg-study-04", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 4 of 7 · Basic programme","Вопрос 4 из 7 · Базовая программа"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("How many levels make up the Basic Reiki Yggdrasil programme?","Сколько ступеней входит в базовую программу Рейки Иггдрасиль?") } },
-    { id: "ygg-study-05", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 5 of 7 · First-level themes","Вопрос 5 из 7 · Темы первой ступени"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("Name two themes taught in the first level of Reiki Yggdrasil.","Назовите две темы первой ступени Рейки Иггдрасиль.") } },
-    { id: "ygg-study-06", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 6 of 7 · Runes and symbols","Вопрос 6 из 7 · Руны и символы"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("What role do runes and the World Tree image play in this spiritual tradition?","Какую роль играют руны и образ Мирового Древа в этой духовной традиции?") } },
-    { id: "ygg-study-07", phase: "yggdrasil", kind: "reflection", image: image.tree,
-      title: l("Question 7 of 7 · Learning and initiation","Вопрос 7 из 7 · Обучение и инициация"),
-      body: l("Write one short answer from the original course materials.", "Коротко ответьте по исходным материалам курса."),
-      question: { type: "text", prompt: l("Why does reading the lessons not automatically mean you have received a personal initiation?","Почему изучение уроков само по себе не означает получения личной инициации?") } },
+    { id: "ygg-study-v2-01", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 1 of 7 · Reiki and Runes", "Вопрос 1 из 7 · Рейки и руны"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[0], yggdrasilPreparationQuestions.ru[0]) } },
+    { id: "ygg-study-v2-02", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 2 of 7 · Tradition and Usui Reiki", "Вопрос 2 из 7 · Традиция и Усуи Рейки"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[1], yggdrasilPreparationQuestions.ru[1]) } },
+    { id: "ygg-study-v2-03", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 3 of 7 · The World Tree", "Вопрос 3 из 7 · Мировое Древо"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[2], yggdrasilPreparationQuestions.ru[2]) } },
+    { id: "ygg-study-v2-04", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 4 of 7 · Healing Stream", "Вопрос 4 из 7 · Поток «Целительство»"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[3], yggdrasilPreparationQuestions.ru[3]) } },
+    { id: "ygg-study-v2-05", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 5 of 7 · Protection Stream", "Вопрос 5 из 7 · Поток «Защита»"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[4], yggdrasilPreparationQuestions.ru[4]) } },
+    { id: "ygg-study-v2-06", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 6 of 7 · Money Stream Activation", "Вопрос 6 из 7 · Активация денежного потока"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[5], yggdrasilPreparationQuestions.ru[5]) } },
+    { id: "ygg-study-v2-07", phase: "yggdrasil", kind: "reflection", image: image.tree,
+      title: l("Question 7 of 7 · Pantheons and Deities", "Вопрос 7 из 7 · Пантеоны и божества"),
+      body: l("Read the course materials and answer in your own words.", "Прочитайте материалы курса и ответьте своими словами."),
+      question: { type: "text", prompt: l(yggdrasilPreparationQuestions.en[6], yggdrasilPreparationQuestions.ru[6]) } },
     { id: "ygg-done", phase: "yggdrasil", kind: "milestone", image: image.tree,
       title: l("Fourth lesson completed!", "Четвёртый урок пройден!"),
       body: l("One lesson remains. Complete it to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Остался один урок! Завершите его, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки.") },
@@ -331,7 +403,13 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
   tantra: [
     { id: "tan-01", phase: "tantra", kind: "lesson", image: image.tantra,
       title: l("The Spring of Life", "Источник жизни"),
-      body: l("The first step of Tantra Reiki uses the Spring of Life as a spiritual metaphor. There is no required sensation to achieve.", "Первая ступень Тантра Рейки использует «Источник жизни» как духовный образ. Не нужно достигать какого-либо обязательного ощущения.") },
+      body: l("The first step of Tantra Reiki uses the Spring of Life as a spiritual metaphor. There is no required sensation to achieve.", "Первая ступень Тантра Рейки использует «Источник жизни» как духовный образ. Не нужно достигать какого-либо обязательного ощущения."),
+      introAudioKey: "tantra",
+      introTopics: [
+        l("What Tantra Reiki is and how the tradition is taught", "Что такое Тантра Рейки и как устроено обучение"),
+        l("The Spring of Life, connection and personal boundaries", "Образ Источника жизни, контакт и личные границы"),
+        l("Guided meditation, observations and personal initiation", "Медитация, собственные впечатления и отличие от личной инициации"),
+      ] },
     { id: "tan-02", phase: "tantra", kind: "video", videoKey: "tantra-reiki",
       title: l("Original Tantra Reiki practice", "Оригинальная практика Тантра Рейки"),
       body: l("Watch Andrey's original English practice at your chosen pace.", "Посмотрите оригинальную английскую практику Андрея в комфортном темпе.") },
@@ -345,32 +423,27 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
     { id: "tan-05", phase: "tantra", kind: "lesson", image: image.tantra,
       title: l("Discover Tantra Reiki", "Познакомьтесь с Тантра Рейки"),
-      body: l("Read Andrey's guide to the tradition, its nine levels and practices. Seven short study questions follow.", "Прочитайте описание Тантра Рейки, девяти ступеней и практик Андрея. Затем ответьте на семь коротких вопросов.") },
+      body: l("Read Andrey's guide to the tradition, its nine levels and practices. Five short study questions follow.", "Прочитайте описание Тантра Рейки, девяти ступеней и практик Андрея. Затем ответьте на пять коротких вопросов.") },
     { id: "tan-study-04", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Question 4 of 7 · Tradition and foundations", "Вопрос 4 из 7 · Традиция и основы"),
+      title: l("Question 1 of 5 · Tradition and foundations", "Вопрос 1 из 5 · Традиция и основы"),
       body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
       question: { type: "text", prompt: l("Which culture and tradition form the foundation of Tantra Reiki?", "Какая культура и традиция лежат в основе Тантра Рейки?") } },
     { id: "tan-06", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Question 1 of 7 · Origins of Tantra Reiki", "Вопрос 1 из 7 · Происхождение Тантра Рейки"),
+      title: l("Question 2 of 5 · Origins of Tantra Reiki", "Вопрос 2 из 5 · Происхождение Тантра Рейки"),
       body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
       question: { type: "text", prompt: l("Who created the Tantra Reiki system, and what is the source of its energy?", "Кто создал систему Тантра Рейки и каков источник её энергии?") } },
-    { id: "tan-study-05", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Question 5 of 7 · The nine levels", "Вопрос 5 из 7 · Девять ступеней"),
-      body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
-      question: { type: "text", prompt: l("How are Levels 1–3, 4–6 and 7–9 connected?", "Как связаны ступени 1–3, 4–6 и 7–9?") } },
     { id: "tan-study-06", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Question 6 of 7 · Mandalas and artifacts", "Вопрос 6 из 7 · Мандалы и артефакты"),
+      title: l("Question 3 of 5 · Mandalas and artifacts", "Вопрос 3 из 5 · Мандалы и артефакты"),
       body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
       question: { type: "text", prompt: l("At which levels do students learn to create mandalas and work with artifacts?", "На каких ступенях ученики учатся создавать мандалы и работать с артефактами?") } },
     { id: "tan-study-07", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Question 7 of 7 · The master level", "Вопрос 7 из 7 · Ступень мастера"),
+      title: l("Question 4 of 5 · The master level", "Вопрос 4 из 5 · Ступень мастера"),
       body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
       question: { type: "text", prompt: l("After which level can someone become a Tantra Reiki Master and teach and initiate others?", "После какой ступени можно стать мастером Тантра Рейки, обучать и инициировать других?") } },
     { id: "tan-study-02", phase: "tantra", kind: "reflection", image: image.tantra,
-      title: l("Questions 2 & 3 of 7 · Purpose and use", "Вопросы 2 и 3 из 7 · Цель и применение"),
-      body: l("Answer both short questions below.", "Ответьте на оба коротких вопроса."),
-      question: { type: "text", prompt: l("What is the main purpose of the Tantra Reiki flow? Why is it needed, and what does it offer a person?", "Какова главная цель потока Тантра Рейки? Для чего он нужен и что даёт человеку?") },
-      secondaryQuestion: { id: "tan-study-03", prompt: l("For what purposes can Tantra Reiki be used?", "Для каких целей можно использовать Тантра Рейки?") } },
+      title: l("Question 5 of 5 · Purpose and use", "Вопрос 5 из 5 · Цель и применение"),
+      body: l("Combine the purpose and possible uses in one short answer.", "Объедините цель и возможное применение в одном коротком ответе."),
+      question: { type: "text", prompt: l("What is the main purpose of the Tantra Reiki flow, what does it offer a person, and for what purposes can it be used?", "Какова главная цель потока Тантра Рейки, что он даёт человеку и для каких целей его можно использовать?") } },
     { id: "tan-03", phase: "tantra", kind: "practice", question: tantraPracticeQuestion,
       title: l("Notice connection and space", "Заметьте связь и пространство"),
       body: l("For one minute, notice your sense of connection and space, without touch.", "Одну минуту замечайте связь с собой и пространством без прикосновений.") },
@@ -378,7 +451,13 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
   kundalini: [
     { id: "kun-01", phase: "kundalini", kind: "lesson", image: image.kundalini,
       title: l("An introduction to Kundalini Reiki", "Знакомство с Кундалини Рейки"),
-      body: l("This is a distinct three-level spiritual teaching. The original Paul Crick manual is available from the public course page.", "Это отдельная трёхступенчатая духовная система. Оригинальная методичка Пола Крика доступна на странице курса.") },
+      body: l("This is a distinct three-level spiritual teaching. The original Paul Crick manual is available from the public course page.", "Это отдельная трёхступенчатая духовная система. Оригинальная методичка Пола Крика доступна на странице курса."),
+      introAudioKey: "kundalini",
+      introTopics: [
+        l("The tradition and its three levels", "Особенности системы и её три ступени"),
+        l("Grounding, intention and relaxed attention", "Опора, намерение и спокойное внимание"),
+        l("First meditation and your own experience", "Знакомство с медитацией и наблюдение за своим опытом"),
+      ] },
     { id: "kun-02", phase: "kundalini", kind: "video", videoKey: "kundalini-reiki",
       title: l("Original Kundalini Reiki meditation", "Оригинальная медитация Кундалини Рейки"),
       body: l("Andrey's English-language source recording. Stop or skip whenever you wish.", "Авторская английская запись Андрея. В любой момент можно остановить или пропустить.") },
@@ -386,8 +465,9 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("A one-minute grounding pause", "Минута ощущения опоры"),
       body: l("For one minute, notice the support of the floor or your chair.", "Одну минуту замечайте опору пола или стула.") },
     { id: "kun-voices", phase: "kundalini", kind: "voices", videoKey: "kundalini-reiki", image: image.kundalini,
-      title: l("What do other viewers say?", "Что пишут другие?"),
-      body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
+      title: l("Kundalini Reiki: experiences from other participants", "Кундалини Рейки: впечатления других участников"),
+      body: l("Three anonymous examples from Kundalini Reiki sessions with other practitioners, not reviews of this exact video. Your experience may be different.", "Три анонимных примера опыта Кундалини Рейки с другими практиками, а не отзывы об этом конкретном видео. Ваши ощущения могут отличаться."),
+      testimonials: kundaliniVoices },
     { id: "kun-04", phase: "kundalini", kind: "reflection",
       title: l("Your meditation feedback", "Ваш отзыв о медитации"),
       body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
@@ -450,31 +530,60 @@ const initiationSlides: EnergyworkSlide[] = [
 
 const endSlides: EnergyworkSlide[] = [
   { id: "end-01", phase: "complete", kind: "reflection",
-    title: l("My personal initiation letter", "Моё письмо перед инициацией"),
-    body: l("Tell Andrey what you learned and why you would like a personal Reiki initiation.", "Напишите Андрею, что вы узнали и почему хотите пройти личную инициацию Рейки."),
-    question: { type: "text", prompt: l("Why would I like to receive a personal initiation?", "Почему я хочу пройти личную инициацию?") } },
+    title: l("Choose your personal Reiki initiation", "Выберите личную Рейки-инициацию"),
+    body: l("Choose one Level 1 initiation as a free gift. You may also request the other two by donation. Tell Andrey about yourself, your preferred time and why this matters to you.", "Выберите одну инициацию первой ступени в подарок. Две другие можно запросить за добровольный донейшн. Расскажите Андрею о себе, удобном времени и своей мотивации."),
+    question: { type: "text", prompt: l("My personal initiation request and motivation", "Моя заявка и мотивация на личную инициацию") } },
   { id: "end-02", phase: "complete", kind: "finish", image: image.world,
     title: l("Your five Reiki lessons", "Ваши пять уроков Рейки"),
     body: l("You have explored Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and personal initiation preparation. This course does not grant Level 1 initiation or certification.", "Вы прошли «Полёт к Солнцу», Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и подготовку к личной инициации. Учебный курс сам по себе не предоставляет инициацию первой ступени или сертификат.") },
 ];
 
+// Keep the same IDs, questions and audio component while placing each lesson's
+// timed practice immediately before its completion/congratulation screen.
+function withClosingPractices(
+  lesson: EnergyworkSlide[],
+  practiceIds: readonly string[],
+  finaleId: string,
+): EnergyworkSlide[] {
+  const practices = practiceIds.map((id) => {
+    const practice = lesson.find((slide) => slide.id === id);
+    if (!practice || practice.kind !== "practice") throw new Error("MISSING_REIKI_PRACTICE_" + id);
+    return practice;
+  });
+  const finale = lesson.find((slide) => slide.id === finaleId);
+  if (!finale || (finale.kind !== "milestone" && finale.kind !== "finish"))
+    throw new Error("MISSING_REIKI_LESSON_FINALE_" + finaleId);
+  return [
+    ...lesson.filter((slide) => slide.id !== finaleId && !practiceIds.includes(slide.id)),
+    ...practices,
+    finale,
+  ];
+}
+
 // Keep the legacy argument solely for callers restoring an old private progress row.
 // It no longer controls the curriculum. All students study every system in sequence.
 export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): EnergyworkSlide[] {
-  return [
-    ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    ...commonSlides.filter((slide) => slide.phase === "flight"),
-    ...pathSlides.tantra.slice(0, 2),
-    pathSlides.tantra.find((slide) => slide.id === "tan-03")!,
-    ...pathSlides.tantra.slice(2).filter((slide) => slide.id !== "tan-03"),
-    commonSlides.find((slide) => slide.id === "presence-01")!,
-    ...commonSlides.filter((slide) => slide.phase === "tantra" && slide.id !== "presence-01"),
-    ...pathSlides.kundalini,
-    ...pathSlides.yggdrasil,
-    ...commonSlides.filter((slide) => slide.phase === "initiation" && slide.id !== "paths-04"),
+  const finalLesson = [
+    commonSlides.find((slide) => slide.id === "paths-01")!,
+    ...commonSlides.filter((slide) => slide.phase === "initiation" &&
+      slide.id !== "paths-01" && slide.id !== "paths-04"),
     ...initiationSlides,
     endSlides[0]!,
     commonSlides.find((slide) => slide.id === "paths-04")!,
     endSlides[1]!,
+  ];
+
+  return [
+    ...commonSlides.filter((slide) => slide.phase === "welcome"),
+    ...withClosingPractices(commonSlides.filter((slide) => slide.phase === "flight"), ["flight-03"], "flight-done"),
+    ...withClosingPractices([
+      ...pathSlides.tantra,
+      ...commonSlides.filter((slide) => slide.phase === "tantra"),
+    ], ["tan-03"], "tan-done"),
+    ...withClosingPractices(pathSlides.kundalini, ["kun-03"], "kun-done"),
+    ...withClosingPractices(pathSlides.yggdrasil, ["ygg-03"], "ygg-done"),
+    // The fifth lesson starts at paths-01, not in the previous Yggdrasil lesson.
+    // Both existing safety/intention practices remain available before the final congratulations.
+    ...withClosingPractices(finalLesson, ["intention-04", "boundaries-03"], "end-02"),
   ];
 }
