@@ -2,13 +2,14 @@ import type {Metadata} from 'next'
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import {PublicSiteHeader} from '@/components/public-site-header'
-import {getHomeopathyLocaleParams,isSupportedLocale} from '@/data/remedies'
-import type {Locale} from '@/data/remedies'
+import {publicLocales} from '@/lib/public-locales'
+import type {PublicLocale} from '@/lib/public-locales'
 import {metadataBaseFor} from '@/data/site-metadata'
 import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp} from '@/lib/whatsapp-enquiry'
 import styles from './page.module.css'
 
 type Props={params:Promise<{locale:string}>}
+const validContactLocale=(value:string):value is PublicLocale=>publicLocales.includes(value as PublicLocale)
 const COPY={
  en:{
   eyebrow:'HOLISTIC HOUSE · CONTACT',title:'Contact Holistic House',
@@ -39,19 +40,19 @@ const COPY={
  },
 }
 export const dynamic='force-static'
-export function generateStaticParams(){return getHomeopathyLocaleParams()}
+export function generateStaticParams(){return publicLocales.map(locale=>({locale}))}
 export async function generateMetadata({params}:Props):Promise<Metadata>{
  const {locale}=await params
- if(!isSupportedLocale(locale))return {title:'Not found'}
- const l=locale as Locale
+ if(!validContactLocale(locale))return {title:'Not found'}
+ const l=locale as PublicLocale
  return {metadataBase:metadataBaseFor(),title:COPY[l].title,
   description:COPY[l].subtitle,alternates:{canonical:'/'+locale+'/contact',
    languages:{en:'/en/contact',ru:'/ru/contact',es:'/es/contact','x-default':'/en/contact'}}}
 }
 export default async function ContactPage({params}:Props){
  const {locale}=await params
- if(!isSupportedLocale(locale))notFound()
- const l=locale as Locale,t=COPY[l]
+ if(!validContactLocale(locale))notFound()
+ const l=locale as PublicLocale,t=COPY[l]
  const whatsapp=whatsappEnquiryUrl({locale:l,service:'Holistic House',
   request:'General contact enquiry',pagePath:'/'+locale+'/contact'})
  const telegram=telegramEnquiryUrlFromWhatsApp(whatsapp)
