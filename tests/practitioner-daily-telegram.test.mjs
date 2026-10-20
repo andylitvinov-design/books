@@ -45,6 +45,7 @@ test('bot schedule is daily and independent of the existing housekeeping job',()
   assert.deepEqual(config.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13 * * *'},
+    {path:'/api/internal/council-archive-telegram',schedule:'0 15 * * *'},
   ])
 })
 test('cron owner auth denies anonymous caller and allows only correct CRON_SECRET',()=>{

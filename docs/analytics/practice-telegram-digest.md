@@ -1,3 +1,19 @@
+## 2026-10-20 — Telegram credentials in ONE place
+
+Use **only** [Holistic House Vercel Production env](https://vercel.com/super10/codex-public-book-library/settings/environment-variables) for the existing @Andydotbot BotFather token and numeric private @AndyTherapist chat ID:
+
+- `HH_PRACTICE_TG_BOT_TOKEN`: encrypted server-only BotFather token.
+- `HH_PRACTICE_TG_CHAT_ID`: encrypted numeric private chat ID.
+- `HH_PRACTICE_TG_ENABLED=false` until correct Bot API identity and test send have been verified; then explicitly opt in.
+
+Do NOT duplicate these Telegram values in GitHub Actions or AI Council Vercel. A separate **automatically provisioned** private relay key is configured in both Vercel backends (`HH_COUNCIL_TG_RELAY_KEY` and `COUNCIL_TELEGRAM_RELAY_KEY`); this does not contain the BotFather token. The AI Council owner-only UI calls the HH central gateway. Daily public Mistral/Gemini/Muse status audit archives to [Issue #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242); the HH `/api/internal/council-archive-telegram` cron at 15:00 UTC sends it to the same private owner, using a separate private idempotency receipt table. The existing My Practice daily statistics cron continues to send independently at 13:00 UTC.
+
+Safety: no client profile, message content or clinical notes; owner check via Telegram `getMe`/`getChat`/`getWebhookInfo`, no userbot or webhook mutation. Sender identity and true Telegram delivery remain **NOT VERIFIED** until the owner securely enters the real BotFather token and chat ID, the server verifies recipient, and one real Telegram message is acknowledged. Enabling one HH delivery switch disables/enables all centralized senders after redeploy; AI Council also has its independent owner opt-in flag.
+
+**Previous environment instructions below refer to the legacy split deployment and are superseded by this section.**
+
+---
+
 # My Practice → daily Telegram service statistics (owner only)
 
 Status as of 2026-10-20: **code in PR #1287, production Telegram delivery not verified**. No Telegram token/chat ID is embedded or assumed available.
