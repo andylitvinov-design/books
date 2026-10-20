@@ -178,6 +178,18 @@ test('explicit missing or malformed flow never falls back to another tab verifie
   assert.equal(calls(),0)
 })
 
+test('Growth Studio OAuth always returns to one fixed admin login page, never an arbitrary destination', async () => {
+  const flow=await routeStart([],null,'growth-studio')
+  assert.equal(flow.callback.searchParams.get('continue'),'growth-studio')
+  const response=await routeCallback(flow,flow.cookies,{cancelled:true})
+  const url=new URL(response.headers.get('location'))
+  assert.equal(url.origin,origin)
+  assert.equal(url.pathname,'/admin/login')
+  assert.equal(url.searchParams.get('next'),'growth-studio')
+  assert.equal(url.searchParams.get('auth'),'cancelled')
+  assert.equal(calls(),0)
+})
+
 test('session cabinet one-tap OAuth accepts only allowlisted app destinations, never guest secrets', async t => {
  const cases = [
   ['cabinet','/en/app/portrait'],['my-tests','/en/app/tests'],
