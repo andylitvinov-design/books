@@ -1,6 +1,6 @@
 'use client'
 
-import {Archive, BadgeCheck, FileText, Film, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Users} from 'lucide-react'
+import {Archive, BadgeCheck, FileText, Film, Headphones, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Users} from 'lucide-react'
 import Link from 'next/link'
 import {useEffect, useState} from 'react'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
@@ -18,6 +18,7 @@ const copy = {
     materials:'Материалы',materialsText:'Библиотека фото, видео и YouTube-ссылок для выбора в отчетах клиентов.',
     appRequests:'Заявки из приложения',appRequestsText:'Запросы консультаций и только те резюме, которыми пользователь решил поделиться.',
     reikiLeads:'Reiki CRM · ученики и инициация',reikiLeadsText:'Лид 1: начало обучения. Лид 2: письмо-заявка и согласованные материалы курса.',
+    reikiAudio:'Аудиовведения Рейки',reikiAudioText:'Загрузить голосовую презентацию Андрея перед медитацией в каждом уроке; проверить и опубликовать.',
     network:'Сеть практиков',networkText:'Проверять профили, credentials и услуги мастеров.',
     seo:'SEO-аналитика',seoText:'Показы, клики, индексация, ошибки сайта и скорость — проверенные данные Google.',
   },
@@ -32,6 +33,7 @@ const copy = {
     materials:'Materials',materialsText:'Reusable photo, video and YouTube library for attaching to client reports.',
     appRequests:'App consultation requests',appRequestsText:'Requests and only the summaries users explicitly chose to share.',
     reikiLeads:'Reiki CRM · students & initiation',reikiLeadsText:'Lead 1: course start. Lead 2: initiation letter and consented student materials.',
+    reikiAudio:'Reiki lesson audio',reikiAudioText:'Upload and preview Andrey’s introductions before each Reiki meditation; publish only after approval.',
     network:'Practitioner network',networkText:'Review practitioner profiles, credentials, and services.',
     seo:'SEO Analytics',seoText:'Search impressions, clicks, indexing, site errors and speed with verified sources.',
   },
@@ -51,6 +53,7 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
      {href:'/admin/reports',icon:FileText,title:text.reports,body:text.reportsText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
     {href:'/admin/reiki-leads',icon:Inbox,title:text.reikiLeads,body:text.reikiLeadsText},
+    {href:'/admin/reiki-audio',icon:Headphones,title:text.reikiAudio,body:text.reikiAudioText},
     {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},
     {href:'/admin/prescriptions/new',icon:FileText,title:text.prescription,body:text.prescriptionText},
     {href:'/admin/payments/new',icon:ReceiptText,title:text.invoice,body:text.invoiceText},
