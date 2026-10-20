@@ -28,6 +28,8 @@ test('individual card payments remain disabled without three merchant and price 
 test('only exact hosted Stripe links are accepted for catalog totals, never arbitrary price input', () => {
   const links = configuredIndividualCardLinks(approved)
   assert.ok(Object.isFrozen(links))
+  assert.deepEqual(configuredIndividualCardLinks({ ...approved, VERCEL_ENV: 'production' })[5000], undefined)
+  assert.deepEqual(configuredIndividualCardLinks({ ...approved, VERCEL_ENV: 'preview' })[10000], undefined)
   assert.equal(buildIndividualCardPaymentUrl([ids[0]], links), approved.HH_CARD_PAYMENT_LINK_50_EUR)
   assert.equal(buildIndividualCardPaymentUrl([ids[1]], links), approved.HH_CARD_PAYMENT_LINK_100_EUR)
   assert.equal(buildIndividualCardPaymentUrl(ids, links), approved.HH_CARD_PAYMENT_LINK_150_EUR)
@@ -76,6 +78,7 @@ test('public cart exposes card and Interac without pretending a completed paymen
   const payments = read('app/[locale]/payments/page.tsx')
   assert.match(page, /configuredIndividualCardLinks/)
   assert.match(cart, /buildIndividualCardPaymentUrl/)
+  assert.match(cart, /wiseEnabled, cardLinks \}: \{/)
   assert.match(cart, /buildInteracTransferInquiry/)
   assert.match(cart, /data-cart-card-payment-link/)
   assert.match(cart, /data-cart-card-link-inquiry/)

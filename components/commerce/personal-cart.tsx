@@ -25,7 +25,7 @@ const copy = {
     interacNote: "Canada only. Ask for the exact CAD quote and verified recipient before transferring. This button does not collect payment.",
     paypalAction: "Continue to PayPal", zenAction: "Request ZEN transfer details",
     wiseAction: "Open Wise", wiseItem: "Pay for", 
-    paypalNote: "Personal PayPal.Me: select Goods & Services, verify Andrii Litvinov, EUR and the total. Payment is verified manually.",
+    paypalNote: "Personal PayPal.Me: choose Goods & Services and verify Andrii Litvinov, EUR and the total. If this option is unavailable, do not use Friends & Family. Payment is checked manually.",
     zenNote: "ZEN.COM opens a WhatsApp request for transfer details, not a payment. Don't transfer before confirmation.",
     wiseNote: "Wise may require you to enter the amount yourself. Verify the recipient and EUR amount before sending.",
     afterPay: "Already paid? Send transaction reference", confirm: "After paying, send your transaction reference so we can verify it.",
@@ -43,7 +43,7 @@ const copy = {
     interacNote: "Только Канада. До перевода уточните сумму в CAD и проверенные реквизиты. Эта кнопка не списывает деньги.",
     paypalAction: "Перейти в PayPal", zenAction: "Запросить реквизиты ZEN",
     wiseAction: "Открыть Wise", wiseItem: "Оплатить",
-    paypalNote: "Личный PayPal.Me: выберите «Товары и услуги», проверьте Andrii Litvinov, валюту EUR и сумму. Оплата проверяется вручную.",
+    paypalNote: "Личный PayPal.Me: выберите «Товары и услуги», проверьте Andrii Litvinov, валюту EUR и сумму. Если опция недоступна, не переводите деньги как «Друзьям и семье». Оплата проверяется вручную.",
     zenNote: "ZEN.COM открывает запрос реквизитов в WhatsApp, а не оплату. Не переводите деньги до подтверждения.",
     wiseNote: "В Wise сумму иногда нужно вводить вручную. Проверьте получателя и сумму в EUR перед переводом.",
     afterPay: "Уже оплатили? Отправить номер транзакции", confirm: "После оплаты отправьте номер транзакции для ручной проверки.",
@@ -61,7 +61,7 @@ const copy = {
     interacNote: "Solo Canadá. Solicita la cantidad exacta en CAD y un destinatario verificado antes de transferir. Esto no cobra dinero.",
     paypalAction: "Continuar a PayPal", zenAction: "Solicitar datos para ZEN",
     wiseAction: "Abrir Wise", wiseItem: "Pagar",
-    paypalNote: "PayPal.Me personal: selecciona Productos y servicios y verifica Andrii Litvinov, EUR y el total. Verificación manual.",
+    paypalNote: "PayPal.Me personal: selecciona Productos y servicios y verifica Andrii Litvinov, EUR y el total. Si no está disponible, no uses Amigos y familiares. Verificación manual.",
     zenNote: "ZEN.COM abre una consulta de datos bancarios por WhatsApp, no es un pago. Espera la confirmación.",
     wiseNote: "Puede que debas introducir el importe en Wise. Verifica el destinatario y el importe en EUR.",
     afterPay: "¿Ya pagaste? Enviar referencia", confirm: "Después de pagar, envía la referencia de la transacción para verificarla.",
@@ -70,7 +70,7 @@ const copy = {
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, cardLinks }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
   wiseEnabled: boolean;
