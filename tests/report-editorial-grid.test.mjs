@@ -41,7 +41,7 @@ test('premium report uses distinct hero/artwork columns, aligned sections, origi
 test('remedy recommendation remains a single dynamic card with metadata, larger photo and clickable action',()=>{
   const source=readFileSync('lib/prescriptions/pdf.js','utf8')
   assert.match(source,/const cardHeight=mainHeight/)
-  assert.match(source,/const imageArea=82/)
+  assert.match(source,/const imageArea=86/)
   assert.match(source,/text\(linkLabel,titleX,linkY/)
   assert.match(source,/page\.links\.push\(\{url,x:titleX,y:linkY/)
   assert.doesNotMatch(source,/const photoY = headerTop - 58/)
