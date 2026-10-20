@@ -128,21 +128,28 @@ function dateLabel(value,lang) {if(!value)return '—'; const d=new Date(value);
 function Questionnaire({ answers, onChange, lang, t, disabled=false }) {
   return <div className={styles.questionnaire} data-business-snapshot>
     <h3>{t.questionnaire}</h3><p>{t.questionnaireHelp}</p><small>{t.scoring}</small>
-    {BUSINESS_DOMAINS.map(domain=><fieldset key={domain.id} className={styles.domain}>
-      <legend>{domain[lang]}</legend>
-      {BUSINESS_QUESTIONS.filter(question=>question.domain===domain.id).map(q=><label key={q.id} className={styles.question}>
-        <span>{q[lang]}</span>
-        <select value={answers[q.id]??''} disabled={disabled} onChange={e=>{
-          const v=e.target.value
-          const next={...answers}
-          if(v==='')delete next[q.id];else next[q.id]=Number(v)
-          onChange(next)
-        }} aria-label={q[lang]}>
-          <option value="">— {t.notMeasured} —</option>
-          {BUSINESS_RESPONSE_LABELS[lang].map((label,i)=><option value={i} key={i}>{i} · {label}</option>)}
-        </select>
-      </label>)}
-    </fieldset>)}
+    {BUSINESS_DOMAINS.map(domain=>{
+      const domainQuestions=BUSINESS_QUESTIONS.filter(question=>question.domain===domain.id)
+      const answered=domainQuestions.filter(question=>Number.isInteger(answers[question.id])).length
+      return <details key={domain.id} className={styles.questionFold} data-business-domain={domain.id}>
+        <summary><span>{domain[lang]}</span><small>{answered} / {domainQuestions.length}</small><ChevronDown size={17} aria-hidden="true"/></summary>
+        <fieldset className={styles.domain}>
+          <legend className={styles.visuallyHidden}>{domain[lang]}</legend>
+          {domainQuestions.map(q=><label key={q.id} className={styles.question}>
+            <span>{q[lang]}</span>
+            <select value={answers[q.id]??''} disabled={disabled} onChange={e=>{
+              const v=e.target.value
+              const next={...answers}
+              if(v==='')delete next[q.id];else next[q.id]=Number(v)
+              onChange(next)
+            }} aria-label={q[lang]}>
+              <option value="">— {t.notMeasured} —</option>
+              {BUSINESS_RESPONSE_LABELS[lang].map((label,i)=><option value={i} key={i}>{i} · {label}</option>)}
+            </select>
+          </label>)}
+        </fieldset>
+      </details>
+    })}
   </div>
 }
 function ScoreTable({answers={},lang,t}){
@@ -407,37 +414,67 @@ export default function BusinessCoaching({locale='en',accountId}){
     {notice&&<p role="status" className={styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
     {course.status!=='active'&&<p className={styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
     {tab==='today'&&<div className={styles.panel} data-business-weekly-lesson>
-      <div className={styles.moduleLead}>
-        <span className={styles.moduleEyebrow}>{week===13?t.finalModule:t.week+' '+week+' / 12'}</span>
-        <h2>{currentModule.title}</h2>
-        <p><strong>{t.weeklyObjective}:</strong> {currentModule.outcome}</p>
-        <p><strong>{t.weekArtifact}:</strong> {currentModule.capstone}</p>
-        <small>{t.moduleComplete}: {currentWeekProgress.complete}/{currentWeekProgress.total} · {t.moduleDocumented}: {currentWeekProgress.documented}</small>
+      <header className={styles.moduleLead}>
+        <div className={styles.moduleLeadCopy}>
+          <span className={styles.moduleEyebrow}>{week===13?t.finalModule:t.week+' '+week+' / 12'}</span>
+          <h2>{currentModule.title}</h2>
+          <p>{currentModule.outcome}</p>
+          <small><FileCheck2 size={15} aria-hidden="true"/><span>{t.weekArtifact}: {currentModule.capstone}</span></small>
+        </div>
+        <div className={styles.moduleStat}>
+          <strong>{currentWeekProgress.complete}<span> / {currentWeekProgress.total}</span></strong>
+          <small>{t.moduleComplete}</small>
+          <div className={styles.moduleStatTrack} role="progressbar" aria-label={t.moduleComplete}
+            aria-valuemin={0} aria-valuemax={currentWeekProgress.total} aria-valuenow={currentWeekProgress.complete}>
+            <span style={{width:(currentWeekProgress.complete/currentWeekProgress.total*100)+'%'}}/>
+          </div>
+        </div>
+      </header>
+      <div className={styles.lessonNavigation}>
+        <label className={styles.moduleChooser}>{t.selectModule}
+          <select value={week} onChange={e=>chooseDay((Number(e.target.value)-1)*7+1)}>
+            {BUSINESS_WEEK_MODULES.map(m=><option key={m.week} value={m.week}>
+              {m.week===13?t.finalModule:t.week+' '+m.week+' · '+m.title[lang]}
+            </option>)}
+          </select>
+        </label>
+        <button className={styles.courseMapButton} type="button" onClick={()=>{setModuleWeek(week);setTab('plan')}}>
+          <ListChecks size={18} aria-hidden="true"/>{t.courseMap}<ArrowRight size={15} aria-hidden="true"/>
+        </button>
       </div>
-      <label className={styles.moduleChooser}>{t.selectModule}
-        <select value={week} onChange={e=>chooseDay((Number(e.target.value)-1)*7+1)}>
-          {BUSINESS_WEEK_MODULES.map(m=><option key={m.week} value={m.week}>
-            {m.week===13?t.finalModule:t.week+' '+m.week+' · '+m.title[lang]}
-          </option>)}
-        </select>
-      </label>
       <nav className={styles.weekDayNav} aria-label={t.selectDay}>
-        {currentModule.days.map((item,index)=><button type="button" key={item.day} aria-current={item.day===day?'step':undefined}
-          aria-label={t.day+' '+item.day+': '+item.resultLabel} onClick={()=>chooseDay(item.day)}
-          className={item.day===day?styles.weekDayActive:''}>
-          <span>{course.days?.[item.day]?.done?'✓':index+1}</span>
-        </button>)}
+        {currentModule.days.map((item,index)=>{
+          const record=course.days?.[item.day]
+          const dayStatus=record?.done?'done':record?.result?'draft':'new'
+          return <button type="button" key={item.day} aria-current={item.day===day?'step':undefined}
+            aria-label={t.moduleDay+' '+(index+1)+': '+item.resultLabel} onClick={()=>chooseDay(item.day)}
+            data-day-status={dayStatus} className={item.day===day?styles.weekDayActive:''}>
+            <span>{record?.done?<CheckCircle2 size={19} aria-hidden="true"/>:index+1}</span>
+            <small>{t.day}</small>
+          </button>
+        })}
       </nav>
-      <div className={styles.dayHeading}>
-        <div><small>{t.day} {day} / 90</small><h2>{selected.resultLabel}</h2><p>{selected.intro}</p></div>
-      </div>
-      <div className={styles.actionCard}><div className={styles.actionIcon}><Target size={20}/></div>
-        <div><strong>{t.practice}</strong><p>{selected.action}</p></div>
-      </div>
-      <div className={styles.dailyOutcome}>
-        <strong>{t.dailyArtifact}</strong><p>{selected.resultLabel}</p>
-        <small><CheckCircle2 size={15} aria-hidden="true"/><span><b>{t.doneWhen}:</b> {selected.doneWhen}</span></small>
-      </div>
+      <article className={styles.lessonSlide} data-business-lesson-slide>
+        <header className={styles.dayHeading}>
+          <div className={styles.lessonIdentity}>
+            <span className={styles.lessonNumber}>{t.moduleDay} {(day-1)%7+1}</span>
+            <span className={styles.lessonFormat}>{t.lessonEyebrow}</span>
+          </div>
+          <h2>{selected.resultLabel}</h2>
+          <p>{selected.intro}</p>
+        </header>
+        <div className={styles.lessonCards}>
+          <section className={styles.actionCard}>
+            <div className={styles.actionIcon}><Target size={22} aria-hidden="true"/></div>
+            <div><strong>{t.practice}</strong><p>{selected.action}</p></div>
+          </section>
+          <section className={styles.dailyOutcome}>
+            <strong><FileCheck2 size={17} aria-hidden="true"/>{t.dailyArtifact}</strong>
+            <p>{selected.resultLabel}</p>
+            <small><CheckCircle2 size={16} aria-hidden="true"/><span><b>{t.doneWhen}:</b> {selected.doneWhen}</span></small>
+          </section>
+        </div>
+      </article>
       <label className={styles.textareaLabel}>{t.myResult}
         <textarea rows={4} value={dayResult} maxLength={1200} onChange={e=>setDayResult(e.target.value)}
           placeholder={t.resultPlaceholder} disabled={course.status!=='active'}/>
@@ -453,11 +490,18 @@ export default function BusinessCoaching({locale='en',accountId}){
         onChange={e=>setDayDone(e.target.checked)}/>{t.completed}</label>
       {dayDone&&dayResult.trim().length<6&&<p className={styles.inlineHelp} role="status">{t.resultRequired}</p>}
       {course.days?.[day]?.done&&!course.days?.[day]?.result&&<p className={styles.legacyNote}>{t.legacyCompletion}</p>}
-      <button type="button" className={styles.primary}
-        disabled={busy||course.status!=='active'||(dayDone&&dayResult.trim().length<6)}
-        onClick={()=>command('day',{day,done:dayDone,note:dayNote,result:dayResult,contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION})}>
-        <CheckCircle2 size={17}/>{t.saveAction}
-      </button>
+      <div className={styles.lessonSaveBar} data-business-lesson-save>
+        <span className={styles.lessonSaveState} aria-live="polite">
+          {hasUnsavedDay?<span className={styles.unsavedDot} aria-hidden="true"/>:<CheckCircle2 size={17} aria-hidden="true"/>}
+          {hasUnsavedDay?t.unsaved:t.alreadySaved}
+        </span>
+        <button type="button" className={styles.primary}
+          disabled={busy||course.status!=='active'||!hasUnsavedDay||(dayDone&&dayResult.trim().length<6)}
+          onClick={saveDayAndContinue}>
+          <CheckCircle2 size={18}/>{dayDone?t.saveContinue:t.draftAction}
+          {dayDone&&day<90?<ArrowRight size={18} aria-hidden="true"/>:null}
+        </button>
+      </div>
       <hr className={styles.divider}/>
       <details className={styles.review} key={week}><summary>{t.weeklyReview} · {t.week} {week}<ChevronDown size={17}/></summary>
         <textarea rows={3} maxLength={1500} value={reviewNote} onChange={e=>setReviewNote(e.target.value)}
