@@ -78,7 +78,7 @@ test('public cart exposes card and Interac without pretending a completed paymen
   const payments = read('app/[locale]/payments/page.tsx')
   assert.match(page, /configuredSquarePaymentLinks/)
   assert.match(cart, /buildSquarePaymentForServices/)
-  assert.match(cart, /wiseEnabled, squareLinks \}: \{/)
+  assert.match(cart, /wiseEnabled, squareLinks, verifiedPayPalEnabled \}: \{/)
   assert.match(cart, /buildInteracTransferInquiry/)
   assert.match(cart, /data-cart-square-payment-link/)
   assert.doesNotMatch(cart, /Hosted by Stripe|Оплата на сайте Stripe|Pago alojado en Stripe/)
