@@ -2,12 +2,14 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp} from '../lib/whatsapp-enquiry.js'
+import {hasSpanishCounterpart,publicCounterpart} from '../lib/public-locales.ts'
 
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 test('all locale contact pages provide public safe access and do not collect sensitive data',()=>{
  const p=source('app/[locale]/contact/page.tsx')
  for(const lang of ['en','ru','es'])assert.match(p,new RegExp('\\b'+lang+':\\s*\\{'))
- assert.match(p,/isSupportedLocale\(locale\)/)
+ assert.match(p,/validContactLocale\(locale\)/)
+ assert.match(p,/publicLocales\.map\(locale=>\(\{locale\}\)\)/)
  assert.match(p,/notFound\(\)/)
  assert.match(p,/PublicSiteHeader/)
  assert.match(p,/whatsappEnquiryUrl/)
@@ -15,6 +17,8 @@ test('all locale contact pages provide public safe access and do not collect sen
  assert.match(p,/explore\/business/)
  assert.match(p,/app\/settings#hh-client-contact-phone/)
  assert.doesNotMatch(p,/localStorage|mailto:|function sendSms|fetch\('/)
+ assert.equal(hasSpanishCounterpart('/es/contact'),true)
+ assert.equal(publicCounterpart('/en/contact','es'),'/es/contact')
 })
 test('public WhatsApp/Telegram contact links are client-initiated and never include private routes',()=>{
  const url=whatsappEnquiryUrl({locale:'ru',service:'Holistic House',request:'General contact enquiry',pagePath:'/ru/contact'})
