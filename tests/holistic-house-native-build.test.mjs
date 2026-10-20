@@ -8,7 +8,7 @@ const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const stage=new URL('../scripts/prepare-holistic-house-native.mjs',import.meta.url)
 const files=[
   'capacitor.config.json','capacitor.holistic-house.config.json','native-web/index.html',
-  'ios/App/Podfile','ios/App/App/Info.plist','ios/App/App/App.entitlements',
+  'ios/App/Podfile','ios/App/App/Info.plist','ios/App/App/App.entitlements','ios/App/App/AppDelegate.swift',
   'ios/App/App.xcodeproj/project.pbxproj','android/app/build.gradle',
   'android/app/src/main/AndroidManifest.xml','android/app/src/main/res/values/strings.xml'
 ]
