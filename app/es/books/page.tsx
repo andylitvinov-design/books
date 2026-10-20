@@ -1,4 +1,5 @@
 import { LibraryBackLink } from "@/components/library-hub";
+import { DaoHexagramLibraryLink } from "@/components/dao-hexagram-library-link";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { SpanishBookShowcase } from "@/components/spanish-book-showcase";
@@ -22,6 +23,7 @@ export default function SpanishBooksPage() {
         <p>Libros y guías del proyecto, con sus imágenes originales y estructura de secciones.</p>
         <p>Los títulos y las descripciones del catálogo están en español. Las ediciones completas conservan su idioma original y se abren en otra pestaña.</p>
       </section>
+      <DaoHexagramLibraryLink locale="es" />
       <SpanishBookShowcase books={books} />
       <p className="remedy-disclaimer">Los materiales se ofrecen como archivo educativo de los textos del autor y no sustituyen el diagnóstico ni el tratamiento médico.</p>
       <PublicConsultationCta locale="es" />

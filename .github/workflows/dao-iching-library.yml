@@ -1,0 +1,75 @@
+name: Dao I Ching Library focused verification
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'app/[locale]/dao/hexagrams/**'
+      - 'app/es/dao/hexagrams/**'
+      - 'app/[locale]/library/page.tsx'
+      - 'app/ia-v2.css'
+      - 'app/es/library/page.tsx'
+      - 'components/dao-*'
+      - 'components/library-hub.tsx'
+      - 'data/dao-*'
+      - 'lib/dao-divination.*'
+      - 'lib/public-locales.ts'
+      - 'tests/dao-*.test.mjs'
+      - '.github/workflows/dao-iching-library.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'app/[locale]/dao/hexagrams/**'
+      - 'app/es/dao/hexagrams/**'
+      - 'app/[locale]/library/page.tsx'
+      - 'app/es/library/page.tsx'
+      - 'components/dao-*'
+      - 'data/dao-*'
+      - 'lib/dao-divination.*'
+      - 'tests/dao-*.test.mjs'
+      - '.github/workflows/dao-iching-library.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dao-iching-library-verify
+  cancel-in-progress: true
+jobs:
+  verified-dao-library:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Validate 64 symbols, provenance, photos and privacy without network
+        run: node --test tests/dao-hexagrams.test.mjs tests/dao-divination.test.mjs
+      - name: Install lockfile dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Lint the new and touched TypeScript files
+        run: |
+          npx --no-install eslint \
+            'app/[locale]/dao/hexagrams/page.tsx' \
+            'app/[locale]/dao/hexagrams/[number]/page.tsx' \
+            'app/es/dao/hexagrams/page.tsx' \
+            'app/es/dao/hexagrams/[number]/page.tsx' \
+            'app/[locale]/library/page.tsx' \
+            'app/es/library/page.tsx' \
+            'components/dao-divination-panel.tsx' \
+            'components/dao-hexagram-library-section.tsx' \
+            'components/dao-hexagram-directory.tsx' \
+            'components/dao-hexagram-pages.tsx' \
+            'components/dao-hexagram-glyph.tsx' \
+            'components/dao-hexagram-library-link.tsx' \
+            'components/library-hub.tsx' \
+            'lib/public-locales.ts'
+      - name: Build exact app (without Vercel paid preview)
+        run: npm run build
+      - name: Typecheck exact app
+        run: npx --no-install tsc --noEmit

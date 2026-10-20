@@ -8,6 +8,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { LibraryBackLink } from "@/components/library-hub";
+import { DaoHexagramLibraryLink } from "@/components/dao-hexagram-library-link";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { featuredBookUrls } from "@/data/featured-books";
 import { filterLibraryBooks } from "@/data/library";
@@ -114,6 +115,8 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
           />
         </label>
       </header>
+
+      {!normalizedQuery ? <DaoHexagramLibraryLink locale={locale} /> : null}
 
       {video}
 

@@ -52,3 +52,27 @@
 Никаких паролей, токенов, кодов Google, скриншотов со значениями переменных и личных данных клиентов не нужно. После этого можно проверять конкретные официальные аккаунты и разрешённые тестовые публикации, но **Publer не отменять** до фактического подтверждения доставки каждого нужного вам канала.
 
 Для технических подробностей: [полная инструкция](https://github.com/andylitvinov-design/books/blob/codex/public-book-library/docs/growth-studio/OWNER_CONNECTION_SETUP_2026-10-20.md); [план развития](https://github.com/andylitvinov-design/books/issues/1214).
+
+---
+
+## Шаг 5 — SEO и реклама: подключение для анализа, не для публикаций
+
+Актуальная проверка реальных аккаунтов от 20.10.2026: GA4 Holistic House **уже подключена** к HYPD (`properties/558442343`), но HYPD не видит выбранные Google Ads и Meta Ads аккаунты или Search Console property. GA4 ↔ Google Ads links отсутствуют. Наличие `NEXT_PUBLIC_GA_MEASUREMENT_ID` в production **не означает**, что аналитические скрипты включены: `PUBLIC_ANALYTICS_AVAILABLE=false` оставляем из-за privacy hold. Сторонние пиксели и ретаргетинг с данными тестов/здоровья запрещены до отдельных consent/E2E проверок.
+
+Откройте провайдера, подтвердите вход и выберите только ваши бизнес-ресурсы:
+- [Google Search Console — подключение](https://app.hypd.ai/sources?manage=search-console)
+- [Google Ads — подключение](https://app.hypd.ai/sources?manage=google-ads)
+- [Meta Ads — подключение](https://app.hypd.ai/sources?manage=meta)
+
+Это подключает источник к **HYPD/ChatGPT**, но не передаёт OAuth-права серверу Holistic House и не включает объявления. Убедитесь, что выбранный рекламный кабинет действительно принадлежит Holistic House, имеет согласованные валюту CAD и часовой пояс Toronto; найденные в Windsor.ai аккаунты в USD **не использовать по умолчанию**. Google Ads и Meta Ads черновики по-прежнему PAUSED, без расходов и реальных конверсий.
+
+## Шаг 6 — Eventbrite и каталоги мероприятий
+
+Для Eventbrite **не создавайте новый backend**: в репозитории TorontoTantra уже есть guarded Event Publisher. Read-only status [issues/71](https://github.com/andylitvinov-design/torontotantra/issues/71) от 20.10.2026 сообщил `token_not_configured`.
+
+1. Получите токен по [официальной инструкции Eventbrite](https://www.eventbrite.com/help/en-us/articles/849962/generate-an-api-key/) в своём аккаунте, не передавайте его в чат.
+2. Добавьте `EVENTBRITE_TOKEN` как приватный секрет в [GitHub Actions Secrets TorontoTantra](https://github.com/andylitvinov-design/torontotantra/settings/secrets/actions).
+3. Для дальнейшей публикации потребуются проверенные ID организации, организатора и площадки (или подтверждённый online-режим), плюс отдельное одобрение **конкретного** мероприятия, билетов и цены. Доступ и статус проверяются через [Event Publisher #71](https://github.com/andylitvinov-design/torontotantra/issues/71).
+4. Meetup — только ручной сценарий до подтверждения Pro, API-лицензии и письменного разрешения на коммерческое использование. Luma и AllEvents — ручные карточки до проверки writer-прав. Google Business Profile возможен только при соответствии условиям владения/доступности профиля — создание и публикация не автоматизируются без согласия.
+
+**Состояние выполнения:** интеграции без дополнительного OAuth подключены максимально доступным образом (IndexNow уже проверенно отправлял публичные URL, Redis Growth Studio настроен и встроен, GA4 read-only и RU YouTube доступны в соответствующих подключённых приложениях). Прямой API-постинг Instagram/Facebook/Metricool/YouTube, Eventbrite writer и Google Ads conversion import **не подтверждены**. Для них нужны права владельца у провайдера; код не может подменить эти разрешения. Никогда не отменяйте Publer и не запускайте рекламу до подтверждённого end-to-end.

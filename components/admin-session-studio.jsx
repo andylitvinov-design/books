@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { SessionMaterialPicker } from './session-material-picker'
+import { AdminSessionEngagement } from './admin-session-engagement'
 import { SessionSaveFooterVideo } from './session-save-footer-video'
 import { tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
 import { resolveSavedReportLocale } from '@/lib/documents/report-locale'
@@ -392,6 +393,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         </div>
       </details>}
     </section>
+    {session.status==='published'&&<AdminSessionEngagement clientId={clientId} sessionId={session.id} locale={locale}/>}
     {message&&<p role="status" className={styles.success}>{message}</p>}
     {error&&<p role="alert" className={styles.error}>{error}</p>}
   </div>

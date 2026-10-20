@@ -1,3 +1,29 @@
+## 2026-10-20 · Genuine Gemini and Mistral reviews to the existing @Andydotbot
+
+**Implementation:** GitHub Actions daily public-site HTML/HTTP scan (09:15 America/Toronto) still archives one evidence report to [AI Council issue #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242). Holistic House Vercel's **existing** Council cron at **21:00 UTC** now uses this evidence for **two independent provider responses** before sending one .md to the verified private owner chat. The bot and chat are ALREADY paired; do not duplicate BotFather credentials or contact @userinfobot.
+
+**One place for BOTH provider API keys (not Telegram secrets):** [Holistic House Vercel → Production environment variables](https://vercel.com/super10/codex-public-book-library/settings/environment-variables).
+
+| Key (all in this one HH Vercel project) | Type | How to obtain / safety |
+| --- | --- | --- |
+| `HH_COUNCIL_GEMINI_API_KEY` | Sensitive, Production | [Google AI Studio — API Keys](https://aistudio.google.com/apikey), choose an actual **Free Tier** Google project, not a billed API project |
+| `HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED` | Plain, Production | Value `true` **only after** owner confirms that project is still Free Tier and Gemini 3.8 Flash is included in their free quota; otherwise leave unset/false |
+| `HH_COUNCIL_OPENROUTER_API_KEY` | Sensitive, Production | [OpenRouter — API Keys](https://openrouter.ai/settings/keys), existing personal OpenRouter key or a new one; **Mistral `mistralai/*:free` only**, dynamic catalog zero-pricing verification, no paid fallback |
+
+The owner does **not** need to add Gemini or Mistral keys to GitHub Actions, AI Council Vercel, or the phone: all real inference occurs in **Holistic House Vercel**. Do not paste any key into GitHub comments, ChatGPT, source code or screenshots. Saving new Production env variables requires a new Vercel Production deployment to take effect; verify READY SHA and canonical alias.
+
+**Why this is genuinely free-first:** Gemini `gemini-3.8-flash` is requested only if BOTH its private key and `HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED=true` exist. The API key's account tier cannot safely be inferred merely from possessing the key; confirming the free project is an owner action. Mistral always uses a current OpenRouter **author=mistralai and slug=:free** model whose catalog pricing fields are all zero, per-request `provider.max_price.prompt/completion=0`, `allow_fallbacks=false`, and returned `usage.cost===0` must be verified. No direct paid Mistral API calls and no model substitution. When a key/model is unavailable, the report clearly says `NOT_AVAILABLE`, never synthesizes a fake AI opinion.
+
+**Real audit content:** Both independent models receive the same **public, sanitized** 24-or-fewer HTTP/HTML evidence items. They must distinguish observed meta/HTTP facts from hypotheses, provide exact URLs, priority, corrections and pass/fail checks. They never access client profiles, clinical records, payments, credentials, private messages, real browser/mobile evidence or Core Web Vitals. The Telegram .md contains each *actual* model's full bounded response, honest provider statuses, the source HTML TZ and Muse `MANUAL_ONLY`.
+
+**Idempotency/cost:** existing private `app_private.council_telegram_deliveries` stores a per-day atomic claim. New additive migration `20261020190745_hh_free_ai_council_cached_daily_20261020.sql` stores the exact public-only reviewed Markdown and model statuses **before** Bot API delivery. Retries reuse the cached result without calling models a second time. One delivery per cron run; previous accepted days aren't resent. No new scheduled job or new paid subscription added.
+
+**Same-day owner option:** [Holistic House → Telegram setup](https://holistichouse.vercel.app/admin/telegram-setup) (existing signed-in master) shows separate Gemini/Mistral readiness and last archived delivery. Once the two keys and Free Tier confirmation are in the Vercel project and deployed, click **«Отправить анализ Gemini и Mistral сейчас»**. It uses the **same** daily claim/cache as the scheduled job; if today's report was already accepted, it will not send a duplicate. The daily scheduler sends future reports automatically. The existing Council cron was moved from 15:00 UTC to 21:00 UTC (17:00 EDT / 16:00 EST) because the 09:15 America/Toronto GitHub audit may be queued for several hours; this prevents routinely checking the archive before its report exists. No extra cron was added.
+
+**Verification status:** server-side code and mock-only provider tests may pass, but **real API calls must remain untested / unavailable until owner configures valid keys**. A green CI build is not evidence of Gemini, Mistral or Telegram provider acceptance. When configured, verify distinct provider responses, actual zero-cost model/usage receipt, Bot API accepted exact private owner chat and owner sees the .md. Never claim genuine AI output from the original GHA archive-only NOT_AVAILABLE text.
+
+---
+
 ## 2026-10-20 — Telegram one-click owner connection (preferred)
 
 **Direct owner link:** [Holistic House → Telegram setup](https://holistichouse.vercel.app/admin/telegram-setup). Sign in via the existing private Practitioner Cabinet if redirected.
