@@ -50,9 +50,14 @@ test("homepage prioritizes personal enquiry while retaining accessible free revi
   assert.match(home, /звонок не входит\. Личные сессии оплачиваются отдельно/);
   assert.match(home, /not a live call\. One-to-one sessions are separate/);
   const landing = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(landing, /<section className=\{styles\.finalCapture\} id="personal-consultation"/);
-  assert.ok(landing.indexOf('id="personal-consultation"') > landing.indexOf('className={styles.alchemy}'),
-    "Optional paid format choice is deferred until after the free review's benefits and optional deeper-work link");
+  const freeEntry = read("components/free-entry-landing.tsx");
+  // Free review now reuses the approved no-call, no-payment first-party landing;
+  // the former Alchemy panel and paid-format upsell no longer belong here.
+  assert.match(landing, /return <FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
+  assert.match(freeEntry, /"request-free-review"/);
+  assert.match(freeEntry, /id=\{captureId\}/);
+  assert.match(freeEntry, /<FreeSituationReviewForm locale=\{locale\} \/>/);
+  assert.match(freeEntry, /No pressure to book a paid session/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
   const book = home.indexOf('"data-hero-cta": "paid-sessions"');
