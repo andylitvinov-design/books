@@ -63,6 +63,17 @@ test('Mobile business page shows a two-step first-screen finder and folds second
   assert.match(css,/\.businessDesktopNav\{display:none\}/)
 })
 
+test('Business request is next after the quiz, before proof and the optional course', () => {
+  const route=read('app/[locale]/explore/[theme]/page.tsx')
+  const quiz=route.indexOf('<TopicJourneySelector locale=')
+  const form=route.indexOf('<BusinessWebsiteEnquiry locale=')
+  const reviews=route.indexOf('<BusinessTestimonials locale=')
+  const course=route.indexOf('data-business-free-90-day-plan')
+  assert.ok(quiz>=0 && form>quiz && reviews>form && course>reviews,
+    'Lead form must follow the quiz directly, without testimonials or a course interrupting the CTA')
+  assert.equal(route.split('<BusinessWebsiteEnquiry').length-1,1)
+})
+
 test('Business landing shows only pre-existing, ID-matched authentic client video testimonials',()=>{
   const route=read('app/[locale]/explore/[theme]/page.tsx')
   const proof=read('components/business-testimonials.tsx')
