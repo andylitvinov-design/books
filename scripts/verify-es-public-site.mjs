@@ -28,16 +28,22 @@ async function assertSpanishNavigation(page, path) {
   const currentUrl = page.url();
   const navigation = page.locator('.site-navigation');
   await expect(navigation).toHaveCount(1);
-  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library'], 'Spanish direct destinations: ' + path);
-  const destinations = [
-    ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
-    ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
-    ['/es/academy', 'Academia'], ['/es/events', 'Eventos'],
-    ['/en/app', 'Gabinete'], ['/es/library', 'Biblioteca'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library', '/es/cart'], 'Spanish direct destinations: ' + path);
+  const mainDestinations = [
+    ['/es', 'Inicio'], ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
+    ['/es/academy', 'Academia'], ['/es/explore/business', 'Negocios'], ['/en/app', 'Gabinete'],
   ];
+  const moreDestinations = [
+    ['/es/cart', 'Carrito'], ['/es/library', 'Biblioteca'], ['/es/events', 'Eventos'],
+    ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+  ];
+  const destinations = [['/es#free-start', 'Empezar gratis'], ...mainDestinations, ...moreDestinations];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
-  const links = menu.locator('.site-main-menu-panel > a');
+  const links = menu.locator('.site-main-menu-panel a');
+  for (const [selector, expected] of [['.site-main-menu-panel > a', ['/es#free-start']], ['.site-main-menu-grid > a', mainDestinations.map(([href]) => href)], ['.site-main-menu-more > a', moreDestinations.map(([href]) => href)]]) {
+    assert.deepEqual(await menu.locator(selector).evaluateAll(elements => elements.map(el => el.getAttribute('href'))), expected, 'Spanish menu group: ' + selector);
+  }
   await expect(menu).toHaveCount(1);
   await expect(menu).toHaveJSProperty('open', false);
   await expect(trigger).toBeVisible();
@@ -236,7 +242,7 @@ try {
         await expect(accountMenu).toHaveJSProperty('open', false);
         await click(page.locator('.site-main-menu-trigger'));
         await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
+        const accountLink = page.locator('.site-main-menu-grid > a[data-nav-item="house"][href="/en/app"]');
         await expect(accountMenu.getByRole('link', { name: 'Gabinete', exact: true })).toHaveCount(1);
         await expect(accountLink).toHaveCount(1);
         await expect(accountLink).toHaveAccessibleName('Gabinete');
@@ -285,7 +291,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eleven-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five direct links plus thirteen-entry grouped Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

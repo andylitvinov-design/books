@@ -30,7 +30,7 @@ test('Day 1 preparation is photo-led with three gentle choices, not a five-card 
   assert.doesNotMatch(textOf(x.h.tree),/STEP 06|How I begin|Today we will notice how we are/)
   const opts=x.buttons?.tree&&nodes(x.buttons.tree).filter(n=>n.type==='button')||[]
   assert.equal(opts.length,3)
-  assert.deepEqual(opts.map(n=>textOf(n)),['Look around','Use the picture','Just read for now'])
+  assert.deepEqual(opts.map(n=>textOf(n).trim()),['Look around','Use the picture','Just read for now'])
   assert.ok(nodes(x.h.tree).some(n=>n.type==='img'&&n.props?.src?.includes('course-focus-mountain-boy')))
   opts[0].props.onClick()
   assert.deepEqual(x.recorded,[{field:'preparation',value:'look'}])
@@ -42,7 +42,7 @@ test('Day 1 notice directs attention outward; inner checking is optional and not
   assert.match(textOf(x.h.tree),/Notice one ordinary detail/)
   assert.doesNotMatch(textOf(x.h.tree),/STEP 07|What do you notice inside right now/)
   const opts=x.buttons?.tree&&nodes(x.buttons.tree).filter(n=>n.type==='button')||[]
-  assert.deepEqual(opts.map(n=>textOf(n)),['Colour','Shape','Object'])
+  assert.deepEqual(opts.map(n=>textOf(n).trim()),['Colour','Shape','Object'])
   assert.ok(nodes(x.h.tree).some(n=>n.type==='details'))
   opts[1].props.onClick()
   assert.deepEqual(x.recorded,[{field:'noticed',value:'shape'}])
@@ -78,7 +78,7 @@ test('shorter footer and calm photo protect the iPhone viewport without clipping
 
 test('the current V6 retains full scenic photographs and an accessible mobile scrolling fallback',()=>{
   assert.match(v6,/data-opora-lesson-photo/)
-  assert.match(v6,/className=\\{styles\\.scenicBackdrop\\}/)
+  assert.match(v6,/<div className=\{styles\.scenicBackdrop\} aria-hidden="true" data-opora-lesson-photo>/)
   assert.match(v6,/data-scene-role=/)
   assert.match(v6Css,/OPORA scenic lesson system/)
   assert.match(v6Css,/scenicBackdrop/)

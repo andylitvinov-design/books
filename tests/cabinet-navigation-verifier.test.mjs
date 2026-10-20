@@ -11,7 +11,7 @@ for (const locale of ['en', 'ru']) {
     const events = []
     const profile = { name: 'profile', getByRole(role, options) {
       assert.equal(role, 'heading')
-      assert.deepEqual(options, { name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true })
+      assert.deepEqual(options, { name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true })
       return { name: 'heading' }
     } }
     const link = { name: 'link', first() { return this }, async click() {

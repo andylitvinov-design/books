@@ -11,10 +11,10 @@ const repo = read("lib/academy/energywork-course-repository.js")
 test("The visible slide counter uses five real lesson lengths and a separate introduction", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges(sequence)
-  assert.equal(sequence.length, 69)
-  assert.deepEqual(sequence.slice(2,9), ["flight-01","flight-02","flight-03","flight-voices","flight-05","flight-04","flight-done"], "Lesson 1 slide 5 is Sun thought and slide 6 is meditation review")
+  assert.equal(sequence.length, 70, "69 original screens plus the non-answer save checkpoint")
+  assert.deepEqual(sequence.slice(2,10), ["flight-01","flight-02","flight-voices","flight-05","flight-04","flight-03","flight-done","flight-save"], "Lesson 1 preserves reflections before practice, then congratulations and explicit saving")
   assert.equal(ranges[0].start, 2, "Two introductory slides are outside lesson 1")
-  assert.deepEqual(ranges.map(range => range.count), [7, 14, 16, 22, 8])
+  assert.deepEqual(ranges.map(range => range.count), [8, 14, 16, 14, 16])
   assert.deepEqual(ranges.map(range => range.firstSlideId),
     ["flight-01", "tan-01", "kun-01", "ygg-01", "paths-01"])
   for (let i = 0; i < ranges.length; i++) {
@@ -48,5 +48,17 @@ test("Cabinet chapter picker uses saved owner progress and forbids deep-link ski
   assert.match(cabinet, /aria-disabled="true"/)
   assert.match(learner, /requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex/)
   assert.match(repo, /COURSE_STEP_NOT_READY/)
-  assert.match(learner, /onClick=\{\(\) => void jumpToSlide\(lesson\.firstSlideId\)\}/)
+  // The learner's rail is informational. Cabinet links are the chapter picker;
+  // review jumps still retain the save gate and persist dirty answers first.
+  const rail = learner.split('<nav className={styles.journey}')[1]?.split('</nav>')[0] ?? ''
+  assert.match(rail, /energyworkLessons\.map/)
+  assert.doesNotMatch(rail, /onClick=|<button|<a\s/)
+  const jump = learner.split('async function jumpToSlide')[1]?.split('async function next')[0] ?? ''
+  assert.match(jump, /if \(busy\) return/)
+  assert.match(jump, /sync !== "ready" && target > slides\.findIndex\(item => item\.id === "flight-save"\)\) return/)
+  assert.match(jump, /sync === "ready" && slide\.question/)
+  assert.match(jump, /dirtyRef\.current\.has\(slide\.id\)/)
+  assert.match(jump, /try \{ await store\(slide\.id\); \}\s*catch \{ setSaveError\(t\.saveFailed\); setBusy\(false\); return; \}/)
+  assert.ok(jump.indexOf('await store(slide.id)') < jump.indexOf('setIndex(target)'),
+    "A dirty review must be saved before jumping away")
 })

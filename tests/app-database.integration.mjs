@@ -644,6 +644,8 @@ test('master network approval, publication and practitioner isolation use the ex
 
 test('article folders: real database ownership, search metadata, archival safety and public draft privacy',async()=>{
  const articleRepo=createArticleRepository(config)
+ await assert.rejects(()=>articleRepo.library(v2Actor),{code:'PRACTITIONER_REQUIRED'},
+   'An active consented account without a practitioner profile must remain rejected')
  const folder=await articleRepo.createFolder(a,{name:'Synthetic QA Remedy Cards'})
  assert.equal(folder.name,'Synthetic QA Remedy Cards')
  await assert.rejects(()=>articleRepo.createFolder(a,{name:' synthetic qa remedy cards '}),{code:'FOLDER_EXISTS'})
@@ -665,7 +667,7 @@ test('article folders: real database ownership, search metadata, archival safety
  assert.equal(others.items.some(x=>x.id===article.id),false)
  assert.equal(others.folders.some(x=>x.id===folder.id),false)
  await assert.rejects(()=>articleRepo.renameFolder(b,folder.id,{name:'Not yours',expectedRevision:0}),
-   e=>['REVISION_CONFLICT','PRACTITIONER_REQUIRED'].includes(e.code))
+   {code:'REVISION_CONFLICT'})
  const renamed=await articleRepo.renameFolder(a,folder.id,{name:'Renamed QA folder',expectedRevision:folder.revision})
  assert.equal(renamed.name,'Renamed QA folder')
  assert.equal(renamed.revision,1)
@@ -1884,11 +1886,14 @@ test('push subscriptions and preferences are account-owned, RLS-protected and re
   const initial=await push.state(a)
   assert.equal(initial.ready,true,'synthetic VAPID fixture must be valid')
   assert.equal(initial.enabled,false)
+  assert.equal(initial.messageAlerts,false,'message alerts require separate explicit consent')
   const saved=await push.subscribe(a,{subscription,locale:'ru',timeZone:'America/Toronto'})
   assert.equal(saved.enabled,true);assert.equal(saved.deviceCount,1);assert.equal(saved.locale,'ru')
+  assert.equal(saved.messageAlerts,false,'course subscription must not opt in to private-message alerts')
   const changed=await push.preferences(a,{enabled:true,courseReminders:false,
     reminderHour:20,timeZone:'America/Toronto',locale:'ru'})
   assert.equal(changed.reminderHour,20);assert.equal(changed.courseReminders,false)
+  assert.equal(changed.messageAlerts,false)
   assert.equal((await transaction(config,v2Actor,db=>db.query('select id from app_private.push_subscriptions'))).rows.length,0)
   assert.equal((await transaction(config,v2Actor,db=>db.query('select account_id from app_private.notification_preferences'))).rows.length,0)
   await assert.rejects(()=>rawAs(a,'authenticated',db=>db.query('select * from app_private.push_subscriptions')),

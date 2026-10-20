@@ -340,6 +340,75 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
     assert.throws(() => assertGuestSaveIntent(broken, result))
 })
 
+test('source-coded bands retain exact EN/RU codes, labels, numerical ranges and order', () => {
+  for (const locale of ['en', 'ru']) for (const library of [PERSONALITY_TYPE_DEFINITIONS, TANTRIC_REFLECTION_DEFINITIONS]) {
+    const definition = library.find(item => item.instrumentLocale === locale)
+    assert.ok(definition)
+    for (const profile of ['min', 'mixed', 'max']) {
+      const result = scored(definition, profile)
+      const snapshot = accountFixture(result, locale)
+      assertAccountReportSnapshot(snapshot, result, locale)
+      const prefix = locale === 'ru' ? '≈ вариант ' : '≈ option '
+      const wrongPrefix = locale === 'ru' ? '≈ option ' : '≈ вариант '
+      for (const [index, scale] of snapshot.scales.entries()) {
+        const dimension = result.dimensions.find(item => item.key === scale.key)
+        const rows = gaugeModule.gaugeModel(dimension, result, locale).rangeReading.rows
+        assert.deepEqual(rows.map(row => row.originalAnswerCode),
+          Array.from({length: definition.answerScale.max - definition.answerScale.min + 1},
+            (_, offset) => definition.answerScale.min + offset))
+        assert.deepEqual(scale.publishedBands, rows.map((row, offset) => ({
+          range: row.displayRange,
+          label: `${prefix}${definition.answerScale.min + offset} · ${row.label}`,
+          current: row.current,
+        })))
+        for (const mutate of [
+          bands => { bands[0].label = rows[0].label },
+          bands => { bands[0].label = '' },
+          bands => { bands[0].label = `${prefix}99 · ${rows[0].label}` },
+          bands => { bands[0].label = `${wrongPrefix}${rows[0].originalAnswerCode} · ${rows[0].label}` },
+          bands => { bands[0].label += ' invented label' },
+          bands => { bands[0].range = '999–1000' },
+          bands => { bands[0].current = !bands[0].current },
+          bands => { [bands[0], bands[1]] = [bands[1], bands[0]] },
+          bands => { bands[1] = structuredClone(bands[0]) },
+          bands => { bands.pop() },
+        ]) {
+          const broken = structuredClone(snapshot)
+          mutate(broken.scales[index].publishedBands)
+          assert.throws(() => assertAccountReportSnapshot(broken, result, locale), /Exact source-aware range/)
+        }
+      }
+    }
+  }
+})
+
+test('uncoded source ranges retain bare labels for both null and absent original answer codes', () => {
+  for (const locale of ['en', 'ru']) for (const [key, version, expectedCode] of [
+    ['hh-current-state', 'v2', null],
+    ['phq-9', 'v1', undefined],
+  ]) {
+    // Use the registered English instrument and verify both display locales;
+    // PHQ-9 v1 does not have a separately registered Russian definition.
+    const result = scored(getAssessmentDefinition(key, version, 'en'), 'mixed')
+    const snapshot = accountFixture(result, locale)
+    assertAccountReportSnapshot(snapshot, result, locale)
+    for (const [index, scale] of snapshot.scales.entries()) {
+      const dimension = result.dimensions.find(item => item.key === scale.key)
+      const rows = gaugeModule.gaugeModel(dimension, result, locale).rangeReading.rows
+      assert.ok(rows.length > 0)
+      for (const row of rows) assert.equal(row.originalAnswerCode, expectedCode)
+      assert.deepEqual(scale.publishedBands, rows.map(row => ({
+        range: row.displayRange, label: row.label, current: row.current,
+      })))
+      for (const label of ['', 'Invented label', `≈ ${locale === 'ru' ? 'вариант' : 'option'} 0 · ${rows[0].label}`]) {
+        const broken = structuredClone(snapshot)
+        broken.scales[index].publishedBands[0].label = label
+        assert.throws(() => assertAccountReportSnapshot(broken, result, locale), /Exact source-aware range/)
+      }
+    }
+  }
+})
+
 test('sector verification tolerates engine rounding but rejects malformed or shifted geometry', () => {
   for (const key of ['phq-9', 'brcs']) for (const locale of ['en', 'ru']) {
     const result = scored(getAssessmentDefinition(key, 'v1', 'en'), 'mixed')
