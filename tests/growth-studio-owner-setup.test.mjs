@@ -15,7 +15,19 @@ test('getting-started panel links exactly to real verified provider setup pages'
     'https://business.facebook.com/',
     'https://github.com/andylitvinov-design/books/blob/codex/public-book-library/docs/growth-studio/START_HERE_RU_2026-10-20.md',
   ])assert.ok(ui.includes(link),link)
-  assert.doesNotMatch(ui,/app\.hypd\.ai\/sources\?manage=(?:google-ads|meta|search-console)/)
+  // HYPD connects reporting accounts in ChatGPT. These links are allowed
+  // ONLY under a separately-labelled non-publisher, non-spending handoff.
+  for(const link of [
+    'https://app.hypd.ai/sources?manage=search-console',
+    'https://app.hypd.ai/sources?manage=google-ads',
+    'https://app.hypd.ai/sources?manage=meta',
+  ])assert.ok(ui.includes(link),link)
+  assert.ok(ui.includes('SEO and ad accounts (NOT social publishing)'))
+  assert.ok(ui.includes('does not give this website posting rights'))
+  assert.match(ui,/t\.setupAdsTitle/)
+  assert.match(ui,/t\.setupEventsTitle/)
+  assert.ok(ui.includes('token has not been configured'))
+  assert.ok(ui.includes('Meetup requires Pro/API access'))
   assert.match(ui,/t\.setupTelegram/)
   assert.match(ui,/t\.setupStorage/)
   assert.match(ui,/t\.setupYouTube/)
