@@ -207,7 +207,7 @@ const practiceQuestion: EnergyworkQuestion = {
   help: l("Any response is fine; no result is required.", "Любой ответ подходит, специального результата не требуется."),
   options: [
     { id: "tried", label: l("I tried it in a way that suited me", "Я попробовал(а) в комфортном варианте") },
-    { id: "skipped", label: l("I chose to skip it today", "Сегодня я решил(а) пропустить") },
+    { id: "skipped", label: l("I need more practice", "Мне нужно ещё попрактиковаться") },
   ],
 };
 

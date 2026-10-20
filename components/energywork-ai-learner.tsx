@@ -345,15 +345,15 @@ function meditationReviewText(value: string) {
   return legacy ? legacy[1] : value;
 }
 
-// Older encrypted progress may still contain one of the previous radio options.
-// Show its original meaning without turning it into a claimed Sun sensation.
+// Keep the historic "skipped" choice ID readable in encrypted progress.
+// Use the current supportive wording without claiming any particular sensation.
 function flightPracticeResponse(value: string, locale: EnergyworkLocale) {
   if (value === "tried") return locale === "ru"
     ? "Я попробовал(а) в комфортном варианте"
     : "I tried it in a way that suited me";
   if (value === "skipped") return locale === "ru"
-    ? "Сегодня я решил(а) пропустить"
-    : "I chose to skip it today";
+    ? "Мне нужно ещё попрактиковаться"
+    : "I need more practice";
   return value;
 }
 
@@ -413,11 +413,11 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   if (present("presence-03")) highlights.push(locale === "ru"
     ? "Вы отметили комфорт короткой паузы на " + present("presence-03") + " из 10 — это только ваша самооценка, не медицинская шкала."
     : "You rated the comfort of a short pause " + present("presence-03") + "/10 — a personal check-in, not a medical score.");
-  const skipped = Object.entries(answers).filter(([id, value]) =>
+  const practicesToRevisit = Object.entries(answers).filter(([id, value]) =>
     /^(flight-03|presence-02|intention-04|boundaries-03|ygg-03|tan-03|kun-03)$/.test(id) && value === "skipped").length;
-  if (skipped) highlights.push(locale === "ru"
-    ? "Вы выбрали пропустить практики: " + skipped + ". Это допустимо; участие остаётся добровольным."
-    : "You chose to skip " + skipped + " practice(s). That is a valid choice; participation remains voluntary.");
+  if (practicesToRevisit) highlights.push(locale === "ru"
+    ? "Практики для повторения: " + practicesToRevisit + ". Можно вернуться к ним в удобном темпе."
+    : "Practices to revisit: " + practicesToRevisit + ". Return to them at your own pace.");
   if (reikiInitiationRequestValid(present("end-01"))) {
     const request = readReikiInitiationRequest(present("end-01"));
     const selected = energyworkPathChoices.find((choice) => choice.id === request.freeInitiation)?.title[locale] ?? "";
