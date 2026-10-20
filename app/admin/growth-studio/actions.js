@@ -6,6 +6,7 @@ import {previewPublicGrowthSource} from '@/lib/growth-studio/source-preview.mjs'
 import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
+import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
@@ -129,6 +130,18 @@ export async function createGrowthEvergreenDraftsAction(input){
 }
 
 // Read-only account readiness. No provider write, no bot secrets returned to UI.
+// Owner-gated, read-only local setup audit: no tokens, customer data,
+// publishing, Ads or provider OAuth are accessed or returned to the browser.
+export async function checkGrowthStudioProviderReadinessAction(){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  try{
+    const result=await readGrowthStudioProviderReadiness()
+    return {ok:true,...result}
+  }catch{
+    return {ok:false,error:'readiness_unavailable'}
+  }
+}
+
 export async function checkGrowthTelegramPublisherAction(){
   if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
   if(!telegramConfig().ready)return {ok:false,error:'telegram_unconfigured'}
