@@ -151,6 +151,8 @@ Production: [holistichouse.vercel.app](https://holistichouse.vercel.app), Vercel
 | GSC / SEO | SEO-план и crawl/sitemap живут в books; сторонний GSC Wizard subscription_required | Не покупать подписку. Данные индексации проверять в авторизованном Google Search Console |
 | Telegram / партнёры | Органические referral labels в исходном коде уже есть | Размещать в группах только при праве публиковать, без массовых холодных сообщений |
 
+**Техническое обновление 19.10.2026 (ещё не production):** verified Event leaf page выдаёт локализованный RFC 5545 `.ics` только пока опубликованное мероприятие не началось; календарь содержит лишь уже публичные title, description, time, address и canonical URL. Нативный Share / fallback Copy передаёт только canonical public URL, поэтому мессенджеры используют существующее OG preview. CSP разрешает Eventbrite poster исключительно для public Events directory и его leaf page, а calendar/API/private routes не расширяет. Нет GA4 event, provider write, регистрации, attendee, цены, organizer или payment data.
+
 Контроль внешнего Event Publisher сохраняется в [TorontoTantra #74](https://github.com/andylitvinov-design/torontotantra/issues/74), разрешения в [#69](https://github.com/andylitvinov-design/torontotantra/issues/69), реальные лиды на сайте в [books #801](https://github.com/andylitvinov-design/books/issues/801). Список возможностей и ограничений площадок: [Provider Capability Matrix](https://github.com/andylitvinov-design/torontotantra/blob/main/docs/event-publisher/PROVIDER_CAPABILITY_MATRIX.md).
 
 ### Модель события и разграничение ответственности
@@ -176,3 +178,12 @@ Production: [holistichouse.vercel.app](https://holistichouse.vercel.app), Vercel
 - Визуальная приёмка 320/390/430px/desktop; фото и кнопка регистрации не должны обрезаться, отсутствие hydration/scroll ошибок.
 - Node regression test + TypeScript + Next build + Vercel Preview/production deployment SHA, после merge независимый HTTP readback реальной страницы.
 - Внешний provider URL, OAuth ID, marketplace billing, реальные органические/платные публикации и реальные CRM конверсии подтверждаются отдельно; не отмечать DONE на основании документа или CI.
+
+
+### CRM attribution for additional event platforms (implementation 19 October 2026)
+
+The existing first-party organic-event referral allowlist already accepts Eventbrite, Meetup, Luma, AllEvents, Humanitix, Ticket Tailor and permitted partners. The owner-only marketing CRM previously exposed Eventbrite/Meetup but grouped the other channels as Other. The follow-up PR adds explicit source identifiers in the existing frontend, backend validator and an additive PostgreSQL CHECK constraint migration. For Eventbrite, Meetup, Luma, AllEvents, Humanitix and Ticket Tailor the owner form defaults medium to organic_event; a partner referral remains an explicit owner choice.
+
+No visits, provider RSVPs or platform-side tickets are imported or counted as received leads. Recording a marketing opportunity still requires an existing owner CRM contact and a checked confirmation that an enquiry was actually received. Only source/medium/public-safe campaign/creative/offer/stage are stored; no medical, test, email or attendee content in URL tracking.
+
+The migration must be applied to the verified Supabase **holistichouse** project before the new options can be used. Confirm the source CHECK and forced RLS afterward. This is a code/DB attribution extension, **not** a provider OAuth connection, marketing campaign, event publication, GA4 activation, or client-data sharing.

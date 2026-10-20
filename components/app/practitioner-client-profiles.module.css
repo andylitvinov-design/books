@@ -26,3 +26,13 @@
 .manualError{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;color:#8c5232;font:500 12px/1.4 system-ui,sans-serif}
 .manualHead h4{margin:0 0 8px}.manual>.empty{padding:11px 4px}
 @media(max-width:740px){.sidebar{max-height:none;overflow:visible}.manualList{grid-template-columns:1fr}.manualClient{min-height:60px}.panel>.searchLabel{padding:4px 0 10px}}
+
+/* Reply-priority client queue: informational status, never false "unread". */
+.awaiting{display:inline-flex;align-self:flex-start;max-width:100%;padding:3px 7px;border-radius:99px;background:#e0f4ea;color:#186958;font:750 11px/1.4 system-ui,sans-serif;overflow-wrap:anywhere}
+.metrics .refresh{min-height:40px;border:1px solid #aad1bd;border-radius:10px;background:#fff;color:#266659;padding:8px 12px;font:750 12px/1.35 system-ui,sans-serif;cursor:pointer}
+.metrics .refresh:disabled{opacity:.45;cursor:wait}
+.metrics .refresh:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+
+/* Distinct from "awaiting reply": only actual unviewed in-app messages. */
+.newCount{background:#fff0d0!important;border-color:#e9d19f!important;color:#78571c!important}
+.unseen{display:inline-flex;align-self:flex-start;max-width:100%;padding:3px 8px;border-radius:99px;background:#fff1d4;color:#805d1f;font:750 11px/1.4 system-ui,sans-serif}

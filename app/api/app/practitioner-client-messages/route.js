@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { getAppConfig, requestOrigin, requireSameOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createPractitionerClientMessages } from '@/lib/practitioners/client-messages'
+import { dispatchClientMessagePush } from '@/lib/app/client-message-push'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -31,10 +32,23 @@ async function handler(request){
       data=await store.list(actor,params.get('requestId'),params.get('before'))
     }else{
       const body=await readBody(request,2048)
-      onlyKeys(body,['requestId','operationId','text','visibility'])
-      data=await store.send(actor,body)
+      if(body?.action==='mark_seen'){
+        onlyKeys(body,['action','requestId','messageId'])
+        data=await store.markSeen(actor,body)
+      }else{
+        onlyKeys(body,['requestId','operationId','text','visibility'])
+        data=await store.send(actor,body)
+      }
     }
-    return auth.apply(NextResponse.json(data,{headers:PRIVATE_HEADERS}))
+    // A saved reply remains saved even if its optional Web Push delivery fails.
+    // Never return an internal notification flag to the browser.
+    if(request.method==='POST'&&data.notifyClient===true&&data.duplicate===false){
+      const id=data.id
+      after(async()=>{try{await dispatchClientMessagePush(config,id)}catch{/* best effort; no private logs */}})
+    }
+    const safeData={...data}
+    delete safeData.notifyClient
+    return auth.apply(NextResponse.json(safeData,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)
     const response=NextResponse.json({error:safe.code},{status:safe.status,headers:PRIVATE_HEADERS})

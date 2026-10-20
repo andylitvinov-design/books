@@ -47,6 +47,7 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
+import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import { isNativePsiAlchemy } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
@@ -203,6 +204,8 @@ export default function AppWorkspace({ locale, path = [] }) {
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
+        ...(page === 'consultations' && searchParams.get('request')
+          ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
       })
       window.location.assign(result.redirectUrl)
     } catch (e) {
@@ -237,6 +240,18 @@ export default function AppWorkspace({ locale, path = [] }) {
           }
         } catch { /* Sign-out must still complete even if iOS is offline. */ }
       }
+      // An installed device must not remain subscribed to a previous account
+      // after sign-out or account switching. Keep failures non-blocking.
+      try {
+        const registration = 'serviceWorker' in navigator
+          ? await navigator.serviceWorker.getRegistration('/') : null
+        const subscription = await registration?.pushManager?.getSubscription()
+        if (subscription) {
+          await appFetch('notifications/unsubscribe', { endpoint: subscription.endpoint },
+            'POST', { accountId: data.account.id })
+          await subscription.unsubscribe()
+        }
+      } catch { /* Do not block sign-out for an unavailable push service. */ }
       await appFetch('auth/logout', { allDevices })
     } catch (e) {
       setError(e)
@@ -631,12 +646,13 @@ export default function AppWorkspace({ locale, path = [] }) {
             )
           )}
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
-          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} />}
+          {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} requestedMessageId={searchParams.get('request') || ''} />}
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+              <InstallHolisticHouse locale={locale} />
               <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
@@ -650,7 +666,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
         </>
       )}
-      {!documentReader && <footer className="hh-footer">
+      {!documentReader && page !== 'portrait' && <footer className="hh-footer">
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
@@ -3537,7 +3553,7 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
-function Consultations({ data, locale, reload, initialServiceId = '', source = '' }) {
+function Consultations({ data, locale, reload, initialServiceId = '', source = '', requestedMessageId = '' }) {
   const c = COPY[locale],
     [selected, setSelected] = useState(null),
     [error, setError] = useState(null)
@@ -3559,6 +3575,11 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
       <div className="hh-heading">
         <h1>{c.consultations}</h1>
         <p>{c.consultationsIntro}</p>
+        <p className="hh-fine">{locale === 'ru' ? 'Чтобы получать сообщения на телефон:' : 'To receive phone alerts for replies:'}{' '}
+          <Link href={`/${locale}/app/settings#hh-phone-notifications`} prefetch={false}>
+            {locale === 'ru' ? 'Включить уведомления' : 'Enable notifications'}
+          </Link>
+        </p>
         {source === 'test-results' && <aside className="hh-panel hh-consult-test-source">
           <h2>{locale === 'ru' ? 'Личные рекомендации по вашим тестам' : 'Personal recommendations about your test results'}</h2>
           <p>{locale === 'ru'
@@ -3569,6 +3590,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
           </Link>
         </aside>}
       </div>
+      <InstallHolisticHouse locale={locale} />
       <div className="hh-grid hh-services">
         {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
         {(data.services || []).map((service) => (
@@ -3600,7 +3622,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
         <h2>{c.requests}</h2>
         {!data.requests.length && <p>{c.emptyRequests}</p>}
         {data.requests.map((request) => (
-          <article className="hh-panel" key={request.id}>
+          <article className="hh-panel" key={request.id} id={'hh-consultation-' + request.id}>
             <span className="hh-badge">{c[request.status]}</span>
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
@@ -3611,6 +3633,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             </p>
             {request.message && <p>{request.message}</p>}
             <PracticeRequestConversation key={request.id} requestId={request.id}
+              autoOpen={requestedMessageId === request.id}
               accountId={data.account.id} locale={locale}
               initialMessage={typeof request.message==='string'?request.message:''}
               createdAt={request.createdAt}/>

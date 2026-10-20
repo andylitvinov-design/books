@@ -81,6 +81,9 @@ on:
       - '.github/workflows/site-video-browser.yml'
 permissions:
   contents: read
+concurrency:
+  group: site-video-browser-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   browser:
     runs-on: ubuntu-latest

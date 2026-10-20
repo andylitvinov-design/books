@@ -45,7 +45,17 @@ export default function PractitionerArticles({locale,services=[]}){
   confirmArchive:'Архивировать статью?',saveFirst:'Сначала сохраните правки — затем отправляйте на проверку.',
   editTitle:'Редактор статьи',draftTitle:'Новая статья',close:'Закрыть редактор',emptyInput:'Введите название папки.',
   tags:'Ключевые слова (по одному на строку)',discard:'Есть несохранённые изменения. Закрыть без сохранения?',filterStatus:'Статус',allStatuses:'Любой статус',
-  duplicateFolder:'Такая папка уже существует.',revisionError:'Материал изменился в другой вкладке. Обновите страницу и повторите.',
+  duplicateFolder:'Такая папка уже существует.',revisionError:'Статья изменена в другой вкладке. Скопируйте несохранённые правки перед обновлением страницы.',
+  saving:'Сохраняем…',savedButRefreshFailed:'Черновик сохранён на сервере. Список не обновился, повторять сохранение не нужно.',
+  statusUpdated:'Статус обновлён.',saveFailed:'Не удалось сохранить. Текст остаётся в редакторе — попробуйте снова.',
+  signInAgain:'Сессия истекла. Войдите в аккаунт снова, предварительно скопировав несохранённый текст.',
+  serverUnavailable:'Сервер временно недоступен. Текст остаётся в редакторе — повторите попытку.',
+  invalidImage:'Проверьте обложку: нужен путь /images/… или /media/remedies/…',
+  invalidUrl:'Источники должны содержать корректные ссылки с https://.',
+  invalidText:'Проверьте длину заголовка, описания, текста или ключевых слов.',
+  invalidFolder:'Выбранная папка недоступна. Выберите «Без папки» и повторите.',
+  tooLarge:'Статья слишком большая для одного запроса. Сократите текст или ссылки.',
+  slowDown:'Слишком много запросов. Подождите минуту и повторите.',
  }:{
   heading:'My articles',intro:'Your personal article library. Drafts stay private until publication is approved.',
   newArticle:'New article',newFolder:'New folder',folder:'Folders',all:'All articles',
@@ -62,7 +72,17 @@ export default function PractitionerArticles({locale,services=[]}){
   confirmArchive:'Archive this article?',saveFirst:'Save your changes before submitting for review.',
   editTitle:'Edit article',draftTitle:'New article',close:'Close editor',emptyInput:'Enter a folder name.',
   tags:'Search keywords (one per line)',discard:'You have unsaved edits. Close without saving?',filterStatus:'Status',allStatuses:'Any status',
-  duplicateFolder:'This folder already exists.',revisionError:'This item changed in another tab. Refresh and try again.',
+  duplicateFolder:'This folder already exists.',revisionError:'This article changed in another tab. Copy unsaved edits before refreshing.',
+  saving:'Saving…',savedButRefreshFailed:'Draft saved on the server. The list could not refresh; no need to save again.',
+  statusUpdated:'Status updated.',saveFailed:'Could not save. Your text remains in the editor; please retry.',
+  signInAgain:'Session expired. Sign in again after copying unsaved text.',
+  serverUnavailable:'The server is temporarily unavailable. Your text remains in the editor; retry.',
+  invalidImage:'Check the cover image: use /images/… or /media/remedies/…',
+  invalidUrl:'Source URLs must be valid https:// links.',
+  invalidText:'Check the title, summary, article length and keywords.',
+  invalidFolder:'The selected folder is unavailable. Choose Unfiled and retry.',
+  tooLarge:'This article is too large for one request. Shorten the text or links.',
+  slowDown:'Too many requests. Wait one minute and retry.',
  }
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
  const [query,setQuery]=useState(''),[limit,setLimit]=useState(24),[statusFilter,setStatusFilter]=useState('all')
@@ -72,13 +92,14 @@ export default function PractitionerArticles({locale,services=[]}){
  const [addingFolder,setAddingFolder]=useState(false),[folderName,setFolderName]=useState('')
  const [preview,setPreview]=useState(false),bodyRef=useRef(null),editorRef=useRef(null)
  const [tagInput,setTagInput]=useState('')
+ const operationRef=useRef(false)
  const tags=[...new Set(tagInput.split(/\r?\n/).map(value=>value.trim()).filter(Boolean))].slice(0,12)
  const preparedDraft={...draft,tags}
  const isUnchanged=!!editing&&JSON.stringify({...initial(editing.draft?.locale),...editing.draft})===JSON.stringify(preparedDraft)&&
   (editing.folderId||'')===folderId
  const hasUnsaved=editorOpen&&(editing?!isUnchanged:Boolean(draft.title.trim()||draft.body.trim()||draft.excerpt.trim()||tags.length||draft.coverPath||draft.sourceUrls?.length))
  function closeEditor(){
-  if(busy)return
+  if(busy||operationRef.current)return
   if(hasUnsaved&&!window.confirm(t.discard))return
   setEditorOpen(false)
  }
@@ -86,7 +107,8 @@ export default function PractitionerArticles({locale,services=[]}){
   const response=await fetch('/api/app/practice/articles',{credentials:'same-origin',cache:'no-store'})
   const json=await response.json().catch(()=>({}))
   if(!response.ok)throw Error(json.error||'ARTICLE_LOAD_FAILED')
-  setItems(json.items||[]);setFolders(json.folders||[])
+  if(!Array.isArray(json.items)||!Array.isArray(json.folders))throw Error('ARTICLE_LOAD_FAILED')
+  setItems(json.items);setFolders(json.folders)
  }
  useEffect(()=>{reload().catch(e=>setError(e.message))},[])
  useEffect(()=>{if(editorOpen)editorRef.current?.scrollIntoView({behavior:'smooth',block:'start'})},[editorOpen,editing?.id])
@@ -97,7 +119,7 @@ export default function PractitionerArticles({locale,services=[]}){
   return ()=>window.removeEventListener('beforeunload',guard)
  },[hasUnsaved])
  function choose(item){
-  if(busy||(hasUnsaved&&!window.confirm(t.discard)))return
+  if(busy||operationRef.current||(hasUnsaved&&!window.confirm(t.discard)))return
   setEditing(item||null)
   setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale))
   setTagInput((item?.draft?.tags||[]).join('\n'))
@@ -114,23 +136,46 @@ export default function PractitionerArticles({locale,services=[]}){
   return json
  }
  async function perform(fn){
+  if(operationRef.current)return
+  operationRef.current=true
   setBusy(true);setError('');setNotice('')
-  try{await fn()}catch(e){setError(e.message==='FOLDER_EXISTS'?t.duplicateFolder:e.message==='REVISION_CONFLICT'?t.revisionError:e.message||'ERROR')}finally{setBusy(false)}
+  try{await fn()}catch(e){
+   const code=e.code||e.message||''
+   const message=code==='FOLDER_EXISTS'?t.duplicateFolder:
+    code==='REVISION_CONFLICT'?t.revisionError:
+    ['SIGN_IN_REQUIRED','ACCOUNT_REQUIRED','ACCOUNT_CHANGED'].includes(code)?t.signInAgain:
+    ['SERVICE_UNAVAILABLE','DATABASE_CONFIG_CHANGED'].includes(code)?t.serverUnavailable:
+    code==='INVALID_IMAGE'?t.invalidImage:code==='INVALID_URL'?t.invalidUrl:
+    ['INVALID_TEXT','INVALID_TAG'].includes(code)?t.invalidText:
+    code==='FOLDER_NOT_FOUND'?t.invalidFolder:
+    code==='PAYLOAD_TOO_LARGE'?t.tooLarge:
+    code==='RATE_LIMITED'?t.slowDown:
+    t.saveFailed+(code&&/^[A-Z0-9_]{3,45}$/.test(code)?' ('+code+')':'')
+   setError(message)
+  }finally{operationRef.current=false;setBusy(false)}
  }
  async function save(){
   await perform(async()=>{
    const saved=await request(editing?'/'+editing.id:'',{draft:preparedDraft,folderId:folderId||null,expectedRevision:editing?.revision})
-   await reload();setEditing(saved);setDraft({...initial(saved.draft?.locale),...saved.draft})
-   setFolderId(saved.folderId||'');setTagInput((saved.draft?.tags||[]).join('\n'));setNotice(t.saved)
+   // A successful write must not be mistaken for failure when only the follow-up GET fails.
+   if(!saved?.id||!Number.isSafeInteger(saved.revision))throw Error('ARTICLE_SAVE_FAILED')
+   setEditing(saved);setDraft({...initial(saved.draft?.locale),...saved.draft})
+   setFolderId(saved.folderId||'');setTagInput((saved.draft?.tags||[]).join('\n'))
+   setItems(current=>[saved,...current.filter(item=>item.id!==saved.id)])
+   setNotice(t.saved)
+   try{await reload()}catch{setNotice(t.savedButRefreshFailed)}
   })
  }
  async function command(action){
   if(!editing)return
   await perform(async()=>{
    const result=await request('/'+editing.id,{action,expectedRevision:editing.revision})
-   await reload()
+   if(!result?.id||!Number.isSafeInteger(result.revision))throw Error('ARTICLE_SAVE_FAILED')
+   setItems(current=>[result,...current.filter(item=>item.id!==result.id)])
    if(action==='archive'){setEditorOpen(false);setEditing(null)}
-   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setTagInput((result.draft?.tags||[]).join('\n'));setNotice(ru?'Статус обновлён.':'Status updated.')}
+   else {setEditing(result);setDraft({...initial(result.draft?.locale),...result.draft});setTagInput((result.draft?.tags||[]).join('\n'))}
+   setNotice(t.statusUpdated)
+   try{await reload()}catch{setNotice(t.savedButRefreshFailed)}
   })
  }
  async function createFolder(e){
@@ -184,8 +229,8 @@ export default function PractitionerArticles({locale,services=[]}){
    <div><h3>{t.heading} ({items.filter(x=>x.status!=='archived').length})</h3><p>{t.intro}</p></div>
    <button type="button" className={styles.primary} disabled={busy} onClick={()=>choose(null)}>+ {t.newArticle}</button>
   </div>
-  {error&&<p role="alert" className={styles.error}>{error}</p>}
-  {notice&&<p role="status" className={styles.status}>{notice}</p>}
+  {!editorOpen&&error&&<p role="alert" className={styles.error}>{error}</p>}
+  {!editorOpen&&notice&&<p role="status" className={styles.status}>{notice}</p>}
   <div className={styles.folders}>
    <div className={styles.folderTitle}><span>{t.folder}</span><button type="button" className={styles.secondary} disabled={busy} onClick={()=>setAddingFolder(x=>!x)}><FolderPlus size={14} aria-hidden="true"/> {t.newFolder}</button></div>
    <div className={styles.folderList} role="group" aria-label={t.folder}>
@@ -219,8 +264,12 @@ export default function PractitionerArticles({locale,services=[]}){
     </div>
    </article>)}</div>:<p className={styles.empty}>{t.none}</p>}
   {filtered.length>limit&&<div className={styles.actions}><button className={styles.secondary} type="button" onClick={()=>setLimit(x=>x+24)}>{t.more} <ChevronDown size={15} aria-hidden="true"/></button></div>}
-  {editorOpen&&<form ref={editorRef} className={styles.editor} onSubmit={e=>{e.preventDefault();void save()}}>
+  {editorOpen&&<form ref={editorRef} className={styles.editor} aria-busy={busy} onSubmit={e=>{e.preventDefault();void save()}}>
    <div className={styles.editorHeader}><h4>{editing?t.editTitle:t.draftTitle}</h4><button type="button" className={styles.secondary} onClick={closeEditor}>{t.close} ×</button></div>
+   {draft.coverPath&&<div className={styles.coverPreview}>
+    <img src={draft.coverPath} alt={draft.title||t.cover} loading="eager"/>
+    <span>{ru?'Фотография прикреплена к статье и сохраняется вместе с текстом.':'The cover photograph stays attached when you save this article.'}</span>
+   </div>}
    {editing?.reviewNote&&<p className={styles.error}>{editing.reviewNote}</p>}
    {editing?.status&&<p className={styles.caption}>{shortStatus(editing.status,ru)}</p>}
    <div className={styles.row}>
@@ -246,10 +295,14 @@ export default function PractitionerArticles({locale,services=[]}){
     <label>{t.cover}<input value={draft.coverPath||''} maxLength={300} placeholder="/images/… or /media/remedies/…" onChange={e=>setDraft({...draft,coverPath:e.target.value})}/></label>
    </details>
    <div className={styles.actions}>
-    <button type="submit" disabled={busy} className={styles.primary}>{busy?'…':t.save}</button>
+    <button type="submit" disabled={busy} className={styles.primary}>{busy?t.saving:t.save}</button>
     {editing&&<button type="button" className={styles.secondary} disabled={busy||!complete||!isUnchanged} onClick={()=>command('submit')}>{t.submit}</button>}
     {editing&&<button type="button" className={styles.danger} disabled={busy} onClick={()=>window.confirm(t.confirmArchive)&&command('archive')}>{t.archive}</button>}
     {editing?.published?.title&&<Link href={'/'+editing.published.locale+'/articles/'+editing.slug}>{t.opened} →</Link>}
+   </div>
+   <div className={styles.saveFeedback} aria-live="polite">
+    {error&&<p role="alert" className={styles.error}>{error}</p>}
+    {notice&&<p role="status" className={styles.status}>{notice}</p>}
    </div>
    {!isUnchanged&&editing&&<p className={styles.caption}>{t.saveFirst}</p>}
   </form>}

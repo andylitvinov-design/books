@@ -8,7 +8,7 @@ const COPY={
     loading:'Loading conversation…',none:'No follow-up messages yet.',reply:'Write a short reply',
     hint:'Business contact only. Do not enter diagnoses, reports, test results or private session links.',
     send:'Save reply in conversation',saved:'Reply saved to the private conversation.',
-    loadOlder:'Earlier messages',refresh:'Refresh',retry:'Try again',error:'Could not load this conversation.',
+    loadOlder:'Earlier messages',refresh:'Refresh',newMessages:'New for you',markViewed:'Mark as viewed',viewed:'Messages marked as viewed.',retry:'Try again',error:'Could not load this conversation.',
     closed:'This enquiry is closed; the history remains readable.',
     conflict:'This reply conflicts with an earlier request. Change the text or refresh.',
     private:'Please remove medical information and private links.',
@@ -19,7 +19,7 @@ const COPY={
     loading:'Загружаю переписку…',none:'Дополнительных сообщений пока нет.',reply:'Ваш короткий ответ',
     hint:'Только деловая переписка. Не указывайте диагнозы, отчёты, результаты тестов и приватные ссылки.',
     send:'Сохранить ответ в переписке',saved:'Ответ сохранён в защищённой переписке.',
-    loadOlder:'Ранние сообщения',refresh:'Обновить',retry:'Повторить',error:'Не удалось загрузить переписку.',
+    loadOlder:'Ранние сообщения',refresh:'Обновить',newMessages:'Новые для вас',markViewed:'Отметить просмотренными',viewed:'Сообщения отмечены просмотренными.',retry:'Повторить',error:'Не удалось загрузить переписку.',
     closed:'Заявка закрыта; история доступна для просмотра.',
     conflict:'Этот запрос противоречит ранее сохранённому ответу. Измените текст или обновите историю.',
     private:'Уберите медицинские данные и приватные ссылки.',
@@ -30,7 +30,7 @@ const COPY={
     loading:'Cargando mensajes…',none:'Aún no hay mensajes adicionales.',reply:'Tu respuesta breve',
     hint:'Solo comunicaciones profesionales. No incluyas diagnósticos, pruebas ni enlaces privados.',
     send:'Guardar respuesta',saved:'Respuesta guardada en la conversación privada.',
-    loadOlder:'Mensajes anteriores',refresh:'Actualizar',retry:'Intentar de nuevo',error:'No se pudo cargar la conversación.',
+    loadOlder:'Mensajes anteriores',refresh:'Actualizar',newMessages:'Nuevos para ti',markViewed:'Marcar como vistos',viewed:'Mensajes marcados como vistos.',retry:'Intentar de nuevo',error:'No se pudo cargar la conversación.',
     closed:'Solicitud cerrada; el historial sigue disponible.',
     conflict:'Esta solicitud entra en conflicto con una respuesta anterior.',private:'Elimina datos médicos y enlaces privados.',
     limit:'Límite diario alcanzado.',unknown:'Estado desconocido; no volver a enviar automáticamente.',
@@ -41,13 +41,14 @@ const ordered=(older=[],fresh=[])=>{
   for(const message of fresh)map.set(message.id,message)
   return [...map.values()].sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id.localeCompare(b.id))
 }
-function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null}){
+function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null,onSaved,onViewed}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang]
   const [view,setView]=useState(null),[error,setError]=useState('')
   const [busy,setBusy]=useState(false),[paging,setPaging]=useState(false)
+  const [markingViewed,setMarkingViewed]=useState(false)
   const [text,setText]=useState(''),[notice,setNotice]=useState('')
   const [visibility,setVisibility]=useState('participants')
-  const pending=useRef(null),requestRef=useRef(requestId)
+  const pending=useRef(null),requestRef=useRef(requestId),lastForegroundRefresh=useRef(0)
   useEffect(()=>{
     requestRef.current=requestId
     pending.current=null
@@ -87,6 +88,46 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
     }catch{if(requestRef.current===id)setError(t.error)}
     finally{if(requestRef.current===id)setPaging(false)}
   }
+  async function markViewed(){
+    const id=requestId
+    // Only acknowledge the most recent OTHER participant message actually
+    // loaded in this visible history; never an internal master-only note.
+    const latest=[...(view?.messages||[])].reverse().find(
+      item=>item.visibility==='participants'&&!item.mine)
+    if(!latest||!view?.unseenCount||markingViewed||busy)return
+    setMarkingViewed(true)
+    try{
+      const response=await fetch('/api/app/practitioner-client-messages',{
+        method:'POST',credentials:'same-origin',
+        headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},
+        body:JSON.stringify({action:'mark_seen',requestId:id,messageId:latest.id}),
+      })
+      if(!response.ok)throw new Error('VIEW_UNAVAILABLE')
+      if(requestRef.current!==id)return
+      await reload()
+      onViewed?.()
+      setNotice(t.viewed)
+    }catch{
+      if(requestRef.current===id)setNotice(t.error)
+    }finally{if(requestRef.current===id)setMarkingViewed(false)}
+  }
+  // A push can refocus this PWA without remounting the conversation.
+  // Refresh on foreground return only; avoid automatic background polling.
+  useEffect(()=>{
+    const refreshOnReturn=()=>{
+      if(document.visibilityState!=='visible')return
+      const now=Date.now()
+      if(now-lastForegroundRefresh.current<1500)return
+      lastForegroundRefresh.current=now
+      void reload()
+    }
+    window.addEventListener('focus',refreshOnReturn)
+    document.addEventListener('visibilitychange',refreshOnReturn)
+    return ()=>{
+      window.removeEventListener('focus',refreshOnReturn)
+      document.removeEventListener('visibilitychange',refreshOnReturn)
+    }
+  },[requestId,accountId,lang])
   async function send(){
     const body=text.trim(),id=requestId
     if(!(visibility==='practitioner_note'?view?.canNote:view?.canReply)||!body||busy)return
@@ -106,6 +147,8 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       if(requestRef.current!==id)return
       await reload()
       pending.current=null;setText('');setNotice(visibility==='practitioner_note'?t.noteSaved:t.saved)
+      // Parent master directory refresh is user-action-only; never auto-poll all clients.
+      onSaved?.()
     }catch(err){
       if(requestRef.current===id){
         setNotice(err.message==='PRIVATE_CONTENT_BLOCKED'?t.private:
@@ -128,8 +171,14 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
     </div>}
     {view&&<><div className={styles.tools}>
       <strong>{t.title}</strong>
-      <button type="button" disabled={busy||paging} onClick={()=>reload()}>{t.refresh}</button>
+      <button type="button" disabled={busy||paging||markingViewed} onClick={()=>reload()}>{t.refresh}</button>
     </div>
+      {view.unseenCount>0&&<div className={styles.unseenBanner} role="status">
+        <strong>{t.newMessages}: {view.unseenCount}</strong>
+        <button type="button" disabled={busy||markingViewed||
+          !(view.messages||[]).some(item=>item.visibility==='participants'&&!item.mine)}
+          onClick={markViewed}>{t.markViewed}</button>
+      </div>}
       {view.nextCursor&&<button type="button" className={styles.more} disabled={paging||busy}
         onClick={()=>reload(view.nextCursor)}>{paging?t.loading:t.loadOlder}</button>}
       {!view.messages.length&&<p className={styles.notice}>{t.none}</p>}
@@ -173,8 +222,15 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
 }
 export default function PracticeRequestConversation(props){
   const t=COPY[props.locale]||COPY.en
-  const [open,setOpen]=useState(false)
-  return <div className={styles.wrapper}>
+  const [open,setOpen]=useState(Boolean(props.autoOpen))
+  const anchor=useRef(null)
+  useEffect(()=>{
+    if(props.autoOpen){
+      setOpen(true)
+      anchor.current?.scrollIntoView?.({behavior:'smooth',block:'start'})
+    }
+  },[props.autoOpen,props.requestId])
+  return <div ref={anchor} className={styles.wrapper}>
     <button type="button" className={styles.toggle} aria-expanded={open}
       onClick={()=>setOpen(value=>!value)}>{open?t.close:t.open}</button>
     {open&&<MessageConversation {...props}/>}

@@ -2153,12 +2153,39 @@
   overflow-wrap:anywhere;
 }
 .reportRecommendedTestText small{color:#567880;font:550 12px/1.35 system-ui,-apple-system,sans-serif}
+.reportRecommendedTestFacts{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:5px 10px;
+  min-width:0;
+  color:#557781;
+  font:600 12px/1.35 system-ui,-apple-system,sans-serif;
+}
+.reportRecommendedTestFact{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.reportRecommendedTestFact svg{flex:none;color:#41878a}
+.reportRecommendedTestKind{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 8px;
+  border:1px solid #c5ded9;
+  border-radius:999px;
+  background:#f0f8f5;
+  color:#226777;
+  font:700 11px/1.3 system-ui,-apple-system,sans-serif;
+  white-space:nowrap;
+}
 .reportRecommendedTestArrow{flex:0 0 auto;color:#317b87}
 .reportRecommendedTestCard:focus-visible{outline:3px solid #258995;outline-offset:3px}
 @media(max-width:700px){
   .reportRecommendedTestList{grid-template-columns:minmax(0,1fr)}
   .cabinetSessionPage .reportRecommendedTestsSection{padding:15px 13px}
   .reportRecommendedTestCard{min-height:68px;padding:11px 12px}
+}
+@media(max-width:380px){
+  .reportRecommendedTestCard{gap:9px}
+  .reportRecommendedTestIcon{flex-basis:40px;width:40px;height:40px}
+  .reportRecommendedTestFacts{gap:5px 8px}
 }
 @media(prefers-reduced-motion:reduce){.reportRecommendedTestCard{transition:none}}
 
@@ -2923,5 +2950,61 @@
   }
   .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3) {
     font-size: 15.5px;
+  }
+}
+
+
+/* Coastal report unified remedy accordions — 2026-10-19.
+   The legacy high-specificity 2-column prescription row must not impose its
+   layout on a full-width nested disclosure. Keep patient instructions visible. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy.canonical-remedy--unified) {
+    display: block;
+    width: 100%;
+    margin-bottom: 11px;
+    padding: 0;
+    border: 1px solid #d3e3df;
+    border-left: 3px solid #70b4ad;
+    border-radius: 14px;
+    background: #fffefd;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(29,80,78,.055);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary) {
+    display: grid;
+    grid-template-columns: 65px minmax(0,1fr) auto;
+    align-items: center;
+    gap: 14px;
+    min-height: 91px;
+    margin: 0;
+    padding: 12px 15px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule) {
+    margin-top: 5px;
+    font: 550 13px/1.42 system-ui,-apple-system,sans-serif;
+  }
+}
+@media screen and (max-width: 700px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy.canonical-remedy--unified) {
+    padding: 0;
+    border-radius: 12px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary) {
+    grid-template-columns: 53px minmax(0,1fr) auto;
+    gap: 9px;
+    min-height: 74px;
+    padding: 10px 11px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-main .canonical-remedy-schedule) {
+    margin-top: 4px;
+    font-size: 12.5px;
+    line-height: 1.36;
+  }
+}
+@media screen and (max-width: 360px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-unified-disclosure > summary.canonical-remedy-unified-summary) {
+    grid-template-columns: 44px minmax(0,1fr) auto;
+    gap: 7px;
+    padding: 9px 8px;
   }
 }

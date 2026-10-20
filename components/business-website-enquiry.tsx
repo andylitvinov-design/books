@@ -15,7 +15,7 @@ const translations = {
     name:"Your name",namePlaceholder:"How should I address you?",email:"Email",phone:"Phone / WhatsApp",
     emailHelp:"Provide an email, phone number, or both.",
     format:"Which format interests you?",formatNames:{free:"Free written review",express:"30 minutes · €50",full:"60 minutes · €100",mentoring:"Goals Mentoring · by arrangement"},
-    question:"Your business question",questionPlaceholder:"What decision or goal would you like to clarify?",
+    question:"Your question or situation",questionPlaceholder:"What decision or goal would you like to clarify?",
     consent:"I agree to be contacted personally about this enquiry. I am not signing up for marketing.",
     send:"Send my request",sending:"Sending…",success:"Request saved. Andrey can now see it in his private CRM.",
     next:"For the free written review, continue to the short questionnaire and handwritten drawing.",
@@ -30,7 +30,7 @@ const translations = {
     name:"Как к вам обращаться",namePlaceholder:"Ваше имя",email:"Email",phone:"Телефон / WhatsApp",
     emailHelp:"Укажите email, телефон или оба контакта.",
     format:"Какой формат интересен?",formatNames:{free:"Бесплатный письменный разбор",express:"30 минут · €50",full:"60 минут · €100",mentoring:"Goals Mentoring · по договорённости"},
-    question:"Ваш бизнес-вопрос",questionPlaceholder:"Какое решение или цель вы хотите прояснить?",
+    question:"Ваш вопрос или ситуация",questionPlaceholder:"Какое решение или цель вы хотите прояснить?",
     consent:"Согласен(на), чтобы Андрей связался со мной по этой заявке. На рекламные рассылки не подписываюсь.",
     send:"Отправить заявку",sending:"Отправляем…",success:"Заявка сохранена. Андрей увидит её в своей CRM.",
     next:"Для бесплатного письменного разбора заполните короткую анкету и отправьте рисунок от руки.",
@@ -45,7 +45,7 @@ const translations = {
     name:"Tu nombre",namePlaceholder:"¿Cómo te llamas?",email:"Correo electrónico",phone:"Teléfono / WhatsApp",
     emailHelp:"Indica correo, teléfono o ambos.",
     format:"¿Qué modalidad te interesa?",formatNames:{free:"Revisión escrita gratuita",express:"30 minutos · €50",full:"60 minutos · €100",mentoring:"Goals Mentoring · por acuerdo"},
-    question:"Tu pregunta de negocio",questionPlaceholder:"¿Qué decisión o meta deseas aclarar?",
+    question:"Tu pregunta o situación",questionPlaceholder:"¿Qué decisión o meta deseas aclarar?",
     consent:"Acepto que Andrey me contacte sobre esta solicitud. No me suscribo a comunicaciones comerciales.",
     send:"Enviar solicitud",sending:"Enviando…",success:"Solicitud guardada. Andrey podrá verla en su CRM privado.",
     next:"Para obtener el informe gratuito, completa el cuestionario y envía un dibujo a mano.",
@@ -76,8 +76,18 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
   useEffect(()=>{
     const choose=(event:MouseEvent)=>{
       if(!(event.target instanceof Element))return;
-      const value=event.target.closest("[data-business-direct-option]")?.getAttribute("data-business-direct-option");
+      const option=event.target.closest("[data-business-direct-option]");
+      const value=option?.getAttribute("data-business-direct-option");
       if(value==="free"||value==="express"||value==="full"||value==="mentoring")setFormat(value);
+      // Prefill only an explicitly chosen, non-sensitive editorial topic. Never
+      // overwrite a client's own message, and never submit before consent.
+      const context=option?.getAttribute("data-business-finder-context");
+      if(context&&context.length<=600){
+        setQuestion(previous=>previous.trim()?previous:context);
+        setSuccess(false);
+        setError("");
+        operation.current=null;
+      }
     };
     document.addEventListener("click",choose);
     return ()=>document.removeEventListener("click",choose);

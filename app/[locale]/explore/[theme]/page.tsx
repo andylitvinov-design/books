@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
 import { TopicGrowthGuide } from '@/components/topic-growth-guide'
+import { BusinessWebsiteEnquiry } from '@/components/business-website-enquiry'
 import { growthGuideFor } from '@/data/growth-guides'
 import { TOPIC_JOURNEYS, getTopicJourney } from '@/lib/assessments/topic-journeys'
 import { buildTopicTestSuggestions } from '@/lib/assessments/topic-test-suggestions'
@@ -37,5 +38,8 @@ export default async function TopicJourneyPage({ params }: Props) {
     <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
     <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale)}/>
     <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>
+    {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) 44px'}}>
+      <BusinessWebsiteEnquiry locale={locale as 'en'|'ru'|'es'} />
+    </div>}
   </main>
 }

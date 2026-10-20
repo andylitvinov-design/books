@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { useOceanPracticeAudio } from "./ocean-practice-audio";
@@ -15,7 +16,12 @@ import {
   energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
-import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete } from "@/data/academy/energywork-ai-schema";
+import {
+  ENERGYWORK_FIRST_LESSON_NEXT, ENERGYWORK_FIRST_LESSON_STORAGE_KEY,
+  energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
+} from "@/data/academy/energywork-first-lesson";
+import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
+import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest } from "@/data/academy/reiki-initiation-request.js";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -25,7 +31,6 @@ const TANTRA_STUDY_HINT_ANCHORS: Record<string, string> = {
   "tan-study-02": "#tantra-original-author-research",
   "tan-study-03": "#tantra-full-source",
   "tan-study-04": "#tantra-full-source",
-  "tan-study-05": "#tantra-levels",
   "tan-study-06": "#tantra-original-master-programme",
   "tan-study-07": "#tantra-original-master-programme",
 };
@@ -38,6 +43,8 @@ type StoredProgress = {
   applicationLead?: { id: string; status: string; submittedAt: string } | null;
 };
 type SyncStatus = "checking" | "guest" | "consent" | "ready" | "unavailable";
+type ReikiBootstrap = { account?: { id?: string; displayName?: string; onboardingState?: string } };
+type FirstLessonHandoff = { answers: Record<string, string> };
 type SaveCommand = {
   action: "save";
   version: string; slideId: string; nextSlideId: string;
@@ -128,7 +135,19 @@ const copy = {
     voicesNext: "Next review",
     voicesNavigation: "Browse learner reviews",
     milestoneLabel: "Well done — keep going!",
+    initiationVideoNoteTitle: "A video meditation is not an initiation",
+    initiationVideoNoteText: "Listening to a recorded meditation does not initiate you. Initiation is always personal. To receive a personal meditation from Andrey, complete all five lessons and write to him.",
     firstMilestoneLabel: "Your Reiki journey is underway",
+    firstSaveTitle: "Keep your Reiki lessons in My Courses",
+    firstSaveText: "Save Lesson 1, your notes and a link to your course materials. After Google sign-in, Lesson 2 opens automatically.",
+    firstSaveConsent: "I am at least 18 and agree to save my lesson progress and answers privately in my Holistic House account.",
+    firstSavePolicy: "Read our Privacy Policy",
+    firstSaveGoogle: "Continue with Google & save",
+    firstSaveAccount: "Save to My Courses & continue",
+    firstSaveGuest: "Or continue as a guest without saving",
+    firstSaveError: "Lesson 1 was not saved. Try again; your answers are still here.",
+    firstSignInCancelled: "Google sign-in was not completed. You can try again or continue as a guest.",
+    firstSaveReady: "Lesson 1 is saved in My Courses.",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
     reviewNeeded: "To request personal initiation, add five meditation reports and answer all study questions in Tantra, Kundalini and Yggdrasil Reiki.",
@@ -161,12 +180,12 @@ const copy = {
     teacherShareAction: "Create my learning lead",
     teacherShareDone: "Andrey can see your course progress and responses in his private CRM.",
     teacherShareHint: "Only you can decide whether your personal course journal is shared with Andrey.",
-    initiationLetterHeading: "Request personal initiation with Andrey",
-    initiationLetterHint: "Your letter from the final lesson and your course materials will be sent securely to Andrey's CRM as a second lead.",
-    initiationConfirm: "I agree to send my initiation letter and course answers to Andrey for personal review.",
+    initiationLetterHeading: "Your personal Reiki initiation request",
+    initiationLetterHint: "Your selected free initiation, optional donation-based choices, contact details and motivation will be shared privately with Andrey only when you confirm below.",
+    initiationConfirm: "I agree to send my initiation choices, name, city, preferred chat time, motivation and course answers to Andrey's private CRM.",
     initiationSend: "Send my initiation request",
-    initiationSent: "Request received in Andrey's private CRM. Your application is awaiting a personal response.",
-    initiationTooShort: "Write at least 20 characters in your initiation letter on the previous step.",
+    initiationSent: "Your request is in Andrey's private CRM. He will review it and arrange a suitable time with you in chat.",
+    initiationTooShort: "Complete your personal initiation form on the previous lesson slide.",
     initiationShareNeeded: "Enable teacher sharing to send your application.",
     initiationNotReady: "Complete your lesson reports and answers to request personal initiation.",
     enableSave: "Start & save my course", signIn: "Sign in with Google to save",
@@ -249,7 +268,19 @@ const copy = {
     voicesNext: "Следующий отзыв",
     voicesNavigation: "Переключение отзывов",
     milestoneLabel: "Отличный результат!",
+    initiationVideoNoteTitle: "Видеомедитация — это ещё не инициация",
+    initiationVideoNoteText: "Прослушанная видеомедитация сама по себе не является инициацией. Инициация всегда персональна. Чтобы получить персональную медитацию от Андрея, завершите все пять уроков курса и напишите ему.",
     firstMilestoneLabel: "Ваш путь в Рейки начался",
+    firstSaveTitle: "Сохраните уроки Рейки в личном кабинете",
+    firstSaveText: "Сохраним первый урок, ваши записи и ссылку на материалы курса. После входа через Google автоматически откроется второй урок.",
+    firstSaveConsent: "Мне исполнилось 18 лет, и я согласен(на) на приватное хранение прогресса и ответов курса в Holistic House.",
+    firstSavePolicy: "Политика конфиденциальности",
+    firstSaveGoogle: "Войти через Google и сохранить",
+    firstSaveAccount: "Сохранить в кабинете и продолжить",
+    firstSaveGuest: "Или продолжить без сохранения",
+    firstSaveError: "Не удалось сохранить первый урок. Повторите попытку: ваши ответы остались на этом экране.",
+    firstSignInCancelled: "Вход через Google не завершён. Можно повторить попытку или продолжить как гость.",
+    firstSaveReady: "Первый урок сохранён в «Моих курсах».",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
     reviewNeeded: "Для заявки заполните пять отчётов и ответы на вопросы, по Тантра, Кундалини и Иггдрасиль Рейки. Учёбу можно продолжать без них.",
@@ -282,12 +313,12 @@ const copy = {
     teacherShareAction: "Создать мой учебный лид",
     teacherShareDone: "Андрей видит прогресс и ваши ответы в закрытой CRM.",
     teacherShareHint: "Только вы решаете, передавать ли Андрею материалы вашего курса.",
-    initiationLetterHeading: "Запрос на личную инициацию у Андрея",
-    initiationLetterHint: "Ваше письмо из последнего урока и ответы сохранятся у Андрея в CRM как второй лид.",
-    initiationConfirm: "Я согласен(на) отправить Андрею своё письмо и ответы курса для личного рассмотрения.",
+    initiationLetterHeading: "Ваша заявка на личную Рейки-инициацию",
+    initiationLetterHint: "Выбранная бесплатная инициация, дополнительные варианты за донейшн, контакты и мотивация попадут к Андрею только после подтверждения отправки.",
+    initiationConfirm: "Я согласен(на) отправить Андрею в закрытую CRM выбранные инициации, имя, город, удобное время для связи в чате, мотивацию и ответы курса.",
     initiationSend: "Отправить заявку на инициацию",
-    initiationSent: "Ваша заявка получена в закрытой CRM Андрея и ожидает личного ответа.",
-    initiationTooShort: "Напишите не меньше 20 символов в письме на предыдущем шаге.",
+    initiationSent: "Заявка получена в закрытой CRM Андрея. Он рассмотрит её и согласует с вами подходящее время в чате.",
+    initiationTooShort: "Заполните анкету личной инициации на предыдущем слайде.",
     initiationShareNeeded: "Для заявки разрешите передачу материалов преподавателю.",
     initiationNotReady: "Заполните ответы и отчёты, чтобы отправить заявку.",
     enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
@@ -348,11 +379,17 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
       const answer = answers[slide.id];
       const secondary = slide.secondaryQuestion ? answers[slide.secondaryQuestion.id] : undefined;
       if (!answer?.trim() && !secondary?.trim()) return [];
+      const shared = Boolean(slide.secondaryQuestion && answer?.trim() && secondary?.trim() &&
+        answer.trim() === secondary.trim());
+      const prompt = shared && slide.secondaryQuestion
+        ? [slide.question?.prompt[locale] || "", slide.secondaryQuestion.prompt[locale]].join("\n")
+        : slide.question?.prompt[locale] || "";
       const choice = slide.question?.options?.find((option) => option.id === answer);
       return [slide.title[locale],
-        ...(answer?.trim() ? [slide.question?.prompt[locale] || "",
-          choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""] : []),
-        ...(secondary?.trim() && slide.secondaryQuestion
+        ...(answer?.trim() ? [prompt,
+          slide.id === "end-01" ? formatReikiInitiationRequest(answer, locale) :
+            choice?.label[locale] ?? (slide.id === "flight-03" ? flightPracticeResponse(answer, locale) : answer), ""] : []),
+        ...(secondary?.trim() && slide.secondaryQuestion && !shared
           ? [slide.secondaryQuestion.prompt[locale], secondary, ""] : []),
       ];
     }),
@@ -379,9 +416,12 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   if (skipped) highlights.push(locale === "ru"
     ? "Вы выбрали пропустить практики: " + skipped + ". Это допустимо; участие остаётся добровольным."
     : "You chose to skip " + skipped + " practice(s). That is a valid choice; participation remains voluntary.");
-  if (present("end-01")) highlights.push(locale === "ru"
-    ? "Ваш следующий шаг: «" + present("end-01") + "»."
-    : "Your next step: “" + present("end-01") + "”.");
+  if (reikiInitiationRequestValid(present("end-01"))) {
+    const request = readReikiInitiationRequest(present("end-01"));
+    const selected = energyworkPathChoices.find((choice) => choice.id === request.freeInitiation)?.title[locale] ?? "";
+    highlights.push(locale === "ru" ? "Ваш выбор бесплатной личной инициации: " + selected + "." :
+      "Your free personal initiation choice: " + selected + ".");
+  }
   return highlights;
 }
 
@@ -389,6 +429,7 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
   const [remaining, setRemaining] = useState(durationSeconds);
   const [running, setRunning] = useState(false);
   const deadline = useRef(0);
+  const pendingStart = useRef(0);
   const ocean = useOceanPracticeAudio();
 
   useEffect(() => {
@@ -408,8 +449,9 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
   // It never resumes audibly without another explicit user tap.
   useEffect(() => {
     const hide = () => {
-      if (document.hidden && running) {
-        setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+      if (document.hidden) {
+        pendingStart.current += 1;
+        if (running) setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
         setRunning(false);
         ocean.pause();
       }
@@ -418,24 +460,35 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
     return () => document.removeEventListener("visibilitychange", hide);
   }, [running, ocean.pause]);
 
-  function toggle() {
+  // Browser media must begin before a sound-enabled practice clock starts.
+  async function toggle() {
     if (running) {
+      pendingStart.current += 1;
       setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
       setRunning(false);
       ocean.pause();
     } else {
+      const ticket = ++pendingStart.current;
+      const soundStarted = await ocean.play();
+      if (ticket !== pendingStart.current || !soundStarted || document.hidden) return;
       deadline.current = Date.now() + (remaining || durationSeconds) * 1000;
       if (remaining === 0) setRemaining(durationSeconds);
-      ocean.play();
       setRunning(true);
     }
   }
 
   function reset() {
-    ocean.pause();
+    pendingStart.current += 1;
+    ocean.reset();
     setRunning(false);
     setRemaining(durationSeconds);
   }
+
+  useEffect(() => {
+    if (!running || !ocean.enabled || !["blocked", "paused"].includes(ocean.status)) return;
+    setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+    setRunning(false);
+  }, [running, ocean.enabled, ocean.status]);
 
   return <div className={styles.practiceTimer} role="group" aria-label={locale === "ru" ? "Таймер необязательной практики" : "Optional practice timer"}>
     <span><Clock3 size={17} aria-hidden="true" />{locale === "ru" ? "Мягкая практика · по желанию" : "Gentle practice · optional"}
@@ -444,10 +497,12 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
     <strong aria-label={locale === "ru" ? "Осталось секунд" : "Seconds remaining"}>
       {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
     </strong>
-    <button type="button" onClick={toggle}>{running ? (locale === "ru" ? "Пауза" : "Pause") :
+    <button type="button" onClick={toggle} disabled={ocean.enabled && ocean.status === "loading"}>{running ? (locale === "ru" ? "Пауза" : "Pause") :
       (remaining < durationSeconds && remaining > 0 ? (locale === "ru" ? "Продолжить" : "Resume") :
         (locale === "ru" ? (durationSeconds === 60 ? "Начать 1 минуту" : "Начать 2 минуты") : (durationSeconds === 60 ? "Start 1 minute" : "Start 2 minutes")))}</button>
     <button type="button" onClick={reset}>{locale === "ru" ? "Сбросить" : "Reset"}</button>
+    {ocean.enabled && ocean.status === "blocked" ? <small role="alert">{locale === "ru" ? "Звук не запустился. Проверьте громкость и попробуйте снова или выключите волны." : "Sound did not start. Check volume and try again, or turn Waves off."}</small> : null}
+    {ocean.enabled && ocean.status === "loading" ? <small role="status">{locale === "ru" ? "Загружается аудио…" : "Loading waves and soft music…"}</small> : null}
   </div>;
 }
 
@@ -503,7 +558,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
       )}
       {(currentReview || youtubeId) ? (
         <div className={styles.voicesReferences}>
-          {currentReview ? (
+          {currentReview?.sourcePath ? (
             <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
               {t.voicesSource}<ExternalLink size={14} aria-hidden="true" />
             </Link>
@@ -520,6 +575,117 @@ function MeditationVoices({ slide, locale, youtubeId }: {
   );
 }
 
+
+/** Lesson 5: all selections serialize into the existing encrypted end-01 answer. */
+function ReikiInitiationRequestForm({ value, locale, onChange }: {
+  value: string; locale: EnergyworkLocale; onChange: (next: string) => void;
+}) {
+  const request = readReikiInitiationRequest(value);
+  const ru = locale === "ru";
+  const ready = reikiInitiationRequestValid(value);
+  const change = (patch: Partial<ReturnType<typeof readReikiInitiationRequest>>) => {
+    // Capture the learner's own browser time zone; they may edit it freely.
+    const timezone = request.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    onChange(writeReikiInitiationRequest({ ...request, timezone, ...patch }));
+  };
+  return (
+    <div className={styles.initiationForm} data-reiki-initiation-choice-form>
+      <div className={styles.initiationGiftIntro}>
+        <span><Sparkles size={18} aria-hidden="true" />{ru ? "Ваш подарок после обучения" : "Your gift after the course"}</span>
+        <p>{ru
+          ? "Выберите любую одну личную инициацию I ступени бесплатно. Андрей рассмотрит вашу заявку и лично согласует проведение. Прохождение курса само по себе не является инициацией."
+          : "Choose any one personal Level 1 initiation for free. Andrey reviews your request and personally confirms the session. Finishing the course does not itself confer initiation."}</p>
+      </div>
+      <fieldset className={styles.initiationChoiceGroup}>
+        <legend>{ru ? "1. Какую инициацию хотите бесплатно?" : "1. Choose your free initiation"}</legend>
+        <div className={styles.initiationChoiceGrid} data-reiki-free-choices>
+          {energyworkPathChoices.map((choice) => (
+            <label key={choice.id} className={styles.initiationChoice + (request.freeInitiation === choice.id ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="radio" name="reiki-free-initiation" value={choice.id}
+                checked={request.freeInitiation === choice.id}
+                onChange={() => change({
+                  freeInitiation: choice.id,
+                  donationInitiations: request.donationInitiations.filter((id) => id !== choice.id),
+                })} />
+              <span>{choice.title[locale]}</span>
+              <small>{ru ? "Бесплатно" : "Free"}</small>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className={styles.initiationChoiceGroup} data-reiki-donation-choices>
+        <legend>{ru ? "2. Хотите вторую или третью инициацию за донейшн?" : "2. Add a second or third initiation by donation?"}</legend>
+        <p className={styles.initiationHelper}>{ru
+          ? "Необязательно. Выберите одну или обе оставшиеся системы. Пожертвование добровольное, его размер можно обсудить позже — оплаты здесь нет."
+          : "Optional: select one or both remaining systems. Donations are voluntary; discuss the amount later. No payment is taken here."}</p>
+        <div className={styles.initiationChoiceGrid}>
+          {energyworkPathChoices.filter((choice) => choice.id !== request.freeInitiation).map((choice) => (
+            <label key={choice.id} className={styles.initiationChoice + (request.donationInitiations.includes(choice.id) ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="checkbox" value={choice.id} checked={request.donationInitiations.includes(choice.id)}
+                onChange={(event) => change({
+                  donationInitiations: event.target.checked
+                    ? [...request.donationInitiations, choice.id]
+                    : request.donationInitiations.filter((id) => id !== choice.id),
+                })} />
+              <span>{choice.title[locale]}</span>
+              <small>{ru ? "За донейшн" : "By donation"}</small>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className={styles.initiationDetails}>
+        <p className={styles.initiationSectionTitle}>{ru ? "3. Как к вам обращаться и когда вам удобно?" : "3. Tell Andrey how to reach you and when you're available"}</p>
+        <div className={styles.initiationFields}>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Имя *" : "First name *"}</span>
+            <input type="text" autoComplete="given-name" maxLength={60} value={request.firstName}
+              onChange={(event) => change({ firstName: event.target.value })} placeholder={ru ? "Ваше имя" : "Your first name"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Фамилия *" : "Last name *"}</span>
+            <input type="text" autoComplete="family-name" maxLength={60} value={request.lastName}
+              onChange={(event) => change({ lastName: event.target.value })} placeholder={ru ? "Ваша фамилия" : "Your last name"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Город и страна проживания *" : "City and country *"}</span>
+            <input type="text" autoComplete="address-level2" maxLength={120} value={request.location}
+              onChange={(event) => change({ location: event.target.value })}
+              placeholder={ru ? "Например: Торонто, Канада" : "For example: Toronto, Canada"} required />
+          </label>
+          <label className={styles.initiationField}>
+            <span>{ru ? "Ваш часовой пояс *" : "Your time zone *"}</span>
+            <input type="text" maxLength={80} value={request.timezone}
+              onChange={(event) => change({ timezone: event.target.value })}
+              placeholder="America/Toronto" required />
+          </label>
+          <label className={styles.initiationField + " " + styles.initiationFieldWide}>
+            <span>{ru ? "Удобные дни и время для инициации *" : "Preferred days and times for initiation *"}</span>
+            <input type="text" maxLength={180} value={request.preferredTime}
+              onChange={(event) => change({ preferredTime: event.target.value })}
+              placeholder={ru ? "Например: будни после 19:00, по моему времени" : "For example: weekdays after 7 PM, my local time"} required />
+          </label>
+        </div>
+        <p className={styles.initiationHelper}>{ru
+          ? "Это не автоматическое бронирование. Андрей уточнит удобное время и формат лично в чате."
+          : "This is not an automatic booking. Andrey will discuss the time and format with you personally in chat."}</p>
+      </div>
+      <label className={styles.initiationMotivation}>
+        <span>{ru ? "4. Почему вам нужна именно эта инициация? *" : "4. Why do you want this initiation? *"}</span>
+        <textarea rows={3} maxLength={700} value={request.motivation}
+          placeholder={ru ? "Что вы хотите развить, почувствовать или привнести в свою практику?" : "What would you like to explore or bring into your practice?"}
+          onChange={(event) => change({ motivation: event.target.value })} required />
+        <small>{ru ? "Минимум 20 символов мотивации" : "At least 20 characters about your motivation"} · {request.motivation.trim().length}/700</small>
+      </label>
+      <p className={styles.initiationFormStatus} role="status">
+        {ready ? <Check size={17} aria-hidden="true" /> : <LockKeyhole size={17} aria-hidden="true" />}
+        {ready
+          ? (ru ? "Анкета заполнена. Перейдите далее, чтобы проверить ответы и отдельно подтвердить отправку Андрею." : "Your form is complete. Continue to review your answers and separately confirm sending them to Andrey.")
+          : (ru ? "Для отправки заявки выберите бесплатную инициацию и заполните поля со звёздочкой. Продолжить курс можно и без заявки." : "Choose a free initiation and complete the starred fields to send a request. You can continue studying without applying.")}
+      </p>
+    </div>
+  );
+}
+
 export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props) {
   const t = copy[locale];
   // Referral entrants have already read the course overview; saved account progress still wins.
@@ -531,6 +697,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
   const [sync, setSync] = useState<SyncStatus>("checking");
   const [consented, setConsented] = useState(false);
+  const [firstLessonConsent, setFirstLessonConsent] = useState(false);
+  const authorizedOAuthLeave = useRef(false);
   const [shareConsented, setShareConsented] = useState(false);
   const [sharingWithTeacher, setSharingWithTeacher] = useState(false);
   const [applicationLead, setApplicationLead] = useState<StoredProgress["applicationLead"]>(null);
@@ -594,7 +762,72 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setSync((error as { status?: number })?.status === 401 ? "guest" : "unavailable");
     } finally { setBusy(false); }
   }, [hydrate]);
-  useEffect(() => { void reloadProgress(); }, [reloadProgress]);
+
+  const completeFirstLesson = useCallback(async (handoff: FirstLessonHandoff) => {
+    setBusy(true);
+    setSync("checking");
+    setSaveError(null);
+    try {
+      // Google creates a login first; a new cabinet may still require consent.
+      // The adult/necessary-processing consent was explicitly selected on the
+      // Lesson 1 save card before the OAuth redirect.
+      const bootstrap = await appFetch("bootstrap", undefined, "GET") as ReikiBootstrap;
+      if (!bootstrap.account?.id) throw new Error("ACCOUNT_UNAVAILABLE");
+      if (bootstrap.account.onboardingState !== "active") {
+        await appFetch("onboarding", {
+          adult: true, necessary: true, marketing: false,
+          uiLocale: locale, goal: "explore",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          displayName: bootstrap.account.displayName || "",
+        }, "POST", { accountId: bootstrap.account.id });
+      }
+      const value = await appFetch("academy-energywork", {
+        action: "start", consent: true, teacherConsent: false,
+        version: ENERGYWORK_COURSE_VERSION, firstLesson: handoff,
+      }, "POST", { accountId: bootstrap.account.id }) as StoredProgress;
+      if (!value.enrolled || !value.slideId || !Number.isSafeInteger(value.revision)) {
+        throw new Error("INVALID_FIRST_LESSON_RESPONSE");
+      }
+      hydrate(value); // The saved cursor is at least tan-01: the next lesson.
+      window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY);
+      setFirstLessonConsent(false);
+    } catch (error) {
+      // A network error must never masquerade as a successful saved course.
+      // Retain the short-lived, same-tab handoff for a deliberate retry.
+      const unauthorized = (error as { status?: number })?.status === 401;
+      setSync(unauthorized ? "guest" : "consent");
+      setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+      setSaveError(unauthorized ? t.signupError : t.firstSaveError);
+    } finally {
+      setBusy(false);
+    }
+  }, [hydrate, locale, t.firstSaveError, t.signupError]);
+
+  useEffect(() => {
+    let raw: string | null = null;
+    try { raw = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+    catch { /* Storage unavailable: the guest course still works normally. */ }
+    const pending = energyworkReadFirstLessonHandoff(raw, locale);
+    if (pending && !new URLSearchParams(window.location.search).has("auth")) {
+      // Resume immediately in the lesson, not the cabinet homepage.
+      setAnswers(pending.answers);
+      answersRef.current = pending.answers;
+      setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+      void completeFirstLesson(pending);
+      return;
+    }
+    if (raw) {
+      try { window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+      catch { /* Nonessential cleanup on restricted browsers. */ }
+      if (pending) {
+        answersRef.current = pending.answers;
+        setAnswers(pending.answers);
+        setIndex(energyworkSlides().findIndex(item => item.id === "flight-done"));
+        setSaveError(t.firstSignInCancelled);
+      }
+    }
+    void reloadProgress();
+  }, [completeFirstLesson, locale, reloadProgress, t.firstSignInCancelled]);
   // Mobile Safari can restore a scrolled document below our fixed lesson.
   // Reset only the document; the slide's own scroll and bottom CTA remain intact.
   useEffect(() => {
@@ -641,9 +874,33 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     try {
       const response = await appFetch("auth/start", { locale, continueTo: "energywork" }, "POST") as { redirectUrl?: string };
       if (!response.redirectUrl || !response.redirectUrl.startsWith("https://")) throw new Error("BAD_OAUTH_URL");
+      // The short-lived, consented first-lesson handoff is safely kept within
+      // this tab, so an expected OAuth navigation should not warn of lost edits.
+      let pending: string | null = null;
+      try { pending = window.sessionStorage.getItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY); }
+      catch { /* Standard Google login still works without storage. */ }
+      authorizedOAuthLeave.current = Boolean(energyworkReadFirstLessonHandoff(pending, locale));
       window.location.assign(response.redirectUrl);
     } catch {
+      authorizedOAuthLeave.current = false;
       setSaveError(t.signupError); setBusy(false);
+    }
+  }
+  async function saveLessonOneToCabinet() {
+    if (busy || !firstLessonConsent || !["guest", "consent"].includes(sync) ||
+        slide.id !== "flight-done") return;
+    try {
+      const value = energyworkCreateFirstLessonHandoff(answersRef.current, locale);
+      // Only a checked and deliberately clicked save action writes temporary
+      // private reflections to sessionStorage. Nothing enters the URL.
+      window.sessionStorage.setItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value);
+      const pending = energyworkReadFirstLessonHandoff(value, locale);
+      if (!pending) throw new Error("INVALID_FIRST_LESSON");
+      setSaveError(null);
+      if (sync === "guest") await signIn();
+      else await completeFirstLesson(pending);
+    } catch {
+      setSaveError(t.firstSaveError);
     }
   }
   const slides = useMemo(() => energyworkSlides(), []);
@@ -661,15 +918,20 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01" || slide.id === "flight-done";
   const voicesArt = slide.kind === "voices";
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
+  // Decorative artwork belongs behind the lesson copy, never in a cropped strip.
+  // Video playback and the existing welcome/testimonial backgrounds are unaffected.
+  const artBackground = Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind);
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
   const feedbackLength = Array.from(meditationReview.trim()).length;
   const feedbackMissing = isMeditationFeedback && feedbackLength < ENERGYWORK_REVIEW_MIN_CHARS;
   const isTantraStudyQuestion = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.includes(slide.id);
+  const unifiedStudyAnswer = slide.secondaryQuestion
+    ? energyworkCombinedTantraAnswer(answers[slide.id], answers[slide.secondaryQuestion.id])
+    : answers[slide.id];
   const tantraStudyMissing = isTantraStudyQuestion &&
-    (!energyworkTantraStudyAnswerComplete(answers[slide.id]) ||
-      Boolean(slide.secondaryQuestion && !energyworkTantraStudyAnswerComplete(answers[slide.secondaryQuestion.id])));
+    !energyworkTantraStudyAnswerComplete(unifiedStudyAnswer);
   const isKundaliniStudyQuestion = ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS.includes(slide.id);
   const isYggdrasilStudyQuestion = ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS.includes(slide.id);
   const isReikiStudyQuestion = isTantraStudyQuestion || isKundaliniStudyQuestion || isYggdrasilStudyQuestion;
@@ -682,7 +944,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const initiationItems = energyworkInitiationRequirements.map((item) => ({
     ...item,
     title: energyworkLessons.find((lesson) => lesson.phase === item.lesson)?.title[locale] ?? item.lesson,
-    reportDone: Boolean(answers[item.reportId]?.trim()),
+    reportDone: item.reportId === "end-01" ? reikiInitiationRequestValid(answers["end-01"]) : Boolean(answers[item.reportId]?.trim()),
     questionCount: item.questionIds.filter((id) => Boolean(answers[id]?.trim())).length,
     questionDone: item.questionIds.every((id) => Boolean(answers[id]?.trim())),
     nextQuestionId: item.questionIds.find((id) => !answers[id]?.trim()) ?? item.questionId,
@@ -696,24 +958,43 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     !busy && !saveError && dirtyRef.current.size === 0;
 
   function setAnswer(value: string, answerId: string = slide.id) {
-    const updated = { ...answersRef.current, [answerId]: value };
+    // One textarea on the combined slide updates both existing private answer IDs.
+    const mirrorId = answerId === slide.id ? slide.secondaryQuestion?.id : undefined;
+    const updated = { ...answersRef.current, [answerId]: value,
+      ...(mirrorId ? { [mirrorId]: value } : {}) };
     answersRef.current = updated;
     setAnswers(updated);
     dirtyRef.current.add(answerId);
+    if (mirrorId) dirtyRef.current.add(mirrorId);
     setCopyState("idle");
   }
   async function store(nextSlideId: string) {
     if (sync !== "ready") return;
     const current = answersRef.current;
-    const primary = current[slide.id] || "";
     const secondaryId = slide.secondaryQuestion?.id;
-    const secondary = secondaryId ? current[secondaryId] || "" : undefined;
+    const combined = secondaryId
+      ? energyworkCombinedTantraAnswer(current[slide.id], current[secondaryId])
+      : "";
+    // Older course records can have only one of the two answer IDs filled.
+    // Backfill the missing ID when continuing, without overwriting distinct
+    // answers from the original two-field version.
+    const needsBackfill = Boolean(secondaryId && combined.trim() &&
+      (!current[slide.id]?.trim() || !current[secondaryId]?.trim()));
+    const primary = needsBackfill ? combined : current[slide.id] || "";
+    const secondary = secondaryId ? (needsBackfill ? combined : current[secondaryId] || "") : undefined;
     const response = await request({
       action: "save", version: ENERGYWORK_COURSE_VERSION,
       slideId: slide.id, nextSlideId,
       ...(slide.question ? { answer: primary } : {}),
       ...(secondaryId ? { secondaryAnswer: secondary } : {}),
     });
+    if (needsBackfill && secondaryId &&
+        (answersRef.current[slide.id] || "") === (current[slide.id] || "") &&
+        (answersRef.current[secondaryId] || "") === (current[secondaryId] || "")) {
+      const updated = { ...answersRef.current, [slide.id]: primary, [secondaryId]: secondary || "" };
+      answersRef.current = updated;
+      setAnswers(updated);
+    }
     if ((answersRef.current[slide.id] || "") === primary) dirtyRef.current.delete(slide.id);
     if (secondaryId && (answersRef.current[secondaryId] || "") === secondary)
       dirtyRef.current.delete(secondaryId);
@@ -805,14 +1086,17 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   // Warn before losing a not-yet-confirmed private answer.
   useEffect(() => {
     if (!dirtyRef.current.size) return;
-    const beforeLeave = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    const beforeLeave = (event: BeforeUnloadEvent) => {
+      if (authorizedOAuthLeave.current) return;
+      event.preventDefault(); event.returnValue = "";
+    };
     window.addEventListener("beforeunload", beforeLeave);
     return () => window.removeEventListener("beforeunload", beforeLeave);
   }, [answers, savedAt]);
 
   async function applyForInitiation() {
     if (busy || !applicationConsented || !savedInitiationReady || !sharingWithTeacher ||
-        applicationLead || (answers["end-01"] || "").trim().length < 20) return;
+        applicationLead || !reikiInitiationRequestValid(answers["end-01"])) return;
     setBusy(true);setApplicationMessage("");
     try {
       await queueRef.current.catch(() => {});
@@ -840,7 +1124,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>
@@ -868,12 +1152,28 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </ol>
         </nav>
 
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} aria-labelledby="energywork-slide-title">
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
+              {slide.introAudioKey && slide.introTopics ? (
+                <section className={styles.lessonIntroPanel} data-reiki-lesson-intro={slide.introAudioKey}
+                  aria-label={locale === "ru" ? "Программа занятия" : "What this lesson covers"}>
+                  <strong className={styles.lessonIntroTitle}>
+                    <BookOpen size={17} aria-hidden="true" />
+                    {locale === "ru" ? "Что мы изучим сегодня" : "What we'll explore in this lesson"}
+                  </strong>
+                  <ul className={styles.lessonIntroTopics}>
+                    {slide.introTopics.map((topic, index) => (
+                      <li key={index}><Check size={15} aria-hidden="true" />{topic[locale]}</li>
+                    ))}
+                  </ul>
+                  <ReikiLessonIntroAudio key={slide.introAudioKey + "-" + locale}
+                    lesson={slide.introAudioKey} locale={locale} />
+                </section>
+              ) : null}
               {slide.id === "tan-05" ? (
                 <Link href={"/" + locale + "/academy/reiki/tantra-reiki"}
                   target="_blank" rel="noopener noreferrer"
@@ -893,7 +1193,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </Link>
               ) : null}
               {slide.id === "ygg-05" ? (
-                <Link href={"/" + locale + "/academy/reiki/yggdrasil"}
+                <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}
                   target="_blank" rel="noopener noreferrer"
                   className={styles.studyButton} data-yggdrasil-study-link>
                   <BookOpen size={18} aria-hidden="true" />
@@ -929,6 +1229,48 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   </div>
                 </div>
               ) : null}
+              {(slide.id === "tan-done" || slide.id === "kun-done") ? (
+                 <aside className={styles.personalInitiationNote} data-reiki-personal-initiation-note>
+                   <span className={styles.personalInitiationNoteTitle}><Heart size={17} aria-hidden="true" />{t.initiationVideoNoteTitle}</span>
+                   <p>{t.initiationVideoNoteText}</p>
+                 </aside>
+               ) : null}
+               {slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? (
+                <aside className={styles.firstLessonSave} data-reiki-first-lesson-save
+                  aria-labelledby="reiki-save-first-lesson-title">
+                  <div className={styles.firstLessonSaveHeading}>
+                    <LockKeyhole size={23} aria-hidden="true" />
+                    <div>
+                      <h2 id="reiki-save-first-lesson-title">{t.firstSaveTitle}</h2>
+                      <p>{t.firstSaveText}</p>
+                    </div>
+                  </div>
+                  <label className={styles.consentLabel}>
+                    <input type="checkbox" checked={firstLessonConsent}
+                      onChange={event => setFirstLessonConsent(event.target.checked)}
+                      data-reiki-first-lesson-consent />
+                    <span>{t.firstSaveConsent}</span>
+                  </label>
+                  <p className={styles.firstLessonPrivacy}>
+                    <Link href="/privacy" target="_blank" rel="noopener noreferrer">{t.firstSavePolicy}</Link>
+                    {" · "}{t.reviewPrivate}
+                  </p>
+                  <button type="button" className={styles.firstLessonSaveAction}
+                    onClick={saveLessonOneToCabinet}
+                    disabled={!firstLessonConsent || busy}
+                    data-reiki-first-lesson-google-save>
+                    {busy ? t.saving : sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount}
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </button>
+                  <p className={styles.firstLessonGuestNote}>{t.firstSaveGuest}</p>
+                </aside>
+              ) : null}
+              {slide.id === "flight-done" && sync === "ready" ? (
+                <p className={styles.firstLessonSaved} data-reiki-first-lesson-saved>
+                  <Check size={18} aria-hidden="true" />{t.firstSaveReady}
+                  <Link href={"/" + locale + "/app/course?view=courses"}>{t.myCourses}</Link>
+                </p>
+              ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
 
@@ -939,7 +1281,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <div className={styles.reviewRows}>
                     {initiationItems.map((item) => (
                       <div className={styles.reviewRow} key={item.lesson}>
-                        <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
+                        <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
                         <div>
                           <button type="button" onClick={() => jumpToSlide(item.reportId)}
                             className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
@@ -959,7 +1301,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </div>
               ) : null}
 
-              {slide.question ? (
+              {slide.id === "end-01" ? (
+                <ReikiInitiationRequestForm value={answers["end-01"] ?? ""} locale={locale}
+                  onChange={(value) => setAnswer(value, "end-01")} />
+              ) : slide.question ? (
                 <div className={styles.question}>
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
                      isMeditationFeedback ? t.feedbackBadge :
@@ -968,28 +1313,35 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
-                  {slide.question.type === "text" ? (
-                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (answers[slide.id] ?? "")}
-                      onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
-                      className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
-                      maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
-                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isReikiStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
-                      required={isReikiStudyQuestion}
-                      aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) ? "reiki-study-help-" + slide.id : undefined}
-                      autoComplete="off" />
+                  {isKundaliniStudyQuestion && slide.question.options?.length ? (
+                    <div className={styles.choices} role="group"
+                      aria-label={slide.question.prompt[locale]} data-kundalini-answer-options>
+                      {slide.question.options.map((option) => (
+                        <label key={option.id} className={styles.choice}>
+                          <input type="radio" name={slide.id + "-suggestion"} value={option.id}
+                            checked={[option.label.en, option.label.ru].includes(answers[slide.id] ?? "")}
+                            onChange={() => setAnswer(option.label[locale])} />
+                          <span>{option.label[locale]}</span>
+                        </label>
+                      ))}
+                    </div>
                   ) : null}
                   {slide.secondaryQuestion ? (
-                    <div className={styles.tantraSecondQuestion} data-tantra-study-combined>
-                      <label className={styles.tantraSecondPrompt} htmlFor={"answer-" + slide.secondaryQuestion.id}>
-                        {slide.secondaryQuestion.prompt[locale]}
-                      </label>
-                      <textarea id={"answer-" + slide.secondaryQuestion.id}
-                        value={answers[slide.secondaryQuestion.id] ?? ""}
-                        onChange={(e) => setAnswer(e.target.value.slice(0, 1600), slide.secondaryQuestion!.id)}
-                        className={styles.textarea} maxLength={1600} rows={2}
-                        placeholder={t.tantraAnswerPlaceholder} required
-                        aria-describedby={"tantra-study-help-" + slide.id} autoComplete="off" />
-                    </div>
+                    <p className={styles.tantraSecondPrompt}
+                      id={"tantra-second-" + slide.secondaryQuestion.id} data-tantra-study-combined>
+                      {slide.secondaryQuestion.prompt[locale]}
+                    </p>
+                  ) : null}
+                  {slide.question.type === "text" ? (
+                    <textarea id={"answer-" + slide.id}
+                      value={isMeditationFeedback ? meditationReview : slide.secondaryQuestion ? unifiedStudyAnswer ?? "" : (answers[slide.id] ?? "")}
+                      onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
+                      className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
+                      maxLength={isMeditationFeedback ? undefined : 1600} rows={slide.secondaryQuestion ? 5 : isKundaliniStudyQuestion ? 2 : 4}
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isKundaliniStudyQuestion ? (locale === "ru" ? "Или напишите свой ответ…" : "Or write your own answer…") : isReikiStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
+                      required={isReikiStudyQuestion}
+                      aria-describedby={isTantraStudyQuestion ? (slide.secondaryQuestion ? "tantra-second-" + slide.secondaryQuestion.id + " " : "") + "tantra-study-help-" + slide.id : (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) ? "reiki-study-help-" + slide.id : undefined}
+                      autoComplete="off" />
                   ) : null}
                   {isMeditationFeedback ? <p className={styles.feedbackCount} aria-live="polite">{feedbackLength} {t.feedbackCharacters} · {t.feedbackMinimum}</p> : null}
                   {slide.question.type === "scale" ? (
@@ -1020,6 +1372,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
                   ) : null}
+                  {isKundaliniStudyQuestion && slide.question.help && (answers[slide.id] || "").trim() ? (
+                    <p className={styles.optional} data-kundalini-answer-explanation role="status">{slide.question.help[locale]}</p>
+                  ) : null}
                   {isTantraStudyQuestion ? (
                     <div className={styles.tantraStudyHelp} id={"tantra-study-help-" + slide.id} data-tantra-study-required>
                       <span className={styles.tantraStudyRequired}>{t.tantraAnswerRequired}</span>
@@ -1033,7 +1388,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <div className={styles.tantraStudyHelp} id={"reiki-study-help-" + slide.id} data-reiki-study-required>
                       <span className={styles.tantraStudyRequired}>{t.tantraAnswerRequired}</span>
                       <Link className={styles.tantraStudyLink}
-                        href={"/" + locale + "/academy/reiki/" + (isKundaliniStudyQuestion ? "kundalini-reiki" : "yggdrasil")}
+                        href={"/" + locale + "/academy/reiki/" + (isKundaliniStudyQuestion ? "kundalini-reiki" : "yggdrasil/free-initiation")}
                         target="_blank" rel="noopener noreferrer" data-reiki-study-hint>
                         <BookOpen size={15} aria-hidden="true" />{t.tantraStudyHint}<ExternalLink size={13} aria-hidden="true" />
                       </Link>
@@ -1063,11 +1418,15 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       <p className={styles.initiationHint}>{t.initiationNotReady}</p>
                     ) : !sharingWithTeacher ? (
                       <p className={styles.initiationHint}>{t.initiationShareNeeded}</p>
-                    ) : (answers["end-01"] || "").trim().length < 20 ? (
-                      <p className={styles.initiationHint}>{t.initiationTooShort}</p>
+                    ) : !reikiInitiationRequestValid(answers["end-01"]) ? (
+                      <p className={styles.initiationHint}>{t.initiationTooShort}{" "}
+                        <button type="button" className={styles.reviewMissing} onClick={() => jumpToSlide("end-01")}>
+                          {locale === "ru" ? "Открыть анкету" : "Open the form"}
+                        </button>
+                      </p>
                     ) : (
                       <div className={styles.initiationApplication}>
-                        <blockquote className={styles.letterPreview}>{answers["end-01"]}</blockquote>
+                        <blockquote className={styles.letterPreview}>{formatReikiInitiationRequest(answers["end-01"], locale)}</blockquote>
                         <label className={styles.consentLabel}>
                           <input type="checkbox" checked={applicationConsented}
                             onChange={event => setApplicationConsented(event.target.checked)} />
@@ -1098,7 +1457,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <div className={styles.reviewRows}>
                       {initiationItems.map((item) => (
                         <div className={styles.reviewRow} key={item.lesson}>
-                          <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
+                          <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
                           <div>
                             {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
                             {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
@@ -1136,9 +1495,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               ) : null}
             </div>
             {artSource ? (
-              <div className={styles.art} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}>
+              <div className={styles.art} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}
+                 data-reiki-diagram={artBackground && artSource?.includes("kundalini-manual") ? "true" : undefined}
+                 aria-hidden={artBackground ? true : undefined}>
                 <Image src={artSource}
-                  alt={portraitArt || voicesArt ? (locale === "ru" ? "Женщина спокойно медитирует в лучах утреннего солнца" : "Woman resting peacefully in morning sunlight") : ""}
+                  alt={artBackground ? "" : portraitArt || voicesArt ? (locale === "ru" ? "Женщина спокойно медитирует в лучах утреннего солнца" : "Woman resting peacefully in morning sunlight") : ""}
                   fill priority={index === 0 || voicesArt} unoptimized={portraitArt || voicesArt}
                   sizes="(max-width: 720px) 100vw, 42vw" />
               </div>
