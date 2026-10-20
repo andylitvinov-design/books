@@ -137,13 +137,13 @@ test('remaining free-entry targets still match actual homepage links and destina
 
 test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', () => {
   for (const required of [
-    "await perform('gate', () => gate);", 'await expect(next).toHaveCount(0)', 'directLink.evaluate(element => element.isConnected)',
+    "await perform('gate', () => gate);", 'await expect(next).toHaveCount(0)', 'frame.evaluate(element => element.isConnected)',
     'size.height >= 46 && size.font >= 14', 'const firstReview = await verifyHomeTestimonialPosters(page)',
-    "await expect(firstReview.locator('a.site-video-play')).toHaveAttribute", 'https://www.youtube.com/watch?v=Dk0LBmOivQo',
-    "await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(1)",
+    "await firstReview.locator('button.site-video-play').click()", 'youtube-nocookie\\.com\\/embed\\/Dk0LBmOivQo\\?',
+    "await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0)",
     'await page.goBack()', 'await expect(page).toHaveURL(origin + homePath(locale))',
     'assert.deepEqual(unexpectedApiRequests, []', "request.method() === 'GET'", 'APP_UNAVAILABLE',
-    'results.filter(result => result.firstLinkRetained).length, 8', 'results.filter(result => result.freeJourney).length, 24',
+    'results.filter(result => result.firstClickRetained).length, 8', 'results.filter(result => result.freeJourney).length, 24',
     'await exerciseFreeJourneys(page, engine, width)', 'assert.deepEqual(errors, [])',
   ]) assert.ok(verifier.includes(required), required);
   assert.doesNotMatch(verifier, /videoPosters\)\.toHaveCount\(6\)|test\.skip|test\.only|test\.todo/);
