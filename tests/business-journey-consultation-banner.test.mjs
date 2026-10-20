@@ -4,22 +4,23 @@ import test from 'node:test'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('Business keeps a concise benefits banner and direct same-page booking handoff', () => {
+test('Business has one clear enquiry path, prices and a slim outcomes strip', () => {
   const selector=read('components/topic-journey-selector.tsx')
   const css=read('components/topic-journey-selector.module.css')
   assert.match(selector,/data-business-consultation-banner/)
+  assert.match(selector,/className=\{styles\.businessValueStrip\}/)
   assert.match(selector,/hh-business-consultation-title/)
+  assert.match(selector,/businessCallout\.points\.map/)
+  assert.match(selector,/className=\{styles\.businessPriceLine\}/)
   assert.match(selector,/href="#business-direct-request"/)
-  assert.match(selector,/event="service_request_start"/)
-  assert.match(selector,/data-topic-action': 'business-consultation-banner'/)
-  assert.match(selector,/onClick=\{cancelStart\}/)
   assert.match(selector,/72 hours/)
   assert.match(selector,/14 days/)
   assert.match(selector,/€50/)
   assert.match(selector,/€100/)
-  assert.match(css,/\.businessPromo\{/)
-  assert.match(css,/\.businessPromoLink:focus-visible/)
-  assert.match(css,/\.root\[data-topic-journey="business"\] \.businessPromo/)
+  assert.match(css,/\.businessValueStrip\{/)
+  assert.match(css,/\.businessPriceLine\{/)
+  assert.doesNotMatch(selector,/businessPromoIcon|businessPromoSide|businessPromoLink/)
+  assert.doesNotMatch(selector,/'data-topic-action': 'business-consultation-banner'/)
 })
 
 test('Mobile business page shows a two-step first-screen finder and folds secondary free tests', () => {
@@ -28,6 +29,7 @@ test('Mobile business page shows a two-step first-screen finder and folds second
   const css=read('components/topic-journey-selector.module.css')
   const fcss=read('components/business-consultation-finder.module.css')
   assert.match(selector,/<BusinessConsultationFinder locale=\{language\}/)
+  assert.match(selector,/className=\{styles\.businessFinderSlot\}/)
   assert.match(selector,/businessSearchDisclosure/)
   assert.match(selector,/businessQuickPaths/)
   assert.match(selector,/const assessmentSections = <>/)
@@ -47,16 +49,18 @@ test('Mobile business page shows a two-step first-screen finder and folds second
   assert.match(finder,/href="#business-direct-request"/)
   assert.match(fcss,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   assert.match(css,/\.businessSelfChecksBody/)
-  assert.match(css,/#203450 0%, #283d5c 58%, #483a52 100%/)
+  assert.match(css,/linear-gradient\(127deg,#223b48/)
+  assert.match(css,/grid-template-areas:/)
   const heroStart=selector.indexOf('<section className={styles.hero}>')
   const finderAt=selector.indexOf('<BusinessConsultationFinder locale={language} />')
   const moreAt=selector.indexOf('<details className={styles.businessExploreMore}>')
   assert.ok(heroStart>=0 && finderAt>heroStart && moreAt>finderAt,
     'The wizard must appear in the hero before any secondary navigation')
   assert.equal(selector.split('<BusinessConsultationFinder').length - 1, 1)
-  assert.match(fcss,/\.choice\{min-height:51px\}/)
+  assert.match(fcss,/\.choice\{min-height:61px;/)
   assert.match(css,/\.businessExploreMore\{/)
-  assert.match(css,/\.businessHeroTopline\{display:none\}/)
+  assert.match(css,/\.businessHeroTopline\{display:flex;/)
+  assert.match(css,/\.businessDesktopNav\{display:none\}/)
 })
 
 test('Business landing shows only pre-existing, ID-matched authentic client video testimonials',()=>{
