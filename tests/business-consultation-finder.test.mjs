@@ -38,21 +38,38 @@ test('unsupported topics never silently route users to a paid offer', () => {
   for (const entry of invalid) assert.equal(suggestBusinessConsultation(entry), null)
 })
 
+test('two answers yield transparent offers without sensitive profiling', () => {
+  for (const [area, issues] of Object.entries(BUSINESS_FINDER_ISSUES)) {
+    for (const issue of issues) {
+      const selected = suggestBusinessConsultation({area, issue})
+      assert.ok(['express', 'full'].includes(selected), area + '/' + issue)
+    }
+  }
+  for (const issue of ['strategy', 'team', 'partnership', 'stuck']) {
+    const area = Object.keys(BUSINESS_FINDER_ISSUES).find(a => BUSINESS_FINDER_ISSUES[a].includes(issue))
+    assert.equal(suggestBusinessConsultation({area, issue}), 'full')
+  }
+  assert.equal(suggestBusinessConsultation({area:'money',issue:'income'}), 'express')
+  assert.equal(suggestBusinessConsultation({area:'money',issue:'income',outcome:'gentle'}), 'free')
+  assert.equal(suggestBusinessConsultation({area:'business',issue:'launch'}), null)
+})
+
 test('Business-only wizard is localised, progressive, accessible and reuses consent-gated enquiry', () => {
   const finder = read('components/business-consultation-finder.tsx')
   const finderCss = read('components/business-consultation-finder.module.css')
   const selector = read('components/topic-journey-selector.tsx')
   const route = read('app/[locale]/explore/[theme]/page.tsx')
   const enquiry = read('components/business-website-enquiry.tsx')
-  assert.match(selector,/journey\.id === 'business' && <BusinessConsultationFinder locale=\{language\}/)
+  assert.match(selector,/<BusinessConsultationFinder locale=\{language\}/)
   assert.match(route,/theme === 'business' && <div/)
   assert.match(route,/<BusinessWebsiteEnquiry locale=/)
   assert.match(finder,/data-business-consultation-finder/)
   assert.match(finder,/data-business-finder-step="area"/)
   assert.match(finder,/data-business-finder-step="issue"/)
-  assert.match(finder,/data-business-finder-step="outcome"/)
+  assert.doesNotMatch(finder,/data-business-finder-step="outcome"/)
   assert.match(finder,/aria-pressed=\{area===key\}/)
   assert.match(finder,/aria-pressed=\{issue===key\}/)
+  assert.match(finder,/aria-valuemax=\{2\}/)
   assert.match(finder,/aria-valuenow=\{answered\}/)
   assert.match(finder,/href="#business-direct-request"/)
   assert.match(finder,/data-business-finder-context/)
