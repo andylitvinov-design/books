@@ -537,7 +537,11 @@ try {
         }
 
         if (kind === "tests") {
-          await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());
+          // The shared header has a hidden menu link to the same explorer.
+          // Require the actual primary CTA, not the first matching navigation link.
+          const startTests = hero.locator('a[href="/' + locale + '/client/tests"]');
+          await expect(startTests).toHaveCount(1);
+          await visible(startTests);
           assert.equal(await main.locator('[data-free-resource-enquiry]').count(), 0,
             "Tests begin in the existing private test explorer, not a fake contact form");
         } else {

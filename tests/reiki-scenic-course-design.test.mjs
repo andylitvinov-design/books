@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
   energyworkSequence, ENERGYWORK_LESSON_STARTS, ENERGYWORK_VERSION,
-  ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
+  ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS, ENERGYWORK_QUESTIONS,
 } from '../data/academy/energywork-ai-schema.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -63,9 +63,17 @@ test('Welcome keeps the free course scenic illustration and three benefits while
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
 })
 
-test('Course has teacher initiation readiness checklist with five private reports + twenty-three answers', () => {
-  assert.equal(ENERGYWORK_REPORT_IDS.length,5)
-  assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,23)
+test('Course readiness keeps five private reports and the exact twenty-two active p10 answer keys', () => {
+  assert.deepEqual(ENERGYWORK_REPORT_IDS,['flight-04','tan-04','kun-04','ygg-04','end-01'])
+  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,[
+    'flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02',
+    'kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05',
+    'kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09',
+    'ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04',
+    'ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07',
+  ])
+  assert.ok(!ENERGYWORK_LESSON_ANSWER_IDS.includes('init-01'))
+  assert.equal(ENERGYWORK_QUESTIONS['init-01'],'text','historic encrypted answer key remains readable')
   assert.match(learner, /const initiationReady = readyCount === readyTargetCount/)
   assert.match(learner, /data-initiation-readiness/)
   assert.match(css, /\.page\[data-course-theme\] \.reviewChecklist/)

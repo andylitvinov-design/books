@@ -168,11 +168,20 @@ test('Approved private audio releases retain teacher titles without affecting st
   assert.doesNotMatch(publicRoute,/reiki-audio-metadata|storage\.list|private.*original/)
 })
 
-test('Current canonical Reiki course uses the complete 70-slide sequence', async () => {
-  const {energyworkSequence}=await import('../data/academy/energywork-ai-schema.js')
+test('Current canonical Reiki p10 course keeps 63 unique screens and the nine approved Lesson 5 screens', async () => {
+  const {ENERGYWORK_VERSION,energyworkSequence,energyworkLessonRanges}=await import('../data/academy/energywork-ai-schema.js')
   const ids=energyworkSequence()
-  assert.equal(ids.length,70)
-  assert.equal(new Set(ids).size,70)
+  const ranges=energyworkLessonRanges(ids)
+  assert.equal(ENERGYWORK_VERSION,'2026-10-20.p10')
+  assert.equal(ids.length,63)
+  assert.equal(new Set(ids).size,63)
+  assert.deepEqual(ranges.map(range => range.count),[8,14,16,14,9])
+  assert.deepEqual(ids.slice(ranges[4].start),[
+    'paths-01','intention-01','intention-03','paths-03','init-02',
+    'end-01','paths-04','intention-04','end-02',
+  ])
+  for(const retired of ['intention-02','boundaries-01','boundaries-02','boundaries-04','paths-02','init-01','boundaries-03'])
+    assert.ok(!ids.includes(retired),retired+' must remain outside active p10 navigation')
   for(const id of ['flight-01','tan-01','kun-01','ygg-01','paths-01'])
     assert.ok(ids.includes(id))
 })

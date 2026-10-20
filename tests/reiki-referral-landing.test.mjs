@@ -83,12 +83,35 @@ test("short referral flow is discoverable from both legacy Tantra pages without 
   assert.match(routes, /Free Reiki course and introductory initiation — Holistic House/);
 });
 
-test("after saved course completion the free initiation is named, not confused with a paid session", () => {
+test("completed course keeps the server receipt and explicit private application instead of duplicate public CTAs", () => {
   const course = read("components/energywork-ai-learner.tsx");
   assert.match(course, /Request free Level 1 introduction in/);
   assert.match(course, /Запросить бесплатную вводную инициацию I ступени/);
-  assert.match(course, /choice\.id === "tantra" \? "#apply-free"/);
+  const finish = course.split('{slide.kind === "finish" ? (')[1]?.split('<p className={styles.reviewPrivacy}>')[0];
+  assert.ok(finish, "inspect the actual completed-course UI");
+  assert.doesNotMatch(finish, /styles\.initiationLinks|energyworkPathChoices\.map|choice\.freePath|#apply-free/);
+  assert.match(finish, /\{applicationLead \? \(\s*<div className=\{styles\.finalReceipt\} data-reiki-application-accepted role="status">/);
+  assert.match(finish, /data-reiki-application-pending/);
+  assert.match(finish, /data-reiki-final-share-consent/);
+  assert.match(finish, /disabled=\{busy \|\| !applicationConsented\} onClick=\{applyForInitiation\}/);
+  const submit = course.split('async function applyForInitiation() {')[1]?.split('async function copyNotes()')[0];
+  assert.ok(submit, "inspect the actual private application handler");
+  assert.match(submit, /if \(busy \|\| !applicationConsented \|\| !savedInitiationReady \|\| !sharingWithTeacher \|\|\s*applicationLead \|\| !reikiInitiationRequestValid\(answers\["end-01"\]\)\) return;/);
+  assert.match(submit, /const value = await appFetch\("academy-energywork", \{\s*action: "apply", version: ENERGYWORK_COURSE_VERSION,\s*expectedRevision: revisionRef\.current, confirmed: true,/);
+  assert.match(submit, /hydrate\(value\)/);
   assert.match(course, /savedInitiationReady/);
   assert.match(course, /!busy && !saveError && dirtyRef\.current\.size === 0/);
   assert.match(course, /t\.reviewPrivate/);
+});
+
+test("public Tantra free anchor still reaches its distinct free chooser, not a paid offer", () => {
+  const tantra = read("components/tantra-free-initiation.tsx");
+  const form = read("components/tantra-initiation-form.tsx");
+  const chooser = read("components/contact-channel-chooser.tsx");
+  assert.match(routes, /key === "reiki\/tantra-reiki\/free-initiation"\) return <TantraFreeInitiation locale=\{locale\} \/>/);
+  assert.match(tantra, /<TantraInitiationForm locale=\{locale\} \/>/);
+  assert.match(form, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{tantraInitiationWhatsAppUrl\(locale, "free"\)\} label=\{t\.free\} className=\{styles\.whatsappPrimary\} id="apply-free" \/>/);
+  assert.match(form, /tantraInitiationWhatsAppUrl\(locale, "personal"\)[^\n]+id="apply-personal"/);
+  assert.match(form, /free: "I would like to request the free introductory Level 1 Tantra Reiki initiation\./);
+  assert.match(chooser, /<button id=\{id\} type="button"/);
 });

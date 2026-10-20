@@ -4,10 +4,103 @@ import { createHash } from 'node:crypto'
 import { readFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { runInNewContext } from 'node:vm'
 import { buildOporaBrowserFixture, oporaFixturePath, oporaFixtureDocument,
-  oporaFixtureBundlePath, requireHostedOporaBrowser, assertFixtureCompilation } from '../scripts/opora-as56-browser-fixture.mjs'
+  oporaFixtureOrigin, oporaFixtureBundlePath, requireHostedOporaBrowser, assertFixtureCompilation } from '../scripts/opora-as56-browser-fixture.mjs'
 
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
+const expectedAssetPaths = [
+  'course-start-heron.webp', 'course-focus-mountain-boy.webp', 'reiki-practitioner-sunrise.webp',
+  'report-lighthouse-coast.webp', 'hero-olive-incense.webp', 'reiki-approved-sunrise-v3.webp', 'gentle-owl.svg',
+].map(name => '/images/holistic-house/' + name)
+
+// Exercise the actual runner's asset setup and interception callback, not a
+// second routing implementation. Only local readFile and route doubles run;
+// importing the browser runner would launch Playwright and compile the fixture.
+async function interceptedAssetFixture() {
+  const browser = await read('scripts/verify-opora-as56-browser.mjs')
+  const assetStart = browser.indexOf('const assets = new Map(')
+  const assetEnd = browser.indexOf('\nconst browser =', assetStart)
+  const routeStart = browser.indexOf("await context.route('**/*', route => {")
+  const routeEnd = browser.indexOf('\n    const button =', routeStart)
+  assert.ok(assetStart >= 0 && assetEnd > assetStart && routeStart >= 0 && routeEnd > routeStart,
+    'Runner asset setup and strict interception callback must remain identifiable')
+  const moduleUrl = new URL('../scripts/verify-opora-as56-browser.mjs', import.meta.url).href
+  const readUrls = [], unexpectedRequests = []
+  const bodies = new Map(expectedAssetPaths.map(path => [path, Buffer.from('synthetic asset: ' + path)]))
+  let handler
+  const scope = {
+    URL, moduleUrl, origin: oporaFixtureOrigin, locale: 'en', oporaFixturePath, oporaFixtureBundlePath,
+    html: '<!doctype html><title>Synthetic fixture</title>', fixture: { bundle: Buffer.from('synthetic bundle') },
+    unexpectedRequests,
+    readFile: async url => {
+      readUrls.push(url.href)
+      const path = expectedAssetPaths.find(path => new URL('../public' + path, moduleUrl).href === url.href)
+      assert.ok(path, 'Only an exact named local fixture asset may be read: ' + url.href)
+      return bodies.get(path)
+    },
+    context: { route(pattern, callback) { assert.equal(pattern, '**/*'); handler = callback } },
+  }
+  const setup = browser.slice(assetStart, assetEnd).replaceAll('import.meta.url', 'moduleUrl')
+  await runInNewContext('(async () => {\n' + setup + '\n' + browser.slice(routeStart, routeEnd) + '\n})()', scope,
+    { timeout: 1000 })
+  assert.equal(typeof handler, 'function')
+  return { handler, readUrls, bodies, unexpectedRequests, scope, moduleUrl }
+}
+
+test('OPORA fixture asset map covers exact production scene paths without broadening its allowlist', async () => {
+  const { readUrls, moduleUrl } = await interceptedAssetFixture()
+  assert.deepEqual(readUrls.sort(), expectedAssetPaths.map(path => new URL('../public' + path, moduleUrl).href).sort())
+  const css = await read('components/app/opora-experience-player.module.css')
+  const scenePaths = [...css.matchAll(/url\(['"]?(\/images\/holistic-house\/[^)'"\s]+)['"]?\)/g)].map(match => match[1])
+  for (const path of ['/images/holistic-house/hero-olive-incense.webp', '/images/holistic-house/reiki-approved-sunrise-v3.webp']) {
+    assert.ok(scenePaths.includes(path), 'Added fixture asset must remain referenced by actual player CSS: ' + path)
+  }
+  for (const path of scenePaths) assert.ok(expectedAssetPaths.includes(path), 'Unreviewed player scene asset: ' + path)
+})
+
+test('OPORA fixture route fulfills only exact local GET fixtures and records every rejected request', async () => {
+  const { handler, bodies, unexpectedRequests, scope } = await interceptedAssetFixture()
+  const request = async (url, method = 'GET') => {
+    const calls = []
+    await handler({ request: () => ({ url: () => url, method: () => method }),
+      fulfill: result => calls.push({ kind: 'fulfill', ...result }),
+      abort: reason => calls.push({ kind: 'abort', reason }),
+      continue: () => assert.fail('Never continue a fixture request'),
+      fetch: () => assert.fail('Never fetch a fixture request or follow a redirect'),
+    })
+    assert.equal(calls.length, 1, 'Each intercepted request must have one terminal action')
+    return calls[0]
+  }
+  for (const path of expectedAssetPaths) {
+    const result = await request(oporaFixtureOrigin + path)
+    assert.deepEqual(result, { kind: 'fulfill', status: 200,
+      contentType: path.endsWith('.svg') ? 'image/svg+xml' : 'image/webp', body: bodies.get(path) })
+  }
+  for (const [path, contentType, body] of [[oporaFixturePath('en'), 'text/html', scope.html],
+    [oporaFixtureBundlePath, 'text/javascript', scope.fixture.bundle]]) {
+    assert.deepEqual(await request(oporaFixtureOrigin + path), { kind: 'fulfill', status: 200, contentType, body })
+  }
+  assert.deepEqual(unexpectedRequests, [])
+  const asset = '/images/holistic-house/hero-olive-incense.webp'
+  const rejected = [
+    [oporaFixtureOrigin + asset, 'POST'], [oporaFixtureOrigin + asset, 'HEAD'],
+    [oporaFixtureOrigin + asset + '?token=synthetic-private-marker'],
+    ['https://example.invalid' + asset], ['https://127.0.0.1:3100' + asset],
+    ['http://localhost:3100' + asset], ['http://127.0.0.1:3101' + asset],
+    [oporaFixtureOrigin + '/images/holistic-house/unreviewed.webp'],
+    [oporaFixtureOrigin + '/images/holistic-house/reiki-approved-sunrise-v4.webp'],
+    [oporaFixtureOrigin + asset + '/extra'], [oporaFixtureOrigin + '/api/session'],
+    [oporaFixtureOrigin + '/redirect?to=https://example.invalid'],
+  ]
+  for (const [url, method = 'GET'] of rejected) {
+    assert.deepEqual(await request(url, method), { kind: 'abort', reason: 'blockedbyclient' })
+    assert.deepEqual({ ...unexpectedRequests.at(-1) }, { method, origin: new URL(url).origin, path: new URL(url).pathname })
+  }
+  assert.equal(unexpectedRequests.length, rejected.length)
+  assert.ok(!JSON.stringify(unexpectedRequests).includes('synthetic-private-marker'), 'Do not record query data')
+})
+
 test('OPORA browser fixture accepts only supported synthetic locales and no saved data', () => {
   for (const locale of ['ru', 'en', 'es']) assert.equal(oporaFixturePath(locale), '/__hh-test__/opora-as56/' + locale)
   for (const locale of ['fr', '', '../en', '<script>']) assert.throws(() => oporaFixturePath(locale))

@@ -80,3 +80,94 @@ test('CRM single-entry production checks do not resurrect duplicate optional fie
     assert.ok(helper.includes(field), field);
   }
 });
+
+// Execute the production branch against link fixtures extracted from the actual
+// landing JSX. This is a source/selector contract, not a browser or CSS test.
+const landingSource = read('components/free-entry-landing.tsx');
+const testsBranch = source.match(/if \(kind === "tests"\) \{([\s\S]*?)\n        \} else \{/);
+const heroBinding = source.match(/const hero = main\.locator\(([^\n]+)\);/);
+assert.ok(testsBranch && heroBinding, 'Use the actual tests branch and hero binding');
+
+function testsLandingFixture(locale, { landing = landingSource, hiddenHero = false, duplicateHero = false,
+  visibleNavigation = false, fakeForm = false } = {}) {
+  const heroMarkup = landing.match(/<section\b[^>]*aria-labelledby="free-entry-title"[^>]*>[\s\S]*?<\/section>/)?.[0];
+  const captureMarkup = landing.match(/<section\b[^>]*id=\{captureId\}[^>]*>[\s\S]*?<\/section>/)?.[0];
+  assert.ok(heroMarkup && captureMarkup, 'Actual hero and capture sections must exist');
+  const hrefExpression = landing.match(/const testsHref = ([^\n]+);/)?.[1];
+  assert.ok(hrefExpression, 'Actual localized explorer expression must exist');
+  const href = runInNewContext(hrefExpression, { locale });
+  const linksIn = (markup, visible) => [...markup.matchAll(/<Link\b[^>]*href=\{testsHref\}[^>]*>/g)]
+    .map(() => ({ tag: 'a', attributes: { href }, visible }));
+  const heroLinks = linksIn(heroMarkup, !hiddenHero);
+  if (duplicateHero) heroLinks.push(...heroLinks.map(link => ({ ...link })));
+  // Same-target navigation comes before the hero, as PublicSiteHeader does in
+  // FreeEntryLanding. It remains a decoy even when its menu is opened.
+  const navigation = { tag: 'a', attributes: { href, 'data-nav-item': 'tests' }, visible: visibleNavigation };
+  const nodes = [
+    { tag: 'nav', children: [navigation] },
+    { tag: 'section', attributes: { 'aria-labelledby': 'free-entry-title' }, children: heroLinks },
+    { tag: 'section', attributes: { id: 'start-free' }, children: linksIn(captureMarkup, true) },
+    ...(fakeForm ? [{ tag: 'form', attributes: { 'data-free-resource-enquiry': 'tests' } }] : []),
+  ];
+  const descendants = entries => entries.flatMap(node => [node, ...descendants(node.children ?? [])]);
+  function locator(entries) {
+    return {
+      entries,
+      locator(selector) {
+        const match = selector.match(/^(a|section)?\[([\w-]+)(?:="([^"]*)")?\]$/);
+        assert.ok(match, 'Only the source contract selectors are supported: ' + selector);
+        return locator(descendants(entries).filter(node => (!match[1] || node.tag === match[1])
+          && Object.hasOwn(node.attributes ?? {}, match[2])
+          && (match[3] === undefined || node.attributes[match[2]] === match[3])));
+      },
+      first() { return locator(entries.slice(0, 1)); },
+      async count() { return entries.length; },
+      async waitFor({ state, timeout }) {
+        assert.equal(state, 'visible');
+        assert.equal(timeout, 30000);
+        assert.equal(entries.length, 1, 'CTA must resolve uniquely');
+        assert.equal(entries[0].visible, true, 'Intended CTA must be visible');
+      },
+    };
+  }
+  return locator(nodes);
+}
+
+async function checkTestsStart(locale, options, branch = testsBranch[1]) {
+  const main = testsLandingFixture(locale, options);
+  const hero = main.locator(runInNewContext(heroBinding[1]));
+  const visible = locator => locator.waitFor({ state: 'visible', timeout: 30000 });
+  const expect = locator => ({ async toHaveCount(count) {
+    assert.equal(await locator.count(), count, 'Exactly one intended hero CTA');
+  } });
+  return runInNewContext('(async () => {' + branch + '\n})()', { locale, main, hero, visible, expect, assert });
+}
+
+test('public tests route binds the real hero CTA instead of the shared hidden navigation', async () => {
+  assert.match(read('app/[locale]/tests/page.tsx'), /<FreeEntryLanding locale=\{locale\} kind="tests" \/>/);
+  assert.ok(landingSource.indexOf('<PublicSiteHeader ') < landingSource.indexOf('aria-labelledby="free-entry-title"'));
+  assert.match(read('components/public-site-header.tsx'), /<SiteNavigation locale=\{locale\} \/>/);
+  assert.match(read('components/site-navigation.tsx'), /<details className="site-main-menu" ref=\{siteMenuRef\}>/);
+  assert.match(testsBranch[1], /hero\.locator/);
+  assert.doesNotMatch(testsBranch[1], /:visible|\.first\(/);
+  for (const locale of ['en', 'ru', 'es']) {
+    await checkTestsStart(locale);
+    await checkTestsStart(locale, { visibleNavigation: true });
+    await assert.rejects(checkTestsStart(locale, {},
+      `await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());`), /Intended CTA must be visible/);
+  }
+});
+
+for (const locale of ['en', 'ru', 'es']) {
+  test(locale + ' rejects absent, hidden, duplicate and wrong-target hero CTAs despite same-target alternatives', async () => {
+    const heroLink = /(<section\b[^>]*aria-labelledby="free-entry-title"[^>]*>[\s\S]*?)<Link\b[^>]*href=\{testsHref\}[^>]*>[\s\S]*?<\/Link>/;
+    assert.match(landingSource, heroLink, 'Mutate the actual intended Link, not a test-side copy');
+    const missing = landingSource.replace(heroLink, '$1');
+    const wrongTarget = landingSource.replace(heroLink, '$1<Link href="/wrong-target">Wrong target</Link>');
+    await assert.rejects(checkTestsStart(locale, { landing: missing, visibleNavigation: true }), /Exactly one intended hero CTA/);
+    await assert.rejects(checkTestsStart(locale, { landing: wrongTarget, visibleNavigation: true }), /Exactly one intended hero CTA/);
+    await assert.rejects(checkTestsStart(locale, { hiddenHero: true, visibleNavigation: true }), /Intended CTA must be visible/);
+    await assert.rejects(checkTestsStart(locale, { duplicateHero: true }), /Exactly one intended hero CTA/);
+    await assert.rejects(checkTestsStart(locale, { fakeForm: true }), /not a fake contact form/);
+  });
+}
