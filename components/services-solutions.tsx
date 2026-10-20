@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
@@ -98,7 +99,9 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Pu
           <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : offer.id === "business" ? "business" : undefined} data-core-service-id={offer.id}>
             {!isHome && offer.id === "alchemy" ? <span id="archetypal" className={styles.anchor}/> : null}
             <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true" prefetch={false}>
-              <Image src={isHome ? homepageMedia[offer.id] : offer.image} alt="" fill unoptimized={(isHome ? homepageMedia[offer.id] : offer.image).endsWith(".webp") || (isHome ? homepageMedia[offer.id] : offer.image) === "/academy/reiki-yggdrasil/source/eastern-tradition.png"} sizes="(max-width: 760px) 45vw, (max-width: 1080px) 30vw, 280px" loading={index === 0 ? "eager" : "lazy"} />
+              {(isHome ? homepageMedia[offer.id] : offer.image) === "/images/holistic-house/andy-about.png"
+                ? <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 760px) 45vw, (max-width: 1080px) 30vw, 280px" loading={index === 0 ? "eager" : "lazy"} />
+                : <Image src={isHome ? homepageMedia[offer.id] : offer.image} alt="" fill unoptimized={(isHome ? homepageMedia[offer.id] : offer.image).endsWith(".webp") || (isHome ? homepageMedia[offer.id] : offer.image) === "/academy/reiki-yggdrasil/source/eastern-tradition.png"} sizes="(max-width: 760px) 45vw, (max-width: 1080px) 30vw, 280px" loading={index === 0 ? "eager" : "lazy"} />}
             </Link>
             <div className={styles.cardContent}>
               <span className={styles.cardLabel}>{offer.label}</span>
