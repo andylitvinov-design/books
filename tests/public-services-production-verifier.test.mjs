@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
+import { isolatedServiceVideoFixture } from '../scripts/helpers/public-service-methods-verifier.mjs';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const source = read('scripts/verify-public-services-production.mjs');
 const guard = source.slice(source.indexOf('const origin ='), source.indexOf('const require ='));
-function accept(env) { runInNewContext(guard, { process: { env } }); }
+function accept(env) { runInNewContext(guard, { process: { env: { CI: 'true', ...env } }, isolatedServiceVideoFixture }); }
 
 test('public-service origin and explicit fixture opt-in fail closed before Playwright or browser launch', () => {
   assert.ok(source.indexOf('const origin =') < source.indexOf('const require ='));

@@ -4,6 +4,7 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 import * as navigationModel from '../lib/site-navigation-model.js';
+import * as serviceCart from '../lib/commerce/cart.js';
 import * as uiLocale from '../lib/ui-locale.js';
 import { isSupportedLocale, getHomeopathyLocaleParams } from '../data/remedies.js';
 
@@ -29,6 +30,13 @@ function load(path, imports, transform = value => value) {
   });
   return exports;
 }
+// Use the real pure cart/catalog module, but never execute client effects or storage.
+const { CartNavLink } = load('components/commerce/cart-nav-link.tsx', {
+  ...common, '@/lib/commerce/cart': serviceCart,
+  './cart-nav-link.module.css': { default: new Proxy({}, { get: (_target, key) => String(key) }) },
+});
+common['@/components/commerce/cart-nav-link'] = { CartNavLink };
+common['./compact-navigation-icons'] = load('components/compact-navigation-icons.ts', common);
 const discoveryTabs=load('components/discovery-section-tabs.tsx',{...common,'./discovery-section-tabs.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}});
 common['@/components/discovery-section-tabs']=discoveryTabs;
 const publicLocales = load('lib/public-locales.ts', {});
@@ -242,4 +250,30 @@ test('actual sitemap assertions require the canonical origin and exact course UR
     correct.map(href => href.endsWith('/academy/free-ai-courses') ? href + '/unrelated' : href),
     [...correct, 'https://holistichouse.vercel.app/es/courses'],
   ]) assert.throws(() => check(sitemap(bad), routes, assert, URL));
+});
+
+for (const [locale, label] of [['en', 'Cart'], ['ru', 'Корзина'], ['es', 'Carrito']]) {
+  test(locale + ' real cart navigation renders localized empty state without client effects', () => {
+    const cart = CartNavLink({ locale });
+    assert.equal(cart.type, 'a');
+    assert.equal(cart.props.href, '/' + locale + '/cart');
+    assert.equal(cart.props['aria-label'], label + ' (0)');
+    assert.equal(cart.props['data-nav-item'], 'cart');
+    assert.equal(cart.props['data-cart-has-items'], 'false');
+    assert.equal(text(cart), label);
+  });
+}
+test('Spanish actual header includes one direct cart and its closed-menu counterpart', () => {
+  const header = SiteNavigation({ locale: 'es' });
+  const allCarts = query(header, 'a[data-nav-item="cart"]');
+  assert.equal(allCarts.length, 2);
+  assert.ok(allCarts.every(node => node.props.href === '/es/cart' && text(node) === 'Carrito'));
+  const cart = query(header, '.site-navigation > a[data-nav-item="cart"]');
+  assert.equal(cart.length, 1);
+  assert.equal(cart[0].props.href, '/es/cart');
+  assert.equal(cart[0].props['aria-label'], 'Carrito (0)');
+});
+test('catalog component loader still rejects an unknown import', () => {
+  assert.throws(() => load('components/commerce/cart-nav-link.tsx', common,
+    value => "import './unknown-synthetic-import';\n" + value), /unknown-synthetic-import/);
 });

@@ -1,6 +1,6 @@
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
 import { assertSingleEntryEnquiryUi, exercisePublicEnquiryUi } from './helpers/public-enquiry-ui-verifier.mjs';
-import { assertPublicServiceMethods } from './helpers/public-service-methods-verifier.mjs';
+import { assertPublicServiceMethods, isolatedServiceVideoFixture } from './helpers/public-service-methods-verifier.mjs';
 import { installPublicUiNetworkGuard } from './helpers/public-ui-network-guard.mjs';
 import { assertDaoLandingReady } from './helpers/dao-request-ui-verifier.mjs';
 import { assertFreeSituationLandingReady } from './helpers/free-situation-ui-verifier.mjs';
@@ -18,6 +18,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) {
 if (process.env.HH_PUBLIC_QA_ENQUIRY_FIXTURE !== "1") {
   throw new Error("Set HH_PUBLIC_QA_ENQUIRY_FIXTURE=1 for isolated UI-only enquiry fixtures; real saves are not permitted");
 }
+const expectedServiceVideos = isolatedServiceVideoFixture({ origin, environment: process.env });
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
@@ -176,7 +177,7 @@ try {
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
       }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
-      await assertPublicServiceMethods(page, expect, locale);
+      await assertPublicServiceMethods(page, expect, locale, expectedServiceVideos);
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // Canonical header: Library shortcut; Cabinet keeps authenticated app access in the menu.
@@ -297,7 +298,7 @@ try {
     const page = await createPage(390);
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
     await visible(page.locator('[data-services-studio-free]'));
-    await assertPublicServiceMethods(page, expect, "es");
+    await assertPublicServiceMethods(page, expect, "es", expectedServiceVideos);
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
     assert.equal(await page.locator("#find-your-service").count(), 0);

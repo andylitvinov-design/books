@@ -1989,10 +1989,7 @@ test('private session share grants enforce per-consultation ownership under real
   const {readFile}=await import('node:fs/promises')
   const db=await adminClient()
   try{
-    await db.query('create schema if not exists storage')
-    await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
-    const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
-    await db.query(sql)
+    // setup() already loaded the exact session schema before housekeeping.
     // The private PDF extension is additive and does not grant browser DB access.
     const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
     await db.query(pdfExtension)

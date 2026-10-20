@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { exercisePublicEnquiryUi } from "./helpers/public-enquiry-ui-verifier.mjs";
 import { installPublicUiNetworkGuard } from "./helpers/public-ui-network-guard.mjs";
 import { collectContactChannelGeometry } from "./helpers/contact-channel-geometry.mjs";
+import { positionContactChannelForHitTest } from "./helpers/contact-channel-positioning.mjs";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -66,7 +67,7 @@ async function verifyChooser(page, chooser, locale, kind, name, screenshot, requ
   assert.ok(waDraft.includes("Holistic House") && /Service|Услуга|Servicio/.test(waDraft));
   const viewportWidth = page.viewportSize().width;
   for (const [channel, link] of [["whatsapp", wa], ["telegram", tg]]) {
-    await link.scrollIntoViewIfNeeded();
+    await positionContactChannelForHitTest(link);
     const b = await link.boundingBox();
     assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target at " + name + ": " + JSON.stringify(b));
     assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");

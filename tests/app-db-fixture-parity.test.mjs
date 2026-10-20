@@ -14,12 +14,23 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 function guard(path, name, globals = {}) {
   const source = read(path)
   const ast = parse(source, { ecmaVersion: 'latest', sourceType: 'module' })
-  const node = ast.body.find(item => item.type === 'FunctionDeclaration' && item.id.name === name)
-  assert.ok(node, 'Production guard must remain independently identifiable: ' + name)
-  return vm.runInNewContext('(' + source.slice(node.start, node.end) + ')', globals)
+  const node = ast.body.map(item => item.declaration || item)
+    .find(item => item.type === 'FunctionDeclaration' && item.id.name === name)
+  assert.ok(node, 'Source function must remain independently identifiable: ' + name)
+  // Preserve statements while relocating import.meta.url into this source-only VM.
+  const body = source.slice(node.start, node.end)
+    .replaceAll('import.meta.url', JSON.stringify(new URL('../' + path, import.meta.url).href))
+  return vm.runInNewContext('(' + body + ')', { URL, ...globals })
 }
 
-test('isolated fixture rejects remote, ambiguous and non-test targets before connecting', () => {
+test('isolated fixture rejects remote, ambiguous and non-test targets before connecting', async () => {
+  let clients = 0
+  class NoDatabaseClient {
+    constructor() { clients++; throw new Error('A rejected target must not create a database client') }
+  }
+  const adminClient = guard('tests/helpers/app-db-setup.mjs', 'adminClient',
+    { Client: NoDatabaseClient, assertIsolated })
+  const setup = guard('tests/helpers/app-db-setup.mjs', 'setup', { adminClient })
   const keys = ['CI', 'HH_APP_TEST_RUNTIME', 'HH_TEST_ADMIN_DATABASE_URL', 'VERCEL']
   const before = Object.fromEntries(keys.map(key => [key, process.env[key]]))
   const isolated = () => {
@@ -35,6 +46,7 @@ test('isolated fixture rejects remote, ambiguous and non-test targets before con
       ['CI', 'false'], ['HH_APP_TEST_RUNTIME', 'production'], ['VERCEL', '1'],
       ['HH_TEST_ADMIN_DATABASE_URL', 'postgres://remote.example.invalid/hh_app_test'],
       ['HH_TEST_ADMIN_DATABASE_URL', 'postgres://localhost/production'],
+      ['HH_TEST_ADMIN_DATABASE_URL', 'postgres://127.0.0.1/postgres'],
       ['HH_TEST_ADMIN_DATABASE_URL', 'postgres://localhost/hh_app_test?host=remote.example.invalid'],
       ['HH_TEST_ADMIN_DATABASE_URL', 'postgres://localhost/hh_app_test#fragment'],
       ['HH_TEST_ADMIN_DATABASE_URL', 'http://localhost/hh_app_test'],
@@ -42,6 +54,8 @@ test('isolated fixture rejects remote, ambiguous and non-test targets before con
       isolated()
       process.env[key] = value
       assert.throws(assertIsolated, /Isolated loopback test database required/)
+      await assert.rejects(setup, /Isolated loopback test database required/)
+      assert.equal(clients, 0, 'No connection or SQL is possible before the isolation guard')
     }
   } finally {
     for (const key of keys) {
@@ -49,6 +63,73 @@ test('isolated fixture rejects remote, ambiguous and non-test targets before con
       else process.env[key] = before[key]
     }
   }
+})
+
+test('fixture refuses a nonempty database before loading schema or creating roles', async () => {
+  const queries = []
+  let ended = false
+  const setup = guard('tests/helpers/app-db-setup.mjs', 'setup', {
+    adminClient: async () => ({
+      query: async sql => { queries.push(sql); return { rows: [{ present: 'app.accounts' }] } },
+      end: async () => { ended = true },
+    }),
+  })
+  await assert.rejects(setup, /Refusing to initialize nonempty test DB/)
+  assert.deepEqual(queries, ["select to_regclass('app.accounts') as present"])
+  assert.equal(ended, true)
+})
+
+test('fixture initializes exact canonical session and engagement SQL before housekeeping', async () => {
+  const sessionPath = 'sql/client-delivery-sessions-20261015.sql'
+  const engagementPath = 'supabase/migrations/20261020192118_hh_report_engagement_opt_in_20261020.sql'
+  const sessionSql = read(sessionPath), engagementSql = read(engagementPath)
+  const queries = [], reads = []
+  let ended = false
+  const noSeed = async () => {}
+  const setup = guard('tests/helpers/app-db-setup.mjs', 'setup', {
+    adminClient: async () => ({
+      query: async sql => { queries.push(sql); return { rows: [{ present: null }] } },
+      end: async () => { ended = true },
+    }),
+    readFile: async (url, encoding) => {
+      assert.equal(encoding, 'utf8')
+      const path = [sessionPath, engagementPath].find(path => url.pathname.endsWith('/' + path))
+      reads.push(path)
+      return readFileSync(url, encoding)
+    },
+    seedApp: noSeed, seedEightIpipTestVersions: noSeed, seedTraumaTestVersions: noSeed,
+    seedHhSplitTestVersions: noSeed, seedBachV2TestVersions: noSeed,
+    seedProfessionalAdditionTestVersions: noSeed, A: 'synthetic-a', B: 'synthetic-b',
+    SA: 'synthetic-session-a', SB: 'synthetic-session-b',
+  })
+  await setup()
+  assert.equal(ended, true)
+  assert.deepEqual(reads.filter(Boolean), [sessionPath, engagementPath])
+  for (const sql of [sessionSql, engagementSql]) assert.equal(queries.filter(query => query === sql).length, 1)
+  const storage = queries.indexOf('create schema if not exists storage')
+  const sessions = queries.indexOf(sessionSql), engagement = queries.indexOf(engagementSql)
+  const actors = queries.findIndex(sql => sql.startsWith('insert into auth.users'))
+  assert.ok(storage > 0 && storage < sessions && sessions < engagement && engagement < actors)
+  const serviceRole = queries.find(sql => sql.startsWith('create role service_role'))
+  assert.equal(serviceRole,
+    'create role service_role nologin noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls')
+  assert.ok(sessions < queries.indexOf(serviceRole) && queries.indexOf(serviceRole) < engagement)
+  assert.doesNotMatch(queries.join('\n'), /grant[^;]*\bto\s+service_role\b|grant\s+service_role\b/i)
+  assert.doesNotMatch(read('tests/app-database.integration.mjs'), /readFile\([^\n]*client-delivery-sessions-20261015\.sql/)
+  assert.match(read('tests/app-database.integration.mjs'), /before\(async \(\) => \{\s*await setup\(\)/)
+  assert.match(read('lib/app/maintenance.js'), /from app_private\.client_session_engagement_events/)
+  assert.match(read('lib/app/maintenance.js'), /from app_private\.client_session_viewer_sessions/)
+  for (const table of ['client_session_engagement_consents', 'client_session_engagement_events']) {
+    for (const mode of ['enable', 'force'])
+      assert.ok(engagementSql.includes('alter table app_private.' + table + ' ' + mode + ' row level security;'))
+    assert.ok(engagementSql.includes('revoke all on app_private.' + table + ' from public,anon,authenticated,service_role;'))
+    assert.ok(engagementSql.includes('grant select,insert,update,delete on app_private.' + table + ' to hh_app_backend;'))
+  }
+  assert.match(engagementSql, /viewer_id uuid primary key references app_private\.client_session_viewer_sessions\(id\) on delete cascade/)
+  assert.match(engagementSql, /grant_id uuid not null references app_private\.client_session_share_grants\(id\) on delete cascade/)
+  assert.match(engagementSql, /constraint hh_session_engagement_duration_check check/)
+  assert.match(engagementSql, /create unique index if not exists hh_session_engagement_one_minute/)
+  assert.doesNotMatch(engagementSql, /disable row level security|grant all/i)
 })
 
 test('fixture loads existing messaging dependencies with their owner/participant RLS intact', () => {
