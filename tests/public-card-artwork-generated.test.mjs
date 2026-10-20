@@ -9,7 +9,7 @@ const renderTargets = [
   ...Object.values(registry.images).map(x => [x, [[x.thumb, 256], [x.feature, 960]]]),
 ];
 
-test("prebuild generates all 87 accessible, decodable public WebP files with bounded dimensions", async () => {
+test("prebuild generates all 85 accessible, decodable public WebP files with bounded dimensions", async () => {
   const seen = new Set();
   for (const [original, variants] of renderTargets) {
     for (const [url, width] of variants) {
@@ -26,5 +26,5 @@ test("prebuild generates all 87 accessible, decodable public WebP files with bou
       assert.ok(meta.height > 0, url + " image decode failed");
     }
   }
-  assert.equal(seen.size, 87);
+  assert.equal(seen.size, 85);
 });

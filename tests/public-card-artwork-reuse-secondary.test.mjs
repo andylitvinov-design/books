@@ -55,7 +55,6 @@ test("source-backed registered cards do not open the optimizer, original reader 
 test("Library and Alchemy services reuse source-pinned 256/960px artwork without paid variants", () => {
   const paths = [
     "/images/holistic-house/books-library.webp",
-    "/images/holistic-house/distance-homeopathy.webp",
     "/images/holistic-house/hero-olive-incense.webp",
     "/media/remedies/arnica/message168-1.jpg",
   ];
@@ -64,6 +63,7 @@ test("Library and Alchemy services reuse source-pinned 256/960px artwork without
     assert.match(item?.thumb ?? "", /^\/images\/holistic-house\/static-card-media\/[a-f0-9]{16}-w256\.webp$/);
     assert.match(item?.feature ?? "", /^\/images\/holistic-house\/static-card-media\/[a-f0-9]{16}-w960\.webp$/);
   }
+  assert.equal(urls.images["/images/holistic-house/distance-homeopathy.webp"], undefined, "Corrupted WebP must never enter the build image registry");
   const catalog = read("components/catalog-showcase.tsx");
   assert.match(catalog, /cardArtworkUrl\(item\.image, "feature"\)/);
   assert.match(catalog, /unoptimized=\{hasCardArtwork\(item\.image\)\}/);

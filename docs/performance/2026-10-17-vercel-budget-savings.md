@@ -11,11 +11,11 @@ Keep `holistichouse.vercel.app` reachable, preserve the existing verified Englis
 - Regular Github test/build/CI exists.
 
 ## What this patch changes
-Image processing moves from **visitor request time** to **build time** for only the 23 published book catalogue cover images and 32 owned public card pictures. All original bytes are verified against their tracked Git blob SHA and byte length before generation. `prebuild` and `predev` run `scripts/build-public-card-artwork.mjs`, generating:
+Image processing moves from **visitor request time** to **build time** for only the 23 published book catalogue cover images and 31 owned public card pictures. All original bytes are verified against their tracked Git blob SHA and byte length before generation. `prebuild` and `predev` run `scripts/build-public-card-artwork.mjs`, generating:
 
 - 23 versioned WebP 720px catalogue cover files in `public/images/holistic-house/static-card-media/`.
-- 32 x 256px thumbnails and 32 x 960px source-proportional public card images, without enlargement.
-- The four additional pinned Library and service image sources (books-library WebP, distance-homeopathy WebP, incense WebP, a public Arnica JPG) are covered by those 32 cards. The previously published full source book/image routes remain unchanged. No full-resolution unoptimized book JPEG is loaded by the catalogue cards.
+- 31 x 256px thumbnails and 31 x 960px source-proportional public card images, without enlargement.
+- The three additional pinned Library and service image sources (books-library WebP, incense WebP, a public Arnica JPG) are covered by those 31 cards. The previously published full source book/image routes remain unchanged. No full-resolution unoptimized book JPEG is loaded by the catalogue cards.
 - CDN gets immutable caching on this **content-addressed folder only**; protected/private content remains dynamic and uncacheable.
 - Non-registered images still use normal Next optimization: explicit safe fallback, no global bypass.
 
@@ -45,3 +45,9 @@ Changing an approved image source requires re-reviewing and updating its recorde
 
 ## Rollback
 Revert only this PR to restore the original `next/image` catalogue/card sources and `build` script. Existing reader paths, private content and metadata remain unchanged. Do not delete original images or existing deployments as part of rollback.
+
+## October 20 production build incident and corrected manifest
+
+Deployment from source commit `903b235042fa` failed during `scripts/build-public-card-artwork.mjs` with Sharp's `webp: unable to parse image`. The source file `public/images/holistic-house/distance-homeopathy.webp` has a Git-pinned **7,509-byte** body while the RIFF WebP header declares **60,086 bytes**. This is an incomplete/corrupt original, not a valid asset for static prebuilding. The file and user-facing original path were not edited or re-encoded.
+
+Exclude that one source from both build and browser URL registries pending a genuinely verified replacement. Preserve all remaining 54 pinned public originals (23 covers + 31 cards), **85** build-time outputs, dynamic/private paths and privacy restrictions. A synthetic source-header test now rejects declared RIFF lengths that do not equal the real source length, preventing this specific build failure from recurring when new artwork is registered. Verify the next exact production deployment is READY before claiming the repaired build is live.
