@@ -3,6 +3,7 @@ import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config
 import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
 import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/development-goals'
+import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
@@ -89,7 +90,7 @@ async function handle(request, { params }) {
         requestId = body.requestId || null,
         native = body.native === true
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations'].includes(continueTo) &&
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business'].includes(continueTo) &&
         !['cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
@@ -132,7 +133,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -158,6 +159,8 @@ async function handle(request, { params }) {
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
               ? `${origin}/${locale}/app/course${program ? `?program=${encodeURIComponent(program)}` : ''}`
+              : continueTo === 'business'
+                ? `${origin}/${locale}/app/business`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-tests'
@@ -516,6 +519,12 @@ async function handle(request, { params }) {
       if (method === 'POST') return json(await saveDevelopmentGoals(config, actor, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
     }
+    if (joined === 'business-coaching') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method === 'GET') return json(await readBusinessCoaching(config, actor))
+      if (method === 'POST') return json(await saveBusinessCoaching(config, actor, await readBody(request, 32768)))
+      throw new AppError('NOT_FOUND', 404)
+    }
     if (joined === 'bootstrap' && method === 'GET') {
       // A reduced initial payload is safe only after the normal verified session,
       // account check and private rate limit above. Other tabs stay unchanged.
@@ -652,6 +661,7 @@ async function handle(request, { params }) {
         exported.savedSessions=exportedSessions
       }
       exported.developmentGoals = await readDevelopmentGoals(config, actor)
+      exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)

@@ -20,6 +20,7 @@ const words = {
     open: 'Настроить мою программу', close: 'Свернуть',
     goalLink: 'Установить ориентиры и цели', goalLinkHint: 'Четыре сферы и отдельные шкалы',
     planLink: 'Просмотреть рекомендованную программу развития', planLinkHint: 'Приоритеты роста и подходящие курсы',
+    businessLink: '90 дней: Бизнес и карьера', businessHint: 'Личный бизнес-профиль, 90 заданий и отслеживание результатов',
     defaultGoalsPreview: 'Пока личные цели не сохранены, автоматический подбор отключён. Начальные ползунки — только образец для редактирования, а не психологическая норма.',
     unsavedGoalsPreview: 'Это предварительный подбор по несохранённым изменениям. Сохраните цели, чтобы закрепить ваш маршрут.',
     goals: 'Желаемые ориентиры', goalHint: 'Ползунки — добровольные личные ориентиры, а не нормы здоровья. Неподходящие для оценки развития шкалы исключены из рекомендаций.',
@@ -69,6 +70,7 @@ const words = {
     open: 'Set my development goals', close: 'Collapse',
     goalLink: 'Set goals & targets', goalLinkHint: 'Four areas and individual scales',
     planLink: 'View recommended development programme', planLinkHint: 'Growth priorities and suitable courses',
+    businessLink: '90 Days: Business & Career', businessHint: 'Personal business snapshot, 90 actions and results tracking',
     defaultGoalsPreview: 'No personal targets are saved yet. The starting sliders are editable placeholders, not a psychological norm; recommendations start after you save.',
     unsavedGoalsPreview: 'This preview uses unsaved changes. Save your targets to keep your development path.',
     goals: 'Your desired levels', goalHint: 'Sliders are optional personal preferences, not health norms; unsuitable measures cannot drive recommendations.',
@@ -302,6 +304,11 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           <span className={styles.sectionLinkCopy}><strong>{t.planLink}</strong><small>{t.planLinkHint}</small></span>
           <ChevronDown size={18} className={activePanel === 'plan' ? styles.rotated : ''} aria-hidden="true" />
         </button>
+        <Link href={'/' + lang + '/app/business'} prefetch={false} className={styles.sectionLink} data-development-business-course>
+          <span className={styles.sectionLinkIcon}><Target size={18} aria-hidden="true" /></span>
+          <span className={styles.sectionLinkCopy}><strong>{t.businessLink}</strong><small>{t.businessHint}</small></span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link>
         {(savedMessage || (loaded && revision > 0 && !dirty)) && !dirty && <p className={styles.success} role="status"><CheckCircle2 size={16} aria-hidden="true" />{savedMessage || t.saved}</p>}
       </div>
       {loading && <p className={styles.status} role="status">{lang === 'ru' ? 'Загружаем цели…' : 'Loading goals…'}</p>}
