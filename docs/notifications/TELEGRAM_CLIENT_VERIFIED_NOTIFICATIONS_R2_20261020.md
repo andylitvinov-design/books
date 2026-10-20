@@ -59,3 +59,16 @@ Only `HH_CLIENT_TG_BOT_TOKEN` and `HH_CLIENT_TG_BOT_USERNAME` are not provisione
 Provider prerequisites for WhatsApp remain absent. The current WhatsApp card can store only an **unverified encrypted number**; it cannot send, deliver or verify on its own. Meta Business/WABA, a verified sender number, approved templates, separate marketing consent and a controlled budget remain future prerequisites. Do not advise using an unofficial personal WhatsApp-Web automation.
 
 Links for the owner: [BotFather](https://t.me/BotFather) · [Vercel environment](https://vercel.com/super10/codex-public-book-library/settings/environment-variables) · [CRM Integrations](https://holistichouse.vercel.app/ru/app/practice) · [Client notification settings](https://holistichouse.vercel.app/ru/app/settings).
+
+
+## One-click owner pilot — no general client-send approval required
+
+The owner can test an individual Bot API delivery **after** the separate client bot is configured, its HTTPS webhook is verified, and the owner's own authenticated account completes Telegram /start linking.
+
+Go to [My Practice → CRM → Integrations](https://holistichouse.vercel.app/ru/app/practice) → **Telegram-бот для клиентов**. The owner-only diagnostics now show whether the bot webhook and **the owner's own** Telegram connection are verified. Click **«Отправить тест себе в Telegram»**. This sends only one fixed, harmless RU/EN/ES test message to the owner's own encrypted, verified chat. It cannot select a CRM contact or arbitrary destination.
+
+The pilot API requires a verified owner session, a matching account header, same-origin POST, an empty request body, active account, correct consent/topic, verified webhook and server-derived verified chat. It rechecks channel consent just before sending and is limited to **one test every 10 minutes**. Response `providerAccepted=true` means that Telegram's Bot API accepted the call, **not** that it was delivered or read.
+
+Leave `HH_CLIENT_TG_SEND_APPROVED=false` during pilot: this button works independently and **does not activate messages to customers**. After a successful real pilot, separate two-account privacy testing and owner approval are still required before enabling event-driven notifications for clients. With the two dedicated bot variables missing, the test button correctly stays disabled.
+
+Source: [PR #1388](https://github.com/andylitvinov-design/books/pull/1388).
