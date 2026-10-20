@@ -42,7 +42,7 @@ test('day 2 may enter/leave the musical slide before saving, with no added write
     await click('Continue')
     await click('Music and a gentle exercise')
     assert.match(textOf(h.tree),/A musical pause/)
-    assert.match(textOf(h.tree),/Two quiet minutes/)
+    assert.match(textOf(h.tree),/There is nothing to achieve/)
     assert.equal(writes,0)
     await click('Back')
     assert.ok(findButton(h.tree,'Music and a gentle exercise'))
