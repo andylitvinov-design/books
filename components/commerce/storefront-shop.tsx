@@ -55,7 +55,7 @@ const copy = {
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · TIENDA",
-    title: "Elige tu próximo paso",
+    title: "Tienda de servicios · tu próximo paso",
     subtitle: "Elige una consulta, explora un programa individual o empieza con un recurso gratuito. Solo las sesiones de precio fijo están disponibles para pagar directamente.",
     search: "Buscar en la tienda", searchPlaceholder: "Buscar servicio o tema…",
     filters: "Categorías de la tienda", all: "Todos", session: "Consultas", program: "Programas", free: "Gratis",
