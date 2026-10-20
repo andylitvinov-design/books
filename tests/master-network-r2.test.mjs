@@ -95,7 +95,7 @@ test('R2 UI exposes Practice master cabinet, public Masters and moderation with 
   assert.match(practice,/pricingMode:'free'/)
   assert.match(route,/practice\/onboarding/)
   assert.match(repository,/async onboarding\(actor,input\)/)
-  assert.match(repository,/validateServiceDraft\(input\.service,\{complete:submitting\}\)/)
+  assert.match(repository,/validateServiceDraft\(\{\.\.\.input\.service,pricingMode:'free',confirmedPrice:null,currency:''\},\{complete:submitting\}\)/)
   assert.match(repository,/serviceDraft\.pricingMode,serviceDraft\.confirmedPrice,serviceDraft\.currency/)
   assert.match(services,/<ServicesDirectoryInvitation/)
    assert.match(directory,/<MarketplaceServiceFinder services=/)
