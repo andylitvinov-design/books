@@ -2,6 +2,7 @@ import type {Metadata} from 'next'
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import {PublicSiteHeader} from '@/components/public-site-header'
+import PublicTelegramNewsOptIn from '@/components/public-telegram-news-optin'
 import {publicLocales} from '@/lib/public-locales'
 import type {PublicLocale} from '@/lib/public-locales'
 import {metadataBaseFor} from '@/data/site-metadata'
@@ -77,6 +78,7 @@ export default async function ContactPage({params}:Props){
      <Link href={'/'+locale+'/app/settings#hh-client-contact-phone'} className={styles.secondary}>{t.settings} →</Link>
     </section>
    </div>
+   <PublicTelegramNewsOptIn locale={l}/>
    <p className={styles.privacy}>{t.privacy} <Link href={'/'+locale+'/about'}>{t.about} →</Link></p>
   </div>
  </main>
