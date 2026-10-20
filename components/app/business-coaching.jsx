@@ -47,6 +47,7 @@ const copy = {
     daySaved:'Saved', checkinDue:'Check-ins may only be repeated after 21 days.', export:'Export all my Cabinet data',
     relatedTests:'Explore other tests in My Tests', describeChange:'Comparable changes', noComparison:'At least two compatible measurements are needed before we can compare outcomes.',
     differenceNote:'Changes below are descriptive, not evidence that the course caused the result.', editCancel:'Cancel',
+    removeMetric:'Remove observation', deleteCourse:'Erase this personal plan', deleteWarning:'Permanently erase the business plan, notes and its saved outcomes from your account? This cannot be undone.',
   },
   ru: {
     eyebrow:'БИЗНЕС И КАРЬЕРА · МОЙ МАРШРУТ РАЗВИТИЯ', title:'Мои 90 дней развития',
@@ -83,6 +84,7 @@ const copy = {
     daySaved:'Сохранено', checkinDue:'Повторный опрос доступен через 21 день.', export:'Экспортировать все данные кабинета',
     relatedTests:'Посмотреть другие тесты в «Моих тестах»', describeChange:'Сопоставимые изменения', noComparison:'Для сравнения необходимы хотя бы два сопоставимых наблюдения.',
     differenceNote:'Изменения носят описательный характер и не доказывают, что их вызвал курс.', editCancel:'Отмена',
+    removeMetric:'Удалить наблюдение', deleteCourse:'Удалить этот личный план', deleteWarning:'Безвозвратно удалить бизнес-программу, дневник и сохранённые результаты из кабинета? Отменить это будет нельзя.',
   },
 }
 const initialGoal = {track:'owner',primaryGoal:'',supportingGoal:'',habit:'',metric:'',target:'',currency:'CAD'}
@@ -371,6 +373,8 @@ export default function BusinessCoaching({locale='en',accountId}){
         <strong>{metricKinds.get(m.metric)?.[lang]||m.metric}</strong>
         <span className={styles.metricValue}>{m.value.toLocaleString(lang==='ru'?'ru-RU':'en-CA')}{m.currency?' '+m.currency:''}</span>
         <small>{m.from} — {m.to} · {t.source}</small>
+        {course.status==='active'&&<button type="button" className={styles.removeMetric} disabled={busy}
+          onClick={()=>command('remove-metric',{id:m.id})}>{t.removeMetric}</button>}
       </div>)}</div>:<p className={styles.empty}>{t.noMetrics}</p>}
     </div>}
     {tab==='report'&&<div className={styles.panel} id="hh-business-printable-report">
@@ -417,6 +421,13 @@ export default function BusinessCoaching({locale='en',accountId}){
         {course.status!=='completed'&&<button type="button" disabled={busy} onClick={()=>{
           if(window.confirm(lang==='ru'?'Завершить курс? История сохранится.':'Finish the course? Your history will be saved.'))void command('complete')
         }}>{t.finish}</button>}
+        <button type="button" className={styles.deleteCourse} disabled={busy} onClick={()=>{
+          if(window.confirm(t.deleteWarning)){
+            void command('delete',{confirmed:true}).then(ok=>{
+              if(ok){setGoal(initialGoal);setConsent(false);setAnswers({});setTab('today')}
+            })
+          }
+        }}>{t.deleteCourse}</button>
       </div>
       <Link href={'/'+lang+'/app/portfolio'}>{t.back} · {lang==='ru'?'Отчёты':'Reports'}</Link>
     </footer>
