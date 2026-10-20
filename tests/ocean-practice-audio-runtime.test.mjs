@@ -56,7 +56,7 @@ function fixture(){
 
 test('one tap starts native, looped and unmuted sound before the timer may begin',async()=>{
   const {sound,media,states}=fixture();
-  assert.match(media.src,/holistic-house-soft-melody-gentle-waves-20s\.wav$/);
+  assert.match(media.src,/holistic-house-soft-melody-gentle-waves-96s\.wav$/);
   assert.equal(media.loop,true);
   assert.equal(media.muted,false);
   assert.equal(media.volume,0.65);
