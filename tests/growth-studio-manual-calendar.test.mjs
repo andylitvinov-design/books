@@ -54,7 +54,9 @@ test('manual .ics contains only planned tasks, no captions or provider-published
  assert.match(text,/DTSTART:20261020T140000Z/)
  assert.match(text,/UID:/)
  assert.match(text,/BEGIN:VALARM/)
- assert.match(text,/NOT published or automatically scheduled/)
+ // RFC 5545 folds long lines with CRLF plus one leading whitespace byte.
+ // Unfold before checking semantic content; line folding is required for valid .ics.
+ assert.match(text.replace(/\r\n[ \t]/g,''),/NOT published or automatically scheduled/)
  assert.doesNotMatch(text,/Public information only|Not planned|Already sent/)
  assert.match(text,/MANUAL post/)
 })
