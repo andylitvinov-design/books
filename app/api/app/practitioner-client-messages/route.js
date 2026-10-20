@@ -31,7 +31,9 @@ async function handler(request){
         throw new AppError('INVALID_REQUEST',400)
       data=await store.list(actor,params.get('requestId'),params.get('before'))
     }else{
-      const body=await readBody(request,2048)
+      // The 1,200-character limit is enforced by the message store. Leave room
+      // for UTF-8 and JSON escaping so the same limit works in every language.
+      const body=await readBody(request,8192)
       if(body?.action==='mark_seen'){
         onlyKeys(body,['action','requestId','messageId'])
         data=await store.markSeen(actor,body)

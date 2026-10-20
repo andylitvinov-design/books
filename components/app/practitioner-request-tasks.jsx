@@ -32,7 +32,7 @@ const COPY={
     private:'Solo visible para el profesional asignado. No envía mensajes automáticamente.',
     today:'Hoy',overdue:'Atrasado'},
 }
-export default function PractitionerRequestTasks({requestId,accountId,locale='en',onChanged}){
+export default function PractitionerRequestTasks({requestId,accountId,locale='en',onChanged,focusTaskId='',focusToken=0}){
   const t=COPY[locale]||COPY.en
   const [open,setOpen]=useState(false),[tasks,setTasks]=useState([])
   const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false)
@@ -41,11 +41,13 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
     ()=>torontoToday(new Date(Date.now()+86400000)))
   const [edit,setEdit]=useState(null)
   const session=useRef(null),pendingCreation=useRef(null),working=useRef(false)
+  const taskAnchors=useRef(new Map()),focusedTask=useRef(''),panelAnchor=useRef(null)
   useEffect(()=>{
     const controller=new AbortController()
     session.current={requestId,controller}
     pendingCreation.current=null;working.current=false
-    setTasks([]);setNotice('');setError('');setOpen(false);setEdit(null)
+    focusedTask.current='';taskAnchors.current.clear()
+    setTasks([]);setNotice('');setError('');setOpen(false);setEdit(null);setBusy(false);setLoading(false)
     return()=>{controller.abort();if(session.current?.controller===controller)session.current=null}
   },[requestId,accountId])
   async function reload(){
@@ -66,6 +68,24 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
       if(session.current===original&&!original.controller.signal.aborted)setError(t.error)
     }finally{if(session.current===original)setLoading(false)}
   }
+  useEffect(()=>{
+    if(!focusTaskId){focusedTask.current='';return}
+    setOpen(true)
+    // The request itself is reachable even while its task list is loading.
+    panelAnchor.current?.focus({preventScroll:true})
+    panelAnchor.current?.scrollIntoView({block:'nearest',behavior:'auto'})
+    void reload()
+  },[requestId,accountId,focusTaskId,focusToken])
+  useEffect(()=>{
+    if(!focusTaskId||!open||loading)return
+    const key=accountId+':'+requestId+':'+focusTaskId+':'+focusToken
+    const anchor=taskAnchors.current.get(focusTaskId)
+    if(!anchor||focusedTask.current===key)return
+    focusedTask.current=key
+    anchor.focus({preventScroll:true})
+    anchor.scrollIntoView({block:'center',behavior:
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})
+  },[requestId,accountId,focusTaskId,focusToken,tasks,open,loading])
   async function submit(action,payload){
     if(working.current||!session.current)return
     const original=session.current
@@ -84,6 +104,7 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
       if(action==='create')pendingCreation.current=null
       setNotice(action==='create'?t.created:t.changed)
       await reload()
+      if(session.current!==original)return
       onChanged?.()
     }catch(e){
       if(session.current!==original)return
@@ -104,7 +125,7 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
     void submit('create',task)
   }
   const now=torontoToday()
-  return <section className={styles.panel}>
+  return <section ref={panelAnchor} tabIndex={-1} className={styles.panel} aria-label={t.title}>
     <button type="button" className={styles.toggle} aria-expanded={open}
       onClick={()=>{setOpen(v=>!v);if(!open)void reload()}}>
       {t.title} {tasks.filter(x=>x.status==='open').length>0?
@@ -126,7 +147,9 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
         <button disabled={busy||!dueOn} type="submit">{t.create}</button>
       </form>
       {!tasks.length&&!loading&&<p className={styles.empty}>{t.empty}</p>}
-      {tasks.map(task=><article key={task.id} className={styles.task}>
+      {tasks.map(task=><article key={task.id} tabIndex={-1} aria-label={(t[task.kind]||t.general)+' · '+task.dueOn}
+        ref={node=>{if(node)taskAnchors.current.set(task.id,node);else taskAnchors.current.delete(task.id)}}
+        className={focusTaskId===task.id?`${styles.task} ${styles.focusedTask}`:styles.task}>
         <div><strong>{t[task.kind]||t.general}</strong>
           <small>{task.dueOn}
             {' · '}{task.status==='done'?t.done:task.dueOn<now?t.overdue:
