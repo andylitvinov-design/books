@@ -56,6 +56,7 @@ if [[ ! -d "$DEST/.venv" ]]; then "$PY" -m venv "$DEST/.venv"; fi
 # weights, real client text, QA approval and Keychain token are never bundled.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 install -m 700 "$SCRIPT_DIR/local_worker.py" "$DEST/local_worker.py"
+install -m 700 "$SCRIPT_DIR/andrey_tts.py" "$DEST/andrey_tts.py"
 install -m 700 "$SCRIPT_DIR/launch_agent.py" "$DEST/launch_agent.py"
 "$DEST/.venv/bin/python" "$DEST/launch_agent.py" --prepare
 
