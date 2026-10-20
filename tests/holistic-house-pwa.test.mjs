@@ -56,3 +56,11 @@ test('install landing is public, bilingual and links to real protected messaging
   assert.match(sw,/\/en\/app/)
   assert.match(sw,/network-only/)
 })
+
+test('iOS Home Screen icon never invokes dynamic font download for unsupported symbol glyph',()=>{
+ const icon=readFileSync('app/holistic-house-icon/[size]/route.js','utf8')
+ assert.match(icon,/new ImageResponse\(/)
+ assert.match(icon,/transform:'rotate\(45deg\)'/)
+ assert.doesNotMatch(icon,/'✦'\)/)
+ assert.doesNotMatch(icon,/fontSize:size\*\.11/)
+})

@@ -11,6 +11,7 @@ import CrmFreeEmail from './crm-free-email'
 import CrmContactEditor from './crm-contact-editor'
 import CrmExportTools from './crm-export-tools'
 import CrmMessengerPanel from './crm-messenger'
+import CrmMessagesNavigation from './crm-messages-navigation'
 import CrmBusinessEnquiries from './crm-business-enquiries'
 import CrmMarketingPanel from './crm-marketing'
 import { CrmWorkflowOverview, CrmContactWorkflow } from './crm-workflow'
@@ -36,6 +37,7 @@ const EXTRA_COPY = {
   ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Поиск и фильтры работают по загруженным контактам. Для остальных нажмите «Загрузить ещё».', stage: 'Статус контакта', conflict: 'Контакт изменён в другой вкладке. Обновите страницу.' },
   es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'La búsqueda y los filtros abarcan los contactos cargados. Carga más para ver los demás.', stage: 'Estado del contacto', conflict: 'El contacto cambió en otra pestaña. Actualiza la página.' },
 }
+const CRM_SECTION_IDS=new Set(['overview','tasks','messages','sms','integrations','contacts'])
 export default function CrmManager({ locale = 'en', accountId }) {
   const language = COPY[locale] ? locale : 'en'
   const c = { ...COPY[language], ...EXTRA_COPY[language] }
@@ -62,6 +64,19 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [lifecycle, setLifecycle] = useState('lead')
   const [source, setSource] = useState('manual')
   const [activeSection, setActiveSection] = useState('overview')
+  function switchSection(next){
+    if(!CRM_SECTION_IDS.has(next))return
+    setActiveSection(next)
+    if(typeof window==='undefined')return
+    const url=new URL(window.location.href)
+    // Navigation state only; no client/contact/message IDs in URLs.
+    if(url.pathname.endsWith('/app/practice')){
+      url.searchParams.set('panel','crm')
+      if(next==='overview')url.searchParams.delete('crmTab')
+      else url.searchParams.set('crmTab',next)
+      window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+    }
+  }
   const [focusedContactId,setFocusedContactId]=useState('')
   const [focusBusy,setFocusBusy]=useState(false)
   const [focusError,setFocusError]=useState('')
@@ -93,7 +108,8 @@ export default function CrmManager({ locale = 'en', accountId }) {
     focusAbortRef.current?.abort();taskPageAbortRef.current?.abort()
     focusedIdRef.current='';setFocusedContactId('');setFocusError('');setFocusBusy(false)
     setTaskPageBusy(false);setTaskPageError(false)
-    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection('overview')
+    const initialTab=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('crmTab'):null
+    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection(CRM_SECTION_IDS.has(initialTab)?initialTab:'overview')
     void load(session).catch(error=>{
       if(error.name!=='AbortError'&&sessionRef.current===session)setNotice(c.error)
     })
@@ -357,7 +373,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
         ['contacts',language==='ru'?'Контакты':language==='es'?'Contactos':'Contacts'],
       ].map(([id,label])=><button key={id} type="button" aria-pressed={activeSection===id}
         className={activeSection===id?styles.sectionTabActive:styles.sectionTab}
-        onClick={()=>{if(id!=='contacts'){focusAbortRef.current?.abort();setFocusBusy(false);focusedIdRef.current='';setFocusedContactId('')}setActiveSection(id)}}>{label}</button>)}
+        onClick={()=>{if(id!=='contacts'){focusAbortRef.current?.abort();setFocusBusy(false);focusedIdRef.current='';setFocusedContactId('')}switchSection(id)}}>{label}</button>)}
     </nav>
     {activeSection!=='messages'&&<div className={styles.privacy}>
       <strong>{language==='ru'?'Только деловые контакты':'Business contacts only'}</strong>
@@ -367,7 +383,11 @@ export default function CrmManager({ locale = 'en', accountId }) {
       <p>{notice||c.loading}</p>
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
-    {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />}
+    {activeSection==='messages'&&<>
+      <CrmMessagesNavigation locale={language} setup={data?.integrationSetup}
+        onSms={()=>switchSection('sms')} onIntegrations={()=>switchSection('integrations')} onOverview={()=>switchSection('overview')}/>
+      <CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />
+    </>}
     {activeSection==='integrations'&&data&&<>
        <CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />
        <CustomerTelegramBotSetup locale={language} accountId={accountId} />
