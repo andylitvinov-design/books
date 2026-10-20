@@ -1,91 +1,110 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { ChevronRight, Check, FileAudio, Folder, FolderOpen, Headphones, RefreshCw, UploadCloud } from 'lucide-react'
 import {
-  REIKI_INTRO_MAX_BYTES, REIKI_INTRO_MIME, reikiIntroMime,
-  reikiIntroPublicUrl, reikiIntroSlot,
+  REIKI_INTRO_MAX_BYTES, reikiIntroMime,
+  reikiIntroPublicUrl, reikiIntroPublicObjectUrl, reikiIntroSlot,
 } from '@/lib/academy/reiki-intro-audio-model'
 import styles from './admin-reiki-audio.module.css'
 
 const lessons = [
-  { id: 'flight', en: 'Flight to the Sun', ru: 'Полёт к Солнцу' },
-  { id: 'tantra', en: 'Tantra Reiki', ru: 'Тантра Рейки' },
-  { id: 'kundalini', en: 'Kundalini Reiki', ru: 'Кундалини Рейки' },
-  { id: 'yggdrasil', en: 'Reiki Yggdrasil', ru: 'Рейки Иггдрасиль' },
+  { id: 'flight', number: 1, en: 'Flight to the Sun', ru: 'Полёт к Солнцу' },
+  { id: 'tantra', number: 2, en: 'Tantra Reiki', ru: 'Тантра Рейки' },
+  { id: 'kundalini', number: 3, en: 'Kundalini Reiki', ru: 'Кундалини Рейки' },
+  { id: 'yggdrasil', number: 4, en: 'Reiki Yggdrasil', ru: 'Рейки Иггдрасиль' },
+  { id: 'initiation', number: 5, en: 'Personal Initiation', ru: 'Личная инициация' },
 ]
-const messages = {
+const copy = {
   ru: {
-    intro: 'Запишите короткое аудиообъяснение к началу урока. Отдельно выберите язык: русская и английская версии независимы. Загрузка не публикует файл автоматически.',
-    steps: 'Выберите запись → прослушайте → загрузите → опубликуйте',
-    language: 'Язык аудио',
-    published: 'Опубликовано для учеников',
-    empty: 'Пока нет опубликованной записи',
-    choose: 'Выберите файл презентации',
-    upload: 'Загрузить аудио',
-    loading: 'Загрузка файла…',
-    publish: 'Опубликовать для учеников',
-    publishing: 'Публикация…',
-    uploaded: 'Загружено, но ещё НЕ опубликовано. Прослушайте и подтвердите.',
-    unpublish: 'Снять с публикации',
-    unpublishing: 'Снимаем с публикации…',
-    confirmUnpublish: 'Убрать эту аудиопрезентацию из курса? Исходный файл сохранится в хранилище.',
-    publishedDone: 'Аудиовведение опубликовано. В курсе появится при следующей загрузке страницы (кеш до минуты).',
-    removed: 'Запись больше не показывается ученикам.',
-    unavailable: 'Хранилище аудио пока недоступно. Проверьте настройки кабинета.',
-    failed: 'Не удалось завершить действие. Проверьте файл, авторизацию или подключение хранилища.',
-    invalid: 'Поддерживаются MP3, M4A и WAV, от 512 байт до 20 МБ.',
-    inspect: 'Прослушать выбранный файл',
-    review: 'Прослушать опубликованное',
-    fileInfo: 'Рекомендуется короткая запись до 1–2 минут. Максимум 20 МБ. Автозапуска у учеников не будет.',
-    viewCourse: 'Посмотреть курс',
-    reload: 'Обновить список',
+    breadcrumbMaterials: 'Материалы', breadcrumbAudio: 'Аудио', course: 'Курс Reiki Practitioner',
+    folderTitle: 'Папки уроков', lesson: 'Урок',
+    language: 'Язык материала', languageHint: 'Выберите язык до загрузки. RU и EN хранятся отдельно.',
+    intro: 'Выберите папку урока, затем язык записи. Можно хранить несколько аудиофайлов и отмечать один для воспроизведения ученику.',
+    steps: 'Папка урока → RU / EN → загрузить → прослушать → опубликовать',
+    published: 'На слайде', empty: 'Аудиовведение пока не выбрано',
+    ready: 'Сохранено', noFiles: 'В этой папке пока нет записей на выбранном языке.',
+    files: 'Аудиофайлы в папке', selectFile: 'Выбрать запись', selected: 'Выбрано',
+    choice: 'Выбранная запись', current: 'Сейчас звучит на слайде',
+    choose: 'Добавить новый аудиофайл', upload: 'Загрузить в папку',
+    loading: 'Загрузка…', publish: 'Использовать на слайде',
+    publishing: 'Публикуем…', uploadDone: 'Файл сохранён в папке. Прослушайте и отдельно назначьте его для урока.',
+    pickExisting: 'Запись выбрана. Можно прослушать и назначить на слайд.',
+    confirmPublish: 'Сделать эту запись доступной ученикам на выбранном уроке? Убедитесь, что в ней нет личных данных клиентов.',
+    publishedDone: 'Запись назначена на слайд. Изменение станет видно после обновления страницы курса.',
+    unpublish: 'Убрать со слайда', unpublishing: 'Убираем…',
+    confirmUnpublish: 'Убрать аудио со слайда? Сохранённые файлы в папке останутся.',
+    removed: 'Аудио снято со слайда. Исходные файлы остались в папке.',
+    unavailable: 'Аудиохранилище пока недоступно. Проверьте настройки доступа.',
+    failed: 'Не получилось завершить действие. Проверьте подключение и повторите.',
+    invalid: 'Используйте MP3, M4A или WAV размером от 512 байт до 20 МБ.',
+    listen: 'Прослушать запись', localPreview: 'Прослушать выбранный файл с устройства',
+    fileInfo: 'MP3 / M4A / WAV · максимум 20 МБ. Можно загружать несколько файлов в одну папку.',
+    publicNote: 'Только для общедоступных учебных записей без данных клиентов. Файлы в этом хранилище технически доступны по прямой ссылке; без публикации они не отображаются в уроке.',
+    viewCourse: 'Открыть курс', refresh: 'Обновить',
+    refreshing: 'Обновляем список…', truncated: 'Показаны первые 100 файлов. Старые файлы остаются в хранилище.',
   },
   en: {
-    intro: 'Record a short spoken introduction before each lesson meditation. English and Russian files are separate. Uploading never publishes a file automatically.',
-    steps: 'Choose recording → listen → upload → publish',
-    language: 'Audio language',
-    published: 'Published for learners',
-    empty: 'No recording published yet',
-    choose: 'Select your presentation audio',
-    upload: 'Upload audio',
-    loading: 'Uploading recording…',
-    publish: 'Publish to learners',
-    publishing: 'Publishing…',
-    uploaded: 'Uploaded but NOT published. Listen, then confirm.',
-    unpublish: 'Unpublish',
-    unpublishing: 'Unpublishing…',
-    confirmUnpublish: 'Remove this audio introduction from the course? The original file remains stored.',
-    publishedDone: 'Audio published. It appears on the course slide after the cache refresh (up to a minute).',
-    removed: 'The recording is no longer shown to learners.',
-    unavailable: 'Audio storage is not available. Check cabinet storage settings.',
-    failed: 'Unable to finish this action. Check the file, sign-in or storage connection.',
+    breadcrumbMaterials: 'Materials', breadcrumbAudio: 'Audio', course: 'Reiki Practitioner course',
+    folderTitle: 'Lesson folders', lesson: 'Lesson',
+    language: 'Recording language', languageHint: 'Choose the language before uploading. RU and EN are kept separately.',
+    intro: 'Choose a lesson folder, then a recording language. Keep several files and select one to play on the learner slide.',
+    steps: 'Lesson folder → RU / EN → upload → listen → publish',
+    published: 'On the slide', empty: 'No audio introduction is selected yet',
+    ready: 'Saved', noFiles: 'This language folder does not have any recordings yet.',
+    files: 'Audio recordings in this folder', selectFile: 'Select recording', selected: 'Selected',
+    choice: 'Selected recording', current: 'Currently on the learner slide',
+    choose: 'Add a new audio recording', upload: 'Upload to folder',
+    loading: 'Uploading…', publish: 'Use on learner slide',
+    publishing: 'Publishing…', uploadDone: 'Saved in the folder. Listen first, then explicitly add the recording to the slide.',
+    pickExisting: 'Recording selected. Listen to it and choose whether to use it on the slide.',
+    confirmPublish: 'Make this recording available to learners on this lesson slide? Make sure it contains no private client information.',
+    publishedDone: 'Recording assigned to the slide. It will appear after the course page refreshes.',
+    unpublish: 'Remove from slide', unpublishing: 'Removing…',
+    confirmUnpublish: 'Remove audio from the slide? Saved audio files remain in this folder.',
+    removed: 'Removed from the slide; uploaded originals remain in the folder.',
+    unavailable: 'The audio store is not available. Check your account and storage settings.',
+    failed: 'Unable to complete the action. Check the connection and retry.',
     invalid: 'Use MP3, M4A or WAV, between 512 bytes and 20 MB.',
-    inspect: 'Preview selected file',
-    review: 'Listen to published audio',
-    fileInfo: 'A concise 1–2 minute recording works well. Maximum 20 MB. Playback never starts automatically.',
-    viewCourse: 'Open the course',
-    reload: 'Refresh audio list',
+    listen: 'Listen to recording', localPreview: 'Preview selected file from this device',
+    fileInfo: 'MP3 / M4A / WAV · up to 20 MB. You can upload multiple files to the same folder.',
+    publicNote: 'Use only public educational recordings with no client information. Files stored here are technically accessible by direct URL, even before they are featured on a lesson slide.',
+    viewCourse: 'Open the course', refresh: 'Refresh',
+    refreshing: 'Refreshing files…', truncated: 'First 100 files shown. Older recordings remain stored.',
   },
 }
 
-async function ownerRequest(body) {
-  const response = await fetch('/admin/reiki-audio/data', {
+async function ownerRequest(body, lesson, locale) {
+  const suffix = body ? '' : '?lesson=' + encodeURIComponent(lesson) + '&locale=' + encodeURIComponent(locale)
+  const response = await fetch('/admin/reiki-audio/data' + suffix, {
     method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin',
-    headers: body ? { 'Content-Type': 'application/json' } : {},
-    ...(body ? { body: JSON.stringify(body) } : {}),
+    ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
   })
   if (!response.ok) throw new Error('OWNER_AUDIO_UNAVAILABLE')
   return response.json()
 }
 
-function LessonAudioCard({ lesson, locale, origin, current, onPublished, copy }) {
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [staged, setStaged] = useState(null)
-  const [busy, setBusy] = useState('')
-  const [notice, setNotice] = useState('')
-  const [error, setError] = useState('')
+function formatFileDate(value, locale) {
+  if (!value) return locale === 'ru' ? 'Дата неизвестна' : 'Date unavailable'
+  const timestamp = new Date(value)
+  return Number.isNaN(timestamp.getTime()) ? '' :
+    timestamp.toLocaleString(locale === 'ru' ? 'ru-RU' : 'en-CA',
+      { dateStyle: 'medium', timeStyle: 'short' })
+}
+function formatBytes(bytes) {
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+}
+
+function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged,setOperationBusy,copy}) {
+  const [file,setFile] = useState(null)
+  const [preview,setPreview] = useState(null)
+  const [staged,setStaged] = useState(null)
+  const [busy,setBusy] = useState('')
+  const [notice,setNotice] = useState('')
+  const [error,setError] = useState('')
+
   useEffect(() => {
     if (!file) { setPreview(null); return }
     const url = URL.createObjectURL(file)
@@ -93,155 +112,271 @@ function LessonAudioCard({ lesson, locale, origin, current, onPublished, copy })
     return () => URL.revokeObjectURL(url)
   }, [file])
 
-  const publishedUrl = reikiIntroPublicUrl(origin, current, lesson.id, locale)
+  const publishedUrl = reikiIntroPublicUrl(origin,current,lesson.id,locale)
+  const stagedUrl = staged
+    ? (file && staged.fileName === file.name ? preview :
+      reikiIntroPublicObjectUrl(origin,staged.path,lesson.id,locale))
+    : null
+
   const select = event => {
     const next = event.target.files?.[0] || null
-    setError(''); setNotice(''); setStaged(null)
-    if (!next) { setFile(null); return }
-    if (!reikiIntroMime(next.type, next.name) ||
-        next.size < 512 || next.size > REIKI_INTRO_MAX_BYTES) {
-      setFile(null); setError(copy.invalid); return
+    setError('');setNotice('');setStaged(null)
+    if (!next) {setFile(null);return}
+    if (!reikiIntroMime(next.type,next.name) ||
+      next.size < 512 || next.size > REIKI_INTRO_MAX_BYTES) {
+      setFile(null);setError(copy.invalid);return
     }
     setFile(next)
   }
+
   async function upload() {
     if (!file || busy) return
-    setBusy('upload'); setError(''); setNotice('')
+    setOperationBusy(true);setBusy('upload');setError('');setNotice('')
     try {
-      const mime = reikiIntroMime(file.type, file.name)
-      const response = await ownerRequest({
-        action: 'prepare', lesson: lesson.id, locale, filename: file.name,
-        mime, bytes: file.size,
+      const mime = reikiIntroMime(file.type,file.name)
+      const {intent} = await ownerRequest({
+        action:'prepare',lesson:lesson.id,locale,filename:file.name,mime,bytes:file.size,
       })
-      const intent = response.intent
       if (!intent || intent.lesson !== lesson.id || intent.locale !== locale ||
-          intent.bytes !== file.size || !intent.token || !intent.publishableKey)
-        throw new Error('INVALID_INTENT')
-      const client = createClient(intent.supabaseUrl, intent.publishableKey, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      })
-      const { error: uploadError } = await client.storage.from(intent.bucket)
-        .uploadToSignedUrl(intent.path, intent.token, file, {
-          contentType: intent.mime, upsert: false,
-        })
+        intent.bytes !== file.size || !intent.token || !intent.publishableKey)
+        throw new Error('INVALID_AUDIO_UPLOAD_INTENT')
+      const storage = createClient(intent.supabaseUrl,intent.publishableKey,{
+        auth:{persistSession:false,autoRefreshToken:false},
+      }).storage.from(intent.bucket)
+      const {error:uploadError} = await storage.uploadToSignedUrl(
+        intent.path,intent.token,file,{contentType:intent.mime,upsert:false})
       if (uploadError) throw uploadError
-      setStaged({ path: intent.path, fileName: file.name })
-      setNotice(copy.uploaded)
-    } catch {
-      setError(copy.failed)
-    } finally { setBusy('') }
-  }
-  async function publish() {
-    if (!staged || busy) return
-    setBusy('publish'); setError(''); setNotice('')
-    try {
-      await ownerRequest({ action: 'publish', lesson: lesson.id, locale, path: staged.path })
-      await onPublished()
-      setStaged(null)
-      setFile(null)
-      setNotice(copy.publishedDone)
-    } catch {
-      setError(copy.failed)
-    } finally { setBusy('') }
-  }
-  async function unpublish() {
-    if (!current || busy || !window.confirm(copy.confirmUnpublish)) return
-    setBusy('unpublish'); setError(''); setNotice('')
-    try {
-      await ownerRequest({ action: 'unpublish', lesson: lesson.id, locale, confirmed: true })
-      await onPublished()
-      setNotice(copy.removed)
-    } catch {
-      setError(copy.failed)
-    } finally { setBusy('') }
+      setStaged({path:intent.path,fileName:file.name})
+      await onChanged()
+      setNotice(copy.uploadDone)
+    } catch {setError(copy.failed)}
+    finally {setBusy('');setOperationBusy(false)}
   }
 
+  async function publish() {
+    if (!staged || busy || !window.confirm(copy.confirmPublish)) return
+    setOperationBusy(true);setBusy('publish');setError('');setNotice('')
+    try {
+      await ownerRequest({action:'publish',lesson:lesson.id,locale,path:staged.path})
+      await onChanged()
+      setStaged(null);setFile(null);setNotice(copy.publishedDone)
+    } catch {setError(copy.failed)}
+    finally {setBusy('');setOperationBusy(false)}
+  }
+
+  async function unpublish() {
+    if (!current || busy || !window.confirm(copy.confirmUnpublish)) return
+    setOperationBusy(true);setBusy('unpublish');setError('');setNotice('')
+    try {
+      await ownerRequest({action:'unpublish',lesson:lesson.id,locale,confirmed:true})
+      await onChanged()
+      setNotice(copy.removed)
+    } catch {setError(copy.failed)}
+    finally {setBusy('');setOperationBusy(false)}
+  }
+
+  const active = !!current
   return <section className={styles.lessonCard} data-reiki-audio-lesson={lesson.id}>
     <header className={styles.lessonHead}>
-      <h2>{lesson[locale]}</h2>
-      <span className={current ? styles.live : styles.notLive}>{current ? copy.published : copy.empty}</span>
+      <div>
+        <p className={styles.folderEyebrow}>{copy.lesson} {lesson.number} / 5 · {locale.toUpperCase()}</p>
+        <h3>{lesson[locale]}</h3>
+      </div>
+      <span className={active ? styles.live : styles.notLive}>{active ? copy.published : copy.empty}</span>
     </header>
-    {publishedUrl ? <div className={styles.player}>
-      <span>{copy.review}</span>
-      <audio controls preload="none" src={publishedUrl} aria-label={copy.review + ' — ' + lesson[locale]} />
-    </div> : null}
-    <label className={styles.filePicker}>
-      <span>{copy.choose}</span>
-      <input type="file" accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
-        onChange={select} disabled={!!busy} />
-    </label>
-    {preview ? <div className={styles.player}>
-      <span>{copy.inspect} · {file.name}</span>
-      <audio controls preload="none" src={preview} aria-label={copy.inspect + ' — ' + lesson[locale]} />
-    </div> : null}
-    <div className={styles.actions}>
-      <button type="button" disabled={!file || !!busy || !!staged} onClick={upload}>
-        {busy === 'upload' ? copy.loading : copy.upload}
+    {publishedUrl ? <div className={styles.player} data-reiki-audio-published>
+      <span><Check size={15} aria-hidden="true"/>{copy.current}</span>
+      <audio controls preload="none" src={publishedUrl} aria-label={copy.listen+' — '+lesson[locale]}/>
+      <button type="button" className={styles.textDanger} disabled={!!busy} onClick={unpublish}>
+        {busy==='unpublish'?copy.unpublishing:copy.unpublish}
       </button>
-      {staged ? <button type="button" className={styles.publish}
-        onClick={publish} disabled={!!busy}>
-        {busy === 'publish' ? copy.publishing : copy.publish}
-      </button> : null}
-      {current ? <button type="button" className={styles.unpublish}
-        onClick={unpublish} disabled={!!busy}>
-        {busy === 'unpublish' ? copy.unpublishing : copy.unpublish}
-      </button> : null}
+    </div> : null}
+
+    <div className={styles.fileList} data-reiki-audio-folder-contents>
+      <div className={styles.fileListHeading}>
+        <h4><FileAudio size={17} aria-hidden="true"/>{copy.files}</h4>
+        <span>{files.length}</span>
+      </div>
+      {!files.length ? <p className={styles.folderEmpty}>{copy.noFiles}</p> : <div className={styles.files}>
+        {files.map((item,index)=>{
+          const isActive = item.path === current?.path
+          const isSelected = item.path === staged?.path
+          return <div key={item.path} className={styles.fileRow + (isSelected? ' '+styles.fileRowSelected:'')}
+            data-reiki-audio-file={item.path} data-file-on-slide={isActive?'true':'false'}>
+            <span className={styles.fileIcon}><FileAudio size={18} aria-hidden="true"/></span>
+            <div className={styles.fileDetails}>
+              <strong>{locale==='ru'?'Запись':'Recording'} {String(index+1).padStart(2,'0')}</strong>
+              <small>{formatFileDate(item.createdAt,locale)} · {formatBytes(item.bytes)} · {item.path.slice(-3).toUpperCase()}</small>
+            </div>
+            {isActive ? <span className={styles.fileActive}><Check size={13} aria-hidden="true"/>{copy.published}</span> :
+              <button type="button" disabled={!!busy}
+                className={styles.selectRecording} aria-pressed={isSelected}
+                onClick={()=>{
+                  setFile(null);setStaged({path:item.path,fileName:null})
+                  setError('');setNotice(copy.pickExisting)
+                }}>{isSelected ? copy.selected:copy.selectFile}</button>}
+          </div>
+        })}
+      </div>}
+      {truncated ? <p className={styles.notice}>{copy.truncated}</p> : null}
     </div>
-    {staged ? <p className={styles.pending}>{copy.uploaded}</p> : null}
+
+    {staged ? <div className={styles.reviewPanel} data-reiki-audio-selection>
+      <strong>{copy.choice}</strong>
+      {stagedUrl ? <audio controls preload="none" src={stagedUrl}
+        aria-label={copy.listen+' — '+lesson[locale]}/> : null}
+      <button type="button" className={styles.publish} disabled={!!busy || !stagedUrl}
+        onClick={publish}>{busy==='publish'?copy.publishing:copy.publish}</button>
+    </div> : null}
+
+    <div className={styles.uploadPanel}>
+      <label className={styles.filePicker}>
+        <span><UploadCloud size={16} aria-hidden="true"/>{copy.choose}</span>
+        <input type="file" accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
+          onChange={select} disabled={!!busy}/>
+      </label>
+      {preview && !staged ? <div className={styles.player}>
+        <span>{copy.localPreview} · {file?.name}</span>
+        <audio controls preload="none" src={preview} aria-label={copy.localPreview}/>
+      </div> : null}
+      <button type="button" className={styles.uploadButton} disabled={!file || !!busy || !!staged}
+        onClick={upload}><UploadCloud size={18} aria-hidden="true"/>{busy==='upload'?copy.loading:copy.upload}</button>
+      <small className={styles.fileHint}>{copy.fileInfo}</small>
+    </div>
     {notice ? <p className={styles.success} role="status">{notice}</p> : null}
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
   </section>
 }
 
-export default function AdminReikiAudio({ initialLocale = 'ru' }) {
-  const [locale, setLocale] = useState(initialLocale)
-  const [manifest, setManifest] = useState({ version: 1, slots: {} })
-  const [origin, setOrigin] = useState('')
-  const [ready, setReady] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const copy = messages[locale]
+export default function AdminReikiAudio({initialLocale='ru',initialLesson='flight'}) {
+  const [locale,setLocale] = useState(initialLocale==='ru'?'ru':'en')
+  const [selectedLesson,setSelectedLesson] = useState(
+    lessons.some(item=>item.id===initialLesson)?initialLesson:'flight')
+  const [manifest,setManifest] = useState({version:1,slots:{}})
+  const [origin,setOrigin] = useState('')
+  const [files,setFiles] = useState([])
+  const [truncated,setTruncated] = useState(false)
+  const [ready,setReady] = useState(false)
+  const [loading,setLoading] = useState(true)
+  const [refreshing,setRefreshing] = useState(false)
+  const [locked,setLocked] = useState(false)
+  const [error,setError] = useState('')
+  const requestNumber = useRef(0)
+  const t=copy[locale]
 
-  async function refresh() {
+  const refresh = useCallback(async (lesson,language) => {
+    const current = ++requestNumber.current
+    setRefreshing(true)
     try {
-      const response = await ownerRequest()
-      setManifest(response.manifest || { version: 1, slots: {} })
-      setOrigin(response.storageOrigin || '')
-      setReady(response.configured === true)
+      const answer = await ownerRequest(null,lesson,language)
+      if (current !== requestNumber.current) return
+      setManifest(answer.manifest||{version:1,slots:{}})
+      setFiles(Array.isArray(answer.files)?answer.files:[])
+      setTruncated(answer.truncated===true)
+      setOrigin(answer.storageOrigin||'')
+      setReady(answer.configured===true)
       setError('')
     } catch {
-      setReady(false)
-      setError(messages[locale].unavailable)
-      throw new Error('OWNER_AUDIO_UNAVAILABLE')
+      if (current !== requestNumber.current) return
+      setReady(false);setError(copy[language].unavailable)
+    } finally {
+      if (current===requestNumber.current) {
+        setLoading(false);setRefreshing(false)
+      }
     }
-  }
-  useEffect(() => {
-    void refresh().catch(() => {}).finally(() => setLoading(false))
-    // Load once per authenticated visit; upload/publish refresh explicitly.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  return <div className={styles.page} data-reiki-intro-audio-manager>
-    <div className={styles.intro}>
-      <p>{copy.intro}</p>
-      <strong>{copy.steps}</strong>
-      <p>{copy.fileInfo}</p>
-      <div className={styles.localeLine}>
-        <span>{copy.language}</span>
-        <div className={styles.localeToggle} role="group" aria-label={copy.language}>
-          <button type="button" aria-pressed={locale === 'ru'} onClick={() => setLocale('ru')}>Русский</button>
-          <button type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>English</button>
-        </div>
-        <a href={'/' + locale + '/academy/principles-of-energywork/learn'} target="_blank" rel="noopener noreferrer">{copy.viewCourse} ↗</a>
-        <button type="button" onClick={() => void refresh().catch(() => {})} disabled={loading}>{copy.reload}</button>
+
+  useEffect(()=>{
+    void refresh(selectedLesson,locale)
+    return ()=>{requestNumber.current += 1}
+  },[selectedLesson,locale,refresh])
+
+  function replaceUrl(lesson,language) {
+    const url=new URL(window.location.href)
+    url.searchParams.set('lesson',lesson)
+    url.searchParams.set('lang',language)
+    window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+  }
+  function chooseLesson(lesson) {
+    if (locked || selectedLesson===lesson) return
+    setFiles([]);setTruncated(false);setSelectedLesson(lesson);replaceUrl(lesson,locale)
+  }
+  function chooseLanguage(language) {
+    if (locked || locale===language) return
+    setFiles([]);setTruncated(false);setLocale(language);replaceUrl(selectedLesson,language)
+  }
+
+  const chosen=lessons.find(item=>item.id===selectedLesson)||lessons[0]
+  const active=manifest.slots?.[reikiIntroSlot(selectedLesson,locale)]||null
+  return <div className={styles.page} data-reiki-intro-audio-manager data-materials-reiki-folder-view>
+    <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+      <Link href="/admin/materials">{t.breadcrumbMaterials}</Link><ChevronRight size={15} aria-hidden="true"/>
+      <Link href="/admin/materials/audio">{t.breadcrumbAudio}</Link><ChevronRight size={15} aria-hidden="true"/>
+      <span>{t.course}</span>
+    </nav>
+    <header className={styles.courseHeader}>
+      <div className={styles.courseHeading}>
+        <span className={styles.courseIcon}><Headphones size={25} aria-hidden="true"/></span>
+        <div><h2>{t.course}</h2><p>{t.intro}</p></div>
       </div>
+      <div className={styles.langPanel} data-reiki-audio-language-toggle>
+        <strong>{t.language}</strong>
+        <div className={styles.localeToggle} role="group" aria-label={t.language}>
+          <button type="button" aria-pressed={locale==='ru'} disabled={locked}
+            onClick={()=>chooseLanguage('ru')}>RU · Русский</button>
+          <button type="button" aria-pressed={locale==='en'} disabled={locked}
+            onClick={()=>chooseLanguage('en')}>EN · English</button>
+        </div>
+        <small>{t.languageHint}</small>
+      </div>
+    </header>
+    <p className={styles.process}>{t.steps}</p>
+    <div className={styles.workspace}>
+      <aside className={styles.lessonFolders} aria-label={t.folderTitle} data-reiki-lesson-folders>
+        <h3><FolderOpen size={19} aria-hidden="true"/>{t.folderTitle}</h3>
+        <div className={styles.folderButtons}>
+          {lessons.map(lesson=>{
+            const open=lesson.id===selectedLesson
+            const ruPublished=!!manifest.slots?.[reikiIntroSlot(lesson.id,'ru')]
+            const enPublished=!!manifest.slots?.[reikiIntroSlot(lesson.id,'en')]
+            return <button type="button" key={lesson.id}
+              className={styles.lessonFolder + (open?' '+styles.lessonFolderOpen:'')}
+              aria-pressed={open} disabled={locked}
+              onClick={()=>chooseLesson(lesson.id)} data-reiki-lesson-folder={lesson.id}>
+              <span className={styles.lessonFolderIcon}>{open?<FolderOpen size={21} aria-hidden="true"/>:
+                <Folder size={21} aria-hidden="true"/>}</span>
+              <span className={styles.lessonFolderText}>
+                <small>{t.lesson} {lesson.number}</small><strong>{lesson[locale]}</strong>
+                <span className={styles.languageIndicators} aria-label={'RU: '+(ruPublished?t.published:t.empty)+'. EN: '+(enPublished?t.published:t.empty)}>
+                  <i data-ready={ruPublished?'true':'false'}>RU {ruPublished?'✓':'–'}</i>
+                  <i data-ready={enPublished?'true':'false'}>EN {enPublished?'✓':'–'}</i>
+                </span>
+              </span>
+              <ChevronRight className={styles.lessonChevron} size={17} aria-hidden="true"/>
+            </button>
+          })}
+        </div>
+      </aside>
+      <section className={styles.folderContents} data-open-reiki-lesson={chosen.id}
+        aria-label={t.lesson+' '+chosen.number+' — '+chosen[locale]}>
+        {loading ? <p role="status">{t.refreshing}</p> :
+          !ready ? <p role="alert" className={styles.error}>{error||t.unavailable}</p> :
+          <>
+            <div className={styles.folderToolbar}>
+              <span>{t.breadcrumbAudio} / {t.course} / {t.lesson} {chosen.number} / {locale.toUpperCase()}</span>
+              <button type="button" onClick={()=>void refresh(selectedLesson,locale)}
+                disabled={refreshing||locked}><RefreshCw size={15} aria-hidden="true"/>{t.refresh}</button>
+            </div>
+            {refreshing ? <p className={styles.refreshing} role="status">{t.refreshing}</p> : null}
+            <LessonAudioCard key={chosen.id+':'+locale} lesson={chosen} locale={locale} origin={origin}
+              current={active} files={files} truncated={truncated} copy={t}
+              onChanged={()=>refresh(chosen.id,locale)} setOperationBusy={setLocked}/>
+          </>}
+      </section>
     </div>
-    {loading ? <p role="status">{locale === 'ru' ? 'Проверяем хранилище…' : 'Checking storage…'}</p>
-      : !ready ? <p role="alert" className={styles.error}>{error || copy.unavailable}</p>
-        : <div className={styles.cards}>
-          {lessons.map(lesson => <LessonAudioCard key={lesson.id + ':' + locale}
-            lesson={lesson} locale={locale} origin={origin}
-            current={manifest.slots?.[reikiIntroSlot(lesson.id, locale)] || null}
-            copy={copy} onPublished={refresh} />)}
-        </div>}
+    <p className={styles.privacyNote}>{t.publicNote}</p>
+    <Link className={styles.courseLink}
+      href={'/'+locale+'/academy/principles-of-energywork/learn'} target="_blank"
+      rel="noopener noreferrer">{t.viewCourse} ↗</Link>
   </div>
 }
