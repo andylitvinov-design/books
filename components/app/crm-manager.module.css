@@ -102,6 +102,11 @@
 .list li.focusedContact{border:2px solid #237a8c;background:#f1fcfc;scroll-margin-block:85px}
 .focusedContact:focus{outline:3px solid #205f75;outline-offset:2px}
 
+/* Owner CRM v6.2: leads with no open follow-up. */
+.leadShortcut{display:block;max-width:100%;width:100%;text-align:left;
+ margin:12px 0 10px;background:#f5e5d1!important;color:#68432e!important;
+ border:1px solid #dfc4a8!important;border-radius:13px!important;
+ min-height:44px!important;font:750 13px/1.4 system-ui,sans-serif!important}
 
 /* CRM omnichannel entry: in-app secure messages and external provider inboxes
    are distinct data domains. Compact, keyboard-accessible at 320px. */
