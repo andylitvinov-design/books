@@ -87,3 +87,75 @@ listening QA remains mandatory. The synthetic unit tests are
 `python3 -m unittest discover -s tests -p test_andrey_voice_reference.py`.
 
 No audio, voice models, transcripts or patient data are committed to the repository.
+
+## 10. Backend staging work — 2026-10-20, NOT ACTIVE
+
+A feature-flagged backend implementation was prepared separately from the previous
+pure-state foundation. The queue uses existing private Redis/Upstash REST
+(`PRESCRIPTIONS_KV_REST_API_URL`, `PRESCRIPTIONS_KV_REST_API_TOKEN`)
+rather than provisioning a new SQL database schema. The job text is encrypted
+server-side with the existing AES-256-GCM `seal/openSealed` facilities before
+Redis receives it, and the queue key is an HMAC of the exact approved text
+and authorized report reference. Redis Lua operations allow atomic create,
+claim/lease, retry and finalization. No client report names, plaintext text,
+voice samples or bearer tokens are stored in queue metadata.
+
+Staged source (not evidence of an operating service):
+- `lib/clients/report-narration-access.js` — shared approved report authorization.
+- `lib/clients/local-narration-redis.js` — bounded encrypted Redis queue.
+- `lib/clients/local-narration-service.js` — enqueue, worker claim and readback.
+- `lib/clients/local-narration-media.js` — private bucket validation and
+  MP3 integrity checks, explicit Range playback.
+- `app/api/report-narration/local/route.js` — same-origin opt-in queue/status.
+- `app/api/report-narration/local/audio/route.js` — reauthorized private audio.
+- `app/api/report-narration/local/worker/claim/route.js` — bearer-only Mac work claim.
+- `components/local-report-narration-player.jsx` — mobile queue-aware player.
+- `scripts/andrey-voice/local_worker.py` — owner-operated Mac worker prototype
+  using the privately installed `andrey_tts.py` with no paid synthesis API.
+
+**Not implemented or verified:** worker complete/failed HTTP handlers; production
+end-to-end Redis and signed Supabase upload; actual Mac MLX synthesis and RU/EN
+timbre; iPhone playback QA. These are blockers for activation, not minor polish.
+
+The staged local feature is deliberately disabled unless ALL conditions hold:
+- `HH_LOCAL_NARRATION_ENABLED=true`
+- `HH_LOCAL_NARRATION_OWNER_APPROVED=true`
+- `HH_LOCAL_NARRATION_END_TO_END_VERIFIED=true`
+- `HH_LOCAL_NARRATION_WORKER_TOKEN` is a securely generated token of 40+ bytes
+  provisioned through encrypted Vercel env and the Mac's private credential store.
+
+No such activation is requested or justified yet. Do not set those flags true
+until the missing routes, test suites, security/privacy QA and real owner
+voice-quality approval are complete.
+
+No new server schema or database migration was applied. Existing RLS warnings in
+Supabase must be reviewed separately; do NOT auto-alter unrelated tables.
+
+
+## 11. Queued-source revocation and revalidation
+
+Before disclosing queued clinical text to Mac, the worker claim now rechecks
+the underlying authorized source and compares the exact approved text for
+the requested part. It verifies current guest grant version, nonrevocation,
+cabinet selector or valid saved-account source under its originally verified
+session context. Expired/revoked saved sessions fail closed. These checks
+are integrated in `currentApprovedAnalysisForWorker` and occur before
+upload signing or exposing the job text to Mac.
+
+**Still not production-ready:** Auth/database integration with realistic
+revoked/expired synthetic fixtures, crash/retry/renewed failed-job behaviour,
+orphaned Supabase object cleanup, personal RU/EN voice QA and real iPhone
+Safari playback have not been independently verified. Do not set any
+`HH_LOCAL_NARRATION_*` activation flag yet.
+
+## 12. Mac preflight and free installation (not executed remotely)
+
+On the owner's Apple Silicon Mac, `zsh scripts/andrey-voice/setup_macos.sh`
+only inspects CPU, macOS, memory and available storage. Running the same file
+with `--install` creates a user-private Python MLX environment after ensuring
+a compatible Python 3.11/3.12 and ffmpeg are present. No sudo, no paid inference
+and no voice model/client data is fetched by the preflight.
+
+Mac is currently not connected to Desktop Commander Remote. The above scripts
+are staged only: the site's approval flags must remain false until an
+authorized owner-only RU/EN audio test and verification of job revocation.

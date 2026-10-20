@@ -48,9 +48,12 @@ test('synthesis stays server-only, uses verified private voices and cannot silen
 
 test('TTS API authenticates every route and never trusts narration supplied by the client', () => {
   const route = source('app/api/report-narration/route.js')
-  for(const check of ['requireSameOrigin(request, config)', 'authorizeSessionGuest',
-    'authorizeCabinetRequest', 'authorizePrescriptionRequest', 'readSavedSession',
-    'readSavedDocument', 'getPublishedSessionReport', 'getClientPrescription',
+  const access = source('lib/clients/report-narration-access.js')
+  for(const check of ['authorizeSessionGuest', 'authorizeCabinetRequest',
+    'authorizePrescriptionRequest', 'readSavedSession', 'readSavedDocument',
+    'getPublishedSessionReport', 'getClientPrescription'])
+    assert.ok(access.includes(check), check)
+  for(const check of ['requireSameOrigin(request, config)', 'authorizedNarrationAnalysis',
     'splitApprovedAnalysis', 'consumeAccessAttempt', 'NARRATION_LIMIT'])
     assert.ok(route.includes(check), check)
   assert.match(route, /body\.part >= parts\.length/)

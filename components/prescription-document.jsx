@@ -8,6 +8,8 @@ import { DocumentAutoPrint } from './document-auto-print'
 import { ReportAppendixPrintExpander } from './report-appendix-print-expander'
 import { PrescriptionActions } from './prescription-actions'
 import { ReportNarrationPlayer } from './report-narration-player'
+import { LocalReportNarrationPlayer } from './local-report-narration-player'
+import { localNarrationEnabled } from '@/lib/clients/local-narration-service'
 import { DaoStageDisclosure } from './dao-resource-stage'
 import { narrationEnabled } from '@/lib/clients/report-narration-service'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
@@ -97,7 +99,9 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       {document.analysis && <section className="canonical-general canonical-report-analysis">
         <div className="canonical-analysis-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 9, marginBottom: 11 }}>
           <h2 style={{ margin: 0 }}>{labels.analysis}</h2>
-          {narration && <ReportNarrationPlayer locale={locale} access={narration} available={narrationEnabled()} />}
+          {narration && (localNarrationEnabled()
+            ? <LocalReportNarrationPlayer locale={locale} access={narration} />
+            : <ReportNarrationPlayer locale={locale} access={narration} available={narrationEnabled()} />)}
         </div>
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
       </section>}
