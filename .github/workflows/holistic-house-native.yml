@@ -16,6 +16,7 @@ on:
       - 'app/api/app/practitioner-client-messages/route.js'
       - 'supabase/migrations/*native*push*'
       - 'tests/native-private-message-push.test.mjs'
+      - 'tests/native-push-release.test.mjs'
       - 'android/**'
       - 'ios/**'
       - 'native-web/**'
@@ -23,6 +24,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: hh-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -54,7 +59,7 @@ jobs:
       - name: Verify native source contracts before staged branding
         run: node --test tests/holistic-house-native-build.test.mjs
       - name: Verify native push privacy, consent and transport
-        run: node --conditions=react-server --test tests/native-private-message-push.test.mjs
+        run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
       - name: Prepare separate Holistic House Capacitor config
         run: node scripts/prepare-holistic-house-native.mjs before-sync
       - name: Inject optional Firebase Android configuration (secrets only)
@@ -113,7 +118,7 @@ jobs:
       - name: Verify native source contracts before staged branding
         run: node --test tests/holistic-house-native-build.test.mjs
       - name: Verify native push privacy, consent and transport
-        run: node --conditions=react-server --test tests/native-private-message-push.test.mjs
+        run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
       - name: Prepare separate Holistic House Capacitor config
         run: node scripts/prepare-holistic-house-native.mjs before-sync
       - name: Sync iOS Capacitor project
