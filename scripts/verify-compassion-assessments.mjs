@@ -69,7 +69,7 @@ try{
  page=await account.newPage()
  page.on('pageerror',e=>errors.push(e.message))
  await navigate(page,origin+'/en/app')
- await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
+ await page.getByRole('button',{name:'Open my Cabinet with Google',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
