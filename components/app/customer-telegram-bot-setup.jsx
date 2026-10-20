@@ -16,7 +16,7 @@ const TEXT={
   error:'Setup check failed. Verify your signed-in owner account and Vercel configuration.',
   sendingOff:'Automatic client messaging is OFF until a controlled pilot is approved.',
   sendingOn:'Automatic client messaging is enabled. Review the pilot and consent controls.',
-  loading:'Checking setup…',reuse:'Using your existing verified practice bot; no new BotFather token or username is needed.',reuseHelp:'The owner chat remains paired. Webhook setup refuses to overwrite another app’s callback.',bot:'Bot:'
+  loading:'Checking setup…',reuse:'Using your existing verified practice bot; no new BotFather token or username is needed.',reuseHelp:'The owner chat remains paired. Webhook setup refuses to overwrite another app’s callback.',bot:'Bot:',
   test:'Send one test to my Telegram',testAccepted:'Telegram accepted the test request. Check your chat; delivery and reading are not confirmed.',
   testNotLinked:'Connect your own Telegram in Cabinet Settings before testing.',testRate:'Only one test every ten minutes.',
   testHelp:'Manual test goes only to your verified Telegram. Client broadcasting remains OFF.',accountSettings:'Open Cabinet Settings',
@@ -33,7 +33,7 @@ const TEXT={
   error:'Проверка не удалась. Проверьте вход владельца и переменные Vercel.',
   sendingOff:'Автоматические сообщения клиентам ВЫКЛЮЧЕНЫ до подтверждённого теста.',
   sendingOn:'Автоматические сообщения клиентам включены. Проверьте согласия и результаты пилота.',
-  loading:'Проверяем подключение…',reuse:'Используем уже настроенного бота мастера. Новый BotFather-токен и имя бота не нужны.',reuseHelp:'Привязка мастера сохранена. Подключение откажется заменять webhook другого приложения.',bot:'Бот:'
+  loading:'Проверяем подключение…',reuse:'Используем уже настроенного бота мастера. Новый BotFather-токен и имя бота не нужны.',reuseHelp:'Привязка мастера сохранена. Подключение откажется заменять webhook другого приложения.',bot:'Бот:',
   test:'Отправить тест себе в Telegram',testAccepted:'Telegram принял тест. Проверьте чат; доставка и прочтение не подтверждаются.',
   testNotLinked:'Сначала подключите свой Telegram в настройках кабинета.',testRate:'Один тест разрешён раз в десять минут.',
   testHelp:'Ручной тест отправляется только на ваш подтверждённый Telegram. Рассылка клиентам остаётся выключенной.',accountSettings:'Открыть настройки кабинета',
@@ -50,7 +50,7 @@ const TEXT={
   error:'No se pudo verificar. Comprueba tu sesión de propietario y Vercel.',
   sendingOff:'Mensajes automáticos DESACTIVADOS hasta aprobar la prueba.',
   sendingOn:'Mensajes automáticos activados. Revisa el consentimiento y las pruebas.',
-  loading:'Comprobando conexión…',reuse:'Se utiliza el bot de práctica ya verificado; no hace falta otro token de BotFather.',reuseHelp:'Se conserva la vinculación del profesional y nunca se sobrescribe otro webhook.',bot:'Bot:'
+  loading:'Comprobando conexión…',reuse:'Se utiliza el bot de práctica ya verificado; no hace falta otro token de BotFather.',reuseHelp:'Se conserva la vinculación del profesional y nunca se sobrescribe otro webhook.',bot:'Bot:',
   test:'Enviar una prueba a mi Telegram',testAccepted:'Telegram aceptó la prueba. Comprueba el chat; no se confirma la entrega ni la lectura.',
   testNotLinked:'Primero conecta tu Telegram en ajustes de tu cuenta.',testRate:'Solo una prueba cada diez minutos.',
   testHelp:'La prueba se envía solo a tu Telegram verificado. Los envíos a clientes siguen desactivados.',accountSettings:'Abrir ajustes de cuenta',
