@@ -124,3 +124,21 @@ Sources:
 This provider is **not enabled** in production until the owner provides credentials through Vercel secrets, verifies the merchant ID, approves the database migrations/terms/refunds/taxes and passes PayPal sandbox + real provider acceptance. The current PayPal.Me / Interac options remain available until then.
 
 API integration reads EUR 50 / EUR 100 from the canonical product catalog, never an amount in the browser. A payer return does not prove capture: only the provider-readback-verified capture + protected billing ledger can mark an order paid. Scheduling is still manual.
+
+## Public website activation behavior — exact EUR checkout (2026-10-20)
+
+The existing public /en|ru|es/payments and /en|ru|es/cart keep their working personal PayPal.Me/manual verification, Interac, and independently approved Square/Zen until getCommerceConfig().enabled is true. This requires an approved PayPal Business merchant (which may be an unincorporated individual).
+
+After merchant/schema/tax approval, pages switch to the EXISTING account-bound ServiceCart instead of creating a duplicate checkout state machine:
+- Visitor selects catalog-fixed EUR 50/30m, EUR 100/60m, or both EUR 150. Client cannot supply the amount.
+- Visitor signs into Holistic House and opens a PayPal-hosted secure one-time checkout. Guest card availability depends on PayPal and buyer eligibility, not on the website. The site never handles card credentials.
+- On PayPal return, POST /api/app/commerce/orders/{orderId}/capture requires valid cookie, same-origin and account binding and independently reads approved provider order, merchant ID, EUR amount and exact items; a return URL is not proof.
+- Account-scoped ledger records paid only after PayPal verified capture; refunds and disputes hold fulfillment. Appointment scheduling remains personal.
+- POST /api/billing/paypal/webhook verifies the exact PayPal webhook signature and provider readback before reconciling; events are idempotent.
+
+### Owner actions for genuine EUR card/PayPal checkout
+1. PayPal Business signup for a truthful unincorporated seller: https://www.paypal.com/ca/business/open-business-account . Complete PayPal identity, lawful activity, EUR Goods & Services and bank checks. PayPal Business account does not require incorporating a company as such, but PayPal may require trade-name / eligibility checks.
+2. PayPal Developer sandbox then live: https://developer.paypal.com/dashboard/applications/sandbox and https://developer.paypal.com/dashboard/applications/live . Create Checkout app owned by the exact seller, and webhook https://holistichouse.vercel.app/api/billing/paypal/webhook. Enter client ID/secret, merchant ID and webhook ID only as protected env variables at https://vercel.com/super10/codex-public-book-library/settings/environment-variables . Never paste these credentials in chat/Git or NEXT_PUBLIC vars.
+3. Approve the protected billing ledger schema (docs/billing/proposed-subscription-schema.sql and docs/billing/proposed-service-commerce-schema.sql) after RLS, financial retention, refunds, scheduling and tax review. Test a PayPal sandbox EUR 50 and EUR 100 round-trip plus cancel/failed/refund, signed webhook, different users, duplicate redirects. Only after verified merchant/bank settlement and permitted real small transaction/refund enable flags HH_COMMERCE_PROVIDER=paypal; HH_PAYPAL_ENVIRONMENT=live; HH_BILLING_SCHEMA_APPROVED=true; HH_COMMERCE_SCHEMA_APPROVED=true; HH_COMMERCE_ENABLED=true; HH_COMMERCE_FULFILLMENT_APPROVED=true; HH_COMMERCE_TAX_REVIEW_APPROVED=true; HH_COMMERCE_PRODUCTION_APPROVED=true; HH_PAYPAL_PRODUCTION_APPROVED=true; HH_PAYPAL_TAX_REVIEW_APPROVED=true.
+
+Do not enable approval flags merely to display a button. Until the merchant and live E2E are verified, personal PayPal.Me/manual confirmation remains the honest production fallback.
