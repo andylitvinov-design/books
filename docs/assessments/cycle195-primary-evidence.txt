@@ -1,0 +1,9 @@
+Cycle 195 research-only source audit, 2026-10-20
+IAS-D-21 and IATS-D-21 https://doi.org/10.1177/13591053261449068
+Intero-10 https://doi.org/10.1002/ejp.70320
+SSDS-33 https://doi.org/10.1016/j.actpsy.2026.106543
+Copeds-19 https://doi.org/10.1080/10503307.2025.2495773
+SPTQ-27 https://doi.org/10.1080/00224499.2025.2572013
+ELIA-39 https://doi.org/10.3389/fpsyg.2026.1757948
+TGI-3S https://doi.org/10.1192/j.eurpsy.2026.12252
+Metadata only. No items, scoring, licenses, or releases.
