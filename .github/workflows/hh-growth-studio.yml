@@ -8,6 +8,7 @@ on:
       - 'components/growth-studio.*'
       - 'components/growth-studio-bulk.jsx'
       - 'components/growth-studio-connections.jsx'
+      - 'components/growth-studio-source-picker.jsx'
       - 'components/prescription-admin-header.jsx'
       - 'components/practitioner-cabinet.jsx'
       - 'components/app/practice-workspace.jsx'
@@ -18,6 +19,7 @@ on:
       - 'tests/growth-studio-telegram.test.mjs'
       - 'tests/growth-studio-platforms.test.mjs'
       - 'tests/growth-studio-manual-calendar.test.mjs'
+      - 'tests/growth-studio-source-preview.test.mjs'
       - 'tests/growth-studio-navigation-preservation.test.mjs'
       - '.github/workflows/hh-growth-studio.yml'
   workflow_dispatch:
@@ -45,9 +47,10 @@ jobs:
           node --check lib/growth-studio/bulk.mjs
           node --check lib/growth-studio/telegram.mjs
           node --check lib/growth-studio/store.js
+          node --check lib/growth-studio/source-preview.mjs
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
-        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs
+        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-source-preview.test.mjs
 
   next-build:
     name: Next.js production build / Growth Studio
