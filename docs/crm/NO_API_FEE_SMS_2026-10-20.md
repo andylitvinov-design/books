@@ -46,3 +46,9 @@ The more general SMS URI RFC: https://www.rfc-editor.org/rfc/rfc5724
 - EN/RU/ES mobile UI and accessible manual controls.
 - Verify the CRM source test workflow and production SHA after merge.
 - Test physical iPhone clipboard → Messages → paste separately before claiming that device handoff works on iOS. Browser/source tests alone do not prove native app launch.
+
+## Update — free mail app handoff
+
+The CRM also offers **Email from your own app · no mailing API** next to the manual SMS option. It uses only verified email addresses with current recorded marketing consent and non-suppressed contact status. Select up to 20 contacts, prepare a short non-clinical message, copy its text and open the owner's native email app with only that recipient address using `mailto:`. Subject and body never go into the URL, and no paid Resend API call or delivery-status claim is made. Each email must be pasted, checked and sent manually. Normal email provider limits and CASL identification and unsubscribe requirements remain applicable. Replies asking to unsubscribe must be processed by the owner in CRM. No contact data is submitted to a new outside vendor or persistent campaign log.
+
+Telegram and WhatsApp are **not** secretly activated. Their free options require explicit subscriber initiation and verified owner assets; published site links cannot bypass consent or provider policy. Client Cabinet Web Push remains the existing opt-in notification channel rather than an SMS replacement.
