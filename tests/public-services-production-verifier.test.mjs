@@ -43,6 +43,9 @@ test('only deliberate enquiry 503 console output is recorded as expected', () =>
 
 test('existing isolated CI command explicitly opts in, without changing its target or permissions', () => {
   const workflow = read('.github/workflows/hh-public-services-production.yml');
+  // The executed-source contract harness imports dev TypeScript under this production job.
+  assert.match(workflow, /^\s+- run: npm ci --include=dev --no-audit --no-fund$/m);
+  assert.match(workflow, /^\s+NODE_ENV: production$/m);
   assert.match(workflow, /HH_PUBLIC_QA_ORIGIN: http:\/\/127\.0\.0\.1:3100/);
   assert.match(workflow, /HH_PUBLIC_QA_ENQUIRY_FIXTURE='1' node scripts\/verify-public-services-production\.mjs/);
   assert.match(workflow, /contents: read/);

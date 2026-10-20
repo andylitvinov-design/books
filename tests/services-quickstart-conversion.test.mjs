@@ -62,7 +62,7 @@ test("real production browser QA covers personal landing CTA and safe messenger 
   assert.match(script, /Business Strategy & Founder Coaching has its own separate/);
   assert.match(script, /for \(const locale of \["en", "ru", "es"\]\)/);
   assert.match(script, /waitForURL\(\/#request-session\$\/\)/);
-  assert.match(script, /assertPreparedContactChannels\(chooser, expect\)/);
+  assertPersonalSaveGatedCaller(script);
   assert.match(script, /personal-request\//);
   assert.doesNotMatch(script, /telegram\.com\/send|wa\.me\/send/);
   assert.match(workflow, /node scripts\/verify-public-services-production\.mjs/);
@@ -88,5 +88,32 @@ test("Business browser contract rejects missing route or locale coverage", () =>
   for (const changed of [script.replace('locale + "/services/business-consulting"', 'locale + "/services/wrong"'), script.replaceAll('["en", "ru", "es"]', '["en", "ru"]')]) {
     assert.notEqual(changed, script);
     assert.throws(() => assertBusinessBrowserRoute(changed));
+  }
+});
+
+function assertPersonalSaveGatedCaller(source) {
+  assert.match(source, /import \{ assertSingleEntryEnquiryUi, exercisePublicEnquiryUi \} from '\.\/helpers\/public-enquiry-ui-verifier\.mjs'/);
+  assert.match(source, /const prepared = await exercisePublicEnquiryUi\(page, scope, expect, options\)/);
+  assert.match(source, /const target = main\.locator\('aside#request-session \[data-consultation-capture="service"\]'\)/);
+  assert.match(source, /await choices\.nth\(1\)\.click\(\)/);
+  assert.match(source, /await runEnquiryFixture\(page, target, \{ locale, kind: service, requiredMessage: \["€50"\] \}\)/);
+  assert.match(source, /prepared\.whatsappUrl\.searchParams\.get\("text"\) \|\| ""\)\.includes\("€50"\)/);
+  assert.match(source, /HH_PUBLIC_QA_ENQUIRY_FIXTURE !== "1"/);
+  assert.match(source, /backend persistence and messenger delivery NOT verified/);
+  assert.doesNotMatch(source, /openContactChannelChooser|assertPreparedContactChannels/);
+}
+
+test("public intake compatibility rejects personal fixture bypass, wrong scope or lost selected price", () => {
+  const source = read("scripts/verify-public-services-production.mjs");
+  assertPersonalSaveGatedCaller(source);
+  for (const [before, after] of [
+    ["await exercisePublicEnquiryUi(page, scope, expect, options)", "await otherFixture(page, scope, expect, options)"],
+    ['runEnquiryFixture(page, target, { locale, kind: service, requiredMessage: ["€50"] })', 'runEnquiryFixture(page, main, { locale, kind: service, requiredMessage: [] })'],
+    ['await choices.nth(1).click()', 'await choices.nth(0).click()'],
+    ['HH_PUBLIC_QA_ENQUIRY_FIXTURE !== "1"', 'false'],
+    ['backend persistence and messenger delivery NOT verified', 'backend persistence verified'],
+  ]) {
+    assert.ok(source.includes(before));
+    assert.throws(() => assertPersonalSaveGatedCaller(source.replace(before, after)));
   }
 });

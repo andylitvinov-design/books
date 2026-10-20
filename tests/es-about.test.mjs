@@ -17,14 +17,28 @@ test('Spanish About uses its independent published Spanish audio, not an English
   assert.match(page, /getPublishedSiteVideos\(\)/);
   assert.ok(page.includes("published['about-intro:es']"));
   assert.doesNotMatch(page, /englishIntro|about-intro:en|create_video|saveSiteVideoAction/);
-  const { existingAboutIntroVideoEs } = await import('../lib/site-videos/defaults.js');
+  const { existingAboutIntroVideo, existingAboutIntroVideoRu, existingAboutIntroVideoEs, builtInSiteVideoRecords } = await import('../lib/site-videos/defaults.js');
   const { aboutIntroEs } = await loadData('data/about-es.ts');
   assert.equal(existingAboutIntroVideoEs.transcript, aboutIntroEs.transcript);
   assert.equal(existingAboutIntroVideoEs.language, 'es');
   assert.equal(existingAboutIntroVideoEs.durationSeconds, 31);
+  assert.equal(existingAboutIntroVideoEs.heygenId, '2c251709aba74fd96ae8be43257a080b');
+  assert.notEqual(existingAboutIntroVideoEs.heygenId, existingAboutIntroVideo.heygenId);
+  assert.notEqual(existingAboutIntroVideoEs.heygenId, existingAboutIntroVideoRu.heygenId);
+  assert.equal(existingAboutIntroVideoEs.youtubeId, '');
+  const publication = builtInSiteVideoRecords().find(record => record.key === 'about-intro:es');
+  assert.equal(publication.published.heygenId, existingAboutIntroVideoEs.heygenId);
+  assert.equal(publication.published.language, 'es');
+  assert.equal(publication.published.status, 'published');
   const player = source('components/site-video-player.tsx');
   assert.ok(player.includes('video.language !== "es"'));
-  for (const text of ['Audio en inglés','Audio en ruso','cc_lang_pref: video.language','lang={textLanguage}','psychic-alchemy-es-v1.webp']) assert.ok(player.includes(text));
+  // YouTube now opens direct watch links; embed-only caption parameters no longer apply.
+  // The independent Spanish publication still uses its original HeyGen source.
+  for (const text of ['Audio en inglés','Audio en ruso','lang={textLanguage}','psychic-alchemy-es-v1.webp']) assert.ok(player.includes(text), text);
+  assert.match(player, /const embedUrl = `https:\/\/app\.heygen\.com\/embeds\/\$\{video\.heygenId\}`/);
+  const mirrors = player.match(/const existingYouTubeMirrors[^=]*=\s*\{([\s\S]*?)\n\};/)?.[1];
+  assert.ok(mirrors, 'Inspect the explicit approved mirror mapping');
+  assert.ok(!mirrors.includes(existingAboutIntroVideoEs.heygenId), 'Spanish About must not inherit an unrelated YouTube mirror');
 });
 test('ES About retains all sections, real translated destinations, form and SEO', () => {
   const page = source('app/es/about/page.tsx'); for (const value of ['about-biography', 'about-testimonials', 'about-review-archive', 'personal-consultation-title', 'about-client-cabinet', 'canonical:', "es: '/es/about'", '/es/books', '/es/homeopathy', '/es/services', '/es/client']) assert.ok(page.includes(value), value);

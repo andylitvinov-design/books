@@ -1,10 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { isSmsPhone, marketingEligibility, smsRecordedConsentEligibility } from '../lib/crm/consent.js'
 import { manualSmsEligible } from '../lib/crm/manual-sms.js'
 import { createSmsStore } from '../lib/crm/sms-store.js'
-import { sendCrmSms } from '../lib/crm/sms-dispatch.js'
 import { smsRecipientFingerprint } from '../lib/crm/sms.js'
 import { seal } from '../lib/app/crypto.js'
 
@@ -155,20 +155,41 @@ test('SMS claim rechecks current owner, consent and STOP before returning dispat
   }
 })
 
-test('provider-off SMS dispatch cannot reserve or send even with recorded consent', async () => {
-  const former = process.env.HH_CRM_SMS_ENABLED
-  process.env.HH_CRM_SMS_ENABLED = 'false'
-  let touched = false
-  try {
+test('provider-off SMS dispatch cannot reserve or send even with recorded consent', () => {
+  // Execute the real server-only module in its own server-conditioned process.
+  // Keep the surrounding consent/STOP/owner suite portable to ordinary Node.
+  const dispatchUrl = new URL('../lib/crm/sms-dispatch.js', import.meta.url).href
+  const child = spawnSync(process.execPath, [
+    '--conditions=react-server', '--input-type=module', '-e', `
+    import assert from 'node:assert/strict'
+    assert.equal(process.env.HH_CRM_SMS_ENABLED, 'false')
+    let reservations = 0
+    let providerCalls = 0
+    globalThis.fetch = async () => {
+      providerCalls += 1
+      throw new Error('provider transport is forbidden in this fixture')
+    }
+    const { sendCrmSms } = await import(${JSON.stringify(dispatchUrl)})
     await assert.rejects(sendCrmSms({
-      repo: { async withOwner() { touched = true; throw new Error('must not reserve') } },
-      actor: { id: ownerId }, payload: { requestId, contactId, body: 'Synthetic message' },
+      repo: { async withOwner() { reservations += 1; throw new Error('must not reserve') } },
+      actor: { id: ${JSON.stringify(ownerId)} },
+      payload: {
+        requestId: ${JSON.stringify(requestId)}, contactId: ${JSON.stringify(contactId)},
+        body: 'Synthetic message',
+      },
     }), /SMS_NOT_CONFIGURED/)
-    assert.equal(touched, false)
-  } finally {
-    if (former === undefined) delete process.env.HH_CRM_SMS_ENABLED
-    else process.env.HH_CRM_SMS_ENABLED = former
-  }
+    assert.equal(reservations, 0)
+    assert.equal(providerCalls, 0)
+    console.log('real provider-off dispatch assertion executed')
+  `], {
+    // Never inherit provider credentials or enablement from the outer runner.
+    env: { HH_CRM_SMS_ENABLED: 'false' },
+    encoding: 'utf8', timeout: 5_000, maxBuffer: 16 * 1024,
+  })
+  assert.equal(child.error, undefined)
+  assert.equal(child.signal, null, child.stderr)
+  assert.equal(child.status, 0, child.stderr)
+  assert.equal(child.stdout.trim(), 'real provider-off dispatch assertion executed')
 })
 
 test('SMS uses recorded-consent naming and truthful EN/RU/ES copy; email still uses verification', () => {

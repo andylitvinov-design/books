@@ -246,8 +246,7 @@ test('both core-service scripts explicitly open the uniquely scoped chooser with
   const production = read('scripts/verify-public-services-production.mjs');
   assert.match(production, /main.locator\('section:has\(> details\)'\)/);
   assert.match(production, /assert.equal\(await capture.count\(\), 1/);
-  assert.match(production, /openContactChannelChooser\(capture, expect\)/);
-  assert.match(production, /Prepared request must retain the selected service/);
+  assertPublicCoreSaveGatedCaller(production, read('scripts/helpers/public-enquiry-ui-verifier.mjs'));
   assert.match(production, /alternative starts collapsed/);
   assert.match(production, /Only|isolated loopback server/);
   assert.match(production, /require\(\(process.env.HH_PLAYWRIGHT_PACKAGE \|\| "playwright"\) \+ "\/test"\)/);
@@ -350,4 +349,40 @@ test('free-review verifier callers open both channels, keep generic drafts and t
   assert.match(temple, /<ContactChannelChooser/);
   assert.doesNotMatch(temple, /<a[^>]*href=\{whatsappUrl\}/);
   assert.match(read('scripts/verify-contact-channel-chooser-browser.mjs'), /verifyChooser\(page,templeChooser/);
+});
+
+function assertPublicCoreSaveGatedCaller(source, helper) {
+  assert.match(source, /import \{ assertSingleEntryEnquiryUi, exercisePublicEnquiryUi \} from '\.\/helpers\/public-enquiry-ui-verifier\.mjs'/);
+  assert.match(source, /const prepared = await exercisePublicEnquiryUi\(page, scope, expect, options\)/);
+  assert.match(source, /await runEnquiryFixture\(page, capture, \{ locale, kind: "hypnotherapy" \}\)/);
+  assert.match(source, /HH_PUBLIC_QA_ENQUIRY_FIXTURE !== "1"/);
+  assert.doesNotMatch(source, /openContactChannelChooser|assertPreparedContactChannels/);
+  const receipt = helper.indexOf("await expect(chooser.locator('[role=\"status\"]')).toContainText(referenceCode)");
+  const channels = helper.indexOf('const prepared = await assertPreparedContactChannels(chooser, expect)');
+  assert.ok(receipt >= 0 && channels > receipt, 'Prepared channels are checked only after the synthetic saved receipt');
+  assert.match(helper, /for \(const required of \[service\.title, \.\.\.requiredMessage, description, referenceCode\]\)/);
+  assert.match(helper, /assert\.ok\(message\.includes\(required\)/);
+  assert.match(helper, /assert\.deepEqual\(request\.body, expectedBody\(requests\[0\]\.body\.operationId\),/);
+}
+
+test('public intake compatibility rejects unscoped or ungated core-service fixtures', () => {
+  const source = read('scripts/verify-public-services-production.mjs');
+  const helper = read('scripts/helpers/public-enquiry-ui-verifier.mjs');
+  assertPublicCoreSaveGatedCaller(source, helper);
+  for (const [before, after] of [
+    ['await exercisePublicEnquiryUi(page, scope, expect, options)', 'await otherFixture(page, scope, expect, options)'],
+    ['runEnquiryFixture(page, capture, { locale, kind: "hypnotherapy" })', 'runEnquiryFixture(page, main, { locale, kind: "hypnotherapy" })'],
+    ['HH_PUBLIC_QA_ENQUIRY_FIXTURE !== "1"', 'false'],
+  ]) {
+    assert.ok(source.includes(before));
+    assert.throws(() => assertPublicCoreSaveGatedCaller(source.replace(before, after), helper));
+  }
+  for (const [before, after] of [
+    ["await expect(chooser.locator('[role=\"status\"]')).toContainText(referenceCode)", '/* no receipt gate */'],
+    ['[service.title, ...requiredMessage, description, referenceCode]', '[...requiredMessage, description, referenceCode]'],
+    ['assert.deepEqual(request.body, expectedBody(requests[0].body.operationId)', 'assert.deepEqual(request.body, request.body'],
+  ]) {
+    assert.ok(helper.includes(before));
+    assert.throws(() => assertPublicCoreSaveGatedCaller(source, helper.replace(before, after)));
+  }
 });
