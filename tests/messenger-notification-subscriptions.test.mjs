@@ -75,3 +75,10 @@ test('phase one stays isolated from external sending and enforces owner-scoped S
  const app=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
  assert.match(app,/MessengerNotificationSettings/)
 })
+
+test('settings register the messenger panel once, keeping the existing push panel once',()=>{
+ const app=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
+ assert.equal((app.match(/import MessengerNotificationSettings from /g)||[]).length,1)
+ assert.equal((app.match(/<MessengerNotificationSettings /g)||[]).length,1)
+ assert.equal((app.match(/<NotificationSettings /g)||[]).length,1)
+})
