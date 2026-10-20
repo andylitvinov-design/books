@@ -23,6 +23,15 @@ export function beforeSync(){
     fail('Refusing to modify a non-PsiAlchemy source checkout')
   write('capacitor.config.json',read('capacitor.holistic-house.config.json'))
   check()
+  // Historical PsiAlchemy Podfile contains an obsolete developer npx cache path.
+  // Resolve all Capacitor Pods from this CI checkout's pinned node_modules.
+  const pod='ios/App/Podfile'
+  const previous=read(pod)
+  const portable=previous.replace(/(?:\.\.\/){7}\.npm\/_npx\/[a-z0-9]+\/node_modules\/@capacitor\/ios/g,
+    '../../node_modules/@capacitor/ios')
+  if(portable===previous&&!previous.includes('../../node_modules/@capacitor/ios'))
+    fail('Unexpected iOS CocoaPods reference')
+  write(pod,portable)
   // The historical Podfile points to one developer's transient npx cache.
   // Resolve CocoaPods from the checked-out, pinned node_modules instead.
   const pod='ios/App/Podfile'
