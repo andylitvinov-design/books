@@ -50,8 +50,7 @@ for (const item of all) {
         .webp({ quality: 76, alphaQuality: 90, effort: 4 })
         .toBuffer();
     } catch (cause) {
-      // Never silently ship a blank image or switch to an unpinned external asset.
-      // Vercel build logs must identify the exact checked-in input to repair.
+      // Preserve strict source validation; report the corrupt input without hiding it.
       throw new Error(
         "Invalid pinned static artwork source: " + item.source +
         " (blob " + item.sha.slice(0, 16) + ", " + original.length +
