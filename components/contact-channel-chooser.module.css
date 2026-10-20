@@ -111,3 +111,10 @@
 .optionalNote[open] { padding-bottom:10px; }
 .optionalNote[open] > textarea { margin:0 10px 8px; width:calc(100% - 20px); }
 .optionalNote[open] > .privateNote { display:block; margin:0 10px; }
+
+/* Reserve actual scrollable space below expanded intake on mobile; the fixed
+   HH tab bar and iPhone safe-area must not cover the optional messenger links. */
+@media(max-width:600px) {
+  .wrapper[data-open="true"] { padding-bottom:calc(94px + env(safe-area-inset-bottom)); }
+  .choices a { scroll-margin-block:110px 140px; }
+}
