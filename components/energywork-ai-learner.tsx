@@ -1298,11 +1298,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                             {item.reportDone ? <Check size={13} aria-hidden="true" /> : null}
                             {item.reportDone ? t.reportReady : t.reportMissing}
                           </button>
-                          <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)}
+                          {item.questionIds.length > 0 ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)}
                             className={item.questionDone ? styles.reviewRecorded : styles.reviewMissing}>
                             {item.questionDone ? <Check size={13} aria-hidden="true" /> : null}
                             {item.questionDone ? t.questionReady : t.questionMissing}
-                          </button>
+                          </button> : null}
                         </div>
                       </div>
                     ))}
