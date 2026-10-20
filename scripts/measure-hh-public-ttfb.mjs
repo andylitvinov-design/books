@@ -50,9 +50,11 @@ for (const suffix of ['/', '/ru']) {
   const warmedHtml = measurements.slice(1).map(v => v.decodedHtmlBytes);
   const warmedInline = measurements.slice(1).map(v => v.inlineScriptBytes);
   const warmedRsc = measurements.slice(1).map(v => v.rscInlineBytes);
+  const warmedHtmlWithoutInlineScripts = measurements.slice(1).map(v => v.htmlExcludingInlineScriptBodiesBytes);
   const medianHtmlBytes = Math.round(median(warmedHtml));
   const medianInlineBytes = Math.round(median(warmedInline));
   const medianRscBytes = Math.round(median(warmedRsc));
+  const medianMarkupBytes = Math.round(median(warmedHtmlWithoutInlineScripts));
   const budgetWarnings = [];
   if (medianHtmlBytes > htmlWarnBytes) budgetWarnings.push(`decoded HTML above ${htmlWarnBytes} bytes`);
   if (medianInlineBytes > inlineWarnBytes) budgetWarnings.push(`inline scripts above ${inlineWarnBytes} bytes`);
@@ -66,8 +68,10 @@ for (const suffix of ['/', '/ru']) {
     medianDecodedHtmlBytes: medianHtmlBytes,
     medianInlineScriptBytes: medianInlineBytes,
     medianRscInlineBytes: medianRscBytes,
+    medianHtmlExcludingInlineScriptBodiesBytes: medianMarkupBytes,
+    medianRscHtmlSharePct: Math.round((medianRscBytes / medianHtmlBytes) * 1000) / 10,
     htmlWarnBytes, inlineWarnBytes, budgetWarnings,
     samples: measurements,
-    note: 'TTFB is header latency only. HTML size is decoded UTF-8, not compressed transfer bytes. Inline Next RSC is a subset of inline scripts; not a browser LCP measurement.',
+    note: 'TTFB is header latency only. HTML size is decoded UTF-8, not compressed transfer bytes. Inline Next RSC is a subset of inline scripts; markup excludes inline script bodies but retains script tags. Not a browser LCP measurement.',
   }, null, 2));
 }
