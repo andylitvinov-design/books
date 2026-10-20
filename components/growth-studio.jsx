@@ -26,7 +26,7 @@ const COPY={
     heading:'Content command center',sub:'One place to prepare posts for your channels, with explicit approvals.',
     draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',manual_done:'Manually marked done · unverified',
     sending:'Sending — do not retry',published:'Published (provider confirmed)',delivery_unknown:'Delivery uncertain — verify in Telegram',
-    manualInbox:'To publish',manualDoneConfirm:'Have you actually posted this exact content in your chosen account? This only records your manual statement; Growth Studio CANNOT verify the social post.',manualDoneNotice:'Marked done manually — not verified by a social platform.',manualUndoConfirm:'Restore this item to the manual publishing queue? It will be counted as pending again.',manualUndoNotice:'Restored to manual posting queue.',manualUndo:'Restore manual task',manualDoneTime:'Owner marked done (not provider verified)',pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
+    manualInbox:'To publish',manualDoneConfirm:'Have you actually posted this exact content in your chosen account? This only records your manual statement; Growth Studio CANNOT verify the social post.',manualDoneNotice:'Marked done manually — not verified by a social platform.',manualDoneButton:'Mark done (manual)',manualUndoConfirm:'Restore this item to the manual publishing queue? It will be counted as pending again.',manualUndoNotice:'Restored to manual posting queue.',manualUndo:'Restore manual task',manualDoneTime:'Owner marked done (not provider verified)',pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
     telegramReady:'Telegram channel ready',telegramDisabled:'Telegram is not connected. Add the dedicated bot settings.',
     telegramSend:'Publish now to Telegram',telegramConfirm:'Publish this exact post now to the configured public Telegram channel?',
     telegramSent:'Telegram confirmed publication.',telegram_delivery_unknown:'The result is uncertain. Check your channel before taking further action. Do NOT retry.',telegram_unconfigured:'Telegram is not configured.',telegram_invalid_post:'This Telegram post is not ready.',telegram_media_unsupported:'This media format requires manual publication.',telegram_text_too_long:'Telegram caption is too long.',telegram_permission_unverified:'The bot does not have confirmed posting rights for the configured public channel. Check Connections first.',
@@ -63,7 +63,7 @@ const COPY={
     heading:'Центр управления контентом',sub:'Готовьте публикации для разных площадок и согласовывайте их перед размещением.',
     draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',manual_done:'Отмечено вручную · не проверено',
     sending:'Отправка — не повторять',published:'Опубликовано (подтверждено)',delivery_unknown:'Доставка неясна — проверьте Telegram',
-    manualInbox:'К публикации',manualDoneConfirm:'Вы действительно разместили этот точный материал в нужном аккаунте? Это только ваша отметка; Growth Studio НЕ проверил пост в соцсети.',manualDoneNotice:'Отмечено вручную. Доставка в соцсеть не подтверждена.',manualUndoConfirm:'Вернуть задачу в очередь ручных публикаций? Она снова будет считаться ожидающей.',manualUndoNotice:'Возвращено в очередь ручных публикаций.',manualUndo:'Вернуть задачу',manualDoneTime:'Отмечено вами; провайдер не проверялся',pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
+    manualInbox:'К публикации',manualDoneConfirm:'Вы действительно разместили этот точный материал в нужном аккаунте? Это только ваша отметка; Growth Studio НЕ проверил пост в соцсети.',manualDoneNotice:'Отмечено вручную. Доставка в соцсеть не подтверждена.',manualDoneButton:'Отметить вручную',manualUndoConfirm:'Вернуть задачу в очередь ручных публикаций? Она снова будет считаться ожидающей.',manualUndoNotice:'Возвращено в очередь ручных публикаций.',manualUndo:'Вернуть задачу',manualDoneTime:'Отмечено вами; провайдер не проверялся',pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
     telegramReady:'Канал Telegram подключён',telegramDisabled:'Telegram не подключён — настройте отдельного бота.',
     telegramSend:'Опубликовать сейчас в Telegram',telegramConfirm:'Опубликовать этот точный текст сейчас в настроенном публичном Telegram-канале?',
     telegramSent:'Telegram подтвердил публикацию.',telegram_delivery_unknown:'Результат неизвестен. Проверьте канал. НЕ повторяйте отправку автоматически.',telegram_unconfigured:'Telegram не настроен.',telegram_invalid_post:'Пост не готов к отправке в Telegram.',telegram_media_unsupported:'Этот формат медиа нужно опубликовать вручную.',telegram_text_too_long:'Слишком длинная подпись для Telegram.',telegram_permission_unverified:'У бота нет подтверждённых прав публикации в заданном канале. Проверьте Подключения.',
@@ -264,7 +264,9 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     finally {setBusy(false)}
   }
   function markManualDone(post){
-    if(!window.confirm(t.manualDoneConfirm+'\n\n'+post.title+'\n'+CHANNELS[post.channel]))return
+    const preview=[t.manualDoneConfirm,BRANDS[post.brand]+' / '+CHANNELS[post.channel],
+      post.title,post.caption,publicCampaignLink(post)].filter(Boolean).join('\n\n')
+    if(!window.confirm(preview))return
     execute('complete_manual',post)
   }
   function undoManualDone(post){
@@ -499,14 +501,14 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
               title={telegramVerified?t.telegramSend:locale==='ru'?'Сначала проверьте права бота в разделе подключений':'Verify bot posting rights under Connections first'} onClick={()=>sendTelegram(post)}>
               <Send size={15}/>{t.telegramSend}</button>}
           {post.status==='planned_manual'&&<button type="button" disabled={busy||!ready}
-            onClick={()=>markManualDone(post)}><CheckCheck size={15}/>{t.manualDoneNotice}</button>}
+            onClick={()=>markManualDone(post)}><CheckCheck size={15}/>{t.manualDoneButton}</button>}
           {post.status==='manual_done'&&<button type="button" disabled={busy||!ready}
             onClick={()=>undoManualDone(post)}><RefreshCcw size={15}/>{t.manualUndo}</button>}
           {post.status==='manual_done'&&<small className={styles.manualDoneTimestamp}>{t.manualDoneTime}: {formatTime(post.manualDoneAt,locale)}</small>}
           {post.status==='published'&&post.delivery?.url&&
             <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>}
           {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
-          {!['archived','sending','published','delivery_unknown'].includes(post.status)&&
+          {!['archived','sending','published','delivery_unknown','manual_done'].includes(post.status)&&
             <button type="button" disabled={busy||!ready} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
           {['approved','planned_manual','published'].includes(post.status)&&
             <button type="button" disabled={busy||!ready} onClick={()=>{setEvergreenSource(post);setNotice('')}}>
