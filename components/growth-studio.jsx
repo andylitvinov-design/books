@@ -417,7 +417,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
               title={telegram.ready?t.telegramSend:t.telegramDisabled} onClick={()=>sendTelegram(post)}>
               <Send size={15}/>{t.telegramSend}</button>}
           {post.status==='published'&&post.delivery?.url&&
-            <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>
+            <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>}
           {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
           {!['archived','sending','published','delivery_unknown'].includes(post.status)&&
             <button type="button" disabled={busy||!ready} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
