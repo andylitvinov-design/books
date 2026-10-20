@@ -212,7 +212,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
           <div className={styles.connectionNav}>
             <a href="https://app.metricool.com/" target="_blank" rel="noopener noreferrer">{t.setupMetricool} ↗</a>
             <a href="https://business.facebook.com/" target="_blank" rel="noopener noreferrer">{t.setupMeta} ↗</a>
-            <a href="https://github.com/andylitvinov-design/books/blob/codex/public-book-library/docs/growth-studio/OWNER_CONNECTION_SETUP_2026-10-20.md" target="_blank" rel="noopener noreferrer">{t.setupHelp} ↗</a>
+            <a href="https://github.com/andylitvinov-design/books/blob/codex/public-book-library/docs/growth-studio/START_HERE_RU_2026-10-20.md" target="_blank" rel="noopener noreferrer">{t.setupHelp} ↗</a>
           </div>
         </section>
       </div>
