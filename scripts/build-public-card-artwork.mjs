@@ -42,11 +42,17 @@ for (const item of all) {
       if (existing !== sha) throw new Error("Static artwork output collision");
       continue;
     }
-    const output = await sharp(original, { failOn: "error" })
-      .rotate()
-      .resize({ width, withoutEnlargement: true, kernel: "lanczos3" })
-      .webp({ quality: 76, alphaQuality: 90, effort: 4 })
-      .toBuffer();
+    let output;
+    try {
+      output = await sharp(original, { failOn: "error" })
+        .rotate()
+        .resize({ width, withoutEnlargement: true, kernel: "lanczos3" })
+        .webp({ quality: 76, alphaQuality: 90, effort: 4 })
+        .toBuffer();
+    } catch (error) {
+      throw new Error("Cannot decode pinned static artwork source: " + item.source +
+        " (" + item.sha + ", " + original.length + " bytes)", { cause: error });
+    }
     writeFileSync(path.join(root, "public", url.slice(1)), output);
     fileHashes.set(url, sha);
   }
