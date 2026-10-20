@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { legacyDocumentProjection } from '../lib/app/legacy-document.js'
+import { spawnSync } from 'node:child_process'
+import { sourceFunction } from './helpers/source-contract-runtime.mjs'
+import { AppError, requireUUID } from '../lib/assessments/contracts.js'
+import { legacyDocumentProjection, legacyDocumentSourceHash } from '../lib/app/legacy-document.js'
 import { savedResourcePath } from '../lib/app/client-handoff.js'
 import { reportPdfFilename } from '../lib/documents/report-filename.js'
 
@@ -37,7 +40,7 @@ test('Google Cabinet opens the full canonical report via an account-verified ser
   assert.match(recommendation, /canonical-report-analysis/)
   assert.match(recommendation, /canonical-report-notes/)
   assert.match(recommendation, /canonical-progress/)
-  assert.match(recommendation, /canonical-remedy-profiles/)
+  assert.match(recommendation, /canonical-remedy-profile-disclosure canonical-remedy-unified-disclosure/)
   assert.match(recommendation, /fullSource/)
   assert.match(recommendation, /includeDistanceHomeopathy/)
   assert.match(receipt, /embedded = false/)
@@ -84,4 +87,102 @@ test('PDF endpoint is gated by verified account and content hash, not the legacy
   assert.match(readFlow, /legacyDocumentSourceHash\(record\) !== ref\.source_hash/)
   assert.match(readFlow, /DOCUMENT_UNAVAILABLE/)
   assert.doesNotMatch(route.slice(pdf, pdf + 1700), /authorizePrescription\(/)
+})
+
+
+test('embedded canonical reader renders full source inside native inline disclosures without private fields', () => {
+  for (const locale of ['en','ru']) {
+    const record={id,clientId:'30000000-0000-4000-8000-000000000002',kind:'prescription',status:'active',
+      dateIssued:'2026-10-13',patientName:'Synthetic Client',recommendationType:'homeopathy',
+      analysis:'SYNTHETIC_ANALYSIS <script>unsafe()</script>',additionalNotes:'SYNTHETIC_NOTES',
+      generalInstructions:'SYNTHETIC_GENERAL',includeDistanceHomeopathy:true,
+      internalNotes:'PRIVATE_PRACTITIONER_ONLY',
+      items:[{displayNameOverride:'Synthetic selection',itemType:'homeopathy',
+        instructions:'SYNTHETIC_AUTHORED_INSTRUCTIONS'},{displayNameOverride:'Unknown synthetic selection',itemType:'homeopathy'}]}
+    const document=legacyDocumentProjection(record,locale)
+    // The public content catalog is replaced only at its data boundary. Execute
+    // and SSR the actual canonical component with the real safe projection.
+    document.items[0].remedySlug='synthetic-remedy'
+    document.items[0].remedyPath=`/${locale}/homeopathy/remedies/synthetic-remedy`
+    const rendered=spawnSync(process.execPath,[new URL('./helpers/render-saved-prescription.mjs',import.meta.url).pathname],{
+      input:JSON.stringify({document,locale}),encoding:'utf8',env:{...process.env,NODE_OPTIONS:''},
+    })
+    assert.equal(rendered.status,0,rendered.stderr)
+    const {html,calls}=JSON.parse(rendered.stdout)
+    assert.match(html,/<section class="prescription-shell canonical-shell">/)
+    assert.equal((html.match(/<details class="canonical-remedy-profile-disclosure canonical-remedy-unified-disclosure"/g)||[]).length,2)
+    const cards=[...html.matchAll(/<details\b[^>]*>([\s\S]*?)<\/details>/g)].map(match=>match[1])
+    assert.match(cards[0],/<summary class="canonical-remedy-unified-summary">/)
+    const summary=cards[0].slice(0,cards[0].indexOf('</summary>'))
+    assert.match(summary,/Synthetic selection/)
+    assert.match(summary,/SYNTHETIC_AUTHORED_INSTRUCTIONS/)
+    assert.match(cards[0],/SYNTHETIC_COMPLETE_LIBRARY_DESCRIPTION/)
+    assert.match(cards[0],/src="\/synthetic-source\.jpg"/)
+    assert.match(cards[0],new RegExp('href="/'+locale+'/homeopathy/remedies/synthetic-remedy"'))
+    assert.match(cards[1],/canonical-remedy-unified-unavailable/)
+    assert.equal(calls.length,1)
+    assert.equal(calls[0].fullSource,true)
+    assert.equal(calls[0].expandSupplementary,true)
+    assert.equal(calls[0].variant,'book')
+    assert.equal(calls[0].showEssence,false)
+    assert.equal(calls[0].locale,locale)
+    assert.equal(calls[0].sourceUrl,'https://example.invalid/source')
+    assert.equal(calls[0].remedy.description,'SYNTHETIC_COMPLETE_LIBRARY_DESCRIPTION')
+    for(const value of ['SYNTHETIC_ANALYSIS','SYNTHETIC_NOTES','SYNTHETIC_GENERAL','SYNTHETIC_DISTANCE_GUIDE'])
+      assert.ok(html.includes(value),value+' must not be abbreviated away')
+    assert.match(html,/data-distance-embedded="true" data-distance-report="true"/)
+    assert.match(html,/&lt;script&gt;unsafe\(\)&lt;\/script&gt;/)
+    assert.doesNotMatch(html,/<script>|PRIVATE_PRACTITIONER_ONLY|30000000-0000-4000-8000-000000000002/)
+  }
+})
+
+test('saved document destinations cannot be changed into unverified paths', () => {
+  for(const value of ['', '../settings',id+'/../settings','https://example.invalid',id+'?token=x'])
+    assert.throws(()=>savedResourcePath('en','legacy_document',value),/Invalid saved resource destination/)
+  assert.throws(()=>savedResourcePath('en','arbitrary-kind',id),/Invalid saved resource destination/)
+  assert.equal(savedResourcePath('//external.invalid','legacy_document',id),'/en/app/document-view/'+id)
+})
+
+
+test('actual saved reader refuses wrong owners and changed source provenance before opening', async () => {
+  const record={id,clientId:'30000000-0000-4000-8000-000000000002',kind:'prescription',status:'active',
+    dateIssued:'2026-10-13',patientName:'Synthetic Client',recommendationType:'homeopathy',
+    analysis:'SYNTHETIC_ANALYSIS',internalNotes:'PRIVATE_PRACTITIONER_ONLY',items:[]}
+  const owner='30000000-0000-4000-8000-000000000003'
+  async function attempt({actorId=owner,source=record,savedId=id}={}) {
+    const queries=[]
+    const reference={id,source_document_id:record.id,legacy_client_id:record.clientId,
+      source_hash:legacyDocumentSourceHash(record),document_kind:'recommendation',occurred_on:'2026-10-13'}
+    const reader=sourceFunction('lib/app/legacy-document-flow.js','readSavedDocument',{
+      requireUUID,AppError,legacyDocumentSourceHash,legacyDocumentProjection,
+      transaction:async (config,actor,callback)=>callback({query:async (sql,params)=>{
+        queries.push(sql)
+        assert.match(sql,/where id=\$1 and account_id=\$2 and removed_at is null/)
+        assert.deepEqual(Array.from(params),[savedId,actor.id])
+        return {rows:actor.id===owner?[reference]:[]}
+      }}),
+    })
+    const store={findById:async sourceId=>{assert.equal(sourceId,record.id);return source}}
+    let result,error
+    try {result=await reader({},store,{id:actorId},savedId,'en')} catch(caught) {error=caught}
+    return {result,error,queries}
+  }
+  const valid=await attempt()
+  assert.equal(valid.error,undefined)
+  assert.equal(valid.queries.length,2)
+  assert.equal(valid.result.document.analysis,'SYNTHETIC_ANALYSIS')
+  assert.equal('internalNotes' in valid.result.document,false)
+  assert.equal('clientId' in valid.result.document,false)
+  const other=await attempt({actorId:'30000000-0000-4000-8000-000000000004'})
+  assert.match(other.error.message,/NOT_FOUND/)
+  assert.equal(other.queries.length,1)
+  for(const source of [null,{...record,status:'archived'},{...record,clientId:'another-client'},
+    {...record,analysis:'CHANGED_SOURCE'}]) {
+    const value=await attempt({source})
+    assert.match(value.error.message,/DOCUMENT_UNAVAILABLE/)
+    assert.equal(value.queries.length,1,'unavailable source must never be marked opened')
+  }
+  const invalid=await attempt({savedId:'../another-document'})
+  assert.ok(invalid.error)
+  assert.equal(invalid.queries.length,0)
 })

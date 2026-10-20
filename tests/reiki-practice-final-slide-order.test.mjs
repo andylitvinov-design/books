@@ -12,11 +12,11 @@ const editorial = read('data/academy/energywork-ai-curriculum.ts')
 const learner = read('components/energywork-ai-learner.tsx')
 const browser = read('scripts/verify-reiki-all-slides-browser.mjs')
 
-test('all five Reiki lessons place music-assisted practice directly before the closing slide', () => {
+test('all five Reiki lessons place practice before congratulations, with Lesson 1 saving immediately afterward', () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
-  assert.equal(sequence.length, 69, 'existing slide IDs are preserved')
-  assert.deepEqual(ranges.map(({ count }) => count), [7, 14, 16, 14, 16])
+  assert.equal(sequence.length, 70, '69 original screens plus the separate non-answer save checkpoint')
+  assert.deepEqual(ranges.map(({ count }) => count), [8, 14, 16, 14, 16])
 
   const endings = [
     { first: 'flight-01', practices: ['flight-03'], last: 'flight-done', report: 'flight-04' },
@@ -28,7 +28,13 @@ test('all five Reiki lessons place music-assisted practice directly before the c
 
   for (const [lessonIndex, item] of endings.entries()) {
     const { start, end } = ranges[lessonIndex]
-    const ids = sequence.slice(start, end)
+    const lessonIds = sequence.slice(start, end)
+    if (lessonIndex === 0) {
+      assert.equal(lessonIds.at(-1), 'flight-save', 'Lesson 1 ends at its explicit save checkpoint')
+      assert.equal(ENERGYWORK_QUESTIONS['flight-save'], undefined, 'Saving is not another question')
+      assert.equal(sequence[end], 'tan-01', 'The next lesson follows the save checkpoint')
+    }
+    const ids = lessonIndex === 0 ? lessonIds.slice(0, -1) : lessonIds
     assert.equal(ids[0], item.first, 'lesson ' + (lessonIndex + 1) + ' introduction')
     assert.equal(ids.at(-1), item.last, 'lesson ' + (lessonIndex + 1) + ' congratulations')
     assert.deepEqual(
@@ -56,7 +62,7 @@ test('all five Reiki lessons place music-assisted practice directly before the c
 
 test('existing practice timers retain soundtrack, pause, answers and previous/next navigation', () => {
   assert.match(editorial, /function withClosingPractices\(/)
-  assert.match(editorial, /withClosingPractices\(commonSlides\.filter\(\(slide\) => slide\.phase === "flight"\), \["flight-03"\], "flight-done"\)/)
+  assert.match(editorial, /withClosingPractices\(\s*commonSlides\.filter\(\(slide\) => slide\.phase === "flight" && slide\.id !== "flight-save"\),\s*\["flight-03"\], "flight-done"\)/)
   assert.match(editorial, /\["tan-03"\], "tan-done"\)/)
   assert.match(editorial, /withClosingPractices\(pathSlides\.kundalini, \["kun-03"\], "kun-done"\)/)
   assert.match(editorial, /withClosingPractices\(pathSlides\.yggdrasil, \["ygg-03"\], "ygg-done"\)/)

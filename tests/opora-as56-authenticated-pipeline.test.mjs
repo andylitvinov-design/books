@@ -2,12 +2,20 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { repositoryHarness, mount, findButton, nodes, textOf } from './helpers/route-pipeline-harness.mjs'
 import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner-growth/anti-stress-skills-v6.js'
+import { oporaEndingCopy } from '../lib/inner-growth/opora-lesson-outro.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 
 const labels = {
-  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Not sure yet', plan: 'Keep this reminder', save: 'Save my practice', receipt: 'Your moment is saved' },
-  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Пока не уверен(а)', plan: 'Хочу запомнить этот вариант', save: 'Сохранить мою практику', receipt: 'Ваш момент сохранён' },
+  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Not sure yet', plan: 'Keep this reminder', save: 'Save my practice' },
+  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Пока не уверен(а)', plan: 'Хочу запомнить этот вариант', save: 'Сохранить мою практику' },
+}
+function assertSavedReceipt(player, locale, day) {
+  const ending = oporaEndingCopy(locale)
+  const title = day === 14 ? ending.congratsFinal : ending.congratsTitle.replace('{day}', String(day))
+  assert.equal(textOf(nodes(player.tree).find(node => node.type === 'h2')), title,
+    'Confirmed persistence shows this lesson’s completion receipt')
+  assert.equal(findButton(player.tree, labels[locale].save), undefined, 'A saved lesson cannot save again')
 }
 async function click(player, label) {
   const button = findButton(player.tree, label)
@@ -62,7 +70,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player, t.save)
       assert.equal(requests, 1)
       assert.ok(receipt)
-      assert.ok(textOf(player.tree).includes(t.receipt))
+      assertSavedReceipt(player, locale, day)
       const saved = owner.sessions.at(-1)
       assert.equal(saved.lesson_id, data.lesson.id)
       assert.equal(saved.content_version, COURSE_ANTISTRESS_SKILLS_V7)
@@ -116,7 +124,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
-    assert.ok(textOf(player.tree).includes(t.receipt))
+    assertSavedReceipt(player, locale, 1)
   } finally { player.unmount() }
 })
 
