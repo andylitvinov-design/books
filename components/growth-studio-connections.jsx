@@ -30,8 +30,14 @@ const messages={
     guidelines:'Готовность определяется по реальному разрешению и ответу провайдера, а не по наличию кнопки.',
     warning:'Для Instagram/TikTok/YouTube нужен подходящий медиафайл, для Pinterest — доска, для мероприятий — подтверждённые дата и организатор.',
     verificationNeeded:'Тест соединения ещё не проводился.',recheck:'Проверить снова',
-    ownerConnectTitle:'Подключить аккаунты владельца',ownerConnectNote:'Нажмите ссылки и подтвердите доступ у провайдера. Пароли и токены сюда не вводятся; подключение в ChatGPT не даёт права публикации сайту.',
-    ownerConnectAds:'Google Ads',ownerConnectMeta:'Meta Ads',ownerConnectGsc:'Google Search Console',ownerConnectMetricool:'Metricool · Instagram / Facebook',ownerConnectEventbrite:'Eventbrite · GitHub secret',
+    ownerConnectTitle:'Что делать дальше: запуск публикаций',ownerConnectNote:'Сначала проверьте серверное сохранение, затем подключите только нужные каналы. Бот и соцсети авторизуются у их владельцев — не в чате ChatGPT.',
+    setupStorage:'1. Проверить черновики',setupStorageHelp:'Выше нажмите «Проверить сохранение». Дождитесь надписи Redis: проверен. Эта проверка ничего не публикует.',
+    setupTelegram:'2. Подключить Telegram (бесплатный Bot API)',setupTelegramHelp:'Создайте отдельного бота через BotFather, назначьте его администратором СВОЕГО публичного канала с правом «Публиковать сообщения». Затем задайте три переменные ниже в Vercel → Production. После применения настроек и нового деплоя нажмите «Проверить Telegram» выше.',
+    setupBotFather:'Открыть BotFather',setupVercel:'Открыть переменные Vercel',setupTelegramKeys:'Три серверные переменные — НЕ вводите их значения в ChatGPT',
+    setupEnvEnabled:'true',setupEnvToken:'секретный токен, выданный BotFather',setupEnvChat:'точный @username публичного канала или проверенный -100… ID',
+    setupYouTube:'3. Проверить YouTube',setupYouTubeHelp:'Откройте загрузчик, войдите через Google и подтвердите точный канал. RU и EN каналы проверяются отдельно. Само открытие ссылки ничего не загружает.',setupYouTubeLink:'Открыть загрузчик YouTube',
+    setupOthers:'4. Остальные сети: подготовить аккаунты',setupOthersHelp:'Откройте Metricool и Meta Business Suite, убедитесь, что ваши страницы Facebook/Instagram подключены. Это НЕ даёт автоматический доступ Holistic House: для прямой публикации потребуются отдельные разрешения приложения или API Metricool Advanced/Custom.',
+    setupMetricool:'Открыть Metricool',setupMeta:'Открыть Meta Business Suite',setupHelp:'Подробная инструкция подключения',setupNoSecrets:'Пароли, OAuth-коды и токены держите у провайдера или в закрытых переменных Vercel. Не пересылайте их в чате и не публикуйте скриншоты.',
     bridgeTitle:'Metricool — отдельный сервис публикации',bridgeNote:'Подключение Metricool к ChatGPT не даёт прав сайту Holistic House. Для прямого API, по текущим правилам Metricool, нужен тариф Advanced/Custom и серверные ключи. Без этого размещение остаётся ручным.',bridgeHelp:'Требования Metricool API',
   },
   en:{
@@ -57,8 +63,14 @@ const messages={
     guidelines:'Readiness requires real provider permission and delivery evidence, not a button in this app.',
     warning:'Instagram/TikTok/YouTube need media; Pinterest requires a board; event listings need verified dates and organizer.',
     verificationNeeded:'No connection test completed yet.',recheck:'Check again',
-    ownerConnectTitle:'Connect your accounts',ownerConnectNote:'Open each provider and approve access there. Never enter passwords or tokens here; connecting a ChatGPT app does not authorize this website to publish.',
-    ownerConnectAds:'Google Ads',ownerConnectMeta:'Meta Ads',ownerConnectGsc:'Google Search Console',ownerConnectMetricool:'Metricool · Instagram / Facebook',ownerConnectEventbrite:'Eventbrite · GitHub secret',
+    ownerConnectTitle:'What to do next: enable publishing',ownerConnectNote:'First verify draft storage, then authorize only the channels you need. Provider access is granted in the provider account, not in ChatGPT.',
+    setupStorage:'1. Verify draft storage',setupStorageHelp:'Above, click Test draft storage and wait for Redis: verified. This never publishes.',
+    setupTelegram:'2. Connect Telegram (free Bot API)',setupTelegramHelp:'Create a dedicated bot in BotFather, add it as an administrator of YOUR PUBLIC channel with Post Messages permission, then set the three Production variables below in Vercel. After a new deployment, click Check Telegram access above.',
+    setupBotFather:'Open BotFather',setupVercel:'Open Vercel variables',setupTelegramKeys:'Three server-only variables — NEVER share values in ChatGPT',
+    setupEnvEnabled:'true',setupEnvToken:'private token from BotFather',setupEnvChat:'exact public channel @username or verified -100… channel ID',
+    setupYouTube:'3. Verify YouTube',setupYouTubeHelp:'Open the uploader, authorize Google, and confirm the exact channel. RU and EN targets are checked independently. Opening the link does not upload a video.',setupYouTubeLink:'Open YouTube uploader',
+    setupOthers:'4. Other networks: prepare accounts',setupOthersHelp:'Open Metricool and Meta Business Suite to check your actual Facebook/Instagram Pages. This does NOT grant Holistic House publishing access: it still needs separate app permissions or Metricool API Advanced/Custom.',
+    setupMetricool:'Open Metricool',setupMeta:'Open Meta Business Suite',setupHelp:'Detailed connection guide',setupNoSecrets:'Keep passwords, OAuth codes and tokens with the provider or in secret Vercel variables. Never post them in chat or screenshots.',
     bridgeTitle:'Metricool — separate publishing service',bridgeNote:'Connecting Metricool to ChatGPT does not authorize the Holistic House server. Metricool currently requires Advanced/Custom for direct API access, plus reviewed server-side credentials. Until then publishing is manual.',bridgeHelp:'Metricool API requirements',
   },
 }
@@ -166,15 +178,45 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       <a href="https://help.metricool.com/basic-guide-for-api-integration-r97af" target="_blank" rel="noopener noreferrer">{t.bridgeHelp} ↗</a>
     </div>
     <div className={styles.connectionBox}>
-      <div className={styles.connectionBoxTitle}><strong>{t.ownerConnectTitle}</strong><span className={styles.notVerifiedText}>{t.unconfigured}</span></div>
+      <div className={styles.connectionBoxTitle}><strong>{t.ownerConnectTitle}</strong></div>
       <p>{t.ownerConnectNote}</p>
-      <div className={styles.connectionNav}>
-        <a href="https://app.hypd.ai/sources?manage=google-ads" target="_blank" rel="noopener noreferrer">{t.ownerConnectAds} ↗</a>
-        <a href="https://app.hypd.ai/sources?manage=meta" target="_blank" rel="noopener noreferrer">{t.ownerConnectMeta} ↗</a>
-        <a href="https://app.hypd.ai/sources?manage=search-console" target="_blank" rel="noopener noreferrer">{t.ownerConnectGsc} ↗</a>
-        <a href="https://app.metricool.com/" target="_blank" rel="noopener noreferrer">{t.ownerConnectMetricool} ↗</a>
-        <a href="https://github.com/andylitvinov-design/torontotantra/settings/secrets/actions" target="_blank" rel="noopener noreferrer">{t.ownerConnectEventbrite} ↗</a>
+      <div className={styles.growthSetupSteps}>
+        <section>
+          <h4>{t.setupStorage}</h4>
+          <p>{t.setupStorageHelp}</p>
+        </section>
+        <section>
+          <h4>{t.setupTelegram}</h4>
+          <p>{t.setupTelegramHelp}</p>
+          <div className={styles.connectionNav}>
+            <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">{t.setupBotFather} ↗</a>
+            <a href="https://vercel.com/super10/codex-public-book-library/settings/environment-variables" target="_blank" rel="noopener noreferrer">{t.setupVercel} ↗</a>
+          </div>
+          <p>{t.setupTelegramKeys}</p>
+          <div className={styles.growthSetupEnv} aria-label={t.setupTelegramKeys}>
+            <div><code>HH_GROWTH_TELEGRAM_ENABLED</code><span>{t.setupEnvEnabled}</span></div>
+            <div><code>HH_GROWTH_TELEGRAM_BOT_TOKEN</code><span>{t.setupEnvToken}</span></div>
+            <div><code>HH_GROWTH_TELEGRAM_CHAT_ID</code><span>{t.setupEnvChat}</span></div>
+          </div>
+        </section>
+        <section>
+          <h4>{t.setupYouTube}</h4>
+          <p>{t.setupYouTubeHelp}</p>
+          <div className={styles.connectionNav}>
+            <Link href="/admin/youtube-upload">{t.setupYouTubeLink} ↗</Link>
+          </div>
+        </section>
+        <section>
+          <h4>{t.setupOthers}</h4>
+          <p>{t.setupOthersHelp}</p>
+          <div className={styles.connectionNav}>
+            <a href="https://app.metricool.com/" target="_blank" rel="noopener noreferrer">{t.setupMetricool} ↗</a>
+            <a href="https://business.facebook.com/" target="_blank" rel="noopener noreferrer">{t.setupMeta} ↗</a>
+            <a href="https://github.com/andylitvinov-design/books/blob/codex/public-book-library/docs/growth-studio/OWNER_CONNECTION_SETUP_2026-10-20.md" target="_blank" rel="noopener noreferrer">{t.setupHelp} ↗</a>
+          </div>
+        </section>
       </div>
+      <p className={styles.growthSetupPrivacy}><ShieldCheck size={15} aria-hidden="true"/>{t.setupNoSecrets}</p>
     </div>
     <div className={styles.connectionScroller}>
       <table className={styles.connectionTable}>
