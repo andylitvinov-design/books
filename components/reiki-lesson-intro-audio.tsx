@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Headphones, Volume2 } from "lucide-react";
 
 type Locale = "en" | "ru";
-type Lesson = "flight" | "tantra" | "kundalini" | "yggdrasil";
+type Lesson = "flight" | "tantra" | "kundalini" | "yggdrasil" | "initiation";
 type PublishedAudio = { src: string; publishedAt: string };
 
 export function ReikiLessonIntroAudio({ lesson, locale }: { lesson: Lesson; locale: Locale }) {
