@@ -31,7 +31,7 @@ test("Spanish Alchemy booking formats, safe handoff and navigation mirror EN/RU"
   const landing = read("components/alchemy-soul-landing.tsx");
   const review = read("app/[locale]/services/free-situation-review/page.tsx");
   const redirect = read("app/[locale]/services/psychohomeopathy/page.tsx");
-  for (const phrase of ["Sesión personal · 60 minutos · €100", "Revisión exprés · 30 minutos · €50", "Acompañamiento de cuatro semanas", "¿Cómo te llamas?", "Elige WhatsApp o Telegram"]) {
+  for (const phrase of ["Sesión personal · 60 minutos · €100", "Revisión exprés · 30 minutos · €50", "Acompañamiento de cuatro semanas", "¿Cómo te llamas?", "WhatsApp o Telegram son opcionales"]) {
     assert.ok(form.includes(phrase), phrase);
   }
   for (const selection of ["30", "60", "month"]) {

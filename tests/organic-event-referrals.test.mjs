@@ -88,13 +88,40 @@ test("voluntary WhatsApp and Telegram handoffs identify safe organic source with
 
 test("no stateful analytics, hidden dispatch or leaking raw URL query in contact chooser", () => {
   const component = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
+  const submission = readFileSync(new URL("../lib/practitioners/public-enquiry-submission.js", import.meta.url), "utf8");
   const script = readFileSync(new URL("../lib/organic-event-referrals.js", import.meta.url), "utf8");
+  assertReferralBoundary(component, submission, script);
+});
+
+function assertReferralBoundary(component, submission, script) {
   assert.match(component, /readOrganicEventReferral\(window\.location\.search/);
   assert.match(component, /withOrganicEventReferral\(whatsappUrl, publicEventSearch/);
   assert.match(component, /href=\{preparedWhatsApp\}/);
   assert.match(component, /telegramEnquiryUrlFromWhatsApp\(preparedWhatsApp\)/);
-  assert.match(component, /fetch\("\/api\/service-enquiries", \{/);
+  assert.match(component, /import \{ createPublicEnquirySubmissionScope \} from "@\/lib\/practitioners\/public-enquiry-submission"/);
+  assert.match(component, /const result = await scope\.submit\(\{/);
+  assert.match(submission, /fetchImpl\('\/api\/service-enquiries', \{/);
+  assert.match(submission, /method: 'POST', credentials: 'same-origin'/);
   assert.match(component, /event\.preventDefault\(\)/);
-  assert.doesNotMatch(component, /sendBeacon|localStorage|sessionStorage/);
+  assert.doesNotMatch(component, /fetch\s*\(/);
+  assert.doesNotMatch(component + submission, /sendBeacon|localStorage|sessionStorage|dispatchEvent|window\.gtag/);
   assert.doesNotMatch(script, /fetch\(|sendBeacon|localStorage|sessionStorage/);
+}
+
+test("referral guards still reject raw query handoffs and hidden submission side effects", () => {
+  const component = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
+  const submission = readFileSync(new URL("../lib/practitioners/public-enquiry-submission.js", import.meta.url), "utf8");
+  const script = readFileSync(new URL("../lib/organic-event-referrals.js", import.meta.url), "utf8");
+  assertReferralBoundary(component, submission, script);
+  for (const [before, after] of [
+    ['withOrganicEventReferral(whatsappUrl, publicEventSearch', 'withOrganicEventReferral(whatsappUrl, window.location.search'],
+    ['href={preparedWhatsApp}', 'href={whatsappUrl}'],
+    ['telegramEnquiryUrlFromWhatsApp(preparedWhatsApp)', 'telegramEnquiryUrlFromWhatsApp(whatsappUrl)'],
+    ['event.preventDefault()', 'event.stopPropagation()'],
+  ]) {
+    assert.ok(component.includes(before), before);
+    assert.throws(() => assertReferralBoundary(component.replace(before, after), submission, script));
+  }
+  assert.throws(() => assertReferralBoundary(component, submission + "\n navigator.sendBeacon('/collect', payload)", script));
+  assert.throws(() => assertReferralBoundary(component, submission, script + "\n sessionStorage.setItem('referral', input)"));
 });

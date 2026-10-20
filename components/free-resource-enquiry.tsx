@@ -17,7 +17,7 @@ const text = {
     questionPlaceholder: "One or two sentences are enough.",
     action: "Continue with a free request",
     copyDetails: "Copy my details", copied: "Copied. Paste these details in your chat.", copyError: "Copy unavailable: select and copy the note below.",
-    note: "Choose WhatsApp or Telegram to review the prepared message. Nothing is stored on this page or sent before you confirm it in the messenger.",
+    note: "The optional details above are a local draft for copying. The next form separately asks for your name, email or phone, and a short enquiry. Submitting it sends those details and your reply consent to the site for CRM registration. After receipt confirmation, WhatsApp or Telegram is optional; you decide whether to send a message there.",
     situation: {
       title: "Your free written review",
       lead: "Start with one topic. Andrey will explain how to send the short questionnaire and your handwritten drawing.",
@@ -41,7 +41,7 @@ const text = {
     questionPlaceholder: "Достаточно одного-двух предложений.",
     action: "Продолжить бесплатный запрос",
     copyDetails: "Скопировать мой запрос", copied: "Скопировано. Вставьте эти детали в чат.", copyError: "Копирование недоступно: выделите текст ниже и скопируйте.",
-    note: "Выберите WhatsApp или Telegram, проверьте текст и сами подтвердите отправку. Сайт не сохраняет ответы и не отправляет их автоматически.",
+    note: "Необязательные данные выше — локальный черновик для копирования. Следующая форма отдельно попросит имя, email или телефон и краткий запрос. При её отправке эти данные и согласие на личный ответ передаются на сайт для регистрации заявки в CRM. После подтверждения получения можно по желанию перейти в WhatsApp или Telegram; сообщение там отправляете вы сами.",
     situation: {
       title: "Ваш бесплатный письменный разбор",
       lead: "Выберите тему. Андрей подскажет, как прислать короткую анкету и рисунок от руки.",
@@ -65,7 +65,7 @@ const text = {
     questionPlaceholder: "Una o dos frases son suficientes.",
     action: "Continuar con la solicitud gratuita",
     copyDetails: "Copiar mis detalles", copied: "Copiado. Pega estos detalles en el chat.", copyError: "No se pudo copiar: selecciona el texto siguiente.",
-    note: "Elige WhatsApp o Telegram, revisa el mensaje y confirma el envío tú mismo. Esta página no almacena ni envía tus respuestas automáticamente.",
+    note: "Los datos opcionales de arriba son un borrador local para copiar. El siguiente formulario pide por separado tu nombre, email o teléfono y una consulta breve. Al enviarlo, esos datos y tu consentimiento para una respuesta personal se envían al sitio para registrar la solicitud en el CRM. Tras la confirmación de recepción, WhatsApp o Telegram son opcionales; tú decides si envías un mensaje allí.",
     situation: {
       title: "Tu revisión gratuita por escrito",
       lead: "Elige un tema. Andrey te explicará cómo enviar el cuestionario breve y tu dibujo a mano.",

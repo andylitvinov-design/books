@@ -79,7 +79,9 @@ test("the real free drawing questionnaire remains reachable and keeps answers lo
   assert.match(intake, /<textarea required/);
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
   assert.match(intake, /setPrepared\(true\)/);
-  assert.match(intake, /Nothing has been sent/);
+  assert.match(intake, /Your questionnaire answers are ready to copy/);
+  assert.match(intake, /Submitting the separate request form sends/);
+  assert.match(intake, /CRM registration/);
   assert.match(intake, /aria-live="polite"/);
   assert.match(intake, /<ContactChannelChooser/);
   assert.doesNotMatch(intake, /encodeURIComponent\((?:answers|problem|goal|obstacle|tried)\)/);

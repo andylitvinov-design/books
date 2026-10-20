@@ -35,6 +35,7 @@ test("Telegram deep link helper rejects arbitrary URLs and generic messages", ()
 
 test("contact chooser is a progressive, accessible mobile-friendly component", () => {
   const src = read("components/contact-channel-chooser.tsx");
+  const submission = read("lib/practitioners/public-enquiry-submission.js");
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
     'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open}',
@@ -47,10 +48,16 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
   assert.match(src, /<textarea[\s\S]*?required minLength=\{10\} maxLength=\{1400\}/);
   assert.match(src, /<form onSubmit=\{submit\}/);
-  assert.match(src, /fetch\("\/api\/service-enquiries"/);
-  assert.match(src, /if \(!response\.ok \|\| data\.saved !== true/);
+  assert.match(src, /import \{ createPublicEnquirySubmissionScope \} from "@\/lib\/practitioners\/public-enquiry-submission"/);
+  assert.match(src, /const scope = createPublicEnquirySubmissionScope\(\)/);
+  assert.match(src, /const result = await scope\.submit\(\{/);
+  assert.match(submission, /fetchImpl\('\/api\/service-enquiries', \{/);
+  assert.match(submission, /method: 'POST', credentials: 'same-origin'/);
+  assert.match(submission, /response\.ok && data\?\.saved === true/);
+  assert.match(src, /if \(result\.kind === "saved"\)/);
   assert.match(src, /\{!saved \? \(/);
-  assert.doesNotMatch(src, /localStorage|sendBeacon|autoSubmit/i);
+  assert.doesNotMatch(src, /fetch\s*\(/);
+  assert.doesNotMatch(src + submission, /localStorage|sessionStorage|sendBeacon|autoSubmit/i);
   assert.match(css, /\.trigger/);
   assert.match(css, /min-height:56px/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
