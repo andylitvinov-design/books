@@ -9,6 +9,7 @@ import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/s
 import { SaveClientSessionToAccount } from './save-client-session-to-account'
 import { SessionExitSaveGuard } from './session-exit-save-guard'
 import { SessionYouTubePlayer } from './session-youtube-player'
+import { ClientSessionEngagement } from './client-session-engagement'
 import { SessionPrivateVideoPoster } from './session-private-video-poster'
 import styles from './client-session.module.css'
 import voiceStyles from './client-session-voice-card.module.css'
@@ -78,13 +79,13 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId,showPractition
   const control=!source?(isVideo?
     <div className={styles.privateVideoPreview}>
       <SessionPrivateVideoPoster src={route}/>
-      <button className={styles.privateVideoPreviewButton} type="button"
+      <button data-hh-engagement-action="media_attempt" className={styles.privateVideoPreviewButton} type="button"
         disabled={loading} onClick={()=>load(false)}>
         <PlayCircle size={44} aria-hidden="true"/>
         <span>{loading?(ru?'Подключаем видео…':'Loading video…'):(ru?'Смотреть видео':'Play video')}</span>
       </button>
     </div>:
-    <button className={[styles.playButton,portraitEnabled&&voiceStyles.voicePlayButton].filter(Boolean).join(' ')}
+    <button data-hh-engagement-action="media_attempt" className={[styles.playButton,portraitEnabled&&voiceStyles.voicePlayButton].filter(Boolean).join(' ')}
       type="button" disabled={loading} onClick={()=>load(false)}
       aria-label={portraitEnabled?buttonLabel:undefined}>
       {portraitEnabled?<><span className={voiceStyles.voicePlayIcon}><Play size={18} fill="currentColor" aria-hidden="true"/></span>
@@ -183,7 +184,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
     (hasFullReport?(extraSessionMessage||plan.nextStep||plan.focus):
       (recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)))
-  const content=<main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
+  const content=<main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}
+    data-hh-session-engagement-root={mode==='guest'?'1':undefined}>
     <header className={styles.clientHeader}>
       <div className={styles.clientBrand}>
         {mode==='owner'&&!hasFullReport&&<span className={styles.clientWordmark}>Holistic House</span>}
@@ -192,6 +194,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </div>
       {mode==='owner'&&<span className={styles.privateLabel}>{ru?'Предпросмотр специалиста':'Practitioner preview'}</span>}
     </header>
+    {mode==='guest'&&<ClientSessionEngagement selector={selector} locale={locale}/>}
     {(videoMedia.length>0||topYoutubeResources.length>0)&&
       <section id="session-video" className={styles.clientSection+' '+styles.videoFirstSection}
         aria-label={ru?'Видео к вашей консультации':'Videos for your consultation'}>
@@ -229,7 +232,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           ru?'Просмотрите назначения и индивидуальные инструкции ниже.':
           'Review the assigned items and your practitioner’s individual instructions below.'
         }</p>}
-        <a href={nextAnchor} className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'View prescriptions ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
+        <a href={nextAnchor} data-hh-engagement-action="next_step" className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'View prescriptions ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
       </div>}
       <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
     </section>}
@@ -354,7 +357,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         </article>
         :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector}
           mode={mode} locale={locale} savedId={savedId}/>)}
-      {linkedResources.map((item,index)=><a className={styles.attachmentCard} key={index}
+      {linkedResources.map((item,index)=><a data-hh-engagement-action="materials" className={styles.attachmentCard} key={index}
         href={item.url} target="_blank" rel="noopener noreferrer">
         <BookOpen size={20} aria-hidden="true"/><div><strong>{item.title}</strong>
           {item.description&&<small>{item.description}</small>}</div>
@@ -387,7 +390,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       score={recommendation?.daoResourceScore} locale={locale}
       published={recommendation?.daoResourcePublished !== false}/>}
 
-    <nav className={styles.sessionBottomActions} data-hh-report-next-actions
+    <nav className={styles.sessionBottomActions} data-hh-report-next-actions data-hh-engagement-action="cabinet"
       aria-label={ru?'Сохранить отчёт в кабинете':'Save the report to your Cabinet'}>
       <div className={styles.sessionBottomHeading}>
         <span className={styles.sectionKicker}>{ru?'СОХРАНИТЕ И ПРОДОЛЖАЙТЕ':'SAVE & CONTINUE'}</span>
@@ -456,7 +459,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           <ExternalLink size={18} className={styles.reportRecommendedTestArrow} aria-hidden="true"/>
         </a>)}
       </div>}
-      <a href={'/'+locale+'/client'} className={styles.reportTestCatalogLink}>
+      <a href={'/'+locale+'/client'} data-hh-engagement-action="tests" className={styles.reportTestCatalogLink}>
         <Gift size={20} aria-hidden="true"/>
         {ru?'Пройти дополнительное тестирование (бонус)':'Take additional tests (bonus)'}
       </a>
@@ -473,12 +476,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
           'Your original PDF contains the complete recommendations and additional details.'}</p>
         <div className={styles.reportPdfActions}>
-          <a href={pdfPath+'&preview=1&layout=a4'} className={styles.reportPdfPreviewButton}
+          <a href={pdfPath+'&preview=1&layout=a4'} data-hh-engagement-action="pdf_preview" className={styles.reportPdfPreviewButton}
             target="_blank" rel="noopener noreferrer">
             <FileText size={20} aria-hidden="true"/>
             {ru?'Просмотреть PDF-отчёт':'Preview PDF report'}
           </a>
-          <a href={pdfPath} className={styles.downloadButton} download>
+          <a href={pdfPath} data-hh-engagement-action="pdf_download" className={styles.downloadButton} download>
             <FileDown size={20} aria-hidden="true"/>
             {ru?'Скачать отчёт':'Download report'}
           </a>
