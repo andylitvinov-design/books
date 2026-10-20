@@ -37,3 +37,25 @@ Account removal cascades. No marketing permission inferred from account creation
 6. WhatsApp Cloud API templates, Meta access and expenses remain strictly OFF pending independent approval.
 
 If the owner has not created a separate bot, the actual linking and external delivery are blocked, regardless of green tests. Do not silently set env send approval.
+
+
+## Owner handoff: two inputs still required (20 October 2026, Toronto)
+
+Read-only source-of-truth check: the Vercel Production project already has:
+- `HH_CLIENT_TG_WEBHOOK_SECRET` — randomly generated and stored as protected/sensitive environment variable; **do not display or copy its value**
+- `HH_CLIENT_TG_LINK_ENABLED=true` — clients can link only after bot credentials and exact callback exist
+- `HH_CLIENT_TG_SEND_APPROVED=false` — automatic sends remain disabled, including after bot creation
+
+Only `HH_CLIENT_TG_BOT_TOKEN` and `HH_CLIENT_TG_BOT_USERNAME` are not provisioned. The existing `HH_PRACTICE_TG_BOT_TOKEN` belongs to another workflow and **must not** be reused.
+
+**Owner actions**
+
+1. Open [BotFather](https://t.me/BotFather). Send `/newbot`; name the bot `Holistic House Notifications`; choose an available unique username ending with `bot` (e.g., `HolisticHouseNoticesBot` if available). Copy the real BotFather token in a secure place, not in chat or GitHub.
+2. Open [Holistic House Vercel environment settings](https://vercel.com/super10/codex-public-book-library/settings/environment-variables). Add *Production-only*: `HH_CLIENT_TG_BOT_TOKEN` (type Sensitive/Encrypted, token value) and `HH_CLIENT_TG_BOT_USERNAME` (username **without** @). Do not edit the three already installed keys. Deploy a fresh production build from the approved source branch after changing env variables.
+3. Open [Holistic House My Practice](https://holistichouse.vercel.app/ru/app/practice) under owner account → CRM → Integrations/Connections → Client Telegram Bot. The panel reports **only missing key names**. Click `Refresh setup status`, then `Verify and connect webhook`. The protected route checks `getMe` and refuses to overwrite an unrelated webhook.
+4. Open [Client Cabinet Settings](https://holistichouse.vercel.app/ru/app/settings) → Telegram → Connect Telegram → tap Start in the new bot → return and Check connection. The client should see a verified Telegram status.
+5. Leave automatic sending OFF for now. Once the owner-controlled two-account /start /stop + privacy pilot passes, enable only an owner-authorized delivery test, verify a provider accepted receipt for one synthetic message, then approve a separate customer rollout.
+
+Provider prerequisites for WhatsApp remain absent. The current WhatsApp card can store only an **unverified encrypted number**; it cannot send, deliver or verify on its own. Meta Business/WABA, a verified sender number, approved templates, separate marketing consent and a controlled budget remain future prerequisites. Do not advise using an unofficial personal WhatsApp-Web automation.
+
+Links for the owner: [BotFather](https://t.me/BotFather) · [Vercel environment](https://vercel.com/super10/codex-public-book-library/settings/environment-variables) · [CRM Integrations](https://holistichouse.vercel.app/ru/app/practice) · [Client notification settings](https://holistichouse.vercel.app/ru/app/settings).
