@@ -40,10 +40,11 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
   const [kind,setKind]=useState('reply'),[dueOn,setDueOn]=useState(
     ()=>torontoToday(new Date(Date.now()+86400000)))
   const [edit,setEdit]=useState(null)
-  const session=useRef(null)
+  const session=useRef(null),pendingCreation=useRef(null),working=useRef(false)
   useEffect(()=>{
     const controller=new AbortController()
     session.current={requestId,controller}
+    pendingCreation.current=null;working.current=false
     setTasks([]);setNotice('');setError('');setOpen(false);setEdit(null)
     return()=>{controller.abort();if(session.current?.controller===controller)session.current=null}
   },[requestId,accountId])
@@ -66,8 +67,9 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
     }finally{if(session.current===original)setLoading(false)}
   }
   async function submit(action,payload){
-    if(busy||!session.current)return
+    if(working.current||!session.current)return
     const original=session.current
+    working.current=true
     setBusy(true);setNotice('');setError('')
     try{
       const response=await fetch('/api/app/practitioner-request-tasks',{
@@ -79,6 +81,7 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
       if(!response.ok)throw new Error(data.error||'REQUEST_FAILED')
       if(session.current!==original)return
       setEdit(null)
+      if(action==='create')pendingCreation.current=null
       setNotice(action==='create'?t.created:t.changed)
       await reload()
       onChanged?.()
@@ -87,11 +90,18 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
       setError(e.message==='TASK_OPEN_LIMIT'?t.limit:
         e.message==='CONFLICT'?t.conflict:t.error)
       if(e.message==='CONFLICT')void reload()
-    }finally{if(session.current===original)setBusy(false)}
+    }finally{
+      if(session.current===original){setBusy(false);working.current=false}
+    }
   }
   function createTask(){
-    if(!dueOn||busy)return
-    void submit('create',{taskId:crypto.randomUUID(),kind,dueOn})
+    if(!dueOn||busy||working.current)return
+    // A lost HTTP response must not create a second task on Retry.
+    const old=pendingCreation.current
+    const task=old&&old.requestId===requestId&&old.kind===kind&&old.dueOn===dueOn
+      ?old:{requestId,taskId:crypto.randomUUID(),kind,dueOn}
+    pendingCreation.current=task
+    void submit('create',task)
   }
   const now=torontoToday()
   return <section className={styles.panel}>
@@ -106,11 +116,13 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
       {error&&<p role="alert" className={styles.error}>{error}</p>}
       {notice&&<p role="status" className={styles.notice}>{notice}</p>}
       <form className={styles.form} onSubmit={event=>{event.preventDefault();createTask()}}>
-        <label>{t.type}<select value={kind} disabled={busy} onChange={e=>setKind(e.target.value)}>
+        <label>{t.type}<select value={kind} disabled={busy} onChange={e=>{
+          pendingCreation.current=null;setKind(e.target.value)
+        }}>
           {PRACTITIONER_TASK_KINDS.map(x=><option key={x} value={x}>{t[x]}</option>)}
         </select></label>
         <label>{t.date}<input type="date" value={dueOn} disabled={busy}
-          min={now} onChange={e=>setDueOn(e.target.value)} required/></label>
+          min={now} onChange={e=>{pendingCreation.current=null;setDueOn(e.target.value)}} required/></label>
         <button disabled={busy||!dueOn} type="submit">{t.create}</button>
       </form>
       {!tasks.length&&!loading&&<p className={styles.empty}>{t.empty}</p>}
