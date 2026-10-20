@@ -174,7 +174,13 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [brandFilter,setBrandFilter]=useState('all')
   const [month,setMonth]=useState(()=>torontoKey(new Date().toISOString()).slice(0,7))
   useEffect(()=>{
-    const onLocale=event=>setLocale(event.detail==='ru'?'ru':'en')
+    const onLocale=event=>{
+      const nextLocale=event.detail==='ru'?'ru':'en'
+      setLocale(nextLocale)
+      // Unsent fresh drafts follow the active interface language, but never
+      // silently relabel already-entered or saved editorial content.
+      setForm(old=>old.title||old.caption?old:{...old,locale:nextLocale})
+    }
     window.addEventListener('holistic-house-ui-locale',onLocale)
     return()=>window.removeEventListener('holistic-house-ui-locale',onLocale)
   },[])
@@ -221,6 +227,14 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       :'Text copied to editor only. Review facts, language and media rights, then save the draft. Nothing was published.')
   }
   const isEditing=Boolean(editing)
+  const openWorkspace=nextTab=>{
+    setWorkspaceOpen(true);setTab(nextTab);setNotice('')
+    // After expanding a collapsed workspace, move the owner to the actual task.
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const node=document.getElementById(nextTab==='compose'?'growth-studio-compose':'growth-studio-posts')
+      if(node)node.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})
+    }))
+  }
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
   const reset=()=>{setEditing(null);setForm({...empty(),locale});setNotice('');setTab('compose')}
   const edit=post=>{
@@ -332,8 +346,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     </div>
     <GrowthStudioConnections locale={locale} telegram={telegram} onTelegramVerified={setTelegramVerified}
       postCount={records.length}
-      onStart={()=>{setWorkspaceOpen(true);setTab('compose');setNotice('')}}
-      onShowPosts={()=>{setWorkspaceOpen(true);setTab('posts');setNotice('')}}/>
+      onStart={()=>openWorkspace('compose')}
+      onShowPosts={()=>openWorkspace('posts')}/>
     {workspaceOpen&&<>
     {!ready&&<p className={styles.warning} role="alert"><CircleAlert size={18}/>{t.unavailable}</p>}
     <p className={telegramVerified?styles.connectionReady:styles.connectionUnavailable}>
@@ -365,7 +379,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       </div>
     </div>
     {notice&&<p className={styles.notice} role="status" aria-live="polite">{notice}</p>}
-    {tab==='compose'&&<div className={styles.columns}>
+    {tab==='compose'&&<div id="growth-studio-compose" className={styles.columns}>
       <div className={styles.editor}>
         <div className={styles.sectionHead}><h3>{isEditing?t.selected:t.newDraft}</h3>
           <button type="button" onClick={reset}><Plus size={15}/>{t.new}</button></div>
@@ -499,7 +513,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           ?reused?'Пакет повторов уже сохранён, дубли не созданы.':'Повторные черновики созданы. Проверьте и одобрите каждый отдельно.'
           :reused?'Repeat batch already exists — no duplicates.':'Repeat drafts created. Review and approve each separately.')
       }}/>} 
-    {tab==='posts'&&<div className={styles.postList}>
+    {tab==='posts'&&<div id="growth-studio-posts" className={styles.postList}>
       {!visible.length&&<p className={styles.empty}>{t.noPosts}</p>}
       {visible.map(post=><article key={post.id} className={styles.post}>
         <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{publicationStatusLabel(post.status,locale)}</span>
