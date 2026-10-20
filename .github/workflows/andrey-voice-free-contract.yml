@@ -35,6 +35,7 @@ jobs:
           node --check lib/clients/report-narration-service.js
           node --check tests/local-narration-queue.test.mjs
           node --check tests/local-narration-backend-contract.test.mjs
+          node --check tests/local-narration-redis-runtime.test.mjs
           node --check tests/report-narration.test.mjs
       - name: Run Node privacy and cost contracts
         run: node --test tests/local-narration-queue.test.mjs tests/local-narration-backend-contract.test.mjs tests/report-narration.test.mjs
@@ -44,6 +45,23 @@ jobs:
           python3 -m compileall -q scripts/andrey-voice
           python3 -m unittest discover -s tests -p 'test_andrey_voice_reference.py' -v
           python3 -m unittest discover -s tests -p 'test_andrey_voice_worker.py' -v
+
+
+  redis-atomic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Launch isolated synthetic-only Redis
+        run: docker run -d --rm --name andrey-voice-redis-ci redis:7-alpine
+      - name: Exercise real Redis Lua queue, leases and revocation
+        run: node --test tests/local-narration-redis-runtime.test.mjs
+      - name: Remove test Redis
+        if: always()
+        run: docker rm -f andrey-voice-redis-ci || true
 
   production-build:
     runs-on: ubuntu-latest
