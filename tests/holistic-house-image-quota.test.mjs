@@ -24,6 +24,16 @@ test("Andy portrait uses already-built responsive static variants on all audited
   assert.match(portrait, /srcSet=\{srcSet\}/);
 });
 
+test("service cards reuse the verified responsive Andy portrait instead of a 2MB PNG transform", () => {
+  const services = read("components/services-solutions.tsx");
+  assert.match(services, /import \{ StaticPortrait \} from "@\/components\/static-portrait"/);
+  assert.match(services, /\(isHome \? homepageMedia\[offer\.id\] : offer\.image\) === "\/images\/holistic-house\/andy-about\.png"/);
+  assert.match(services, /<StaticPortrait src="\/images\/holistic-house\/andy-about\.png" alt="" fill/);
+  const portrait = JSON.parse(read("data/static-portrait.json"));
+  assert.ok(portrait.sourceBytes > 2000000);
+  assert.ok(portrait.variants.some(variant => variant.width === 828 && variant.bytes < 160000));
+});
+
 test("the image optimizer remains available for the book images that benefit from resizing", () => {
   const config = read("next.config.ts");
   const book = read("components/book-catalog.tsx");
