@@ -26,19 +26,23 @@ async function click(h,label){
 
 test('the ocean slide follows confirmed receipt, but neither it nor its audio are completion gates',async()=>{
   const f=fixture('en',1)
-  for(let i=0;i<8;i++)await click(f.h,'Continue')
+  for(let i=0;i<10;i++)await click(f.h,'Continue')
+  await click(f.h,'I only explored them today')
   await click(f.h,'Save my practice')
   assert.equal(f.writes,1)
-  assert.match(textOf(f.h.tree),/Your moment is saved/)
+  assert.match(textOf(f.h.tree),/Saved to your course/)
+  await click(f.h,'Review slides')
+  assert.equal(f.writes,1)
+  await click(f.h,'Continue')
   assert.ok(findButton(f.h.tree,'My course map'),'Receipt must retain direct exit to the map')
   assert.ok(findButton(f.h.tree,'Relax with waves'),'The primary next step opens optional relaxation')
-  assert.match(textOf(f.h.tree),/10\s*\/\s*11/)
+  assert.match(textOf(f.h.tree),/12\s*\/\s*16/)
   await click(f.h,'Relax with waves')
   assert.equal(f.writes,1,'Opening audio never performs another save')
   assert.match(textOf(f.h.tree),/Two quiet minutes/)
-  assert.match(textOf(f.h.tree),/11\s*\/\s*11/)
+  assert.match(textOf(f.h.tree),/13\s*\/\s*16/)
   await click(f.h,'Back')
-  assert.match(textOf(f.h.tree),/Your moment is saved/)
+  assert.match(textOf(f.h.tree),/Saved to your course/)
   await click(f.h,'My course map')
   assert.equal(f.exits,1)
   assert.equal(f.writes,1)
@@ -47,7 +51,8 @@ test('the ocean slide follows confirmed receipt, but neither it nor its audio ar
 
 test('the receipt can skip the audio entirely for short lessons',async()=>{
   const f=fixture('en',2)
-  for(let i=0;i<4;i++)await click(f.h,'Continue')
+  for(let i=0;i<11;i++)await click(f.h,'Continue')
+  await click(f.h,'I only explored them today')
   await click(f.h,'Save my practice')
   assert.equal(f.writes,1)
   await click(f.h,'My course map')
@@ -63,7 +68,8 @@ test('the ocean slide remains localized and saves no extra practice response',as
   ]
   for(const [locale,next,save,audio,title,map] of labels){
     const f=fixture(locale,2)
-    for(let i=0;i<4;i++)await click(f.h,next)
+    for(let i=0;i<11;i++)await click(f.h,next)
+    await click(f.h,locale==='ru'?'Пока только знакомлюсь':'Hoy solo las exploré')
     await click(f.h,save)
     await click(f.h,audio)
     assert.match(textOf(f.h.tree),new RegExp(title))
