@@ -62,7 +62,7 @@ async function verify(browserType, locale, width) {
     const call=page.locator('[data-business-finder-start="website-form"]')
     assert.equal(await call.getAttribute('href'),'#business-direct-request')
     assert.equal(await call.getAttribute('data-business-direct-option'),'express')
-    assert.equal(await page.locator('[role="progressbar"]').first().getAttribute('aria-valuenow'),'2')
+    assert.equal(await finder.locator('[role="progressbar"]').getAttribute('aria-valuenow'),'2')
     const b=await call.boundingBox()
     assert.ok(b && b.height>=44,label+': CTA touch target')
     const finalWidth=await page.evaluate(()=>document.documentElement.scrollWidth)
