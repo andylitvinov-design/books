@@ -10,7 +10,7 @@ import {
   businessSnapshotScores, businessSuggestions, businessProgress, businessDay, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
 import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress } from '@/lib/business-coaching/week-modules'
-import styles from './business-coaching.weekModule.css'
+import styles from './business-coaching.module.css'
 
 const copy = {
   en: {
