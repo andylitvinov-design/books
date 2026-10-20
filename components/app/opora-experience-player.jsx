@@ -660,12 +660,43 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 :<p className={styles.moodOptional}>{t.arriveSkip}</p>}
             </>}
           </>}
+
+          {moment==='support'&&<div className={styles.supportMoment} data-opora-support="true">
+            <span className={styles.supportSymbol} aria-hidden="true">♡</span>
+            <p className={styles.lead}>{d.supportLead}</p>
+            {chosenFeeling&&<p className={styles.soft}>{chosenFeeling.reply}</p>}
+          </div>}
+          {moment==='understand'&&<div className={styles.learningMoment} data-opora-why="true">
+            <p className={styles.lead}>{depth?.why}</p>
+            <p className={styles.soft}>{dayCopy?.title}: {dayCopy?.practice}</p>
+          </div>}
+          {moment==='story'&&<div className={styles.learningMoment} data-opora-case="true">
+            <p className={styles.lead}>{depth?.scenario}</p>
+            <p className={styles.miniLabel}>{d.storyQuestion}</p>
+            <div className={styles.chips} role="group" aria-label={d.storyQuestion}>
+              {[[d.storyNotice,'notice'],[d.storyFix,'fix']].map(([label,value])=>
+                <button type="button" key={value} disabled={locked} aria-pressed={storyChoice===value}
+                  onClick={()=>setStoryChoice(value)}>{label}</button>)}
+            </div>
+            {storyChoice&&<p className={styles.moodReply} role="status">
+              {storyChoice==='notice'?d.storyRight:d.storyLeft}</p>}
+          </div>}
+          {moment==='options'&&<div className={styles.learningMoment} data-opora-choice="true">
+            <p className={styles.lead}>{d.optionsLead}</p>
+            <div className={styles.practiceModes} role="group" aria-label={d.optionsTitle}>
+              {[[d.optionFull,'full'],[d.optionSmall,'small'],[d.optionObserve,'observe']].map(([label,value])=>
+                <button type="button" key={value} disabled={locked} aria-pressed={practiceMode===value}
+                  onClick={()=>setPracticeMode(value)}>{label}</button>)}
+            </div>
+            <p className={styles.action}>{chosenPractice}</p>
+            <p className={styles.soft}>{d.optionSelected}</p>
+          </div>}
           {moment==='practice'&&<>
             {!neutralSupport&&cycle.day===1&&dayCopy?.purpose&&
               <div className={styles.coreWhy} data-opora-core-purpose="true">
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
-            {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
+            {!neutralSupport&&<p className={styles.lead}>{chosenPractice}</p>}
             <p className={styles.miniLabel}>{cycle.day===1?t.tryPrompt:t.tryAfter}</p>
             <div className={styles.chips} role="group"
               aria-label={cycle.day===1?t.tryPrompt:t.tryAfter}>
@@ -674,6 +705,17 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                   aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
             </div>
           </>}
+
+          {moment==='repeat'&&<div className={styles.learningMoment} data-opora-repeat="true">
+            <p className={styles.lead}>{d.repeatLead}</p>
+            <p className={styles.action}>{depth?.alternative}</p>
+            <p className={styles.miniLabel}>{d.repeatPrompt}</p>
+            <div className={styles.chips} role="group" aria-label={d.repeatPrompt}>
+              {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
+                <button type="button" key={value} disabled={locked}
+                  aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
+            </div>
+          </div>}
           {moment==='feel'&&<>
             {!neutralSupport&&<p className={styles.lead}>{t.feelText}</p>}
             <div className={styles.chips+' '+styles.feeling} role="group" aria-label={t.feel}>
@@ -683,6 +725,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                   aria-pressed={rating===value} onClick={()=>changeFeeling(value)}>{label}</button>)}
             </div>
           </>}
+
+          {moment==='everyday'&&<div className={styles.learningMoment} data-opora-transfer-example="true">
+            <p className={styles.lead}>{depth?.everyday}</p>
+            <p className={styles.soft}>{d.everydayLead}</p>
+          </div>}
           {moment==='affirmation'&&<>
             <blockquote className={styles.quotation}>{quote}</blockquote>
             <p className={styles.subtle}>{cycle.day===1?opening.thoughtLead:t.quoteText}</p>
@@ -762,18 +809,29 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <span>{c.day} {item.day}/14</span><strong>{item.copy.title}</strong>
             </div>)}
           </div>}
-          {moment==='receipt'&&<>
-            <div className={styles.celebrationMark} aria-hidden="true"><CheckCircle2 size={36}/></div>
-            <p className={styles.lead}>{c.congratsLead}</p>
-            <p className={styles.soft}>{t.savedText}</p>
-            <div className={styles.receiptNote}>
-              <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
+          {moment==='receipt'&&<div className={styles.celebration} data-opora-celebration="true">
+            <div className={styles.celebrationArt} aria-hidden="true">
+              <Sparkles className={styles.celebrationStarLeft} size={24}/>
+              <div className={styles.celebrationMedal}><CheckCircle2 size={40}/></div>
+              <Sparkles className={styles.celebrationStarRight} size={20}/>
             </div>
-            {chosenFeeling&&<p className={styles.soft}><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
-            {answers.transfer==='planned'&&<p className={styles.soft}><strong>{t.takeaway}:</strong> {plan}</p>}
-            {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
-            {!rating&&<p className={styles.soft}>{t.noResult}</p>}
-          </>}
+            <p className={styles.celebrationKicker}>{d.celebrationOverline}</p>
+            <p className={styles.celebrationLead}>{c.congratsLead}</p>
+            <div className={styles.celebrationSummary}>
+              <p className={styles.celebrationBadge}><ShieldCheck size={18}/>{d.savedBadge}</p>
+              <div className={styles.celebrationSkill}>
+                <small>{d.todayLesson}</small><strong>{dayCopy?.title||t.learn}</strong>
+              </div>
+              <p className={styles.celebrationAttempt}>{reportedAttempt?d.triedNote:d.exploredNote}</p>
+            </div>
+            <p className={styles.celebrationBody}>{d.celebrationBody}</p>
+            {(chosenFeeling||rating||answers.transfer==='planned')&&<details className={styles.celebrationDetails}>
+              <summary>{d.details}</summary>
+              {chosenFeeling&&<p><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
+              {answers.transfer==='planned'&&<p><strong>{t.takeaway}:</strong> {plan}</p>}
+              {rating&&<p><strong>{t.feedback}:</strong> {ratingText}</p>}
+            </details>}
+          </div>}
           {outroOpen&&<OporaOceanOutro locale={lang} paused={safety}/>}
           {outroOpen&&<button type="button" className={styles.linkHint} disabled={locked}
             onClick={onFinish||onClose}>{t.finish}</button>}
@@ -809,8 +867,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         receipt?<button type="button" className={styles.back} disabled={locked}
           onClick={moment==='habit'
             ?(habitSetup?()=>setHabitSetup(false):()=>{setPreviewIndex(-1);setInviteOpen(true)})
-            :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
-          <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview||outroOpen?t.back:t.finish}
+            :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):()=>setStep(scenes.length-1)}>
+          <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview||outroOpen?t.back:d.reviewLesson}
         </button>:step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
