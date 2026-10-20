@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { ArrowUpRight, BadgeCheck, MessageCircle, ShieldCheck } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
-import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
+import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled, buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
+import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
+import { configuredSquarePaymentLinks, buildSquarePaymentForServices, formatSquareCadAmount } from "@/lib/commerce/square-payment-links";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import styles from "./payments.module.css";
 
@@ -24,7 +26,11 @@ const copy = {
     zenTitle: "Prefer ZEN.COM?",
     zenIntro: "Ask whether you can pay by EUR bank transfer. No payment is collected here; we first confirm the appointment and verified recipient details.",
     zenRequest: "Ask for ZEN.COM transfer details",
-    otherPayment: "Other payment options",
+    otherPayment: "View full cart", extraMethods: "More payment options",
+    interacTitle: "In Canada without PayPal?", interacIntro: "You can request an Interac e-Transfer. First we confirm a CAD amount, recipient and appointment time. No transfer happens when you click.",
+    interacRequest: "Request Interac details", squareAction: "Pay by card via Square",
+    combinedTitle: "Both consultations", combinedIntro: "30 + 60 minutes. Appointment times confirmed personally; no automatic booking.",
+    combinedPay: "Pay both through PayPal", combinedCart: "Review both in cart",
   },
   ru: {
     back: "Услуги", tag: "СПОСОБЫ ОПЛАТЫ · РАЗОВЫЕ УСЛУГИ",
@@ -40,7 +46,11 @@ const copy = {
     zenTitle: "Предпочитаете ZEN.COM?",
     zenIntro: "Узнайте, можно ли оплатить переводом EUR. Здесь деньги не списываются: сначала согласуем время и проверим реквизиты получателя.",
     zenRequest: "Запросить реквизиты ZEN.COM",
-    otherPayment: "Другие способы оплаты",
+    otherPayment: "Открыть полную корзину", extraMethods: "Другие варианты",
+    interacTitle: "В Канаде без PayPal?", interacIntro: "Можно запросить перевод Interac e-Transfer. Сначала согласуем сумму в CAD, получателя и время сеанса. При нажатии деньги не списываются.",
+    interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square",
+    combinedTitle: "Обе консультации", combinedIntro: "30 + 60 минут. Время согласуется лично, бронирование не происходит автоматически.",
+    combinedPay: "Оплатить обе через PayPal", combinedCart: "Проверить обе услуги в корзине",
   },
   es: {
     back: "Servicios", tag: "FORMAS DE PAGO · SERVICIOS ÚNICOS",
@@ -56,7 +66,11 @@ const copy = {
     zenTitle: "¿Prefieres ZEN.COM?",
     zenIntro: "Consulta si puedes pagar mediante transferencia en EUR. Aquí no se cobra: primero confirmamos la cita y los datos del destinatario.",
     zenRequest: "Solicitar datos para ZEN.COM",
-    otherPayment: "Otras formas de pago",
+    otherPayment: "Abrir el carrito", extraMethods: "Más opciones",
+    interacTitle: "¿En Canadá sin PayPal?", interacIntro: "Puedes solicitar Interac e-Transfer. Primero confirmamos el importe en CAD, destinatario y cita. Hacer clic no envía dinero.",
+    interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square",
+    combinedTitle: "Ambas consultas", combinedIntro: "30 + 60 minutos. Confirmaremos personalmente el horario; no hay reserva automática.",
+    combinedPay: "Pagar ambas con PayPal", combinedCart: "Ver ambas en el carrito",
   },
 } as const;
 
@@ -91,6 +105,10 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
   const t = copy[locale];
   const enabled = personalPayPalEnabled();
   const products = publicServiceCatalog(locale);
+  const squareLinks = configuredSquarePaymentLinks();
+  const combinedIds = products.map(product => product.id);
+  const combinedPayPalUrl = enabled && products.length === 2 ? buildPersonalPayPalCartUrl(combinedIds) : null;
+  const combinedEuros = products.reduce((sum, product) => sum + product.amountMinor, 0) / 100;
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -109,14 +127,16 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
             <small>{t.verify}</small>
           </div>
         </div>
-        <div className={styles.zenNotice} data-zen-manual-inquiry>
-          <strong>{t.zenTitle}</strong><p>{t.zenIntro}</p>
+        <div className={styles.zenNotice} data-interac-manual-inquiry>
+          <strong>{t.interacTitle}</strong><p>{t.interacIntro}</p>
         </div>
         <h2 className={styles.heading}>{t.choose}</h2>
         <div className={styles.cards}>
           {products.map((product) => {
             const euros = product.amountMinor / 100;
             const zenInquiryUrl = buildZenTransferInquiry([product.id], locale);
+            const interacInquiryUrl = buildInteracTransferInquiry([product.id], locale);
+            const squarePayment = buildSquarePaymentForServices([product.id], squareLinks);
             return <article key={product.id} className={styles.card} data-paypal-personal-service={product.id}>
               <div className={styles.productHead}>
                 <span className={styles.duration}>{product.durationMinutes} min</span>
@@ -128,13 +148,28 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
                   target="_blank" rel="noopener noreferrer" data-paypal-personal-link>
                 {t.pay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
               </a> : <p className={styles.unavailable}>{t.help}</p>}
-              <Link href={"/" + locale + "/cart?items=" + encodeURIComponent(product.id)} className={styles.zenButton} data-other-payment-methods>
-                {t.otherPayment} <ArrowUpRight size={17} aria-hidden="true" />
-              </Link>
-              {zenInquiryUrl ? <a href={zenInquiryUrl} className={styles.zenButton}
-                target="_blank" rel="noopener noreferrer" data-zen-transfer-inquiry={product.id}>
-                {t.zenRequest} <MessageCircle size={17} aria-hidden="true" />
+              {squarePayment ? <a href={squarePayment.url} className={styles.payButton}
+                target="_blank" rel="noopener noreferrer" data-square-personal-link={product.id}>
+                {t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
               </a> : null}
+              {interacInquiryUrl ? <a href={interacInquiryUrl} className={styles.zenButton}
+                target="_blank" rel="noopener noreferrer" data-interac-direct-inquiry={product.id}>
+                {t.interacRequest} <MessageCircle size={17} aria-hidden="true" />
+              </a> : null}
+              <details className={styles.otherDetails} data-zen-manual-inquiry>
+                <summary>{t.extraMethods}</summary>
+                <div className={styles.otherActions}>
+                  <Link href={"/" + locale + "/cart?items=" + encodeURIComponent(product.id)}
+                    className={styles.zenButton} data-other-payment-methods>
+                    {t.otherPayment} <ArrowUpRight size={17} aria-hidden="true" />
+                  </Link>
+                  {zenInquiryUrl ? <a href={zenInquiryUrl} className={styles.zenButton}
+                    target="_blank" rel="noopener noreferrer" data-zen-transfer-inquiry={product.id}>
+                    {t.zenRequest} <MessageCircle size={17} aria-hidden="true" />
+                  </a> : null}
+                  <p>{t.zenIntro}</p>
+                </div>
+              </details>
               <a href={receiptUrl(locale, product.title, euros)} className={styles.receiptButton}
                 target="_blank" rel="noopener noreferrer" data-paypal-manual-confirmation>
                 <MessageCircle size={17} aria-hidden="true" /> {t.after}
@@ -142,6 +177,20 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
             </article>;
           })}
         </div>
+        {combinedPayPalUrl ? <div className={styles.combined} data-paypal-combined-cart>
+          <div>
+            <strong>{t.combinedTitle} · €{combinedEuros}</strong>
+            <p>{t.combinedIntro}</p>
+          </div>
+          <div className={styles.combinedActions}>
+            <a href={combinedPayPalUrl} className={styles.payButton} target="_blank" rel="noopener noreferrer" data-paypal-combined-link>
+              {t.combinedPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
+            </a>
+            <Link className={styles.zenButton} href={"/" + locale + "/cart?items=" + combinedIds.join(",")} data-combined-cart-link>
+              {t.combinedCart} <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
+          </div>
+        </div> : null}
         <div className={styles.final}>
           <div className={styles.step}><BadgeCheck size={21} aria-hidden="true" /><p>{t.process}</p></div>
           <p className={styles.warning}>{t.instructions}</p>
