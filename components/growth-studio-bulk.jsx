@@ -10,6 +10,7 @@ const NAMES={
  instagram:'Instagram',facebook:'Facebook',telegram:'Telegram',youtube:'YouTube',
  linkedin:'LinkedIn',threads:'Threads',bluesky:'Bluesky',pinterest:'Pinterest',
  tiktok:'TikTok',eventbrite:'Eventbrite',meetup:'Meetup',manual:'Other / Manual',
+ twitter:'X / Twitter',google_business:'Google Business',mastodon:'Mastodon',wordpress:'WordPress',
 }
 const COPY={
  en:{
