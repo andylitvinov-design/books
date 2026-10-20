@@ -147,7 +147,7 @@ test('mockup-aligned first-page composition uses two measured gauges, split clie
   assert.match(generator,/roundedFill\(A4\.left,metadataTop-metadataHeight,280,metadataHeight,8/)
   assert.match(generator,/roundedFill\(A4\.left\+290,metadataTop-metadataHeight/)
   assert.match(generator,/const noteX=A4\.left\+308/)
-  assert.match(generator,/const titleSize = 26\.2/)
+  assert.match(generator,/const titleSize = 27\.5/)
   assert.match(reader,/className="canonical-progress-note"/)
   assert.match(css,/\.canonical-document--editorial \.canonical-progress-note \{/)
   for(const locale of ['ru','en']){
