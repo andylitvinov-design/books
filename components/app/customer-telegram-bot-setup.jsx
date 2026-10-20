@@ -16,7 +16,7 @@ const TEXT={
   error:'Setup check failed. Verify your signed-in owner account and Vercel configuration.',
   sendingOff:'Automatic client messaging is OFF until a controlled pilot is approved.',
   sendingOn:'Automatic client messaging is enabled. Review the pilot and consent controls.',
-  loading:'Checking setup…',otherWebhook:'This bot already uses another webhook. No changes made.',ownerPair:'Verify the owner's saved private Telegram pairing first.',reuse:'Using your existing verified practice bot; no new BotFather token or username is needed.',reuseHelp:'The owner chat remains paired. Webhook setup refuses to overwrite another app’s callback.',bot:'Bot:',
+  loading:'Checking setup…',otherWebhook:'This bot already uses another webhook. No changes made.',ownerPair:'Verify the owner’s saved private Telegram pairing first.',reuse:'Using your existing verified practice bot; no new BotFather token or username is needed.',reuseHelp:'The owner chat remains paired. Webhook setup refuses to overwrite another app’s callback.',bot:'Bot:',
   test:'Send one test to my Telegram',testAccepted:'Telegram accepted the test request. Check your chat; delivery and reading are not confirmed.',
   testNotLinked:'Connect your own Telegram in Cabinet Settings before testing.',testRate:'Only one test every ten minutes.',
   testHelp:'Manual test goes only to your verified Telegram. Client broadcasting remains OFF.',accountSettings:'Open Cabinet Settings',
