@@ -234,17 +234,22 @@ export function AcademyVideoLibraryClient({
                                             {lesson.unavailable ? <div className={styles.lessonToggle} role="note">
                                               <span className={styles.lessonTitle}>{lesson.title}</span>
                                               <span>{t.unavailable}</span>
-                                            </div> : <button
-                                              className={styles.lessonToggle + (playing ? " " + styles.selected : "")}
-                                              type="button"
-                                              onClick={() => openVideoById(key)}
-                                              aria-expanded={playing}
-                                              aria-label={t.watch + ": " + lesson.title}
-                                            >
-                                              <span className={styles.lessonPoster}><Image src={poster(lesson.id)} unoptimized width={80} height={45} sizes="62px" alt="" loading="lazy" /></span>
-                                              <span className={styles.lessonTitle}>{lesson.title}</span>
-                                              <Play size={17} aria-hidden="true" />
-                                            </button>}
+                                            </div> : (
+                                              <div className={styles.lessonActions}>
+                                                <a className={styles.lessonToggle} href={"https://www.youtube.com/watch?v=" + lesson.id}
+                                                  target="_blank" rel="noopener noreferrer"
+                                                  aria-label={t.youtube + ": " + lesson.title}>
+                                                  <span className={styles.lessonPoster}><Image src={poster(lesson.id)} unoptimized width={80} height={45} sizes="62px" alt="" loading="lazy" /></span>
+                                                  <span className={styles.lessonTitle}>{lesson.title}</span>
+                                                  <ArrowUpRight size={17} aria-hidden="true" />
+                                                </a>
+                                                <button className={styles.lessonInlineToggle + (playing ? " " + styles.selected : "")}
+                                                  type="button" onClick={() => openVideoById(key)} aria-expanded={playing}
+                                                  aria-label={t.watch + ": " + lesson.title} title={t.watch}>
+                                                  <Play size={17} aria-hidden="true" />
+                                                </button>
+                                              </div>
+                                            )}
                                             {playing ? (
                                               <div className={styles.player}>
                                                 <div className={styles.frame}>
