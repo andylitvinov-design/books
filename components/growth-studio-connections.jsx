@@ -11,7 +11,7 @@ const messages={
     quickTitle:'Начните здесь',quickIntro:'Одна страница для работы с публикациями. Проверка сохранения выполняется автоматически.',
     quickReady:'Сохранение проверено · можно создавать черновики',quickChecking:'Проверяем сохранение на сервере…',
     quickFailed:'Сохранение пока не подтверждено. Ничего не будет потеряно или опубликовано.',
-    quickStart:'Создать публикацию',quickPosts:'Мои материалы',quickRetry:'Повторить проверку',
+    quickStart:'Создать черновик',quickPosts:'Мои материалы',quickRetry:'Повторить проверку',
     quickExternal:'Размещение в соцсетях — вручную, пока доступы не подтверждены. Ни один пост не отправится сам.',
     quickDetails:'Подключения и дополнительные настройки (необязательно)',
     summary:'Подключения и способы публикации',
@@ -58,7 +58,7 @@ const messages={
     quickTitle:'Start here',quickIntro:'One page to manage your posts. Your saved-draft storage is checked automatically.',
     quickReady:'Storage verified · draft editor available',quickChecking:'Checking saved drafts on the server…',
     quickFailed:'Storage could not be verified. No post will be lost or published.',
-    quickStart:'Create a post',quickPosts:'My posts',quickRetry:'Retry connection',
+    quickStart:'Create a draft',quickPosts:'My posts',quickRetry:'Retry connection',
     quickExternal:'Social publishing remains manual until your account permissions are verified. Nothing is posted automatically.',
     quickDetails:'Connections and advanced setup (optional)',
     summary:'Connections and publishing methods',
@@ -124,7 +124,6 @@ const modes={telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader
 export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},
   onTelegramVerified=()=>{},onStart=()=>{},onShowPosts=()=>{},postCount=0}){
   const t=messages[locale==='ru'?'ru':'en']
-  const [tested,setTested]=useState(false)
   const [verified,setVerified]=useState(false)
   const [checking,setChecking]=useState(false)
   const [error,setError]=useState('')
@@ -134,7 +133,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
-    setChecking(true);setError('');setTested(true);setVerified(false);onTelegramVerified(false)
+    setChecking(true);setError('');setVerified(false);onTelegramVerified(false)
     try{
       const result=await checkGrowthTelegramPublisherAction()
       if(result.ok&&result.verified===true){setVerified(true);onTelegramVerified(true)}
