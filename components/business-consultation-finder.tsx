@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, ShieldCheck, Sparkles } from 'lucide-react'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
