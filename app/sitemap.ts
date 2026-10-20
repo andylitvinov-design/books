@@ -1,23 +1,44 @@
 import type { MetadataRoute } from "next";
 import { academyPublicBlocks, mediaForRecord, preferredAcademyRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
-import { getSitemapEntries } from '@/data/seo';
 import { getPrioritySitemapEntries } from '@/data/seo-priority-paths';
 import { PUBLIC_EVENTS } from '@/data/public-events';
 import { TOPIC_JOURNEYS } from '@/lib/assessments/topic-journeys';
 import { metadataBaseFor } from '@/data/site-metadata';
-import { getSpanishRemedySlugs } from '@/data/remedies-es';
 import { getAppConfig } from '@/lib/app/config';
 import { createPractitionerRepository } from '@/lib/practitioners/repository';
 import { createArticleRepository } from '@/lib/practitioners/article-repository';
 const academyDirectoryPaths = ["", "/free-ai-courses", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties", "/reiki/tantra-reiki/free-initiation", "/reiki/free-practitioner-course", "/principles-of-energywork", "/reiki/kundalini-reiki/free-initiation"];
+
+// A missing data asset in a Vercel Function must not bring down the whole public
+// sitemap. Normal deployments include all files via next.config.ts tracing.
+async function loadSeoEntries(base: string): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { getSitemapEntries } = await import("@/data/seo");
+    return getSitemapEntries(base);
+  } catch (error) {
+    console.error("[sitemap] SEO remedy catalog unavailable; returning other public URLs", error);
+    return [];
+  }
+}
+
+async function loadSpanishRemedyPaths(): Promise<string[]> {
+  try {
+    const { getSpanishRemedySlugs } = await import("@/data/remedies-es");
+    return getSpanishRemedySlugs().map(slug => `/es/homeopathy/remedies/${slug}`);
+  } catch (error) {
+    console.error("[sitemap] Spanish remedy catalog unavailable; returning other public URLs", error);
+    return [];
+  }
+}
 
 // Recompute upcoming event URLs as confirmed dates pass.
 export const revalidate = 300;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = metadataBaseFor().toString().replace(/\/$/, '');
-  const existing = getSitemapEntries(base);
+  const existing = await loadSeoEntries(base);
+  const spanishRemedyPaths = await loadSpanishRemedyPaths();
   const templeDirections = new Set(["mysteries", "symbolic", "applied", "school"]);
   const academyPaths = (["en", "ru", "es"] as PublicLocale[]).flatMap((locale) => {
     const academyRecordPaths = preferredAcademyRecords(locale)
@@ -38,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       && Date.parse(event.startsAt) >= Date.now()
       && (event.registrationHref.startsWith('https://') || event.registrationHref.startsWith('/')))
       .map(event => '/' + locale + '/events/' + encodeURIComponent(event.id)));
-  const publicPaths = [...(['en','ru','es'] as const).map(locale => '/' + locale + '/events'), ...verifiedEventPages, ...topicJourneys, '/en/toronto', '/ru/toronto', '/es/toronto', '/en/courses/antistress', '/ru/courses/antistress', '/es/courses/antistress', '/en/courses/methodology', '/ru/courses/methodology', '/es/courses/methodology', '/en/explore/relationships', '/ru/explore/relationships', '/en/books', '/ru/books', '/en/library', '/ru/library', '/es/library', '/en/library/distance-homeopathy', '/ru/library/distance-homeopathy', '/es/library/distance-homeopathy', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...getSpanishRemedySlugs().map(slug => `/es/homeopathy/remedies/${slug}`),  ...coreServiceUrls, ...(['en','ru','es'] as const).flatMap(locale => [`/${locale}/services/business-consulting`, ...['psychohomeopathy', 'imagery-therapy', 'systemic-constellations'].map(slug => `/${locale}/services/${slug}`)]), ...academyPaths];
+  const publicPaths = [...(['en','ru','es'] as const).map(locale => '/' + locale + '/events'), ...verifiedEventPages, ...topicJourneys, '/en/toronto', '/ru/toronto', '/es/toronto', '/en/courses/antistress', '/ru/courses/antistress', '/es/courses/antistress', '/en/courses/methodology', '/ru/courses/methodology', '/es/courses/methodology', '/en/explore/relationships', '/ru/explore/relationships', '/en/books', '/ru/books', '/en/library', '/ru/library', '/es/library', '/en/library/distance-homeopathy', '/ru/library/distance-homeopathy', '/es/library/distance-homeopathy', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...spanishRemedyPaths,  ...coreServiceUrls, ...(['en','ru','es'] as const).flatMap(locale => [`/${locale}/services/business-consulting`, ...['psychohomeopathy', 'imagery-therapy', 'systemic-constellations'].map(slug => `/${locale}/services/${slug}`)]), ...academyPaths];
   const entries: MetadataRoute.Sitemap = publicPaths.map(path => ({
     url: base + path, changeFrequency: path.includes('/explore/') ? 'weekly' : 'monthly',
     priority: path === '/es' ? 0.8 : 0.6,
