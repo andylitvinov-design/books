@@ -4,7 +4,7 @@ import { createRequestAuth } from '@/lib/app/session'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createPractitionerClientMessages } from '@/lib/practitioners/client-messages'
-import { dispatchClientMessagePush } from '@/lib/app/client-message-push'
+import { dispatchClientMessagePush,dispatchPractitionerMessagePush } from '@/lib/app/client-message-push'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -42,12 +42,16 @@ async function handler(request){
     }
     // A saved reply remains saved even if its optional Web Push delivery fails.
     // Never return an internal notification flag to the browser.
-    if(request.method==='POST'&&data.notifyClient===true&&data.duplicate===false){
+    if(request.method==='POST'&&data.duplicate===false){
       const id=data.id
-      after(async()=>{try{await dispatchClientMessagePush(config,id)}catch{/* best effort; no private logs */}})
+      if(data.notifyClient===true)
+        after(async()=>{try{await dispatchClientMessagePush(config,id)}catch{/* best effort; no private logs */}})
+      else if(data.notifyMaster===true)
+        after(async()=>{try{await dispatchPractitionerMessagePush(config,id)}catch{/* best effort; no private logs */}})
     }
     const safeData={...data}
     delete safeData.notifyClient
+    delete safeData.notifyMaster
     return auth.apply(NextResponse.json(safeData,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)

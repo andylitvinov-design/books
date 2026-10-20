@@ -1,0 +1,56 @@
+name: Holistic House IndexNow public search notification
+
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'public/fd5a76df78ea5cb826818733ae65556c.txt'
+      - 'data/indexnow-public-urls.json'
+      - 'scripts/indexnow-client.mjs'
+      - 'scripts/submit-indexnow.mjs'
+      - 'tests/indexnow-submission.test.mjs'
+      - '.github/workflows/hh-indexnow.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'public/fd5a76df78ea5cb826818733ae65556c.txt'
+      - 'data/indexnow-public-urls.json'
+      - 'scripts/indexnow-client.mjs'
+      - 'scripts/submit-indexnow.mjs'
+      - 'tests/indexnow-submission.test.mjs'
+      - '.github/workflows/hh-indexnow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Exact public URL and proof tests (offline)
+        run: node --test tests/indexnow-submission.test.mjs
+      - name: Inspect dry-run public URLs only
+        run: node scripts/submit-indexnow.mjs --dry-run
+
+  notify-search-engines:
+    needs: [validate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/public-book-library'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Wait for real public Vercel proof and canonical readback, then submit
+        run: node scripts/submit-indexnow.mjs --submit

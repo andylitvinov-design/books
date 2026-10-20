@@ -90,7 +90,7 @@
             "status": "PAUSED",
             "headlines": [
               "Free Situation Review",
-              "A Hand-Drawing Assessment",
+              "A Hand-Drawn Reflection",
               "Receive A Written Report",
               "No Free Call Required",
               "Describe Your Situation",
@@ -102,7 +102,8 @@
               "Complete a short coaching form and handwritten drawing for a personal written review.",
               "A symbolic situation review, not a medical diagnosis. Paid sessions are optional."
             ]
-          }
+          },
+          "trackingUrl": "https://holistichouse.vercel.app/en/services/free-situation-review?utm_source=google&utm_medium=cpc&utm_campaign=hh_free_review_en_toronto_202610&utm_content=search_a"
         }
       ]
     },
@@ -211,5 +212,52 @@
         }
       ]
     }
-  ]
+  ],
+  "lastReadinessReviewedAt": "2026-10-20",
+  "ga4": {
+    "propertyId": "properties/558442343",
+    "measurementId": null,
+    "actualEventDebugViewVerified": false,
+    "consentHold": "PUBLIC_ANALYTICS_AVAILABLE=false",
+    "remarketingEnabled": false
+  },
+  "campaignAccountBoundary": {
+    "connectedGoogleAdsCustomerId": null,
+    "adsAccountReadback": "HYPD Google Ads account list empty as of 2026-10-20",
+    "expectedCurrency": "CAD",
+    "expectedTimeZone": "America/Toronto",
+    "spendingAllowed": false
+  },
+  "verifiedPublicLandings": {
+    "free_review_en": {
+      "path": "/en/services/free-situation-review",
+      "httpStatus": 200,
+      "canonicalVerified": true,
+      "externalPrivacyTagAbsent": true
+    },
+    "free_review_ru": {
+      "path": "/ru/services/free-situation-review",
+      "httpStatus": 200,
+      "canonicalVerified": true,
+      "externalPrivacyTagAbsent": true
+    },
+    "free_review_es": {
+      "path": "/es/services/free-situation-review",
+      "httpStatus": 200,
+      "canonicalVerified": true,
+      "externalPrivacyTagAbsent": true
+    },
+    "constellations_en": {
+      "path": "/en/services/systemic-constellations",
+      "httpStatus": 200,
+      "canonicalVerified": true,
+      "externalPrivacyTagAbsent": true
+    },
+    "reiki_yggdrasil_en": {
+      "path": "/en/academy/reiki/yggdrasil",
+      "httpStatus": 200,
+      "canonicalVerified": true,
+      "externalPrivacyTagAbsent": true
+    }
+  }
 }

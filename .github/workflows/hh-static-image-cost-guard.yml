@@ -1,0 +1,70 @@
+name: Holistic House static image cost guard
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/hh-static-image-cost-guard.yml"
+      - "data/public-card-artwork*.json"
+      - "lib/public-card-artwork.ts"
+      - "scripts/build-public-card-artwork.mjs"
+      - "tests/public-card-artwork*.test.mjs"
+      - "components/book-catalog.tsx"
+      - "components/book-showcase.tsx"
+      - "components/spanish-book-showcase.tsx"
+      - "components/catalog-showcase.tsx"
+      - "components/yggdrasil-program-landing.tsx"
+      - "components/temple-studies.tsx"
+      - "components/core-service-detail.tsx"
+      - "next.config.ts"
+      - "package.json"
+  push:
+    branches: ["codex/public-book-library"]
+    paths:
+      - ".github/workflows/hh-static-image-cost-guard.yml"
+      - "data/public-card-artwork*.json"
+      - "lib/public-card-artwork.ts"
+      - "scripts/build-public-card-artwork.mjs"
+      - "tests/public-card-artwork*.test.mjs"
+      - "components/book-catalog.tsx"
+      - "components/book-showcase.tsx"
+      - "components/spanish-book-showcase.tsx"
+      - "components/catalog-showcase.tsx"
+      - "components/yggdrasil-program-landing.tsx"
+      - "components/temple-studies.tsx"
+      - "components/core-service-detail.tsx"
+      - "next.config.ts"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Superseded PR commits do not need another costly full verification build.
+concurrency:
+  group: hh-static-image-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-image-cost-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install lockfile-pinned packages
+        run: npm ci --no-audit --no-fund
+      - name: Verify public source hashes and static lookup paths
+        run: node --test tests/public-card-artwork-cost-guard.test.mjs tests/public-card-artwork-reuse-secondary.test.mjs
+      - name: Build real Next.js app with prebuilt static WebP
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+      - name: Prove generated WebP images are usable and bounded
+        run: node --test tests/public-card-artwork-generated.test.mjs
+      - name: Typecheck
+        run: npx --no-install tsc --noEmit

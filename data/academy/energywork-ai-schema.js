@@ -1,8 +1,11 @@
+import { reikiInitiationRequestValid } from './reiki-initiation-request.js'
+
 // A small, server-readable registry of approved slide IDs and answer contracts.
 // The bilingual editorial content lives in data/academy/energywork-ai-curriculum.ts.
 // Keep this registry aligned with that file; tests enforce exact ID parity.
 export const ENERGYWORK_KEY = 'academy-energywork-principles'
-export const ENERGYWORK_VERSION = '2026-10-19.p8'
+export const ENERGYWORK_VERSION = '2026-10-19.p9'
+export const ENERGYWORK_P8_VERSION = '2026-10-19.p8'
 export const ENERGYWORK_P7_VERSION = '2026-10-19.p7'
 export const ENERGYWORK_P6_VERSION = '2026-10-19.p6'
 export const ENERGYWORK_P5_VERSION = '2026-10-19.p5'
@@ -21,7 +24,7 @@ export const ENERGYWORK_COMMON = Object.freeze([
   'paths-01','paths-02','paths-03','paths-04',
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
-  yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','ygg-done'],
+  yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
   tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02'],
   kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
 })
@@ -41,14 +44,17 @@ export function energyworkMeditationFeedbackComplete(answer) {
   }
   return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
-export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','init-01'])
+export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','init-01'])
 // Only five active Tantra Reiki answers are required; historical keys stay readable.
 // Drafts may still be saved blank, but a whitespace-only answer is not complete.
 export const ENERGYWORK_TANTRA_STUDY_QUESTION_IDS = Object.freeze([
   'tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02',
 ])
 export const ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS = Object.freeze(['kun-study-v2-01', 'kun-study-v2-02', 'kun-study-v2-03', 'kun-study-v2-04', 'kun-study-v2-05', 'kun-study-v2-06', 'kun-study-v2-07', 'kun-study-v2-08', 'kun-study-v2-09'])
-export const ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS = Object.freeze(['ygg-06', 'ygg-study-02', 'ygg-study-03', 'ygg-study-04', 'ygg-study-05', 'ygg-study-06', 'ygg-study-07'])
+export const ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS = Object.freeze(['ygg-study-v2-01', 'ygg-study-v2-02', 'ygg-study-v2-03', 'ygg-study-v2-04', 'ygg-study-v2-05', 'ygg-study-v2-06', 'ygg-study-v2-07'])
+// Archived p6-p8 answers remain in the encrypted learner journal under the original keys.
+// They do not satisfy the seven different, corrected preparation questions.
+export const ENERGYWORK_PREVIOUS_YGGDRASIL_STUDY_QUESTION_IDS = Object.freeze(['ygg-06', 'ygg-study-02', 'ygg-study-03', 'ygg-study-04', 'ygg-study-05', 'ygg-study-06', 'ygg-study-07'])
 export function energyworkReikiStudyAnswerComplete(answer) {
   return typeof answer === 'string' && answer.trim().length > 0
 }
@@ -75,7 +81,8 @@ export const ENERGYWORK_QUESTIONS = Object.freeze({
   'boundaries-03': 'choice',
   'boundaries-04': 'text',
   'ygg-04': 'text', 'ygg-06': 'text',
-  'ygg-study-02': 'text', 'ygg-study-03': 'text', 'ygg-study-04': 'text', 'ygg-study-05': 'text', 'ygg-study-06': 'text', 'ygg-study-07': 'text',
+  'ygg-study-02': 'text', 'ygg-study-03': 'text', 'ygg-study-04': 'text', 'ygg-study-05': 'text', 'ygg-study-06': 'text', 'ygg-study-07': 'text', // Archived responses, readable but not required
+  'ygg-study-v2-01': 'text', 'ygg-study-v2-02': 'text', 'ygg-study-v2-03': 'text', 'ygg-study-v2-04': 'text', 'ygg-study-v2-05': 'text', 'ygg-study-v2-06': 'text', 'ygg-study-v2-07': 'text',
   'ygg-03': 'choice',
   'tan-04': 'text', 'tan-06': 'text',
   'tan-study-02': 'text', 'tan-study-03': 'text', 'tan-study-04': 'text',
@@ -94,19 +101,39 @@ export const ENERGYWORK_SUN_PRACTICE_VALUES = Object.freeze(['felt-light','more-
 export const ENERGYWORK_TANTRA_PRACTICE_VALUES = Object.freeze(['connected','more-practice'])
 export const energyworkPathValid = (id) => ENERGYWORK_PATHS.includes(id)
 // Legacy path argument is accepted for old snapshots but never changes the curriculum.
+// The slide IDs remain stable for private answers and saved progress. Move only
+// the optional practice screens to just before their lesson finale.
+function withClosingPractices(ids, practiceIds, finaleId) {
+  if (!ids.includes(finaleId) || practiceIds.some(id => !ids.includes(id)))
+    throw new Error('ENERGYWORK_LESSON_PRACTICE_MISSING')
+  return [
+    ...ids.filter(id => id !== finaleId && !practiceIds.includes(id)),
+    ...practiceIds,
+    finaleId,
+  ]
+}
 export function energyworkSequence(_legacyPath = null) {
   return [
     'welcome-01','welcome-02',
-    'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
-    ...ENERGYWORK_BRANCH.tantra,
-    'presence-01','presence-04','tan-done',
-    ...ENERGYWORK_BRANCH.kundalini,
-    ...ENERGYWORK_BRANCH.yggdrasil,
-    'intention-01','intention-02','intention-03','intention-04',
-    'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
-    'paths-01','paths-02','paths-03',
-    ...ENERGYWORK_INITIATION,
-    'end-01','paths-04','end-02',
+    ...withClosingPractices(
+      ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
+      ['flight-03'], 'flight-done'),
+    'flight-save',
+    ...withClosingPractices(
+      [...ENERGYWORK_BRANCH.tantra, 'presence-01','presence-04','tan-done'],
+      ['tan-03'], 'tan-done'),
+    ...withClosingPractices(ENERGYWORK_BRANCH.kundalini, ['kun-03'], 'kun-done'),
+    ...withClosingPractices(ENERGYWORK_BRANCH.yggdrasil, ['ygg-03'], 'ygg-done'),
+    // Previously, these activities were accidentally counted in Lesson 4.
+    // Lesson 5 now begins with its own introduction and ends with its practices.
+    ...withClosingPractices([
+      'paths-01',
+      'intention-01','intention-02','intention-03','intention-04',
+      'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
+      'paths-02','paths-03',
+      ...ENERGYWORK_INITIATION,
+      'end-01','paths-04','end-02',
+    ], ['intention-04','boundaries-03'], 'end-02'),
   ]
 }
 // Derive lesson lengths from the canonical sequence, not hard-coded totals.
@@ -144,6 +171,8 @@ const P3_TANTRA = Object.freeze([
 // Resume on the first unanswered original question in the NEW order.
 // The last shared screen retains both historic answer keys privately.
 export function energyworkP4ResumeId(slideId, answers = {}) {
+  if (ENERGYWORK_PREVIOUS_YGGDRASIL_STUDY_QUESTION_IDS.includes(slideId) || slideId === 'ygg-done')
+    return ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS[0]
   if (['tan-06','tan-study-02','tan-study-03','tan-study-04',
     'tan-study-05','tan-study-06','tan-study-07'].includes(slideId)) {
     const missing = ENERGYWORK_TANTRA_STUDY_QUESTION_IDS.find(id =>
@@ -157,6 +186,8 @@ export function energyworkP4ResumeId(slideId, answers = {}) {
 // p6 saved quiz positions pointed to different questions: restart only the new
 // quiz, without deleting the encrypted original written responses.
 export function energyworkP6ResumeId(slideId) {
+  if (ENERGYWORK_PREVIOUS_YGGDRASIL_STUDY_QUESTION_IDS.includes(slideId) || slideId === 'ygg-done')
+    return ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS[0]
   // p5/p6/p7 learners at the retired nine-levels slide keep their place.
   if (slideId === 'tan-study-05') return 'tan-study-06'
   if (['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07'].includes(slideId)) return 'kun-study-v2-01'
@@ -167,6 +198,13 @@ export function energyworkP6ResumeId(slideId) {
 export function energyworkP7ResumeId(slideId) {
   if (slideId === 'tan-study-05') return 'tan-study-06'
   return energyworkP6ResumeId(slideId)
+}
+// Versions up to p8 displayed seven different Yggdrasil questions.
+// Restart only their corrected study section without modifying answers.
+export function energyworkP8ResumeId(slideId) {
+  if (ENERGYWORK_PREVIOUS_YGGDRASIL_STUDY_QUESTION_IDS.includes(slideId) || slideId === 'ygg-done')
+    return ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS[0]
+  return energyworkP7ResumeId(slideId)
 }
 export function energyworkPreviousResumeId(slideId, answers = {}) {
   const flightStep = PREVIOUS_FLIGHT.indexOf(slideId)
@@ -191,15 +229,19 @@ export function energyworkP2ResumeId(slideId, answers = {}) {
 }
 // P3 lesson-one positions preceded the p4 swap. P4 quiz positions preceded p5.
 const P3_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
+// Preserve the historical p3→p9 ordinal migration independently of new display order.
+// The lesson-end practice move must not silently rewrite old cursor migrations.
+const P9_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
 export function energyworkP3ResumeId(slideId, answers = {}) {
   const flightStep = P3_FLIGHT.indexOf(slideId)
-  if (flightStep >= 0) return energyworkSequence()[2 + flightStep]
+  if (flightStep >= 0) return P9_FLIGHT[flightStep]
   return energyworkP4ResumeId(slideId, answers)
 }
 export function energyworkInitiationReady(answers) {
   return Boolean(answers && typeof answers === 'object' && !Array.isArray(answers) &&
     [...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS]
-      .every((id) => typeof answers[id] === 'string' && answers[id].trim().length > 0))
+      .every((id) => typeof answers[id] === 'string' && answers[id].trim().length > 0) &&
+    reikiInitiationRequestValid(answers['end-01']))
 }
 export function energyworkAnswerValid(id, answer) {
   const kind = ENERGYWORK_QUESTIONS[id]

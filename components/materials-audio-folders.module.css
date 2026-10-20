@@ -1,0 +1,73 @@
+.collection {
+  width: min(1040px, calc(100% - 32px));
+  margin: 18px auto 0;
+  padding: clamp(16px, 2.5vw, 24px);
+  border: 1px solid #d4e5ec;
+  border-radius: 20px;
+  background: linear-gradient(130deg, #f8fcff, #eef8f5);
+  color: #244b60;
+  box-shadow: 0 9px 27px rgba(20, 66, 89, .06);
+}
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  color: #17465c;
+  font-size: clamp(18px, 2vw, 23px);
+  font-weight: 800;
+  letter-spacing: -.025em;
+}
+.sectionTitle svg { color: #087f8a; flex: none; }
+.description {
+  margin: 0 0 16px;
+  color: #557481;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.folderGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(235px,1fr)); gap: 12px; }
+.folderLink {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 88px;
+  padding: 15px;
+  border: 1px solid #c7ddd9;
+  border-radius: 15px;
+  background: white;
+  color: #154e61;
+  text-decoration: none;
+  box-shadow: 0 4px 13px rgba(16, 89, 99, .04);
+}
+.folderLink:hover { border-color: #28a7a6; background: #f6fffd; }
+.folderLink:focus-visible { outline: 3px solid #19a6a4; outline-offset: 3px; }
+.folderIcon {
+  display: grid; place-items: center; flex: 0 0 48px; height: 48px;
+  border-radius: 13px; color: #087e89; background: #e0f5f1;
+}
+.folderIcon svg { width: 24px; height: 24px; }
+.folderName { flex: 1; display: grid; gap: 5px; min-width: 0; }
+.folderName strong { font-size: 16px; line-height: 1.24; color: #174a5c; }
+.folderName small { font-size: 12px; line-height: 1.4; color: #56747d; }
+.arrow { flex: none; color: #319097; width: 18px; }
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: #50717c;
+  margin: 0 0 15px;
+}
+.breadcrumb a { color: #117f89; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb a:focus-visible { outline: 2px solid #119f9c; outline-offset: 3px; }
+.breadcrumb svg { width: 14px; height: 14px; color: #7b9fa6; }
+@media(max-width:590px){
+  .collection { width:calc(100% - 20px); margin-top: 12px; padding: 13px; border-radius: 16px; }
+  .folderGrid { grid-template-columns: 1fr; gap: 8px; }
+  .folderLink { min-height: 75px; padding: 10px 12px; gap: 11px; }
+  .folderIcon { flex-basis: 42px; height: 42px; border-radius: 11px; }
+  .folderName strong { font-size: 15px; }
+}

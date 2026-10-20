@@ -162,13 +162,19 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0)
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     if(params.get('panel')==='materials')setActivePanel('materials')
+    if(params.get('panel')==='clients'){
+      setActivePanel('clients')
+      const requested=params.get('requestId')||''
+      if(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requested))
+        setFocusRequestId(requested)
+    }
   },[])
   useEffect(()=>{
     if(!activePanel)return undefined
@@ -486,9 +492,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 
         {activePanel==='clients'&&
           <PractitionerClientProfiles items={requests} services={services}
+            practitionerTasks={data.practitionerTasks||[]}
             locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
             onRefresh={()=>load()}
+            focusRequestId={focusRequestId}
             onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
         {activePanel==='crm'&&isOwner&&accountId&&

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { writeReikiInitiationRequest, reikiInitiationRequestValid } from '../data/academy/reiki-initiation-request.js'
 import {
   ENERGYWORK_KEY, ENERGYWORK_VERSION, ENERGYWORK_LEGACY_VERSION, ENERGYWORK_PREVIOUS_VERSION, ENERGYWORK_P2_VERSION, ENERGYWORK_P3_VERSION, ENERGYWORK_P4_VERSION,
   ENERGYWORK_COMMON, ENERGYWORK_BRANCH, ENERGYWORK_FINISH,
@@ -22,13 +23,14 @@ const p5Migration = read('supabase/migrations/20261019160000_hh_academy_reiki_qu
 const p6Migration = read('supabase/migrations/20261019170000_hh_academy_reiki_kundalini_ygg_study_p6_20261019.sql')
 const p7Migration = read('supabase/migrations/20261019180000_hh_academy_reiki_kundalini_nine_questions_p7_20261019.sql')
 const p8Migration = read('supabase/migrations/20261019190500_hh_academy_reiki_tantra_five_questions_p8_20261019.sql')
+const p9Migration = read('supabase/migrations/20261019203000_hh_academy_reiki_yggdrasil_source_questions_p9_20261019.sql')
 const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
 test('Server registry includes exactly 69 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
-  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p8')
+  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p9')
   assert.equal(ENERGYWORK_P4_VERSION, '2026-10-19.p4')
   assert.equal(ENERGYWORK_P3_VERSION, '2026-10-19.p3')
   assert.equal(ENERGYWORK_P2_VERSION, '2026-10-19.p2')
@@ -42,7 +44,7 @@ test('Server registry includes exactly 69 editorial IDs in one fixed five-lesson
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
   assert.equal(sequence.length,69)
-  assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
+  assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
   assert.equal(sequence[0],'welcome-01')
   assert.equal(sequence.at(-1),'end-02')
   assert.deepEqual(ENERGYWORK_LESSON_STARTS,['flight-01','tan-01','kun-01','ygg-01','paths-01'])
@@ -74,10 +76,17 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
   assert.match(repository,/MEDITATION_FEEDBACK_REQUIRED/)
   assert.match(learner,/feedbackMissing = isMeditationFeedback/)
   assert.match(learner,/experienceMissing \|\| feedbackMissing/)
-  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-06','ygg-study-02','ygg-study-03','ygg-study-04','ygg-study-05','ygg-study-06','ygg-study-07','init-01'])
+  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','init-01'])
   assert.equal(energyworkInitiationReady(null),false)
   assert.equal(energyworkInitiationReady({}),false)
   const complete = Object.fromEntries([...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS].map(id=>[id,'My own note']))
+  complete['end-01'] = writeReikiInitiationRequest({
+    firstName: 'Maria', lastName: 'Ivanova', location: 'Toronto, Canada',
+    timezone: 'America/Toronto', preferredTime: 'Weekdays after 19:00',
+    freeInitiation: 'tantra', donationInitiations: ['kundalini'],
+    motivation: 'I would like to learn how to deepen my personal Reiki practice.',
+  })
+  assert.equal(reikiInitiationRequestValid(complete['end-01']),true)
   assert.equal(energyworkInitiationReady(complete),true)
   for(const id of [...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS]){
     assert.equal(energyworkInitiationReady({...complete,[id]:'  '}),false,'Must not accept blank '+id)
@@ -139,6 +148,8 @@ test('Existing encrypted owner-only RLS is retained and version upgrade is addit
   assert.doesNotMatch(p7Migration, /drop table|delete from|drop policy|drop column/i)
   assert.match(p8Migration, /alter column course_version set default '2026-10-19\.p8'/)
   assert.doesNotMatch(p8Migration, /drop table|delete from|drop policy|drop column/i)
+  assert.match(p9Migration, /alter column course_version set default '2026-10-19\.p9'/)
+  assert.doesNotMatch(p9Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p4Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p3Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(upgrade,/drop table|delete from|drop policy|drop column/i)

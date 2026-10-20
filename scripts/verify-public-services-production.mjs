@@ -129,7 +129,7 @@ try {
       assert.equal(await page.locator("#find-your-service").count(), 0,
         "Detailed practitioner search belongs on the separate directory");
       const testAction = free.locator('[data-services-studio-action="tests"]');
-      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/client/tests");
+      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
       await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
       await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
@@ -365,8 +365,8 @@ try {
     await page.close();
   }
 
+  // DAO now has its own free photo-led landing, not a paid core-service detail.
   const coreServices = [
-    ["dao-health-profile", "dao"],
     ["alchemy-of-soul", "alchemy"],
     ["hypnotherapy-course", "hypnotherapy"],
   ];
@@ -462,108 +462,99 @@ try {
     }
   }
 
-  for (const locale of ["en", "ru"]) {
-    for (const width of [320, 360, 390, 1188]) {
-      const page = await createPage(width);
-      await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
-      await visible(page.locator("[data-free-quick-request]").first());
-      assert.equal(await page.locator("[data-free-quick-request]").count(), 1, "One consultation selector appears only after the benefits, process and Alchemy of the Soul link");
-      await expect(page.locator("[data-free-quick-request]").first().locator('input[type="radio"]')).toHaveCount(3);
-      const detailIntake = page.locator("[data-free-drawing-intake]");
-      await detailIntake.waitFor({ state: "hidden" });
-      const advanced = page.locator("details").filter({ has: detailIntake });
-      assert.equal(await advanced.evaluate(element => element.open), false, "Detailed questionnaire must start collapsed");
-      await assertNoDevIssueOverlay(page, locale + "/free-situation-review/" + width);
-      await assertViewport(page, locale + "/free-situation-review/" + width);
-      if (width <= 390) {
-        const panelHeights = await page.evaluate(() => {
-          const sections = {
-            hero: 'section[aria-labelledby="review-hero-title"]',
-            situations: '#situations',
-            outcomes: 'section[aria-labelledby="review-outcomes-title"]',
-            testimonials: '[data-personal-testimonials="all"]',
-            alchemy: 'section[aria-labelledby="review-alchemy-title"]',
-            about: 'section[aria-labelledby="review-about-title"]',
-            faq: 'section[aria-labelledby="review-faq-title"]',
-            steps: '#how-it-works',
-            final: 'section[aria-labelledby="review-final-title"]',
-          };
-          const max = window.innerHeight - 90; // reserve bottom menu and a little breathing room
-          return Object.entries(sections).map(([name, selector]) => {
-            const node = document.querySelector(selector);
-            return { name, height: Math.ceil(node?.getBoundingClientRect().height ?? 9999), max };
-          });
-        });
-        assert.deepEqual(panelHeights.filter(item => item.height > item.max), [],
-          "Each collapsed mobile landing panel should fit within one viewport: " + JSON.stringify(panelHeights));
-        const archive = page.locator('[data-personal-testimonials="all"]');
-        const gallery = archive.locator('[role="region"]');
-        assert.equal(await archive.locator('[data-testimonial-video-id]').count(), 12);
-        assert.equal(await archive.locator('details').first().evaluate(element => element.open), false);
-        assert.ok(await gallery.evaluate(element => element.scrollWidth > element.clientWidth),
-          "All twelve source-backed reviews remain available by horizontal swipe");
-      }
-      if (width === 390 || width === 1188) {
-        await page.screenshot({ path: output + "/free-review-" + locale + "-hero-" + width + ".png", fullPage: false });
-      }
-      await page.close();
-    }
+  // The three free paths now share a photo-led landing and an actual independent entry.
+  for (const locale of ["en", "ru", "es"]) {
+    for (const [kind, slug, captureId] of [
+      ["tests", "tests", "start-free"],
+      ["situation", "services/free-situation-review", "request-free-review"],
+      ["dao", "services/dao-health-profile", "request-free-wu-xing"],
+    ]) {
+      for (const width of [320, 360, 390, 1188]) {
+        const page = await createPage(width);
+        await page.goto(origin + "/" + locale + "/" + slug, { waitUntil: "networkidle" });
+        const main = page.locator('main[data-free-entry-landing="' + kind + '"]');
+        await visible(main.locator('h1'));
+        await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);
+        await assertViewport(page, locale + "/" + slug + "/" + width);
 
-    const page = await createPage(390);
-    await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
-    const quick = page.locator("[data-free-quick-request]").first();
-    await visible(quick);
-    assert.equal(await page.locator("#personal-consultation").count(), 1, "Existing service consultation links still target the final selector");
-    assert.equal(await page.locator("#situations article").count(), 4, "Four grounded question categories are displayed");
-    const heroText = await page.locator('section[aria-labelledby="review-hero-title"]').innerText();
-    assert.ok(!heroText.includes("€50") && !heroText.includes("€100"), "First screen focuses on benefits, not pricing");
-    const quickChooser = await openContactChannelChooser(quick, expect);
-    const freeDraft = await assertPreparedContactChannels(quickChooser, expect);
-    const freeMessage = freeDraft.whatsappUrl.searchParams.get("text") || "";
-    assert.ok(freeMessage.includes(locale === "ru" ? "Бесплатная консультация" : "Free consultation"), "Free request includes its explicit selected format");
-    assert.ok(!freeMessage.includes("€50") && !freeMessage.includes("€100"), "Free enquiry must not accidentally quote a paid price");
-    for (const [format, price, minutes] of [["mini", "€50", "30"], ["full", "€100", "60"]]) {
-      await quick.locator('input[type="radio"][value="' + format + '"]').check();
-      await expect(quick.locator('input[type="radio"][value="' + format + '"]')).toBeChecked();
-      await expect(quickChooser.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
-      const selectedChooser = await openContactChannelChooser(quick, expect);
-      const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(selectedChooser, expect);
-      const text = whatsappUrl.searchParams.get("text") || "";
-      assert.ok(text.includes(price) && text.includes(minutes), "Messenger draft retains exact paid amount and duration: " + format);
-      assert.equal(telegramUrl.searchParams.get("text"), text, "Telegram and WhatsApp preserve paid selection");
+        const hero = main.locator('section[aria-labelledby="free-entry-title"]');
+        await visible(hero.locator('img'));
+        await visible(main.locator('#what-you-get'));
+        await visible(main.locator('#how-it-works'));
+        const capture = main.locator('#' + captureId);
+        await visible(capture);
+        assert.ok((await hero.innerText()).length > 150, "First screen must explain value before an enquiry");
+        assert.ok(!(await hero.innerText()).includes("€100"), "A free hero must not be a paid consultation upsell");
+
+        if (width <= 390) {
+          const panelHeights = await page.evaluate(() => {
+            const names = {
+              hero: 'section[aria-labelledby="free-entry-title"]',
+              outcomes: '#what-you-get',
+              process: '#how-it-works',
+            };
+            return Object.entries(names).map(([name, selector]) => {
+              const el = document.querySelector(selector);
+              return { name, height: Math.ceil(el?.getBoundingClientRect().height ?? 9999),
+                max: window.innerHeight - 66 };
+            });
+          });
+          assert.deepEqual(panelHeights.filter((item) => item.height > item.max), [],
+            "Each photo-led mobile section should fit within one screen: " + JSON.stringify(panelHeights));
+        }
+
+        if (kind === "tests") {
+          await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());
+          assert.equal(await main.locator('[data-free-resource-enquiry]').count(), 0,
+            "Tests begin in the existing private test explorer, not a fake contact form");
+        } else {
+          const form = main.locator('[data-free-resource-enquiry="' + kind + '"]');
+          await visible(form);
+          assert.equal(await form.locator('select').count(), 1);
+          assert.equal(await form.locator('input[type="text"]').count(), 1);
+          assert.equal(await form.locator('textarea').count(), 1);
+          const markerA = "Synthetic name marker - " + locale + "/" + kind;
+          const markerB = "Synthetic private context marker - " + locale + "/" + kind;
+          await form.locator('input[type="text"]').fill(markerA);
+          await form.locator('textarea').fill(markerB);
+          await visible(form.getByRole('button', {name: locale === "ru" ? "Скопировать мой запрос" : locale === "es" ? "Copiar mis detalles" : "Copy my details"}));
+          const chooser = await openContactChannelChooser(form, expect);
+          const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(chooser, expect);
+          assert.ok((whatsappUrl.searchParams.get("text") || "").length > 40);
+          for (const marker of [markerA, markerB]) {
+            assert.ok(!whatsappUrl.searchParams.get("text")?.includes(marker), "Private note must not leak in WhatsApp URL");
+            assert.ok(!telegramUrl.searchParams.get("text")?.includes(marker), "Private note must not leak in Telegram URL");
+            assert.ok(!decodeURIComponent(page.url()).includes(marker), "Private note must not leak in page URL");
+          }
+          if (kind === "situation") {
+            const detailedForm = main.locator('[data-free-drawing-intake]');
+            await detailedForm.waitFor({ state: "hidden" });
+            const details = main.locator('details').filter({ has: detailedForm });
+            assert.equal(await details.evaluate((element) => element.open), false,
+              "The real hand-drawn situation questionnaire is available but initially compact");
+            if (width === 390) {
+              await details.locator(':scope > summary').click();
+              await visible(detailedForm);
+              await detailedForm.locator('textarea').nth(0).fill(markerA);
+              await detailedForm.locator('textarea').nth(1).fill(markerB);
+              await detailedForm.locator('form button[type="submit"]').click();
+              const ready = detailedForm.locator('[role="region"]');
+              await visible(ready);
+              const intakeChannels = await openContactChannelChooser(ready, expect);
+              const prepared = await assertPreparedContactChannels(intakeChannels, expect);
+              for (const marker of [markerA, markerB]) {
+                assert.ok(!prepared.whatsappUrl.searchParams.get("text")?.includes(marker));
+                assert.ok(!prepared.telegramUrl.searchParams.get("text")?.includes(marker));
+              }
+            }
+          }
+        }
+        if (width === 390 || width === 1188) {
+          await page.screenshot({path: output + "/free-" + kind + "-" + locale + "-hero-" + width + ".png", fullPage: false});
+        }
+        await page.close();
+      }
     }
-    // The only format selector is the final section; the selected prices above
-    // have already been verified against WhatsApp and Telegram drafts.
-    const intake = page.locator("[data-free-drawing-intake]");
-    const advanced = page.locator("details").filter({ has: intake });
-    await intake.waitFor({ state: "hidden" });
-    await advanced.locator(":scope > summary").click();
-    await visible(intake);
-    // A reflected state transition proves React is interactive before controlled inputs are filled.
-    const topicChoice = intake.locator('fieldset button[type="button"]').nth(1);
-    await topicChoice.click();
-    await page.waitForFunction(() => document.querySelectorAll('[data-free-drawing-intake] fieldset button[type="button"]')[1]?.getAttribute('data-selected') === 'true');
-    const markerA = "Synthetic privacy marker A — " + locale;
-    const markerB = "Synthetic privacy marker B — " + locale;
-    await intake.locator("textarea").nth(0).fill(markerA);
-    await intake.locator("textarea").nth(1).fill(markerB);
-    assert.equal(await intake.locator("textarea").nth(0).inputValue(), markerA, "first answer remains intact before native submit");
-    assert.equal(await intake.locator("textarea").nth(1).inputValue(), markerB, "second answer remains intact before native submit");
-    await intake.locator('form button[type="submit"]').click();
-    const ready = intake.locator('[role="region"]');
-    await visible(ready);
-    const readyChooser = await openContactChannelChooser(ready, expect);
-    const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(readyChooser, expect);
-    const whatsappText = whatsappUrl.searchParams.get("text") || "";
-    const telegramText = telegramUrl.searchParams.get("text") || "";
-    const decodedPageUrl = decodeURIComponent(page.url());
-    for (const marker of [markerA, markerB]) {
-      assert.ok(!whatsappText.includes(marker), "WhatsApp query text must not include answer marker");
-      assert.ok(!telegramText.includes(marker), "Telegram query text must not include answer marker");
-      assert.ok(!decodedPageUrl.includes(marker), "Page URL must not include answer marker");
-    }
-    await ready.screenshot({ path: output + "/free-review-" + locale + "-ready-region-390.png" });
-    await page.close();
   }
 
   diagnostics.devIssueOverlay = false;

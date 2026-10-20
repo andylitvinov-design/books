@@ -147,8 +147,9 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
                   </span>}
                 </span>
                 <span className="canonical-remedy-profile-action canonical-remedy-unified-toggle">
-                  <span>{locale === 'ru' ? 'Описание' : 'Details'}</span>
-                  <span className="canonical-remedy-unified-chevron" aria-hidden="true">⌄</span>
+                  <span className="canonical-remedy-toggle-label-closed">{locale === 'ru' ? 'Описание' : 'Details'}</span>
+                  <span className="canonical-remedy-toggle-label-open">{locale === 'ru' ? 'Свернуть' : 'Close'}</span>
+                  <span className="canonical-remedy-unified-chevron" aria-hidden="true" />
                 </span>
               </summary>
               <div className="canonical-remedy-profile-content">

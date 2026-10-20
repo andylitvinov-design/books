@@ -21,10 +21,12 @@ test('premium report uses distinct hero/artwork columns, aligned sections, origi
   for(const locale of ['en','ru']){
     const source=textOf(buildPrescriptionPdf({...base,patientName:'Sample Subject'},locale,origin))
     assert.match(source,/^%PDF-1\.7/)
-    assert.equal((source.match(/\/Lighthouse Do Q/g)??[]).length,2,
-      'approved mark and larger illustrated lighthouse occur only on first cover')
-    assert.match(source,/0\.85 0\.91 0\.90 rg/,'unboxed watercolor-style coast on ivory paper')
-    assert.match(source,/0\.51 0\.72 0\.72 RG/,'coastal scenery integrates with the lighthouse')
+    assert.equal((source.match(/\/Lighthouse Do Q/g)??[]).length,1,
+      'approved masthead mark stays, duplicated white-backed hero JPEG is removed')
+    assert.ok(/\/CoastalPhoto Do Q/.test(source) || /0\.85 0\.91 0\.90 rg/.test(source),
+      'approved lighthouse coast or vector-only fallback appears on cover')
+    assert.ok(/\/CoastalPhoto Do Q/.test(source) || /0\.51 0\.72 0\.72 RG/.test(source),
+      'sea treatment is integrated, not a hard white photo rectangle')
     assert.match(source,/0\.965 0\.980 0\.969 rg/,'balanced two-ring progress dashboard')
     assert.match(source,/\/RemedyPhoto1 Do Q/,'original selected remedy artwork')
     assert.match(source,/\/Signature Do Q/,'original signature')
@@ -39,7 +41,7 @@ test('premium report uses distinct hero/artwork columns, aligned sections, origi
 test('remedy recommendation remains a single dynamic card with metadata, larger photo and clickable action',()=>{
   const source=readFileSync('lib/prescriptions/pdf.js','utf8')
   assert.match(source,/const cardHeight=mainHeight/)
-  assert.match(source,/const imageArea=82/)
+  assert.match(source,/const imageArea=86/)
   assert.match(source,/text\(linkLabel,titleX,linkY/)
   assert.match(source,/page\.links\.push\(\{url,x:titleX,y:linkY/)
   assert.doesNotMatch(source,/const photoY = headerTop - 58/)

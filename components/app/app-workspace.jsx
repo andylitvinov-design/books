@@ -47,8 +47,9 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
+import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
-import { isNativePsiAlchemy } from '@/lib/native/client'
+import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
@@ -199,15 +200,23 @@ export default function AppWorkspace({ locale, path = [] }) {
     setBusy(true)
     setError(null)
     try {
+      const native = isNativeHolisticHouse()
       const result = await appFetch('auth/start', {
         locale,
+        ...(native ? { native: true } : {}),
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
       })
-      window.location.assign(result.redirectUrl)
+      if (native) {
+        // Google OAuth uses Chrome Custom Tabs / Safari View Controller,
+        // not the app's credential-readable embedded WebView.
+        const { Browser } = await import('@capacitor/browser')
+        await Browser.open({ url: result.redirectUrl })
+        setBusy(false)
+      } else window.location.assign(result.redirectUrl)
     } catch (e) {
       setError(e)
       setBusy(false)
@@ -654,6 +663,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
               <InstallHolisticHouse locale={locale} />
               <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
+              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
                 logout={logout}

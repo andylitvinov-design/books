@@ -59,6 +59,9 @@ on:
       - 'next.config.ts'
 permissions:
   contents: read
+concurrency:
+  group: release-reaudit-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   browser:
     runs-on: ubuntu-latest

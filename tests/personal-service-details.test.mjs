@@ -28,7 +28,7 @@ test("three free paths and two personal cards retain all core service detail pag
   const offers = read("data/core-service-offers.ts");
   const ui = read("components/services-solutions.tsx");
   const free = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(services, /<ServicesSolutions locale=/);
+  assert.match(services, /<ServicesStudioOffers locale=/);
   for(const slug of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + slug + '"'));
   for(const slug of ["alchemy-of-soul","imagery-therapy","systemic-constellations"])
@@ -37,31 +37,34 @@ test("three free paths and two personal cards retain all core service detail pag
   assert.match(freePaths, /free-situation-review/);
   assert.match(freePaths, /dao-health-profile/);
   assert.match(ui, /visibleOffers.map/);
-  assert.match(free, /FreeSituationReviewForm/);
+  assert.match(free, /<FreeEntryLanding locale=\{locale\} kind="situation"/);
+  assert.match(read("components/free-entry-landing.tsx"), /<FreeSituationReviewForm locale=\{locale\}/);
 });
 
-test("free diagnostic renders scope and safety in its steps and FAQ without a duplicate scope section", () => {
-  const s = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(s, /t\.steps\.map/);
-  assert.match(s, /t\.faqs\.map/);
-  assert.match(s, /<p className=\{styles\.safety\}>\{t\.transparency\}<\/p>/);
+test("free written review keeps personal scope, optional long questionnaire and no paid or false clinical claims", () => {
+  const route = read("app/[locale]/services/free-situation-review/page.tsx");
+  const landing = read("components/free-entry-landing.tsx");
+  const enquiry = read("components/free-resource-enquiry.tsx");
+  const css = read("components/free-entry-landing.module.css");
+  assert.match(route, /kind="situation"/);
+  assert.match(landing, /t\.steps\.map/);
+  assert.match(landing, /t\.faq\.map/);
+  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
+  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\}>/);
+  assert.match(landing, /"request-free-review"/);
   for (const phrase of [
-    "The free offer does not include a live call.",
-    "Бесплатного созвона в этот формат не входит.",
-    "No incluye una llamada en directo.",
-    "not a medical diagnosis, psychiatric diagnosis or prescription",
-    "не медицинский или психиатрический диагноз или назначение лечения",
-    "sin diagnósticos médicos o psiquiátricos ni recetas",
-  ]) assert.ok(s.includes(phrase), phrase);
-  assert.match(s, /className=\{styles\.finalCapture\} id="personal-consultation"/);
-  assert.match(s, /className=\{styles\.finalRequest\} id="request-free-review"/);
-  assert.match(s, /<FreeReviewQuickRequest locale=\{locale\} \/>/);
-  assert.match(s, /This is optional, never a requirement for your free written review/);
-  assert.ok(s.indexOf('id="personal-consultation"') > s.indexOf("className={styles.details}"));
-  assert.doesNotMatch(s, /className=\{styles\.scope\}/);
-  const css = read("app/[locale]/services/free-situation-review/review.module.css");
-  assert.match(css, /\.steps\{grid-template-columns:1fr/);
-  assert.match(css, /@media\(max-width:767px\)/);
+    "It does not include a video call or live consultation",
+    "Он не включает видеозвонок",
+    "No incluye videollamada ni consulta en directo",
+    "educational and symbolic",
+    "не диагностируют и не лечат заболевания",
+    "no diagnostican ni tratan enfermedades",
+  ]) assert.ok(landing.includes(phrase), phrase);
+  assert.match(enquiry, /<ContactChannelChooser/);
+  assert.match(enquiry, /navigator\.clipboard\.writeText\(privateContext\)/);
+  assert.doesNotMatch(landing + enquiry, /guaranteed cure|medical diagnosis provided|€50|€100/i);
+  assert.match(css, /@media\(max-width:600px\)/);
+  assert.match(css, /min-height:calc\(100svh - 150px\)/);
 });
 
 test("all personal services have source-backed educational language, approved prices and no medical claims", () => {

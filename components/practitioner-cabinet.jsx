@@ -1,6 +1,6 @@
 'use client'
 
-import {Archive, BadgeCheck, FileText, Film, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Users} from 'lucide-react'
+import {Archive, BadgeCheck, FileText, Film, Headphones, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Users} from 'lucide-react'
 import Link from 'next/link'
 import {useEffect, useState} from 'react'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
@@ -18,7 +18,9 @@ const copy = {
     materials:'Материалы',materialsText:'Библиотека фото, видео и YouTube-ссылок для выбора в отчетах клиентов.',
     appRequests:'Заявки из приложения',appRequestsText:'Запросы консультаций и только те резюме, которыми пользователь решил поделиться.',
     reikiLeads:'Reiki CRM · ученики и инициация',reikiLeadsText:'Лид 1: начало обучения. Лид 2: письмо-заявка и согласованные материалы курса.',
+    reikiAudio:'Аудио · Reiki Practitioner',reikiAudioText:'Материалы → Аудио → Reiki Practitioner. Пять папок уроков, RU / EN, загрузка и публикация записей.',
     network:'Сеть практиков',networkText:'Проверять профили, credentials и услуги мастеров.',
+    acquisition:'Кампании и обращения',acquisitionText:'Счётчики услуг, статус измерений и безопасные ссылки кампаний.',
     seo:'SEO-аналитика',seoText:'Показы, клики, индексация, ошибки сайта и скорость — проверенные данные Google.',
   },
   en: {
@@ -32,7 +34,9 @@ const copy = {
     materials:'Materials',materialsText:'Reusable photo, video and YouTube library for attaching to client reports.',
     appRequests:'App consultation requests',appRequestsText:'Requests and only the summaries users explicitly chose to share.',
     reikiLeads:'Reiki CRM · students & initiation',reikiLeadsText:'Lead 1: course start. Lead 2: initiation letter and consented student materials.',
+    reikiAudio:'Audio · Reiki Practitioner',reikiAudioText:'Materials → Audio → Reiki Practitioner. Five lesson folders, RU / EN, audio uploads and publication.',
     network:'Practitioner network',networkText:'Review practitioner profiles, credentials, and services.',
+    acquisition:'Campaigns & enquiries',acquisitionText:'Service counters, measurement coverage and safe campaign links.',
     seo:'SEO Analytics',seoText:'Search impressions, clicks, indexing, site errors and speed with verified sources.',
   },
 }
@@ -47,10 +51,12 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
   },[])
   const actions=[
     {href:'/admin/seo',icon:SearchCheck,title:text.seo,body:text.seoText},
+    {href:'/admin/acquisition',icon:SearchCheck,title:text.acquisition,body:text.acquisitionText},
     {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
      {href:'/admin/reports',icon:FileText,title:text.reports,body:text.reportsText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
     {href:'/admin/reiki-leads',icon:Inbox,title:text.reikiLeads,body:text.reikiLeadsText},
+    {href:'/admin/materials/audio/reiki-practitioner',icon:Headphones,title:text.reikiAudio,body:text.reikiAudioText},
     {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},
     {href:'/admin/prescriptions/new',icon:FileText,title:text.prescription,body:text.prescriptionText},
     {href:'/admin/payments/new',icon:ReceiptText,title:text.invoice,body:text.invoiceText},

@@ -43,21 +43,21 @@ const ruTitles = [
 
 test("Five lesson course retains Sun meditation and has 69 slides", () => {
   const sequence = energyworkSequence()
-  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p8")
+  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p9")
   assert.deepEqual(sequence.slice(2, 9), [
-    "flight-01", "flight-02", "flight-03", "flight-voices",
-    "flight-05", "flight-04", "flight-done",
+    "flight-01", "flight-02", "flight-voices", "flight-05",
+    "flight-04", "flight-03", "flight-done",
   ])
   assert.equal(sequence.length, 69)
-  assert.deepEqual(energyworkLessonRanges().map(({count}) => count), [7, 14, 16, 22, 8])
+  assert.deepEqual(energyworkLessonRanges().map(({count}) => count), [7, 14, 16, 14, 16])
 })
 
 test("Tantra has exactly five required screens in the established order", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
   assert.deepEqual(sequence.slice(ranges[1].start, ranges[1].end), [
-    "tan-01", "tan-02", "tan-03", "tan-voices", "tan-04", "tan-05",
-    ...quizOrder, "presence-01", "presence-04", "tan-done",
+    "tan-01", "tan-02", "tan-voices", "tan-04", "tan-05",
+    ...quizOrder, "presence-01", "presence-04", "tan-03", "tan-done",
   ])
   assert.deepEqual([...ENERGYWORK_TANTRA_STUDY_QUESTION_IDS], quizOrder)
   assert.equal(sequence.includes("tan-study-05"), false, "Nine-levels question removed")
