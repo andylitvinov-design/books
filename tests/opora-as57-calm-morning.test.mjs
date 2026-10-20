@@ -73,7 +73,7 @@ test('photographic mobile player uses a bright panel and high-contrast large typ
   assert.match(jsx,/oporaExperienceDay\(cycle\.day,lang\)/);
   assert.match(jsx,/data-course-visual-theme=\{OPORA_EXPERIENCE_DESIGN_VERSION\}/);
   assert.match(jsx,/locale==='es'/);
-  assert.match(jsx,/practiceAttempt:attempted/);
+  assert.match(jsx,/practiceAttempt:attemptStatus/);
   assert.match(jsx,/visitedSlideKeys:\[\.\.\.scenes\]/);
   assert.match(jsx,/moment==='welcome'\|\|moment==='arrive'\|\|receipt/);
   assert.match(jsx,/data-opora-start-mood="true"/);
