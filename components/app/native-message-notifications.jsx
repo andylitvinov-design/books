@@ -29,6 +29,8 @@ async function plugin(){
 }
 function currentPlatform(){
   if(typeof window==='undefined'||!isNativeHolisticHouse())return null
+  const detected=window.Capacitor?.getPlatform?.()
+  if(detected==='ios'||detected==='android')return detected
   return /iPhone|iPad|iPod/i.test(navigator.userAgent)?'ios':'android'
 }
 export default function NativeMessageNotifications({accountId,locale='en'}){
