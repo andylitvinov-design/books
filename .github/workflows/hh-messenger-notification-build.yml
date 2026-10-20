@@ -14,6 +14,7 @@ on:
       - 'tests/client-telegram-owner-pilot.test.mjs'
       - 'tests/telegram-guest-news.test.mjs'
       - 'lib/app/telegram-guest-*.js'
+      - 'lib/app/maintenance.js'
       - 'app/api/public/telegram-subscribe/**'
       - 'components/public-telegram-news*'
       - 'app/[locale]/subscribe/telegram/**'
