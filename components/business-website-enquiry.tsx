@@ -22,7 +22,7 @@ const translations = {
     next:"For the free written review, continue to the short questionnaire and handwritten drawing.",
     nextAction:"Continue free questionnaire",note:"Only necessary business contact information is collected and encrypted. Do not share medical or other highly sensitive details.",
     contactError:"Add a valid email address or international phone number (+...).",
-    error:"The request could not be saved. Please retry, or use the WhatsApp/Telegram options above.",
+    error:"Your request was not saved. Please try again or contact Andrey directly.",manualFallback:"Open WhatsApp / Telegram contact options",
     rate:"Too many requests. Please try again later.",offline:"The website request system is temporarily unavailable.",
   },
   ru: {
@@ -37,7 +37,7 @@ const translations = {
     next:"Для бесплатного письменного разбора заполните короткую анкету и отправьте рисунок от руки.",
     nextAction:"Перейти к бесплатной анкете",note:"Контакты шифруются и используются только для ответа. Не указывайте медицинскую или другую особо чувствительную информацию.",
     contactError:"Укажите корректный email или телефон в международном формате (+...).",
-    error:"Не удалось сохранить заявку. Попробуйте ещё раз или используйте WhatsApp/Telegram выше.",
+    error:"Заявка не сохранилась. Попробуйте ещё раз или свяжитесь с Андреем напрямую.",manualFallback:"Открыть варианты связи через WhatsApp / Telegram",
     rate:"Слишком много запросов. Попробуйте позже.",offline:"Сохранение заявок временно недоступно.",
   },
   es: {
@@ -52,7 +52,7 @@ const translations = {
     next:"Para obtener el informe gratuito, completa el cuestionario y envía un dibujo a mano.",
     nextAction:"Continuar con el cuestionario",note:"Solo recopilamos información profesional necesaria, cifrada. No incluyas datos médicos ni otra información sensible.",
     contactError:"Indica un correo válido o un teléfono internacional (+...).",
-    error:"No se pudo guardar la solicitud. Inténtalo otra vez o usa WhatsApp/Telegram.",
+    error:"No se guardó la solicitud. Vuelve a intentarlo o contacta directamente con Andrey.",manualFallback:"Abrir contacto por WhatsApp / Telegram",
     rate:"Demasiadas solicitudes. Inténtalo más tarde.",offline:"Las solicitudes web no están disponibles temporalmente.",
   },
 } as const;
@@ -177,7 +177,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
       <label className={styles.consent}><input type="checkbox" required checked={consent}
           onChange={event=>{setConsent(event.target.checked);edit();}}/><span>{t.consent}</span></label>
       <button type="submit" disabled={busy||!consent}>{busy?t.sending:t.send}<ArrowRight size={19} aria-hidden="true"/></button>
-      {error&&<p className={styles.error} role="alert">{error}</p>}
+      {error&&<p className={styles.error} role="alert">{error} <Link prefetch={false} className={styles.fallback} href={"/"+locale+"/services/business-consulting#business-offers"}>{t.manualFallback}<ArrowRight size={15} aria-hidden="true"/></Link></p>}
     </form>}
     <p className={styles.note}><ShieldCheck size={16} aria-hidden="true"/>{t.note}</p>
   </section>;
