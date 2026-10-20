@@ -9,6 +9,7 @@ import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled, buildPersonalPayPalCartUr
 import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
 import { configuredSquarePaymentLinks, buildSquarePaymentForServices, formatSquareCadAmount } from "@/lib/commerce/square-payment-links";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
+import { configuredPayPalHostedLinks, buildPayPalHostedCartUrl } from "@/lib/commerce/paypal-hosted-links";
 import styles from "./payments.module.css";
 
 type PageProps = { params: Promise<{ locale: string }> };
@@ -19,7 +20,7 @@ const copy = {
     lead: "Choose a fixed-price consultation. Please agree a suitable session time with Andrey before making a payment.",
     payee: "PayPal recipient", method: "Payment type", methodValue: "Goods & Services (not Friends & Family)",
     verify: "Check the recipient, the exact amount and EUR currency on PayPal before sending money.",
-    choose: "Select a session", pay: "PayPal.Me · manual confirmation", autoPay: "Secure checkout · automatic confirmation", after: "I have paid · send transaction ID",
+    choose: "Select a session", pay: "PayPal.Me · manual confirmation", hostedPay: "Pay on PayPal · fixed EUR total", hostedInfo: "This opens PayPal checkout. Check the merchant and exact EUR total. Payment must still be verified after transfer.", autoPay: "Secure checkout · automatic confirmation", after: "I have paid · send transaction ID",
     process: "After paying, send the PayPal transaction ID through WhatsApp for manual verification and to arrange your session.",
     disclaimer: "PayPal.Me requires the payer to have a PayPal account; a linked card may be used after sign-in, but this is not guest card checkout. The website cannot automatically verify a personal PayPal payment. We confirm the appointment only after verifying the received funds.",
     help: "Ask about availability first", contact: "Contact on WhatsApp",
@@ -39,7 +40,7 @@ const copy = {
     lead: "Выберите консультацию с фиксированной стоимостью. Перед оплатой согласуйте с Андреем удобное время сеанса.",
     payee: "Получатель в PayPal", method: "Тип платежа", methodValue: "Товары и услуги (не друзьям и семье)",
     verify: "Перед отправкой денег проверьте получателя, точную сумму и валюту EUR в PayPal.",
-    choose: "Выберите формат", pay: "PayPal.Me · ручная проверка", autoPay: "Оплатить · автоматическое подтверждение", after: "Я оплатил(а) · отправить ID транзакции",
+    choose: "Выберите формат", pay: "PayPal.Me · ручная проверка", hostedPay: "Оплатить через PayPal · точная сумма", hostedInfo: "Откроется защищённая оплата PayPal. Проверьте получателя и сумму в EUR. Поступление подтверждается после сверки транзакции.", autoPay: "Оплатить · автоматическое подтверждение", after: "Я оплатил(а) · отправить ID транзакции",
     process: "После оплаты отправьте ID транзакции PayPal через WhatsApp. Мы вручную проверим поступление и согласуем сеанс.",
     disclaimer: "Для оплаты через PayPal.Me требуется аккаунт PayPal. Можно выбрать привязанную карту, но это не гостевая оплата картой. Сайт не проверяет поступление автоматически: сеанс подтверждается только после ручной проверки платежа.",
     help: "Сначала уточнить время", contact: "Написать в WhatsApp",
@@ -59,7 +60,7 @@ const copy = {
     lead: "Elige una consulta de precio fijo. Acuerda la fecha y hora con Andrey antes de enviar el pago.",
     payee: "Destinatario de PayPal", method: "Tipo de pago", methodValue: "Productos y servicios (no amigos y familiares)",
     verify: "Comprueba el destinatario, importe exacto y moneda EUR en PayPal antes de pagar.",
-    choose: "Elige una sesión", pay: "PayPal.Me · verificación manual", autoPay: "Pago seguro · confirmación automática", after: "Ya pagué · enviar ID de transacción",
+    choose: "Elige una sesión", pay: "PayPal.Me · verificación manual", hostedPay: "Pagar en PayPal · precio fijo en EUR", hostedInfo: "Se abre el pago seguro de PayPal. Comprueba el destinatario y el total en EUR. El pago se verifica después de recibirlo.", autoPay: "Pago seguro · confirmación automática", after: "Ya pagué · enviar ID de transacción",
     process: "Después de pagar, envía el ID de transacción de PayPal por WhatsApp para la verificación manual y acordar tu sesión.",
     disclaimer: "PayPal.Me requiere una cuenta PayPal; puedes usar una tarjeta vinculada después de iniciar sesión, pero no es un pago con tarjeta como invitado. La web no confirma pagos automáticamente; verificamos los fondos antes de reservar la cita.",
     help: "Primero consultar disponibilidad", contact: "Contactar por WhatsApp",
@@ -109,10 +110,12 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
   const enabled = personalPayPalEnabled();
   const products = publicServiceCatalog(locale);
   const squareLinks = configuredSquarePaymentLinks();
+  const hostedPayPalLinks = configuredPayPalHostedLinks();
   const combinedIds = products.map(product => product.id);
   const combinedPayPalUrl = enabled && products.length === 2 ? buildPersonalPayPalCartUrl(combinedIds) : null;
+  const combinedHostedUrl = products.length === 2 ? buildPayPalHostedCartUrl(combinedIds, hostedPayPalLinks) : null;
   const combinedEuros = products.reduce((sum, product) => sum + product.amountMinor, 0) / 100;
-  const combinedAvailable = products.length === 2 && (verifiedPayPalCheckout || Boolean(combinedPayPalUrl));
+  const combinedAvailable = products.length === 2 && (verifiedPayPalCheckout || Boolean(combinedPayPalUrl) || Boolean(combinedHostedUrl));
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -141,6 +144,7 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
             const zenInquiryUrl = buildZenTransferInquiry([product.id], locale);
             const interacInquiryUrl = buildInteracTransferInquiry([product.id], locale);
             const squarePayment = buildSquarePaymentForServices([product.id], squareLinks);
+            const hostedPayPalUrl = buildPayPalHostedCartUrl([product.id], hostedPayPalLinks);
             return <article key={product.id} className={styles.card} data-paypal-personal-service={product.id}>
               <div className={styles.productHead}>
                 <span className={styles.duration}>{product.durationMinutes} min</span>
@@ -152,12 +156,16 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
                 href={`/${locale}/services/checkout?service=${encodeURIComponent(product.id)}`}
                 className={styles.payButton} data-verified-paypal-checkout={product.id}>
                 {t.autoPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
-              </Link> : null}
+              </Link> : !hostedPayPalUrl ? null :
+                <a className={styles.payButton} href={hostedPayPalUrl} target="_blank"
+                  rel="noopener noreferrer" data-paypal-hosted-link={product.id}>
+                  {t.hostedPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
+                </a>}
               {enabled ? <a href={`/api/payments/paypal/${product.id}`}
-                  className={verifiedPayPalCheckout ? styles.zenButton : styles.payButton}
+                  className={verifiedPayPalCheckout || hostedPayPalUrl ? styles.zenButton : styles.payButton}
                   target="_blank" rel="noopener noreferrer" data-paypal-personal-link>
                 {t.pay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
-              </a> : verifiedPayPalCheckout ? null : <p className={styles.unavailable}>{t.help}</p>}
+              </a> : verifiedPayPalCheckout || hostedPayPalUrl ? null : <p className={styles.unavailable}>{t.help}</p>}
               {squarePayment ? <a href={squarePayment.url} className={styles.payButton}
                 target="_blank" rel="noopener noreferrer" data-square-personal-link={product.id}>
                 {t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
@@ -196,9 +204,12 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
             {verifiedPayPalCheckout ? <Link href={`/${locale}/services/checkout?items=${combinedIds.join(",")}`}
               className={styles.payButton} data-verified-paypal-combined>
               {t.autoPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
-            </Link> : null}
+            </Link> : combinedHostedUrl ? <a href={combinedHostedUrl}
+              className={styles.payButton} target="_blank" rel="noopener noreferrer" data-paypal-hosted-combined>
+              {t.hostedPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
+            </a> : null}
             {combinedPayPalUrl ? <a href={combinedPayPalUrl}
-              className={verifiedPayPalCheckout ? styles.zenButton : styles.payButton}
+              className={verifiedPayPalCheckout || combinedHostedUrl ? styles.zenButton : styles.payButton}
               target="_blank" rel="noopener noreferrer" data-paypal-combined-link>
               {t.combinedPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
             </a> : null}
@@ -211,6 +222,7 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
           <div className={styles.step}><BadgeCheck size={21} aria-hidden="true" /><p>{t.process}</p></div>
           <p className={styles.warning}>{t.instructions}</p>
           <p className={styles.disclaimer}>{t.disclaimer}</p>
+          {Object.keys(hostedPayPalLinks).length ? <p className={styles.disclaimer}>{t.hostedInfo}</p> : null}
           <a className={styles.contact} href="https://wa.me/14376066502" target="_blank" rel="noopener noreferrer">{t.contact} →</a>
         </div>
       </section>
