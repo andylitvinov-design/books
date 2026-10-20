@@ -1,0 +1,49 @@
+name: HH Business Coaching 90-day validation
+on:
+  pull_request:
+    branches:
+      - codex/public-book-library
+    paths:
+      - '.github/workflows/hh-business-coaching.yml'
+      - 'lib/business-coaching/**'
+      - 'lib/app/business-coaching.js'
+      - 'components/app/business-coaching*'
+      - 'components/app/development-program.jsx'
+      - 'components/app/my-courses-dashboard*'
+      - 'components/app/app-workspace.jsx'
+      - 'app/[locale]/app/[[...path]]/workspace.css'
+      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'app/[locale]/explore/[theme]/page.tsx'
+      - 'app/api/app/[...path]/route.js'
+      - 'tests/business-coaching-90-days.test.mjs'
+  push:
+    branches:
+      - codex/public-book-library
+    paths:
+      - 'lib/business-coaching/**'
+      - 'lib/app/business-coaching.js'
+      - 'components/app/business-coaching*'
+      - 'tests/business-coaching-90-days.test.mjs'
+      - '.github/workflows/hh-business-coaching.yml'
+  workflow_dispatch:
+jobs:
+  business-coaching-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Syntax checks
+        run: |
+          node --check lib/business-coaching/program.js
+          node --check lib/app/business-coaching.js
+          node scripts/check-business-coaching-syntax.mjs
+      - name: Business tests
+        run: node --test tests/business-coaching-90-days.test.mjs tests/reports-development-program.test.mjs

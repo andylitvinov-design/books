@@ -14,6 +14,7 @@ export async function generateMetadata({ params }) {
     tests: locale === 'ru' ? 'Мои тесты' : 'My tests',
     portfolio: locale === 'ru' ? 'Мои результаты' : 'My results',
     course: locale === 'ru' ? 'Мои курсы' : 'My courses',
+    business: locale === 'ru' ? 'Мой бизнес-курс на 90 дней' : 'My 90-day business programme',
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
@@ -36,7 +37,7 @@ export default async function AppPage({ params }) {
       redirect('/' + locale + '/app/document-view/' + path[1])
     }
   }
-  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course'].includes(path[0]) && path.length)) notFound()
+  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course','business'].includes(path[0]) && path.length)) notFound()
   // Existing Analysis bookmarks are permanently useful: open the merged report archive.
   if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait#personal-reports')
   // A tab-specific workspace cannot briefly render full screens with a

@@ -31,7 +31,7 @@ const header = read('components/prescription-admin-header.jsx')
 const css = read('components/energywork-ai-learner.module.css')
 
 test('Four meditation introductions and the fifth initiation lesson preserve all existing slide IDs', () => {
-  assert.equal(energyworkSequence().length, 69)
+  assert.equal(energyworkSequence().length, 70)
   const ids = [
     ['flight-01','flight-02','flight'],
     ['tan-01','tan-02','tantra'],
@@ -210,7 +210,7 @@ test('A lesson language folder lists safe uploaded audio, never client assets or
 
 test('Several saved audio files can be previewed; only one is assigned to the lesson after consent', () => {
   assert.match(adminUi,/data-reiki-audio-folder-contents/)
-  assert.match(adminUi,/files\.map\(\(item\)=>/)
+  assert.match(adminUi,/visibleFiles\.map\(\(item\)=>/)
   assert.match(adminUi,/data-reiki-audio-file=\{item\.path\}/)
   assert.match(adminUi,/setStaged\(\{path:item\.path,fileName:null,storage:item\.storage/)
   assert.match(adminUi,/reikiIntroPublicObjectUrl\(origin,staged\.path,lesson\.id,locale\)/)
