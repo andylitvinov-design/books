@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, C
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { appFetch } from "@/lib/app/client-fetch";
+import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { useOceanPracticeAudio } from "./ocean-practice-audio";
 import OceanSoundToggle from "./ocean-sound-toggle";
@@ -163,6 +164,13 @@ const copy = {
     readyCount: "items completed",
     initiateRequest: "Request free Level 1 introduction in",
     finish: "Course completed",
+    finalAcceptedHeading: "Your application has been received!",
+    finalPendingHeading: "One last step — send your initiation request",
+    finalReviewChecklist: "Review your lesson answers",
+    finalEnableShare: "Allow private sharing & continue",
+    finalContactHeading: "Write to Andrey personally",
+    finalContactNote: "I've completed the Reiki Practitioner course and want to take the next step. Open a private chat with this message already prepared — no private course answers are included.",
+    finalRevisit: "Revisit a previous lesson",
     finishNote: "Your reflections are private when signed in and saving is enabled. In guest mode, copy them before leaving.",
     summary: "Your personal course journal",
     nothing: "You did not add written reflections; that is completely fine.",
@@ -185,7 +193,7 @@ const copy = {
     initiationLetterHint: "Your selected free initiation, optional donation-based choices, contact details and motivation will be shared privately with Andrey only when you confirm below.",
     initiationConfirm: "I agree to send my initiation choices, name, city, preferred chat time, motivation and course answers to Andrey's private CRM.",
     initiationSend: "Send my initiation request",
-    initiationSent: "Your request is in Andrey's private CRM. He will review it and arrange a suitable time with you in chat.",
+    initiationSent: "Your request is securely recorded in Andrey's private CRM. He will contact you personally to discuss the next step and arrange a suitable time.",
     initiationTooShort: "Complete your personal initiation form on the previous lesson slide.",
     initiationShareNeeded: "Enable teacher sharing to send your application.",
     initiationNotReady: "Complete your lesson reports and answers to request personal initiation.",
@@ -297,6 +305,13 @@ const copy = {
     readyCount: "пунктов заполнено",
     initiateRequest: "Запросить бесплатную вводную инициацию I ступени —",
     finish: "Курс завершён",
+    finalAcceptedHeading: "Ваша заявка принята!",
+    finalPendingHeading: "Последний шаг — отправьте заявку на инициацию",
+    finalReviewChecklist: "Проверить ответы уроков",
+    finalEnableShare: "Разрешить приватную передачу и продолжить",
+    finalContactHeading: "Напишите Андрею лично",
+    finalContactNote: "Я завершил(а) курс Reiki Practitioner и хочу двигаться дальше. Откройте личный чат с готовым сообщением — ответы и личные данные из курса не передаются.",
+    finalRevisit: "Вернуться к предыдущим урокам",
     finishNote: "После входа и согласия ваши ответы сохраняются приватно. В гостевом режиме скопируйте их перед выходом.",
     summary: "Ваш личный учебный дневник",
     nothing: "Вы не записали наблюдения, и это совершенно нормально.",
@@ -319,7 +334,7 @@ const copy = {
     initiationLetterHint: "Выбранная бесплатная инициация, дополнительные варианты за донейшн, контакты и мотивация попадут к Андрею только после подтверждения отправки.",
     initiationConfirm: "Я согласен(на) отправить Андрею в закрытую CRM выбранные инициации, имя, город, удобное время для связи в чате, мотивацию и ответы курса.",
     initiationSend: "Отправить заявку на инициацию",
-    initiationSent: "Заявка получена в закрытой CRM Андрея. Он рассмотрит её и согласует с вами подходящее время в чате.",
+    initiationSent: "Заявка сохранена в закрытой CRM Андрея. Он лично свяжется с вами, чтобы обсудить следующий шаг и согласовать удобное время.",
     initiationTooShort: "Заполните анкету личной инициации на предыдущем слайде.",
     initiationShareNeeded: "Для заявки разрешите передачу материалов преподавателю.",
     initiationNotReady: "Заполните ответы и отчёты, чтобы отправить заявку.",
@@ -963,6 +978,16 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
     : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
+  // Messenger links contain only a generic public service request — no learner data.
+  // Neither link sends automatically; the visitor must confirm in the chat app.
+  const reikiWhatsAppUrl = whatsappEnquiryUrl({
+    locale, service: "Reiki Practitioner",
+    request: locale === "ru"
+      ? "Я завершил(а) все пять уроков Reiki Practitioner и хочу двигаться дальше — обсудить личную инициацию."
+      : "I've completed all five Reiki Practitioner lessons and would like to move forward with personal initiation.",
+    pagePath: "/" + locale + "/academy/principles-of-energywork/learn",
+  });
+  const reikiTelegramUrl = telegramEnquiryUrlFromWhatsApp(reikiWhatsAppUrl);
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01" || slide.id === "flight-done";
   const voicesArt = slide.kind === "voices";
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
@@ -1343,11 +1368,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                             {item.reportDone ? <Check size={13} aria-hidden="true" /> : null}
                             {item.reportDone ? t.reportReady : t.reportMissing}
                           </button>
-                          <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)}
+                          {item.questionIds.length > 0 ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)}
                             className={item.questionDone ? styles.reviewRecorded : styles.reviewMissing}>
                             {item.questionDone ? <Check size={13} aria-hidden="true" /> : null}
                             {item.questionDone ? t.questionReady : t.questionMissing}
-                          </button>
+                          </button> : null}
                         </div>
                       </div>
                     ))}
@@ -1463,35 +1488,96 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
               {slide.kind === "finish" ? (
                 <div className={styles.final}>
-                  <span className={styles.finalTag}><Check size={18} aria-hidden="true" />{t.finish}</span>
+                  <span className={styles.finalTag}><Award size={18} aria-hidden="true" />{t.finish}</span>
                   <section className={styles.initiationRequestBox} data-reiki-initiation-request>
-                    <h2>{t.initiationLetterHeading}</h2>
-                    <p>{t.initiationLetterHint}</p>
                     {applicationLead ? (
-                      <p className={styles.initiationSent} role="status"><Check size={17} aria-hidden="true" />{t.initiationSent}</p>
-                    ) : !savedInitiationReady ? (
-                      <p className={styles.initiationHint}>{t.initiationNotReady}</p>
-                    ) : !sharingWithTeacher ? (
-                      <p className={styles.initiationHint}>{t.initiationShareNeeded}</p>
-                    ) : !reikiInitiationRequestValid(answers["end-01"]) ? (
-                      <p className={styles.initiationHint}>{t.initiationTooShort}{" "}
-                        <button type="button" className={styles.reviewMissing} onClick={() => jumpToSlide("end-01")}>
-                          {locale === "ru" ? "Открыть анкету" : "Open the form"}
-                        </button>
-                      </p>
-                    ) : (
-                      <div className={styles.initiationApplication}>
-                        <blockquote className={styles.letterPreview}>{formatReikiInitiationRequest(answers["end-01"], locale)}</blockquote>
-                        <label className={styles.consentLabel}>
-                          <input type="checkbox" checked={applicationConsented}
-                            onChange={event => setApplicationConsented(event.target.checked)} />
-                          <span>{t.initiationConfirm}</span>
-                        </label>
-                        <button type="button" className={styles.initiationSend} disabled={busy || !applicationConsented}
-                          onClick={applyForInitiation}>{t.initiationSend}<ArrowRight size={18} aria-hidden="true" /></button>
+                      <div className={styles.finalReceipt} data-reiki-application-accepted role="status">
+                        <Check size={24} aria-hidden="true" />
+                        <div>
+                          <strong>{t.finalAcceptedHeading}</strong>
+                          <p>{t.initiationSent}</p>
+                        </div>
                       </div>
+                    ) : (
+                      <>
+                        <h2>{t.finalPendingHeading}</h2>
+                        <p>{t.initiationLetterHint}</p>
+                        {!savedInitiationReady ? (
+                          <div className={styles.finalPending} data-reiki-application-pending>
+                            <p>{!initiationReady ? t.initiationNotReady : sync !== "ready" ? t.reviewSaveNeeded : t.saving}</p>
+                            <button type="button" className={styles.reviewMissing}
+                              onClick={() => jumpToSlide("paths-04")} disabled={busy}>
+                              {t.finalReviewChecklist}<ArrowRight size={15} aria-hidden="true" />
+                            </button>
+                          </div>
+                        ) : !sharingWithTeacher ? (
+                          <div className={styles.initiationApplication} data-reiki-final-share-consent>
+                            <p className={styles.initiationHint}>{t.initiationShareNeeded}</p>
+                            <label className={styles.consentLabel}>
+                              <input type="checkbox" checked={shareConsented}
+                                onChange={event => setShareConsented(event.target.checked)} />
+                              <span>{t.teacherShareConsent}</span>
+                            </label>
+                            <button type="button" className={styles.initiationSend}
+                              disabled={busy || !shareConsented} onClick={shareWithTeacher}>
+                              {t.finalEnableShare}<ArrowRight size={18} aria-hidden="true" />
+                            </button>
+                          </div>
+                        ) : !reikiInitiationRequestValid(answers["end-01"]) ? (
+                          <p className={styles.initiationHint}>{t.initiationTooShort}{" "}
+                            <button type="button" className={styles.reviewMissing}
+                              onClick={() => jumpToSlide("end-01")}>
+                              {locale === "ru" ? "Открыть анкету" : "Open the form"}
+                            </button>
+                          </p>
+                        ) : (
+                          <div className={styles.initiationApplication}>
+                            <blockquote className={styles.letterPreview}>
+                              {formatReikiInitiationRequest(answers["end-01"], locale)}
+                            </blockquote>
+                            <label className={styles.consentLabel}>
+                              <input type="checkbox" checked={applicationConsented}
+                                onChange={event => setApplicationConsented(event.target.checked)} />
+                              <span>{t.initiationConfirm}</span>
+                            </label>
+                            <button type="button" className={styles.initiationSend}
+                              disabled={busy || !applicationConsented} onClick={applyForInitiation}>
+                              {t.initiationSend}<ArrowRight size={18} aria-hidden="true" />
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                     {applicationMessage ? <p role="alert">{applicationMessage}</p> : null}
+                  </section>
+                  <section className={styles.finalContact} data-reiki-personal-contact
+                    aria-label={t.finalContactHeading}>
+                    <h2><MessageCircle size={19} aria-hidden="true" />{t.finalContactHeading}</h2>
+                    <p>{t.finalContactNote}</p>
+                    <div className={styles.finalContactActions}>
+                      <a className={styles.finalContactLink} href={reikiWhatsAppUrl}
+                        target="_blank" rel="noopener noreferrer">
+                        WhatsApp <ExternalLink size={16} aria-hidden="true" />
+                      </a>
+                      <a className={styles.finalContactLink} href={reikiTelegramUrl}
+                        target="_blank" rel="noopener noreferrer">
+                        Telegram <ExternalLink size={16} aria-hidden="true" />
+                      </a>
+                    </div>
+                  </section>
+                  <section className={styles.finalRevisit} aria-label={t.finalRevisit}
+                    data-reiki-final-revisit>
+                    <h2>{t.finalRevisit}</h2>
+                    <div className={styles.finalRevisitGrid}>
+                      {energyworkLessons.map((lesson, lessonIndex) => (
+                        <button key={lesson.phase} type="button" disabled={busy}
+                          onClick={() => jumpToSlide(lesson.firstSlideId)}
+                          className={styles.finalRevisitButton}>
+                          {lessonIndex + 1}. {lesson.title[locale]}
+                          <ArrowLeft size={13} aria-hidden="true" />
+                        </button>
+                      ))}
+                    </div>
                   </section>
                   <h2>{locale === "ru" ? "Ваши личные учебные итоги" : "Your personal learning highlights"}</h2>
                   <p className={styles.guideNote}>{locale === "ru"
@@ -1524,16 +1610,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   ) : (
                     <p className={styles.reviewDoneMessage}>{applicationLead ? t.initiationSent : t.initiationLetterHint}</p>
                   )}
-                  {applicationLead ? (
-                    <div className={styles.initiationLinks}>
-                      {energyworkPathChoices.map((choice) => (
-                        <Link key={choice.id} className={styles.textLink}
-                          href={"/" + locale + "/academy/" + choice.freePath + (choice.id === "tantra" ? "#apply-free" : "")}>
-                          {t.initiateRequest} {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
-                        </Link>
-                      ))}
-                    </div>
-                  ) : null}
                   <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
                   <p className={styles.initiationNote}>{t.noInitiation}</p>
                   <h2>{t.source}</h2>
@@ -1664,8 +1740,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </button>
         </section>
         <footer className={styles.footer}>
-          {!completed ? (
-            <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
+          <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
               {slide.kind === "milestone" ? (
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.milestoneBack} aria-label={t.back} title={t.back}>
@@ -1675,7 +1750,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               )}
-              {slide.id !== "flight-save" ? (
+              {!completed && slide.id !== "flight-save" ? (
                 <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
                   className={styles.next} data-energywork-next>
                   {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
@@ -1684,8 +1759,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <ArrowRight size={19} aria-hidden="true" />
                 </button>
               ) : null}
-            </div>
-          ) : null}
+          </div>
           {slide.kind === "milestone" && slide.id !== "flight-save" && saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
         </footer>
       </div>

@@ -41,15 +41,15 @@ const ruTitles = [
   "Вопрос 5 из 5 · Цель и применение",
 ]
 
-test("Five lesson course retains Sun meditation and has 70 slides", () => {
+test("Five lesson course retains Sun meditation and has 63 slides", () => {
   const sequence = energyworkSequence()
-  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p9")
+  assert.equal(ENERGYWORK_VERSION, "2026-10-20.p10")
   assert.deepEqual(sequence.slice(2, 9), [
     "flight-01", "flight-02", "flight-voices", "flight-05",
     "flight-04", "flight-03", "flight-done",
   ])
-  assert.equal(sequence.length, 70)
-  assert.deepEqual(energyworkLessonRanges().map(({count}) => count), [8, 14, 16, 14, 16])
+  assert.equal(sequence.length, 63)
+  assert.deepEqual(energyworkLessonRanges().map(({count}) => count), [8, 14, 16, 14, 9])
 })
 
 test("Tantra has exactly five required screens in the established order", () => {

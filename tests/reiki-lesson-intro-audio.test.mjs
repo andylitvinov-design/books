@@ -31,7 +31,7 @@ const header = read('components/prescription-admin-header.jsx')
 const css = read('components/energywork-ai-learner.module.css')
 
 test('Four meditation introductions and the fifth initiation lesson preserve all existing slide IDs', () => {
-  assert.equal(energyworkSequence().length, 70)
+  assert.equal(energyworkSequence().length, 63)
   const ids = [
     ['flight-01','flight-02','flight'],
     ['tan-01','tan-02','tantra'],
@@ -50,7 +50,7 @@ test('Four meditation introductions and the fifth initiation lesson preserve all
     assert.equal((block.match(/\n\s+l\("/g)||[]).length >= 3,true)
     assert.ok(block.includes('introAudioKey: "'+key+'"'))
   }
-  const fifth = curriculum.split('id: "paths-01"')[1]?.split('id: "paths-02"')[0] || ''
+  const fifth = curriculum.split('id: "paths-01"')[1]?.split('id: "paths-03"')[0] || ''
   assert.match(fifth,/introAudioKey: "initiation"/)
   assert.match(fifth,/introTopics: \[/)
   assert.ok(energyworkSequence().includes('paths-01'))
