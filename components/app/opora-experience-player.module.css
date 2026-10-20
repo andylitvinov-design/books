@@ -371,6 +371,113 @@
   .futureItem{padding:9px 12px}
   .offerList a{min-height:54px;padding:9px 11px}
 }
+
+/* Guided learning: one meaningful decision or example per screen, with no
+   additional personal data or invented completion signals. */
+.supportMoment,.learningMoment{display:grid;gap:clamp(12px,2vh,18px);min-width:0}
+.supportMoment{justify-items:start}
+.supportSymbol{
+  display:grid;place-items:center;width:68px;height:68px;
+  border-radius:23px;color:#157f82;font:400 49px/1 Georgia,serif;
+  background:radial-gradient(circle at 30% 20%,#fff 0%,#cff3eb 100%);
+  border:1px solid rgba(109,190,180,.75);
+  box-shadow:0 8px 22px rgba(21,123,123,.13)
+}
+.supportMoment .lead{font:500 clamp(20px,5vw,26px)/1.47 Georgia,serif;color:#205869}
+.learningMoment .lead{font-size:clamp(18px,4.6vw,21px);line-height:1.49}
+.learningMoment .action{font-size:clamp(16px,4.2vw,18px);font-weight:590}
+.practiceModes{display:grid;grid-template-columns:1fr;gap:8px}
+.practiceModes button{
+  min-height:49px;border:1.5px solid #b6d5d2;border-radius:15px;
+  background:rgba(255,255,255,.9);color:#1d5262;
+  font:750 clamp(14px,3.8vw,16px)/1.3 system-ui,sans-serif;
+  text-align:left;padding:10px 15px;cursor:pointer
+}
+.practiceModes button[aria-pressed=true]{background:#d4f5eb;border:2px solid #139b96;color:#135965}
+.practiceModes button:focus-visible{outline:3px solid #096d89;outline-offset:3px}
+
+/* Actual save receipt: a warm milestone rather than a diagnostic report. */
+.receipt::after{
+  background:linear-gradient(180deg,rgba(255,250,232,.31),rgba(240,252,246,.50) 46%,rgba(218,247,241,.70))
+}
+.receipt .panel{
+  width:min(100%,555px);padding:clamp(16px,3.8vw,25px);
+  gap:clamp(8px,1.3vh,12px);
+  background:linear-gradient(150deg,rgba(255,254,243,.96),rgba(235,251,246,.96));
+  border:1.5px solid rgba(255,253,238,.98);
+  box-shadow:0 18px 46px rgba(33,84,71,.21),inset 0 0 0 1px rgba(255,255,255,.60)
+}
+.receipt .title{
+  text-align:center;color:#32463d;
+  font-size:clamp(28px,7vw,38px);line-height:1.13
+}
+.celebration{display:grid;justify-items:center;gap:clamp(9px,1.4vh,13px);text-align:center}
+.celebrationArt{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  width:100%;min-height:97px
+}
+.celebrationStarLeft,.celebrationStarRight{color:#b49757;filter:drop-shadow(0 1px 2px #dabf916b)}
+.celebrationStarRight{transform:translateY(-15px)}
+.celebrationStarLeft{transform:translateY(14px)}
+.celebrationMedal{
+  display:grid;place-items:center;width:88px;height:88px;border-radius:50%;
+  color:#0a8781;border:3px solid #e4cf98;
+  background:radial-gradient(circle at 33% 22%,#fffefa,#d4f2e9 75%);
+  box-shadow:0 0 0 8px rgba(240,215,148,.18),0 11px 25px rgba(27,112,99,.20)
+}
+.celebrationKicker{
+  margin:0;font-size:clamp(10px,2.9vw,12px);letter-spacing:.14em;
+  line-height:1.35;font-weight:850;color:#857043
+}
+.celebrationLead{
+  margin:0;max-width:460px;color:#295967;
+  font:500 clamp(18px,4.75vw,22px)/1.35 Georgia,serif
+}
+.celebrationSummary{
+  display:grid;justify-items:center;gap:8px;width:100%;
+  padding:13px 14px;border:1px solid rgba(151,209,194,.75);
+  border-radius:20px;background:rgba(240,254,249,.91)
+}
+.celebrationBadge{
+  display:inline-flex;align-items:center;gap:7px;
+  margin:0;padding:6px 11px;border-radius:999px;
+  color:#136b67;background:#d4f2e8;border:1px solid #a3dacc;
+  font-size:clamp(12px,3.3vw,14px);font-weight:800
+}
+.celebrationSkill{display:grid;gap:3px}
+.celebrationSkill small{font-size:11px;letter-spacing:.1em;font-weight:820;color:#647b6f}
+.celebrationSkill strong{font:700 clamp(18px,4.7vw,22px)/1.2 Georgia,serif;color:#234d51}
+.celebrationAttempt{
+  margin:0;color:#3a6770;font-size:clamp(13px,3.7vw,15px);
+  line-height:1.45;font-weight:550
+}
+.celebrationBody{margin:0;color:#55747b;font-size:clamp(13px,3.5vw,15px);line-height:1.4}
+.celebrationDetails{
+  width:100%;color:#44656e;text-align:left;
+  font-size:clamp(13px,3.4vw,15px);line-height:1.4
+}
+.celebrationDetails summary{
+  cursor:pointer;text-align:center;border-radius:11px;padding:7px 10px;
+  font-weight:720;color:#345e66
+}
+.celebrationDetails summary:focus-visible{outline:3px solid #096d89;outline-offset:2px}
+.celebrationDetails p{margin:7px 4px}
+@media(max-width:430px){
+  .receipt .panel{padding:clamp(12px,3.1vw,17px);border-radius:22px}
+  .celebrationArt{min-height:79px}
+  .celebrationMedal{width:72px;height:72px}
+  .celebrationMedal svg{width:34px;height:34px}
+  .celebrationSummary{padding:10px 11px;gap:6px}
+  .celebration{gap:8px}
+}
+@media(max-height:660px){
+  .receipt .panel{gap:6px}
+  .celebrationArt{min-height:65px}
+  .celebrationMedal{width:66px;height:66px}
+  .celebrationSummary{gap:6px;padding:8px 11px}
+  .celebrationLead{font-size:17px}
+}
+
 .shade{
   position:fixed;inset:0;z-index:3;
   display:grid;place-items:center;padding:20px;
