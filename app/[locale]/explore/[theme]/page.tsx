@@ -57,19 +57,19 @@ export default async function TopicJourneyPage({ params }: Props) {
     {theme === 'business'
       ? <BusinessTestimonials locale={locale as PublicLocale}/>
       : <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>}
-    {theme === 'business' && <aside data-business-free-90-day-plan
+    {theme === 'business' && <aside data-business-free-90-day-plan data-business-wood-entry="executive-wood-v1"
       style={{maxWidth:1160,margin:'0 auto 16px',padding:'0 clamp(14px,3.5vw,34px)'}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',border:'1px solid #c6ded7',borderRadius:14,background:'#f0f7f4'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'15px 18px',border:'1px solid #c7a77f',borderLeft:'5px solid #795337',borderRadius:16,background:'linear-gradient(110deg,#fffaf1 0%,#ebdbc4 100%)',boxShadow:'0 6px 16px #65402113'}}>
         <div style={{flex:'1 1 240px'}}>
-          <strong style={{color:'#1d5662',fontSize:14}}>
+          <strong style={{color:'#422e22',fontSize:15,fontFamily:'Georgia,serif'}}>
             {locale === 'ru' ? 'Бесплатная программа развития на 90 дней' : locale === 'es' ? 'Plan de desarrollo gratuito de 90 días' : 'Free 90-day business development plan'}
           </strong>
-          <p style={{margin:'4px 0 0',fontSize:12,lineHeight:1.45,color:'#607982'}}>
+          <p style={{margin:'5px 0 0',fontSize:12,lineHeight:1.5,color:'#725d49'}}>
             {locale === 'ru' ? 'Цели, короткие ежедневные шаги и динамика в личном кабинете.' : locale === 'es' ? 'Objetivos, acciones diarias y seguimiento privado.' : 'Set goals, take small daily actions and track your progress privately.'}
           </p>
         </div>
         <Link prefetch={false} href={`/${locale === 'ru' ? 'ru' : 'en'}/app/business`}
-          style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minHeight:44,padding:'9px 13px',background:'#275f68',color:'#fff',borderRadius:10,textDecoration:'none',fontSize:12,fontWeight:800}}>
+          style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minHeight:44,padding:'10px 16px',background:'#583c2b',color:'#fffaf2',border:'1px solid #694731',borderBottom:'3px solid #33241d',borderRadius:11,textDecoration:'none',fontSize:12,fontWeight:800}}>
           {locale === 'ru' ? 'Создать мой план →' : locale === 'es' ? 'Crear mi plan →' : 'Start free plan →'}
         </Link>
       </div>
