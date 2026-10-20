@@ -7,6 +7,7 @@ import {
   reikiIntroPublicStorageOrigin, reikiIntroPublicUrl, readReikiIntroManifest,
   validReikiIntroAudioPath, validReikiIntroEntry,
   reikiIntroAudioFolder, reikiIntroPublicObjectUrl, reikiIntroInventoryFile,
+  reikiIntroCanonicalMime,
 } from '../lib/academy/reiki-intro-audio-model.js'
 import { energyworkSequence } from '../data/academy/energywork-ai-schema.js'
 
@@ -68,6 +69,10 @@ test('Audio formats and immutable object paths are tightly constrained to separa
   assert.equal(REIKI_INTRO_MAX_BYTES,20000000)
   assert.equal(reikiIntroMime('audio/mpeg','voice.mp3'),'audio/mpeg')
   assert.equal(reikiIntroMime('audio/mp4','voice.m4a'),'audio/mp4')
+  assert.equal(reikiIntroCanonicalMime('audio/x-m4a'),'audio/mp4')
+  assert.equal(reikiIntroCanonicalMime('audio/mp4; charset=UTF-8'),'audio/mp4')
+  assert.equal(reikiIntroCanonicalMime('audio/x-wav'),'audio/wav')
+  assert.equal(reikiIntroCanonicalMime('audio/mpeg'),'audio/mpeg')
   assert.equal(reikiIntroMime('','recording.M4A'),'audio/mp4')
   assert.equal(reikiIntroMime('','recording.mp3'),'audio/mpeg')
   assert.equal(reikiIntroMime('text/html','voice.mp3'),null)
