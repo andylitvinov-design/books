@@ -96,7 +96,7 @@ try {
       await expect(page.locator('[aria-pressed]')).toHaveCount(0)
       await assertBounds('support')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-support.png` })
-      await click(t.next)
+      for(let i=0;i<4;i++)await click(t.next) // understand → case → options → actual practice
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
       assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
       assert.ok(brief.length <= 140 && brief.split(/\s+/u).length <= 20)
@@ -125,7 +125,7 @@ try {
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-neutral.png` })
       await click(t.original)
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
-      await click(t.next) // Feel; navigation closes optional original guidance.
+      await click(t.next) // Optional repeat; navigation closes original guidance.
       await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
       await click(t.pause); await click(t.neutral)
       await click(t.previous) // Feel -> Back must not resurrect day-five guidance.
