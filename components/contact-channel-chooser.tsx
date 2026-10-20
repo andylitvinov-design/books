@@ -91,13 +91,14 @@ type Props = {
   analyticsEvent?: PublicAnalyticsEvent;
   onChannelClick?: (channel: "whatsapp" | "telegram") => void;
   attributes?: Record<string, string>;
+  requestContext?: string;
   id?: string;
 };
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id,
+  onChannelClick, attributes, id, requestContext,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -186,7 +187,8 @@ export function ContactChannelChooser({
         method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          operationId: nextId, serviceTitle, description: description.trim(),
+          operationId: nextId, serviceTitle,
+          description: [requestContext?.trim(), description.trim()].filter(Boolean).join("\n"),
           sourcePath: pathname, locale,
           contact: { displayName: displayName.trim(), email: email.trim(), phone: cleanedPhone },
           contactConsent: consent, website,
@@ -226,6 +228,7 @@ export function ContactChannelChooser({
         <p className={styles.question}>{saved ? c.messengers : c.question}</p>
         {!saved ? (
           <form onSubmit={submit} className={styles.enquiryForm}>
+            {requestContext ? <p className={styles.privateNote}>{requestContext}</p> : null}
             <div className={styles.contactFields}>
               <label>{c.name} *
                 <input type="text" autoComplete="name" required minLength={2} maxLength={120}
@@ -251,7 +254,7 @@ export function ContactChannelChooser({
             <details className={styles.optionalNote}>
               <summary>{c.description}</summary>
               <textarea id={panelId + "-situation"} aria-label={c.description}
-                maxLength={1400} rows={2}
+                maxLength={1400 - (requestContext?.trim().length ? requestContext.trim().length + 1 : 0)} rows={2}
                 placeholder={c.placeholder} value={description} disabled={busy}
                 onChange={event => {
                   setDescription(event.target.value); setError(""); operationId.current = null;
