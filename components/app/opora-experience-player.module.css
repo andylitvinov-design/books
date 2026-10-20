@@ -496,3 +496,34 @@
 
 @media(max-width:370px){.guidanceAnimal{flex-basis:39px;width:39px;height:39px}.guidanceRow{gap:7px}.linkHint{min-height:43px;padding:8px 10px;font-size:14px}}
 @media(prefers-reduced-motion:reduce){.linkHint svg{transition:none}}
+
+/* A voluntary music-and-grounding detour on every daily practice screen.
+   It is a comfortable 48px+ tap target even in a 320px iPhone viewport. */
+.midPauseButton {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:11px;
+  width:100%;
+  min-height:50px;
+  margin-top:14px;
+  padding:11px 15px;
+  border:1px solid rgba(38,139,149,.45);
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(251,255,251,.95),rgba(212,241,239,.93));
+  color:#1d5c67;
+  font:inherit;
+  font-weight:750;
+  text-align:center;
+  cursor:pointer;
+  box-shadow:0 3px 12px rgba(31,95,103,.10);
+}
+.midPauseButton > span {
+  font-size:22px;
+  line-height:1;
+}
+.midPauseButton:focus-visible {
+  outline:3px solid #166c75;
+  outline-offset:3px;
+}
+.midPauseButton:disabled { cursor:default;opacity:.6 }
