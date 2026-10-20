@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
@@ -10,6 +10,7 @@ import styles from './topic-journey-selector.module.css'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { DiscoverySectionTabs } from '@/components/discovery-section-tabs'
 import { BusinessConsultationFinder } from '@/components/business-consultation-finder'
+import { BusinessServiceBrowser } from '@/components/business-service-browser'
 
 type Language = 'en' | 'ru' | 'es'
 type Item = { id: string; title: Record<Language, string>; detail: Record<Language, string>; focus: readonly string[] }
@@ -91,44 +92,27 @@ const personalServiceForJourney: Record<string, string> = {
 }
 
 
-// A separate, editorial link to Andrey's existing consultation offer.
-// Keep it independent of the voluntary self-check flow and any private test results.
-// Value and published prices stay visible without a second competing CTA.
-const businessPromo = {
+const businessDiscoveryCopy = {
   en: {
-    kicker: 'WHAT YOU CAN WORK TOWARD',
-    points: ['Clear priorities', 'Action within 72 hours', '14-day checkpoint'],
-    price: 'Free written review · 30 min €50 · 60 min €100',
+    eyebrow: 'PERSONAL BUSINESS CONSULTATIONS',
+    title: 'What would help your business most right now?',
+    lead: 'Choose one answer. We will suggest a way to begin — no long questionnaire.',
+    portrait: 'Andrey Litvinov · Personal consultation',
   },
   ru: {
-    kicker: 'ЧТО ВЫ ПОЛУЧИТЕ',
-    points: ['Ясные приоритеты', 'Действие за 72 часа', 'Проверка через 14 дней'],
-    price: 'Бесплатный письменный разбор · 30 мин €50 · 60 мин €100',
+    eyebrow: 'ЛИЧНЫЕ БИЗНЕС-КОНСУЛЬТАЦИИ',
+    title: 'Что сейчас больше всего поможет вашему делу?',
+    lead: 'Выберите один ответ и сразу увидите подходящий вариант — без длинных анкет.',
+    portrait: 'Андрей Литвинов · Личная консультация',
   },
   es: {
-    kicker: 'LO QUE PUEDES TRABAJAR',
-    points: ['Prioridades claras', 'Acción en 72 horas', 'Revisión en 14 días'],
-    price: 'Revisión escrita gratuita · 30 min €50 · 60 min €100',
+    eyebrow: 'CONSULTAS PERSONALES DE NEGOCIOS',
+    title: '¿Qué ayudaría más a tu negocio hoy?',
+    lead: 'Elige una respuesta y encuentra cómo empezar, sin formularios largos.',
+    portrait: 'Andrey Litvinov · Consulta personal',
   },
 } as const
 
-const businessDiscoveryCopy = {
-  en: { eyebrow: 'HOLISTIC HOUSE · BUSINESS', title: 'Find your business consultation',
-    lead: 'Explore one decision about business, income, work or your own project — and find the right way forward.',
-    searchLabel: 'Search business topics', placeholder: 'Decisions, focus, work pressure or goals…',
-    submit: 'Find my focus', paths: 'Explore business options', match: 'Find a consultation', topics: 'Business topics', tests: 'Free tests', sessions: 'Send a request',
-    none: 'No business topics match your search.', reset: 'Show all topics' },
-  ru: { eyebrow: 'HOLISTIC HOUSE · БИЗНЕС', title: 'Подберите бизнес-консультацию',
-    lead: 'Обсудите важное решение о бизнесе, доходе, работе или своём деле и найдите конкретный следующий шаг.',
-    searchLabel: 'Поиск тем бизнеса', placeholder: 'Решения, цели, деньги, работа…',
-    submit: 'Найти направление', paths: 'Направления бизнеса', match: 'Подобрать консультацию', topics: 'Темы бизнеса', tests: 'Бесплатные тесты', sessions: 'Оставить заявку',
-    none: 'По этому запросу темы не найдены.', reset: 'Показать все темы' },
-  es: { eyebrow: 'HOLISTIC HOUSE · NEGOCIOS', title: 'Encuentra tu consulta de negocios',
-    lead: 'Explora una decisión sobre tu negocio, ingresos, trabajo o proyecto y encuentra un próximo paso.',
-    searchLabel: 'Buscar temas de negocios', placeholder: 'Decisiones, trabajo, dinero o metas…',
-    submit: 'Buscar mi enfoque', paths: 'Explorar opciones', match: 'Elegir consulta', topics: 'Temas', tests: 'Pruebas gratis', sessions: 'Enviar solicitud',
-    none: 'No hay temas que coincidan con la búsqueda.', reset: 'Mostrar todos los temas' },
-} as const
 type StartAttempt = { controller: AbortController; scope: string; href: string; intent?: string; handedOff: boolean }
 
 function stopAttempt(attempt: StartAttempt | null) {
@@ -162,30 +146,14 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
   // Private test sessions still use the existing English/Russian app.
   const appLocale = language === 'es' ? 'en' : language
   const c = copy[language]
-  const businessCallout = businessPromo[language]
   const businessText = businessDiscoveryCopy[language]
   const [selected, setSelected] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
   const [shareStatus,setShareStatus] = useState<'copied'|'shared'|'manual'|''>('')
-  const [businessQuery, setBusinessQuery] = useState('')
-  const [businessFilter, setBusinessFilter] = useState('')
-  const [testsOpen, setTestsOpen] = useState(false)
   const focus = useMemo(() => journeyFocusForTopics(journey, selected), [journey, selected])
   const problems = useMemo(() => journeyProblemsForTopics(journey, selected), [journey, selected])
   const recommended = suggestions[selected.slice().sort().join(',')] || []
-  const visibleTopics = journey.id !== 'business' || !businessFilter ? journey.topics : journey.topics.filter((topic) =>
-    [topic.title.en, topic.title.ru, topic.title.es, topic.detail.en, topic.detail.ru, topic.detail.es]
-      .some((wording) => wording.toLocaleLowerCase().includes(businessFilter))
-  )
-  function findBusinessTopics(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setBusinessFilter(businessQuery.trim().toLocaleLowerCase())
-    setTestsOpen(true)
-    window.requestAnimationFrame(() => document.getElementById('hh-topic-selection-heading')?.scrollIntoView({
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start'
-    }))
-  }
   const scope = JSON.stringify([language, journey.id, selected, recommended.map((item) => [item.key, item.definition])])
   const scopeRef = useRef(scope)
   scopeRef.current = scope
@@ -259,11 +227,6 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
       setShareStatus('manual')
     }
   }
-
-  useEffect(() => {
-    // Deep links into the voluntary free-tests section must reveal the target.
-    if (window.location.hash === '#hh-topic-selection-heading' || window.location.hash === '#hh-topic-recommended-tests') setTestsOpen(true)
-  }, [])
 
   const toggle = (id: string) => setSelected((current) =>
     current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
@@ -346,17 +309,11 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         <p>{c.pickHint}</p>
       </div>
       <div className={styles.topics} role="group" aria-label={c.pickTitle}>
-        {visibleTopics.map((topic) => <button key={topic.id} type="button" className={styles.topic}
+        {journey.topics.map((topic) => <button key={topic.id} type="button" className={styles.topic}
           aria-pressed={selected.includes(topic.id)} data-topic-choice={topic.id} onClick={() => toggle(topic.id)}>
           <span className={styles.check}><Check size={16} aria-hidden="true" /></span>
           <span><strong>{topic.title[language]}</strong><small>{topic.detail[language]}</small></span>
         </button>)}
-        {journey.id === 'business' && visibleTopics.length === 0 ? (
-          <div className={styles.businessNoMatches} role="status">
-            <p>{businessText.none}</p>
-            <button type="button" onClick={() => { setBusinessQuery(''); setBusinessFilter('') }}>{businessText.reset}</button>
-          </div>
-        ) : null}
       </div>
     </section>
 
@@ -402,31 +359,22 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
     <section className={styles.hero}>
       {journey.id === 'business' ? (
         <div className={styles.businessHeroContent}>
-          <div className={styles.businessHeroTopline}>
-            <p className={styles.businessHeroEyebrow}><Sparkles size={15} aria-hidden="true" />{businessText.eyebrow}</p>
-            <div className={styles.businessDesktopNav}><DiscoverySectionTabs locale={locale} active="business" /></div>
+          <div className={styles.businessHeroPhoto}>
+            <Image src={art.business} alt={businessText.portrait} fill unoptimized priority
+              sizes="(max-width: 720px) 135px, (max-width: 1100px) 30vw, 360px" />
+            <span>{businessText.portrait}</span>
           </div>
-          <h1>{businessText.title}</h1>
-          <div className={styles.businessFinderSlot}><BusinessConsultationFinder locale={language} /></div>
-          <p className={styles.businessPriceLine}>{businessCallout.price}</p>
-          <details className={styles.businessExploreMore}>
-            <summary>{language === 'ru' ? 'Другие способы продолжить' : language === 'es' ? 'Otras formas de continuar' : 'More ways to continue'}</summary>
+          <div className={styles.businessHeroMain}>
+            <div className={styles.businessHeroTopline}>
+              <p className={styles.businessHeroEyebrow}>{businessText.eyebrow}</p>
+              <div className={styles.businessDesktopNav}>
+                <DiscoverySectionTabs locale={locale} active="business" />
+              </div>
+            </div>
+            <h1>{businessText.title}</h1>
             <p className={styles.businessHeroLead}>{businessText.lead}</p>
-          <details className={styles.businessSearchDisclosure}>
-            <summary>{businessText.searchLabel}</summary>
-          <form className={styles.businessSearchForm} role="search" onSubmit={findBusinessTopics}>
-            <label className={styles.businessSrOnly} htmlFor="hh-business-topic-query">{businessText.searchLabel}</label>
-            <input id="hh-business-topic-query" type="search" value={businessQuery}
-              onChange={(event) => setBusinessQuery(event.target.value)} placeholder={businessText.placeholder} />
-            <button type="submit">{businessText.submit}<Search size={19} aria-hidden="true" /></button>
-          </form>
-          </details>
-          <nav className={styles.businessQuickPaths} aria-label={businessText.paths}>
-            <a href="#hh-business-finder"><Sparkles size={16} aria-hidden="true" />{businessText.match}</a>
-            <a href="#hh-business-free-tests" onClick={()=>setTestsOpen(true)}><ClipboardCheck size={16} aria-hidden="true" />{businessText.tests}</a>
-            <a href="#business-direct-request"><CalendarDays size={16} aria-hidden="true" />{businessText.sessions}</a>
-          </nav>
-          </details>
+            <BusinessConsultationFinder locale={language}/>
+          </div>
         </div>
       ) : (
         <>
@@ -447,24 +395,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
     </section>
 
 
-    {journey.id === 'business' && (
-      <aside className={styles.businessValueStrip} aria-labelledby="hh-business-consultation-title" data-business-consultation-banner>
-        <strong id="hh-business-consultation-title">{businessCallout.kicker}</strong>
-        <ul>
-          {businessCallout.points.map((point)=><li key={point}><Check size={14} aria-hidden="true"/>{point}</li>)}
-        </ul>
-      </aside>
-    )}
-
-    {journey.id === 'business' ? (
-      <details className={styles.businessSelfChecks} id="hh-business-free-tests" open={testsOpen}
-        onToggle={(event)=>setTestsOpen(event.currentTarget.open)}>
-        <summary>{language==='ru' ? 'Бесплатные тесты — по желанию' : language==='es' ? 'Pruebas gratuitas (opcional)' : 'Optional: free self-checks'} <ChevronDown size={18} aria-hidden="true"/></summary>
-        <div className={styles.businessSelfChecksBody}>
-          {assessmentSections}
-        </div>
-      </details>
-    ) : assessmentSections}
+    {journey.id === 'business' ? <BusinessServiceBrowser locale={language}/> : assessmentSections}
 
     {journey.id !== 'business' && (
     <section className={styles.actions} aria-labelledby="hh-topic-actions-heading">
