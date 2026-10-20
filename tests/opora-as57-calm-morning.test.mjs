@@ -60,11 +60,12 @@ test('photographic mobile player uses a bright panel and high-contrast large typ
   assert.match(css,/100dvh/);
   assert.match(css,/\.frame::before/);
   // iOS regression: foreground header, lesson and CTA must be above the scenic
-  // overlay, and the 14px blur must only affect the photograph pseudo-elements.
+  // overlay. Fullscreen photographs should stay sharp, not be blurred.
   assert.match(css,/\.header,\.stage,\.footer\s*\{\s*position:relative;z-index:1\s*\}/);
   assert.doesNotMatch(css,/\.header\s*,\s*\.stage\s*,\s*\.footer\s*,/);
-  assert.match(css,/\.welcome::before,\s*\.arrive::before\s*\{\s*filter:blur\(14px\)/);
-  assert.match(css,/filter:brightness\(1\.23\)/);
+  assert.match(css,/\.welcome::before,\s*\.arrive::before\s*\{\s*filter:brightness\(1\.04\) contrast\(1\.04\)/);
+  assert.doesNotMatch(css,/(?<!-)filter:blur\(/);
+  assert.match(css,/filter:brightness\(1\.04\) contrast\(1\.06\)/);
   assert.match(css,/rgba\(250,255,253,\.92\)/);
   assert.match(css,/\.lead\s*\{[\s\S]*?font-size:clamp\(18px,4\.7vw,21px\)/);
   assert.match(css,/\.title\s*\{[\s\S]*?color:#153e51/);

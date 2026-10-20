@@ -6,7 +6,7 @@ import { yggdrasilTextTestimonials } from "./yggdrasil-testimonials";
 import { yggdrasilPreparationQuestions } from "./yggdrasil-preparation-questions";
 
 export const ENERGYWORK_COURSE_ID = "academy-energywork-principles";
-export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p9";
+export const ENERGYWORK_COURSE_VERSION = "2026-10-20.p10";
 
 export type EnergyworkLocale = "en" | "ru";
 export type Localized = { en: string; ru: string };
@@ -162,7 +162,7 @@ export const energyworkLessons: Array<{ phase: EnergyworkPhase; firstSlideId: st
 
 // A written meditation reflection follows each practice. Five short study
 // questions in Tantra Reiki require a brief written answer before advancing.
-// The personal-initiation review also checks all five lesson journals.
+// The personal-initiation review checks five reports and the remaining study answers.
 export const energyworkInitiationRequirements: ReadonlyArray<{
   lesson: EnergyworkPhase;
   reportId: string;
@@ -173,7 +173,7 @@ export const energyworkInitiationRequirements: ReadonlyArray<{
   { lesson: "tantra", reportId: "tan-04", questionId: "tan-study-04", questionIds: ["tan-study-04", "tan-06", "tan-study-06", "tan-study-07", "tan-study-02"] },
   { lesson: "kundalini", reportId: "kun-04", questionId: "kun-study-v2-01", questionIds: ["kun-study-v2-01", "kun-study-v2-02", "kun-study-v2-03", "kun-study-v2-04", "kun-study-v2-05", "kun-study-v2-06", "kun-study-v2-07", "kun-study-v2-08", "kun-study-v2-09"] },
   { lesson: "yggdrasil", reportId: "ygg-04", questionId: "ygg-study-v2-01", questionIds: ["ygg-study-v2-01", "ygg-study-v2-02", "ygg-study-v2-03", "ygg-study-v2-04", "ygg-study-v2-05", "ygg-study-v2-06", "ygg-study-v2-07"] },
-  { lesson: "initiation", reportId: "end-01", questionId: "init-01", questionIds: ["init-01"] },
+  { lesson: "initiation", reportId: "end-01", questionId: "end-01", questionIds: [] },
 ];
 
 export const energyworkPathChoices: Array<{
@@ -294,9 +294,6 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "intention-01", phase: "initiation", kind: "lesson", image: image.sun,
     title: l("What is intention?", "Что такое намерение?"),
     body: l("In these traditions, intention gives a practice direction. It is a personal purpose, not a promise that an outcome must happen.", "В этих традициях намерение задаёт направление практики. Это личная цель, а не обещание обязательного результата.") },
-  { id: "intention-02", phase: "initiation", kind: "lesson",
-    title: l("Symbols help us reflect", "Символы помогают размышлять"),
-    body: l("A tree may suggest grounding; sunlight may suggest clarity. The meaning belongs to the learner and is not a diagnostic interpretation.", "Дерево может напоминать об опоре, солнечный свет — о ясности. Смысл выбирает сам ученик; это не диагностика.") },
   { id: "intention-03", phase: "initiation", kind: "reflection",
     title: l("Write your own intention", "Запишите своё намерение"),
     body: l("Keep it simple and within your influence, such as making room for a short quiet pause.", "Пусть оно будет простым и посильным, например выделить пару минут для спокойной паузы."),
@@ -304,26 +301,6 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "intention-04", phase: "initiation", kind: "practice", question: practiceQuestion,
     title: l("Try your intention gently", "Мягко вспомните намерение"),
     body: l("For a few moments, notice your intention while staying aware of your surroundings. It is fine to change it later.", "На несколько мгновений вспомните своё намерение, оставаясь в контакте с окружающим. Позже его можно изменить.") },
-
-  { id: "boundaries-01", phase: "initiation", kind: "lesson", image: image.world,
-    title: l("Choice and boundaries", "Выбор и границы"),
-    body: l("In any spiritual practice, your comfort and consent matter. You never owe anyone an explanation for pausing or declining.", "В любой духовной практике важны комфорт и согласие. Вы можете сделать паузу или отказаться без объяснений.") },
-  { id: "boundaries-02", phase: "initiation", kind: "reflection",
-    title: l("A practical choice", "Практическая ситуация"),
-    body: l("A practice does not feel comfortable today. What could you do?", "Сегодня практика ощущается некомфортно. Что вы можете сделать?"),
-    question: { type: "choice", prompt: l("Choose a response that respects your comfort", "Выберите ответ, уважающий ваш комфорт"),
-      options: [
-        { id: "pause", label: l("Pause or stop — that is okay", "Сделать паузу или остановиться — это нормально") },
-        { id: "adapt", label: l("Choose an easier alternative", "Выбрать более простой вариант") },
-        { id: "ask", label: l("Ask the teacher for clarification", "Попросить преподавателя объяснить") },
-      ] } },
-  { id: "boundaries-03", phase: "initiation", kind: "practice", question: practiceQuestion,
-    title: l("A moment of choice", "Момент выбора"),
-    body: l("Try saying to yourself: 'I can choose the pace and the format.' You may also skip this exercise.", "Попробуйте сказать себе: «Я могу выбирать темп и формат». Это упражнение тоже можно пропустить.") },
-  { id: "boundaries-04", phase: "initiation", kind: "reflection",
-    title: l("What makes practice feel safe?", "Что делает практику комфортной?"),
-    body: l("Describe a simple condition or boundary that works for you.", "Опишите одно простое условие или границу, которая вам подходит."),
-    question: { type: "text", prompt: l("For me, it helps when…", "Мне помогает, когда…") } },
 
   { id: "paths-01", phase: "initiation", kind: "lesson",
     title: l("Personal initiation: what comes next?", "Личная инициация: что дальше?"),
@@ -334,9 +311,6 @@ const commonSlides: EnergyworkSlide[] = [
       l("Choosing one gift initiation and optional additional traditions", "Как выбрать одну бесплатную инициацию и дополнительные варианты"),
       l("Preparing your motivation and arranging a time with Andrey in chat", "Как описать мотивацию и согласовать время в чате с Андреем"),
     ] },
-  { id: "paths-02", phase: "initiation", kind: "lesson", image: image.tree,
-    title: l("What your learning journal needs", "Что нужно для учебного дневника"),
-    body: l("After each meditation, add a short review to continue. You may return to the separate lesson questions later; all five are needed before personal initiation review.", "После каждой медитации оставьте короткий отзыв для продолжения. К отдельным вопросам уроков можно вернуться позже — все пять понадобятся перед рассмотрением личной инициации.") },
   { id: "paths-03", phase: "initiation", kind: "lesson", image: image.tantra,
     title: l("One course, several initiation options", "Один курс — несколько вариантов инициации"),
     body: l("You may discuss initiation in any of the three traditions, one at a time. Completion of this educational course does not mean an initiation has taken place.", "Вы можете обсудить инициацию в любой из трёх традиций, по очереди. Прохождение учебного курса само по себе не означает получения инициации.") },
@@ -523,10 +497,6 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
 };
 
 const initiationSlides: EnergyworkSlide[] = [
-  { id: "init-01", phase: "initiation", kind: "reflection",
-    title: l("What is a personal initiation?", "Что такое личная инициация?"),
-    body: l("Describe why course completion and teacher-led initiation are different. This is the fifth lesson's question.", "Объясните, почему прохождение курса и инициация с преподавателем — разные вещи. Это вопрос пятого урока."),
-    question: { type: "text", prompt: l("My answer about personal initiation…", "Мой ответ о личной инициации…") } },
   { id: "init-02", phase: "initiation", kind: "reflection",
     title: l("Questions for the teacher", "Вопросы преподавателю"),
     body: l("Write anything you would like to clarify with Andrey. This note is private until you deliberately share it.", "Запишите, что вы хотели бы уточнить у Андрея. Эта запись приватна, пока вы сами не решите ею поделиться."),
@@ -539,8 +509,8 @@ const endSlides: EnergyworkSlide[] = [
     body: l("Choose one Level 1 initiation as a free gift. You may also request the other two by donation. Tell Andrey about yourself, your preferred time and why this matters to you.", "Выберите одну инициацию первой ступени в подарок. Две другие можно запросить за добровольный донейшн. Расскажите Андрею о себе, удобном времени и своей мотивации."),
     question: { type: "text", prompt: l("My personal initiation request and motivation", "Моя заявка и мотивация на личную инициацию") } },
   { id: "end-02", phase: "complete", kind: "finish", image: image.world,
-    title: l("Your five Reiki lessons", "Ваши пять уроков Рейки"),
-    body: l("You have explored Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and personal initiation preparation. This course does not grant Level 1 initiation or certification.", "Вы прошли «Полёт к Солнцу», Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и подготовку к личной инициации. Учебный курс сам по себе не предоставляет инициацию первой ступени или сертификат.") },
+    title: l("Congratulations! All five Reiki lessons complete", "Поздравляем! Все пять уроков Рейки пройдены"),
+    body: l("You've completed your Reiki learning journey and prepared for a personal next step. Level 1 initiation is arranged separately; completing these lessons is not an initiation or certification.", "Вы завершили пять уроков Рейки и подготовились к следующему личному шагу. Инициация первой ступени согласуется отдельно: завершение курса само по себе не является инициацией или сертификацией.") },
 ];
 
 // Keep the same IDs, questions and audio component while placing each lesson's
@@ -593,7 +563,7 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
     ...withClosingPractices(pathSlides.kundalini, ["kun-03"], "kun-done"),
     ...withClosingPractices(pathSlides.yggdrasil, ["ygg-03"], "ygg-done"),
     // The fifth lesson starts at paths-01, not in the previous Yggdrasil lesson.
-    // Both existing safety/intention practices remain available before the final congratulations.
-    ...withClosingPractices(finalLesson, ["intention-04", "boundaries-03"], "end-02"),
+    // The remaining intention practice stays before the final congratulations.
+    ...withClosingPractices(finalLesson, ["intention-04"], "end-02"),
   ];
 }

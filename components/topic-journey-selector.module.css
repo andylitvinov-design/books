@@ -442,3 +442,22 @@
 .businessBenefitTags{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 0;padding:0;list-style:none}
 .businessBenefitTags li{padding:5px 9px;border:1px solid #98b4b5;border-radius:99px;color:#f4e1be;background:#ffffff0b;font:700 10px/1.3 system-ui,sans-serif}
 @media(max-width:600px){.businessBenefitTags{gap:5px;margin-top:7px}.businessBenefitTags li{padding:4px 7px;font-size:9px}}
+
+/* Mobile first-fold consultation finder; secondary discovery remains in one
+   disclosure instead of pushing the first question below the hero. */
+.businessExploreMore{margin-top:8px;color:#cde5e7}
+.businessExploreMore>summary{display:inline-flex;align-items:center;min-height:32px;padding:5px 3px;cursor:pointer;font:650 11px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.businessExploreMore[open]{margin-top:11px}
+.businessExploreMore[open] .businessHeroLead{margin:5px 0 8px;font-size:12px}
+.businessExploreMore:focus-within{outline:none}
+.businessExploreMore>summary:focus-visible{outline:3px solid #f3b4c9;outline-offset:3px}
+.root[data-topic-journey="business"] .hero{margin-top:0;padding:clamp(13px,2.1vw,21px)}
+.root[data-topic-journey="business"] .hero h1{font-size:clamp(24px,3vw,32px);margin:0 0 9px}
+@media(max-width:650px){
+  .root[data-topic-journey="business"]{padding:5px 8px 16px}
+  .root[data-topic-journey="business"] .hero{margin:0 0 11px;padding:9px 9px 7px;border-radius:15px}
+  .root[data-topic-journey="business"] .hero h1{font-size:clamp(20px,5.3vw,23px);line-height:1.16;margin:0 0 7px}
+  .root[data-topic-journey="business"] .businessHeroTopline{display:none}
+  .businessExploreMore{margin-top:3px}
+  .businessExploreMore>summary{font-size:10px;min-height:29px}
+}

@@ -39,8 +39,8 @@ test('Rendered course and private-save registry agree on every slide, including 
     const slides = energyworkSlides(legacyPath)
     assert.deepEqual(slides.map(slide => slide.id), sequence,
       'Rendered next/previous targets must match the server private-save sequence')
-    assert.equal(new Set(slides.map(slide => slide.id)).size, 70,
-      'Preserve the 69 original screens plus the standalone first-lesson save milestone')
+    assert.equal(new Set(slides.map(slide => slide.id)).size, 63,
+      'Preserve all 63 p10 screens, including the standalone first-lesson save milestone')
     assert.deepEqual(slides.slice(6, 11).map(slide => slide.id),
       ['flight-04', 'flight-03', 'flight-done', 'flight-save', 'tan-01'],
       'Review, practice and congratulations precede saving; Lesson 2 follows the save checkpoint')
@@ -57,12 +57,12 @@ test('Rendered course and private-save registry agree on every slide, including 
   }
 })
 
-test('Unified Reiki Practitioner course has 70 stable editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 63 published editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p9"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 70)
+  assert.equal(ids.length, 63)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -140,17 +140,18 @@ test('Sun practice uses two optional choices for the one-minute exercise', () =>
   assert.match(css, /\.choices/)
 })
 
-test('Five lessons have separate post-meditation reports and question answers', () => {
+test('Five lesson reports and four sets of study questions gate initiation', () => {
   const assignments = [
     ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-study-04'],
     ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-study-v2-01'],
-    ['initiation','end-01','init-01'],
   ]
   for (const [name,report,question] of assignments) {
     assert.ok(curriculum.includes('lesson: "'+name+'", reportId: "'+report+'", questionId: "'+question+'"'))
     assert.ok(curriculum.includes('id: "'+report+'"'))
     assert.ok(curriculum.includes('id: "'+question+'"'))
   }
+  assert.match(curriculum, /lesson: "initiation", reportId: "end-01", questionId: "end-01", questionIds: \[\]/)
+  assert.doesNotMatch(curriculum, /id: "init-01", phase:/)
   assert.match(learner, /const initiationItems = energyworkInitiationRequirements\.map/)
   assert.match(learner, /readyTargetCount/)
   assert.match(learner, /savedInitiationReady = initiationReady && sync === "ready"/)
@@ -213,7 +214,7 @@ test('Reiki opening explains a single sequential course and separate teacher ini
   assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
   assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
   assert.match(learner, /Want to go further\? You can explore personal Reiki initiation/)
-  assert.match(curriculum, /does not grant Level 1 initiation or certification/)
+  assert.match(curriculum, /Level 1 initiation is arranged separately; completing these lessons is not an initiation or certification/)
   assert.match(css, /welcomeSlide \.art/)
 })
 

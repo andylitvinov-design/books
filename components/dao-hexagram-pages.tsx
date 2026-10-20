@@ -8,6 +8,7 @@ import { DaoHexagramGlyph } from "./dao-hexagram-glyph";
 import { DaoDivinationPanel } from "./dao-divination-panel";
 import { archivePhotoFor, daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle, hexagrams, trigramInfo } from "@/data/dao-hexagrams.mjs";
 import authorRecords from "@/data/dao-hexagram-author.json";
+import { getDaoEditorialHexagramText } from "@/data/dao-hexagrams-editorial.mjs";
 import styles from "./dao-hexagrams.module.css";
 
 export type DaoLocale = "ru" | "en" | "es";
@@ -17,9 +18,10 @@ const copy = {
   ru: {
     kicker: "Даосская традиция · И-Цзин", heading: "64 гексаграммы Книги Перемен",
     lead: "Каждый символ — сочетание двух триграмм. Исследуйте образы, смысл ситуации и шаги для размышления. Оригинальные авторские трактовки сохранены без пересказа.",
-    provenance: "12 карточек содержат опубликованные авторские интерпретации. Остальные 52 — краткий традиционный справочник; развёрнутый авторский текст для них пока не подтверждён.",
+    provenance: "12 исходных авторских публикаций сохранены без изменений. Для остальных 52 подготовлены новые полные толкования в том же образном формате; это редакционное продолжение, а не найденные авторские оригиналы.",
     sourceBook: "Открыть исходную главу книги", caution: "И-Цзин здесь представлен как культурная и рефлексивная традиция, не как гарантированный прогноз и не как медицинская диагностика.",
     authorHeading: "Авторское толкование", noteRu: "Оригинальный текст автора на русском языке.", referenceHeading: "Краткое традиционное значение",
+    editorialHeading: "Новое толкование в авторском стиле", editorialNote: "Новая редакционная интерпретация, подготовленная по запросу автора на русском языке. Не является ранее опубликованным текстом Андрея.",
     missing: "Развёрнутое авторское толкование для этого символа в проверенных материалах не найдено. Карточка содержит базовые сведения и будет дополнена только после подтверждения источника.",
     photo: "Иллюстрация из авторской публикации", themePhoto: "Тематическое фото из архивной коллекции Дао",
     source: "Читать исходную публикацию", privateArchive: "Исходный текст сохранён в личном архиве автора; публичной ссылки пока нет.",
@@ -29,9 +31,10 @@ const copy = {
   en: {
     kicker: "Daoist tradition · I Ching", heading: "64 hexagrams of the Book of Changes",
     lead: "Each symbol joins two trigrams. Explore its traditional meaning and the author's original reflective interpretations where available.",
-    provenance: "12 cards include verified original author texts (in Russian). The other 52 offer concise traditional reference notes; no extended author wording is claimed.",
+    provenance: "12 verified original author texts remain unchanged. The other 52 now have full newly written interpretations in the same archetypal format, clearly marked as editorial continuations, not original author publications.",
     sourceBook: "Read the source book chapter", caution: "A cultural and reflective reference, not a guaranteed prediction or medical guidance.",
     authorHeading: "Original interpretation", noteRu: "Original author text in Russian, preserved as written.", referenceHeading: "Traditional reference meaning",
+    editorialHeading: "New interpretation in the author’s style", editorialNote: "New editorial text commissioned for this collection (in Russian); not presented as a previously published original by Andrey.",
     missing: "No verified extended author interpretation was found for this symbol. The card contains a short reference note until the original source is confirmed.",
     photo: "Photo from the original author publication", themePhoto: "Thematic archival Dao collection photo",
     source: "Open original publication", privateArchive: "Source text held in the author's archive; no public link available.",
@@ -41,9 +44,10 @@ const copy = {
   es: {
     kicker: "Tradición taoísta · I Ching", heading: "64 hexagramas del Libro de los Cambios",
     lead: "Cada símbolo reúne dos trigramas. Explora su significado tradicional y las interpretaciones originales del autor cuando estén disponibles.",
-    provenance: "12 tarjetas contienen textos originales verificados (en ruso). Las otras 52 ofrecen una referencia breve y no se presentan como textos originales.",
+    provenance: "Conservamos 12 textos originales verificados. Los otros 52 símbolos tienen interpretaciones nuevas y completas en el mismo formato, señaladas como continuaciones editoriales, no publicaciones originales.",
     sourceBook: "Leer el capítulo del libro", caution: "Referencia cultural y reflexiva; no es una predicción garantizada ni un diagnóstico médico.",
     authorHeading: "Interpretación original", noteRu: "Texto original del autor en ruso, conservado sin cambios.", referenceHeading: "Significado tradicional",
+    editorialHeading: "Nueva interpretación en el estilo del autor", editorialNote: "Texto editorial nuevo, preparado a petición del autor en ruso; no se presenta como publicación original anterior de Andrey.",
     missing: "Aún no se ha confirmado un texto original extenso para este símbolo. La tarjeta contiene una nota de referencia.",
     photo: "Imagen de la publicación original", themePhoto: "Imagen temática del archivo taoísta",
     source: "Ver publicación original", privateArchive: "Texto conservado en el archivo privado del autor; no hay enlace público.",
@@ -90,6 +94,7 @@ export function DaoHexagramDetails({ locale, number }: { locale: DaoLocale; numb
   if (!item) notFound();
   const labels = copy[locale];
   const author = authorByNumber.get(number);
+  const editorialText = author ? null : getDaoEditorialHexagramText(number);
   const title = hexagramTitle(item, locale);
   const photo = archivePhotoFor(item, author?.photo);
   const above = trigramInfo[item.upper][locale];
@@ -113,7 +118,7 @@ export function DaoHexagramDetails({ locale, number }: { locale: DaoLocale; numb
           </div>
           <p className={styles.detailTrigrams}>{labels.upper}: {above} · {labels.lower}: {below}</p>
           <p>{hexagramEssence(item, locale)}</p>
-          <small className={styles.provenance}>{author ? labels.noteRu : labels.provenance}</small>
+          <small className={styles.provenance}>{author ? labels.noteRu : labels.editorialNote}</small>
         </section>
       </div>
       {author ? (
@@ -128,10 +133,19 @@ export function DaoHexagramDetails({ locale, number }: { locale: DaoLocale; numb
             <a className={styles.sourceLink} href={author.source} target="_blank" rel="noopener noreferrer">{labels.source} ↗</a>
           ) : <p className={styles.provenance}>{labels.privateArchive}</p>}
         </article>
+      ) : editorialText ? (
+        <article className={styles.originalPanel} aria-label={labels.editorialHeading}>
+          <p className={styles.kicker}>{labels.editorialHeading}</p>
+          <h2>{item.hanzi} · {title}</h2>
+          <p className={styles.provenance}>{labels.editorialNote}</p>
+          <div className={styles.originalText} lang="ru">
+            {editorialText.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+          </div>
+          <p className={styles.provenance}>{labels.caution}</p>
+        </article>
       ) : (
         <section className={styles.referencePanel}>
           <h2>{labels.referenceHeading}</h2><p>{hexagramEssence(item, locale)}</p><p>{labels.missing}</p>
-          <p className={styles.provenance}>{labels.caution}</p>
         </section>
       )}
       <nav className={styles.related} aria-label={labels.heading}>

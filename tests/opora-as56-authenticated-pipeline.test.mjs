@@ -47,7 +47,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         await click(player, locale==='ru'?'Чувствую напряжение':'I feel tense')
         assert.match(textOf(player.tree),locale==='ru'
           ?/Не нужно сразу менять своё состояние/:/Nothing needs to change right away/)
-        for(let i=0;i<4;i++)await click(player,t.next)
+        for(let i=0;i<5;i++)await click(player,t.next)
         await click(player,t.vote)
         await click(player,t.next)
         await click(player,t.next)
@@ -56,7 +56,8 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         await click(player, locale==='ru'?'Напряжённо':'Tense')
         assert.match(textOf(player.tree),locale==='ru'
           ?/не нужно заставлять себя расслабиться/:/do not have to make yourself relax/)
-        await click(player,t.next)
+        await click(player,t.next) // support, with no required response
+        await click(player,t.next) // optional exercise
       }
       await click(player,t.tried)
       await click(player,t.next)
@@ -110,7 +111,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     async onSession(input) { await owner.command(structuredClone(input), locale); return true },
   })
   try {
-    for (let i = 0; i < 9; i++) await click(player, t.next)
+    for (let i = 0; i < 10; i++) await click(player, t.next)
     await click(player,locale==='ru'?'Пока только знакомлюсь':'I only explored them today')
     await click(player, t.save)
     const saved = owner.sessions.at(-1)
@@ -171,7 +172,7 @@ test('Day 1 optional own resource is mutually exclusive with buttons, encrypted,
     })
     const getField=()=>nodes(player.tree).find(n=>n.type==='input'&&n.props?.['data-opora-own-resource']==='true')
     try{
-      for(let i=0;i<3;i++)await click(player,next)
+      for(let i=0;i<4;i++)await click(player,next)
       assert.ok(getField(),'Day 1 must offer a text input below the quick choices')
       assert.equal(getField().props.maxLength,160)
       getField().props.onChange({target:{value:'  '+answer+'  '}})

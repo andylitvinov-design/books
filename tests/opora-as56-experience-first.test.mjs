@@ -6,7 +6,7 @@ import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
 import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
@@ -36,12 +36,22 @@ async function click(h,label){
   control.props.onClick()
   await h.settle()
 }
+function courseMap(h){
+  // The shared harness leaves this pure local component as a function node.
+  // Execute only its actual source function with its actual emitted props.
+  const parts=nodes(h.tree).filter(n=>typeof n.type==='function'&&n.type.name==='OporaCoursePath')
+  assert.equal(parts.length,1,'Expected exactly one actual OporaCoursePath')
+  const maps=nodes(parts[0].type(parts[0].props)).filter(n=>n.props?.['data-opora-course-map']==='all-14-days')
+  assert.equal(maps.length,1,'The actual source must render one all-14-days map')
+  return maps[0]
+}
 
-test('day one restores five opening screens while days 2–14 keep their existing short route',async()=>{
+test('day one restores five opening screens and all days add untracked support at step two',async()=>{
   assert.deepEqual([...OPORA_EXPERIENCE_PRE_SAVE_KEYS],['arrive','practice','feel','affirmation','save'])
   assert.deepEqual([...OPORA_DAY_ONE_RESTORED_KEYS],
     ['welcome','baseline','checkin','recall','affirmation','arrive','practice','feel','save'])
   assert.equal(oporaExperienceGuidesValid(),true)
+  assert.equal(oporaExperienceSupportValid(),true)
   for(const lang of ['ru','en'])for(let day=1;day<=14;day++){
     const f=fixture(lang,day),h=f.h,d=t[lang]
     if(day===1){
@@ -50,6 +60,9 @@ test('day one restores five opening screens while days 2–14 keep their existin
       const choice=lang==='ru'?'Чувствую напряжение':'I feel tense'
       await click(h,choice)
       assert.match(textOf(h.tree),lang==='ru'?/Не нужно сразу менять своё состояние/:/Nothing needs to change right away/)
+      await click(h,d.next)
+      assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
+      assert.ok(!findButton(h.tree,d.try),'No exercise reporting on support screen')
       await click(h,d.next)
       assert.match(textOf(h.tree),lang==='ru'?/Насколько вы сейчас чувствуете внутреннюю опору/:/How much inner support do you feel/)
       await click(h,'4')
@@ -67,7 +80,12 @@ test('day one restores five opening screens while days 2–14 keep their existin
     assert.match(textOf(h.tree),lang==='ru'?(day===1?/Можно просто побыть здесь/:/Как вы сейчас себя чувствуете/):
       (day===1?/You can arrive just as you are/:/How are you feeling right now/))
     await click(h,d.next)
-    // Day 1 action occurs only after the original supportive opening.
+    if(day!==1){
+      assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
+      assert.ok(!findButton(h.tree,d.try),'Step two must never ask for practice proof')
+      await click(h,d.next)
+    }
+    // Practical work always comes after the voluntary acceptance screen.
     assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
     await click(h,d.try)
     await click(h,d.next)
@@ -115,16 +133,31 @@ test('day one restores five opening screens while days 2–14 keep their existin
     await click(h,lang==='ru'?'Послушать волны':'Relax with waves')
     assert.match(textOf(h.tree),lang==='ru'?/Две минуты спокойствия/:/Two quiet minutes/)
     await click(h,lang==='ru'?'Посмотреть, что дальше':"See what's next")
-    if(day===1){
-      assert.match(textOf(h.tree),lang==='ru'?/Первая неделя/:/Week 1/)
-      await click(h,d.next)
-      assert.match(textOf(h.tree),lang==='ru'?/Вторая неделя/:/Week 2/)
-      await click(h,d.next)
+    // A single long route replaces the duplicated 3-day teaser and two
+    // disconnected weekly lists. All 14 previews remain visible and read-only.
+    const map=courseMap(h)
+    assert.ok(map,'The whole route must be visible after a confirmed save')
+    const cards=nodes(map).filter(n=>n.props?.['data-opora-journey-day']!==undefined)
+    assert.equal(cards.length,14,'All 14 days in one scrollable path')
+    for(let n=1;n<=14;n++){
+      const card=cards.find(node=>node.props['data-opora-journey-day']===n)
+      assert.ok(card,'Missing day '+n)
+      assert.ok(textOf(card).includes(oporaExperienceDay(n,lang).title))
+      assert.ok(textOf(card).includes(oporaExperienceDay(n,lang).practice))
+      assert.equal(card.props['data-day-status'],
+        n<=day?'completed':n===day+1?'next':'locked')
     }
-    if(day<14)assert.ok(textOf(h.tree).includes(oporaExperienceDay(day+1,lang).title))
-    else assert.match(textOf(h.tree),lang==='ru'?/Ваши 14 дней позади/:/Your 14 days are complete/)
+    assert.ok(textOf(map).includes(lang==='ru'?'Пройдено дней':'Days completed'))
+    if(day===14)assert.match(textOf(map),lang==='ru'?/Ваши 14 дней позади/:/Your 14 days are complete/)
+    if(day===1){
+      assert.equal(cards[0].props['data-day-status'],'completed')
+      assert.equal(cards[1].props['data-day-status'],'next')
+    }
     await click(h,"I'm committed")
-    if(day===1)await click(h,lang==='ru'?'Не сейчас':'Not now')
+    if(day===1){
+      assert.match(textOf(h.tree),lang==='ru'?/ОПОРА всегда под рукой/:/Keep OPORA close/)
+      await click(h,lang==='ru'?'Не сейчас':'Not now')
+    }
     assert.match(textOf(h.tree),day===14
       ?(lang==='ru'?/Ваш курс завершён/:/Your course is complete/)
       :(lang==='ru'?/Увидимся завтра/:/See you tomorrow/))
@@ -138,7 +171,7 @@ test('day one restores five opening screens while days 2–14 keep their existin
 
 test('the restored five opening screens remain fully optional, with no false practice claim',async()=>{
   const f=fixture('en',1),h=f.h
-  for(let i=0;i<9;i++)await click(h,t.en.next)
+  for(let i=0;i<10;i++)await click(h,t.en.next)
   await click(h,'I only explored them today')
   await click(h,t.en.save)
   assert.equal(f.requests,1)
@@ -166,7 +199,7 @@ test('photo-first feelings and optional feedback work in ES without changing val
   const selection=nodes(h.tree).find(node=>node.type==='button'&&textOf(node).includes('Me siento tenso/a'))
   assert.equal(selection?.props['aria-pressed'],true)
   assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-start-mood']==='true').length,1)
-  for(let i=0;i<9;i++)await click(h,'Continuar')
+  for(let i=0;i<10;i++)await click(h,'Continuar')
   await click(h,'Hoy solo las exploré')
   await click(h,'Guardar mi práctica')
   assert.equal(f.payload.welcomeFeeling,'tense')
@@ -177,7 +210,7 @@ test('photo-first feelings and optional feedback work in ES without changing val
 
 test('a missing recap selection never sends a completion receipt or invented action',async()=>{
   const f=fixture('en',2),h=f.h
-  for(let i=0;i<5;i++)await click(h,t.en.next)
+  for(let i=0;i<6;i++)await click(h,t.en.next)
   assert.match(textOf(h.tree),/What you learned today/)
   await click(h,t.en.save)
   assert.equal(f.requests,0)
@@ -226,9 +259,10 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
   assert.match(today,/<OporaExperiencePlayer/)
   assert.match(today,/<OporaV6SlidePlayer/)
   assert.match(css,/100dvh/)
-  assert.match(css,/course-start-heron\.webp/)
-  assert.match(css,/course-focus-mountain-boy\.webp/)
-  assert.match(css,/reiki-practitioner-sunrise\.webp/)
+  assert.match(css,/report-lighthouse-coast\.webp/)
+  assert.match(css,/hero-olive-incense\.webp/)
+  assert.match(css,/reiki-approved-sunrise-v3\.webp/)
+  assert.doesNotMatch(css,/course-start-heron\.webp|reiki-practitioner-sunrise\.webp/)
   assert.match(css,/prefers-reduced-motion/)
   assert.match(js,/inert=\{safety\}/)
   assert.match(js,/onClick=\{\(\)=>tryStatus\(value\)\}/)
@@ -256,9 +290,12 @@ test('pending and failed saves never show completion; retry confirms the same op
     const noReceipt=()=>{
       assert.ok(!textOf(h.tree).includes(receiptTitle),'No completion without confirmed persistence')
       assert.equal(findButton(h.tree,locale==='ru'?'Послушать волны':'Relax with waves'),undefined)
+      assert.equal(nodes(h.tree).some(n=>typeof n.type==='function'&&n.type.name==='OporaCoursePath'),false,
+        'The course programme stays behind confirmed persistence')
     }
     try{
-      for(let i=0;i<(day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS).length;i++)await click(h,d.next)
+      // One editorial support screen is displayed but never persisted as a visit.
+      for(let i=0;i<(day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS).length+1;i++)await click(h,d.next)
       await click(h,locale==='ru'?'Получилось немного':'I managed a little')
       noReceipt()
       await click(h,d.save)

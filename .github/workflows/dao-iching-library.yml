@@ -11,6 +11,7 @@ on:
       - 'components/dao-*'
       - 'components/library-hub.tsx'
       - 'data/dao-*'
+      - 'data/dao-hexagrams-editorial/**'
       - 'lib/dao-divination.*'
       - 'lib/public-locales.ts'
       - 'tests/dao-*.test.mjs'
@@ -24,6 +25,7 @@ on:
       - 'app/es/library/page.tsx'
       - 'components/dao-*'
       - 'data/dao-*'
+      - 'data/dao-hexagrams-editorial/**'
       - 'lib/dao-divination.*'
       - 'tests/dao-*.test.mjs'
       - '.github/workflows/dao-iching-library.yml'
@@ -49,7 +51,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Validate 64 symbols, provenance, photos and privacy without network
-        run: node --test tests/dao-hexagrams.test.mjs tests/dao-divination.test.mjs
+        run: node --test tests/dao-hexagrams.test.mjs tests/dao-divination.test.mjs tests/dao-hexagrams-editorial.test.mjs
       - name: Install lockfile dependencies
         run: npm ci --no-audit --no-fund
       - name: Lint the new and touched TypeScript files

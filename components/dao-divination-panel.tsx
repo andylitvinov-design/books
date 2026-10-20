@@ -10,6 +10,7 @@ import styles from "./dao-divination.module.css";
 
 type Locale = "en" | "ru" | "es";
 type Selection = { number: number; method: "question" | "number" };
+type EditorialReading = { number: number; text: string | null };
 const authorByNumber = new Map(authorRecords.map((record) => [record.number, record]));
 
 const copy = {
@@ -19,8 +20,9 @@ const copy = {
     draw: "Получить случайную гексаграмму", numberTitle: "Найти по номеру", numberLabel: "Номер гексаграммы · 1–64", numberPlaceholder: "Например, 49", find: "Открыть карту",
     invalidQuestion: "Напишите свой вопрос перед гаданием.", invalidNumber: "Укажите целое число от 1 до 64.",
     resultFromQuestion: "Выпал символ для вашего вопроса", resultFromNumber: "Выбранная гексаграмма", upper: "Верх", lower: "Низ",
-    original: "Авторское толкование", reference: "Традиционная справка", authorFull: "Полное авторское толкование", referenceShort: "Краткое значение", readPage: "Открыть отдельную карточку", allCards: "Все 64 карточки", clear: "Сбросить выбор", source: "Исходная публикация",
-    noAuthor: "Развёрнутый авторский текст пока не найден; показана только справочная трактовка.", originalLanguage: "Авторский оригинал на русском.",
+    original: "Авторское толкование", reference: "Новое толкование", authorFull: "Полное авторское толкование", referenceShort: "Краткое значение", readPage: "Открыть отдельную карточку", allCards: "Все 64 карточки", clear: "Сбросить выбор", source: "Исходная публикация",
+    noAuthor: "Новая полная интерпретация подготовлена в авторском стиле.", originalLanguage: "Авторский оригинал на русском.",
+    newFull: "Полное новое толкование", newNote: "Новая редакционная версия по заказу автора. Это не ранее опубликованный текст Андрея. Язык оригинала — русский.", loading: "Загружается новое толкование…",
     photoOriginal: "Фотография из авторской публикации", photoThematic: "Тематическая фотография из архива автора",
     caveat: "Символ выбирается случайно, независимо от содержания вопроса. Это способ символического размышления, не достоверный прогноз или медицинский совет.",
     questionNotSaved: "Вопрос нигде не сохраняется. Не вводите конфиденциальные персональные данные.",
@@ -31,8 +33,9 @@ const copy = {
     draw: "Draw a random hexagram", numberTitle: "Find by number", numberLabel: "Hexagram number · 1–64", numberPlaceholder: "For example, 49", find: "Reveal the card",
     invalidQuestion: "Enter a question before drawing.", invalidNumber: "Enter a whole number from 1 to 64.",
     resultFromQuestion: "Hexagram drawn for your question", resultFromNumber: "Selected hexagram", upper: "Above", lower: "Below",
-    original: "Original interpretation", reference: "Traditional reference", authorFull: "Full author interpretation", referenceShort: "Short reference meaning", readPage: "View individual card", allCards: "Browse all 64 cards", clear: "Clear selection", source: "Original Telegram publication",
-    noAuthor: "No verified extended author text was found for this hexagram. This is a short reference interpretation only.", originalLanguage: "Original author's text is in Russian.",
+    original: "Original interpretation", reference: "New interpretation", authorFull: "Full author interpretation", referenceShort: "Short reference meaning", readPage: "View individual card", allCards: "Browse all 64 cards", clear: "Clear selection", source: "Original Telegram publication",
+    noAuthor: "Full new editorial interpretation in the author’s style.", originalLanguage: "Original author's text is in Russian.",
+    newFull: "Full new interpretation", newNote: "New editorial continuation commissioned for this collection, not an original previously published by Andrey. Text in Russian.", loading: "Loading the new interpretation…",
     photoOriginal: "Photo from original author post", photoThematic: "Thematic photo from the author's archive",
     caveat: "The draw is random and independent of your question. Use it for reflection, not for guaranteed prediction or medical advice.",
     questionNotSaved: "Your question is not saved. Avoid entering confidential personal information.",
@@ -43,8 +46,9 @@ const copy = {
     draw: "Obtener un hexagrama al azar", numberTitle: "Buscar por número", numberLabel: "Número del hexagrama · 1–64", numberPlaceholder: "Por ejemplo, 49", find: "Revelar la tarjeta",
     invalidQuestion: "Escribe una pregunta antes de consultar.", invalidNumber: "Introduce un número entero del 1 al 64.",
     resultFromQuestion: "Hexagrama obtenido para tu pregunta", resultFromNumber: "Hexagrama elegido", upper: "Arriba", lower: "Abajo",
-    original: "Interpretación original", reference: "Referencia tradicional", authorFull: "Interpretación completa del autor", referenceShort: "Significado resumido", readPage: "Abrir tarjeta individual", allCards: "Ver las 64 tarjetas", clear: "Borrar selección", source: "Publicación original en Telegram",
-    noAuthor: "No se ha confirmado un texto extenso del autor para este hexagrama. Esta es solo una breve referencia.", originalLanguage: "Texto original del autor en ruso.",
+    original: "Interpretación original", reference: "Nueva interpretación", authorFull: "Interpretación completa del autor", referenceShort: "Significado resumido", readPage: "Abrir tarjeta individual", allCards: "Ver las 64 tarjetas", clear: "Borrar selección", source: "Publicación original en Telegram",
+    noAuthor: "Nueva interpretación completa en el estilo del autor.", originalLanguage: "Texto original del autor en ruso.",
+    newFull: "Nueva interpretación completa", newNote: "Continuación editorial encargada para esta colección; no es una publicación original anterior de Andrey. Texto en ruso.", loading: "Cargando la nueva interpretación…",
     photoOriginal: "Foto de la publicación original", photoThematic: "Foto temática del archivo del autor",
     caveat: "El resultado es aleatorio e independiente del contenido de la pregunta. Es una herramienta de reflexión, no una predicción ni un consejo médico.",
     questionNotSaved: "La pregunta no se guarda. Evita compartir datos personales confidenciales.",
@@ -57,7 +61,23 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
   const [numberText, setNumberText] = useState("");
   const [error, setError] = useState<"question" | "number" | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [editorial, setEditorial] = useState<EditorialReading | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  // The 52 long new readings are code-split. Do not put 130KB+ of Russian prose
+  // into the initial client bundle of the public Library.
+  useEffect(() => {
+    const number = selection?.number;
+    if (!number || authorByNumber.has(number)) return;
+    let cancelled = false;
+    void import("@/data/dao-hexagrams-editorial.mjs")
+      .then(({ getDaoEditorialHexagramText }) => {
+        if (!cancelled) setEditorial({ number, text: getDaoEditorialHexagramText(number) });
+      })
+      .catch(() => {
+        if (!cancelled) setEditorial({ number, text: null });
+      });
+    return () => { cancelled = true; };
+  }, [selection?.number]);
   useEffect(() => { if (selection) resultRef.current?.focus(); }, [selection]);
   function handleQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -147,7 +167,19 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
                   <p className={styles.languageNote}>{t.originalLanguage}</p>
                   {author.source ? <a href={author.source} rel="noopener noreferrer" target="_blank">{t.source} ↗</a> : null}
                 </details>
-              ) : <div className={styles.noAuthor}><strong>{t.referenceShort}</strong><p>{t.noAuthor}</p></div>}
+              ) : (
+                <details className={styles.fullReading} open key={item.number}>
+                  <summary>{t.newFull} <span aria-hidden="true">⌄</span></summary>
+                  <p className={styles.languageNote}>{t.newNote}</p>
+                  {editorial?.number === item.number && editorial.text ? (
+                    <div lang="ru" className={styles.authorText}>
+                      {editorial.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+                    </div>
+                  ) : (
+                    <p className={styles.languageNote}>{editorial?.number === item.number && editorial.text === null ? t.noAuthor : t.loading}</p>
+                  )}
+                </details>
+              )}
               <Link className={styles.detailLink} href={"/" + locale + "/dao/hexagrams/" + item.number}>{t.readPage} →</Link>
             </div>
           </div>
