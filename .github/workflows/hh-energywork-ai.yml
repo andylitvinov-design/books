@@ -5,6 +5,8 @@ on:
     paths:
       - 'components/energywork-ai-learner.*'
       - 'tests/reiki-ios-keyboard-cta.test.mjs'
+      - 'tests/reiki-ios-viewport-anchor.test.mjs'
+      - 'tests/reiki-mobile-text-question-one-screen.test.mjs'
       - 'components/principles-of-energywork.tsx'
       - 'components/academy-free-course-banner.tsx'
       - 'components/app/cabinet-free-course-banners.*'
