@@ -127,7 +127,7 @@ test('balanced report keeps title, original photograph and remedy schedule on th
   assert.ok(remedyPage>=1,'remedy begins after the factual summary cover')
   assert.match(pages[remedyPage],/\(Veratrum Album\)/,
     'the actual remedy title appears beside its original image, not on the next page')
-  assert.match(source,/room\(cardHeight\+105\)/,'title-photo pair is a keep-together unit')
+  assert.match(source,/room\(cardHeight\+80\)/,'compact phone subheading, original photo and schedule are measured together')
   assert.match(source,/const total=57\+lines\.length\*23/,
     'small authored analyses are measured and kept intact before breaking')
   assert.doesNotMatch(source.slice(source.indexOf('export function buildPrescriptionMobilePdf')),
