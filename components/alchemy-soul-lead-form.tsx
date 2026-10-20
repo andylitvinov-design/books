@@ -33,7 +33,7 @@ const copy = {
       other: "Другая тема",
     },
     action: "Запросить сеанс",
-    note: "Выберите WhatsApp или Telegram, проверьте заявку и подтвердите отправку. Время сеанса согласуется лично, без автоматической оплаты.",
+    note: "Оставьте контакт в форме записи. Время подтверждается лично; WhatsApp и Telegram — по желанию. Автоматической оплаты нет.",
     privacy: "Не вводите здесь диагнозы или медицинские сведения — подробности обсудим лично.",
     telegram: "Или напишите мне в Telegram",
     greeting: "Здравствуйте! Хочу заказать сеанс «Алхимия души / Психогомеопатия».",
@@ -60,7 +60,7 @@ const copy = {
       other: "Another topic",
     },
     action: "Request a session",
-    note: "Choose WhatsApp or Telegram and confirm sending. We agree the session time personally; no automatic charge.",
+    note: "Leave your contact in the registration form. We agree the session time personally; WhatsApp and Telegram are optional, with no automatic charge.",
     privacy: "Please don't enter diagnoses or confidential health details here. We can discuss your question directly.",
     telegram: "Or message me on Telegram",
     greeting: "Hello! I would like to book an Alchemy of the Soul / Psycho-homeopathy session.",
@@ -87,7 +87,7 @@ const copy = {
       other: "Otro tema",
     },
     action: "Solicitar una sesión",
-    note: "Elige WhatsApp o Telegram, revisa el mensaje y decide si lo envías. Acordaremos la hora personalmente; no se realiza ningún cobro automático.",
+    note: "Deja tu contacto en el formulario. Confirmaremos la hora personalmente; WhatsApp o Telegram son opcionales, sin cobro automático.",
     privacy: "No incluyas diagnósticos ni datos médicos confidenciales. Podemos hablar de los detalles personalmente.",
     telegram: "O escríbeme por Telegram",
     greeting: "¡Hola! Quisiera solicitar una sesión de Alquimia del Alma / Psicohomeopatía.",
@@ -104,7 +104,6 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
   const formId = useId();
   const [format, setFormat] = useState<Format>("60");
   const [topic, setTopic] = useState<Topic>("relationships");
-  const [name, setName] = useState("");
 
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
@@ -112,7 +111,6 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
     request: t.greeting + " " + t.question,
     option: t.formatNames[format],
     topic: t.topicNames[topic],
-    ...(name.trim() ? { context: t.nameField + ": " + name.trim() } : {}),
     pagePath: "/" + locale + "/services/alchemy-of-soul",
   });
 
@@ -131,9 +129,6 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
             <option value={key} key={key}>{t.topicNames[key]}</option>
           ))}
         </select>
-      </label>
-      <label htmlFor={formId + "-name"}>{t.name}
-        <input id={formId + "-name"} name="name" autoComplete="given-name" maxLength={70} placeholder={t.namePlaceholder} value={name} onChange={(value) => setName(value.target.value)} />
       </label>
       <div className={styles.formOrder}>
         <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}

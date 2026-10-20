@@ -31,6 +31,28 @@ test('service registration is lead-source website and accepts phone-only contact
   })
   assert.deepEqual(result.contact,{displayName:'Мария', email:'', phone:'+442071234567',source:'website'})
 })
+test('contact-only interest is valid without a personal note across all locales',()=>{
+  for(const locale of ['en','ru','es']){
+    const result=normalizePublicServiceEnquiry({...payload,locale,description:''})
+    assert.match(result.description,/Tantra Reiki/)
+    assert.ok(result.description.length>=10)
+    assert.equal(result.contactConsent,true)
+    const withoutField={...payload,locale}
+    delete withoutField.description
+    assert.equal(normalizePublicServiceEnquiry(withoutField).description,result.description)
+  }
+})
+test('short optional comments remain in the encrypted request and legacy guest requests still need a description',()=>{
+  const short=normalizePublicServiceEnquiry({...payload,description:'Hi'})
+  assert.ok(short.description.endsWith(' Hi'))
+  for(const bad of [
+    {...payload,description:'x'.repeat(1401)},
+    {...payload,description:'hello\u0007world'},
+    {...payload,description:42},
+  ])assert.throws(()=>normalizePublicServiceEnquiry(bad))
+  const {contact,contactConsent,website,...legacy}=payload
+  assert.throws(()=>normalizePublicServiceEnquiry({...legacy,description:''}))
+})
 test('public registration never stores unconsented, malformed or unexpected contact fields',()=>{
   for (const candidate of [
     {...payload,contactConsent:false},
@@ -86,6 +108,11 @@ test('shared course/service chooser requires name, contact and opt-in before sav
   assert.match(view,/fetch\("\/api\/service-enquiries"/)
   assert.match(view,/name:\s*"Ваше имя"/)
   assert.match(view,/name:\s*"Tu nombre"/)
+  assert.match(view,/className=\{styles\.optionalNote\}/)
+  assert.doesNotMatch(view,/c\.situation \+ ": " \+ description/)
+  const alchemy=read('components/alchemy-soul-lead-form.tsx')
+  assert.doesNotMatch(alchemy,/name\.trim\(\) \? \{ context:/)
+  assert.doesNotMatch(alchemy,/name="name" autoComplete="given-name"/)
   assert.match(styles,/\.honeypot/)
   assert.match(styles,/@container \(max-width:340px\)/)
   assert.doesNotMatch(view,/localStorage|sendBeacon/i)
