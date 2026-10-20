@@ -38,7 +38,7 @@ test("paid Meta and Google ad URLs are allowlisted public landings with no PII",
     "//untrusted.example/path", "https://other.example/path",
     "/en/services/free-situation-review?email=user@example.com",
   ]) assert.throws(() => paidAdLandingUrl(invalid, { source: "facebook", campaign }), TypeError);
-  for (const invalid of ["private@email.com", "anxiety depression", "x".repeat(65), "symptom/heart"])
+  for (const invalid of ["private@email.com", "anxiety depression", "anxiety_depression", "x".repeat(65), "symptom/heart"])
     assert.throws(() => paidAdLandingUrl(path, { source: "facebook", campaign: invalid }), TypeError);
 });
 
@@ -51,6 +51,8 @@ test("private, duplicated, mismatched, unknown or sensitive query params fail cl
     valid + "&utm_term=mental-health-condition",
     valid + "&utm_source=google",
     valid + "&utm_campaign=another",
+    valid.replace(campaign, "client_record_123"),
+    valid.replace("utm_content=ad_a", "utm_content=private_record"),
     "?utm_source=facebook&utm_medium=cpc&utm_campaign=" + campaign,
     "?utm_source=google&utm_medium=paid_social&utm_campaign=" + campaign,
     "?utm_source=random&utm_medium=paid_social&utm_campaign=" + campaign,
