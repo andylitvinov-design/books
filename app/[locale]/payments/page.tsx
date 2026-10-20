@@ -24,7 +24,7 @@ const copy = {
     zenTitle: "Prefer ZEN.COM?",
     zenIntro: "Ask whether you can pay by EUR bank transfer. No payment is collected here; we first confirm the appointment and verified recipient details.",
     zenRequest: "Ask for ZEN.COM transfer details",
-    otherPayment: "Card or Interac options",
+    otherPayment: "Other payment options",
   },
   ru: {
     back: "Услуги", tag: "СПОСОБЫ ОПЛАТЫ · РАЗОВЫЕ УСЛУГИ",
@@ -40,7 +40,7 @@ const copy = {
     zenTitle: "Предпочитаете ZEN.COM?",
     zenIntro: "Узнайте, можно ли оплатить переводом EUR. Здесь деньги не списываются: сначала согласуем время и проверим реквизиты получателя.",
     zenRequest: "Запросить реквизиты ZEN.COM",
-    otherPayment: "Карта или Interac",
+    otherPayment: "Другие способы оплаты",
   },
   es: {
     back: "Servicios", tag: "FORMAS DE PAGO · SERVICIOS ÚNICOS",
@@ -56,7 +56,7 @@ const copy = {
     zenTitle: "¿Prefieres ZEN.COM?",
     zenIntro: "Consulta si puedes pagar mediante transferencia en EUR. Aquí no se cobra: primero confirmamos la cita y los datos del destinatario.",
     zenRequest: "Solicitar datos para ZEN.COM",
-    otherPayment: "Tarjeta o Interac",
+    otherPayment: "Otras formas de pago",
   },
 } as const;
 
