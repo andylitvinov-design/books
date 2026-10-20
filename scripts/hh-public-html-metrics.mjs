@@ -13,6 +13,7 @@ export function analyzePublicHtmlPayload(html) {
   let rscInlineBytes = 0;
   let rscScriptCount = 0;
   let largestInlineScriptBytes = 0;
+  let largestRscScriptBytes = 0;
 
   for (const [, attributes, script] of html.matchAll(INLINE_SCRIPT)) {
     if (/(?:^|\s)src\s*=/i.test(attributes)) continue;
@@ -23,6 +24,7 @@ export function analyzePublicHtmlPayload(html) {
     if (NEXT_RSC_PUSH.test(script)) {
       rscInlineBytes += size;
       rscScriptCount += 1;
+      largestRscScriptBytes = Math.max(largestRscScriptBytes, size);
     }
   }
   return {
@@ -32,6 +34,11 @@ export function analyzePublicHtmlPayload(html) {
     inlineScriptCount,
     rscScriptCount,
     largestInlineScriptBytes,
+    largestRscScriptBytes,
+    // Inline script body bytes are already included in the decoded HTML total.
+    // Excluding those bodies separates HTML markup from hydration/LD-JSON cost.
+    htmlExcludingInlineScriptBodiesBytes: decodedHtmlBytes - inlineScriptBytes,
+    rscHtmlSharePct: decodedHtmlBytes ? Math.round((rscInlineBytes / decodedHtmlBytes) * 1000) / 10 : 0,
     inlineScriptSharePct: decodedHtmlBytes ? Math.round((inlineScriptBytes / decodedHtmlBytes) * 1000) / 10 : 0,
   };
 }

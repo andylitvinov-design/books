@@ -26,7 +26,7 @@ export default function SpanishHomePage() {
           <AcquisitionEventLink className="service-home-button service-home-button--primary"
             href="/es/services#consultation" event="service_view"
             attributes={{ "data-hero-cta": "paid-sessions" }} prefetch={false}>
-            Solicitar sesión personal · desde €50<span aria-hidden="true">→</span>
+            Solicitar una consulta · desde €50<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
           <AcquisitionEventLink className="service-home-button service-home-button--secondary"
             href="/es/services/free-situation-review" event="service_request_start"

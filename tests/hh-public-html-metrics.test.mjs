@@ -11,6 +11,9 @@ test('counts decoded HTML and RSC pushes without double-counting external script
   assert.equal(data.decodedHtmlBytes, Buffer.byteLength(html, 'utf8'));
   assert.equal(data.inlineScriptBytes, Buffer.byteLength(rsc, 'utf8') + Buffer.byteLength(ldJson, 'utf8'));
   assert.equal(data.rscInlineBytes, Buffer.byteLength(rsc, 'utf8'));
+  assert.equal(data.largestRscScriptBytes, Buffer.byteLength(rsc, 'utf8'));
+  assert.equal(data.htmlExcludingInlineScriptBodiesBytes, data.decodedHtmlBytes - data.inlineScriptBytes);
+  assert.ok(data.rscHtmlSharePct > 0 && data.rscHtmlSharePct <= data.inlineScriptSharePct);
   assert.equal(data.inlineScriptCount, 2);
   assert.equal(data.rscScriptCount, 1);
   assert.equal(data.largestInlineScriptBytes, Math.max(Buffer.byteLength(rsc), Buffer.byteLength(ldJson)));
@@ -21,6 +24,9 @@ test('handles documents without scripts and rejects non-HTML inputs', () => {
   const data = analyzePublicHtmlPayload('<!doctype html><main>ok</main>');
   assert.equal(data.inlineScriptCount, 0);
   assert.equal(data.rscInlineBytes, 0);
+  assert.equal(data.rscHtmlSharePct, 0);
+  assert.equal(data.largestRscScriptBytes, 0);
+  assert.equal(data.htmlExcludingInlineScriptBodiesBytes, data.decodedHtmlBytes);
   assert.equal(data.inlineScriptSharePct, 0);
   assert.throws(() => analyzePublicHtmlPayload(null), TypeError);
 });
