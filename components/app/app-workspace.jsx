@@ -1,5 +1,6 @@
 'use client'
-import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
+import { assessmentAnswerProgress, mergeAssessmentAnswers, assessmentSaveProgress, isPcPtsd5Definition } from '@/lib/assessments/pc-ptsd5-runtime'
+import { TraumaFrontMatter, TraumaSectionInstructions, TraumaExposureExamples } from './trauma-administration'
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import {consumeSessionSaveTarget} from '@/lib/app/session-exit-navigation'
@@ -1439,12 +1440,14 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     load()
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
   const def = run ? getDefinitionById(run.definitionId) : null,
-    index = run?.progress || 0,
-    question = def?.questions[index],
-    isContext = def && index >= def.questions.length,
-    answeredCount = def ? def.questions.filter(item => Object.prototype.hasOwnProperty.call(run.answers || {}, item.id)).length : 0,
-    allAnswered = def ? answeredCount === def.questions.length : false,
-    quickMinutes = def ? Math.max(1, Number(monitoringCatalogItem(def.key)?.durationMinutes) || Math.ceil(def.questions.length / 5)) : 1,
+    answerProgress = assessmentAnswerProgress(def, run?.answers || {}),
+    questions = answerProgress.questions,
+    index = def && isPcPtsd5Definition(def) ? Math.min(run?.progress || 0, questions.length) : run?.progress || 0,
+    question = questions[index],
+    isContext = def && index >= questions.length,
+    answeredCount = answerProgress.answeredCount,
+    allAnswered = answerProgress.allAnswered,
+    quickMinutes = def ? Math.max(1, Number(monitoringCatalogItem(def.key)?.durationMinutes) || Math.ceil(questions.length / 5)) : 1,
     guidedMinutes = Math.max(quickMinutes + 1, Math.ceil(quickMinutes * 1.4)),
     timeUnit = locale === 'ru' ? 'мин' : 'min',
     timeframe = def?.key === 'hh-bach-flower-profile'
@@ -1496,9 +1499,9 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
   }
   async function chooseAnswer(value, questionId = question?.id) {
     if (!questionId) return
-    const answers = { ...(run.answers || {}), [questionId]: value }
-    const firstMissing = def.questions.findIndex(item => !Object.prototype.hasOwnProperty.call(answers, item.id))
-    const progress = mode === 'quick' ? (firstMissing < 0 ? def.questions.length : firstMissing) : index
+    const answers = mergeAssessmentAnswers(def, run.answers || {}, { [questionId]: value })
+    const nextProgress = assessmentAnswerProgress(def, answers)
+    const progress = mode === 'quick' ? nextProgress.nextIndex : assessmentSaveProgress(def, answers, index)
     await save({ [questionId]: value }, progress)
   }
   async function next() {
@@ -1512,7 +1515,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
       // Keep the exact submitted revision across an uncertain response. Never
       // attempt to edit an already completed run just to recover its report.
       if (!completion.current) {
-        const saved = await save({}, def.questions.length)
+        const saved = await save({}, questions.length)
         if (!saved) return
         completion.current = { revision: saved.revision, destination, result: null }
       }
@@ -1593,11 +1596,11 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
 
   const min = question?.min ?? def.answerScale?.min,
     max = question?.max ?? def.answerScale?.max,
-    partCount = def.key === 'hh-bach-flower-profile' ? 3 : Math.min(4, Math.max(1, def.questions.length)),
-    partSize = Math.ceil(def.questions.length / partCount),
+    partCount = def.key === 'hh-bach-flower-profile' ? 3 : Math.min(4, Math.max(1, questions.length)),
+    partSize = Math.ceil(questions.length / partCount),
     currentPart = def.key === 'hh-bach-flower-profile'
       ? (index < 38 ? 1 : index < 77 ? 2 : 3)
-      : Math.min(partCount, Math.floor(Math.min(index, def.questions.length - 1) / partSize) + 1),
+      : Math.min(partCount, Math.floor(Math.min(index, questions.length - 1) / partSize) + 1),
     bachSectionName = section => {
       const names = locale === 'ru'
         ? { situation: '1/3 · Текущая ситуация', character: '2/3 · Эмоциональные паттерны', control: '3/3 · Проверка и поддержка' }
@@ -1625,9 +1628,9 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
           )}
         </div>
         <div className="hh-runner-segments" role="progressbar" aria-label={c.tests}
-          aria-valuemin="0" aria-valuemax={def.questions.length}
-          aria-valuenow={mode === 'quick' ? answeredCount : Math.min(index, def.questions.length)}>
-          {def.questions.map((item, step) => (
+          aria-valuemin="0" aria-valuemax={questions.length}
+          aria-valuenow={mode === 'quick' ? answeredCount : Math.min(index, questions.length)}>
+          {questions.map((item, step) => (
             <span key={item.id}
               className={mode === 'quick'
                 ? (Object.prototype.hasOwnProperty.call(run.answers || {}, item.id) ? 'is-done' : '')
@@ -1637,23 +1640,24 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
         </div>
         <div className="hh-runner-progress-copy">
           <span>{mode === 'quick'
-            ? `${answeredCount} / ${def.questions.length} ${locale === 'ru' ? 'ответов' : 'answered'}`
-            : `${modeCopy.question} ${Math.min(index + 1, def.questions.length)} / ${def.questions.length}`}</span>
+            ? `${answeredCount} / ${questions.length} ${locale === 'ru' ? 'ответов' : 'answered'}`
+            : `${modeCopy.question} ${Math.min(index + 1, questions.length)} / ${questions.length}`}</span>
           <span role="status" aria-live="polite" className="hh-runner-save-state">{status}</span>
         </div>
       </header>
 
-      <p className="hh-runner-instructions">{hasTraumaAdministration(def) ? (def.key === 'itq-adult' ? 'Follow the instructions for each section below.' : 'During the past month') : timeframe}</p>
+      <p className="hh-runner-instructions">{isPcPtsd5Definition(def) ? 'The exposure question refers to your lifetime; symptom questions refer to the past month.' : hasTraumaAdministration(def) ? (def.key === 'itq-adult' ? 'Follow the instructions for each section below.' : 'During the past month') : timeframe}</p>
       {hasTraumaAdministration(def) && <p lang="en">{def.safetyText}</p>}
       {def.instructions && <p className="hh-runner-instructions" lang={def.instrumentLocale}>{def.instructions}</p>}
+      <TraumaExposureExamples definition={def} />
       <Asrs6SourceNotice definition={def} startedAt={run.startedAt} locale={locale} />
 
       {mode === 'quick' ? (
         <div className="hh-quick-form" aria-label={locale === 'ru' ? 'Все вопросы теста' : 'All test questions'}>
-          {def.questions.map((item, step) => (
+          {questions.map((item, step) => (
             <fieldset className="hh-quick-question" key={item.id} disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
               <legend>
-                <span className="hh-quick-number">{modeCopy.question} {step + 1} / {def.questions.length}</span>
+                <span className="hh-quick-number">{modeCopy.question} {step + 1} / {questions.length}</span>
                 {def.key === 'hh-bach-flower-profile' && <span className="hh-kicker">{bachSectionName(item.section)}</span>}
                 <TraumaSectionInstructions question={item} />
                 <h2>{item.text}</h2>
@@ -1734,7 +1738,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
         </div>
       )}
       {(isContext || (mode === 'quick' && allAnswered) ||
-        (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
+        (mode === 'guided' && index === questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
         <TestFinishActions locale={locale} courseMode={courseMode}
           disabled={busy || Boolean(operation.current) || Boolean(completion.current) || !allAnswered}
           onReport={() => finish('report')} onNext={() => finish('next')} />
@@ -1749,7 +1753,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
           </button>
         )}
         {!isContext && mode === 'guided' &&
-          !(index === def.questions.length - 1 && allAnswered && !def.optionalContext.length) && (
+          !(index === questions.length - 1 && allAnswered && !def.optionalContext.length) && (
           <button
             className="hh-primary"
             disabled={busy || run.answers[question.id] === undefined || Boolean(operation.current) || Boolean(completion.current)}
