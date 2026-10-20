@@ -284,3 +284,24 @@
   .manualInboxMetrics strong{font-size:16px}
   .manualInboxItem{padding:11px}
 }
+
+/* Keep the owner editor visible sooner on narrow iPhones while preserving
+   consent, publishing and storage notices in an accessible reading order. */
+@media (max-width:580px){
+  .studio{margin:8px auto 36px;padding:10px;border-radius:15px}
+  .intro{gap:7px;padding:5px 2px 10px}
+  .intro h2{font-size:22px;line-height:1.22;margin:3px 0 5px}
+  .intro p{line-height:1.45}
+  .intro .eyebrow{font-size:10px;letter-spacing:.12em}
+  .safetyBadge{padding:8px 10px;font-size:11px;line-height:1.4}
+  .connectionReady,.connectionUnavailable{padding:7px 10px;margin:0 0 8px;font-size:12px}
+  .privacyNote{padding:8px 10px;margin:0 0 9px;line-height:1.4}
+  .connectionPanel{margin:8px 0 11px}
+  .connectionPanel>summary{min-height:44px;flex-wrap:wrap;gap:6px;padding:9px 10px;line-height:1.35}
+  .connectionPanel>summary>span:nth-child(2){min-width:150px}
+  .connectionSummaryCount{white-space:nowrap;font-size:11px}
+  .metrics{gap:7px}
+  .metrics>div{min-height:65px;padding:9px 10px}
+  .metrics strong{font-size:22px}
+  .toolbar{margin:12px 0 11px;gap:8px}
+}

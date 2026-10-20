@@ -28,14 +28,14 @@ export async function previewPublicGrowthSourceAction(input) {
 }
 
 // An explicit owner click verifies the existing Redis REST connection by
-// writing, reading and deleting ONE random short-lived diagnostic key.
+// creating, reading, CAS-updating and deleting ONE expiring synthetic Redis hash.
 // No editorial posts or client data are read; no publish, Ads or video APIs.
 export async function checkGrowthStudioStorageAction() {
   if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
   try {
     const store = getGrowthStudioStore()
     if (!store) return {ok:false,error:'storage_unavailable'}
-    const verified = await store.verifyPersistence()
+    const verified = await store.verifyEditorialRoundTrip()
     return verified === true
       ? {ok:true,verified:true}
       : {ok:false,error:'storage_unavailable'}

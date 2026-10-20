@@ -72,3 +72,25 @@ Only after:
 **Границы:** тест выполняется только по явному нажатию внутри авторизованного интерфейса. Нельзя запускать его через публичный API, временную секретную ссылку, общий токен или автоматический cron. Не публикуйте тест в Telegram, Instagram, Meta, Eventbrite или YouTube. Код и тесты проходят через штатный GitHub PR и Vercel release verification.
 
 **Состояние площадок:** HYPD Google Ads / Meta Ads / GSC без OAuth; Metricool RU YouTube доступен через ChatGPT, но без передачи API прав сайту; Telegram публичного канала требует отдельного подтверждённого бота и chat ID; Eventbrite авторизация требует GitHub Actions secret. Не тратьте деньги и не отменяйте Publer без отдельного решения.
+
+---
+
+## 20 October 2026 — automatic admin-only editorial Redis Save/CAS healthcheck
+
+The earlier `Test draft storage` manual button and basic `SET/GET/DEL` probe only confirmed generic Redis operations. A real Growth Studio Save uses `EVAL`, `HSET`, `HGETALL`, `HGET` and optimistic revision checks. This implementation tests those **actual Redis command families** against a synthetic, isolated key without touching the editorial hash.
+
+**Automatically when an authenticated owner opens Growth Studio:** its private Connections component calls an owner-authenticated server action once on mount; duplicate concurrent calls in the same mounted component are guarded. No public endpoint, background cron, client token, OAuth, user fingerprint or ad tracking is added. The owner can manually retry with the existing button.
+
+The probe:
+1. Creates a unique `holistic-house:growth-studio:healthcheck:v1:<uuid>` Redis **hash** via one atomic Lua `EVAL` that sets a **30-second TTL**;
+2. Reads `HGETALL` and confirms exactly one synthetic draft at revision 1;
+3. Uses the **same Lua optimistic-CAS Save script as editorial posts** to advance its own synthetic draft to approved revision 2;
+4. Reads `HGET` and confirms the real stored revision/fields;
+5. Attempts a stale revision-1 CAS and requires a conflict (zero);
+6. Deletes the entire temporary key via `DEL`, with best-effort cleanup and expiry fallback on failure.
+
+Only synthetic, generic non-client data is ever written; the main `holistic-house:growth-studio:editorial:v1` key, CRM tables, client Cabinet, test responses, and media are untouched. The success signal reads **"Redis verified"**, not "published," "lead received" or "fully audited." A failed check remains a visible failure without enabling social posting.
+
+The narrow mobile layout now keeps the important privacy notices while reducing excessive empty vertical space before the editor. The `0/16 channels` count still refers exclusively to actual verified **site-side** publisher credentials; a Redis success does NOT alter that value. HYPD and Metricool connection through ChatGPT do not provide the Holistic House production server with publisher OAuth.
+
+**Important limitation:** an isolated synthetic Redis hash roundtrip validates connectivity and CAS semantics. It does **not** assert that a real owner-created marketing post has been reviewed and saved, nor that iPhone Safari E2E, account credentials, remote scheduling or provider delivery were verified. A screenshot alone of the editor cannot establish a successful Save/Reload flow. No automated public posts, paid ads, subscriptions or video renders are authorized.
