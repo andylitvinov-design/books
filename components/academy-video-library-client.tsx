@@ -259,7 +259,7 @@ export function AcademyVideoLibraryClient({
                                                     title={lesson.title}
                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                     allowFullScreen
-                                                    loading="lazy"
+                                                    loading="eager"
                                                   />
                                                 </div>
                                                 <a href={"https://www.youtube.com/watch?v=" + lesson.id} target="_blank" rel="noopener noreferrer">
