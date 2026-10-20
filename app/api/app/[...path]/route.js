@@ -3,6 +3,7 @@ import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config
 import { createRequestAuth } from '@/lib/app/session'
 import { createAppRepository } from '@/lib/app/repository'
 import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/development-goals'
+import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
@@ -527,6 +528,19 @@ async function handle(request, { params }) {
       onlyKeys(await readBody(request),[])
       return json(await removeSavedSession(config,actor,path[1]))
     }
+    if (joined === 'labs' || (path[0] === 'labs' && path.length === 3 && path[2] === 'delete')) {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (joined === 'labs' && method === 'GET') return json(await listLabReports(config, actor))
+      if (joined === 'labs' && method === 'POST') {
+        await consumeRate(config, { op: 'lab-save', actor: actor.id }, 12, 3600)
+        return json(await saveLabReport(config, actor, await readBody(request, 40000)), 201)
+      }
+      if (path.length === 3 && method === 'POST') {
+        onlyKeys(await readBody(request, 1024), [])
+        return json(await deleteLabReport(config, actor, path[1]))
+      }
+      throw new AppError('NOT_FOUND', 404)
+    }
     if (joined === 'development-goals') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
       if (method === 'GET') return json(await readDevelopmentGoals(config, actor))
@@ -675,6 +689,7 @@ async function handle(request, { params }) {
         exported.savedSessions=exportedSessions
       }
       exported.developmentGoals = await readDevelopmentGoals(config, actor)
+      exported.labReports = (await listLabReports(config, actor)).reports
       exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)

@@ -97,3 +97,7 @@
 .integrationReady{background:#e7f3e8;color:#366b45}
 .integrationCode{display:block;overflow-wrap:anywhere;padding:7px 8px;border-radius:9px;background:#f4f0ea;color:#4c4139;font:500 10px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
 .integrationLink{display:inline-flex;align-items:center;min-height:38px;color:#195d74;font:700 12px/1.3 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+
+/* Exact owned contact selected from the follow-up workday queue. */
+.list li.focusedContact{border:2px solid #237a8c;background:#f1fcfc;scroll-margin-block:85px}
+.focusedContact:focus{outline:3px solid #205f75;outline-offset:2px}

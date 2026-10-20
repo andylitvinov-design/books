@@ -2,12 +2,13 @@
 import {useEffect,useState} from 'react'
 
 const COPY={
-  en:{pending:'Waiting for the client to message you',hint:'After receiving the client’s own WhatsApp or Telegram message, record the contact shown there. The website cannot read private messenger contacts.',channel:'Messenger',address:'Contact from the conversation',whatsapp:'WhatsApp phone',telegram:'Telegram @username',save:'Save contact',manual:'Saved manually, not verified by a messaging provider',reference:'Enquiry reference'},
-  ru:{pending:'Ждём сообщения клиента в мессенджере',hint:'Когда клиент сам напишет в WhatsApp или Telegram, сохраните контакт из переписки. Сайт не считывает контакты личных чатов.',channel:'Мессенджер',address:'Контакт из переписки',whatsapp:'Телефон WhatsApp',telegram:'Telegram @username',save:'Сохранить контакт',manual:'Контакт записан вручную, без подтверждения через API',reference:'Номер заявки'},
-  es:{pending:'Esperando un mensaje del cliente',hint:'Cuando el cliente escriba por WhatsApp o Telegram, guarda aquí el contacto de la conversación. La web no puede leer sus datos automáticamente.',channel:'Mensajería',address:'Contacto de la conversación',whatsapp:'Teléfono de WhatsApp',telegram:'Usuario @ de Telegram',save:'Guardar contacto',manual:'Guardado manualmente, sin verificación del proveedor',reference:'Referencia'},
+  en:{pending:'Waiting for the client to message you',hint:'After receiving the client’s own WhatsApp or Telegram message, record the contact shown there. The website cannot read private messenger contacts.',channel:'Messenger',address:'Contact from the conversation',whatsapp:'WhatsApp phone',telegram:'Telegram @username',save:'Save contact',manual:'Saved manually, not verified by a messaging provider',visitor:'Visitor registered with contact details (not independently verified)',reply:'Reply to this enquiry only · no marketing opt-in',reference:'Enquiry reference'},
+  ru:{pending:'Ждём сообщения клиента в мессенджере',hint:'Когда клиент сам напишет в WhatsApp или Telegram, сохраните контакт из переписки. Сайт не считывает контакты личных чатов.',channel:'Мессенджер',address:'Контакт из переписки',whatsapp:'Телефон WhatsApp',telegram:'Telegram @username',save:'Сохранить контакт',manual:'Контакт записан вручную, без подтверждения через API',visitor:'Контакт оставлен клиентом при регистрации (пока не подтверждён)',reply:'Только ответ по заявке · без согласия на рассылки',reference:'Номер заявки'},
+  es:{pending:'Esperando un mensaje del cliente',hint:'Cuando el cliente escriba por WhatsApp o Telegram, guarda aquí el contacto de la conversación. La web no puede leer sus datos automáticamente.',channel:'Mensajería',address:'Contacto de la conversación',whatsapp:'Teléfono de WhatsApp',telegram:'Usuario @ de Telegram',save:'Guardar contacto',manual:'Guardado manualmente, sin verificación del proveedor',visitor:'El visitante dejó datos de contacto (no verificados)',reply:'Solo respuesta a la solicitud · sin publicidad',reference:'Referencia'},
 }
 export default function PublicEnquiryContact({request,locale='en',busy=false,onSave}){
   const t=COPY[locale]||COPY.en
+  const isVisitor=request.contactProvenance==='visitor_submitted_unverified'
   const [channel,setChannel]=useState(request.contact?.channel||'whatsapp')
   const [address,setAddress]=useState(request.contact?.address||'')
   useEffect(()=>{
@@ -17,7 +18,11 @@ export default function PublicEnquiryContact({request,locale='en',busy=false,onS
   if(request.requestKind!=='public')return null
   return <div className="hh-public-lead-contact" data-public-lead-contact>
     <p><strong>{t.reference}:</strong> {request.referenceCode}</p>
-    <p role="status">{request.contactPending?t.pending:t.manual}</p>
+    <p role="status">{request.contactPending?t.pending:isVisitor?t.visitor:t.manual}</p>
+    {isVisitor&&<p><strong>{request.contact?.displayName||'—'}</strong>
+      {request.contact?.email&&<> · {request.contact.email}</>}
+      {request.contact?.phone&&<> · {request.contact.phone}</>}
+      <small> · {t.reply}</small></p>}
     <p>{t.hint}</p>
     <form onSubmit={event=>{
       event.preventDefault()

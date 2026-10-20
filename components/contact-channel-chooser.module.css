@@ -80,3 +80,21 @@
   background:transparent; border:0; cursor:pointer;
   text-decoration:underline; font:650 11px/1.4 Arial,Helvetica,sans-serif;
 }
+
+/* Opt-in lead registration: readable form in narrow course/service offer cards. */
+.contactFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.contactFields label { display:grid; align-content:start; gap:5px; min-width:0; }
+.contactFields label:first-child { grid-column:1 / -1; }
+.contactFields input {
+  width:100%; min-width:0; min-height:44px; box-sizing:border-box;
+  border:1px solid #bacbd9; border-radius:9px; background:white;
+  padding:10px; color:#213c55; font:400 14px/1.4 Arial,Helvetica,sans-serif;
+}
+.contactFields input:focus-visible, .consent input:focus-visible { outline:3px solid #80abc7; outline-offset:2px; }
+.consent { display:flex; align-items:flex-start; gap:9px; line-height:1.5 !important; cursor:pointer; }
+.consent input { width:19px; height:19px; flex:none; accent-color:#147b79; margin:0; }
+.consent span { flex:1; }
+.honeypot { position:absolute; left:-10000px; width:1px; height:1px; overflow:hidden; }
+@container (max-width:340px) {
+  .contactFields { grid-template-columns:1fr; }
+}

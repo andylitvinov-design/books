@@ -1,12 +1,15 @@
 'use client'
 import { useState } from 'react'
 import CrmContactActivity from './crm-contact-activity'
+import {buildCrmWorkday,filterCrmWorkdayTasks} from '../../lib/crm/workday'
 import styles from './crm-workflow.module.css'
 
 const COPY={
  en:{
   overview:'Practice overview',manual:'Stages and sources are recorded manually; they are not verified bookings or revenue.',
   leads:'Interested',clients:'Clients',open:'Open follow-ups',overdue:'Overdue',today:'Due today',
+  buckets:{urgent:'Urgent',overdue:'Overdue',today:'Today',upcoming:'Later',all:'All tasks'},
+  tasksTitle:'Tasks & daily work',taskSearch:'Find contact or action',openContact:'Open contact',noMatches:'No matching tasks in the loaded list.',incomplete:'This is a partial task list. Totals include all tasks.',viewTasks:'Open task center',
   queue:'Next actions',empty:'No follow-ups yet. Add one from a contact below.',more:'Showing the first 12 open actions',
   history:'Recent activity',historyEmpty:'No business activity recorded yet.',done:'Done',cancel:'Cancel',cancelConfirm:'Cancel this scheduled action?',showMore:'Show more actions',
   move:'Move date',date:'Due date',source:'How they found you',sourceNote:'Source entered manually',
@@ -20,6 +23,8 @@ const COPY={
  ru:{
   overview:'Обзор работы с клиентами',manual:'Этапы и источники указаны вручную. Это не подтверждённые оплаты или бронирования.',
   leads:'Интересуются',clients:'Клиенты',open:'Открытые задачи',overdue:'Просрочено',today:'На сегодня',
+  buckets:{urgent:'Срочно',overdue:'Просрочено',today:'На сегодня',upcoming:'Позже',all:'Все'},
+  tasksTitle:'Задачи и план дня',taskSearch:'Поиск по клиенту или действию',openContact:'Открыть контакт',noMatches:'В загруженном списке нет подходящих задач.',incomplete:'Загружена только часть задач. Общие показатели полные.',viewTasks:'Открыть центр задач',
   queue:'Следующие действия',empty:'Пока нет задач. Добавьте действие из карточки контакта.',more:'Показаны первые 12 открытых задач',
   history:'История взаимодействий',historyEmpty:'Деловых действий пока нет.',done:'Выполнено',cancel:'Отменить',cancelConfirm:'Отменить запланированное действие?',showMore:'Показать ещё задачи',
   move:'Перенести',date:'Дата действия',source:'Откуда узнали о вас',sourceNote:'Источник указан вручную',
@@ -33,6 +38,8 @@ const COPY={
  es:{
   overview:'Resumen de contactos',manual:'Las etapas y fuentes se introducen manualmente; no son reservas ni pagos verificados.',
   leads:'Interesados',clients:'Clientes',open:'Tareas pendientes',overdue:'Atrasadas',today:'Para hoy',
+  buckets:{urgent:'Urgentes',overdue:'Atrasadas',today:'Hoy',upcoming:'Más tarde',all:'Todas'},
+  tasksTitle:'Tareas y agenda diaria',taskSearch:'Buscar contacto o acción',openContact:'Abrir contacto',noMatches:'No hay tareas coincidentes en la lista cargada.',incomplete:'Se muestra una parte de las tareas. Los totales son completos.',viewTasks:'Abrir centro de tareas',
   queue:'Próximas acciones',empty:'Todavía no hay tareas. Añade una desde un contacto.',more:'Se muestran las primeras 12 tareas abiertas',
   history:'Actividad reciente',historyEmpty:'Aún no hay actividad.',done:'Hecho',cancel:'Cancelar',cancelConfirm:'¿Cancelar esta acción?',showMore:'Mostrar más tareas',
   move:'Cambiar fecha',date:'Fecha',source:'Cómo te conocieron',sourceNote:'Fuente indicada manualmente',
@@ -50,7 +57,7 @@ const showDay = value => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value||''))) return ''
   return value
 }
-function Action({item,t,busy,onAction,today}) {
+function Action({item,t,busy,onAction,today,onOpenContact}) {
  const [nextDue,setNextDue]=useState(item.dueOn)
  const state=dueStyle(item.dueOn,today)
  return <li className={styles.actionRow} key={item.id}>
@@ -60,6 +67,8 @@ function Action({item,t,busy,onAction,today}) {
      <small className={state==='overdue'?styles.late:styles.meta}>{t.date}: {showDay(item.dueOn)}</small>
    </div>
    <div className={styles.actionControls}>
+      {onOpenContact&&<button type="button" className={styles.contactLink}
+        onClick={()=>onOpenContact(item.contactId)}>{t.openContact}</button>}
      <button type="button" disabled={busy} onClick={()=>onAction('change_followup',{id:item.id,action:'complete',expectedRevision:item.revision})}>{t.done}</button>
      <label className={styles.moveDate}>{t.move}
        <input aria-label={t.move+' — '+item.contactName} type="date" value={nextDue} min="2020-01-01" max="2100-12-31" onChange={event=>setNextDue(event.target.value)} />
@@ -70,43 +79,61 @@ function Action({item,t,busy,onAction,today}) {
  </li>
 }
 
-export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=[],busy=false,onAction}) {
- const t=COPY[locale]||COPY.en
- const [showAll,setShowAll]=useState(false)
- const counts=overview?.stages||{}
- const follow=overview?.followups||{}
- const today=overview?.asOf||''
- const open=followups.filter(x=>x.status==='open').sort((a,b)=>a.dueOn.localeCompare(b.dueOn))
- const recent=activity.slice(0,8)
- const sources=Object.entries(overview?.sources||{}).filter(([,n])=>Number(n)>0)
- return <section className={styles.overview} aria-labelledby="crm-workflow-title">
-   <div className={styles.sectionHeader}>
-     <h3 id="crm-workflow-title">{t.overview}</h3>
-     <p>{t.manual}</p>
-   </div>
-   <div className={styles.metrics}>
-     {[[t.leads,counts.lead||0],[t.clients,counts.client||0],[t.open,follow.open||0],[t.overdue,follow.overdue||0]].map(([label,num])=>
-       <div className={styles.metric} key={label}><strong>{num}</strong><span>{label}</span></div>)}
-   </div>
-   <div className={styles.subMetrics}><span>{t.today}: <strong>{follow.today||0}</strong></span><span>{t.sourceNote}</span></div>
-   {!!sources.length&&<div className={styles.sources} aria-label={t.source}>{sources.map(([key,num])=>
-     <span key={key}>{t.sources[key]||key}: <strong>{num}</strong></span>)}</div>}
-   <details className={styles.section} open>
-     <summary>{t.queue} ({follow.open||0})</summary>
-     <p className={styles.fine}>{t.noReminders}</p>
-     {open.length?<><ol className={styles.actionList}>{open.slice(0,showAll?300:12).map(x=>
-       <Action key={x.id} item={x} t={t} busy={busy} onAction={onAction} today={today} />)}</ol>
-       {open.length>12&&!showAll&&<button className={styles.showMore} type="button" onClick={()=>setShowAll(true)}>{t.showMore} ({open.length-12})</button>}
-     </>:<p className={styles.fine}>{t.empty}</p>}
-   </details>
-   <details className={styles.section}>
-     <summary>{t.history}</summary>
-     {recent.length?<ol className={styles.history}>{recent.map(x=><li key={x.id}>
-       <strong>{x.contactName}</strong> · {t.events[x.kind]||x.kind}{x.stage?' · '+(x.stage==='lead'?t.leads:x.stage==='client'?t.clients:x.stage):''}
-       <time dateTime={x.occurredAt}>{new Date(x.occurredAt).toLocaleDateString(locale)}</time>
-     </li>)}</ol>:<p className={styles.fine}>{t.historyEmpty}</p>}
-   </details>
- </section>
+export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=[],busy=false,onAction,onOpenContact,onViewTasks,mode='overview'}) {
+  const t=COPY[locale]||COPY.en
+  const [showAll,setShowAll]=useState(false)
+  const [bucket,setBucket]=useState('urgent')
+  const [taskSearch,setTaskSearch]=useState('')
+  const counts=overview?.stages||{}
+  const follow=overview?.followups||{}
+  const board=buildCrmWorkday(overview,followups)
+  const open=filterCrmWorkdayTasks(board,{bucket,query:taskSearch})
+  const recent=activity.slice(0,8)
+  const sources=Object.entries(overview?.sources||{}).filter(([,n])=>Number(n)>0)
+  return <section className={styles.overview} aria-labelledby="crm-workflow-title">
+    <div className={styles.sectionHeader}>
+      <h3 id="crm-workflow-title">{mode==='tasks'?t.tasksTitle:t.overview}</h3>
+      <p>{mode==='tasks'?t.noReminders:t.manual}</p>
+    </div>
+    {mode!=='tasks'&&<>
+      <div className={styles.metrics}>
+        {[[t.leads,counts.lead||0],[t.clients,counts.client||0],[t.open,follow.open||0],[t.overdue,follow.overdue||0]].map(([label,num])=>
+          <div className={styles.metric} key={label}><strong>{num}</strong><span>{label}</span></div>)}
+      </div>
+      <div className={styles.subMetrics}><span>{t.today}: <strong>{follow.today||0}</strong></span><span>{t.sourceNote}</span></div>
+      {!!sources.length&&<div className={styles.sources} aria-label={t.source}>{sources.map(([key,num])=>
+        <span key={key}>{t.sources[key]||key}: <strong>{num}</strong></span>)}</div>}
+    </>}
+    <details className={styles.section} open>
+      <summary>{t.queue} ({board.counts.open})</summary>
+      {mode!=='tasks'&&<p className={styles.fine}>{t.noReminders}</p>}
+      <div className={styles.workdayFilters} role="group" aria-label={t.tasksTitle}>
+        {['urgent','overdue','today','upcoming','all'].map(key=>
+          <button key={key} type="button" aria-pressed={bucket===key}
+            className={bucket===key?styles.filterActive:styles.filter}
+            onClick={()=>{setBucket(key);setShowAll(false)}}>{t.buckets[key]} · {board.counts[key==='all'?'open':key]}</button>)}
+      </div>
+      <label className={styles.taskSearch}>{t.taskSearch}
+        <input type="search" value={taskSearch} maxLength={120}
+          placeholder={t.taskSearch} onChange={e=>{setTaskSearch(e.target.value);setShowAll(false)}}/>
+      </label>
+      {board.partial&&<p role="status" className={styles.fine}>{t.incomplete} ({board.loaded}/{board.counts.open})</p>}
+      {mode==='overview'&&onViewTasks&&<button type="button" className={styles.viewTasks} onClick={onViewTasks}>{t.viewTasks}</button>}
+      {open.length?<><ol className={styles.actionList}>{open.slice(0,mode==='tasks'||showAll?300:12).map(x=>
+        <Action key={x.id} item={x} t={t} busy={busy} onAction={onAction}
+          onOpenContact={onOpenContact} today={board.asOf} />)}</ol>
+        {mode!=='tasks'&&open.length>12&&!showAll&&<button
+          className={styles.showMore} type="button" onClick={()=>setShowAll(true)}>{t.showMore} ({open.length-12})</button>}
+      </>:<p className={styles.fine}>{board.counts.open?t.noMatches:t.empty}</p>}
+    </details>
+    {mode!=='tasks'&&<details className={styles.section}>
+      <summary>{t.history}</summary>
+      {recent.length?<ol className={styles.history}>{recent.map(x=><li key={x.id}>
+        <strong>{x.contactName}</strong> · {t.events[x.kind]||x.kind}{x.stage?' · '+(x.stage==='lead'?t.leads:x.stage==='client'?t.clients:x.stage):''}
+        <time dateTime={x.occurredAt}>{new Date(x.occurredAt).toLocaleDateString(locale)}</time>
+      </li>)}</ol>:<p className={styles.fine}>{t.historyEmpty}</p>}
+    </details>}
+  </section>
 }
 
 export function CrmContactWorkflow({locale='en',contact,accountId,followups=[],busy=false,onAction}) {
