@@ -2,6 +2,7 @@
 import {randomUUID} from 'node:crypto'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {GrowthStudioError, nextGrowthPost} from '@/lib/growth-studio/model.mjs'
+import {previewPublicGrowthSource} from '@/lib/growth-studio/source-preview.mjs'
 import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
@@ -9,6 +10,21 @@ import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTele
 const safeError = error => error instanceof GrowthStudioError &&
   ['invalid_post','invalid_action','invalid_transition','not_found','conflict','capacity_reached'].includes(error.code)
     ? error.code : 'storage_unavailable'
+
+// Read-only public-page metadata preview, explicitly invoked by the owner.
+// No save, provider side effect, AI translation or automatic publication.
+export async function previewPublicGrowthSourceAction(input) {
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  try{
+    const preview=await previewPublicGrowthSource(input)
+    return {ok:true,preview}
+  }catch(error){
+    const allowed=new Set(['invalid_source','source_unavailable','source_not_public',
+      'source_not_html','source_invalid_html','source_too_large','source_missing_metadata'])
+    return {ok:false,error:error instanceof GrowthStudioError && allowed.has(error.code)
+      ?error.code:'source_unavailable'}
+  }
+}
 
 export async function listGrowthStudioPostsAction() {
   if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
