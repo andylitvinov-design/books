@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { ChevronRight, Check, FileAudio, Folder, FolderOpen, Headphones, RefreshCw, UploadCloud } from 'lucide-react'
+import { ChevronRight, Check, FileAudio, Folder, FolderOpen, Headphones, RefreshCw, UploadCloud, Pencil, Archive, Trash2, RotateCcw } from 'lucide-react'
 import {
-  REIKI_INTRO_MAX_BYTES, reikiIntroMime,
+  REIKI_INTRO_MAX_BYTES, REIKI_AUDIO_MAX_BATCH, REIKI_AUDIO_MAX_TITLE,
+  REIKI_AUDIO_MAX_DESCRIPTION, reikiAudioUploadTitle, reikiIntroMime,
   reikiIntroPublicUrl, reikiIntroPublicObjectUrl, reikiIntroSlot,
 } from '@/lib/academy/reiki-intro-audio-model'
 import styles from './admin-reiki-audio.module.css'
@@ -47,6 +48,19 @@ const copy = {
     publicNote: 'Новые исходные записи остаются приватными. Только после вашего подтверждения создаётся публичная копия. Опубликованные версии доступны по ссылке; никогда не добавляйте данные клиентов.',
     viewCourse: 'Открыть курс', refresh: 'Обновить',
     refreshing: 'Обновляем список…', truncated: 'Показаны первые 100 файлов. Старые файлы остаются в хранилище.',
+    edit: 'Название и описание', editTitle: 'Название записи', editDescription: 'Описание (необязательно)',
+    save: 'Сохранить', saving: 'Сохраняем…', cancel: 'Отмена', saved: 'Название и настройки сохранены.',
+    archive: 'В архив', restore: 'Вернуть из архива', archivedLabel: 'В архиве',
+    showArchived: 'Показывать архив', delete: 'Удалить оригинал навсегда',
+    confirmDelete: 'Удалить этот архивный приватный файл навсегда? Восстановить его будет нельзя. Публичные копии остаются отдельно.',
+    deleted: 'Приватный оригинал удалён.', activeDenied: 'Сначала снимите активную запись со слайда.',
+    archiveFirst: 'Для удаления сначала сохраните запись в архиве.',
+    bulkLimit: 'За один раз можно выбрать до 5 файлов (каждый до 20 МБ).',
+    batchCount: 'Файлов выбрано', uploadProgress: 'Загружено файлов',
+    uploadStopped: 'Загрузка остановлена после текущего файла.',
+    stopBatch: 'Остановить после текущего', metadataWarning: 'Запись загружена, но её название пока не сохранено; можно изменить его позже.',
+    storageUsage: 'В этой папке', incompleteUsage: 'Показаны не все файлы — размер указан только для отображаемых.',
+    descriptionHint: 'Название и описание доступны только мастеру. Публикация аудио происходит отдельно.',
   },
   en: {
     breadcrumbMaterials: 'Materials', breadcrumbAudio: 'Audio', course: 'Reiki Practitioner course',
@@ -77,6 +91,19 @@ const copy = {
     publicNote: 'New originals remain private. Only your explicit approval creates a public copy. Published copies are accessible by direct URL; never upload client details.',
     viewCourse: 'Open the course', refresh: 'Refresh',
     refreshing: 'Refreshing files…', truncated: 'First 100 files shown. Older recordings remain stored.',
+    edit: 'Title and notes', editTitle: 'Recording title', editDescription: 'Notes (optional)',
+    save: 'Save', saving: 'Saving…', cancel: 'Cancel', saved: 'Title and settings saved.',
+    archive: 'Archive', restore: 'Restore from archive', archivedLabel: 'Archived',
+    showArchived: 'Show archived', delete: 'Permanently delete original',
+    confirmDelete: 'Permanently delete this archived private audio file? It cannot be recovered. Public copies are separate.',
+    deleted: 'Private original deleted.', activeDenied: 'Remove the active track from the learner slide first.',
+    archiveFirst: 'Archive and save the original before deleting.',
+    bulkLimit: 'Choose up to 5 files at once (each up to 20 MB).',
+    batchCount: 'Files selected', uploadProgress: 'Files uploaded',
+    uploadStopped: 'Stopped after the current upload.',
+    stopBatch: 'Stop after this file', metadataWarning: 'Audio uploaded, but its title was not saved. You can edit it later.',
+    storageUsage: 'In this folder', incompleteUsage: 'Not all files are shown; size includes only displayed items.',
+    descriptionHint: 'Names and notes are visible only to the owner. Publication is a separate action.',
   },
 }
 
@@ -104,7 +131,13 @@ function formatBytes(bytes) {
 
 function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged,setOperationBusy,copy}) {
   const [file,setFile] = useState(null)
+  const [pendingFiles,setPendingFiles] = useState([])
   const [preview,setPreview] = useState(null)
+  const [progress,setProgress] = useState('')
+  const cancelAfterCurrent = useRef(false)
+  const fileInputRef = useRef(null)
+  const [editing,setEditing] = useState(null)
+  const [showArchived,setShowArchived] = useState(false)
   const [staged,setStaged] = useState(null)
   const [busy,setBusy] = useState('')
   const [notice,setNotice] = useState('')
@@ -125,38 +158,81 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     : null
 
   const select = event => {
-    const next = event.target.files?.[0] || null
-    setError('');setNotice('');setStaged(null)
-    if (!next) {setFile(null);return}
-    if (!reikiIntroMime(next.type,next.name) ||
-      next.size < 512 || next.size > REIKI_INTRO_MAX_BYTES) {
-      setFile(null);setError(copy.invalid);return
+    const next = Array.from(event.target.files || [])
+    setError('');setNotice('');setStaged(null);setProgress('')
+    setFile(null);setPendingFiles([])
+    if (!next.length) return
+    if (next.length > REIKI_AUDIO_MAX_BATCH) {
+      if (fileInputRef.current) fileInputRef.current.value=''
+      setError(copy.bulkLimit);return
     }
-    setFile(next)
+    if (next.some(item => !reikiIntroMime(item.type,item.name) ||
+      item.size < 512 || item.size > REIKI_INTRO_MAX_BYTES)) {
+      if (fileInputRef.current) fileInputRef.current.value=''
+      setError(copy.invalid);return
+    }
+    setPendingFiles(next)
+    setFile(next[0])
   }
 
   async function upload() {
-    if (!file || busy) return
+    if (!file || busy || !pendingFiles.length) return
     setOperationBusy(true);setBusy('upload');setError('');setNotice('')
+    cancelAfterCurrent.current = false
+    let saved = 0, metadataFailed = 0, last = null
     try {
-      const mime = reikiIntroMime(file.type,file.name)
-      const {intent} = await ownerRequest({
-        action:'prepare',lesson:lesson.id,locale,filename:file.name,mime,bytes:file.size,
-      })
-      if (!intent || intent.lesson !== lesson.id || intent.locale !== locale ||
-        intent.bytes !== file.size || !intent.token || !intent.publishableKey)
-        throw new Error('INVALID_AUDIO_UPLOAD_INTENT')
-      const storage = createClient(intent.supabaseUrl,intent.publishableKey,{
-        auth:{persistSession:false,autoRefreshToken:false},
-      }).storage.from(intent.bucket)
-      const {error:uploadError} = await storage.uploadToSignedUrl(
-        intent.path,intent.token,file,{contentType:intent.mime,upsert:false})
-      if (uploadError) throw uploadError
-      setStaged({path:intent.path,fileName:file.name,storage:'draft'})
+      for (const item of pendingFiles) {
+        if (cancelAfterCurrent.current) break
+        const mime = reikiIntroMime(item.type,item.name)
+        setProgress(copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length)
+        const {intent} = await ownerRequest({
+          action:'prepare',lesson:lesson.id,locale,filename:item.name,mime,bytes:item.size,
+        })
+        if (!intent || intent.lesson !== lesson.id || intent.locale !== locale ||
+          intent.bytes !== item.size || !intent.token || !intent.publishableKey ||
+          intent.bucket !== 'hh-reiki-audio-drafts')
+          throw new Error('INVALID_AUDIO_UPLOAD_INTENT')
+        const storage = createClient(intent.supabaseUrl,intent.publishableKey,{
+          auth:{persistSession:false,autoRefreshToken:false},
+        }).storage.from(intent.bucket)
+        const {error:uploadError} = await storage.uploadToSignedUrl(
+          intent.path,intent.token,item,{contentType:intent.mime,upsert:false})
+        if (uploadError) throw uploadError
+        saved += 1
+        last = {path:intent.path,fileName:item.name,storage:'draft'}
+        setProgress(copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length)
+        try {
+          await ownerRequest({
+            action:'register',lesson:lesson.id,locale,path:intent.path,
+            title:reikiAudioUploadTitle(item.name) || (locale === 'ru' ? 'Аудиозапись' : 'Audio recording'),
+          })
+        } catch {
+          metadataFailed += 1
+        }
+      }
       await onChanged()
-      setNotice(copy.uploadDone)
-    } catch {setError(copy.failed)}
-    finally {setBusy('');setOperationBusy(false)}
+      if (saved === 1 && pendingFiles.length === 1 && last) setStaged(last)
+      else {
+        setFile(null);setStaged(null);setPendingFiles([])
+        if (fileInputRef.current) fileInputRef.current.value=''
+      }
+      setNotice((cancelAfterCurrent.current ? copy.uploadStopped : copy.uploadDone) +
+        ' · ' + copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length +
+        (metadataFailed ? ' · ' + copy.metadataWarning : ''))
+    } catch {
+      if (saved) await onChanged().catch(() => {})
+      // Never silently re-upload completed files when the owner retries
+      // after a partial network failure.
+      if (saved) {
+        const remaining = pendingFiles.slice(saved)
+        setPendingFiles(remaining)
+        setFile(remaining[0] || null)
+        if (!remaining.length && fileInputRef.current) fileInputRef.current.value=''
+      }
+      setError(copy.failed + (saved ? ' · ' + copy.uploadProgress + ': ' + saved + '/' + pendingFiles.length : ''))
+    } finally {
+      setBusy('');setOperationBusy(false);cancelAfterCurrent.current = false
+    }
   }
 
   async function chooseSaved(item) {
@@ -183,7 +259,9 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       await ownerRequest({action:'publish',lesson:lesson.id,locale,path:staged.path,
         storage:staged.storage||'public'})
       await onChanged()
-      setStaged(null);setFile(null);setNotice(copy.publishedDone)
+      setStaged(null);setFile(null);setPendingFiles([])
+      if (fileInputRef.current) fileInputRef.current.value=''
+      setNotice(copy.publishedDone)
     } catch (error) {setError(error?.message==='REIKI_AUDIO_COPY_FAILED'?copy.copyFailed:copy.failed)}
     finally {setBusy('');setOperationBusy(false)}
   }
@@ -199,7 +277,50 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     finally {setBusy('');setOperationBusy(false)}
   }
 
+  function editItem(item) {
+    if (busy) return
+    setEditing({
+      path:item.path, storage:item.storage, title:item.title ||
+        (locale === 'ru' ? 'Запись ' : 'Recording ') + item.path.split('/').pop()?.slice(0,8),
+      description:item.description || '', archived:item.archived === true,
+    })
+    setError('');setNotice('')
+  }
+  async function saveMetadata(event) {
+    event.preventDefault()
+    if (!editing || busy) return
+    setOperationBusy(true);setBusy('metadata');setError('');setNotice('')
+    try {
+      await ownerRequest({
+        action:'metadata',lesson:lesson.id,locale,path:editing.path,storage:editing.storage,
+        title:editing.title,description:editing.description,archived:editing.archived,
+      })
+      await onChanged()
+      setEditing(null);setNotice(copy.saved)
+    } catch (error) {
+      setError(error?.message==='REIKI_AUDIO_ACTIVE_ON_SLIDE'?copy.activeDenied:copy.failed)
+    } finally {setBusy('');setOperationBusy(false)}
+  }
+  async function deleteDraft(item) {
+    if (busy || item.storage!=='draft' || !item.archived ||
+        !window.confirm(copy.confirmDelete)) return
+    setOperationBusy(true);setBusy('delete');setError('');setNotice('')
+    try {
+      await ownerRequest({
+        action:'delete-draft',lesson:lesson.id,locale,path:item.path,confirmed:true,
+      })
+      if (staged?.path===item.path) setStaged(null)
+      setEditing(null)
+      await onChanged()
+      setNotice(copy.deleted)
+    } catch (error) {
+      setError(error?.message==='REIKI_AUDIO_ACTIVE_ON_SLIDE'?copy.activeDenied:
+        error?.message==='REIKI_AUDIO_ARCHIVE_FIRST'?copy.archiveFirst:copy.failed)
+    } finally {setBusy('');setOperationBusy(false)}
+  }
   const active = !!current
+  const visibleFiles = files.filter(item => showArchived || !item.archived)
+  const usageBytes = files.reduce((sum,item)=>sum+item.bytes,0)
   return <section className={styles.lessonCard} data-reiki-audio-lesson={lesson.id}>
     <header className={styles.lessonHead}>
       <div>
@@ -219,30 +340,77 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     <div className={styles.fileList} data-reiki-audio-folder-contents>
       <div className={styles.fileListHeading}>
         <h4><FileAudio size={17} aria-hidden="true"/>{copy.files}</h4>
-        <span>{files.length}</span>
+        <span>{visibleFiles.length} / {files.length}</span>
       </div>
-      {!files.length ? <p className={styles.folderEmpty}>{copy.noFiles}</p> : <div className={styles.files}>
-        {files.map((item)=>{
+      <div className={styles.folderControls}>
+        <small>{copy.storageUsage}: {files.length} · {formatBytes(usageBytes)}</small>
+        <label className={styles.archivedToggle}>
+          <input type="checkbox" checked={showArchived} onChange={event=>setShowArchived(event.target.checked)}/>
+          {copy.showArchived}
+        </label>
+      </div>
+      {!visibleFiles.length ? <p className={styles.folderEmpty}>{copy.noFiles}</p> : <div className={styles.files}>
+        {visibleFiles.map((item)=>{
           const isActive = item.storage === 'public' && item.path === current?.path
-          const isSelected = item.path === staged?.path
-          return <div key={item.path} className={styles.fileRow + (isSelected? ' '+styles.fileRowSelected:'')}
+          const isSelected = item.path === staged?.path && item.storage === staged?.storage
+          return <div key={item.storage+':'+item.path} className={styles.fileRow + (isSelected? ' '+styles.fileRowSelected:'')}
             data-reiki-audio-file={item.path} data-file-on-slide={isActive?'true':'false'}>
             <span className={styles.fileIcon}><FileAudio size={18} aria-hidden="true"/></span>
             <div className={styles.fileDetails}>
-              <strong>{locale==='ru'?'Запись':'Recording'} · {item.path.split('/').pop()?.slice(0,8).toUpperCase()}</strong>
+              <strong>{item.title || ((locale==='ru'?'Запись':'Recording')+' · '+item.path.split('/').pop()?.slice(0,8).toUpperCase())}</strong>
               <small>{formatFileDate(item.createdAt,locale)} · {formatBytes(item.bytes)} · {item.path.slice(-3).toUpperCase()}</small>
-              <small>{item.storage === 'draft' ? copy.draft : copy.publishedFile}</small>
+              <small>{item.storage === 'draft' ? copy.draft : copy.publishedFile}{item.archived ? ' · '+copy.archivedLabel : ''}</small>
+              {item.description ? <small>{item.description}</small> : null}
             </div>
-            {isActive ? <span className={styles.fileActive}><Check size={13} aria-hidden="true"/>{copy.published}</span> :
-              <button type="button" disabled={!!busy}
-                className={styles.selectRecording} aria-pressed={isSelected}
-                onClick={()=>void chooseSaved(item)}>{busy==='preview'&&isSelected?copy.preparing:
-                  (isSelected ? copy.selected:copy.selectFile)}</button>}
+            <div className={styles.fileActions}>
+              {isActive ? <span className={styles.fileActive}><Check size={13} aria-hidden="true"/>{copy.published}</span> :
+                <button type="button" disabled={!!busy || item.archived}
+                  className={styles.selectRecording} aria-pressed={isSelected}
+                  onClick={()=>void chooseSaved(item)}>{busy==='preview'&&isSelected?copy.preparing:
+                    (isSelected ? copy.selected:copy.selectFile)}</button>}
+              <button type="button" className={styles.editRecording} disabled={!!busy}
+                onClick={()=>editItem(item)} aria-label={copy.edit+' — '+(item.title||item.path)}>
+                <Pencil size={15} aria-hidden="true"/>{copy.edit}
+              </button>
+            </div>
           </div>
         })}
       </div>}
-      {truncated ? <p className={styles.notice}>{copy.truncated}</p> : null}
+      {truncated ? <p className={styles.notice}>{copy.truncated} {copy.incompleteUsage}</p> : null}
     </div>
+
+    {editing ? <form className={styles.metadataEditor} onSubmit={saveMetadata} data-reiki-audio-editor>
+      <strong>{copy.edit}</strong>
+      <label>{copy.editTitle}
+        <input type="text" required maxLength={REIKI_AUDIO_MAX_TITLE}
+          value={editing.title} disabled={!!busy}
+          onChange={event=>setEditing({...editing,title:event.target.value})}/>
+      </label>
+      <label>{copy.editDescription}
+        <textarea rows={2} maxLength={REIKI_AUDIO_MAX_DESCRIPTION}
+          value={editing.description} disabled={!!busy}
+          onChange={event=>setEditing({...editing,description:event.target.value})}/>
+      </label>
+      <label className={styles.archivedToggle}>
+        <input type="checkbox" checked={editing.archived} disabled={!!busy}
+          onChange={event=>setEditing({...editing,archived:event.target.checked})}/>
+        {editing.archived ? <><RotateCcw size={15} aria-hidden="true"/>{copy.restore}</> :
+          <><Archive size={15} aria-hidden="true"/>{copy.archive}</>}
+      </label>
+      <p className={styles.fileHint}>{copy.descriptionHint}</p>
+      <div className={styles.editorActions}>
+        <button type="submit" disabled={!!busy || !editing.title.trim()}>
+          {busy==='metadata'?copy.saving:copy.save}
+        </button>
+        <button type="button" disabled={!!busy} onClick={()=>setEditing(null)}>{copy.cancel}</button>
+        {editing.storage==='draft' && editing.archived &&
+          files.some(item=>item.path===editing.path && item.storage==='draft' && item.archived) ?
+          <button type="button" className={styles.dangerButton}
+            disabled={!!busy} onClick={()=>void deleteDraft(editing)}>
+            <Trash2 size={15} aria-hidden="true"/>{copy.delete}
+          </button> : null}
+      </div>
+    </form> : null}
 
     {staged ? <div className={styles.reviewPanel} data-reiki-audio-selection>
       <strong>{copy.choice}</strong>
@@ -255,16 +423,26 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     <div className={styles.uploadPanel}>
       <label className={styles.filePicker}>
         <span><UploadCloud size={16} aria-hidden="true"/>{copy.choose}</span>
-        <input type="file" accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
+        <input ref={fileInputRef} type="file" multiple accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
           onChange={select} disabled={!!busy}/>
       </label>
       {preview && !staged ? <div className={styles.player}>
         <span>{copy.localPreview} · {file?.name}</span>
         <audio controls preload="none" src={preview} aria-label={copy.localPreview}/>
       </div> : null}
-      <button type="button" className={styles.uploadButton} disabled={!file || !!busy || !!staged}
-        onClick={upload}><UploadCloud size={18} aria-hidden="true"/>{busy==='upload'?copy.loading:copy.upload}</button>
-      <small className={styles.fileHint}>{copy.fileInfo}</small>
+      {pendingFiles.length>1 ? <strong className={styles.fileHint}>
+        {copy.batchCount}: {pendingFiles.length} / {REIKI_AUDIO_MAX_BATCH}
+      </strong> : null}
+      {progress ? <p className={styles.progress} role="status">{progress}</p> : null}
+      <div className={styles.uploadActions}>
+        <button type="button" className={styles.uploadButton} disabled={!file || !!busy || !!staged}
+          onClick={upload}><UploadCloud size={18} aria-hidden="true"/>{busy==='upload'?copy.loading:copy.upload}</button>
+        {busy==='upload' && pendingFiles.length>1 ?
+          <button type="button" className={styles.stopUpload} onClick={()=>{cancelAfterCurrent.current=true}}>
+            {copy.stopBatch}
+          </button> : null}
+      </div>
+      <small className={styles.fileHint}>{copy.fileInfo} {copy.bulkLimit}</small>
     </div>
     {notice ? <p className={styles.success} role="status">{notice}</p> : null}
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
