@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, BadgeCheck, MessageCircle, ShieldCheck } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { ServiceCart } from "@/components/commerce/service-cart";
 import { getCommerceConfig } from "@/lib/commerce/config";
 import { publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
 import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled, buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
@@ -20,7 +19,7 @@ const copy = {
     lead: "Choose a fixed-price consultation. Please agree a suitable session time with Andrey before making a payment.",
     payee: "PayPal recipient", method: "Payment type", methodValue: "Goods & Services (not Friends & Family)",
     verify: "Check the recipient, the exact amount and EUR currency on PayPal before sending money.",
-    choose: "Select a session", pay: "Pay via PayPal", after: "I have paid · send transaction ID",
+    choose: "Select a session", pay: "PayPal.Me · manual confirmation", autoPay: "Secure checkout · automatic confirmation", after: "I have paid · send transaction ID",
     process: "After paying, send the PayPal transaction ID through WhatsApp for manual verification and to arrange your session.",
     disclaimer: "PayPal.Me requires the payer to have a PayPal account; a linked card may be used after sign-in, but this is not guest card checkout. The website cannot automatically verify a personal PayPal payment. We confirm the appointment only after verifying the received funds.",
     help: "Ask about availability first", contact: "Contact on WhatsApp",
@@ -40,7 +39,7 @@ const copy = {
     lead: "Выберите консультацию с фиксированной стоимостью. Перед оплатой согласуйте с Андреем удобное время сеанса.",
     payee: "Получатель в PayPal", method: "Тип платежа", methodValue: "Товары и услуги (не друзьям и семье)",
     verify: "Перед отправкой денег проверьте получателя, точную сумму и валюту EUR в PayPal.",
-    choose: "Выберите формат", pay: "Оплатить через PayPal", after: "Я оплатил(а) · отправить ID транзакции",
+    choose: "Выберите формат", pay: "PayPal.Me · ручная проверка", autoPay: "Оплатить · автоматическое подтверждение", after: "Я оплатил(а) · отправить ID транзакции",
     process: "После оплаты отправьте ID транзакции PayPal через WhatsApp. Мы вручную проверим поступление и согласуем сеанс.",
     disclaimer: "Для оплаты через PayPal.Me требуется аккаунт PayPal. Можно выбрать привязанную карту, но это не гостевая оплата картой. Сайт не проверяет поступление автоматически: сеанс подтверждается только после ручной проверки платежа.",
     help: "Сначала уточнить время", contact: "Написать в WhatsApp",
@@ -60,7 +59,7 @@ const copy = {
     lead: "Elige una consulta de precio fijo. Acuerda la fecha y hora con Andrey antes de enviar el pago.",
     payee: "Destinatario de PayPal", method: "Tipo de pago", methodValue: "Productos y servicios (no amigos y familiares)",
     verify: "Comprueba el destinatario, importe exacto y moneda EUR en PayPal antes de pagar.",
-    choose: "Elige una sesión", pay: "Pagar con PayPal", after: "Ya pagué · enviar ID de transacción",
+    choose: "Elige una sesión", pay: "PayPal.Me · verificación manual", autoPay: "Pago seguro · confirmación automática", after: "Ya pagué · enviar ID de transacción",
     process: "Después de pagar, envía el ID de transacción de PayPal por WhatsApp para la verificación manual y acordar tu sesión.",
     disclaimer: "PayPal.Me requiere una cuenta PayPal; puedes usar una tarjeta vinculada después de iniciar sesión, pero no es un pago con tarjeta como invitado. La web no confirma pagos automáticamente; verificamos los fondos antes de reservar la cita.",
     help: "Primero consultar disponibilidad", contact: "Contactar por WhatsApp",
@@ -113,6 +112,7 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
   const combinedIds = products.map(product => product.id);
   const combinedPayPalUrl = enabled && products.length === 2 ? buildPersonalPayPalCartUrl(combinedIds) : null;
   const combinedEuros = products.reduce((sum, product) => sum + product.amountMinor, 0) / 100;
+  const combinedAvailable = products.length === 2 && (verifiedPayPalCheckout || Boolean(combinedPayPalUrl));
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -123,7 +123,6 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
           <h1 id="personal-payment-title">{t.title}</h1>
           <p>{t.lead}</p>
         </div>
-        {verifiedPayPalCheckout ? <ServiceCart locale={locale} /> : <>
         <div className={styles.notice}>
           <ShieldCheck size={22} aria-hidden="true" />
           <div className={styles.noticeText}>
@@ -149,10 +148,16 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
               </div>
               <h3>{product.title}</h3>
               <p>{product.description}</p>
-              {enabled ? <a href={`/api/payments/paypal/${product.id}`} className={styles.payButton}
+              {verifiedPayPalCheckout ? <Link
+                href={`/${locale}/services/checkout?service=${encodeURIComponent(product.id)}`}
+                className={styles.payButton} data-verified-paypal-checkout={product.id}>
+                {t.autoPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
+              </Link> : null}
+              {enabled ? <a href={`/api/payments/paypal/${product.id}`}
+                  className={verifiedPayPalCheckout ? styles.zenButton : styles.payButton}
                   target="_blank" rel="noopener noreferrer" data-paypal-personal-link>
                 {t.pay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
-              </a> : <p className={styles.unavailable}>{t.help}</p>}
+              </a> : verifiedPayPalCheckout ? null : <p className={styles.unavailable}>{t.help}</p>}
               {squarePayment ? <a href={squarePayment.url} className={styles.payButton}
                 target="_blank" rel="noopener noreferrer" data-square-personal-link={product.id}>
                 {t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
@@ -182,15 +187,21 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
             </article>;
           })}
         </div>
-        {combinedPayPalUrl ? <div className={styles.combined} data-paypal-combined-cart>
+        {combinedAvailable ? <div className={styles.combined} data-paypal-combined-cart>
           <div>
             <strong>{t.combinedTitle} · €{combinedEuros}</strong>
             <p>{t.combinedIntro}</p>
           </div>
           <div className={styles.combinedActions}>
-            <a href={combinedPayPalUrl} className={styles.payButton} target="_blank" rel="noopener noreferrer" data-paypal-combined-link>
+            {verifiedPayPalCheckout ? <Link href={`/${locale}/services/checkout?items=${combinedIds.join(",")}`}
+              className={styles.payButton} data-verified-paypal-combined>
+              {t.autoPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
+            </Link> : null}
+            {combinedPayPalUrl ? <a href={combinedPayPalUrl}
+              className={verifiedPayPalCheckout ? styles.zenButton : styles.payButton}
+              target="_blank" rel="noopener noreferrer" data-paypal-combined-link>
               {t.combinedPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
-            </a>
+            </a> : null}
             <Link className={styles.zenButton} href={"/" + locale + "/cart?items=" + combinedIds.join(",")} data-combined-cart-link>
               {t.combinedCart} <ArrowUpRight size={17} aria-hidden="true" />
             </Link>
@@ -202,7 +213,6 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
           <p className={styles.disclaimer}>{t.disclaimer}</p>
           <a className={styles.contact} href="https://wa.me/14376066502" target="_blank" rel="noopener noreferrer">{t.contact} →</a>
         </div>
-        </>}
       </section>
     </main>
   );

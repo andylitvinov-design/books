@@ -142,3 +142,17 @@ After merchant/schema/tax approval, pages switch to the EXISTING account-bound S
 3. Approve the protected billing ledger schema (docs/billing/proposed-subscription-schema.sql and docs/billing/proposed-service-commerce-schema.sql) after RLS, financial retention, refunds, scheduling and tax review. Test a PayPal sandbox EUR 50 and EUR 100 round-trip plus cancel/failed/refund, signed webhook, different users, duplicate redirects. Only after verified merchant/bank settlement and permitted real small transaction/refund enable flags HH_COMMERCE_PROVIDER=paypal; HH_PAYPAL_ENVIRONMENT=live; HH_BILLING_SCHEMA_APPROVED=true; HH_COMMERCE_SCHEMA_APPROVED=true; HH_COMMERCE_ENABLED=true; HH_COMMERCE_FULFILLMENT_APPROVED=true; HH_COMMERCE_TAX_REVIEW_APPROVED=true; HH_COMMERCE_PRODUCTION_APPROVED=true; HH_PAYPAL_PRODUCTION_APPROVED=true; HH_PAYPAL_TAX_REVIEW_APPROVED=true.
 
 Do not enable approval flags merely to display a button. Until the merchant and live E2E are verified, personal PayPal.Me/manual confirmation remains the honest production fallback.
+
+## Automatic EUR checkout handoff — 20 October 2026
+
+PayPal Canada's agreement permits a Business merchant account even when the seller is unincorporated. KYC, accurate business-activity description, tax and bank details and provider approval are required; a registered corporation is not inherently a prerequisite.
+Canadian account terms: https://www.paypal.com/ca/legalhub/paypal/useragreement-full
+Create merchant account: https://www.paypal.com/ca/business/open-business-account
+PayPal developer REST dashboard: https://developer.paypal.com/dashboard/applications
+
+The public EN/RU/ES payments page and personal cart offer secure automatic checkout only after verified merchant, private financial-ledger RLS and tax/fulfillment gates are active. The amounts EUR 50 / EUR 100 / EUR 150 derive solely from the existing catalog, not query strings. The approved payer returns to the authenticated /{locale}/services/checkout page; only server-side Orders v2 capture with merchant/amount readback can commit paid. PayPal.Me personal and Interac remain manual alternatives.
+
+**Owner setup:** Approve the PayPal unincorporated sole-proprietor merchant identity and EUR payment/settlement, then create separate sandbox and live REST applications. Put HH_PAYPAL_CLIENT_ID, HH_PAYPAL_CLIENT_SECRET, HH_PAYPAL_MERCHANT_ID, HH_PAYPAL_WEBHOOK_ID in the protected production Vercel environment, never in chat/source: https://vercel.com/super10/codex-public-book-library/settings/environment-variables .
+First independently review/install the existing guarded subscription/customer and service-order financial schemas and verify RLS, role isolation, refund/tax/cancellation/retention policy. Then run an actual PayPal sandbox approval/capture, cancellation, duplicate click, different owner, retry, dispute/refund, provider-webhook signature and account balance readback.
+Only after genuine approval: HH_COMMERCE_PROVIDER=paypal, HH_PAYPAL_ENVIRONMENT=live, HH_COMMERCE_PRODUCTION_APPROVED=true, HH_PAYPAL_PRODUCTION_APPROVED=true, HH_COMMERCE_SCHEMA_APPROVED=true, HH_BILLING_SCHEMA_APPROVED=true, HH_COMMERCE_FULFILLMENT_APPROVED=true, HH_COMMERCE_TAX_REVIEW_APPROVED=true, HH_PAYPAL_TAX_REVIEW_APPROVED=true. Set HH_COMMERCE_ENABLED=true **last** and perform a small user-authorized real charge/refund verification.
+Missing credentials or schema means no authorized auto-confirmed transaction; do not enable by URL redirect alone.

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PersonalCart } from "@/components/commerce/personal-cart";
-import { ServiceCart } from "@/components/commerce/service-cart";
 import { getCommerceConfig } from "@/lib/commerce/config";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
@@ -28,6 +27,7 @@ export default async function CartPage({ params }: Props) {
   const verifiedPayPalCheckout = commerce.provider === "paypal" && commerce.enabled;
   return <main className="services-shell services-shell--studio" lang={locale} data-service-cart-page>
     <PublicSiteHeader locale={locale} />
-    {verifiedPayPalCheckout ? <ServiceCart locale={locale} /> : <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()} squareLinks={configuredSquarePaymentLinks()} />}
+    <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
+      squareLinks={configuredSquarePaymentLinks()} verifiedPayPalEnabled={verifiedPayPalCheckout} />
   </main>;
 }
