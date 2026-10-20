@@ -74,3 +74,29 @@
 .businessTrack:hover{border-color:#77b7a7;background:#e6f5ef}
 .businessTrack:focus-visible{outline:3px solid #337c84;outline-offset:3px}
 @media(max-width:460px){.businessTrack{padding:11px;gap:9px}.businessTrackIcon{flex-basis:36px;height:36px}.businessTrack strong{font-size:12px}.businessTrack small{font-size:10px}}
+
+/* Business & Career wooden entry only. Other course tiles keep their presets. */
+.businessTrack[data-business-coaching-course-link]{
+  border:1px solid #c9ab83;
+  border-left:5px solid #815d3c;
+  background:linear-gradient(111deg,#fffaf0 0%,#f1e4d2 72%,#e8d4b7 100%);
+  border-radius:15px;
+  box-shadow:0 7px 17px #6e4b2916;
+  color:#503624;
+}
+.businessTrack[data-business-coaching-course-link] .businessTrackIcon{
+  background:#e7cfb0;
+  border:1px solid #ceaa80;
+  color:#6b482f;
+}
+.businessTrack[data-business-coaching-course-link] strong{color:#452f22}
+.businessTrack[data-business-coaching-course-link] small{color:#77624c}
+.businessTrack[data-business-coaching-course-link]>svg:last-child{color:#8b613a}
+.businessTrack[data-business-coaching-course-link]:hover{
+  border-color:#a27b50;
+  background:linear-gradient(111deg,#faf1e4,#ead6b9);
+}
+.businessTrack[data-business-coaching-course-link]:focus-visible{outline:3px solid #ad7a45;outline-offset:3px}
+@media(max-width:460px){
+  .businessTrack[data-business-coaching-course-link]{padding:12px 11px;border-radius:13px}
+}
