@@ -8,12 +8,13 @@ import type { BusinessLocale } from "@/data/business-consulting-copy";
 import styles from "./business-website-enquiry.module.css";
 
 type Format = "free" | "express" | "full" | "mentoring";
+type ReplyChannel = "" | "email" | "sms" | "phone" | "whatsapp";
 const translations = {
   en: {
     eyebrow:"SEND DIRECTLY TO ANDREY", title:"Send your consultation request",
     lead:"Choose a format, describe your question and leave a contact. Andrey will reply personally; no payment or confirmed booking happens here.",
     name:"Your name",namePlaceholder:"How should I address you?",email:"Email",phone:"Phone / WhatsApp",
-    emailHelp:"Provide an email, phone number, or both.",
+    emailHelp:"Provide an email, phone number, or both.",replyMethod:"How would you prefer a personal reply?",replyOptions:{none:"No preference",email:"Email",sms:"SMS on this number",phone:"Phone call",whatsapp:"WhatsApp"},replyHint:"SMS is for a reply about this request only, not a marketing subscription. You can decline SMS.",
     format:"Which format interests you?",formatNames:{free:"Free written review",express:"30 minutes · €50",full:"60 minutes · €100",mentoring:"Goals Mentoring · by arrangement"},
     question:"Your question or situation",questionPlaceholder:"What decision or goal would you like to clarify?",
     consent:"I agree to be contacted personally about this enquiry. I am not signing up for marketing.",
@@ -28,7 +29,7 @@ const translations = {
     eyebrow:"НАПРЯМУЮ АНДРЕЮ",title:"Оставить заявку на консультацию",
     lead:"Выберите формат, кратко опишите вопрос и оставьте контакт. Андрей ответит лично; оплата и запись не происходят автоматически.",
     name:"Как к вам обращаться",namePlaceholder:"Ваше имя",email:"Email",phone:"Телефон / WhatsApp",
-    emailHelp:"Укажите email, телефон или оба контакта.",
+    emailHelp:"Укажите email, телефон или оба контакта.",replyMethod:"Как вам удобнее получить личный ответ?",replyOptions:{none:"Не важно",email:"Email",sms:"SMS на этот номер",phone:"Телефонный звонок",whatsapp:"WhatsApp"},replyHint:"SMS — только ответ по этой заявке, не подписка на рекламу. Можно выбрать другой канал.",
     format:"Какой формат интересен?",formatNames:{free:"Бесплатный письменный разбор",express:"30 минут · €50",full:"60 минут · €100",mentoring:"Goals Mentoring · по договорённости"},
     question:"Ваш вопрос или ситуация",questionPlaceholder:"Какое решение или цель вы хотите прояснить?",
     consent:"Согласен(на), чтобы Андрей связался со мной по этой заявке. На рекламные рассылки не подписываюсь.",
@@ -43,7 +44,7 @@ const translations = {
     eyebrow:"MENSAJE DIRECTO A ANDREY",title:"Enviar solicitud de consulta",
     lead:"Elige la modalidad, explica tu pregunta y deja un contacto. Andrey responderá personalmente; no hay pago ni reserva automática.",
     name:"Tu nombre",namePlaceholder:"¿Cómo te llamas?",email:"Correo electrónico",phone:"Teléfono / WhatsApp",
-    emailHelp:"Indica correo, teléfono o ambos.",
+    emailHelp:"Indica correo, teléfono o ambos.",replyMethod:"¿Cómo prefieres recibir una respuesta personal?",replyOptions:{none:"Sin preferencia",email:"Correo",sms:"SMS a este número",phone:"Llamada",whatsapp:"WhatsApp"},replyHint:"SMS solo para responder a esta solicitud. No autoriza mensajes comerciales.",
     format:"¿Qué modalidad te interesa?",formatNames:{free:"Revisión escrita gratuita",express:"30 minutos · €50",full:"60 minutos · €100",mentoring:"Goals Mentoring · por acuerdo"},
     question:"Tu pregunta o situación",questionPlaceholder:"¿Qué decisión o meta deseas aclarar?",
     consent:"Acepto que Andrey me contacte sobre esta solicitud. No me suscribo a comunicaciones comerciales.",
@@ -62,6 +63,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
   const [name,setName]=useState("");
   const [email,setEmail]=useState("");
   const [phone,setPhone]=useState("");
+  const [replyChannel,setReplyChannel]=useState<ReplyChannel>("");
   const [question,setQuestion]=useState("");
   const [consent,setConsent]=useState(false);
   const [website,setWebsite]=useState("");
@@ -97,6 +99,10 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
     event.preventDefault();
     if(busy||success)return;
     if(!email.trim()&&!phone.trim()){setError(t.contactError);return}
+    if((replyChannel==="email"&&!email.trim())||
+       (replyChannel!==""&&replyChannel!=="email"&&!phone.trim())){
+      setError(t.contactError);return;
+    }
     setBusy(true);setError("");
     try{
       operation.current ||= crypto.randomUUID();
@@ -110,7 +116,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
         method:"POST",credentials:"same-origin",cache:"no-store",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({operationId:operation.current,locale,format,name,email,phone,question,
-          contactConsent:consent,website,attribution}),
+          contactConsent:consent,...(replyChannel?{replyChannel}:{}),website,attribution}),
       });
       if(!response.ok){
         const body=await response.json().catch(()=>({}));
@@ -150,6 +156,17 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
           onChange={event=>{setPhone(event.target.value);edit();}} /></label>
       </div>
       <p className={styles.help}>{t.emailHelp}</p>
+      <label>{t.replyMethod}
+        <select value={replyChannel} onChange={event=>{setReplyChannel(event.target.value as ReplyChannel);edit();}}
+          data-business-field="reply-channel">
+          <option value="">{t.replyOptions.none}</option>
+          <option value="email" disabled={!email.trim()}>{t.replyOptions.email}</option>
+          <option value="sms" disabled={!phone.trim()}>{t.replyOptions.sms}</option>
+          <option value="phone" disabled={!phone.trim()}>{t.replyOptions.phone}</option>
+          <option value="whatsapp" disabled={!phone.trim()}>{t.replyOptions.whatsapp}</option>
+        </select>
+      </label>
+      <p className={styles.help}>{t.replyHint}</p>
       <label>{t.question}
         <textarea required minLength={5} maxLength={700} rows={3} value={question} placeholder={t.questionPlaceholder}
           onChange={event=>{setQuestion(event.target.value);edit();}}/>
