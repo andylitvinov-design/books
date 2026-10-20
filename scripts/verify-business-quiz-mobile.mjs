@@ -26,7 +26,6 @@ async function verify(browserType,locale,width){
   try{
     const response=await page.goto(origin+'/'+locale+'/explore/business',{waitUntil:'networkidle',timeout:60000})
     assert.equal(response?.status(),200,label+': route')
-    const hero=page.locator('[data-topic-journey="business"] .businessHeroPhoto').first()
     // CSS Modules hash class; assert via real img near the finder instead of class text.
     const finder=page.locator('[data-business-consultation-finder]')
     await finder.waitFor({state:'visible'})
