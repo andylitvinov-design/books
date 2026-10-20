@@ -59,6 +59,8 @@ test('cron route is fail-closed, no client data and safe bounded receipts',()=>{
   const backend=readFileSync(new URL('../lib/practitioners/daily-telegram-digest.js',import.meta.url),'utf8')
   assert.match(source,/cronAuthorized\(request,process\.env\)/)
   assert.match(source,/practiceTelegramConfigured\(process\.env\)/)
+  assert.ok(source.includes("from '@/lib/practitioners/daily-telegram-transport.mjs'"))
+  assert.ok(source.includes("from '@/lib/practitioners/daily-telegram-digest'"))
   assert.match(source,/PRIVATE_HEADERS/)
   assert.match(backend,/hh_app_backend|\{server:true\}/)
   assert.match(backend,/claim_token/)

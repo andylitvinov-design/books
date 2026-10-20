@@ -3,10 +3,8 @@ import { getAppConfig } from '@/lib/app/config'
 import { closeDatabase } from '@/lib/app/database'
 import { cronAuthorized } from '@/lib/app/housekeeping-cron'
 import { PRIVATE_HEADERS } from '@/lib/app/http'
-import {
-  practiceTelegramConfigured,
-  deliverDailyPracticeDigest,
-} from '@/lib/practitioners/daily-telegram-digest'
+import { practiceTelegramConfigured } from '@/lib/practitioners/daily-telegram-transport.mjs'
+import { deliverDailyPracticeDigest } from '@/lib/practitioners/daily-telegram-digest'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
