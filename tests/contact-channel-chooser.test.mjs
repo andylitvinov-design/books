@@ -38,14 +38,18 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
     'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open}',
-    'Расскажите, с чем вам нужна помощь', 'Describe what you would like help with',
-    'Cuéntanos en qué podemos ayudarte', 'WhatsApp', 'Telegram',
+    'Оставьте контакт, чтобы записаться или узнать подробности',
+    'Leave your contact to enquire or join',
+    'Deja tus datos para consultar o inscribirte', 'WhatsApp', 'Telegram',
     'data-contact-channel-chooser', 'data-contact-order',
     'telegramEnquiryUrlFromWhatsApp', 'role="group"',
   ]) assert.ok(src.includes(text), text);
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.match(src, /<textarea[\s\S]*?required minLength=\{10\} maxLength=\{1400\}/);
+  assert.match(src, /<details className=\{styles\.optionalNote\}>/);
+  assert.match(src, /<textarea[\s\S]*?maxLength=\{1400\} rows=\{2\}/);
+  assert.doesNotMatch(src, /c\.situation \+ ": " \+ description\.trim\(\)/);
+  assert.match(src, /originalMessage \+ "\\n\\n" \+ c\.reference/);
   assert.match(src, /<form onSubmit=\{submit\}/);
   assert.match(src, /fetch\("\/api\/service-enquiries"/);
   assert.match(src, /if \(!response\.ok \|\| data\.saved !== true/);
@@ -55,6 +59,7 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   assert.match(css, /min-height:56px/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /:focus-visible/);
+  assert.match(css, /\.optionalNote > summary/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /@container \(max-width: 300px\)/);
   assert.match(src, /onChannelClick\?\./);
