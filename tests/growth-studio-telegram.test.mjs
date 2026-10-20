@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
 import {nextGrowthPost} from '../lib/growth-studio/model.mjs'
-import {telegramConfig,telegramPayload,telegramPublicStatus,verifyTelegramChannel,sendTelegramPost} from '../lib/growth-studio/telegram.mjs'
+import {telegramConfig,telegramPayload,telegramPublicStatus,verifyTelegramChannel,verifyTelegramPostingPermissions,sendTelegramPost} from '../lib/growth-studio/telegram.mjs'
 
 const env={
  HH_GROWTH_TELEGRAM_ENABLED:'true',
@@ -109,4 +109,49 @@ test('no configured bot means no network access',async()=>{
   let count=0
   await assert.rejects(sendTelegramPost(approved(),{environment:{},fetchFn:async()=>{count++;return {}}}),/telegram_unconfigured/)
   assert.equal(count,0)
+})
+
+
+test('Telegram connection test validates exact channel, bot identity and administrator posting permissions',async()=>{
+ const methods=[]
+ const fetchFn=async(url,req)=>{
+   const method=url.split('/').at(-1)
+   methods.push(method)
+   if(method==='getChat')return {ok:true,json:async()=>({ok:true,result:{type:'channel',id:-1001234567890,username:'HolisticHouseChannel'}})}
+   if(method==='getMe')return {ok:true,json:async()=>({ok:true,result:{id:123456789,is_bot:true,username:'HolisticHousePublisher'}})}
+   if(method==='getChatMember'){
+     assert.deepEqual(JSON.parse(req.body),{chat_id:'@HolisticHouseChannel',user_id:123456789})
+     return {ok:true,json:async()=>({ok:true,result:{status:'administrator',can_post_messages:true}})}
+   }
+   throw new Error('UNEXPECTED_ENDPOINT')
+ }
+ const result=await verifyTelegramPostingPermissions({environment:env,fetchFn})
+ assert.equal(result.verified,true)
+ assert.equal(result.channel,'@HolisticHouseChannel')
+ assert.deepEqual(methods,['getChat','getMe','getChatMember'])
+})
+test('Telegram connection fails closed for bot without channel posting rights',async()=>{
+ for(const rights of [
+  {status:'member'},{status:'administrator',can_post_messages:false},
+  {status:'restricted',can_post_messages:true},
+ ]){
+   await assert.rejects(verifyTelegramPostingPermissions({environment:env,fetchFn:async(url)=>{
+     const method=url.split('/').at(-1)
+     const result=method==='getChat'?{type:'channel',id:-1001234567890,username:'HolisticHouseChannel'}:
+       method==='getMe'?{id:123456789,is_bot:true}:rights
+     return {ok:true,json:async()=>({ok:true,result})}
+   }}),/telegram_permission_unverified/)
+ }
+})
+test('posting-permission check does not attempt to send or post content',async()=>{
+ let calls=0
+ const fetchFn=async(url)=>{
+   assert.ok(url.endsWith('/getChat')||url.endsWith('/getMe')||url.endsWith('/getChatMember'))
+   calls++
+   const method=url.split('/').at(-1)
+   return {ok:true,json:async()=>({ok:true,result:method==='getChat'?{type:'channel',username:'HolisticHouseChannel',id:-1001234567890}:
+     method==='getMe'?{id:123456789,is_bot:true}:{status:'administrator',can_post_messages:true}})}
+ }
+ await verifyTelegramPostingPermissions({environment:env,fetchFn})
+ assert.equal(calls,3)
 })
