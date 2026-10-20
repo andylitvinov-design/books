@@ -1,3 +1,19 @@
+## 2026-10-20 — Telegram one-click owner connection (preferred)
+
+**Direct owner link:** [Holistic House → Telegram setup](https://holistichouse.vercel.app/admin/telegram-setup). Sign in via the existing private Practitioner Cabinet if redirected.
+
+A genuine existing BotFather token was saved by the owner as **Sensitive / Production** in the Holistic House Vercel project. No second token, numeric chat ID, GitHub secret or @userinfobot is required for the standard no-webhook case.
+
+**Owner's action:** open [@Andydotbot](https://t.me/Andydotbot), send a fresh `/start` if necessary, then open the private setup screen and choose **«Проверить и отправить один тест»**. The POST is a signed admin-authenticated Next.js Server Action; it uses existing `ensureOwnerTelegramPairing` (getMe, getWebhookInfo, getUpdates without offset **only without webhook**, then getChat), saves the verified numeric chat ID only encrypted in `app_private.telegram_owner_pairings`, checks Bot API identity again, and calls the fixed-recipient sendDocument only for the authenticated owner's explicit click. Test delivery is atomic **at most once** through the pairing row's `test_status/test_claim_token` private receipt; a timeout is **uncertain** and blocks unverified retry to prevent duplicates. No private client data or contact details are sent.
+
+The separate **«Только проверить · без сообщения»** action verifies pairing without sending Telegram messages. The owner-facing screen shows only statuses, not token values or numeric chat IDs. The existing `HH_PRACTICE_TG_ENABLED` switch must be true for an owner-authorized test send; even then, a missing/incorrect paired private chat blocks all deliveries. Manual daily cron and private Council relay continue to reuse the same independently verified owner recipient.
+
+**If webhook is active:** do not delete/replace it or call getUpdates. The page reports the blocker; first identify and securely integrate the currently authorized webhook receiver. Do not invent a chat ID or steal updates. If an old /start expired, send a new one; Telegram only retains pending updates for up to 24 hours.
+
+**Implementation:** `app/admin/telegram-setup/{page.js,actions.js,telegram-setup.module.css}`, `lib/practitioners/telegram-owner-setup.js`, private migration `20261020172000_hh_owner_telegram_test_receipt_20261020.sql`. Status remains **NOT LIVE VERIFIED** until the real Bot API confirms delivery to the verified private owner chat and the owner sees the document.
+
+---
+
 ## 2026-10-20 — Automatic owner chat pairing after one BotFather token
 
 The owner added `HH_PRACTICE_TG_BOT_TOKEN` in **Holistic House Vercel Production**. It is a Sensitive secret; no plain-text token or numeric Telegram chat ID was copied into this repository or shown in ChatGPT.
