@@ -273,7 +273,7 @@ test('course summary suggests three focus areas with direct stage-2 review to st
   assert.match(r3,/revision=reviewed\.course\.revision/)
   assert.match(r3,/const payload=\{\s*action:'choose-goals',expectedRevision:revision,/)
   assert.match(r3,/startCourseWithRecovery\(async body=>\{\s*ensureCurrent\(\)\s*const response=body\s*\? await onCourseCommand\('choose-goals',body\)\s*: await onCourseRead\(\)\s*return ensureCourseResponse\(response\)\s*\},payload\)/)
-  assert.match(r3,/ensureCourseResponse\(result\)\s*onState\(result\)/)
+  assert.match(r3,/ensureCourseResponse\(result\)\s*(?:\/\/[^\n]*\n\s*)*if \(moduleSelection && result\.course\.stage === 4\) onLaunchReady\?\.\(courseId\)\s*onState\(result\)/)
   assert.match(r3,/consent:true,durationDays:14/)
   assert.match(r3,/onAlternative=\{openManualFocus\}/)
   assert.match(r3,/setScaleView\('manual'\)/)

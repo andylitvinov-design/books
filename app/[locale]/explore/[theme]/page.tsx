@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
 import { TopicGrowthGuide } from '@/components/topic-growth-guide'
@@ -56,6 +57,23 @@ export default async function TopicJourneyPage({ params }: Props) {
     {theme === 'business'
       ? <BusinessTestimonials locale={locale as PublicLocale}/>
       : <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>}
+    {theme === 'business' && <aside data-business-free-90-day-plan
+      style={{maxWidth:1160,margin:'0 auto 16px',padding:'0 clamp(14px,3.5vw,34px)'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',border:'1px solid #c6ded7',borderRadius:14,background:'#f0f7f4'}}>
+        <div style={{flex:'1 1 240px'}}>
+          <strong style={{color:'#1d5662',fontSize:14}}>
+            {locale === 'ru' ? 'Бесплатная программа развития на 90 дней' : locale === 'es' ? 'Plan de desarrollo gratuito de 90 días' : 'Free 90-day business development plan'}
+          </strong>
+          <p style={{margin:'4px 0 0',fontSize:12,lineHeight:1.45,color:'#607982'}}>
+            {locale === 'ru' ? 'Цели, короткие ежедневные шаги и динамика в личном кабинете.' : locale === 'es' ? 'Objetivos, acciones diarias y seguimiento privado.' : 'Set goals, take small daily actions and track your progress privately.'}
+          </p>
+        </div>
+        <Link prefetch={false} href={`/${locale === 'ru' ? 'ru' : 'en'}/app/business`}
+          style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minHeight:44,padding:'9px 13px',background:'#275f68',color:'#fff',borderRadius:10,textDecoration:'none',fontSize:12,fontWeight:800}}>
+          {locale === 'ru' ? 'Создать мой план →' : locale === 'es' ? 'Crear mi plan →' : 'Start free plan →'}
+        </Link>
+      </div>
+    </aside>}
     {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) calc(116px + env(safe-area-inset-bottom))'}}>
       <BusinessWebsiteEnquiry locale={locale as 'en'|'ru'|'es'} />
     </div>}
