@@ -134,19 +134,20 @@ def run_local_engine(language: str, text: str, out: Path, scratch: Path) -> None
     reference = Path(os.environ.get(reference_var, "")).expanduser()
     if not reference.is_file() or reference.suffix.lower() != ".wav":
         raise ValueError("private language reference missing")
-    input_file = scratch / "report-part.txt"
-    input_file.write_text(text, encoding="utf-8")
-    input_file.chmod(0o600)
+    # The CLI can read `--text-file /dev/stdin` on macOS. Feeding the
+    # approved report over a private subprocess pipe avoids leaving a clinical
+    # plaintext text file behind when the Mac sleeps or loses power.
     wav = scratch / "narration.wav"
     args = [sys.executable, str(script), "--language", language,
-            "--text-file", str(input_file), "--reference", str(reference),
+            "--text-file", "/dev/stdin", "--reference", str(reference),
             "--model", os.environ.get("HH_VOICE_MODEL", "fast"),
             "--output", str(wav)]
     transcript_var = "HH_VOICE_REFERENCE_TRANSCRIPT_RU" if language == "ru" else "HH_VOICE_REFERENCE_TRANSCRIPT_EN"
     reference_text = os.environ.get(transcript_var, "")
     if reference_text:
         args += ["--ref-text", reference_text]
-    subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    subprocess.run(args, input=text.encode("utf-8"),
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                    check=True, timeout=720)
     if not wav.is_file() or wav.stat().st_size <= 128:
         raise ValueError("local model produced no WAV")
