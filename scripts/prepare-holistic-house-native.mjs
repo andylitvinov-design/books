@@ -84,7 +84,26 @@ export function afterIos(){
     'PRODUCT_BUNDLE_IDENTIFIER = '+id+';',2)
   write(project,pbx)
   const ent='ios/App/App/App.entitlements'
-  write(ent,exact(read(ent),'applinks:codex-public-book-library.vercel.app','applinks:'+host))
+  let entitlement=exact(read(ent),'applinks:codex-public-book-library.vercel.app','applinks:'+host)
+  entitlement=exact(entitlement,'</dict>',
+    '<key>aps-environment</key>\\n<string>development</string>\\n</dict>')
+  write(ent,entitlement)
+  // Register APNs callbacks with the officially pinned Capacitor push plugin.
+  // Only the temporary Holistic House build receives these methods.
+  const delegate='ios/App/App/AppDelegate.swift'
+  const registration=[
+    '    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {',
+    '        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)',
+    '    }',
+    '    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {',
+    '        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)',
+    '    }',
+    ''
+  ].join('\\n')
+  const swift=read(delegate)
+  if(!swift.includes('import Capacitor')||swift.includes('capacitorDidRegisterForRemoteNotifications'))
+    fail('Unexpected AppDelegate push registration state')
+  write(delegate,swift.replace(/\\n}\\s*$/, '\\n'+registration+'}\\n'))
 }
 export function run(stage){
   if(stage==='before-sync')return beforeSync()
