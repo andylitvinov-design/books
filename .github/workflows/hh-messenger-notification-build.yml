@@ -8,6 +8,9 @@ on:
       - 'components/app/messenger-notification-settings.*'
       - 'components/app/app-workspace.jsx'
       - 'tests/messenger-notification-subscriptions.test.mjs'
+      - 'tests/messenger-telegram-link.test.mjs'
+      - 'lib/app/client-telegram-*.js'
+      - 'app/api/app/practitioner-client-messages/route.js'
       - 'supabase/migrations/*messenger_pending_contacts*'
       - '.github/workflows/hh-messenger-notification-build.yml'
   workflow_dispatch:
@@ -27,9 +30,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Messenger policy, privacy and Settings smoke tests
-        run: node --test tests/messenger-notification-subscriptions.test.mjs tests/notification-stack-integration.test.mjs
+        run: node --test tests/messenger-notification-subscriptions.test.mjs tests/messenger-telegram-link.test.mjs tests/notification-stack-integration.test.mjs
       - name: Lint new notification service and Settings integration
-        run: npx eslint lib/app/messenger-notification-policy.js lib/app/messenger-notification-repository.js app/api/app/notification-channels/route.js components/app/messenger-notification-settings.jsx components/app/app-workspace.jsx
+        run: npx eslint lib/app/messenger-notification-policy.js lib/app/messenger-notification-repository.js app/api/app/notification-channels/route.js components/app/messenger-notification-settings.jsx components/app/app-workspace.jsx lib/app/client-telegram-policy.js lib/app/client-telegram-transport.js lib/app/client-telegram-webhook.js lib/app/client-telegram-dispatch.js app/api/app/notification-channels/telegram/webhook/route.js app/api/app/notification-channels/telegram/setup/route.js app/api/app/practitioner-client-messages/route.js
       - name: Next.js production build (no provider keys)
         run: npm run build
         env:
