@@ -557,7 +557,7 @@ try {
           if (kind === "situation") {
             const detailedForm = main.locator('[data-free-drawing-intake]');
             await detailedForm.waitFor({ state: "hidden" });
-            const details = main.locator('details').filter({ has: detailedForm });
+            const details = freeLanding.advanced;
             assert.equal(await details.evaluate((element) => element.open), false,
               "The real hand-drawn situation questionnaire is available but initially compact");
             if (width === 390) {

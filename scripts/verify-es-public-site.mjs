@@ -28,13 +28,17 @@ async function assertSpanishNavigation(page, path) {
   const currentUrl = page.url();
   const navigation = page.locator('.site-navigation');
   await expect(navigation).toHaveCount(1);
-  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library', '/es/cart'], 'Spanish direct destinations: ' + path);
+  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library', '/es/shop', '/es/cart'], 'Spanish direct destinations: ' + path);
+  assert.deepEqual(await navigation.locator(':scope > a[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), [
+    { id: 'services', href: '/es/services' }, { id: 'library', href: '/es/library' },
+    { id: 'shop', href: '/es/shop' }, { id: 'cart', href: '/es/cart' },
+  ], 'Spanish direct destination IDs: ' + path);
   const mainDestinations = [
     ['/es', 'Inicio'], ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
     ['/es/academy', 'Academia'], ['/es/explore/business', 'Negocios'], ['/en/app', 'Gabinete'],
   ];
   const moreDestinations = [
-    ['/es/cart', 'Carrito'], ['/es/library', 'Biblioteca'], ['/es/events', 'Eventos'],
+    ['/es/shop', 'Tienda'], ['/es/cart', 'Carrito'], ['/es/library', 'Biblioteca'], ['/es/events', 'Eventos'],
     ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
   ];
   const destinations = [['/es#free-start', 'Empezar gratis'], ...mainDestinations, ...moreDestinations];
@@ -290,7 +294,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five direct links plus thirteen-entry grouped Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'six direct links with four exact IDs plus fourteen-entry grouped Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

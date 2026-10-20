@@ -30,6 +30,22 @@ const landing = catalogue('components/free-entry-landing.tsx');
 const drawing = catalogue('components/free-drawing-intake.tsx');
 const alchemy = catalogue('components/alchemy-soul-landing.tsx');
 const lead = catalogue('components/alchemy-soul-lead-form.tsx');
+// Reviewed first-party registration disclosures. Keep these specific to the lead
+// form: accepting its revised wording must not loosen the other copy contracts.
+const leadDisclosure = {
+  en: {
+    note: 'The form sends your contact details, reply consent and optional note to the site for CRM registration. After receipt confirmation, WhatsApp and Telegram are optional. We confirm the session time personally; there is no automatic charge.',
+    privacy: "Please don't enter diagnoses or confidential health details here. We can discuss your question directly.",
+  },
+  ru: {
+    note: 'Форма отправляет на сайт ваши контакты, согласие на личный ответ и необязательный комментарий для регистрации заявки в CRM. После подтверждения получения можно по желанию открыть WhatsApp или Telegram. Время подтверждается лично, автоматической оплаты нет.',
+    privacy: 'Не вводите здесь диагнозы или медицинские сведения — подробности обсудим лично.',
+  },
+  es: {
+    note: 'El formulario envía tus datos de contacto, consentimiento para una respuesta personal y nota opcional al sitio para registrar la solicitud en el CRM. Tras confirmar la recepción, WhatsApp y Telegram son opcionales. Confirmamos la hora personalmente; no hay cobro automático.',
+    privacy: 'No incluyas diagnósticos ni datos médicos confidenciales. Podemos hablar de los detalles personalmente.',
+  },
+};
 const patterns = {
   en: { local: /local draft/, separate: /separate|separately/, consent: /reply consent|consent for a personal reply/, submit: /[Ss]ubmi/, copy: /copy/, receipt: /[Aa]fter receipt confirmation/, optional: /optional/, noCharge: /no automatic (?:booking or )?charge/, form: /request form/, manual: /You decide|you decide|choose whether/ },
   ru: { local: /локальный черновик/, separate: /[Оо]тдельн/, consent: /согласи(?:е|ем|я) на личный ответ/, submit: /отправк|отправляет/, copy: /копирован/, receipt: /[Пп]осле подтверждения получения/, optional: /необязател|по желанию/, noCharge: /без автоматической оплаты|автоматической записи и списания денег нет/, form: /форм[ауы] заявки/, manual: /[Вв]ы по своему решению|вы сами|самим отправить/ },
@@ -59,7 +75,8 @@ for (const locale of ['en', 'ru', 'es']) {
     for (const pattern of [p.submit, p.consent, p.receipt, p.optional, p.noCharge, p.manual, /CRM/, /WhatsApp/, /Telegram/]) assert.match(faq, pattern);
     assert.match(alchemy[locale].requestIntro, p.form);
     assert.match(alchemy[locale].requestIntro, p.optional);
-    for (const pattern of [p.submit, p.receipt, p.optional, p.noCharge, /CRM/]) assert.match(lead[locale].note, pattern);
+    assert.equal(lead[locale].note, leadDisclosure[locale].note, `${locale}: first-party CRM disclosure`);
+    assert.equal(lead[locale].privacy, leadDisclosure[locale].privacy, `${locale}: no medical data`);
   });
 }
 test('quick entry has no redundant private draft; full questionnaire still copies locally without uploads', () => {
@@ -80,4 +97,13 @@ test('neither corrected flow claims that the whole page sends or stores nothing 
   const text = [quick.en.note, quick.ru.note, quick.es.note,
     landing.en.situation.faq[2][1], landing.ru.situation.faq[2][1], landing.es.situation.faq[2][1]].join('\n');
   assert.doesNotMatch(text, /Nothing is stored on this page|Nothing is submitted automatically|Сайт не сохраняет ответы|автоматической передачи нет|no almacena ni envía/i);
+});
+
+test('Alchemy renders the reviewed registration and medical-data notices beside its actual shared chooser', () => {
+  const source = read('components/alchemy-soul-lead-form.tsx');
+  assert.match(source, /import \{ ContactChannelChooser \} from "@\/components\/contact-channel-chooser"/);
+  assert.match(source, /const t = copy\[locale\]/);
+  assert.match(source, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{whatsappUrl\} label=\{t\.action\}/);
+  assert.match(source, /<p className=\{styles\.formNote\}>\{t\.note\}<\/p>/);
+  assert.match(source, /<p className=\{styles\.formPrivacy\}>[\s\S]*?\{t\.privacy\}<\/p>/);
 });

@@ -230,6 +230,10 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
     if (fault === 'consent payload false') return source.replace('contactConsent: consent,', 'contactConsent: false,');
     if (fault === 'contact URL leak') return source.replace('originalMessage + "\\n\\n" + c.reference', 'originalMessage + displayName + "\\n\\n" + c.reference');
     if (fault === 'private note URL leak') return source.replace('originalMessage + "\\n\\n" + c.reference', 'originalMessage + description + "\\n\\n" + c.reference');
+    if (fault === 'missing note disclosure') return source.replace('<details className={styles.optionalNote}>', '<div className={styles.optionalNote}>').replace('</details>', '</div>');
+    if (fault === 'duplicate note disclosure') return source.replace(/<details className=\{styles\.optionalNote\}>[\s\S]*?<\/details>/, '$&$&');
+    if (fault === 'wrong note descendant') return source.replace(/(<details className=\{styles\.optionalNote\}>)([\s\S]*?)(<textarea[\s\S]*?\/>)([\s\S]*?)(<\/details>)/, '$3$1$2$4$5');
+    if (fault === 'wrong note label') return source.replace('aria-label={c.description}', 'aria-label={c.description + " wrong"}');
     if (fault === 'required private note') return source.replace('<textarea id={panelId', '<textarea required id={panelId');
     if (fault === 'minimum private note') return source.replace('maxLength={1400} rows={2}', 'minLength={10} maxLength={1400} rows={2}');
     if (fault === 'expanded private note') return source.replace('<details className={styles.optionalNote}>', '<details open className={styles.optionalNote}>');
@@ -398,7 +402,12 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
       first() { return locator(root => resolve(root).slice(0, 1)); },
       nth(index) { return locator(root => resolve(root).slice(index, index + 1)); },
       filter({ has }) {
-        return locator(root => resolve(root).filter(node => descendants(node).some(child => has.resolve(root).includes(child))));
+        // Playwright evaluates the complete inner selector relative to each
+        // outer candidate, never by intersecting document-global matches.
+        return locator(root => resolve(root).filter(node => {
+          const inner = has.resolve(node);
+          return descendants(node).some(child => inner.includes(child));
+        }));
       },
       getByRole(role, { name, exact, level, includeHidden = false } = {}) {
         return locator(root => resolve(root).flatMap(descendants).filter(node =>

@@ -1,7 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import ts from 'typescript'
 import { normalizePublicServiceEnquiry } from '../lib/practitioners/public-service-enquiry-input.mjs'
+import { PHONE_COUNTRIES, E164_PHONE, composeCountryPhone, phoneCountryFromValue, phoneNationalPart } from '../lib/contact/phone-country.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const payload = {
@@ -99,7 +101,7 @@ test('guest registration creates an encrypted CRM contact in the same transactio
 test('shared course/service chooser requires name, contact and opt-in before saving',()=>{
   const view=read('components/contact-channel-chooser.tsx')
   const styles=read('components/contact-channel-chooser.module.css')
-  for (const term of ['autoComplete="name"','autoComplete="email"','autoComplete="tel"',
+  for (const term of ['autoComplete="name"','autoComplete="email"',
     'contactConsent: consent', 'contact: { displayName:', 'type="checkbox" required',
     'setConsent(false)','setDisplayName("")','setPhone("")']) {
     assert.ok(view.includes(term),term)
@@ -125,3 +127,115 @@ test('shared course/service chooser requires name, contact and opt-in before sav
   assert.match(store,/\.\.\.\(former\.enquiry \? \{enquiry:former\.enquiry\} : \{\}\)/)
 })
 
+// Inspect the actual imported JSX child, not a tel token in an unrelated file.
+// Components are parsed as source only; no React hooks, rendering or requests.
+const parse = path => ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+const compact = text => text.replace(/\s+/g, '')
+function namedImport(ast, name, path) {
+  const matches = ast.statements.filter(ts.isImportDeclaration).filter(statement =>
+    statement.importClause?.namedBindings && ts.isNamedImports(statement.importClause.namedBindings) &&
+    statement.importClause.namedBindings.elements.some(element => element.name.text === name))
+  assert.equal(matches.length, 1, `${name}: one actual named import`)
+  const statement = matches[0]
+  assert.ok(!statement.importClause.isTypeOnly, `${name}: runtime import`)
+  assert.equal(statement.moduleSpecifier.text, path, `${name}: imported source`)
+  const binding = statement.importClause.namedBindings.elements.find(element => element.name.text === name)
+  assert.ok(!binding.isTypeOnly, `${name}: runtime binding`)
+  assert.equal(binding.propertyName?.text ?? binding.name.text, name, `${name}: exported binding`)
+}
+function namedFunction(ast, name) {
+  const matches = ast.statements.filter(ts.isFunctionDeclaration).filter(node => node.name?.text === name)
+  assert.equal(matches.length, 1, `${name}: one function declaration`)
+  return matches[0]
+}
+function jsxWithin(ast, scope, name) {
+  const matches = []
+  function visit(node) {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(ast) === name) matches.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(scope)
+  assert.equal(matches.length, 1, `${scope.name.text}: one actual ${name}`)
+  return matches[0]
+}
+function attribute(ast, node, name) {
+  assert.ok(!node.attributes.properties.some(ts.isJsxSpreadAttribute), `${node.tagName.getText(ast)}: no overriding spread`)
+  const entries = node.attributes.properties.filter(entry => ts.isJsxAttribute(entry) && entry.name.text === name)
+  assert.equal(entries.length, 1, `${node.tagName.getText(ast)}: ${name}`)
+  const value = entries[0].initializer
+  if (ts.isStringLiteral(value)) return value.text
+  assert.ok(ts.isJsxExpression(value) && value.expression, `${name}: explicit expression`)
+  return compact(value.expression.getText(ast))
+}
+
+test('chooser binds its real country-phone child to optional contact state and an E.164 save guard', () => {
+  const chooser = parse('components/contact-channel-chooser.tsx')
+  namedImport(chooser, 'PhoneCountryInput', '@/components/phone-country-input')
+  jsxWithin(chooser, namedFunction(chooser, 'ContactChannelChooser'), 'ContactChannelChooserForm')
+  const form = namedFunction(chooser, 'ContactChannelChooserForm')
+  const phone = jsxWithin(chooser, form, 'PhoneCountryInput')
+  for (const [name, value] of Object.entries({ id:'panelId+"-phone"', locale:'locale', disabled:'busy||uncertain', value:'phone' })) {
+    assert.equal(attribute(chooser, phone, name), value)
+  }
+  assert.equal(attribute(chooser, phone, 'onChange'), 'value=>{setPhone(value);setError("");}')
+  assert.ok(!phone.attributes.properties.some(entry => ts.isJsxSpreadAttribute(entry) || entry.name.text === 'required'), 'email-only contact remains possible')
+  const formSource = form.getText(chooser)
+  const submit = namedFunction(form.body, 'submit')
+  const guard = submit.body.statements.filter(ts.isIfStatement).find(node => node.expression.getText(chooser).includes('cleanedPhone'))
+  assert.ok(guard, 'actual save guard')
+  assert.equal(compact(guard.expression.getText(chooser)), compact('displayName.trim().length < 2 || (!email.trim() && !cleanedPhone) || (cleanedPhone && !/^\\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent'))
+  assert.equal(compact(guard.thenStatement.getText(chooser)), '{setError(c.contactError);return;}')
+  assert.match(formSource, /contact: \{ displayName: displayName\.trim\(\), email: email\.trim\(\), phone: cleanedPhone \}/)
+
+  // Resolve the file from that verified import, and bind its helpers to their
+  // real module, which is exercised below with synthetic phone strings only.
+  const child = parse('components/phone-country-input.tsx')
+  for (const name of ['PHONE_COUNTRIES', 'composeCountryPhone', 'phoneCountryFromValue', 'phoneNationalPart']) {
+    namedImport(child, name, '@/lib/contact/phone-country')
+  }
+  const component = namedFunction(child, 'PhoneCountryInput')
+  assert.ok(component.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword))
+  const childSource = compact(component.getText(child))
+  assert.ok(childSource.includes('required=false,disabled=false'))
+  assert.ok(childSource.includes('useState(()=>phoneCountryFromValue(value))'))
+  assert.ok(childSource.includes('constcurrent=PHONE_COUNTRIES.find(item=>item.iso===country)||PHONE_COUNTRIES[0]'))
+  const input = jsxWithin(child, component, 'input')
+  for (const [name, value] of Object.entries({ id:'inputId', 'aria-label':'words.number', type:'tel', inputMode:'tel', autoComplete:'tel-national', value:'phoneNationalPart(value,current.dial)', required:'required', disabled:'disabled' })) {
+    assert.equal(attribute(child, input, name), value)
+  }
+  assert.equal(attribute(child, input, 'onChange'), compact(`event=>{
+    const next=composeCountryPhone(current.dial,event.target.value);
+    if(event.target.value.trim().startsWith("+"))setCountry(phoneCountryFromValue(next));
+    onChange(next);
+  }`))
+  const country = jsxWithin(child, component, 'select')
+  for (const [name, value] of Object.entries({ 'aria-label':'words.country', value:'country', disabled:'disabled' })) {
+    assert.equal(attribute(child, country, name), value)
+  }
+  assert.equal(attribute(child, country, 'onChange'), compact(`event=>{
+    const next=event.target.value,chosen=PHONE_COUNTRIES.find(item=>item.iso===next);
+    const national=phoneNationalPart(value,current.dial);
+    setCountry(next);
+    onChange(chosen?.dial?composeCountryPhone(chosen.dial,national):"");
+  }`))
+  assert.match(country.parent.getText(child), /PHONE_COUNTRIES\.map\(item=><option key=\{item\.iso\} value=\{item\.iso\}/)
+})
+
+test('country-phone helpers compose national input without duplicate dial codes and preserve E.164 validation', () => {
+  assert.equal(PHONE_COUNTRIES.find(country => country.iso === 'CA').dial, '+1')
+  assert.equal(PHONE_COUNTRIES.find(country => country.iso === 'GB').dial, '+44')
+  assert.equal(PHONE_COUNTRIES.find(country => country.iso === 'OTHER').dial, '')
+  assert.equal(phoneCountryFromValue(''), 'CA')
+  assert.equal(phoneCountryFromValue('+442012345678'), 'GB')
+  assert.equal(phoneCountryFromValue('+999123456789'), 'OTHER')
+  assert.equal(phoneNationalPart('+1 (416) 555-0123', '+1'), '4165550123')
+  assert.equal(composeCountryPhone('+1', '416 555 0123'), '+14165550123')
+  assert.equal(composeCountryPhone('+1', '1 416 555 0123'), '+14165550123')
+  assert.equal(composeCountryPhone('+1', '+44 20 1234 5678'), '+442012345678')
+  assert.equal(composeCountryPhone('+44', phoneNationalPart('+14165550123', '+1')), '+444165550123')
+  assert.equal(composeCountryPhone('+1', ''), '')
+  assert.equal(composeCountryPhone('', '20 1234 5678'), '2012345678')
+  assert.equal(composeCountryPhone('', '+44 20 1234 5678'), '+442012345678')
+  for (const value of ['+14165550123', '+442012345678']) assert.ok(E164_PHONE.test(value))
+  for (const value of ['', '2012345678', '+0123456789', '+1234567', '+1234567890123456']) assert.ok(!E164_PHONE.test(value), value)
+})

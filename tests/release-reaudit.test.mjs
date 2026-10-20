@@ -119,10 +119,89 @@ test('route or active-locale changes close both disclosures without stealing foc
   assert.doesNotThrow(() => navigationEffect(['pathname', 'activeLocale'], context));
   cleanup();
 });
-test('locale selection and site-menu links close their own disclosures immediately', () => {
+// Inspect exact menu link templates, then execute each real handler. A global
+// handler count would accept a missing Shop handler if another link gained one.
+function siteMenuLinkTemplates(componentSource) {
+  const ast = ts.createSourceFile('site-navigation.tsx', componentSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const links = [];
+  function attribute(opening, name) {
+    return opening.attributes.properties.find(item => ts.isJsxAttribute(item) && item.name.getText(ast) === name);
+  }
+  function value(opening, name) {
+    const initializer = attribute(opening, name)?.initializer;
+    if (!initializer) return '';
+    return ts.isStringLiteral(initializer) ? initializer.text : initializer.expression?.getText(ast) ?? '';
+  }
+  function visit(node, inMenu = false, group = '') {
+    if (ts.isJsxElement(node)) {
+      const opening = node.openingElement;
+      const className = value(opening, 'className');
+      inMenu ||= opening.tagName.getText(ast) === 'details' && className === 'site-main-menu';
+      if (inMenu && ['site-main-menu-panel', 'site-main-menu-grid', 'site-main-menu-more'].includes(className)) group = className;
+      if (inMenu && opening.tagName.getText(ast) === 'Link') {
+        const handler = attribute(opening, 'onClick')?.initializer;
+        links.push({ group, href: value(opening, 'href'), id: value(opening, 'data-nav-item'),
+          handler: handler && ts.isJsxExpression(handler) ? handler.expression : undefined, ast });
+      }
+    }
+    ts.forEachChild(node, child => visit(child, inMenu, group));
+  }
+  visit(ast);
+  return links;
+}
+function assertSiteMenuLinksClose(componentSource) {
+  const links = siteMenuLinkTemplates(componentSource);
+  assert.deepEqual(links.map(({ group, href, id }) => [group, href, id]), [
+    ['site-main-menu-panel', 'freeStartHref', ''],
+    ['site-main-menu-grid', 'item.href', 'item.id'],
+    ['site-main-menu-more', '"/" + activeLocale + "/shop"', 'shop'],
+    ['site-main-menu-more', '`/${activeLocale}/cart`', 'cart'],
+    ['site-main-menu-more', 'item.href', 'item.id'],
+    ['site-main-menu-more', '`/${activeLocale}/about`', 'about'],
+  ], 'exact menu templates include localized Shop immediately before cart');
+  for (const { group, href, handler, ast } of links) {
+    assert.ok(handler && ts.isArrowFunction(handler), `${group} ${href} has its own close handler`);
+    const compiled = ts.transpileModule(`(${handler.getText(ast)})`, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    for (const initiallyOpen of [true, false]) {
+      const context = { siteMenuRef: { current: { open: initiallyOpen } }, languageRef: { current: { open: true } } };
+      runInNewContext(compiled, context)();
+      assert.equal(context.siteMenuRef.current.open, false, `${group} ${href} closes its own menu`);
+      assert.equal(context.languageRef.current.open, true, `${group} ${href} does not close the language menu`);
+    }
+    assert.doesNotThrow(() => runInNewContext(compiled, { siteMenuRef: { current: null } })(), `${group} ${href} tolerates an unmounted menu`);
+  }
+}
+test('locale selection and every exact site-menu link, including Shop, close their own disclosures immediately', () => {
   assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
   assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
-  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 5);
+  assertSiteMenuLinksClose(navigationSource);
+});
+test('menu-close contract rejects missing or inert handlers on each exact link template', () => {
+  for (const link of siteMenuLinkTemplates(navigationSource)) {
+    assert.ok(link.handler);
+    const start = link.handler.getStart(link.ast), end = link.handler.getEnd();
+    for (const replacement of ['undefined', '() => {}', '() => { if (siteMenuRef.current) siteMenuRef.current.open = true; }']) {
+      assertSiteMenuLinksClose(navigationSource);
+      const mutated = navigationSource.slice(0, start) + replacement + navigationSource.slice(end);
+      const diagnostic = replacement === 'undefined' ? /has its own close handler/ : /closes its own menu/;
+      assert.throws(() => assertSiteMenuLinksClose(mutated), { message: diagnostic }, `${link.group} ${link.href}: ${replacement}`);
+    }
+  }
+});
+test('Shop menu-close contract rejects the wrong disclosure and a missing null guard', () => {
+  const link = siteMenuLinkTemplates(navigationSource).find(entry => entry.id === 'shop');
+  assert.ok(link?.handler);
+  const start = link.handler.getStart(link.ast), end = link.handler.getEnd();
+  for (const [replacement, diagnostic] of [
+    ['() => { if (languageRef.current) languageRef.current.open = false; }', /closes its own menu/],
+    ['() => { siteMenuRef.current.open = false; }', /tolerates an unmounted menu/],
+  ]) {
+    assertSiteMenuLinksClose(navigationSource);
+    const mutated = navigationSource.slice(0, start) + replacement + navigationSource.slice(end);
+    assert.throws(() => assertSiteMenuLinksClose(mutated), { message: diagnostic });
+  }
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');

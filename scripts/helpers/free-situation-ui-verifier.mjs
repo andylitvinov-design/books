@@ -82,7 +82,7 @@ export async function assertFreeSituationLandingReady(page, expect, locale, { qu
   await expect(enquiry.locator('button[data-contact-order]')).toBeVisible();
   const intake = capture.locator('[data-free-drawing-intake]');
   await expect(intake).toHaveCount(1);
-  const advanced = capture.locator('details').filter({ has: intake });
+  const advanced = capture.locator('details').filter({ has: page.locator('[data-free-drawing-intake]') });
   await expect(advanced).toHaveCount(1);
   assert.equal(await advanced.evaluate(node => node.open), false, 'Full drawing questionnaire starts collapsed');
   await expect(advanced.locator(':scope > summary')).toBeVisible();

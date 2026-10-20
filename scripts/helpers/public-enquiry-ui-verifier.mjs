@@ -120,18 +120,20 @@ export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kin
     await trigger.click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     const form = chooser.locator('form');
-    const details = form.locator('textarea');
+    const note = form.locator('details');
+    const details = note.locator('textarea');
     const submit = form.locator('button[type="submit"]');
     const name = form.locator('input[autocomplete="name"]');
     const email = form.locator('input[type="email"]');
     const phone = form.getByLabel(words.phone, { exact: true });
     const phoneField = form.locator('[data-phone-country-input]');
     const country = phoneField.getByRole('combobox', { name: words.country, exact: true });
-    const note = form.locator('details').filter({ has: details });
     const noteToggle = note.locator(':scope > summary');
     const consent = form.locator('input[type="checkbox"]');
     await expect(form).toHaveCount(1);
     await expect(form).toBeVisible();
+    await expect(note).toHaveCount(1);
+    await expect(form.locator('textarea')).toHaveCount(1);
     for (const field of [name, email, phone, consent]) await expect(field).toBeVisible();
     for (const field of [details, name, email, phone, consent]) await expect(field).toHaveCount(1);
     await expect(phoneField).toHaveCount(1);
@@ -142,11 +144,11 @@ export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kin
     await expect(country.locator('option')).toHaveText(PHONE_COUNTRIES.map(item =>
       item.flag + ' ' + (item.dial || '+') + ' · ' + item.names[locale]));
     for (const item of PHONE_COUNTRIES) await expect(country.locator('option[value="' + item.iso + '"]')).toHaveCount(1);
-    await expect(note).toHaveCount(1);
     assert.equal(await note.evaluate(node => node.open), false, 'Private note starts collapsed');
     await expect(noteToggle).toBeVisible();
     await expect(noteToggle).toHaveText(words.note);
-    await expect(form.getByLabel(words.note, { exact: true })).toHaveCount(1);
+    await expect(note.getByLabel(words.note, { exact: true })).toHaveCount(1);
+    await expect(details).toHaveAttribute('aria-label', words.note);
     assert.equal(await details.getAttribute('required'), null, 'Private note is optional');
     assert.equal(await details.getAttribute('minlength'), null, 'Private note has no minimum length');
     await expect(details).toHaveAttribute('maxlength', '1400');

@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import vm from 'node:vm'
+import ts from 'typescript'
 import {canReply,channelTransportReady,telegramPilotReady,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
 import {messengerCursor,parseMessengerCursor} from '../lib/crm/messenger-pagination.js'
 const root=new URL('..',import.meta.url)
@@ -133,16 +135,88 @@ test('multiple browser tabs and lost HTTP responses cannot reserve same pending 
 test('CRM owner has separate three-section mobile navigation and never mounts messages on Contacts',()=>{
   const ui=source('components/app/crm-manager.jsx')
   const css=source('components/app/crm-manager.module.css')
+  function checkMessagesMount(text){
+    const ast=ts.createSourceFile('crm-manager.jsx',text,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+    assert.equal(ast.parseDiagnostics.length,0,'CRM manager must parse')
+    const panels=[]
+    function visit(node){
+      if(ts.isJsxSelfClosingElement(node)&&node.tagName.getText(ast)==='CrmMessengerPanel')panels.push(node)
+      ts.forEachChild(node,visit)
+    }
+    visit(ast)
+    assert.equal(panels.length,1,'Exactly one actual messenger panel must exist')
+    for(const [name,path] of [['CrmMessengerPanel','./crm-messenger'],['CrmMessagesNavigation','./crm-messages-navigation']]){
+      assert.equal(ast.statements.filter(node=>ts.isImportDeclaration(node)&&
+        node.importClause?.name?.text===name&&node.moduleSpecifier.text===path).length,1,
+      `Actual ${name} import must remain bound`)
+    }
+    let boundary=panels[0].parent
+    while(boundary&&!ts.isJsxExpression(boundary))boundary=boundary.parent
+    assert.ok(boundary?.expression,'Messenger needs an explicit section expression')
+    assert.ok(ts.isJsxElement(boundary.parent)&&ts.isReturnStatement(boundary.parent.parent),
+      'Messages must remain a direct returned-section child, independent of overview data')
+    assert.equal(boundary.parent.openingElement.tagName.getText(ast),'section')
+    const expression=boundary.expression
+    assert.ok(ts.isBinaryExpression(expression)&&expression.operatorToken.kind===ts.SyntaxKind.AmpersandAmpersandToken,
+      'Messenger must keep its conditional mount guard')
+    const emitted=ts.transpileModule(`(${expression.getText(ast)})`,{
+      compilerOptions:{target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React,jsxFactory:'jsx',jsxFragmentFactory:'Fragment'},
+    }).outputText
+    const jsx=(type,props,...children)=>({type,props:props||{},children:children.flat(Infinity).filter(child=>child&&typeof child==='object')})
+    for(const activeSection of ['messages','contacts','overview','integrations','sms']){
+      for(const data of [undefined,{integrationSetup:{synthetic:true}}]){
+        const retry=()=>{},switched=[]
+        const rendered=vm.runInNewContext(emitted,{
+          activeSection,data,accountId:'synthetic-account',language:'es',retry,
+          switchSection:id=>switched.push(id),jsx,Fragment:'fragment',
+          CrmMessagesNavigation:'navigation',CrmMessengerPanel:'panel',
+        },{timeout:1000})
+        if(activeSection!=='messages'){
+          assert.equal(rendered,false,`No messenger mount on ${activeSection}`)
+          continue
+        }
+        assert.ok(rendered&&rendered.type==='fragment','Messages remain mounted without overview data')
+        assert.deepEqual(rendered.children.map(child=>child.type),['navigation','panel'],
+          'Messages navigation precedes the single panel')
+        const [navigation,panel]=rendered.children
+        assert.equal(navigation.props.locale,'es')
+        assert.equal(navigation.props.setup,data?.integrationSetup)
+        assert.deepEqual(Object.keys(panel.props).sort(),['accountId','key','locale','onCrmChange'])
+        assert.equal(panel.props.key,'synthetic-account-messenger')
+        assert.equal(panel.props.accountId,'synthetic-account')
+        assert.equal(panel.props.locale,'es')
+        assert.equal(panel.props.onCrmChange,retry)
+        navigation.props.onSms();navigation.props.onIntegrations();navigation.props.onOverview()
+        assert.deepEqual(switched,['sms','integrations','overview'])
+      }
+    }
+    assert.ok(boundary.getStart(ast)<text.indexOf('{data&&<>'),
+      'Inbox stays available before the overview-data gate')
+  }
+  checkMessagesMount(ui)
+  const guard="activeSection==='messages'&&<>"
+  assert.ok(ui.includes(guard),'Mutation anchor must match the actual source')
+  const mutations=[
+    ['wrong section',ui.replace(guard,"activeSection==='contacts'&&<>"),/Messages remain mounted without overview data/],
+    ['overview data gate',ui.replace(guard,"activeSection==='messages'&&data&&<>"),/Messages remain mounted without overview data/],
+    ['removed guard',ui.replace(guard,'<>'),/conditional mount guard/],
+    ['wrong account',ui.replace('accountId={accountId} locale={language} onCrmChange={retry}','accountId=\"foreign-account\" locale={language} onCrmChange={retry}'),/foreign-account/],
+    ['wrong key',ui.replace("key={accountId+'-messenger'}","key={'static-messenger'}"),/static-messenger/],
+    ['wrong locale',ui.replace('accountId={accountId} locale={language} onCrmChange={retry}','accountId={accountId} locale=\"en\" onCrmChange={retry}'),/'en'/],
+    ['missing retry',ui.replace(' locale={language} onCrmChange={retry}',' locale={language}'),/onCrmChange/],
+  ]
+  for(const [name,mutated,reason] of mutations){
+    assert.notEqual(mutated,ui,`${name}: mutation must alter current source`)
+    assert.throws(()=>checkMessagesMount(mutated),reason,`${name}: intended guard must reject`)
+  }
   assert.match(ui,/aria-pressed=\{activeSection===id\}/)
   assert.match(ui,/activeSection==='overview'/)
-  assert.match(ui,/activeSection==='messages'&&<CrmMessengerPanel/)
-  assert.ok(ui.indexOf("activeSection==='messages'&&<CrmMessengerPanel")<ui.indexOf('{data&&<>'),
-    'inbox must mount independently when overview API is unavailable')
   assert.match(ui,/activeSection==='contacts'&&<>/)
   assert.match(ui,/\['messages',language==='ru'\?'Сообщения'/)
   assert.match(css,/min-height:44px/)
   assert.match(css,/\.sectionTabs\{[^}]*overflow-x:auto/)
 })
+
 test('inbox supports channel, unread and search filters with locale-correct provider statuses',()=>{
   const ui=source('components/app/crm-messenger.jsx')
   const css=source('components/app/crm-messenger.module.css')

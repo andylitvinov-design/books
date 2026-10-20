@@ -408,3 +408,74 @@ for (const kind of ['dao', 'situation']) test(kind + ' keyed topic change create
   assert.equal(mounted.externalClicks(), 0);
   mounted.unmount();
 });
+
+for (const locale of ['en', 'ru', 'es']) {
+  test(locale + ' relative has starts inside each disclosure, rejecting all three ancestor-chain selectors', async () => {
+    const mounted = mountPublicConversion(locale, 'situation');
+    const { page, expect } = mounted;
+    const { main, enquiry, advanced, intake } = await assertFreeSituationLandingReady(page, expect, locale);
+    const capture = main.locator('section#request-free-review');
+    const form = enquiry.locator('[data-contact-channel-chooser]').locator('form');
+    const note = form.locator('details');
+    const formTextarea = form.locator('textarea');
+    // The actual page has both a contact-note disclosure and a separate full
+    // drawing disclosure. Global intersection would incorrectly accept these
+    // complete ancestor chains as a nested has selector.
+    await expect(note).toHaveCount(1);
+    await expect(note.locator('textarea')).toHaveCount(1);
+    await expect(note.filter({ has: page.locator('textarea') })).toHaveCount(1);
+    assert.equal(note.filter({ has: formTextarea }).selected().length, 0, 'Original note has-chain cannot find an outer form inside its details');
+    assert.equal(capture.locator('details').filter({ has: intake }).selected().length, 0, 'Original readiness has-chain cannot find outer capture ancestry inside details');
+    const detailedForm = main.locator('[data-free-drawing-intake]');
+    assert.equal(main.locator('details').filter({ has: detailedForm }).selected().length, 0, 'Original production has-chain cannot find its outer main inside details');
+    await expect(main.locator('details').filter({ has: page.locator('[data-free-drawing-intake]') })).toHaveCount(1);
+    await expect(note.filter({ has: page.locator('[data-free-drawing-intake]') })).toHaveCount(0);
+    await expect(advanced).toHaveCount(1);
+    await expect(advanced.locator('[data-free-drawing-intake]')).toHaveCount(1);
+    assert.equal(await advanced.evaluate(node => node.open), false);
+    assert.equal(mounted.fetchCount(), 0);
+    assert.equal(mounted.externalClicks(), 0);
+    mounted.unmount();
+  });
+
+  for (const [fault, disclosures, formTextareas, noteTextareas] of [
+    ['missing note disclosure', 0, 1, 0],
+    ['duplicate note disclosure', 2, 2, 2],
+    ['wrong note descendant', 1, 1, 0],
+    ['wrong note label', 1, 1, 1],
+  ]) {
+    test(locale + ' scoped optional-note contract rejects ' + fault + ' before any POST', async () => {
+      const nominal = mountPublicConversion(locale, 'imagery-therapy');
+      await exercisePublicEnquiryUi(nominal.page, nominal.page.locator('[data-consultation-capture="service"]'), nominal.expect,
+        { locale, kind: 'imagery-therapy' });
+      assert.equal(nominal.fetchCount(), 4, 'The same actual nested enquiry must first pass its complete nominal flow');
+      nominal.unmount();
+      const mounted = mountPublicConversion(locale, 'imagery-therapy', fault);
+      const scope = mounted.page.locator('[data-consultation-capture="service"]');
+      const form = scope.locator('[data-contact-channel-chooser]').locator('form');
+      await mounted.expect(form).toHaveCount(1);
+      await mounted.expect(form.locator('details')).toHaveCount(disclosures);
+      await mounted.expect(form.locator('textarea')).toHaveCount(formTextareas);
+      await mounted.expect(form.locator('details').locator('textarea')).toHaveCount(noteTextareas);
+      assert.ok(mounted.mutationReceipts.some(receipt => receipt.fault === fault
+        && receipt.path === 'components/contact-channel-chooser.tsx'), 'Mutate the actual current source, not a detached invented DOM');
+      let failedMatcher;
+      const expect = actual => Object.fromEntries(Object.entries(mounted.expect(actual)).map(([name, method]) => [name,
+        typeof method !== 'function' ? method : async (...args) => {
+          try { return await method(...args); } catch (error) { failedMatcher = name; throw error; }
+        }]));
+      expect.poll = mounted.expect.poll;
+      await assert.rejects(() => exercisePublicEnquiryUi(mounted.page, scope, expect, { locale, kind: 'imagery-therapy' }), error => {
+        assert.equal(error.code, 'ERR_ASSERTION');
+        assert.equal(failedMatcher, 'toHaveCount');
+        assert.match(error.stack, /exercisePublicEnquiryUi/);
+        return true;
+      });
+      assert.equal(mounted.fetchCount(), 0);
+      assert.equal(mounted.externalClicks(), 0);
+      assert.equal(mounted.intercepted(), false);
+      mounted.unmount();
+      assert.deepEqual(mounted.writesAfterUnmount, []);
+    });
+  }
+}
