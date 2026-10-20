@@ -75,6 +75,7 @@ def api_post(path: str, body: dict, *, authorized: bool = True) -> dict:
         "/api/report-narration/local/worker/claim",
         "/api/report-narration/local/worker/complete",
         "/api/report-narration/local/worker/failed",
+        "/api/report-narration/local/worker/cleanup",
     }:
         raise ValueError("worker path is not allowlisted")
     data = json.dumps(body, separators=(",", ":")).encode()
@@ -186,6 +187,12 @@ def process_one() -> bool:
     claim = api_post("/api/report-narration/local/worker/claim", {})
     job = claim.get("job")
     if job is None:
+        # Private, bounded cleanup runs only while the Mac is awake.
+        # No client text or voice models are involved.
+        try:
+            api_post("/api/report-narration/local/worker/cleanup", {})
+        except (HTTPError, URLError, ValueError, OSError):
+            pass
         return False
     if not isinstance(job, dict) or set(job) != {
         "id", "leaseId", "language", "text", "uploadUrl"
