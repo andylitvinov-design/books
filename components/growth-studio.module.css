@@ -305,3 +305,21 @@
   .metrics strong{font-size:22px}
   .toolbar{margin:12px 0 11px;gap:8px}
 }
+
+
+/* Owner launch checklist; links are provider login pages, not OAuth success. */
+.growthSetupSteps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.growthSetupSteps>section{padding:12px;min-width:0;border:1px solid #dceae6;background:#fff;border-radius:12px}
+.growthSetupSteps h4{font-size:13px;color:#1b535d;line-height:1.4;margin:0 0 7px;font-weight:760}
+.growthSetupSteps p{font-size:12px;line-height:1.6;color:#546e74;margin:0 0 8px}
+.growthSetupSteps .connectionNav{padding:4px 0 7px}
+.growthSetupSteps .connectionNav a{font-size:11px;min-height:33px;padding:5px 9px}
+.growthSetupEnv{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.growthSetupEnv>div{display:flex;flex-direction:column;gap:4px;min-width:0;padding:8px;
+  border:1px solid #d7e6e1;border-radius:8px;background:#f7fbf9}
+.growthSetupEnv code{font-size:11px;color:#235963;line-height:1.4;overflow-wrap:anywhere}
+.growthSetupEnv span{font-size:11px;color:#6b8084}
+.connectionBox p.growthSetupPrivacy{display:flex;align-items:flex-start;gap:8px;
+  margin-top:14px;border-top:1px solid #e4eae8;padding-top:12px;color:#85591a}
+.growthSetupPrivacy svg{flex:none;margin-top:1px}
+@media(max-width:750px){.growthSetupSteps{grid-template-columns:1fr}}
