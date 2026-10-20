@@ -11,7 +11,7 @@ create table if not exists app_private.business_coaching_programs (
 );
 alter table app_private.business_coaching_programs enable row level security;
 revoke all on table app_private.business_coaching_programs from public, anon, authenticated;
-grant select, insert, update on app_private.business_coaching_programs to hh_app_backend;
+grant select, insert, update, delete on app_private.business_coaching_programs to hh_app_backend;
 do $$
 begin
  if not exists(select 1 from pg_policies where schemaname='app_private' and tablename='business_coaching_programs' and policyname='business_coaching_owner_select') then
@@ -30,5 +30,10 @@ begin
    using (account_id=(select auth.uid()) and (select app_private.account_active()))
    with check (account_id=(select auth.uid()) and (select app_private.account_active()));
  end if;
-end $$;
+ if not exists(select 1 from pg_policies where schemaname='app_private' and tablename='business_coaching_programs' and policyname='business_coaching_owner_delete') then
+  create policy business_coaching_owner_delete on app_private.business_coaching_programs
+   for delete to hh_app_backend
+   using (account_id=(select auth.uid()) and (select app_private.account_active()));
+ end if;
+end $;
 commit;
