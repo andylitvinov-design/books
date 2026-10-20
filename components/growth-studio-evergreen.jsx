@@ -43,7 +43,8 @@ export default function GrowthStudioEvergreen({source,locale='en',disabled=false
   const t=COPY[locale==='ru'?'ru':'en']
   const [cadence,setCadence]=useState('weekly')
   const [count,setCount]=useState(3)
-  const [start,setStart]=useState(()=>inputLocal(source.scheduledAt))
+  const [start,setStart]=useState(()=>source.scheduledAt && Date.parse(source.scheduledAt)>Date.now()+3600_000
+    ?inputLocal(source.scheduledAt):'')
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const pendingBatch=useRef(null)
