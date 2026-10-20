@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server'
 import {getAppConfig,requestOrigin,requireSameOrigin} from '@/lib/app/config'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
-import {telegramClientLinkReady} from '@/lib/app/client-telegram-policy'
+import {telegramClientLinkReady,telegramClientBotUsername} from '@/lib/app/client-telegram-policy'
 import {guestTelegramIpBucket} from '@/lib/app/telegram-guest-news-policy'
 import {createGuestNewsLink,guestNewsStatus} from '@/lib/app/telegram-guest-news'
 
@@ -22,7 +22,8 @@ export async function GET(request){
   requestOrigin(request,config)
   const token=request.cookies.get(COOKIE)?.value
   const status=token?await guestNewsStatus(config,token):'not_requested'
-  return reply({status,available:telegramClientLinkReady()})
+  return reply({status,available:telegramClientLinkReady(),
+    botUsername:telegramClientLinkReady()?telegramClientBotUsername():null})
  }catch(error){
   const safe=safeError(error)
   return reply({error:safe.code,available:false},safe.status)
