@@ -17,7 +17,7 @@ test('supports quoted delimiters, CRLF and explicit UTC offset',()=>{
   assert.equal(result.items[0].scheduledAt,'2026-12-01T17:30:00.000Z')
 })
 test('rejects guessed time zones, unsupported platforms and private links row by row',()=>{
-  const input='caption,channel,scheduled_at,sourceUrl\nHello,instagram,2026-11-02 12:00,/en/academy\nWorld,twitter,,/en/academy\nSafe,telegram,,/en/client'
+  const input='caption,channel,scheduled_at,sourceUrl\nHello,instagram,2026-11-02 12:00,/en/academy\nWorld,not-a-network,,/en/academy\nSafe,telegram,,/en/client'
   const result=parseGrowthCsv(input)
   assert.equal(result.items.length,0)
   assert.deepEqual(result.errors.map(x=>x.reason),['timezone_required','invalid_post','invalid_post'])
