@@ -1,6 +1,8 @@
 'use client'
 import {useEffect,useMemo,useState} from 'react'
 import PracticeRequestConversation from './practice-request-conversation'
+import PractitionerRequestTasks from './practitioner-request-tasks'
+import {torontoToday} from '@/lib/practitioners/task-policy'
 import PublicEnquiryContact from './public-enquiry-contact'
 import {groupVerifiedPractitionerClients} from '@/lib/practitioners/client-profile-groups'
 import styles from './practitioner-client-profiles.module.css'
@@ -19,7 +21,7 @@ const COPY={
     privacy:'Only enquiries to your services. Anonymous contacts are not verified; private tests and records stay hidden.',
     noPortal:'Reply inside Holistic House or use the contact details the client shared. Telegram/WhatsApp history is not connected.',
     historySummary:'Original request and secure in-app replies',messageCount:'Conversation entries',
-    recent:'Recent clients',awaiting:'Awaiting my reply',newMessages:'New messages',lastActivity:'Recent activity',refresh:'Refresh clients',tip:'Tap a client to see their requests and conversation.',
+    recent:'Recent clients',tasks:'Open tasks',overdue:'Overdue',nextActions:'Upcoming actions',taskFilter:'With tasks',awaiting:'Awaiting my reply',newMessages:'New messages',lastActivity:'Recent activity',refresh:'Refresh clients',tip:'Tap a client to see their requests and conversation.',
     emptyHelp:'When someone enquires about your service, they will appear here automatically. You can add a service or share your practitioner profile to invite enquiries.',
     more:'Show {count} more clients',less:'Show latest 5',showing:'Showing {visible} of {total}'},
   ru:{title:'Мои клиенты',intro:'Последние клиенты появляются здесь автоматически — по дате последнего обращения.',
@@ -33,7 +35,7 @@ const COPY={
     privacy:'Здесь только обращения к вам. Анонимные контакты не подтверждены; личные тесты и чужие заявки недоступны.',
     noPortal:'Можно ответить внутри Holistic House или по указанному контакту. История Telegram/WhatsApp пока не подключена.',
     historySummary:'Первое обращение и ответы внутри сайта',messageCount:'Записей переписки',
-    recent:'Последние клиенты',awaiting:'Ждут моего ответа',newMessages:'Новые сообщения',lastActivity:'Недавняя активность',refresh:'Обновить клиентов',tip:'Нажмите на клиента, чтобы увидеть его заявки и переписку.',
+    recent:'Последние клиенты',tasks:'Открытые задачи',overdue:'Просрочено',nextActions:'Ближайшие действия',taskFilter:'С задачами',awaiting:'Ждут моего ответа',newMessages:'Новые сообщения',lastActivity:'Недавняя активность',refresh:'Обновить клиентов',tip:'Нажмите на клиента, чтобы увидеть его заявки и переписку.',
     emptyHelp:'После обращения по вашей услуге клиент появится здесь автоматически. Для первых заявок можно разместить услугу или поделиться профилем.',
     more:'Показать ещё {count}',less:'Показать последние 5',showing:'Показано {visible} из {total}'},
   es:{title:'Mis clientes',intro:'Tus clientes recientes aparecen automáticamente, ordenados por su última solicitud.',
@@ -47,7 +49,7 @@ const COPY={
     privacy:'Solo solicitudes a tus servicios. Los contactos anónimos no están verificados; sin datos privados de terceros.',
     noPortal:'Puedes responder dentro de Holistic House. El historial de Telegram/WhatsApp no está conectado.',
     historySummary:'Solicitud original y respuestas privadas',messageCount:'Mensajes guardados',
-    recent:'Clientes recientes',awaiting:'Esperan mi respuesta',newMessages:'Mensajes nuevos',lastActivity:'Actividad reciente',refresh:'Actualizar clientes',tip:'Elige un cliente para ver sus solicitudes y mensajes.',
+    recent:'Clientes recientes',tasks:'Tareas pendientes',overdue:'Atrasadas',nextActions:'Próximas acciones',taskFilter:'Con tareas',awaiting:'Esperan mi respuesta',newMessages:'Mensajes nuevos',lastActivity:'Actividad reciente',refresh:'Actualizar clientes',tip:'Elige un cliente para ver sus solicitudes y mensajes.',
     emptyHelp:'Los clientes aparecerán aquí cuando soliciten tus servicios. Puedes publicar un servicio o compartir tu perfil.',
     more:'Mostrar {count} clientes más',less:'Mostrar los últimos 5',showing:'Mostrando {visible} de {total}'},
 }
@@ -96,9 +98,17 @@ export default function PractitionerClientProfiles({items=[],services=[],account
     return ()=>abort.abort()
   },[isOwner,accountId,manualRetry])
   const selected=groups.find(item=>item.key===selectedKey)
+  const openTasks=(Array.isArray(practitionerTasks)?practitionerTasks:[])
+    .filter(item=>item.status==='open')
+    .sort((a,b)=>a.dueOn.localeCompare(b.dueOn)||a.id.localeCompare(b.id))
+  const today=torontoToday()
+  const overdueCount=openTasks.filter(item=>item.dueOn<today).length
+  const taskRequests=new Set(openTasks.map(item=>item.requestId))
   const filtered=groups.filter(group=>
     (!search.trim()||(group.name+' '+group.contact).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
-    &&(filter==='all'||(filter==='reply'?group.awaiting>0:filter==='open'?group.open>0:group.open===0)))
+    &&(filter==='all'||(filter==='tasks'
+      ?group.items.some(item=>taskRequests.has(item.id))
+      :filter==='reply'?group.awaiting>0:filter==='open'?group.open>0:group.open===0)))
   const activeCount=groups.filter(g=>g.open>0).length
   const awaitingCount=groups.filter(g=>g.awaiting>0).length
   const newMessagesCount=groups.reduce((total,g)=>total+g.newMessages,0)
@@ -116,12 +126,27 @@ export default function PractitionerClientProfiles({items=[],services=[],account
         {isOwner&&<span>{manualLoading?'…':manualClients.length} {u.count}</span>}
         <span>{items.length} {t.requests}</span><span>{activeCount} {t.pending}</span>
         <span>{awaitingCount} {t.awaiting}</span>
+        <span>{openTasks.length} {t.tasks}</span>
+        {overdueCount>0&&<span className={styles.overdueCount} role="status">{overdueCount} {t.overdue}</span>}
         {newMessagesCount>0&&<span className={styles.newCount} role="status">
           {newMessagesCount} {t.newMessages}</span>}
         {onRefresh&&<button type="button" className={styles.refresh} disabled={busy}
           onClick={()=>onRefresh()}>{t.refresh}</button>}
       </div>
     </header>
+    {openTasks.length>0&&<section className={styles.nextActions} aria-label={t.nextActions}>
+      <strong>{t.nextActions} · {openTasks.length}</strong>
+      <div>{openTasks.slice(0,5).map(task=>{
+        const group=groups.find(g=>g.items.some(item=>item.id===task.requestId))
+        if(!group)return null
+        return <button type="button" key={task.id} onClick={()=>{
+          setSelectedKey(group.key);setFilter('all')
+        }}>
+          <span>{group.name}</span>
+          <small>{task.dueOn}{task.dueOn<today?' · '+t.overdue:''}</small>
+        </button>
+      })}</div>
+    </section>}
     {isOwner?<details className={styles.privacy}><summary>{u.source} · {u.enquiries}</summary><p>{u.privacy}</p></details>
       :<p className={styles.privacy}>{t.privacy}</p>}
     <label className={styles.searchLabel}>{t.search}
@@ -170,7 +195,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
             </div>
           : <>
             <div className={styles.filters} role="group" aria-label={t.title}>
-              {[[ 'all',t.all ],['reply',t.awaiting],['open',t.open],['closed',t.closed]].map(([id,label])=>
+              {[[ 'all',t.all ],['reply',t.awaiting],['tasks',t.taskFilter],['open',t.open],['closed',t.closed]].map(([id,label])=>
                 <button type="button" key={id} aria-pressed={filter===id}
                   onClick={()=>{setFilter(id);setVisibleCount(CLIENTS_PAGE_SIZE);setSelectedKey('')}}>{label}</button>)}
             </div>
