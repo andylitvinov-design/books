@@ -25,24 +25,26 @@ const copy = {
     intro: 'Выберите папку урока, затем язык записи. Можно хранить несколько аудиофайлов и отмечать один для воспроизведения ученику.',
     steps: 'Папка урока → RU / EN → загрузить → прослушать → опубликовать',
     published: 'На слайде', empty: 'Аудиовведение пока не выбрано',
+    draft: 'Приватный оригинал', publishedFile: 'Публичная копия', preparing: 'Открываем защищённое аудио…',
+    copyFailed: 'Не удалось создать публичную копию. Оригинал сохранён в приватной папке.',
     ready: 'Сохранено', noFiles: 'В этой папке пока нет записей на выбранном языке.',
     files: 'Аудиофайлы в папке', selectFile: 'Выбрать запись', selected: 'Выбрано',
     choice: 'Выбранная запись', current: 'Сейчас звучит на слайде',
     choose: 'Добавить новый аудиофайл', upload: 'Загрузить в папку',
     loading: 'Загрузка…', publish: 'Использовать на слайде',
-    publishing: 'Публикуем…', uploadDone: 'Файл сохранён в папке. Прослушайте и отдельно назначьте его для урока.',
+    publishing: 'Публикуем…', uploadDone: 'Файл сохранён приватно. Прослушайте и отдельно опубликуйте копию для урока.',
     pickExisting: 'Запись выбрана. Можно прослушать и назначить на слайд.',
-    confirmPublish: 'Сделать эту запись доступной ученикам на выбранном уроке? Убедитесь, что в ней нет личных данных клиентов.',
+    confirmPublish: 'Создать публичную копию для учеников этого урока? Убедитесь, что запись не содержит конфиденциальных данных и её можно сделать общедоступной.',
     publishedDone: 'Запись назначена на слайд. Изменение станет видно после обновления страницы курса.',
     unpublish: 'Убрать со слайда', unpublishing: 'Убираем…',
-    confirmUnpublish: 'Убрать аудио со слайда? Сохранённые файлы в папке останутся.',
+    confirmUnpublish: 'Убрать запись со слайда? Оригинал сохранится, но ранее опубликованная публичная копия может остаться доступной по прямой ссылке.',
     removed: 'Аудио снято со слайда. Исходные файлы остались в папке.',
     unavailable: 'Аудиохранилище пока недоступно. Проверьте настройки доступа.',
     failed: 'Не получилось завершить действие. Проверьте подключение и повторите.',
     invalid: 'Используйте MP3, M4A или WAV размером от 512 байт до 20 МБ.',
     listen: 'Прослушать запись', localPreview: 'Прослушать выбранный файл с устройства',
     fileInfo: 'MP3 / M4A / WAV · максимум 20 МБ. Можно загружать несколько файлов в одну папку.',
-    publicNote: 'Только для общедоступных учебных записей без данных клиентов. Файлы в этом хранилище технически доступны по прямой ссылке; без публикации они не отображаются в уроке.',
+    publicNote: 'Новые исходные записи остаются приватными. Только после вашего подтверждения создаётся публичная копия. Опубликованные версии доступны по ссылке; никогда не добавляйте данные клиентов.',
     viewCourse: 'Открыть курс', refresh: 'Обновить',
     refreshing: 'Обновляем список…', truncated: 'Показаны первые 100 файлов. Старые файлы остаются в хранилище.',
   },
@@ -53,24 +55,26 @@ const copy = {
     intro: 'Choose a lesson folder, then a recording language. Keep several files and select one to play on the learner slide.',
     steps: 'Lesson folder → RU / EN → upload → listen → publish',
     published: 'On the slide', empty: 'No audio introduction is selected yet',
+    draft: 'Private original', publishedFile: 'Public copy', preparing: 'Opening protected audio…',
+    copyFailed: 'Could not create the public copy. The private original is safely stored.',
     ready: 'Saved', noFiles: 'This language folder does not have any recordings yet.',
     files: 'Audio recordings in this folder', selectFile: 'Select recording', selected: 'Selected',
     choice: 'Selected recording', current: 'Currently on the learner slide',
     choose: 'Add a new audio recording', upload: 'Upload to folder',
     loading: 'Uploading…', publish: 'Use on learner slide',
-    publishing: 'Publishing…', uploadDone: 'Saved in the folder. Listen first, then explicitly add the recording to the slide.',
+    publishing: 'Publishing…', uploadDone: 'Saved privately. Listen first, then approve a public copy for the slide.',
     pickExisting: 'Recording selected. Listen to it and choose whether to use it on the slide.',
-    confirmPublish: 'Make this recording available to learners on this lesson slide? Make sure it contains no private client information.',
+    confirmPublish: 'Create a public copy for this lesson? Confirm that this recording has no confidential details and is suitable for public access.',
     publishedDone: 'Recording assigned to the slide. It will appear after the course page refreshes.',
     unpublish: 'Remove from slide', unpublishing: 'Removing…',
-    confirmUnpublish: 'Remove audio from the slide? Saved audio files remain in this folder.',
+    confirmUnpublish: 'Remove audio from the slide? The original remains saved. A previously public copy may still be accessible via its direct link.',
     removed: 'Removed from the slide; uploaded originals remain in the folder.',
     unavailable: 'The audio store is not available. Check your account and storage settings.',
     failed: 'Unable to complete the action. Check the connection and retry.',
     invalid: 'Use MP3, M4A or WAV, between 512 bytes and 20 MB.',
     listen: 'Listen to recording', localPreview: 'Preview selected file from this device',
     fileInfo: 'MP3 / M4A / WAV · up to 20 MB. You can upload multiple files to the same folder.',
-    publicNote: 'Use only public educational recordings with no client information. Files stored here are technically accessible by direct URL, even before they are featured on a lesson slide.',
+    publicNote: 'New originals remain private. Only your explicit approval creates a public copy. Published copies are accessible by direct URL; never upload client details.',
     viewCourse: 'Open the course', refresh: 'Refresh',
     refreshing: 'Refreshing files…', truncated: 'First 100 files shown. Older recordings remain stored.',
   },
@@ -82,8 +86,9 @@ async function ownerRequest(body, lesson, locale) {
     method: body ? 'POST' : 'GET', cache: 'no-store', credentials: 'same-origin',
     ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
   })
-  if (!response.ok) throw new Error('OWNER_AUDIO_UNAVAILABLE')
-  return response.json()
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(data.error || 'OWNER_AUDIO_UNAVAILABLE')
+  return data
 }
 
 function formatFileDate(value, locale) {
@@ -114,8 +119,9 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
 
   const publishedUrl = reikiIntroPublicUrl(origin,current,lesson.id,locale)
   const stagedUrl = staged
-    ? (file && staged.fileName === file.name ? preview :
-      reikiIntroPublicObjectUrl(origin,staged.path,lesson.id,locale))
+    ? (staged.previewUrl || (file && staged.fileName === file.name ? preview :
+      staged.storage === 'public' ?
+        reikiIntroPublicObjectUrl(origin,staged.path,lesson.id,locale) : null))
     : null
 
   const select = event => {
@@ -146,9 +152,26 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       const {error:uploadError} = await storage.uploadToSignedUrl(
         intent.path,intent.token,file,{contentType:intent.mime,upsert:false})
       if (uploadError) throw uploadError
-      setStaged({path:intent.path,fileName:file.name})
+      setStaged({path:intent.path,fileName:file.name,storage:'draft'})
       await onChanged()
       setNotice(copy.uploadDone)
+    } catch {setError(copy.failed)}
+    finally {setBusy('');setOperationBusy(false)}
+  }
+
+  async function chooseSaved(item) {
+    if (busy) return
+    setOperationBusy(true);setBusy('preview');setError('');setNotice('')
+    try {
+      const response = item.storage === 'draft'
+        ? await ownerRequest({action:'preview',lesson:lesson.id,locale,path:item.path})
+        : {previewUrl:reikiIntroPublicObjectUrl(origin,item.path,lesson.id,locale)}
+      if (!response.previewUrl || new URL(response.previewUrl).origin !== origin)
+        throw new Error('INVALID_REIKI_AUDIO_FILE')
+      setFile(null)
+      setStaged({path:item.path,fileName:null,storage:item.storage||'public',
+        previewUrl:response.previewUrl})
+      setNotice(copy.pickExisting)
     } catch {setError(copy.failed)}
     finally {setBusy('');setOperationBusy(false)}
   }
@@ -157,10 +180,11 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     if (!staged || busy || !window.confirm(copy.confirmPublish)) return
     setOperationBusy(true);setBusy('publish');setError('');setNotice('')
     try {
-      await ownerRequest({action:'publish',lesson:lesson.id,locale,path:staged.path})
+      await ownerRequest({action:'publish',lesson:lesson.id,locale,path:staged.path,
+        storage:staged.storage||'public'})
       await onChanged()
       setStaged(null);setFile(null);setNotice(copy.publishedDone)
-    } catch {setError(copy.failed)}
+    } catch (error) {setError(error?.message==='REIKI_AUDIO_COPY_FAILED'?copy.copyFailed:copy.failed)}
     finally {setBusy('');setOperationBusy(false)}
   }
 
@@ -199,7 +223,7 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       </div>
       {!files.length ? <p className={styles.folderEmpty}>{copy.noFiles}</p> : <div className={styles.files}>
         {files.map((item)=>{
-          const isActive = item.path === current?.path
+          const isActive = item.storage === 'public' && item.path === current?.path
           const isSelected = item.path === staged?.path
           return <div key={item.path} className={styles.fileRow + (isSelected? ' '+styles.fileRowSelected:'')}
             data-reiki-audio-file={item.path} data-file-on-slide={isActive?'true':'false'}>
@@ -207,14 +231,13 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
             <div className={styles.fileDetails}>
               <strong>{locale==='ru'?'Запись':'Recording'} · {item.path.split('/').pop()?.slice(0,8).toUpperCase()}</strong>
               <small>{formatFileDate(item.createdAt,locale)} · {formatBytes(item.bytes)} · {item.path.slice(-3).toUpperCase()}</small>
+              <small>{item.storage === 'draft' ? copy.draft : copy.publishedFile}</small>
             </div>
             {isActive ? <span className={styles.fileActive}><Check size={13} aria-hidden="true"/>{copy.published}</span> :
               <button type="button" disabled={!!busy}
                 className={styles.selectRecording} aria-pressed={isSelected}
-                onClick={()=>{
-                  setFile(null);setStaged({path:item.path,fileName:null})
-                  setError('');setNotice(copy.pickExisting)
-                }}>{isSelected ? copy.selected:copy.selectFile}</button>}
+                onClick={()=>void chooseSaved(item)}>{busy==='preview'&&isSelected?copy.preparing:
+                  (isSelected ? copy.selected:copy.selectFile)}</button>}
           </div>
         })}
       </div>}

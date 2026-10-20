@@ -187,3 +187,15 @@ The existing first-party organic-event referral allowlist already accepts Eventb
 No visits, provider RSVPs or platform-side tickets are imported or counted as received leads. Recording a marketing opportunity still requires an existing owner CRM contact and a checked confirmation that an enquiry was actually received. Only source/medium/public-safe campaign/creative/offer/stage are stored; no medical, test, email or attendee content in URL tracking.
 
 The migration must be applied to the verified Supabase **holistichouse** project before the new options can be used. Confirm the source CHECK and forced RLS afterward. This is a code/DB attribution extension, **not** a provider OAuth connection, marketing campaign, event publication, GA4 activation, or client-data sharing.
+
+---
+
+### 2026-10-20 — Paid advertising staging and verified account boundary
+
+HYPD: 0 connected Meta Ads, 0 connected Google Ads; GA4 property properties/558442343 verified. Windsor.ai has Facebook Ads Fenix Andrey (USD, America/Los_Angeles) and Елена Айтерра (USD, Europe/Kiev). Neither matches an owner-confirmed Holistic House CAD + Toronto campaign account. Windsor plan: Trial. Metricool: connected YouTube only; no IG/FB. Do NOT silently use unrelated/USD accounts or change billing.
+
+Public website landings checked HTTP 200 and self-canonical: EN/RU/ES Free Situation Review, EN systemic constellations, EN Reiki Yggdrasil, EN Toronto. GA4 and Meta pixel remain disabled/unverified; PUBLIC_ANALYTICS_AVAILABLE=false must remain until consent, private-path isolation and DebugView tests pass. A messenger-open or click is NOT a verified lead.
+
+Staging branch feat/hh-ads-referrals-readiness-20261020 introduces data/meta-ads-pilot-draft.json: one PAUSED EN/Toronto Meta pilot, two text/real-photo proposals, hard lifetime CAD 35 cap and seven-day maximum, but no account ID, assets uploaded, active ad, spend approval or real campaign. data/google-ads-pilot-draft.json receives honest GA4 property/account metadata and safe landing URL. lib/paid-ad-referrals.js permits only vetted Facebook/Instagram paid_social and Google/Google Ads cpc first-party free-review referrals, stripping click IDs and all personal query parameters. It adds a public-safe source label to the visitor-initiated WhatsApp/Telegram draft, not to an advertiser pixel or server-confirmed lead. Tests cover nonpersonal labels, invalid/duplicate data and nonactivation.
+
+Remaining launch gates: verified CAD + America/Toronto owner ad account; Meta professional Page/IG access; official Google Ads Customer ID; correct platform minimum budget and hard spend limit; verified real owner reception of applications; neutral ad copy/approved real photos; policy and consent QA; explicit owner budget approval. Do not buy paid connectors, alter another brand's ad account, create live ads or send unsolicited client messages.

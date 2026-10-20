@@ -42,11 +42,23 @@ for (const item of all) {
       if (existing !== sha) throw new Error("Static artwork output collision");
       continue;
     }
-    const output = await sharp(original, { failOn: "error" })
-      .rotate()
-      .resize({ width, withoutEnlargement: true, kernel: "lanczos3" })
-      .webp({ quality: 76, alphaQuality: 90, effort: 4 })
-      .toBuffer();
+    let output;
+    try {
+      output = await sharp(original, { failOn: "error" })
+        .rotate()
+        .resize({ width, withoutEnlargement: true, kernel: "lanczos3" })
+        .webp({ quality: 76, alphaQuality: 90, effort: 4 })
+        .toBuffer();
+    } catch (cause) {
+      // Never silently ship a blank image or switch to an unpinned external asset.
+      // Vercel build logs must identify the exact checked-in input to repair.
+      throw new Error(
+        "Invalid pinned static artwork source: " + item.source +
+        " (blob " + item.sha.slice(0, 16) + ", " + original.length +
+        " bytes), destination " + url + ". Re-encode and re-pin the reviewed source image.",
+        { cause },
+      );
+    }
     writeFileSync(path.join(root, "public", url.slice(1)), output);
     fileHashes.set(url, sha);
   }

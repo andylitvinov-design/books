@@ -1,5 +1,6 @@
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 
 import { YggdrasilEnglishVideoGuide } from "@/components/yggdrasil-english-video-guide";
@@ -183,39 +184,53 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
 
   return (
     <div className="yggdrasil-program-landing">
-      <section className="yggdrasil-program-hero">
+      <section className="yggdrasil-program-hero reiki-screen reiki-screen--hero">
         <SourceVisual url={hero.localUrl ?? hero.sourceUrl} label={hero.label[locale]} className="yggdrasil-program-hero-image" />
         <div className="yggdrasil-program-hero-copy">
           <p className="homeopathy-kicker">{text.eyebrow}</p>
           <h1>{text.title}</h1>
           <p className="yggdrasil-hero-tagline">{text.tagline}</p>
           <p className="yggdrasil-program-intro">{text.lead}</p>
-          <p className="yggdrasil-program-benefits-title">{text.benefits}</p>
-          <ul className="yggdrasil-program-highlights">
+          <details className="reiki-disclosure reiki-disclosure--hero">
+             <summary>{text.benefits}<span aria-hidden="true">＋</span></summary>
+             <ul className="yggdrasil-program-highlights">
             {heroHighlights[locale].map((highlight) => <li key={highlight}>{highlight}</li>)}
           </ul>
+           </details>
           <div className="yggdrasil-program-actions">
             <Link className="yggdrasil-primary-action" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"} <span aria-hidden="true">→</span></Link>
             <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{text.free} <span aria-hidden="true">→</span></Link>
-            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
-            <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
           </div>
-          <Link className="yggdrasil-program-detail-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description} <span aria-hidden="true">↗</span></Link>
+          <details className="reiki-disclosure reiki-disclosure--hero-links">
+            <summary>{locale === "ru" ? "Программа, модули и полное описание" : locale === "es" ? "Programa, módulos y descripción completa" : "Explore modules, full programme & guide"}<span aria-hidden="true">＋</span></summary>
+            <nav className="reiki-hero-links" aria-label={locale === "ru" ? "Дополнительные варианты" : locale === "es" ? "Más opciones" : "More options"}>
+              <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
+              <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
+              <Link className="yggdrasil-program-detail-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description} <span aria-hidden="true">↗</span></Link>
+            </nav>
+          </details>
         </div>
       </section>
 
       {/* Guide-first, compact capture after the authentic course hero. */}
-      <YggdrasilLeadForms locale={locale} placement="top" />
+      <details className="reiki-optional-capture">
+         <summary>{locale === "ru" ? "Получить программу и вводную инициацию" : locale === "es" ? "Recibir la guía y la iniciación introductoria" : "Get the study guide & introductory initiation"}<span aria-hidden="true">＋</span></summary>
+         <YggdrasilLeadForms locale={locale} placement="top" />
+       </details>
 
-      <section className="yggdrasil-program-section" id="system-modules">
+      <section className="yggdrasil-program-section reiki-screen reiki-screen--explore" id="system-modules">
         <p className="homeopathy-kicker">{text.mapEyebrow}</p>
         <h2>{text.mapTitle}</h2>
         <p className="yggdrasil-program-section-lead">{text.mapLead}</p>
-        <div className="yggdrasil-module-grid">
+        <nav className="reiki-module-jumps" aria-label={locale === "ru" ? "Выбрать модуль" : locale === "es" ? "Elegir módulo" : "Choose a module"}>
+           {yggdrasilModuleLandings.map((module, index) => <a href={"#yggdrasil-module-" + module.slug} key={module.slug}>{String(index + 1).padStart(2, "0")} · {module.title[locale]}</a>)}
+         </nav>
+         <p className="reiki-swipe-cue">{locale === "ru" ? "Листайте модули горизонтально →" : locale === "es" ? "Desliza entre módulos →" : "Swipe or scroll through the modules →"}</p>
+         <div className="yggdrasil-module-grid" tabIndex={0} aria-label={locale === "ru" ? "Модули Рейки Иггдрасиль" : locale === "es" ? "Módulos de Reiki Yggdrasil" : "Reiki Yggdrasil modules"}>
           {yggdrasilModuleLandings.map((module) => (
-            <article className="yggdrasil-module-card" key={module.slug}>
+            <article className="yggdrasil-module-card" id={"yggdrasil-module-" + module.slug} key={module.slug}>
               <Link className={"yggdrasil-module-art yggdrasil-module-art--" + module.slug} href={`/${locale}/academy/reiki/yggdrasil/${module.slug}`} aria-label={`${text.open}: ${module.title[locale]}`}>
-                <Image src={module.image} alt={module.title[locale]} fill sizes="(max-width: 680px) 130px, (max-width: 1100px) 240px, 240px" className="yggdrasil-module-art-image" />
+                <Image src={cardArtworkUrl(module.image)} unoptimized={hasCardArtwork(module.image)} alt={module.title[locale]} fill sizes="(max-width: 680px) 130px, (max-width: 1100px) 240px, 240px" className="yggdrasil-module-art-image" />
               </Link>
               <div className="yggdrasil-module-card-copy">
                 <small>{text.module} {module.levelId}</small>
@@ -228,7 +243,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
       </section>
 
-      <section className="yggdrasil-basic-course" id="basic-course">
+      <section className="yggdrasil-basic-course reiki-chapter-collection" id="basic-course">
         <div className="yggdrasil-basic-course-heading">
           <p className="homeopathy-kicker">{text.basicEyebrow}</p>
           <h2>{text.basicTitle}</h2>
@@ -241,7 +256,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
         <div className="yggdrasil-basic-levels">
           {basicSteps.map((step) => (
-            <article className="yggdrasil-basic-level-card" key={step.id}>
+            <article className="yggdrasil-basic-level-card reiki-screen reiki-screen--chapter" key={step.id}>
               <Link
                 className="yggdrasil-basic-level-photo-link"
                 href={`/${locale}/academy/reiki/yggdrasil/basic-course#${step.id.toLowerCase()}`}
@@ -258,10 +273,11 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
                 <small>{text.basicLevel} {step.number} · {step.settings.length} {text.basicSettings}</small>
                 <h3>{step.title[locale]}</h3>
                 <p>{basicStepDescriptions[step.number][locale]}</p>
-                <div className="yggdrasil-basic-level-attunements" aria-label={text.basicSettings}>
+                <details className="yggdrasil-basic-level-attunements reiki-disclosure">
+                   <summary>{locale === "ru" ? "Раскрыть настройки ступени" : locale === "es" ? "Ver sintonizaciones del nivel" : "Explore level attunements"}<span aria-hidden="true">＋</span></summary>
                   <strong>{locale === "ru" ? "Настройки ступени" : locale === "es" ? "Sintonizaciones del nivel" : "Attunements included"}</strong>
                   <ul>{step.settings.map((setting, index) => <li key={setting.id}>{basicAttunementName(locale, step, setting, index)}</li>)}</ul>
-                </div>
+                </details>
                 <Link className="yggdrasil-basic-level-open" href={`/${locale}/academy/reiki/yggdrasil/basic-course#${step.id.toLowerCase()}`}>
                   {text.basicStepOpen} {step.number} <span aria-hidden="true">→</span>
                 </Link>
@@ -271,11 +287,14 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
       </section>
 
-      <YggdrasilMeditationFeature locale={locale} />
+      <div className="reiki-screen reiki-screen--media"><YggdrasilMeditationFeature locale={locale} /></div>
 
-      <YggdrasilTestimonials locale={locale} />
+      <div className="reiki-screen reiki-screen--social"><YggdrasilTestimonials locale={locale} /></div>
 
-      <YggdrasilEnglishVideoGuide locale={locale} scope="all" />
+      <details className="reiki-disclosure reiki-disclosure--archive">
+         <summary>{locale === "ru" ? "Полный видеоархив и дополнительные материалы" : locale === "es" ? "Archivo de vídeos y materiales adicionales" : "Complete video archive & further resources"}<span aria-hidden="true">＋</span></summary>
+         <YggdrasilEnglishVideoGuide locale={locale} scope="all" />
+       </details>
 
 
 

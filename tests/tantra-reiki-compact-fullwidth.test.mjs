@@ -33,7 +33,8 @@ test("First Tantra level is a single scenic reading screen with original text be
   assert.match(journey, /<div className="tantra-journey__source-body">/);
   assert.match(journey, /originalAuthorDescription\(locale, i\)\.map/);
   assert.match(journey, /originalProgrammeStudyStep\(locale, i\)/);
-  assert.match(journey, /<details className="tantra-journey__extras" open=\{i === 0\}>/);
+  assert.match(journey, /<details className="tantra-journey__extras">/);
+  assert.doesNotMatch(journey, /<details className="tantra-journey__extras" open=/);
   assert.equal((journey.match(/className="tantra-journey__first-cta"/g) || []).length, 1);
   assert.match(journey, /if \(n === 1\) return article/);
   assert.match(journey, /<details className="tantra-journey__collapsed"/);

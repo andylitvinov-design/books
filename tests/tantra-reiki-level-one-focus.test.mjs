@@ -28,7 +28,7 @@ test("Tantra Reiki landing leads with the first initiation in all locales", asyn
   assert.equal((page.match(/<TantraReikiJourney locale=\{locale\} \/>/g) ?? []).length, 1);
 });
 
-test("all nine author chapters are preserved but only Levels 2–9 require clicks", async () => {
+test("all nine author chapters remain, with first level visible and optional attunements expandable", async () => {
   const [journey, css] = await Promise.all([
     read("components/tantra-reiki-journey.tsx"),
     read("app/academy.css"),
@@ -38,7 +38,8 @@ test("all nine author chapters are preserved but only Levels 2–9 require click
   assert.match(journey, /<details className="tantra-journey__collapsed"/);
   assert.match(journey, /id=\{"tantra-level-"\+n\}/);
   assert.match(journey, /<summary className="tantra-journey__collapsed-summary">/);
-  assert.match(journey, /<details className="tantra-journey__extras" open=\{i === 0\}>/);
+  assert.match(journey, /<details className="tantra-journey__extras">/);
+  assert.doesNotMatch(journey, /<details className="tantra-journey__extras" open=/);
   assert.match(journey, /originalAuthorDescription\(locale, i\)\.map/);
   assert.match(journey, /originalProgrammeStudyStep\(locale, i\)/);
   assert.match(journey, /levelPhotos\[i\]/);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/app/academy.css";
+import "@/app/reiki-landing-screens.css";
 import "@/app/yggdrasil-basic-description.css";
 import "@/app/temple-studies.css";
 import { notFound, permanentRedirect, redirect } from "next/navigation";

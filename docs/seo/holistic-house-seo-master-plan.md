@@ -270,3 +270,19 @@ on the most frequently visited pages.
 **Production bounds:** отдельные Vercel readback в 23:55 UTC до и 23:57 UTC после съёмки совпали: READY `dpl_GZvJMFGbTcosM6HzFm3AvwZD41h7`, canonical alias `holistichouse.vercel.app`, source SHA `60e11d5df9b2cb683963ff14dc85dfe472a45cf2`. Код probe: `ai-projects-brain@347917ac4bb289909cf416df44492a360ac24df2`; его commit не является source SHA сайта.
 
 **Scope:** top/choices на всех ширинах; подробные интерактивные состояния и конец страницы только на 390 px. Эмуляция Chromium, не физический iPhone/Safari. Воспроизведение видео, внешняя отправка сообщений, реальные заявки, CWV/CrUX, индексация и остальные money pages этим аудитом не приняты. Общие SEO/analytics acceptance gates остаются отдельными.
+
+---
+
+## 20 октября 2026 — IndexNow: бесплатный API поисковых уведомлений (Bing и участвующие поисковики)
+
+В рамках подключения органического продвижения подготовлен отдельный **безучётный** и бесплатный маршрут уведомления поисковиков IndexNow. Он не подменяет Google Search Console, GA4, Bing Webmaster Tools, платные объявления или поисковую индексацию.
+
+- Источник проверяемого хоста: `https://holistichouse.vercel.app`; ключ в корне сайта `public/fd5a76df78ea5cb826818733ae65556c.txt` (ключ публичен по протоколу IndexNow, это не секрет и не рекламный API-токен).
+- Строго ограниченный список: `data/indexnow-public-urls.json` (8 реальных публичных, локализованных URL без query/PII; никаких /client, /admin, /report, результатов тестирования, health-профилей).
+- Реализация: `scripts/indexnow-client.mjs`, `scripts/submit-indexnow.mjs`; сетевые запросы запрещены в режиме dry-run, реальная отправка только с `--submit`.
+- `.github/workflows/hh-indexnow.yml`: на PR только offline проверка; **после merge в подтверждённую production-ветку** и появления проверяемого публичного ключа на реально развёрнутом сайте — один POST на официальный `https://api.indexnow.org/indexnow`. Без дополнительной подписки, постоянного сервера или cron.
+- Перед POST скрипт отдельно читает живой ключ, каждую целевую страницу (HTTP 200) и её self-canonical/noindex. При неудаче **ничего не отправляет**. HTTP 200/202 означает *полученное уведомление*, НЕ подтверждённую индексацию.
+- При будущих содержательных обновлениях корректируйте только реальные изменившиеся URL в allowlist, не массово уведомляйте о сотнях неизменённых страниц. Ручная workflow_dispatch по умолчанию выполняет только dry-run.
+- После релиза обязательна проверка точного PR-commit и Vercel-alias READY, чтения key file, статуса GH Actions notify-job и ответа IndexNow. До такого readback не ставить LIVE/CONNECTED.
+
+Официальный протокол: https://www.indexnow.org/documentation и https://www.indexnow.org/faq.

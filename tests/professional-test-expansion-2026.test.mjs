@@ -93,7 +93,7 @@ test('each original questionnaire scores its official dimensions without fabrica
 
 })
 
-test('small professional ordering bonus is limited to discovery; actual topic relevance remains dominant', () => {
+test('a source label cannot add invented validity points to discovery ranking or match percent', () => {
   const shared = {
     key:'comparison-fixture', selectable:true, scaleGuide:{ measurementAxes:[], scales:[] },
     topics:['mood'], analysisAxes:[{key:'mood',weight:0.75}],
@@ -103,9 +103,8 @@ test('small professional ordering bonus is limited to discovery; actual topic re
   const professional = { ...shared, testKind:'professional' }
   const checkin = { ...shared, testKind:'monitoring' }
   const ranked = rankExplorerEntries([checkin, professional])
-  assert.equal(ranked[0].testKind, 'professional')
-  assert.equal(ranked[0].score - ranked[1].score, 7)
-  assert.equal(estimatedTestMatchPercent(professional) - estimatedTestMatchPercent(checkin), 3)
+  assert.equal(ranked[0].score, ranked[1].score)
+  assert.equal(estimatedTestMatchPercent(professional),estimatedTestMatchPercent(checkin))
   const guest = buildExplorerEntries({locale:'en',audience:'guest'})
   const real = rankPublicTestMatches(guest, {focus:['relationships'],depth:'balanced'})
   assert.ok(real.some(entry => NEW_KEYS.includes(entry.key)))

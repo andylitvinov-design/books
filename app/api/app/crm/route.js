@@ -6,12 +6,13 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createCrmRepository, crmEnabled } from '@/lib/crm/repository'
 import { billingRegistryEnabled } from '@/lib/crm/billing-registry'
-import { getCrmEmailConfig } from '@/lib/crm/email'
+import { emailSetupStatus, getCrmEmailConfig } from '@/lib/crm/email'
 import { sendCrmMessage, sendCrmVerification } from '@/lib/crm/email-dispatch'
 import { getSmsConfig, smsSetupStatus } from '@/lib/crm/sms'
 import { probeTwilioSmsConnection } from '@/lib/crm/sms-setup'
 import { sendCrmSms } from '@/lib/crm/sms-dispatch'
 import { refreshCrmSmsStatus } from '@/lib/crm/sms-status'
+import { MESSENGER_CHANNELS, messengerSetupStatus } from '@/lib/crm/messenger-policy'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -61,6 +62,11 @@ async function handle(request) {
             smsStatus:getSmsConfig().reason||'ready',
             smsLive:getSmsConfig().live||false,
             smsSetup:smsSetupStatus(),
+            integrationSetup:{
+              email:emailSetupStatus(),
+              sms:smsSetupStatus(),
+              messengers:MESSENGER_CHANNELS.map(channel=>messengerSetupStatus(channel)),
+            },
           }
         })
       }
