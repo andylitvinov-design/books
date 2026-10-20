@@ -110,7 +110,7 @@ export function ContactChannelChooser({
     const adReferral = readPaidAdReferral(window.location.search, window.location.pathname);
     setPublicAdSearch(adReferral ? "?" + new URLSearchParams({
       utm_source: adReferral.source,
-      utm_medium: adReferral.medium,
+      utm_medium: adReferral.medium ?? "",
       utm_campaign: adReferral.campaign,
       ...(adReferral.content ? { utm_content: adReferral.content } : {}),
     }).toString() : "");
