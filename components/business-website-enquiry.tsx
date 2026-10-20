@@ -162,7 +162,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
           <textarea disabled={!showQuestion} maxLength={700} minLength={5} rows={2} value={question}
             placeholder={t.questionPlaceholder} onChange={event=>{setQuestion(event.target.value);edit();}}/>
         </label>
-      </div>}
+      </div>
       <label className={styles.honeypot} aria-hidden="true">Website
         <input type="text" value={website} tabIndex={-1} autoComplete="off" onChange={event=>setWebsite(event.target.value)} />
       </label>
