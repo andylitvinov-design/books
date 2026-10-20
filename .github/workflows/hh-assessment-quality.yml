@@ -1,0 +1,61 @@
+name: Holistic House assessment evidence and authored-content QA
+
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-assessment-quality.yml'
+      - 'data/assessments/**'
+      - 'lib/assessments/**'
+      - 'components/app/test-explorer.*'
+      - 'scripts/audit-hh-author-items-2026.mjs'
+      - 'scripts/audit-psychometric-quality-2026.mjs'
+      - 'tests/*assessment*.test.mjs'
+      - 'tests/checkin-scoring-analysis-quality.test.mjs'
+      - 'tests/hh-author-content-audit.test.mjs'
+      - 'tests/psychometric-validity-directory.test.mjs'
+      - 'docs/assessments/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-assessment-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  authored-content-and-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Exact source evidence, 73 authored families, 150 groups and safe reports
+        run: >-
+          node --conditions=react-server --test
+          tests/psychometric-validity-directory.test.mjs
+          tests/hh-original-review-ledger.test.mjs
+          tests/hh-author-content-audit.test.mjs
+          tests/checkin-scoring-analysis-quality.test.mjs
+          tests/checkin-course-result-integrity.test.mjs
+          tests/full-assessment-library-quality.test.mjs
+          tests/professional-test-expansion-2026.test.mjs
+          tests/public-test-match-paging.test.mjs
+      - name: Export static editorial review queue — no users or client data
+        run: |
+          mkdir -p artifacts/assessment-quality
+          node --conditions=react-server scripts/audit-hh-author-items-2026.mjs > artifacts/assessment-quality/summary.json
+          node --conditions=react-server scripts/audit-hh-author-items-2026.mjs --csv > artifacts/assessment-quality/reviewer-items-en-ru.csv
+          node --conditions=react-server scripts/audit-psychometric-quality-2026.mjs > artifacts/assessment-quality/evidence-groups.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assessment-evidence-and-author-review
+          path: artifacts/assessment-quality/
+          retention-days: 14
+          if-no-files-found: error
