@@ -58,6 +58,8 @@ jobs:
           cache: npm
       - name: Install lockfile-pinned packages
         run: npm ci --no-audit --no-fund
+      - name: Identify corrupt pinned source before unrelated source tests
+        run: node scripts/build-public-card-artwork.mjs
       - name: Verify public source hashes and static lookup paths
         run: node --test tests/public-card-artwork-cost-guard.test.mjs tests/public-card-artwork-reuse-secondary.test.mjs
       - name: Build real Next.js app with prebuilt static WebP
