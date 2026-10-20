@@ -98,7 +98,8 @@ export default function LabResults({ accountId, locale = 'en' }) {
   const chosen = useMemo(() => reports.find(report => report.id === selected) || null, [selected,reports])
   const validRows = useMemo(() => rows.map(normalizeLabMarker), [rows])
   const valid = validRows.length > 0 && validRows.every(Boolean)
-  const current = chosen?.markers || validRows.filter(Boolean)
+  // Prevent unverified transcription from driving even an educational preview.
+  const current = chosen?.markers || (confirmed ? validRows.filter(Boolean) : [])
   const review = useMemo(() => buildLabReview(current, locale), [current,locale])
   const change = (index,key,value) => { setConfirmed(false); setSuccess(''); setRows(current => current.map((item,i) => i === index ? { ...item,[key]: value } : item)) }
   const reset = () => { setSelected(null);setRows([blank()]);setRaw('');setLabName('');setMeasuredOn(localDay());setHint('');setError('');setSuccess('');setConfirmed(false);setSourceFormat('manual'); if(fileRef.current)fileRef.current.value='' }
@@ -204,7 +205,7 @@ export default function LabResults({ accountId, locale = 'en' }) {
         </section>}
         {review.entries.length>0 && <section className={styles.panel}>
           <h2>{t.plan}</h2><p className={styles.small}>{t.planIntro}</p>
-          {review.focus.length>0 && <div className={styles.focus}><strong>{t.focus}:</strong>{review.focus.map(f=><span key={f.id}>{f.label}</span>)}</div>}
+          {review.focus.length>0 && <div className={styles.focus}><strong>{t.focus}:</strong><div className={styles.focusList}>{review.focus.map(f=><article key={f.id}><strong>{f.label}</strong><p>{f.question}</p></article>)}</div></div>}
           <ol className={styles.plan}>{review.steps.map(step=><li key={step.day}><span className={styles.day}>{step.day}</span><div><strong>{step.title}</strong><p>{step.detail}</p></div></li>)}</ol>
         </section>}
         {chosen && <PriorChanges report={chosen} reports={reports} t={t}/>}
