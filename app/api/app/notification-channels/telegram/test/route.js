@@ -24,10 +24,10 @@ export async function POST(request){
    if(request.headers.get('x-hh-account-id')!==actor.id)
      throw new AppError('ACCOUNT_CHANGED',409)
    if(!practitionerEmailAllowed(actor))throw new AppError('ACCESS_DENIED',403)
-   if(Number(request.headers.get('content-length')||0)>128)
+   // This action has no parameters. Reject even streamed request bodies
+   // without buffering user-controlled bytes into server memory.
+   if(request.body!==null||Number(request.headers.get('content-length')||0)>0)
      throw new AppError('INVALID_BODY',400)
-   const body=await request.arrayBuffer()
-   if(body.byteLength>0)throw new AppError('INVALID_BODY',400)
    const result=await sendOwnerTelegramPilot(config,actor)
    return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
  }catch(error){
