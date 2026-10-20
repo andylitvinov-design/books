@@ -39,7 +39,11 @@ export default function CrmMessagesNavigation({locale='en',setup,onSms,onIntegra
  const realReady=external.filter(item=>crmIntegrationStage(item.channel,item)==='configured').length
  const pilot=external.filter(item=>crmIntegrationStage(item.channel,item)==='pilot').length
  const count=realReady+pilot
- const providerNote=locale==='ru'
+ const providerNote=!setup
+   ?locale==='ru'?'Статус внешних каналов ещё не загружен. Откройте «Подключения» для проверки.':
+     locale==='es'?'No se ha cargado el estado de proveedores. Abre «Conexiones».':
+       'External provider status has not loaded. Open Connections to verify it.'
+   :locale==='ru'
    ?'Внешних каналов технически готово: '+realReady+(pilot?' · пилотных: '+pilot:'')+'. Фактические доставки не подтверждены этим счётчиком.'
    :locale==='es'
      ?'Canales externos configurados: '+realReady+(pilot?' · pilotos: '+pilot:'')+'. La entrega real no está confirmada.'
