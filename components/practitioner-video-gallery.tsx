@@ -43,7 +43,7 @@ export default function PractitionerVideoGallery({videos,locale='en'}:{videos:Vi
    const id=index+':'+video.url,active=playing===id
    return <article className={styles.card} key={id}>
     <div className={styles.screen}>{active
-     ?<iframe title={video.title} src={embed.src} loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/>
+     ?<iframe title={video.title} src={embed.src} loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/>
      :<button type="button" className={styles.poster} style={embed.poster?{backgroundImage:'linear-gradient(0deg,rgba(6,24,40,.67),rgba(6,24,40,.1)),url("'+embed.poster+'")'}:undefined}
        onClick={()=>setPlaying(id)} aria-label={t.watch+': '+video.title}>
        <span className={styles.play} aria-hidden="true">▶</span><span>{t.watch}</span>
