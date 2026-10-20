@@ -60,7 +60,7 @@ test('queued report text stays encrypted and worker transport is restricted',()=
   assert.match(redis,/FAILURE_SCRIPT/)
   assert.match(redis,/ZRANGEBYSCORE/)
   assert.match(redis,/EVAL/)
-  assert.match(storage,/data\.public!==false/)
+  assert.match(storage,/checkPrivateMediaStorage\(config\)/)
   assert.match(storage,/3000000/)
   assert.match(worker,/HH_LOCAL_NARRATION_SUPABASE_HOST/)
   assert.match(worker,/HTTPRedirectHandler/)
