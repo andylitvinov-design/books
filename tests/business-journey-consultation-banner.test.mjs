@@ -22,7 +22,7 @@ test('Business keeps a concise benefits banner and direct same-page booking hand
   assert.match(css,/\.root\[data-topic-journey="business"\] \.businessPromo/)
 })
 
-test('Mobile business page shows a three-step finder and folds secondary free tests', () => {
+test('Mobile business page shows a two-step first-screen finder and folds secondary free tests', () => {
   const selector=read('components/topic-journey-selector.tsx')
   const finder=read('components/business-consultation-finder.tsx')
   const css=read('components/topic-journey-selector.module.css')
@@ -41,12 +41,22 @@ test('Mobile business page shows a three-step finder and folds secondary free te
   assert.match(selector,/journey\.id !== 'business' && \(/)
   assert.match(finder,/stage === 'area'/)
   assert.match(finder,/stage === 'issue'/)
-  assert.match(finder,/stage === 'outcome'/)
+  assert.doesNotMatch(finder,/stage === 'outcome'/)
+  assert.match(finder,/aria-valuemax=\{2\}/)
   assert.match(finder,/aria-valuenow=\{answered\}/)
   assert.match(finder,/href="#business-direct-request"/)
   assert.match(fcss,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   assert.match(css,/\.businessSelfChecksBody/)
   assert.match(css,/#203450 0%, #283d5c 58%, #483a52 100%/)
+  const heroStart=selector.indexOf('<section className={styles.hero}>')
+  const finderAt=selector.indexOf('<BusinessConsultationFinder locale={language} />')
+  const moreAt=selector.indexOf('<details className={styles.businessExploreMore}>')
+  assert.ok(heroStart>=0 && finderAt>heroStart && moreAt>finderAt,
+    'The wizard must appear in the hero before any secondary navigation')
+  assert.equal(selector.split('<BusinessConsultationFinder').length - 1, 1)
+  assert.match(fcss,/\.choice\{min-height:51px\}/)
+  assert.match(css,/\.businessExploreMore\{/)
+  assert.match(css,/\.businessHeroTopline\{display:none\}/)
 })
 
 test('Business landing shows only pre-existing, ID-matched authentic client video testimonials',()=>{

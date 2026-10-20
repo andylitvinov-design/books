@@ -6,15 +6,16 @@ import { ENERGYWORK_PRACTICE_VALUES, energyworkAnswerValid } from "../data/acade
 const curriculum = readFileSync(new URL("../data/academy/energywork-ai-curriculum.ts", import.meta.url), "utf8");
 const learner = readFileSync(new URL("../components/energywork-ai-learner.tsx", import.meta.url), "utf8");
 
-test("All four shared Reiki practice options invite further practice in EN and RU", () => {
+test("All three active shared Reiki practices invite further practice in EN and RU", () => {
   assert.match(curriculum, /id: "skipped", label: l\("I need more practice", "Мне нужно ещё попрактиковаться"\)/);
-  assert.equal((curriculum.match(/question: practiceQuestion/g) || []).length, 4);
+  assert.equal((curriculum.match(/question: practiceQuestion/g) || []).length, 3);
   assert.deepEqual([...ENERGYWORK_PRACTICE_VALUES], ["tried", "skipped"], "Keep historic private answers compatible");
-  for (const id of ["intention-04", "boundaries-03", "ygg-03", "kun-03"]) {
+  for (const id of ["intention-04", "ygg-03", "kun-03"]) {
     assert.match(curriculum, new RegExp('id: "' + id + '"[^\\n]*question: practiceQuestion'), id);
     assert.equal(energyworkAnswerValid(id, "tried"), true, id);
     assert.equal(energyworkAnswerValid(id, "skipped"), true, id);
   }
+  assert.equal(energyworkAnswerValid("boundaries-03", "skipped"), true, "Preserve historical encrypted choice");
   assert.doesNotMatch(curriculum, /I chose to skip it today|Сегодня я решил\(а\) пропустить/);
 });
 
