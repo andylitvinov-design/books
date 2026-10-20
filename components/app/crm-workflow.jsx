@@ -9,7 +9,7 @@ const COPY={
   overview:'Practice overview',manual:'Stages and sources are recorded manually; they are not verified bookings or revenue.',
   leads:'Interested',clients:'Clients',open:'Open follow-ups',overdue:'Overdue',today:'Due today',
   buckets:{urgent:'Urgent',overdue:'Overdue',today:'Today',upcoming:'Later',all:'All tasks'},
-  tasksTitle:'Tasks & daily work',taskSearch:'Find contact or action',openContact:'Open contact',noMatches:'No matching tasks in the loaded list.',incomplete:'This is a partial task list. Totals include all tasks.',viewTasks:'Open task center',
+  tasksTitle:'Tasks & daily work',taskSearch:'Find contact or action',openContact:'Open contact',noMatches:'No matching tasks in the loaded list.',incomplete:'This is a partial task list. Totals include all tasks.',viewTasks:'Open task center',loadTasks:'Load more open tasks',loadError:'Could not load more tasks. Try again.',loadingTasks:'Loading tasks…',
   queue:'Next actions',empty:'No follow-ups yet. Add one from a contact below.',more:'Showing the first 12 open actions',
   history:'Recent activity',historyEmpty:'No business activity recorded yet.',done:'Done',cancel:'Cancel',cancelConfirm:'Cancel this scheduled action?',showMore:'Show more actions',
   move:'Move date',date:'Due date',source:'How they found you',sourceNote:'Source entered manually',
@@ -24,7 +24,7 @@ const COPY={
   overview:'Обзор работы с клиентами',manual:'Этапы и источники указаны вручную. Это не подтверждённые оплаты или бронирования.',
   leads:'Интересуются',clients:'Клиенты',open:'Открытые задачи',overdue:'Просрочено',today:'На сегодня',
   buckets:{urgent:'Срочно',overdue:'Просрочено',today:'На сегодня',upcoming:'Позже',all:'Все'},
-  tasksTitle:'Задачи и план дня',taskSearch:'Поиск по клиенту или действию',openContact:'Открыть контакт',noMatches:'В загруженном списке нет подходящих задач.',incomplete:'Загружена только часть задач. Общие показатели полные.',viewTasks:'Открыть центр задач',
+  tasksTitle:'Задачи и план дня',taskSearch:'Поиск по клиенту или действию',openContact:'Открыть контакт',noMatches:'В загруженном списке нет подходящих задач.',incomplete:'Загружена только часть задач. Общие показатели полные.',viewTasks:'Открыть центр задач',loadTasks:'Загрузить ещё задачи',loadError:'Не удалось загрузить задачи. Повторите.',loadingTasks:'Загружаю задачи…',
   queue:'Следующие действия',empty:'Пока нет задач. Добавьте действие из карточки контакта.',more:'Показаны первые 12 открытых задач',
   history:'История взаимодействий',historyEmpty:'Деловых действий пока нет.',done:'Выполнено',cancel:'Отменить',cancelConfirm:'Отменить запланированное действие?',showMore:'Показать ещё задачи',
   move:'Перенести',date:'Дата действия',source:'Откуда узнали о вас',sourceNote:'Источник указан вручную',
@@ -39,7 +39,7 @@ const COPY={
   overview:'Resumen de contactos',manual:'Las etapas y fuentes se introducen manualmente; no son reservas ni pagos verificados.',
   leads:'Interesados',clients:'Clientes',open:'Tareas pendientes',overdue:'Atrasadas',today:'Para hoy',
   buckets:{urgent:'Urgentes',overdue:'Atrasadas',today:'Hoy',upcoming:'Más tarde',all:'Todas'},
-  tasksTitle:'Tareas y agenda diaria',taskSearch:'Buscar contacto o acción',openContact:'Abrir contacto',noMatches:'No hay tareas coincidentes en la lista cargada.',incomplete:'Se muestra una parte de las tareas. Los totales son completos.',viewTasks:'Abrir centro de tareas',
+  tasksTitle:'Tareas y agenda diaria',taskSearch:'Buscar contacto o acción',openContact:'Abrir contacto',noMatches:'No hay tareas coincidentes en la lista cargada.',incomplete:'Se muestra una parte de las tareas. Los totales son completos.',viewTasks:'Abrir centro de tareas',loadTasks:'Cargar más tareas',loadError:'No se pudieron cargar más tareas. Inténtalo de nuevo.',loadingTasks:'Cargando tareas…',
   queue:'Próximas acciones',empty:'Todavía no hay tareas. Añade una desde un contacto.',more:'Se muestran las primeras 12 tareas abiertas',
   history:'Actividad reciente',historyEmpty:'Aún no hay actividad.',done:'Hecho',cancel:'Cancelar',cancelConfirm:'¿Cancelar esta acción?',showMore:'Mostrar más tareas',
   move:'Cambiar fecha',date:'Fecha',source:'Cómo te conocieron',sourceNote:'Fuente indicada manualmente',
@@ -79,7 +79,7 @@ function Action({item,t,busy,onAction,today,onOpenContact}) {
  </li>
 }
 
-export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=[],busy=false,onAction,onOpenContact,onViewTasks,mode='overview'}) {
+export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=[],busy=false,onAction,onOpenContact,onViewTasks,mode='overview',nextCursor=null,onLoadMore,pageBusy=false,pageError=false}) {
   const t=COPY[locale]||COPY.en
   const [showAll,setShowAll]=useState(false)
   const [bucket,setBucket]=useState('urgent')
@@ -125,6 +125,10 @@ export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=
         {mode!=='tasks'&&open.length>12&&!showAll&&<button
           className={styles.showMore} type="button" onClick={()=>setShowAll(true)}>{t.showMore} ({open.length-12})</button>}
       </>:<p className={styles.fine}>{board.counts.open?t.noMatches:t.empty}</p>}
+      {mode==='tasks'&&nextCursor&&onLoadMore&&<button type="button" className={styles.showMore}
+        disabled={pageBusy||busy} onClick={onLoadMore}>
+        {pageBusy?t.loadingTasks:t.loadTasks}</button>}
+      {mode==='tasks'&&pageError&&<p role="alert" className={styles.fine}>{t.loadError}</p>}
     </details>
     {mode!=='tasks'&&<details className={styles.section}>
       <summary>{t.history}</summary>
