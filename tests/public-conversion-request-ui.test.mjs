@@ -3,16 +3,112 @@ import test from 'node:test';
 import { mountPublicConversion } from './helpers/public-conversion-ui-harness.mjs';
 import { assertPublicEnquiryFixture, publicEnquiryContract, assertSingleEntryEnquiryUi, exercisePublicEnquiryUi } from '../scripts/helpers/public-enquiry-ui-verifier.mjs';
 import { assertFreeSituationLandingReady, exerciseFreeSituationRequestUi, prepareDrawingIntakeUi } from '../scripts/helpers/free-situation-ui-verifier.mjs';
+import { assertDaoLandingReady, exerciseDaoRequestUi } from '../scripts/helpers/dao-request-ui-verifier.mjs';
+
+const freeTopicContracts = {
+  situation: { ready: assertFreeSituationLandingReady, exercise: exerciseFreeSituationRequestUi },
+  dao: { ready: assertDaoLandingReady, exercise: exerciseDaoRequestUi },
+};
+for (const locale of ['en', 'ru', 'es']) for (const [kind, contract] of Object.entries(freeTopicContracts)) {
+  test(`${locale} ${kind} native topic name is exact while getByLabel retains descendant option text`, async () => {
+    for (const fault of ['', 'nested topic label']) {
+      const mounted = mountPublicConversion(locale, kind, fault);
+      const { enquiry, text, topic } = await contract.ready(mounted.page, mounted.expect, locale);
+      if (fault) assert.ok(mounted.mutationReceipts.some(receipt => receipt.fault === fault));
+      await mounted.expect(topic).toHaveCount(1);
+      await mounted.expect(topic.locator('option')).toHaveText(text.topics);
+      // Reproduce the old browser failure against the actual compiled component,
+      // not a fixture that discards the nested options when computing label text.
+      const oldTopic = enquiry.getByLabel(text.topic, { exact: true });
+      await mounted.expect(oldTopic).toHaveCount(0);
+      await assert.rejects(() => mounted.expect(oldTopic).toBeVisible(), { code: 'ERR_ASSERTION' });
+      await mounted.expect(enquiry.getByLabel(text.topic)).toHaveCount(1);
+      await mounted.expect(enquiry.getByLabel(text.topic.toUpperCase(), { exact: false })).toHaveCount(1);
+      await mounted.expect(enquiry.getByLabel(text.topic + text.topics.join(''), { exact: true })).toHaveCount(1);
+      await topic.selectOption('2');
+      await mounted.expect(topic).toHaveValue('2');
+      assert.equal(mounted.fetchCount(), 0, 'Reading or selecting a topic never submits');
+      assert.equal(mounted.externalClicks(), 0);
+      mounted.unmount();
+    }
+  });
+
+  for (const fault of ['missing topic', 'hidden topic', 'duplicate topic', 'wrong topic label',
+    'unassociated topic label', 'wrong topic role', 'wrong topic option', 'missing topic option',
+    'stuck topic value', 'stale topic']) {
+    test(`${locale} ${kind} exact topic contract rejects ${fault} at its intended stage`, async () => {
+      const nominal = mountPublicConversion(locale, kind);
+      await contract.exercise(nominal.page, nominal.expect, locale);
+      assert.equal(nominal.fetchCount(), 4, 'The same actual route must first pass the complete nominal request');
+      nominal.unmount();
+      const mounted = mountPublicConversion(locale, kind, fault);
+      const enquiry = mounted.page.locator(`[data-free-resource-enquiry="${kind}"]`);
+      assert.ok(mounted.mutationReceipts.some(receipt => receipt.fault === fault
+        && receipt.path === 'components/free-resource-enquiry.tsx'), 'Mutate the current shared source');
+      if (fault === 'hidden topic') assert.equal(enquiry.locator('select').selected()[0].hidden, true);
+      if (fault === 'wrong topic role') await mounted.expect(enquiry.getByRole('listbox')).toHaveCount(1);
+      let failedMatcher;
+      const expect = actual => {
+        const original = mounted.expect(actual);
+        return Object.fromEntries(Object.entries(original).map(([name, method]) => [name,
+          typeof method !== 'function' ? method : async (...args) => {
+            try { return await method(...args); } catch (error) { failedMatcher = name; throw error; }
+          }]));
+      };
+      expect.poll = mounted.expect.poll;
+      await assert.rejects(() => contract.exercise(mounted.page, expect, locale), error => {
+        assert.equal(error.code, 'ERR_ASSERTION');
+        if (fault === 'stale topic') assert.match(error.message, /Prepared .* request must retain/);
+        else assert.equal(failedMatcher, fault.includes('option') ? 'toHaveText'
+          : fault === 'stuck topic value' ? 'toHaveValue' : 'toHaveCount');
+        return true;
+      });
+      assert.equal(mounted.fetchCount(), fault === 'stale topic' ? 4 : 0);
+      assert.equal(mounted.externalClicks(), 0);
+      assert.equal(mounted.intercepted(), false);
+      mounted.unmount();
+    });
+  }
+}
+
+test('label fidelity preserves nested consent text and explicit private-note aria-label without a request', async () => {
+  const mounted = mountPublicConversion('en', 'situation');
+  const scope = mounted.page.locator('[data-free-resource-enquiry="situation"]');
+  const fields = [
+    ['Your name *', 'input[autocomplete="name"]'],
+    ['Email', 'input[type="email"]'],
+    ['Phone number', 'input[type="tel"]'],
+    ['Add a short note (optional)', 'textarea'],
+    ['I agree to be contacted personally about this enquiry only. No marketing subscription.', 'input[type="checkbox"]'],
+  ];
+  for (const [label, selector] of fields) {
+    const byLabel = scope.getByLabel(label, { exact: true });
+    await mounted.expect(byLabel).toHaveCount(1);
+    await mounted.expect(scope.locator(selector)).toHaveCount(1);
+    // Locator resolution rerenders the VM tree; stable paths identify the same
+    // real control without comparing newly created callback function objects.
+    assert.deepEqual(byLabel.selected().map(node => node.path), scope.locator(selector).selected().map(node => node.path));
+    await mounted.expect(scope.getByLabel(label.toUpperCase(), { exact: false })).toHaveCount(1);
+    await mounted.expect(scope.getByLabel(label + ' incorrect', { exact: true })).toHaveCount(0);
+  }
+  await mounted.expect(scope.locator('input[type="checkbox"]')).not.toBeChecked();
+  assert.equal(mounted.fetchCount(), 0);
+  assert.equal(mounted.externalClicks(), 0);
+  mounted.unmount();
+});
 
 for (const locale of ['en', 'ru']) {
   test(locale + ' actual Alchemy personalized and price-card choosers retain selections, retry, and never pay or send', async () => {
     const mounted = mountPublicConversion(locale, 'alchemy');
     const { page, expect } = mounted;
     const form = page.locator('[data-alchemy-lead-form="single"]');
-    await expect(form.locator('select')).toHaveCount(2);
+    const format = form.getByRole('combobox', { name: locale === 'ru' ? 'Формат' : 'Session format', exact: true });
+    const topic = form.getByRole('combobox', { name: locale === 'ru' ? 'Тема' : 'Topic', exact: true });
+    await expect(format).toHaveCount(1);
+    await expect(topic).toHaveCount(1);
     await assertSingleEntryEnquiryUi(form, expect);
-    await form.locator('select').first().selectOption('30');
-    await form.locator('select').nth(1).selectOption('business');
+    await format.selectOption('30');
+    await topic.selectOption('business');
     await exercisePublicEnquiryUi(page, form, expect, { locale, kind: 'alchemy',
       requiredMessage: ['€50', locale === 'ru' ? 'Работа и деньги' : 'Work and money'] });
     const pricing = page.locator('[data-alchemy-booking-formats]');
@@ -112,7 +208,7 @@ for (const [fault, expectedRequests] of [
 
 for (const [fault, selector, select, required] of [
   ['stale alchemy format', '[data-alchemy-booking-formats]', async scope => scope.locator('[data-alchemy-format="30"]').click(), '€50'],
-  ['stale alchemy topic', '[data-alchemy-lead-form="single"]', async scope => scope.locator('select').nth(1).selectOption('business'), 'Work and money'],
+  ['stale alchemy topic', '[data-alchemy-lead-form="single"]', async scope => scope.getByRole('combobox', { name: 'Topic', exact: true }).selectOption('business'), 'Work and money'],
 ]) {
   test('Alchemy acceptance rejects ' + fault, async () => {
     const mounted = mountPublicConversion('en', 'alchemy', fault);
@@ -240,9 +336,75 @@ for (const locale of ['en', 'ru', 'es']) for (const contactMode of ['phone', 'bo
     assert.equal(mounted.fetchCount(), 4);
     for (const request of mounted.requests) {
       assert.equal(request.contact.email, contactMode === 'phone' ? '' : 'visitor@example.test');
-      assert.equal(request.contact.phone, '+14165551234');
+      assert.equal(request.contact.phone, '+447700900123');
       assert.equal(request.contactConsent, true);
     }
     assert.equal(mounted.externalClicks(), 0);
   });
 }
+
+// These mutations change the current component source and first pass the same
+// nominal request, so an unrelated earlier failure cannot satisfy the control.
+for (const [fault, expectedRequests, matcher, message] of [
+  ['missing country', 0, 'toHaveCount'], ['duplicate country', 0, 'toHaveCount'],
+  ['hidden country', 0, 'toHaveCount'], ['wrong country name', 0, 'toHaveCount'],
+  ['wrong country option', 0, 'toHaveText'], ['missing country option', 0, 'toHaveText'],
+  ['wrong country option value', 0, 'toHaveCount'], ['stuck country', 0, 'toHaveValue'],
+  ['country dial lost', 0, 'toHaveValue'], ['country editable while pending', 1, 'toBeDisabled'],
+  ['required private note', 0, null, 'Private note is optional'],
+  ['minimum private note', 0, null, 'Private note has no minimum length'],
+  ['expanded private note', 0, null, 'Private note starts collapsed'],
+  ['private note blocks contact only', 0, 'toBeEnabled'],
+  ['private note URL leak', 4, null, 'Contact and separately entered private details never enter messenger URLs'],
+]) {
+  test('actual country/private-note contract rejects ' + fault + ' at the intended guard', async () => {
+    const nominal = mountPublicConversion('en', 'situation');
+    await exerciseFreeSituationRequestUi(nominal.page, nominal.expect, 'en', { contactMode: 'phone' });
+    assert.equal(nominal.fetchCount(), 4);
+    assert.ok(nominal.requests.every(body => body.contact.phone === '+447700900123'));
+    nominal.unmount();
+    const mounted = mountPublicConversion('en', 'situation', fault);
+    mounted.page.locator('[data-free-resource-enquiry]').selected();
+    assert.ok(mounted.mutationReceipts.some(receipt => receipt.fault === fault
+      && receipt.path === (fault.includes('country') ? 'components/phone-country-input.tsx' : 'components/contact-channel-chooser.tsx')));
+    let failedMatcher;
+    const expect = actual => Object.fromEntries(Object.entries(mounted.expect(actual)).map(([name, method]) => [name,
+      typeof method !== 'function' ? method : async (...args) => {
+        try { return await method(...args); } catch (error) { failedMatcher = name; throw error; }
+      }]));
+    expect.poll = mounted.expect.poll;
+    await assert.rejects(() => exerciseFreeSituationRequestUi(mounted.page, expect, 'en', { contactMode: 'phone' }), error => {
+      assert.equal(error.code, 'ERR_ASSERTION');
+      if (matcher) assert.equal(failedMatcher, matcher);
+      else assert.ok(error.message.includes(message), error.message);
+      return true;
+    });
+    assert.equal(mounted.fetchCount(), expectedRequests);
+    assert.equal(mounted.externalClicks(), 0);
+    assert.equal(mounted.intercepted(), false);
+    mounted.unmount();
+    assert.deepEqual(mounted.writesAfterUnmount, []);
+  });
+}
+
+for (const kind of ['dao', 'situation']) test(kind + ' keyed topic change creates a fresh collapsed private-note disclosure and country state', async () => {
+  const mounted = mountPublicConversion('en', kind);
+  const { enquiry, topic } = await freeTopicContracts[kind].ready(mounted.page, mounted.expect, 'en');
+  const chooser = enquiry.locator('[data-contact-channel-chooser]');
+  await chooser.locator('button[data-contact-order]').click();
+  const note = chooser.locator('details');
+  await note.locator(':scope > summary').click();
+  await chooser.locator('textarea').fill('Private note from old keyed scope');
+  await chooser.getByRole('combobox', { name: 'Country calling code', exact: true }).selectOption('GB');
+  assert.equal(await note.evaluate(node => node.open), true);
+  await topic.selectOption('1');
+  await mounted.expect(chooser.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
+  await chooser.locator('button[data-contact-order]').click();
+  assert.equal(await note.evaluate(node => node.open), false, 'New native disclosure cannot inherit old open state');
+  await mounted.expect(chooser.locator('textarea')).toBeHidden();
+  await mounted.expect(chooser.locator('textarea')).toHaveValue('');
+  await mounted.expect(chooser.getByRole('combobox', { name: 'Country calling code', exact: true })).toHaveValue('CA');
+  assert.equal(mounted.fetchCount(), 0);
+  assert.equal(mounted.externalClicks(), 0);
+  mounted.unmount();
+});

@@ -547,7 +547,7 @@ try {
         } else {
           const form = freeLanding.enquiry;
           await visible(form);
-          assert.equal(await form.locator('select').count(), 1);
+          assert.equal(await freeLanding.topic.count(), 1, 'Exactly one selected public topic, independently of the contact country picker');
           // The asserted CRM single-entry contract permits no duplicate optional fields.
           const { whatsappUrl, telegramUrl } = await runEnquiryFixture(page, form, { locale, kind });
           assert.ok((whatsappUrl.searchParams.get("text") || "").length > 40);

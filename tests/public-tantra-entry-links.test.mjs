@@ -193,8 +193,10 @@ test('Spanish Tantra link belongs to the new learning card and preserves current
   assert.ok(links(html).some((link) => link.href === '/es/client/tests'));
   assert.ok(links(html).some((link) => link.href === '/es/about#testimonials-title'));
   assert.match(html, /Andrey Litvinov/);
-  assert.match(html, /data-video-id="m9RfDgK76PU"/);
-  assert.match(html, /data-video-id="5oj0BIbLT4w"/);
+  assertSpanishTestimonials(html);
+  const expanded = spanishTestimonialDisclosure().expanded;
+  assert.match(expanded, /data-video-id="m9RfDgK76PU"/);
+  assert.match(expanded, /data-video-id="5oj0BIbLT4w"/);
 });
 
 for (const locale of ['en', 'ru', 'es']) {
@@ -239,4 +241,53 @@ test('Spanish harness fails closed for missing moved dependencies and unknown im
   for (const name of ['unexpected-component', 'node:fs', 'node:child_process']) {
     assert.throws(() => loadComponent('synthetic-dependency.ts', shared, `require(${JSON.stringify(name)});`), error => error.message === 'Unexpected dependency in synthetic-dependency.ts: ' + name);
   }
+});
+
+
+// Drive the actual disclosure handler with its real parent-provided video props.
+// Only React state is controlled; no archive data or component output is invented.
+function spanishTestimonialDisclosure() {
+  let expanded = false;
+  const more = loadComponent('components/home-testimonial-more.tsx', {
+    ...shared,
+    react: { ...React, useState: () => [expanded, value => { expanded = value; }] },
+    '@/components/site-video-player': testimonialVideo,
+    './personal-testimonials.module.css': {},
+  });
+  const parent = loadComponent('components/personal-testimonials.tsx', {
+    ...testimonialDependencies,
+    '@/components/home-testimonial-more': more,
+  }).PersonalTestimonials;
+  const nodes = element => !React.isValidElement(element) ? [] : [element, ...React.Children.toArray(element.props.children).flatMap(nodes)];
+  const child = nodes(parent({ locale: 'es' })).find(node => node.type === more.HomeTestimonialMore);
+  assert.ok(child, 'actual Spanish parent includes the actual disclosure');
+  const render = () => renderToStaticMarkup(React.createElement(parent, { locale: 'es' }));
+  const initial = render();
+  more.HomeTestimonialMore(child.props).props.onToggle({ currentTarget: { open: true } });
+  const opened = render();
+  more.HomeTestimonialMore(child.props).props.onToggle({ currentTarget: { open: false } });
+  return { initial, expanded: opened, closed: render() };
+}
+const spanishArchiveIds = ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk', '4NrryHcEF1A', 'hYwRNMxIMjc', 'm9RfDgK76PU', 'MIVLm1GUTtM', 'ttQxUHopaUM', 'VABgpmn4ZYA', 'muOnIHllI7E', '5oj0BIbLT4w'];
+function assertExpandedSpanishTestimonials(html) {
+  const ids = [...html.matchAll(/data-video-id="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(ids, spanishArchiveIds, 'exact ordered Spanish 4 + 8 video archive');
+  assert.equal(new Set(ids).size, 12, 'no duplicate archive videos');
+  assert.match(html, /lang="es"/, 'Spanish testimonial locale');
+  assert.match(html, /Ver más testimonios/, 'Spanish disclosure label');
+  assert.match(html, /Más testimonios en inglés/, 'primary audio group label');
+  assert.match(html, /Testimonios en ruso/, 'secondary audio group label');
+  assert.ok(links(html).some(link => link.href === '/es/about#testimonials-title'), 'Spanish archive destination');
+  assert.ok(links(html).some(link => link.href === '/es/services/free-situation-review'), 'Spanish review destination');
+}
+test('Spanish actual disclosure preserves exact 4 + 8 archive through open and close', () => {
+  const html = spanishTestimonialDisclosure();
+  assertSpanishTestimonials(html.initial);
+  assertExpandedSpanishTestimonials(html.expanded);
+  assertSpanishTestimonials(html.closed);
+  for (const bad of [html.expanded.replace('data-video-id="m9RfDgK76PU"', 'data-video-id="wrong"'), html.expanded.replace('data-video-id="5oj0BIbLT4w"', 'data-video-id="m9RfDgK76PU"')]) {
+    assert.throws(() => assertExpandedSpanishTestimonials(bad), /exact ordered Spanish 4 \+ 8 video archive/);
+  }
+  assert.throws(() => assertExpandedSpanishTestimonials(html.expanded.replaceAll('/es/', '/en/')), /Spanish archive destination/);
+  assert.throws(() => assertExpandedSpanishTestimonials(html.expanded.replace('lang="es"', 'lang="en"')), /Spanish testimonial locale/);
 });

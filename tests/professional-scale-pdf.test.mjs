@@ -65,8 +65,8 @@ test('gated guide entries are visible in PDF filter but cannot enter the test ba
   assert.equal(getProfessionalScaleResource('ras-7').downloadType, 'educational_scale_guide_only')
   for (const audience of ['guest', 'account']) {
     const entries = buildExplorerEntries({ locale: 'en', audience })
-    assert.equal(entries.length, 290)
-    assert.equal(new Set(entries.map(row => row.key)).size, 290)
+    assert.equal(entries.length, 295)
+    assert.equal(new Set(entries.map(row => row.key)).size, 295)
     const ras = entries.filter(row => row.key === 'ras-7')
     assert.equal(ras.length, 1)
     assert.equal(ras[0].selectable, false)

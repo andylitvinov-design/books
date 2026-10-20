@@ -5,6 +5,7 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
+import {oporaExperienceSupport} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {mount,findButton,findPart,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
@@ -31,7 +32,19 @@ async function click(h,label){
 async function saveFromRecap(f,locale,day,next,save){
   const scenes=day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
   const copy=oporaEndingCopy(locale)
-  for(let i=0;i<scenes.length;i++)await click(f.h,next)
+  // The second visible screen is editorial support, not another persisted visit.
+  await click(f.h,next)
+  const support=oporaExperienceSupport(day,locale)
+  const supporting=nodes(f.h.tree).filter(node=>node.props?.['data-opora-daily-support']===day)
+  assert.equal(supporting.length,1,'Support must be the second visible screen')
+  assert.equal(textOf(nodes(f.h.tree).find(node=>node.type==='h2')),support.title)
+  assert.ok(textOf(supporting[0]).includes(support.body))
+  assert.equal(nodes(f.h.tree).filter(node=>node.props?.['aria-pressed']!==undefined).length,0,
+    'Editorial support must not ask for another answer or practice report')
+  assert.equal(f.writes,0,'Reading support must not save')
+  assert.equal(findPart(f.h.tree,'OporaOceanOutro'),undefined,'Support never starts optional audio')
+  await click(f.h,next)
+  for(let i=1;i<scenes.length;i++)await click(f.h,next)
   assert.equal(f.writes,0,'Teaching screens never save')
   assert.equal(findPart(f.h.tree,'OporaOceanOutro'),undefined,'Audio is unavailable before persistence')
   assert.equal(textOf(nodes(f.h.tree).find(node=>node.type==='h2')),copy.recapTitle)
@@ -57,12 +70,12 @@ test('the ocean slide follows confirmed receipt, but neither it nor its audio ar
   assert.match(textOf(f.h.tree),/Congratulations! Lesson 1 complete!/)
   assert.ok(findButton(f.h.tree,'My course map'),'Receipt must retain direct exit to the map')
   assert.ok(findButton(f.h.tree,'Relax with waves'),'The primary next step opens optional relaxation')
-  assert.match(textOf(f.h.tree),/11\s*\/\s*17/)
+  assert.match(textOf(f.h.tree),/12\s*\/\s*16/)
   await click(f.h,'Relax with waves')
   assert.equal(f.writes,1,'Opening audio never performs another save')
   assert.match(textOf(f.h.tree),/Two quiet minutes/)
   assert.equal(findPart(f.h.tree,'OporaOceanOutro')?.props.locale,'en')
-  assert.match(textOf(f.h.tree),/12\s*\/\s*17/)
+  assert.match(textOf(f.h.tree),/13\s*\/\s*16/)
   await click(f.h,'Back')
   assert.match(textOf(f.h.tree),/Congratulations! Lesson 1 complete!/)
   await click(f.h,'My course map')
@@ -93,7 +106,7 @@ test('the ocean slide remains localized and saves no extra practice response',as
     await click(f.h,audio)
     assert.match(textOf(f.h.tree),new RegExp(title))
     assert.equal(findPart(f.h.tree,'OporaOceanOutro')?.props.locale,locale)
-    assert.match(textOf(f.h.tree),/8\s*\/\s*10/)
+    assert.match(textOf(f.h.tree),/9\s*\/\s*11/)
     assert.equal(f.writes,1)
     await click(f.h,map)
     assert.equal(f.exits,1)

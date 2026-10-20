@@ -71,6 +71,8 @@ function mount(kind, locale) {
   }
   modules['@/lib/whatsapp-enquiry'] = load('lib/whatsapp-enquiry.js');
   modules['@/lib/practitioners/public-enquiry-submission'] = load('lib/practitioners/public-enquiry-submission.js');
+  modules['@/lib/contact/phone-country'] = load('lib/contact/phone-country.js');
+  modules['@/components/phone-country-input'] = load('components/phone-country-input.tsx');
   modules['@/components/contact-channel-chooser'] = load('components/contact-channel-chooser.tsx');
   const Component = kind === 'alchemy' ? load('components/alchemy-soul-lead-form.tsx').AlchemySoulLeadForm
     : load('components/free-resource-enquiry.tsx').FreeResourceEnquiry;
@@ -161,7 +163,7 @@ for (const locale of ['en', 'ru', 'es']) {
           assert.ok(text.includes(topic.label), 'Chosen topic survives');
           if (format) assert.ok(text.includes(format.label), 'Chosen format survives');
           assert.ok(text.includes(payload.serviceTitle)); assert.ok(text.includes(h.path));
-          assert.ok(text.includes(payload.description)); assert.ok(text.includes('HH-123456789ABC'));
+          assert.ok(!text.includes(payload.description), 'Private note stays in first-party CRM, never messenger'); assert.ok(text.includes('HH-123456789ABC'));
           assert.ok(!text.includes('Synthetic Visitor')); assert.ok(!text.includes('visitor@example.test'));
         }
         for (const link of links) { assert.equal(link.props.event, 'service_request_start'); assert.equal(link.props.target, '_blank'); }

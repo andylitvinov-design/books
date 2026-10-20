@@ -1,6 +1,7 @@
 // Actual chooser + actual submission scope with the same keyed hook scheduling
-// as public-enquiry-component-lifecycle.test.mjs. Real URL/referral helpers are
-// loaded explicitly. Only browser APIs/decorative children are synthetic.
+// as public-enquiry-component-lifecycle.test.mjs. The actual PhoneCountryInput,
+// pure phone-country module and URL/referral helpers are loaded explicitly.
+// Browser APIs/decorative children and hook scheduling remain synthetic.
 // Not mounted React, browser/native validation, backend storage or delivery QA.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -17,8 +18,8 @@ const compile = (source, path) => ts.transpileModule(source, { fileName: path, c
 const same = (a, b) => a && b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
 const description = 'Synthetic request about available consultation times.';
 export function savedSuffix(locale, referenceCode) {
-  const labels = { en: ['Situation', 'Enquiry'], ru: ['Ситуация', 'Заявка'], es: ['Situación', 'Solicitud'] }[locale];
-  return '\n\n' + labels[0] + ': ' + description + '\n' + labels[1] + ': ' + referenceCode;
+  const label = { en: 'Enquiry', ru: 'Заявка', es: 'Solicitud' }[locale];
+  return '\n\n' + label + ': ' + referenceCode;
 }
 export function mountSavedChooser(locale, fault, reducedMotion = false, locationOptions = {}) {
   let choice = 'session', instance, active, tree, dirty = true, disposed = false, serial = 0, uuid = 0, externalClicks = 0;
@@ -49,6 +50,7 @@ export function mountSavedChooser(locale, fault, reducedMotion = false, location
     '@/components/acquisition-event-link': { AcquisitionEventLink: ({ attributes, ...props }) => jsx('a', { ...props, ...attributes }) },
     '@/lib/whatsapp-enquiry': enquiries, '@/lib/organic-event-referrals': organic, '@/lib/paid-ad-referrals': paid,
     './contact-channel-chooser.module.css': { default: {} },
+    './phone-country-input.module.css': { default: {} },
   };
   function mutate(source, before, after) { assert.ok(source.includes(before), fault + ' mutation reached actual source');
     mutations.push(fault); return source.replace(before, after); }
@@ -81,8 +83,28 @@ export function mountSavedChooser(locale, fault, reducedMotion = false, location
     runInNewContext(compile(source, path), runtime, { timeout: 1000 }); return runtime.exports;
   }
   modules['@/lib/practitioners/public-enquiry-submission'] = load('lib/practitioners/public-enquiry-submission.js');
+  modules['@/lib/contact/phone-country'] = load('lib/contact/phone-country.js');
+  modules['@/components/phone-country-input'] = load('components/phone-country-input.tsx');
+  const { PhoneCountryInput } = modules['@/components/phone-country-input'];
   const component = load('components/contact-channel-chooser.tsx');
-  function cleanup() { if (instance) { instance.slots.forEach(slot => slot?.cleanup?.()); instance.alive = false; } }
+  function cleanupInstance(inst) { if (inst) { inst.slots.forEach(slot => slot?.cleanup?.()); inst.alive = false; } }
+  function cleanup() { cleanupInstance(instance?.phone); cleanupInstance(instance); }
+  // The real stateful phone child gets its own hook slots, exactly once per
+  // synthetic render. Queries must never call it or append hooks to the form.
+  function resolvePhone(node) {
+    if (!node || typeof node !== 'object') return node;
+    if (Array.isArray(node)) return node.map(resolvePhone);
+    if (node.type === PhoneCountryInput) {
+      assert.equal(instance.phoneSeen, false, 'One actual phone child per enquiry form');
+      instance.phoneSeen = true;
+      const phone = instance.phone ??= { slots: [], alive: true };
+      phone.cursor = 0; phone.effects = []; active = phone;
+      const resolved = PhoneCountryInput(node.props);
+      active = instance;
+      return resolvePhone(resolved);
+    }
+    return { ...node, props: { ...node.props, children: resolvePhone(node.props?.children) } };
+  }
   function render() {
     assert.ok(!disposed); dirty = false;
     const wrapper = component.ContactChannelChooser({ locale,
@@ -94,7 +116,10 @@ export function mountSavedChooser(locale, fault, reducedMotion = false, location
       cleanup(); instance = { type: wrapper.type, key: wrapper.key, slots: [], alive: true };
     }
     active = instance; instance.cursor = 0; instance.effects = [];
-    tree = wrapper.type(wrapper.props); collect(false); instance.effects.forEach(effect => effect());
+    instance.phoneSeen = false;
+    tree = resolvePhone(wrapper.type(wrapper.props));
+    if (!instance.phoneSeen) { cleanupInstance(instance.phone); instance.phone = null; }
+    collect(false); instance.phone?.effects.forEach(effect => effect()); instance.effects.forEach(effect => effect());
   }
   function collect(applyFault = true) {
     const result = [];
@@ -103,7 +128,14 @@ export function mountSavedChooser(locale, fault, reducedMotion = false, location
       if (Array.isArray(node)) { node.forEach(child => visit(child, hidden)); return; }
       if (typeof node.type === 'function') { visit(node.type(node.props), hidden); return; }
       const invisible = hidden || Boolean(node.props.hidden);
-      if (node.props.ref) node.props.ref.current = { scrollIntoView: options => scrollCalls.push({ ...options }) };
+      if (node.props.ref) node.props.ref.current = {
+        scrollIntoView: options => scrollCalls.push({ ...options }),
+        querySelector(selector) {
+          assert.equal(selector, '[data-contact-channel="whatsapp"]');
+          return result.some(n => n.type === 'a' && n.props['data-contact-channel'] === 'whatsapp')
+            ? { scrollIntoView: options => scrollCalls.push({ ...options }) } : null;
+        },
+      };
       result.push({ ...node, props: { ...node.props }, hidden: invisible }); visit(node.props.children, invisible);
     }
     visit(tree);
@@ -126,7 +158,7 @@ export function mountSavedChooser(locale, fault, reducedMotion = false, location
   }
   function nodes() { for (let pass = 0; dirty; pass++) { assert.ok(pass < 20, 'Effects settle'); render(); } return collect(); }
   function locator(selector) {
-    const match = selector.match(/^(a|button|form|input|textarea)?(?:\[([\w-]+)(?:="([^"]+)")?\])?$/);
+    const match = selector.match(/^(a|button|form|input|textarea|select|details|summary)?(?:\[([\w-]+)(?:="([^"]+)")?\])?$/);
     assert.ok(match && (match[1] || match[2]), 'Explicitly supported selector: ' + selector);
     const selected = () => nodes().filter(node => (!match[1] || node.type === match[1]) && (!match[2] || Object.hasOwn(node.props, match[2])) && (match[3] === undefined || node.props[match[2]] === match[3]));
     return { locator, selected, async getAttribute(name) { const all = selected(); assert.equal(all.length, 1); return all[0].props[name] ?? null; },
@@ -149,7 +181,7 @@ export function mountSavedChooser(locale, fault, reducedMotion = false, location
     get scopeIdentity() { nodes(); return instance; },
     choose(value) { choice = value; dirty = true; }, navigate(pathname, search) { Object.assign(location, { pathname, search }); dirty = true; },
     externalClicks: () => externalClicks, field(type) { return nodes().find(n => n.type === 'input' && (n.props.autoComplete === type || n.props.type === type)); },
-    async change(type, value) { const field = type === 'textarea' ? nodes().find(n => n.type === 'textarea') : mounted.field(type);
+    async change(type, value) { const field = ['textarea', 'select'].includes(type) ? nodes().find(n => n.type === type) : mounted.field(type);
       assert.ok(field && !field.props.disabled); field.props.onChange({ target: { value, checked: value } }); await mounted.settle(); },
     async settle() { for (let i = 0; i < 12; i++) { await Promise.resolve(); if (!disposed) nodes(); } },
     post() { return nodes().find(n => n.type === 'form').props.onSubmit({ preventDefault() {} }); },
@@ -158,7 +190,7 @@ export function mountSavedChooser(locale, fault, reducedMotion = false, location
   nodes(); return mounted;
 }
 
-export async function openSavedContactChooser(mounted, reply = 'saved') {
+export async function openSavedContactChooser(mounted, reply = 'saved', note = description) {
   const { scope, expect } = mounted, chooser = scope.locator('[data-contact-channel-chooser]');
   const trigger = chooser.locator('button[data-contact-order]');
   await expect(chooser).toHaveCount(1); await expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -166,6 +198,12 @@ export async function openSavedContactChooser(mounted, reply = 'saved') {
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(hasForm ? 0 : 2);
   if (hasForm) {
     assert.equal(mounted.field('name').props.value, ''); assert.equal(mounted.field('checkbox').props.checked, false);
+    assert.equal(mounted.field('tel').props.value, '');
+    assert.equal(chooser.locator('select').selected()[0].props.value, 'CA');
+    const noteDisclosure = chooser.locator('details').selected();
+    assert.equal(noteDisclosure.length, 1);
+    assert.equal(Boolean(noteDisclosure[0].props.open), false, 'Optional note starts collapsed');
+    assert.equal(Boolean(chooser.locator('textarea').selected()[0].props.required), false);
   } else {
     assert.ok(mounted.calls.length > 0 && mounted.savedReceipt && mounted.referenceCode,
       'Formless reopening requires a prior confirmed synthetic receipt');
@@ -176,7 +214,7 @@ export async function openSavedContactChooser(mounted, reply = 'saved') {
   await trigger.click(); await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   if (hasForm) {
     const previous = mounted.calls.length, previousAttempts = mounted.attempts.length;
-    for (const [type, value] of [['name', 'Synthetic Visitor'], ['email', 'visitor@example.test'], ['textarea', description]]) await mounted.change(type, value);
+    for (const [type, value] of [['name', 'Synthetic Visitor'], ['email', 'visitor@example.test'], ['textarea', note]]) await mounted.change(type, value);
     assert.equal(mounted.nodes().find(n => n.type === 'button' && n.props.type === 'submit').props.disabled, true);
     await mounted.post(); await mounted.settle();
     assert.equal(mounted.attempts.length, previousAttempts, 'No request without explicit reply consent');
@@ -187,9 +225,9 @@ export async function openSavedContactChooser(mounted, reply = 'saved') {
     assert.equal(mounted.calls.length, previous + 1);
     await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
     await expect(chooser.locator('[role="status"]')).toHaveCount(0);
-    assert.ok(mounted.nodes().filter(n => ['input', 'textarea'].includes(n.type)).every(n => n.props.disabled));
+    assert.ok(mounted.nodes().filter(n => ['input', 'textarea', 'select'].includes(n.type)).every(n => n.props.disabled));
     const body = JSON.parse(mounted.calls.at(-1).body);
-    assert.deepEqual(body, { serviceTitle: 'Consultation', description, sourcePath: mounted.pathname,
+    assert.deepEqual(body, { serviceTitle: 'Consultation', description: note.trim(), sourcePath: mounted.pathname,
       locale: mounted.locale, contact: { displayName: 'Synthetic Visitor', email: 'visitor@example.test', phone: '' }, contactConsent: true, website: '', operationId: body.operationId });
     assert.match(body.operationId, /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i);
     mounted.referenceCode = 'HH-' + String(mounted.calls.length).padStart(12, '0');
@@ -200,5 +238,12 @@ export async function openSavedContactChooser(mounted, reply = 'saved') {
     await expect(chooser.locator('[role="status"]')).toContainText(mounted.referenceCode);
     if (reply === 'saved') mounted.savedReceipt = { scope: mounted.scopeIdentity, referenceCode: mounted.referenceCode };
   }
-  await assertPreparedContactChannels(chooser, expect); return chooser;
+  const prepared = await assertPreparedContactChannels(chooser, expect);
+  for (const url of [prepared.whatsappUrl, prepared.telegramUrl]) {
+    const message = url.searchParams.get('text');
+    assert.ok(message.endsWith(savedSuffix(mounted.locale, mounted.referenceCode)));
+    for (const privateValue of [note.trim(), 'Synthetic Visitor', 'visitor@example.test'].filter(Boolean))
+      assert.ok(!message.includes(privateValue), 'Private contact and optional note stay out of messenger drafts');
+  }
+  return chooser;
 }

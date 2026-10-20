@@ -13,6 +13,55 @@ const read = path => readFileSync(new URL('../../' + path, import.meta.url), 'ut
 const children = node => [node?.props?.children].flat(Infinity).filter(value => value != null && value !== false);
 const descendants = node => children(node).flatMap(child => typeof child === 'object' ? [child, ...descendants(child)] : []);
 const textOf = node => typeof node === 'string' || typeof node === 'number' ? String(node) : children(node).map(textOf).join('');
+const normalizeText = value => value.replace(/[\u200b\u00ad]/g, '').replace(/\s+/g, ' ').trim();
+const labelable = node => ['button', 'meter', 'output', 'progress', 'select', 'textarea'].includes(node.type)
+  || (node.type === 'input' && node.props.type !== 'hidden');
+function associatedLabels(node, root) {
+  if (!labelable(node)) return [];
+  const all = [root, ...descendants(root)];
+  return all.filter(label => label.type === 'label' && (label.props.htmlFor !== undefined
+    ? all.find(target => target.props.id === label.props.htmlFor) === node
+    : descendants(label).find(labelable) === node));
+}
+function labelledBy(node, root) {
+  const ids = String(node.props['aria-labelledby'] || '').split(/\s+/).filter(Boolean);
+  const all = [root, ...descendants(root)];
+  const labels = [...new Set(ids.map(id => all.find(target => target.props.id === id)).filter(Boolean))];
+  return labels.length ? labels : null;
+}
+function labelTexts(node, root) {
+  const referenced = labelledBy(node, root);
+  if (referenced) return referenced.map(textOf);
+  const ariaLabel = node.props['aria-label'];
+  if (typeof ariaLabel === 'string' && ariaLabel.trim()) return [ariaLabel];
+  // Playwright 1.63 uses full label descendant text, including select options.
+  return associatedLabels(node, root).map(textOf);
+}
+function textWithoutControl(node, control) {
+  if (node === control) return '';
+  return typeof node === 'string' || typeof node === 'number' ? String(node)
+    : children(node).map(child => textWithoutControl(child, control)).join('');
+}
+function accessibleName(node, root) {
+  const referenced = labelledBy(node, root);
+  if (referenced) return referenced.map(label => textWithoutControl(label, node)).join(' ');
+  if (node.props['aria-label']?.trim()) return node.props['aria-label'];
+  const labels = associatedLabels(node, root);
+  if (labels.length) return labels.map(label => textWithoutControl(label, node)).join(' ');
+  // Native select names never fall back to their options' text.
+  return node.type === 'select' ? node.props.title || '' : textOf(node);
+}
+function matchesText(actual, expected, exact = false) {
+  if (expected instanceof RegExp) { expected.lastIndex = 0; return expected.test(actual); }
+  const value = normalizeText(actual), wanted = normalizeText(expected);
+  return exact ? value === wanted : value.toLowerCase().includes(wanted.toLowerCase());
+}
+function hiddenForRole(node) {
+  for (let current = node; current; current = current.parent) {
+    if (current.hidden || String(current.props['aria-hidden']) === 'true') return true;
+  }
+  return false;
+}
 const attr = (node, name) => {
   const value = node.props[{ maxlength: 'maxLength', minlength: 'minLength', readonly: 'readOnly', autocomplete: 'autoComplete' }[name] || name];
   if ((name.startsWith('aria-') || name.startsWith('data-')) && value != null) return String(value);
@@ -153,9 +202,23 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
     if (fault === 'accept unsaved response') return source.replace(' && data?.saved === true', '');
     return source;
   });
+  modules['@/lib/contact/phone-country'] = compile('lib/contact/phone-country.js');
+  modules['@/components/phone-country-input'] = compile('components/phone-country-input.tsx', source => {
+    if (fault === 'missing country') return source.replace(/  <select[\s\S]*?<\/select>/, '');
+    if (fault === 'duplicate country') return source.replace(/  <select[\s\S]*?<\/select>/, '$&$&');
+    if (fault === 'hidden country') return source.replace('<select aria-label=', '<select hidden aria-label=');
+    if (fault === 'wrong country name') return source.replace('aria-label={words.country}', 'aria-label={words.country + " wrong"}');
+    if (fault === 'wrong country option') return source.replace('item.names[locale]||item.names.en', '"Wrong country"');
+    if (fault === 'missing country option') return source.replace('PHONE_COUNTRIES.map(', 'PHONE_COUNTRIES.slice(1).map(');
+    if (fault === 'wrong country option value') return source.replace('value={item.iso}', 'value={item.iso === "GB" ? "ZZ" : item.iso}');
+    if (fault === 'stuck country') return source.replace('setCountry(next);', 'setCountry("CA");');
+    if (fault === 'country dial lost') return source.replace('composeCountryPhone(current.dial,event.target.value)', 'composeCountryPhone("+1",event.target.value)');
+    if (fault === 'country editable while pending') return source.replace('<select aria-label={words.country} value={country} disabled={disabled}', '<select aria-label={words.country} value={country} disabled={false}');
+    return source;
+  });
   modules['@/components/contact-channel-chooser'] = compile('components/contact-channel-chooser.tsx', source => {
     if (fault === 'links while pending') return source.replace('setBusy(true);', 'setBusy(true); setSaved({saved:true,referenceCode:"HH-0123456789AB"});');
-    if (fault === 'submit enabled while pending') return source.replace('disabled={busy || description.trim().length < 10 ||', 'disabled={description.trim().length < 10 ||');
+    if (fault === 'submit enabled while pending') return source.replace('disabled={busy || displayName.trim().length < 2 ||', 'disabled={displayName.trim().length < 2 ||');
     if (fault === 'details editable while pending') return source.replace('value={description} disabled={busy || uncertain}', 'value={description} disabled={false}');
     if (fault === 'hidden name') return source.replace('<input type="text" autoComplete="name"', '<input hidden type="text" autoComplete="name"');
     if (fault === 'hidden question') return source.replace('<textarea id={panelId', '<textarea hidden id={panelId');
@@ -165,7 +228,12 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
     if (fault === 'invalid phone accepted') return source.replace('(cleanedPhone && !/^\\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || ', '');
     if (fault === 'missing contact payload') return source.replace('contact: { displayName: displayName.trim(), email: email.trim(), phone: cleanedPhone },', '');
     if (fault === 'consent payload false') return source.replace('contactConsent: consent,', 'contactConsent: false,');
-    if (fault === 'contact URL leak') return source.replace('originalMessage + "\\n\\n" + c.situation', 'originalMessage + displayName + "\\n\\n" + c.situation');
+    if (fault === 'contact URL leak') return source.replace('originalMessage + "\\n\\n" + c.reference', 'originalMessage + displayName + "\\n\\n" + c.reference');
+    if (fault === 'private note URL leak') return source.replace('originalMessage + "\\n\\n" + c.reference', 'originalMessage + description + "\\n\\n" + c.reference');
+    if (fault === 'required private note') return source.replace('<textarea id={panelId', '<textarea required id={panelId');
+    if (fault === 'minimum private note') return source.replace('maxLength={1400} rows={2}', 'minLength={10} maxLength={1400} rows={2}');
+    if (fault === 'expanded private note') return source.replace('<details className={styles.optionalNote}>', '<details open className={styles.optionalNote}>');
+    if (fault === 'private note blocks contact only') return source.replace('disabled={busy || displayName.trim().length', 'disabled={busy || description.trim().length < 10 || displayName.trim().length');
     if (fault === 'wrong service title') return source.replace('serviceTitle, description:', 'serviceTitle: "Unrelated service", description:');
     if (fault === 'extra payload field') return source.replace('sourcePath: pathname, locale,', 'sourcePath: pathname, locale, privateAnswer: "unexpected answer",');
     if (fault === 'wrong source path') return source.replace('sourcePath: pathname, locale,', 'sourcePath: "/en/services/unrelated", locale,');
@@ -177,6 +245,17 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
     return source;
   });
   modules['@/components/free-resource-enquiry'] = compile('components/free-resource-enquiry.tsx', source => {
+    const topicLabel = /<label>\{t\.topic\}[\s\S]*?<\/label>/;
+    if (fault === 'nested topic label') return source.replace('<label>{t.topic}', '<label><span>{t.topic}</span>');
+    if (fault === 'missing topic') return source.replace(/<select value=\{topic\}[\s\S]*?<\/select>/, '');
+    if (fault === 'hidden topic') return source.replace('<select value={topic}', '<select hidden value={topic}');
+    if (fault === 'duplicate topic') return source.replace(topicLabel, '$&$&');
+    if (fault === 'wrong topic label') return source.replace('<label>{t.topic}', '<label>{t.topic} extra');
+    if (fault === 'unassociated topic label') return source.replace(topicLabel, label => label.replace('<label>', '<div>').replace('</label>', '</div>'));
+    if (fault === 'wrong topic role') return source.replace('<select value={topic}', '<select multiple value={topic}');
+    if (fault === 'wrong topic option') return source.replace('value={index}>{item}</option>', 'value={index}>{index === 0 ? "Wrong option" : item}</option>');
+    if (fault === 'missing topic option') return source.replace('offer.topics.map(', 'offer.topics.slice(1).map(');
+    if (fault === 'stuck topic value') return source.replace('setTopic(Number(event.target.value))', 'setTopic(0)');
     if (fault === 'automatic mount post') return source.replace('import { useState }', 'import { useEffect, useState }')
       .replace('  const t = text[locale];', "  useEffect(() => { void fetch('/api/service-enquiries', { method: 'POST' }).catch(() => {}); }, []);\n  const t = text[locale];");
     if (fault === 'automatic topic post') return source.replace('setTopic(Number(event.target.value))', "(setTopic(Number(event.target.value)), void fetch('/api/service-enquiries', { method: 'POST' }).catch(() => {}))");
@@ -271,22 +350,37 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
           instance.cursor = 0; currentInstance = instance; seen.add(identity);
           return expand(element.type(element.props), identity + '.render');
         }
-        return { ...element, props: { ...element.props, children: expand(element.props.children, position + '.children') } };
+        return { ...element, hostIdentity: position + ':' + element.type + ':' + (element.key ?? ''),
+          props: { ...element.props, children: expand(element.props.children, position + '.children') } };
       }
       root = expand(rootElement(), 'root');
       for (const [key, instance] of instances) if (!seen.has(key)) { cleanup(instance); instances.delete(key); }
+      const liveNativeDetails = new Set();
       function commit(node, hidden = false, path = 'root', parent = null) {
         if (!node || typeof node !== 'object') return;
         node.path = path; node.parent = parent;
         node.hidden = hidden || Boolean(node.props.hidden);
-        if (node.props.ref) node.props.ref.current = { scrollIntoView() {}, focus() { focusedPath = path; } };
-        const open = detailsOpen.has(path) ? detailsOpen.get(path) : Boolean(node.props.open);
+        if (node.props.ref) {
+          const element = target => ({
+            scrollIntoView() {}, focus() { focusedPath = target.path; },
+            querySelector(selector) {
+              const found = descendants(target).find(child => matches(child, selector));
+              return found ? element(found) : null;
+            },
+          });
+          node.props.ref.current = element(node);
+        }
+        if (node.type === 'details') liveNativeDetails.add(node.hostIdentity);
+        const open = detailsOpen.has(node.hostIdentity) ? detailsOpen.get(node.hostIdentity) : Boolean(node.props.open);
         node.open = open;
         children(node).forEach((child, index) => commit(child,
           node.hidden || (node.type === 'details' && !open && child?.type !== 'summary'),
           path + '/' + index, node));
       }
       commit(root);
+      // Native disclosure state belongs to this mounted host identity, not its
+      // screen position. Removed or keyed-remounted details start fresh.
+      for (const key of detailsOpen.keys()) if (!liveNativeDetails.has(key)) detailsOpen.delete(key);
       effects.forEach(effect => effect());
       if (!dirty) { while (frames.length) frames.shift()(); return root; }
     }
@@ -306,26 +400,28 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
       filter({ has }) {
         return locator(root => resolve(root).filter(node => descendants(node).some(child => has.resolve(root).includes(child))));
       },
-      getByRole(role, { name, exact, level } = {}) {
+      getByRole(role, { name, exact, level, includeHidden = false } = {}) {
         return locator(root => resolve(root).flatMap(descendants).filter(node =>
           (node.props.role === role || (role === 'link' && node.type === 'a') || (role === 'button' && node.type === 'button')
+            || (node.type === 'select' && !node.props.role
+              && role === (node.props.multiple || Number(node.props.size) > 1 ? 'listbox' : 'combobox'))
             || (role === 'heading' && /^h[1-6]$/.test(node.type) && (!level || node.type === 'h' + level)))
-          && (name === undefined || (exact ? textOf(node) === name : textOf(node).includes(name)))));
+          && (includeHidden || !hiddenForRole(node))
+          && (name === undefined || matchesText(accessibleName(node, root), name, exact))));
       },
-      getByLabel(label) {
-        return locator(root => resolve(root).flatMap(descendants).filter(node => node.type === 'label'
-          && children(node).filter(child => typeof child !== 'object').join('') === label)
-          .flatMap(descendants).filter(node => ['input', 'select', 'textarea'].includes(node.type)));
+      getByLabel(label, { exact = false } = {}) {
+        return locator(root => resolve(root).flatMap(descendants).filter(node =>
+          labelTexts(node, root).some(text => matchesText(text, label, exact))));
       },
       async getAttribute(name) { return attr(one(), name); },
       async innerText() { return textOf(one()); },
       async inputValue() { return String(one().props.value); },
       async evaluate(callback) { return callback({ open: one().open }); },
       async scrollIntoViewIfNeeded() { one(); },
-      async fill(value) { const node = one(); assert.notEqual(node.props.disabled, true); node.props.onChange({ target: { value } }); render(); },
+      async fill(value) { const node = one(); assert.equal(node.hidden, false); assert.notEqual(node.props.disabled, true); node.props.onChange({ target: { value } }); render(); },
       async check() { const node = one(); assert.notEqual(node.props.disabled, true); node.props.onChange({ target: { checked: true } }); render(); },
       async uncheck() { const node = one(); assert.notEqual(node.props.disabled, true); node.props.onChange({ target: { checked: false } }); render(); },
-      async selectOption(value) { one().props.onChange({ target: { value } }); render(); },
+      async selectOption(value) { const node = one(); assert.equal(node.hidden, false); assert.notEqual(node.props.disabled, true); assert.ok(descendants(node).some(option => option.type === 'option' && String(option.props.value) === String(value)), 'Selected option exists'); node.props.onChange({ target: { value } }); render(); },
       async click() {
         const node = one();
         assert.equal(node.hidden, false);
@@ -333,7 +429,7 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
         if (node.type === 'a') { externalClicks++; assert.fail('Never open messenger links'); }
         if (node.type === 'summary') {
           assert.equal(node.parent.type, 'details');
-          detailsOpen.set(node.parent.path, !node.parent.open);
+          detailsOpen.set(node.parent.hostIdentity, !node.parent.open);
         } else if (node.props.type === 'submit') {
           let form = node.parent;
           while (form && form.type !== 'form') form = form.parent;

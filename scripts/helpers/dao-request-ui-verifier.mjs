@@ -49,26 +49,28 @@ export async function assertDaoLandingReady(page, expect, locale) {
   const enquiry = capture.locator('[data-free-resource-enquiry="dao"]');
   await expect(enquiry).toHaveCount(1);
   await expect(enquiry).toBeVisible();
-  await expect(enquiry.getByLabel(text.topic, { exact: true })).toBeVisible();
-  await expect(enquiry.getByLabel(text.topic, { exact: true }).locator('option')).toHaveText(text.topics);
+  // Shared FreeResourceEnquiry wraps its select/options in the visible label.
+  const topic = enquiry.getByRole('combobox', { name: text.topic, exact: true });
+  await expect(topic).toHaveCount(1);
+  await expect(topic).toBeVisible();
+  await expect(topic.locator('option')).toHaveText(text.topics);
   await assertSingleEntryEnquiryUi(enquiry, expect);
   await expect(enquiry.locator('button[data-contact-order]')).toBeVisible();
   await expect(main).toContainText(text.safety);
   await expect(main.locator('a[href="/' + locale + '/wu-xing"]')).toBeVisible();
   await expect(main.locator('a[href="/' + locale + '/services#free-insights"]')).toBeVisible();
-  return { main, enquiry, text };
+  return { main, enquiry, text, topic };
 }
 
 // CRM single-entry contract: topic here; name, contact, consent and short enquiry
 // exactly once in the save-gated chooser. No legacy optional duplicate fields.
-export async function exerciseDaoRequestUi(page, expect, locale, { contactMode = 'email' } = {}) {
+export async function exerciseDaoRequestUi(page, expect, locale, { contactMode = 'email', noteMode = 'supplied' } = {}) {
   assertPublicEnquiryFixture(page, 'dao', locale);
-  const { enquiry, text } = await assertDaoLandingReady(page, expect, locale);
-  const topic = enquiry.getByLabel(text.topic, { exact: true });
+  const { enquiry, text, topic } = await assertDaoLandingReady(page, expect, locale);
   await topic.selectOption('2');
   await expect(topic).toHaveValue('2');
   const { requestCount, mockedSave, messengerLinksOpened } = await exercisePublicEnquiryUi(page, enquiry, expect, {
-    locale, kind: 'dao', requiredMessage: [text.qualification, text.topics[2]], contactMode,
+    locale, kind: 'dao', requiredMessage: [text.qualification, text.topics[2]], contactMode, noteMode,
   });
   return { requestCount, mockedSave, messengerLinksOpened };
 }

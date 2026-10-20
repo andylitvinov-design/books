@@ -64,8 +64,12 @@ export async function assertFreeSituationLandingReady(page, expect, locale, { qu
   const enquiry = capture.locator('[data-free-resource-enquiry="situation"]');
   await expect(enquiry).toHaveCount(1);
   await expect(enquiry).toBeVisible();
-  await expect(enquiry.getByLabel(text.topic, { exact: true })).toBeVisible();
-  await expect(enquiry.getByLabel(text.topic, { exact: true }).locator('option')).toHaveText(text.topics);
+  // A wrapping label includes option text for getByLabel; the select's
+  // accessible name is the prompt, as exposed by the native combobox role.
+  const topic = enquiry.getByRole('combobox', { name: text.topic, exact: true });
+  await expect(topic).toHaveCount(1);
+  await expect(topic).toBeVisible();
+  await expect(topic.locator('option')).toHaveText(text.topics);
   if (quickEntrySaved) {
     // Explicit test phase after exerciseFreeSituationRequestUi confirmed the mock.
     // Do not infer a legacy/new layout from missing fields or accept unsaved links.
@@ -88,17 +92,17 @@ export async function assertFreeSituationLandingReady(page, expect, locale, { qu
   await expect(intake).toContainText(text.submissionDisclosure);
   await expect(intake).toContainText(text.nonMedical);
   await expect(intake).toContainText(text.drawing);
-  return { main, enquiry, intake, advanced, text };
+  return { main, enquiry, intake, advanced, text, topic };
 }
 
-export async function exerciseFreeSituationRequestUi(page, expect, locale, { contactMode = 'email' } = {}) {
+export async function exerciseFreeSituationRequestUi(page, expect, locale, { contactMode = 'email', noteMode = 'supplied' } = {}) {
   assertPublicEnquiryFixture(page, 'situation', locale);
-  const { enquiry, text } = await assertFreeSituationLandingReady(page, expect, locale);
-  await enquiry.getByLabel(text.topic, { exact: true }).selectOption('2');
-  await expect(enquiry.getByLabel(text.topic, { exact: true })).toHaveValue('2');
+  const { enquiry, text, topic } = await assertFreeSituationLandingReady(page, expect, locale);
+  await topic.selectOption('2');
+  await expect(topic).toHaveValue('2');
   return exercisePublicEnquiryUi(page, enquiry, expect, {
     locale, kind: 'situation', requiredMessage: [text.qualification, text.topics[2]],
-    contactMode,
+    contactMode, noteMode,
   });
 }
 

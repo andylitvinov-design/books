@@ -57,20 +57,20 @@ for (const reducedMotion of [false, true]) test('chooser effects reset only chan
   await mounted.expect(mounted.scope.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
   assert.deepEqual(mounted.scrollCalls, []);
   const chooser = await openSavedContactChooser(mounted);
-  assert.deepEqual(mounted.scrollCalls, [{ block: 'center', behavior: reducedMotion ? 'auto' : 'smooth' }]);
+  assert.deepEqual(mounted.scrollCalls, Array.from({ length: 2 }, () => ({ block: 'center', behavior: reducedMotion ? 'auto' : 'smooth' })), 'Opening and confirmed save each reposition the intended target');
   mounted.choose('session');
   await assertPreparedContactChannels(chooser, mounted.expect);
-  assert.equal(mounted.scrollCalls.length, 1, 'Unchanged request must neither reset nor scroll again');
+  assert.equal(mounted.scrollCalls.length, 2, 'Unchanged request must neither reset nor scroll again');
   mounted.choose('questions');
   await mounted.expect(mounted.scope.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
   await mounted.expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
   assert.equal(mounted.field('checkbox').props.checked, false, 'New selection cannot inherit consent');
-  assert.equal(mounted.scrollCalls.length, 1, 'Reset must not scroll the hidden panel');
+  assert.equal(mounted.scrollCalls.length, 2, 'Reset must not scroll the hidden panel');
   await openSavedContactChooser(mounted);
-  assert.equal(mounted.scrollCalls.length, 2);
+  assert.equal(mounted.scrollCalls.length, 4, 'New opening and confirmed save each reposition the intended target');
   await chooser.locator('button[data-contact-order]').click();
   await openSavedContactChooser(mounted);
-  assert.equal(mounted.scrollCalls.length, 3, 'Manual dismissal must remain reopenable');
+  assert.equal(mounted.scrollCalls.length, 5, 'Manual dismissal must remain reopenable');
   assert.equal(mounted.externalClicks(), 0);
 });
 
@@ -112,7 +112,7 @@ for (const [locale, label] of [['en', 'Event referral'], ['ru', 'Источни�
     mounted.navigate('/' + locale + '/services/psychohomeopathy', '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026&email=must-not-share');
     await openSavedContactChooser(mounted);
     await assertDraft('questions');
-    assert.equal(mounted.scrollCalls.length, 5, 'Each changed route creates a closed scope and scrolls only on deliberate reopen');
+    assert.equal(mounted.scrollCalls.length, 10, 'Each changed route creates a closed scope, then deliberate reopen and confirmed save reposition their targets');
     assert.equal(mounted.externalClicks(), 0);
     assert.deepEqual(mounted.channelClicks, [], 'Preparing referrals must not invoke a contact action');
   });
@@ -284,7 +284,11 @@ function assertPublicCoreSaveGatedCaller(source, helper) {
   const receipt = helper.indexOf("await expect(chooser.locator('[role=\"status\"]')).toContainText(referenceCode)");
   const channels = helper.indexOf('const prepared = await assertPreparedContactChannels(chooser, expect)');
   assert.ok(receipt >= 0 && channels > receipt, 'Prepared channels are checked only after the synthetic saved receipt');
-  assert.match(helper, /for \(const required of \[service\.title, \.\.\.requiredMessage, description, referenceCode\]\)/);
+  assert.match(helper, /for \(const required of \[service\.title, \.\.\.requiredMessage, referenceCode\]\)/);
+  assert.match(helper, /for \(const privateValue of \[\.\.\.Object\.values\(contact\)\.filter\(Boolean\), \.\.\.\(description \? \[description\] : \[\]\), \.\.\.privateValues\]\)/);
+  assert.match(helper, /for \(const url of \[prepared\.whatsappUrl, prepared\.telegramUrl\]\)/);
+  assert.match(helper, /assert\.ok\(!url\.searchParams\.get\('text'\)\.includes\(privateValue\)/);
+  assert.match(helper, /assert\.ok\(!decodeURIComponent\(url\.href\)\.includes\(privateValue\)/);
   assert.match(helper, /assert\.ok\(message\.includes\(required\)/);
   assert.match(helper, /assert\.deepEqual\(request\.body, expectedBody\(requests\[0\]\.body\.operationId\),/);
 }
@@ -303,7 +307,11 @@ test('public intake compatibility rejects unscoped or ungated core-service fixtu
   }
   for (const [before, after] of [
     ["await expect(chooser.locator('[role=\"status\"]')).toContainText(referenceCode)", '/* no receipt gate */'],
-    ['[service.title, ...requiredMessage, description, referenceCode]', '[...requiredMessage, description, referenceCode]'],
+    ['[service.title, ...requiredMessage, referenceCode]', '[...requiredMessage, referenceCode]'],
+    ['...(description ? [description] : [])', '...[]'],
+    ["!url.searchParams.get('text').includes(privateValue)", "url.searchParams.get('text').includes(privateValue)"],
+    ['!decodeURIComponent(url.href).includes(privateValue)', 'decodeURIComponent(url.href).includes(privateValue)'],
+    ['[prepared.whatsappUrl, prepared.telegramUrl]', '[prepared.whatsappUrl]'],
     ['assert.deepEqual(request.body, expectedBody(requests[0].body.operationId)', 'assert.deepEqual(request.body, request.body'],
   ]) {
     assert.ok(helper.includes(before));
@@ -363,6 +371,39 @@ test('save-first harness detects actual consent and receipt-gate mutations', asy
   assert.throws(() => assert.equal(receipt.scope.locator('a[data-contact-channel]').selected().length, 0), 'Malformed saved:false receipt must be detected by the absent-channel contract');
 });
 
+test('save-first harness rejects a private optional note in both otherwise valid prepared drafts', async () => {
+  const note = 'Synthetic private optional note with spaces.';
+  const nominal = mountChooser('en');
+  await openSavedContactChooser(nominal, 'saved', note);
+  assert.equal(nominal.calls.length, 1);
+  assert.equal(JSON.parse(nominal.calls[0].body).description, note);
+  assert.equal(nominal.externalClicks(), 0);
+  const mounted = mountChooser('en');
+  const changedChannels = new Set();
+  // Negative fixture only: inspect the real post-receipt anchors, but corrupt
+  // their readback equally so channel equality cannot conceal a private note.
+  const wrap = locator => ({ ...locator,
+    locator: selector => wrap(locator.locator(selector)),
+    async getAttribute(name) {
+      const value = await locator.getAttribute(name);
+      if (name !== 'href' || !value) return value;
+      const url = new URL(value), text = url.searchParams.get('text');
+      const suffix = savedSuffix('en', mounted.referenceCode);
+      assert.ok(text.endsWith(suffix), 'Corrupt only an actual reference-bearing saved draft');
+      url.searchParams.set('text', text.slice(0, -suffix.length) + '\n\n' + note + suffix);
+      changedChannels.add(url.origin);
+      return url.href;
+    },
+  });
+  const originalLocator = mounted.scope.locator;
+  mounted.scope.locator = selector => wrap(originalLocator(selector));
+  await assert.rejects(openSavedContactChooser(mounted, 'saved', note), /Private contact and optional note stay out of messenger drafts/);
+  assert.deepEqual([...changedChannels].sort(), ['https://t.me', 'https://wa.me']);
+  assert.equal(mounted.calls.length, 1);
+  assert.equal(JSON.parse(mounted.calls[0].body).description, note);
+  assert.equal(mounted.externalClicks(), 0);
+});
+
 
 test('actual paid attribution dependency preserves only approved labels after explicit save', async () => {
   const valid = '?utm_source=facebook&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_a';
@@ -399,8 +440,9 @@ function assertPublicDrawingCallerContract(source, helper) {
   assert.match(helper, /await expect\(consent\)\.not\.toBeChecked\(\)/);
   assert.match(helper, /await consent\.uncheck\(\);\s*await expect\(submit\)\.toBeDisabled\(\)/);
   assert.match(helper, /assert\.equal\(requests\.length, 0, 'Contact details without explicit consent cannot submit'\)/);
-  assert.match(helper, /for \(const privateValue of \[\.\.\.Object\.values\(contact\)\.filter\(Boolean\), \.\.\.privateValues\]\)/);
-  assert.match(helper, /assert\.ok\(!message\.includes\(privateValue\)/);
+  assert.match(helper, /for \(const privateValue of \[\.\.\.Object\.values\(contact\)\.filter\(Boolean\), \.\.\.\(description \? \[description\] : \[\]\), \.\.\.privateValues\]\)/);
+  assert.match(helper, /assert\.ok\(!url\.searchParams\.get\('text'\)\.includes\(privateValue\)/);
+  assert.match(helper, /assert\.ok\(!decodeURIComponent\(url\.href\)\.includes\(privateValue\)/);
   assert.match(helper, /assert\.ok\(!decodeURIComponent\(page\.url\(\)\)\.includes\(privateValue\)/);
   // Execute the real expected-payload expression with synthetic values: a regex
   // mentioning consent cannot hide added questionnaire fields or consent:false.
@@ -438,7 +480,9 @@ test('public drawing caller rejects widened scope, lost private markers, consent
     ['source', 'name: freeLanding.text.prepare, exact: true', 'name: freeLanding.text.prepare, exact: false'],
     ['helper', 'await expect(consent).not.toBeChecked()', 'await expect(consent).toBeChecked()'],
     ['helper', 'await consent.uncheck();', '/* consent gate removed */'],
-    ['helper', '!message.includes(privateValue)', 'true'],
+    ['helper', "!url.searchParams.get('text').includes(privateValue)", 'true'],
+    ['helper', '!decodeURIComponent(url.href).includes(privateValue)', 'true'],
+    ['helper', '...(description ? [description] : [])', '...[]'],
     ['helper', '!decodeURIComponent(page.url()).includes(privateValue)', 'true'],
     ['helper', 'contactConsent: true', 'contactConsent: false'],
     ['helper', "contact, contactConsent: true, website: ''", "contact, contactConsent: true, website: '', questionnaire: 'unexpected'"],

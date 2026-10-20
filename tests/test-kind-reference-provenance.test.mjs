@@ -18,14 +18,14 @@ test('authored and hobby provenance takes precedence over reference storage and 
   assert.equal(testKindFor({ key: 'unknown-without-metadata' }), 'monitoring')
 })
 
-test('all 290 reviewed entries retain their purpose, with 145 active instruments', () => {
+test('all 295 reviewed entries retain their purpose, with 150 active instruments', () => {
   for (const locale of ['en', 'ru']) {
     const entries = buildExplorerEntries({ locale, audience: 'account' })
-    assert.equal(entries.length, 290)
+    assert.equal(entries.length, 295)
     const active = entries.filter(entry => entry.selectable)
-    assert.equal(active.length, 145)
+    assert.equal(active.length, 150)
     assert.deepEqual(['monitoring', 'professional', 'hobby'].map(kind =>
-      active.filter(entry => entry.testKind === kind).length), [67, 72, 6])
+      active.filter(entry => entry.testKind === kind).length), [67, 77, 6])
     for (const entry of entries) {
       const expected = HOBBY_TEST_KEYS.includes(entry.key) ? 'hobby'
         : entry.key.startsWith('hh-') || entry.key === 'functioning-review' ? 'monitoring' : 'professional'

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { assertPreparedContactChannels } from './contact-channel-verifier.mjs';
+import { PHONE_COUNTRIES } from '../../lib/contact/phone-country.js';
 
 // Explicit contracts for these public UI journeys, not arbitrary API fixtures.
 const services = {
@@ -38,7 +39,12 @@ export function assertPublicEnquiryFixture(page, kind, locale) {
 
 // Explicit final-composition contract for the CRM single-entry UX introduced in
 // a7c74814370c1aa4c5ffccbcc85f4f9a79c81df2. Not a permissive legacy/new fallback.
-export const publicEnquiryUiVariant = 'crm-single-entry-v1';
+export const publicEnquiryUiVariant = 'crm-single-entry-optional-private-note-v2';
+const contactCopy = {
+  en: { country: 'Country calling code', phone: 'Phone number', note: 'Add a short note (optional)' },
+  ru: { country: 'Код страны', phone: 'Номер телефона', note: 'Добавить комментарий (необязательно)' },
+  es: { country: 'Prefijo del país', phone: 'Número de teléfono', note: 'Añadir una nota (opcional)' },
+};
 export async function assertSingleEntryEnquiryUi(scope, expect) {
   for (const [selector, count] of [
     ['form', 1], ['input[type="text"]', 2], // one contact name plus hidden honeypot
@@ -56,18 +62,20 @@ export async function assertSingleEntryEnquiryUi(scope, expect) {
  * Backend validation/storage/notification integration remains a separate gate.
  * Nothing clicks a messenger link or equates a saved request with message sent.
  */
-export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kind, requiredMessage = [], privateValues = [], scopeIsChooser = false, contactMode = 'email' }) {
+export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kind, requiredMessage = [], privateValues = [], scopeIsChooser = false, contactMode = 'email', noteMode = 'supplied' }) {
   const { service, current } = assertPublicEnquiryFixture(page, kind, locale);
   const endpoint = current.origin + '/api/service-enquiries';
   // Catch malformed query/trailing-path variants too, but never another host.
   // Only the exact endpoint and payload below may receive a positive fixture.
   const endpointMatch = url => url.origin === current.origin && /^\/api\/service-enquiries(?:\/|$)/.test(url.pathname);
-  const description = 'Synthetic ' + kind + ' public UI enquiry for ' + locale + '.';
+  assert.ok(['absent', 'supplied'].includes(noteMode), 'Explicit optional-note fixture mode required');
+  const description = noteMode === 'absent' ? '' : 'Synthetic private ' + kind + ' note for ' + locale + '.';
+  const words = contactCopy[locale];
   const referenceCode = 'HH-0123456789AB';
   assert.ok(['email', 'phone', 'both'].includes(contactMode), 'Explicit synthetic contact mode required');
   const contact = { displayName: 'Synthetic Visitor',
     email: contactMode === 'phone' ? '' : 'visitor@example.test',
-    phone: contactMode === 'email' ? '' : '+14165551234' };
+    phone: contactMode === 'email' ? '' : '+447700900123' };
   const replies = [
     { status: 503, json: { error: 'SYNTHETIC_UNAVAILABLE' } },
     { status: 200, json: { saved: false, referenceCode } },
@@ -116,22 +124,36 @@ export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kin
     const submit = form.locator('button[type="submit"]');
     const name = form.locator('input[autocomplete="name"]');
     const email = form.locator('input[type="email"]');
-    const phone = form.locator('input[type="tel"]');
+    const phone = form.getByLabel(words.phone, { exact: true });
+    const phoneField = form.locator('[data-phone-country-input]');
+    const country = phoneField.getByRole('combobox', { name: words.country, exact: true });
+    const note = form.locator('details').filter({ has: details });
+    const noteToggle = note.locator(':scope > summary');
     const consent = form.locator('input[type="checkbox"]');
     await expect(form).toHaveCount(1);
     await expect(form).toBeVisible();
     for (const field of [name, email, phone, consent]) await expect(field).toBeVisible();
     for (const field of [details, name, email, phone, consent]) await expect(field).toHaveCount(1);
-    await expect(details).toHaveAttribute('required', '');
-    await expect(details).toHaveAttribute('minlength', '10');
+    await expect(phoneField).toHaveCount(1);
+    await expect(phoneField.locator('select')).toHaveCount(1);
+    await expect(country).toHaveCount(1);
+    await expect(country).toBeVisible();
+    await expect(country).toHaveValue('CA');
+    await expect(country.locator('option')).toHaveText(PHONE_COUNTRIES.map(item =>
+      item.flag + ' ' + (item.dial || '+') + ' · ' + item.names[locale]));
+    for (const item of PHONE_COUNTRIES) await expect(country.locator('option[value="' + item.iso + '"]')).toHaveCount(1);
+    await expect(note).toHaveCount(1);
+    assert.equal(await note.evaluate(node => node.open), false, 'Private note starts collapsed');
+    await expect(noteToggle).toBeVisible();
+    await expect(noteToggle).toHaveText(words.note);
+    await expect(form.getByLabel(words.note, { exact: true })).toHaveCount(1);
+    assert.equal(await details.getAttribute('required'), null, 'Private note is optional');
+    assert.equal(await details.getAttribute('minlength'), null, 'Private note has no minimum length');
     await expect(details).toHaveAttribute('maxlength', '1400');
-    await expect(details).toBeVisible();
-    await expect(submit).toBeDisabled();
-    await details.fill('short');
+    await expect(details).toBeHidden();
+    await expect(details).toHaveValue('');
     await expect(submit).toBeDisabled();
     assert.equal(requests.length, 0, 'Opening the chooser must not submit an enquiry');
-    await details.fill(description);
-    await expect(submit).toBeDisabled();
     await expect(name).toHaveAttribute('required', '');
     await expect(consent).toHaveAttribute('required', '');
     await expect(consent).not.toBeChecked();
@@ -144,7 +166,10 @@ export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kin
     await submit.click();
     await expect(chooser.locator('[role="alert"]')).toBeVisible();
     assert.equal(requests.length, 0, 'An invalid phone cannot submit when no email was provided');
-    await phone.fill('+14165551234');
+    await country.selectOption('GB');
+    await expect(country).toHaveValue('GB');
+    await phone.fill('7700 900123');
+    await expect(phone).toHaveValue('7700900123');
     await expect(submit).toBeEnabled();
     await name.fill('');
     await expect(submit).toBeDisabled();
@@ -156,9 +181,22 @@ export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kin
     await expect(submit).toBeDisabled();
     assert.equal(requests.length, 0, 'Contact details without explicit consent cannot submit');
     await email.fill(contact.email);
-    await phone.fill(contact.phone);
+    await phone.fill(contactMode === 'email' ? '' : '7700900123');
+    await expect(country).toHaveValue('GB');
     await consent.check();
     await expect(submit).toBeEnabled();
+    // An absent note already permits the valid contact-only request. A short
+    // supplied note must not introduce a hidden minimum-length requirement.
+    if (noteMode === 'supplied') {
+      await noteToggle.click();
+      assert.equal(await note.evaluate(node => node.open), true);
+      await expect(details).toBeVisible();
+      await details.fill('brief');
+      await expect(submit).toBeEnabled();
+      await details.fill(description);
+      await expect(submit).toBeEnabled();
+    } else await expect(details).toBeHidden();
+    assert.equal(requests.length, 0, 'Contact, country, note and consent edits must not auto-submit');
     for (let index = 0; index < replies.length; index++) {
       // Hold each response so the browser must expose its true pending state,
       // not just a successful settled frame. Always release even on assertion failure.
@@ -168,7 +206,7 @@ export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kin
       try {
         await expect.poll(() => requests.length).toBe(index + 1);
         await expect(submit).toBeDisabled();
-        for (const field of [details, name, email, phone, consent]) await expect(field).toBeDisabled();
+        for (const field of [details, name, email, phone, country, consent]) await expect(field).toBeDisabled();
         await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
         await expect(chooser.locator('[role="status"]')).toHaveCount(0);
       } finally {
@@ -194,11 +232,14 @@ export async function exercisePublicEnquiryUi(page, scope, expect, { locale, kin
     await expect(chooser).toContainText(handoff[locale]);
     const prepared = await assertPreparedContactChannels(chooser, expect);
     const message = prepared.whatsappUrl.searchParams.get('text');
-    for (const required of [service.title, ...requiredMessage, description, referenceCode]) {
+    for (const required of [service.title, ...requiredMessage, referenceCode]) {
       assert.ok(message.includes(required), 'Prepared ' + kind + ' request must retain: ' + required);
     }
-    for (const privateValue of [...Object.values(contact).filter(Boolean), ...privateValues]) {
-      assert.ok(!message.includes(privateValue), 'Contact and separately entered private details never enter messenger URLs');
+    for (const privateValue of [...Object.values(contact).filter(Boolean), ...(description ? [description] : []), ...privateValues]) {
+      for (const url of [prepared.whatsappUrl, prepared.telegramUrl]) {
+        assert.ok(!url.searchParams.get('text').includes(privateValue), 'Contact and separately entered private details never enter messenger URLs');
+        assert.ok(!decodeURIComponent(url.href).includes(privateValue), 'Contact and separately entered private details never enter messenger URLs');
+      }
       assert.ok(!decodeURIComponent(page.url()).includes(privateValue), 'Private details never enter page URL');
     }
     assert.equal(requests.length, replies.length, 'Reading prepared links must not resubmit');

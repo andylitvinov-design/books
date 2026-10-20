@@ -73,9 +73,10 @@ for (const locale of ['en','ru','es']) test('actual '+locale+' welcome renders d
   }))}
   const h=mount('antistress-module-finder',{props:{locale,profile,onStart:selection=>writes.push(selection)}})
   await h.settle()
-  const label=({en:'Let’s go',ru:'Поехали!',es:'¡Vamos!'})[locale]
+  const label=({en:'Start my first lesson',ru:'Начать первый урок',es:'Empezar mi primera lección'})[locale]
   const start=findButton(h.tree,label)
   assert.ok(start)
+  assert.equal(nodes(h.tree).filter(node=>node.type==='button'&&Object.hasOwn(node.props,'data-course-consent-module')).length,1,'exactly one direct start action')
   assert.equal(start.props.disabled,false)
   const details=nodes(h.tree).find(node=>node.type==='details')
   assert.ok(details)
