@@ -49,3 +49,14 @@ test('no BotFather token returns no external network call',async()=>{
   const result=await discoverOwnerPrivateChat({},async()=>assert.fail('must not fetch'),now)
   assert.equal(result.status,'token_missing')
 })
+
+test('one-time discovery route is restricted by existing CRON_SECRET and never exposes token or raw updates',async()=>{
+  const {readFileSync}=await import('node:fs')
+  const source=readFileSync(new URL('../app/api/internal/telegram-owner-discovery/route.js',import.meta.url),'utf8')
+  assert.match(source,/cronAuthorized\(request,process\.env\)/)
+  assert.match(source,/PRIVATE_HEADERS/)
+  assert.match(source,/request.*GET|export async function GET/)
+  assert.doesNotMatch(source,/getUpdates|deleteWebhook|setWebhook|console\.log\(.*token/)
+  const config=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
+  assert.equal(config.crons.some(c=>c.path==='/api/internal/telegram-owner-discovery'),false)
+})
