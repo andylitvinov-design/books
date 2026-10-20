@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import { getImageProps } from 'next/image.js';
+import * as serviceCart from '../lib/commerce/cart.js';
 import * as navigationModel from '../lib/site-navigation-model.js';
 import * as acquisition from '../data/local-acquisition.js';
 
@@ -16,8 +18,8 @@ const origin = 'https://example.test';
 const treeNodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(treeNodes) : [tree, ...treeNodes(tree.props.children)];
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} };
 const link = props => jsx('a', props);
-function loadComponent(path, modules) {
-  const compiled = ts.transpileModule(read(path), { fileName: path, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+function loadComponent(path, modules, source = read(path)) {
+  const compiled = ts.transpileModule(source, { fileName: path, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};
   runInNewContext(compiled, { exports, require: name => {
     assert.ok(Object.hasOwn(modules, name), 'Known component dependency: ' + name);
@@ -30,6 +32,24 @@ const common = {
   'next/link': { default: link },
   'lucide-react': Object.fromEntries(['BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown'].map(name => [name, () => null])),
 };
+// Render the real imported UI. Effects stay inert: there is no browser storage,
+// document, provider, or network in this synthetic component harness.
+let cartCount = 0;
+const cartDependencies = {
+  ...common,
+  react: { useEffect() {}, useState: () => [cartCount, () => {}] },
+  'lucide-react': { ShoppingBasket: () => null },
+  '@/lib/commerce/cart': serviceCart,
+  './cart-nav-link.module.css': { default: { navCart: 'cart-nav-link' } },
+};
+const { CartNavLink } = loadComponent('components/commerce/cart-nav-link.tsx', cartDependencies);
+const portrait = JSON.parse(read('data/static-portrait.json'));
+const { StaticPortrait } = loadComponent('components/static-portrait.tsx', {
+  ...common,
+  'react-dom': { preload() {} },
+  'next/image': { getImageProps },
+  '@/data/static-portrait.json': { default: portrait },
+});
 let pathname = '/';
 const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   ...common,
@@ -38,6 +58,7 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/lib/ui-locale': { localePath: (path, locale) => '/' + locale + path, saveUiLocale() {} },
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
+  '@/components/commerce/cart-nav-link': { CartNavLink },
   './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
 });
@@ -46,6 +67,7 @@ const { coreServiceOffers } = loadComponent('data/core-service-offers.ts', {});
 const { ServicesSolutions } = loadComponent('components/services-solutions.tsx', {
   ...common,
   'next/image': { default: props => jsx('img', props) },
+  '@/components/static-portrait': { StaticPortrait },
   '@/components/acquisition-event-link': { AcquisitionEventLink },
   '@/components/contact-channel-chooser': { ContactChannelChooser: () => jsx('button', {}) },
   '@/lib/whatsapp-enquiry': { whatsappEnquiryUrl },
@@ -265,4 +287,51 @@ test('library audit checks the menu active link while preserving exact six-slot 
   assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(6\)/);
   assert.match(ia, /const libraryEntry = header\.locator\('a\.site-library-entry'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(0\)/);
+});
+
+
+function assertCartLink(tree, locale, count) {
+  const label = { en: 'Cart', ru: 'Корзина', es: 'Carrito' }[locale];
+  assert.equal(tree.type, 'a');
+  assert.equal(tree.props.href, '/' + locale + '/cart');
+  assert.equal(tree.props['data-nav-item'], 'cart');
+  assert.equal(tree.props['aria-label'], `${label} (${count})`);
+  assert.equal(tree.props['data-cart-has-items'], count > 0 ? 'true' : 'false');
+  const badges = treeNodes(tree).filter(node => node.type === 'b');
+  assert.equal(badges.length, count > 0 ? 1 : 0);
+  if (count > 0) {
+    assert.equal(badges[0].props.children, count);
+    assert.equal(badges[0].props['aria-live'], 'polite');
+  }
+}
+for (const locale of ['en', 'ru', 'es']) {
+  test(locale + ' harness renders actual cart destination, label and count without browser effects', () => {
+    try {
+      for (const count of [0, 2]) {
+        cartCount = count;
+        const tree = CartNavLink({ locale });
+        assertCartLink(tree, locale, count);
+        tree.props.href = '/wrong';
+        assert.throws(() => assertCartLink(tree, locale, count));
+      }
+    } finally { cartCount = 0; }
+  });
+}
+test('navigation harness keeps the real cart contract and rejects unknown dependencies or write APIs', () => {
+  assert.deepEqual(serviceCart.restoreServiceCart('["express-consultation-30", "not-a-product"]'), ['express-consultation-30']);
+  assert.deepEqual(serviceCart.restoreServiceCart('{"unexpected":"object"}'), []);
+  const withoutCart = { ...cartDependencies };
+  delete withoutCart['@/lib/commerce/cart'];
+  assert.throws(() => loadComponent('components/commerce/cart-nav-link.tsx', withoutCart), /Known component dependency: @\/lib\/commerce\/cart/);
+  for (const name of ['unexpected-component', 'node:fs', 'node:child_process']) {
+    assert.throws(() => loadComponent('synthetic-dependency.ts', common, `require(${JSON.stringify(name)});`), error => error.message === 'Known component dependency: ' + name);
+  }
+});
+test('navigation harness renders actual static portrait and retains its source guard', () => {
+  const tree = StaticPortrait({ src: portrait.source, alt: 'Synthetic portrait', fill: true, sizes: '280px' });
+  assert.equal(tree.type, 'img');
+  assert.equal(tree.props.src, portrait.variants.at(-1).path);
+  assert.equal(tree.props.srcSet, portrait.variants.map(variant => `${variant.path} ${variant.width}w`).join(', '));
+  assert.equal(tree.props.alt, 'Synthetic portrait');
+  assert.throws(() => StaticPortrait({ src: '/wrong.png', alt: '', fill: true }), /requires the verified portrait source/);
 });

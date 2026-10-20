@@ -270,9 +270,13 @@ test('weekly business module helpers remain compatible with Next production lint
 })
 
 
-test('Business course uses a scoped premium wooden executive language with both reading modes',()=>{
-  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
-  const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
+function cssRule(css,selector){
+  const escaped=selector.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')
+  const match=css.match(new RegExp('(?:^|[}\\n])\\s*'+escaped+'\\s*\\{([^{}]*)\\}'))
+  assert.ok(match,'Missing scoped CSS rule: '+selector)
+  return match[1]
+}
+function assertStandaloneBusinessWoodTheme(ui,css){
   assert.ok(css.includes('HOLISTIC HOUSE PREMIUM WOOD EXECUTIVE V4'))
   assert.ok(!css.includes('HOLISTIC HOUSE COURSE DESIGN V3'))
   assert.ok(css.includes('--wood-walnut:#503424'))
@@ -304,6 +308,21 @@ test('Business course uses a scoped premium wooden executive language with both 
   assert.ok(ui.includes('role="group" aria-label={t.woodTheme}'))
   assert.ok(!ui.includes('course-journey-landscape.svg'))
   assert.ok(!ui.includes("import Image from 'next/image'"))
+  // The dashboard card may change independently; the actual programme stays wood/beige.
+  const woodLayer=css.slice(css.indexOf('/* HOLISTIC HOUSE PREMIUM WOOD EXECUTIVE V4'))
+  const light=cssRule(woodLayer,'.root')
+  const dark=cssRule(woodLayer,'.root[data-wood-mode=dark]')
+  assert.match(light,/--wood-paper:#fffaf2;--wood-bg:#f6ecdc;/)
+  assert.match(light,/--wood-ink:#35261d;/)
+  assert.match(light,/linear-gradient\(180deg,var\(--wood-bg\),var\(--wood-paper\)\)!important/)
+  assert.match(dark,/--wood-paper:#342821;--wood-bg:#241a15;/)
+  assert.match(dark,/--wood-ink:#fff2df;/)
+}
+
+test('Business course uses a scoped premium wooden executive language with both reading modes',()=>{
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
+  assertStandaloneBusinessWoodTheme(ui,css)
 })
 
 function relativeLuminance(hex){
@@ -331,14 +350,11 @@ test('Wood redesign has complete CSS Module bindings without impacting other cou
   assert.deepEqual(used.filter(name=>!available.has(name)),[])
   const publicPage=readFileSync(new URL('../app/[locale]/explore/[theme]/page.tsx',import.meta.url),'utf8')
   const promoCss=readFileSync(new URL('../components/business-coaching-promo.module.css',import.meta.url),'utf8')
-  const courseListCss=readFileSync(new URL('../components/app/my-courses-dashboard.module.css',import.meta.url),'utf8')
   assert.ok(publicPage.includes('data-business-free-90-day-plan'))
   assert.ok(publicPage.includes('business-coaching-promo.module.css'))
   assert.ok(publicPage.includes('12 недель, конкретный результат каждого дня'))
   assert.ok(publicPage.includes("locale==='ru'?'ru':'en'"))
   assert.ok(promoCss.includes('linear-gradient(105deg,#67462f,#483023)'))
-  assert.ok(courseListCss.includes('.businessTrack'))
-  assert.ok(courseListCss.includes('background:linear-gradient(115deg,#fffaf1,#f0dfc7'))
   assert.ok(css.includes('data-wood-mode=dark'))
 })
 
@@ -399,18 +415,69 @@ test('Previously saved lessons have a real Next lesson action without re-saving'
   assert.ok(ui.includes('savedLessonCanContinue?t.nextLesson'))
 })
 
+function assertBusinessDashboardCard(component,css){
+  const cards=[...component.matchAll(/<Link\b[\s\S]*?<\/Link>/g)]
+    .map(match=>match[0]).filter(link=>link.includes('data-business-coaching-course-link'))
+  assert.equal(cards.length,1,'Exactly one Business course link must own the dashboard card')
+  const card=cards[0]
+  assert.match(card,/href=\{'\/' \+ \(locale==='ru'\?'ru':'en'\) \+ '\/app\/business'\}/)
+  assert.match(card,/className=\{styles\.businessTrack\} data-business-coaching-course-link/)
+  assert.match(card,/className=\{styles\.businessTrackPhoto\}[\s\S]*?<img src="\/images\/holistic-house\/books-library\.webp"[\s\S]*?className=\{styles\.businessTrackBody\}/)
+  assert.match(card,/className=\{styles\.businessTrackTitle\}/)
+  assert.match(card,/Бизнес и карьера · 90 дней/)
+  assert.match(card,/Business & Career · 90 Days/)
+  const action=card.match(/<span className=\{styles\.businessTrackAction\}>([\s\S]*?)<\/span>/)
+  assert.ok(action,'The Business card must contain its own visible free-plan CTA')
+  assert.match(action[1],/locale==='ru'\?'Создать бесплатный план':'Start free plan'/)
+  assert.match(action[1],/<ArrowRight size=\{16\} aria-hidden="true"\/>/)
+  const track=cssRule(css,'.businessTrack')
+  const actionRule=cssRule(css,'.businessTrackAction')
+  assert.match(track,/display:grid;grid-template-columns:clamp\(112px,19vw,162px\) minmax\(0,1fr\)/)
+  assert.match(track,/background:linear-gradient\(118deg,#1c4e61,#1a314b\)/)
+  assert.match(actionRule,/background:#0b9fa8;color:#fff/)
+  assert.match(css,/@media\(max-width:600px\)\{\s*\.businessTrack\{grid-template-columns:102px minmax\(0,1fr\)/)
+  assert.match(css,/@media\(max-width:370px\)\{\s*\.businessTrack\{grid-template-columns:91px minmax\(0,1fr\)/)
+}
+
 test('business promotion matches the saved course photo-left design at phone widths',()=>{
   const component=readFileSync(new URL('../components/app/my-courses-dashboard.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/my-courses-dashboard.module.css',import.meta.url),'utf8')
-  assert.match(component,/data-business-coaching-course-link/)
-  assert.match(component,/className=\{styles\.businessTrackPhoto\}/)
-  assert.match(component,/\/images\/holistic-house\/books-library\.webp/)
-  assert.match(component,/className=\{styles\.businessTrackAction\}/)
-  assert.match(component,/Start free plan/)
-  assert.match(component,/Создать бесплатный план/)
-  assert.match(css,/\.businessTrack\{[\s\S]*?grid-template-columns:clamp\(112px,19vw,162px\) minmax\(0,1fr\)/)
-  assert.match(css,/\.businessTrack\{[\s\S]*?background:linear-gradient\(118deg,#1c4e61,#1a314b\)/)
-  assert.match(css,/\.businessTrackAction\{[\s\S]*?background:#0b9fa8/)
-  assert.match(css,/@media\(max-width:600px\)\{\s*\.businessTrack\{grid-template-columns:102px minmax\(0,1fr\)/)
-  assert.match(css,/@media\(max-width:370px\)\{\s*\.businessTrack\{grid-template-columns:91px minmax\(0,1fr\)/)
+  assertBusinessDashboardCard(component,css)
+})
+
+test('Business dashboard contract rejects the wrong card, route, image and palette',()=>{
+  const component=readFileSync(new URL('../components/app/my-courses-dashboard.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/my-courses-dashboard.module.css',import.meta.url),'utf8')
+  for(const [label,wrongComponent,wrongCss] of [
+    ['unrelated card',component.replace('data-business-coaching-course-link','data-unrelated-course-link'),css],
+    ['wrong course route',component.replace("+ '/app/business'","+ '/app/opora'"),css],
+    ['wrong photograph',component.replace('/images/holistic-house/books-library.webp','/images/holistic-house/other-course.webp'),css],
+    ['wood dashboard with navy decoy',component,css.replace(/(\.businessTrack\{[^}]*?)background:linear-gradient\(118deg,#1c4e61,#1a314b\)/,'$1background:linear-gradient(115deg,#fffaf1,#f0dfc7)')+'\n.otherCard{background:linear-gradient(118deg,#1c4e61,#1a314b)}'],
+    ['wrong CTA color with turquoise decoy',component,css.replace(/(\.businessTrackAction\{[^}]*?)background:#0b9fa8/,'$1background:#654831')+'\n.otherAction{background:#0b9fa8;color:#fff}'],
+  ]){
+    assert.ok(wrongComponent!==component||wrongCss!==css,'Mutation must change source: '+label)
+    assert.throws(()=>assertBusinessDashboardCard(wrongComponent,wrongCss),{code:'ERR_ASSERTION'},label)
+  }
+})
+
+test('Business dashboard contract rejects a missing CTA even when labels remain elsewhere',()=>{
+  const component=readFileSync(new URL('../components/app/my-courses-dashboard.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/my-courses-dashboard.module.css',import.meta.url),'utf8')
+  const withoutAction=component.replace(/<span className=\{styles\.businessTrackAction\}>[\s\S]*?<\/span>/,'')
+  assert.notEqual(withoutAction,component,'Mutation must remove the Business CTA')
+  const unrelatedAction='<span className={styles.businessTrackAction}>{locale===\'ru\'?\'Создать бесплатный план\':\'Start free plan\'}<ArrowRight size={16} aria-hidden="true"/></span>'
+  assert.throws(()=>assertBusinessDashboardCard(withoutAction+'\n'+unrelatedAction,css),{code:'ERR_ASSERTION'})
+})
+
+test('Business standalone theme contract rejects dashboard colors or a different programme visual',()=>{
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
+  for(const [label,wrongUi,wrongCss] of [
+    ['navy instead of beige',ui,css.replace('--wood-bg:#f6ecdc','--wood-bg:#1a314b')],
+    ['turquoise instead of dark wood',ui,css.replace('--wood-bg:#241a15','--wood-bg:#0b9fa8')],
+    ['different programme visual',ui.replaceAll('data-course-visual="executive-wood-v2"','data-course-visual="dashboard-navy"'),css],
+  ]){
+    assert.ok(wrongUi!==ui||wrongCss!==css,'Mutation must change source: '+label)
+    assert.throws(()=>assertStandaloneBusinessWoodTheme(wrongUi,wrongCss),{code:'ERR_ASSERTION'},label)
+  }
 })
