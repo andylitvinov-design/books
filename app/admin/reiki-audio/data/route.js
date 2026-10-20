@@ -19,13 +19,21 @@ const permitted = (body, keys) =>
   !!body && typeof body === 'object' && !Array.isArray(body) &&
   Object.keys(body).every(key => keys.includes(key))
 
-export async function GET() {
+export async function GET(request) {
   if (!await requireAdminRequest()) return result({ error: 'NOT_FOUND' }, 404)
+  const params = new URL(request.url).searchParams
+  const lesson = params.get('lesson')
+  const locale = params.get('locale')
+  if ((lesson === null) !== (locale === null))
+    return result({ error: 'INVALID_REIKI_AUDIO_SLOT' }, 400)
   try {
     const config = getAppConfig()
-    return result({ manifest: await reikiIntroAudioAdminRead(config), storageOrigin: config.supabaseUrl, configured: true })
-  } catch {
-    return result({ manifest: { version: 1, slots: {} }, configured: false }, 503)
+    const inventory = await reikiIntroAudioAdminRead(config, { lesson, locale })
+    return result({ ...inventory, storageOrigin: config.supabaseUrl, configured: true })
+  } catch (error) {
+    const invalid = error?.code === 'INVALID_REIKI_AUDIO_SLOT'
+    return result({ manifest: { version: 1, slots: {} }, files: [],
+      configured: false, error: invalid ? 'INVALID_REIKI_AUDIO_SLOT' : 'REIKI_AUDIO_STORAGE_UNAVAILABLE' }, invalid ? 400 : 503)
   }
 }
 
