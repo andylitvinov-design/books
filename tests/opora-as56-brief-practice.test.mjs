@@ -57,9 +57,9 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
   test(`AS5.7 ${locale} day ${day}: actual player preserves owner title, practice and voluntary hint without writes`,async()=>{
     const f=fixture(locale,day),t=words[locale]
     try{
-      // Day 1 now begins with five restored check-in slides and a gentle arrival;
-      // the daily practice follows those six screens, not the initial Welcome.
-      for(let i=0;i<(day===1?6:1);i++)await f.click(t.next)
+      // The acceptance screen is second for every day. Day 1 still keeps its
+      // five original opening screens before arriving at practical work.
+      for(let i=0;i<(day===1?7:2);i++)await f.click(t.next)
       assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
       assert.ok(textOf(f.h.tree).includes(oporaExperienceGuide(day,locale)))
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
@@ -83,7 +83,7 @@ for(const locale of ['ru','en','es']){
     test(`AS5.7 ${locale}: neutral return from ${source}, hint initially ${priorHelp?'open':'closed'}, remains safe through Back`,async()=>{
       const f=fixture(locale)
       try{
-        await f.click(t.next)
+        await f.click(t.next);await f.click(t.next)
         if(priorHelp)await f.click(t.help)
         if(source!=='practice')await f.click(t.next)
         await f.click(source==='discomfort'?t.hard:t.pause)
@@ -105,11 +105,11 @@ for(const locale of ['ru','en','es']){
       }finally{f.h.unmount()}
     })
   }
-  for(const step of [0,1,2,3,4,5]){
+  for(const step of [0,1,2,3,4,5,6]){
     test(`AS5.7 ${locale}: neutral return stays visible from moment ${step}`,async()=>{
-      const f=fixture(locale,5,step===5?{signals:{opora54:{answers:{}}}}:null)
+      const f=fixture(locale,5,step===6?{signals:{opora54:{answers:{}}}}:null)
       try{
-        if(step<5)for(let i=0;i<step;i++)await f.click(t.next)
+        if(step<6)for(let i=0;i<step;i++)await f.click(t.next)
         await f.click(t.pause);await f.click(t.neutral);assertNeutral(f,locale)
       }finally{f.h.unmount()}
     })
@@ -117,7 +117,7 @@ for(const locale of ['ru','en','es']){
   test(`AS5.7 ${locale}: ordinary Go back preserves an explicitly opened hint without saving`,async()=>{
     const f=fixture(locale)
     try{
-      await f.click(t.next);await f.click(t.help);await f.click(t.pause);await f.click(t.back)
+      await f.click(t.next);await f.click(t.next);await f.click(t.help);await f.click(t.pause);await f.click(t.back)
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],true)
       await f.click(t.pause);await f.click(t.end)
       assert.equal(f.saves,0);assert.equal(f.closes,1);assert.deepEqual(f.data,f.original)
