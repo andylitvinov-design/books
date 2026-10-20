@@ -142,11 +142,22 @@ export default function MyCoursesDashboard({
       <div><span className={styles.micro}>{t.eyebrow} · HOLISTIC HOUSE</span><h2>{t.heading}</h2><p>{t.more}</p></div>
       <span className={styles.cap}><Sparkles size={15}/>{occupied} / {limit}</span>
     </header>
-    <Link href={'/' + (locale==='ru'?'ru':'en') + '/app/business'} prefetch={false} className={styles.businessTrack} data-business-coaching-course-link>
-      <span className={styles.businessTrackIcon}><BookOpenCheck size={23} aria-hidden="true" /></span>
-      <span><strong>{locale==='ru'?'Бизнес и карьера · 90 дней':'Business & Career · 90 Days'}</strong>
-        <small>{locale==='ru'?'Бесплатная персональная программа по целям, самооценке и практическим результатам':'Free personal plan built around your goals, self-reflection and actual outcomes'}</small></span>
-      <ArrowRight size={19} aria-hidden="true" />
+    <Link href={'/' + (locale==='ru'?'ru':'en') + '/app/business'} prefetch={false}
+      className={styles.businessTrack} data-business-coaching-course-link>
+      <span className={styles.businessTrackPhoto} aria-hidden="true">
+        <img src="/images/holistic-house/books-library.webp" alt=""
+          width={240} height={220} loading="lazy" decoding="async" />
+      </span>
+      <span className={styles.businessTrackBody}>
+        <span className={styles.businessTrackEyebrow}>{locale==='ru'?'БЕСПЛАТНЫЙ КУРС':'FREE PERSONAL COURSE'}</span>
+        <strong className={styles.businessTrackTitle}>{locale==='ru'?'Бизнес и карьера · 90 дней':'Business & Career · 90 Days'}</strong>
+        <span className={styles.businessTrackDescription}>
+          {locale==='ru'?'Личный план под ваши цели, рефлексию и реальные результаты':'A personal plan for your goals, reflection and real-world outcomes'}
+        </span>
+        <span className={styles.businessTrackAction}>
+          {locale==='ru'?'Создать бесплатный план':'Start free plan'}<ArrowRight size={16} aria-hidden="true"/>
+        </span>
+      </span>
     </Link>
     {main&&<section className={styles.startedCourses} aria-label={t.started} data-started-courses>
       <h3>{t.started}</h3>
