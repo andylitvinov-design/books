@@ -25,6 +25,10 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 MAX_AUDIO_BYTES = 3_000_000
 JOB_ID = re.compile(r"^[a-f0-9-]{36}$", re.I)
 PRODUCTION_SITE = "https://holistichouse.vercel.app"
+# Nonsecret storage host is verified against the site's Supabase project.
+PRODUCTION_STORAGE_HOST = "shervdixkaxurnaecioe.supabase.co"
+VOICE_HOME = Path.home() / "Library" / "Application Support" / "HolisticHouse" / "AndreyVoice"
+KEYCHAIN_SERVICE = "holistichouse.andrey-voice.worker-token"
 VALID_LOCALES = {"ru", "en"}
 
 
@@ -50,6 +54,17 @@ def base_url() -> str:
 
 def api_token() -> str:
     token = os.environ.get("HH_LOCAL_NARRATION_WORKER_TOKEN", "")
+    if not token and sys.platform == "darwin":
+        # Secret lives in the owner's macOS Keychain, never in a launchd plist,
+        # downloaded zip, Git repository or script command line.
+        try:
+            token = subprocess.check_output(
+                ["/usr/bin/security", "find-generic-password",
+                 "-s", KEYCHAIN_SERVICE, "-a", "AndreyVoice", "-w"],
+                stderr=subprocess.DEVNULL, timeout=8
+            ).decode("utf-8").strip()
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            token = ""
     if len(token) < 40 or len(token) > 200 or any(ch.isspace() for ch in token):
         raise ValueError("secure worker token not configured")
     return token
@@ -86,7 +101,9 @@ def approved_upload_url(url: str) -> str:
     if parts.scheme != "https" or parts.username or parts.password or parts.fragment:
         raise ValueError("upload URL not secure")
     host = parts.hostname or ""
-    approved_host = os.environ.get("HH_LOCAL_NARRATION_SUPABASE_HOST", "").lower().strip()
+    approved_host = os.environ.get(
+        "HH_LOCAL_NARRATION_SUPABASE_HOST", PRODUCTION_STORAGE_HOST
+    ).lower().strip()
     if not approved_host.endswith(".supabase.co") or host.lower() != approved_host or parts.port not in (None, 443):
         raise ValueError("upload host does not match verified private Supabase storage")
     if not parts.path.startswith("/storage/v1/object/upload/sign/hh-client-private-media/"):
@@ -127,11 +144,16 @@ def put_signed_mp3(url: str, path: Path) -> None:
 
 
 def run_local_engine(language: str, text: str, out: Path, scratch: Path) -> None:
-    script = Path(os.environ.get("HH_VOICE_ENGINE_SCRIPT", "")).expanduser()
+    script = Path(os.environ.get(
+        "HH_VOICE_ENGINE_SCRIPT", str(VOICE_HOME / "andrey_tts.py")
+    )).expanduser()
     if not script.is_file() or script.name != "andrey_tts.py":
         raise ValueError("owner-approved local synthesizer is not installed")
     reference_var = "HH_VOICE_REFERENCE_RU" if language == "ru" else "HH_VOICE_REFERENCE_EN"
-    reference = Path(os.environ.get(reference_var, "")).expanduser()
+    default_name = "ru_heygen_preview.wav" if language == "ru" else "en_v4_ref_12s.wav"
+    reference = Path(os.environ.get(
+        reference_var, str(VOICE_HOME / "voice_sources" / default_name)
+    )).expanduser()
     if not reference.is_file() or reference.suffix.lower() != ".wav":
         raise ValueError("private language reference missing")
     # The CLI can read `--text-file /dev/stdin` on macOS. Feeding the
