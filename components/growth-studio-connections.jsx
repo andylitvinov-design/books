@@ -23,6 +23,8 @@ const messages={
     guidelines:'Готовность определяется по реальному разрешению и ответу провайдера, а не по наличию кнопки.',
     warning:'Для Instagram/TikTok/YouTube нужен подходящий медиафайл, для Pinterest — доска, для мероприятий — подтверждённые дата и организатор.',
     verificationNeeded:'Тест соединения ещё не проводился.',recheck:'Проверить снова',
+    ownerConnectTitle:'Подключить аккаунты владельца',ownerConnectNote:'Нажмите ссылки и подтвердите доступ у провайдера. Пароли и токены сюда не вводятся; подключение в ChatGPT не даёт права публикации сайту.',
+    ownerConnectAds:'Google Ads',ownerConnectMeta:'Meta Ads',ownerConnectGsc:'Google Search Console',ownerConnectMetricool:'Metricool · Instagram / Facebook',ownerConnectEventbrite:'Eventbrite · GitHub secret',
     bridgeTitle:'Metricool — отдельный сервис публикации',bridgeNote:'Подключение Metricool к ChatGPT не даёт прав сайту Holistic House. Для прямого API, по текущим правилам Metricool, нужен тариф Advanced/Custom и серверные ключи. Без этого размещение остаётся ручным.',bridgeHelp:'Требования Metricool API',
   },
   en:{
@@ -41,6 +43,8 @@ const messages={
     guidelines:'Readiness requires real provider permission and delivery evidence, not a button in this app.',
     warning:'Instagram/TikTok/YouTube need media; Pinterest requires a board; event listings need verified dates and organizer.',
     verificationNeeded:'No connection test completed yet.',recheck:'Check again',
+    ownerConnectTitle:'Connect your accounts',ownerConnectNote:'Open each provider and approve access there. Never enter passwords or tokens here; connecting a ChatGPT app does not authorize this website to publish.',
+    ownerConnectAds:'Google Ads',ownerConnectMeta:'Meta Ads',ownerConnectGsc:'Google Search Console',ownerConnectMetricool:'Metricool · Instagram / Facebook',ownerConnectEventbrite:'Eventbrite · GitHub secret',
     bridgeTitle:'Metricool — separate publishing service',bridgeNote:'Connecting Metricool to ChatGPT does not authorize the Holistic House server. Metricool currently requires Advanced/Custom for direct API access, plus reviewed server-side credentials. Until then publishing is manual.',bridgeHelp:'Metricool API requirements',
   },
 }
@@ -102,6 +106,17 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       <div className={styles.connectionBoxTitle}><strong>{t.bridgeTitle}</strong><span className={styles.notVerifiedText}>{t.external}</span></div>
       <p>{t.bridgeNote}</p>
       <a href="https://help.metricool.com/basic-guide-for-api-integration-r97af" target="_blank" rel="noopener noreferrer">{t.bridgeHelp} ↗</a>
+    </div>
+    <div className={styles.connectionBox}>
+      <div className={styles.connectionBoxTitle}><strong>{t.ownerConnectTitle}</strong><span className={styles.notVerifiedText}>{t.unconfigured}</span></div>
+      <p>{t.ownerConnectNote}</p>
+      <div className={styles.connectionNav}>
+        <a href="https://app.hypd.ai/sources?manage=google-ads" target="_blank" rel="noopener noreferrer">{t.ownerConnectAds} ↗</a>
+        <a href="https://app.hypd.ai/sources?manage=meta" target="_blank" rel="noopener noreferrer">{t.ownerConnectMeta} ↗</a>
+        <a href="https://app.hypd.ai/sources?manage=search-console" target="_blank" rel="noopener noreferrer">{t.ownerConnectGsc} ↗</a>
+        <a href="https://app.metricool.com/" target="_blank" rel="noopener noreferrer">{t.ownerConnectMetricool} ↗</a>
+        <a href="https://github.com/andylitvinov-design/torontotantra/settings/secrets/actions" target="_blank" rel="noopener noreferrer">{t.ownerConnectEventbrite} ↗</a>
+      </div>
     </div>
     <div className={styles.connectionScroller}>
       <table className={styles.connectionTable}>
