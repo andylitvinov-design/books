@@ -7,6 +7,7 @@ The agent polls the protected site only while the Mac is on and logged in.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -46,6 +47,30 @@ def no_secrets(data: dict) -> bool:
     ))
 
 
+def owner_qa_verified(home: Path = HOME) -> bool:
+    approval = home / 'owner_voice_qa_approved.json'
+    try:
+        if not approval.is_file() or approval.stat().st_size > 2048:
+            return False
+        record = json.loads(approval.read_text(encoding='utf-8'))
+        if record.get('owner_approved') is not True:
+            return False
+        for language, name in (('en', 'en_v4_ref_12s.wav'),
+                               ('ru', 'ru_heygen_preview.wav')):
+            reference = home / 'voice_sources' / name
+            if not reference.is_file() or reference.stat().st_size < 5000:
+                return False
+            digest = hashlib.sha256()
+            with reference.open('rb') as stream:
+                for block in iter(lambda: stream.read(65536), b''):
+                    digest.update(block)
+            if digest.hexdigest() != record.get(language + '_sha256'):
+                return False
+        return True
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
+
+
 def prepare() -> Path:
     if sys.platform != "darwin":
         raise RuntimeError("LaunchAgent must be installed on macOS")
@@ -63,8 +88,8 @@ def prepare() -> Path:
 
 
 def activate() -> None:
-    if not (HOME / "owner_voice_qa_approved.json").is_file():
-        raise RuntimeError("RU/EN voice quality has not been owner-approved")
+    if not owner_qa_verified():
+        raise RuntimeError("RU/EN voice quality and reference hashes not owner-approved")
     for filename in (
         HOME / ".venv" / "bin" / "python",
         HOME / "local_worker.py",
