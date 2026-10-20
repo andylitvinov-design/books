@@ -69,7 +69,8 @@ test('Square requires three distinct verified Square links, no custom destinatio
 test('public cart defaults to personal PayPal and never advertises unconfigured card checkout',()=>{
   const cart=read('components/commerce/personal-cart.tsx')
   const page=read('app/[locale]/cart/page.tsx')
-  assert.match(cart,/paypalEnabled \|\| verifiedPayPalEnabled \? "paypal"/)
+  assert.match(cart,/paypalEnabled \|\| verifiedPayPalEnabled \|\| Object\.keys\(hostedPayPalLinks\)\.length \? "paypal"/)
+  assert.match(cart,/data-cart-paypal-hosted/)
   assert.match(page,/configuredSquarePaymentLinks/)
   assert.match(cart,/buildSquarePaymentForServices/)
   assert.match(cart,/data-cart-square-payment-link/)
