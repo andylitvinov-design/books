@@ -146,7 +146,9 @@ async function runEngine(name, engine) {
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
-          cases.push({path:"/"+locale+"/services/dao-health-profile",selector:'main[data-free-entry-landing="dao"] [data-free-resource-enquiry="dao"] [data-contact-channel-chooser]',min:1});
+          // The free DAO resource CTA can be collapsed behind a separate landing step.
+          // Exercise the visible consultation-registration CTAs on the Alchemy service instead.
+          cases.push({path:"/"+locale+"/services/alchemy-of-soul",selector:'[data-contact-channel-chooser]:visible',min:1});
           for (const item of cases) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
