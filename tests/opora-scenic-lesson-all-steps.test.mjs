@@ -4,13 +4,13 @@ import {readFileSync, statSync} from 'node:fs'
 
 const jsx=readFileSync(new URL('../components/app/opora-v6-slide-player.jsx',import.meta.url),'utf8')
 const css=readFileSync(new URL('../components/app/opora-v6-slide-player.module.css',import.meta.url),'utf8')
-const photo=new URL('../public/images/holistic-house/course-focus-mountain-boy.webp',import.meta.url)
+const photo=new URL('../public/images/holistic-house/report-lighthouse-coast.webp',import.meta.url)
 
 test('AS2 fifteen-step player keeps a real local photo on every step, including completion',()=>{
-  assert.ok(statSync(photo).size>10_000,'approved local photo must be available')
+  assert.ok(statSync(photo).size>100_000,'approved local photo must be available')
   assert.match(jsx,/className=\{styles\.frame\} data-scene-role=\{afterSave\?'complete':\(role\|\|'welcome'\)\}/)
   assert.match(jsx,/className=\{styles\.scenicBackdrop\} aria-hidden="true" data-opora-lesson-photo/)
-  assert.match(jsx,/className=\{styles\.scenicPhoto\}[\s\S]*?src="\/images\/holistic-house\/course-focus-mountain-boy\.webp"/)
+  assert.match(jsx,/className=\{styles\.scenicPhoto\}[\s\S]*?src="\/images\/holistic-house\/report-lighthouse-coast\.webp"/)
   assert.match(css,/\.scenicBackdrop\s*\{[\s\S]*?position:absolute;inset:0/)
   assert.match(css,/\.scenicPhoto\s*\{[\s\S]*?object-fit:cover/)
   assert.match(css,/\.frame\[data-scene-role="complete"\] \.heroIcon/)
