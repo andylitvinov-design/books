@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {oporaExperienceDay} from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
+import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_EXTENDED_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
 function fixture(locale,day){
@@ -23,10 +23,10 @@ async function press(h,label){
   await h.settle()
 }
 const words={
-  en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
+  en:{next:'Continue',save:'Save my practice',receipt:'Saved to your course',
     audio:'Relax with waves',start:"See what's next",week1:'Week 1: Find your supports',week2:'Week 2: Make it your own',
     nextTitle:'Your next small step',map:'My course map',finished:'Your 14 days are complete',habit:'Keep OPORA close',configure:'Set it up',later:'Not now'},
-  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
+  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Сохранено в вашем курсе',
     audio:'Послушать волны',start:'Посмотреть, что дальше',week1:'Первая неделя: найти опору',
     week2:'Вторая неделя: свой опыт',nextTitle:'Следующий маленький шаг',
     map:'К карте курса',finished:'Ваши 14 дней позади',habit:'ОПОРА всегда под рукой',configure:'Настроить',later:'Не сейчас'},
@@ -75,11 +75,11 @@ test('confirmed Day 1 save leads to programme, commitment, optional phone setup,
 test('Days 2-13 show the real next lesson after saving; Day 14 shows completion, not Day 15',async()=>{
   for(const day of [2,13,14]){
     const f=fixture('en',day),w=words.en
-    for(let i=0;i<OPORA_EXPERIENCE_PRE_SAVE_KEYS.length;i++)await press(f.h,w.next)
+    for(let i=0;i<OPORA_EXPERIENCE_EXTENDED_KEYS.length;i++)await press(f.h,w.next)
     await press(f.h,'I managed a little')
     await press(f.h,w.save)
     assert.equal(f.saved.length,1)
-    assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+    assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_EXPERIENCE_EXTENDED_KEYS])
     await press(f.h,w.audio)
     await press(f.h,w.start)
     const rendered=textOf(f.h.tree)
