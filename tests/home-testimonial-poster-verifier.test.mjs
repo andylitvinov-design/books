@@ -121,7 +121,8 @@ test('remaining free-entry targets still match actual homepage links and destina
     assert.ok(capture.includes('`/${locale}' + suffix + '`'));
     assert.ok(verifier.includes("'" + suffix + "'"));
   }
-  assert.match(read('app/[locale]/services/free-situation-review/page.tsx'), /<h1 id="review-hero-title"/);
+  assert.match(read('app/[locale]/services/free-situation-review/page.tsx'), /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
+  assert.match(read('components/free-entry-landing.tsx'), /<h1 id="free-entry-title">\{t\.title\}<\/h1>/);
   assert.match(read('app/[locale]/services/dao-health-profile/page.tsx'), /const kind = "dao" as const/);
   const dao = read('components/core-service-detail.tsx');
   assert.match(dao, /data-core-service-detail=\{kind\}/);

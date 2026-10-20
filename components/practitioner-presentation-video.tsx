@@ -23,7 +23,7 @@ export default function PractitionerPresentationVideo({video,locale='en',service
   if(parsed.hostname==='www.youtube.com'){
    const id=parsed.searchParams.get('v')
    if(!id||!/^[a-zA-Z0-9_-]{11}$/.test(id))return null
-   embedUrl='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&rel=0'
+   embedUrl='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&playsinline=1&rel=0'
    posterUrl='https://i.ytimg.com/vi/'+id+'/hqdefault.jpg'
   }else if(parsed.hostname==='vimeo.com'){
    const id=parsed.pathname.slice(1)
@@ -40,7 +40,7 @@ export default function PractitionerPresentationVideo({video,locale='en',service
        aria-label={t.watch}>
        <span className={styles.play} aria-hidden="true">▶</span><span>{t.watch}</span>
      </button>:isExternal?<iframe src={embedUrl} className={styles.player} allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-       title={service?t.service:t.title} referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/>
+       title={service?t.service:t.title} referrerPolicy="strict-origin-when-cross-origin" loading="eager" allowFullScreen/>
        :<video src={url} controls autoPlay playsInline preload="metadata" className={styles.player}
          aria-label={service?t.service:t.title}/>}
    </div>

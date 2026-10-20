@@ -29,6 +29,8 @@ test("Academy lesson thumbnails start inline YouTube, external watch stays secon
   assert.match(library, /onClick=\{\(\) => openVideoById\(key\)\}/);
   assert.match(library, /\{playing \? \(\s*<div className=\{styles\.player\}>/);
   assert.match(library, /youtube-nocookie\.com\/embed/);
+  assert.match(library, /autoplay=1&playsinline=1&rel=0/);
+  assert.match(library, /referrerPolicy="strict-origin-when-cross-origin"/);
   assert.doesNotMatch(library, /<a className=\{styles\.lessonToggle\}/);
 });
 
@@ -43,6 +45,9 @@ test("public practitioner videos stay on-site and do not iframe before click", (
   assert.match(presentation, /\{!playing\?<button/);
   assert.match(presentation, /isExternal\?<iframe/);
   assert.match(presentation, /youtube-nocookie\.com\/embed/);
+  assert.match(presentation, /autoplay=1&playsinline=1&rel=0/);
+  assert.match(presentation, /referrerPolicy="strict-origin-when-cross-origin"/);
+  assert.match(presentation, /loading="eager"/);
   assert.doesNotMatch(presentation, /isExternal&&posterUrl\?<a/);
 });
 

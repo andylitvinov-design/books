@@ -126,28 +126,33 @@ try {
     for (const locale of ['en', 'ru']) {
       await navigate('/' + locale + '/services')
       const visibleGallery = page.locator('#method-videos')
-      const serviceIntro = page.locator('#meet-andrey [data-video-slot="services-intro"][data-video-locale="' + locale + '"]')
-      // Overview is in Meet Andrey, not in the separate method-video gallery.
-      // The actual methods stay visible and their iframes must remain opt-in.
       await expect(visibleGallery).toHaveAttribute('open', '')
-      await expect(serviceIntro.locator('.site-video-play')).toBeVisible()
+      // Services introduction is a sibling of #method-videos after the studio layout revision.
+      // Verify the real poster is present without an eagerly mounted YouTube iframe.
+      const intro = page.locator(`[data-services-meet] [data-video-slot="services-intro"][data-video-locale="${locale}"]`)
+      await expect(intro.locator('button.site-video-play')).toBeVisible()
+      await expect(intro.locator('iframe')).toHaveCount(0)
+      // Keep the current production's additional EN method-poster acceptance.
       if (locale === 'en') {
         await expect(visibleGallery.locator('[data-video-slot="method-hypnotherapy"] .site-video-play')).toBeVisible()
         await expect(visibleGallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
       }
-      const sourceLinks = page.locator('[data-core-service-offers="services"] [data-service-card-video]')
-      await expect(sourceLinks).toHaveCount(2)
-      const hrefs = await sourceLinks.evaluateAll(links => links.map(link => link.getAttribute('href')))
-      assert.ok(hrefs.every(url => url && (locale === 'ru'
-        ? /^https:\/\/www\.youtube\.com\/watch\?v=/.test(url)
-        : /^\/en\/services\/(?:alchemy-of-soul|hypnotherapy-course)#service-video$/.test(url))))
+      const offers = page.locator('[data-services-studio-paid] [data-services-studio-card]')
+      await expect(offers).toHaveCount(5)
+      for (const [id, suffix] of [['alchemy', 'alchemy-of-soul'], ['hypnotherapy', 'hypnotherapy-course']]) {
+        // The offer itself is the matching card, not an obsolete direct-video link.
+        const hrefs = await page.locator('[data-services-studio-card="' + id + '"] a[href]')
+          .evaluateAll(links => links.map(link => link.getAttribute('href')))
+        assert.ok(hrefs.includes('/' + locale + '/services/' + suffix), id + ' route not reachable from Services')
+      }
       await page.setViewportSize({ width: 390, height: 844 })
-      await expect(serviceIntro.locator('.site-video-play')).toBeVisible()
+      await expect(intro.locator('button.site-video-play')).toBeVisible()
+      await expect(visibleGallery).toHaveAttribute('open', '')
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
       await page.setViewportSize({ width: 1365, height: 1000 })
     }
-    pass('EN/RU Services overviews and open method galleries render in their correct sections; mobile width is safe')
+    pass('EN/RU Services galleries are open on load, video links work, and mobile width is safe')
 
     const detailRoutes = [
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
