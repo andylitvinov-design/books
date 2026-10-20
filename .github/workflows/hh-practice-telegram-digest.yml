@@ -1,0 +1,36 @@
+name: HH Practice Telegram Digest checks
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'lib/practitioners/daily-digest.mjs'
+      - 'lib/practitioners/daily-telegram-digest.js'
+      - 'lib/app/housekeeping-cron.js'
+      - 'app/api/internal/practice-telegram-digest/route.js'
+      - 'supabase/migrations/*practice_telegram_digest*.sql'
+      - 'tests/practitioner-daily-telegram.test.mjs'
+      - 'tests/app-housekeeping-cron.test.mjs'
+      - 'vercel.json'
+      - '.github/workflows/hh-practice-telegram-digest.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Node syntax and Vercel cron config
+        run: |
+          node --check lib/practitioners/daily-digest.mjs
+          node --check lib/practitioners/daily-telegram-digest.js
+          node --check app/api/internal/practice-telegram-digest/route.js
+          node -e "JSON.parse(require('node:fs').readFileSync('vercel.json','utf8'))"
+      - name: Private digest unit and existing cron regressions
+        run: node --test tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
