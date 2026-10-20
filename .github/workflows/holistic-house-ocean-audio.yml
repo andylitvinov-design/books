@@ -8,6 +8,8 @@ on:
       - 'components/app/course-guided-timer.jsx'
       - 'components/energywork-ai-learner.tsx'
       - 'public/audio/**'
+      - 'scripts/generate-soft-ocean-melody.mjs'
+      - 'package.json'
       - 'tests/ocean-practice-audio*.test.mjs'
       - '.github/workflows/holistic-house-ocean-audio.yml'
   push:
@@ -18,6 +20,8 @@ on:
       - 'components/app/course-guided-timer.jsx'
       - 'components/energywork-ai-learner.tsx'
       - 'public/audio/**'
+      - 'scripts/generate-soft-ocean-melody.mjs'
+      - 'package.json'
       - 'tests/ocean-practice-audio*.test.mjs'
       - '.github/workflows/holistic-house-ocean-audio.yml'
   workflow_dispatch:
@@ -42,5 +46,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       # Course-navigation/receipt tests have a separate 17-slide migration lifecycle.
       # Here only the shared sound engine and the three audio consumers are gated.
-      - name: Verify audible WAV and native media lifecycle across practice timers
+      - name: Generate the complete 96-second original score
+        run: node scripts/generate-soft-ocean-melody.mjs
+      - name: Verify full-length WAV and native media lifecycle across practice timers
         run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs
