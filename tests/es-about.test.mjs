@@ -3,7 +3,33 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { createHash } from 'node:crypto';
+import { runInNewContext } from 'node:vm';
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+// Execute the real media-selection declarations, not a copied implementation or
+// a literal declaration shape that changes when other videos gain embed support.
+function selectedMedia(player, video) {
+  const ast = ts.createSourceFile('site-video-player.tsx', player, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const names = new Set(['existingYouTubeMirrors', 'mirrorId', 'playbackYouTubeId', 'playerParams', 'embedUrl']);
+  const declarations = new Map();
+  const iframeSources = [];
+  function visit(node) {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && names.has(node.name.text)) {
+      assert.ok(!declarations.has(node.name.text), `Unique media declaration: ${node.name.text}`);
+      assert.ok(node.initializer, `Media initializer: ${node.name.text}`);
+      declarations.set(node.name.text, `const ${node.name.text} = ${node.initializer.getText(ast)};`);
+    }
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(ast) === 'iframe') {
+      const src = node.attributes.properties.find(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(ast) === 'src');
+      iframeSources.push(src?.initializer?.getText(ast));
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+  for (const name of ['existingYouTubeMirrors', 'mirrorId', 'playbackYouTubeId', 'embedUrl']) assert.ok(declarations.has(name), `Required media declaration: ${name}`);
+  assert.deepEqual(iframeSources, ['{embedUrl}'], 'Playback iframe consumes the selected media URL');
+  const code = [...declarations.values()].join('\n') + '\n({ mirrorId, playbackYouTubeId, embedUrl });';
+  return runInNewContext(code, { video, locale: 'es', URLSearchParams }, { timeout: 1000 });
+}
 async function loadData(path) { const { outputText } = ts.transpileModule(source(path), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }); return import('data:text/javascript;base64,' + Buffer.from(outputText).toString('base64')); }
 test('Spanish biography preserves every English section, paragraph and experience entry', async () => {
   const { aboutBiography } = await loadData('data/about-biography.ts'); const { aboutEs, aboutIntroEs } = await loadData('data/about-es.ts');
@@ -32,13 +58,12 @@ test('Spanish About uses its independent published Spanish audio, not an English
   assert.equal(publication.published.status, 'published');
   const player = source('components/site-video-player.tsx');
   assert.ok(player.includes('video.language !== "es"'));
-  // YouTube now opens direct watch links; embed-only caption parameters no longer apply.
-  // The independent Spanish publication still uses its original HeyGen source.
+  // Other videos may use direct links or approved mirrors. Spanish keeps its source.
   for (const text of ['Audio en inglés','Audio en ruso','lang={textLanguage}','psychic-alchemy-es-v1.webp']) assert.ok(player.includes(text), text);
-  assert.match(player, /const embedUrl = `https:\/\/app\.heygen\.com\/embeds\/\$\{video\.heygenId\}`/);
-  const mirrors = player.match(/const existingYouTubeMirrors[^=]*=\s*\{([\s\S]*?)\n\};/)?.[1];
-  assert.ok(mirrors, 'Inspect the explicit approved mirror mapping');
-  assert.ok(!mirrors.includes(existingAboutIntroVideoEs.heygenId), 'Spanish About must not inherit an unrelated YouTube mirror');
+  const media = selectedMedia(player, publication.published);
+  assert.equal(media.mirrorId, undefined, 'Spanish About must not inherit an unrelated YouTube mirror');
+  assert.equal(media.playbackYouTubeId, '', 'Spanish About keeps its original source');
+  assert.equal(media.embedUrl, `https://app.heygen.com/embeds/${existingAboutIntroVideoEs.heygenId}`);
 });
 test('ES About retains all sections, real translated destinations, form and SEO', () => {
   const page = source('app/es/about/page.tsx'); for (const value of ['about-biography', 'about-testimonials', 'about-review-archive', 'personal-consultation-title', 'about-client-cabinet', 'canonical:', "es: '/es/about'", '/es/books', '/es/homeopathy', '/es/services', '/es/client']) assert.ok(page.includes(value), value);

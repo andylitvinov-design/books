@@ -48,7 +48,18 @@ test('missing, malformed, outside-range scores and dates do not produce fabricat
       section('ok', { value: 0 }),
     ],
   }, { measurementAt: 'bad-date' })
-  assert.deepEqual(overview.preview.map(item => item.score), [null, null, null])
+  // Valid zero is a real measurement and ranks ahead of unavailable scores.
+  const byKey = new Map(overview.preview.map(item => [item.key, item]))
+  assert.equal(overview.initialIndex, 3)
+  assert.equal(overview.preview[0].key, 'ok')
+  assert.equal(byKey.get('ok').score, '0 / 0–10')
+  for (const invalid of [section('bad', { value: null }), section('outside', { value: 12 }), section('non-numeric', { value: 'high' })]) {
+    // Inspect every invalid case, including the one beyond the three-row preview.
+    const single = assessmentResultOverview({ sections: [invalid] }, null).preview
+    assert.equal(single[0].key, invalid.key)
+    assert.equal(single[0].score, null)
+    if (byKey.has(invalid.key)) assert.equal(byKey.get(invalid.key).score, null)
+  }
   assert.equal(overview.additionalCount, 1)
   assert.equal(overview.measurementDateLabel, null)
   assert.match(overview.purpose, /compatible data/)

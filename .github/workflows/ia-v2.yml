@@ -42,7 +42,11 @@ jobs:
           }, null, 2));
           JS
       - run: npm ci --no-audit --no-fund
+      - name: Generate pinned public artwork for unit fixtures
+        run: node scripts/build-public-card-artwork.mjs
       - run: npm run test:unit
+        env:
+          HH_TEST_REDIS_CONTAINER: ${{ job.services.redis.id }}
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - run: npm run lint

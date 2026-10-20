@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
+import { parseDaoResourceScore } from '../lib/consultations/dao-resource-stage.js'
+import { parseReportMaterialIds } from '../lib/consultations/report-material-staging.js'
 const src = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
 const record = { id:'report-1', clientId:'client-1', kind:'recommendation', status:'active', updatedAt:'revision-1' }
 function actions(path, bindings, names) {
@@ -8,11 +10,18 @@ function actions(path, bindings, names) {
   return new Function(...Object.keys(bindings), source + '\nreturn {'+names.join(',')+'}')(...Object.values(bindings))
 }
 function fixture() {
-  const state = { published:{ media:['approved'], summary:'approved' }, draft:{ media:['approved','unpublished'], summary:'unpublished' }, saves:0 }
+  const state = { published:{ media:['approved'], summary:'approved' }, draft:{ media:['approved','unpublished'], summary:'unpublished' }, saves:0, unexpectedCalls:[] }
+  const forbidden = name => () => { state.unexpectedCalls.push(name); throw new Error(`UNEXPECTED_${name}`) }
   const store = { findById:async()=>record, save:async()=>{state.saves++} }
   const bindings = {
     redirect:url=>{throw Object.assign(new Error('redirect'),{url})}, requireAdminRequest:async()=>true,
     getPrescriptionStore:()=>store, consultationSavingAvailable:()=>true,
+    // Use the production pure parsers, but never reach a database or stage a draft.
+    parseDaoResourceScore, parseReportMaterialIds,
+    deliveryEnabled:forbidden('deliveryEnabled'), getAppConfig:forbidden('getAppConfig'),
+    transaction:forbidden('transaction'), selectedMaterialSnapshots:forbidden('selectedMaterialSnapshots'),
+    stageReportMaterials:forbidden('stageReportMaterials'), createClientSession:forbidden('createClientSession'),
+    getOwnerSession:forbidden('getOwnerSession'), saveOwnerDraft:forbidden('saveOwnerDraft'),
     createConsultation:async()=>{state.saves++;return {recommendation:record}},
     updateConsultation:async()=>{state.saves++;return {recommendation:record}},
     createPrescription:()=>record, updatePrescription:()=>record,
@@ -26,12 +35,12 @@ function fixture() {
 for (const name of ['createConsultationAction','updateConsultationAction']) test(`${name} saves source without publishing pending media/materials`,async()=>{
   const f=fixture();const before=structuredClone(f.state);const a=actions('app/admin/consultations/actions.js',f.bindings,[name]);
   await assert.rejects(name.startsWith('create')?a[name](null,f.data):a[name](record.id,null,f.data),e=>e.url===`/admin/consultations/${record.id}`)
-  assert.equal(f.state.saves,1);assert.deepEqual(f.state.published,before.published);assert.deepEqual(f.state.draft,before.draft)
+  assert.equal(f.state.saves,1);assert.deepEqual(f.state.unexpectedCalls,[]);assert.deepEqual(f.state.published,before.published);assert.deepEqual(f.state.draft,before.draft)
 })
 for (const name of ['createPrescriptionAction','updatePrescriptionAction']) test(`${name} keeps published projection unchanged`,async()=>{
   const f=fixture();const before=structuredClone(f.state);const a=actions('app/admin/prescriptions/actions.js',f.bindings,[name]);
   await assert.rejects(name.startsWith('create')?a[name](f.data):a[name](record.id,f.data),e=>e.url===`/admin/prescriptions/${record.id}`)
-  assert.equal(f.state.saves,1);assert.deepEqual(f.state.published,before.published);assert.deepEqual(f.state.draft,before.draft)
+  assert.equal(f.state.saves,1);assert.deepEqual(f.state.unexpectedCalls,[]);assert.deepEqual(f.state.published,before.published);assert.deepEqual(f.state.draft,before.draft)
 })
 test('ordinary save actions retain authorization and stale consultation protection',async()=>{
   const f=fixture();f.bindings.requireAdminRequest=async()=>false

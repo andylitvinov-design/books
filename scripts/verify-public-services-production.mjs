@@ -179,7 +179,7 @@ try {
       await assertPublicServiceMethods(page, expect, locale);
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // Canonical header: Library shortcut; My House keeps cabinet access in the menu.
+      // Canonical header: Library shortcut; Cabinet keeps authenticated app access in the menu.
       const header = page.locator("header.house-header--services");
       const libraryEntry = header.locator("a.site-library-entry");
       await expect(libraryEntry).toHaveCount(1);
@@ -199,10 +199,10 @@ try {
       const cabinetEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/app"]');
       await expect(cabinetEntry).toHaveCount(1);
       await visible(cabinetEntry);
-      await expect(cabinetEntry).toHaveText(locale === "ru" ? "Мой дом" : "My House");
-      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "My House opens the authenticated app");
+      await expect(cabinetEntry).toHaveText(locale === "ru" ? "Кабинет" : "Cabinet");
+      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "Cabinet opens the authenticated app");
       const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My House entry must fit the opened menu: " + locale + "/" + width);
+      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the opened menu: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);

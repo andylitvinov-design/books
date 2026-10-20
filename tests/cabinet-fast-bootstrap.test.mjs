@@ -51,7 +51,11 @@ test('Profile-only repository projection skips expensive non-profile reads, pres
   const initial = route.indexOf("if (joined === 'bootstrap' && method === 'GET')", verified)
   assert.ok(verified >= 0 && limiter > verified && initial > limiter,
     'minimal bootstrap must run after the existing verified login and private rate limit')
-  assert.match(route.slice(initial, initial + 360), /repo.bootstrap\(actor, \{ view \}\)/)
+  const endOfBootstrap = route.indexOf('\n    }', initial)
+  assert.ok(endOfBootstrap > initial, 'bootstrap handler has a bounded closing block')
+  const bootstrap = route.slice(initial, endOfBootstrap)
+  assert.match(bootstrap, /const view = new URL\(request.url\).searchParams.get\('view'\) === 'portrait' \? 'portrait' : 'full'/)
+  assert.match(bootstrap, /return json\(await repo.bootstrap\(actor, \{ view \}\)\)/)
 })
 
 test('full tabs keep the complete bootstrap; route transition cannot reuse reduced Profile data', () => {

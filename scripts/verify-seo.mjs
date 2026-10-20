@@ -10,7 +10,7 @@ const read = (path) => readFileSync(new URL(path, projectRoot), "utf8");
 const origin = "https://holistichouse.vercel.app";
 const publicRouteSources = [
   ["app/[locale]/about/page.tsx", /generateMetadata/, /alternates:/, /<h1/],
-  ["app/[locale]/services/free-situation-review/page.tsx", /generateMetadata/, /alternates:/, /<h1/],
+  ["app/[locale]/services/free-situation-review/page.tsx", /generateMetadata/, /alternates:/],
   ["app/[locale]/academy/[[...slug]]/page.tsx", /generateMetadata/, /alternates:/],
   ["components/yggdrasil-free-initiation.tsx", /<h1/],
 ];
@@ -20,6 +20,30 @@ const privateRouteSources = [
   "app/[locale]/report/[assessmentId]/page.jsx",
   "app/admin/clients/page.js",
 ];
+
+// This explicit delegated source check is not rendered HTML or indexing evidence.
+export function auditFreeEntryLandingSources(routeSource, landingSource) {
+  const uncomment = source => source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const route = uncomment(routeSource);
+  const landing = uncomment(landingSource);
+  const failures = [];
+  const check = (condition, message) => { if (!condition) failures.push(message); };
+  check(/import \{ FreeEntryLanding \} from ["']@\/components\/free-entry-landing["']/.test(route),
+    "Situation route must import the audited FreeEntryLanding component");
+  check(/return <FreeEntryLanding locale=\{locale\} kind="situation" \/>/.test(route),
+    "Situation route must return the localized situation landing");
+  check(!/<h1\b/.test(route), "Situation route must not duplicate the delegated H1");
+  const start = landing.indexOf("export function FreeEntryLanding(");
+  check(start >= 0, "Missing exported FreeEntryLanding component");
+  const component = start < 0 ? "" : landing.slice(start);
+  check(/const t = copy\[locale\]\[kind\]/.test(component), "Landing heading must use localized kind-specific copy");
+  check(/<main\b[^>]*lang=\{locale\}[^>]*data-free-entry-landing=\{kind\}/.test(component),
+    "Landing main must retain locale and entry kind");
+  check((component.match(/<h1\b/g) || []).length === 1 &&
+    /<h1 id="free-entry-title">\{t.title\}<\/h1>/.test(component),
+    "FreeEntryLanding must render exactly one localized H1");
+  return { ok: failures.length === 0, failures };
+}
 
 export function auditSeoSources() {
   const failures = [];
@@ -49,6 +73,10 @@ export function auditSeoSources() {
     const source = read(path);
     for (const pattern of patterns) check(pattern.test(source), "Missing public SEO contract " + pattern + " in " + path);
   }
+  failures.push(...auditFreeEntryLandingSources(
+    read("app/[locale]/services/free-situation-review/page.tsx"),
+    read("components/free-entry-landing.tsx"),
+  ).failures);
   for (const path of privateRouteSources) {
     check(existsSync(new URL(path, projectRoot)), "Missing private route source: " + path);
     check(/robots:\s*\{\s*index:\s*false/.test(read(path)), "Private route must remain noindex: " + path);

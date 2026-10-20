@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { exercisePublicEnquiryUi } from "./helpers/public-enquiry-ui-verifier.mjs";
 import { installPublicUiNetworkGuard } from "./helpers/public-ui-network-guard.mjs";
+import { collectContactChannelGeometry } from "./helpers/contact-channel-geometry.mjs";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -79,11 +80,7 @@ async function verifyChooser(page, chooser, locale, kind, name, screenshot, requ
       const target = document.elementFromPoint(r.left + r.width / 2, r.bottom - 6);
       return Boolean(target?.closest('a[data-contact-channel="' + channel + '"]'));
     }, {channel,panelId}, {timeout: 5000}).catch(async error => {
-      const diagnostic = await page.evaluate(() => ({
-        nav: document.querySelector('.mobile-bottom-navigation')?.getBoundingClientRect().toJSON(),
-        open: document.querySelector('[data-contact-order][aria-expanded="true"]')?.outerHTML.slice(0,250),
-        viewport: {height:innerHeight,width:innerWidth,scrollY},
-      }));
+      const diagnostic = await page.evaluate(collectContactChannelGeometry, { channel, panelId });
       throw new Error("Messenger channel obstructed: " + name + " " + JSON.stringify(diagnostic) + ": " + error.message);
     });
   }
