@@ -4,11 +4,12 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {GrowthStudioError, nextGrowthPost} from '@/lib/growth-studio/model.mjs'
 import {previewPublicGrowthSource} from '@/lib/growth-studio/source-preview.mjs'
 import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
+import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
-  ['invalid_post','invalid_action','invalid_transition','not_found','conflict','capacity_reached'].includes(error.code)
+  ['invalid_post','invalid_action','invalid_transition','not_found','conflict','capacity_reached','invalid_recurrence','invalid_source'].includes(error.code)
     ? error.code : 'storage_unavailable'
 
 // Read-only public-page metadata preview, explicitly invoked by the owner.
@@ -78,6 +79,34 @@ export async function createGrowthStudioBulkAction(input) {
   } catch(error) {return {ok:false,error:safeError(error)}}
 }
 
+
+// Evergreen reuse is explicitly owner-requested and drafts-only.
+// Atomic source-revision check prevents a concurrently edited/unapproved
+// original from silently generating previously approved marketing copy.
+export async function createGrowthEvergreenDraftsAction(input){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+      Object.keys(input).some(key=>!['sourceId','expectedRevision','batchId','cadence','count','startAt'].includes(key))||
+      typeof input.sourceId!=='string'|| !/^[0-9a-f-]{36}$/i.test(input.sourceId))
+    return {ok:false,error:'invalid_recurrence'}
+  try{
+    const store=getGrowthStudioStore()
+    if(!store)return {ok:false,error:'storage_unavailable'}
+    const source=await store.get(input.sourceId)
+    if(!source)return {ok:false,error:'not_found'}
+    const {sourceId,...params}=input
+    const drafts=prepareEvergreenGrowthDrafts(params,{source})
+    const current=await Promise.all(drafts.map(item=>store.get(item.id)))
+    if(current.every(Boolean)){
+      if(!current.every((item,index)=>sameGrowthDraft(item,drafts[index])))
+        return {ok:false,error:'conflict'}
+      return {ok:true,records:current,reused:true}
+    }
+    if(current.some(Boolean))return {ok:false,error:'conflict'}
+    await store.batchCreateFromSource(drafts,sourceId,input.expectedRevision)
+    return {ok:true,records:drafts,reused:false}
+  }catch(error){return {ok:false,error:safeError(error)}}
+}
 
 // Read-only account readiness. No provider write, no bot secrets returned to UI.
 export async function checkGrowthTelegramPublisherAction(){
