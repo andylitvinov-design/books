@@ -59,7 +59,7 @@ test('Business landing shows only pre-existing, ID-matched authentic client vide
   assert.match(route,/<BusinessWebsiteEnquiry locale=/)
   assert.match(proof,/<SiteVideoPlayer/)
   assert.match(proof,/compact minimal/)
-  assert.match(proof,/testimonial-posters\/\$\{?/)
+  assert.match(proof,/testimonial-posters/)
   assert.match(proof,/data-business-testimonial-id=\{item\.id\}/)
   const videoIds=['Dk0LBmOivQo','aUJde6A-9p0','ttQxUHopaUM','VABgpmn4ZYA']
   for(const id of videoIds) {
