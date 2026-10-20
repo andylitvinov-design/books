@@ -670,7 +670,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
           {moment==='understand'&&<div className={styles.learningMoment} data-opora-why="true">
             <p className={styles.lead}>{depth?.why}</p>
-            <p className={styles.soft}>{dayCopy?.title}: {dayCopy?.practice}</p>
+            {!neutralSupport&&<p className={styles.soft}>{dayCopy?.title}: {dayCopy?.practice}</p>}
           </div>}
           {moment==='story'&&<div className={styles.learningMoment} data-opora-case="true">
             <p className={styles.lead}>{depth?.scenario}</p>
@@ -690,7 +690,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <button type="button" key={value} disabled={locked} aria-pressed={practiceMode===value}
                   onClick={()=>setPracticeMode(value)}>{label}</button>)}
             </div>
-            <p className={styles.action}>{chosenPractice}</p>
+            {!neutralSupport&&<p className={styles.action}>{chosenPractice}</p>}
             <p className={styles.soft}>{d.optionSelected}</p>
           </div>}
           {moment==='practice'&&<>
@@ -827,6 +827,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <p className={styles.celebrationAttempt}>{reportedAttempt?d.triedNote:d.exploredNote}</p>
             </div>
             <p className={styles.celebrationBody}>{d.celebrationBody}</p>
+            <button type="button" className={styles.celebrationReview} disabled={locked}
+              onClick={()=>setStep(scenes.length-1)}><ArrowLeft size={16}/>{d.reviewLesson}</button>
             {(chosenFeeling||rating||answers.transfer==='planned')&&<details className={styles.celebrationDetails}>
               <summary>{d.details}</summary>
               {chosenFeeling&&<p><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
@@ -869,8 +871,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         receipt?<button type="button" className={styles.back} disabled={locked}
           onClick={moment==='habit'
             ?(habitSetup?()=>setHabitSetup(false):()=>{setPreviewIndex(-1);setInviteOpen(true)})
-            :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):()=>setStep(scenes.length-1)}>
-          <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview||outroOpen?t.back:d.reviewLesson}
+            :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
+          <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview||outroOpen?t.back:t.finish}
         </button>:step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
