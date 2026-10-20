@@ -138,7 +138,7 @@ test('private schema forces row-level security and zero anonymous grants', () =>
 
 test('lab reports encryption uses a permitted AAD field and binds ciphertext to the owner', () => {
   const source=readFileSync(new URL('../lib/app/lab-reports.js',import.meta.url),'utf8')
-  const field=source.match(/field:\\s*'([^']+)'/)?.[1]
+  const field=source.match(/field: *'([^']+)'/)?.[1]
   assert.equal(field,'health.laboratory')
   const accountId='73d68320-b733-4c2d-b3ae-1c9b1877dfd9'
   const recordId='7c62f6d8-b92b-45cb-a291-2d164b690b79'
