@@ -68,6 +68,20 @@ test('rejects private/admin/test/foreign URLs before requesting network',async()
   assert.equal(calls,0)
 })
 
+
+test('never treats meta-like strings inside script/style/comment as publisher metadata',()=>{
+  const page=String.raw`<html lang="ru"><head>
+    <script>const bad = '<meta property="og:title" content="INJECTED_FAKE_TITLE">';</script>
+    <!-- <meta property="og:description" content="INJECTED_FAKE_DESCRIPTION"> -->
+    <style>/* <meta name="description" content="INJECTED_STYLES"> */</style>
+    <title>Настоящее название</title>
+  </head><body>not imported</body></html>`
+  const data=parsePublicGrowthHead(page,'https://holistichouse.vercel.app/ru/academy')
+  assert.equal(data.title,'Настоящее название')
+  assert.equal(data.description,'')
+  assert.doesNotMatch(JSON.stringify(data),/INJECTED_/)
+})
+
 test('does not follow redirects, auth challenges or upstream errors',async()=>{
   let count=0
   for(const status of [301,302,303,307,308,401,403,404,500]){
