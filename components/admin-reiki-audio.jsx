@@ -198,14 +198,14 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
         <span>{files.length}</span>
       </div>
       {!files.length ? <p className={styles.folderEmpty}>{copy.noFiles}</p> : <div className={styles.files}>
-        {files.map((item,index)=>{
+        {files.map((item)=>{
           const isActive = item.path === current?.path
           const isSelected = item.path === staged?.path
           return <div key={item.path} className={styles.fileRow + (isSelected? ' '+styles.fileRowSelected:'')}
             data-reiki-audio-file={item.path} data-file-on-slide={isActive?'true':'false'}>
             <span className={styles.fileIcon}><FileAudio size={18} aria-hidden="true"/></span>
             <div className={styles.fileDetails}>
-              <strong>{locale==='ru'?'Запись':'Recording'} {String(index+1).padStart(2,'0')}</strong>
+              <strong>{locale==='ru'?'Запись':'Recording'} · {item.path.split('/').pop()?.slice(0,8).toUpperCase()}</strong>
               <small>{formatFileDate(item.createdAt,locale)} · {formatBytes(item.bytes)} · {item.path.slice(-3).toUpperCase()}</small>
             </div>
             {isActive ? <span className={styles.fileActive}><Check size={13} aria-hidden="true"/>{copy.published}</span> :
