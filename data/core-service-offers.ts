@@ -14,7 +14,7 @@ export type CoreServiceOffer = {
 };
 
 const images = {
-  situation: "/images/holistic-house/hero-olive-incense.webp",
+  situation: "/images/holistic-house/andy-about.png",
   dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
   alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
   hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",

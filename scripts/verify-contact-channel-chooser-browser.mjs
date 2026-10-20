@@ -109,7 +109,7 @@ async function runEngine(name, engine) {
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
-          if (locale !== "es") cases.push({path:"/"+locale+"/services/dao-health-profile",selector:'main[data-core-service-detail="dao"] [data-contact-channel-chooser]',min:2});
+          cases.push({path:"/"+locale+"/services/dao-health-profile",selector:'main[data-free-entry-landing="dao"] [data-free-resource-enquiry="dao"] [data-contact-channel-chooser]',min:1});
           for (const item of cases) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
