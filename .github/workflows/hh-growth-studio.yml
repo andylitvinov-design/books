@@ -6,7 +6,7 @@ on:
     paths:
       - 'app/admin/growth-studio/**'
       - 'app/admin/login/page.js'
-      - 'app/api/app/[...path]/route.js'
+      - 'app/api/app/**/route.js'
       - 'components/growth-studio.*'
       - 'components/growth-studio-bulk.jsx'
       - 'components/growth-studio-connections.jsx'
