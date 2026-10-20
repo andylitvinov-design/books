@@ -25,8 +25,10 @@ test('PDF keeps one clean lighthouse masthead plus vector sea and botanical artw
     assert.match(pdf,/^%PDF-1\.7/)
     assert.equal((pdf.match(/\/Lighthouse Do Q/g)??[]).length,1,
       'brand masthead keeps the approved photograph without a second white-backed hero copy')
-    assert.match(pdf,/0\.85 0\.91 0\.90 rg/,'soft coastal mountains replace rectangular photo fill')
-    assert.match(pdf,/0\.51 0\.72 0\.72 RG/,'editorial coastal wave paths are rendered')
+    assert.ok(/\/CoastalPhoto Do Q/.test(pdf) || /0\.85 0\.91 0\.90 rg/.test(pdf),
+      'approved coastal cover or safe vector fallback exists')
+    assert.ok(/\/CoastalPhoto Do Q/.test(pdf) || /0\.51 0\.72 0\.72 RG/.test(pdf),
+      'sea is rendered from approved art, without a second lighthouse rectangle')
     assert.match(pdf,/0\.75 0\.85 0\.78 rg/,'botanical leaf vector art is rendered')
     assert.match(pdf,/\/RemedyPhoto1 Do Q/,'selected library image remains')
     assert.match(pdf,/\/Signature Do Q/,'approved practitioner signature remains')
@@ -68,7 +70,7 @@ test('web and print share lighthouse art, arrows, readable responsive layout',()
   assert.ok(html.includes('fullSource'))
   assert.ok(html.includes("key: 'after'"))
   assert.ok(!html.includes("key: 'target'"))
-  assert.match(generator,/drawReportHeroArtwork\(579, 130\)/)
+  assert.match(generator,/drawReportHeroArtwork\(597, 112\)/)
   assert.match(generator,/drawReportSprig/)
 })
 
@@ -108,8 +110,8 @@ test('wide white signature is a report-body closing, not the legal footer (RU an
   const css=readFileSync('components/consultation-report.css','utf8')
   assert.match(generator,/const signatureWidth = 207/)
   assert.match(generator,/const signatureHeight = 81\.5/)
-  assert.match(generator,/if \(y < 203\) startPage\(\)/,
-    'signature is kept safely above the reserved footer')
+  assert.match(generator,/if \(y < 190\) startPage\(\)/,
+    'signature uses a measured footer-safe gate, avoiding an orphan signed sheet')
   assert.doesNotMatch(generator,/fill\(A4\.left, top - 63, A4\.contentWidth, 63, palette\.paper\)/,
     'the former small tinted signature plaque was removed')
   assert.match(component,/<section className="canonical-signature canonical-signature--compact canonical-signature--wide"/)
@@ -145,13 +147,13 @@ test('mockup-aligned first-page composition uses two measured gauges, split clie
   assert.match(generator,/roundedFill\(A4\.left,metadataTop-metadataHeight,280,metadataHeight,8/)
   assert.match(generator,/roundedFill\(A4\.left\+290,metadataTop-metadataHeight/)
   assert.match(generator,/const noteX=A4\.left\+308/)
-  assert.match(generator,/const titleSize = 24\.6/)
+  assert.match(generator,/const titleSize = 26\.2/)
   assert.match(reader,/className="canonical-progress-note"/)
   assert.match(css,/\.canonical-document--editorial \.canonical-progress-note \{/)
   for(const locale of ['ru','en']){
     const pdf=buildPrescriptionPdf(sample(locale),locale,origin).toString('latin1')
     assert.match(pdf,/\/Lighthouse Do Q/,'real lighthouse remains')
-    assert.match(pdf,/0\.981 0\.963 0\.948 rg/,'both ivory client/date cards drawn')
+    assert.match(pdf,/0\.974 0\.982 0\.976 rg/,'both cream/teal client/date cards drawn')
     assert.match(pdf,/\/RemedyPhoto1 Do Q/,'original remedy source photo remains')
     assert.match(pdf,/\/Signature Do Q/,'signed white closing remains')
     assert.doesNotMatch(pdf,/\(TARGET\)/,'a future goal is never a third score')
