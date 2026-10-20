@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = {title:'Growth Studio · Holistic House',robots:{index:false,follow:false}}
 
 export default async function GrowthStudioPage() {
-  if (!await requireAdminRequest()) redirect('/admin/login')
+  if (!await requireAdminRequest()) redirect('/admin/login?next=growth-studio')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'ru' ? 'ru' : 'en'
   let initialRecords = [], storageReady = false
   try {
@@ -20,11 +20,11 @@ export default async function GrowthStudioPage() {
     // Never present unsaved browser-only data as durable editorial records.
   }
   return <main className="prescription-admin-shell">
-    <PrescriptionAdminHeader initialLocale={locale}
+    <PrescriptionAdminHeader compact initialLocale={locale}
       title={{en:'Growth Studio',ru:'Центр продвижения'}}
       description={{
-        en:'Prepare and plan posts across your brands. External publishing is not activated.',
-        ru:'Готовьте публикации разных проектов. Автопубликация пока не подключена.',
+        en:'Create and manage posts from one place.',
+        ru:'Создавайте и ведите публикации в одном месте.',
       }}
     />
     <GrowthStudio initialLocale={locale} initialRecords={initialRecords} storageReady={storageReady}

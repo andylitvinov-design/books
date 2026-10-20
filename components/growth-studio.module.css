@@ -323,3 +323,54 @@
   margin-top:14px;border-top:1px solid #e4eae8;padding-top:12px;color:#85591a}
 .growthSetupPrivacy svg{flex:none;margin-top:1px}
 @media(max-width:750px){.growthSetupSteps{grid-template-columns:1fr}}
+
+
+
+/* Simple single-link Growth Studio: progressive disclosure, no extra credentials. */
+.quickLaunch{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px 23px;
+  padding:clamp(14px,2.7vw,24px);border:1px solid #d4e5da;border-radius:18px;background:#fffdf8;
+  box-shadow:0 4px 18px rgba(90,71,37,.035);margin:2px 0 12px;min-width:0}
+.quickLaunchCopy{min-width:0}
+.quickLaunchHeading{display:flex;align-items:center;gap:9px}
+.quickLaunchHeading svg{flex:none;color:#176b64}
+.quickLaunchHeading h3{margin:0;color:#244b4f;font-size:clamp(17px,2.2vw,22px);line-height:1.3;letter-spacing:-.01em}
+.quickLaunchCopy>p{margin:8px 0 0;font-size:13px;color:#5a6d6b;line-height:1.55}
+.quickLaunchCopy p.quickLaunchVerified{color:#17664e;font-weight:700}
+.quickLaunchCopy p.quickLaunchWaiting{color:#866132;font-weight:650}
+.quickLaunchActions{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:175px}
+.quickLaunchActions button{display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;padding:10px 18px;border-radius:11px;font-size:13px;font-weight:750}
+.quickLaunchPrimary{background:#176f6a;color:#fff;border:1px solid #176f6a}
+.quickLaunchPrimary:hover:not(:disabled){background:#115d56}
+.quickLaunchSecondary{background:#fff;color:#2a6163;border:1px solid #d3e5de}
+.quickLaunchFootnote{grid-column:1/-1;margin:0;padding-top:10px;border-top:1px solid #e8eee8;
+  font-size:11px;line-height:1.5;color:#6c7e7a}
+.connectionAdvanced{padding:0 4px 8px;min-width:0}
+.connectionPanel .connectionTechnical{border:1px solid #e5eae7;border-radius:10px;padding:4px 10px;margin:10px 8px}
+.connectionPanel .connectionTechnical>summary{cursor:pointer;min-height:34px;font-size:12px;color:#416267;
+  font-weight:690;padding:7px 2px}
+.connectionPanel .connectionTechnical>p{font-size:12px;line-height:1.6;margin:6px 0}
+.quickComposerFields{display:flex;flex-direction:column;gap:12px}
+.composerOptions{border:1px solid #d8e4dc;background:#fbfcf9;border-radius:12px;padding:0 13px;min-width:0}
+.composerOptions>summary{list-style:disclosure-closed;cursor:pointer;font-size:13px;font-weight:720;
+  min-height:46px;display:list-item;padding:13px 1px;color:#356466;line-height:1.5}
+.composerOptions[open]>summary{border-bottom:1px solid #e6ece5;margin-bottom:12px;list-style:disclosure-open}
+.composerOptions>label{margin:12px 0}
+.composerOptions>.pair{margin:12px 0}
+.composerOptions>.hint{margin:8px 0 10px}
+.composerOptions>.manualSlotActions{margin:7px 0 12px}
+.composerOptions>.publicSourcePicker{margin:10px 0}
+.workspaceClose{display:flex;justify-content:flex-end;margin:7px 0}
+.workspaceClose button{font-size:12px;color:#49686a;border:0;background:transparent;padding:8px 10px}
+.studio summary:focus-visible{outline:3px solid #edb85b;outline-offset:3px;border-radius:5px}
+@media(max-width:750px){
+  .quickLaunch{grid-template-columns:1fr;gap:10px}
+  .quickLaunchActions{min-width:0}
+  .quickLaunchActions button{width:100%;min-height:45px}
+}
+@media(max-width:430px){
+  .quickLaunch{padding:13px;gap:9px;border-radius:13px}
+  .quickLaunchHeading h3{font-size:18px}
+  .quickLaunchCopy>p{font-size:12px}
+  .composerOptions{padding:0 10px}
+}

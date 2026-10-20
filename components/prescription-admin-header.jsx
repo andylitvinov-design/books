@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { logout } from '@/app/admin/logout/actions'
 import { readUiLocale, saveUiLocale } from '@/lib/ui-locale'
 
-export function PrescriptionAdminHeader({ title, description, initialLocale = 'en' }) {
+export function PrescriptionAdminHeader({ title, description, initialLocale = 'en', compact = false }) {
   const [locale, setLocale] = useState(initialLocale === 'ru' ? 'ru' : 'en')
   const labels = locale === 'ru'
     ? { cabinet: 'Кабинет', newConsultation: 'Новая консультация', reports: 'Отчёты', clients: 'Клиенты', legacy: 'Архив', materials: 'Материалы', videos: 'Видео сайта', seo:'SEO', growth:'Продвижение', youtubeUploader: 'Загрузка в YouTube', reikiAudio: 'Рейки · Аудио', telegram: 'Telegram', logout: 'Выйти', language: 'Язык интерфейса' }
@@ -44,6 +44,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
 
       <nav aria-label={labels.cabinet} className="prescription-admin-navigation prescription-admin-navigation--tabs">
         <Link href="/admin">{labels.cabinet}</Link>
+        {!compact&&<>
         <Link href="/admin/consultations/new">{labels.newConsultation}</Link>
         <Link href="/admin/reports">{labels.reports}</Link>
         <Link href="/admin/clients">{labels.clients}</Link>
@@ -55,6 +56,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
         <Link href="/admin/youtube-upload">{labels.youtubeUploader}</Link>
         <Link href="/admin/telegram-setup">{labels.telegram}</Link>
         <Link href="/admin/materials/audio/reiki-practitioner">{labels.reikiAudio}</Link>
+        </>}
       </nav>
     </header>
   )

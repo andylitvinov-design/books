@@ -10,8 +10,10 @@ export const metadata = { robots: { index: false, follow: false }, title: 'Pract
 // Restore practitioner access through the verified Google owner bridge;
 // individual admin routes continue to enforce their own private session checks.
 export default async function PrescriptionAdminLogin({ searchParams }) {
-  if (await requireAdminRequest()) redirect('/admin')
   const [params, jar] = await Promise.all([searchParams, cookies()])
+  // Only this literal owner route may be restored after Google OAuth.
+  const next = params?.next === 'growth-studio' ? 'growth-studio' : null
+  if (await requireAdminRequest()) redirect(next ? '/admin/growth-studio' : '/admin')
   const locale = jar.get(uiLocaleCookie)?.value === 'ru' ? 'ru' : 'en'
-  return <PractitionerAutoEntry locale={locale} authFailed={['failed', 'cancelled'].includes(params?.auth)} />
+  return <PractitionerAutoEntry locale={locale} next={next} authFailed={['failed', 'cancelled'].includes(params?.auth)} />
 }

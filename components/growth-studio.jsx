@@ -23,7 +23,9 @@ const CHANNELS={
 }
 const COPY={
   en:{
-    heading:'Content command center',sub:'One place to prepare posts for your channels, with explicit approvals.',
+    heading:'Content command center',sub:'Prepare public posts quickly; extra controls appear only when needed.',
+    simpleGuide:'Pick a channel, add a title and your post text. Save as a draft; nothing is published automatically.',
+    moreOptions:'Extra options: project, media, links and scheduling', advancedHint:'Optional. Select the correct brand, language and public image only when needed.',
     draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',manual_done:'Manually marked done · unverified',
     sending:'Sending — do not retry',published:'Published (provider confirmed)',delivery_unknown:'Delivery uncertain — verify in Telegram',
     manualInbox:'To publish',manualDoneConfirm:'Have you actually posted this exact content in your chosen account? This only records your manual statement; Growth Studio CANNOT verify the social post.',manualDoneNotice:'Marked done manually — not verified by a social platform.',manualDoneButton:'Mark done (manual)',manualUndoConfirm:'Restore this item to the manual publishing queue? It will be counted as pending again.',manualUndoNotice:'Restored to manual posting queue.',manualUndo:'Restore manual task',manualDoneTime:'Owner marked done (not provider verified)',pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
@@ -60,7 +62,9 @@ const COPY={
     duplicate:'Duplicate into draft',
   },
   ru:{
-    heading:'Центр управления контентом',sub:'Готовьте публикации для разных площадок и согласовывайте их перед размещением.',
+    heading:'Центр управления контентом',sub:'Подготовьте публикацию за минуту, остальные настройки открывайте по необходимости.',
+    simpleGuide:'Выберите площадку, введите название и текст. Сохранится только черновик — ничего не будет отправлено автоматически.',
+    moreOptions:'Дополнительно: проект, медиа, ссылки и расписание', advancedHint:'Необязательно. Выбирайте другой проект, язык или публичное изображение только когда это нужно.',
     draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',manual_done:'Отмечено вручную · не проверено',
     sending:'Отправка — не повторять',published:'Опубликовано (подтверждено)',delivery_unknown:'Доставка неясна — проверьте Telegram',
     manualInbox:'К публикации',manualDoneConfirm:'Вы действительно разместили этот точный материал в нужном аккаунте? Это только ваша отметка; Growth Studio НЕ проверил пост в соцсети.',manualDoneNotice:'Отмечено вручную. Доставка в соцсеть не подтверждена.',manualDoneButton:'Отметить вручную',manualUndoConfirm:'Вернуть задачу в очередь ручных публикаций? Она снова будет считаться ожидающей.',manualUndoNotice:'Возвращено в очередь ручных публикаций.',manualUndo:'Вернуть задачу',manualDoneTime:'Отмечено вами; провайдер не проверялся',pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
@@ -104,7 +108,7 @@ const CHANNEL_WARNINGS={
 }
 const METHOD_LABELS={en:{telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
 const empty = () => ({
-  brand:'holistic_house',channel:'instagram',locale:'en',title:'',caption:'',
+  brand:'holistic_house',channel:'manual',locale:'en',title:'',caption:'',
   sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',
 })
 const isoFromLocal = input => {
@@ -162,14 +166,21 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [editing,setEditing]=useState(null)
-  const [form,setForm]=useState(empty)
+  const [form,setForm]=useState(()=>({...empty(),locale:initialLocale==='ru'?'ru':'en'}))
   const [tab,setTab]=useState('compose')
+  const [workspaceOpen,setWorkspaceOpen]=useState(false)
   const [evergreenSource,setEvergreenSource]=useState(null)
   const [filter,setFilter]=useState('active')
   const [brandFilter,setBrandFilter]=useState('all')
   const [month,setMonth]=useState(()=>torontoKey(new Date().toISOString()).slice(0,7))
   useEffect(()=>{
-    const onLocale=event=>setLocale(event.detail==='ru'?'ru':'en')
+    const onLocale=event=>{
+      const nextLocale=event.detail==='ru'?'ru':'en'
+      setLocale(nextLocale)
+      // Unsent fresh drafts follow the active interface language, but never
+      // silently relabel already-entered or saved editorial content.
+      setForm(old=>old.title||old.caption?old:{...old,locale:nextLocale})
+    }
     window.addEventListener('holistic-house-ui-locale',onLocale)
     return()=>window.removeEventListener('holistic-house-ui-locale',onLocale)
   },[])
@@ -216,8 +227,16 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       :'Text copied to editor only. Review facts, language and media rights, then save the draft. Nothing was published.')
   }
   const isEditing=Boolean(editing)
+  const openWorkspace=nextTab=>{
+    setWorkspaceOpen(true);setTab(nextTab);setNotice('')
+    // After expanding a collapsed workspace, move the owner to the actual task.
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const node=document.getElementById(nextTab==='compose'?'growth-studio-compose':'growth-studio-posts')
+      if(node)node.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})
+    }))
+  }
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
-  const reset=()=>{setEditing(null);setForm(empty());setNotice('');setTab('compose')}
+  const reset=()=>{setEditing(null);setForm({...empty(),locale});setNotice('');setTab('compose')}
   const edit=post=>{
     setEditing({id:post.id,revision:post.revision})
     setForm({...post,scheduledAt:localFromIso(post.scheduledAt)})
@@ -320,18 +339,24 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     scheduledByDay.set(day,[...(scheduledByDay.get(day)||[]),post])
   }
   return <section className={styles.studio} aria-label="HH Growth Studio">
-    <div className={styles.intro}>
+    {workspaceOpen&&<div className={styles.intro}>
       <div><p className={styles.eyebrow}>HOLISTIC HOUSE · GROWTH STUDIO</p>
         <h2>{t.heading}</h2><p>{t.sub}</p></div>
       <div className={styles.safetyBadge}><ShieldCheck size={18} aria-hidden="true"/>{t.noAuto}</div>
-    </div>
+    </div>}
+    <GrowthStudioConnections locale={locale} telegram={telegram} onTelegramVerified={setTelegramVerified}
+      postCount={records.length}
+      onStart={()=>openWorkspace('compose')}
+      onShowPosts={()=>openWorkspace('posts')}/>
+    {workspaceOpen&&<>
     {!ready&&<p className={styles.warning} role="alert"><CircleAlert size={18}/>{t.unavailable}</p>}
     <p className={telegramVerified?styles.connectionReady:styles.connectionUnavailable}>
       <ShieldCheck size={15}/>{telegramVerified?(locale==='ru'?'Права бота Telegram подтверждены':'Telegram bot posting permissions verified'):
         telegram.ready?(locale==='ru'?'Настройки Telegram найдены — сначала проверьте права ниже':'Telegram settings found — verify posting permissions below'):t.telegramDisabled}
     </p>
     <p className={styles.privacyNote}><ShieldCheck size={15} aria-hidden="true"/>{t.unsafe}</p>
-    <GrowthStudioConnections locale={locale} telegram={telegram} onTelegramVerified={setTelegramVerified}/>
+    <div className={styles.workspaceClose}><button type="button" onClick={()=>setWorkspaceOpen(false)}>
+      {locale==='ru'?'Свернуть рабочее место':'Collapse workspace'}</button></div>
     <div className={styles.metrics}>
       <div><span>{t.draftCount}</span><strong>{counts.draft}</strong></div>
       <div><span>{t.approvedCount}</span><strong>{counts.approved}</strong></div>
@@ -354,45 +379,49 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       </div>
     </div>
     {notice&&<p className={styles.notice} role="status" aria-live="polite">{notice}</p>}
-    {tab==='compose'&&<div className={styles.columns}>
+    {tab==='compose'&&<div id="growth-studio-compose" className={styles.columns}>
       <div className={styles.editor}>
         <div className={styles.sectionHead}><h3>{isEditing?t.selected:t.newDraft}</h3>
           <button type="button" onClick={reset}><Plus size={15}/>{t.new}</button></div>
-        <p className={styles.hint}>{t.createGuide}</p>
-        <div className={styles.pair}>
-          <label>{t.brand}<select disabled={!ready||busy} value={form.brand} onChange={set('brand')}>
-            {Object.keys(GROWTH_BRANDS).map(brand=><option key={brand} value={brand}>{BRANDS[brand]}</option>)}</select></label>
+        <p className={styles.hint}>{t.simpleGuide}</p>
+        <div className={styles.quickComposerFields}>
           <label>{t.channel}<select disabled={!ready||busy} value={form.channel} onChange={set('channel')}>
             {GROWTH_CHANNELS.map(channel=><option key={channel} value={channel}>{CHANNELS[channel]}</option>)}</select></label>
-          <label>{t.language}<select disabled={!ready||busy} value={form.locale} onChange={set('locale')}>
-            {GROWTH_LANGUAGES.map(language=><option key={language} value={language}>{language.toUpperCase()}</option>)}</select></label>
-          <label>{t.campaign}<input disabled={!ready||busy} type="text" maxLength={64} pattern="[a-zA-Z0-9_-]*"
-            placeholder="academy_intro_202610" value={form.campaign} onChange={set('campaign')}/></label>
+          <label>{t.title}<input disabled={!ready||busy} type="text" maxLength={120} required
+            placeholder={locale==='ru'?'Название публикации':'Post title'}
+            value={form.title} onChange={set('title')}/></label>
+          <label>{t.caption}<textarea disabled={!ready||busy} maxLength={3500} rows={5} value={form.caption}
+            placeholder={locale==='ru'?'Напишите публичный текст...':'Write public post text...'} onChange={set('caption')}/></label>
         </div>
-        <label>{t.title}<input disabled={!ready||busy} type="text" maxLength={120} required
-          placeholder={locale==='ru'?'Образовательный пост':'Education post'}
-          value={form.title} onChange={set('title')}/></label>
-        <label>{t.caption}<textarea disabled={!ready||busy} maxLength={3500} rows={6} value={form.caption}
-          placeholder={locale==='ru'?'Напишите короткий текст публикации...':'Write your post caption...'} onChange={set('caption')}/></label>
-        <p className={styles.hint}>{t.captionHint}</p>
-        <div className={styles.pair}>
-          <label>{t.media}<input disabled={!ready||busy} type="text" maxLength={500} value={form.mediaUrl||''}
-            placeholder={GROWTH_BRANDS[form.brand]+'/images/photo.webp'} onChange={set('mediaUrl')}/></label>
-          <label>{t.mediaAlt}<input disabled={!ready||busy} type="text" maxLength={240} value={form.mediaAlt||''}
-            placeholder={locale==='ru'?'Описание изображения':'What the image shows'} onChange={set('mediaAlt')}/></label>
-        </div>
-        <p className={styles.hint}>{t.mediaHint}</p>
-        <label>{t.source}<input disabled={!ready||busy} type="text" maxLength={500} value={form.sourceUrl}
-          placeholder={GROWTH_BRANDS[form.brand]+'/en/academy'} onChange={set('sourceUrl')}/></label>
-        <p className={styles.hint}>{t.sourceHint}</p>
-        <GrowthStudioSourcePicker brand={form.brand} sourceUrl={form.sourceUrl}
-          locale={locale} disabled={!ready||busy} onApply={applyPublicSource}/>
-        <label>{t.schedule}<input disabled={!ready||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
-        <p className={styles.hint}>{t.scheduleNote}</p>
-        <div className={styles.manualSlotActions}>
-          <button type="button" disabled={!ready||busy} onClick={suggestManualTime}><CalendarDays size={15}/>{t.planNext}</button>
-          <span>{locale==='ru'?'Пн–Пт · 10:00/17:00 по Торонто. Не прогноз лучшего времени.':'Mon–Fri · 10:00/17:00 Toronto. Editorial preset, not an analytics-based best time.'}</span>
-        </div>
+        <details className={styles.composerOptions}>
+          <summary>{t.moreOptions}{form.mediaUrl?' · 📷':''}{form.scheduledAt?' · 📅':''}</summary>
+          <p className={styles.hint}>{t.advancedHint}</p>
+          <div className={styles.pair}>
+            <label>{t.brand}<select disabled={!ready||busy} value={form.brand} onChange={set('brand')}>
+              {Object.keys(GROWTH_BRANDS).map(brand=><option key={brand} value={brand}>{BRANDS[brand]}</option>)}</select></label>
+            <label>{t.language}<select disabled={!ready||busy} value={form.locale} onChange={set('locale')}>
+              {GROWTH_LANGUAGES.map(language=><option key={language} value={language}>{language.toUpperCase()}</option>)}</select></label>
+            <label>{t.campaign}<input disabled={!ready||busy} type="text" maxLength={64} pattern="[a-zA-Z0-9_-]*"
+              placeholder="academy_intro_202610" value={form.campaign} onChange={set('campaign')}/></label>
+          </div>
+          <div className={styles.pair}>
+            <label>{t.media}<input disabled={!ready||busy} type="text" maxLength={500} value={form.mediaUrl||''}
+              placeholder={GROWTH_BRANDS[form.brand]+'/images/photo.webp'} onChange={set('mediaUrl')}/></label>
+            <label>{t.mediaAlt}<input disabled={!ready||busy} type="text" maxLength={240} value={form.mediaAlt||''}
+              placeholder={locale==='ru'?'Описание изображения':'What the image shows'} onChange={set('mediaAlt')}/></label>
+          </div>
+          <p className={styles.hint}>{t.mediaHint}</p>
+          <label>{t.source}<input disabled={!ready||busy} type="text" maxLength={500} value={form.sourceUrl}
+            placeholder={GROWTH_BRANDS[form.brand]+'/en/academy'} onChange={set('sourceUrl')}/></label>
+          <GrowthStudioSourcePicker brand={form.brand} sourceUrl={form.sourceUrl}
+            locale={locale} disabled={!ready||busy} onApply={applyPublicSource}/>
+          <label>{t.schedule}<input disabled={!ready||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
+          <p className={styles.hint}>{t.scheduleNote}</p>
+          <div className={styles.manualSlotActions}>
+            <button type="button" disabled={!ready||busy} onClick={suggestManualTime}><CalendarDays size={15}/>{t.planNext}</button>
+            <span>{locale==='ru'?'Пн–Пт · 10:00/17:00 по Торонто. Не прогноз лучшего времени.':'Mon–Fri · 10:00/17:00 Toronto. Editorial preset, not analytics-based best time.'}</span>
+          </div>
+        </details>
         {plannedConflict>0&&<p className={styles.manualSlotConflict} role="alert">{t.planCollision}</p>}
         <div className={styles.publisherDiagnostics} role="status" aria-live="polite">
           <strong>{CHANNEL_CAPABILITIES[form.channel]?.name || form.channel} · {METHOD_LABELS[locale]?.[CHANNEL_CAPABILITIES[form.channel]?.mode] || METHOD_LABELS.en.manual}</strong>
@@ -484,7 +513,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           ?reused?'Пакет повторов уже сохранён, дубли не созданы.':'Повторные черновики созданы. Проверьте и одобрите каждый отдельно.'
           :reused?'Repeat batch already exists — no duplicates.':'Repeat drafts created. Review and approve each separately.')
       }}/>} 
-    {tab==='posts'&&<div className={styles.postList}>
+    {tab==='posts'&&<div id="growth-studio-posts" className={styles.postList}>
       {!visible.length&&<p className={styles.empty}>{t.noPosts}</p>}
       {visible.map(post=><article key={post.id} className={styles.post}>
         <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{publicationStatusLabel(post.status,locale)}</span>
@@ -519,5 +548,6 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         </div>
       </article>)}
     </div>}
+    </>}
   </section>
 }

@@ -27,7 +27,7 @@ const copy = {
   },
 }
 
-export function PractitionerAutoEntry({ locale = 'en', authFailed = false }) {
+export function PractitionerAutoEntry({ locale = 'en', authFailed = false, next = null }) {
   const [state, setState] = useState(authFailed ? 'retry' : 'opening')
   const started = useRef(false)
   const text = copy[locale] || copy.en
@@ -38,12 +38,13 @@ export function PractitionerAutoEntry({ locale = 'en', authFailed = false }) {
       // Server checks the verified Google account and owner-only practitioner role.
       const response = await appFetch('practitioner/open', { destination: 'cabinet' })
       if (response.redirectUrl !== '/admin') throw new Error('Unexpected destination')
-      window.location.replace('/admin')
+      window.location.replace(next === 'growth-studio' ? '/admin/growth-studio' : '/admin')
     } catch (error) {
       if (error?.status === 401) {
         try {
           // Resume this private entry after Google OAuth without exposing a PIN.
-          const result = await appFetch('auth/start', { locale, continueTo: 'practitioner' })
+          const result = await appFetch('auth/start', { locale,
+            continueTo: next === 'growth-studio' ? 'growth-studio' : 'practitioner' })
           window.location.assign(result.redirectUrl)
           return
         } catch {
