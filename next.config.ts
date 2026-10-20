@@ -117,6 +117,14 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    // The /sitemap.xml metadata route reads remedy files through fs at runtime.
+    // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
+    // Keep this scoped to the sitemap; do not replicate the corpus across all routes.
+    "/sitemap.xml": [
+      "./data/spanish-remedies.json",
+      "./content/remedies/en/*.md",
+      "./content/remedies/ru/*.md",
+    ],
     "/[locale]/client/[selector]/documents/[id]": ["./assets/documents/*"],
     "/api/client/[selector]/documents/[id]/pdf": reportPdfAssets,
     "/[locale]/prescriptions/[selector]": ["./assets/documents/andrii-signature-left-90.png", "./content/remedies/**/*.md"],

@@ -382,3 +382,63 @@
   .businessQuickPaths a { gap: 3px; padding-inline: 2px; }
   .businessQuickPaths a svg { width: 12px; height: 12px; }
 }
+
+/* Business conversion v2: show one clear path; detailed free tests are voluntary. */
+.businessSearchDisclosure{margin:0 0 7px;color:#d6e9ec}
+.businessSearchDisclosure>summary{
+  display:inline-flex;align-items:center;min-height:36px;padding:7px 9px;
+  cursor:pointer;font:650 12px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;
+}
+.businessSearchDisclosure[open] .businessSearchForm{margin-top:8px}
+.root[data-topic-journey="business"] .hero{padding:clamp(17px,2.5vw,28px);margin:5px 0 14px}
+.root[data-topic-journey="business"] .hero h1{font-size:clamp(28px,3.7vw,42px);max-width:700px}
+.root[data-topic-journey="business"] .businessHeroLead{margin-bottom:8px}
+.root[data-topic-journey="business"] .businessQuickPaths{margin-top:7px}
+.root[data-topic-journey="business"] .businessPromo{
+  margin:0 0 15px;padding:13px 15px;
+  grid-template-columns:35px minmax(0,1fr) auto;gap:10px;
+  border-radius:15px;box-shadow:none;
+}
+.root[data-topic-journey="business"] .businessPromoIcon{width:35px;height:35px;border-radius:10px}
+.root[data-topic-journey="business"] .businessPromoIcon svg{width:19px;height:19px}
+.root[data-topic-journey="business"] .businessPromoCopy h2{font-size:clamp(19px,2.4vw,23px);line-height:1.16}
+.root[data-topic-journey="business"] .businessPromoCopy>p:last-child{font-size:11px;line-height:1.45}
+.root[data-topic-journey="business"] .businessPromoSide{min-width:185px;max-width:245px;gap:7px}
+.root[data-topic-journey="business"] .businessPromoPrice{font-size:10px}
+.businessSelfChecks{
+  margin:0 0 20px;border:1px solid #cbdfe3;border-radius:14px;
+  background:#fffdfa;scroll-margin-top:100px;
+}
+.businessSelfChecks>summary{
+  display:flex;align-items:center;justify-content:space-between;gap:9px;
+  padding:14px 16px;min-height:48px;cursor:pointer;
+  font:800 13px/1.3 system-ui,sans-serif;color:#1b6677;list-style:none;
+}
+.businessSelfChecks>summary::-webkit-details-marker{display:none}
+.businessSelfChecks>summary svg{flex:none;transition:transform .15s}
+.businessSelfChecks[open]>summary svg{transform:rotate(180deg)}
+.businessSelfChecksBody{padding:4px 13px 12px}
+.businessSelfChecksBody .sectionHead h2{font-size:clamp(22px,2.6vw,29px)}
+.businessSelfChecksBody .selection{margin-bottom:13px}
+.businessSelfChecksBody .suggestions{margin-bottom:0;padding:16px}
+.businessSelfChecksBody .topic{min-height:58px}
+.businessSelfChecksBody .topic small{font-size:11px}
+.businessSelfChecks :focus-visible,.businessSearchDisclosure>summary:focus-visible{outline:3px solid #168d9d;outline-offset:2px}
+@media(max-width:720px){
+  .root[data-topic-journey="business"] .hero{padding:15px 13px;margin:5px 0 12px}
+  .root[data-topic-journey="business"] .hero h1{font-size:clamp(27px,7vw,34px)}
+  .root[data-topic-journey="business"] .businessPromo{
+    grid-template-columns:29px minmax(0,1fr);gap:7px 10px;padding:12px;border-radius:13px;
+  }
+  .root[data-topic-journey="business"] .businessPromoIcon{width:29px;height:29px}
+  .root[data-topic-journey="business"] .businessPromoSide{grid-column:1/-1;min-width:0;max-width:none}
+  .root[data-topic-journey="business"] .businessPromoLink{min-width:0;width:100%}
+  .root[data-topic-journey="business"] .businessQuickPaths a{padding-inline:6px}
+  .businessSelfChecksBody{padding:2px 10px 11px}
+  .businessSelfChecksBody .suggestions{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){.businessSelfChecks>summary svg{transition:none}}
+
+.businessBenefitTags{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 0;padding:0;list-style:none}
+.businessBenefitTags li{padding:5px 9px;border:1px solid #98b4b5;border-radius:99px;color:#f4e1be;background:#ffffff0b;font:700 10px/1.3 system-ui,sans-serif}
+@media(max-width:600px){.businessBenefitTags{gap:5px;margin-top:7px}.businessBenefitTags li{padding:4px 7px;font-size:9px}}

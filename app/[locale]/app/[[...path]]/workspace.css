@@ -1744,3 +1744,17 @@
   outline-offset: -2px;
   border-radius: 9px;
 }
+
+/* Report-specific print cleanup lives in global workspace CSS, never in a
+   CSS Module, which forbids selectors with no local class. */
+@media print {
+  .hh-app:has(#hh-business-printable-report) .hh-header,
+  .hh-app:has(#hh-business-printable-report) .hh-nav,
+  .hh-app:has(#hh-business-printable-report) .hh-account-menu {
+    display: none !important;
+  }
+  .hh-app:has(#hh-business-printable-report) {
+    background: #fff !important;
+    padding: 0 !important;
+  }
+}

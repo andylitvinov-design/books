@@ -1,0 +1,70 @@
+name: HH Growth Studio editorial checks
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'app/admin/growth-studio/**'
+      - 'components/growth-studio.*'
+      - 'components/growth-studio-bulk.jsx'
+      - 'components/growth-studio-connections.jsx'
+      - 'components/prescription-admin-header.jsx'
+      - 'components/practitioner-cabinet.jsx'
+      - 'components/app/practice-workspace.jsx'
+      - 'lib/growth-studio/**'
+      - 'tests/growth-studio-editorial.test.mjs'
+      - 'tests/growth-studio-csv.test.mjs'
+      - 'tests/growth-studio-bulk.test.mjs'
+      - 'tests/growth-studio-telegram.test.mjs'
+      - 'tests/growth-studio-platforms.test.mjs'
+      - 'tests/growth-studio-manual-calendar.test.mjs'
+      - 'tests/growth-studio-navigation-preservation.test.mjs'
+      - '.github/workflows/hh-growth-studio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  editorial-security:
+    name: Owner editorial and storage safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Validate JS modules
+        run: |
+          node --check lib/growth-studio/model.mjs
+          node --check lib/growth-studio/manual-calendar.mjs
+          node --check lib/growth-studio/channel-capabilities.mjs
+          node --check lib/growth-studio/bulk.mjs
+          node --check lib/growth-studio/telegram.mjs
+          node --check lib/growth-studio/store.js
+          node --check app/admin/growth-studio/actions.js
+      - name: Check editorial transitions, URL and Redis guards
+        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs
+
+  next-build:
+    name: Next.js production build / Growth Studio
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact dependency lock
+        run: npm ci
+      - name: Next.js build
+        run: npm run build

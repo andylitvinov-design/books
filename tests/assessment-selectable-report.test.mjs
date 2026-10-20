@@ -164,6 +164,40 @@ function assertSelected(h, result, report, section, locale) {
   }
 }
 
+test('verified EN/RU check-in summaries appear visibly before scale tabs, with one contextual follow-up',()=>{
+  for(const [key,version] of [['hh-current-state','v2'],['hh-weekly-pulse','v1']])
+    for(const locale of ['en','ru']){
+      const result=fixture(key,locale,version)
+      const report=buildAssessmentResultReport(result,locale)
+      assert.equal(report.verified,true)
+      assert.equal(report.checkinInsight?.kind,'original-descriptive-checkin')
+      const mounted=mount({result,report,locale})
+      const notes=nodes(mounted.tree).filter(node=>own(node,'data-original-checkin-reflection'))
+      assert.equal(notes.length,1,key+'/'+locale+' must surface its verified synthesis')
+      assert.equal(notes[0].props['data-checkin-focus-key'],report.checkinInsight.focusKey)
+      assert.equal(notes[0].props.role,'note')
+      assert.ok(text(notes[0]).includes(report.checkinInsight.summary))
+      assert.ok(text(notes[0]).includes(report.checkinInsight.reflectionQuestion))
+      assert.equal(nodes(mounted.tree).filter(node=>own(node,'data-unverified-assessment-result')).length,0)
+      assert.deepEqual(triggers(mounted.tree).map(n=>n.props['data-assessment-scale-trigger']),
+        report.sections.map(section=>section.key))
+    }
+})
+
+test('invalid saved check-in or ordinary professional result never gets a credible-looking reflection panel',()=>{
+  const valid=fixture('hh-current-state','en','v2')
+  const tampered={...valid,contentHash:'sha256:altered'}
+  const unverified=buildAssessmentResultReport(tampered,'en')
+  assert.equal(unverified.verified,false)
+  const bad=mount({result:tampered,report:unverified,locale:'en'})
+  assert.equal(nodes(bad.tree).filter(node=>own(node,'data-original-checkin-reflection')).length,0)
+  assert.equal(nodes(bad.tree).filter(node=>own(node,'data-unverified-assessment-result')).length,1)
+  const professional=fixture('phq-4','en')
+  const report=buildAssessmentResultReport(professional,'en')
+  const normal=mount({result:professional,report,locale:'en'})
+  assert.equal(nodes(normal.tree).filter(node=>own(node,'data-original-checkin-reflection')).length,0)
+})
+
 test('actual buttons expose every semantic explanation at min, max and mixed answers in EN/RU', () => {
   const enabled = new Set(MONITORING_CATALOG.filter(item => item.startable).map(item => item.key + ':' + item.version))
   const definitions = ASSESSMENT_DEFINITIONS.filter(definition => enabled.has(definition.key + ':' + definition.version))

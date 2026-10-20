@@ -1,0 +1,47 @@
+name: Holistic House sitemap runtime assets
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'app/sitemap.ts'
+      - 'next.config.ts'
+      - 'data/spanish-remedies.json'
+      - 'content/remedies/**'
+      - 'tests/sitemap-runtime-assets.test.mjs'
+      - '.github/workflows/hh-sitemap-runtime-assets.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sitemap-runtime-assets-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sitemap-packaging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify the sitemap's fail-closed asset and locale contracts
+        run: node --test tests/sitemap-runtime-assets.test.mjs
+      - name: Check Next.js production trace
+        run: |
+          npm run build
+          node --input-type=module <<'JS'
+          import { readFileSync, existsSync } from 'node:fs';
+          import assert from 'node:assert/strict';
+          const file='.next/server/app/sitemap.xml/route.js.nft.json';
+          assert.ok(existsSync(file), 'Missing metadata route runtime trace: '+file);
+          const parsed=JSON.parse(readFileSync(file,'utf8'));
+          const paths=parsed.files||[];
+          assert.ok(paths.some(x=>x.endsWith('data/spanish-remedies.json')), 'Spanish JSON omitted from sitemap trace');
+          for(const locale of ['en','ru'])
+            assert.ok(paths.some(x=>x.includes('content/remedies/'+locale+'/')&&x.endsWith('.md')), 'Remedy source '+locale+' omitted from sitemap trace');
+          console.log('SITEMAP_RUNTIME_TRACE_PASS',JSON.stringify({count:paths.length,locales:['en','ru','es']}));
+          JS

@@ -79,6 +79,7 @@ test('manual phone composer stays private, opt-in only, no Twilio API, no delive
  for(const key of ['en','ru','es']) assert.match(component,new RegExp('\\b'+key+':\\s*\\{'))
  const manager=source('components/app/crm-manager.jsx')
  assert.match(manager,/<CrmFreeSmsPanel/)
- assert.match(manager,/key=\{accountId\+'-manual-sms'\}/)
+ assert.match(manager,/key=\{accountId\+'-manual-sms-'\+language\} contacts=\{contacts\}/)
  assert.match(source('lib/crm/manual-sms.js'),/sms:\x27\+phone/)
+ assert.match(source('lib/crm/contact-operations-store.js'),/createSmsStore\(db,actor,config\)\.listSmsEligibility/)
 })
