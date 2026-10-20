@@ -9,6 +9,7 @@ import type { PublicAnalyticsEvent } from "@/lib/public-analytics";
 import type { PublicLocale } from "@/lib/public-locales";
 import { telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organic-event-referrals";
+import { readPaidAdReferral, withPaidAdReferral } from "@/lib/paid-ad-referrals";
 import styles from "./contact-channel-chooser.module.css";
 
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
@@ -93,6 +94,7 @@ export function ContactChannelChooser({
   const operationId = useRef<string | null>(null);
   const pathname = usePathname();
   const [publicEventSearch, setPublicEventSearch] = useState("");
+  const [publicAdSearch, setPublicAdSearch] = useState("");
   const panelId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const c = copy[locale];
@@ -104,6 +106,13 @@ export function ContactChannelChooser({
       utm_medium: "organic_event",
       utm_campaign: referral.campaign,
       ...(referral.content ? { utm_content: referral.content } : {}),
+    }).toString() : "");
+    const adReferral = readPaidAdReferral(window.location.search, window.location.pathname);
+    setPublicAdSearch(adReferral ? "?" + new URLSearchParams({
+      utm_source: adReferral.source,
+      utm_medium: adReferral.medium,
+      utm_campaign: adReferral.campaign,
+      ...(adReferral.content ? { utm_content: adReferral.content } : {}),
     }).toString() : "");
   }, [pathname]);
 
@@ -121,7 +130,10 @@ export function ContactChannelChooser({
     panelRef.current?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
   }, [open]);
 
-  const referredWhatsappUrl = withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale);
+  const referredWhatsappUrl = withPaidAdReferral(
+    withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale),
+    publicAdSearch, pathname, locale,
+  );
   const originalMessage = new URL(referredWhatsappUrl).searchParams.get("text") || "";
   const serviceTitle = originalMessage.split("\n")
     .find(line => /^(?:Service|Услуга|Servicio):\s*/i.test(line))
