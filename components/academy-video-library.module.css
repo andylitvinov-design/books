@@ -451,3 +451,10 @@
 @media (prefers-reduced-motion: reduce) {
   .chevron { transition: none; }
 }
+
+/* Primary lesson action opens the verified YouTube source; embedded play is optional. */
+.lessonActions{display:flex;align-items:stretch;gap:4px;min-width:0}
+.lessonActions .lessonToggle{flex:1 1 auto;width:auto;min-width:0;text-align:left;text-decoration:none}
+.lessonInlineToggle{display:grid;place-items:center;flex:0 0 44px;align-self:center;min-height:44px;border:1px solid #e2d6ca;border-radius:9px;background:#f9f4ec;color:#75533f;cursor:pointer}
+.lessonInlineToggle:hover{background:#efe5d8}
+.lessonInlineToggle:focus-visible{outline:3px solid #27889b;outline-offset:2px}
