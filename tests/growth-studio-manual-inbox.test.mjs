@@ -25,9 +25,6 @@ function post(scheduledAt,channel='instagram'){
 
 test('owner-reported completion never creates provider-confirmed publication data',async()=>{
   const store=createMemoryGrowthStudioStore()
-  const scheduled=post('2026-10-20T14:00:00.000Z')
-  await store.save({...scheduled,status:'draft',revision:1},0)
-    .catch(()=>{})
   // Exercise the real optimistic revision chain against persistent storage.
   const draft=nextGrowthPost({action:'save',id:randomUUID(),now:created,
     fields:{brand:'holistic_house',channel:'instagram',locale:'en',
@@ -77,7 +74,7 @@ test('rejects invalid manual completions from unapproved or provider-confirmed s
 test('forged "manual_done" without timestamp or with provider receipts fails closed',()=>{
   const planned=post('2026-10-20T14:00:00.000Z')
   assert.equal(isSavedGrowthPost({...planned,status:'manual_done'}),false)
-  assert.equal(isSavedGrowthPost({...planned,status:'manual_done',manualDoneAt:'2026-10-20'}),true)
+  assert.equal(isSavedGrowthPost({...planned,status:'manual_done',manualDoneAt:'2026-10-20'}),false)
   const done=nextGrowthPost({current:planned,action:'complete_manual',now})
   assert.equal(isSavedGrowthPost({...done,manualDoneAt:'invalid'}),false)
   assert.equal(isSavedGrowthPost({...done,manualDoneAt:'2026-10-01T12:00:00.000Z'}),false)
