@@ -62,7 +62,21 @@ test("provider OAuth links are owner-invoked and never imply publishing connecti
   "/admin/youtube-upload",
  ])assert.ok(panel.includes(url),url);
  // Marketing pixel/ad connectors never grant social publishing OAuth.
- assert.doesNotMatch(panel,/app\.hypd\.ai\/sources\?manage=/);
+ // Analytics/ad source links are segregated from publishing permission claims.
+ for(const uri of [
+  "https://app.hypd.ai/sources?manage=search-console",
+  "https://app.hypd.ai/sources?manage=google-ads",
+  "https://app.hypd.ai/sources?manage=meta",
+  "https://github.com/andylitvinov-design/torontotantra/settings/secrets/actions",
+  "https://github.com/andylitvinov-design/torontotantra/issues/71",
+  "https://www.eventbrite.com/help/en-us/articles/849962/generate-an-api-key/",
+ ]) assert.ok(panel.includes(uri),uri);
+ assert.ok(panel.includes("5. Separately: SEO and ad accounts (NOT social publishing)"));
+ assert.match(panel,/does not give this website posting rights/);
+ assert.match(panel,/do not duplicate it/);
+ assert.match(panel,/token has not been configured/);
+ assert.ok(panel.includes("Meetup requires Pro/API access"));
+ assert.doesNotMatch(panel,/import .*hypad|import .*eventbrite|directAdsConnected:true/);
  assert.ok(panel.includes("t.ownerConnectNote"));
  assert.ok(!panel.includes("autoConnect(") && !panel.includes("accessToken"));
  assert.match(panel,/rel="noopener noreferrer"/);
