@@ -14,7 +14,7 @@ const copy = {
     cta: "Получить бесплатный письменный разбор",
     freeCta: "Начать бесплатно · 3 варианта",
     paidCta: "Запросить личную сессию · от €50",
-    secondary: "Все три бесплатных варианта",
+    secondary: "Все три бесплатных варианта", shop: "Открыть магазин услуг",
     small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
     workWith: "Личная работа с Андреем Литвиновым, в Торонто и онлайн",
     solutions: "Личные форматы работы",
@@ -30,7 +30,7 @@ const copy = {
     cta: "Get a free written review",
     freeCta: "Start free · 3 options",
     paidCta: "Ask about a personal session · from €50",
-    secondary: "See all three free options",
+    secondary: "See all three free options", shop: "Browse the shop",
     small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
     workWith: "Personal work with Andrey Litvinov, in Toronto and online",
     solutions: "Explore personal work options",
@@ -46,7 +46,7 @@ const copy = {
     cta: "Recibir revisión escrita gratuita",
     freeCta: "Empezar gratis · 3 opciones",
     paidCta: "Solicitar sesión personal · desde €50",
-    secondary: "Opciones gratuitas y cursos",
+    secondary: "Opciones gratuitas y cursos", shop: "Ver la tienda",
     small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
     workWith: "Trabajo individual con Andrey Litvinov, en Toronto y en línea",
     solutions: "Explorar los servicios personales",
@@ -73,6 +73,9 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
           </Link>
           <Link className={styles.secondary} href="#solutions">
             {t.solutions}<ArrowRight size={17} aria-hidden="true" />
+          </Link>
+          <Link className={styles.secondary} href={"/" + locale + "/shop"} data-service-hero-cta="shop">
+            {t.shop}<ArrowRight size={17} aria-hidden="true" />
           </Link>
         </div>
         <p className={styles.small}>{t.small}</p>

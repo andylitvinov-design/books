@@ -51,7 +51,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .map((suffix) => "/" + locale + "/academy" + suffix);
   });
   const coreServicePaths = ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"];
-  const coreServiceUrls = (["en", "ru", "es"] as const).flatMap(locale => coreServicePaths.map(slug => `/${locale}/services/${slug}`));
+  const coreServiceUrls = (["en", "ru", "es"] as const).flatMap(locale =>
+    [...coreServicePaths.map(slug => "/" + locale + "/services/" + slug), "/" + locale + "/shop"]);
   const topicJourneys = (['en','ru','es'] as const).flatMap(locale => TOPIC_JOURNEYS.map(journey => `/${locale}/explore/${journey.id}`));
   const verifiedEventPages = (['en', 'ru', 'es'] as const).flatMap(locale =>
     PUBLIC_EVENTS.filter(event => event.status === 'published'
