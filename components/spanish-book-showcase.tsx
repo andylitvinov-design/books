@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { bookCoverArtworkUrl, hasBookCoverArtwork } from "@/lib/public-card-artwork";
 import { BookOpen } from "lucide-react";
 
 import { featuredBookUrls } from "@/data/featured-books";
@@ -23,7 +24,7 @@ export function SpanishBookShowcase({ books }: { books: Book[] }) {
           aria-label="The Power of Life: abrir edición inglesa en otra pestaña"
         >
           <figure className="catalog-cover">
-            <Image alt="Portada: The Power of Life" height={600} width={800} priority src="/images/holistic-house/books-library.webp" />
+            <Image alt="Portada: The Power of Life" height={600} width={800} priority unoptimized src="/images/holistic-house/books-library.webp" />
           </figure>
           <div className="catalog-card-body">
             <p className="catalog-card-series">Edición del autor · inglés</p>
@@ -50,7 +51,7 @@ export function SpanishBookShowcase({ books }: { books: Book[] }) {
             aria-label={`${copy.title}: abrir ficha en español`}
           >
             <figure className="catalog-cover">
-              <Image alt={`Portada: ${copy.title}`} height={600} width={800} priority={index < 1 && !showFeatured} src={`/media/${book.mediaSeries}/${book.cover}`} />
+              <Image alt={`Portada: ${copy.title}`} height={600} width={800} priority={index < 1 && !showFeatured} src={bookCoverArtworkUrl(book.id, `/media/${book.mediaSeries}/${book.cover}`)} unoptimized={hasBookCoverArtwork(book.id)} />
             </figure>
             <div className="catalog-card-body">
               <p className="catalog-card-series"><span>{copy.category}</span><span className="catalog-material-role">{roleLabels[getBookMaterialRole(book.id)]}</span></p>
