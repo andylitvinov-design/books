@@ -1,0 +1,36 @@
+name: Holistic House messenger notification build
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'lib/app/messenger-notification-*.js'
+      - 'app/api/app/notification-channels/**'
+      - 'components/app/messenger-notification-settings.*'
+      - 'components/app/app-workspace.jsx'
+      - 'tests/messenger-notification-subscriptions.test.mjs'
+      - 'supabase/migrations/*messenger_pending_contacts*'
+      - '.github/workflows/hh-messenger-notification-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  notification-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Messenger policy, privacy and Settings smoke tests
+        run: node --test tests/messenger-notification-subscriptions.test.mjs tests/notification-stack-integration.test.mjs
+      - name: Lint new notification service and Settings integration
+        run: npx eslint lib/app/messenger-notification-policy.js lib/app/messenger-notification-repository.js app/api/app/notification-channels/route.js components/app/messenger-notification-settings.jsx components/app/app-workspace.jsx
+      - name: Next.js production build (no provider keys)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
