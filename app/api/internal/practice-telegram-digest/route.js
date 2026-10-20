@@ -6,6 +6,7 @@ import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {practiceTelegramConfigured} from '@/lib/practitioners/daily-telegram-transport.mjs'
 import {deliverDailyPracticeDigest} from '@/lib/practitioners/daily-telegram-digest'
 import {ensureOwnerTelegramPairing,resolvedOwnerTelegramEnv} from '@/lib/practitioners/telegram-owner-pairing'
+import {registerClientTelegramWebhook,verifyClientBot,ownerAiMenuReady} from '@/lib/app/client-telegram-transport'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -28,6 +29,18 @@ export async function GET(request){
     if(!['paired','already_configured'].includes(pairing.status))
       return NextResponse.json(pairing,{headers:PRIVATE_HEADERS})
     const env=await resolvedOwnerTelegramEnv(config)
+    // Daily idempotent safety net for the owner AI menu. Never overwrite a
+    // different webhook or let menu setup block existing daily digests.
+    if(env.HH_OWNER_AI_TG_ENABLED==='true'&&env.HH_CLIENT_TG_USE_PRACTICE_BOT==='true'){
+      try{
+        let ready=false
+        try{
+          await verifyClientBot(env,{requireWebhook:true})
+          ready=await ownerAiMenuReady(config,env)
+        }catch{/* Unconfigured/not-ready: registration verifies identity again. */}
+        if(!ready)await registerClientTelegramWebhook(env,{config})
+      }catch{/* No auto-retries/owner message; existing digest continues. */}
+    }
     if(!practiceTelegramConfigured(env))
       return NextResponse.json({status:'paired',delivery_enabled:false},
         {headers:PRIVATE_HEADERS})
