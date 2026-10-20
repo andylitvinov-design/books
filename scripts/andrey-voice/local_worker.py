@@ -25,6 +25,10 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 MAX_AUDIO_BYTES = 3_000_000
 JOB_ID = re.compile(r"^[a-f0-9-]{36}$", re.I)
 PRODUCTION_SITE = "https://holistichouse.vercel.app"
+# Nonsecret storage host is verified against the site's Supabase project.
+PRODUCTION_STORAGE_HOST = "shervdixkaxurnaecioe.supabase.co"
+VOICE_HOME = Path.home() / "Library" / "Application Support" / "HolisticHouse" / "AndreyVoice"
+KEYCHAIN_SERVICE = "holistichouse.andrey-voice.worker-token"
 VALID_LOCALES = {"ru", "en"}
 
 
@@ -50,6 +54,17 @@ def base_url() -> str:
 
 def api_token() -> str:
     token = os.environ.get("HH_LOCAL_NARRATION_WORKER_TOKEN", "")
+    if not token and sys.platform == "darwin":
+        # Secret lives in the owner's macOS Keychain, never in a launchd plist,
+        # downloaded zip, Git repository or script command line.
+        try:
+            token = subprocess.check_output(
+                ["/usr/bin/security", "find-generic-password",
+                 "-s", KEYCHAIN_SERVICE, "-a", "AndreyVoice", "-w"],
+                stderr=subprocess.DEVNULL, timeout=8
+            ).decode("utf-8").strip()
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            token = ""
     if len(token) < 40 or len(token) > 200 or any(ch.isspace() for ch in token):
         raise ValueError("secure worker token not configured")
     return token
@@ -60,6 +75,7 @@ def api_post(path: str, body: dict, *, authorized: bool = True) -> dict:
         "/api/report-narration/local/worker/claim",
         "/api/report-narration/local/worker/complete",
         "/api/report-narration/local/worker/failed",
+        "/api/report-narration/local/worker/cleanup",
     }:
         raise ValueError("worker path is not allowlisted")
     data = json.dumps(body, separators=(",", ":")).encode()
@@ -86,7 +102,9 @@ def approved_upload_url(url: str) -> str:
     if parts.scheme != "https" or parts.username or parts.password or parts.fragment:
         raise ValueError("upload URL not secure")
     host = parts.hostname or ""
-    approved_host = os.environ.get("HH_LOCAL_NARRATION_SUPABASE_HOST", "").lower().strip()
+    approved_host = os.environ.get(
+        "HH_LOCAL_NARRATION_SUPABASE_HOST", PRODUCTION_STORAGE_HOST
+    ).lower().strip()
     if not approved_host.endswith(".supabase.co") or host.lower() != approved_host or parts.port not in (None, 443):
         raise ValueError("upload host does not match verified private Supabase storage")
     if not parts.path.startswith("/storage/v1/object/upload/sign/hh-client-private-media/"):
@@ -127,26 +145,32 @@ def put_signed_mp3(url: str, path: Path) -> None:
 
 
 def run_local_engine(language: str, text: str, out: Path, scratch: Path) -> None:
-    script = Path(os.environ.get("HH_VOICE_ENGINE_SCRIPT", "")).expanduser()
+    script = Path(os.environ.get(
+        "HH_VOICE_ENGINE_SCRIPT", str(VOICE_HOME / "andrey_tts.py")
+    )).expanduser()
     if not script.is_file() or script.name != "andrey_tts.py":
         raise ValueError("owner-approved local synthesizer is not installed")
     reference_var = "HH_VOICE_REFERENCE_RU" if language == "ru" else "HH_VOICE_REFERENCE_EN"
-    reference = Path(os.environ.get(reference_var, "")).expanduser()
+    default_name = "ru_heygen_preview.wav" if language == "ru" else "en_v4_ref_12s.wav"
+    reference = Path(os.environ.get(
+        reference_var, str(VOICE_HOME / "voice_sources" / default_name)
+    )).expanduser()
     if not reference.is_file() or reference.suffix.lower() != ".wav":
         raise ValueError("private language reference missing")
-    input_file = scratch / "report-part.txt"
-    input_file.write_text(text, encoding="utf-8")
-    input_file.chmod(0o600)
+    # The CLI can read `--text-file /dev/stdin` on macOS. Feeding the
+    # approved report over a private subprocess pipe avoids leaving a clinical
+    # plaintext text file behind when the Mac sleeps or loses power.
     wav = scratch / "narration.wav"
     args = [sys.executable, str(script), "--language", language,
-            "--text-file", str(input_file), "--reference", str(reference),
+            "--text-file", "/dev/stdin", "--reference", str(reference),
             "--model", os.environ.get("HH_VOICE_MODEL", "fast"),
             "--output", str(wav)]
     transcript_var = "HH_VOICE_REFERENCE_TRANSCRIPT_RU" if language == "ru" else "HH_VOICE_REFERENCE_TRANSCRIPT_EN"
     reference_text = os.environ.get(transcript_var, "")
     if reference_text:
         args += ["--ref-text", reference_text]
-    subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    subprocess.run(args, input=text.encode("utf-8"),
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                    check=True, timeout=720)
     if not wav.is_file() or wav.stat().st_size <= 128:
         raise ValueError("local model produced no WAV")
@@ -163,6 +187,12 @@ def process_one() -> bool:
     claim = api_post("/api/report-narration/local/worker/claim", {})
     job = claim.get("job")
     if job is None:
+        # Private, bounded cleanup runs only while the Mac is awake.
+        # No client text or voice models are involved.
+        try:
+            api_post("/api/report-narration/local/worker/cleanup", {})
+        except (HTTPError, URLError, ValueError, OSError):
+            pass
         return False
     if not isinstance(job, dict) or set(job) != {
         "id", "leaseId", "language", "text", "uploadUrl"
@@ -213,10 +243,14 @@ def main() -> int:
             "status": "local_config_check",
             "python": sys.version.split()[0],
             "site": PRODUCTION_SITE,
-            "engine_configured": Path(os.environ.get("HH_VOICE_ENGINE_SCRIPT", "/nonexistent")).is_file(),
-            "english_reference_exists": Path(os.environ.get("HH_VOICE_REFERENCE_EN", "/nonexistent")).is_file(),
-            "russian_reference_exists": Path(os.environ.get("HH_VOICE_REFERENCE_RU", "/nonexistent")).is_file(),
-            "token_present": len(os.environ.get("HH_LOCAL_NARRATION_WORKER_TOKEN", "")) >= 40,
+            "engine_configured": Path(os.environ.get(
+                "HH_VOICE_ENGINE_SCRIPT", str(VOICE_HOME / "andrey_tts.py"))).is_file(),
+            "english_reference_exists": Path(os.environ.get(
+                "HH_VOICE_REFERENCE_EN", str(VOICE_HOME / "voice_sources" / "en_v4_ref_12s.wav"))).is_file(),
+            "russian_reference_exists": Path(os.environ.get(
+                "HH_VOICE_REFERENCE_RU", str(VOICE_HOME / "voice_sources" / "ru_heygen_preview.wav"))).is_file(),
+            "token_in_environment": len(os.environ.get("HH_LOCAL_NARRATION_WORKER_TOKEN", "")) >= 40,
+            "token_may_be_in_keychain": sys.platform == "darwin",
         }))
         return 0
     api_token()

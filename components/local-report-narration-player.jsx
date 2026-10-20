@@ -16,6 +16,7 @@ export function LocalReportNarrationPlayer({locale='en',access}) {
   const timer=useRef(null)
   const mounted=useRef(true)
   const requested=useRef(false)
+  const waitingPolls=useRef(0)
   const audioSrc=useRef('')
   const [state,setState]=useState('idle')
   const [error,setError]=useState('')
@@ -63,9 +64,16 @@ export function LocalReportNarrationPlayer({locale='en',access}) {
       if(result.status==='failed')throw new Error('failed')
       if(result.status!=='ready') {
         setState(result.status)
-        timer.current=setTimeout(()=>{if(mounted.current&&requested.current)void loadPart(index)},15000)
+        // Mac can be offline for days. Back off aggressively rather than
+        // exhausting the shared Redis free-tier quota with 15s polling.
+        const delay=Math.min(300000,30000*2**Math.min(waitingPolls.current,4))
+        waitingPolls.current+=1
+        timer.current=setTimeout(()=>{
+          if(mounted.current&&requested.current)void loadPart(index)
+        },delay)
         return
       }
+      waitingPolls.current=0
       if(typeof result.audioUrl!=='string'||
         !result.audioUrl.startsWith('/api/report-narration/local/audio?'))
         throw new Error('unavailable')
@@ -96,10 +104,12 @@ export function LocalReportNarrationPlayer({locale='en',access}) {
       return
     }
     requested.current=true
+    waitingPolls.current=0
     void loadPart(state==='done'?0:part)
   }
   function stop() {
     requested.current=false
+    waitingPolls.current=0
     clean()
     const player=audio.current
     if(player){player.pause();player.removeAttribute('src');player.load()}
