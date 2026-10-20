@@ -5,6 +5,7 @@ import {useEffect, useMemo, useState} from 'react'
 import {CalendarDays, Check, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
 import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
+import GrowthStudioSourcePicker from './growth-studio-source-picker'
 import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/lib/growth-studio/manual-calendar.mjs'
 import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
@@ -201,6 +202,16 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     setForm(old=>({...old,scheduledAt:localFromIso(result.scheduledAt)}))
     setNotice(t.planNextFound+': '+result.localDate+' '+result.localTime+' America/Toronto')
   }
+  const applyPublicSource=preview=>{
+    if((form.title.trim()||form.caption.trim())&& !window.confirm(locale==='ru'
+      ?'Заменить название и текст текущего черновика данными открытой страницы? После изменения ранее одобренного текста потребуется новое согласование.'
+      :'Replace the current draft title and caption with public-page metadata? Previously approved content requires review again after an edit.'))return
+    setForm(old=>({...old,title:preview.title,caption:preview.description||'',
+      sourceUrl:preview.sourceUrl,locale:preview.language||old.locale}))
+    setNotice(locale==='ru'
+      ?'Текст добавлен только в редактор. Проверьте факты, язык и права на материалы, затем сохраните черновик. В соцсети ничего не отправлено.'
+      :'Text copied to editor only. Review facts, language and media rights, then save the draft. Nothing was published.')
+  }
   const isEditing=Boolean(editing)
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
   const reset=()=>{setEditing(null);setForm(empty());setNotice('');setTab('compose')}
@@ -358,6 +369,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <label>{t.source}<input disabled={!ready||busy} type="text" maxLength={500} value={form.sourceUrl}
           placeholder={GROWTH_BRANDS[form.brand]+'/en/academy'} onChange={set('sourceUrl')}/></label>
         <p className={styles.hint}>{t.sourceHint}</p>
+        <GrowthStudioSourcePicker brand={form.brand} sourceUrl={form.sourceUrl}
+          locale={locale} disabled={!ready||busy} onApply={applyPublicSource}/>
         <label>{t.schedule}<input disabled={!ready||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
         <p className={styles.hint}>{t.scheduleNote}</p>
         <div className={styles.manualSlotActions}>
