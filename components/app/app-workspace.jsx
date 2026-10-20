@@ -47,6 +47,7 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
+import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
@@ -115,7 +116,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     [state, setState] = useState('loading'),
     [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
-    [deleted, setDeleted] = useState(false)
+    [deleted, setDeleted] = useState(false),
+    [nativeApp,setNativeApp] = useState(false)
+  useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
   const quickAuthAttempted = useRef(false)
   const signinAttempted = useRef(false)
   const page = path[0] || 'portrait',
@@ -241,6 +244,16 @@ export default function AppWorkspace({ locale, path = [] }) {
   async function logout(allDevices = false) {
     setBusy(true)
     try {
+      // Revoke native phone tokens *before* clearing this account's session.
+      // A failed or revoked server session still blocks delivery through the
+      // session-bound native_push_devices lookup.
+      if(isNativeHolisticHouse() && data?.account?.id){
+        try{
+          await appFetch('notifications/native/disable',{},'POST',{accountId:data.account.id})
+          const {registerPlugin}=await import('@capacitor/core')
+          await registerPlugin('PushNotifications').unregister()
+        }catch{/* Sign-out must continue; server also requires a live Auth session. */}
+      }
       // End account-bound Live Activities before clearing the verified session.
       if (isNativePsiAlchemy()) {
         try {
@@ -666,7 +679,9 @@ export default function AppWorkspace({ locale, path = [] }) {
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
               <InstallHolisticHouse locale={locale} />
-              <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
+              {nativeApp
+                ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
+                : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
               <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}

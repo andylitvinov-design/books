@@ -6,6 +6,7 @@ import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/developmen
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
+import {createNativePushRepository} from '@/lib/app/native-push-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-course-repository'
@@ -446,6 +447,19 @@ async function handle(request, { params }) {
     if (path[0] === 'notifications') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
       const notifications = createNotificationRepository(config)
+      const nativePush = createNativePushRepository(config)
+      if(joined==='notifications/native' && method==='GET'){
+        const query=new URL(request.url).searchParams
+        if([...query.keys()].some(k=>k!=='platform')||query.getAll('platform').length!==1)
+          throw new AppError('INVALID_REQUEST',400)
+        return json(await nativePush.state(actor,query.get('platform')))
+      }
+      if(joined==='notifications/native/register' && method==='POST')
+        return json(await nativePush.register(actor,await readBody(request,8192)),201)
+      if(joined==='notifications/native/disable' && method==='POST'){
+        onlyKeys(await readBody(request,1024),[])
+        return json(await nativePush.disable(actor))
+      }
       if (joined === 'notifications' && method === 'GET')
         return json(await notifications.state(actor))
       if (joined === 'notifications/live-token' && method === 'POST')

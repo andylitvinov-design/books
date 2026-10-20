@@ -23,8 +23,13 @@ export function beforeSync(){
     fail('Refusing to modify a non-PsiAlchemy source checkout')
   write('capacitor.config.json',read('capacitor.holistic-house.config.json'))
   check()
+  // The Capacitor CLI discovers dependencies from the staged package.json.
+  const pkg=JSON.parse(read('package.json'))
+  if(pkg.dependencies?.['@capacitor/push-notifications'])
+    fail('Native push plugin must remain Holistic-House-only in source')
+  pkg.dependencies['@capacitor/push-notifications']='7.0.1'
+  write('package.json',JSON.stringify(pkg,null,2)+'\n')
   // Historical PsiAlchemy Podfile contains an obsolete developer npx cache path.
-  // Resolve all Capacitor Pods from this CI checkout's pinned node_modules.
   const pod='ios/App/Podfile'
   const previous=read(pod)
   const portable=previous.replace(/(?:\.\.\/){7}\.npm\/_npx\/[a-z0-9]+\/node_modules\/@capacitor\/ios/g,
@@ -84,7 +89,28 @@ export function afterIos(){
     'PRODUCT_BUNDLE_IDENTIFIER = '+id+';',2)
   write(project,pbx)
   const ent='ios/App/App/App.entitlements'
-  write(ent,exact(read(ent),'applinks:codex-public-book-library.vercel.app','applinks:'+host))
+  let entitlement=exact(read(ent),'applinks:codex-public-book-library.vercel.app','applinks:'+host)
+  entitlement=exact(entitlement,'</dict>',
+    '<key>aps-environment</key>\n<string>development</string>\n</dict>')
+  write(ent,entitlement)
+  const delegate='ios/App/App/AppDelegate.swift'
+  const registration=[
+    '    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {',
+    '        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)',
+    '    }',
+    '    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {',
+    '        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)',
+    '    }',
+    ''
+  ].join('\n')
+  const swift=read(delegate)
+  const classEnd=/\n}\s*$/
+  if(!swift.includes('import Capacitor')||swift.includes('capacitorDidRegisterForRemoteNotifications')||!classEnd.test(swift))
+    fail('Unexpected AppDelegate push registration state')
+  const updated=swift.replace(classEnd,'\n'+registration+'}\n')
+  if(!updated.includes('object: deviceToken')||!updated.includes('object: error'))
+    fail('APNs delegate callbacks were not installed')
+  write(delegate,updated)
 }
 export function run(stage){
   if(stage==='before-sync')return beforeSync()

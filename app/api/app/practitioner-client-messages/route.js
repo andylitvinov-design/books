@@ -5,6 +5,7 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createPractitionerClientMessages } from '@/lib/practitioners/client-messages'
 import { dispatchClientMessagePush,dispatchPractitionerMessagePush } from '@/lib/app/client-message-push'
+import {dispatchNativeClientMessagePush} from '@/lib/app/native-push-dispatch'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -45,7 +46,12 @@ async function handler(request){
     if(request.method==='POST'&&data.duplicate===false){
       const id=data.id
       if(data.notifyClient===true)
-        after(async()=>{try{await dispatchClientMessagePush(config,id)}catch{/* best effort; no private logs */}})
+        after(async()=>{
+          await Promise.allSettled([
+            dispatchClientMessagePush(config,id),
+            dispatchNativeClientMessagePush(config,id),
+          ])
+        })
       else if(data.notifyMaster===true)
         after(async()=>{try{await dispatchPractitionerMessagePush(config,id)}catch{/* best effort; no private logs */}})
     }
