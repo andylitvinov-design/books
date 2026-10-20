@@ -70,7 +70,7 @@ test('web and print share lighthouse art, arrows, readable responsive layout',()
   assert.ok(html.includes('fullSource'))
   assert.ok(html.includes("key: 'after'"))
   assert.ok(!html.includes("key: 'target'"))
-  assert.match(generator,/drawReportHeroArtwork\(579, 130\)/)
+  assert.match(generator,/drawReportHeroArtwork\(597, 112\)/)
   assert.match(generator,/drawReportSprig/)
 })
 
