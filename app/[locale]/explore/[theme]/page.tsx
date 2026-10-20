@@ -10,6 +10,21 @@ import { TOPIC_JOURNEYS, getTopicJourney } from '@/lib/assessments/topic-journey
 import { buildTopicTestSuggestions } from '@/lib/assessments/topic-test-suggestions'
 import type { PublicLocale } from '@/lib/public-locales'
 
+const BUSINESS_SEO = {
+  en: {
+    title: 'Business Consultations & Founder Coaching',
+    description: 'Explore business strategy, income decisions and project goals with Andrey Litvinov. Free written review or personal 30-minute (€50) and 60-minute (€100) consultations.',
+  },
+  ru: {
+    title: 'Бизнес-консультации и коучинг предпринимателей',
+    description: 'Разбор бизнес-решений, дохода, целей и собственного дела с Андреем Литвиновым. Бесплатный письменный разбор, консультации 30 минут (€50) и 60 минут (€100).',
+  },
+  es: {
+    title: 'Consultoría de negocios y coaching de emprendedores',
+    description: 'Explora decisiones de negocio, ingresos y proyectos con Andrey Litvinov. Revisión escrita gratuita y consultas personales de 30 min (€50) o 60 min (€100).',
+  },
+} as const
+
 type Props = { params: Promise<{ locale: string; theme: string }> }
 export function generateStaticParams() {
   return ['en','ru','es'].flatMap((locale) => TOPIC_JOURNEYS.map((item) => ({locale, theme:item.id})))
@@ -20,8 +35,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!journey || !['en','ru','es'].includes(locale)) return {title:'Not found'}
   const language = locale as 'en' | 'ru' | 'es'
   const guide = growthGuideFor(theme,language)
-  const title = (guide?.title || journey.title[language]) + ' | Holistic House'
-  const description = (guide?.lead || journey.summary[language]).slice(0,180)
+  const title = (theme === 'business' ? BUSINESS_SEO[language].title : guide?.title || journey.title[language]) + ' | Holistic House'
+  const description = (theme === 'business' ? BUSINESS_SEO[language].description : guide?.lead || journey.summary[language]).slice(0,180)
   return {
     title,
     description,
