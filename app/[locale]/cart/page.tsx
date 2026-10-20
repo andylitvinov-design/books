@@ -4,7 +4,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { PersonalCart } from "@/components/commerce/personal-cart";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
-import { configuredIndividualCardLinks } from "@/lib/commerce/card-payment-links";
+import { configuredSquarePaymentLinks } from "@/lib/commerce/square-payment-links";
 import type { ServiceLocale } from "@/lib/commerce/catalog";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -24,6 +24,6 @@ export default async function CartPage({ params }: Props) {
   if (!isLocale(locale)) notFound();
   return <main className="services-shell services-shell--studio" lang={locale} data-service-cart-page>
     <PublicSiteHeader locale={locale} />
-    <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()} cardLinks={configuredIndividualCardLinks()} />
+    <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()} squareLinks={configuredSquarePaymentLinks()} />
   </main>;
 }
