@@ -1,11 +1,30 @@
 name: HH Business Coaching 90-day validation
 on:
-  push:
-    branches:
-      - feat/business-coaching-90-days-20261020
   pull_request:
     branches:
       - codex/public-book-library
+    paths:
+      - '.github/workflows/hh-business-coaching.yml'
+      - 'lib/business-coaching/**'
+      - 'lib/app/business-coaching.js'
+      - 'components/app/business-coaching*'
+      - 'components/app/development-program.jsx'
+      - 'components/app/my-courses-dashboard*'
+      - 'components/app/app-workspace.jsx'
+      - 'app/[locale]/app/[[...path]]/workspace.css'
+      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'app/[locale]/explore/[theme]/page.tsx'
+      - 'app/api/app/[...path]/route.js'
+      - 'tests/business-coaching-90-days.test.mjs'
+  push:
+    branches:
+      - codex/public-book-library
+    paths:
+      - 'lib/business-coaching/**'
+      - 'lib/app/business-coaching.js'
+      - 'components/app/business-coaching*'
+      - 'tests/business-coaching-90-days.test.mjs'
+      - '.github/workflows/hh-business-coaching.yml'
   workflow_dispatch:
 jobs:
   business-coaching-contract:

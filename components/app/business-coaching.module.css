@@ -145,8 +145,6 @@
 .changeRow small{width:100%;color:#7b8d8c}
 .relatedTests{display:inline-flex;gap:8px;align-items:center;margin-top:12px;color:#226575;font-size:12px;font-weight:750}
 @media print{
- :global(.hh-header),:global(.hh-nav),:global(.hh-account-menu){display:none!important}
- :global(body){background:#fff!important}
  .goalEditor,.tabs,.footer,.hero,.eyebrow,.print,.metricForm,.changes{display:none!important}
 }
 
