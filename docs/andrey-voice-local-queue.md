@@ -130,3 +130,18 @@ voice-quality approval are complete.
 
 No new server schema or database migration was applied. Existing RLS warnings in
 Supabase must be reviewed separately; do NOT auto-alter unrelated tables.
+
+
+## 11. Activation blocker — revoked queued snapshots
+
+A pending approved text is rechecked when a reader requests playback, but the
+Mac worker's current claim implementation **does not yet independently verify**
+that the report or client permissions remained valid after enqueue. It must be
+amended to re-resolve and verify the exact published source (including guest
+grant revocation, removed saved copies, cabinet/legacy access changes) before
+decrypting and transmitting any previously queued text to the Mac. Without this
+gate, the worker must not be enabled even on the owner's machine.
+
+No `HH_LOCAL_NARRATION_*` activation flags should be set yet. Final activation
+also requires source-revision tests, queue expiration/revocation cleanup, a
+genuine RU/EN sound check and physical iPhone audio acceptance.
