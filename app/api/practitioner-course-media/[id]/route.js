@@ -16,7 +16,10 @@ export async function GET(request,{params}){
   requireUUID(id)
   const config=getAppConfig()
   const repo=createPractitionerCourseRepository(config)
-  let asset=await repo.publicAsset(id)
+  const wantsDownload=new URL(request.url).searchParams.get('download')==='1'
+  // A published asset may be streamed by learners; obtaining its original file
+  // for upload elsewhere ALWAYS requires signing in as its course owner.
+  let asset=wantsDownload?null:await repo.publicAsset(id)
   if(!asset){
    auth=createRequestAuth(request,config)
    let actor
@@ -24,7 +27,7 @@ export async function GET(request,{params}){
    asset=await repo.ownAsset(actor,id)
   }
   if(!asset)throw new AppError('COURSE_MEDIA_NOT_FOUND',404)
-  const url=await repo.signedAssetUrl(asset)
+  const url=wantsDownload?await repo.signedOwnerDownloadUrl(asset):await repo.signedAssetUrl(asset)
   const res=NextResponse.redirect(url,302)
   Object.entries(PRIVATE_HEADERS).forEach(([key,value])=>res.headers.set(key,value))
   res.headers.set('Content-Security-Policy',"default-src 'none'; sandbox")
