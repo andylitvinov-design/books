@@ -6,21 +6,21 @@
  box-shadow:0 18px 50px #1e201c40;background:#fffaf3;color:#342b25}
 .header{display:flex;align-items:center;gap:9px;min-height:48px;padding:6px 12px;border-bottom:1px solid #ebe0d5}
 .header svg{color:#276d68;flex:none}.header h2{margin:0;flex:1;font:650 19px/1.2 Georgia,serif}
-.close{display:grid;place-items:center;width:38px;height:38px;min-height:38px;border-radius:50%;
+.close{display:grid;place-items:center;width:44px;height:44px;min-height:44px;border-radius:50%;
  background:#f3e9dc;color:#5a4636;border:0;cursor:pointer}
 .destination,.method{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:5px;background:#f3eadd}
 .destination{margin:8px 10px 0;border-radius:12px}
-.destination button,.method button{min-width:0;min-height:40px;padding:6px;border:1px solid transparent;
+.destination button,.method button{min-width:0;min-height:44px;padding:6px;border:1px solid transparent;
  border-radius:10px;background:transparent;color:#6d5e52;font:750 13px/1.2 system-ui,sans-serif;cursor:pointer}
 .destination button[aria-pressed="true"],.method button[aria-pressed="true"]{background:#e3f3ec;color:#185e57;border-color:#90c4b4}
 .destination button:disabled,.method button:disabled{opacity:.65;cursor:not-allowed}
 .body{min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;padding:9px 10px 10px}
 .siteForm{display:grid;gap:8px;min-width:0}
 .method{margin:0;padding:3px;border-radius:10px}
-.method button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:36px}
+.method button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px}
 .field{display:grid;gap:4px;min-width:0;font:700 12px/1.2 system-ui,sans-serif;color:#315954}
 .field :is(input,select,textarea){box-sizing:border-box;width:100%;max-width:100%;min-width:0;
- min-height:42px;border:1px solid #c6d8d1;border-radius:10px;background:#fff;color:#283c3a;
+ min-height:44px;border:1px solid #c6d8d1;border-radius:10px;background:#fff;color:#283c3a;
  padding:9px 11px;font:500 16px/1.25 system-ui,sans-serif}
 .field input[type="file"]{font-size:12px;padding:8px}
 .field textarea{resize:vertical}
@@ -32,7 +32,7 @@
 .error{margin:0;color:#9b3243;font:650 12px/1.4 system-ui,sans-serif;overflow-wrap:anywhere}
 .footer{display:flex;gap:7px;min-height:55px;padding:8px 10px;border-top:1px solid #ebe1d6;
  background:#fffaf3;box-sizing:border-box}
-.primary,.secondary{flex:1;min-width:0;min-height:42px;border-radius:10px;
+.primary,.secondary{flex:1;min-width:0;min-height:44px;border-radius:10px;
  padding:8px 12px;font:750 13px/1.2 system-ui,sans-serif;cursor:pointer}
 .primary{background:#157d74;color:#fff;border:1px solid #157d74}
 .secondary{background:#fff;color:#38584f;border:1px solid #d5ddd5}

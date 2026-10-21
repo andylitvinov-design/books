@@ -129,7 +129,7 @@ export default function CompactVideoComposer({
          </div>}
          {siteMethod==='link'?<>
            <label className={styles.field}>{t.name}
-             <input autoFocus required maxLength={140} type="text" value={title} onChange={e=>setTitle(e.target.value)} placeholder={t.name} disabled={busy}/></label>
+             <input required maxLength={140} type="text" value={title} onChange={e=>setTitle(e.target.value)} placeholder={t.name} disabled={busy}/></label>
            <label className={styles.field}>{t.url}
              <input required maxLength={500} type="url" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://youtu.be/..." disabled={busy}/></label>
            <label className={styles.field}>{t.lang}
