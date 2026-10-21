@@ -29,7 +29,7 @@ jobs:
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Canonical Homeopathy / Alchemy service routing regression
-        run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs
+        run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/services-promo-carousel.test.mjs
       - name: Production build and public browser acceptance
         run: |
           mkdir -p artifacts/public-services-production
@@ -42,6 +42,7 @@ jobs:
           done
           status=0
           node scripts/verify-business-quiz-mobile.mjs || status=$?
+          node scripts/verify-services-promo-browser.mjs || status=$?
           node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
           node scripts/verify-service-cart-browser.mjs || status=$?
@@ -57,6 +58,7 @@ jobs:
           name: public-services-production-acceptance
           path: |
             artifacts/public-services-production/
+            artifacts/public-services-promo/
             artifacts/business-quiz-mobile/
             artifacts/contact-channel-browser/
             artifacts/service-cart/

@@ -1,0 +1,86 @@
+.section {box-sizing:border-box;width:min(1240px,calc(100% - 28px));margin:12px auto 18px;color:#3f322c;font-family:Arial,Helvetica,sans-serif;}
+.section * {box-sizing:border-box;}
+.header {display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 0 10px;padding:0 4px;}
+.headerText {min-width:0;}
+.eyebrow {display:flex;align-items:center;gap:7px;margin:0 0 4px;color:#91633b;font:800 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;}
+.headingRow {display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.headingRow h2 {margin:0;color:#533a2d;font:400 clamp(29px,3.2vw,39px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.025em;}
+.headingRow span {color:#776456;font:12px/1.4 Arial,Helvetica,sans-serif;}
+.nav {display:flex;align-items:center;gap:8px;flex:none;}
+.counter {margin-right:3px;white-space:nowrap;color:#826d5c;font:750 11px/1.4 Arial,Helvetica,sans-serif;}
+.nav button {display:grid;place-items:center;flex:none;width:44px;height:44px;padding:0;border:1px solid #dec9b6;border-radius:999px;background:#fffaf3;color:#715140;cursor:pointer;}
+.nav button:hover {background:#f1e4d5;}
+.card {display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);overflow:hidden;min-width:0;border:1px solid #dfcdb9;border-radius:23px;background:#fffaf3;box-shadow:0 12px 38px rgba(92,67,43,.11);}
+.media {position:relative;min-height:430px;min-width:0;isolation:isolate;overflow:hidden;background:#736b5d;}
+.image {width:100%;height:100%;object-fit:cover;object-position:center;}
+.media:after {content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(0deg,rgba(23,30,23,.87),rgba(31,41,33,.56) 46%,rgba(33,41,33,.06));}
+.mediaOverlay {position:absolute;z-index:1;inset:auto 25px 23px 28px;display:flex;align-items:flex-start;flex-direction:column;color:#fffaf3;}
+.free {display:inline-flex;align-items:center;min-height:25px;padding:4px 10px;margin-bottom:9px;border:1px solid rgba(255,250,240,.65);border-radius:999px;background:#f0c48b;color:#412d21;font:800 11px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.06em;}
+.mediaOverlay h3 {max-width:580px;margin:0;color:#fffaf4;font:400 clamp(28px,3.1vw,42px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.03em;text-wrap:balance;}
+.mediaOverlay p {max-width:500px;margin:9px 0 10px;color:#f8ebda;font:13px/1.45 Arial,Helvetica,sans-serif;}
+.detailLink {display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:7px 0;color:#ffe1bb;font:750 12px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:4px;}
+.formColumn {min-width:0;align-self:center;padding:20px clamp(20px,3.1vw,38px) 19px;background:#fffaf4;}
+.formColumn h4 {margin:0 0 5px;color:#5a3b31;font:400 clamp(24px,2.4vw,30px)/1.14 Georgia,"Times New Roman",serif;}
+.formIntro {margin:0 0 11px;color:#746253;font:12px/1.5 Arial,Helvetica,sans-serif;}
+.details {margin-top:7px;color:#765d4c;}
+.details > summary {display:inline-flex;align-items:center;min-height:32px;cursor:pointer;font:700 11px/1.45 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px;}
+.details p {margin:0 0 5px;color:#766458;font:11px/1.45 Arial,Helvetica,sans-serif;}
+.formNote {display:flex;align-items:flex-start;gap:6px;margin:7px 0 0;color:#806d61;font:10px/1.4 Arial,Helvetica,sans-serif;}
+.formNote svg {flex:none;margin-top:1px;color:#835b43;}
+.sectionNote {margin:8px 4px 0;color:#806d5e;font:11px/1.4 Arial,Helvetica,sans-serif;}
+.dots {display:flex;align-items:center;justify-content:center;gap:5px;margin:2px 0 0;}
+.dot,.dotActive {display:grid;place-items:center;width:44px;height:32px;border:0;background:transparent;cursor:pointer;}
+.dot::after,.dotActive::after {content:"";width:14px;height:5px;border-radius:999px;background:#d8c6b7;}
+.dotActive::after {width:26px;background:#85573d;}
+.section :is(button,a,summary,input,select):focus-visible {outline:3px solid #ba8957;outline-offset:3px;}
+@media(max-width:900px) {
+ .card {grid-template-columns:minmax(0,1fr) minmax(305px,1fr);}
+ .media {min-height:400px;}
+ .formColumn {padding:16px 19px;}
+ .mediaOverlay {inset:auto 17px 17px;}
+}
+@media(max-width:760px) {
+ .section {width:calc(100% - 16px);margin:7px auto 12px;}
+ .header {padding:0 3px;align-items:end;gap:7px;margin-bottom:7px;}
+ .eyebrow {font-size:9px;letter-spacing:.08em;gap:5px;margin-bottom:3px;}
+ .eyebrow svg {width:14px;height:14px;}
+ .headingRow {gap:5px;}
+ .headingRow h2 {font-size:28px;}
+ .headingRow span {display:none;}
+ .nav {gap:3px;}
+ .counter {font-size:10px;margin-right:2px;}
+ .nav button {width:44px;height:44px;}
+ .card {grid-template-columns:minmax(0,1fr);border-radius:19px;}
+ .media {height:165px;min-height:165px;}
+ .media:after {background:linear-gradient(0deg,rgba(17,28,24,.86),rgba(24,37,29,.43) 68%,rgba(24,37,29,.12));}
+ .mediaOverlay {inset:auto 15px 8px;}
+ .free {min-height:20px;padding:3px 8px;font-size:9px;margin-bottom:5px;}
+ .mediaOverlay h3 {font-size:clamp(22px,6vw,28px);line-height:1.1;}
+ .mediaOverlay p {font-size:11px;line-height:1.3;margin:4px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+ .detailLink {font-size:10.5px;min-height:32px;padding:4px 0;}
+ .formColumn {padding:11px 15px 9px;align-self:stretch;}
+ .formColumn h4 {font-size:22px;margin-bottom:3px;}
+ .formIntro {font-size:11px;line-height:1.36;margin-bottom:7px;}
+ .details {margin-top:4px;}
+ .details > summary {min-height:29px;}
+ .formNote {margin-top:2px;font-size:9.5px;}
+ .sectionNote {font-size:10px;margin-top:5px;}
+ .dots {margin:0;}
+}
+@media(max-width:365px) {
+ .section {margin-top:5px;}
+ .headingRow h2 {font-size:25px;}
+ .media {height:145px;min-height:145px;}
+ .mediaOverlay h3 {font-size:21px;}
+ .mediaOverlay p {display:none;}
+ .formColumn {padding:9px 11px 7px;}
+ .formColumn h4 {font-size:21px;}
+ .formIntro {font-size:10px;}
+ .nav .counter {display:none;}
+ .sectionNote {font-size:9px;}
+}
+@media(max-height:700px) and (max-width:760px) {
+ .media {height:130px;min-height:130px;}
+ .mediaOverlay p {display:none;}
+ .headingRow h2 {font-size:25px;}
+}

@@ -108,14 +108,17 @@ type Props = {
   onChannelClick?: (channel: "whatsapp" | "telegram") => void;
   attributes?: Record<string, string>;
   id?: string;
+  /** Inline uses the same consented CRM registration without an extra trigger. */
+  presentation?: "button" | "inline";
 };
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id,
+  onChannelClick, attributes, id, presentation = "button",
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const isInline = presentation === "inline";
+  const [open, setOpen] = useState(isInline);
   const [description, setDescription] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [method, setMethod] = useState<"email" | "phone">("email");
@@ -155,7 +158,7 @@ export function ContactChannelChooser({
   }, [pathname]);
 
   useEffect(() => {
-    setOpen(false);
+    setOpen(isInline);
     setDescription("");
     setDisplayName("");
     setMethod("email");
@@ -167,10 +170,10 @@ export function ContactChannelChooser({
     setSaved(null);
     setError("");
     operationId.current = null;
-  }, [whatsappUrl]);
+  }, [whatsappUrl, isInline]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isInline) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // On iPhone, the form shrinks after save and the messenger actions can fall
     // under the fixed bottom navigation. Reposition the saved actions, not just
@@ -179,7 +182,7 @@ export function ContactChannelChooser({
       ? panelRef.current?.querySelector('[data-contact-channel="whatsapp"]')
       : panelRef.current;
     target?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
-  }, [open, saved]);
+  }, [open, saved, isInline]);
 
   const referredWhatsappUrl = withPaidAdReferral(
     withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale),
@@ -304,14 +307,14 @@ export function ContactChannelChooser({
   }
 
   return (
-    <div className={styles.wrapper} data-contact-channel-chooser data-open={open}>
-      <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
+    <div className={[styles.wrapper, isInline ? styles.inline : ""].filter(Boolean).join(" ")} data-contact-channel-chooser data-presentation={presentation} data-open={open}>
+      {!isInline && <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
         aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}
         data-contact-order>
         <ShoppingBag size={20} aria-hidden="true" />
         <span>{label || c.order}</span>
         <ChevronDown className={styles.chevron} size={21} aria-hidden="true" />
-      </button>
+      </button>}
       <div ref={panelRef} className={styles.panel} id={panelId} hidden={!open}>
         <p className={styles.question}>{saved ? c.messengers : c.question}</p>
         {!saved ? (

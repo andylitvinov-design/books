@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesPromoCarousel } from "@/components/services-promo-carousel";
 import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
@@ -67,6 +68,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <ServicesExplorerProvider>
+        <ServicesPromoCarousel locale={locale as Locale} />
         <ServicesConversionHero locale={locale as Locale} />
         <ServicesStudioOffers locale={locale as Locale} />
       </ServicesExplorerProvider>

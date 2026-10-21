@@ -168,3 +168,41 @@
 @container (max-width: 300px) {
   .methodChoices { grid-template-columns:1fr; }
 }
+
+
+/* Services special-offer carousel: native, always-visible version of the same
+   consent-first CRM registration. All request validation and persistence stay shared. */
+.inline { width:100%; min-width:0; }
+.inline .panel {
+  display:block; position:static; width:100%; min-width:0;
+  margin:0; padding:0; border:0; border-radius:0; box-shadow:none;
+  background:transparent; color:#4f4137; scroll-margin:0;
+}
+.inline .question { margin:0 0 6px; color:#4a382f; font-size:12px; line-height:1.35; }
+.inline .enquiryForm { gap:7px; }
+.inline .googleButton {
+  min-height:44px; font-size:12px; padding:7px 10px;
+  border-color:#e4d4c4; background:#fffefa; color:#524234;
+}
+.inline .separator { margin:0; font-size:10px; color:#827365; }
+.inline .methodChoices { padding:3px; background:#f0e6da; }
+.inline .methodChoices button { min-height:44px; font-size:12px; color:#574539; }
+.inline .methodChoices button[aria-pressed="true"] { border-color:#e1c9b7; color:#573927; }
+.inline .contactFields label { color:#574335; font-size:11px; }
+.inline .contactFields input { min-height:44px; background:#fffdfb; border-color:#d8c9bc; }
+.inline .consent { align-items:flex-start; color:#5d4c42; font-size:11px; line-height:1.36!important; }
+.inline .consent input { accent-color:#824462; }
+.inline .privateNote,.inline .optionalName,.inline .optionalNote { display:none; }
+.inline .submit { min-height:47px; background:#803954; font-size:13px; border-radius:11px; }
+.inline .submit:not(:disabled):hover { background:#6a2e49; }
+.inline .privacy { margin-top:6px; }
+.inline .privacy > summary { display:inline-flex; align-items:center; min-height:28px; color:#7c6558; }
+.inline .saved { margin-top:5px; }
+.inline .next { font-size:11px; }
+.inline .choices a { min-height:44px; font-size:12px; }
+.inline .enquiryForm input { scroll-margin-bottom:140px; }
+@media(max-width:600px) {
+  .wrapper.inline[data-open="true"] { padding-bottom:0; }
+  .inline .panel { padding:0; }
+  .inline .googleButton { min-height:44px; }
+}
