@@ -29,7 +29,7 @@ function ArticlePreview({body}){
 }
 export default function PractitionerArticles({locale,services=[]}){
  const ru=locale==='ru'
- const t=ru?{
+ const base=ru?{
   heading:'Мои статьи',intro:'Личная библиотека: черновики остаются закрытыми до одобрения публикации.',
   newArticle:'Новая статья',newFolder:'Новая папка',folder:'Папки',all:'Все статьи',
   noFolder:'Без папки',rename:'Переименовать',delete:'Удалить папку',
@@ -84,11 +84,25 @@ export default function PractitionerArticles({locale,services=[]}){
   tooLarge:'This article is too large for one request. Shorten the text or links.',
   slowDown:'Too many requests. Wait one minute and retry.',
  }
+ const t=locale==='es'?{...base,
+  heading:'Mis artículos',newArticle:'Nuevo artículo',newFolder:'Nueva carpeta',folder:'Carpetas',all:'Todos los artículos',
+  noFolder:'Sin carpeta',search:'Buscar artículos…',found:'Encontrados',none:'Todavía no hay artículos.',
+  edit:'Editar',more:'Ver más',cancel:'Cancelar',add:'Crear',filterStatus:'Estado',allStatuses:'Cualquier estado',
+  folderName:'Nombre de carpeta',delete:'Eliminar carpeta',rename:'Renombrar',
+  title:'Título',excerpt:'Descripción breve',body:'Texto del artículo',place:'Guardar en carpeta',
+  draftTitle:'Nuevo artículo',editTitle:'Editar artículo',close:'Cerrar',save:'Guardar borrador',submit:'Enviar a revisión',
+  sourceLinks:'Enlaces a fuentes',sources:'Fuentes, portada y servicios',related:'Servicios relacionados',
+  cover:'Imagen de portada',language:'Idioma',tags:'Palabras clave',preview:'Vista previa',hidePreview:'Ocultar vista',
+  serverUnavailable:'El servidor de artículos no está disponible. Inténtalo de nuevo.',
+  folderFilters:'Carpetas, búsqueda y filtros',retry:'Reintentar',loading:'Cargando artículos…',
+  archive:'Archivar',confirmArchive:'¿Archivar este artículo?',opened:'Abrir artículo publicado'
+ }: {...base,folderFilters:ru?'Папки, поиск и фильтры':'Folders, search & filters',retry:ru?'Повторить':'Retry',loading:ru?'Загружаем статьи…':'Loading articles…'}
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
  const [query,setQuery]=useState(''),[limit,setLimit]=useState(24),[statusFilter,setStatusFilter]=useState('all')
  const [editing,setEditing]=useState(null),[editorOpen,setEditorOpen]=useState(false)
  const [draft,setDraft]=useState(()=>initial(locale)),[folderId,setFolderId]=useState('')
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
+ const [loadState,setLoadState]=useState('loading')
  const [addingFolder,setAddingFolder]=useState(false),[folderName,setFolderName]=useState('')
  const [preview,setPreview]=useState(false),bodyRef=useRef(null),editorRef=useRef(null)
  const [tagInput,setTagInput]=useState('')
@@ -108,9 +122,16 @@ export default function PractitionerArticles({locale,services=[]}){
   const json=await response.json().catch(()=>({}))
   if(!response.ok)throw Error(json.error||'ARTICLE_LOAD_FAILED')
   if(!Array.isArray(json.items)||!Array.isArray(json.folders))throw Error('ARTICLE_LOAD_FAILED')
-  setItems(json.items);setFolders(json.folders)
+  setItems(json.items);setFolders(json.folders);setLoadState('ready')
  }
- useEffect(()=>{reload().catch(e=>setError(e.message))},[])
+ function refreshList(){
+  setLoadState('loading');setError('')
+  void reload().catch(e=>{
+   setLoadState('error')
+   setError(['SERVICE_UNAVAILABLE','DATABASE_CONFIG_CHANGED','ARTICLE_LOAD_FAILED'].includes(e.message)?t.serverUnavailable:e.message)
+  })
+ }
+ useEffect(()=>{refreshList()},[])
  useEffect(()=>{if(editorOpen)editorRef.current?.scrollIntoView({behavior:'smooth',block:'start'})},[editorOpen,editing?.id])
  useEffect(()=>{
   if(!hasUnsaved)return undefined
@@ -225,12 +246,16 @@ export default function PractitionerArticles({locale,services=[]}){
  const selected=folders.find(x=>x.id===selectedFolder)
  const complete=draft.title.trim()&&draft.excerpt.trim().length>=30&&draft.body.trim().length>=200
  return <div className={styles.shell}>
-  <div className={styles.top}>
-   <div><h3>{t.heading} ({items.filter(x=>x.status!=='archived').length})</h3><p>{t.intro}</p></div>
-   <button type="button" className={styles.primary} disabled={busy} onClick={()=>choose(null)}>+ {t.newArticle}</button>
+  <div className={styles.top} data-material-primary-action="articles">
+   <button type="button" className={styles.primary} disabled={busy} onClick={()=>choose(null)}><PenLine size={18} aria-hidden="true"/> {t.newArticle}</button>
+   <span className={styles.compactSummary}>{t.heading} · {items.filter(x=>x.status!=='archived').length}</span>
   </div>
-  {!editorOpen&&error&&<p role="alert" className={styles.error}>{error}</p>}
+  {!editorOpen&&loadState==='error'&&<div className={styles.loadError} role="alert"><p>{error||t.serverUnavailable}</p><button type="button" className={styles.secondary} onClick={refreshList}>{t.retry}</button></div>}
+  {!editorOpen&&loadState==='loading'&&<p className={styles.loadingMessage} role="status">{t.loading}</p>}
   {!editorOpen&&notice&&<p role="status" className={styles.status}>{notice}</p>}
+  {!editorOpen&&loadState==='ready'&&<>
+   <details className={styles.libraryTools}>
+    <summary>{t.folderFilters}</summary>
   <div className={styles.folders}>
    <div className={styles.folderTitle}><span>{t.folder}</span><button type="button" className={styles.secondary} disabled={busy} onClick={()=>setAddingFolder(x=>!x)}><FolderPlus size={14} aria-hidden="true"/> {t.newFolder}</button></div>
    <div className={styles.folderList} role="group" aria-label={t.folder}>
@@ -251,6 +276,7 @@ export default function PractitionerArticles({locale,services=[]}){
    </select>
   </div>
   <div className={styles.results}><span>{t.found}: {filtered.length}</span><span>{selected?.name||(selectedFolder==='unfiled'?t.noFolder:t.all)}</span></div>
+   </details>
   {filtered.length?<div className={styles.list}>{filtered.slice(0,limit).map(item=><article key={item.id} className={styles.card}>
     <div className={styles.cardHeader}>
      {item.draft?.coverPath&&<img className={styles.thumb} src={item.draft.coverPath} alt="" loading="lazy"/>}
@@ -264,6 +290,7 @@ export default function PractitionerArticles({locale,services=[]}){
     </div>
    </article>)}</div>:<p className={styles.empty}>{t.none}</p>}
   {filtered.length>limit&&<div className={styles.actions}><button className={styles.secondary} type="button" onClick={()=>setLimit(x=>x+24)}>{t.more} <ChevronDown size={15} aria-hidden="true"/></button></div>}
+  </>}
   {editorOpen&&<form ref={editorRef} className={styles.editor} aria-busy={busy} onSubmit={e=>{e.preventDefault();void save()}}>
    <div className={styles.editorHeader}><h4>{editing?t.editTitle:t.draftTitle}</h4><button type="button" className={styles.secondary} onClick={closeEditor}>{t.close} ×</button></div>
    {draft.coverPath&&<div className={styles.coverPreview}>
