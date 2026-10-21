@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, Check, Compass, Heart, Mic, RotateCcw, Send, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
 
 import {
@@ -42,6 +42,12 @@ type GuideCopy = {
   title: string;
   lead: string;
   welcome: string;
+  chatStatus: string;
+  openChat: string;
+  closeChat: string;
+  starterHint: string;
+  moreWays: string;
+  topicPrompt: Record<IdeasTopic, string>;
   question: string;
   placeholder: string;
   send: string;
@@ -80,7 +86,19 @@ const copy: Record<PublicLocale, GuideCopy> = {
     eyebrow: "HOLISTIC HOUSE · PERSONAL GUIDANCE",
     title: "What's on your mind?",
     lead: "Ask by text or voice. Find a useful next step.",
-    welcome: "Hello, I'm your Holistic House site guide. What would you like to explore today?",
+    welcome: "Hi! I'm the Holistic House website guide. Tell me what's on your mind, or choose a topic below.",
+    chatStatus: "Automated guide · local suggestions",
+    openChat: "Open a conversation",
+    closeChat: "Close conversation",
+    starterHint: "No account needed · Typed messages stay on this page",
+    moreWays: "Other options",
+    topicPrompt: {
+      relationships: "Would it help more to understand what is happening, or to try a small practice?",
+      stress: "Would you prefer a free self-check or a calming practice?",
+      resources: "Would you like to try a short practice or check your current resources?",
+      work: "Would a structured course, a free test or personal guidance help more?",
+      direction: "Would a short reflection, a free review or a self-check help you choose a next step?",
+    },
     question: "Your question or situation",
     placeholder: "Ask anything…",
     send: "Get guidance",
@@ -142,7 +160,19 @@ const copy: Record<PublicLocale, GuideCopy> = {
     eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ ПОДДЕРЖКА",
     title: "Что сейчас вас волнует?",
     lead: "Спросите текстом или голосом. Найдём следующий шаг.",
-    welcome: "Здравствуйте! Я помощник сайта Holistic House. С чем хотите разобраться сегодня?",
+    welcome: "Здравствуйте! Я помощник сайта Holistic House. Расскажите, что вас волнует, или выберите тему ниже.",
+    chatStatus: "Помощник сайта · локальные подсказки",
+    openChat: "Открыть диалог",
+    closeChat: "Закрыть диалог",
+    starterHint: "Без регистрации · Текст остаётся на этой странице",
+    moreWays: "Другие варианты",
+    topicPrompt: {
+      relationships: "Хотите сначала разобраться в ситуации или попробовать небольшую практику?",
+      stress: "Начнём с бесплатной самопроверки или практики для спокойствия?",
+      resources: "Вам сейчас полезнее короткая практика или проверка своих ресурсов?",
+      work: "Вам поможет пошаговый курс, бесплатный тест или личная беседа?",
+      direction: "Попробуем короткое упражнение, бесплатный разбор или самопроверку?",
+    },
     question: "Ваш вопрос или ситуация",
     placeholder: "Спросите…",
     send: "Получить подсказку",
@@ -204,7 +234,19 @@ const copy: Record<PublicLocale, GuideCopy> = {
     eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN PERSONAL",
     title: "¿Qué te preocupa hoy?",
     lead: "Pregunta por texto o voz. Encuentra tu próximo paso.",
-    welcome: "¡Hola! Soy la guía de Holistic House. ¿Sobre qué te gustaría conversar?",
+    welcome: "¡Hola! Soy la guía del sitio Holistic House. Cuéntame qué te preocupa o elige un tema.",
+    chatStatus: "Guía automática · sugerencias locales",
+    openChat: "Abrir conversación",
+    closeChat: "Cerrar conversación",
+    starterHint: "Sin registro · Tus mensajes escritos permanecen aquí",
+    moreWays: "Otras opciones",
+    topicPrompt: {
+      relationships: "¿Prefieres comprender la situación o probar una práctica sencilla?",
+      stress: "¿Empezamos con una prueba gratuita o con una práctica para relajarte?",
+      resources: "¿Te serviría más una práctica breve o revisar tus recursos personales?",
+      work: "¿Te ayudaría más un curso, una prueba gratuita o una conversación personal?",
+      direction: "¿Prefieres una reflexión, una revisión gratuita o una autoevaluación?",
+    },
     question: "Tu pregunta o situación",
     placeholder: "Pregunta…",
     send: "Recibir orientación",
@@ -266,8 +308,19 @@ const copy: Record<PublicLocale, GuideCopy> = {
 
 const quickStartIcons = [Waves, Heart, Compass] as const;
 
+// Offer choices stay limited to three relevant options in the chat; the other
+// existing routes remain explicitly available via "Other options".
+const goalSuggestions: Record<IdeasTopic, HomeGuideGoal[]> = {
+  relationships: ["understand", "practice", "consult"],
+  stress: ["tests", "practice", "understand"],
+  resources: ["practice", "tests", "understand"],
+  work: ["practice", "tests", "consult"],
+  direction: ["understand", "ideas", "tests"],
+};
+
 export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [context, setContext] = useState<Context | null>(null);
@@ -277,7 +330,10 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [voiceElapsed, setVoiceElapsed] = useState(0);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const launcherRef = useRef<HTMLButtonElement>(null);
   const questionRef = useRef<HTMLTextAreaElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const speechRef = useRef<SpeechEngine | null>(null);
   const voiceGenerationRef = useRef(0);
   const voiceBaseRef = useRef("");
@@ -286,6 +342,60 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const submitOnEndRef = useRef(false);
   const voiceStartedAtRef = useRef(0);
   const nextId = useRef(1);
+
+  const closeDialog = useCallback(() => {
+    // Closing must never silently submit an in-progress speech transcript.
+    voiceDiscardRef.current = true;
+    voiceGenerationRef.current += 1;
+    const engine = speechRef.current;
+    speechRef.current = null;
+    try { if (engine?.abort) engine.abort(); else engine?.stop(); } catch { /* Already closed */ }
+    setVoiceState("idle");
+    setVoiceElapsed(0);
+    setVoiceTranscript("");
+    setIsOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const frame = window.requestAnimationFrame(() => dialogRef.current?.focus({ preventScroll: true }));
+    function onDialogKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDialog();
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), a[href], textarea, summary'
+      )).filter(item => item.getClientRects().length > 0);
+      if (focusable.length === 0) { event.preventDefault(); dialogRef.current.focus(); return; }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onDialogKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onDialogKeyDown);
+      document.body.style.overflow = previousOverflow;
+      if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
+    };
+  }, [isOpen, closeDialog]);
+
+  useEffect(() => {
+    if (isOpen && chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [isOpen, turns, context, goal]);
 
   useEffect(() => {
     const speechWindow = window as typeof window & {
@@ -333,13 +443,14 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   function ask(text: string) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
+    setIsOpen(true);
     const result = resolveHomeGuideQuestion(question, locale);
     const responseCopy = copy[result.lang];
     const answer = result.urgent
       ? responseCopy.urgent
-      : (result.matched && result.topic
-        ? responseCopy.topics + " «" + responseCopy.topic[result.topic] + "». "
-        : responseCopy.unknown + " ") + responseCopy.followup;
+      : result.matched && result.topic
+        ? responseCopy.topicPrompt[result.topic]
+        : responseCopy.unknown + " " + responseCopy.followup;
     appendExchange(question, answer);
     setContext(result);
     setGoal(null);
@@ -394,7 +505,8 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const Speech = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!Speech) {
       setVoiceError(t.voiceKeyboard);
-      questionRef.current?.focus();
+      window.requestAnimationFrame(() => questionRef.current?.focus());
+
       return;
     }
     // This runs synchronously inside the microphone click: required by mobile browsers.
@@ -484,6 +596,9 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const recording = voiceState !== "idle";
   const recordingLabel = voiceState === "starting" ? t.voiceStarting : voiceState === "finishing" ? t.voiceFinishing : t.voiceListening;
   const voiceTime = `${String(Math.floor(voiceElapsed / 60)).padStart(2, "0")}:${String(voiceElapsed % 60).padStart(2, "0")}`;
+  const recommendedGoals: HomeGuideGoal[] = context?.topic
+    ? goalSuggestions[context.topic]
+    : ["understand", "tests", "practice"];
 
   return (
     <section id="ask-holistic-house" className={styles.root} data-home-conversation-guide
@@ -495,110 +610,156 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
         <div className={styles.scenery} aria-hidden="true" />
       </div>
 
-      <div className={styles.conversation}>
-        <div className={styles.log} data-has-turns={turns.length > 0 ? "true" : "false"}
-          role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
-          {turns.map(turn => (
-            <p key={turn.id} className={turn.role === "guide" ? styles.guideBubble : styles.visitorBubble}>{turn.text}</p>
-          ))}
+      <div className={styles.entry} aria-hidden={isOpen}>
+        <div className={styles.launcherRow}>
+          <button type="button" ref={launcherRef} className={styles.launcher}
+            data-home-guide-launcher aria-haspopup="dialog" aria-controls="home-guide-chat"
+            aria-expanded={isOpen} aria-label={t.openChat} onClick={() => setIsOpen(true)}>
+            <Sparkles size={19} aria-hidden="true" />
+            <span>{t.placeholder}</span>
+            <span className={styles.launcherGo}><ArrowRight size={19} aria-hidden="true" /></span>
+          </button>
+          <button type="button" className={styles.launchMic} data-home-guide-launcher-mic
+            aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+            title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+            onClick={() => { setIsOpen(true); toggleVoice(); }}>
+            <Mic size={21} aria-hidden="true" />
+          </button>
         </div>
-
-        {context && !context.urgent && goal === null ? (
-          <div className={styles.choices} role="group" aria-label={answerCopy.followup} data-home-guide-choices>
-            {homeGuideGoals.map(value => (
-              <button key={value} type="button" className={styles.choice} onClick={() => chooseGoal(value)}>
-                {answerCopy.goalLabels[value]}
-              </button>
-            ))}
+        <div className={styles.examples} aria-label={t.exampleLabel}>
+          <span>{t.exampleLabel}</span>
+          <div className={styles.quickChoices}>
+            {t.examples.map((example, index) => {
+              const Icon = quickStartIcons[index] ?? Compass;
+              return (
+                <button type="button" key={example} onClick={() => ask(example)}>
+                  <Icon size={16} aria-hidden="true" /><span>{example}</span>
+                </button>
+              );
+            })}
           </div>
-        ) : null}
-
-        {links && goal ? (
-          <div className={styles.result} data-home-guide-result>
-            <Link href={links.primary} className={styles.primaryAction} prefetch={false}>
-              {answerCopy.goalActions[goal]}<ArrowRight size={17} aria-hidden="true" />
-            </Link>
-            <Link href={links.secondary} className={styles.secondaryAction} prefetch={false}>
-              <Compass size={15} aria-hidden="true" />{answerCopy.secondary}<ArrowRight size={15} aria-hidden="true" />
-            </Link>
-            <p className={styles.limitation}>{answerCopy.limitation}</p>
-          </div>
-        ) : null}
-
-        <form className={styles.form} onSubmit={submit} aria-label={t.question}>
-          {recording ? (
-            <div className={styles.recording} data-home-voice-recording role="group" aria-label={recordingLabel}>
-              <span className={styles.recordingDot} aria-hidden="true" />
-              <span className={styles.recordingMessage} aria-live="off">{voiceTranscript || recordingLabel}</span>
-              <span className={styles.recordingTime} aria-label={voiceTime}>{voiceTime}</span>
-              <button type="button" className={styles.cancelVoice} aria-label={t.voiceCancel} onClick={cancelVoice}>
-                <X size={19} aria-hidden="true" />
-              </button>
-              <button type="button" className={styles.finishVoice} aria-label={t.voiceDone} onClick={finishVoice} disabled={voiceState === "finishing"}>
-                <Check size={21} aria-hidden="true" />
-              </button>
-            </div>
-          ) : (
-            <>
-              <label className={styles.srOnly} htmlFor="home-guide-question">{t.question}</label>
-              <div className={styles.inputRow}>
-                <Sparkles size={20} className={styles.inputIcon} aria-hidden="true" />
-                <textarea
-                  id="home-guide-question"
-                  ref={questionRef}
-                  value={draft}
-                  onChange={event => setDraft(event.currentTarget.value)}
-                  onKeyDown={event => {
-                    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-                      event.preventDefault();
-                      event.currentTarget.form?.requestSubmit();
-                    }
-                  }}
-                  maxLength={500}
-                  rows={1}
-                  placeholder={t.placeholder}
-                  autoComplete="off"
-                  aria-label={t.question}
-                />
-                <button
-                  type="button" className={styles.voiceButton}
-                  aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
-                  title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
-                  onClick={toggleVoice}
-                ><Mic size={20} aria-hidden="true" /></button>
-              </div>
-              <button type="submit" className={styles.sendButton} aria-label={t.send} disabled={!draft.trim()}>
-                <Send size={19} aria-hidden="true" /><span>{t.send}</span>
-              </button>
-            </>
-          )}
-        </form>
-        {recording ? <p className={styles.voiceNotice}>{t.voicePrivacy}</p> : null}
-        {voiceError ? <p className={styles.error} role="alert">{voiceError}</p> : null}
-        <details className={styles.privacy}>
-          <summary><ShieldCheck size={14} aria-hidden="true" />{t.privacyShort}</summary>
-          <p>{t.privacyDetail}</p>
-        </details>
-
-        {turns.length === 0 ? (
-          <div className={styles.examples} aria-label={t.exampleLabel}>
-            <span>{t.exampleLabel}</span>
-            <div className={styles.quickChoices}>
-              {t.examples.map((example, index) => {
-                const Icon = quickStartIcons[index] ?? Compass;
-                return <button type="button" key={example} onClick={() => ask(example)}>
-                  <Icon size={21} aria-hidden="true" /><span>{example}</span>
-                </button>;
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className={styles.restart}>
-            <span>{answerCopy.askAgain}</span>
-            <button type="button" onClick={reset}><RotateCcw size={14} aria-hidden="true" />{t.reset}</button>
-          </div>
-        )}
+        </div>
+        <p className={styles.starterHint}><ShieldCheck size={13} aria-hidden="true" />{t.starterHint}</p>
       </div>
+
+      {isOpen ? (
+        <div className={styles.overlay} data-home-guide-overlay>
+          <button type="button" className={styles.backdrop} tabIndex={-1}
+            aria-label={t.closeChat} onClick={closeDialog} />
+          <div id="home-guide-chat" className={styles.dialog} data-home-guide-dialog
+            role="dialog" aria-modal="true" aria-labelledby="home-guide-chat-title"
+            ref={dialogRef} tabIndex={-1}>
+            <header className={styles.dialogHeader}>
+              <span className={styles.avatar}><Sparkles size={21} aria-hidden="true" /></span>
+              <div className={styles.chatIdentity}>
+                <h3 id="home-guide-chat-title">Holistic House</h3>
+                <p>{t.chatStatus}</p>
+              </div>
+              {turns.length > 0 ? (
+                <button type="button" className={styles.headerAction} onClick={reset} aria-label={t.reset} title={t.reset}>
+                  <RotateCcw size={18} aria-hidden="true" />
+                </button>
+              ) : null}
+              <button type="button" className={styles.headerAction} onClick={closeDialog} aria-label={t.closeChat}>
+                <X size={21} aria-hidden="true" />
+              </button>
+            </header>
+            <div className={styles.chatScroll} ref={chatScrollRef}>
+              <div className={styles.conversation}>
+                <div className={styles.log} data-has-turns={turns.length > 0 ? "true" : "false"}
+                  role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
+                  {turns.length === 0 ? <p className={styles.guideBubble}>{t.welcome}</p> : null}
+                  {turns.map(turn => (
+                    <p key={turn.id} className={turn.role === "guide" ? styles.guideBubble : styles.visitorBubble}>{turn.text}</p>
+                  ))}
+                </div>
+
+                {context && !context.urgent && goal === null ? (
+                  <div className={styles.choiceGroup}>
+                    <p className={styles.choiceCaption}>{answerCopy.followup}</p>
+                    <div className={styles.choices} role="group" aria-label={answerCopy.followup} data-home-guide-choices>
+                      {recommendedGoals.map(value => (
+                        <button key={value} type="button" className={styles.choice} onClick={() => chooseGoal(value)}>
+                          {answerCopy.goalLabels[value]}<ArrowRight size={16} aria-hidden="true" />
+                        </button>
+                      ))}
+                    </div>
+                    <details className={styles.extraChoices}>
+                      <summary>{t.moreWays}</summary>
+                      <div className={styles.choices}>
+                        {homeGuideGoals.filter(value => !recommendedGoals.includes(value)).map(value => (
+                          <button key={value} type="button" className={styles.choice} onClick={() => chooseGoal(value)}>
+                            {answerCopy.goalLabels[value]}<ArrowRight size={16} aria-hidden="true" />
+                          </button>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                ) : null}
+
+                {links && goal ? (
+                  <div className={styles.result} data-home-guide-result>
+                    <Link href={links.primary} className={styles.primaryAction} prefetch={false}>
+                      {answerCopy.goalActions[goal]}<ArrowRight size={17} aria-hidden="true" />
+                    </Link>
+                    <Link href={links.secondary} className={styles.secondaryAction} prefetch={false}>
+                      <Compass size={15} aria-hidden="true" />{answerCopy.secondary}<ArrowRight size={15} aria-hidden="true" />
+                    </Link>
+                    <p className={styles.limitation}>{answerCopy.limitation}</p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <div className={styles.chatFooter}>
+              <form className={styles.form} onSubmit={submit} aria-label={t.question}>
+                {recording ? (
+                  <div className={styles.recording} data-home-voice-recording role="group" aria-label={recordingLabel}>
+                    <span className={styles.recordingDot} aria-hidden="true" />
+                    <span className={styles.recordingMessage} aria-live="off">{voiceTranscript || recordingLabel}</span>
+                    <span className={styles.recordingTime} aria-label={voiceTime}>{voiceTime}</span>
+                    <button type="button" className={styles.cancelVoice} aria-label={t.voiceCancel} onClick={cancelVoice}>
+                      <X size={19} aria-hidden="true" />
+                    </button>
+                    <button type="button" className={styles.finishVoice} aria-label={t.voiceDone}
+                      onClick={finishVoice} disabled={voiceState === "finishing"}>
+                      <Check size={21} aria-hidden="true" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <label className={styles.srOnly} htmlFor="home-guide-question">{t.question}</label>
+                    <div className={styles.inputRow}>
+                      <textarea id="home-guide-question" ref={questionRef} value={draft}
+                        onChange={event => setDraft(event.currentTarget.value)}
+                        onKeyDown={event => {
+                          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                            event.preventDefault();
+                            event.currentTarget.form?.requestSubmit();
+                          }
+                        }}
+                        maxLength={500} rows={1} placeholder={t.placeholder}
+                        autoComplete="off" aria-label={t.question} />
+                      <button type="button" className={styles.voiceButton}
+                        aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+                        title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+                        onClick={toggleVoice}><Mic size={20} aria-hidden="true" /></button>
+                      <button type="submit" className={styles.sendButton} aria-label={t.send} disabled={!draft.trim()}>
+                        <Send size={19} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </form>
+              {recording ? <p className={styles.voiceNotice}>{t.voicePrivacy}</p> : null}
+              {voiceError ? <p className={styles.error} role="alert">{voiceError}</p> : null}
+              <details className={styles.privacy}>
+                <summary><ShieldCheck size={14} aria-hidden="true" />{t.privacyShort}</summary>
+                <p>{t.privacyDetail}</p>
+              </details>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
