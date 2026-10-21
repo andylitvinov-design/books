@@ -116,7 +116,7 @@ test("one-tap ChatGPT-style microphone is local, cancellable, and sends recogniz
   assert.match(component, /data-guide-phase=\{turns\.length === 0/);
   assert.match(component, /className=\{styles\.inputRow\}/);
   assert.match(component, /role="dialog" aria-modal="true"/, "conversation lives in a dialog");
-  assert.match(component, /data-home-guide-launcher/, "homepage only shows a compact launcher");
+  assert.match(component, /data-home-guide-launcher/, "homepage retains a full-width guidance CTA");
   assert.match(component, /data-home-guide-launcher-mic/, "one-tap microphone opens the dialog");
   assert.match(component, /followup.choices.slice/, "only topic-matched choices are shown");
   assert.match(component, /document.body.style.overflow = "hidden"/, "mobile chat keeps the page from scrolling");
@@ -262,6 +262,24 @@ test("specific offer cards retain compact modal and bounded Safari microphone",(
  assert.ok(!ui.includes("homeGuideGoals.map"));
  for(const term of ["fetch(","sendBeacon(","localStorage","sessionStorage","/api/"])
   assert.ok(!ui.includes(term),term);
+});
+
+test("approved first-screen composer stays spacious while contextual chat remains available", () => {
+  const component = read("components/home-conversation-guide.tsx");
+  const css = read("components/home-conversation-guide.module.css");
+  assert.match(component, /<form className=\{styles\.entryForm\} onSubmit=\{submitEntry\}/);
+  assert.match(component, /id="home-guide-entry-question" value=\{draft\}/);
+  assert.match(component, /className=\{styles\.entryMic\} data-home-guide-launcher-mic/);
+  assert.match(component, /className=\{styles\.entrySend\} data-home-guide-launcher/);
+  assert.match(component, /if \(draft\.trim\(\)\) ask\(draft\)/);
+  assert.match(component, /className=\{styles\.entryPrivacy\}/);
+  assert.match(css, /\.entryForm textarea \{[^}]*resize: none/);
+  assert.match(css, /\.entrySend \{[^}]*min-height: 50px/);
+  assert.match(css, /\.examples button \{[^}]*flex-direction: column/);
+  assert.match(css, /\.examples button \{[^}]*min-height: 73px/);
+  assert.match(css, /\.offerTag/);
+  assert.match(component, /recommendations.map/, "latest contextual offers are preserved");
+  assert.match(css, /ideas-pine-reference\.webp/);
 });
 
 

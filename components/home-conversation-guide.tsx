@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, Check, Compass, Heart, Mic, RotateCcw, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
+import { ArrowRight, ArrowUp, Check, Compass, Heart, Mic, RotateCcw, Send, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
 
 import {
   homeGuideFollowup,
@@ -326,7 +326,6 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [voiceElapsed, setVoiceElapsed] = useState(0);
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const launcherRef = useRef<HTMLButtonElement>(null);
   const questionRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -502,6 +501,14 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     ask(draft);
+  }
+
+  // Keep the first-screen question editable; handle it locally before opening
+  // the contextual chat and preserve the existing topic/offer recommendation flow.
+  function submitEntry(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (draft.trim()) ask(draft);
+    else setIsOpen(true);
   }
 
   function chooseGoal(choiceId: string) {
@@ -719,21 +726,35 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       </div>
 
       <div className={styles.entry} aria-hidden={isOpen}>
-        <div className={styles.launcherRow}>
-          <button type="button" ref={launcherRef} className={styles.launcher}
-            data-home-guide-launcher aria-haspopup="dialog" aria-controls="home-guide-chat"
-            aria-expanded={isOpen} aria-label={t.openChat} onClick={() => setIsOpen(true)}>
-            <Sparkles size={19} aria-hidden="true" />
-            <span>{t.placeholder}</span>
-            <span className={styles.launcherGo}><ArrowRight size={19} aria-hidden="true" /></span>
+        <form className={styles.entryForm} onSubmit={submitEntry} aria-label={t.question}>
+          <label className={styles.srOnly} htmlFor="home-guide-entry-question">{t.question}</label>
+          <div className={styles.entryInputRow}>
+            <Sparkles size={21} className={styles.entryInputIcon} aria-hidden="true" />
+            <textarea id="home-guide-entry-question" value={draft}
+              onChange={event => setDraft(event.currentTarget.value)}
+              onKeyDown={event => {
+                if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+              maxLength={500} rows={1} placeholder={t.placeholder} autoComplete="off"
+              aria-label={t.question} />
+            <button type="button" className={styles.entryMic} data-home-guide-launcher-mic
+              aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+              title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+              onClick={() => { setIsOpen(true); toggleVoice(); }}>
+              <Mic size={22} aria-hidden="true" />
+            </button>
+          </div>
+          <button type="submit" className={styles.entrySend} data-home-guide-launcher aria-label={t.send}>
+            <Send size={20} aria-hidden="true" /><span>{t.send}</span>
           </button>
-          <button type="button" className={styles.launchMic} data-home-guide-launcher-mic
-            aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
-            title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
-            onClick={() => { setIsOpen(true); toggleVoice(); }}>
-            <Mic size={21} aria-hidden="true" />
-          </button>
-        </div>
+        </form>
+        <details className={styles.entryPrivacy}>
+          <summary><ShieldCheck size={15} aria-hidden="true" />{t.privacyShort}</summary>
+          <p>{t.privacyDetail}</p>
+        </details>
         <div className={styles.examples} aria-label={t.exampleLabel}>
           <span>{t.exampleLabel}</span>
           <div className={styles.quickChoices}>
@@ -741,13 +762,12 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
               const Icon = quickStartIcons[index] ?? Compass;
               return (
                 <button type="button" key={example} onClick={() => ask(example)}>
-                  <Icon size={16} aria-hidden="true" /><span>{example}</span>
+                  <Icon size={21} aria-hidden="true" /><span>{example}</span>
                 </button>
               );
             })}
           </div>
         </div>
-        <p className={styles.starterHint}><ShieldCheck size={13} aria-hidden="true" />{t.starterHint}</p>
       </div>
 
       {isOpen ? (
