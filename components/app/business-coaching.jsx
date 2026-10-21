@@ -498,6 +498,13 @@ export default function BusinessCoaching({locale='en',accountId}){
             </button>
           })}
         </nav>
+      <details className={styles.review} key={week}>
+        <summary>{t.weeklyReview} · {t.week} {week}<ChevronDown size={17}/></summary>
+        <textarea rows={3} maxLength={1500} value={reviewNote} onChange={e=>setReviewNote(e.target.value)}
+          placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
+        <button type="button" disabled={busy||course.status!=='active'}
+          onClick={()=>command('weekly-review',{week,note:reviewNote})}>{t.saveReview}</button>
+      </details>
       </details>
       <nav className={styles.lessonStageNav} aria-label={t.lessonEyebrow}>
         {[t.ideaSlide,t.actionSlide,t.resultSlide].map((label,index)=>
@@ -555,7 +562,8 @@ export default function BusinessCoaching({locale='en',accountId}){
               disabled={busy||course.status!=='active'||!hasUnsavedDay}
               onClick={()=>void saveDayAndContinue(false)}>{t.draftAction}</button>
             <button type="button" className={styles.primary}
-              disabled={busy||course.status!=='active'||dayResult.trim().length<6||
+              disabled={busy||course.status!=='active'||
+                (!savedLessonCanContinue&&dayResult.trim().length<6)||
                 (!hasUnsavedDay&&day===90&&Boolean(savedDay.done))}
               onClick={()=>{if(savedLessonCanContinue)chooseDay(day+1);else void saveDayAndContinue(true)}}>
               {savedLessonCanContinue?t.nextLesson:day<90?t.saveContinue:t.saveAction}
@@ -565,13 +573,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       </div>
       {lessonStage===2&&dayResult.trim().length>0&&dayResult.trim().length<6&&
         <p className={styles.inlineHelp} role="status">{t.resultRequired}</p>}
-      <details className={styles.review} key={week}>
-        <summary>{t.weeklyReview} · {t.week} {week}<ChevronDown size={17}/></summary>
-        <textarea rows={3} maxLength={1500} value={reviewNote} onChange={e=>setReviewNote(e.target.value)}
-          placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
-        <button type="button" disabled={busy||course.status!=='active'}
-          onClick={()=>command('weekly-review',{week,note:reviewNote})}>{t.saveReview}</button>
-      </details>
+
     </div>}
     {course.status==='active'&&<div className={styles.goalEditor}>
       {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
