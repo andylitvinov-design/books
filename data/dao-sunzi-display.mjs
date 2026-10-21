@@ -7,7 +7,7 @@ export function prepareDaoReadingForSunTzu(text) {
   if (!input) return SUN_TZU_PLACEHOLDER;
   if (input.includes(SUN_TZU_PLACEHOLDER)) return input;
   const legacy = /(?:📜 Императорская стратегия в духе Сунь-цзы|📖 Сунь-Цзы — стратегия[^\n]*)[\s\S]*?(?=\n\s*(?:🧠 Смысл:|🧬 Психотерапевтический смысл:|🪞 Аффирмации:))/iu;
-  if (legacy.test(input)) return input.replace(legacy, SUN_TZU_PLACEHOLDER + "\n");
+  if (legacy.test(input)) return input.replace(legacy, "\n\n" + SUN_TZU_PLACEHOLDER + "\n\n");
   const at = input.search(/(?:🧬 Психотерапевтический смысл|🪞 Аффирмации)/u);
   if (at >= 0) return input.slice(0, at) + SUN_TZU_PLACEHOLDER + "\n\n" + input.slice(at);
   return input + "\n\n" + SUN_TZU_PLACEHOLDER;
