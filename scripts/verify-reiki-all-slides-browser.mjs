@@ -67,6 +67,10 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       slideHorizontalOverflow: scroller.scrollWidth-scroller.clientWidth,
       slideVerticalOverflow: scroller.scrollHeight-scroller.clientHeight,
       rootHorizontalOverflow: element.scrollWidth-element.clientWidth,
+      slideTop: slideRect.top,
+      slideBottom: slideRect.bottom,
+      progressTop: progress?.getBoundingClientRect().top ?? null,
+      ctaHeight: rect?.height ?? null,
       ctaTop: rect?.top ?? null,
       ctaBottom: rect?.bottom ?? null,
       viewportHeight: innerHeight,
@@ -96,7 +100,17 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
   }
-  assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
+  if (id === "flight-save") {
+    // PR1468 deliberately top-aligns scrollable copy above the persistent save dock.
+    assert.equal(data.slideJustify, "flex-start", where + ": save copy uses its dedicated scroller");
+    assert.ok(data.ctaHeight >= 44, where + ": save action remains a usable touch target");
+    assert.ok(data.ctaTop >= data.slideTop && data.ctaBottom <= data.slideBottom + 2,
+      where + ": save action is inside the visible lesson card: " + JSON.stringify(data));
+    assert.ok(data.ctaBottom <= data.progressTop,
+      where + ": save action is above progress, never obscured by it");
+  } else {
+    assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
+  }
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
   // PR1465 replaced the save/check popover with public referral sharing. Private
   // saving remains in the live status and the dedicated consent/save checkpoint;
@@ -599,8 +613,10 @@ async function verifyShortViewport(page,locale) {
 // save/consent requests and the existing guest/security assertions are unchanged.
 let introAudioFixture = null;
 let introAudioMetadataRequests = 0;
+const introAudioNetwork = [];
 const syntheticAudioUrl = "https://example.invalid/reiki-qa-intro.mp3";
 async function verifyOptionalIntroAudio(page) {
+  await page.setViewportSize({ width: 390, height: 844 });
   let mediaRequests = 0;
   await page.route(syntheticAudioUrl, async route => { mediaRequests += 1; await route.abort(); });
   for (const published of [false, true]) {
@@ -612,6 +628,8 @@ async function verifyOptionalIntroAudio(page) {
     await page.locator('input[name="welcome-02"][value="beginner"]').check();
     await page.locator('button[data-energywork-next]').click();
     await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id', 'flight-01');
+    await page.screenshot({ path: output + "/" + engineName + "-optional-audio-" + (published ? "published" : "unpublished") + ".png", animations: "disabled", timeout: 30000 });
+    console.log("REIKI_AUDIO_METADATA_DIAGNOSTIC", JSON.stringify({ engine: engineName, published, requestsBefore: before, requestsNow: introAudioMetadataRequests, observed: introAudioNetwork }));
     await expect.poll(() => introAudioMetadataRequests).toBeGreaterThan(before);
     const player = page.locator('[data-reiki-lesson-intro-audio]');
     if (published) {
@@ -636,6 +654,14 @@ async function verifyOptionalIntroAudio(page) {
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
 const page = await context.newPage();
 page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)));
+page.on("request", request => {
+  if (new URL(request.url()).pathname === "/api/reiki-intro-audio")
+    introAudioNetwork.push({ event: "request", url: request.url(), method: request.method() });
+});
+page.on("requestfailed", request => {
+  if (new URL(request.url()).pathname === "/api/reiki-intro-audio")
+    introAudioNetwork.push({ event: "failed", url: request.url(), reason: request.failure()?.errorText });
+});
 const introMetadataPattern = new RegExp("^" + origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "/api/reiki-intro-audio\\?lesson=(flight|tantra|kundalini|yggdrasil|initiation)&locale=(en|ru)$");
 await page.route(introMetadataPattern, async route => {
   assert.equal(route.request().method(), 'GET', 'Optional-audio metadata fixture is read-only');
@@ -643,6 +669,9 @@ await page.route(introMetadataPattern, async route => {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ audio: introAudioFixture }) });
 });
 try {
+  // Capture independent guest/mobile evidence before optional-metadata or full-tour
+  // failures. No assertion is skipped and any failure still fails this job.
+  for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   await verifyOptionalIntroAudio(page);
   const image = await page.request.get(origin+"/images/holistic-house/reiki-heaven-sky.svg");
   assert.equal(image.status(),200,"Approved local sky background must be served");
@@ -662,7 +691,6 @@ try {
     await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
     await inspect(page,{locale,width,index:1,id:"welcome-01",screenshot:true});
   }
-  for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log(engineName === "webkit" ? "REIKI_SAFARI_GUEST_SAVE_GATE_PASS" : "REIKI_ALL_SLIDES_BROWSER_PASS",
     JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 63,
