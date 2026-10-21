@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PhoneCountryInput } from "@/components/phone-country-input";
@@ -11,6 +11,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organic-event-referrals";
 import { readPaidAdReferral, withPaidAdReferral } from "@/lib/paid-ad-referrals";
+import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import styles from "./contact-channel-chooser.module.css";
 
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
@@ -129,6 +130,7 @@ export function ContactChannelChooser({
   const [error, setError] = useState("");
   const operationId = useRef<string | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
   const [publicEventSearch, setPublicEventSearch] = useState("");
   const [publicAdSearch, setPublicAdSearch] = useState("");
   const panelId = useId();
@@ -274,6 +276,17 @@ export function ContactChannelChooser({
         throw new Error(data.error || "NOT_SAVED");
       }
       setSaved({ saved: true, referenceCode: data.referenceCode });
+      // Only a confirmed server/CRM write creates a receipt. No personal data
+      // or sensitive answers are placed in browser storage or the URL.
+      try {
+        window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
+          referenceCode: data.referenceCode, createdAt: Date.now(),
+        }));
+        router.push("/" + locale + "/thank-you");
+      } catch {
+        // Private browsing may block sessionStorage. The existing in-place
+        // confirmation and optional messenger handoff remain available.
+      }
     } catch {
       setError(c.error);
     } finally {

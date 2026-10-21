@@ -161,7 +161,7 @@ test('mixed or malformed provider IDs fail closed and HeyGen public output keeps
 })
 
 test('slots, locales and entities have isolated, validated keys and real public page paths', () => {
-  assert.equal(SITE_VIDEO_SLOTS.length, 15)
+  assert.equal(SITE_VIDEO_SLOTS.length, 16)
   assert.ok(Object.isFrozen(SITE_VIDEO_SLOTS))
   for (const slot of SITE_VIDEO_SLOTS) {
     for (const locale of ['en', 'ru']) {
