@@ -34,13 +34,13 @@ test("all three Services free cards open their own benefit-first, photo-led land
   }
 });
 
-test("each landing begins with the explicit personal benefit, then separate outcomes, steps and capture", () => {
+test("benefit-first landing shows compact capture before separate outcomes and process", () => {
   const hero = landing.indexOf('className={styles.hero}');
   const outcome = landing.indexOf('className={[styles.scene, styles.outcomeScene]');
   const process = landing.indexOf('className={[styles.scene, styles.processScene]');
   const capture = landing.indexOf('className={styles.capture}');
   const video = landing.indexOf('<ServiceVideoShowcase');
-  assert.ok(hero > 0 && hero < outcome && outcome < process && process < capture && capture < video);
+  assert.ok(hero > 0 && hero < capture && capture < outcome && outcome < process && process < video);
   assert.match(landing, /t\.bullets\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /t\.steps\.map/);
@@ -87,19 +87,19 @@ test("the real free drawing questionnaire remains reachable and keeps answers lo
   assert.match(intakeCss, /@media\(max-width:767px\)/);
 });
 
-test("new DAO and free situation lead capture prepares real WhatsApp/Telegram drafts, with no URL leak of personal notes", () => {
+test("DAO and free situation register with one contact, optional broad topic, and no private URLs", () => {
   for (const label of ["Relationships & family", "Отношения и семья", "Relaciones y familia",
-    "Balance & everyday energy", "Баланс и энергия", "Equilibrio y energía diaria"]) assert.ok(enquiry.includes(label), label);
-  assert.match(enquiry, /<select value=\{topic\}/);
-  assert.match(enquiry, /<input value=\{name\}/);
-  assert.match(enquiry, /<textarea rows=\{3\} maxLength=\{350\}/);
-  assert.match(enquiry, /whatsappEnquiryUrl\(\{/);
-  assert.match(enquiry, /topic: offer\.topics\[topic\]/);
-  assert.match(enquiry, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{whatsappUrl\}/);
-  assert.match(enquiry, /navigator\.clipboard\.writeText\(privateContext\)/);
-  assert.match(enquiry, /copyStatus === "error"/);
-  assert.doesNotMatch(enquiry, /\n\s+context,\n/, "Personal free-form notes must never enter messenger query URL");
+    "Balance & everyday energy", "Баланс и энергия", "Equilibrio y energía diaria"]) {
+    assert.ok(enquiry.includes(label), label);
+  }
+  assert.ok(enquiry.includes('<ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} quick resetKey={kind}'));
+  assert.ok(enquiry.includes('<details className={styles.topicOptional}>'));
+  assert.ok(enquiry.includes('<select value={topic}'));
+  assert.ok(enquiry.includes('publicTopic={broadTopic}'));
+  assert.ok(enquiry.includes('whatsappEnquiryUrl({'));
+  assert.doesNotMatch(enquiry, /<input value=\{name\}|<textarea|navigator\.clipboard|privateContext/);
   assert.doesNotMatch(enquiry, /localStorage|sessionStorage|fetch\(|sendBeacon|<\/form>/);
+  assert.match(enquiryCss, /\.topicOptional/);
   assert.match(enquiryCss, /focus-visible/);
 });
 

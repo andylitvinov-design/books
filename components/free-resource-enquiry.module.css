@@ -18,3 +18,15 @@
 .copyButton:hover{background:#e7f5ef}
 .copyStatus{margin:6px 0 0;font-size:11px;color:#226c64;line-height:1.5}
 .copyRegion textarea{width:100%;margin-top:7px;padding:10px;border:1px solid #bdd9d0;border-radius:10px;font:12px/1.5 Arial,sans-serif;color:#1f4a50;background:#fff}
+
+/* Topic is optional and never interrupts the one-step request. */
+.topicOptional { margin:10px 0 0; border-top:1px solid #d5e8e0; padding-top:9px; }
+.topicOptional > summary { min-height:32px; padding:5px 2px; color:#226d71; cursor:pointer;
+  font:650 12px/1.4 Arial,Helvetica,sans-serif; }
+.topicOptional select { box-sizing:border-box; width:100%; min-height:44px; margin:7px 0 0;
+  padding:9px 11px; border:1px solid #bfd9d0; border-radius:10px; background:#fff;
+  color:#23515b; font:400 16px/1.4 Arial,Helvetica,sans-serif; }
+.topicOptional summary:focus-visible,.topicOptional select:focus-visible { outline:3px solid #e6ad75; outline-offset:2px; }
+@media(max-width:430px){ .form { padding:14px 12px; }
+  .lead { margin-bottom:12px; }
+  .note { margin-top:9px; font-size:10px; } }
