@@ -5,8 +5,11 @@ import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
 import PractitionerCourseBuilder from './practitioner-course-builder'
 import PracticeReportMaterials from './practice-report-materials'
+import dynamic from 'next/dynamic'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract.js'
 import styles from './practice-materials.module.css'
+
+const CompactVideoComposer=dynamic(()=>import('./compact-video-composer'),{ssr:false})
 
 const fresh=locale=>({locale:['en','ru','es'].includes(locale)?locale:'en',title:'',description:'',url:''})
 // Use exactly the same YouTube/Vimeo parsing as the server. Shared links with
@@ -15,7 +18,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onSaveVideos,onSubmitVideos}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onSaveVideos,onSubmitVideos,onSaveSitePresentation}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -119,18 +122,19 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   }catch(error){showSaveError(error);return false}
   finally{setSaving(false)}
  }
- async function apply(event){
-  event.preventDefault()
-  if(locked)return
-  const canonicalUrl=canonicalVideoUrl(form.url)
-  if(!canonicalUrl||!form.title.trim()){setError(t.invalid);return}
-  const normalized={title:form.title.trim(),description:form.description.trim(),url:canonicalUrl,locale:form.locale}
+ async function apply(event,values=form){
+  event?.preventDefault()
+  if(locked)return false
+  const canonicalUrl=canonicalVideoUrl(values.url)
+  if(!canonicalUrl||!values.title.trim()){setError(t.invalid);return false}
+  const normalized={title:values.title.trim(),description:String(values.description||'').trim(),url:canonicalUrl,locale:values.locale}
   if(videos.some((video,index)=>index!==editing&&video.locale===normalized.locale&&canonicalVideoUrl(video.url)===canonicalUrl)){
-   setError(t.duplicate);return
+   setError(t.duplicate);return false
   }
   const next=editing==='new'?[...videos,normalized]:videos.map((video,index)=>index===editing?normalized:video)
-  if(next.length>12){setError('Maximum 12 videos');return}
-  if(await persist(next,t.saved)){setEditing(null);setForm(fresh(locale))}
+  if(next.length>12){setError('Maximum 12 videos');return false}
+  if(await persist(next,t.saved)){setEditing(null);setForm(fresh(locale));return true}
+  return false
  }
  async function remove(index){
   if(locked||!window.confirm(t.confirmRemove))return
@@ -226,20 +230,19 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
      </div>
     </article>
    })}</div>:<p className={styles.empty}>{t.empty}</p>}
-   {editing!==null&&<form className={styles.editor} onSubmit={apply} aria-busy={saving}>
-    <h4>{editing==='new'?t.new:t.edit}</h4>
-    <label>{t.title}<input required disabled={locked} maxLength={140} value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
-    <label>{t.url}<input required disabled={locked} type="url" maxLength={500} value={form.url} placeholder="https://youtu.be/..." onChange={e=>setForm({...form,url:e.target.value})}/></label>
-    <label>{t.language}<select disabled={locked} value={form.locale} onChange={e=>setForm({...form,locale:e.target.value})}>
-     <option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option>
-    </select></label>
-    <label>{t.description}<textarea disabled={locked} rows={3} maxLength={500} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
-    {error&&<p className={styles.error} role="alert">{error}</p>}
-    <div className={styles.editorActions}>
-     <button className={styles.primary} type="submit" disabled={locked}>{saving?t.saving:editing==='new'?t.addToList:t.update}</button>
-     <button type="button" className={styles.secondary} disabled={locked} onClick={()=>{setEditing(null);setError('')}}>{t.cancel}</button>
-    </div>
-   </form>}
+   {editing!==null&&<CompactVideoComposer
+     key={editing==='new'?'new-video':'video-'+editing}
+     locale={locale} initial={form} existing={editing!=='new'}
+     hasPresentation={Boolean(practitioner?.draftProfile?.videoPresentation)}
+     onClose={()=>{setEditing(null);setError('')}}
+     onSaveLink={values=>apply(null,values)}
+     onSaveSiteFile={async video=>{
+       if(typeof onSaveSitePresentation!=='function')throw Error('SITE_UPLOAD_UNAVAILABLE')
+       await onSaveSitePresentation(video)
+       setEditing(null);setFeedback(ru?'Видеопрезентация сохранена в черновике профиля.':es?'La presentación se guardó como borrador.':'Video presentation saved in your profile draft.')
+     }}
+     onSiteError={error}
+   />}
    {feedback&&<p className={styles.success} role="status" aria-live="polite">{feedback}</p>}
    {error&&editing===null&&<p className={styles.error} role="alert">{error}</p>}
    <div className={styles.saveActions}>

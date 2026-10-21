@@ -1180,3 +1180,24 @@
 @media(prefers-reduced-motion:reduce){
  .hh-app .hh-practice-v4-grid button{transition:none}
 }
+
+/* Compact 320–430px master overview; preserve all six actions and 44px touch targets. */
+@media(max-width:430px){
+ .hh-app .hh-practice-dashboard{gap:7px}
+ .hh-app .hh-practice-head{min-height:95px;padding:10px 12px;border-radius:14px}
+ .hh-app .hh-practice-head h1{font-size:25px;line-height:1.12}
+ .hh-app .hh-practice-breadcrumb{margin-bottom:5px}
+ .hh-app .hh-practice-intro{font-size:11px;line-height:1.32}
+ .hh-app .hh-practice-status{margin-top:6px}
+ .hh-app .hh-practice-status-chip{padding:4px 7px}
+ .hh-app .hh-practice-v4-grid{gap:5px}
+ .hh-app .hh-practice-v4-grid button{min-height:66px;padding:5px 3px;gap:2px;border-radius:11px}
+ .hh-app .hh-practice-v4-grid button svg{width:18px;height:18px}
+ .hh-app .hh-practice-v4-grid button span{font-size:11px}
+ .hh-app .hh-practice-v4-grid button strong{font-size:12px}
+ .hh-app .hh-practice-v4-grid button small{font-size:9px}
+ .hh-app .hh-practice-v4-materials-cta{min-height:68px;padding:9px 11px;gap:7px;margin-top:6px;border-radius:12px}
+ .hh-app .hh-practice-v4-materials-cta strong{font-size:15px}
+ .hh-app .hh-practice-v4-materials-cta small{font-size:10px}
+ .hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"]{scroll-margin-top:4px}
+}

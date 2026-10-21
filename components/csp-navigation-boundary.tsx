@@ -30,6 +30,7 @@ function cspClassForPath(pathname: string) {
   // Must match middleware.ts. Otherwise the uploader continuously replaces its
   // own URL after hydration, making iPhone scrolling and taps impossible.
   if (pathname === "/admin/youtube-upload") return "youtube-uploader";
+  if (/^\/(en|ru|es)\/app\/practice\/?$/.test(pathname)) return "practitioner-youtube";
   if (pathname === "/admin/videos") return "video-manager";
   if (privatePath(pathname)) return "private";
   if (/^\/(en|ru|es)\/academy\/reiki\/tantra-reiki(?:\/|$)/.test(pathname)) return "tantra-media";

@@ -296,3 +296,27 @@
  .composerIcon{width:29px;height:29px}
  .composerCopy strong{font-size:11px}
 }
+
+/* Phone-first resource hub: five real categories remain accessible, but optional
+   search and long edit forms no longer push the video action off the screen. */
+@media(max-width:430px){
+ .shell{padding:10px;border-radius:15px}
+ .hubHeader{margin-bottom:7px}
+ .hubHeader .eyebrow{display:none}
+ .hubHeader h3{font-size:25px;line-height:1.08}
+ .hubHeader p{font-size:11px}
+ .shell .tabs{gap:4px;margin-bottom:7px}
+ .shell .tabs button{min-height:48px;padding:5px 1px;border-radius:10px;gap:2px}
+ .shell .tabs button svg{width:17px;height:17px}
+ .shell .tabs button span{font-size:10px}
+ .searchWrap{min-height:38px;margin-bottom:7px}
+ .activePanel .intro{margin-bottom:7px}
+ .activePanel .heading{margin-bottom:7px}
+ .activePanel .heading h3{font-size:17px}
+ .activePanel .resourceRow{padding:8px}
+ .activePanel .empty{padding:10px;font-size:12px}
+}
+@media(max-width:350px){
+ .shell .tabs button{min-height:46px}
+ .shell .tabs button span{font-size:9px}
+}

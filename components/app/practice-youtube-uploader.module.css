@@ -1,0 +1,66 @@
+.panel{min-width:0;display:grid;gap:12px;border:1px solid #dacfc0;border-radius:17px;padding:clamp(12px,3vw,20px);background:#fffdfa;color:#294b4b}
+.panel h3{margin:0;font:650 clamp(18px,3vw,23px)/1.2 Georgia,serif;color:#3e514d}
+.intro,.notice{margin:0;color:#63726c;font-size:13px;line-height:1.5}
+.choices{border:0;margin:0;padding:0;min-width:0}
+.choices legend{font-size:14px;font-weight:750;margin-bottom:9px;color:#3a5755}
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.slot,.selected{display:grid;text-align:left;gap:4px;min-width:0;border-radius:12px;padding:12px;border:1px solid #d0ded9;background:#f9fbf8;font:inherit;cursor:pointer;color:#325652}
+.slots span{font-size:12px;overflow-wrap:anywhere}
+.selected{background:#deeeeb;border-color:#4a9187}
+.connection,.result{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.action,.neutral{min-height:42px;border-radius:10px;padding:10px 13px;font:700 13px/1.2 system-ui,sans-serif;cursor:pointer}
+.action{color:#fff!important;background:#276d68!important;border:1px solid #276d68!important}
+.neutral{color:#2c5955!important;background:#fff!important;border:1px solid #b8d3cc!important}
+.panel button:disabled{opacity:.55;cursor:not-allowed}
+.confirm,.form,.fields,.history{display:grid;gap:11px;border:1px solid #e1e5df;border-radius:13px;padding:13px;background:#fff}
+.confirm strong,.historyRow strong{overflow-wrap:anywhere}
+.confirm small,.historyRow small{display:block;font-size:12px;color:#697d7a}
+.confirm label,.checkbox{display:flex!important;align-items:center;gap:9px;font-size:13px;line-height:1.4}
+.form label:not(.checkbox),.fields label:not(.checkbox){display:grid;gap:5px;font-size:13px;font-weight:650;color:#48655f;min-width:0}
+.form input[type=file]{display:block;width:100%;max-width:100%;min-width:0;font-size:13px;margin-top:8px}
+.fields input:not([type=checkbox]),.fields textarea{width:100%;min-width:0;background:#fff;border:1px solid #cfddd7;border-radius:9px;font:inherit;font-size:16px;padding:10px;box-sizing:border-box}
+.fields p{margin:0;font-size:12px;overflow-wrap:anywhere}
+.visibility{font-size:13px;color:#2b766b}
+.fields progress{width:100%;height:13px}
+.result a{color:#176a70;font-weight:700;font-size:13px;overflow-wrap:anywhere}
+.result span{color:#337c63;font-size:13px}
+.success{margin:0;background:#eaf7f0;color:#216950;border-radius:9px;padding:9px 11px;font-size:13px}
+.error{margin:0;color:#992b43;font-size:13px;overflow-wrap:anywhere}
+.warning{margin:0;border-left:3px solid #bf9567;background:#fff6e9;color:#745b47;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5}
+.history{display:block}
+.history summary{cursor:pointer;font-size:14px;font-weight:750}
+.historyRow{border-top:1px solid #e4eae6;padding:10px 0;display:grid;gap:5px}
+.historyRow:first-of-type{margin-top:12px}
+@media(max-width:360px){.slots{grid-template-columns:1fr}.action,.neutral{flex:1 1 auto}}
+
+/* Phone composer: essential channel, Google, file, title and Upload controls fit a short sheet.
+   Advanced metadata and previous uploads stay optional native disclosures. */
+.compact{gap:8px;padding:0;border:0;border-radius:0;background:transparent}
+.compact .choices legend{margin-bottom:4px;font-size:12px}
+.compact .slots{gap:6px}
+.compact .slot,.compact .selected{padding:6px 8px;min-height:39px;gap:2px;border-radius:9px}
+.compact .slots strong{font-size:12px}
+.compact .slots span{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.compact .connection{gap:6px}
+.compact .connection button{min-height:38px;padding:7px 9px;font-size:12px}
+.compact .form{gap:7px;padding:0;border:0;background:transparent}
+.compact .file{font-size:12px}
+.compact .form input[type=file]{margin-top:3px;font-size:11px}
+.compact .fields{gap:6px;padding:8px;border-radius:10px}
+.compact .fields label{font-size:12px}
+.compact .fields p{font-size:10px}
+.compact .fields input:not([type=checkbox]){min-height:40px;padding:7px 9px}
+.compact .fields progress{height:7px}
+.compact .confirm{gap:5px;padding:8px;font-size:12px}
+.compact .confirm p{margin:0}
+.compact .confirm label{font-size:11px}
+.compact .success{padding:5px 8px;font-size:11px;overflow-wrap:anywhere}
+.compact .warning{padding:8px;font-size:11px}
+.compact .history{padding:7px 8px;font-size:11px}
+.compact .history summary{font-size:11px}
+.compact .advanced{padding:0;border:0;background:transparent;display:block}
+.compact .advanced summary{cursor:pointer;color:#476d64;font:650 11px/1.3 system-ui,sans-serif}
+.compact .advanced[open] label{margin-top:7px}
+.compact .advanced .checkbox{font-size:11px}
+.compact .fields .action{flex:1 1 165px}
+@media(max-width:360px){.compact .slots{grid-template-columns:repeat(2,minmax(0,1fr))}.compact .connection button{flex:1 1 130px}}
