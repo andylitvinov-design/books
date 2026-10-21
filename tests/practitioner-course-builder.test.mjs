@@ -84,7 +84,7 @@ test('cabinet account switch, owner Reiki shortcut and signed-media origin are p
  assert.match(builder,/const api=body=>request\(body,accountId\)/)
  assert.match(builder,/'x-hh-account-id':accountId/)
  const parent=read('components/app/practice-workspace.jsx')
- assert.match(parent,/onOpenReikiCourse=\{lesson=>openOwner\('reikiCourse',undefined,lesson\)\}/)
+ assert.match(parent,/onOpenReikiCourse=\{\(lesson,mode\)=>openOwner\('reikiCourse',undefined,lesson,mode\)\}/)
  assert.match(parent,/accountId=\{accountId\}/)
  const middleware=read('middleware.ts')
  assert.match(middleware,/practitionerCourseMediaOrigin/)

@@ -329,3 +329,90 @@
 .uploadedPresentation span{display:grid;min-width:0;gap:3px}
 .uploadedPresentation strong{font:750 12px/1.35 system-ui,sans-serif}
 .uploadedPresentation small{font:550 11px/1.3 system-ui,sans-serif;color:#5e7467;overflow-wrap:anywhere}
+
+
+/* V4.2 first-screen actions: one selected material, one clear action, short list.
+   Keeps the six-item app bottom navigation untouched. */
+.shell{padding:10px 12px 12px;box-shadow:none}
+.hubHeader{margin:0 0 9px;padding-right:72px}
+.hubHeader .eyebrow,.hubHeader > p:last-child{display:none}
+.hubHeader h3{font:400 24px/1.2 Georgia,serif;letter-spacing:-.025em}
+.shell .tabs{gap:5px;margin-bottom:9px}
+.shell .tabs button{min-height:52px;padding:5px 2px;border-radius:11px;gap:3px}
+.shell .tabs button svg{width:18px;height:18px}
+.shell .tabs button span{font-size:10px;line-height:1.17}
+.actionBar{display:flex;align-items:stretch;gap:7px;min-width:0;margin:0 0 10px}
+.actionPrimary,.actionSecondary,.actionSearch{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-width:0;min-height:47px;border-radius:11px;padding:8px 12px;cursor:pointer;
+ font:760 13px/1.2 system-ui,sans-serif;transition:background .15s ease}
+.actionPrimary{flex:1 1 auto;background:#0b7976;border:1px solid #0b7976;color:#fff;white-space:normal}
+.actionSecondary{flex:0 1 auto;background:#fffdfa;border:1px solid #d9c6b2;color:#745744;font-size:11px}
+.actionSecondary[aria-pressed="true"]{background:#dcefe8;color:#086c66;border-color:#8bbdb3}
+.actionSearch{flex:0 0 46px;width:46px;padding:0;border:1px solid #dcc9b7;background:#fffdfa;color:#786453}
+.actionSearch[aria-expanded="true"]{background:#dcefe8;color:#086c66;border-color:#8bbdb3}
+.actionBar button:disabled{opacity:.55;cursor:not-allowed}
+.actionBar button:focus-visible,.showMore:focus-visible,.rules summary:focus-visible{outline:3px solid #63aba0;outline-offset:2px}
+:global(.hh-app) .shell .actionPrimary{background:#0b7976;color:#fff;border:1px solid #0b7976;min-height:47px}
+:global(.hh-app) .shell .actionSecondary{background:#fffdfa;color:#745744;border:1px solid #d9c6b2;min-height:47px}
+:global(.hh-app) .shell .actionSearch{background:#fffdfa;color:#786453;border:1px solid #dcc9b7;min-height:47px}
+:global(.hh-app) .shell .actionSearch[aria-expanded="true"],:global(.hh-app) .shell .actionSecondary[aria-pressed="true"]{background:#dcefe8;color:#086c66}
+.actionBar svg{flex:none}
+.searchWrap{min-height:42px;margin:0 0 8px}
+.sectionCount{margin:1px 0 7px;font:700 11px/1.35 system-ui,sans-serif;color:#8b705c}
+.mediaRows{gap:6px}
+.mediaRow,.mediaRow.featureRow{min-height:65px;padding:7px 9px;border-radius:12px;gap:9px}
+.materialArtwork{width:40px;height:40px;border-radius:10px}
+.mediaRowCopy{gap:2px}
+.mediaRowCopy strong{font:700 13px/1.24 Georgia,serif}
+.mediaRowCopy small{font-size:10px}
+.mediaRow.featureRow{min-height:75px}
+.reikiArtwork{width:58px;height:58px}
+.featureRow .mediaRowCopy strong{font-size:14px}
+.featureRow .mediaRowCopy small{font-size:10px}
+.featuredCourse{gap:4px;margin:0}
+.featuredCourse[hidden]{display:none!important}
+.featureKicker{font-size:10px;letter-spacing:.04em}
+.featuredCourse .privacyNote{font-size:10px;margin:5px 0 0}
+.courseAccess{font-size:10px;padding:3px 7px}
+.showMore{display:flex;justify-content:center;width:100%;min-height:35px;align-items:center;
+ border:0;background:transparent;color:#0b7776;font:730 12px/1.2 system-ui,sans-serif;
+ margin-top:7px;padding:5px;cursor:pointer}
+:global(.hh-app) .shell .showMore{border:0;background:transparent;color:#0b7776;min-height:35px}
+.activePanel{min-height:0}
+.activePanel .empty{margin:0;padding:13px 10px;border-radius:11px;text-align:center;font-size:12px}
+.activePanel .resourceRow{padding:7px}
+.compactReview{display:flex;align-items:center;justify-content:space-between;gap:7px;
+ padding:7px 0;margin-top:7px;border-top:1px solid #e4d7c8}
+.compactReview span{font:620 11px/1.3 system-ui,sans-serif;color:#786a5f}
+.compactReview button{min-height:39px;font-size:11px;padding:7px 9px}
+.rules{margin:7px 0 0;color:#796c5d;font-size:11px}
+.rules summary{cursor:pointer;min-height:31px;display:flex;align-items:center}
+.rules p{margin:5px 0;line-height:1.45}
+.privateLibrary{margin-top:7px;padding:8px 10px}
+.privateLibrary > summary{min-height:32px}
+@media(max-width:430px){
+ .shell{padding:9px 10px 11px}
+ .hubHeader{margin-bottom:8px;padding-right:70px}
+ .hubHeader h3{font-size:23px}
+ .shell .tabs{gap:4px;margin-bottom:8px}
+ .shell .tabs button{min-height:51px;padding:5px 1px}
+ .shell .tabs button svg{width:17px;height:17px}
+ .shell .tabs button span{font-size:10px}
+ .actionBar{gap:6px;margin-bottom:9px}
+ .actionPrimary,.actionSecondary{padding:8px 9px;font-size:12px}
+ .actionSecondary{font-size:10px}
+ .actionSearch{flex-basis:42px;width:42px}
+ .mediaRow,.mediaRow.featureRow{min-height:60px;padding:6px 8px}
+ .mediaRowCopy strong{font-size:13px}
+}
+@media(max-width:350px){
+ .hubHeader h3{font-size:22px}
+ .shell .tabs{gap:3px}
+ .shell .tabs button{min-height:49px}
+ .shell .tabs button span{font-size:9px}
+ .actionPrimary,.actionSecondary{font-size:10px;padding:7px 6px;gap:4px}
+ .actionBar svg{width:15px;height:15px}
+ .actionSearch{flex-basis:40px;width:40px}
+ .reikiArtwork{width:48px;height:48px}
+ .mediaRowCopy strong{font-size:12px}
+}

@@ -27,6 +27,6 @@ export default async function MasterReikiCourseMaterials({searchParams}) {
         en:'Choose a lesson and language. Upload meditations privately, listen first and explicitly assign a recording to its slide.',
       }}
     />
-    <AdminReikiAudio initialLocale={language} initialLesson={lesson}/>
+    <AdminReikiAudio initialLocale={language} initialLesson={lesson} initialMode={query?.mode==='record'?'record':'upload'}/>
   </main>
 }

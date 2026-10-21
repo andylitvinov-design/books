@@ -325,3 +325,17 @@
  .lessonFolder{min-height:58px}
  .fileRow{padding:8px}
 }
+
+
+/* Permission-based on-device audio capture; no upload until the user confirms. */
+.recorderControls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px;
+ border-radius:11px;border:1px solid #cce2dc;background:#f0f9f5}
+.recorderControls button{display:inline-flex;justify-content:center;align-items:center;gap:7px;
+ min-height:44px;padding:9px 13px;border-radius:10px;border:1px solid #087a77;
+ background:#0b7976;color:#fff;font:760 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.recorderControls button:disabled{opacity:.5;cursor:not-allowed}
+.recorderControls small{flex:1 1 180px;color:#536d61;font-size:11px;line-height:1.4}
+@media(max-width:430px){
+ .recorderControls{padding:7px}
+ .recorderControls button{flex:1 0 100%}
+}
