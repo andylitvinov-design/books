@@ -38,7 +38,7 @@
 .field input::placeholder { color:#938c83; opacity:1; }
 .field input:focus-visible { outline:none; }
 .shell .field button {
-  flex:0 0 40px; width:40px; height:40px; min-height:40px; padding:0;
+  flex:0 0 44px; width:44px; height:44px; min-height:44px; padding:0;
   display:grid; place-items:center; border:0; border-radius:12px;
 }
 .shell .field .mic { color:#53766c; background:#f3f8f3; }
@@ -73,7 +73,7 @@
 .shell .more { margin:8px 0 0; }
 .shell .more > summary {
   display:flex; align-items:center; justify-content:center; gap:5px;
-  min-height:34px; padding:4px 8px; cursor:pointer; list-style:none;
+  min-height:44px; padding:4px 8px; cursor:pointer; list-style:none;
   border-radius:10px; color:#416f61;
   font:650 11px/1.25 system-ui,sans-serif;
 }
