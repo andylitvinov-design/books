@@ -84,6 +84,19 @@ try {
       assert.doesNotMatch(wa.searchParams.get("text")||"",/promo-qa@example\.test/);
       assert.match(wa.searchParams.get("text")||"",/HH-ABCD1234EF56/);
       // Swapping the promotion must never silently reuse the previous lead.
+      // If a site-wide handler unexpectedly navigates after registration, report
+      // the actual route and DOM state instead of a 30-second locator timeout.
+      const afterSave = await page.evaluate(() => ({
+        path: window.location.pathname,
+        promoCount: document.querySelectorAll("[data-services-promo]").length,
+        nextButtons: document.querySelectorAll("[data-services-promo-next]").length,
+        activeOffer: document.querySelector("[data-services-promo]")?.getAttribute("data-services-promo-active"),
+      }));
+      console.log("[promo browser]", locale, width, wanted, JSON.stringify(afterSave));
+      assert.equal(afterSave.path, "/" + locale + "/services",
+        "Registering an offer must not navigate away from Services");
+      assert.equal(afterSave.promoCount, 1, "Promotion remains mounted after a lead save");
+      assert.equal(afterSave.nextButtons, 1, "Promotion navigation remains available after lead save");
       await promo.locator("[data-services-promo-next]").click();
       await expect(chooser).toHaveCount(1);
       await expect(promo).not.toHaveAttribute("data-services-promo-active", wanted);
