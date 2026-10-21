@@ -1,0 +1,53 @@
+.section{box-sizing:border-box;width:min(1188px,calc(100% - 32px));margin:35px auto 38px;scroll-margin-top:88px;color:#392d25}
+.header{margin:0 0 19px;max-width:760px}
+.kicker{margin:0 0 7px;color:#8d6047;font:750 11px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.15em}
+.header h2{margin:0;font:400 clamp(31px,3.6vw,46px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.032em;text-wrap:balance}
+.intro{max-width:670px;margin:9px 0 0;color:#6a6259;font:14px/1.5 Arial,Helvetica,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{box-sizing:border-box;display:grid;grid-template-columns:clamp(122px,13.5vw,170px) minmax(0,1fr);min-width:0;gap:15px;overflow:hidden;align-items:stretch;padding:10px;border:1px solid #e6d8ca;border-radius:19px;background:#fffdfa;box-shadow:0 5px 20px rgba(62,43,31,.045);color:inherit;text-decoration:none;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.card:hover{border-color:#bb9374;box-shadow:0 10px 25px rgba(62,43,31,.09);transform:translateY(-2px)}
+.card:focus-visible,.quicklinks a:focus-visible{outline:3px solid #a47451;outline-offset:3px}
+.photo{position:relative;display:block;min-height:164px;overflow:hidden;border-radius:13px;background:#eae1d5}
+.photo img{width:100%;height:100%;object-fit:cover;object-position:center}
+.card[data-home-explore-id="business"] .photo img{object-position:center 22%}
+.content{display:flex;min-width:0;flex-direction:column;align-items:flex-start;padding:7px 5px 5px 0}
+.eyebrow{color:#577263;font:750 10px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.065em;text-transform:uppercase}
+.title{display:block;margin-top:6px;font:400 clamp(21px,2vw,26px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.02em;text-wrap:balance}
+.benefit{display:block;margin-top:8px;color:#5f5b54;font:13px/1.48 Arial,Helvetica,sans-serif}
+.action{display:inline-flex;align-items:center;gap:7px;min-height:38px;margin-top:auto;padding-top:9px;color:#865338;font:750 12px/1.35 Arial,Helvetica,sans-serif}
+.action svg{flex:none;transition:transform .18s ease}
+.card:hover .action svg{transform:translate(2px,-2px)}
+.quicklinks{display:flex;flex-wrap:wrap;align-items:center;gap:9px 15px;margin-top:13px;padding:13px 15px;border:1px solid #e6dacc;border-radius:15px;background:#f4f0e8}
+.returnLabel{flex:1 1 250px;color:#655c53;font:12px/1.45 Arial,Helvetica,sans-serif}
+.quicklinks a{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;box-sizing:border-box;padding:9px 12px;border:1px solid #ceb4a1;border-radius:11px;background:#fffdfa;color:#78503a;font:750 12px/1.35 Arial,Helvetica,sans-serif;text-decoration:none}
+.quicklinks a:hover{border-color:#8b5c3f;background:#fff}
+.quicklinks a svg{flex:none}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.card{grid-template-columns:150px minmax(0,1fr)}.photo{min-height:145px}}
+@media(max-width:600px){
+ .section{width:calc(100% - 28px);margin:23px auto 27px}
+ .header{margin-bottom:13px}
+ .kicker{font-size:10px;letter-spacing:.105em}
+ .header h2{font-size:clamp(29px,7.6vw,36px)}
+ .intro{margin-top:7px;font-size:13px;line-height:1.47}
+ .grid{gap:9px}
+ .card{grid-template-columns:clamp(92px,28vw,122px) minmax(0,1fr);gap:11px;min-height:143px;padding:8px;border-radius:16px}
+ .photo{min-height:126px;border-radius:10px}
+ .content{padding:4px 1px 3px 0}
+ .eyebrow{font-size:9px;letter-spacing:.025em}
+ .title{margin-top:5px;font-size:clamp(19px,5.25vw,23px)}
+ .benefit{margin-top:5px;font-size:12px;line-height:1.39}
+ .action{min-height:30px;padding-top:6px;font-size:12px}
+ .quicklinks{gap:8px;margin-top:10px;padding:11px;border-radius:13px}
+ .returnLabel{flex-basis:100%;font-size:12px}
+ .quicklinks a{flex:1 1 145px;min-height:44px}
+}
+@media(max-width:359px){
+ .section{width:calc(100% - 24px)}
+ .card{grid-template-columns:78px minmax(0,1fr);gap:9px;padding:7px}
+ .photo{min-height:120px}
+ .title{font-size:19px}
+ .benefit{font-size:11.5px}
+ .action{font-size:11.5px}
+ .quicklinks a{flex-basis:100%}
+}
+@media(prefers-reduced-motion:reduce){.card,.action svg{transition:none}.card:hover,.card:hover .action svg{transform:none}}

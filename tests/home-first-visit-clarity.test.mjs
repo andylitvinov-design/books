@@ -43,7 +43,7 @@ test("photo-led service cards replace the duplicated free text cards on all home
   assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt, "Photo service cards must precede topic journeys");
   assert.doesNotMatch(home, /HomeFreeTestsBanner/);
   assert.match(es, /className="service-home-actions" id="free-start"/);
-  assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('className="service-home-start"'));
+  assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('<HomeExploreSections locale="es" />'));
   assert.match(navigation, /#free-start/);
   assert.match(home, /not a live call/);
   assert.match(es, /no una llamada/);
