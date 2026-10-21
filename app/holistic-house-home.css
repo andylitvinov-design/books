@@ -1012,7 +1012,7 @@ a.service-home-start-card:hover {
    This applies to every public page using the shared services header. */
 @media (max-width: 767px) {
   .house-header--services { gap: 5px; padding-inline: clamp(8px, 3vw, 16px); }
-  .house-header--services .house-wordmark { font-size: clamp(18px, 5.4vw, 24px); }
+  .house-header--services .house-wordmark { font-size: clamp(19px, 6vw, 26px); }
   .house-header--services .site-navigation { gap: 5px; }
   .house-header--services .site-navigation > .site-cabinet-entry {
     width: auto;
@@ -1029,7 +1029,7 @@ a.service-home-start-card:hover {
 }
 
 @media (max-width: 359px) {
-  .house-header--services .house-wordmark { font-size: 17px; }
+  .house-header--services .house-wordmark { font-size: clamp(17px, 5.6vw, 20px); }
   .house-header--services .site-navigation { gap: 4px; }
   .house-header--services .site-navigation > .site-cabinet-entry {
     min-width: 62px;
