@@ -33,7 +33,13 @@ test("A single checkpoint action saves before advancing and does not promise gue
   assert.match(learner, /saveAndContinue: "Сохранить прогресс и продолжить"/);
   assert.match(learner, /returnAnytime: "Pick up here anytime from My Courses\."/);
   assert.match(learner, /returnAnytime: "Вернуться к уроку можно через «Мои курсы»\."/);
-  assert.match(learner, /async function next\(\) \{[\s\S]*?if \(sync === "ready"\) \{[\s\S]*?await store\(nextId\);[\s\S]*?setIndex\(\(current\) => Math\.min\(current \+ 1, slides\.length - 1\)\)/);
+  assert.match(learner, /async function next\(\) \{[\s\S]*?if \(sync === "ready" && !alreadyStored\) \{[\s\S]*?await store\(nextId\);[\s\S]*?setIndex\(\(current\) => Math\.min\(current \+ 1, slides\.length - 1\)\)/);
+  const nextAction = learner.slice(learner.indexOf("  async function next() {"), learner.indexOf("  async function finishForToday() {"));
+  // Unchanged revisits may advance without a duplicate private write; new or
+  // edited answers still save first. Authentication and save failures stay gates.
+  assert.match(nextAction, /const alreadyStored = sync === "ready" && energyworkAdvanceAlreadyStored\(/);
+  assert.match(nextAction, /\(slide\.id === "flight-save" && sync !== "ready"\)\) return/);
+  assert.match(nextAction, /catch \(error\) \{[\s\S]*?setBusy\(false\); return;[\s\S]*?setIndex\(\(current\) => Math\.min\(current \+ 1/);
   assert.match(learner, /data-reiki-milestone-choices/);
   assert.match(learner, /data-reiki-tomorrow-choice/);
   assert.match(learner, /data-energywork-next/);
