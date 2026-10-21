@@ -79,10 +79,10 @@ const copy: Record<PublicLocale, GuideCopy> = {
   en: {
     eyebrow: "HOLISTIC HOUSE · YOUR STARTING POINT",
     title: "What's on your mind?",
-    lead: "Tell us what's happening. We'll ask one more question and help you find a useful next step.",
+    lead: "Ask by text or voice. We'll help you find a useful next step.",
     welcome: "Hello, I'm your Holistic House site guide. What would you like to explore today?",
     question: "Your question or situation",
-    placeholder: "Ask or speak…",
+    placeholder: "Ask anything…",
     send: "Let's talk",
     reset: "Start over",
     askAgain: "You can continue the conversation or ask something else.",
@@ -141,10 +141,10 @@ const copy: Record<PublicLocale, GuideCopy> = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · НАЧНЁМ С РАЗГОВОРА",
     title: "Что сейчас вас волнует?",
-    lead: "Расскажите о ситуации. Я задам уточняющий вопрос и помогу выбрать первый шаг.",
+    lead: "Спросите текстом или голосом — поможем выбрать первый шаг.",
     welcome: "Здравствуйте! Я помощник сайта Holistic House. С чем хотите разобраться сегодня?",
     question: "Ваш вопрос или ситуация",
-    placeholder: "Напишите или скажите…",
+    placeholder: "Спросите…",
     send: "Обсудить",
     reset: "Новый разговор",
     askAgain: "Можно продолжить разговор или задать другой вопрос.",
@@ -203,10 +203,10 @@ const copy: Record<PublicLocale, GuideCopy> = {
   es: {
     eyebrow: "HOLISTIC HOUSE · EMPIEZA CON UNA CONVERSACIÓN",
     title: "¿Qué te preocupa hoy?",
-    lead: "Cuéntanos qué pasa. Haremos una pregunta más para ayudarte a encontrar tu próximo paso.",
+    lead: "Pregunta por texto o voz. Te ayudaremos a encontrar el siguiente paso.",
     welcome: "¡Hola! Soy la guía de Holistic House. ¿Sobre qué te gustaría conversar?",
     question: "Tu pregunta o situación",
-    placeholder: "Escribe o habla…",
+    placeholder: "Pregunta…",
     send: "Conversemos",
     reset: "Nueva conversación",
     askAgain: "Puedes continuar la conversación o preguntar otra cosa.",
@@ -305,9 +305,14 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       const elapsed = Math.floor((Date.now() - voiceStartedAtRef.current) / 1000);
       setVoiceElapsed(elapsed);
       if (elapsed >= 60 && speechRef.current) {
+        const engine = speechRef.current;
+        const generation = voiceGenerationRef.current;
         submitOnEndRef.current = true;
         setVoiceState("finishing");
-        speechRef.current.stop();
+        try { engine.stop(); } catch { engine.onend?.(); }
+        window.setTimeout(() => {
+          if (generation === voiceGenerationRef.current && speechRef.current === engine) engine.onend?.();
+        }, 2500);
       }
     }, 500);
     return () => window.clearInterval(interval);
@@ -488,7 +493,6 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       </div>
       <div className={styles.conversation}>
         <div className={styles.log} role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
-          {turns.length === 0 ? <p className={styles.guideBubble}>{t.welcome}</p> : null}
           {turns.map(turn => (
             <p key={turn.id} className={turn.role === "guide" ? styles.guideBubble : styles.visitorBubble}>{turn.text}</p>
           ))}
