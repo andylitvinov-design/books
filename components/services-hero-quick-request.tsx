@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, X } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -100,6 +100,11 @@ export function ServicesHeroQuickRequest({
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
   const operationId = useRef<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    panelRef.current?.focus({ preventScroll: true });
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -145,7 +150,7 @@ export function ServicesHeroQuickRequest({
   }
 
   return (
-    <div className={styles.requestPanel} data-services-quick-request role="group" aria-label={t.eyebrow}>
+    <div ref={panelRef} tabIndex={-1} className={styles.requestPanel} data-services-quick-request role="group" aria-label={t.eyebrow}>
       <button type="button" className={styles.requestClose} onClick={onClose} aria-label={t.close}>
         <X size={20} aria-hidden="true" />
       </button>
@@ -166,15 +171,15 @@ export function ServicesHeroQuickRequest({
           <div className={styles.requestFields}>
             <label>{t.name}
               <input type="text" autoComplete="name" maxLength={120} value={name}
-                onChange={event => setName(event.target.value)} />
+                onChange={event => { setName(event.target.value); operationId.current = null; setError(""); }} />
             </label>
             <label>{t.contact}
               <input type="text" required maxLength={254} autoComplete="off" value={address}
-                placeholder={t.placeholder} onChange={event => setAddress(event.target.value)} />
+                placeholder={t.placeholder} onChange={event => { setAddress(event.target.value); operationId.current = null; setError(""); }} />
             </label>
           </div>
           <label className={styles.requestConsent}>
-            <input type="checkbox" checked={consent} required onChange={event => setConsent(event.target.checked)} />
+            <input type="checkbox" checked={consent} required onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
             <span>{t.consent}</span>
           </label>
           <button type="submit" disabled={!consent || sending} className={styles.requestSubmit}>
