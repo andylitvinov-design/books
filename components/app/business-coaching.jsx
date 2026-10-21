@@ -317,6 +317,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       day:current,done:complete,note:dayNote,result:dayResult,
       contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
     })
+    if(ok)setDayDone(complete)
     if(ok && advance){
       const next=current+1
       setDay(next)
