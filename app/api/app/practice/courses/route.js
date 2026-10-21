@@ -18,6 +18,8 @@ async function handle(request){
   if(request.method!=='GET')requireSameOrigin(request,config)
   auth=createRequestAuth(request,config)
   const actor=await auth.verified()
+  const expectedAccount=request.headers.get('x-hh-account-id')
+  if(expectedAccount&&expectedAccount!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
   await consumeRate(config,{op:'practice-courses',actor:actor.id},80,60)
   const repo=createPractitionerCourseRepository(config)
   if(request.method==='GET')
