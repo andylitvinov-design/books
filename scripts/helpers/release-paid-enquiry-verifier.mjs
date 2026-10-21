@@ -15,12 +15,26 @@ export function releasePaidPolicy({ origin, label, locale, width }) {
   return Object.freeze({ origin, label, locale, width, path: '/' + locale + '/services/imagery-therapy' });
 }
 
+// Source-bound exceptions for this public page only, not general URL decoding.
+// Next 15.5.21 encodes the literal [locale] app-entry segment. The booking
+// portrait's default loader uses these configured widths and quality 75.
+const localBookingPortraitUrls = new Set([32, 64, 96, 160, 256, 384, 640, 828, 1080, 1440, 1920, 2560].map(width =>
+  `http://127.0.0.1:3123/_next/image?url=%2Fimages%2Fholistic-house%2Fandy-about.png&w=${width}&q=75`));
+
 export function classifyPaidRequest(policy, request) {
   // Reject first, without logging URL/query/header/body data. No private API,
-  // prefetch query, image proxy, provider, or arbitrary document is allowlisted.
+  // prefetch query, generic image proxy, provider, or arbitrary document is allowlisted.
   if (request.method() !== 'GET') return 'non-GET';
   let url;
   try { url = new URL(request.url()); } catch { return 'malformed URL'; }
+  const raw = request.url();
+  if (raw === policy.origin + url.pathname
+    && /^\/_next\/static\/chunks\/app\/%5Blocale%5D\/services\/imagery-therapy\/page-[0-9a-f]{16}\.js$/.test(url.pathname)
+    && request.resourceType() === 'script' && !request.isNavigationRequest()) return null;
+  // Live optimizer requests stay denied: a public GET can incur transform cost.
+  if (policy.label === 'local' && policy.origin === 'http://127.0.0.1:3123'
+    && localBookingPortraitUrls.has(raw)
+    && request.resourceType() === 'image' && !request.isNavigationRequest()) return null;
   if (url.href !== request.url() || url.username || url.password || url.search || url.hash || /%|\\/.test(request.url())) return 'noncanonical URL';
   if (url.origin !== policy.origin) return 'external origin';
   const type = request.resourceType();
