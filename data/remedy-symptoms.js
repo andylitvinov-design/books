@@ -107,4 +107,32 @@ veratrum-album|Рвота с выраженной слабостью;Часты�
 zincum-metallicum|Беспокойные движения стоп;Мышечные подёргивания;Головная боль от перенапряжения;Прерывистый сон|Restless foot movements;Muscle twitches;Headaches after overwork;Interrupted sleep|Movimientos inquietos de pies;Sacudidas musculares;Cefaleas por sobreesfuerzo;Sueño interrumpido
 `.trim().split('\n');
 
-// Remaining helpers are added once all 104 bilingual/trilingual entries are complete.
+
+const languageKeys = ['ru', 'en', 'es'];
+const symptomBySlug = Object.create(null);
+for (const row of rows) {
+  const [slug, ...translations] = row.split('|');
+  if (!/^[a-z][a-z-]+$/.test(slug) || translations.length !== 3 || symptomBySlug[slug]) {
+    throw new Error('Invalid or duplicate remedy symptom row: ' + slug);
+  }
+  const values = Object.fromEntries(translations.map((text, index) => {
+    const items = text.split(';').map(item => item.trim()).filter(Boolean);
+    if (items.length !== 4 || new Set(items).size !== 4) {
+      throw new Error('Every remedy must have four distinct symptoms: ' + slug + '/' + languageKeys[index]);
+    }
+    return [languageKeys[index], Object.freeze(items)];
+  }));
+  symptomBySlug[slug] = Object.freeze(values);
+}
+
+export const remedySymptomSlugs = Object.freeze(Object.keys(symptomBySlug));
+export function getRemedySymptoms(slug, locale) {
+  return symptomBySlug[slug]?.[locale] ?? [];
+}
+
+// Bach flower descriptions record possible bodily correlates of stressful states,
+// NOT remedy-specific physical indications or evidence of an effect.
+export function isBachEssence(slug) {
+  return slug.startsWith('bach-') || ['rock-rose', 'rock-water', 'star-of-bethlehem'].includes(slug);
+}
+
