@@ -193,7 +193,8 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     <h3>{t.videos}</h3>
     <button type="button" className={styles.primary} onClick={()=>open()} disabled={locked||editing!==null||videos.length>=12}>{t.add}</button>
    </div>
-   {videos.length?<div className={styles.resourceList}>{videos.map((video,index)=>{
+   {visibleVideos.length?<div className={styles.resourceList}>{visibleVideos.map((video,index)=>{
+    const originalIndex=videos.indexOf(video)
     const live=published.some(p=>p.url===video.url&&p.title===video.title&&p.locale===video.locale&&p.description===video.description)
     return <article className={styles.resourceRow} key={video.url+'-'+index}>
      <div className={styles.resourceMain}>
@@ -206,8 +207,8 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
        <h4>{video.title}</h4>
        {video.description&&<p className={styles.description} title={video.description}>{video.description}</p>}
        <div className={styles.cardActions}>
-        <button type="button" disabled={locked} onClick={()=>open(index)}>{t.editBtn}</button>
-        <button type="button" disabled={locked} onClick={()=>void remove(index)}>{t.deleteBtn}</button>
+        <button type="button" disabled={locked} onClick={()=>open(originalIndex)}>{t.editBtn}</button>
+        <button type="button" disabled={locked} onClick={()=>void remove(originalIndex)}>{t.deleteBtn}</button>
        </div>
       </div>
      </div>
@@ -235,6 +236,10 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    </div>
    {dirty&&<p className={styles.notice}>{t.unsaved}</p>}
    <p className={styles.notice}>{t.moderation}</p>
+   {isOwner&&reportMode!=='not-owner'&&<details className={styles.privateLibrary}><summary><FolderOpen size={17} aria-hidden="true"/>{ru?'Приватные материалы клиентских отчётов':es?'Recursos privados de informes':'Private client report resources'}</summary>
+    <PracticeReportMaterials items={reportItems} locale={locale} loading={reportMode==='loading'} error={reportError} onRefresh={()=>setReportRefresh(n=>n+1)}/>
+   </details>}
   </div>}
+ </div>
  </div>
 }
