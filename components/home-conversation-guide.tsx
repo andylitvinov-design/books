@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Check, Compass, Heart, Mic, RotateCcw, Send, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
+import { ArrowRight, ArrowUp, Check, Compass, Heart, Mic, RotateCcw, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
 
 import {
   homeGuideDestinations,
@@ -21,7 +21,7 @@ type Context = {
   matched: boolean;
   urgent: boolean;
 };
-type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> };
 type SpeechEngine = {
   lang: string;
   interimResults: boolean;
@@ -77,6 +77,8 @@ type GuideCopy = {
   voiceCancel: string;
   voiceDone: string;
   voicePrivacy: string;
+  voiceUnresponsive: string;
+  voiceKeyboardAction: string;
   urgent: string;
   limitation: string;
 };
@@ -145,13 +147,15 @@ const copy: Record<PublicLocale, GuideCopy> = {
     voiceError: "Speech recognition stopped unexpectedly. You can try again or type your question.",
     voiceEmpty: "No words heard. Tap the microphone to retry or type your question.",
     voiceDenied: "Microphone access was not allowed. Enable it in browser settings or type instead.",
-    voiceKeyboard: "Voice dictation isn't supported here. Use your keyboard's microphone or type.",
+    voiceKeyboard: "Voice dictation is not supported here. Open your keyboard and tap its microphone, or type.",
     voiceStarting: "Connecting microphone…",
     voiceListening: "Listening…",
     voiceFinishing: "Finishing…",
     voiceCancel: "Cancel recording",
     voiceDone: "Finish and send",
-    voicePrivacy: "Tap ✓ to send · Audio recognition may use your browser provider.",
+    voicePrivacy: "Microphone starts on tap. Your voice isn't stored by this site; your browser may use its speech provider.",
+    voiceUnresponsive: "Speech recognition isn't responding. Use the keyboard microphone or type your question.",
+    voiceKeyboardAction: "Open keyboard",
 
     urgent: "I'm sorry you're facing this. A website guide can't provide emergency help. If you may be in immediate danger or might hurt yourself, contact local emergency services now or reach a trusted person who can stay with you. In Canada and the US you can call or text 988 for suicide crisis support.",
     limitation: "Suggestions are for reflection and navigation, not a diagnosis, treatment or promised result.",
@@ -219,13 +223,15 @@ const copy: Record<PublicLocale, GuideCopy> = {
     voiceError: "Голосовой ввод прервался. Попробуйте ещё раз или напишите вопрос.",
     voiceEmpty: "Речь не распознана. Нажмите микрофон ещё раз или напишите вопрос.",
     voiceDenied: "Доступ к микрофону запрещён. Разрешите его в настройках браузера или напишите вопрос.",
-    voiceKeyboard: "Здесь диктовка недоступна. Используйте микрофон на клавиатуре или напишите вопрос.",
+    voiceKeyboard: "Здесь диктовка недоступна. Откройте клавиатуру и нажмите её микрофон или напишите вопрос.",
     voiceStarting: "Подключаю микрофон…",
     voiceListening: "Слушаю…",
     voiceFinishing: "Завершаю…",
     voiceCancel: "Отменить запись",
     voiceDone: "Завершить и отправить",
-    voicePrivacy: "Нажмите ✓ для отправки · Распознавание может выполняться сервисом браузера.",
+    voicePrivacy: "Микрофон включается по нажатию. Сайт не хранит аудио; браузер может использовать свой сервис распознавания.",
+    voiceUnresponsive: "Распознавание не отвечает. Используйте диктовку с клавиатуры iPhone или напишите вопрос.",
+    voiceKeyboardAction: "Открыть клавиатуру",
 
     urgent: "Мне жаль, что вам сейчас настолько тяжело. Помощник сайта не заменяет экстренную помощь. Если есть непосредственная опасность или риск причинить себе вред, обратитесь в местные экстренные службы или к близкому человеку, который может быть рядом. В Канаде и США можно позвонить или написать на 988.",
     limitation: "Подсказки помогают ориентироваться, но не являются диагнозом, лечением или обещанием результата.",
@@ -293,13 +299,15 @@ const copy: Record<PublicLocale, GuideCopy> = {
     voiceError: "El dictado se interrumpió. Vuelve a intentarlo o escribe tu pregunta.",
     voiceEmpty: "No se reconocieron palabras. Toca el micrófono otra vez o escribe.",
     voiceDenied: "No se permitió usar el micrófono. Actívalo en el navegador o escribe.",
-    voiceKeyboard: "El dictado no está disponible aquí. Usa el micrófono del teclado o escribe.",
+    voiceKeyboard: "El dictado no está disponible aquí. Abre el teclado y toca su micrófono, o escribe.",
     voiceStarting: "Conectando micrófono…",
     voiceListening: "Escuchando…",
     voiceFinishing: "Terminando…",
     voiceCancel: "Cancelar grabación",
     voiceDone: "Terminar y enviar",
-    voicePrivacy: "Pulsa ✓ para enviar · El navegador puede procesar el audio.",
+    voicePrivacy: "El micrófono se inicia al tocarlo. El sitio no guarda el audio; tu navegador puede procesar la voz.",
+    voiceUnresponsive: "El dictado no responde. Usa el micrófono del teclado o escribe tu pregunta.",
+    voiceKeyboardAction: "Abrir teclado",
 
     urgent: "Lamento que estés pasando por esto. Esta guía no ofrece ayuda de emergencia. Si estás en peligro inmediato o piensas hacerte daño, contacta los servicios de emergencia locales o a alguien de confianza que pueda acompañarte. En Canadá y EE. UU. puedes llamar o enviar un mensaje al 988.",
     limitation: "Estas sugerencias sirven para orientarte; no son diagnósticos, tratamientos ni garantías.",
@@ -341,15 +349,25 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const voiceDiscardRef = useRef(false);
   const submitOnEndRef = useRef(false);
   const voiceStartedAtRef = useRef(0);
+  const voiceFinalRef = useRef(false);
+  const voiceFailureRef = useRef(false);
+  const voiceStartTimerRef = useRef<number | null>(null);
+  const voiceProgressTimerRef = useRef<number | null>(null);
+  const voiceStopTimerRef = useRef<number | null>(null);
   const nextId = useRef(1);
 
   const closeDialog = useCallback(() => {
     // Closing must never silently submit an in-progress speech transcript.
     voiceDiscardRef.current = true;
     voiceGenerationRef.current += 1;
+    for (const ref of [voiceStartTimerRef, voiceProgressTimerRef, voiceStopTimerRef]) {
+      if (ref.current !== null) window.clearTimeout(ref.current);
+      ref.current = null;
+    }
     const engine = speechRef.current;
     speechRef.current = null;
     try { if (engine?.abort) engine.abort(); else engine?.stop(); } catch { /* Already closed */ }
+    setVoiceError(null);
     setVoiceState("idle");
     setVoiceElapsed(0);
     setVoiceTranscript("");
@@ -403,11 +421,27 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       webkitSpeechRecognition?: SpeechConstructor;
     };
     setSupportsVoice(Boolean(speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition));
-    return () => {
+    const shutdown = (restoreUi: boolean) => {
       voiceGenerationRef.current += 1;
       voiceDiscardRef.current = true;
-      speechRef.current?.stop();
+      for (const ref of [voiceStartTimerRef, voiceProgressTimerRef, voiceStopTimerRef]) {
+        if (ref.current !== null) window.clearTimeout(ref.current);
+        ref.current = null;
+      }
+      const engine = speechRef.current;
       speechRef.current = null;
+      try { if (engine?.abort) engine.abort(); else engine?.stop(); } catch { /* Browser already closed */ }
+      if (restoreUi) {
+        setVoiceState("idle");
+        setVoiceElapsed(0);
+        setVoiceTranscript("");
+      }
+    };
+    const onPageHide = () => shutdown(true);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      shutdown(false);
     };
   }, []);
 
@@ -415,16 +449,22 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     if (voiceState !== "listening") return;
     const interval = window.setInterval(() => {
       const elapsed = Math.floor((Date.now() - voiceStartedAtRef.current) / 1000);
-      setVoiceElapsed(elapsed);
+      setVoiceElapsed(Math.max(0, elapsed));
       if (elapsed >= 60 && speechRef.current) {
         const engine = speechRef.current;
         const generation = voiceGenerationRef.current;
         submitOnEndRef.current = true;
         setVoiceState("finishing");
+        if (voiceProgressTimerRef.current !== null) window.clearTimeout(voiceProgressTimerRef.current);
+        voiceProgressTimerRef.current = null;
         try { engine.stop(); } catch { engine.onend?.(); }
-        window.setTimeout(() => {
-          if (generation === voiceGenerationRef.current && speechRef.current === engine) engine.onend?.();
-        }, 2500);
+        if (speechRef.current === engine) {
+          voiceStopTimerRef.current = window.setTimeout(() => {
+            if (generation !== voiceGenerationRef.current || speechRef.current !== engine) return;
+            try { engine.abort?.(); } catch { /* Already stopped */ }
+            engine.onend?.();
+          }, 2500);
+        }
       }
     }, 500);
     return () => window.clearInterval(interval);
@@ -470,26 +510,45 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setGoal(value);
   }
 
+  // Browser speech recognition does not guarantee onend/onerror on iOS Safari.
+  // Every recording needs finite deadlines and an explicit, privacy-safe fallback.
+  function clearVoiceTimers() {
+    for (const ref of [voiceStartTimerRef, voiceProgressTimerRef, voiceStopTimerRef]) {
+      if (ref.current !== null) {
+        window.clearTimeout(ref.current);
+        ref.current = null;
+      }
+    }
+  }
+
   function finishVoice() {
     const engine = speechRef.current;
     if (!engine || voiceState === "finishing") return;
     submitOnEndRef.current = true;
     setVoiceState("finishing");
+    if (voiceStartTimerRef.current !== null) window.clearTimeout(voiceStartTimerRef.current);
+    if (voiceProgressTimerRef.current !== null) window.clearTimeout(voiceProgressTimerRef.current);
+    voiceStartTimerRef.current = null;
+    voiceProgressTimerRef.current = null;
     try { engine.stop(); } catch { engine.onend?.(); }
-    // Some iOS Safari versions never dispatch onend after an audio session.
-    // Release the UI rather than showing a stuck microphone indefinitely.
+    // iOS Safari can leave stop() pending forever, particularly after video playback.
     const generation = voiceGenerationRef.current;
-    window.setTimeout(() => {
-      if (generation === voiceGenerationRef.current && speechRef.current === engine) engine.onend?.();
-    }, 2500);
+    if (speechRef.current === engine) {
+      voiceStopTimerRef.current = window.setTimeout(() => {
+        if (generation !== voiceGenerationRef.current || speechRef.current !== engine) return;
+        try { engine.abort?.(); } catch { /* Already stopped */ }
+        engine.onend?.();
+      }, 2500);
+    }
   }
 
   function cancelVoice() {
     voiceDiscardRef.current = true;
-    voiceGenerationRef.current += 1;
+    voiceGenerationRef.current += 1; // Ignore late Safari callbacks from a cancelled session.
+    clearVoiceTimers();
     const engine = speechRef.current;
     speechRef.current = null;
-    try { if (engine?.abort) engine.abort(); else engine?.stop(); } catch { /* Already ended */ }
+    try { if (engine?.abort) engine.abort(); else engine?.stop(); } catch { /* Already stopped */ }
     setVoiceState("idle");
     setVoiceElapsed(0);
     setVoiceTranscript("");
@@ -505,41 +564,95 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const Speech = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!Speech) {
       setVoiceError(t.voiceKeyboard);
-      window.requestAnimationFrame(() => questionRef.current?.focus());
-
+      questionRef.current?.focus();
       return;
     }
-    // This runs synchronously inside the microphone click: required by mobile browsers.
-    const engine = new Speech();
+    let engine: SpeechEngine;
+    try { engine = new Speech(); }
+    catch {
+      setVoiceError(t.voiceKeyboard);
+      questionRef.current?.focus();
+      return;
+    }
+
+    // start() MUST be called synchronously by the microphone tap on iPhone.
     const generation = ++voiceGenerationRef.current;
     voiceBaseRef.current = draft.trim();
     voiceTextRef.current = "";
+    voiceFinalRef.current = false;
+    voiceFailureRef.current = false;
     voiceDiscardRef.current = false;
     submitOnEndRef.current = false;
+    clearVoiceTimers();
     setVoiceTranscript("");
     setVoiceElapsed(0);
     setVoiceError(null);
     voiceStartedAtRef.current = 0;
     engine.lang = locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-US";
     engine.interimResults = true;
-    engine.continuous = true;
+    // iOS WebKit has known long-running/restart bugs; prefer a short utterance.
+    const isIosWebKit = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    engine.continuous = !isIosWebKit;
+
+    const sessionIsCurrent = () =>
+      voiceGenerationRef.current === generation && speechRef.current === engine;
+
+    const failUnresponsive = () => {
+      if (!sessionIsCurrent()) return;
+      voiceFailureRef.current = true;
+      setVoiceError(t.voiceUnresponsive);
+      try { engine.abort?.(); } catch { /* Browser service may be hung */ }
+      engine.onend?.();
+    };
+
+    const armProgressWatchdog = () => {
+      if (voiceProgressTimerRef.current !== null) window.clearTimeout(voiceProgressTimerRef.current);
+      voiceProgressTimerRef.current = window.setTimeout(failUnresponsive, 18000);
+    };
+
     engine.onstart = () => {
-      if (voiceGenerationRef.current !== generation) return;
+      if (!sessionIsCurrent()) return;
+      if (voiceStartTimerRef.current !== null) window.clearTimeout(voiceStartTimerRef.current);
+      voiceStartTimerRef.current = null;
       voiceStartedAtRef.current = Date.now();
-      setVoiceState("listening");
+      if (!submitOnEndRef.current) setVoiceState("listening");
+      armProgressWatchdog();
     };
     engine.onresult = (event) => {
-      if (voiceGenerationRef.current !== generation) return;
-      const words = Array.from(event.results, item => item[0]?.transcript || "").join(" ").replace(/\s+/g, " ").trim();
-      voiceTextRef.current = words.slice(0, 500);
-      setVoiceTranscript(voiceTextRef.current);
+      if (!sessionIsCurrent()) return;
+      // WebKit sometimes emits a result without first emitting onstart.
+      if (!voiceStartedAtRef.current) {
+        voiceStartedAtRef.current = Date.now();
+        if (!submitOnEndRef.current) setVoiceState("listening");
+      }
+      if (voiceStartTimerRef.current !== null) window.clearTimeout(voiceStartTimerRef.current);
+      voiceStartTimerRef.current = null;
+      const results = Array.from(event.results);
+      const words = results.map(item => item[0]?.transcript || "")
+        .join(" ").replace(/\s+/g, " ").trim().slice(0, 500);
+      if (words) {
+        voiceTextRef.current = words;
+        voiceFinalRef.current = results.length > 0 && results.every(item => item.isFinal === true);
+        setVoiceTranscript(words);
+        armProgressWatchdog();
+      }
     };
     engine.onerror = (event) => {
-      if (voiceGenerationRef.current !== generation || voiceDiscardRef.current) return;
-      setVoiceError(event.error === "not-allowed" || event.error === "service-not-allowed" ? t.voiceDenied : t.voiceError);
+      if (!sessionIsCurrent() || voiceDiscardRef.current) return;
+      if (event.error === "aborted" && (submitOnEndRef.current || voiceFailureRef.current)) return;
+      voiceFailureRef.current = true;
+      const denied = event.error === "not-allowed" || event.error === "service-not-allowed";
+      setVoiceError(denied ? t.voiceDenied : event.error === "no-speech" ? t.voiceEmpty : t.voiceError);
+      try { engine.abort?.(); } catch { /* Browser may already be disconnected */ }
+      if (sessionIsCurrent()) {
+        if (voiceStopTimerRef.current !== null) window.clearTimeout(voiceStopTimerRef.current);
+        voiceStopTimerRef.current = window.setTimeout(() => engine.onend?.(), 400);
+      }
     };
     engine.onend = () => {
-      if (voiceGenerationRef.current !== generation) return;
+      if (!sessionIsCurrent()) return;
+      clearVoiceTimers();
       speechRef.current = null;
       setVoiceState("idle");
       setVoiceTranscript("");
@@ -548,44 +661,37 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       const spoken = voiceTextRef.current.trim();
       const complete = [voiceBaseRef.current, spoken].filter(Boolean).join(" ").slice(0, 500);
       if (spoken) {
-        if (submitOnEndRef.current) ask(complete);
-        else setDraft(complete); // Safari sometimes ends on a pause: let the visitor review.
+        // Explicit finish or natural end of a final utterance: no second Send tap.
+        // Interrupted/incomplete speech remains editable, never silently submitted.
+        if (!voiceFailureRef.current && (submitOnEndRef.current || voiceFinalRef.current)) ask(complete);
+        else setDraft(complete);
       } else {
         setDraft(voiceBaseRef.current);
-        setVoiceError(current => current || t.voiceEmpty);
+        if (!voiceFailureRef.current) setVoiceError(current => current || t.voiceEmpty);
       }
     };
+
     speechRef.current = engine;
     setVoiceState("starting");
+    // Allow time for an iOS permission sheet; still recover if WebKit never starts.
+    voiceStartTimerRef.current = window.setTimeout(failUnresponsive, 25000);
     try { engine.start(); }
     catch {
-      if (voiceGenerationRef.current !== generation) return;
+      if (!sessionIsCurrent()) return;
+      clearVoiceTimers();
       speechRef.current = null;
       setVoiceState("idle");
-      setVoiceError(t.voiceError);
+      setVoiceError(t.voiceKeyboard);
+      questionRef.current?.focus();
     }
-    // A permission/service stall must not trap visitors in recording mode.
-    window.setTimeout(() => {
-      if (voiceGenerationRef.current === generation && speechRef.current === engine && voiceStartedAtRef.current === 0) {
-        try { engine.abort?.(); } catch { /* Browser may already have stopped */ }
-        engine.onend?.();
-      }
-    }, 12000);
   }
 
   function reset() {
-    voiceDiscardRef.current = true;
-    voiceGenerationRef.current += 1;
-    speechRef.current?.stop();
-    speechRef.current = null;
-    setVoiceState("idle");
-    setVoiceElapsed(0);
-    setVoiceTranscript("");
+    cancelVoice();
     setContext(null);
     setGoal(null);
     setDraft("");
     setTurns([]);
-    setVoiceError(null);
     questionRef.current?.focus();
   }
 
@@ -713,8 +819,8 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
             <div className={styles.chatFooter}>
               <form className={styles.form} onSubmit={submit} aria-label={t.question}>
                 {recording ? (
-                  <div className={styles.recording} data-home-voice-recording role="group" aria-label={recordingLabel}>
-                    <span className={styles.recordingDot} aria-hidden="true" />
+                  <div className={styles.recording} data-home-voice-recording data-voice-state={voiceState} role="group" aria-label={recordingLabel}>
+                    <span className={styles.recordingDot} data-state={voiceState} aria-hidden="true" />
                     <span className={styles.recordingMessage} aria-live="off">{voiceTranscript || recordingLabel}</span>
                     <span className={styles.recordingTime} aria-label={voiceTime}>{voiceTime}</span>
                     <button type="button" className={styles.cancelVoice} aria-label={t.voiceCancel} onClick={cancelVoice}>
@@ -744,14 +850,19 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                         title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
                         onClick={toggleVoice}><Mic size={20} aria-hidden="true" /></button>
                       <button type="submit" className={styles.sendButton} aria-label={t.send} disabled={!draft.trim()}>
-                        <Send size={19} aria-hidden="true" />
+                        <ArrowUp size={20} aria-hidden="true" />
                       </button>
                     </div>
                   </>
                 )}
               </form>
               {recording ? <p className={styles.voiceNotice}>{t.voicePrivacy}</p> : null}
-              {voiceError ? <p className={styles.error} role="alert">{voiceError}</p> : null}
+              {voiceError ? (
+                <div className={styles.voiceRecovery} role="alert">
+                  <p className={styles.error}>{voiceError}</p>
+                  <button type="button" onClick={() => questionRef.current?.focus()}>{t.voiceKeyboardAction}</button>
+                </div>
+              ) : null}
               <details className={styles.privacy}>
                 <summary><ShieldCheck size={14} aria-hidden="true" />{t.privacyShort}</summary>
                 <p>{t.privacyDetail}</p>
