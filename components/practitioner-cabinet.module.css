@@ -1,10 +1,10 @@
 /* Smaller admin header; old giant Practitioner Cabinet headline is retired. */
-.page :global(.prescription-admin-titleblock h1){font-size:clamp(29px,4.2vw,43px);line-height:1.08}
+.page :global(.prescription-admin-titleblock) h1{font-size:clamp(29px,4.2vw,43px)!important;line-height:1.08!important}
 .page :global(.prescription-admin-titleblock){padding-top:15px;padding-bottom:10px}
 .page :global(.prescription-admin-description){font-size:13px;line-height:1.5}
 .page :global(.prescription-admin-navigation--tabs){gap:6px;flex-wrap:wrap}
 @media(max-width:520px){
-  .page :global(.prescription-admin-titleblock h1){font-size:30px}
+  .page :global(.prescription-admin-titleblock) h1{font-size:30px!important}
   .page :global(.prescription-admin-titleblock){padding-top:10px}
 }
 .shell{
