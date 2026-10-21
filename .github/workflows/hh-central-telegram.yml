@@ -6,10 +6,12 @@ on:
       - 'vercel.json'
       - 'lib/practitioners/telegram-hub.mjs'
       - 'lib/practitioners/council-telegram-archive.mjs'
+      - 'lib/practitioners/chatgpt-telegram-report.mjs'
       - 'lib/practitioners/council-telegram-delivery.js'
       - 'lib/practitioners/council-free-models.mjs'
       - 'tests/practitioner-council-free-models.test.mjs'
       - 'tests/telegram-ai-daily-nonempty.test.mjs'
+      - 'tests/practitioner-chatgpt-daily-telegram.test.mjs'
       - 'supabase/migrations/*free_ai_council_cached_daily*.sql'
       - 'app/api/internal/telegram-hub/route.js'
       - 'app/api/internal/council-archive-telegram/route.js'
@@ -51,8 +53,9 @@ jobs:
           node --check app/api/internal/telegram-owner-discovery/route.js
           node --check lib/practitioners/telegram-hub.mjs
           node --check lib/practitioners/council-telegram-archive.mjs
+          node --check lib/practitioners/chatgpt-telegram-report.mjs
           node --check lib/practitioners/council-telegram-delivery.js
           node --check lib/practitioners/council-free-models.mjs
           node --check app/api/internal/telegram-hub/route.js
           node --check app/api/internal/council-archive-telegram/route.js
-          node --test tests/practitioner-council-free-models.test.mjs tests/telegram-ai-daily-nonempty.test.mjs tests/practitioner-telegram-owner-ui.test.mjs tests/telegram-owner-pairing-contract.test.mjs tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
+          node --test tests/practitioner-council-free-models.test.mjs tests/telegram-ai-daily-nonempty.test.mjs tests/practitioner-chatgpt-daily-telegram.test.mjs tests/practitioner-telegram-owner-ui.test.mjs tests/telegram-owner-pairing-contract.test.mjs tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
