@@ -2,7 +2,7 @@
 
 import {createContext,useCallback,useContext,useEffect,useRef,useState} from 'react'
 import {BookmarkCheck,House,LockKeyhole,ShieldCheck,X} from 'lucide-react'
-import {SESSION_SAVE_COPY} from './save-client-session-to-account'
+import {SESSION_SAVE_COPY} from '@/lib/clients/session-save-copy'
 import {appFetch} from '@/lib/app/client-fetch'
 import {rememberSessionSaveTarget,safeSessionExitTarget,sessionExitActionTarget} from '@/lib/app/session-exit-navigation'
 import styles from './client-session.module.css'
