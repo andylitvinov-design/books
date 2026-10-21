@@ -48,6 +48,7 @@ test('typed RU/EN wishes select real tools without automatically creating or tra
   assert.equal(matchCabinetIntent('I need help'), 'review')
   assert.equal(matchCabinetIntent(''), null)
   assert.equal(matchCabinetIntent('Всё и сразу'), null)
+  assert.equal(matchCabinetIntent('Хочу стать спокойнее'), null)
 })
 
 test('signed-in portrait opens the compact task-first UI before preserved report archive', () => {
