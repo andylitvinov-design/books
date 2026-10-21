@@ -43,6 +43,7 @@ function mount(locale = 'en', options = {}) {
     '@/lib/app/repository': { createAppRepository: () => repo },
     '@/lib/practitioners/repository': { createPractitionerRepository: () => ({}) },
     '@/lib/practitioners/article-repository': { createArticleRepository: () => ({}) },
+    '@/lib/practitioners/events-repository': { createPractitionerEventsRepository: () => ({}) },
     '@/lib/app/guest-repository': { createGuestRepository: () => ({}) },
     '@/lib/app/database': { consumeRate: async () => {} },
     '@/lib/app/http': { PRIVATE_HEADERS: {}, readBody: request => request.json(), safeError: error => ({ code: error.code || error.message, status: error.status || 500 }) },
