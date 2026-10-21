@@ -41,14 +41,29 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   await form.waitFor({state:"visible"});
   const button=form.locator('button[type="submit"]');
   assert.equal(await button.isDisabled(),true,"Contact+consent are required");
-  await form.locator('input[autocomplete="name"]').fill("QA Visitor");
-  await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
-  // Alternate private note / no-note requests to prove both paths. Neither may
-  // leak personal details into the external messenger deep link.
+  const withName = submissions.length % 3 === 0;
+  const usePhone = submissions.length % 3 === 1;
+  const googleButton = form.locator('button[type="button"]').filter({hasText:/Google/i});
+  if (locale === "en") {
+    assert.equal(await googleButton.count(),1,"Optional Google must be available");
+    assert.equal(await googleButton.first().isDisabled(),false);
+  }
+  if (usePhone) {
+    await form.getByRole('group').locator('button').nth(1).click();
+    await form.locator('input[type="tel"]').fill("4165550123");
+  } else await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
+  if (withName) {
+    // Name is an explicit opt-in field, hidden until requested.
+    await form.locator('details').filter({has:form.locator('input[autocomplete="name"]')})
+      .locator('summary').click();
+    await form.locator('input[autocomplete="name"]').fill("QA Visitor");
+  }
+  // Alternate private note / no-note requests without expanding optional name.
   const privateNote = "PRIVATE_QA_NOTE_NOT_FOR_MESSENGER";
   const hasNote = submissions.length % 2 === 0;
   if (hasNote) {
-    await form.locator('details.optionalNote, details').first().locator('summary').click();
+    await form.locator('details').filter({has:form.locator('textarea')})
+      .locator('summary').click();
     await form.locator('textarea').fill(privateNote);
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
@@ -61,9 +76,10 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   const request=submissions[submissions.length-1];
   assert.equal(request.locale,locale);
   assert.equal(request.contactConsent,true);
-  assert.equal(request.contact.displayName,"QA Visitor");
-  assert.equal(request.contact.email,"qa-browser@example.test");
-  assert.equal(request.contact.phone,"");
+  assert.equal(request.contact.displayName,withName?"QA Visitor":"");
+  assert.equal(request.contact.email,usePhone?"":"qa-browser@example.test");
+  assert.equal(request.contact.phone,usePhone?"+14165550123":"");
+  assert.deepEqual(Object.keys(request.contact).sort(),["displayName","email","phone"]);
   assert.ok(request.operationId && /^[a-f0-9-]{36}$/i.test(request.operationId));
   assert.ok(request.sourcePath && request.sourcePath.startsWith("/"+locale+"/"));
   assert.ok(request.serviceTitle);
