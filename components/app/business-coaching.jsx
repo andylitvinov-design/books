@@ -311,13 +311,14 @@ export default function BusinessCoaching({locale='en',accountId}){
   async function saveDayAndContinue(complete=false){
     const current=day
     const advance=complete && current<90
-    // Finish is a deliberate claim of completing the practical action.
-    // Drafts never increment the completed-day count.
+    // Editing a previously completed day must not silently erase completion.
+    // An unfinished draft on a new day does not mark that day complete.
+    const persistedDone=complete || Boolean(savedDay.done)
     const ok=await command('day',{
-      day:current,done:complete,note:dayNote,result:dayResult,
+      day:current,done:persistedDone,note:dayNote,result:dayResult,
       contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
     })
-    if(ok)setDayDone(complete)
+    if(ok)setDayDone(persistedDone)
     if(ok && advance){
       const next=current+1
       setDay(next)
