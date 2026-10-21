@@ -355,8 +355,11 @@ try {
       await visible(offers.locator('[data-business-offer="' + kind + '"]'));
     }
     assert.ok((await offers.innerText()).includes("€50") && (await offers.innerText()).includes("€100"));
-    await visible(main.locator('a[href="#business-offers"]'));
-    await main.locator('a[href="#business-offers"]').click();
+    // The hero and the quick-start card both legitimately link to this section.
+    // Choose the visible hero CTA deterministically rather than violating Playwright strict mode.
+    const toOffers = main.locator('a[href="#business-offers"]').first();
+    await visible(toOffers);
+    await toOffers.click();
     await page.waitForURL(/#business-offers$/);
     const express = offers.locator('[data-business-offer="express"]');
     const chooser = await openContactChannelChooser(express, expect);
