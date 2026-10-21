@@ -171,9 +171,9 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
     </aside>
     {current&&draft&&<div className={styles.editor}>
      <div className={styles.fields}>
-      <label>{t.name}<input value={draft.title} maxLength={140} onChange={e=>setDraft({...draft,title:e.target.value})} disabled={busy||uploading}/></label>
-      <label>{t.lang}<select value={draft.locale} disabled={busy||uploading} onChange={e=>setDraft({...draft,locale:e.target.value})}><option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option></select></label>
-      <label className={styles.wide}>{t.summary}<textarea rows={2} maxLength={900} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} disabled={busy||uploading}/></label>
+      <label>{t.name}<input value={draft.title} maxLength={140} onChange={e=>setDraft({...draft,title:e.target.value})} disabled={busy||uploading||recording}/></label>
+      <label>{t.lang}<select value={draft.locale} disabled={busy||uploading||recording} onChange={e=>setDraft({...draft,locale:e.target.value})}><option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option></select></label>
+      <label className={styles.wide}>{t.summary}<textarea rows={2} maxLength={900} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} disabled={busy||uploading||recording}/></label>
      </div>
      <div className={styles.slideHeading}><strong>{t.slides} · {draft.slides.length}/60</strong>
       <button type="button" onClick={addSlide} disabled={busy||uploading||recording||draft.slides.length>=60}><Plus size={15}/>{t.add}</button></div>
@@ -183,22 +183,22 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
      </div>
      {active&&<div className={styles.slideEditor} key={active.id}>
        <div className={styles.slideTools}>
-        <label>{t.type}<select value={active.kind} disabled={busy||uploading} onChange={e=>updateSlide({kind:e.target.value,assetId:null,videoUrl:''})}>
+        <label>{t.type}<select value={active.kind} disabled={busy||uploading||recording} onChange={e=>updateSlide({kind:e.target.value,assetId:null,videoUrl:''})}>
          <option value="text">{t.text}</option><option value="image">{t.image}</option><option value="audio">{t.audio}</option><option value="video">{t.video}</option><option value="embed">{t.embed}</option>
         </select></label>
         <div className={styles.reorder}>
-         <button type="button" title={t.up} aria-label={t.up} onClick={()=>moveSlide(-1)} disabled={busy||uploading}><ArrowUp size={17}/></button>
-         <button type="button" title={t.down} aria-label={t.down} onClick={()=>moveSlide(1)} disabled={busy||uploading}><ArrowDown size={17}/></button>
-         <button type="button" title={t.removeSlide} aria-label={t.removeSlide} onClick={removeSlide} disabled={busy||uploading}><Trash2 size={17}/></button>
+         <button type="button" title={t.up} aria-label={t.up} onClick={()=>moveSlide(-1)} disabled={busy||uploading||recording}><ArrowUp size={17}/></button>
+         <button type="button" title={t.down} aria-label={t.down} onClick={()=>moveSlide(1)} disabled={busy||uploading||recording}><ArrowDown size={17}/></button>
+         <button type="button" title={t.removeSlide} aria-label={t.removeSlide} onClick={removeSlide} disabled={busy||uploading||recording}><Trash2 size={17}/></button>
         </div>
        </div>
-       <label>{t.slideTitle}<input value={active.title} maxLength={140} disabled={busy||uploading} onChange={e=>updateSlide({title:e.target.value})}/></label>
-       <label>{t.body}<textarea value={active.body} maxLength={4000} rows={4} disabled={busy||uploading} onChange={e=>updateSlide({body:e.target.value})}/></label>
-       {active.kind==='embed'&&<label><Link2 size={15}/>{t.link}<input type="url" value={active.videoUrl||''} placeholder="https://youtu.be/…" onChange={e=>updateSlide({videoUrl:e.target.value})} disabled={busy||uploading}/></label>}
+       <label>{t.slideTitle}<input value={active.title} maxLength={140} disabled={busy||uploading||recording} onChange={e=>updateSlide({title:e.target.value})}/></label>
+       <label>{t.body}<textarea value={active.body} maxLength={4000} rows={4} disabled={busy||uploading||recording} onChange={e=>updateSlide({body:e.target.value})}/></label>
+       {active.kind==='embed'&&<label><Link2 size={15}/>{t.link}<input type="url" value={active.videoUrl||''} placeholder="https://youtu.be/…" onChange={e=>updateSlide({videoUrl:e.target.value})} disabled={busy||uploading||recording}/></label>}
        {['image','audio','video'].includes(active.kind)&&<div className={styles.mediaBox}>
         <label>{active.kind==='image'?<ImageIcon size={16}/>:active.kind==='audio'?<Headphones size={16}/>:<Film size={16}/>}
           {uploading?t.uploading:t.upload}
-          <input type="file" accept={fileAccept[active.kind]} disabled={busy||uploading}
+          <input type="file" accept={fileAccept[active.kind]} disabled={busy||uploading||recording}
            onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file)}}/>
         </label>
         {['audio','video'].includes(active.kind)&&<CourseSlideRecorder key={active.id+':'+active.kind}
@@ -229,10 +229,10 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
      </div>
      {current.status==='published'&&<div className={styles.publicControls}>
       <a href={shareHref} target="_blank" rel="noopener noreferrer"><Eye size={16}/>{t.preview}</a>
-      <button type="button" onClick={()=>void share()} disabled={busy||uploading}><Share2 size={16}/>{t.share}</button>
-      <button type="button" onClick={()=>void operate('unpublish')} disabled={busy||uploading}>{t.hide}</button>
+      <button type="button" onClick={()=>void share()} disabled={busy||uploading||recording}><Share2 size={16}/>{t.share}</button>
+      <button type="button" onClick={()=>void operate('unpublish')} disabled={busy||uploading||recording}>{t.hide}</button>
      </div>}
-     <button className={styles.archive} type="button" disabled={busy||uploading} onClick={()=>void operate('archive')}>{t.delete}</button>
+     <button className={styles.archive} type="button" disabled={busy||uploading||recording} onClick={()=>void operate('archive')}>{t.delete}</button>
     </div>}
    </div>}
   {error&&<p className={styles.error} role="alert">{error}</p>}
