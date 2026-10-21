@@ -247,7 +247,7 @@ try {
         await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
         await expect(guide.locator('[role="alert"]')).toBeVisible();
         await guide.getByRole("button", { name: keyboardName[sample.locale] }).click();
-        await expect(guide.locator("textarea")).toBeFocused();
+        await expect(guide.locator("[data-home-guide-dialog] textarea")).toBeFocused();
       }
       if (sample.kind === "permission") {
         await expect(guide.locator("[data-home-voice-recording]")).toBeVisible();
@@ -255,7 +255,7 @@ try {
         await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
         await expect(guide.locator('[role="alert"]')).toBeVisible();
         await guide.getByRole("button", { name: keyboardName[sample.locale] }).click();
-        await expect(guide.locator("textarea")).toBeFocused();
+        await expect(guide.locator("[data-home-guide-dialog] textarea")).toBeFocused();
         assert.ok(!(await guide.locator('[role="log"]').innerText()).includes(sample.text),
           "Denied microphone must not create a question");
       }
