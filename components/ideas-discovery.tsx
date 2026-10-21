@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
-import { getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
+import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
 import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
@@ -13,6 +13,7 @@ import styles from "./ideas-discovery.module.css";
 
 type Mode = "dao" | "aphorisms" | "personal";
 type Result = { mode: Mode; topic: IdeasTopic; matched: boolean; hexagram?: number };
+type DaoReading = { number: number; text: string; kind: "original" | "editorial" };
 
 const copy = {
   ru: {
@@ -36,6 +37,9 @@ const copy = {
     headings: { dao: "Символ Книги Перемен", aphorisms: "Афоризмы по вашему вопросу", personal: "Три способа начать" },
     topic: { relationships: "Отношения и близость", stress: "Тревога и внутреннее спокойствие", resources: "Ресурсы и энергия", work: "Работа и решения", direction: "Выбор и направление" },
     daoNote: "Одна из 64 гексаграмм выпадает случайно, независимо от смысла вопроса. Это образ для размышления, а не предсказание.",
+    expandDao: "Развернуть всё", collapseDao: "Свернуть",
+    originalReading: "Полное авторское толкование · русский оригинал", editorialReading: "Полное редакционное толкование · на русском",
+    loadingReading: "Загружаем полное толкование…", unavailableReading: "Полное толкование не загрузилось. Откройте карточку гексаграммы.",
     again: "Другой символ",
     card: "Прочитать толкование",
     aphorismNote: "Подбор по смыслу вопроса. Редакционные афоризмы и авторские переложения классических идей — не дословные цитаты исторических авторов.",
@@ -74,6 +78,9 @@ const copy = {
     headings: { dao: "A symbol from the Book of Changes", aphorisms: "Reflections for your question", personal: "Three ways to begin" },
     topic: { relationships: "Relationships and connection", stress: "Stress and inner calm", resources: "Energy and resources", work: "Work and decisions", direction: "Choices and direction" },
     daoNote: "One of 64 hexagrams is drawn at random, independently of your question. It offers a symbol for reflection, not a prediction.",
+    expandDao: "Expand all", collapseDao: "Show less",
+    originalReading: "Full author interpretation · in Russian", editorialReading: "Full editorial interpretation · in Russian",
+    loadingReading: "Loading full interpretation…", unavailableReading: "The full reading could not be loaded. Open the hexagram page instead.",
     again: "Draw another",
     card: "Read interpretation",
     aphorismNote: "Topic-matched editorial aphorisms and original paraphrases inspired by classics, not verbatim historical quotations.",
@@ -112,6 +119,9 @@ const copy = {
     headings: { dao: "Un símbolo del Libro de los Cambios", aphorisms: "Reflexiones para tu pregunta", personal: "Tres maneras de empezar" },
     topic: { relationships: "Relaciones y cercanía", stress: "Estrés y calma interior", resources: "Energía y recursos", work: "Trabajo y decisiones", direction: "Opciones y rumbo" },
     daoNote: "Uno de los 64 hexagramas se elige al azar, independientemente de tu pregunta. Es un símbolo para reflexionar, no una predicción.",
+    expandDao: "Desplegar todo", collapseDao: "Mostrar menos",
+    originalReading: "Interpretación completa del autor · en ruso", editorialReading: "Interpretación editorial completa · en ruso",
+    loadingReading: "Cargando interpretación completa…", unavailableReading: "No se pudo cargar la interpretación. Abre la página del hexagrama.",
     again: "Otro símbolo",
     card: "Leer interpretación",
     aphorismNote: "Aforismos editoriales y paráfrasis propias inspiradas en clásicos. No son citas literales.",
@@ -144,6 +154,9 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const [visibleAphorisms, setVisibleAphorisms] = useState(3);
   const [result, setResult] = useState<Result | null>(null);
   const [activeMode, setActiveMode] = useState<Mode>("dao");
+  const [expandedDao, setExpandedDao] = useState(false);
+  const [fullDaoReading, setFullDaoReading] = useState<DaoReading | null>(null);
+  const [daoReadingError, setDaoReadingError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   function choose(mode: Mode) {
@@ -154,6 +167,9 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       return;
     }
     const matched = matchIdeasTopic(question);
+    setExpandedDao(false);
+    setFullDaoReading(null);
+    setDaoReadingError(false);
     setError(false);
     setVisibleAphorisms(3);
     setResult({ mode, ...matched, hexagram: mode === "dao" ? drawRandomHexagram() : undefined });
@@ -166,8 +182,41 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       textareaRef.current?.focus();
       return;
     }
-    choose(activeMode);
+    // Asking the question always opens the short Daoist answer first.
+    // The other two modes remain available through their own buttons.
+    choose("dao");
   }
+
+  useEffect(() => {
+    const number = result?.mode === "dao" ? result.hexagram : undefined;
+    if (!expandedDao || !number || fullDaoReading?.number === number) return;
+    const selectedNumber: number = number;
+    let cancelled = false;
+    async function loadReading() {
+      try {
+        if (daoAuthorHexagramNumbers.includes(selectedNumber)) {
+          const { default: records } = await import("@/data/dao-hexagram-author.json");
+          const text = records.find(record => record.number === selectedNumber)?.text;
+          if (!cancelled) {
+            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "original" });
+            else setDaoReadingError(true);
+          }
+        } else {
+          // The 52 full editorial readings are intentionally code-split.
+          const { getDaoEditorialHexagramText } = await import("@/data/dao-hexagrams-editorial.mjs");
+          const text = getDaoEditorialHexagramText(selectedNumber);
+          if (!cancelled) {
+            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "editorial" });
+            else setDaoReadingError(true);
+          }
+        }
+      } catch {
+        if (!cancelled) setDaoReadingError(true);
+      }
+    }
+    void loadReading();
+    return () => { cancelled = true; };
+  }, [expandedDao, result?.mode, result?.hexagram, fullDaoReading]);
 
   const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
@@ -219,28 +268,74 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
 
       {result ? (
         <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode} data-question-language={answerLocale} lang={answerLocale}>
-          <div className={styles.resultsHeading}>
-            <div>
-              <p className={styles.tag}>{answerCopy.basedOn}: {topicLabel}</p>
-              <h2>{answerCopy.headings[result.mode]}</h2>
+          {result.mode !== "dao" ? (
+            <div className={styles.resultsHeading}>
+              <div>
+                <p className={styles.tag}>{answerCopy.basedOn}: {topicLabel}</p>
+                <h2>{answerCopy.headings[result.mode]}</h2>
+              </div>
+              <button type="button" className={styles.reset} onClick={() => { setResult(null); setQuestion(""); textareaRef.current?.focus(); }}>{answerCopy.reset} ×</button>
             </div>
-            <button type="button" className={styles.reset} onClick={() => { setResult(null); setQuestion(""); textareaRef.current?.focus(); }}>{answerCopy.reset} ×</button>
-          </div>
+          ) : null}
           {result.mode === "dao" && hexagram ? (
-            <article className={styles.hexagramCard}>
-              <div className={styles.hexagramMark}>
-                <DaoHexagramGlyph upper={hexagram.upper} lower={hexagram.lower} label={"Hexagram " + hexagram.number} />
+            <div className={styles.daoQuick} data-ideas-dao>
+              <p className={styles.daoSummary} data-ideas-dao-summary>
+                <strong>{answerCopy.dao} · {hexagramTitle(hexagram, answerLocale)}.</strong>{" "}{hexagramEssence(hexagram, answerLocale)}
+              </p>
+              <button type="button" className={styles.expandDao}
+                aria-expanded={expandedDao} aria-controls="ideas-dao-details"
+                onClick={() => { setExpandedDao(open => !open); setDaoReadingError(false); }}>
+                {expandedDao ? answerCopy.collapseDao : answerCopy.expandDao}<ChevronDown aria-hidden="true" size={18} />
+              </button>
+              <div id="ideas-dao-details" className={styles.daoDetails} hidden={!expandedDao}
+                data-ideas-dao-expanded={expandedDao ? "true" : undefined}>
+                {expandedDao ? (
+                  <>
+                    <div className={styles.resultsHeading}>
+                      <div>
+                        <p className={styles.tag}>{answerCopy.basedOn}: {topicLabel}</p>
+                        <h2>{answerCopy.headings.dao}</h2>
+                      </div>
+                      <button type="button" className={styles.reset}
+                        onClick={() => { setResult(null); setQuestion(""); setExpandedDao(false); textareaRef.current?.focus(); }}>
+                        {answerCopy.reset} ×
+                      </button>
+                    </div>
+                    <div className={styles.hexagramCard}>
+                      <div className={styles.hexagramMark}>
+                        <DaoHexagramGlyph upper={hexagram.upper} lower={hexagram.lower} label={"Hexagram " + hexagram.number} />
+                      </div>
+                      <div className={styles.hexagramText}>
+                        <p className={styles.tag}>№ {hexagram.number} · {hexagram.hanzi}</p>
+                        <h3>{hexagramTitle(hexagram, answerLocale)}</h3>
+                      </div>
+                    </div>
+                    <div className={styles.daoReading} data-ideas-dao-reading>
+                      {fullDaoReading?.number === hexagram.number ? (
+                        <>
+                          <p className={styles.tag}>{fullDaoReading.kind === "original" ? answerCopy.originalReading : answerCopy.editorialReading}</p>
+                          <div className={styles.daoProse} lang="ru">
+                            {fullDaoReading.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+                          </div>
+                        </>
+                      ) : <p className={styles.daoReadingStatus} role="status">{daoReadingError ? answerCopy.unavailableReading : answerCopy.loadingReading}</p>}
+                    </div>
+                    <div className={styles.hexagramActions}>
+                      <Link href={"/" + answerLocale + "/dao/hexagrams/" + hexagram.number} prefetch={false}>
+                        {answerCopy.card}<ArrowRight size={16} aria-hidden="true" />
+                      </Link>
+                      <button type="button" onClick={() => {
+                        setExpandedDao(false);
+                        setFullDaoReading(null);
+                        setDaoReadingError(false);
+                        setResult({ ...result, hexagram: drawRandomHexagram() });
+                      }}><RefreshCw size={16} aria-hidden="true" />{answerCopy.again}</button>
+                    </div>
+                    <p className={styles.note}>{answerCopy.daoNote}</p>
+                  </>
+                ) : null}
               </div>
-              <div className={styles.hexagramText}>
-                <p className={styles.tag}>№ {hexagram.number} · {hexagram.hanzi}</p>
-                <h3>{hexagramTitle(hexagram, answerLocale)}</h3>
-                <p>{hexagramEssence(hexagram, answerLocale)}</p>
-                <div className={styles.hexagramActions}>
-                  <Link href={"/" + answerLocale + "/dao/hexagrams/" + hexagram.number} prefetch={false}>{answerCopy.card}<ArrowRight size={16} aria-hidden="true" /></Link>
-                  <button type="button" onClick={() => setResult({ ...result, hexagram: drawRandomHexagram() })}><RefreshCw size={16} aria-hidden="true" />{answerCopy.again}</button>
-                </div>
-              </div>
-            </article>
+            </div>
           ) : null}
           {result.mode === "aphorisms" ? (
             <>
@@ -300,7 +395,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
               </ol>
             </div>
           ) : null}
-          <p className={styles.note}>{result.mode === "dao" ? answerCopy.daoNote : result.mode === "aphorisms" ? answerCopy.aphorismNote : answerCopy.personalNote}</p>
+          {result.mode !== "dao" ? <p className={styles.note}>{result.mode === "aphorisms" ? answerCopy.aphorismNote : answerCopy.personalNote}</p> : null}
         </div>
       ) : exampleHexagram ? (
         <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}>

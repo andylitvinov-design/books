@@ -21,6 +21,27 @@ test("approved Ideas design keeps question, submit button and three touch-sized 
   assert.match(css, /prefers-reduced-motion/);
 });
 
+
+test("asking a question reveals only a Daoist paragraph and Expand all; full 64-card texts load on demand", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  assert.match(ui, /function submitQuestion\(event: FormEvent<HTMLFormElement>\)[\s\S]*?choose\("dao"\)/);
+  assert.match(ui, /<p className=\{styles\.daoSummary\} data-ideas-dao-summary>/);
+  assert.match(ui, /<button type="button" className=\{styles\.expandDao\}/);
+  assert.match(ui, /aria-expanded=\{expandedDao\} aria-controls="ideas-dao-details"/);
+  assert.match(ui, /hidden=\{!expandedDao\}/);
+  assert.match(ui, /data-ideas-dao-expanded/);
+  assert.match(ui, /await import\("@\/data\/dao-hexagram-author\.json"\)/);
+  assert.match(ui, /await import\("@\/data\/dao-hexagrams-editorial\.mjs"\)/);
+  assert.match(ui, /expandDao: "Развернуть всё"/);
+  assert.match(ui, /expandDao: "Expand all"/);
+  assert.match(ui, /expandDao: "Desplegar todo"/);
+  assert.match(css, /\.daoSummary \{/);
+  assert.match(css, /\.expandDao \{[\s\S]*?min-height: 44px/);
+  assert.match(css, /\.daoDetails \{/);
+  assert.match(css, /\.daoProse \{/);
+});
+
 test("first screen shows an explicitly marked educational example, never a made-up personal answer", () => {
   const ui = read("components/ideas-discovery.tsx");
   assert.match(ui, /const exampleHexagram = getHexagram\(42\)/);
