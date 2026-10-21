@@ -88,7 +88,7 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
           body:ru?'Настройка канала, без автоматической отправки.':'Connection setup; no automatic send.'},
       ]},
   ]
-  return <main className="prescription-admin-shell">
+  return <main className={"prescription-admin-shell "+styles.page}>
     <PrescriptionAdminHeader
       title={{en:'Additional tools',ru:'Дополнительные инструменты'}}
       description={{en:'Specialized owner functions — without a second practitioner cabinet.',ru:'Специальные функции владельца без второго кабинета мастера.'}}
