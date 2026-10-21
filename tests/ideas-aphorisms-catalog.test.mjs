@@ -160,7 +160,7 @@ test("14 traditional proverbs: seven verified original languages and three indep
     assert.equal(item.source_license, "public_domain_1857_us");
     for (const locale of ["ru", "en", "es"]) {
       assert.ok(item["text_" + locale].length >= 25, item.id + "-" + locale);
-      const resolved = getIdeasAphorismMatches(item["text_" + locale], locale, matchIdeasTopic(item["text_" + locale]).topic)
+      const resolved = getIdeasAphorismMatches(item["text_" + locale], locale, item.topic)
         .find(found => found.id === item.id);
       assert.ok(resolved, item.id + "-" + locale);
       assert.equal(resolved.kind, "proverb");
