@@ -51,6 +51,7 @@ import ClientContactPhone from '@/components/app/client-contact-phone'
 import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
+import PostSignupInstallOffer from '@/components/app/post-signup-install-offer'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
@@ -119,7 +120,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false),
-    [nativeApp,setNativeApp] = useState(false)
+    [nativeApp,setNativeApp] = useState(false),
+    [installOfferAccountId,setInstallOfferAccountId] = useState(null)
   useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
   const quickAuthAttempted = useRef(false)
   const signinAttempted = useRef(false)
@@ -146,6 +148,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
+      return fresh
     } catch (e) {
       if (epoch !== loadEpoch.current) return
       setData(null)
@@ -283,6 +286,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       setError(e)
     } finally {
       goSignedOut(setData)
+      setInstallOfferAccountId(null)
       setState('signed-out')
       setBusy(false)
       router.replace(root)
@@ -524,6 +528,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     page === 'reports'
   return (
     <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
+    <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
+      visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
+      onDismiss={()=>setInstallOfferAccountId(null)} />
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
@@ -566,7 +573,14 @@ export default function AppWorkspace({ locale, path = [] }) {
         </nav>
       )}
       {data.account.onboardingState !== 'active' ? (
-        <Preferences data={data} locale={locale} onboarding onDone={load} />
+        <Preferences data={data} locale={locale} onboarding onDone={async()=>{
+          // Only a successful server-authenticated bootstrap after consent
+          // completion can offer installation. Never show it on failed login,
+          // unfinished onboarding, or a stale/different account.
+          const fresh=await load()
+          if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id)
+            setInstallOfferAccountId(fresh.account.id)
+        }} />
       ) : (
         <>
           {page === 'continue' && (
