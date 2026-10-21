@@ -275,10 +275,13 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     <button type="button" className={styles.secondary} disabled={locked||dirty||editing!==null||practitioner?.status==='submitted'} onClick={onSubmitVideos}>{t.review}</button>
    </div>}
    {dirty&&<p className={styles.notice}>{t.unsaved}</p>}
-   <details className={styles.rules}><summary>{ru?'Правила и видимость видео':es?'Privacidad y publicación':'Privacy & publishing'}</summary><p>{t.note}</p><p>{t.autoSaved}</p><p>{t.moderation}</p></details>
-   {isOwner&&reportMode!=='not-owner'&&<details className={styles.privateLibrary}><summary><FolderOpen size={17} aria-hidden="true"/>{ru?'Приватные материалы клиентских отчётов':es?'Recursos privados de informes':'Private client report resources'}</summary>
-    <PracticeReportMaterials items={reportItems} locale={locale} loading={reportMode==='loading'} error={reportError} onRefresh={()=>setReportRefresh(n=>n+1)}/>
-   </details>}
+   <details className={styles.advancedOptions} data-practice-video-advanced>
+    <summary>{ru?'Дополнительно · приватность и публикация':es?'Opciones · privacidad y publicación':'More · privacy & publishing'}</summary>
+    <details className={styles.rules}><summary>{ru?'Правила публикации':es?'Normas de publicación':'Publishing rules'}</summary><p>{t.note}</p><p>{t.autoSaved}</p><p>{t.moderation}</p></details>
+    {isOwner&&reportMode!=='not-owner'&&<details className={styles.privateLibrary}><summary><FolderOpen size={17} aria-hidden="true"/>{ru?'Приватные материалы клиентских отчётов':es?'Recursos privados de informes':'Private client report resources'}</summary>
+     <PracticeReportMaterials items={reportItems} locale={locale} loading={reportMode==='loading'} error={reportError} onRefresh={()=>setReportRefresh(n=>1+n)}/>
+    </details>}
+   </details>
   </div>}
  </div>
  </div>
