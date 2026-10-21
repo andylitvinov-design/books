@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, Check, Compass, Mic, RotateCcw, ShieldCheck, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, Compass, Heart, Mic, RotateCcw, Send, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
 
 import {
   homeGuideDestinations,
@@ -77,17 +77,17 @@ type GuideCopy = {
 
 const copy: Record<PublicLocale, GuideCopy> = {
   en: {
-    eyebrow: "HOLISTIC HOUSE · YOUR STARTING POINT",
+    eyebrow: "HOLISTIC HOUSE · PERSONAL GUIDANCE",
     title: "What's on your mind?",
-    lead: "Ask by text or voice. We'll help you find a useful next step.",
+    lead: "Ask by text or voice. Find a useful next step.",
     welcome: "Hello, I'm your Holistic House site guide. What would you like to explore today?",
     question: "Your question or situation",
     placeholder: "Ask anything…",
-    send: "Let's talk",
+    send: "Get guidance",
     reset: "Start over",
     askAgain: "You can continue the conversation or ask something else.",
     exampleLabel: "Or start with",
-    examples: ["I'm feeling stressed", "A relationship is difficult", "I need to make a decision", "I want to grow or learn"],
+    examples: ["Feeling stressed", "Relationships", "Need a decision"],
     topic: {
       relationships: "relationships and connection",
       stress: "stress and inner calm",
@@ -120,7 +120,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
       ideas: "Explore Ideas",
     },
     secondary: "Another way to explore",
-    privacyShort: "Private text · How this guide works",
+    privacyShort: "Private in this browser · How it works",
     privacyDetail: "Your typed question stays in this browser while the page is open. It is not sent to our server, CRM, analytics or an AI provider. This is a local topic-based guide, not an AI therapist or a real-time human conversation. If you choose voice input, your browser or operating system may process audio through its speech recognition provider. You decide whether to enable the microphone. Do not include confidential personal details.",
     voiceStart: "Dictate a question with microphone",
     voiceStop: "Stop voice input",
@@ -139,17 +139,17 @@ const copy: Record<PublicLocale, GuideCopy> = {
     limitation: "Suggestions are for reflection and navigation, not a diagnosis, treatment or promised result.",
   },
   ru: {
-    eyebrow: "HOLISTIC HOUSE · НАЧНЁМ С РАЗГОВОРА",
+    eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ ПОДДЕРЖКА",
     title: "Что сейчас вас волнует?",
-    lead: "Спросите текстом или голосом — поможем выбрать первый шаг.",
+    lead: "Спросите текстом или голосом. Найдём следующий шаг.",
     welcome: "Здравствуйте! Я помощник сайта Holistic House. С чем хотите разобраться сегодня?",
     question: "Ваш вопрос или ситуация",
     placeholder: "Спросите…",
-    send: "Обсудить",
+    send: "Получить подсказку",
     reset: "Новый разговор",
     askAgain: "Можно продолжить разговор или задать другой вопрос.",
     exampleLabel: "Или выберите тему",
-    examples: ["Я тревожусь и устаю", "Сложности в отношениях", "Не могу принять решение", "Хочу развиваться и учиться"],
+    examples: ["Стресс и тревога", "Отношения", "Трудно принять решение"],
     topic: {
       relationships: "отношений и близости",
       stress: "тревоги и спокойствия",
@@ -182,7 +182,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
       ideas: "Открыть Идеи",
     },
     secondary: "Другой способ разобраться",
-    privacyShort: "Ваш вопрос приватен · Как это работает",
+    privacyShort: "Только в этом браузере · Как работает",
     privacyDetail: "Текст вопроса остаётся в этом браузере, пока открыта страница. Он не передаётся на наш сервер, в CRM, аналитику или AI-провайдеру. Это тематический помощник для навигации, а не AI-терапевт и не живой консультант. При голосовом вводе браузер или операционная система могут обрабатывать звук через сервис распознавания речи. Микрофон включается только по вашему действию. Не вводите конфиденциальные данные.",
     voiceStart: "Продиктовать вопрос",
     voiceStop: "Остановить голосовой ввод",
@@ -201,17 +201,17 @@ const copy: Record<PublicLocale, GuideCopy> = {
     limitation: "Подсказки помогают ориентироваться, но не являются диагнозом, лечением или обещанием результата.",
   },
   es: {
-    eyebrow: "HOLISTIC HOUSE · EMPIEZA CON UNA CONVERSACIÓN",
+    eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN PERSONAL",
     title: "¿Qué te preocupa hoy?",
-    lead: "Pregunta por texto o voz. Te ayudaremos a encontrar el siguiente paso.",
+    lead: "Pregunta por texto o voz. Encuentra tu próximo paso.",
     welcome: "¡Hola! Soy la guía de Holistic House. ¿Sobre qué te gustaría conversar?",
     question: "Tu pregunta o situación",
     placeholder: "Pregunta…",
-    send: "Conversemos",
+    send: "Recibir orientación",
     reset: "Nueva conversación",
     askAgain: "Puedes continuar la conversación o preguntar otra cosa.",
     exampleLabel: "O elige un tema",
-    examples: ["Me siento con ansiedad", "Problemas en una relación", "Necesito tomar una decisión", "Quiero aprender y crecer"],
+    examples: ["Estrés y ansiedad", "Relaciones", "Tomar una decisión"],
     topic: {
       relationships: "relaciones y conexión",
       stress: "estrés y calma interior",
@@ -244,7 +244,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
       ideas: "Explorar Ideas",
     },
     secondary: "Otra opción para explorar",
-    privacyShort: "Texto privado · Cómo funciona",
+    privacyShort: "Privado en este navegador · Cómo funciona",
     privacyDetail: "Tu texto permanece en este navegador mientras la página esté abierta. No se envía a nuestro servidor, CRM, analítica ni a un proveedor de IA. Esta guía local recomienda rutas por temas: no es una terapeuta de IA ni una conversación humana en directo. Si usas la voz, el navegador o sistema operativo puede enviar audio a su proveedor de reconocimiento. Solo activamos el micrófono cuando lo decides. Evita datos confidenciales.",
     voiceStart: "Dictar una pregunta",
     voiceStop: "Detener dictado",
@@ -263,6 +263,8 @@ const copy: Record<PublicLocale, GuideCopy> = {
     limitation: "Estas sugerencias sirven para orientarte; no son diagnósticos, tratamientos ni garantías.",
   },
 };
+
+const quickStartIcons = [Waves, Heart, Compass] as const;
 
 export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
@@ -484,15 +486,18 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const voiceTime = `${String(Math.floor(voiceElapsed / 60)).padStart(2, "0")}:${String(voiceElapsed % 60).padStart(2, "0")}`;
 
   return (
-    <section id="ask-holistic-house" className={styles.root} data-home-conversation-guide aria-labelledby="home-guide-title">
+    <section id="ask-holistic-house" className={styles.root} data-home-conversation-guide
+      data-guide-phase={turns.length === 0 ? "ready" : "conversation"} aria-labelledby="home-guide-title">
       <div className={styles.intro}>
-        <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
+        <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
         <h2 id="home-guide-title">{t.title}</h2>
         <p className={styles.lead}>{t.lead}</p>
         <div className={styles.scenery} aria-hidden="true" />
       </div>
+
       <div className={styles.conversation}>
-        <div className={styles.log} role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
+        <div className={styles.log} data-has-turns={turns.length > 0 ? "true" : "false"}
+          role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
           {turns.map(turn => (
             <p key={turn.id} className={turn.role === "guide" ? styles.guideBubble : styles.visitorBubble}>{turn.text}</p>
           ))}
@@ -520,20 +525,6 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
           </div>
         ) : null}
 
-        {turns.length === 0 ? (
-          <div className={styles.examples} aria-label={t.exampleLabel}>
-            <span>{t.exampleLabel}</span>
-            {t.examples.map(example => (
-              <button type="button" key={example} onClick={() => ask(example)}>{example}</button>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.restart}>
-            <span>{answerCopy.askAgain}</span>
-            <button type="button" onClick={reset}><RotateCcw size={13} aria-hidden="true" />{t.reset}</button>
-          </div>
-        )}
-
         <form className={styles.form} onSubmit={submit} aria-label={t.question}>
           {recording ? (
             <div className={styles.recording} data-home-voice-recording role="group" aria-label={recordingLabel}>
@@ -550,31 +541,34 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
           ) : (
             <>
               <label className={styles.srOnly} htmlFor="home-guide-question">{t.question}</label>
-              <textarea
-                id="home-guide-question"
-                ref={questionRef}
-                value={draft}
-                onChange={event => setDraft(event.currentTarget.value)}
-                onKeyDown={event => {
-                  if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-                    event.preventDefault();
-                    event.currentTarget.form?.requestSubmit();
-                  }
-                }}
-                maxLength={500}
-                rows={1}
-                placeholder={t.placeholder}
-                autoComplete="off"
-                aria-label={t.question}
-              />
-              <button
-                type="button" className={styles.voiceButton}
-                aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
-                title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
-                onClick={toggleVoice}
-              ><Mic size={20} aria-hidden="true" /></button>
+              <div className={styles.inputRow}>
+                <Sparkles size={20} className={styles.inputIcon} aria-hidden="true" />
+                <textarea
+                  id="home-guide-question"
+                  ref={questionRef}
+                  value={draft}
+                  onChange={event => setDraft(event.currentTarget.value)}
+                  onKeyDown={event => {
+                    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                      event.preventDefault();
+                      event.currentTarget.form?.requestSubmit();
+                    }
+                  }}
+                  maxLength={500}
+                  rows={1}
+                  placeholder={t.placeholder}
+                  autoComplete="off"
+                  aria-label={t.question}
+                />
+                <button
+                  type="button" className={styles.voiceButton}
+                  aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+                  title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+                  onClick={toggleVoice}
+                ><Mic size={20} aria-hidden="true" /></button>
+              </div>
               <button type="submit" className={styles.sendButton} aria-label={t.send} disabled={!draft.trim()}>
-                <ArrowUp size={20} aria-hidden="true" />
+                <Send size={19} aria-hidden="true" /><span>{t.send}</span>
               </button>
             </>
           )}
@@ -585,6 +579,25 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
           <summary><ShieldCheck size={14} aria-hidden="true" />{t.privacyShort}</summary>
           <p>{t.privacyDetail}</p>
         </details>
+
+        {turns.length === 0 ? (
+          <div className={styles.examples} aria-label={t.exampleLabel}>
+            <span>{t.exampleLabel}</span>
+            <div className={styles.quickChoices}>
+              {t.examples.map((example, index) => {
+                const Icon = quickStartIcons[index] ?? Compass;
+                return <button type="button" key={example} onClick={() => ask(example)}>
+                  <Icon size={21} aria-hidden="true" /><span>{example}</span>
+                </button>;
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className={styles.restart}>
+            <span>{answerCopy.askAgain}</span>
+            <button type="button" onClick={reset}><RotateCcw size={14} aria-hidden="true" />{t.reset}</button>
+          </div>
+        )}
       </div>
     </section>
   );
