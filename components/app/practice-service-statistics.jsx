@@ -1,5 +1,6 @@
-import PracticeAnalyticsSubscriptions from './practice-analytics-subscriptions'
 'use client'
+
+import PracticeAnalyticsSubscriptions from './practice-analytics-subscriptions'
 
 import {useMemo,useState} from 'react'
 
