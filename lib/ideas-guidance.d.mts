@@ -1,6 +1,10 @@
 export type IdeasTopic = "relationships" | "stress" | "resources" | "work" | "direction";
 export type IdeasFreeId = "review" | "tests" | "dao";
+export type IdeasAphorism = { id: string; text: string; kind: "editorial" | "inspired"; source: { author: string; work: string; url: string } | null };
 export declare const ideaTopics: ReadonlyArray<IdeasTopic>;
+export declare const ideasAphorismCatalog: ReadonlyArray<{id: string;topic: string;text_en: string;text_ru: string;text_es: string}>;
 export declare function matchIdeasTopic(question: string): { topic: IdeasTopic; matched: boolean };
+export declare function matchIdeasAphorismTheme(question: string, topic?: IdeasTopic): string;
+export declare function getIdeasAphorismMatches(question: string, locale: "ru" | "en" | "es", topic?: IdeasTopic): IdeasAphorism[];
 export declare function getIdeasAphorisms(topic: IdeasTopic, locale: "ru" | "en" | "es"): string[];
 export declare function getIdeasFreeRecommendations(topic: IdeasTopic): IdeasFreeId[];
