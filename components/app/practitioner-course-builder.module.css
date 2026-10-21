@@ -48,3 +48,20 @@
 .message{background:#e4f2ed;color:#29594c;border:1px solid #bddace}
 @media(max-width:680px){.columns{grid-template-columns:minmax(0,1fr)}.courseList{flex-direction:row;max-height:none;overflow-x:auto;padding-bottom:6px}.courseList button{flex:0 0 145px}.editor{padding:11px}.heading h3{font-size:18px}.root{padding:12px}.bottom{justify-content:stretch}.bottom button{flex:1}.bottom span{flex:0 0 100%}.publicControls>*{flex:1}.slidePicker button{max-width:120px}}
 @media(max-width:355px){.fields{grid-template-columns:minmax(0,1fr)}.fields .wide{grid-column:auto}.slideEditor{padding:9px}.slidePicker button{max-width:99px}.bottom button{flex:0 0 100%}.heading>.primary{width:100%}}
+
+
+/* Course V5 — review private video before separately uploading to YouTube. */
+.youtubePrepare{border:1px solid #d9c9b4;border-radius:12px;background:#fdf8f0;overflow:hidden;min-width:0}
+.youtubePrepare>summary{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:44px;
+ padding:10px 12px;color:#6c5340;font:750 12px/1.3 system-ui,sans-serif;list-style:none}
+.youtubePrepare>summary::-webkit-details-marker{display:none}
+.youtubePrepare[open]>summary{border-bottom:1px solid #e4d5c2}
+.youtubePrepare p{margin:10px 12px;color:#7a6b5b;font:450 12px/1.5 system-ui,sans-serif}
+.youtubeActions{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;padding:0 12px 12px}
+.youtubeActions a,.youtubeActions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 165px;
+ border:1px solid #bbd5cc;border-radius:11px;min-height:45px;padding:9px 12px;
+ background:#e1f0ea;color:#156b65;text-decoration:none;cursor:pointer;font:740 12px/1.35 system-ui,sans-serif}
+.youtubeActions a:hover,.youtubeActions button:hover{background:#d4e9e1}
+.youtubeActions a:focus-visible,.youtubeActions button:focus-visible{outline:3px solid #55a79a;outline-offset:2px}
+.youtubeActions button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:430px){.youtubeActions{gap:6px}.youtubeActions a,.youtubeActions button{flex-basis:100%}}
