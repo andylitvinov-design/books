@@ -130,13 +130,14 @@ test('multiple browser tabs and lost HTTP responses cannot reserve same pending 
   assert.match(code,/return \{id:previous\.id,status:previous\.status,duplicate:true\}/)
   assert.match(code,/created_at>now\(\)-interval '24 hours'/)
 })
-test('CRM owner has separate three-section mobile navigation and never mounts messages on Contacts',()=>{
+test('CRM owner keeps the messages navigation and inbox outside data-bound contact sections',()=>{
   const ui=source('components/app/crm-manager.jsx')
   const css=source('components/app/crm-manager.module.css')
   assert.match(ui,/aria-pressed=\{activeSection===id\}/)
   assert.match(ui,/activeSection==='overview'/)
-  assert.match(ui,/activeSection==='messages'&&<CrmMessengerPanel/)
-  assert.ok(ui.indexOf("activeSection==='messages'&&<CrmMessengerPanel")<ui.indexOf('{data&&<>'),
+  assert.match(ui,/activeSection==='messages'&&<>\s*<CrmMessagesNavigation[\s\S]*?<CrmMessengerPanel/)
+  const messageIndex=ui.indexOf("activeSection==='messages'&&<>")
+  assert.ok(messageIndex>=0&&messageIndex<ui.indexOf('{data&&<>'),
     'inbox must mount independently when overview API is unavailable')
   assert.match(ui,/activeSection==='contacts'&&<>/)
   assert.match(ui,/\['messages',language==='ru'\?'Сообщения'/)

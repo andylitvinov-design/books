@@ -211,7 +211,7 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
 
       <div className="site-video-manager-grid">
         <nav className="site-video-placement-list" aria-label={text.pages}>
-          {SITE_VIDEO_SLOTS.filter(item => locale !== "es" || item.id === "about-intro").map(item => {
+          {SITE_VIDEO_SLOTS.filter(item => locale !== "es" || ["about-intro", "thank-you"].includes(item.id)).map(item => {
             const itemRecord = item.entityType ? undefined : records.find(entry => entry.key === videoKey(item.id, locale));
             const count = item.entityType ? records.filter(entry => entry.slot === item.id && entry.locale === locale && entry.published).length : 0;
             const status = itemRecord?.published ? "published" : itemRecord?.draft ? "draft" : "empty";
