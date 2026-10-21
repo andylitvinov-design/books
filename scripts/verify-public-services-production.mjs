@@ -465,7 +465,9 @@ try {
             // Check semantic controls instead of a fragile global select count.
             await expect(form.locator('select[id$="-format"]')).toHaveCount(1);
             await expect(form.locator('select[id$="-topic"]')).toHaveCount(1);
-            await expect(form.locator('select[aria-label="Country calling code"]')).toHaveCount(1);
+            const countryCode = form.locator('[data-phone-country-input] select');
+            await expect(countryCode).toHaveCount(1);
+            await expect(countryCode).toHaveAttribute("aria-label", locale === "ru" ? "Код страны" : "Country calling code");
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
               nodes.map(node => ({top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom})));
