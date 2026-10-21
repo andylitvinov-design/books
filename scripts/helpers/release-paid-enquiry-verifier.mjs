@@ -149,16 +149,28 @@ export async function installPaidReadOnlyGuard(context, policy) {
     return promise.finally(() => pending.delete(promise));
   };
   const abort = route => route.abort('blockedbyclient').catch(() => {});
-  let posts = 0, allowedGets = 0;
+  let posts = 0, allowedGets = 0, intentionallySuppressedPrefetches = 0;
   const record = diagnostic => violations.push(diagnostic); // Bounded categories only, never raw request data.
   await context.route('**/*', route => track(async () => {
     const request = route.request();
     if (request.method() === 'POST') posts++;
     const denied = classifyPaidRequest(policy, request);
     if (denied) {
-      let diagnostic = denied;
-      try { diagnostic = { reason: denied, ...deniedPaidRequestMetadata(policy, request), ...await deniedPaidFetchMetadata(policy, request) }; }
+      let diagnostic = denied, suppressPrefetch = false;
+      try {
+        diagnostic = { reason: denied, ...deniedPaidRequestMetadata(policy, request), ...await deniedPaidFetchMetadata(policy, request) };
+        suppressPrefetch = denied === 'noncanonical URL'
+          && ['home', 'services', 'free-review'].includes(diagnostic.publicFetchDestination)
+          && diagnostic.nextRouterPrefetch === 'one' && diagnostic.rscQueryKeyCount === 1
+          && /^\?_rsc=[^&]+(?![\s\S])/.test(new URL(request.url()).search);
+      }
       catch { /* Metadata must never interrupt the original record/abort path. */ }
+      // Explicit test-only exception: abort speculative public prefetch without
+      // fetching it. Never count this as a successful GET or suppress cart.
+      if (suppressPrefetch) {
+        intentionallySuppressedPrefetches++;
+        await abort(route); return;
+      }
       record(diagnostic); await abort(route); return;
     }
     try {
@@ -183,7 +195,7 @@ export async function installPaidReadOnlyGuard(context, policy) {
     assertClean() {
       assert.equal(posts, 0, 'Paid read-only audit attempted a POST');
       assert.deepEqual(violations, [], 'Paid read-only network boundary violated');
-      return { postAttempts: posts, blockedRequests: violations.length, allowedGets };
+      return { postAttempts: posts, blockedRequests: violations.length, allowedGets, intentionallySuppressedPrefetches };
     },
   };
 }

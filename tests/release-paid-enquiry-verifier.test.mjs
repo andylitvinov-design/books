@@ -45,7 +45,7 @@ for (const options of [base, live]) {
     for (const [path, type] of [[policy.path, 'document'], ['/_next/static/chunks/app.js', 'script'], ['/_next/static/css/app.css', 'stylesheet'], ['/_next/static/media/font.woff2', 'font'], ['/images/holistic-house/service.webp', 'image']]) {
       assert.deepEqual(await context.send(request(policy, path, 'GET', type)), ['fetch', 'fulfill']);
     }
-    assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 5 });
+    assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 5, intentionallySuppressedPrefetches: 0 });
   });
 }
 const rejectedModes = [
@@ -341,7 +341,7 @@ for (const options of [base, live]) test(options.label + ' wrapper installs both
   const browser = { async newContext(settings) { assert.deepEqual(settings, { viewport: { width: options.width, height: 900 }, reducedMotion: 'reduce', serviceWorkers: 'block' }); events.push('newContext'); return context; } };
   const result = await verifyReleasePaidEnquiry(browser, options, mock.expect);
   assert.deepEqual(events, ['newContext', 'route', 'socket guard', 'newPage', 'goto', 'close']);
-  assert.equal(result.postAttempts, 0); assert.equal(result.blockedRequests, 0);
+  assert.equal(result.postAttempts, 0); assert.equal(result.blockedRequests, 0); assert.equal(result.intentionallySuppressedPrefetches, 0);
 });
 test('late forbidden teardown request cannot produce a green result', async () => {
   const mock = ui(base), { context } = network();
@@ -418,10 +418,17 @@ async function observeDeniedFetch(policy, req) {
   });
   return diagnostic;
 }
+async function observeSuppressedFetch(policy, req) {
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL', 'Classifier must still deny the URL');
+  assert.deepEqual(await context.send(req), ['abort'], 'Suppression must never fetch or fulfill a speculative request');
+  await guard.settle();
+  assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 1, intentionallySuppressedPrefetches: 1 });
+}
 async function nominalFetchDiagnostic(policy) {
   const { req, calls } = diagnosticFetch(policy);
-  const row = await observeDeniedFetch(policy, req);
-  assert.deepEqual(fetchFields(row), { publicFetchDestination: 'services', nextRouterPrefetch: 'one', rscQueryKeyCount: 1 });
+  await observeSuppressedFetch(policy, req);
   assert.deepEqual(calls, { named: ['next-router-prefetch'], forbidden: 0 });
 }
 function directLinkProps(text) {
@@ -448,13 +455,19 @@ for (const [file, hrefs] of [
 });
 
 for (const mode of [base, live]) for (const locale of ['en', 'ru', 'es']) for (const destination of ['home', 'services', 'free-review', 'cart']) {
-  test(`${mode.label}/${locale} finite ${destination} fetch diagnostic never authorizes request`, async () => {
+  test(`${mode.label}/${locale} finite ${destination} fetch is aborted without upstream permission`, async () => {
     const policy = releasePaidPolicy({ ...mode, locale }); await nominalFetchDiagnostic(policy);
     const path = destination === 'home' ? locale === 'es' ? '/es' : '/' : '/' + locale + '/' + (destination === 'free-review' ? 'services/free-situation-review' : destination);
     const { req, calls } = diagnosticFetch(policy, path);
     if (destination === 'cart') req.headerValue = () => { calls.named.push('FORBIDDEN'); throw new Error(DIAGNOSTIC_CANARY); };
-    const row = await observeDeniedFetch(policy, req);
-    assert.deepEqual(fetchFields(row), { publicFetchDestination: destination, nextRouterPrefetch: destination === 'cart' ? 'unavailable' : 'one', rscQueryKeyCount: 1 });
+    if (destination === 'cart') {
+      const row = await observeDeniedFetch(policy, req);
+      assert.deepEqual(fetchFields(row), { publicFetchDestination: 'cart', nextRouterPrefetch: 'unavailable', rscQueryKeyCount: 1 });
+    } else {
+      await observeSuppressedFetch(policy, req);
+      const projected = await deniedPaidFetchMetadata(policy, diagnosticFetch(policy, path).req);
+      assert.deepEqual(projected, { publicFetchDestination: destination, nextRouterPrefetch: 'one', rscQueryKeyCount: 1 });
+    }
     assert.deepEqual(calls, { named: destination === 'cart' ? [] : ['next-router-prefetch'], forbidden: 0 });
     assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL');
   });
@@ -494,8 +507,11 @@ for (const [name, marker, expected] of [['absent', null, 'absent'], ['one', '1',
     const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
     const { req, calls } = diagnosticFetch(policy, '/en/services', '?_rsc=' + DIAGNOSTIC_CANARY, marker);
     if (name === 'unsupported') req.headerValue = async key => { calls.named.push(key); return undefined; };
-    const row = await observeDeniedFetch(policy, req);
-    assert.deepEqual(fetchFields(row), { publicFetchDestination: 'services', nextRouterPrefetch: expected, rscQueryKeyCount: 1 });
+    if (expected === 'one') await observeSuppressedFetch(policy, req);
+    else {
+      const row = await observeDeniedFetch(policy, req);
+      assert.deepEqual(fetchFields(row), { publicFetchDestination: 'services', nextRouterPrefetch: expected, rscQueryKeyCount: 1 });
+    }
     assert.deepEqual(calls, { named: ['next-router-prefetch'], forbidden: 0 });
   });
 }
@@ -557,13 +573,111 @@ for (const fault of ['missing', 'throwing', 'rejected', 'hanging', 'late rejecti
   } finally { process.removeListener('unhandledRejection', onUnhandled); t.mock.restoreAll(); }
 });
 
-test('successful named-header diagnostic clears timer while preserving original denial', async t => {
+test('successful named-header suppression clears timer and performs no upstream fetch', async t => {
   const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy); const { req } = diagnosticFetch(policy);
   const originalSet = globalThis.setTimeout, originalClear = globalThis.clearTimeout; const pending = new Set(); let scheduled = 0, cleared = 0;
   t.mock.method(globalThis, 'setTimeout', (fn, ms) => { assert.equal(ms, 250); scheduled++; const timer = originalSet(fn, ms); pending.add(timer); return timer; });
   t.mock.method(globalThis, 'clearTimeout', timer => { cleared++; pending.delete(timer); return originalClear(timer); });
-  try { const row = await observeDeniedFetch(policy, req); assert.equal(row.nextRouterPrefetch, 'one'); assert.equal(scheduled, 1); assert.equal(cleared, 1); assert.equal(pending.size, 0); }
+  try { await observeSuppressedFetch(policy, req); assert.equal(scheduled, 1); assert.equal(cleared, 1); assert.equal(pending.size, 0); }
   finally { t.mock.restoreAll(); }
+});
+
+for (const mode of [base, live]) test(mode.label + ' suppression counts attempts separately from successful GETs', async () => {
+  const policy = releasePaidPolicy(mode); await nominalFetchDiagnostic(policy);
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  const { req, calls } = diagnosticFetch(policy);
+  for (let i = 1; i <= 3; i++) {
+    assert.deepEqual(await context.send(req), ['abort']);
+    assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 1, intentionallySuppressedPrefetches: i });
+  }
+  assert.deepEqual(calls, { named: Array(3).fill('next-router-prefetch'), forbidden: 0 });
+  assert.deepEqual(await context.send(request(policy, '/_next/static/chunks/app.js', 'GET', 'script')), ['fetch', 'fulfill']);
+  assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2, intentionallySuppressedPrefetches: 3 });
+});
+
+for (const suffix of ['?_rsc', '?_rsc=', '?_rsc=x&', '?&_rsc=x', '?_rsc=x&&', '?_rsc=x&=', '?_rsc=x&_rsc=']) {
+  test('ambiguous single-field query stays fatal after nominal: ' + suffix, async () => {
+    const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
+    const { req } = diagnosticFetch(policy, '/en/services', suffix);
+    const row = await observeDeniedFetch(policy, req);
+    assert.equal(row.reason, 'noncanonical URL');
+  });
+}
+
+const afterSuppressionFaults = [
+  ['cart', p => diagnosticFetch(p, '/en/cart').req],
+  ['private', p => diagnosticFetch(p, '/en/client/records').req],
+  ['required normal RSC navigation without AUTO marker', p => diagnosticFetch(p, '/en/services', '?_rsc=x', null).req],
+  ['document navigation', p => request(p, '/en/services?_rsc=x', 'GET', 'document')],
+  ['fetch navigation', p => ({ ...diagnosticFetch(p).req, isNavigationRequest: () => true })],
+  ['POST action', p => ({ ...diagnosticFetch(p).req, method: () => 'POST' })],
+  ['HEAD', p => ({ ...diagnosticFetch(p).req, method: () => 'HEAD' })],
+  ['duplicate key', p => diagnosticFetch(p, '/en/services', '?_rsc=x&_rsc=y').req],
+  ['other marker', p => diagnosticFetch(p, '/en/services', '?_rsc=x', DIAGNOSTIC_CANARY).req],
+  ['external', p => ({ ...diagnosticFetch(p).req, url: () => 'https://example.invalid/en/services?_rsc=x' })],
+];
+for (const mode of [base, live]) for (const [name, make] of afterSuppressionFaults) test(`${mode.label} suppression cannot hide later ${name}`, async () => {
+  const policy = releasePaidPolicy(mode); await nominalFetchDiagnostic(policy);
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  assert.deepEqual(await context.send(diagnosticFetch(policy).req), ['abort']);
+  assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 1, intentionallySuppressedPrefetches: 1 });
+  const req = make(policy); assert.deepEqual(await context.send(req), ['abort']);
+  assert.throws(() => guard.assertClean(), error => {
+    assert.match(error.message, name === 'POST action' ? /attempted a POST/ : /network boundary violated/);
+    if (name !== 'POST action') { assert.equal(error.actual.length, 1); assert.equal(error.actual[0].reason, classifyPaidRequest(policy, req)); }
+    assert.doesNotMatch(error.message + JSON.stringify(error.actual), new RegExp(DIAGNOSTIC_CANARY));
+    return true;
+  });
+});
+
+test('original non-GET denial cannot be suppressed by later eligible metadata', async () => {
+  const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  const { req } = diagnosticFetch(policy); let reads = 0;
+  req.method = () => ++reads === 2 ? 'HEAD' : 'GET';
+  assert.deepEqual(await context.send(req), ['abort']);
+  assert.throws(() => guard.assertClean(), error => {
+    assert.match(error.message, /network boundary violated/); assert.equal(error.actual.length, 1);
+    assert.equal(error.actual[0].reason, 'non-GET');
+    assert.deepEqual(fetchFields(error.actual[0]), { publicFetchDestination: 'services', nextRouterPrefetch: 'one', rscQueryKeyCount: 1 });
+    return true;
+  });
+});
+
+async function wrapperWithSuppressedPrefetch(mode, fault) {
+  const mock = ui(mode, fault), { context } = network(); let closed = false;
+  context.newPage = async () => {
+    mock.page.goto = async href => {
+      mock.page.url = href;
+      assert.deepEqual(await context.send(request(mock.policy)), ['fetch', 'fulfill']);
+      assert.deepEqual(await context.send(diagnosticFetch(mock.policy).req), ['abort']);
+      return { status: () => 200 };
+    };
+    return mock.page;
+  };
+  context.close = async () => { closed = true; };
+  try {
+    const result = await verifyReleasePaidEnquiry({ newContext: async () => context }, mode, mock.expect);
+    assert.deepEqual(mock.calls.filter(([kind]) => kind === 'choice').map(([, index]) => index), [1, 2, 0]);
+    assert.equal(result.intentionallySuppressedPrefetches, 1); assert.equal(result.allowedGets, 1);
+    assert.equal(result.postAttempts, 0); assert.equal(result.blockedRequests, 0);
+    assert.equal(result.messageSent, false); assert.equal(result.postSaveRuntimeVerified, false);
+    return result;
+  } finally { assert.equal(closed, true); }
+}
+for (const mode of [base, live]) test(mode.label + ' full no-submit UI contract retains separate suppression count', async () => {
+  await wrapperWithSuppressedPrefetch(mode);
+});
+for (const [fault, error] of [
+  ['pre-save messenger', /anchors count/], ['submit trigger', /trigger attribute type/], ['associated trigger', /No form-associated audit click/],
+  ['ancestor form', /Only standalone non-submit buttons/], ['wrong price', /Selected paid duration and price/],
+  ['filled form', /Exact blank contact-only/], ['form not remounted', /Old form must be detached/], ['external free target', /strictly equal/],
+]) test('suppressed prefetch cannot hide required UI failure: ' + fault, async () => {
+  await wrapperWithSuppressedPrefetch(base);
+  await assert.rejects(wrapperWithSuppressedPrefetch(base, fault), error);
 });
 const metadataKeys = ['resourceType', 'sameOrigin', 'pathClass', 'knownQueryKeys', 'unknownQueryKeyCount', 'hasPercent', 'hasBackslash', 'hasHash', 'hasUserinfo', 'publicScriptRoute', 'publicScriptBrackets'];
 test('denied metadata reports only approved schema and never makes a query allowable', () => {
@@ -683,7 +797,7 @@ for (const mode of [base, live]) for (const locale of ['en', 'ru', 'es']) for (c
       assert.equal(classifyPaidRequest(policy, req), null);
       assert.deepEqual(await context.send(req), ['fetch', 'fulfill']);
     }
-    assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+    assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2, intentionallySuppressedPrefetches: 0 });
   });
 }
 const homeChunkFaults = [
@@ -859,19 +973,19 @@ for (const [file, , name, marker] of publicScriptSources) test('diagnostic physi
   assert.throws(() => assertPublicScriptSource('', name, marker), /One physical public default page/);
 });
 
-test('reviewed classifier and diagnostic-await guard retain exact execution blocks', () => {
+test('reviewed classifier and explicit prefetch-suppression guard retain exact execution blocks', () => {
   const text = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
   const ast = ts.createSourceFile('guard.mjs', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const expected = {
     classifyPaidRequest: '0860c17a2cd0213fda1c23fe63c88e0521f0c6320755e9c439703776df73a439',
-    installPaidReadOnlyGuard: '576693264830d83aee5aa7da8a3bb6222e04f8d156368fb66d32e41c93ffd76d',
+    installPaidReadOnlyGuard: '4517c1bc22ea6d7375eb6a71bf66267ec59750ef10234acdf08bfb6717e7c6bf',
   };
   for (const [name, digest] of Object.entries(expected)) {
     const declarations = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
     assert.equal(declarations.length, 1);
     const block = declarations[0].getText(ast);
     const hash = value => createHash('sha256').update(value).digest('hex');
-    assert.equal(hash(block), digest, 'Exact reviewed permission/diagnostic-await block: ' + name);
+    assert.equal(hash(block), digest, 'Exact reviewed classifier / explicit public-prefetch suppression block: ' + name);
     assert.notEqual(hash(block.replace(name, 'Mutated')), digest, 'Byte-identity control is active');
   }
 });
@@ -886,7 +1000,7 @@ for (const mode of [base, live]) for (const shape of scriptShapes) test(`${mode.
   const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
   assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
   assert.deepEqual(await context.send(req), expectedReason ? ['abort'] : ['fetch', 'fulfill']);
-  if (!expectedReason) assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+  if (!expectedReason) assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2, intentionallySuppressedPrefetches: 0 });
   else assert.throws(() => guard.assertClean(), error => {
     assert.match(error.message, /Paid read-only network boundary violated/);
     assert.deepEqual(error.actual, [{ reason: expectedReason, ...deniedPaidRequestMetadata(policy, req) }]);
@@ -944,7 +1058,7 @@ for (const mode of [base, live]) for (const [name, mutate, expectedReason = 'non
   assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
   // Unknown diagnostics do not revoke the original generic ASCII static rule.
   assert.deepEqual(await context.send(req), reason ? ['abort'] : ['fetch', 'fulfill']);
-  if (!reason) assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+  if (!reason) assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2, intentionallySuppressedPrefetches: 0 });
   else assert.throws(() => guard.assertClean(), error => {
     assert.match(error.message, /Paid read-only network boundary violated/);
     assert.equal(error.actual[0].reason, reason);
@@ -1043,7 +1157,7 @@ for (const mode of [base, live]) for (const locale of ['en', 'ru', 'es']) for (c
       assert.equal(classifyPaidRequest(policy, req), null);
       assert.deepEqual(await context.send(req), ['fetch', 'fulfill']);
     }
-    assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+    assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2, intentionallySuppressedPrefetches: 0 });
   });
   test(`${mode.label}/${locale}/${width} keeps the twelve portrait URLs local-only`, async () => {
     const policy = releasePaidPolicy({ ...mode, locale, width }), { context } = network();
@@ -1054,7 +1168,7 @@ for (const mode of [base, live]) for (const locale of ['en', 'ru', 'es']) for (c
       assert.equal(classifyPaidRequest(policy, req), mode.label === 'local' ? null : 'noncanonical URL');
       assert.deepEqual(await context.send(req), mode.label === 'local' ? ['fetch', 'fulfill'] : ['abort']);
     }
-    if (mode.label === 'local') assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 24 });
+    if (mode.label === 'local') assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 24, intentionallySuppressedPrefetches: 0 });
     else assert.throws(() => guard.assertClean(), error => error.code === 'ERR_ASSERTION' && error.actual.length === 12 && error.actual.every(row => row.reason === 'noncanonical URL'));
   });
 }
@@ -1126,7 +1240,7 @@ for (const [kind, path, type, faults] of [['chunk', nominalChunk, 'script', chun
     if (reason === null) {
       assert.equal(kind, 'chunk'); assert.equal(changed, nominalHomeChunk, 'Only newly approved Home moved from denial to acceptance');
       assert.deepEqual(await context.send(request(policy, changed, 'GET', type)), ['fetch', 'fulfill']);
-      assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+      assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2, intentionallySuppressedPrefetches: 0 });
     } else {
       assert.deepEqual(await context.send(request(policy, changed, 'GET', type)), ['abort']);
       assert.throws(() => guard.assertClean(), /Paid read-only network boundary violated/);

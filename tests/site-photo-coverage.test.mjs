@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { servicesStudioContract } from "./helpers/services-studio-contract.mjs";
 
 const root = process.cwd();
 const read = file => readFileSync(path.join(root, file), "utf8");
@@ -14,7 +15,7 @@ const validateFiles = (file) => {
   return unique;
 };
 
-test("critical photo-first sections use existing local image files, never placeholders", () => {
+test("critical photo-first sections use existing local image files, never placeholders", async () => {
   for (const file of [
     "components/personal-work-journey.tsx",
     "app/es/services/page.tsx",
@@ -26,7 +27,34 @@ test("critical photo-first sections use existing local image files, never placeh
     "data/personal-service-pages.ts",
     "app/[locale]/wu-xing/page.tsx",
     "app/es/page.tsx",
-  ]) validateFiles(file);
+  ]) {
+    if (file !== "app/es/services/page.tsx") {
+      validateFiles(file);
+      continue;
+    }
+    const view = await servicesStudioContract("es");
+    const expectedImageById = {
+      tests: "/images/holistic-house/course-start-heron.webp",
+      situation: "/images/holistic-house/andy-about.png",
+      dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
+      alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+      hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+      constellations: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+      business: "/images/holistic-house/andy-about.png",
+      "remote-energy-support": "/academy/reiki-yggdrasil/source/basic-program.jpg",
+    };
+    assert.deepEqual([...view.cards.map(card => card.props["data-services-studio-card"])].sort(), Object.keys(expectedImageById).sort(), "Actual Spanish studio retains each intended service identity exactly once");
+    assert.ok(view.cards.length, "No local images found in " + file);
+    for (const card of view.cards) {
+      const id = card.props["data-services-studio-card"];
+      const photos = view.descendants(card).filter(node => node.type === view.image || node.type === view.portrait);
+      assert.equal(photos.length, 1, "Mounted Spanish service card retains its photo: " + id);
+      const src = photos[0].props.src;
+      assert.equal(typeof src, "string", "Spanish service image is a local source: " + id);
+      assert.equal(src, expectedImageById[id], "Spanish service retains its source image: " + id);
+      assert.ok(readImage(src), file + " points to a missing local image: " + src);
+    }
+  }
 });
 
 test("personal services retain source images and nine compact Spanish image-left cards", () => {
