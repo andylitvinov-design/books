@@ -1216,3 +1216,92 @@
  .hh-app .hh-practice-presentation-options button{min-height:44px}
  .hh-app .hh-practice-presentation-input :is(input,textarea){font-size:16px}
 }
+
+
+/* V4.3 · One workspace at a time. The permanent 8-way switcher replaces
+   stacked independent detail screens without altering their data/auth flows. */
+.hh-app .hh-practice-dashboard[data-practice-active]{
+  width:100%;max-width:1180px;gap:7px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-head{
+  min-height:0;margin:0;padding:8px 12px;border-radius:13px;
+  background:#fffcf7;box-shadow:none;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-head h1{
+  font-size:20px;line-height:1.2;margin:0;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-breadcrumb,
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-intro,
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-status{
+  display:none;
+}
+.hh-app .hh-practice-v4-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button{
+  min-height:48px;padding:5px 3px;gap:3px;border-radius:11px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button small{
+  display:none;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button svg{
+  width:17px;height:17px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button span{
+  font-size:11px;line-height:1.15;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-form-panel{
+  margin:0;padding:10px 12px;border-radius:13px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-form-heading{
+  margin-bottom:8px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-form-heading h2{
+  font-size:21px;
+}
+.hh-app .hh-practice-inline-more .hh-practice-tool-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+.hh-app .hh-practice-inline-more .hh-practice-tool-card{
+  min-height:65px;padding:9px;
+}
+.hh-app .hh-practice-inline-more .hh-practice-tool-description{
+  font-size:10px;
+}
+.hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="materials"]{
+  padding:0;border:0;background:transparent;box-shadow:none;
+}
+@media(min-width:850px){
+ .hh-app .hh-practice-v4-grid{grid-template-columns:repeat(8,minmax(0,1fr))}
+}
+@media(max-width:430px){
+ .hh-app .hh-practice-dashboard[data-practice-active]{gap:5px}
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-head{
+   padding:6px 10px;border-radius:11px;min-height:0;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-head h1{
+   font-size:18px;line-height:1.15;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid{
+   grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button{
+   min-width:0;min-height:46px;padding:4px 1px;gap:2px;border-radius:9px;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button svg{
+   width:15px;height:15px;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button span{
+   font-size:10px;line-height:1.15;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-form-panel{
+   margin:0;padding:7px;border-radius:12px;
+ }
+ .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="materials"]{
+   padding:0;
+ }
+ .hh-app .hh-practice-inline-more .hh-practice-tool-card{min-height:58px;padding:7px}
+ .hh-app .hh-practice-inline-more .hh-practice-tool-description{display:none}
+}
+@media(max-width:350px){
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid{gap:3px}
+ .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button span{font-size:9px}
+}
