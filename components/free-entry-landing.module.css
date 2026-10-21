@@ -131,3 +131,56 @@
  .captureIntro>p:not(.sectionLabel):not(.optional){margin:0 0 7px;line-height:1.4}
  .capture .optional{margin:0 0 9px}
 }
+
+/* Wu Xing: one visual idea per mobile viewport, without changing the other free landings. */
+.daoHero{min-height:min(660px,calc(100svh - 146px));grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(22px,3vw,42px)}
+.daoHero h1{max-width:650px;font-size:clamp(39px,4.4vw,64px);line-height:1.04}
+.daoHero .lead{max-width:530px;margin-bottom:20px;font-size:clamp(16px,1.55vw,19px);line-height:1.45}
+.daoHero .heroVisual{min-height:300px;max-height:510px}
+.daoBenefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 22px;padding:0;list-style:none}
+.daoBenefits li{display:flex;align-items:center;gap:8px;min-width:0;padding:12px 10px;border:1px solid rgba(203,244,230,.25);border-radius:12px;background:rgba(255,255,255,.075);color:#ecf8f2;font-size:13px;font-weight:750;line-height:1.3}
+.daoBenefits svg{flex:none;color:#b8f2d5}
+.daoSafety{display:flex;align-items:flex-start;gap:7px;margin:13px 0 0;color:#c7eee2;font-size:11px;line-height:1.4}
+.daoSafety svg{flex:none;margin-top:1px}
+.daoOutcomeScene{min-height:min(650px,calc(100svh - 146px))}
+.daoOutcomeScene .sceneImage{min-height:310px}
+.daoOutcomeList{gap:8px}
+.daoOutcomeList article{grid-template-columns:30px minmax(0,1fr);gap:10px;padding:13px 14px;border:1px solid #d4e5dd!important;border-radius:13px;background:rgba(255,255,255,.85)}
+.daoOutcomeList article:last-child{border-bottom:1px solid #d4e5dd}
+.daoOutcomeList h3{font-size:clamp(19px,2vw,23px)}
+.daoOutcomeList p{font-size:13px;line-height:1.45}
+.daoCapture{min-height:0}
+.daoCapture .captureIntro>p:not(.sectionLabel):not(.optional){max-width:380px}
+@media(max-width:850px){
+  .daoHero{min-height:0}
+  .daoHero .heroVisual{min-height:0;max-height:none;height:260px}
+  .daoOutcomeScene{min-height:0}
+}
+@media(max-width:600px){
+  .daoHero,.daoOutcomeScene,.daoCapture{min-height:0;align-content:start;gap:12px;padding:19px 16px}
+  .daoHero h1{margin:8px 0 10px;font-size:clamp(30px,8.3vw,40px);line-height:1.08;letter-spacing:-.035em}
+  .daoHero .lead{margin-bottom:13px;font-size:14px;line-height:1.42}
+  .daoBenefits{gap:5px;margin:0 0 13px}
+  .daoBenefits li{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:9px 7px;font-size:10.5px;line-height:1.25;border-radius:10px}
+  .daoBenefits svg{width:15px;height:15px}
+  .daoHero .actions{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+  .daoHero .primary{min-height:46px;font-size:13px;flex:auto}
+  .daoHero .secondary{align-self:center;min-height:28px;padding:3px 8px;border:0;background:transparent;font-size:12px;text-decoration:underline;text-underline-offset:3px}
+  .daoSafety{margin:8px 0 0;font-size:10px;line-height:1.35}
+  .daoHero .heroVisual{height:clamp(112px,16svh,165px);min-height:0;border-radius:13px}
+  .daoOutcomeScene .sceneText{order:0}
+  .daoOutcomeScene .sceneImage{order:1;height:clamp(125px,17svh,190px);min-height:0}
+  .daoOutcomeScene h2,.daoCapture h2{font-size:clamp(27px,7.6vw,35px);margin-bottom:9px}
+  .daoOutcomeScene .sectionLead{margin-bottom:10px}
+  .daoOutcomeList{gap:6px}
+  .daoOutcomeList article{grid-template-columns:22px minmax(0,1fr);gap:8px;padding:10px 11px}
+  .daoOutcomeList article>span{font-size:10px}
+  .daoOutcomeList h3{font-size:17px;margin-bottom:2px}
+  .daoOutcomeList p{font-size:11.5px;line-height:1.4}
+  .daoCapture .captureIntro>p:not(.sectionLabel):not(.optional){margin:0 0 9px;font-size:13px;line-height:1.45}
+}
+@media(max-width:360px){
+  .daoHero,.daoOutcomeScene,.daoCapture{padding:16px 13px}
+  .daoHero h1{font-size:29px}
+  .daoBenefits li{font-size:10px}
+}
