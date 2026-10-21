@@ -28,7 +28,9 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - run: npm ci --no-audit --no-fund
+      # NODE_ENV=production otherwise omits TypeScript devDependencies and makes
+      # npx --no-install tsc fail without testing the application.
+      - run: npm ci --include=dev --no-audit --no-fund
       - name: Thumbnail URL safety and media source allowlist
         run: node --test tests/practice-material-preview-url.test.mjs
       - name: TypeScript regression
