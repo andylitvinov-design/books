@@ -151,7 +151,7 @@ test('Course remains available in Academy, guest cabinet and course page routes'
 test('Mobile course uses teal five-step rail and remains accessible', () => {
   assert.match(learner, /<section className=\{styles\.programme\} data-expanded=/)
   assert.match(learner, /aria-expanded=\{programmeOpen\}/)
-  assert.match(learner, /<details className=\{styles\.saveManager\}>/)
+  assert.match(learner, /<ReikiCourseReferralShare locale=\{locale\} \/>/)
   assert.match(learner, /energyworkLessons\.map/)
   assert.match(learner, /role="progressbar"/)
   assert.match(learner, /aria-labelledby="energywork-slide-title"/)
