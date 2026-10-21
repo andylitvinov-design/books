@@ -5051,3 +5051,34 @@
     line-height: 1.15;
   }
 }
+
+/* Flight to the Sun: warmer, more evocative opening without sacrificing text contrast.
+   Scoped to flight-01; preserves the existing 320–430px lesson/navigation layout. */
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"][data-energywork-slide-id="flight-01"] .slideMain > .art img {
+  opacity: .42;
+  object-position: 58% 42%;
+}
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"][data-energywork-slide-id="flight-01"] .slideMain > .art::after {
+  background: linear-gradient(105deg, rgba(255, 252, 247, .94), rgba(255, 250, 241, .74) 54%, rgba(247, 251, 248, .46));
+}
+.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .content h1 {
+  color: #114554;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .lessonIntroPanel {
+  background: linear-gradient(125deg, rgba(255, 251, 241, .96), rgba(238, 254, 251, .96));
+  border-color: rgba(183, 147, 90, .52);
+  box-shadow: 0 8px 24px rgba(128, 93, 45, .09);
+}
+.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .lessonIntroTitle {
+  color: #865928;
+}
+@media (max-width: 760px) {
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .description {
+    max-width: 38ch;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .lessonIntroPanel {
+    margin-top: 9px;
+  }
+}
