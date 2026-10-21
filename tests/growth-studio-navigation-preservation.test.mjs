@@ -34,7 +34,7 @@ test("new owner Growth Studio links do not replace practitioner onboarding, CRM 
  assert.match(practice,/PractitionerClientProfiles/);
  assert.match(practice,/PracticeRequestsOverview/);
  assert.match(practice,/CrmManager/);
- assert.match(cabinet,/href:'\/admin\/growth-studio'/);
+ assert.match(cabinet,/panel=marketing/);
  assert.match(admin,/href="\/admin\/growth-studio"/);
  assert.match(admin,/href="\/admin\/seo"/);
 });
