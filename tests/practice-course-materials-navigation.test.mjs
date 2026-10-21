@@ -14,13 +14,18 @@ const middleware=source('middleware.ts')
 const audio=source('components/admin-reiki-audio.jsx')
 
 test('My Practice Materials offers Reiki course recordings only to the owner',()=>{
-  assert.match(workspace,/isOwner=\{isOwner\} onOpenReikiCourse=\{\(\)=>openOwner\('reikiCourse'\)\}/)
-  assert.match(materialTab,/\{isOwner&&<button[\s\S]{0,200}data-practice-materials-courses-tab/)
-  assert.match(materialTab,/tab==='courses'&&isOwner\?<section/)
-  assert.match(materialTab,/onClick=\{onOpenReikiCourse\} data-open-reiki-course-audio/)
+  assert.match(workspace,/isOwner=\{isOwner\} onOpenReikiCourse=\{lesson=>openOwner\('reikiCourse',undefined,lesson\)\}/)
+  assert.match(materialTab,/<button type="button" role="tab"[\s\S]{0,200}data-practice-materials-courses-tab/)
+  assert.match(materialTab,/tab==='courses'\?<section/)
+  // The universal authoring tool is visible to masters, but Reiki recordings
+  // and owner-only lesson shortcuts are still guarded separately.
+  assert.match(materialTab,/\{isOwner&&<div>/)
+  assert.match(materialTab,/onClick=\{\(\)=>onOpenReikiCourse\?\.\(\)\} data-open-reiki-course-audio/)
   assert.match(materialTab,/Практик Рейки/)
   assert.match(materialTab,/Reiki Practitioner/)
   assert.match(materialTab,/Practicante de Reiki/)
+  assert.match(materialTab,/data-practice-materials-audio-tab/)
+  assert.match(materialTab,/data-unified-material-nav/)
   assert.match(materialTab,/lang|locale/)
   assert.match(access,/reikiCourse: '\/admin\/materials\/courses\/reiki-practitioner'/)
   assert.match(backend,/if \(joined === 'practitioner\/open' && method === 'POST'\)/)
