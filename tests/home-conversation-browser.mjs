@@ -75,6 +75,17 @@ try {
         const dialog = guide.locator("[data-home-guide-dialog]");
         await expect(dialog).toHaveAttribute("aria-modal", "true");
         await expect(dialog.getByRole("button", { name: scenario.send })).toHaveCSS("min-height", "44px");
+        const composerFit = await dialog.evaluate(node => {
+          const row = node.querySelector("[class*=inputRow]");
+          const send = row?.querySelector("button[type=submit]");
+          if (!row || !send) return null;
+          const outer = row.getBoundingClientRect(), inner = send.getBoundingClientRect();
+          return { inside: inner.left >= outer.left && inner.right <= outer.right &&
+              inner.top >= outer.top && inner.bottom <= outer.bottom,
+            overflow: row.scrollWidth > row.clientWidth + 1 };
+        });
+        assert.ok(composerFit && composerFit.inside && !composerFit.overflow,
+          scenario.locale + "/" + width + " chat composer must fit: " + JSON.stringify(composerFit));
         const dialogBox = await dialog.boundingBox();
         assert.ok(dialogBox && dialogBox.x >= -1 && dialogBox.x + dialogBox.width <= width + 1,
           "Dialog extends beyond the mobile viewport");
@@ -156,6 +167,98 @@ try {
       assert.deepEqual(errors, [], "Voice UI JS error");
       assert.deepEqual(leakedRequests, [], "Spoken question must never leak through a request URL");
       evidence.cases.push({ locale: scenario.locale, width: 390, voiceMock: true, cancel: true, finishSends: true, noUrlLeak: true });
+    } finally {
+      await context.close();
+    }
+  }
+  // Browser speech implementations vary. These cases exercise the *failure*
+  // paths in real Next/React/WebKit DOM without permission prompts or speech uploads.
+  const finishName = {
+    en: "Finish and send",
+    ru: "Завершить и отправить",
+    es: "Terminar y enviar",
+  };
+  const keyboardName = {
+    en: "Open keyboard",
+    ru: "Открыть клавиатуру",
+    es: "Abrir teclado",
+  };
+  const failureCases = [
+    { kind: "permission", locale: "en", path: "/", text: "I am worried about work" },
+    { kind: "start-hang", locale: "ru", path: "/ru", text: "Я тревожусь и хочу помощи" },
+    { kind: "stop-hang", locale: "es", path: "/es", text: "Tengo miedo y mucha ansiedad" },
+    { kind: "natural-final", locale: "en", path: "/", text: "I feel stressed and anxious" },
+    { kind: "unsupported", locale: "ru", path: "/ru", text: "Я тревожусь" },
+  ];
+  for (const sample of failureCases) {
+    const context = await browser.newContext({ viewport: { width: 320, height: 820 }, serviceWorkers: "block" });
+    await context.addInitScript(kind => {
+      class TestRecognizer {
+        start() {
+          window.__voiceTest = this;
+          if (kind !== "start-hang") this.onstart?.();
+        }
+        stop() { if (kind !== "stop-hang" && kind !== "start-hang") this.onend?.(); }
+        abort() { this.onend?.(); }
+      }
+      window.SpeechRecognition = kind === "unsupported" ? undefined : TestRecognizer;
+      window.webkitSpeechRecognition = kind === "unsupported" ? undefined : TestRecognizer;
+    }, sample.kind);
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    try {
+      if (sample.kind === "start-hang" || sample.kind === "stop-hang") await page.clock.install();
+      await page.goto(host + sample.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+      const guide = page.locator("[data-home-conversation-guide]");
+      await guide.locator("[data-home-guide-launcher-mic]").click();
+      await expect(guide.locator("[data-home-guide-dialog]")).toBeVisible();
+      if (sample.kind === "unsupported") {
+        await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
+        await expect(guide.locator('[role="alert"]')).toBeVisible();
+        await guide.getByRole("button", { name: keyboardName[sample.locale] }).click();
+        await expect(guide.locator("textarea")).toBeFocused();
+      }
+      if (sample.kind === "permission") {
+        await expect(guide.locator("[data-home-voice-recording]")).toBeVisible();
+        await page.evaluate(() => window.__voiceTest.onerror?.({ error: "not-allowed" }));
+        await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
+        await expect(guide.locator('[role="alert"]')).toBeVisible();
+        await guide.getByRole("button", { name: keyboardName[sample.locale] }).click();
+        await expect(guide.locator("textarea")).toBeFocused();
+        assert.ok(!(await guide.locator('[role="log"]').innerText()).includes(sample.text),
+          "Denied microphone must not create a question");
+      }
+      if (sample.kind === "start-hang") {
+        await expect(guide.locator("[data-home-voice-recording]")).toBeVisible();
+        await page.clock.fastForward(25100);
+        await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
+        await expect(guide.locator('[role="alert"]')).toBeVisible();
+        assert.ok(!(await guide.locator('[role="log"]').innerText()).includes(sample.text),
+          "Unresponsive microphone must not submit anything");
+      }
+      if (sample.kind === "stop-hang") {
+        await page.evaluate(text => window.__voiceTest.onresult({
+          results: [[{ transcript: text }]],
+        }), sample.text);
+        await guide.getByRole("button", { name: finishName[sample.locale] }).click();
+        await expect(guide.locator("[data-home-voice-recording]")).toBeVisible();
+        await page.clock.fastForward(2600);
+        await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
+        await expect(guide.locator('[role="log"]')).toContainText(sample.text);
+      }
+      if (sample.kind === "natural-final") {
+        await page.evaluate(text => {
+          const finalResult = [{ transcript: text }];
+          finalResult.isFinal = true;
+          window.__voiceTest.onresult({ results: [finalResult] });
+          window.__voiceTest.onend();
+        }, sample.text);
+        await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
+        await expect(guide.locator('[role="log"]')).toContainText(sample.text);
+      }
+      assert.deepEqual(errors, [], sample.kind + " must not throw client errors");
+      evidence.cases.push({ kind: sample.kind, locale: sample.locale, width: 320, recovered: true });
     } finally {
       await context.close();
     }
