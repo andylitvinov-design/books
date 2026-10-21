@@ -69,6 +69,8 @@ export default async function TelegramSetupPage({searchParams}){
     geminiFreeConfirmed:models.geminiFreeConfirmed,
     mistralStudioKeyPresent:models.mistralDirectKeyPresent,
     mistralFreeConfirmed:models.mistralDirectFreeConfirmed,
+    mistralStudioProbeStatus:'not_checked',
+    mistralStudioProbeModel:null,
     mistralOpenRouterKeyPresent:models.mistralOpenRouterKeyPresent}
   const result=(await searchParams)?.result||''
   let state={token_saved:false,telegram_enabled:false,pairing:'not_started',
@@ -190,6 +192,25 @@ export default async function TelegramSetupPage({searchParams}){
                   'Key saved; confirm Free mode with pay-as-you-go disabled'
               :ru?'Не подключён':'Not connected'
           }</strong></p>
+          {provider.mistralStudioKeyPresent&&provider.mistralFreeConfirmed&&
+            <p className={
+              provider.mistralStudioProbeStatus==='ready'?styles.footnote:styles.warning
+            } role="status">
+              {provider.mistralStudioProbeStatus==='ready'
+                ?ru?'Проверка Mistral API: модель доступна по GET без расходов. Настоящая генерация ещё не проверена.':
+                  'Mistral API: model accessible via read-only GET; actual generation still unverified.'
+                :provider.mistralStudioProbeStatus==='access_denied'
+                  ?ru?'Mistral API отклонил доступ (401/403). Ключ сохранён, но его наличие не означает разрешение API. Не подключай платный тариф.':
+                    'Mistral API denied access (401/403). The key is saved, but API access is not confirmed. No paid upgrade is needed.'
+                  :provider.mistralStudioProbeStatus==='rate_limited'
+                    ?ru?'Mistral API сообщил о лимите (429). Генерация не запускалась.':
+                      'Mistral API returned a rate limit (429). No generation was performed.'
+                    :provider.mistralStudioProbeStatus==='model_unavailable'
+                      ?ru?'Текущий Mistral Workspace не предоставляет нужную модель Small. Платный fallback отключён.':
+                        'The workspace does not expose a supported Small model. Paid fallback is disabled.'
+                      :ru?'Доступ к Mistral API пока не подтверждён. Проверка выполняется только GET-запросом без генерации.':
+                        'Mistral API access is not yet verified. Read-only GET is used without inference.'}
+            </p>}
           <p className={styles.footnote}>{
             ru?'Аудиты выполняются только по публичным страницам; платные модели автоматически не используются.':
               'Public-site evidence only. Paid model fallback is strictly disabled.'
@@ -233,6 +254,10 @@ export default async function TelegramSetupPage({searchParams}){
             <form action={saveOwnerFreeProviderAction} className={styles.providerForm}>
               <input type="hidden" name="provider" value="mistral"/>
               <strong>2. Mistral · Studio Free mode</strong>
+              {provider.mistralStudioKeyPresent&&<p className={styles.footnote}>
+                {ru?'Ключ уже сохранён зашифрованным. Повторно вставлять его не нужно; форма ниже только для замены.':
+                  'The key is already stored encrypted. No need to paste it again; the form below is for replacement only.'}
+              </p>}
               <a href="https://console.mistral.ai/" target="_blank" rel="noopener noreferrer">
                 {ru?'Открыть Mistral Studio → API Keys ↗':'Open Mistral Studio → API Keys ↗'}
               </a>
@@ -254,7 +279,9 @@ export default async function TelegramSetupPage({searchParams}){
                   'Pay-as-you-go is off; no paid plan is enabled.'}</span>
               </label>
               <button type="submit" className={styles.primary} disabled={unavailable}>
-                {ru?'Безопасно сохранить ключ Mistral':'Safely save Mistral key'}
+                {provider.mistralStudioKeyPresent
+                  ?ru?'Заменить ключ Mistral':'Replace Mistral key'
+                  :ru?'Безопасно сохранить ключ Mistral':'Safely save Mistral key'}
               </button>
             </form>
             {provider.mistralStudioKeyPresent&&<form action={disableOwnerFreeProviderAction}
