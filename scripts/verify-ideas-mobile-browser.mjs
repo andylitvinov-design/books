@@ -41,6 +41,14 @@ async function verify(browserType, locale, width) {
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
     await hub.locator("[data-ideas-preview]").waitFor({ state: "visible" });
+    const initialExamples = hub.locator("[data-ideas-preview] [data-ideas-aphorisms] ol li");
+    assert.equal(await initialExamples.count(), 3, label + ": three illustrated example aphorisms");
+    assert.equal(await hub.locator("[data-ideas-preview] details").first().evaluate(node => node.open), true,
+      label + ": example's detailed meaning visible");
+    const sourceLabels = await hub.locator("[data-ideas-preview] [class*=aphorismSource]").allTextContents();
+    assert.equal(sourceLabels.length, 3, label + ": all sample aphorisms visibly sourced");
+    assert.ok(sourceLabels.every(text => text.trim()), label + ": no empty sources");
+
     assert.equal(await hub.locator("[data-ideas-result]").count(), 0, label + ": example not a false result");
     const initialPreviewLabel = await hub.locator("[data-ideas-preview] [class*=tag]").first().innerText();
     assert.ok(initialPreviewLabel.length > 4, label + ": clearly labelled editorial preview");
@@ -70,6 +78,15 @@ async function verify(browserType, locale, width) {
     await textarea.fill(phrases[locale]);
     await hub.locator('button[type="submit"]').tap();
     await hub.locator('[data-ideas-result="dao"]').waitFor({ state: "visible" });
+    const detail = hub.locator('[data-ideas-result="dao"] details').first();
+    assert.equal(await detail.evaluate(node => node.open), false, label + ": only short paragraph initially expanded");
+    await detail.locator("summary").tap();
+    assert.equal(await detail.evaluate(node => node.open), true, label + ": full explanation expands on tap");
+    assert.equal(await hub.locator('[data-ideas-result="dao"] [class*=daoPoint]').count() >= 3, true,
+      label + ": meaning, key message, practical step");
+    assert.equal(await hub.locator('[data-ideas-result="dao"] [data-ideas-aphorisms] ol li').count(), 3,
+      label + ": three topical aphorisms after Dao insight");
+
     assert.equal(await hub.locator('[data-ideas-result="dao"] [role="img"]').count(), 1,
       label + ": genuine I Ching hexagram");
     const detailUrl = await hub.locator('[data-ideas-result="dao"] a[href*="/dao/hexagrams/"]').getAttribute("href");
