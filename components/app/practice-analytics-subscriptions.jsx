@@ -70,7 +70,7 @@ export default function PracticeAnalyticsSubscriptions({locale='en',accountId}){
  const lang=COPY[locale]?locale:'en',t=COPY[lang]
  const [state,setState]=useState(null),[channel,setChannel]=useState('telegram')
  const [frequency,setFrequency]=useState('weekly'),[consent,setConsent]=useState(false)
- const [phone,setPhone]=useState(''),[pending,setPending]=useState(false)
+ const [phone,setPhone]=useState('')
  const [busy,setBusy]=useState(''),[notice,setNotice]=useState(''),[error,setError]=useState('')
  const [preview,setPreview]=useState('')
  useEffect(()=>{
