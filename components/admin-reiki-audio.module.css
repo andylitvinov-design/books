@@ -268,3 +268,60 @@
   .fileActions { justify-content: flex-start; margin-left: 36px; width: calc(100% - 36px); }
   .uploadActions .uploadButton { width: 100%; }
 }
+
+/* Approved 2026-10-21 master lesson editor: restrained V4 cream/wood/teal. */
+.page{--v4-paper:#fffcf7;--v4-border:#e3d4c3;--v4-ink:#382c23;--v4-teal:#0b7776;
+ color:var(--v4-ink);max-width:1040px;margin:0 auto;padding:0}
+.breadcrumb{color:#857263;gap:7px;margin:0 0 9px}
+.breadcrumb a{color:#7c604c;text-decoration:none}
+.courseHeader{border:1px solid var(--v4-border);background:linear-gradient(125deg,#fffdfa,#f7efe4);
+ border-radius:18px;padding:clamp(12px,2.6vw,20px);margin-bottom:10px}
+.courseHeading h2{font:400 clamp(24px,4vw,31px)/1.15 Georgia,serif;color:var(--v4-ink)}
+.courseHeading p,.langPanel small{color:#78695c}
+.courseIcon{border-radius:13px;background:#dceee9;color:#117874}
+.langPanel{border:1px solid #e3d4c3;border-radius:12px;background:#fffdfa;padding:9px}
+.langPanel strong{color:#755c49;font-size:11px}
+.localeToggle button{color:#5b4b3b;border-color:#e2d4c3;background:#fffdfa}
+.localeToggle button[aria-pressed="true"]{color:#056e6d;border-color:#8ac0b7;background:#ddf1eb}
+.process{color:#796555;font-size:11px}
+.lessonFolders{border:1px solid #e1d1bf;border-radius:15px;background:#faf2e9}
+.lessonFolders h3{color:#584438;font:700 15px/1.3 Georgia,serif}
+.lessonFolder{border-color:#eadccf;background:#fffefa;border-radius:12px}
+.lessonFolder:hover{background:#f2ede5}
+.lessonFolderOpen,.lessonFolder[aria-pressed="true"]{background:#dfefeb;border-color:#90bdb4}
+.lessonFolderIcon{color:#0b7776}
+.lessonFolderText > strong{color:#453629}
+.lessonFolderText > small{color:#8e7661}
+.lessonChevron{color:#7b9c95}
+.folderContents{border:1px solid #e5d7c7;border-radius:16px;background:#fffdfa;
+ box-shadow:0 3px 14px #513a210d}
+.folderToolbar span{color:#796657}
+.folderToolbar button{color:#0a7776;border-color:#c5ded6;background:#f3faf6}
+.lessonCard{gap:11px}
+.lessonHead{border-color:#ebdfd1}
+.lessonHead h3{font:400 clamp(20px,3vw,25px)/1.2 Georgia,serif;color:#382b22}
+.folderEyebrow{color:#87705e}
+.fileList{border-color:#e6d7c9;background:#fbf7ef}
+.fileRow{border-color:#e9d9c9;background:#fffefa}
+.fileDetails strong{color:#382d25}
+.fileDetails small{color:#807064}
+.fileIcon{background:#e2f0eb;color:#0b7776}
+.fileListHeading h4{color:#514034}
+.selectRecording{background:#e5f3ee;border-color:#c0d9d2;color:#0a7775}
+.selectRecording[aria-pressed="true"]{background:#0a7775;color:white;border-color:#0a7775}
+.metadataEditor{border-color:#b9d3c9;background:#fbf7ef}
+.metadataEditor > strong,.metadataEditor > label:not(.archivedToggle){color:#4c3c30}
+.metadataEditor input[type="text"],.metadataEditor textarea{border-color:#ded1c1;color:#342921}
+.editorActions button[type="submit"],.uploadButton,.publish{
+ background:#0a7776!important;border-color:#0a7776!important;color:white!important}
+.player,.reviewPanel{border-color:#c7ded3;background:#f3faf5}
+.privacyNote{color:#796858;font:500 11px/1.55 system-ui,sans-serif}
+.courseLink{background:#f1eee5;color:#176a68;border-color:#d0e0d9}
+.page :is(button,input,textarea,a):focus-visible{outline:3px solid #65aba0;outline-offset:2px}
+@media(max-width:690px){
+ .courseHeader{padding:12px}
+ .lessonFolders{padding:10px}
+ .folderContents{padding:11px}
+ .lessonFolder{min-height:58px}
+ .fileRow{padding:8px}
+}

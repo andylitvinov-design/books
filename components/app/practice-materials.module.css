@@ -148,3 +148,79 @@
   .courseFolderButton{flex:1 0 100%}.courseFolderIcon{width:42px;height:42px}
   .courseFolderCopy h3{font-size:17px}}
 @media(max-width:360px){.tabs button{gap:2px;font-size:10px;padding:6px 2px}.courseFolder{padding:10px}}
+
+/* Approved practitioner V4: one compact five-format library (2026-10-21). */
+.shell{--v4-cream:#fffcf7;--v4-teal:#0b7776;--v4-stroke:#e3d4c3;
+ padding:clamp(11px,2.5vw,20px);border:1px solid var(--v4-stroke);
+ border-radius:21px;background:linear-gradient(150deg,#fffcf7,#f8f2e8);
+ box-shadow:0 8px 26px #543b250b;color:#352a22}
+.hubHeader{margin:0 0 13px}
+.hubHeader .eyebrow{font:750 10px/1.5 system-ui,sans-serif;letter-spacing:.11em;color:#9b7256;margin:0 0 3px}
+.hubHeader h3{font:400 clamp(25px,4vw,32px)/1.13 Georgia,serif;color:#38291f;margin:0 0 4px}
+.hubHeader p{font:400 12px/1.45 system-ui,sans-serif;color:#786b5e;margin:0}
+.shell .tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 0 13px;
+ background:transparent;border:0;padding:0;border-radius:0}
+.shell .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+ min-width:0;min-height:66px;padding:9px 2px;border:1px solid #e6d9c8;border-radius:13px;
+ color:#705949;background:#fffaf4;box-shadow:none;cursor:pointer;white-space:normal}
+.shell .tabs button svg{display:block;flex:none;width:20px;height:20px}
+.shell .tabs button span{font:720 11px/1.2 system-ui,sans-serif;overflow:visible;text-overflow:clip;
+ overflow-wrap:anywhere}
+.shell .tabs button[aria-selected="true"]{background:#daefeb;border-color:#8cbdb6;
+ color:#086a69;box-shadow:0 2px 8px #14615b13}
+.shell .tabs button:focus-visible,.mediaRow:focus-visible,.searchWrap:focus-within{
+ outline:3px solid #63aba0;outline-offset:2px}
+.searchWrap{display:flex;align-items:center;gap:7px;margin:0 0 13px;padding:0 12px;
+ min-height:43px;border:1px solid #e2d8cc;border-radius:12px;
+ background:#f5f0e8;color:#927f6f}
+.searchWrap input{flex:1;min-width:0;width:100%;padding:8px 0;background:transparent;color:#352a22;
+ border:0;box-shadow:none;outline:none;font:400 14px/1.45 system-ui,sans-serif}
+.searchWrap input::placeholder{color:#928a82}
+.visuallyHidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+ clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.activePanel{min-height:80px;min-width:0}
+.activePanel .body{color:#352a22}
+.activePanel .intro{font-size:12px;color:#79695c;margin:0 0 12px}
+.activePanel .heading{gap:8px}
+.activePanel .heading h3{font:650 20px/1.2 Georgia,serif;color:#38291f}
+.activePanel .heading h3 small{font:600 12px/1 system-ui,sans-serif;color:#8b7c6d}
+.mediaRows{display:grid;gap:8px}
+.mediaRow{display:flex;align-items:center;width:100%;gap:12px;text-align:left;min-width:0;
+ padding:10px;border:1px solid #ebdfd2;background:#fffefa;border-radius:14px;
+ cursor:pointer;color:#0a7777;min-height:73px;box-shadow:0 2px 7px #59391f08}
+.mediaRow:hover{background:#f8f0e7;border-color:#bbd3ca}
+.mediaRow:disabled{opacity:.55;cursor:not-allowed}
+.materialArtwork{display:grid;place-items:center;flex:none;width:48px;height:48px;
+ border-radius:12px;background:linear-gradient(135deg,#e1ede6,#f5e9df);color:#327e74}
+.mediaRowCopy{display:grid;flex:1;gap:5px;min-width:0;overflow-wrap:anywhere}
+.mediaRowCopy strong{color:#3a2c23;font:700 15px/1.3 Georgia,serif}
+.mediaRowCopy small{font:500 11px/1.35 system-ui,sans-serif;color:#877567}
+.mediaRow > svg:last-child{flex:none}
+.activePanel .privacyNote{display:flex;align-items:center;gap:7px;
+ color:#756b5c;margin-top:12px;font:500 11px/1.4 system-ui,sans-serif}
+.activePanel .primary{background:#087978;border:1px solid #087978;color:#fff;
+ min-height:42px;border-radius:11px;font:750 12px/1.3 system-ui,sans-serif}
+:global(.hh-app) .shell .activePanel .primary{background:#087978;border-color:#087978}
+.activePanel .resourceRow{background:#fffefa;border-color:#e6d8c9}
+.activePanel .resourceCopy h4{color:#352e26}
+.privateLibrary{margin-top:14px;padding:12px;border:1px solid #e3d4c3;
+ border-radius:13px;background:#fffefa}
+.privateLibrary > summary{display:flex;align-items:center;gap:8px;color:#705848;
+ font:750 12px/1.4 system-ui,sans-serif;cursor:pointer;min-height:36px}
+.privateLibrary[open] > summary{margin-bottom:12px}
+@media(max-width:430px){
+ .shell{padding:10px;border-radius:16px}
+ .shell .tabs{gap:4px}
+ .shell .tabs button{min-height:59px;border-radius:10px;padding:7px 1px}
+ .shell .tabs button span{font-size:10px}
+ .shell .tabs button svg{width:19px;height:19px}
+ .mediaRow{min-height:65px;gap:9px;padding:9px}
+ .materialArtwork{width:42px;height:42px}
+ .mediaRowCopy strong{font-size:14px}
+}
+@media(max-width:350px){
+ .shell .tabs button span{font-size:9px}
+ .shell .tabs button svg{display:block;width:18px;height:18px}
+ .shell .tabs button{min-height:57px}
+ .mediaRowCopy strong{font-size:13px}
+}

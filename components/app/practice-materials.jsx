@@ -1,6 +1,6 @@
 'use client'
 import {useEffect,useState} from 'react'
-import {BookOpen,ChevronRight,FileText,Globe2,Headphones} from 'lucide-react'
+import {BookOpen,ChevronRight,FileText,Headphones,Search,Leaf,Film,FolderOpen,LockKeyhole} from 'lucide-react'
 import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
 import PracticeReportMaterials from './practice-report-materials'
@@ -14,7 +14,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,isOwner=false,onOpenReikiCourse,onSaveVideos,onSubmitVideos}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,isOwner=false,onOpenReikiCourse,onOpenServices,onSaveVideos,onSubmitVideos}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -44,11 +44,20 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   moderation:'Your videos appear on the public profile after editorial approval. Previously published materials remain visible until changes are approved.',
   invalid:'Enter a valid YouTube or Vimeo URL.',duplicate:'This video is already in your materials.',saving:'Saving…',saved:'Video saved to your materials as a draft.',removed:'Video removed from your materials.',saveFailed:'Could not save the video. Please try again.',conflict:'Your profile changed in another tab. Refresh the page and try again.',confirmRemove:'Remove this video from your materials?',autoSaved:'Videos save immediately. Submit for review to publish them on your profile.',
  }
- const [tab,setTab]=useState('reports')
+ const [tab,setTab]=useState(isOwner?'courses':'articles')
+ const [query,setQuery]=useState('')
+ const activeTabs=['articles','services',...(isOwner?['courses','audio']:[]),'videos']
  useEffect(()=>{
-  const requested=new URLSearchParams(window.location.search).get('materialTab')
-  if(requested==='articles'||(requested==='courses'&&isOwner))setTab(requested)
+   const requested=new URLSearchParams(window.location.search).get('materialTab')
+   if(activeTabs.includes(requested))setTab(requested)
  },[isOwner])
+ function chooseTab(next){
+   if(!activeTabs.includes(next))return
+   setTab(next);setQuery('');setEditing(null);setError('')
+   const url=new URL(window.location.href)
+   url.searchParams.set('materialTab',next)
+   window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+ }
  const [reportItems,setReportItems]=useState([])
  const [reportMode,setReportMode]=useState('loading')
  const [reportError,setReportError]=useState('')
@@ -66,7 +75,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    .then(async r=>r.status===404?null:(r.ok?await r.json():Promise.reject()))
    .then(data=>{
     if(!alive)return
-    if(data===null){setReportMode('not-owner');setTab('videos');return}
+    if(data===null){setReportMode('not-owner');setTab(t=>t==='reports'?'videos':t);return}
     setReportItems(Array.isArray(data.items)?data.items:[])
     setReportMode('ready')
    }).catch(()=>{if(alive){setReportMode('error');setReportError('Unable to load the private library')}})
@@ -75,6 +84,15 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  const published=practitioner?.profile?.videoMaterials||[]
  const dirty=JSON.stringify(videos)!==JSON.stringify(original)
  const locked=busy||saving
+ const visibleVideos=videos.filter(v=>!query||[v.title,v.description,v.locale].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+ const visibleServices=services.filter(v=>!query||[v.localizedCopy?.[locale]?.title,v.copy?.title,v.localizedCopy?.en?.title,v.draftCopy?.copy?.[locale]?.title].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+ const lessonEntries=[
+  {id:'flight',ru:'Полёт к Солнцу',en:'Flight to the Sun'},
+  {id:'tantra',ru:'Тантра Рейки',en:'Tantra Reiki'},
+  {id:'kundalini',ru:'Кундалини Рейки',en:'Kundalini Reiki'},
+  {id:'yggdrasil',ru:'Рейки Иггдрасиль',en:'Reiki Yggdrasil'},
+  {id:'initiation',ru:'Личная инициация',en:'Personal initiation'},
+ ]
  function open(index=null){
   if(locked)return
   setEditing(index===null?'new':index)
@@ -117,53 +135,66 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   const next=videos.filter((_,i)=>i!==index)
   if(await persist(next,t.removed))setEditing(null)
  }
- return <div className={styles.shell}>
-  <div className={styles.tabs} role="group" aria-label={ru?'Тип материалов':'Material type'}>
-   {reportMode!=='not-owner'&&<button type="button" aria-pressed={tab==='reports'}
-     aria-label={ru?'Для клиентских отчётов':es?'Para informes de clientes':'For client reports'}
-     onClick={()=>setTab('reports')}>
-     <FileText size={16} aria-hidden="true"/><span>{ru?'Отчёты':es?'Informes':'Reports'}</span>
-     <small>{reportMode==='ready'?reportItems.length:'…'}</small>
-    </button>}
-   <button type="button" aria-pressed={tab==='videos'}
-     aria-label={ru?'Публичный профиль':es?'Perfil público':'Public profile'} onClick={()=>setTab('videos')}>
-     <Globe2 size={16} aria-hidden="true"/><span>{ru?'Профиль':es?'Perfil':'Public'}</span>
-     <small>{videos.length}</small>
-   </button>
-   <button type="button" aria-pressed={tab==='articles'} onClick={()=>setTab('articles')}>
-     <BookOpen size={16} aria-hidden="true"/><span>{t.articles}</span>
-   </button>
-   {isOwner&&<button type="button" aria-pressed={tab==='courses'} onClick={()=>setTab('courses')} data-practice-materials-courses-tab>
-     <Headphones size={16} aria-hidden="true"/><span>{ru?'Курсы':es?'Cursos':'Courses'}</span>
-   </button>}
-  </div>
+ return <div className={styles.shell} data-practitioner-materials-v4>
+  <header className={styles.hubHeader}>
+    <p className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'МАТЕРИАЛЫ МАСТЕРА':es?'BIBLIOTECA DEL PROFESIONAL':'PRACTITIONER LIBRARY'}</p>
+    <h3>{ru?'Материалы':es?'Materiales':'Materials'}</h3>
+    <p>{ru?'Все материалы и программы — в одном месте.':es?'Tus materiales y programas, en un solo lugar.':'All your resources and programs in one place.'}</p>
+  </header>
+  <nav className={styles.tabs} role="tablist" aria-label={ru?'Тип материала':es?'Tipo de material':'Material type'} data-unified-material-nav>
+    <button type="button" role="tab" aria-selected={tab==='articles'} onClick={()=>chooseTab('articles')}><FileText size={19} aria-hidden="true"/><span>{ru?'Статьи':es?'Artículos':'Articles'}</span></button>
+    <button type="button" role="tab" aria-selected={tab==='services'} onClick={()=>chooseTab('services')}><Leaf size={19} aria-hidden="true"/><span>{ru?'Услуги':es?'Servicios':'Services'}</span></button>
+    {isOwner&&<button type="button" role="tab" aria-selected={tab==='courses'} onClick={()=>chooseTab('courses')} data-practice-materials-courses-tab><BookOpen size={19} aria-hidden="true"/><span>{ru?'Курсы':es?'Cursos':'Courses'}</span></button>}
+    {isOwner&&<button type="button" role="tab" aria-selected={tab==='audio'} onClick={()=>chooseTab('audio')} data-practice-materials-audio-tab><Headphones size={19} aria-hidden="true"/><span>{ru?'Аудио':es?'Audio':'Audio'}</span></button>}
+    <button type="button" role="tab" aria-selected={tab==='videos'} onClick={()=>chooseTab('videos')}><Film size={19} aria-hidden="true"/><span>{ru?'Видео':es?'Vídeos':'Video'}</span></button>
+  </nav>
+  {tab!=='articles'&&<label className={styles.searchWrap}><Search size={17} aria-hidden="true"/>
+    <span className={styles.visuallyHidden}>{ru?'Поиск материалов':es?'Buscar materiales':'Search materials'}</span>
+    <input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={ru?'Поиск по материалам…':es?'Buscar materiales…':'Search resources…'} />
+  </label>}
+  <div className={styles.activePanel} role="tabpanel" data-material-panel={tab}>
   {tab==='courses'&&isOwner?<section className={styles.body} data-practice-master-courses>
-    <p className={styles.intro}>{ru?'Выберите учебную программу, чтобы управлять её медитациями и аудиозаписями.':es?'Selecciona un curso para gestionar sus meditaciones y grabaciones.':'Choose a course to manage its meditations and audio recordings.'}</p>
-    <div className={styles.courseFolder}>
-      <span className={styles.courseFolderIcon}><Headphones size={24} aria-hidden="true"/></span>
-      <div className={styles.courseFolderCopy}>
-        <h3>{ru?'Практик Рейки':es?'Practicante de Reiki':'Reiki Practitioner'}</h3>
-        <p>{ru?'Пять уроков: Полёт к Солнцу, Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и личная инициация.':es?'Cinco lecciones: Vuelo al Sol, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil e iniciación personal.':'Five lessons: Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and personal initiation.'}</p>
-        <small>{ru?'Аудиомедитации · RU / EN · приватные черновики':es?'Meditaciones de audio · RU / EN · borradores privados':'Audio meditations · RU / EN · private drafts'}</small>
-      </div>
-      <button type="button" className={styles.courseFolderButton} disabled={busy||typeof onOpenReikiCourse!=='function'}
-        onClick={onOpenReikiCourse} data-open-reiki-course-audio>
-        {ru?'Открыть записи':es?'Abrir grabaciones':'Open recordings'}<ChevronRight size={16} aria-hidden="true"/>
-      </button>
+    <p className={styles.intro}>{ru?'Выберите курс, чтобы управлять его уроками и медитациями.':es?'Elige un curso para gestionar sus lecciones.':'Choose a course to manage its lessons and meditations.'}</p>
+    {(!query||'Практик Рейки Reiki Practitioner Practicante de Reiki'.toLowerCase().includes(query.toLowerCase()))?
+      <button type="button" className={styles.mediaRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.()} data-open-reiki-course-audio>
+        <span className={styles.materialArtwork}><BookOpen size={27} aria-hidden="true"/></span>
+        <span className={styles.mediaRowCopy}><strong>{ru?'Практик Рейки':es?'Practicante de Reiki':'Reiki Practitioner'}</strong><small>{ru?'5 уроков · RU / EN · аудиомедитации':es?'5 lecciones · RU / EN · audio':'5 lessons · RU / EN · guided audio'}</small></span>
+        <ChevronRight size={20} aria-hidden="true"/>
+      </button>:<p className={styles.empty}>{ru?'Курс не найден.':es?'Curso no encontrado.':'No matching course.'}</p>}
+    <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>{ru?'Записи приватны до отдельного подтверждения публикации.':es?'Las grabaciones siguen privadas antes de publicarse.':'Recordings stay private until explicit publication.'}</p>
+   </section>:
+   tab==='audio'&&isOwner?<section className={styles.body} data-practice-audio-lessons>
+    <p className={styles.intro}>{ru?'Выберите папку урока, чтобы загрузить или прослушать медитацию.':es?'Selecciona la carpeta de lección para subir o escuchar audio.':'Choose a lesson folder to upload or preview audio.'}</p>
+    <div className={styles.mediaRows}>
+     {lessonEntries.filter(lesson=>!query||[lesson.en,lesson.ru].join(' ').toLowerCase().includes(query.toLowerCase())).map((lesson,i)=>
+      <button key={lesson.id} type="button" className={styles.mediaRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.(lesson.id)} data-reiki-audio-shortcut={lesson.id}>
+       <span className={styles.materialArtwork}><Headphones size={23} aria-hidden="true"/></span>
+       <span className={styles.mediaRowCopy}><strong>{ru?'Урок':es?'Lección':'Lesson'} {lessonEntries.indexOf(lesson)+1} · {ru?lesson.ru:lesson.en}</strong><small>RU / EN · MP3, M4A, WAV</small></span>
+       <ChevronRight size={19} aria-hidden="true"/>
+      </button>)}
     </div>
-    <p className={styles.notice}>{ru?'Загружайте MP3, M4A или WAV до 20 МБ. Файл остаётся приватным, пока вы отдельно не одобрите публикацию на уроке.':es?'Sube archivos MP3, M4A o WAV de hasta 20 MB. Seguirán privados hasta que apruebes su publicación.':'Upload MP3, M4A or WAV up to 20 MB. Recordings remain private until you separately approve publishing them to a lesson.'}</p>
-  </section>:
-  tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
-   tab==='reports'?<PracticeReportMaterials items={reportItems} locale={locale}
-    loading={reportMode==='loading'} error={reportError}
-    onRefresh={()=>setReportRefresh(n=>n+1)}/>:
+   </section>:
+   tab==='services'?<section className={styles.body} data-practice-services-library>
+    <div className={styles.heading}><h3>{ru?'Мои услуги':es?'Mis servicios':'My services'} <small>({services.length})</small></h3>
+      <button type="button" className={styles.primary} disabled={busy} onClick={onOpenServices}>{ru?'Управлять':es?'Gestionar':'Manage'}</button>
+    </div>
+    {visibleServices.length?<div className={styles.mediaRows}>{visibleServices.map((item,i)=>{
+     const title=item.localizedCopy?.[locale]?.title||item.copy?.title||item.draftCopy?.copy?.[locale]?.title||item.localizedCopy?.en?.title||item.draftCopy?.copy?.en?.title||(ru?'Услуга':es?'Servicio':'Service')
+     return <button type="button" key={item.id||i} className={styles.mediaRow} disabled={busy} onClick={onOpenServices}>
+       <span className={styles.materialArtwork}><Leaf size={23} aria-hidden="true"/></span>
+       <span className={styles.mediaRowCopy}><strong>{title}</strong><small>{item.status||''} · {item.deliveryFormat||''}</small></span><ChevronRight size={18} aria-hidden="true"/>
+     </button>
+    })}</div>:<p className={styles.empty}>{query?(ru?'Услуг по запросу нет.':es?'Sin resultados.':'No matching services.'):(ru?'Добавьте первую услугу через редактор.':es?'Añade tu primer servicio.':'Add your first service through the editor.')}</p>}
+   </section>:
+   tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
   <div className={styles.body}>
    <p className={styles.intro}>{t.note}</p>
    <div className={styles.heading}>
     <h3>{t.videos}</h3>
     <button type="button" className={styles.primary} onClick={()=>open()} disabled={locked||editing!==null||videos.length>=12}>{t.add}</button>
    </div>
-   {videos.length?<div className={styles.resourceList}>{videos.map((video,index)=>{
+   {visibleVideos.length?<div className={styles.resourceList}>{visibleVideos.map((video,index)=>{
+    const originalIndex=videos.indexOf(video)
     const live=published.some(p=>p.url===video.url&&p.title===video.title&&p.locale===video.locale&&p.description===video.description)
     return <article className={styles.resourceRow} key={video.url+'-'+index}>
      <div className={styles.resourceMain}>
@@ -176,8 +207,8 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
        <h4>{video.title}</h4>
        {video.description&&<p className={styles.description} title={video.description}>{video.description}</p>}
        <div className={styles.cardActions}>
-        <button type="button" disabled={locked} onClick={()=>open(index)}>{t.editBtn}</button>
-        <button type="button" disabled={locked} onClick={()=>void remove(index)}>{t.deleteBtn}</button>
+        <button type="button" disabled={locked} onClick={()=>open(originalIndex)}>{t.editBtn}</button>
+        <button type="button" disabled={locked} onClick={()=>void remove(originalIndex)}>{t.deleteBtn}</button>
        </div>
       </div>
      </div>
@@ -205,6 +236,10 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    </div>
    {dirty&&<p className={styles.notice}>{t.unsaved}</p>}
    <p className={styles.notice}>{t.moderation}</p>
+   {isOwner&&reportMode!=='not-owner'&&<details className={styles.privateLibrary}><summary><FolderOpen size={17} aria-hidden="true"/>{ru?'Приватные материалы клиентских отчётов':es?'Recursos privados de informes':'Private client report resources'}</summary>
+    <PracticeReportMaterials items={reportItems} locale={locale} loading={reportMode==='loading'} error={reportError} onRefresh={()=>setReportRefresh(n=>n+1)}/>
+   </details>}
   </div>}
+ </div>
  </div>
 }

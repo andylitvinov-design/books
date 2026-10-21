@@ -5881,3 +5881,87 @@
     scroll-behavior: auto;
   }
 }
+
+
+/* Approved practitioner V4: same restrained cream / wood / teal admin workspace. */
+.prescription-admin-shell{
+ --v4-practitioner-ink:#352a22;--v4-practitioner-teal:#0b7776;
+ --v4-practitioner-stroke:#e3d4c3;
+ max-width:1080px!important;margin:0 auto;padding:clamp(12px,3vw,28px)!important;
+ padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important;
+ color:var(--v4-practitioner-ink)}
+.prescription-admin-header--refined{display:block!important;margin:0 0 14px;padding:0!important;
+ border:0!important}
+.prescription-admin-topbar{padding:0 0 12px;border-color:#dfcfbd}
+.prescription-admin-wordmark strong{font:400 clamp(22px,3vw,28px)/1.2 Georgia,serif;color:#392d25}
+.prescription-admin-titleblock{padding:17px 0 12px!important}
+.prescription-admin-titleblock h1{font:400 clamp(31px,5vw,45px)/1.12 Georgia,serif!important;
+ letter-spacing:-.042em!important;color:#392d25;margin:0!important}
+.prescription-admin-titleblock .prescription-admin-description{
+ margin:7px 0 0!important;color:#796b5e!important;max-width:62ch;
+ font:450 12px/1.55 system-ui,sans-serif!important}
+.prescription-admin-v4-shell-nav{display:grid;gap:9px;margin:0 0 15px}
+.prescription-admin-v4-shell-nav > .prescription-admin-navigation--tabs{
+ display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));
+ gap:6px!important;margin:0!important;padding:0!important;overflow:visible!important}
+.prescription-admin-v4-shell-nav > .prescription-admin-navigation--tabs a{
+ display:flex;align-items:center;justify-content:center;min-width:0;min-height:44px;
+ padding:7px 4px!important;text-align:center;white-space:normal;
+ background:#fffbf6!important;border:1px solid #e4d6c5!important;
+ border-radius:11px!important;color:#584739!important;
+ font:720 11px/1.2 system-ui,sans-serif!important;text-decoration:none!important}
+.prescription-admin-v4-shell-nav > .prescription-admin-navigation--tabs a:hover,
+.prescription-admin-v4-shell-nav > .prescription-admin-navigation--tabs a:focus-visible{
+ border-color:#86b9b0!important;background:#e4f1eb!important;color:#075f60!important}
+.prescription-admin-v4-more{border:1px solid #e3d6c6;border-radius:12px;background:#fffaf4;
+ margin:0;overflow:hidden}
+.prescription-admin-v4-more > summary{display:flex;align-items:center;min-height:40px;
+ padding:8px 13px;cursor:pointer;list-style:none;
+ color:#746154;font:720 12px/1.3 system-ui,sans-serif}
+.prescription-admin-v4-more > summary::-webkit-details-marker{display:none}
+.prescription-admin-v4-more[open] > summary{border-bottom:1px solid #e3d6c6}
+.prescription-admin-v4-more > nav{display:flex!important;flex-wrap:wrap;gap:6px!important;
+ padding:10px!important;margin:0!important;overflow:visible!important}
+.prescription-admin-v4-more > nav a{min-height:40px!important;padding:9px 11px!important;
+ background:white!important;color:#705744!important;border-color:#dfcdb8!important;
+ font:650 11px/1.2 system-ui,sans-serif!important}
+.prescription-admin-shell :is(button,a,summary,input,select,textarea):focus-visible{
+ outline:3px solid #66a99e;outline-offset:2px}
+@media(max-width:430px){
+ .prescription-admin-topbar{gap:8px;padding-bottom:10px}
+ .prescription-admin-titleblock{padding:13px 0 11px!important}
+ .prescription-admin-titleblock h1{font-size:32px!important}
+ .prescription-admin-v4-shell-nav > .prescription-admin-navigation--tabs{gap:4px!important}
+ .prescription-admin-v4-shell-nav > .prescription-admin-navigation--tabs a{
+  padding:5px 1px!important;border-radius:9px!important;font-size:10px!important;min-height:44px}
+}
+@media(max-width:350px){
+ .prescription-admin-v4-shell-nav > .prescription-admin-navigation--tabs a{font-size:9px!important}
+}
+
+
+/* Owner Materials landing: same five-category language as My Practice. */
+.hh-admin-material-v4-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;
+ margin:0 0 14px}
+.hh-admin-material-v4-tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:5px;min-width:0;min-height:69px;padding:10px 2px;text-decoration:none;
+ font:750 11px/1.25 system-ui,sans-serif;color:#614b3b;
+ border:1px solid #e2d1bf;background:#fffcf6;border-radius:12px}
+.hh-admin-material-v4-tabs a svg{width:20px;height:20px;color:#0b7876}
+.hh-admin-material-v4-tabs a:hover{border-color:#95c1b7;background:#e0eee9}
+.hh-admin-private-materials-v4{margin:15px 0;border:1px solid #e3d4c3;
+ border-radius:17px;background:#fffdf8;overflow:hidden}
+.hh-admin-private-materials-v4 > summary{display:flex;align-items:center;gap:10px;
+ min-height:49px;padding:11px 14px;color:#705945;cursor:pointer;list-style:none;
+ font:750 12px/1.4 system-ui,sans-serif}
+.hh-admin-private-materials-v4 > summary::-webkit-details-marker{display:none}
+.hh-admin-private-materials-v4 > summary span{flex:1;min-width:0}
+.hh-admin-private-materials-v4 > summary svg{width:18px;height:18px;color:#247d74;flex:none}
+.hh-admin-private-materials-v4[open] > summary{border-bottom:1px solid #e4d5c5}
+.hh-admin-private-materials-v4[open] > summary > svg:last-child{transform:rotate(90deg)}
+@media(max-width:430px){
+ .hh-admin-material-v4-tabs{gap:4px}
+ .hh-admin-material-v4-tabs a{min-height:58px;padding:6px 2px;font-size:10px;border-radius:10px}
+ .hh-admin-material-v4-tabs a svg{width:18px;height:18px}
+}
+@media(max-width:350px){.hh-admin-material-v4-tabs a{font-size:9px}}
