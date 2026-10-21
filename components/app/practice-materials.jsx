@@ -67,7 +67,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    .then(async r=>r.status===404?null:(r.ok?await r.json():Promise.reject()))
    .then(data=>{
     if(!alive)return
-    if(data===null){setReportMode('not-owner');setTab('videos');return}
+    if(data===null){setReportMode('not-owner');setTab(current=>current==='reports'?'videos':current);return}
     setReportItems(Array.isArray(data.items)?data.items:[])
     setReportMode('ready')
    }).catch(()=>{if(alive){setReportMode('error');setReportError('Unable to load the private library')}})
