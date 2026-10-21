@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone } from 'lucide-react'
+import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeMaterials from './practice-materials'
@@ -215,7 +215,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     {destination:'videos',icon:Film,title:ru?'Видео сайта':locale==='es'?'Vídeos del sitio':'Website videos',description:ru?'Публичная видеобиблиотека и размещение.':locale==='es'?'Biblioteca y publicación de vídeos.':'Public video library and placement.'},
     {destination:'youtube',icon:CalendarDays,title:ru?'Загрузка YouTube':locale==='es'?'Subir a YouTube':'YouTube upload',description:ru?'Отдельная загрузка после проверки ролика и канала.':locale==='es'?'Subir tras revisar vídeo y canal.':'Separate upload after video and channel QA.'},
   ]
-  async function openOwner(destination,clientId) {
+  async function openOwner(destination,clientId,lesson) {
     if(busy||!isOwner)return
     setBusy(true);setError('')
     try {
@@ -228,7 +228,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       const result=await response.json()
       // The server validates ownership and maps only allowed admin destinations.
       if(typeof result.redirectUrl!=='string'||!result.redirectUrl.startsWith('/admin'))throw new Error('OPEN_UNAVAILABLE')
-      window.location.assign(result.redirectUrl)
+      // Select an allowed lesson only after the server authorizes this owner route.
+      const safeLesson=['flight','tantra','kundalini','yggdrasil','initiation'].includes(lesson)?lesson:null
+      const destinationUrl=destination==='reikiCourse'&&safeLesson&&
+        result.redirectUrl==='/admin/materials/courses/reiki-practitioner'
+        ?result.redirectUrl+'?lesson='+safeLesson+'&lang='+(locale==='ru'?'ru':'en')
+        :result.redirectUrl
+      window.location.assign(destinationUrl)
     } catch {
       setError(d.ownerError);setBusy(false)
     }
@@ -361,61 +367,39 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
-    {!needsOnboarding&&<section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
-      <div className="hh-practice-marketplace-heading">
-        <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
-        <div>
-          <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
-          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
-          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
-        </div>
-      </div>
-      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
-        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
-          aria-pressed={activePanel==='services'} onClick={addService}>
-          <Plus aria-hidden="true" />
-          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
-          <ChevronRight aria-hidden="true" />
+    
+    {!needsOnboarding&&<section className="hh-practice-v4-launch" aria-label={ru?'Основные инструменты мастера':locale==='es'?'Herramientas del profesional':'Practitioner essentials'} data-practitioner-v4-dashboard>
+      <div className="hh-practice-v4-grid">
+        <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>
+          <UsersRound aria-hidden="true"/><span>{d.clients}</span><small>{ru?'Контакты':locale==='es'?'Contactos':'Contacts'}</small>
         </button>
-        <p className="hh-practice-marketplace-cta-note">
-          <span>{marketplaceCopy.hobby}</span>
-          <span aria-hidden="true">·</span>
-          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
-        </p>
+        <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
+          <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
+        </button>
+        <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>
+          <Leaf aria-hidden="true"/><span>{d.services}</span><strong>{services.length}</strong>
+        </button>
+        <button type="button" onClick={()=>choosePanel('materials')} aria-pressed={activePanel==='materials'}>
+          <FileText aria-hidden="true"/><span>{ru?'Материалы':locale==='es'?'Materiales':'Materials'}</span><small>{ru?'Библиотека':locale==='es'?'Biblioteca':'Library'}</small>
+        </button>
+        <button type="button" onClick={()=>choosePanel('materials')} aria-pressed={activePanel==='materials'}>
+          <BookOpen aria-hidden="true"/><span>{ru?'Курсы':locale==='es'?'Cursos':'Courses'}</span><small>{ru?'Управление':locale==='es'?'Gestionar':'Manage'}</small>
+        </button>
+        <button type="button" onClick={()=>document.getElementById('hh-practice-v4-analytics')?.scrollIntoView({behavior:'smooth',block:'start'})}>
+          <BarChart3 aria-hidden="true"/><span>{ru?'Аналитика':locale==='es'?'Analíticas':'Insights'}</span><small>{ru?'Практика':locale==='es'?'Práctica':'Practice'}</small>
+        </button>
       </div>
-      <div className="hh-practice-marketplace-latest">
-        <div className="hh-practice-marketplace-latest-heading">
-          <h3>{marketplaceCopy.latest}</h3>
-          <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
-            {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
-          </Link>
-        </div>
-        {recentPublicServices.length?<ul className="hh-practice-marketplace-cards">
-          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
-            <Link className="hh-practice-marketplace-card"
-              href={getPublicServiceDetailHref(locale,item.practitionerSlug,item.slug)} prefetch={false}>
-              <ShowcaseCover item={item} />
-              <span className="hh-practice-marketplace-card-content">
-                <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>
-                <strong className="hh-practice-marketplace-card-title">{item.titles?.[locale]||item.titles?.en}</strong>
-                <span className="hh-practice-marketplace-card-summary">{item.shortDescriptions?.[locale]||item.shortDescriptions?.en||''}</span>
-                <span className="hh-practice-marketplace-card-foot">
-                  <span>{showcasePrice(item,locale,marketplaceCopy)}</span><ChevronRight aria-hidden="true" />
-                </span>
-              </span>
-            </Link>
-          </li>)}
-        </ul>:<p className="hh-practice-marketplace-empty" role="status">
-          {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
-        </p>}
-      </div>
+      <button type="button" className="hh-practice-v4-materials-cta" onClick={()=>choosePanel('materials')}>
+        <Headphones aria-hidden="true"/><span><strong>{ru?'Создавайте и делитесь знаниями':locale==='es'?'Crea y comparte conocimientos':'Create and share knowledge'}</strong><small>{ru?'Статьи, услуги, курсы, медитации и видео':locale==='es'?'Artículos, servicios, cursos, audio y vídeo':'Articles, services, courses, meditations and videos'}</small></span><ChevronRight aria-hidden="true"/>
+      </button>
     </section>}
-    <PracticeRequestsOverview requests={requests} services={services} locale={locale}
+
+    <div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
       onAddService={needsOnboarding
         ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
         : addService}
-      onViewAll={()=>{setActivePanel('requests');setError('')}} />
+      onViewAll={()=>{setActivePanel('requests');setError('')}} /></div>
     {readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
       <div className="hh-practice-setup-head">
         <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
@@ -435,7 +419,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       <div><strong>{publishedCount}</strong><span>{ru?'Опубликованные услуги':'Published services'}</span></div>
       <div><strong>{pendingServices}</strong><span>{ru?'Ждут проверки':'Under review'}</span></div>
     </div>}
-    {!needsOnboarding&&<PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} />}
+    {!needsOnboarding&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics"><PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} /></div>}
     {!needsOnboarding&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
       <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
         {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>
@@ -511,8 +495,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
-        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy}
-           isOwner={isOwner} onOpenReikiCourse={()=>openOwner('reikiCourse')} accountId={accountId}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={lesson=>openOwner('reikiCourse',undefined,lesson)} onOpenServices={()=>choosePanel('services')}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
@@ -551,6 +534,59 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
       </section>}
+    {!needsOnboarding&&<details className="hh-practice-v4-community">
+      <summary><Leaf aria-hidden="true"/><span>{marketplaceCopy.latest}</span><ChevronRight aria-hidden="true"/></summary>
+      <section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
+      <div className="hh-practice-marketplace-heading">
+        <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
+        <div>
+          <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
+          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
+          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
+        </div>
+      </div>
+      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
+        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
+          aria-pressed={activePanel==='services'} onClick={addService}>
+          <Plus aria-hidden="true" />
+          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        <p className="hh-practice-marketplace-cta-note">
+          <span>{marketplaceCopy.hobby}</span>
+          <span aria-hidden="true">·</span>
+          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
+        </p>
+      </div>
+      <div className="hh-practice-marketplace-latest">
+        <div className="hh-practice-marketplace-latest-heading">
+          <h3>{marketplaceCopy.latest}</h3>
+          <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
+            {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
+          </Link>
+        </div>
+        {recentPublicServices.length?<ul className="hh-practice-marketplace-cards">
+          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
+            <Link className="hh-practice-marketplace-card"
+              href={getPublicServiceDetailHref(locale,item.practitionerSlug,item.slug)} prefetch={false}>
+              <ShowcaseCover item={item} />
+              <span className="hh-practice-marketplace-card-content">
+                <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>
+                <strong className="hh-practice-marketplace-card-title">{item.titles?.[locale]||item.titles?.en}</strong>
+                <span className="hh-practice-marketplace-card-summary">{item.shortDescriptions?.[locale]||item.shortDescriptions?.en||''}</span>
+                <span className="hh-practice-marketplace-card-foot">
+                  <span>{showcasePrice(item,locale,marketplaceCopy)}</span><ChevronRight aria-hidden="true" />
+                </span>
+              </span>
+            </Link>
+          </li>)}
+        </ul>:<p className="hh-practice-marketplace-empty" role="status">
+          {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
+        </p>}
+      </div>
+    </section>
+    </details>}
+
     {ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
