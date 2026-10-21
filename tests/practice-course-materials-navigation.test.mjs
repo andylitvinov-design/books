@@ -14,7 +14,7 @@ const middleware=source('middleware.ts')
 const audio=source('components/admin-reiki-audio.jsx')
 
 test('My Practice Materials offers Reiki course recordings only to the owner',()=>{
-  assert.match(workspace,/isOwner=\{isOwner\} onOpenReikiCourse=\{lesson=>openOwner\('reikiCourse',undefined,lesson\)\}/)
+  assert.match(workspace,/isOwner=\{isOwner\} onOpenReikiCourse=\{\(lesson,mode\)=>openOwner\('reikiCourse',undefined,lesson,mode\)\}/)
   assert.match(materialTab,/<button type="button" role="tab"[\s\S]{0,200}data-practice-materials-courses-tab/)
   assert.match(materialTab,/tab==='courses'\?<section/)
   // The universal authoring tool is visible to masters, but Reiki recordings
@@ -38,7 +38,7 @@ test('New Routes reuse protected audio editor without spawning duplicate media s
   assert.match(ownerPage,/requireAdminRequest\(\)/)
   assert.match(ownerPage,/REIKI_INTRO_LESSONS\.includes\(query\?\.lesson\)/)
   assert.match(ownerPage,/\['ru','en'\]\.includes\(query\?\.lang\)/)
-  assert.match(ownerPage,/<AdminReikiAudio initialLocale=\{language\} initialLesson=\{lesson\}\/>/)
+  assert.match(ownerPage,/<AdminReikiAudio initialLocale=\{language\} initialLesson=\{lesson\} initialMode=/)
   assert.match(audio,/uploadToSignedUrl/)
   assert.match(audio,/action:'publish'/)
   assert.match(audio,/action:'preview'/)
