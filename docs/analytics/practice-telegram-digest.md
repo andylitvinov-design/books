@@ -1,3 +1,23 @@
+## 2026-10-21 — optional direct Mistral Studio Free mode for real two-model daily audits
+
+**Why:** The owner already installed Google AI Studio and OpenRouter keys in Holistic House Vercel Production. The read-only provider probe in [PR #1440](https://github.com/andylitvinov-design/books/pull/1440) authenticated both on 2026-10-20 but found **zero eligible** zero-priced OpenRouter Mistral models. The existing Gemini key is valid; its Google project Free Tier has **not** been confirmed. Key authentication does not prove billing, model inference or Telegram delivery.
+
+**Safe additional path (reuse the existing Council, no new job, bot or route):** lib/practitioners/council-free-models.mjs supports **Mistral Studio direct Free mode** only if the owner confirms that workspace is Free mode **with pay-as-you-go OFF**, stores a private Mistral API key and explicitly enables the free-mode flag. Official information: [Mistral Free mode](https://docs.mistral.ai/getting-started/quickstarts/studio/activate-and-generate-api-key), [included usage and limits](https://docs.mistral.ai/admin/billing-usage/usage-limits), [workspace-scoped API keys](https://docs.mistral.ai/admin/identity-access/api-keys). Free mode has account and model quotas, including possible HTTP 429, never a paid fallback.
+
+Add **only after the owner personally verifies the corresponding no-billing conditions**, in [HH Production Vercel environment settings](https://vercel.com/super10/codex-public-book-library/settings/environment-variables):
+
+| Variable | Type | Prerequisite |
+| --- | --- | --- |
+| HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED=true | Plain, Production | Existing Google API-key project actually on Free Tier without paid billing |
+| HH_COUNCIL_MISTRAL_API_KEY | Sensitive, Production | New or existing Mistral Studio workspace key, not OpenRouter/browser-only token |
+| HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED=true | Plain, Production | Studio workspace on Free mode and pay-as-you-go disabled |
+
+**Do not duplicate or replace the existing** HH_COUNCIL_GEMINI_API_KEY, HH_COUNCIL_OPENROUTER_API_KEY, BotFather token, owner pairing or cron. Mistral Studio Free mode takes precedence only if BOTH its own key and the separate free confirmation exist. Otherwise the original current-catalog zero-priced OpenRouter Mistral route remains available whenever a named free model reappears. The direct adapter verifies accessible model mistral-small-2603 using authenticated GET /v1/models before POST chat completion, then checks exact model identity, finish reason and nonempty answer; unavailable models, 429, timeouts and incomplete/substituted replies fail closed. An API key or model list alone **cannot prove the Free plan**; only the owner can confirm current billing status.
+
+After changing the environment, make a new **READY Production deployment** and verify exact codex/public-book-library SHA with holistichouse.vercel.app alias. In the [existing admin Telegram setup](https://holistichouse.vercel.app/admin/telegram-setup), click **Send Gemini + Mistral audit now** when the public archive exists. The original 09:15 America/Toronto GitHub public HTML archive, 21:00 UTC HH cron, private forced-RLS per-day receipt, owner Telegram bot and free-only principle are reused. Require **two attributed genuine model replies and accepted owner Telegram delivery** before declaring the two-model path fully operational; a bot test or green CI does not prove it.
+
+---
+
 ## 2026-10-20 — prevent empty Gemini/Mistral reports from consuming the day
 
 **Production behavior:** the private Telegram bot is verified and the owner accepted the test; model keys remain **owner-held and missing** in HH Vercel Production. The scheduled AI Council digest now checks for both provider keys and explicit Google Free Tier confirmation *before* fetching GitHub HTML evidence or claiming a day. Missing settings return `model_setup_required`, with **no Telegram document** and **no accepted daily receipt**, so a later owner setup is not blocked by a fake 'complete' report.
