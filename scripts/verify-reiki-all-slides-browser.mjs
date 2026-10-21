@@ -219,7 +219,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
 async function installLocalAccountMock(page) {
   const progress = {
     enrolled: true, accountId: "00000000-0000-4000-8000-000000000001",
-    courseId: "academy-energywork-principles", courseVersion: "2026-10-19.p9",
+    courseId: "academy-energywork-principles", courseVersion: "2026-10-20.p10",
     slideId: "welcome-01", status: "active", answers: {}, revision: 0,
     savedAt: null, sharingWithTeacher: false, applicationLead: null,
   };
@@ -254,7 +254,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p9");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-20.p10");
 
   // Opening the bottom hint should consume height in the flex column,
   // shrinking the slide instead of overlaying its contents.
