@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowRight, ArrowUp, BarChart3, BookOpen, ChevronDown, Clapperboard,
+  ArrowRight, ArrowUp, ShieldCheck, BookOpen, ChevronDown, Clapperboard,
   ClipboardList, FileText, Headphones, Leaf, Mic, MicOff, PenLine,
   Plus, Sparkles, TestTube2,
 } from 'lucide-react'
@@ -180,6 +180,6 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
       <summary><span>{t.more}</span><ChevronDown size={16} aria-hidden="true" /></summary>
       <div className={styles.grid}>{extras.map(renderAction)}</div>
     </details>
-    <p className={styles.privacy}><BarChart3 size={13} aria-hidden="true" />{t.privacy} {speechAvailable ? t.voicePrivacy : ''}</p>
+    <p className={styles.privacy}><ShieldCheck size={13} aria-hidden="true" />{t.privacy} {speechAvailable ? t.voicePrivacy : ''}</p>
   </section>
 }
