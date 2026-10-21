@@ -28,7 +28,7 @@ function loadComponent(path, modules) {
 const common = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/link': { default: link },
-  'lucide-react': Object.fromEntries(['BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown'].map(name => [name, () => null])),
+  'lucide-react': Object.fromEntries(['BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'ArrowRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown', 'Sparkles'].map(name => [name, () => null])),
 };
 let pathname = '/';
 const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
@@ -38,6 +38,7 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/lib/ui-locale': { localePath: (path, locale) => '/' + locale + path, saveUiLocale() {} },
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
+  '@/components/commerce/cart-nav-link': { CartNavLink: () => null },
   './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
 });
@@ -48,6 +49,7 @@ const { ServicesSolutions } = loadComponent('components/services-solutions.tsx',
   'next/image': { default: props => jsx('img', props) },
   '@/components/acquisition-event-link': { AcquisitionEventLink },
   '@/components/contact-channel-chooser': { ContactChannelChooser: () => jsx('button', {}) },
+  '@/components/static-portrait': { StaticPortrait: () => jsx('img', {src:'/images/holistic-house/andy-about.png'}) },
   '@/lib/whatsapp-enquiry': { whatsappEnquiryUrl },
   '@/data/core-service-offers': { coreServiceOffers },
   '@/data/service-video-library': { getServiceVideoWatchUrl: (id, locale) => '/' + locale + '/services/video/' + id },
@@ -152,8 +154,48 @@ test('header matrix preserves all widths and tests direct links against the actu
   assert.match(ia, /assert\.deepEqual\(errors, \[\]\)/);
 });
 
+
+// The featured menu entry must describe the existing written, non-clinical
+// service rather than an unspecified "Start free" action or a home anchor.
+test('featured mobile menu action names and links to the actual free written review in all locales', () => {
+  const savedPath = pathname;
+  try {
+    const cases = [
+      ['en', 'Free situation review', 'Short questionnaire and drawing'],
+      ['ru', 'Бесплатный разбор ситуации', 'Короткая анкета и рисунок'],
+      ['es', 'Revisión gratuita de tu situación', 'Cuestionario y dibujo'],
+    ];
+    for (const [locale, title, detail] of cases) {
+      pathname = locale === 'en' ? '/' : '/' + locale;
+      const tree = SiteNavigation({ locale });
+      const anchors = treeNodes(tree).filter(node => node.type === 'a');
+      const expected = '/' + locale + '/services/free-situation-review';
+      const direct = anchors.find(node => node.props.className === 'site-nav-free-entry');
+      const featured = anchors.find(node => node.props['data-free-review-entry'] === 'menu');
+      assert.equal(direct?.props.href, expected, locale + ': direct header entry');
+      assert.equal(featured?.props.href, expected, locale + ': featured menu entry');
+      assert.equal(featured?.props.className, 'site-main-menu-free');
+      const titleNode = treeNodes(featured).find(node => node.props.className === 'site-main-menu-free__title');
+      const detailNode = treeNodes(featured).find(node => node.props.className === 'site-main-menu-free__detail');
+      assert.equal(titleNode?.props.children, title, locale + ': service title visible');
+      assert.ok(detailNode?.props.children.includes(detail), locale + ': method and response visible');
+      assert.equal(anchors.filter(node => node.props.href === expected).length, 2, locale + ': no duplicate menu destinations');
+    }
+  } finally {
+    pathname = savedPath;
+  }
+});
+
+test('the menu preserves tap targets and makes secondary navigation a compact two-column grid', () => {
+  const styles = read('app/holistic-house-home.css');
+  assert.match(styles, /\.site-navigation \.site-main-menu-more \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /\.site-navigation \.site-main-menu-more a \{[\s\S]*?min-height: 44px/);
+  assert.match(styles, /max-height: min\(70dvh, calc\(100dvh - 220px\), 550px\)/);
+  assert.match(styles, /\.site-main-menu-free__detail \{/);
+});
+
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
+  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
@@ -223,7 +265,7 @@ async function directScenario(locale, surface, fault) {
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const direct = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a');
-  if (fault === 'wrong free hash') direct[0].props.href = (locale === 'en' ? '/' : '/' + locale) + '#start-here';
+  if (fault === 'wrong free review route') direct[0].props.href = '/wrong-free-route';
   if (fault === 'wrong services route') direct[1].props.href = '/wrong';
   if (fault === 'wrong About route') direct[2].props.href = '/wrong';
   if (fault === 'wrong cabinet route') direct[3].props.href = '/' + locale + '/library';
@@ -254,7 +296,7 @@ async function directScenario(locale, surface, fault) {
 for (const locale of ['en', 'ru', 'es']) {
   for (const surface of ['home', 'services', 'library']) test(`${locale}/${surface} verifier checks actual direct JSX destinations and active state`, () => directScenario(locale, surface));
 }
-for (const fault of ['wrong free hash', 'wrong services route', 'wrong About route', 'wrong cabinet route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
+for (const fault of ['wrong free review route', 'wrong services route', 'wrong About route', 'wrong cabinet route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
   test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'services', fault)));
 }
 

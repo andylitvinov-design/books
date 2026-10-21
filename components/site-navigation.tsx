@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { LayoutDashboard, Menu } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, Menu, Sparkles } from 'lucide-react';
 import { CartNavLink } from '@/components/commerce/cart-nav-link';
 import { compactNavigationIcons } from './compact-navigation-icons';
 import type { Locale } from '@/data/remedies';
@@ -22,9 +22,24 @@ const cabinetEntryCopy = {
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
 
 const siteMenuCopy = {
-  en: { open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu', start: 'Start free', quick: 'Main sections', more: 'Explore more' },
-  ru: { open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню', start: 'Начать бесплатно', quick: 'Основные разделы', more: 'Другие разделы' },
-  es: { open: 'Abrir menú del sitio', heading: 'Explorar Holistic House', label: 'Menú', start: 'Empezar gratis', quick: 'Secciones principales', more: 'Explorar más' },
+  en: {
+    open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu',
+    start: 'Free review', freeTitle: 'Free situation review',
+    freeDetail: 'Short questionnaire and drawing · personal written response',
+    quick: 'Main sections', more: 'Explore more',
+  },
+  ru: {
+    open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню',
+    start: 'Бесплатный разбор', freeTitle: 'Бесплатный разбор ситуации',
+    freeDetail: 'Короткая анкета и рисунок · личный письменный ответ',
+    quick: 'Основные разделы', more: 'Другие разделы',
+  },
+  es: {
+    open: 'Abrir menú del sitio', heading: 'Explorar Holistic House', label: 'Menú',
+    start: 'Revisión gratis', freeTitle: 'Revisión gratuita de tu situación',
+    freeDetail: 'Cuestionario y dibujo · respuesta personal por escrito',
+    quick: 'Secciones principales', more: 'Explorar más',
+  },
 } as const;
 
 export function SiteNavigation({ locale, onLocaleChange }: Props) {
@@ -41,7 +56,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const localizedPath = /^\/(ru|en|es)(?=\/|$)/.test(pathname);
   const available = hasSpanishCounterpart(pathname);
   const languages: PublicLocale[] = available ? ['ru', 'en', 'es'] : ['ru', 'en'];
-  const freeStartHref = `${activeLocale === 'en' ? '/' : `/${activeLocale}`}#free-start`;
+  const freeReviewHref = `/${activeLocale}/services/free-situation-review`;
 
   useEffect(() => {
     if (!locale) return;
@@ -105,7 +120,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
-    <Link className="site-nav-free-entry" href={freeStartHref} prefetch={false}>{siteMenu.start}</Link>
+    <Link className="site-nav-free-entry" href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>
     {getSiteNavigation(activeLocale).filter(item => item.id === 'services').map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
@@ -140,7 +155,20 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       </summary>
       <div className="site-main-menu-panel">
         <p className="site-main-menu-heading">{siteMenu.heading}</p>
-        <Link className="site-main-menu-free" href={freeStartHref} prefetch={false} onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>{siteMenu.start}</Link>
+        <Link
+          className="site-main-menu-free"
+          data-free-review-entry="menu"
+          href={freeReviewHref}
+          prefetch={false}
+          onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
+        >
+          <span className="site-main-menu-free__icon"><Sparkles aria-hidden="true" /></span>
+          <span className="site-main-menu-free__copy">
+            <strong className="site-main-menu-free__title">{siteMenu.freeTitle}</strong>
+            <span className="site-main-menu-free__detail">{siteMenu.freeDetail}</span>
+          </span>
+          <ArrowRight className="site-main-menu-free__arrow" aria-hidden="true" />
+        </Link>
         <p className="site-main-menu-group-label">{siteMenu.quick}</p>
         <div className="site-main-menu-grid" aria-label={siteMenu.quick}>
           {mainMenuItems.map(item => {
