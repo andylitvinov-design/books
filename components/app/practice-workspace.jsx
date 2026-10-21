@@ -435,7 +435,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       <div><strong>{publishedCount}</strong><span>{ru?'Опубликованные услуги':'Published services'}</span></div>
       <div><strong>{pendingServices}</strong><span>{ru?'Ждут проверки':'Under review'}</span></div>
     </div>}
-    {!needsOnboarding&&<PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} />}
+    {!needsOnboarding&&<PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} />}
     {!needsOnboarding&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
       <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
         {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>
