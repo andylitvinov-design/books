@@ -159,6 +159,39 @@
   box-shadow: 0 6px 24px rgba(65, 55, 43, .042);
   scroll-margin-top: 12px;
 }
+.daoQuick { min-width: 0; }
+.daoSummary {
+  margin: 0;
+  color: #51483f;
+  font: 400 clamp(16px, 1.6vw, 18px)/1.55 Arial, Helvetica, sans-serif;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.daoSummary strong { color: #154f54; font-weight: 800; }
+.expandDao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 9px;
+  padding: 9px 17px;
+  border: 1px solid #94bfbb;
+  border-radius: 999px;
+  background: #e9f4f0;
+  color: #125457;
+  font: 750 13px/1.25 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+.expandDao:hover { background: #dcefe9; border-color: #4b9e9d; }
+.expandDao svg { transition: transform .16s ease; }
+.expandDao[aria-expanded="true"] svg { transform: rotate(180deg); }
+.daoDetails { margin-top: 17px; padding-top: 15px; border-top: 1px solid #e3d9c9; }
+.daoReading { margin-top: 17px; padding: 14px 0 0; border-top: 1px solid #e7ddd0; }
+.daoProse { margin-top: 13px; color: #514a44; font-size: 14px; line-height: 1.7; }
+.daoProse p { margin: 0 0 14px; white-space: pre-line; overflow-wrap: anywhere; }
+.daoReadingStatus { margin: 0; color: #6c6259; font-size: 13px; line-height: 1.5; }
+
 .resultsHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
 .resultsHeading h2, .previewTitle {
   margin: 6px 0 0;
@@ -213,17 +246,49 @@
 .preview .hexagramMark { min-height: 98px; }
 .preview .hexagramText p { margin: 6px 0 0; color: #645d56; font-size: 14px; line-height: 1.48; }
 .preview .note { margin-top: 12px; }
+/* Compact warm editorial slips with a visible source beneath every aphorism. */
 .aphorisms { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.aphorisms li { display: flex; align-items: baseline; gap: 16px; padding: 10px 0 15px; border-bottom: 1px solid #e7dccd; }
-.aphorisms li:last-child { border: 0; }
-.aphorismBody { min-width: 0; flex: 1; }
-.aphorismSource { display: inline-block; margin-top: 9px; font-size: 11px; line-height: 1.5; color: #806b58; text-underline-offset: 3px; overflow-wrap: anywhere; }
-a.aphorismSource:hover { color: #533b28; }
-.moreAphorisms { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; margin-top: 14px; padding: 10px 19px; border-radius: 999px; border: 1px solid #674a36; background: #674a36; color: #fffaf2; font-size: 13px; font-weight: 750; cursor: pointer; }
+.aphorisms li {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: start; gap: 12px;
+  padding: 15px 14px; border: 1px solid #e7dac9; border-radius: 15px;
+  background: linear-gradient(125deg, #fffdf9 0%, #fbf7f0 100%);
+  box-shadow: 0 3px 11px rgba(71, 52, 35, .035);
+}
+.aphorismBody { min-width: 0; }
+.number {
+  display: grid; place-items: center; width: 30px; height: 30px;
+  border: 1px solid #d1e4de; border-radius: 9px; background: #e9f3ef;
+  color: #16595d; font-size: 11px; font-weight: 800; letter-spacing: .04em;
+}
+.aphorisms p {
+  margin: 0; color: #302c28;
+  font: 400 clamp(17px, 2vw, 20px)/1.37 Georgia, "Times New Roman", serif;
+  letter-spacing: -.012em; text-wrap: pretty; overflow-wrap: anywhere;
+}
+.aphorismAttribution {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 5px 7px;
+  margin-top: 10px; padding-top: 8px; border-top: 1px solid #ede2d3;
+  color: #7b6959; font: 12px/1.42 Arial, Helvetica, sans-serif;
+}
+.aphorismAttribution > svg { color: #8ca9a0; flex: 0 0 auto; }
+.aphorismSourceLabel { font-weight: 750; color: #7b6855; }
+.aphorismSource {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px;
+  color: #625343; min-width: 0; overflow-wrap: anywhere;
+}
+.aphorismSource cite { font-style: normal; }
+.aphorismSource svg { flex: 0 0 auto; }
+a.aphorismSource { text-underline-offset: 3px; text-decoration-color: #b59f87; padding: 7px 0; margin: -7px 0; }
+a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
+.moreAphorisms {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  width: 100%; max-width: 360px; min-height: 46px; margin-top: 14px; padding: 10px 18px;
+  border: 1px solid #674a36; border-radius: 999px;
+  background: linear-gradient(115deg, #78563f, #644733); color: #fffaf2;
+  font-size: 13px; font-weight: 750; cursor: pointer;
+}
 .moreAphorisms:hover { background: #4d3527; }
 .moreAphorisms:focus-visible, a.aphorismSource:focus-visible { outline: 3px solid #98683a; outline-offset: 3px; }
-.number { flex: 0 0 27px; color: #207077; font-size: 12px; font-weight: 800; }
-.aphorisms p { margin: 0; font: 400 clamp(18px, 2.1vw, 22px)/1.4 Georgia, "Times New Roman", serif; }
 /* A single editorial list — never repeated marketing cards with thumbnails. */
 .personalResults { padding: clamp(14px, 2.4vw, 22px); }
 .personalResults .resultsHeading { margin-bottom: 12px; }
@@ -276,6 +341,11 @@ a.aphorismSource:hover { color: #533b28; }
   .action svg:last-child { display: none; }
   .action span { text-wrap: balance; }
   .results { margin-top: 9px; padding: 13px 12px; border-radius: 16px; }
+  .daoSummary { font-size: 16px; line-height: 1.5; }
+  .expandDao { width: 100%; min-height: 44px; font-size: 13px; }
+  .daoDetails { margin-top: 12px; padding-top: 12px; }
+  .daoReading { margin-top: 12px; padding-top: 12px; }
+  .daoProse { font-size: 14px; line-height: 1.6; }
   .resultsHeading { gap: 8px; margin-bottom: 10px; }
   .resultsHeading h2, .previewTitle { font-size: clamp(20px, 5.9vw, 26px); line-height: 1.14; }
   .tag { font-size: 10px; letter-spacing: .11em; }
@@ -289,9 +359,12 @@ a.aphorismSource:hover { color: #533b28; }
   .preview .hexagramCard { margin-top: 8px; }
   .preview .hexagramMark { min-height: 95px; }
   .preview .note { margin-top: 9px; }
-  .aphorisms { gap: 4px; }
-  .aphorisms li { gap: 10px; padding: 8px 0 12px; }
-  .aphorisms p { font-size: 19px; }
+  .aphorisms { gap: 8px; }
+  .aphorisms li { grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 12px 10px; border-radius: 13px; }
+  .number { width: 26px; height: 28px; }
+  .aphorisms p { font-size: clamp(17px, 5.1vw, 19px); }
+  .aphorismAttribution { margin-top: 8px; padding-top: 7px; font-size: 11.5px; }
+  .moreAphorisms { max-width: none; }
   .personalResults { padding: 13px 11px; }
   .personalResults .resultsHeading { gap: 10px; }
   .personalResults .resultsHeading h2 { font-size: 23px; }
@@ -320,6 +393,7 @@ a.aphorismSource:hover { color: #533b28; }
   .guidanceTitle { font-size: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .expandDao svg { transition: none; }
   .action, .question textarea { transition: none; }
   .action:hover { transform: none; }
 }
@@ -603,3 +677,35 @@ a.aphorismSource:hover { color: #533b28; }
   .aphorisms p { font-size:11.5px; }
 }
 @media (prefers-reduced-motion:reduce) { .attach,.submit,.daoExpanded summary { transition:none; } }
+
+/* Real Dao paragraph and lazy-loaded author readings remain the source of truth. */
+.daoQuick {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border:1px solid #ebddcd;
+  border-radius:18px;
+  background:linear-gradient(145deg,#fffaf3,#f8efe3);
+  padding:14px;
+}
+.daoQuick .daoLandscape { z-index:-1; }
+.daoQuick .daoSummary { margin:8px 0; font-size:14px; line-height:1.5; color:#5b5149; }
+.daoQuick .daoSummary strong { display:none; }
+.daoQuick .expandDao { position:relative; min-height:44px; padding:9px 10px; color:#0b666a; border-color:#c9dcd7; background:#fffaf3; }
+.daoQuick .daoDetails { margin-top:8px; padding-top:9px; border-top:1px solid #e5d8c8; }
+.daoQuick .daoReading { margin-top:11px; padding-top:11px; border-top:1px solid #e5d8c8; }
+.daoQuick .daoProse { color:#564d44; line-height:1.58; }
+.daoQuick .daoInterpretation { margin-top:8px; }
+.daoQuick .resultsHeading { margin-bottom:8px; }
+.daoQuick .daoTitle { padding-right:22px; }
+.aphorismAttribution { margin-top:8px; padding-top:7px; border-top:1px solid #eaded1; }
+.aphorismSourceLabel { font-size:10px; }
+@media (max-width:760px) {
+  .daoQuick { padding:11px; border-radius:15px; }
+  .daoQuick .daoSummary { font-size:13px; line-height:1.38; }
+  .daoQuick .expandDao { min-height:44px; }
+  .daoQuick .daoDetails { padding-top:8px; }
+  .daoQuick .daoTitle { font-size:clamp(23px,6.4vw,30px); }
+  .aphorismAttribution { font-size:10px; line-height:1.25; }
+  .aphorismSourceLabel { font-size:10px; }
+}
