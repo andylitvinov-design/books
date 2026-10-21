@@ -3,7 +3,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {CheckCircle2, AlertCircle, CircleHelp, RefreshCcw, ShieldCheck} from 'lucide-react'
 import {GROWTH_PUBLICATION_NETWORKS,CHANNEL_CAPABILITIES} from '@/lib/growth-studio/channel-capabilities.mjs'
-import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction,checkGrowthStudioProviderReadinessAction} from '@/app/admin/growth-studio/actions'
+import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction,checkGrowthStudioProviderReadinessAction,checkGrowthMetricoolBrandAction} from '@/app/admin/growth-studio/actions'
 import styles from './growth-studio.module.css'
 
 const messages={
@@ -63,6 +63,14 @@ const messages={
     setupDirectoryTitle:'Каталоги мероприятий и Google Business',
     setupDirectoryNote:'Luma/AllEvents — ручное размещение, пока нет проверенных writer-прав. Google Business Profile возможен только при соответствии правилам и подтверждённом владении профилем; создание профиля и публикации не выполняются автоматически.',setupNoSecrets:'Пароли, OAuth-коды и токены держите у провайдера или в закрытых переменных Vercel. Не пересылайте их в чате и не публикуйте скриншоты.',
     bridgeTitle:'Metricool — отдельный сервис публикации',bridgeNote:'Подключение Metricool к ChatGPT не даёт прав сайту Holistic House. Для прямого API, по текущим правилам Metricool, нужен тариф Advanced/Custom и серверные ключи. Без этого размещение остаётся ручным.',bridgeHelp:'Требования Metricool API',
+    metricoolCheck:'Проверить Metricool API (только чтение)',metricoolChecking:'Проверяем аккаунт…',
+    metricoolNotChecked:'Доступ сайта к API ещё не проверен',
+    metricoolNotConnected:'API сайта не настроен — это не то же самое, что Metricool в ChatGPT',
+    metricoolVerified:'Подтверждён выбранный бренд (только чтение, публикация не включена)',
+    metricoolBrandMismatch:'Бренд или название не совпадают; доступ не подтверждён',
+    metricoolAuthFailed:'API-токен недействителен или доступ не разрешён',
+    metricoolUnavailable:'API недоступен, результат проверки неизвестен',
+    metricoolSetup:'Для проверки на сайте требуются 4 серверные Production-переменные: METRICOOL_USER_TOKEN (секрет), METRICOOL_USER_ID, METRICOOL_BLOG_ID и METRICOOL_BRAND_NAME (точное название бренда). API доступен только на Advanced/Custom; не покупайте тариф без согласования.',
   },
   en:{
     summary:'Connections and publishing methods',
@@ -120,6 +128,14 @@ const messages={
     setupDirectoryTitle:'Event directories and Google Business',
     setupDirectoryNote:'Luma/AllEvents currently require manual listing without verified writer access. A Google Business Profile must be owner-controlled and eligible; no automatic account creation or publication is implied.',setupNoSecrets:'Keep passwords, OAuth codes and tokens with the provider or in secret Vercel variables. Never post them in chat or screenshots.',
     bridgeTitle:'Metricool — separate publishing service',bridgeNote:'Connecting Metricool to ChatGPT does not authorize the Holistic House server. Metricool currently requires Advanced/Custom for direct API access, plus reviewed server-side credentials. Until then publishing is manual.',bridgeHelp:'Metricool API requirements',
+    metricoolCheck:'Check Metricool API (read only)',metricoolChecking:'Checking account…',
+    metricoolNotChecked:'Website API access has not been verified',
+    metricoolNotConnected:'Website API not configured — different from Metricool in ChatGPT',
+    metricoolVerified:'Selected brand verified for read-only access; posting not enabled',
+    metricoolBrandMismatch:'Brand ID or exact name mismatched; access not verified',
+    metricoolAuthFailed:'API token invalid or access not authorized',
+    metricoolUnavailable:'Metricool API unavailable; status unverified',
+    metricoolSetup:'Website requires four Production server-only settings: METRICOOL_USER_TOKEN (secret), METRICOOL_USER_ID, METRICOOL_BLOG_ID and METRICOOL_BRAND_NAME (exact brand name). API is Advanced/Custom only; do not purchase a plan without approval.',
   },
 }
 const RU_REQUIREMENTS={
@@ -154,6 +170,8 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [providerSnapshot,setProviderSnapshot]=useState(null)
   const [providerChecking,setProviderChecking]=useState(false)
   const [providerFailed,setProviderFailed]=useState(false)
+  const [metricoolChecking,setMetricoolChecking]=useState(false)
+  const [metricoolResult,setMetricoolResult]=useState(null)
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
@@ -205,6 +223,25 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
     }
   },[])
   useEffect(()=>{void checkProviders()},[checkProviders])
+  async function checkMetricool(){
+    if(metricoolChecking)return
+    setMetricoolChecking(true)
+    setMetricoolResult(null)
+    try{
+      const result=await checkGrowthMetricoolBrandAction()
+      setMetricoolResult(result?.ok===true?result:{state:'unavailable'})
+    }catch{
+      setMetricoolResult({state:'unavailable'})
+    }finally{
+      setMetricoolChecking(false)
+    }
+  }
+  const metricoolCopy=metricoolResult?.state==='verified_read_only'?t.metricoolVerified:
+    metricoolResult?.state==='not_connected'?t.metricoolNotConnected:
+    metricoolResult?.state==='brand_unverified'?t.metricoolBrandMismatch:
+    metricoolResult?.state==='auth_unverified'?t.metricoolAuthFailed:
+    metricoolResult?.state==='unavailable'?t.metricoolUnavailable:t.metricoolNotChecked
+  
   return <details className={styles.connectionPanel}>
     <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.summary}</span>
       <span className={storageState==='verified'?styles.verifiedText:styles.notVerifiedText} role="status">
@@ -270,7 +307,20 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
     <div className={styles.connectionBox}>
       <div className={styles.connectionBoxTitle}><strong>{t.bridgeTitle}</strong><span className={styles.notVerifiedText}>{t.external}</span></div>
       <p>{t.bridgeNote}</p>
-      <a href="https://help.metricool.com/basic-guide-for-api-integration-r97af" target="_blank" rel="noopener noreferrer">{t.bridgeHelp} ↗</a>
+      <p>{t.metricoolSetup}</p>
+      <button type="button" onClick={checkMetricool} disabled={metricoolChecking}>
+        {metricoolChecking?t.metricoolChecking:t.metricoolCheck}
+      </button>
+      <p role="status" className={metricoolResult?.state==='verified_read_only'?styles.verifiedText:styles.notVerifiedText}>
+        {metricoolChecking?t.metricoolChecking:metricoolCopy}
+        {metricoolResult?.state==='verified_read_only'?
+          ' · '+metricoolResult.brandName+' (#'+metricoolResult.blogId+')':''}
+      </p>
+      <div className={styles.connectionNav}>
+        <a href="https://help.metricool.com/basic-guide-for-api-integration-r97af" target="_blank" rel="noopener noreferrer">{t.bridgeHelp} ↗</a>
+        <a href="https://vercel.com/super10/codex-public-book-library/settings/environment-variables"
+          target="_blank" rel="noopener noreferrer">{t.setupVercel} ↗</a>
+      </div>
     </div>
     <div className={styles.connectionBox}>
       <div className={styles.connectionBoxTitle}><strong>{t.ownerConnectTitle}</strong></div>
