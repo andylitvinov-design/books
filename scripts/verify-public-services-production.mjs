@@ -215,6 +215,34 @@ try {
         await insights.scrollIntoViewIfNeeded();
         await insights.screenshot({ path: output + "/services-" + locale + "-free-insights-390.png" });
       }
+      // Category slider and Online/Toronto choice: real client interactions,
+      // never registering a lead, sending messages or initiating payment.
+      if (width === 320 || width === 390) {
+        const showcase = page.locator("[data-services-showcase-hero]");
+        await showcase.locator('[data-services-slide-dot="personal"]').click();
+        await visible(showcase.locator('[data-services-slide="personal"]'));
+        assert.equal(await showcase.locator("[data-services-slide-dot]").count(), 5);
+        await showcase.locator('[data-services-slide-dot="business"]').click();
+        await visible(showcase.locator('[data-services-slide="business"]'));
+        await showcase.locator('[data-services-slide-action="business"]').click();
+        await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
+        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
+        await showcase.locator('[data-services-mode="toronto"]').click();
+        await expect(page.locator("[data-services-studio-free]")).toBeHidden();
+        await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
+        await showcase.locator('[data-services-kind="reiki"]').click();
+        await visible(showcase.locator("[data-services-empty]"));
+        await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
+        await showcase.locator("[data-services-empty] button").click();
+        await expect(showcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+        await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+        await showcase.locator('[data-services-kind="free"]').click();
+        await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
+        await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
+        await showcase.locator('[data-services-kind="all"]').click();
+        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+        await assertViewport(page, locale + "/services/slider-filter/" + width);
+      }
       // Keep the advanced matching UX available on a separate, dedicated
       // directory page, instead of duplicating it below personal offers.
       const directoryResponse = await page.goto(origin + "/" + locale + "/services/catalog", { waitUntil: "networkidle" });
@@ -302,6 +330,22 @@ try {
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
     assert.equal(await page.locator("#find-your-service").count(), 0);
+    // Verify the same service mode and topic filtering in Spanish.
+    const esShowcase = page.locator("[data-services-showcase-hero]");
+    await esShowcase.locator('[data-services-slide-dot="business"]').click();
+    await esShowcase.locator('[data-services-slide-action="business"]').click();
+    await expect(esShowcase.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
+    await esShowcase.locator('[data-services-mode="toronto"]').click();
+    await expect(page.locator("[data-services-studio-free]")).toBeHidden();
+    await esShowcase.locator('[data-services-kind="reiki"]').click();
+    await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
+    await esShowcase.locator('[data-services-mode="online"]').click();
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await esShowcase.locator('[data-services-kind="all"]').click();
+    await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
+    await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+    await assertViewport(page, "es/services/slider-filter/390");
     await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);

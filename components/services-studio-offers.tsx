@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { serviceIsVisible, useServicesExplorer, type StudioServiceId } from "@/components/services-explorer-state";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowRight, ChevronDown, ClipboardCheck, ShieldCheck } from "lucide-react";
@@ -10,7 +13,7 @@ import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./services-studio-offers.module.css";
 
 type Offer = {
-  id: string;
+  id: StudioServiceId;
   title: string;
   description: string;
   details: string;
@@ -150,10 +153,10 @@ const directStaticServiceImages = new Set([
   "/academy/reiki-yggdrasil/source/basic-program.jpg",
 ]);
 
-function ServiceCard({ offer, locale, index }: { offer: Offer; locale: PublicLocale; index: number }) {
+function ServiceCard({ offer, locale, index, hidden = false }: { offer: Offer; locale: PublicLocale; index: number; hidden?: boolean }) {
   const t = text[locale];
   return (
-    <article className={styles.card} data-services-studio-card={offer.id}>
+    <article className={styles.card} data-services-studio-card={offer.id} hidden={hidden}>
       <Link href={offer.href} className={styles.photo} tabIndex={-1} aria-hidden="true" prefetch={false}>
         {offer.image === "/images/holistic-house/andy-about.png" ? (
           <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
@@ -212,6 +215,7 @@ function ServiceCard({ offer, locale, index }: { offer: Offer; locale: PublicLoc
 }
 
 export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
+  const { mode, topic } = useServicesExplorer();
   const t = text[locale];
   const core = coreServiceOffers(locale);
   const byId = (id: CoreServiceOffer["id"]) => core.find((offer) => offer.id === id)!;
@@ -253,30 +257,35 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
       price: t.remotePrice, externalFlow: true },
   ];
 
+  const visible = (id: StudioServiceId) => serviceIsVisible(id, mode, topic);
+  const freeAvailable = free.some(offer => visible(offer.id));
+  const paidAvailable = paid.some(offer => visible(offer.id));
+
   return (
     <>
-      <section className={styles.section} id="free-insights" aria-labelledby="services-free-title" data-services-studio-free lang={locale}>
+      <div id="service-results" className={styles.resultsAnchor} tabIndex={-1} />
+      <section className={styles.section} id="free-insights" hidden={!freeAvailable} aria-labelledby="services-free-title" data-services-studio-free lang={locale}>
         <header className={styles.heading}>
           <p className={styles.eyebrow}><ClipboardCheck size={16} aria-hidden="true" />{t.freeEyebrow}</p>
           <h2 id="services-free-title">{t.freeTitle}</h2>
           <p>{t.freeLead}</p>
         </header>
         <div className={styles.freeGrid}>
-          {free.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} />)}
+          {free.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} hidden={!visible(offer.id)} />)}
         </div>
         <div className={styles.freeFooter}>
           <span><ShieldCheck size={17} aria-hidden="true" />{t.freeNote}</span>
           <Link href={"/" + locale + "/courses/antistress"} prefetch={false}>{t.opora}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
       </section>
-      <section className={styles.section} id="solutions" aria-labelledby="services-personal-title" data-services-studio-paid lang={locale}>
+      <section className={styles.section} id="solutions" hidden={!paidAvailable} aria-labelledby="services-personal-title" data-services-studio-paid lang={locale}>
         <header className={styles.heading}>
           <p className={styles.eyebrow}>{t.paidEyebrow}</p>
           <h2 id="services-personal-title">{t.paidTitle}</h2>
           <p>{t.paidLead}</p>
         </header>
         <div className={styles.paidGrid}>
-          {paid.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} />)}
+          {paid.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} hidden={!visible(offer.id)} />)}
         </div>
         <div className={styles.paidFooter}>
           <span><ShieldCheck size={17} aria-hidden="true" />{t.reassurance}</span>
