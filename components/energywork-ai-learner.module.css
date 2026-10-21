@@ -4877,10 +4877,13 @@
 }
 @media (max-width: 760px) {
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices {
-    grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 11px;
   }
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices button {
-    min-height: 55px; padding: 9px 12px; font-size: clamp(13px, 3.65vw, 16px); gap: 9px;
+    min-height: 64px; padding: 8px 9px; font-size: clamp(12px, 3.25vw, 15px); gap: 6px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices button > svg {
+    width: 17px; height: 17px;
   }
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices button small {
     font-size: clamp(10px, 2.8vw, 12px);
@@ -4897,7 +4900,10 @@
     gap: 6px; margin-top: 8px;
   }
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices button {
-    min-height: 49px; padding: 7px 9px;
+    min-height: 55px; padding: 7px 9px; font-size: 12px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices button > svg {
+    display: none;
   }
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices button small {
     margin-top: 1px;
