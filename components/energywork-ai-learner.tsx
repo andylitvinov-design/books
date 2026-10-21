@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Award, Smartphone, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
+import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-share";
 import { appFetch } from "@/lib/app/client-fetch";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -202,10 +203,6 @@ const copy = {
     checking: "Checking saved course…", consentTitle: "Save your learning privately",
     consentText: "I agree to save my course progress and answers privately. I can delete my course record.",
     teacherShareConsent: "Also share my learning progress, reviews and answers with Andrey in his private practitioner CRM. No public posting or marketing.",
-    teacherShareTitle: "Share my learning with Andrey",
-    teacherShareAction: "Create my learning lead",
-    teacherShareDone: "Andrey can see your course progress and responses in his private CRM.",
-    teacherShareHint: "Only you can decide whether your personal course journal is shared with Andrey.",
     initiationLetterHeading: "Your personal Reiki initiation request",
     initiationLetterHint: "Your selected free initiation, optional donation-based choices, contact details and motivation will be shared privately with Andrey only when you confirm below.",
     initiationConfirm: "I agree to send my initiation choices, name, city, preferred chat time, motivation and course answers to Andrey's private CRM.",
@@ -360,10 +357,6 @@ const copy = {
     checking: "Проверяем сохранённый курс…", consentTitle: "Сохранить обучение приватно",
     consentText: "Я согласен(на) приватно сохранять прогресс и ответы курса. Данные курса можно удалить.",
     teacherShareConsent: "Также разрешаю передавать Андрею мои ответы, отзывы и прогресс в его закрытую CRM. Без публикаций и рекламных рассылок.",
-    teacherShareTitle: "Поделиться обучением с Андреем",
-    teacherShareAction: "Создать мой учебный лид",
-    teacherShareDone: "Андрей видит прогресс и ваши ответы в закрытой CRM.",
-    teacherShareHint: "Только вы решаете, передавать ли Андрею материалы вашего курса.",
     initiationLetterHeading: "Ваша заявка на личную Рейки-инициацию",
     initiationLetterHint: "Выбранная бесплатная инициация, дополнительные варианты за донейшн, контакты и мотивация попадут к Андрею только после подтверждения отправки.",
     initiationConfirm: "Я согласен(на) отправить Андрею в закрытую CRM выбранные инициации, имя, город, удобное время для связи в чате, мотивацию и ответы курса.",
@@ -1792,66 +1785,43 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
             <span className={styles.progressStep}>{lessonProgressLabel}</span>
             <div className={styles.progressStatus}>
               <span>{progressPercent}% {t.completedLabel}</span>
-              <details className={styles.saveManager}>
-                <summary aria-label={t.consentTitle} title={t.consentTitle}>
-                  {sync === "ready" ? <Check size={16} aria-hidden="true" /> : <LockKeyhole size={16} aria-hidden="true" />}
-                </summary>
-                <aside className={styles.preview} aria-live="polite">
-                <LockKeyhole size={19} aria-hidden="true" />
-                <div className={styles.syncContent}>
-                  {sync === "checking" ? <strong>{t.checking}</strong> : null}
-                  {sync === "guest" ? <>
-                    <strong>{t.preview}</strong>
-                    <details className={styles.saveDetails}>
-                      <summary>{t.consentTitle}</summary>
-                      <p>{t.previewHelp}</p>
-                      <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
-                      <p>{t.guestHint}</p>
-                    </details>
-                  </> : null}
-                  {sync === "consent" ? <>
-                    <details className={styles.saveDetails}>
-                      <summary>{t.consentTitle}</summary>
-                      <label className={styles.consentLabel}>
-                        <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
-                        <span>{t.consentText}</span>
-                      </label>
-                      <label className={styles.consentLabel}>
-                        <input type="checkbox" checked={shareConsented} onChange={(event) => setShareConsented(event.target.checked)} />
-                        <span>{t.teacherShareConsent}</span>
-                      </label>
-                      <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
-                      <p>{t.guestHint}</p>
-                    </details>
-                  </> : null}
-                  {sync === "ready" ? <>
-                    <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
-                    {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
-                    <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
-                    {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
-                      <details className={styles.saveDetails}>
-                        <summary>{t.teacherShareTitle}</summary>
-                        <p>{t.teacherShareHint}</p>
-                        <label className={styles.consentLabel}>
-                          <input type="checkbox" checked={shareConsented}
-                            onChange={event => setShareConsented(event.target.checked)} />
-                          <span>{t.teacherShareConsent}</span>
-                        </label>
-                        <button type="button" onClick={shareWithTeacher}
-                          disabled={!shareConsented || busy} className={styles.syncButton}>{t.teacherShareAction}</button>
-                      </details>}
-                  </> : null}
-                  {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
-                  {saveError ? <p role="alert" className={styles.saveError}>{saveError}
-                    <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
-                </div>
-                </aside>
-              </details>
+              <ReikiCourseReferralShare locale={locale} />
             </div>
           </div>
           <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
             aria-valuenow={reachedIndex + 1} aria-label={t.lesson}>
             <span style={{ width: progressPercent + "%" }} />
+          </div>
+          <div className={styles.savedLine} data-reiki-private-save-status aria-live="polite">
+            {sync === "ready" ? <>
+              <LockKeyhole size={13} aria-hidden="true" />
+              <span>{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</span>
+              <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
+            </> : null}
+            {sync === "guest" ? <span>{t.preview}</span> : null}
+            {sync === "checking" ? <span>{t.checking}</span> : null}
+            {sync === "consent" ? (
+              slide.id === "flight-save" ? null : (
+                <details className={styles.saveSettings}>
+                  <summary>{t.consentTitle}</summary>
+                  <label className={styles.consentLabel}>
+                    <input type="checkbox" checked={consented}
+                      onChange={event => setConsented(event.target.checked)} />
+                    <span>{t.consentText}</span>
+                  </label>
+                  <button type="button" className={styles.syncButton}
+                    disabled={!consented || busy} onClick={startSaving}>{t.enableSave}</button>
+                </details>
+              )
+            ) : null}
+            {sync === "unavailable" ? <>
+              <span>{t.offline}</span>
+              <button type="button" onClick={reloadProgress} disabled={busy}>{t.retry}</button>
+            </> : null}
+            {saveError ? <p className={styles.saveStatusError} role="alert">
+              {saveError}
+              <button type="button" onClick={reloadProgress} disabled={busy}>{t.reload}</button>
+            </p> : null}
           </div>
         </div>
 

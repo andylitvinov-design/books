@@ -3208,50 +3208,71 @@
   gap: 7px;
   white-space: nowrap;
 }
-.page[data-course-visual] .saveManager {
-  position: relative;
-  flex: 0 0 auto;
+/* Public referral button is independent from private course saving. */
+.page[data-course-visual] .savedLine {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 18px;
+  margin: 4px 0 0;
+  color: #50767a;
+  font-size: 10.5px;
+  line-height: 1.3;
 }
-.page[data-course-visual] .saveManager > summary {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  list-style: none;
-  border: 1px solid #a5d6da;
-  border-radius: 10px;
-  background: rgba(246, 253, 253, .96);
-  color: #087581;
+.page[data-course-visual] .savedLine:empty { display: none; }
+.page[data-course-visual] .savedLine > svg { color: #218780; flex: 0 0 auto; }
+.page[data-course-visual] .savedLine > a {
+  color: #076c79;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.page[data-course-visual] .savedLine > button,
+.page[data-course-visual] .savedLine .saveStatusError button {
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid #80c6c3;
+  background: #e7f8f4;
+  color: #11676e;
+  border-radius: 8px;
+  font: inherit;
   cursor: pointer;
 }
-.page[data-course-visual] .saveManager > summary::-webkit-details-marker { display: none; }
-.page[data-course-visual] .saveManager > summary:hover { background: #d6f5f1; }
-.page[data-course-visual] .saveManager[open] > summary { border-color: #078a9c; }
-.page[data-course-visual] .saveManager > .preview {
-  position: absolute;
-  z-index: 20;
-  right: 0;
-  bottom: calc(100% + 8px);
-  display: flex;
-  width: min(350px, calc(100vw - 24px));
-  max-height: min(65dvh, 540px);
-  margin: 0;
-  padding: 13px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+.page[data-course-visual] .savedLine .saveSettings {
+  width: 100%;
+  padding: 5px 8px;
+  background: #eef9f6;
+  border: 1px solid #bddcd6;
+  border-radius: 10px;
   white-space: normal;
-  border: 1px solid #9bd4d9;
-  border-radius: 14px;
-  background: rgba(246, 253, 253, .99);
-  box-shadow: 0 12px 30px rgba(9, 64, 78, .2);
 }
+.page[data-course-visual] .saveSettings > summary {
+  min-height: 28px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  color: #116e74;
+}
+.page[data-course-visual] .saveSettings .consentLabel { margin: 8px 0; }
+.page[data-course-visual] .saveSettings .syncButton { min-height: 38px; }
+.page[data-course-visual] .saveStatusError {
+  width: 100%;
+  margin: 3px 0;
+  color: #9b3340;
+  white-space: normal;
+  line-height: 1.4;
+  font-weight: 700;
+}
+.page[data-course-visual] .saveStatusError button { margin-left: 7px; }
 @media (max-width: 760px) {
   .page[data-course-visual] .programme > .programmeSummary {
     height: 35px;
     min-height: 35px;
     padding: 4px 9px;
   }
-  .page[data-course-visual] .saveManager > .preview { max-height: 60dvh; }
+  .page[data-course-visual] .savedLine { font-size: 10px; margin-top: 3px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .page[data-course-visual] .programme .programmeChevron { transition: none; }
