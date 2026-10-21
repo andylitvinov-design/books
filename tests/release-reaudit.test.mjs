@@ -322,7 +322,7 @@ test('release poster audit delegates the full original image set to the disclosu
   const verifier = read('scripts/verify-release-reaudit.mjs');
   const posters = read('scripts/helpers/release-services-poster-verifier.mjs');
   assert.match(verifier, /import \{ verifyReleasePosters \} from '\.\/helpers\/release-services-poster-verifier\.mjs';/);
-  assert.equal(verifier.split('await verifyReleasePosters(page, { path, locale }, expect);').length - 1, 1);
+  assert.equal(verifier.split('await verifyReleasePosters(page, { path, locale, origin }, expect);').length - 1, 1);
   assert.match(posters, /const images = await posters\.elementHandles\(\)/);
   assert.ok(posters.indexOf('const images = await posters.elementHandles()') < posters.indexOf('await summary.click()'));
   assert.match(posters, /await decodeReadyPoster\(image, expect\)/);
