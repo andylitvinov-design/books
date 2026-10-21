@@ -75,7 +75,7 @@ test("browser-only conversation supports multiple turns, voice consent, accessib
     "new Speech()",
     "engine.start()",
     "SpeechRecognition",
-    "speechRef.current?.stop()",
+    "try { engine.stop(); }",
     "result.urgent",
     "context.urgent",
     "t.privacyDetail",
@@ -126,6 +126,36 @@ test("one-tap ChatGPT-style microphone is local, cancellable, and sends recogniz
   assert.match(css, /\.recordingDot \{ animation: none;/);
   for (const forbidden of ["MediaRecorder", "getUserMedia(", "fetch(", "localStorage", "sessionStorage"]) {
     assert.ok(!component.includes(forbidden), "Speech-to-text should not save raw audio or send private text: " + forbidden);
+  }
+});
+
+test("Safari voice lifecycle is bounded and never silently sends interrupted speech", () => {
+  const component = read("components/home-conversation-guide.tsx");
+  const css = read("components/home-conversation-guide.module.css");
+  for (const token of [
+    'data-voice-state={voiceState}',
+    'voiceStartTimerRef.current = window.setTimeout(failUnresponsive, 25000)',
+    'voiceProgressTimerRef.current = window.setTimeout(failUnresponsive, 18000)',
+    'voiceStopTimerRef.current = window.setTimeout',
+    'voiceGenerationRef.current === generation',
+    'voiceFailureRef.current = true',
+    'voiceFinalRef.current = results.length > 0 && results.every(item => item.isFinal === true)',
+    'voiceDiscardRef.current = true',
+    'if (engine?.abort) engine.abort()',
+    'window.addEventListener("pagehide", onPageHide)',
+    'engine.continuous = !isIosWebKit',
+    'const spoken = voiceTextRef.current.trim()',
+    'if (!voiceFailureRef.current && (submitOnEndRef.current || voiceFinalRef.current)) ask(complete)',
+    'questionRef.current?.focus()',
+    'voiceKeyboardAction',
+  ]) assert.ok(component.includes(token), token);
+  assert.match(component, /<button type="submit" className=\{styles\.sendButton\}/);
+  assert.match(component, /<div className=\{styles\.inputRow\}>[\s\S]*?<button type="submit" className=\{styles\.sendButton\}/);
+  assert.match(css, /\.voiceButton, \.sendButton, \.cancelVoice, \.finishVoice \{[^}]*min-width: 44px;/);
+  assert.match(css, /\.voiceRecovery button \{[^}]*min-height: 44px;/);
+  assert.match(css, /\.recordingDot\[data-state="starting"\]/);
+  for (const forbidden of ["MediaRecorder", "getUserMedia(", "fetch(", "sendBeacon(", "localStorage", "sessionStorage"]) {
+    assert.ok(!component.includes(forbidden), "No new raw audio or chat-content transmission: " + forbidden);
   }
 });
 
@@ -207,7 +237,7 @@ test("routes use explicit EN fallbacks and never invent a paid checkout", () => 
 
 
 
-test("typed and dictated follow-ups select only currently offered choices",()=>{
+test("natural replies are restricted to the contextual choice list",()=>{
  const work=resolveHomeGuideQuestion("My business needs clients");
  assert.equal(matchHomeGuideReply("I'm just starting",work),"work-start");
  assert.equal(matchHomeGuideReply("I already have customers",work),"work-grow");
@@ -222,12 +252,13 @@ test("typed and dictated follow-ups select only currently offered choices",()=>{
  assert.equal(matchHomeGuideReply("start",null),null);
  assert.equal(matchHomeGuideReply("personal",resolveHomeGuideQuestion("I want to die")),null);
 });
-test("specific offer cards preserve approved chat modal and local microphone",()=>{
+test("specific offer cards retain compact modal and bounded Safari microphone",()=>{
  const ui=read("components/home-conversation-guide.tsx"),css=read("components/home-conversation-guide.module.css");
- for(const term of ["data-home-guide-dialog","data-home-guide-launcher","data-home-voice-recording","data-home-guide-change","data-home-guide-offer","matchHomeGuideReply","homeGuideFollowup","recommendations.map","finishVoice","cancelVoice"])
+ for(const term of ["data-home-guide-dialog","data-home-guide-launcher","data-home-voice-recording","data-home-guide-change","data-home-guide-offer","matchHomeGuideReply","homeGuideFollowup","recommendations.map","finishVoice","cancelVoice","failUnresponsive","voiceRecovery"])
   assert.ok(ui.includes(term),term);
  assert.match(css,/\.chatScroll/);
  assert.match(css,/\.offer /);
+ assert.match(css,/\.voiceRecovery/);
  assert.ok(!ui.includes("homeGuideGoals.map"));
  for(const term of ["fetch(","sendBeacon(","localStorage","sessionStorage","/api/"])
   assert.ok(!ui.includes(term),term);
