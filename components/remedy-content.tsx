@@ -207,6 +207,8 @@ function ContentSection({ section, locale, variant, sourceUrl }: { section: Sect
 
 function SectionLayout({ sections, locale, variant, sourceUrl, slug, symptomsAfterState }: { sections: Section[]; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string; slug: string; symptomsAfterState: boolean }) {
   const rendered: ReactNode[] = [];
+  const indicatedIndex = sections.findIndex((section) => /^(показания|indications)$/u.test(normaliseHeading(section.heading)));
+  const symptomIndex = indicatedIndex >= 0 ? indicatedIndex : sections.findIndex((section) => section.key === "state");
   for (let index = 0; index < sections.length;) {
     const first = sections[index];
     const second = sections[index + 1];
@@ -217,7 +219,7 @@ function SectionLayout({ sections, locale, variant, sourceUrl, slug, symptomsAft
       continue;
     }
     rendered.push(<ContentSection key={`${first.heading}-${first.index}`} locale={locale} section={first} sourceUrl={sourceUrl} variant={variant} />);
-    if (symptomsAfterState && first.key === "state") {
+    if (symptomsAfterState && index === symptomIndex) {
       rendered.push(<RemedySymptomsSection key={`symptoms-after-${first.index}`} slug={slug} locale={locale} variant={variant} />);
     }
     index += 1;
@@ -231,8 +233,9 @@ export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence 
   </div>;
   const labels = copy[locale];
   const content = splitDescription(remedy.description);
-  const symptomsAfterState = content.sections.some((section) => section.key === "state");
-  const introPlacement = symptomsAfterState ? null : splitAtRemedyIndications(content.intro);
+  const sourceIntroPlacement = splitAtRemedyIndications(content.intro);
+  const symptomsAfterState = !sourceIntroPlacement.foundIndications && content.sections.some((section) => section.key === "state");
+  const introPlacement = symptomsAfterState ? null : sourceIntroPlacement;
   const supplementaryCount = countSupplementarySources(remedy.supplementary_materials);
 
   return <div className={`remedy-content-body remedy-content-body--${variant}`}>
