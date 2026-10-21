@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { ArrowRight, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles, ClipboardCheck } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
@@ -16,12 +16,15 @@ type Result = { mode: Mode; topic: IdeasTopic; matched: boolean; hexagram?: numb
 
 const copy = {
   ru: {
-    eyebrow: "ВАШ ВОПРОС · ТРИ СПОСОБА НАЙТИ ИДЕЮ",
+    eyebrow: "ИДЕИ · ПОДСКАЗКИ ДЛЯ ВАС",
     title: "Идеи",
-    lead: "Опишите, что вас волнует, где нужен ответ или новый взгляд. Выберите символ, три афоризма или подходящий бесплатный первый шаг.",
+    lead: "Задайте вопрос, получите вдохновение и полезную подсказку.",
     question: "О чём хотите спросить?",
-    placeholder: "Например: как мне найти опору, когда я переживаю из-за отношений?",
+    placeholder: "Задайте вопрос или опишите, что вас волнует…",
     choose: "Выберите способ получить подсказку",
+    ask: "Задать вопрос",
+    preview: "ПРИМЕР · КНИГА ПЕРЕМЕН",
+    previewNote: "Пример для знакомства. Напишите вопрос, чтобы получить собственную подсказку.",
     dao: "Даосская подсказка",
     aphorisms: "Афоризмы",
     personal: "Личная подсказка",
@@ -46,12 +49,15 @@ const copy = {
     },
   },
   en: {
-    eyebrow: "YOUR QUESTION · THREE WAYS TO FIND AN IDEA",
+    eyebrow: "IDEAS & GUIDANCE",
     title: "Ideas",
-    lead: "Share what is on your mind or where you need a fresh perspective. Discover a symbol, three reflections, or a useful free first step.",
+    lead: "Ask a question, find inspiration and a practical next step.",
     question: "What would you like guidance on?",
-    placeholder: "For example: how can I find steadiness when relationships feel uncertain?",
+    placeholder: "Ask a question or share what is on your mind…",
     choose: "Choose how to explore your question",
+    ask: "Get guidance",
+    preview: "EXAMPLE · BOOK OF CHANGES",
+    previewNote: "A sample, not a response to you. Ask a question above to get your own guidance.",
     dao: "Daoist insight",
     aphorisms: "Aphorisms",
     personal: "Personal guidance",
@@ -76,12 +82,15 @@ const copy = {
     },
   },
   es: {
-    eyebrow: "TU PREGUNTA · TRES MANERAS DE ENCONTRAR IDEAS",
+    eyebrow: "IDEAS Y ORIENTACIÓN",
     title: "Ideas",
-    lead: "Comparte qué te preocupa o dónde necesitas una nueva perspectiva. Descubre un símbolo, tres reflexiones o un primer paso gratuito.",
+    lead: "Haz una pregunta, encuentra inspiración y un primer paso útil.",
     question: "¿Sobre qué quieres una orientación?",
-    placeholder: "Por ejemplo: ¿cómo encontrar equilibrio cuando mis relaciones son inciertas?",
+    placeholder: "Escribe tu pregunta o lo que te preocupa…",
     choose: "Elige cómo explorar tu pregunta",
+    ask: "Pedir orientación",
+    preview: "EJEMPLO · LIBRO DE LOS CAMBIOS",
+    previewNote: "Es un ejemplo, no una respuesta personal. Escribe tu pregunta para continuar.",
     dao: "Consejo taoísta",
     aphorisms: "Aforismos",
     personal: "Orientación personal",
@@ -120,11 +129,13 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const [question, setQuestion] = useState("");
   const [error, setError] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  const [activeMode, setActiveMode] = useState<Mode>("dao");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   function choose(mode: Mode) {
+    setActiveMode(mode);
     if (!question.trim()) {
-      setError(true);
+      setError(false);
       textareaRef.current?.focus();
       return;
     }
@@ -133,6 +144,17 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     setResult({ mode, ...matched, hexagram: mode === "dao" ? drawRandomHexagram() : undefined });
   }
 
+  function submitQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!question.trim()) {
+      setError(true);
+      textareaRef.current?.focus();
+      return;
+    }
+    choose(activeMode);
+  }
+
+  const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
   const topicLabel = result ? (result.matched ? t.topic[result.topic] : t.generic) : "";
   return (
@@ -146,27 +168,30 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
         <span className={styles.decor} aria-hidden="true">✦</span>
       </div>
 
-      <div className={styles.question}>
+      <form className={styles.question} onSubmit={submitQuestion}>
         <label htmlFor="ideas-question">{t.question}</label>
-        <textarea
-          id="ideas-question" ref={textareaRef} maxLength={500} rows={2} autoComplete="off"
-          placeholder={t.placeholder} value={question} aria-invalid={error}
-          aria-describedby={error ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
-          onChange={(event) => { setQuestion(event.target.value); setError(false); setResult(null); }}
-        />
+        <div className={styles.questionFields}>
+          <textarea
+            id="ideas-question" ref={textareaRef} maxLength={500} rows={1} autoComplete="off"
+            placeholder={t.placeholder} value={question} aria-invalid={error}
+            aria-describedby={error ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
+            onChange={(event) => { setQuestion(event.target.value); setError(false); setResult(null); }}
+          />
+          <button type="submit" className={styles.submit}><Sparkles size={17} aria-hidden="true" />{t.ask}</button>
+        </div>
         {error ? <p className={styles.error} role="alert" id="ideas-question-error">{t.error}</p> : null}
         <p id="ideas-question-privacy" className={styles.privacy}>{t.privacy}</p>
-      </div>
+      </form>
 
       <p className={styles.actionLabel}>{t.choose}</p>
       <div className={styles.actions}>
-        <button type="button" onClick={() => choose("dao")} aria-pressed={result?.mode === "dao"} className={styles.action}>
+        <button type="button" onClick={() => choose("dao")} aria-pressed={activeMode === "dao"} className={styles.action}>
           <Compass aria-hidden="true" size={21} /><span>{t.dao}</span><ArrowRight aria-hidden="true" size={16} />
         </button>
-        <button type="button" onClick={() => choose("aphorisms")} aria-pressed={result?.mode === "aphorisms"} className={styles.action}>
+        <button type="button" onClick={() => choose("aphorisms")} aria-pressed={activeMode === "aphorisms"} className={styles.action}>
           <Quote aria-hidden="true" size={21} /><span>{t.aphorisms}</span><ArrowRight aria-hidden="true" size={16} />
         </button>
-        <button type="button" onClick={() => choose("personal")} aria-pressed={result?.mode === "personal"} className={styles.action}>
+        <button type="button" onClick={() => choose("personal")} aria-pressed={activeMode === "personal"} className={styles.action}>
           <HandHeart aria-hidden="true" size={21} /><span>{t.personal}</span><ArrowRight aria-hidden="true" size={16} />
         </button>
       </div>
@@ -220,6 +245,20 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             </div>
           ) : null}
           <p className={styles.note}>{result.mode === "dao" ? t.daoNote : result.mode === "aphorisms" ? t.aphorismNote : t.personalNote}</p>
+        </div>
+      ) : exampleHexagram ? (
+        <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}>
+          <p className={styles.tag}><Leaf size={15} aria-hidden="true" />{t.preview}</p>
+          <div className={styles.hexagramCard}>
+            <div className={styles.hexagramMark}>
+              <DaoHexagramGlyph upper={exampleHexagram.upper} lower={exampleHexagram.lower} label={"Hexagram 42"} />
+            </div>
+            <div className={styles.hexagramText}>
+              <h2 className={styles.previewTitle}>42 · {hexagramTitle(exampleHexagram, locale)}</h2>
+              <p>{hexagramEssence(exampleHexagram, locale)}</p>
+            </div>
+          </div>
+          <p className={styles.note}>{t.previewNote}</p>
         </div>
       ) : null}
     </section>
