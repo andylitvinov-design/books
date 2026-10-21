@@ -32,12 +32,13 @@ test("36: agreed concise quotation is canonical chapter III passage",()=>{
 });
 test("display removes original unverified pastiche but does not rewrite source records",()=>{
   const original=JSON.parse(readFileSync(new URL("../data/dao-hexagram-author.json",import.meta.url)));
-  const author9=original.find(x=>x.number===9).text;
-  assert.match(author9,/Императорская стратегия в духе Сунь-цзы/);
-  const displayed=prepareDaoReadingForSunTzu(author9);
-  assert.ok(displayed.includes(SUN_TZU_PLACEHOLDER));
-  assert.ok(!displayed.includes("Императорская стратегия в духе Сунь-цзы"));
-  assert.ok(displayed.includes("🧠 Смысл:"));
+  for (const entry of original) {
+    const displayed=prepareDaoReadingForSunTzu(entry.text);
+    assert.equal(displayed.split(SUN_TZU_PLACEHOLDER).length,2,"one sourced slot "+entry.number);
+    assert.ok(!/Сунь-Цзы — стратегия|Императорская стратегия в духе Сунь-цзы/u.test(displayed),"no unsourced strategy "+entry.number);
+    assert.ok(displayed.length>350,"keep full author reading "+entry.number);
+  }
+  assert.ok(prepareDaoReadingForSunTzu(original.find(x=>x.number===9).text).includes("🧠 Смысл:"));
   for(const n of [1,33,36,64]){
     const text=getDaoEditorialHexagramText(n);
     if(text){
