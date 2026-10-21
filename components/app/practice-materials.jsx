@@ -3,6 +3,7 @@ import {useEffect,useState} from 'react'
 import {BookOpen,ChevronRight,FileText,Headphones,Search,Leaf,Film,FolderOpen,LockKeyhole} from 'lucide-react'
 import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
+import PractitionerCourseBuilder from './practitioner-course-builder'
 import PracticeReportMaterials from './practice-report-materials'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract.js'
 import styles from './practice-materials.module.css'
@@ -14,7 +15,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,isOwner=false,onOpenReikiCourse,onOpenServices,onSaveVideos,onSubmitVideos}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenServices,onSaveVideos,onSubmitVideos}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -46,7 +47,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  }
  const [tab,setTab]=useState(isOwner?'courses':'articles')
  const [query,setQuery]=useState('')
- const activeTabs=['articles','services',...(isOwner?['courses','audio']:[]),'videos']
+ const activeTabs=['articles','services','courses',...(isOwner?['audio']:[]),'videos']
  useEffect(()=>{
    const requested=new URLSearchParams(window.location.search).get('materialTab')
    if(activeTabs.includes(requested))setTab(requested)
@@ -144,7 +145,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   <nav className={styles.tabs} role="tablist" aria-label={ru?'Тип материала':es?'Tipo de material':'Material type'} data-unified-material-nav>
     <button type="button" role="tab" aria-selected={tab==='articles'} onClick={()=>chooseTab('articles')}><FileText size={19} aria-hidden="true"/><span>{ru?'Статьи':es?'Artículos':'Articles'}</span></button>
     <button type="button" role="tab" aria-selected={tab==='services'} onClick={()=>chooseTab('services')}><Leaf size={19} aria-hidden="true"/><span>{ru?'Услуги':es?'Servicios':'Services'}</span></button>
-    {isOwner&&<button type="button" role="tab" aria-selected={tab==='courses'} onClick={()=>chooseTab('courses')} data-practice-materials-courses-tab><BookOpen size={19} aria-hidden="true"/><span>{ru?'Курсы':es?'Cursos':'Courses'}</span></button>}
+    <button type="button" role="tab" aria-selected={tab==='courses'} onClick={()=>chooseTab('courses')} data-practice-materials-courses-tab><BookOpen size={19} aria-hidden="true"/><span>{ru?'Курсы':es?'Cursos':'Courses'}</span></button>
     {isOwner&&<button type="button" role="tab" aria-selected={tab==='audio'} onClick={()=>chooseTab('audio')} data-practice-materials-audio-tab><Headphones size={19} aria-hidden="true"/><span>{ru?'Аудио':es?'Audio':'Audio'}</span></button>}
     <button type="button" role="tab" aria-selected={tab==='videos'} onClick={()=>chooseTab('videos')}><Film size={19} aria-hidden="true"/><span>{ru?'Видео':es?'Vídeos':'Video'}</span></button>
   </nav>
@@ -153,7 +154,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     <input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={ru?'Поиск по материалам…':es?'Buscar materiales…':'Search resources…'} />
   </label>}
   <div className={styles.activePanel} role="tabpanel" data-material-panel={tab}>
-  {tab==='courses'&&isOwner?<section className={styles.body} data-practice-master-courses>
+  {tab==='courses'?<section className={styles.body} data-practice-master-courses>
+    <PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query}/>
+    {isOwner&&<div>
     <p className={styles.intro}>{ru?'Выберите курс, чтобы управлять его уроками и медитациями.':es?'Elige un curso para gestionar sus lecciones.':'Choose a course to manage its lessons and meditations.'}</p>
     {(!query||'Практик Рейки Reiki Practitioner Practicante de Reiki'.toLowerCase().includes(query.toLowerCase()))?
       <button type="button" className={styles.mediaRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.()} data-open-reiki-course-audio>
@@ -162,6 +165,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
         <ChevronRight size={20} aria-hidden="true"/>
       </button>:<p className={styles.empty}>{ru?'Курс не найден.':es?'Curso no encontrado.':'No matching course.'}</p>}
     <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>{ru?'Записи приватны до отдельного подтверждения публикации.':es?'Las grabaciones siguen privadas antes de publicarse.':'Recordings stay private until explicit publication.'}</p>
+    </div>}
    </section>:
    tab==='audio'&&isOwner?<section className={styles.body} data-practice-audio-lessons>
     <p className={styles.intro}>{ru?'Выберите папку урока, чтобы загрузить или прослушать медитацию.':es?'Selecciona la carpeta de lección para subir o escuchar audio.':'Choose a lesson folder to upload or preview audio.'}</p>

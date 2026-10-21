@@ -73,3 +73,24 @@ test("local illustrated hero and original books/news/film feed remain available 
   assert.match(spanish, /<IdeasNewsFeed locale="es"/);
   assert.match(localized, /<IdeasNewsFeed locale=\{locale as Locale\}/);
 });
+
+test("Dao insight offers exactly two localized next steps with existing enquiry flows", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  const intro = read("app/[locale]/services/free-consultation/page.tsx");
+  const free = read("app/[locale]/services/free-situation-review/page.tsx");
+  assert.match(ui, /data-ideas-dao-promos/);
+  assert.match(ui, /result\.mode === "dao" && hexagram[\s\S]*?data-ideas-dao-promos[\s\S]*?result\.mode === "aphorisms"/);
+  assert.match(ui, /answerCopy\.daoPromoReading\.title/);
+  assert.match(ui, /answerCopy\.daoPromoGift\.title/);
+  assert.match(ui, /\/services\/free-consultation#intro-request/);
+  assert.match(ui, /\/services\/free-situation-review#request-free-review/);
+  assert.match(intro, /id="intro-request"/);
+  assert.match(free, /FreeEntryLanding locale=\{locale\} kind="situation"/);
+  for (const text of ["Получите персональное даосское гадание", "Get a personal Daoist reading", "Recibe una lectura taoísta personal", "ПОДАРОК · БЕСПЛАТНО", "FREE GIFT", "REGALO · GRATIS"]) {
+    assert.ok(ui.includes(text), "missing localized offer: " + text);
+  }
+  assert.match(css, /\.daoPromos \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.daoPromos \{ grid-template-columns: 1fr/);
+  assert.match(css, /\.daoPromoAction \{[^}]*min-height: 44px/);
+});

@@ -436,6 +436,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <Share2 aria-hidden="true" />{profileLive?(ru?'Пригласить клиента':'Invite client'):(ru?'Мой профиль':'My profile')}
         </button>
       </nav>
+      <details className="hh-practice-v4-extra" data-practice-more-tools>
+        <summary><BarChart3 aria-hidden="true"/><span>{ru?'Другие инструменты':locale==='es'?'Otras herramientas':'More tools'}</span><ChevronRight aria-hidden="true"/></summary>
       <section aria-labelledby="hh-practice-tools-title" className="hh-practice-tools">
         <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{isOwner?d.privateTitle:d.publicTools}</h2></div>
         <div className="hh-practice-tool-grid">
@@ -473,6 +475,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <ChevronRight className="hh-practice-tool-arrow" aria-hidden="true" />
         </button>
       </section>
+      </details>
     </>}
     {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
@@ -495,7 +498,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
-        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={lesson=>openOwner('reikiCourse',undefined,lesson)} onOpenServices={()=>choosePanel('services')}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={lesson=>openOwner('reikiCourse',undefined,lesson)} onOpenServices={()=>choosePanel('services')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}

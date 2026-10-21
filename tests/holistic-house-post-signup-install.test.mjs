@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {
   capturePwaInstallPrompt,onPwaInstallPrompt,requestPwaInstallation,pwaInstalled,
 } from '../lib/pwa/install-prompt.js'
+import {shouldPauseNewSignupSave} from '../lib/pwa/post-signup-flow.js'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 
 test('deferred browser install event survives registration and is consumed once',async()=>{
@@ -99,4 +100,32 @@ test('existing iOS/Android PWA remains same Holistic House app; no test-only APK
   }
   const ui=read('components/app/post-signup-install-offer.jsx')
   assert.doesNotMatch(ui,/\.apk|testflight|app-store|play\.google|google-services\.json|HH_FCM/)
+})
+
+test('post-signup report Save offers install only for the matching new active account after commit',()=>{
+  assert.equal(shouldPauseNewSignupSave({pendingAccountId:'a',accountId:'a',installEligible:true}),true)
+  for(const args of [
+    {pendingAccountId:null,accountId:'a',installEligible:true},
+    {pendingAccountId:'a',accountId:'b',installEligible:true},
+    {pendingAccountId:'a',accountId:'a',installEligible:false},
+    {pendingAccountId:'a',accountId:null,installEligible:true},
+  ])assert.equal(shouldPauseNewSignupSave(args),false)
+  const app=read('components/app/app-workspace.jsx')
+  const continuation=app.slice(app.indexOf('function SaveContinuation('),app.indexOf('function Preferences('))
+  const commit=continuation.indexOf("const saved = await appFetch('save-intents/' + intentId + '/commit'")
+  assert.ok(commit>=0)
+  assert.ok(continuation.indexOf('if(onComplete)onComplete(destination)')>commit)
+  assert.match(app,/if\(page==='continue'\) pendingSaveInstallAccountId\.current=fresh\.account\.id/)
+  assert.match(app,/onComplete=\{completeSaveContinuation\}/)
+  assert.match(app,/context=\{savedInstallContext \? 'saved' : 'signup'\}/)
+  assert.match(app,/savedExitDestination\.current=null/)
+  assert.match(app,/shouldPauseNewSignupSave\(/)
+  assert.match(app,/router\.replace\(destination\)/)
+  const offer=read('components/app/post-signup-install-offer.jsx')
+  assert.match(offer,/isPostSignupInstallEligible/)
+  assert.match(offer,/if\(offerVisible\.current\)close\.current\?\.\(\)/)
+  assert.match(offer,/setDevice\(\{\.\.\.mobileDevice\(\),installed:true\}\)/)
+  assert.match(offer,/context!=='saved'/)
+  assert.match(offer,/context==='saved'/)
+  assert.doesNotMatch(offer,/sessionStorage|localStorage|PushManager|Notification\.requestPermission/)
 })
