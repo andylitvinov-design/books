@@ -68,6 +68,7 @@ test('recipe reuses warm paper/terra-cotta Google cabinet styling with compact m
 test('report save CTA has one short primary action and a separate Google explanation in EN/RU/ES',()=>{
   const page=read('components/client-session-page.jsx')
   const save=read('components/save-client-session-to-account.jsx')
+  const copy=read('lib/clients/session-save-copy.js')
   const modal=read('components/session-exit-save-guard.jsx')
   const css=read('components/client-session.module.css')
   assert.match(page,/sessionBottomDescription/)
