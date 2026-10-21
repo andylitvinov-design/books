@@ -362,7 +362,7 @@ try {
     await toOffers.click();
     await page.waitForURL(/#business-offers$/);
     const express = offers.locator('[data-business-offer="express"]');
-    const chooser = await openContactChannelChooser(express, expect);
+    const chooser = await openRegisteredContactChannelChooser(express, expect, page);
     const prepared = await assertPreparedContactChannels(chooser, expect);
     assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
       "Business express €50 must survive messenger selection: " + label);
@@ -444,7 +444,7 @@ try {
               "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openContactChannelChooser(pricing, expect);
+            const channels = await openRegisteredContactChannelChooser(pricing, expect, page);
             const prepared = await assertPreparedContactChannels(channels, expect);
             assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
               "Selected express session must appear in prepared order draft");
@@ -454,7 +454,7 @@ try {
             const capture = main.locator('section:has(> details)');
             assert.equal(await capture.count(), 1, "Exactly one core-service footer");
             await capture.scrollIntoViewIfNeeded();
-            const chooser = await openContactChannelChooser(capture, expect);
+            const chooser = await openRegisteredContactChannelChooser(capture, expect, page);
             const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
             assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
             const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
@@ -525,7 +525,7 @@ try {
           await form.locator('input[type="text"]').fill(markerA);
           await form.locator('textarea').fill(markerB);
           await visible(form.getByRole('button', {name: locale === "ru" ? "Скопировать мой запрос" : locale === "es" ? "Copiar mis detalles" : "Copy my details"}));
-          const chooser = await openContactChannelChooser(form, expect);
+          const chooser = await openRegisteredContactChannelChooser(form, expect, page);
           const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(chooser, expect);
           assert.ok((whatsappUrl.searchParams.get("text") || "").length > 40);
           for (const marker of [markerA, markerB]) {
@@ -547,7 +547,7 @@ try {
               await detailedForm.locator('form button[type="submit"]').click();
               const ready = detailedForm.locator('[role="region"]');
               await visible(ready);
-              const intakeChannels = await openContactChannelChooser(ready, expect);
+              const intakeChannels = await openRegisteredContactChannelChooser(ready, expect, page);
               const prepared = await assertPreparedContactChannels(intakeChannels, expect);
               for (const marker of [markerA, markerB]) {
                 assert.ok(!prepared.whatsappUrl.searchParams.get("text")?.includes(marker));
