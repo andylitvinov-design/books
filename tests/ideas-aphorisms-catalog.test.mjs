@@ -13,20 +13,20 @@ import {
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("128 individually curated ideas, 16 themes, 9 named public-domain reading sources and three complete languages", () => {
-  assert.equal(catalog.items.length, 128);
+test("142 curated Ideas texts in 16 themes and 10 documented sources, with three complete language versions", () => {
+  assert.equal(catalog.items.length, 142);
   assert.equal(new Set(catalog.items.map(item => item.id)).size, 128);
   assert.equal(new Set(catalog.items.map(item => item.topic)).size, 16);
-  assert.equal(Object.keys(catalog.sources).length, 9);
+  assert.equal(Object.keys(catalog.sources).length, 10);
   for (const locale of ["en", "ru", "es"]) {
     const key = "text_" + locale;
-    assert.equal(new Set(catalog.items.map(item => item[key])).size, 128);
+    assert.equal(new Set(catalog.items.map(item => item[key])).size, 142);
     for (const item of catalog.items) assert.ok(item[key].length >= 25, item.id + " " + locale);
   }
   for (const item of catalog.items) {
     assert.equal(item.keywords.length > 2, true, item.id);
-    assert.ok(["editorial", "inspired"].includes(item.kind));
-    if (item.kind === "inspired") {
+    assert.ok(["editorial", "inspired", "proverb"].includes(item.kind));
+    if (item.kind === "inspired" || item.kind === "proverb") {
       const source = catalog.sources[item.source_id];
       assert.ok(source, item.id);
       assert.match(source.url, /^https:\/\//);
@@ -74,7 +74,7 @@ test("initial 3 and next 3 always keep stable order without repeats, scoped to r
       assert.equal(all.slice(0, 3).length, 3);
       assert.equal(all.slice(3, 6).length, 3);
       assert.ok(all.slice(0, 3).every(item => !all.slice(3, 6).some(next => next.id === item.id)));
-      assert.ok(all.every(item => !item.source || item.kind === "inspired"));
+      assert.ok(all.every(item => !item.source || ["inspired", "proverb"].includes(item.kind)));
     }
   }
   for (const topic of ideaTopics) for (const locale of ["ru", "en", "es"]) {
@@ -140,4 +140,61 @@ test("answer language follows the question regardless of page locale; sources re
   assert.match(ui, /Holistic House · авторский афоризм/);
   assert.match(ui, /getIdeasAphorismMatches\(question, answerLocale, result\.topic\)/);
   assert.ok(!ui.includes("fetch("));
+});
+
+test("14 traditional proverbs: seven verified original languages and three independent sense translations", () => {
+  const additions = catalog.items.filter(item => item.kind === "proverb");
+  assert.equal(additions.length, 14);
+  assert.deepEqual([...new Set(additions.map(item => item.original_language))].sort(), ["da", "de", "es", "fr", "it", "nl", "pt"]);
+  const source = catalog.sources.bohn_polyglot_1857;
+  assert.match(source.url, /^https:\/\/www\.gutenberg\.org\/files\/51090\//);
+  assert.match(source.rights_note, /public domain/i);
+  assert.match(source.work, /1857/);
+  assert.equal(new Set(catalog.items.map(item => item.id)).size, 142);
+  for (const item of additions) {
+    assert.match(item.id, /^hh-proverb-(fr|it|de|nl|es|pt|da)-\d{2}$/);
+    assert.ok(item.original_text.length >= 12, item.id);
+    assert.ok(item.source_locator.includes("proverbs"), item.id);
+    assert.equal(item.source_id, "bohn_polyglot_1857");
+    assert.equal(item.translation_method, "new_editorial_sense_translation");
+    assert.equal(item.source_license, "public_domain_1857_us");
+    for (const locale of ["ru", "en", "es"]) {
+      assert.ok(item["text_" + locale].length >= 25, item.id + "-" + locale);
+      const resolved = getIdeasAphorismMatches(item["text_" + locale], locale, matchIdeasTopic(item["text_" + locale]).topic)
+        .find(found => found.id === item.id);
+      assert.ok(resolved, item.id + "-" + locale);
+      assert.equal(resolved.kind, "proverb");
+      assert.deepEqual(resolved.original, { text: item.original_text, language: item.original_language });
+      assert.equal(resolved.source.url, source.url);
+      assert.match(resolved.source.author, /\S/);
+    }
+  }
+  const norm = text => text.normalize("NFKD").toLowerCase()
+    .replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]/gu, "");
+  for (const locale of ["en", "ru", "es"]) {
+    assert.equal(new Set(catalog.items.map(item => norm(item["text_" + locale]))).size, 142, locale);
+  }
+  assert.equal(new Set(additions.map(item => norm(item.original_text))).size, 14);
+});
+
+test("traditional provenance, original shown beneath source, historical license and RLS preserved", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  const matcher = read("lib/ideas-guidance.mjs");
+  const migration = read("supabase/migrations/20261021162000_hh_ideas_proverbs_sources.sql");
+  assert.match(ui, /item\.kind !== "editorial" && item\.source/);
+  assert.match(ui, /item\.kind === "proverb" && item\.original/);
+  assert.match(ui, /lang=\{item\.original\.language\}/);
+  assert.match(ui, /href=\{item\.source\.url\}/);
+  assert.match(ui, /proverbSource: "Народная пословица"/);
+  assert.match(css, /\.aphorisms p\.aphorismOriginal/);
+  assert.match(matcher, /Traditional proverb/);
+  assert.match(migration, /CHECK \(kind IN \('editorial', 'inspired', 'proverb'\)\)/);
+  assert.match(migration, /original_language/);
+  assert.match(migration, /source_locator/);
+  assert.match(migration, /public\.hh_ideas_aphorisms/);
+  assert.doesNotMatch(migration, /GRANT (?:INSERT|UPDATE|DELETE)/);
+  for (const denied of ["fetch(", "sendBeacon", "XMLHttpRequest", "localStorage"]) {
+    assert.ok(!ui.includes(denied)); assert.ok(!matcher.includes(denied));
+  }
 });
