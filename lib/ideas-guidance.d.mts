@@ -1,6 +1,6 @@
 export type IdeasTopic = "relationships" | "stress" | "resources" | "work" | "direction";
 export type IdeasFreeId = "review" | "tests" | "dao";
-export type IdeasAphorism = { id: string; text: string; kind: "editorial" | "inspired"; source: { author: string; work: string; url: string } | null };
+export type IdeasAphorism = { id: string; text: string; kind: "editorial" | "inspired" | "proverb"; source: { author: string; work: string; url: string; locator?: string | null } | null; original?: { text: string; language: string } | null };
 export declare const ideaTopics: ReadonlyArray<IdeasTopic>;
 export declare const ideasAphorismCatalog: ReadonlyArray<{id: string;topic: string;text_en: string;text_ru: string;text_es: string}>;
 export declare function detectIdeasQuestionLocale(question: string, fallback?: "ru" | "en" | "es"): "ru" | "en" | "es";
