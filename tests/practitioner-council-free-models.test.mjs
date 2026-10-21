@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
-  GEMINI_MODEL,modelSettings,freeMistral,chooseFreeMistral,publicReviewPrompt,
+  GEMINI_MODEL,MISTRAL_DIRECT_MODEL,modelSettings,freeMistral,chooseFreeMistral,publicReviewPrompt,
   reviewGemini,reviewMistral,reviewDailyCouncil,composeDailyCouncilTelegram
 } from '../lib/practitioners/council-free-models.mjs'
 import {pickPublicCouncilReports,readCouncilEvidence} from '../lib/practitioners/council-telegram-archive.mjs'
@@ -161,4 +161,73 @@ test('daily report is cached under one claimed private date before Telegram send
   assert.match(sql,/force row level security/i)
   assert.match(sql,/revoke all.*from public,anon,authenticated/i)
   assert.doesNotMatch(sql,/API_KEY|BOT_TOKEN|client_email|phone/i)
+})
+
+
+test('Mistral Studio key is never used without owner-confirmed Free mode',async()=>{
+  const env={HH_COUNCIL_MISTRAL_API_KEY:'synthetic-direct-mistral'}
+  const settings=modelSettings(env)
+  assert.equal(settings.mistralDirectKeyPresent,true)
+  assert.equal(settings.mistralDirectFreeConfirmed,false)
+  assert.equal(settings.mistralKeyPresent,false)
+  const result=await reviewMistral(report,env,noNet)
+  assert.equal(result.status,'disabled')
+  assert.equal(result.reason,'FREE_MODE_NOT_CONFIRMED')
+})
+test('confirmed Mistral Studio Free mode checks accessible model before inference',async()=>{
+  const env={HH_COUNCIL_MISTRAL_API_KEY:'synthetic-free-mode-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true'}
+  const calls=[]
+  const result=await reviewMistral(report,env,async(url,options)=>{
+    calls.push(String(url))
+    assert.equal(options.headers.Authorization,'Bearer '+env.HH_COUNCIL_MISTRAL_API_KEY)
+    if(String(url).endsWith('/models')){
+      assert.equal(options.method,'GET')
+      return json({data:[{id:MISTRAL_DIRECT_MODEL}]})
+    }
+    assert.equal(String(url),'https://api.mistral.ai/v1/chat/completions')
+    assert.equal(options.method,'POST')
+    const body=JSON.parse(options.body)
+    assert.equal(body.model,MISTRAL_DIRECT_MODEL)
+    assert.equal(body.stream,false)
+    assert.match(body.messages[1].content,/missing_description/)
+    assert.ok(!body.messages[1].content.includes('PRIVATE SECRET'))
+    return json({model:MISTRAL_DIRECT_MODEL,
+      choices:[{finish_reason:'stop',message:{content:long}}]})
+  })
+  assert.equal(modelSettings(env).mistralKeyPresent,true)
+  assert.deepEqual(calls,[
+    'https://api.mistral.ai/v1/models',
+    'https://api.mistral.ai/v1/chat/completions'
+  ])
+  assert.equal(result.status,'ok')
+  assert.equal(result.model,MISTRAL_DIRECT_MODEL)
+  assert.ok(result.text.length>=180)
+})
+test('Mistral Studio Free mode fail-closed on inaccessible model, 429 and substitution',async()=>{
+  const env={HH_COUNCIL_MISTRAL_API_KEY:'test-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'test-openrouter'}
+  let count=0
+  const missing=await reviewMistral(report,env,async()=>{
+    count++
+    return json({data:[]})
+  })
+  assert.equal(missing.status,'unavailable')
+  assert.equal(missing.reason,'MODEL_NOT_IN_WORKSPACE')
+  assert.equal(count,1)
+  const quota=await reviewMistral(report,env,async(url)=>
+    String(url).endsWith('/models')
+      ?json({data:[{id:MISTRAL_DIRECT_MODEL}]})
+      :json({},429))
+  assert.equal(quota.status,'error')
+  assert.equal(quota.reason,'HTTP 429')
+  const altered=await reviewMistral(report,env,async(url)=>
+    String(url).endsWith('/models')
+      ?json({data:[{id:MISTRAL_DIRECT_MODEL}]})
+      :json({model:'not-mistral',choices:[{
+        finish_reason:'stop',message:{content:long}
+      }]}))
+  assert.equal(altered.status,'error')
+  assert.equal(altered.reason,'incomplete_or_short')
 })
