@@ -198,3 +198,12 @@
   .finder .topic,.finder .topicActive { font-size:11px; }
 }
 @media(prefers-reduced-motion:reduce) { .requestButton { transition:none; } }
+
+/* The category grid immediately below offers discovery on 320px screens;
+   keep the paid request action visible without clipping the photo headline. */
+@media(max-width:365px) {
+  .slideActions .requestButton + .viewButton { display:none; }
+  .slideCopy :is(h1,h2) { font-size:clamp(27px,8vw,30px); }
+  .slider:not([data-request-open="true"]) { min-height:365px; }
+}
+.requestPanel:focus-visible { outline:3px solid #f1bc83; outline-offset:-4px; }
