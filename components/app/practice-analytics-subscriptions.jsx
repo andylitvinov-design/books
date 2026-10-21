@@ -1,5 +1,7 @@
 'use client'
 import {useEffect,useState} from 'react'
+import {BarChart3, ChevronDown} from 'lucide-react'
+import styles from './practice-analytics-subscriptions.module.css'
 import {appFetch} from '@/lib/app/client-fetch'
 import {MESSENGER_CONTACT_NOTICE_VERSION} from '@/lib/app/messenger-notification-policy'
 
@@ -8,7 +10,7 @@ const NO_OTHER_NOTIFICATIONS={messages:false,booking:false,reports:false,courses
 const VERSION='hh-master-aggregate-stats-v1'
 const COPY={
  en:{
-  title:'Your service-view reports',hint:'Private, opt-in statistics for your published services.',
+  title:'Get service statistics by message',hint:'Your views and clicks are shown above. You can also receive a private summary without opening the site.',
   via:'Send by',freq:'Report frequency',daily:'Daily · yesterday',weekly:'Weekly · 7 completed days',
   telegram:'Telegram',whatsapp:'WhatsApp',connect:'Verify Telegram',verified:'Telegram verified',
   connectHint:'Confirm your account through the official Telegram bot (press Start). Typing a username is not verification.',
@@ -25,9 +27,14 @@ const COPY={
   sending:'Processing…',privacy:'Only counts and public service titles. No names, health data, private messages or test results.',
   note:'A view is a tracked service impression, not a unique visitor. Clicks are not bookings or payments.',
   status:'Status',unapproved:'Automated reports require an approved, active practitioner profile.',
+  configure:'Set up updates',collapse:'Hide settings',frequencyDaily:'Every day',frequencyWeekly:'Once a week',
+  dailyHelp:'Yesterday',weeklyHelp:'Past 7 days',previewClose:'Close preview',
+  stateOff:'Updates are off',stateOn:'Telegram delivery available',stateWait:'Waiting for Telegram connection',
+  statePaused:'Telegram sending is paused',stateWhatsApp:'WhatsApp sending unavailable',
+  waUnavailable:'Not sending yet',botUnavailable:'Bot connection is currently unavailable.',
  },
  ru:{
-  title:'Статистика просмотров в мессенджер',hint:'Личная подписка на показатели опубликованных услуг.',
+  title:'Сводка услуг в мессенджере',hint:'Просмотры и клики показаны выше. Можно дополнительно получать короткий отчёт в Telegram.',
   via:'Куда присылать',freq:'Как часто',daily:'Ежедневно · за вчера',weekly:'Раз в неделю · 7 завершённых дней',
   telegram:'Telegram',whatsapp:'WhatsApp',connect:'Подтвердить Telegram',verified:'Telegram подтверждён',
   connectHint:'Подтвердите аккаунт через официального бота Telegram (нажмите Start). Имя @username не подтверждает владение.',
@@ -44,9 +51,14 @@ const COPY={
   sending:'Выполняем…',privacy:'Только цифры и названия публичных услуг. Никаких имён, диагнозов, переписок и результатов тестов.',
   note:'Показ — зафиксированное отображение услуги, не уникальный посетитель. Клики не означают запись или оплату.',
   status:'Статус',unapproved:'Для автоматических отчётов нужен подтверждённый активный профиль мастера.',
+  configure:'Настроить отчёты',collapse:'Скрыть настройки',frequencyDaily:'Каждый день',frequencyWeekly:'Раз в неделю',
+  dailyHelp:'За вчера',weeklyHelp:'За 7 дней',previewClose:'Закрыть пример',
+  stateOff:'Рассылка выключена',stateOn:'Telegram готов к отправке',stateWait:'Ожидаем подключения Telegram',
+  statePaused:'Отправка Telegram приостановлена',stateWhatsApp:'Отправка в WhatsApp недоступна',
+  waUnavailable:'Пока не отправляется',botUnavailable:'Подключение бота пока недоступно.',
  },
  es:{
-  title:'Informes de visitas a tus servicios',hint:'Estadísticas privadas y voluntarias de tus servicios publicados.',
+  title:'Resumen de servicios por mensaje',hint:'Arriba puedes ver visitas y clics. Si quieres, recibe también un breve informe privado.',
   via:'Recibir por',freq:'Frecuencia',daily:'Diario · ayer',weekly:'Semanal · últimos 7 días completos',
   telegram:'Telegram',whatsapp:'WhatsApp',connect:'Verificar Telegram',verified:'Telegram verificado',
   connectHint:'Confirma tu cuenta con Start en el bot oficial. Un nombre de usuario no demuestra la titularidad.',
@@ -63,11 +75,13 @@ const COPY={
   sending:'Procesando…',privacy:'Solo cifras y nombres de servicios públicos. Sin datos de clientes, diagnósticos ni pruebas.',
   note:'Una vista es una impresión registrada, no un visitante único. Los clics no confirman una reserva o pago.',
   status:'Estado',unapproved:'El perfil del profesional debe estar aprobado y activo.',
+  configure:'Configurar informes',collapse:'Ocultar ajustes',frequencyDaily:'Cada día',frequencyWeekly:'Cada semana',
+  dailyHelp:'Ayer',weeklyHelp:'Últimos 7 días',previewClose:'Cerrar ejemplo',
+  stateOff:'Envíos desactivados',stateOn:'Envío por Telegram disponible',stateWait:'Esperando conexión con Telegram',
+  statePaused:'Envío por Telegram pausado',stateWhatsApp:'WhatsApp aún no envía informes',
+  waUnavailable:'Aún no disponible',botUnavailable:'El bot no está disponible por ahora.',
  },
 }
-const capsule={display:'inline-flex',alignItems:'center',gap:7,padding:'7px 11px',borderRadius:12,border:'1px solid #d6c8b5',fontSize:13,background:'#fffaf2',maxWidth:'100%'}
-const subActions={display:'flex',flexWrap:'wrap',gap:8,alignItems:'center'}
-const btn={...capsule,cursor:'pointer',color:'#4b3929',fontWeight:650}
 export default function PracticeAnalyticsSubscriptions({locale='en',accountId}){
  const lang=COPY[locale]?locale:'en',t=COPY[lang]
  const [state,setState]=useState(null),[channel,setChannel]=useState('telegram')
@@ -75,10 +89,11 @@ export default function PracticeAnalyticsSubscriptions({locale='en',accountId}){
  const [phone,setPhone]=useState('')
  const [busy,setBusy]=useState(''),[notice,setNotice]=useState(''),[error,setError]=useState('')
  const [preview,setPreview]=useState('')
+ const [settingsOpen,setSettingsOpen]=useState(false)
  useEffect(()=>{
   if(!accountId)return undefined
   const controller=new AbortController()
-  setState(null);setError('');setPreview('');setConsent(false)
+  setState(null);setError('');setPreview('');setConsent(false);setSettingsOpen(false)
   appFetch('practice-analytics-notifications',undefined,undefined,{accountId,signal:controller.signal})
    .then(next=>{if(controller.signal.aborted)return;setState(next);setChannel(next.channel||'telegram');setFrequency(next.frequency==='daily'?'daily':'weekly')})
    .catch(()=>{if(!controller.signal.aborted)setError(t.error)})
@@ -122,7 +137,7 @@ export default function PracticeAnalyticsSubscriptions({locale='en',accountId}){
     }:{action:kind==='disable'?'disable':kind==='preview'?'preview':'send_now'}
     next=await appFetch('practice-analytics-notifications',body,undefined,{accountId})
     if(kind==='save'||kind==='disable'){
-     setState(next);setConsent(false)
+     setState(next);setConsent(false);setSettingsOpen(false)
      setNotice(kind==='disable'?t.stopped:next.channel==='whatsapp'?t.waPending:next.telegramVerified?t.saved:t.pending)
     }else if(kind==='preview'){
      setPreview(next.text||'')
@@ -136,59 +151,90 @@ export default function PracticeAnalyticsSubscriptions({locale='en',accountId}){
  }
  if(!accountId)return null
  const active=Boolean(state?.channel)&&state?.frequency!=='off'
- return <section style={{border:'1px solid #e3d8c5',borderRadius:16,background:'linear-gradient(135deg,#fbf6ec,#f6f4ec)',padding:'clamp(12px,3vw,20px)',marginBlock:18,color:'#443c32'}} aria-label={t.title}>
-  <div style={{display:'flex',gap:8,justifyContent:'space-between',flexWrap:'wrap',alignItems:'baseline'}}>
-   <div><p style={{fontSize:12,letterSpacing:1,textTransform:'uppercase',color:'#846d52',margin:'0 0 3px'}}>MY PRACTICE · INSIGHTS</p>
-   <h3 style={{fontSize:'clamp(17px,3vw,21px)',margin:'0 0 4px'}}>{t.title}</h3><p style={{fontSize:13,margin:'0 0 12px'}}>{t.hint}</p></div>
-   {active&&<span style={{...capsule,color:'#695232'}}>{t.status}: {state.channel} · {state.frequency}</span>}
+ const ready=Boolean(state?.approved&&state?.telegramVerified&&state?.telegramSendingEnabled)
+ const deliveryStatus=!active?t.stateOff
+  :state.channel==='whatsapp'?t.stateWhatsApp
+  :!state.telegramVerified?t.stateWait
+  :ready?t.stateOn:t.statePaused
+ return <section className={styles.panel} aria-label={t.title} data-practice-analytics-subscription>
+  <div className={styles.intro}>
+   <span className={styles.icon} aria-hidden="true"><BarChart3 size={20}/></span>
+   <div className={styles.introText}>
+    <h3>{t.title}</h3>
+    <p>{t.hint}</p>
+   </div>
   </div>
-  {!state?<p role="status">{t.sending}</p>:<>
-   {!state.approved&&<p style={{fontSize:13}}>{t.unapproved}</p>}
-   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,220px),1fr))',gap:12}}>
-    <fieldset style={{border:0,padding:0,minWidth:0,margin:0}}>
-     <legend style={{fontWeight:700,marginBottom:7,fontSize:14}}>{t.via}</legend>
-     <div style={subActions}>{['telegram','whatsapp'].map(option=><label key={option} style={{...capsule,cursor:'pointer',background:channel===option?'#e5e8de':'#fffaf2'}}>
-      <input type="radio" name="practice-stats-channel" value={option} checked={channel===option} onChange={()=>{setChannel(option);setConsent(false)}} />
-      {t[option]}</label>)}</div>
-    </fieldset>
-    <fieldset style={{border:0,padding:0,minWidth:0,margin:0}}>
-     <legend style={{fontWeight:700,marginBottom:7,fontSize:14}}>{t.freq}</legend>
-     <div style={subActions}>{['daily','weekly'].map(option=><label key={option} style={{...capsule,cursor:'pointer',background:frequency===option?'#e5e8de':'#fffaf2'}}>
-      <input type="radio" name="practice-stats-frequency" value={option} checked={frequency===option} onChange={()=>{setFrequency(option);setConsent(false)}}/>
-      {t[option]}</label>)}</div>
-    </fieldset>
+  {!state?<div className={styles.statusMessage} role={error?'alert':'status'}>
+   <span>{error||t.sending}</span>
+   {error&&<button type="button" className={[styles.button,styles.secondary].join(' ')} disabled={Boolean(busy)} onClick={()=>action('refresh')}>{t.refresh}</button>}
+  </div>:<>
+   <div className={styles.toolbar}>
+    <span className={[styles.status,ready&&active&&state.channel==='telegram'?styles.statusReady:styles.statusPaused].join(' ')}>
+     <span className={styles.statusDot} aria-hidden="true"/>{deliveryStatus}
+    </span>
+    <div className={styles.actions}>
+     <button type="button" className={[styles.button,styles.secondary].join(' ')} disabled={Boolean(busy)||!state.approved} onClick={()=>action('preview')}>{t.preview}</button>
+     <button type="button" className={[styles.button,styles.primary].join(' ')} aria-expanded={settingsOpen} aria-controls="hh-practice-analytics-settings" disabled={Boolean(busy)} onClick={()=>setSettingsOpen(open=>!open)}>
+      {settingsOpen?t.collapse:t.configure}<ChevronDown size={15} aria-hidden="true" className={settingsOpen?styles.chevronOpen:styles.chevron}/>
+     </button>
+    </div>
    </div>
-   <div style={{marginTop:12,padding:'11px 12px',border:'1px solid #e1d3c1',borderRadius:12,background:'#fffdf8',fontSize:13}}>
-    {channel==='telegram'?<>
-     <p style={{margin:'0 0 9px'}}><strong>{state.telegramVerified?t.verified:t.connect}</strong> · {state.telegramVerified?(state.telegramSendingEnabled?t.ready:t.disabled):t.connectHint}</p>
-     <div style={subActions}>
-      {!state.telegramVerified&&<button type="button" style={btn} onClick={()=>action('connect')} disabled={Boolean(busy)||!state.telegramLinkAvailable}>{t.connect}</button>}
-      <button type="button" style={btn} onClick={()=>action('refresh')} disabled={Boolean(busy)}>{t.refresh}</button>
-     </div>
-    </>:<>
-     <p style={{margin:'0 0 8px'}}>{t.waHelp}</p>
-     <label style={{display:'block',marginBottom:8}}>{t.wa} <input type="tel" autoComplete="tel" inputMode="tel" placeholder="+14165550123" value={phone} onChange={e=>setPhone(e.target.value)} style={{width:'100%',maxWidth:275,minHeight:38,padding:'7px 10px',border:'1px solid #c9bca8',borderRadius:9,background:'white'}} /></label>
-     <button type="button" style={btn} disabled={Boolean(busy)||!phone.trim()||!consent} onClick={()=>action('saveWhatsApp')}>{t.waSave}</button>
-     <p style={{margin:'8px 0 0'}}>{t.waPending}</p>
-    </>}
-   </div>
-   <label style={{display:'flex',gap:9,alignItems:'flex-start',margin:'12px 0',fontSize:13}}>
-    <input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} style={{marginTop:3,width:16,height:16,flexShrink:0}}/>
-    {t.consent}
-   </label>
-   <div style={subActions}>
-    <button type="button" disabled={Boolean(busy)||!consent} onClick={()=>action('save')} style={{...btn,background:'#496f69',borderColor:'#496f69',color:'#fff'}}>{t.save}</button>
-    <button type="button" disabled={Boolean(busy)||!state.approved} onClick={()=>action('preview')} style={btn}>{t.preview}</button>
-    {active&&<button type="button" disabled={Boolean(busy)||!state.approved||!state.telegramVerified||!state.telegramSendingEnabled||state.channel!=='telegram'} onClick={()=>action('send_now')} style={btn}>{t.send}</button>}
-    {active&&<button type="button" disabled={Boolean(busy)} onClick={()=>action('disable')} style={btn}>{t.off}</button>}
-   </div>
-   {busy&&<p role="status" style={{fontSize:13}}>{t.sending}</p>}
-   {notice&&<p role="status" style={{fontSize:13,marginBottom:0}}>{notice}</p>}
-   {error&&<p role="alert" style={{color:'#9b3428',fontSize:13,marginBottom:0}}>{error}</p>}
-   {preview&&<details open style={{marginTop:13}}><summary style={{cursor:'pointer',fontWeight:700}}>{t.previewTitle}</summary>
-    <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:13,lineHeight:1.5,padding:12,background:'#fff',borderRadius:10}}>{preview}</pre>
-   </details>}
-   <p style={{fontSize:12,color:'#665f52',margin:'12px 0 0'}}>{t.privacy} {t.note}</p>
+   {settingsOpen&&<div className={styles.settings} id="hh-practice-analytics-settings">
+    {!state.approved&&<p className={styles.helper}>{t.unapproved}</p>}
+    <div className={styles.optionGroups}>
+     <fieldset className={styles.group}>
+      <legend>{t.via}</legend>
+      <div className={styles.segment} role="group" aria-label={t.via}>
+       {['telegram','whatsapp'].map(option=><button key={option} type="button" className={styles.choice} aria-pressed={channel===option} disabled={Boolean(busy)} onClick={()=>{setChannel(option);setConsent(false)}}>
+        <span>{t[option]}</span>{option==='whatsapp'&&<small>{t.waUnavailable}</small>}
+       </button>)}
+      </div>
+     </fieldset>
+     <fieldset className={styles.group}>
+      <legend>{t.freq}</legend>
+      <div className={styles.segment} role="group" aria-label={t.freq}>
+       {['daily','weekly'].map(option=><button key={option} type="button" className={styles.choice} aria-pressed={frequency===option} disabled={Boolean(busy)} onClick={()=>{setFrequency(option);setConsent(false)}}>
+        <span>{option==='daily'?t.frequencyDaily:t.frequencyWeekly}</span>
+        <small>{option==='daily'?t.dailyHelp:t.weeklyHelp}</small>
+       </button>)}
+      </div>
+     </fieldset>
+    </div>
+    <div className={styles.connection}>
+     {channel==='telegram'?<>
+      <div className={styles.connectionHead}><strong>{state.telegramVerified?t.verified:t.connect}</strong><span>{state.telegramVerified?(ready?t.ready:t.disabled):t.connectHint}</span></div>
+      <div className={styles.actions}>
+       {!state.telegramVerified&&<button type="button" className={[styles.button,styles.secondary].join(' ')} onClick={()=>action('connect')} disabled={Boolean(busy)||!state.telegramLinkAvailable}>{t.connect}</button>}
+       <button type="button" className={[styles.button,styles.textButton].join(' ')} onClick={()=>action('refresh')} disabled={Boolean(busy)}>{t.refresh}</button>
+      </div>
+      {!state.telegramVerified&&!state.telegramLinkAvailable&&<p className={styles.helper}>{t.botUnavailable}</p>}
+     </>:<>
+      <p className={styles.helper}>{t.waHelp}</p>
+      <label className={styles.phoneLabel}>{t.wa}
+       <input type="tel" autoComplete="tel" inputMode="tel" placeholder="+14165550123" value={phone} onChange={e=>setPhone(e.target.value)}/>
+      </label>
+      <button type="button" className={[styles.button,styles.secondary].join(' ')} disabled={Boolean(busy)||!phone.trim()||!consent} onClick={()=>action('saveWhatsApp')}>{t.waSave}</button>
+      <p className={styles.helper}>{t.waPending}</p>
+     </>}
+    </div>
+    <label className={styles.consent}>
+     <input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
+     <span>{t.consent}</span>
+    </label>
+    <div className={styles.saveRow}>
+     <button type="button" className={[styles.button,styles.primary].join(' ')} disabled={Boolean(busy)||!consent} onClick={()=>action('save')}>{t.save}</button>
+     {active&&<button type="button" className={[styles.button,styles.secondary].join(' ')} disabled={Boolean(busy)} onClick={()=>action('disable')}>{t.off}</button>}
+     {active&&ready&&state.channel==='telegram'&&<button type="button" className={[styles.button,styles.secondary].join(' ')} disabled={Boolean(busy)} onClick={()=>action('send_now')}>{t.send}</button>}
+    </div>
+    <p className={styles.privacy}>{t.privacy} {t.note}</p>
+   </div>}
+   {busy&&<p role="status" className={styles.statusMessage}>{t.sending}</p>}
+   {notice&&<p role="status" className={styles.statusMessage}>{notice}</p>}
+   {error&&<p role="alert" className={styles.error}>{error}</p>}
+   {preview&&<div className={styles.preview} role="region" aria-label={t.previewTitle}>
+    <div className={styles.previewTitle}><strong>{t.previewTitle}</strong><button type="button" className={styles.closePreview} onClick={()=>setPreview('')}>{t.previewClose}</button></div>
+    <pre>{preview}</pre>
+   </div>}
   </>}
  </section>
 }
