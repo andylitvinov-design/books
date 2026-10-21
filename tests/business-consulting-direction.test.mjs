@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { servicesStudioContract } from "./helpers/services-studio-contract.mjs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -28,17 +29,31 @@ test("business strategy and founder coaching has a dedicated EN/RU/ES landing", 
   assert.doesNotMatch(landing, /ServiceVideoShowcase/);
 });
 
-test("business offer is discoverable without altering the four-card homepage contract", () => {
+test("business offer is discoverable without altering the four-card homepage contract", async () => {
   const services = read("data/core-service-offers.ts");
   const grid = read("components/services-solutions.tsx");
-  const spanish = read("app/es/services/page.tsx");
   assert.match(services, /route: "business-consulting"/);
   assert.match(services, /Business Strategy & Founder Coaching/);
   assert.match(services, /Бизнес-стратегия и коучинг предпринимателей/);
   assert.match(services, /Estrategia de negocios y coaching para emprendedores/);
   assert.match(services, /business: "\/images\/holistic-house\/andy-about\.png"/);
   assert.match(grid, /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
-  assert.match(spanish, /\/es\/services\/business-consulting/);
+  for (const locale of ["en", "ru", "es"]) {
+    const view = await servicesStudioContract(locale);
+    assert.deepEqual(view.homeIds, ["situation", "dao", "alchemy", "hypnotherapy"], locale + ": Home keeps exactly four non-Business offers");
+    const cards = view.cards.filter(card => card.props["data-services-studio-card"] === "business");
+    assert.equal(cards.length, 1, locale + ": Business appears exactly once");
+    assert.equal(cards[0].props.hidden, false, locale + ": Business is visible by default");
+    assert.equal(view.isVisible(cards[0]), true, locale + ": no hidden ancestor conceals Business");
+    const descendants = view.descendants(cards[0]);
+    const links = descendants.filter(node => node.type === "a");
+    assert.ok(links.length >= 3, locale + ": photo, title and details retain their destinations");
+    for (const link of links) assert.equal(link.props.href, "/" + locale + "/services/business-consulting");
+    const photos = descendants.filter(node => node.type === view.portrait || node.type === view.image);
+    assert.equal(photos.length, 1);
+    assert.equal(photos[0].type, view.portrait, locale + ": Business keeps the static portrait");
+    assert.equal(photos[0].props.src, "/images/holistic-house/andy-about.png");
+  }
 });
 
 test("business messaging separates evidence and symbolic methods", () => {

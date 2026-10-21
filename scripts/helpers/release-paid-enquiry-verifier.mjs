@@ -28,6 +28,14 @@ export function classifyPaidRequest(policy, request) {
   let url;
   try { url = new URL(request.url()); } catch { return 'malformed URL'; }
   const raw = request.url();
+  // Source-proven dynamic Home page only. This explicit permission does not
+  // authorize sibling routes or alternate bracket spellings from diagnostics.
+  if (raw === policy.origin + url.pathname
+    && /^\/_next\/static\/chunks\/app\/%5Blocale%5D\/page-[0-9a-f]{16}\.js(?![\s\S])/.test(url.pathname)) {
+    try {
+      if (request.resourceType() === 'script' && request.isNavigationRequest() === false) return null;
+    } catch { /* Missing metadata must fall through to the original rejection. */ }
+  }
   if (raw === policy.origin + url.pathname
     && /^\/_next\/static\/chunks\/app\/%5Blocale%5D\/services\/imagery-therapy\/page-[0-9a-f]{16}\.js$/.test(url.pathname)
     && request.resourceType() === 'script' && !request.isNavigationRequest()) return null;

@@ -474,6 +474,173 @@ const nominalChunk = chunkPath('0123456789abcdef');
 const portraitPath = width => '/_next/image?url=' + encodeURIComponent(portraitAsset) + '&w=' + width + '&q=75';
 const nominalPortrait = portraitPath(64);
 
+// This is an explicit reviewed permission addition, not a diagnostic inference.
+// Derive the synthetic filename from the actual Russian-only Home page file.
+const homeRouteFile = 'app/[locale]/page.tsx';
+const homeChunkPath = hash => '/_next/static/chunks/' + homeRouteFile.replace(/\.tsx$/, '').split('/').map(encodeURIComponent).join('/') + '-' + hash + '.js';
+const nominalHomeChunk = homeChunkPath('0123456789abcdef');
+function assertHomePageBinding(text) {
+  assert.match(text, /export function generateStaticParams\(\) \{ return \[\{ locale: "ru" \}\]; \}/, 'Home static params are Russian-only');
+  assert.match(text, /export default async function RussianHomePage\(/, 'Exact physical dynamic Home page');
+  assert.match(text, /if \(\(await params\)\.locale !== "ru"\) notFound\(\);/, 'Home rejects unsupported locale');
+  assert.match(text, /<HolisticHouseHome\s+locale="ru"/, 'Home renderer and locale');
+}
+test('Home exception stays bound to the actual Russian-only physical page', () => {
+  const text = read(homeRouteFile); assertHomePageBinding(text);
+  for (const [from, to, reason] of [
+    ['return [{ locale: "ru" }]', 'return [{ locale: "en" }]', /Home static params/],
+    ['function RussianHomePage(', 'function OtherPage(', /Exact physical/],
+    ['if ((await params).locale !== "ru") notFound();', '', /Home rejects/],
+    ['<HolisticHouseHome', '<OtherHome', /Home renderer/],
+  ]) {
+    assertHomePageBinding(text);
+    assert.throws(() => assertHomePageBinding(text.replace(from, to)), reason);
+  }
+  assertHomePageBinding(text);
+  assert.throws(() => assertHomePageBinding(''), /Home static params/);
+});
+
+for (const mode of [base, live]) for (const locale of ['en', 'ru', 'es']) for (const width of [390, 1365]) {
+  test(`${mode.label}/${locale}/${width} permits only canonical source-bound Home script via actual guard`, async () => {
+    const policy = releasePaidPolicy({ ...mode, locale, width }), { context } = network();
+    const guard = await installPaidReadOnlyGuard(context, policy);
+    for (const hash of ['0123456789abcdef', 'fedcba9876543210']) {
+      const req = { ...request(policy, homeChunkPath(hash), 'GET', 'script'),
+        headers() { throw new Error(DIAGNOSTIC_CANARY); }, postData() { throw new Error(DIAGNOSTIC_CANARY); } };
+      assert.equal(classifyPaidRequest(policy, req), null);
+      assert.deepEqual(await context.send(req), ['fetch', 'fulfill']);
+    }
+    assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+  });
+}
+const homeChunkFaults = [
+  ['encoded Services index', p => p.replace('/page-', '/services/page-')],
+  ['encoded free review', p => p.replace('/page-', '/services/free-situation-review/page-')],
+  ['encoded private route', p => p.replace('/page-', '/client/records/page-')],
+  ['encoded admin route', p => p.replace('/page-', '/admin/clients/page-')],
+  ['unknown encoded route', p => p.replace('/page-', '/other/page-')],
+  ['secret route', p => p.replace('/page-', '/' + DIAGNOSTIC_CANARY + '/page-')],
+  ['unproved layout', p => p.replace('/page-', '/layout-')],
+  ['lowercase encoding', p => p.replace('%5Blocale%5D', '%5blocale%5d')],
+  ['mixed encoding', p => p.replace('%5D', '%5d')],
+  ['literal brackets', p => p.replace('%5Blocale%5D', '[locale]'), 'unallowlisted public resource'],
+  ['double encoding', p => p.replaceAll('%5', '%255')],
+  ['encoded letter', p => p.replace('locale', '%6Cocale')],
+  ['different dynamic parameter', p => p.replace('locale', 'language')],
+  ['catch-all parameter', p => p.replace('locale', '...locale')],
+  ['encoded slash', p => p.replace('/page-', '%2Fpage-')],
+  ['literal traversal', p => p.replace('/page-', '/extra/../page-')],
+  ['encoded traversal', p => p.replace('/page-', '/%2e%2e/page-')],
+  ['backslash', p => p.replace('/page-', '\\page-')],
+  ['wrong static root', p => p.replace('/_next/static/', '/other/static/')],
+  ['double slash', p => p.replace('/chunks/', '/chunks//')],
+  ['short hash', p => p.replace('0123456789abcdef', '0123456789abcde')],
+  ['long hash', p => p.replace('0123456789abcdef', '0123456789abcdef0')],
+  ['uppercase hash', p => p.replace('abcdef', 'ABCDEF')],
+  ['nonhex hash', p => p.replace('abcdef', 'ghijkl')],
+  ['empty hash', p => p.replace('0123456789abcdef', '')],
+  ['secret hash', p => p.replace('0123456789abcdef', DIAGNOSTIC_CANARY)],
+  ['dotted filename', p => p.replace('page-', 'page.')],
+  ['wrong extension', p => p.replace('.js', '.css')],
+  ['source map', p => p + '.map'],
+  ['trailing segment', p => p + '/extra'],
+  ['trailing newline', p => p + '\n'],
+  ['trailing carriage return', p => p + '\r'],
+  ['trailing tab', p => p + '\t'],
+  ['trailing space', p => p + ' '],
+  ['bare query', p => p + '?'],
+  ['version query', p => p + '?v=' + DIAGNOSTIC_CANARY],
+  ['deployment query', p => p + '?dpl=' + DIAGNOSTIC_CANARY],
+  ['prefetch query', p => p + '?_rsc=' + DIAGNOSTIC_CANARY],
+  ['unknown query', p => p + '?' + DIAGNOSTIC_CANARY + '=hidden'],
+  ['bare fragment', p => p + '#'],
+  ['secret fragment', p => p + '#' + DIAGNOSTIC_CANARY],
+];
+for (const mode of [base, live]) for (const [name, mutate, reason = 'noncanonical URL'] of homeChunkFaults) {
+  test(`${mode.label} Home exception rejects ${name} after actual guard nominal`, async () => {
+    const policy = releasePaidPolicy(mode), { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+    assert.deepEqual(await context.send(request(policy, nominalHomeChunk, 'GET', 'script')), ['fetch', 'fulfill']);
+    const req = request(policy, mutate(nominalHomeChunk), 'GET', 'script');
+    assert.equal(classifyPaidRequest(policy, req), reason);
+    assert.deepEqual(await context.send(req), ['abort']);
+    assert.throws(() => guard.assertClean(), error => {
+      assert.match(error.message, /Paid read-only network boundary violated/);
+      assert.equal(error.actual.length, 1); assert.equal(error.actual[0].reason, reason);
+      assert.doesNotMatch(error.message + JSON.stringify(error.actual), new RegExp(DIAGNOSTIC_CANARY, 'i'));
+      assert.doesNotMatch(error.message, /https?:\/\/|\/_next\/|client\/|admin\//);
+      return true;
+    });
+  });
+}
+const homeRequestFaults = [
+  ['POST', req => ({ ...req, method: () => 'POST' }), 'non-GET'],
+  ['HEAD', req => ({ ...req, method: () => 'HEAD' }), 'non-GET'],
+  ['fetch resource', req => ({ ...req, resourceType: () => 'fetch' })],
+  ['document resource', req => ({ ...req, resourceType: () => 'document' })],
+  ['image resource', req => ({ ...req, resourceType: () => 'image' })],
+  ['script navigation', req => ({ ...req, isNavigationRequest: () => true })],
+  ['missing navigation value', req => ({ ...req, isNavigationRequest: () => undefined })],
+  ['null navigation value', req => ({ ...req, isNavigationRequest: () => null })],
+  ['zero navigation value', req => ({ ...req, isNavigationRequest: () => 0 })],
+  ['foreign host', req => ({ ...req, url: () => req.url().replace(/https?:\/\/[^/]+/, 'https://example.invalid') })],
+  ['wrong scheme', req => ({ ...req, url: () => req.url().replace(/^https?/, 'ftp') })],
+  ['userinfo', req => ({ ...req, url: () => req.url().replace('://', '://' + DIAGNOSTIC_CANARY + ':hidden@') })],
+  ['extra port', req => ({ ...req, url: () => req.url().replace('/_next/', ':3000/_next/') }), 'malformed URL'],
+  ['malformed URL', req => ({ ...req, url: () => DIAGNOSTIC_CANARY }), 'malformed URL'],
+];
+for (const mode of [base, live]) for (const [name, mutate, declaredReason = 'noncanonical URL'] of homeRequestFaults) {
+  test(`${mode.label} Home exception rejects ${name} request after nominal`, async () => {
+    const policy = releasePaidPolicy(mode), { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+    const nominal = request(policy, nominalHomeChunk, 'GET', 'script');
+    assert.deepEqual(await context.send(nominal), ['fetch', 'fulfill']);
+    const req = mutate(nominal);
+    const reason = name === 'extra port' && mode.label === 'live' ? 'noncanonical URL' : declaredReason;
+    assert.equal(classifyPaidRequest(policy, req), reason);
+    assert.deepEqual(await context.send(req), ['abort']);
+    assert.throws(() => guard.assertClean(), error => {
+      assert.match(error.message, name === 'POST' ? /attempted a POST/ : /network boundary violated/);
+      if (name !== 'POST') { assert.equal(error.actual.length, 1); assert.equal(error.actual[0].reason, reason); }
+      assert.doesNotMatch(error.message + JSON.stringify(error.actual), new RegExp(DIAGNOSTIC_CANARY, 'i'));
+      return true;
+    });
+  });
+}
+
+test('Home permission does not bypass redirect failure after nominal', async () => {
+  const policy = releasePaidPolicy(base), { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  const req = request(policy, nominalHomeChunk, 'GET', 'script');
+  assert.deepEqual(await context.send(req), ['fetch', 'fulfill']);
+  assert.deepEqual(await context.send(req, { status: 302 }), ['fetch', 'abort']);
+  assert.throws(() => guard.assertClean(), error => error.actual.length === 1 && error.actual[0] === 'redirect');
+});
+
+for (const mode of [base, live]) for (const method of ['isNavigationRequest', 'resourceType']) for (const fault of ['missing', 'throwing']) {
+  test(`${mode.label} Home ${fault} ${method} retains original guard abort/fatal after nominal`, async () => {
+    const policy = releasePaidPolicy(mode), { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+    const req = request(policy, nominalHomeChunk, 'GET', 'script');
+    assert.deepEqual(await context.send(req), ['fetch', 'fulfill']);
+    const broken = { ...req };
+    if (fault === 'missing') delete broken[method];
+    else broken[method] = () => { throw new Error(DIAGNOSTIC_CANARY); };
+    assert.deepEqual(await context.send(broken), ['abort']);
+    assert.equal(classifyPaidRequest(policy, broken), 'noncanonical URL');
+    assert.throws(() => guard.assertClean(), error => {
+      assert.match(error.message, /Paid read-only network boundary violated/);
+      assert.deepEqual(error.actual, ['noncanonical URL']);
+      assert.doesNotMatch(error.message, new RegExp(DIAGNOSTIC_CANARY));
+      return true;
+    });
+  });
+}
+
+test('Home permission does not bypass failed GET after nominal', async () => {
+  const policy = releasePaidPolicy(base), { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  const req = request(policy, nominalHomeChunk, 'GET', 'script');
+  assert.deepEqual(await context.send(req), ['fetch', 'fulfill']);
+  assert.deepEqual(await context.send(req, { fail: true }), ['fetch', 'abort']);
+  assert.throws(() => guard.assertClean(), error => error.actual.length === 1 && error.actual[0] === 'allowlisted GET failed');
+});
+
 // Only these current physical page files may receive a public diagnostic label.
 // This is not evidence that a request came from prefetch or from this build.
 const publicScriptSources = [
@@ -519,11 +686,11 @@ for (const [file, , name, marker] of publicScriptSources) test('diagnostic physi
   assert.throws(() => assertPublicScriptSource('', name, marker), /One physical public default page/);
 });
 
-test('diagnostic addition preserves exact classifier and guard execution blocks', () => {
+test('reviewed Home exception classifier and unchanged guard retain exact execution blocks', () => {
   const text = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
   const ast = ts.createSourceFile('guard.mjs', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const expected = {
-    classifyPaidRequest: '374db363c80abdf4193e0af508bae18b41bfd065d27a51b9ca54601e0b597346',
+    classifyPaidRequest: '0860c17a2cd0213fda1c23fe63c88e0521f0c6320755e9c439703776df73a439',
     installPaidReadOnlyGuard: '4e563df7b87afc886507f887bd6a7ff2b5d4f4b749216da57ae33e5195f852be',
   };
   for (const [name, digest] of Object.entries(expected)) {
@@ -531,14 +698,14 @@ test('diagnostic addition preserves exact classifier and guard execution blocks'
     assert.equal(declarations.length, 1);
     const block = declarations[0].getText(ast);
     const hash = value => createHash('sha256').update(value).digest('hex');
-    assert.equal(hash(block), digest, 'Original permission/abort/fatal block unchanged: ' + name);
+    assert.equal(hash(block), digest, 'Exact reviewed permission/unchanged abort/fatal block: ' + name);
     assert.notEqual(hash(block.replace(name, 'Mutated')), digest, 'Byte-identity control is active');
   }
 });
 
 for (const mode of [base, live]) for (const shape of scriptShapes) test(`${mode.label} finite ${shape.route}/${shape.brackets}/${shape.path.includes('/es/') ? 'es' : 'physical'} diagnostic preserves decision`, async () => {
   const policy = releasePaidPolicy(mode), req = request(policy, shape.path, 'GET', 'script');
-  const expectedReason = shape.brackets === 'none' || (shape.route === 'imagery' && shape.brackets === 'encoded-uppercase')
+  const expectedReason = shape.brackets === 'none' || (['home', 'imagery'].includes(shape.route) && shape.brackets === 'encoded-uppercase')
     ? null : shape.brackets === 'literal' ? 'unallowlisted public resource' : 'noncanonical URL';
   assert.equal(classifyPaidRequest(policy, req), expectedReason);
   assert.deepEqual(publicFields(deniedPaidRequestMetadata(policy, req)), { publicScriptRoute: shape.route, publicScriptBrackets: shape.brackets });
@@ -724,7 +891,7 @@ const chunkFaults = [
   ['admin route', p => p.replace('services/imagery-therapy', 'admin/clients')],
   ['API route', p => p.replace('services/imagery-therapy', 'api/service-enquiries')],
   ['linked route', p => p.replace('imagery-therapy', 'free-situation-review')],
-  ['sibling page', p => p.replace('/services/imagery-therapy', '')],
+  ['approved Home sibling', p => p.replace('/services/imagery-therapy', ''), null],
   ['invented layout', p => p.replace('/services/imagery-therapy/page-', '/layout-')],
   ['other variable', p => p.replace('locale', 'selector')],
   ['literal brackets', p => p.replace('%5Blocale%5D', '[locale]'), 'unallowlisted public resource'],
@@ -778,13 +945,19 @@ const imageFaults = [
   ...['&', '?', '#', '#fragment', '&v=1', '&dpl=1', '&_rsc=1'].map(suffix => ['suffix ' + suffix, p => p + suffix]),
 ];
 for (const [kind, path, type, faults] of [['chunk', nominalChunk, 'script', chunkFaults], ['portrait', nominalPortrait, 'image', imageFaults]]) {
-  for (const [name, mutate, reason = 'noncanonical URL'] of faults) test(`${kind} grammar rejects ${name} after nominal acceptance`, async () => {
+  for (const [name, mutate, reason = 'noncanonical URL'] of faults) test(`${kind} grammar ${reason === null ? 'permits reviewed' : 'rejects'} ${name} after nominal acceptance`, async () => {
     const policy = releasePaidPolicy(base), { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
     assert.deepEqual(await context.send(request(policy, path, 'GET', type)), ['fetch', 'fulfill']);
     const changed = mutate(path); assert.notEqual(changed, path);
     assert.equal(classifyPaidRequest(policy, request(policy, changed, 'GET', type)), reason);
-    assert.deepEqual(await context.send(request(policy, changed, 'GET', type)), ['abort']);
-    assert.throws(() => guard.assertClean(), /Paid read-only network boundary violated/);
+    if (reason === null) {
+      assert.equal(kind, 'chunk'); assert.equal(changed, nominalHomeChunk, 'Only newly approved Home moved from denial to acceptance');
+      assert.deepEqual(await context.send(request(policy, changed, 'GET', type)), ['fetch', 'fulfill']);
+      assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+    } else {
+      assert.deepEqual(await context.send(request(policy, changed, 'GET', type)), ['abort']);
+      assert.throws(() => guard.assertClean(), /Paid read-only network boundary violated/);
+    }
   });
   for (const [name, modify, reason] of [
     ['POST', req => ({ ...req, method: () => 'POST' }), 'non-GET'],
