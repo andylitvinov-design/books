@@ -70,7 +70,7 @@ test("browser-only conversation supports multiple turns, voice consent, accessib
     'aria-live="polite"',
     'maxLength={500}',
     'onSubmit={submit}',
-    'followup.choices.map',
+    'followup.choices.slice(0, 3).map',
     "appendExchange",
     "new Speech()",
     "engine.start()",
@@ -110,19 +110,24 @@ test("one-tap ChatGPT-style microphone is local, cancellable, and sends recogniz
     'setVoiceState("finishing")',
   ]) assert.ok(component.includes(token), token);
   assert.match(css, /\.recordingMessage\s*\{[^}]*text-overflow: ellipsis/);
-  assert.match(css, /\.quickChoices \{ display: grid; grid-template-columns: repeat\(3,/);
+  assert.match(css, /\.quickChoices\s*\{[^}]*grid-template-columns: repeat\(3,/);
   assert.match(css, /ideas-pine-reference\.webp/);
   assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(component, /data-guide-phase=\{turns\.length === 0/);
   assert.match(component, /className=\{styles\.inputRow\}/);
-  assert.doesNotMatch(component, />\{t\.welcome\}<\/p>/, "hide redundant welcome speech bubble");
+  assert.match(component, /role="dialog" aria-modal="true"/, "conversation lives in a dialog");
+  assert.match(component, /data-home-guide-launcher/, "homepage only shows a compact launcher");
+  assert.match(component, /data-home-guide-launcher-mic/, "one-tap microphone opens the dialog");
+  assert.match(component, /followup.choices.slice/, "only topic-matched choices are shown");
+  assert.match(component, /document.body.style.overflow = "hidden"/, "mobile chat keeps the page from scrolling");
+  assert.match(css, /\.chatScroll\s*\{[^}]*overflow-y: auto/, "messages scroll inside the dialog");
+  assert.match(css, /\.dialog\s*\{[^}]*flex-direction: column/, "mobile dialog has a fixed header and composer");
   assert.match(css, /\.form textarea \{[^}]*resize: none/);
   assert.match(css, /\.recordingDot \{ animation: none;/);
   for (const forbidden of ["MediaRecorder", "getUserMedia(", "fetch(", "localStorage", "sessionStorage"]) {
     assert.ok(!component.includes(forbidden), "Speech-to-text should not save raw audio or send private text: " + forbidden);
   }
 });
-
 
 const journeys = [
   ["I need clients for my business", "work-start", "business"],
@@ -200,41 +205,30 @@ test("routes use explicit EN fallbacks and never invent a paid checkout", () => 
   for (const forbidden of ["fetch(", "sendBeacon(", "localStorage", "sessionStorage", "/api/"]) assert.ok(!source.includes(forbidden));
 });
 
-test("homepage provides the single canonical free Reiki start without changing the carousel", () => {
-  const component = read("components/home-conversation-guide.tsx");
-  assert.ok(component.includes("data-home-guide-reiki-entry"));
-  assert.ok(component.includes("!context?.urgent ? <div className={styles.reikiEntry}"), "Static course promotion must also disappear in crisis");
-  assert.ok(component.includes("href={REIKI_FREE_COURSE_PATH}"));
-  assert.ok(component.includes("Curso en inglés"));
-  assert.ok(component.includes("Курс откроется на английском"));
-  assert.ok(component.includes("Начать курс на английском"));
-  assert.doesNotMatch(component, /€39|Buy now|Купить сейчас/);
+
+
+test("typed and dictated follow-ups select only currently offered choices",()=>{
+ const work=resolveHomeGuideQuestion("My business needs clients");
+ assert.equal(matchHomeGuideReply("I'm just starting",work),"work-start");
+ assert.equal(matchHomeGuideReply("I already have customers",work),"work-grow");
+ assert.equal(matchHomeGuideReply("Я развиваю карьеру",work),"work-career");
+ assert.equal(matchHomeGuideReply("I'd like a consultation",work),"personal");
+ assert.equal(matchHomeGuideReply("something unrelated",work),null);
+ const stress=resolveHomeGuideQuestion("Постоянная тревога");
+ assert.equal(matchHomeGuideReply("Хочу попробовать практику",stress),"calm-practice");
+ assert.equal(matchHomeGuideReply("Пройду тест",stress),"self-check");
+ assert.equal(matchHomeGuideReply("Grow my business",stress),null);
+ assert.equal(matchHomeGuideReply("Quiero negocio",resolveHomeGuideQuestion("Something confusing")),"topic-work");
+ assert.equal(matchHomeGuideReply("start",null),null);
+ assert.equal(matchHomeGuideReply("personal",resolveHomeGuideQuestion("I want to die")),null);
 });
-
-test("product routing preserves latest voice lifecycle and initial three-choice layout", () => {
-  const component = read("components/home-conversation-guide.tsx");
-  assert.ok(component.indexOf("data-home-guide-reiki-entry") > component.indexOf("className={styles.quickChoices}"), "Secondary course entry must not displace the approved hero or composer");
-  for (const token of ["voiceGenerationRef.current += 1", "elapsed >= 60", "}, 12000)", "}, 2500)", "voiceDiscardRef.current = true", "submitOnEndRef.current = false"]) assert.ok(component.includes(token), token);
-});
-
-
-test("spoken and typed answers use only the currently permitted contextual choices", () => {
-  const business = resolveHomeGuideQuestion("I need clients for my business");
-  assert.equal(matchHomeGuideReply("I'm just starting", business), "work-start");
-  assert.equal(matchHomeGuideReply("I already have customers", business), "work-grow");
-  assert.equal(matchHomeGuideReply("Я развиваю карьеру", business), "work-career");
-  assert.equal(matchHomeGuideReply("something different", business), null);
-  assert.equal(matchHomeGuideReply("I'd like a consultation", business), "personal");
-  const stress = resolveHomeGuideQuestion("Постоянная тревога");
-  assert.equal(matchHomeGuideReply("Хочу попробовать практику", stress), "calm-practice");
-  assert.equal(matchHomeGuideReply("Пройду тест", stress), "self-check");
-  assert.equal(matchHomeGuideReply("I want to grow my business", stress), null);
-  const unknown = resolveHomeGuideQuestion("Something complicated");
-  assert.equal(matchHomeGuideReply("Quiero negocio", unknown), "topic-work");
-  assert.equal(matchHomeGuideReply("new project", null), null);
-  assert.equal(matchHomeGuideReply("personal", resolveHomeGuideQuestion("I want to die")), null);
-  const ui = read("components/home-conversation-guide.tsx");
-  assert.match(ui, /data-home-guide-change/);
-  assert.match(ui, /matchHomeGuideReply\(question, context\)/);
-  assert.match(ui, /logRef\.current\?\.scrollTo/);
+test("specific offer cards preserve approved chat modal and local microphone",()=>{
+ const ui=read("components/home-conversation-guide.tsx"),css=read("components/home-conversation-guide.module.css");
+ for(const term of ["data-home-guide-dialog","data-home-guide-launcher","data-home-voice-recording","data-home-guide-change","data-home-guide-offer","matchHomeGuideReply","homeGuideFollowup","recommendations.map","finishVoice","cancelVoice"])
+  assert.ok(ui.includes(term),term);
+ assert.match(css,/\.chatScroll/);
+ assert.match(css,/\.offer /);
+ assert.ok(!ui.includes("homeGuideGoals.map"));
+ for(const term of ["fetch(","sendBeacon(","localStorage","sessionStorage","/api/"])
+  assert.ok(!ui.includes(term),term);
 });

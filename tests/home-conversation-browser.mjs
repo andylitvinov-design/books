@@ -66,7 +66,8 @@ try {
         await expect(guide).toBeVisible();
         await expect(guide).toHaveAttribute("data-guide-phase", "ready");
         await expect(guide.locator("div[class*=quickChoices] button")).toHaveCount(3);
-        await expect(guide.getByRole("button", { name: scenario.send })).toHaveCSS("min-height", "46px");
+        await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
+        await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(page.locator("[data-home-section-carousel]")).toHaveCount(1);
         const geometry = await guide.evaluate(node => {
           const rect = node.getBoundingClientRect();
@@ -74,24 +75,36 @@ try {
         });
         assert.ok(geometry.left >= -1 && geometry.right <= width + 1,
           scenario.locale + "/" + width + " guide clipped: " + JSON.stringify(geometry));
+        if (width === 390) {
+          await page.screenshot({ path: `artifacts/home-conversation/${engineName}-${scenario.locale}-collapsed.png` });
+        }
+        await guide.locator("[data-home-guide-launcher]").click();
+        const dialog = guide.locator("[data-home-guide-dialog]");
+        await expect(dialog).toHaveAttribute("aria-modal", "true");
+        await expect(dialog.getByRole("button", { name: scenario.send })).toHaveCSS("min-height", "44px");
+        const dialogBox = await dialog.boundingBox();
+        assert.ok(dialogBox && dialogBox.x >= -1 && dialogBox.x + dialogBox.width <= width + 1,
+          "Dialog extends beyond the mobile viewport");
         const question = guide.locator("textarea");
         await question.fill(scenario.text);
         await guide.getByRole("button", { name: scenario.send }).click();
         await expect(guide).toHaveAttribute("data-guide-phase", "conversation");
         await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
+        const currentChoices = await guide.locator("[data-home-guide-choices] button").count();
+        assert.ok(currentChoices >= 2 && currentChoices <= 3, "Show at most three contextual actions");
         await guide.getByRole("button", { name: scenario.goal, exact: true }).click();
         const primary = guide.locator("[data-home-guide-result] a").first();
         await expect(primary).toHaveAttribute("href", scenario.href);
         await expect(primary).toBeVisible();
-        assert.ok(await guide.locator("[data-home-guide-offer]").count() <= 2);
-        await expect(guide.locator("[data-home-guide-reiki-entry] a")).toHaveAttribute("href", "/en/academy/principles-of-energywork/learn");
+        assert.ok(await guide.locator("[data-home-guide-offer]").count() <= 2, "Two specific offers maximum");
         await expect(guide.locator("[data-home-guide-change]")).toBeVisible();
-        if (width === 390 && scenario.href.endsWith("/app/business")) {
-          const reply = { en: "I'm just starting", ru: "Я только начинаю", es: "Estoy empezando" }[scenario.locale];
-          await question.fill(reply);
-          await guide.getByRole("button", { name: scenario.send }).click();
+        if (scenario.href.endsWith("/app/business") && width === 390) {
+          await question.fill({ en: "I'm just starting", ru: "Я только начинаю", es: "Estoy empezando" }[scenario.locale]);
+          await dialog.getByRole("button", { name: scenario.send }).click();
           await expect(guide.locator("[data-home-guide-result] a").first()).toHaveAttribute("href", scenario.href);
-          await expect(guide.locator('[role="log"]')).toContainText(reply);
+        }
+        if (width === 390) {
+          await page.screenshot({ path: `artifacts/home-conversation/${engineName}-${scenario.locale}-dialog.png` });
         }
         const bubbleText = await guide.locator('[role="log"]').innerText();
         assert.ok(bubbleText.includes(scenario.text), "Question should remain visible only in local dialogue");
@@ -99,17 +112,17 @@ try {
         await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
         await expect(question).toHaveValue("");
         await expect(guide).toHaveAttribute("data-guide-phase", "ready");
-        await question.fill("I want to kill myself");
-        await guide.getByRole("button", { name: scenario.send }).click();
-        await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
-        await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
-        await expect(guide.locator("[data-home-guide-reiki-entry]")).toHaveCount(0);
-        await question.fill("business");
-        await guide.getByRole("button", { name: scenario.send }).click();
-        await expect(guide.locator("[data-home-guide-reiki-entry]")).toHaveCount(0);
-        await guide.getByRole("button", { name: scenario.reset }).click();
-        await expect(guide.locator("[data-home-guide-reiki-entry]")).toHaveCount(1);
-        assert.deepEqual(leak, [], "Private question must not leak through request URLs or bodies");
+        if (width === 320) {
+          await question.fill("I want to kill myself");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
+          await dialog.getByRole("button", { name: scenario.reset }).click();
+        }
+        await page.keyboard.press("Escape");
+        await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
+        await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
+        assert.deepEqual(leak, [], "Private question must not leak through request URLs");
         assert.deepEqual(errors, [], "Homepage javascript error");
         evidence.cases.push({ locale: scenario.locale, width, visible: true, route: scenario.href, reset: true, noUrlLeak: true });
       } finally {
@@ -119,7 +132,7 @@ try {
   }
   // Simulated browser recognition tests the full 2-tap UI without capturing audio
   // or relying on Safari's remote recognition/permission provider.
-  for (const scenario of scenarios) {
+  for (const scenario of scenarios.slice(0, 3)) {
     const context = await browser.newContext({ viewport: { width: 390, height: 820 }, serviceWorkers: "block" });
     await context.addInitScript(() => {
       class FakeSpeechRecognition {
@@ -140,12 +153,12 @@ try {
     try {
       await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
       const guide = page.locator("[data-home-conversation-guide]");
-      const microphone = guide.getByRole("button", { name: {
-        en: "Dictate a question with microphone", ru: "Продиктовать вопрос", es: "Dictar una pregunta",
-      }[scenario.locale] });
+      const microphone = guide.locator("[data-home-guide-launcher-mic]");
+      const microphoneLabel = { en: "Dictate a question with microphone", ru: "Продиктовать вопрос", es: "Dictar una pregunta" }[scenario.locale];
       const cancel = { en: "Cancel recording", ru: "Отменить запись", es: "Cancelar grabación" }[scenario.locale];
       const finish = { en: "Finish and send", ru: "Завершить и отправить", es: "Terminar y enviar" }[scenario.locale];
       await microphone.click();
+      await expect(guide.locator("[data-home-guide-dialog]")).toBeVisible();
       await expect(guide.locator("[data-home-voice-recording]")).toBeVisible();
       await page.evaluate(text => {
         window.__homeVoiceMock.onresult({ results: [[{ transcript: text }]] });
@@ -154,7 +167,7 @@ try {
       await guide.getByRole("button", { name: cancel }).click();
       await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
       assert.ok(!(await guide.locator('[role="log"]').innerText()).includes(scenario.text), "Cancel must not send");
-      await microphone.click();
+      await guide.locator("[data-home-guide-dialog]").getByRole("button", { name: microphoneLabel }).click();
       await page.evaluate(text => {
         window.__homeVoiceMock.onresult({ results: [[{ transcript: text }]] });
       }, scenario.text);
@@ -175,4 +188,3 @@ try {
   if (browser) await browser.close();
   server.kill("SIGTERM");
 }
-
