@@ -52,3 +52,12 @@ test("compact request comes right after the hero, above optional service detail"
   assert.ok(landing.includes('kind="dao"') === false || landing.includes("kind"));
   assert.ok(css.includes("@media(max-width:430px)"));
 });
+
+test("the explicit Spanish Wu Xing route reuses the one-contact landing", () => {
+  const spanish = read("app/es/services/dao-health-profile/page.tsx");
+  const localized = read("app/[locale]/services/dao-health-profile/page.tsx");
+  assert.ok(spanish.includes('<FreeEntryLanding locale="es" kind="dao" />'));
+  assert.ok(localized.includes('<FreeEntryLanding locale={locale} kind="dao" />'));
+  assert.doesNotMatch(spanish, /CoreServiceDetail|ContactChannelChooser/);
+  assert.match(spanish, /spanishMetadata/);
+});
