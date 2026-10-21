@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { releasePaidPolicy, classifyPaidRequest, deniedPaidRequestMetadata, installPaidReadOnlyGuard, expectedPaidForm, readPaidForm, assertPaidFormSnapshot, verifyPaidEnquiryUi, verifyReleasePaidEnquiry } from '../scripts/helpers/release-paid-enquiry-verifier.mjs';
+import { releasePaidPolicy, classifyPaidRequest, deniedPaidRequestMetadata, deniedPaidFetchMetadata, installPaidReadOnlyGuard, expectedPaidForm, readPaidForm, assertPaidFormSnapshot, verifyPaidEnquiryUi, verifyReleasePaidEnquiry } from '../scripts/helpers/release-paid-enquiry-verifier.mjs';
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from '../lib/whatsapp-enquiry.js';
 import ts from 'typescript';
 import { PHONE_COUNTRIES, phoneCountryFromValue, phoneNationalPart, composeCountryPhone } from '../lib/contact/phone-country.js';
@@ -392,6 +392,179 @@ test('Release caller retains matrix, explicit label, and no unsafe helper or run
 // These synthetic canaries model sensitive input. Neither values nor unknown
 // key strings may reach a guard assertion; only the approved bounded metadata.
 const DIAGNOSTIC_CANARY = 'SYNTHETIC_SECRET_MUST_NOT_APPEAR';
+const fetchDiagnosticKeys = ['publicFetchDestination', 'nextRouterPrefetch', 'rscQueryKeyCount'];
+const fetchFields = row => Object.fromEntries(fetchDiagnosticKeys.filter(key => Object.hasOwn(row, key)).map(key => [key, row[key]]));
+const unknownFetch = count => ({ publicFetchDestination: 'unknown', nextRouterPrefetch: 'unavailable', rscQueryKeyCount: count });
+function diagnosticFetch(policy, path = '/' + policy.locale + '/services', suffix = '?_rsc=' + DIAGNOSTIC_CANARY, marker = '1') {
+  const calls = { named: [], forbidden: 0 };
+  const forbidden = () => { calls.forbidden++; throw new Error(DIAGNOSTIC_CANARY); };
+  return { calls, req: { ...request(policy, path + suffix, 'GET', 'fetch'),
+    async headerValue(name) { calls.named.push(name); return marker; },
+    headers: forbidden, allHeaders: forbidden, postData: forbidden } };
+}
+async function observeDeniedFetch(policy, req) {
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  const reason = classifyPaidRequest(policy, req); assert.notEqual(reason, null);
+  assert.deepEqual(await context.send(req), ['abort']);
+  let diagnostic;
+  assert.throws(() => guard.assertClean(), error => {
+    assert.match(error.message, /Paid read-only network boundary violated/);
+    assert.equal(error.actual.length, 1); diagnostic = error.actual[0]; assert.equal(diagnostic.reason, reason);
+    assert.deepEqual(Object.keys(diagnostic), ['reason', ...metadataKeys, ...(req.resourceType() === 'fetch' ? fetchDiagnosticKeys : [])]);
+    assert.doesNotMatch(error.message + JSON.stringify(error.actual), new RegExp(DIAGNOSTIC_CANARY, 'i'));
+    assert.doesNotMatch(error.message, /https?:\/\/|\/_next\/|\/api\/|\/client\//);
+    return true;
+  });
+  return diagnostic;
+}
+async function nominalFetchDiagnostic(policy) {
+  const { req, calls } = diagnosticFetch(policy);
+  const row = await observeDeniedFetch(policy, req);
+  assert.deepEqual(fetchFields(row), { publicFetchDestination: 'services', nextRouterPrefetch: 'one', rscQueryKeyCount: 1 });
+  assert.deepEqual(calls, { named: ['next-router-prefetch'], forbidden: 0 });
+}
+function directLinkProps(text) {
+  const ast = ts.createSourceFile('public.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX), links = [];
+  function visit(node) {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(ast) === 'Link') {
+      const attrs = node.attributes.properties;
+      links.push({ href: attrs.find(a => ts.isJsxAttribute(a) && a.name.text === 'href')?.initializer?.getText(ast),
+        prefetch: attrs.find(a => ts.isJsxAttribute(a) && a.name.text === 'prefetch')?.initializer?.getText(ast) });
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(ast); return links;
+}
+for (const [file, hrefs] of [
+  ['components/personal-service-landing.tsx', ['{`/${locale}/services`}', '{`/${locale}/services/free-situation-review`}', '{`/${locale}/services/free-situation-review`}']],
+  ['components/public-site-header.tsx', ['{locale === "es" ? "/es" : "/"}']],
+  ['components/commerce/cart-nav-link.tsx', ['{`/${locale}/cart`}']],
+]) test('finite fetch destinations bind to actual public Link source: ' + file, () => {
+  const text = read(file), expected = hrefs.map(href => ({ href, prefetch: undefined }));
+  assert.deepEqual(directLinkProps(text), expected);
+  assert.notDeepEqual(directLinkProps(text.replace('href=', 'prefetch={false} href=')), expected);
+  assert.notDeepEqual(directLinkProps(text.replaceAll('<Link', '<a').replaceAll('</Link>', '</a>')), expected);
+});
+
+for (const mode of [base, live]) for (const locale of ['en', 'ru', 'es']) for (const destination of ['home', 'services', 'free-review', 'cart']) {
+  test(`${mode.label}/${locale} finite ${destination} fetch diagnostic never authorizes request`, async () => {
+    const policy = releasePaidPolicy({ ...mode, locale }); await nominalFetchDiagnostic(policy);
+    const path = destination === 'home' ? locale === 'es' ? '/es' : '/' : '/' + locale + '/' + (destination === 'free-review' ? 'services/free-situation-review' : destination);
+    const { req, calls } = diagnosticFetch(policy, path);
+    if (destination === 'cart') req.headerValue = () => { calls.named.push('FORBIDDEN'); throw new Error(DIAGNOSTIC_CANARY); };
+    const row = await observeDeniedFetch(policy, req);
+    assert.deepEqual(fetchFields(row), { publicFetchDestination: destination, nextRouterPrefetch: destination === 'cart' ? 'unavailable' : 'one', rscQueryKeyCount: 1 });
+    assert.deepEqual(calls, { named: destination === 'cart' ? [] : ['next-router-prefetch'], forbidden: 0 });
+    assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL');
+  });
+}
+const fetchPathFaults = [
+  ['private', p => '/en/client/records'], ['API', p => '/api/service-enquiries'], ['admin', p => '/admin/clients'],
+  ['unknown public', p => '/en/unknown'], ['cross-locale Services', p => '/ru/services'],
+  ['cross-locale free review', p => '/ru/services/free-situation-review'], ['cross-locale cart', p => '/ru/cart'],
+  ['unlinked Russian Home', p => '/ru'], ['unlinked English Home', p => '/en'],
+  ['cart prefix', p => '/en/cart/extra'], ['cart lookalike', p => '/en/cartoon'],
+  ['wrong case', p => p.replace('services', 'Services')], ['trailing slash', p => p + '/'],
+  ['encoded path', p => p.replace('services', '%73ervices')], ['dot normalization', p => '/en/x/../services'],
+  ['backslash', p => '/en\\services'], ['double slash', p => '/en//services'], ['secret path', p => '/' + DIAGNOSTIC_CANARY],
+];
+for (const mode of [base, live]) for (const [name, mutate] of fetchPathFaults) test(`${mode.label} unknown ${name} fetch does not read headers after nominal`, async () => {
+  const policy = releasePaidPolicy(mode); await nominalFetchDiagnostic(policy);
+  const { req, calls } = diagnosticFetch(policy, mutate('/en/services'));
+  req.headerValue = () => { calls.named.push('FORBIDDEN'); throw new Error(DIAGNOSTIC_CANARY); };
+  const row = await observeDeniedFetch(policy, req);
+  assert.deepEqual(fetchFields(row), unknownFetch(1)); assert.deepEqual(calls, { named: [], forbidden: 0 });
+});
+const fetchSuffixFaults = [
+  ['unknown key', '?_rsc=' + DIAGNOSTIC_CANARY + '&private=' + DIAGNOSTIC_CANARY, 1],
+  ['known non-RSC key', '?_rsc=x&v=' + DIAGNOSTIC_CANARY, 1],
+  ['case key', '?_RSC=' + DIAGNOSTIC_CANARY, 0], ['encoded key', '?%5Frsc=' + DIAGNOSTIC_CANARY, 1],
+  ['no key', '', 0], ['bare query', '?', 0], ['fragment', '?_rsc=x#' + DIAGNOSTIC_CANARY, 1],
+  ['bare fragment', '?_rsc=x#', 1], ['percent value', '?_rsc=%41', 1], ['backslash value', '?_rsc=\\hidden', 1],
+];
+for (const [name, suffix, count] of fetchSuffixFaults) test('unsafe fetch query shape ' + name + ' remains unknown/fatal after nominal', async () => {
+  const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
+  const { req, calls } = diagnosticFetch(policy, '/en/services', suffix);
+  const row = await observeDeniedFetch(policy, req); assert.deepEqual(fetchFields(row), unknownFetch(count));
+  assert.deepEqual(calls, { named: [], forbidden: 0 });
+});
+for (const [name, marker, expected] of [['absent', null, 'absent'], ['one', '1', 'one'], ['other', DIAGNOSTIC_CANARY, 'other'], ['unsupported', undefined, 'unavailable'], ['number', 1, 'unavailable']]) {
+  test('named prefetch marker projects only enum ' + name + ' and still aborts', async () => {
+    const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
+    const { req, calls } = diagnosticFetch(policy, '/en/services', '?_rsc=' + DIAGNOSTIC_CANARY, marker);
+    if (name === 'unsupported') req.headerValue = async key => { calls.named.push(key); return undefined; };
+    const row = await observeDeniedFetch(policy, req);
+    assert.deepEqual(fetchFields(row), { publicFetchDestination: 'services', nextRouterPrefetch: expected, rscQueryKeyCount: 1 });
+    assert.deepEqual(calls, { named: ['next-router-prefetch'], forbidden: 0 });
+  });
+}
+test('duplicate RSC keys are counted with a cap without exposing values or authorization', async () => {
+  const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
+  for (const count of [2, 101]) {
+    const { req } = diagnosticFetch(policy, '/en/services', '?' + Array.from({ length: count }, () => '_rsc=' + DIAGNOSTIC_CANARY).join('&'));
+    const row = await observeDeniedFetch(policy, req);
+    assert.deepEqual(fetchFields(row), { publicFetchDestination: 'services', nextRouterPrefetch: 'one', rscQueryKeyCount: Math.min(100, count) });
+  }
+});
+for (const [name, modify, expected = unknownFetch(1)] of [
+  ['HEAD', req => ({ ...req, method: () => 'HEAD' })],
+  ['navigation', req => ({ ...req, isNavigationRequest: () => true })],
+  ['missing navigation value', req => ({ ...req, isNavigationRequest: () => undefined })],
+  ['missing navigation method', req => { const next = { ...req }; delete next.isNavigationRequest; return next; }],
+  ['throwing navigation method', req => ({ ...req, isNavigationRequest: () => { throw new Error(DIAGNOSTIC_CANARY); } })],
+  ['external', req => ({ ...req, url: () => req.url().replace(base.origin, 'https://example.invalid') })],
+  ['userinfo', req => ({ ...req, url: () => req.url().replace('://', '://' + DIAGNOSTIC_CANARY + '@') })],
+  ['wrong type', req => ({ ...req, resourceType: () => 'script' }), {}],
+  ['malformed URL', req => ({ ...req, url: () => DIAGNOSTIC_CANARY }), unknownFetch(0)],
+]) test('ineligible fetch metadata ' + name + ' never reads named or bulk headers', async () => {
+  const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
+  const { req, calls } = diagnosticFetch(policy); const row = await observeDeniedFetch(policy, modify(req));
+  assert.deepEqual(fetchFields(row), expected); assert.deepEqual(calls, { named: [], forbidden: 0 });
+});
+
+test('POST fetch remains aborted and fails the original POST assertion without header reads', async () => {
+  const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
+  const { req, calls } = diagnosticFetch(policy); req.method = () => 'POST';
+  assert.deepEqual(await deniedPaidFetchMetadata(policy, req), unknownFetch(1));
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  assert.deepEqual(await context.send(req), ['abort']);
+  assert.throws(() => guard.assertClean(), /Paid read-only audit attempted a POST/);
+  assert.deepEqual(calls, { named: [], forbidden: 0 });
+});
+
+for (const fault of ['missing', 'throwing', 'rejected', 'hanging', 'late rejection']) test('bounded named-header ' + fault + ' preserves abort/fatal and cleans timer', async t => {
+  const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy);
+  const { req } = diagnosticFetch(policy); let lateReject;
+  if (fault === 'missing') delete req.headerValue;
+  else if (fault === 'throwing') req.headerValue = () => { throw new Error(DIAGNOSTIC_CANARY); };
+  else if (fault === 'rejected') req.headerValue = () => Promise.reject(new Error(DIAGNOSTIC_CANARY));
+  else req.headerValue = () => new Promise((resolve, reject) => { lateReject = reject; });
+  const originalSet = globalThis.setTimeout, originalClear = globalThis.clearTimeout;
+  const pending = new Set(); let scheduled = 0, cleared = 0;
+  t.mock.method(globalThis, 'setTimeout', (fn, ms, ...args) => {
+    assert.equal(ms, 250); scheduled++;
+    const timer = originalSet(() => { pending.delete(timer); fn(...args); }, ms); pending.add(timer); return timer;
+  });
+  t.mock.method(globalThis, 'clearTimeout', timer => { cleared++; pending.delete(timer); return originalClear(timer); });
+  const unhandled = []; const onUnhandled = error => unhandled.push(error); process.on('unhandledRejection', onUnhandled);
+  try {
+    const row = await observeDeniedFetch(policy, req);
+    assert.deepEqual(fetchFields(row), { publicFetchDestination: 'services', nextRouterPrefetch: 'unavailable', rscQueryKeyCount: 1 });
+    if (fault === 'late rejection') { lateReject(new Error(DIAGNOSTIC_CANARY)); await new Promise(resolve => setImmediate(resolve)); }
+    assert.equal(scheduled, 1); assert.equal(cleared, 1); assert.equal(pending.size, 0); assert.deepEqual(unhandled, []);
+  } finally { process.removeListener('unhandledRejection', onUnhandled); t.mock.restoreAll(); }
+});
+
+test('successful named-header diagnostic clears timer while preserving original denial', async t => {
+  const policy = releasePaidPolicy(base); await nominalFetchDiagnostic(policy); const { req } = diagnosticFetch(policy);
+  const originalSet = globalThis.setTimeout, originalClear = globalThis.clearTimeout; const pending = new Set(); let scheduled = 0, cleared = 0;
+  t.mock.method(globalThis, 'setTimeout', (fn, ms) => { assert.equal(ms, 250); scheduled++; const timer = originalSet(fn, ms); pending.add(timer); return timer; });
+  t.mock.method(globalThis, 'clearTimeout', timer => { cleared++; pending.delete(timer); return originalClear(timer); });
+  try { const row = await observeDeniedFetch(policy, req); assert.equal(row.nextRouterPrefetch, 'one'); assert.equal(scheduled, 1); assert.equal(cleared, 1); assert.equal(pending.size, 0); }
+  finally { t.mock.restoreAll(); }
+});
 const metadataKeys = ['resourceType', 'sameOrigin', 'pathClass', 'knownQueryKeys', 'unknownQueryKeyCount', 'hasPercent', 'hasBackslash', 'hasHash', 'hasUserinfo', 'publicScriptRoute', 'publicScriptBrackets'];
 test('denied metadata reports only approved schema and never makes a query allowable', () => {
   const policy = releasePaidPolicy(base);
@@ -686,19 +859,19 @@ for (const [file, , name, marker] of publicScriptSources) test('diagnostic physi
   assert.throws(() => assertPublicScriptSource('', name, marker), /One physical public default page/);
 });
 
-test('reviewed Home exception classifier and unchanged guard retain exact execution blocks', () => {
+test('reviewed classifier and diagnostic-await guard retain exact execution blocks', () => {
   const text = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
   const ast = ts.createSourceFile('guard.mjs', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const expected = {
     classifyPaidRequest: '0860c17a2cd0213fda1c23fe63c88e0521f0c6320755e9c439703776df73a439',
-    installPaidReadOnlyGuard: '4e563df7b87afc886507f887bd6a7ff2b5d4f4b749216da57ae33e5195f852be',
+    installPaidReadOnlyGuard: '576693264830d83aee5aa7da8a3bb6222e04f8d156368fb66d32e41c93ffd76d',
   };
   for (const [name, digest] of Object.entries(expected)) {
     const declarations = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
     assert.equal(declarations.length, 1);
     const block = declarations[0].getText(ast);
     const hash = value => createHash('sha256').update(value).digest('hex');
-    assert.equal(hash(block), digest, 'Exact reviewed permission/unchanged abort/fatal block: ' + name);
+    assert.equal(hash(block), digest, 'Exact reviewed permission/diagnostic-await block: ' + name);
     assert.notEqual(hash(block.replace(name, 'Mutated')), digest, 'Byte-identity control is active');
   }
 });

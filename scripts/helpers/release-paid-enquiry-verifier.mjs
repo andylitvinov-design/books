@@ -102,6 +102,44 @@ export function deniedPaidRequestMetadata(policy, request) {
   };
 }
 
+// Diagnostic only: exact source-linked destinations, never a fetch permission.
+// Read one named, nonsecret marker only for the three eligible public families.
+export async function deniedPaidFetchMetadata(policy, request) {
+  const result = { publicFetchDestination: 'unknown', nextRouterPrefetch: 'unavailable', rscQueryKeyCount: 0 };
+  let raw, url;
+  try {
+    if (request.resourceType() !== 'fetch') return {};
+    raw = request.url(); url = new URL(raw);
+    let onlyRsc = true;
+    for (const key of url.searchParams.keys()) {
+      if (key === '_rsc') result.rscQueryKeyCount = Math.min(100, result.rscQueryKeyCount + 1);
+      else onlyRsc = false;
+    }
+    if (request.method() !== 'GET' || request.isNavigationRequest() !== false
+      || url.origin !== policy.origin || raw !== policy.origin + url.pathname + url.search
+      || url.href !== raw || url.username || url.password || url.hash || /%|\\/.test(raw)
+      || !onlyRsc || result.rscQueryKeyCount === 0) return result;
+    const home = policy.locale === 'es' ? '/es' : '/';
+    if (url.pathname === home) result.publicFetchDestination = 'home';
+    else if (url.pathname === '/' + policy.locale + '/services') result.publicFetchDestination = 'services';
+    else if (url.pathname === '/' + policy.locale + '/services/free-situation-review') result.publicFetchDestination = 'free-review';
+    else if (url.pathname === '/' + policy.locale + '/cart') result.publicFetchDestination = 'cart';
+  } catch { return result; }
+  // A cart Link is source-proven, but cart state and headers are not in scope.
+  if (!['home', 'services', 'free-review'].includes(result.publicFetchDestination)) return result;
+  let timer;
+  try {
+    result.nextRouterPrefetch = await Promise.race([
+      Promise.resolve().then(() => request.headerValue('next-router-prefetch')).then(
+        value => value === null ? 'absent' : value === '1' ? 'one' : typeof value === 'string' ? 'other' : 'unavailable',
+        () => 'unavailable',
+      ),
+      new Promise(resolve => { timer = setTimeout(() => resolve('unavailable'), 250); }),
+    ]);
+  } finally { clearTimeout(timer); }
+  return result;
+}
+
 export async function installPaidReadOnlyGuard(context, policy) {
   const violations = [];
   const pending = new Set();
@@ -119,7 +157,7 @@ export async function installPaidReadOnlyGuard(context, policy) {
     const denied = classifyPaidRequest(policy, request);
     if (denied) {
       let diagnostic = denied;
-      try { diagnostic = { reason: denied, ...deniedPaidRequestMetadata(policy, request) }; }
+      try { diagnostic = { reason: denied, ...deniedPaidRequestMetadata(policy, request), ...await deniedPaidFetchMetadata(policy, request) }; }
       catch { /* Metadata must never interrupt the original record/abort path. */ }
       record(diagnostic); await abort(route); return;
     }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { servicesStudioContract } from './helpers/services-studio-contract.mjs'
 
 import {
   ACQUISITION_EVENTS,
@@ -40,14 +41,36 @@ test('acquisition events are an allowlist and never describe personal or assessm
   assert.doesNotMatch(JSON.stringify(ACQUISITION_EVENTS), /answer|score|email|name|health/i)
 })
 
-test('public Home and Services use four shared offers without exposing private answers', () => {
+test('public Home and Services use four shared offers without exposing private answers', async () => {
   const home = readFileSync(new URL('../components/holistic-house-home.tsx', import.meta.url), 'utf8');
   const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8');
   const ui = readFileSync(new URL('../components/services-solutions.tsx', import.meta.url), 'utf8');
   const offers = readFileSync(new URL('../data/core-service-offers.ts', import.meta.url), 'utf8');
   assert.match(home, /LOCAL_ACQUISITION/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home"/);
-  assert.match(services, /<ServicesSolutions locale=/);
+  const sharedRoutes = {
+    situation: 'free-situation-review',
+    dao: 'dao-health-profile',
+    alchemy: 'alchemy-of-soul',
+    hypnotherapy: 'hypnotherapy-course',
+  };
+  for (const locale of ['en', 'ru']) {
+    const view = await servicesStudioContract(locale);
+    assert.deepEqual([...view.homeIds].sort(), Object.keys(sharedRoutes).sort(), locale + ': Home retains exactly the four shared offers');
+    for (const [id, route] of Object.entries(sharedRoutes)) {
+      const href = '/' + locale + '/services/' + route;
+      const core = view.core.filter(offer => offer.id === id);
+      assert.equal(core.length, 1, locale + ': shared core offer exists once: ' + id);
+      assert.equal(core[0].href, href, locale + ': shared core route remains unchanged: ' + id);
+      const cards = view.cards.filter(card => card.props['data-services-studio-card'] === id);
+      assert.equal(cards.length, 1, locale + ': shared Services offer exists once: ' + id);
+      assert.equal(cards[0].props.hidden, false, locale + ': shared offer is visible by default: ' + id);
+      assert.equal(view.isVisible(cards[0]), true, locale + ': no hidden ancestor conceals shared offer: ' + id);
+      const links = view.descendants(cards[0]).filter(node => node.type === 'a');
+      assert.ok(links.length >= 3, locale + ': shared offer keeps photo, title and details destinations: ' + id);
+      for (const link of links) assert.equal(link.props.href, href, locale + ': shared offer keeps its localized destination: ' + id);
+    }
+  }
   assert.doesNotMatch(services, /<CatalogShowcase/);
   assert.match(ui, /coreServiceOffers\(locale\)/);
   assert.match(offers, /dao-health-profile/);
