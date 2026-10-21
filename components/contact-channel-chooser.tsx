@@ -23,8 +23,13 @@ const copy = {
     description: "Add a short note (optional)",
     placeholder: "Any practical questions? You can leave this blank.",
     name: "Your name", email: "Email", phone: "Phone / WhatsApp",
-    contactHelp: "Add an email address, a phone number or both. No account needed.",
-    contactError: "Enter your name and a valid email or international phone number.",
+    contactHelp: "Choose one way to receive a personal reply. No account needed.",
+    contactError: "Enter a valid email or international phone number.",
+    google: "Continue with Google", googleBusy: "Connecting Google…",
+    googleReady: "Google details added. Please confirm your request.",
+    googleError: "Google sign-in is unavailable. You can leave a contact without an account.",
+    divider: "or without an account", replyVia: "How should Andrey reply?",
+    nameOptional: "Add your name (optional)", privacy: "How we use your details",
     consent: "I agree to be contacted personally about this enquiry only. No marketing subscription.",
     submit: "Register my request",
     sending: "Saving request…",
@@ -44,8 +49,13 @@ const copy = {
     description: "Добавить комментарий (необязательно)",
     placeholder: "Дополнительные вопросы? Можно оставить пустым.",
     name: "Ваше имя", email: "Электронная почта", phone: "Телефон / WhatsApp",
-    contactHelp: "Укажите почту, телефон или оба контакта. Регистрация аккаунта не нужна.",
-    contactError: "Укажите имя и действительный email или телефон в международном формате.",
+    contactHelp: "Выберите один удобный способ для личного ответа. Аккаунт не нужен.",
+    contactError: "Введите правильный email или телефон с международным кодом.",
+    google: "Продолжить с Google", googleBusy: "Подключаем Google…",
+    googleReady: "Контакт Google добавлен. Подтвердите отправку заявки.",
+    googleError: "Вход через Google недоступен. Можно оставить контакт без аккаунта.",
+    divider: "или без аккаунта", replyVia: "Как вам ответить?",
+    nameOptional: "Добавить имя (необязательно)", privacy: "Как используются ваши данные",
     consent: "Согласен(на) на личный ответ по этой заявке. На рекламную рассылку не подписываюсь.",
     submit: "Оставить заявку",
     sending: "Сохраняем заявку…",
@@ -65,8 +75,13 @@ const copy = {
     description: "Añadir una nota (opcional)",
     placeholder: "¿Alguna pregunta práctica? Puedes dejarlo en blanco.",
     name: "Tu nombre", email: "Correo electrónico", phone: "Teléfono / WhatsApp",
-    contactHelp: "Deja tu email, teléfono o ambos. No necesitas crear una cuenta.",
-    contactError: "Introduce tu nombre y un correo o teléfono internacional válido.",
+    contactHelp: "Elige un medio para recibir una respuesta personal. No necesitas cuenta.",
+    contactError: "Introduce un correo válido o teléfono con prefijo internacional.",
+    google: "Continuar con Google", googleBusy: "Conectando Google…",
+    googleReady: "Datos de Google añadidos. Confirma tu solicitud.",
+    googleError: "Google no está disponible. Puedes dejar tu contacto sin cuenta.",
+    divider: "o sin crear una cuenta", replyVia: "¿Cómo prefieres recibir la respuesta?",
+    nameOptional: "Añadir tu nombre (opcional)", privacy: "Cómo usamos tus datos",
     consent: "Acepto que me contacten solamente sobre esta solicitud. No me suscribo a publicidad.",
     submit: "Registrar mi solicitud",
     sending: "Guardando solicitud…",
@@ -102,6 +117,9 @@ export function ContactChannelChooser({
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [method, setMethod] = useState<"email" | "phone">("email");
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
@@ -138,6 +156,8 @@ export function ContactChannelChooser({
     setOpen(false);
     setDescription("");
     setDisplayName("");
+    setMethod("email");
+    setGoogleReady(false);
     setEmail("");
     setPhone("");
     setConsent(false);
@@ -168,12 +188,69 @@ export function ContactChannelChooser({
     .find(line => /^(?:Service|Услуга|Servicio):\s*/i.test(line))
     ?.replace(/^[^:]+:\s*/, "").trim() || "Holistic House service";
 
+  // A same-tab OAuth return uses only non-sensitive, public service identity in
+  // sessionStorage; never save entered contacts, private notes or tokens there.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("hh_enquiry") !== "google") return;
+    let pending: { path?: string; service?: string; panel?: string } | null = null;
+    try {
+      pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
+    } catch { /* A blocked or malformed temporary marker never creates a lead. */ }
+    if (pending?.path !== pathname || pending.service !== serviceTitle || pending.panel !== panelId) return;
+    window.sessionStorage.removeItem("hh-google-enquiry-return");
+    url.searchParams.delete("hh_enquiry");
+    const authError = url.searchParams.has("auth");
+    url.searchParams.delete("auth");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    setOpen(true);
+    if (authError) { setError(c.googleError); return; }
+    let active = true;
+    fetch("/api/app/auth/contact-profile", { method: "GET", credentials: "same-origin", cache: "no-store" })
+      .then(response => response.ok ? response.json() : Promise.reject(new Error("NOT_SIGNED_IN")))
+      .then(profile => {
+        if (!active) return;
+        const nextEmail = typeof profile.email === "string" ? profile.email.trim() : "";
+        const nextName = typeof profile.displayName === "string" ? profile.displayName.trim() : "";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) throw new Error("NO_EMAIL");
+        setEmail(nextEmail);
+        if (nextName.length >= 2 && nextName.length <= 120) setDisplayName(nextName);
+        setMethod("email");
+        setGoogleReady(true);
+        setError("");
+      }).catch(() => { if (active) setError(c.googleError); });
+    return () => { active = false; };
+  }, [pathname, serviceTitle, panelId, c.googleError]);
+
+  async function startGoogle() {
+    if (googleBusy || busy) return;
+    setGoogleBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/app/auth/start", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale, continueTo: "enquiry", returnPath: pathname }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || typeof data.redirectUrl !== "string" ||
+          new URL(data.redirectUrl).protocol !== "https:") throw new Error("GOOGLE_UNAVAILABLE");
+      window.sessionStorage.setItem("hh-google-enquiry-return",
+        JSON.stringify({ path: pathname, service: serviceTitle, panel: panelId }));
+      window.location.assign(data.redirectUrl);
+    } catch {
+      window.sessionStorage.removeItem("hh-google-enquiry-return");
+      setGoogleBusy(false);
+      setError(c.googleError);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || saved) return;
     const cleanedPhone = phone.replace(/[\s().-]/g, "");
-    if (displayName.trim().length < 2 || (!email.trim() && !cleanedPhone) ||
-      (cleanedPhone && !/^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
+    if ((method === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
+      (method === "phone" && ! /^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
       setError(c.contactError);
       return;
     }
@@ -188,7 +265,7 @@ export function ContactChannelChooser({
         body: JSON.stringify({
           operationId: nextId, serviceTitle, description: description.trim(),
           sourcePath: pathname, locale,
-          contact: { displayName: displayName.trim(), email: email.trim(), phone: cleanedPhone },
+          contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
           contactConsent: consent, website,
         }),
       });
@@ -226,27 +303,50 @@ export function ContactChannelChooser({
         <p className={styles.question}>{saved ? c.messengers : c.question}</p>
         {!saved ? (
           <form onSubmit={submit} className={styles.enquiryForm}>
+            <button type="button" className={styles.googleButton} onClick={startGoogle}
+              disabled={busy || googleBusy} aria-label={c.google}>
+              <span className={styles.googleMark} aria-hidden="true">G</span>
+              {googleBusy ? c.googleBusy : c.google}
+            </button>
+            {googleReady && <p className={styles.googleReady} role="status">{c.googleReady}</p>}
+            <p className={styles.separator}><span>{c.divider}</span></p>
+            <div className={styles.methodChoices} role="group" aria-label={c.replyVia}>
+              <button type="button" aria-pressed={method === "email"} disabled={busy || googleBusy}
+                onClick={() => { setMethod("email"); setError(""); operationId.current = null; }}>
+                {c.email}
+              </button>
+              <button type="button" aria-pressed={method === "phone"} disabled={busy || googleBusy}
+                onClick={() => { setMethod("phone"); setError(""); operationId.current = null; }}>
+                {c.phone}
+              </button>
+            </div>
             <div className={styles.contactFields}>
-              <label>{c.name} *
-                <input type="text" autoComplete="name" required minLength={2} maxLength={120}
-                  disabled={busy} value={displayName} onChange={event => {
+              {method === "email" ? (
+                <label>{c.email}
+                  <input type="email" autoComplete="email" maxLength={254} required disabled={busy || googleBusy}
+                    value={email} onChange={event => {
+                      setEmail(event.target.value); setError(""); operationId.current = null;
+                    }} />
+                </label>
+              ) : (
+                <div className={styles.phoneField}>
+                  <label htmlFor={panelId + "-phone"}>{c.phone}</label>
+                  <PhoneCountryInput id={panelId + "-phone"} locale={locale} required
+                    disabled={busy || googleBusy} value={phone} onChange={value => {
+                      setPhone(value); setError(""); operationId.current = null;
+                    }} />
+                </div>
+              )}
+            </div>
+            <details className={styles.optionalName}>
+              <summary>{c.nameOptional}</summary>
+              <label>{c.name}
+                <input type="text" autoComplete="name" minLength={2} maxLength={120}
+                  disabled={busy || googleBusy} value={displayName} onChange={event => {
                     setDisplayName(event.target.value); setError(""); operationId.current = null;
                   }} />
               </label>
-              <label>{c.email}
-                <input type="email" autoComplete="email" maxLength={254} disabled={busy}
-                  value={email} onChange={event => {
-                    setEmail(event.target.value); setError(""); operationId.current = null;
-                  }} />
-              </label>
-              <div className={styles.phoneField}>
-                <label htmlFor={panelId + "-phone"}>{c.phone}</label>
-                <PhoneCountryInput id={panelId + "-phone"} locale={locale}
-                  disabled={busy} value={phone} onChange={value => {
-                    setPhone(value); setError(""); operationId.current = null;
-                  }} />
-              </div>
-            </div>
+            </details>
             <small className={styles.privateNote}>{c.contactHelp}</small>
             <details className={styles.optionalNote}>
               <summary>{c.description}</summary>
@@ -268,8 +368,8 @@ export function ContactChannelChooser({
                 value={website} onChange={event => setWebsite(event.target.value)} />
             </label>
             <button type="submit" className={styles.submit}
-              disabled={busy || displayName.trim().length < 2 ||
-                (!email.trim() && !phone.trim()) || !consent}>
+              disabled={busy || googleBusy ||
+                (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
               <Send size={17} aria-hidden="true" />{busy ? c.sending : c.submit}
             </button>
             {error && <p className={styles.error} role="alert">{error}</p>}
@@ -297,11 +397,15 @@ export function ContactChannelChooser({
             </div>
             <button type="button" className={styles.again} onClick={() => {
               setSaved(null); setDescription(""); setDisplayName(""); setEmail("");
+              setMethod("email"); setGoogleReady(false);
               setPhone(""); setConsent(false); setWebsite(""); setError(""); operationId.current = null;
             }}>{c.again}</button>
           </>
         )}
-        <small className={styles.note}>{c.note}</small>
+        <details className={styles.privacy}>
+          <summary>{c.privacy}</summary>
+          <small className={styles.note}>{c.note}</small>
+        </details>
       </div>
     </div>
   );
