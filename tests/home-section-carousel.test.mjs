@@ -61,3 +61,26 @@ test("touch, focus, arrows, accessible dots and reduced motion are preserved on 
   assert.match(style, /@media\(max-width:365px\)/);
   assert.match(style, /:focus-visible/);
 });
+
+test("all homepage slides describe real benefits in EN, RU and ES with compact mobile copy", () => {
+  const ids = ["services", "tests", "academy", "business", "ideas", "cabinet"];
+  const entries = [...carousel.matchAll(/^      (services|tests|academy|business|ideas|cabinet): \\{ eyebrow: "([^"]+)", title: "([^"]+)", lead: "([^"]+)", action: "([^"]+)" \\},$/gm)];
+  assert.equal(entries.length, 18, "Six complete benefit statements are required in every locale");
+
+  for (let languageIndex = 0; languageIndex < 3; languageIndex++) {
+    assert.deepEqual(entries.slice(languageIndex * 6, languageIndex * 6 + 6).map(match => match[1]), ids);
+  }
+  for (const [, id, eyebrow, title, lead, action] of entries) {
+    assert.ok(eyebrow.length >= 8 && eyebrow.length <= 46, id + ": readable section label");
+    assert.ok(title.length >= 16 && title.length <= 46, id + ": short, specific heading");
+    assert.ok(lead.length >= 55 && lead.length <= 145, id + ": tangible benefit in phone-sized copy");
+    assert.ok(action.length >= 7 && action.length <= 34, id + ": concise action");
+    assert.doesNotMatch(lead, /cures?|diagnos|лечит|излеч|cura enfermedades/i);
+  }
+  assert.match(carousel, /lead: "Save test reports, continue courses, revisit recommendations/);
+  assert.match(carousel, /lead: "Сохраняйте отчёты, продолжайте курсы, возвращайтесь к рекомендациям/);
+  assert.match(carousel, /lead: "Guarda informes, continúa tus cursos, revisa recomendaciones/);
+  assert.match(carousel, /title: "Free tests to understand yourself"/);
+  assert.match(carousel, /title: "Курсы, уроки и медитации"/);
+  assert.match(carousel, /title: "Nuevas ideas para tu pregunta"/);
+});
