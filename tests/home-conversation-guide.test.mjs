@@ -70,7 +70,7 @@ test("browser-only conversation supports multiple turns, voice consent, accessib
     'aria-live="polite"',
     'maxLength={500}',
     'onSubmit={submit}',
-    'homeGuideGoals.map',
+    'recommendedGoals.map',
     "appendExchange",
     "new Speech()",
     "engine.start()",
