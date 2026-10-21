@@ -90,7 +90,7 @@ async function verifySiteMenu(page, header, { locale, surface, label, expectedMe
   await inViewport(trigger, label + '/site-menu')
   assert.deepEqual(await links.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), expectedMenu, label + ': exact site-menu destinations')
   await expect(menu.locator('a[aria-current="page"]')).toHaveCount(1)
-  await expect(menu.locator('a[aria-current="page"]')).toHaveAttribute('href', surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : surface === 'library' ? '/' + locale + '/library?view=books' : '/' + locale + '/' + surface)
+  await expect(menu.locator('a[aria-current="page"]')).toHaveAttribute('href', surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : surface === 'library' ? '/' + locale + '/books' : '/' + locale + '/' + surface)
   await trigger.focus()
   await trigger.press('Enter')
   await expect(menu).toHaveJSProperty('open', true)
@@ -336,7 +336,7 @@ try {
           await verifyDirectNavigation(nav, { locale, surface: 'library', expected, label: locale + '/library/' + width })
           const current = nav.locator('.site-main-menu-panel a[aria-current="page"]')
           await expect(current).toHaveCount(1)
-          await expect(current).toHaveAttribute('href', '/' + locale + '/library?view=books')
+          await expect(current).toHaveAttribute('href', '/' + locale + '/books')
         } else {
           // Books is the sixth bottom-navigation slot; the full Library remains in the menu.
           const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })

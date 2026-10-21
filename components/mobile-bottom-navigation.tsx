@@ -29,7 +29,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const current = activeCompactNavigationId(pathname);
   const mobileItems = getCompactNavigation(locale);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {/* Keep six high-priority destinations on the bottom bar. Books is here;
+    {/* Keep six high-priority destinations on the bottom bar. Ideas is here;
         Cabinet remains in the top header, with the full Library in the expanded menu. */}
     {mobileItems.map(item => {
       const Icon = compactNavigationIcons[item.id as keyof typeof compactNavigationIcons];

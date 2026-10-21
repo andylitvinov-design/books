@@ -8,6 +8,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { LibraryBackLink } from "@/components/library-hub";
+import { IdeasDiscovery } from "@/components/ideas-discovery";
 import { DaoHexagramLibraryLink } from "@/components/dao-hexagram-library-link";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { featuredBookUrls } from "@/data/featured-books";
@@ -95,12 +96,13 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
   return (
     <main className="catalog-shell" lang={locale}>
       <PublicSiteHeader locale={locale} />
+      <IdeasDiscovery locale={locale} />
       <LibraryBackLink locale={locale} />
 
       <header className="catalog-header">
         <div className="catalog-header-copy">
           <p className="catalog-kicker">{text.kicker}</p>
-          <h1>{text.heading}</h1>
+          <h2 className="mt-2 font-serif text-5xl leading-none text-[#2c2119] sm:text-6xl">{text.heading}</h2>
           <p>{text.lead}</p>
         </div>
 

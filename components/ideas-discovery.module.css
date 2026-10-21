@@ -1,0 +1,103 @@
+.root {
+  --ideas-ink: #34291f;
+  --ideas-muted: #736153;
+  --ideas-line: #d8c6ae;
+  margin: 10px 0 30px;
+  padding: clamp(20px, 4vw, 38px);
+  border: 1px solid #d9c5a9;
+  border-radius: 24px;
+  background: radial-gradient(circle at 93% 1%, rgba(202, 168, 111, .18), transparent 35%), linear-gradient(145deg, #fffdf8 0%, #f3e8d8 100%);
+  box-shadow: 0 14px 42px rgba(77, 55, 34, .07);
+  color: var(--ideas-ink);
+}
+.root * { box-sizing: border-box; }
+.heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.eyebrow, .tag {
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  color: #936c47; text-transform: uppercase; letter-spacing: .11em; font-size: 10px; font-weight: 800;
+}
+.heading h1 {
+  margin: 6px 0 0; font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(42px, 6vw, 76px); line-height: 1; font-weight: 400; letter-spacing: -.045em;
+}
+.lead { max-width: 670px; margin: 14px 0 0; color: var(--ideas-muted); font-size: clamp(14px, 1.7vw, 16px); line-height: 1.65; }
+.decor { color: #ac865d; font-family: Georgia, serif; font-size: 100px; line-height: 1; opacity: .35; }
+.question { margin-top: 26px; }
+.question label { display: block; margin-bottom: 10px; font-weight: 750; font-size: 15px; }
+.question textarea {
+  display: block; width: 100%; min-height: 90px; padding: 17px 18px;
+  border: 1px solid #b99e81; border-radius: 15px; outline: none; resize: vertical;
+  background: #fffefa; color: #34291f; font: inherit; font-size: 16px; line-height: 1.5;
+  transition: border-color .16s, box-shadow .16s;
+}
+.question textarea::placeholder { color: #958679; }
+.question textarea:focus-visible { border-color: #66442e; box-shadow: 0 0 0 3px rgba(125, 85, 55, .17); }
+.question textarea[aria-invalid="true"] { border-color: #ad493d; }
+.error { margin: 8px 0 0; color: #a13f33; font-size: 13px; font-weight: 700; }
+.privacy, .note { margin: 10px 0 0; color: var(--ideas-muted); font-size: 11px; line-height: 1.55; }
+.actionLabel { margin: 21px 0 10px; font-size: 12px; font-weight: 700; color: #6b5747; }
+.actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.action {
+  min-width: 0; min-height: 61px; display: flex; align-items: center; justify-content: flex-start; gap: 11px;
+  padding: 12px 14px; border-radius: 13px; border: 1px solid #d7c2aa;
+  background: #fffbf3; color: #4e3829; text-align: left; cursor: pointer;
+  font-size: 13px; font-weight: 750; line-height: 1.28;
+  transition: background .16s, border-color .16s, transform .16s;
+}
+.action span { flex: 1; }
+.action svg { flex-shrink: 0; }
+.action:hover { transform: translateY(-1px); border-color: #996e4d; background: white; }
+.action[aria-pressed="true"] { border-color: #6b4630; background: #593e2d; color: #fff9ee; }
+.action:focus-visible, .reset:focus-visible, .hexagramActions a:focus-visible, .hexagramActions button:focus-visible, .offer a:focus-visible {
+  outline: 3px solid #98683a; outline-offset: 3px;
+}
+.results { margin-top: 19px; padding: clamp(15px, 3vw, 26px); border: 1px solid var(--ideas-line); border-radius: 17px; background: rgba(255,255,255,.65); }
+.resultsHeading { display: flex; gap: 18px; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.resultsHeading h2 { margin: 7px 0 0; font-family: Georgia, serif; font-size: clamp(25px, 3vw, 34px); line-height: 1.16; font-weight: 400; }
+.reset {
+  padding: 7px 0; border: 0; background: transparent; color: #735740;
+  text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; cursor: pointer;
+  font-size: 12px;
+}
+.hexagramCard { display: flex; gap: 23px; align-items: flex-start; }
+.hexagramMark { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 132px; min-height: 143px; border-radius: 13px; background: #eee2ce; }
+.hexagramText { flex: 1; min-width: 0; }
+.hexagramText h3 { margin: 8px 0; font-family: Georgia, serif; font-size: 24px; font-weight: 500; }
+.hexagramText > p:not(.tag) { margin: 6px 0 0; font-size: 14px; line-height: 1.6; }
+.hexagramActions { display: flex; gap: 10px 20px; flex-wrap: wrap; margin-top: 17px; }
+.hexagramActions a, .hexagramActions button, .offer a {
+  min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 10px 16px; border-radius: 999px; font-size: 12px;
+  font-weight: 750; text-decoration: none; cursor: pointer;
+}
+.hexagramActions a, .offer a { color: #fffaf2; background: #61422f; border: 1px solid #61422f; }
+.hexagramActions button { color: #61422f; background: transparent; border: 1px solid #bda78e; }
+.aphorisms { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.aphorisms li { display: flex; align-items: baseline; gap: 16px; border-bottom: 1px solid #e3d5c2; padding: 10px 0 15px; }
+.aphorisms li:last-child { border: none; }
+.number { flex: 0 0 29px; color: #967452; font-size: 12px; font-weight: 800; }
+.aphorisms p { margin: 0; font-family: Georgia, serif; font-size: clamp(18px, 2.4vw, 23px); line-height: 1.35; }
+.offers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+.offer { display: flex; flex-direction: column; min-width: 0; min-height: 225px; padding: 17px; border: 1px solid #dfd0bd; border-radius: 14px; background: #fffdfa; }
+.offerHead { display: flex; align-items: center; justify-content: space-between; color: #745439; }
+.offerHead span { background: #e9f0e2; color: #476043; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 800; }
+.offer h3 { font-family: Georgia, serif; font-size: 21px; font-weight: 500; margin: 14px 0 0; line-height: 1.17; }
+.offer p { margin: 9px 0 18px; font-size: 12px; line-height: 1.55; color: #6c5c51; flex: 1; }
+.offer a { align-self: stretch; }
+@media (max-width: 760px) {
+  .root { border-radius: 18px; padding: 20px 15px; }
+  .heading { align-items: flex-start; }
+  .decor { font-size: 58px; }
+  .question { margin-top: 19px; }
+  .actions { grid-template-columns: 1fr; gap: 7px; }
+  .action { min-height: 50px; padding: 11px 13px; }
+  .resultsHeading { flex-wrap: wrap; }
+  .offers { grid-template-columns: 1fr; }
+  .offer { min-height: 0; }
+  .hexagramCard { flex-direction: column; gap: 12px; }
+  .hexagramMark { width: 100%; min-height: 105px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action, .question textarea { transition: none; }
+  .action:hover { transform: none; }
+}

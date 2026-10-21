@@ -261,7 +261,7 @@ for (const fault of ['wrong free hash', 'wrong services route', 'wrong About rou
 test('library audit checks the menu active link while preserving exact six-slot bottom navigation', () => {
   assert.match(ia, /verifyDirectNavigation\(nav, \{ locale, surface: 'library', expected, label:/);
   assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
-  assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/library\?view=books'\)/);
+  assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/books'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(6\)/);
   assert.match(ia, /const cabinetEntry = header\.locator\('a\.site-cabinet-entry'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(1\)/);
