@@ -103,8 +103,22 @@ function assertReferralBoundary(component, submission, script) {
   assert.match(submission, /fetchImpl\('\/api\/service-enquiries', \{/);
   assert.match(submission, /method: 'POST', credentials: 'same-origin'/);
   assert.match(component, /event\.preventDefault\(\)/);
-  assert.doesNotMatch(component, /fetch\s*\(/);
-  assert.doesNotMatch(component + submission, /sendBeacon|localStorage|sessionStorage|dispatchEvent|window\.gtag/);
+  assert.doesNotMatch(component + submission, /sendBeacon|localStorage|dispatchEvent|window\.gtag/);
+  assert.doesNotMatch(submission, /sessionStorage/);
+  // The only component-owned requests are the existing Google continuation.
+  // Lead persistence remains solely in the immutable submission scope above.
+  const calls = [...component.matchAll(/\bfetch\s*\(\s*(["'])([^"']+)\1/g)];
+  assert.equal(calls.length, [...component.matchAll(/\bfetch\s*\(/g)].length, 'No dynamic component fetch');
+  assert.deepEqual(calls.map(match => match[2]), ['/api/app/auth/contact-profile', '/api/app/auth/start'], 'Only exact Google continuation requests');
+  assert.match(component, /fetch\("\/api\/app\/auth\/contact-profile", \{ method: "GET", credentials: "same-origin", cache: "no-store" \}\)/, 'Private profile GET is same-origin and uncached');
+  assert.match(component, /fetch\("\/api\/app\/auth\/start", \{\s*method: "POST", credentials: "same-origin",\s*headers: \{ "Content-Type": "application\/json" \},\s*body: JSON\.stringify\(\{ locale, continueTo: "enquiry", returnPath: pathname \}\),\s*\}\)/, 'Auth start carries only public continuation identity');
+  // One public path/service/panel marker only, never a contact or private note.
+  assert.equal([...component.matchAll(/sessionStorage\.setItem\s*\(/g)].length, 1, 'One public identity marker write');
+  assert.match(component, /sessionStorage\.setItem\("hh-google-enquiry-return",\s*JSON\.stringify\(\{ path: pathname, service: serviceTitle, panel: panelId \}\)\)/, 'Exact public identity marker only');
+  assert.doesNotMatch(component, /sessionStorage\.setItem\([^;]*(?:email|phone|description|consent)/i);
+  for (const match of component.matchAll(/sessionStorage\.(?:getItem|removeItem)\(([^)]*)\)/g)) {
+    assert.equal(match[1], '"hh-google-enquiry-return"', 'Only the public continuation marker is read or removed');
+  }
   assert.doesNotMatch(script, /fetch\(|sendBeacon|localStorage|sessionStorage/);
 }
 
@@ -124,4 +138,25 @@ test("referral guards still reject raw query handoffs and hidden submission side
   }
   assert.throws(() => assertReferralBoundary(component, submission + "\n navigator.sendBeacon('/collect', payload)", script));
   assert.throws(() => assertReferralBoundary(component, submission, script + "\n sessionStorage.setItem('referral', input)"));
+});
+
+test("optional Google continuation cannot turn referral storage into private persistence or extra dispatch", () => {
+  const component = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
+  const submission = readFileSync(new URL("../lib/practitioners/public-enquiry-submission.js", import.meta.url), "utf8");
+  const script = readFileSync(new URL("../lib/organic-event-referrals.js", import.meta.url), "utf8");
+  for (const [before, after, diagnostic] of [
+    ['"/api/app/auth/contact-profile"', '"/api/app/private"', /Only exact Google continuation requests/],
+    ['cache: "no-store"', 'cache: "force-cache"', /Private profile GET is same-origin and uncached/],
+    ['continueTo: "enquiry", returnPath: pathname', 'continueTo: "enquiry", returnPath: email', /Auth start carries only public continuation identity/],
+    ['{ path: pathname, service: serviceTitle, panel: panelId }', '{ path: pathname, service: serviceTitle, panel: panelId, email }', /Exact public identity marker only/],
+    ['sessionStorage.getItem("hh-google-enquiry-return")', 'sessionStorage.getItem("private-contact")', /Only the public continuation marker is read or removed/],
+  ]) {
+    assertReferralBoundary(component, submission, script);
+    assert.ok(component.includes(before), before);
+    assert.throws(() => assertReferralBoundary(component.replace(before, after), submission, script), diagnostic);
+  }
+  assertReferralBoundary(component, submission, script);
+  assert.throws(() => assertReferralBoundary(component + '\nfetch(endpoint)', submission, script), /No dynamic component fetch/);
+  assertReferralBoundary(component, submission, script);
+  assert.throws(() => assertReferralBoundary(component + '\nwindow.sessionStorage.setItem("extra", "value")', submission, script), /One public identity marker write/);
 });

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
+import vm from 'node:vm'
 import { normalizePublicServiceEnquiry } from '../lib/practitioners/public-service-enquiry-input.mjs'
 import { PHONE_COUNTRIES, E164_PHONE, composeCountryPhone, phoneCountryFromValue, phoneNationalPart } from '../lib/contact/phone-country.js'
 
@@ -98,7 +99,7 @@ test('guest registration creates an encrypted CRM contact in the same transactio
   assert.doesNotMatch(sql,/grant\s+(all|select|update|delete)\s+on\s+app\.crm_contacts\s+to\s+(anon|authenticated|hh_app_backend)/i)
   assert.doesNotMatch(sql,/security definer|marketing_consent|send_sms|send_email/i)
 })
-test('shared course/service chooser requires name, contact and opt-in before saving',()=>{
+test('shared course/service chooser requires a reply contact and opt-in; name is optional',()=>{
   const view=read('components/contact-channel-chooser.tsx')
   const styles=read('components/contact-channel-chooser.module.css')
   for (const term of ['autoComplete="name"','autoComplete="email"',
@@ -106,6 +107,7 @@ test('shared course/service chooser requires name, contact and opt-in before sav
     'setConsent(false)','setDisplayName("")','setPhone("")']) {
     assert.ok(view.includes(term),term)
   }
+  assert.match(read('components/phone-country-input.tsx'),/autoComplete="tel-national"/)
   assert.match(view,/sourcePath: pathname, locale/)
   assert.match(view,/scope\.submit\(/)
   const submission=read('lib/practitioners/public-enquiry-submission.js')
@@ -129,7 +131,7 @@ test('shared course/service chooser requires name, contact and opt-in before sav
 
 // Inspect the actual imported JSX child, not a tel token in an unrelated file.
 // Components are parsed as source only; no React hooks, rendering or requests.
-const parse = path => ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+const parse = (path, source = read(path)) => ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 const compact = text => text.replace(/\s+/g, '')
 function namedImport(ast, name, path) {
   const matches = ast.statements.filter(ts.isImportDeclaration).filter(statement =>
@@ -168,24 +170,47 @@ function attribute(ast, node, name) {
   return compact(value.expression.getText(ast))
 }
 
-test('chooser binds its real country-phone child to optional contact state and an E.164 save guard', () => {
-  const chooser = parse('components/contact-channel-chooser.tsx')
+function assertChooserPhoneContract(source = read('components/contact-channel-chooser.tsx')) {
+  const chooser = parse('components/contact-channel-chooser.tsx', source)
   namedImport(chooser, 'PhoneCountryInput', '@/components/phone-country-input')
   jsxWithin(chooser, namedFunction(chooser, 'ContactChannelChooser'), 'ContactChannelChooserForm')
   const form = namedFunction(chooser, 'ContactChannelChooserForm')
   const phone = jsxWithin(chooser, form, 'PhoneCountryInput')
-  for (const [name, value] of Object.entries({ id:'panelId+"-phone"', locale:'locale', disabled:'busy||uncertain', value:'phone' })) {
+  for (const [name, value] of Object.entries({ id:'panelId+"-phone"', locale:'locale', disabled:'busy||googleBusy||uncertain', value:'phone' })) {
     assert.equal(attribute(chooser, phone, name), value)
   }
   assert.equal(attribute(chooser, phone, 'onChange'), 'value=>{setPhone(value);setError("");}')
-  assert.ok(!phone.attributes.properties.some(entry => ts.isJsxSpreadAttribute(entry) || entry.name.text === 'required'), 'email-only contact remains possible')
+  const required = phone.attributes.properties.filter(entry => ts.isJsxAttribute(entry) && entry.name.text === 'required')
+  assert.equal(required.length, 1, 'Phone is required only in selected phone mode')
+  assert.equal(required[0].initializer, undefined, 'Native required boolean is retained')
+  let branch = phone.parent
+  while (branch && !ts.isConditionalExpression(branch)) branch = branch.parent
+  assert.ok(branch, 'Phone belongs to the actual contact method conditional')
+  assert.equal(compact(branch.condition.getText(chooser)), 'method==="email"', 'Exact contact method selector')
+  assert.ok(branch.whenFalse.getText(chooser).includes(phone.getText(chooser)), 'Phone only in phone branch')
+  assert.match(branch.whenTrue.getText(chooser), /type="email"[^>]*required/, 'Email mode has its own required email')
+  assert.doesNotMatch(branch.whenTrue.getText(chooser), /PhoneCountryInput/, 'Email mode does not mount phone')
   const formSource = form.getText(chooser)
   const submit = namedFunction(form.body, 'submit')
   const guard = submit.body.statements.filter(ts.isIfStatement).find(node => node.expression.getText(chooser).includes('cleanedPhone'))
   assert.ok(guard, 'actual save guard')
-  assert.equal(compact(guard.expression.getText(chooser)), compact('displayName.trim().length < 2 || (!email.trim() && !cleanedPhone) || (cleanedPhone && !/^\\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent'))
+  assert.equal(compact(guard.expression.getText(chooser)), compact('(displayName.trim() && displayName.trim().length < 2) || displayName.trim().length > 120 || /[\\u0000-\\u001f\\u007f]/.test(displayName.trim()) || (method === "email" && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) || (method === "phone" && ! /^\\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent'), 'Exact mode, optional-name and explicit-consent guard')
   assert.equal(compact(guard.thenStatement.getText(chooser)), '{setError(c.contactError);return;}')
-  assert.match(formSource, /contact: \{ displayName: displayName\.trim\(\), email: email\.trim\(\), phone: cleanedPhone \}/)
+  assert.match(formSource, /contact: \{ displayName: displayName\.trim\(\), email: method === "email" \? email\.trim\(\) : "", phone: method === "phone" \? cleanedPhone : "" \}/)
+  for (const method of ['email', 'phone']) for (const name of ['', '   ', 'A', 'Alex', 'x'.repeat(120), 'x'.repeat(121), 'A\u0007B']) {
+    const values = { displayName:name, method, email:'synthetic@example.test', cleanedPhone:'+14165550123', consent:true }
+    const blocked = Boolean(vm.runInNewContext('(' + guard.expression.getText(chooser) + ')', values, { timeout:100, contextCodeGeneration:{strings:false,wasm:false} }))
+    const input = {...payload, contact:{displayName:name.trim(), email:method==='email'?values.email:'', phone:method==='phone'?values.cleanedPhone:''}}
+    let serverAccepted = true
+    try { normalizePublicServiceEnquiry(input) } catch { serverAccepted = false }
+    assert.equal(blocked, !serverAccepted, 'Optional submitted name agrees with unchanged server normalization')
+  }
+  for (const values of [
+    {displayName:'',method:'email',email:'',cleanedPhone:'+14165550123',consent:true},
+    {displayName:'',method:'email',email:'invalid',cleanedPhone:'+14165550123',consent:true},
+    {displayName:'',method:'phone',email:'synthetic@example.test',cleanedPhone:'4165550123',consent:true},
+    {displayName:'',method:'phone',email:'synthetic@example.test',cleanedPhone:'+14165550123',consent:false},
+  ]) assert.equal(Boolean(vm.runInNewContext('(' + guard.expression.getText(chooser) + ')', values, {timeout:100,contextCodeGeneration:{strings:false,wasm:false}})), true, 'Inactive contact or missing consent cannot substitute for selected reply method')
 
   // Resolve the file from that verified import, and bind its helpers to their
   // real module, which is exercised below with synthetic phone strings only.
@@ -219,7 +244,9 @@ test('chooser binds its real country-phone child to optional contact state and a
     onChange(chosen?.dial?composeCountryPhone(chosen.dial,national):"");
   }`))
   assert.match(country.parent.getText(child), /PHONE_COUNTRIES\.map\(item=><option key=\{item\.iso\} value=\{item\.iso\}/)
-})
+}
+
+test('chooser binds real country-phone child to selected contact mode and E.164 save guard', () => assertChooserPhoneContract())
 
 test('country-phone helpers compose national input without duplicate dial codes and preserve E.164 validation', () => {
   assert.equal(PHONE_COUNTRIES.find(country => country.iso === 'CA').dial, '+1')
@@ -238,4 +265,20 @@ test('country-phone helpers compose national input without duplicate dial codes 
   assert.equal(composeCountryPhone('', '+44 20 1234 5678'), '+442012345678')
   for (const value of ['+14165550123', '+442012345678']) assert.ok(E164_PHONE.test(value))
   for (const value of ['', '2012345678', '+0123456789', '+1234567', '+1234567890123456']) assert.ok(!E164_PHONE.test(value), value)
+})
+
+test('compact phone contract rejects changed method, required, consent and privacy bindings', () => {
+  const source = read('components/contact-channel-chooser.tsx')
+  for (const [before, after, diagnostic] of [
+    ['locale={locale} required', 'locale={locale}', /Phone is required only in selected phone mode/],
+    ['{method === "email" ? (', '{method === "phone" ? (', /Exact contact method selector/],
+    ['disabled={busy || googleBusy || uncertain} value={phone}', 'disabled={busy || googleBusy} value={phone}', /busy\|\|googleBusy/],
+    ['displayName.trim().length < 2', 'displayName.trim().length < 1', /Exact mode, optional-name and explicit-consent guard/],
+    ['|| !consent) {', '|| false) {', /Exact mode, optional-name and explicit-consent guard/],
+    ['phone: method === "phone" ? cleanedPhone : ""', 'phone: cleanedPhone', /contact:/],
+  ]) {
+    assertChooserPhoneContract(source)
+    assert.ok(source.includes(before), before)
+    assert.throws(() => assertChooserPhoneContract(source.replace(before, after)), diagnostic)
+  }
 })

@@ -11,6 +11,9 @@ on:
       - 'components/app/customer-telegram-bot-setup.jsx'
       - 'tests/practitioner-owner-ai-telegram.test.mjs'
       - 'lib/practitioners/owner-ai-bootstrap.mjs'
+      - 'lib/practitioners/council-provider-readiness.mjs'
+      - 'app/api/internal/council-provider-readiness/**'
+      - 'tests/practitioner-council-provider-readiness.test.mjs'
       - 'app/api/internal/owner-ai-bootstrap/**'
       - 'app/api/internal/practice-telegram-digest/route.js'
       - 'tests/practitioner-owner-ai-bootstrap.test.mjs'
@@ -33,6 +36,8 @@ jobs:
           node-version: '22'
       - name: Syntax
         run: |
+          node --check lib/practitioners/council-provider-readiness.mjs
+          node --check app/api/internal/council-provider-readiness/route.js
           node --check lib/practitioners/owner-ai-bootstrap.mjs
           node --check app/api/internal/owner-ai-bootstrap/route.js
           node --check app/api/internal/practice-telegram-digest/route.js
@@ -44,4 +49,4 @@ jobs:
           node --check app/api/app/notification-channels/telegram/setup/route.js
       - name: Owner-only chat, free-cost model verification and customer pairing regressions
         run: |
-          node --test tests/practitioner-owner-ai-bootstrap.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/practitioner-council-free-models.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/practitioner-telegram-hub.test.mjs
+          node --test tests/practitioner-council-provider-readiness.test.mjs tests/practitioner-owner-ai-bootstrap.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/practitioner-council-free-models.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/practitioner-telegram-hub.test.mjs
