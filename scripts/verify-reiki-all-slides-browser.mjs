@@ -200,12 +200,10 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(page.locator("[data-reiki-first-lesson-consent]")).toHaveCount(0);
   } else if (data.kind === "milestone") {
     await expect(page.locator("button[data-energywork-next]")).toHaveText(
-      id === "flight-done"
-        ? (locale === "ru" ? "Продолжить сейчас — сохранить первый урок" : "Continue now — save lesson 1 first")
-        : (locale === "ru" ? "Хочу продолжить сейчас — следующий урок" : "I'd like to continue now — next lesson"));
+      locale === "ru" ? "Выбрать следующий шаг" : "Choose how to continue");
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
-    await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(1);
-    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(3);
+    await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(0);
+    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(2);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }
@@ -213,6 +211,43 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await page.screenshot({ path: output+"/"+engineName+"-"+locale+"-"+width+"-"+String(index).padStart(2,"0")+"-"+id+".png", animations:"disabled", timeout:30000 });
   }
   console.log("REIKI_SCREEN_QA", JSON.stringify({engine:engineName, locale, width, index, id, kind:data.kind, phase:data.phase}));
+}
+
+// This virtual checkpoint is deliberately absent from the canonical 63-slide schema.
+// Check the newly visible, full-size actions without faking a server save.
+async function inspectDecision(page, { locale, width, id }) {
+  const choice = page.locator('[data-reiki-lesson-choice-screen]');
+  await expect(choice).toBeVisible();
+  await expect(page.locator('[data-energywork-slide-id]'))
+    .toHaveAttribute('data-energywork-slide-id', id + '-choice');
+  const save = choice.locator('button[data-reiki-save-tomorrow]');
+  const continueNow = choice.locator('button[data-reiki-continue-now]');
+  await expect(save).toBeEnabled();
+  await expect(continueNow).toBeEnabled();
+  await expect(save).toContainText(locale === "ru" ? "Сохранить и продолжить завтра" : "Save and return tomorrow");
+  await expect(continueNow).toContainText(locale === "ru" ? "Продолжить сейчас" : "Continue now");
+  await expect(page.locator('button[data-energywork-next]')).toHaveCount(0);
+  await expect(choice.locator('button[data-reiki-tomorrow-choice]')).toHaveCount(1);
+  await expect(choice.locator('[data-reiki-reminder-setup]')).toHaveCount(0);
+  // The choice is visible and independently scrollable even on a narrow phone.
+  const rects = await choice.evaluate(node => {
+    const panel = node.getBoundingClientRect();
+    const controls = [...node.querySelectorAll('[data-reiki-save-tomorrow], [data-reiki-continue-now]')]
+      .map(control => {
+        const bounds = control.getBoundingClientRect();
+        return { width: bounds.width, height: bounds.height, left: bounds.left,
+          right: bounds.right, top: bounds.top, bottom: bounds.bottom };
+      });
+    return { panel: { left: panel.left, right: panel.right, width: panel.width }, controls,
+      scrollWidth: node.scrollWidth, clientWidth: node.clientWidth };
+  });
+  assert.equal(rects.controls.length, 2, locale + ": both decision buttons exist");
+  assert.ok(rects.scrollWidth <= rects.clientWidth + 3, "decision has no horizontal overflow: " + JSON.stringify(rects));
+  for (const rect of rects.controls) {
+    assert.ok(rect.height >= 44 && rect.width >= 120, "accessible large choice button: " + JSON.stringify(rect));
+    assert.ok(rect.left >= -3 && rect.right <= width + 3, "choice fits horizontal viewport: " + JSON.stringify(rect));
+  }
+  await page.screenshot({path:output+"/"+engineName+"-"+locale+"-"+width+"-choice-"+id+".png",animations:"disabled",timeout:30000});
 }
 
 // Never visit a real account. This in-memory progress endpoint is private to
@@ -379,6 +414,10 @@ async function exerciseJourney(page, locale, width) {
     const next = page.locator("button[data-energywork-next]");
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
+    if (["flight-done", "tan-done", "kun-done", "ygg-done"].includes(id)) {
+      await inspectDecision(page, { locale, width, id });
+      await page.locator('button[data-reiki-continue-now]').click();
+    }
   }
   assert.deepEqual(journey,expectedSequence,locale+": all 63 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
@@ -493,8 +532,13 @@ async function verifyShortViewport(page,locale) {
   await expect(page.locator('[data-energywork-slide-id="flight-done"] [class*="milestoneCard"]'))
     .not.toContainText(/Personal initiation and group membership|Инициация и вступление в сообщество/);
   await page.screenshot({path:output+"/"+engineName+"-"+locale+"-375-short-flight-done.png",animations:"disabled",timeout:30000});
-  // Guest must be explicitly asked to save, with no second forward/skip action.
+  // A separate choice after congratulations. Guest save must go through
+  // the original consent gate, never an unverified server-save claim.
   await page.locator('button[data-energywork-next]').click();
+  await inspectDecision(page, { locale, width: 375, id: "flight-done" });
+  await expect(page.locator('button[data-reiki-save-tomorrow]'))
+    .toContainText(locale === "ru" ? "Войти и сохранить до завтра" : "Sign in to save for tomorrow");
+  await page.locator('button[data-reiki-save-tomorrow]').click();
   await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-save');
   const saveAction = page.locator('button[data-reiki-first-lesson-google-save]');
   await expect(saveAction).toBeDisabled();

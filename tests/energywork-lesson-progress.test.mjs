@@ -34,7 +34,8 @@ test("A single checkpoint action saves before advancing and does not promise gue
   assert.match(learner, /returnAnytime: "Pick up here anytime from My Courses\."/);
   assert.match(learner, /returnAnytime: "Вернуться к уроку можно через «Мои курсы»\."/);
   assert.match(learner, /async function next\(\) \{[\s\S]*?if \(sync === "ready"\) \{[\s\S]*?await store\(nextId\);[\s\S]*?setIndex\(\(current\) => Math\.min\(current \+ 1, slides\.length - 1\)\)/);
-  assert.match(learner, /data-reiki-milestone-choices/);
+  assert.match(learner, /data-reiki-lesson-choice-screen/);
+  assert.match(learner, /if \(slide\.kind === "milestone" && slide\.id !== "flight-save" && !milestoneDecision\)/);
   assert.match(learner, /data-reiki-tomorrow-choice/);
   assert.match(learner, /data-energywork-next/);
   assert.match(repo, /MEDITATION_FEEDBACK_REQUIRED/);

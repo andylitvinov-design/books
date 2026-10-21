@@ -7,20 +7,26 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 
-test("milestone save and continue actions appear on the slide instead of footer", () => {
-  assert.match(learner, /data-reiki-milestone-choices/);
+test("milestone opens an extra mobile-first screen with two save-or-continue options", () => {
+  assert.match(learner, /data-reiki-lesson-choice-screen/);
+  assert.match(learner, /data-reiki-save-tomorrow/);
+  assert.match(learner, /data-reiki-continue-now/);
   assert.match(learner, /data-reiki-tomorrow-choice/);
   assert.match(learner, /data-energywork-next/);
-  assert.match(learner, /tomorrowChoice: "Save and finish for today"/);
-  assert.match(learner, /tomorrowChoice: "Сохранить и закончить на сегодня"/);
+  assert.match(learner, /decisionSave: "Save and return tomorrow"/);
+  assert.match(learner, /decisionSave: "Сохранить и продолжить завтра"/);
+  assert.match(learner, /decisionContinue: "Continue now"/);
+  assert.match(learner, /decisionContinue: "Продолжить сейчас"/);
   assert.match(learner, /onClick=\{finishForToday\}/);
+  assert.match(learner, /if \(slide\.kind === "milestone" && slide\.id !== "flight-save" && !milestoneDecision\)/);
   assert.match(learner, /slide\.kind !== "milestone" && !completed/);
-  assert.doesNotMatch(learner, /data-reiki-reminder-setup|reminderSetupOpen|downloadTomorrowReminder/);
+  assert.doesNotMatch(learner, /data-reiki-milestone-choices|reminderSetupOpen|downloadTomorrowReminder/);
   assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
-  assert.match(css, /\.milestoneInlineChoices/);
-  assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /min-height: 55px/);
+  assert.match(css, /\.lessonDecision/);
+  assert.match(css, /\.decisionActions/);
+  assert.match(css, /@media \(max-width: 430px\)/);
 });
+
 test("guest must consent and authenticate before server save and post-save install", () => {
   assert.match(learner, /if \(sync === "guest" \|\| sync === "consent"\)/);
   assert.match(learner, /setIndex\(slides\.findIndex\(item => item\.id === "flight-save"\)\)/);

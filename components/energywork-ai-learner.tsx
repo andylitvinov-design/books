@@ -97,6 +97,18 @@ const copy = {
     continueNow: "Continue to the next lesson",
     continueNowSave: "Continue — save lesson 1 first",
     lessonChoices: "Choose what to do after this lesson",
+    chooseNext: "Choose how to continue",
+    decisionKicker: "Lesson complete",
+    decisionTitle: "Your progress, your pace",
+    decisionIntro: "Save your place and return tomorrow, or explore the next lesson now.",
+    decisionStep: "Lesson complete · Next step",
+    decisionSave: "Save and return tomorrow",
+    decisionGuestSave: "Sign in to save for tomorrow",
+    decisionSaveDetail: "Your course and private notes will be waiting in My Courses.",
+    decisionGuestSaveDetail: "Continue with Google to save your first lesson privately.",
+    decisionContinue: "Continue now",
+    decisionContinueDetail: "Go straight to the next lesson with your progress kept safe.",
+    decisionContinueGuestDetail: "First save lesson one to unlock the next lesson.",
     saveTodayDetail: "Return anytime from My Courses",
     saveGuestDetail: "Save your first lesson with Google",
     accountSaveTitle: "Save your Reiki course",
@@ -255,6 +267,18 @@ const copy = {
     continueNow: "Продолжить следующий урок",
     continueNowSave: "Продолжить — сначала сохранить урок 1",
     lessonChoices: "Что сделать после урока",
+    chooseNext: "Выбрать следующий шаг",
+    decisionKicker: "Урок завершён",
+    decisionTitle: "Ваш прогресс — в вашем ритме",
+    decisionIntro: "Сохранить результаты и вернуться завтра или продолжить следующий урок прямо сейчас?",
+    decisionStep: "Урок завершён · Следующий шаг",
+    decisionSave: "Сохранить и продолжить завтра",
+    decisionGuestSave: "Войти и сохранить до завтра",
+    decisionSaveDetail: "Прогресс и личные записи будут ждать вас в «Моих курсах».",
+    decisionGuestSaveDetail: "Для приватного сохранения первого урока потребуется вход через Google.",
+    decisionContinue: "Продолжить сейчас",
+    decisionContinueDetail: "Перейти к следующему уроку с сохранением прогресса.",
+    decisionContinueGuestDetail: "Для следующего урока сначала нужно сохранить первый.",
     saveTodayDetail: "Вернуться в любое время из «Моих курсов»",
     saveGuestDetail: "Сохранить первый урок через Google",
     accountSaveTitle: "Сохраните свой курс Рейки",
@@ -744,6 +768,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const pageRef = useRef<HTMLElement | null>(null);
   const [programmeOpen, setProgrammeOpen] = useState(false);
   const [showInstallOffer, setShowInstallOffer] = useState(false);
+  const [milestoneDecisionId, setMilestoneDecisionId] = useState<string | null>(null);
   const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const answersRef = useRef<AnswerMap>({});
@@ -1004,6 +1029,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
   const slides = useMemo(() => energyworkSlides(), []);
   const slide = slides[index] ?? slides[0]!;
+  const milestoneDecision = slide.kind === "milestone" && slide.id !== "flight-save" && milestoneDecisionId === slide.id;
   const total = slides.length;
   const lessonRanges = useMemo(() => energyworkLessonRanges(), []);
   const currentLessonRange = lessonRanges.find((range) => index >= range.start && index < range.end);
@@ -1014,6 +1040,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
     : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
+  useEffect(() => { setMilestoneDecisionId(null); }, [slide.id]);
   // Messenger links contain only a generic public service request — no learner data.
   // Neither link sends automatically; the visitor must confirm in the chat app.
   const reikiWhatsAppUrl = whatsappEnquiryUrl({
@@ -1126,11 +1153,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     }
     setReviewReturn(id === "paths-04" ? false :
       slide.id === "paths-04" || slide.kind === "finish" ? true : reviewReturn);
+    setMilestoneDecisionId(null);
     setIndex(target);
   }
   async function next() {
     if (busy || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing ||
         (slide.id === "flight-save" && sync !== "ready")) return;
+    // A separate visible choice after each milestone; never create a fake server cursor.
+    if (slide.kind === "milestone" && slide.id !== "flight-save" && !milestoneDecision) {
+      setSaveError(null);
+      setMilestoneDecisionId(slide.id);
+      return;
+    }
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -1169,6 +1203,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
   async function previous() {
     if (index === 0 || busy) return;
+    if (milestoneDecision) {
+      setMilestoneDecisionId(null);
+      setSaveError(null);
+      return;
+    }
     if (sync === "ready" && slide.question &&
       (dirtyRef.current.has(slide.id) ||
         Boolean(slide.secondaryQuestion && dirtyRef.current.has(slide.secondaryQuestion.id)))) {
@@ -1312,7 +1351,32 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </ol>
         </nav>
 
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id + (milestoneDecision ? "-choice" : "")} data-energywork-slide-kind={milestoneDecision ? "decision" : slide.kind} data-energywork-slide-id={milestoneDecision ? slide.id + "-choice" : slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
+          {milestoneDecision ? (
+            <div className={styles.lessonDecision} data-reiki-lesson-choice-screen>
+              <span className={styles.decisionSeal}><Award size={28} aria-hidden="true" /></span>
+              <span className={styles.decisionKicker}>{t.decisionKicker} · {t.lesson} {currentLessonRange?.lesson}</span>
+              <h1 id="energywork-slide-title">{t.decisionTitle}</h1>
+              <p className={styles.decisionIntro}>{t.decisionIntro}</p>
+              <div className={styles.decisionActions} role="group" aria-label={t.lessonChoices}>
+                <button type="button" className={styles.decisionSave} data-reiki-save-tomorrow data-reiki-tomorrow-choice
+                  onClick={finishForToday} disabled={busy || sync === "checking" || sync === "unavailable"}>
+                  <Check size={23} aria-hidden="true" />
+                  <span><strong>{sync === "ready" ? t.decisionSave : t.decisionGuestSave}</strong>
+                    <small>{sync === "ready" ? t.decisionSaveDetail : t.decisionGuestSaveDetail}</small></span>
+                  <ArrowRight size={19} aria-hidden="true" />
+                </button>
+                <button type="button" className={styles.decisionContinue} data-reiki-continue-now
+                  onClick={next} disabled={busy || sync === "checking" || sync === "unavailable"}>
+                  <ArrowRight size={23} aria-hidden="true" />
+                  <span><strong>{t.decisionContinue}</strong>
+                    <small>{slide.id === "flight-done" && sync !== "ready" ? t.decisionContinueGuestDetail : t.decisionContinueDetail}</small></span>
+                  <ArrowRight size={19} aria-hidden="true" />
+                </button>
+              </div>
+              {saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
+            </div>
+          ) : (
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
@@ -1394,24 +1458,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <strong>{slide.id === "flight-done" ? t.firstMilestoneLabel : t.milestoneLabel}</strong>
                     {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                   </div>
-                </div>
-              ) : null}
-              {slide.kind === "milestone" && slide.id !== "flight-save" ? (
-                <div className={styles.milestoneInlineChoices} role="group" aria-label={t.lessonChoices}
-                  data-reiki-milestone-choices>
-                  <button type="button" className={styles.milestoneSaveChoice}
-                    onClick={finishForToday} disabled={busy || sync === "checking" || sync === "unavailable"}
-                    data-reiki-tomorrow-choice>
-                    <BookOpen size={21} aria-hidden="true" />
-                    <span><strong>{t.tomorrowChoice}</strong>
-                      <small>{sync === "ready" ? t.saveTodayDetail : t.saveGuestDetail}</small></span>
-                  </button>
-                  <button type="button" className={styles.milestoneContinueChoice}
-                    onClick={next} disabled={busy || sync === "checking"}
-                    data-energywork-next>
-                    <ArrowRight size={21} aria-hidden="true" />
-                    <span>{slide.id === "flight-done" && sync !== "ready" ? t.continueNowSave : t.continueNow}</span>
-                  </button>
                 </div>
               ) : null}
               {(slide.id === "tan-done" || slide.id === "kun-done") ? (
@@ -1747,11 +1793,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               </div>
             ) : null}
           </div>
+          )}
         </section>
 
         <div className={styles.progressFooter}>
           <div className={styles.progressHeader}>
-            <span className={styles.progressStep}>{lessonProgressLabel}</span>
+            <span className={styles.progressStep}>{milestoneDecision ? t.decisionStep : lessonProgressLabel}</span>
             <div className={styles.progressStatus}>
               <span>{progressPercent}% {t.completedLabel}</span>
               <details className={styles.saveManager}>
@@ -1854,6 +1901,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                 className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
             )}
+            {slide.kind === "milestone" && slide.id !== "flight-save" && !milestoneDecision ? (
+              <button type="button" onClick={next} disabled={busy || sync === "checking"}
+                className={styles.next} data-energywork-next>
+                {t.chooseNext}<ArrowRight size={19} aria-hidden="true" />
+              </button>
+            ) : null}
             {slide.kind !== "milestone" && !completed ? (
               <button type="button" onClick={next}
                 disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
@@ -1863,7 +1916,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               </button>
             ) : null}
           </div>
-          {slide.kind === "milestone" && slide.id !== "flight-save" && saveError
+          {slide.kind === "milestone" && slide.id !== "flight-save" && !milestoneDecision && saveError
             ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
         </footer>
       </div>
