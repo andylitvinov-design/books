@@ -551,7 +551,11 @@ function assertImageryCallerContract(source) {
       assert.deepEqual(result.writes[0].content.results, [{ name: 'synthetic-paid-boundary', ok: false }]);
       assert.equal(Object.hasOwn(result.writes[0].content, 'buildAttribution'), label === 'local', 'no live projection');
       if (label === 'local') assert.deepEqual(result.writes[0].content.buildAttribution, diagnostic);
-      assert.deepEqual(result.logs, [{ label, total: 1, failed: 1, failures: [{ name: 'synthetic-paid-boundary', ok: false }] }]);
+      assert.equal(result.logs.length, 1);
+      assert.equal(Object.hasOwn(result.logs[0], 'buildAttribution'), label === 'local', 'local-only console projection');
+      if (label === 'local') assert.deepEqual(result.logs[0].buildAttribution, diagnostic, 'exact sanitized console projection');
+      assert.deepEqual(result.logs, [{ label, total: 1, failed: 1, failures: [{ name: 'synthetic-paid-boundary', ok: false }],
+        ...(label === 'local' ? { buildAttribution: diagnostic } : {}) }], 'original console failures remain intact');
       assert.match(result.error?.message ?? '', /Re-audit failed; inspect evidence/, 'original failure remains fatal');
     }
   }
@@ -575,6 +579,10 @@ const imageryCallerMutants = [
   ['wrong output path', source => source.replace('`${evidence}/${label}-results.json`', '`${evidence}/${label}-replacement.json`'), /results\.json/],
   ['forged failed count', source => source.replace('failed: failed.length, results,', 'failed: 0, results,'), /original failed count/],
   ['removed fatal assertion', source => source.replace("if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');", ''), /original failure remains fatal/],
+  ['missing console projection', source => source.replace('failures: failed, ...(label === \'local\' ? { buildAttribution } : {})', 'failures: failed'), /local-only console projection/],
+  ['live console projection', source => source.replace('failures: failed, ...(label === \'local\' ? { buildAttribution } : {})', "failures: failed, buildAttribution: buildAttribution ?? { status: 'unreadable' }"), /local-only console projection/],
+  ['forged console projection', source => source.replace('failures: failed, ...(label === \'local\' ? { buildAttribution } : {})', "failures: failed, ...(label === 'local' ? { buildAttribution: { status: 'present', files: [] } } : {})"), /exact sanitized console projection/],
+  ['erased console failures', source => source.replace('failures: failed, ...(label === \'local\' ? { buildAttribution } : {})', 'failures: [], ...(label === \'local\' ? { buildAttribution } : {})'), /original console failures remain intact/],
 ];
 for (const [name, mutate, message] of imageryCallerMutants) {
   test(`generated Imagery caller contract rejects ${name} after a nominal execution`, () => {
@@ -603,3 +611,30 @@ test('generated Imagery diagnostic is source-bound to the public route and exist
   const paid = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
   assert.doesNotMatch(paid, /readReleaseImageryBuildDiagnostic|projectReleaseImageryBuildManifest|buildAttribution|app-build-manifest/);
 });
+
+const imageryConsoleCanaries = [
+  ['other page data', JSON.stringify({ pages: { [imageryEntry]: imageryFiles,
+    '/SECRET_ROUTE_CANARY': ['SECRET_PRIVATE_FILENAME_CANARY?SECRET_QUERY_CANARY=value'] } }), nominalImageryProjection],
+  ['unsafe target filename', imageryManifest([...imageryFiles, 'https://SECRET_HOST_CANARY/private?SECRET_QUERY_CANARY=value']), { status: 'invalid', reason: 'filename' }],
+  ['malformed manifest', 'SECRET_PARSE_CANARY {', { status: 'invalid', reason: 'json' }],
+  ['missing exact entry', JSON.stringify({ pages: { '/SECRET_ROUTE_CANARY': ['SECRET_FILE_CANARY'] } }), { status: 'absent', reason: 'entrypoint' }],
+];
+for (const [name, manifest, expected] of imageryConsoleCanaries) {
+  test(`local console emits only the sanitized projection with ${name}`, () => {
+    const source = read('scripts/verify-release-reaudit.mjs');
+    assertImageryCallerContract(source);
+    const diagnostic = projectReleaseImageryBuildManifest(manifest);
+    assert.deepEqual(diagnostic, expected);
+    for (const label of ['local', 'live']) {
+      const result = runImageryDiagnosticCaller(source, { label, diagnostic });
+      assert.equal(result.counts.reads, label === 'local' ? 1 : 0);
+      assert.equal(result.logs.length, 1);
+      assert.equal(Object.hasOwn(result.logs[0], 'buildAttribution'), label === 'local');
+      if (label === 'local') assert.deepEqual(result.logs[0].buildAttribution, expected);
+      assert.doesNotMatch(JSON.stringify(result.logs), /SECRET_|https:\/\/SECRET_/);
+      assert.equal(result.logs[0].failed, 1);
+      assert.deepEqual(result.logs[0].failures, [{ name: 'synthetic-paid-boundary', ok: false }]);
+      assert.match(result.error?.message ?? '', /Re-audit failed; inspect evidence/);
+    }
+  });
+}

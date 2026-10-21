@@ -756,6 +756,6 @@ try {
 } finally { await context.close(); await browser.close(); }
 const failed = results.filter(row => !row.ok);
 writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results, ...(label === 'local' ? { buildAttribution } : {}) }, null, 2));
-console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
+console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed, ...(label === 'local' ? { buildAttribution } : {}) }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');
 

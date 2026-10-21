@@ -44,21 +44,52 @@ test('approved My Practice design presents compact actions, tools and real profi
 })
 
 test('Create report passes through owner-only app-to-admin bridge and never publishes a report silently', async () => {
-  const [destinations, api, selector, editor, store] = await Promise.all([
+  const [destinations, api, entry, studio, editor, store] = await Promise.all([
     source('lib/app/practitioner-access.js'),
     source('app/api/app/[...path]/route.js'),
     source('app/admin/reports/new/page.js'),
+    source('app/admin/consultations/new/page.js'),
     source('app/admin/clients/[id]/assessments/new/page.js'),
     source('lib/clients/assessments.js'),
   ])
   assert.match(destinations, /report: '\/admin\/reports\/new'/)
   assert.match(api, /!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)/)
-  assert.match(selector, /if \(!await requireAdminRequest\(\)\) redirect\('\/admin\/login'\)/)
-  assert.match(selector, /getPrescriptionStore\(\)/)
-  assert.match(selector, /client\.status === 'active'/)
-  assert.match(selector, /\/admin\/consultations\/new\?clientId=/)
-  assert.match(selector, /Documents stay private until you explicitly share them/)
-  assert.match(selector, /robots: \{ index: false, follow: false \}/)
+  const verifiedActor = api.indexOf('    const actor = await auth.verified(),')
+  const bridge = api.indexOf("    if (joined === 'practitioner/open' && method === 'POST') {")
+  assert.ok(verifiedActor >= 0 && bridge > verifiedActor)
+  assert.match(api.slice(verifiedActor, bridge), /if \(expectedAccount && expectedAccount !== actor\.id\) throw new AppError\('ACCOUNT_CHANGED',409\)/)
+  assert.ok(api.slice(bridge).startsWith([
+    "    if (joined === 'practitioner/open' && method === 'POST') {",
+    '      const body = await readBody(request)',
+    "      onlyKeys(body, ['destination', 'clientId'])",
+    "      if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor)) throw new AppError('NOT_FOUND', 404)",
+    "      const isClient = body.destination === 'client'",
+    '      if (isClient) requireUUID(body.clientId)',
+    "      else if (body.clientId !== undefined) throw new AppError('INVALID_INPUT', 400)",
+    '      const destination = isClient',
+    "        ? '/admin/clients/' + body.clientId",
+    '        : practitionerDestination[body.destination]',
+    "      if (!destination) throw new AppError('NOT_FOUND', 404)",
+    '      if (isClient) {',
+    '        const store = getPrescriptionStore()',
+    "        if (!store) throw new AppError('CLIENT_STORAGE_UNAVAILABLE', 503)",
+    "        if (!await store.findClientById(body.clientId)) throw new AppError('NOT_FOUND', 404)",
+    '      }',
+    '      const response = json({ redirectUrl: destination })',
+    '      if (!issueTrustedAdminSession(response, { secure: !config.test }))',
+    "        throw new AppError('PRACTITIONER_UNAVAILABLE', 503)",
+    '      return response',
+    '    }',
+  ].join('\n')), 'the report bridge must remain owner-only and fail closed on destinations')
+  assert.match(entry, /if \(!await requireAdminRequest\(\)\) redirect\('\/admin\/login'\)/)
+  assert.match(entry, /redirect\(validUuid\(clientId\)/)
+  assert.ok(entry.includes('`/admin/consultations/new?clientId=${encodeURIComponent(clientId)}`'))
+  assert.match(entry, /robots: \{ index: false, follow: false \}/)
+  assert.doesNotMatch(entry, /getPrescriptionStore|listClients|createConsultation|publish|saveOwnerDraft/)
+  assert.match(studio, /if \(!await requireAdminRequest\(\)\) redirect\('\/admin\/login'\)/)
+  assert.match(studio, /getPrescriptionStore\(\)/)
+  assert.match(studio, /clients\.filter\(c => c\.status === 'active'\)/)
+  assert.match(studio, /<ConsultationForm\s+clients=\{options\}\s+selectedClientId=\{selectedClientId\}/)
   assert.match(editor, /AssessmentEditor/)
   assert.match(editor, /searchParams\)\?\.kind === 'research_result'/)
   assert.match(editor, /redirect\(\`\/admin\/consultations\/new\?clientId=/)
