@@ -23,7 +23,7 @@ test('Reiki lessons are featured ahead of an opt-in new course editor',()=>{
  const featured=materials.indexOf('data-open-reiki-course-audio')
  const editor=materials.indexOf('<PractitionerCourseBuilder locale={locale}')
  assert.ok(featured>0&&editor>featured,'Existing Reiki must appear before optional authoring')
- assert.match(materials,/\{isOwner&&<div className=\{styles\.featuredCourse\}>/)
+ assert.match(materials,/\{isOwner&&<div className=\{styles\.featuredCourse\} hidden=\{courseComposerOpen\}>/)
  assert.match(materials,/aria-expanded=\{courseComposerOpen\}/)
  assert.match(materials,/\{courseComposerOpen&&<div/)
  assert.match(materials,/onClick=\{\(\)=>onOpenReikiCourse\?\.\(\)\}/)
