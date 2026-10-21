@@ -60,7 +60,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       slideJustify: getComputedStyle(scroller).justifyContent,
       slideHeight: slideRect.height,
       titleHeaderCount: element.querySelectorAll("header").length,
-      privateSaveManagerPresent: Boolean(element.querySelector('details[class*="saveManager"] aside[class*="preview"]')),
+      privateSaveStatusPresent: Boolean(element.querySelector('[data-reiki-private-save-status][aria-live="polite"]')),
+      referralSharePresent: Boolean(element.querySelector('[data-reiki-referral-share] > summary[aria-label]')),
       programmeOpen: element.querySelector('button[aria-controls="reiki-journey-help"]')?.getAttribute("aria-expanded") === "true",
       programmeHeight: element.querySelector("section[data-expanded]")?.getBoundingClientRect().height ?? 0,
       slideHorizontalOverflow: scroller.scrollWidth-scroller.clientWidth,
@@ -97,7 +98,11 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   }
   assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
-  assert.ok(data.privateSaveManagerPresent, where + ": private saving is accessible from the separate progress icon");
+  // PR1465 replaced the save/check popover with public referral sharing. Private
+  // saving remains in the live status and the dedicated consent/save checkpoint;
+  // the later guest-gate and consented-save assertions still exercise that path.
+  assert.ok(data.privateSaveStatusPresent, where + ": private saving retains its accessible live status");
+  assert.ok(data.referralSharePresent, where + ": separate labeled public sharing action is available");
   assert.equal(data.programmeOpen, false, where + ": journey hint is collapsed unless requested");
   assert.ok(data.programmeHeight > 25 && data.programmeHeight < 48,
     where + ": collapsed hint keeps a single compact bottom row");
