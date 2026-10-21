@@ -40,3 +40,36 @@
 .publish{background:#243d6c;color:white}
 .unpublish{background:#fff;color:#6b4851!important;border-color:#ccb6bb!important}
 .publishActions button:disabled{opacity:.55;cursor:wait}
+
+/* Practitioner V4 — preserve uploader/API, visually align the older report catalog. */
+.shell{max-width:980px;margin:0 auto 10px;padding:12px;color:#3b2e26}
+.panel{border:1px solid #e6d6c3;border-radius:16px;background:#fffdfa;
+ padding:clamp(11px,2vw,19px);box-shadow:0 4px 18px #5d43220c}
+.panel h2,.listHeader h2{font:400 clamp(20px,3vw,27px)/1.2 Georgia,serif;color:#3b2c22}
+.hint{color:#78695b;font-size:12px;margin-bottom:10px}
+.types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:11px 0 14px}
+.types button{min-width:0;min-height:46px;border:1px solid #e4d5c4;border-radius:11px;
+ padding:8px 5px;color:#665140;background:#fff9f2;gap:5px;font-size:12px}
+.types button[aria-pressed="true"]{color:#056d6b;border-color:#95c6ba;background:#dff0ec}
+.form{gap:11px}
+.form label{color:#584b3f;font-size:12px}
+.form input,.form textarea{border-color:#dcccba;border-radius:11px;color:#352a22;
+ font-size:16px;background:#fffefa}
+.note{border:1px solid #e8decf;border-radius:11px;color:#746153;background:#f7f1e9;
+ font-size:12px;padding:10px}
+.primary{min-height:45px;padding:11px 18px;border-radius:11px;background:#0b7776;color:white}
+.listHeader{margin-top:19px}
+.listHeader select{border-color:#dbcab6;color:#4f3e31;background:#fffdfa}
+.catalog{grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:9px}
+.item{border-color:#e5d7c6;background:#fffdfa;border-radius:13px}
+.item header strong{color:#4f3928}
+.item p,.itemFooter{color:#7c6b5e}
+.publishActions select{color:#47382c;border-color:#d8c7b4;background:#fffdfa}
+.publish{background:#0b7776;border-color:#0b7776;color:white}
+@media(max-width:590px){
+ .shell{padding:8px;margin:0}
+ .panel{padding:10px}
+ .catalog{grid-template-columns:minmax(0,1fr)}
+ .types{gap:4px}
+ .types button{font-size:11px;padding:6px 1px;gap:3px}
+}

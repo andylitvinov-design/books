@@ -63,7 +63,7 @@ test('public course read uses published snapshot rather than pending draft',()=>
 })
 test('existing materials and Academy catalog use new builder without replacing Reiki',()=>{
  const material=read('components/app/practice-materials.jsx')
- assert.match(material,/<PractitionerCourseBuilder locale=\{locale\}\/>/)
+ assert.match(material,/<PractitionerCourseBuilder locale=\{locale\} accountId=\{accountId\} searchQuery=\{query\}\/>/)
  assert.match(material,/data-open-reiki-course-audio/)
  assert.match(material,/data-practice-materials-courses-tab/)
  const academy=read('app/[locale]/academy/[[...slug]]/page.tsx')
@@ -84,7 +84,7 @@ test('cabinet account switch, owner Reiki shortcut and signed-media origin are p
  assert.match(builder,/const api=body=>request\(body,accountId\)/)
  assert.match(builder,/'x-hh-account-id':accountId/)
  const parent=read('components/app/practice-workspace.jsx')
- assert.match(parent,/onOpenReikiCourse=\{\(\)=>openOwner\('reikiCourse'\)\}/)
+ assert.match(parent,/onOpenReikiCourse=\{lesson=>openOwner\('reikiCourse',undefined,lesson\)\}/)
  assert.match(parent,/accountId=\{accountId\}/)
  const middleware=read('middleware.ts')
  assert.match(middleware,/practitionerCourseMediaOrigin/)

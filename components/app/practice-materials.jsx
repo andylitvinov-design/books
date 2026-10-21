@@ -15,7 +15,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,isOwner=false,onOpenReikiCourse,onOpenServices,onSaveVideos,onSubmitVideos}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenServices,onSaveVideos,onSubmitVideos}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -155,7 +155,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   </label>}
   <div className={styles.activePanel} role="tabpanel" data-material-panel={tab}>
   {tab==='courses'?<section className={styles.body} data-practice-master-courses>
-    <PractitionerCourseBuilder locale={locale} searchQuery={query}/>
+    <PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query}/>
     {isOwner&&<div>
     <p className={styles.intro}>{ru?'Выберите курс, чтобы управлять его уроками и медитациями.':es?'Elige un curso para gestionar sus lecciones.':'Choose a course to manage its lessons and meditations.'}</p>
     {(!query||'Практик Рейки Reiki Practitioner Practicante de Reiki'.toLowerCase().includes(query.toLowerCase()))?

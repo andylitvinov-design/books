@@ -7,7 +7,9 @@ import {uiLocaleCookie} from '@/lib/ui-locale'
 import {getAppConfig} from '@/lib/app/config'
 import {ownerTelegramSetupStatus} from '@/lib/practitioners/telegram-owner-setup'
 import {modelSettings} from '@/lib/practitioners/council-free-models.mjs'
-import {sendDailyCouncilReportAction} from './actions'
+import {sendDailyCouncilReportAction,saveOwnerFreeProviderAction,
+  disableOwnerFreeProviderAction} from './actions'
+import {ownerAiProviderReadiness} from '@/lib/practitioners/owner-ai-provider-settings'
 import {
   checkTelegramConnectionAction,connectAndTestTelegramAction
 } from './actions'
@@ -49,6 +51,13 @@ const resultNotes={
   council_no_archive:{ru:'Публичный HTML-аудит ещё не создан.',en:'Public HTML audit not archived yet.'},
   council_not_paired:{ru:'Личный чат ещё не подтверждён.',en:'Private Telegram chat not verified.'},
   council_unavailable:{ru:'Доставка не подтверждена. Проверь статус отчёта.',en:'Delivery unconfirmed. Check report status.'},
+  gemini_free_saved:{ru:'Подтверждение бесплатного Gemini сохранено. Теперь модель сможет запускаться в пределах Free Tier.',en:'Free Gemini confirmation saved. The model may now run within Free Tier.'},
+  mistral_free_saved:{ru:'Ключ Mistral сохранён зашифрованным. Free mode подтверждён. Доступность модели проверяется при запуске.',en:'Mistral key saved encrypted. Free mode confirmed. Model availability is checked on every run.'},
+  gemini_disabled:{ru:'Разрешение Gemini отключено.',en:'Gemini Free Tier permission disabled.'},
+  mistral_disabled:{ru:'Доступ Mistral отключён, сохранённый ключ удалён.',en:'Mistral disabled and its stored key cleared.'},
+  free_setup_confirmation_required:{ru:'Поставь обе галочки подтверждения бесплатного тарифа и отсутствия платного биллинга.',en:'Please confirm both the free plan and no paid billing.'},
+  free_setup_invalid_key:{ru:'Ключ Mistral неверного формата. Вставь ключ из Studio целиком.',en:'Mistral key has an invalid format. Paste the whole Studio key.'},
+  free_setup_unavailable:{ru:'Настройка временно недоступна. Ничего платного не запускалось.',en:'Setup temporarily unavailable. No paid model was started.'},
 }
 
 export default async function TelegramSetupPage({searchParams}){
@@ -56,12 +65,22 @@ export default async function TelegramSetupPage({searchParams}){
   const ru=(await cookies()).get(uiLocaleCookie)?.value==='ru'
   const models=modelSettings(process.env)
   const lang=ru?'ru':'en'
+  let provider={geminiKeyPresent:models.geminiKeyPresent,
+    geminiFreeConfirmed:models.geminiFreeConfirmed,
+    mistralStudioKeyPresent:models.mistralDirectKeyPresent,
+    mistralFreeConfirmed:models.mistralDirectFreeConfirmed,
+    mistralOpenRouterKeyPresent:models.mistralOpenRouterKeyPresent}
   const result=(await searchParams)?.result||''
   let state={token_saved:false,telegram_enabled:false,pairing:'not_started',
     test:'not_sent',test_accepted:false}
   let unavailable=false
   try{
-    state=await ownerTelegramSetupStatus(getAppConfig())
+    const config=getAppConfig()
+    const [telegramState,providerState]=await Promise.all([
+      ownerTelegramSetupStatus(config),ownerAiProviderReadiness(config)
+    ])
+    state=telegramState
+    provider=providerState
   }catch{unavailable=true}
   const pairing=notes[state.pairing]||notes.not_started
   const statusText=state.test_accepted
@@ -74,8 +93,9 @@ export default async function TelegramSetupPage({searchParams}){
     ?resultNotes.setup_unavailable[lang]
     :returned?.[lang]
   const canCheck=state.token_saved&&!unavailable
+  // The main ChatGPT daily report is always deliverable when archived:
+  // no Gemini/Mistral Free Tier attestation is required for Telegram transport.
   const canCouncil=canCheck&&state.pairing==='paired'&&state.telegram_enabled&&
-    models.geminiKeyPresent&&models.geminiFreeConfirmed&&models.mistralKeyPresent&&
     state.council?.status!=='sending'
   const canSend=canCheck&&state.telegram_enabled&&!state.test_accepted&&
     !['sending','uncertain'].includes(state.test)
@@ -149,21 +169,21 @@ export default async function TelegramSetupPage({searchParams}){
         <div className={styles.modelSetup} aria-label={ru?'Доступность AI-отчётов':'AI audit readiness'}>
           <h3>{ru?'Ежедневный анализ сайта':'Daily website review'}</h3>
           <p>{ru?'Gemini:':'Gemini:'} <strong>{
-            models.geminiKeyPresent&&models.geminiFreeConfirmed
+            provider.geminiKeyPresent&&provider.geminiFreeConfirmed
               ?ru?'Ключ сохранён, бесплатный тариф подтверждён':'Key saved, Free Tier confirmed'
-              :models.geminiKeyPresent
+              :provider.geminiKeyPresent
                 ?ru?'Ключ сохранён; требуется подтверждение Free Tier':'Key saved; Free Tier confirmation required'
                 :ru?'API-ключ не подключён':'API key missing'
           }</strong></p>
           <p>Mistral · OpenRouter: <strong>{
-            models.mistralOpenRouterKeyPresent
+            provider.mistralOpenRouterKeyPresent
               ?ru?'Ключ сохранён; модель :free и цена проверяются при запуске':
                 'Key saved; :free model and price checked per run'
               :ru?'Нет ключа':'No key'
           }</strong></p>
           <p>Mistral · Studio Free mode: <strong>{
-            models.mistralDirectKeyPresent
-              ?models.mistralDirectFreeConfirmed
+            provider.mistralStudioKeyPresent
+              ?provider.mistralFreeConfirmed
                 ?ru?'Ключ сохранён; Free mode подтверждён владельцем; доступность модели проверяется при запуске':
                   'Key saved; owner-confirmed Free mode; model access checked per run'
                 :ru?'Ключ сохранён; требуется подтверждение Free mode без pay-as-you-go':
@@ -174,15 +194,90 @@ export default async function TelegramSetupPage({searchParams}){
             ru?'Аудиты выполняются только по публичным страницам; платные модели автоматически не используются.':
               'Public-site evidence only. Paid model fallback is strictly disabled.'
           }</p>
+          <div className={styles.ownerAiSetup}>
+            <h3>{ru?'Подключение AI — один экран':'AI setup — one screen'}</h3>
+            <p className={styles.footnote}>{
+              ru?'Никаких настроек Vercel или новых Telegram-ботов. Сначала проверь тарифы в личных кабинетах, затем подтверди их здесь. Ключ Mistral вводи только на этом защищённом экране — не в ChatGPT.':
+                'No Vercel settings or additional Telegram bots. Verify your provider plans first, then confirm here. Enter the Mistral key only on this secured screen, never in a chat.'
+            }</p>
+            <form action={saveOwnerFreeProviderAction} className={styles.providerForm}>
+              <input type="hidden" name="provider" value="gemini"/>
+              <strong>1. Gemini · Google AI Studio</strong>
+              <a href="https://aistudio.google.com/app/projects" target="_blank" rel="noopener noreferrer">
+                {ru?'Проверить Free Tier своего проекта ↗':'Verify the Free Tier for this project ↗'}
+              </a>
+              <label className={styles.checkLine}>
+                <input name="free_confirmed" type="checkbox" value="yes" required/>
+                <span>{ru?'Проверил: именно проект моего существующего ключа Gemini — Free Tier.':
+                  'I checked: the project of my existing Gemini key is on Free Tier.'}</span>
+              </label>
+              <label className={styles.checkLine}>
+                <input name="no_paid_billing" type="checkbox" value="yes" required/>
+                <span>{ru?'Платный биллинг этого проекта не включён.':
+                  'This project does not have paid billing enabled.'}</span>
+              </label>
+              <button type="submit" className={styles.primary}
+                disabled={!provider.geminiKeyPresent||provider.geminiFreeConfirmed||unavailable}>
+                {provider.geminiFreeConfirmed
+                  ?ru?'Gemini подтверждён':'Gemini confirmed'
+                  :ru?'Подтвердить бесплатный Gemini':'Confirm free Gemini'}
+              </button>
+            </form>
+            {provider.geminiFreeConfirmed&&<form action={disableOwnerFreeProviderAction}
+              className={styles.disableForm}>
+              <input type="hidden" name="provider" value="gemini"/>
+              <button type="submit" className={styles.secondary}>
+                {ru?'Отключить разрешение Gemini':'Disable Gemini permission'}
+              </button>
+            </form>}
+            <form action={saveOwnerFreeProviderAction} className={styles.providerForm}>
+              <input type="hidden" name="provider" value="mistral"/>
+              <strong>2. Mistral · Studio Free mode</strong>
+              <a href="https://console.mistral.ai/" target="_blank" rel="noopener noreferrer">
+                {ru?'Открыть Mistral Studio → API Keys ↗':'Open Mistral Studio → API Keys ↗'}
+              </a>
+              <label htmlFor="owner-mistral-key">
+                {ru?'Вставить API-ключ из Mistral Studio':'Paste Mistral Studio API key'}
+              </label>
+              <input id="owner-mistral-key" name="mistral_key" type="password"
+                minLength={24} maxLength={512} autoComplete="off" spellCheck={false}
+                className={styles.secretInput} placeholder={ru?'Секретный API-ключ':'Private API key'}
+                required/>
+              <label className={styles.checkLine}>
+                <input name="free_confirmed" type="checkbox" value="yes" required/>
+                <span>{ru?'Проверил: мой Mistral Workspace находится в Free mode.':
+                  'I checked: my Mistral workspace is in Free mode.'}</span>
+              </label>
+              <label className={styles.checkLine}>
+                <input name="no_paid_billing" type="checkbox" value="yes" required/>
+                <span>{ru?'Pay-as-you-go отключён; платный тариф не включён.':
+                  'Pay-as-you-go is off; no paid plan is enabled.'}</span>
+              </label>
+              <button type="submit" className={styles.primary} disabled={unavailable}>
+                {ru?'Безопасно сохранить ключ Mistral':'Safely save Mistral key'}
+              </button>
+            </form>
+            {provider.mistralStudioKeyPresent&&<form action={disableOwnerFreeProviderAction}
+              className={styles.disableForm}>
+              <input type="hidden" name="provider" value="mistral"/>
+              <button type="submit" className={styles.secondary}>
+                {ru?'Удалить ключ и отключить Mistral':'Delete key and disable Mistral'}
+              </button>
+            </form>}
+          </div>
           <p>{ru?'Последний AI-отчёт':'Latest AI report'}: <strong>{
             state.council
               ?state.council.date+' · '+state.council.status+
                 ' · Gemini '+state.council.gemini+' / Mistral '+state.council.mistral
               :ru?'Нет подтверждённого отчёта':'No confirmed report yet'
           }</strong></p>
+          <p className={styles.footnote}>
+            {ru?'Можно отправить отчёт ChatGPT без подключения Mistral и Gemini. Ответы независимых моделей добавляются только после подтверждения бесплатных тарифов и реальной проверки API. Повтор того же отчёта не отправляется.':
+              'You can send a ChatGPT report without Gemini or Mistral credentials. Independent model answers are included only after verified free-tier setup and real API responses. The same daily report cannot be resent.'}
+          </p>
           <form action={sendDailyCouncilReportAction} className={styles.sendForm}>
             <button type="submit" className={styles.primary} disabled={!canCouncil}>
-              {ru?'Отправить анализ Gemini и Mistral сейчас':'Send Gemini + Mistral audit now'}
+              {ru?'Отправить доступный отчёт сегодня':'Send available daily report now'}
             </button>
           </form>
           <div className={styles.setupLinks}>
