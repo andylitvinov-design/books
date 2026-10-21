@@ -98,7 +98,7 @@ export default function PractitionerArticles({locale,services=[]}){
   archive:'Archivar',confirmArchive:'¿Archivar este artículo?',opened:'Abrir artículo publicado'
  }: {...base,folderFilters:ru?'Папки, поиск и фильтры':'Folders, search & filters',retry:ru?'Повторить':'Retry',loading:ru?'Загружаем статьи…':'Loading articles…'}
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
- const [query,setQuery]=useState(''),[limit,setLimit]=useState(24),[statusFilter,setStatusFilter]=useState('all')
+ const [query,setQuery]=useState(''),[limit,setLimit]=useState(2),[statusFilter,setStatusFilter]=useState('all')
  const [editing,setEditing]=useState(null),[editorOpen,setEditorOpen]=useState(false)
  const [draft,setDraft]=useState(()=>initial(locale)),[folderId,setFolderId]=useState('')
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
@@ -203,7 +203,7 @@ export default function PractitionerArticles({locale,services=[]}){
   e.preventDefault();if(!folderName.trim()){setError(t.emptyInput);return}
   await perform(async()=>{
    const folder=await request('/folders',{name:folderName})
-   await reload();setSelectedFolder(folder.id);if(editorOpen)setFolderId(folder.id);setFolderName('');setAddingFolder(false);setLimit(24);setNotice(t.folderSaved)
+   await reload();setSelectedFolder(folder.id);if(editorOpen)setFolderId(folder.id);setFolderName('');setAddingFolder(false);setLimit(2);setNotice(t.folderSaved)
   })
  }
  async function renameFolder(){
@@ -259,9 +259,9 @@ export default function PractitionerArticles({locale,services=[]}){
   <div className={styles.folders}>
    <div className={styles.folderTitle}><span>{t.folder}</span><button type="button" className={styles.secondary} disabled={busy} onClick={()=>setAddingFolder(x=>!x)}><FolderPlus size={14} aria-hidden="true"/> {t.newFolder}</button></div>
    <div className={styles.folderList} role="group" aria-label={t.folder}>
-    <button type="button" className={styles.folder} aria-pressed={selectedFolder==='all'} onClick={()=>{setSelectedFolder('all');setLimit(24)}}><BookOpen size={15} aria-hidden="true"/>{t.all}<small>{items.length}</small></button>
-    {folders.map(f=><button type="button" className={styles.folder} key={f.id} aria-pressed={selectedFolder===f.id} onClick={()=>{setSelectedFolder(f.id);setLimit(24)}}><Folder size={15} aria-hidden="true"/>{f.name}<small>{items.filter(x=>x.folderId===f.id).length}</small></button>)}
-    <button type="button" className={styles.folder} aria-pressed={selectedFolder==='unfiled'} onClick={()=>{setSelectedFolder('unfiled');setLimit(24)}}>{t.noFolder}<small>{items.filter(x=>!x.folderId).length}</small></button>
+    <button type="button" className={styles.folder} aria-pressed={selectedFolder==='all'} onClick={()=>{setSelectedFolder('all');setLimit(2)}}><BookOpen size={15} aria-hidden="true"/>{t.all}<small>{items.length}</small></button>
+    {folders.map(f=><button type="button" className={styles.folder} key={f.id} aria-pressed={selectedFolder===f.id} onClick={()=>{setSelectedFolder(f.id);setLimit(2)}}><Folder size={15} aria-hidden="true"/>{f.name}<small>{items.filter(x=>x.folderId===f.id).length}</small></button>)}
+    <button type="button" className={styles.folder} aria-pressed={selectedFolder==='unfiled'} onClick={()=>{setSelectedFolder('unfiled');setLimit(2)}}>{t.noFolder}<small>{items.filter(x=>!x.folderId).length}</small></button>
    </div>
    {(addingFolder||selected)&&<div className={styles.manage}>
     {addingFolder&&<form onSubmit={createFolder}><input value={folderName} onChange={e=>setFolderName(e.target.value)} maxLength={80} placeholder={t.folderName} aria-label={t.folderName} autoFocus/><button disabled={busy} className={styles.primary} type="submit">{t.add}</button><button type="button" className={styles.secondary} onClick={()=>setAddingFolder(false)}>{t.cancel}</button></form>}
@@ -269,8 +269,8 @@ export default function PractitionerArticles({locale,services=[]}){
    </div>}
   </div>
   <div className={styles.findBar}>
-   <label className={styles.search}><Search size={18} aria-hidden="true"/><input type="search" aria-label={t.search} placeholder={t.search} value={query} onChange={e=>{setQuery(e.target.value);setLimit(24)}}/></label>
-   <select className={styles.statusSelect} aria-label={t.filterStatus} value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setLimit(24)}}>
+   <label className={styles.search}><Search size={18} aria-hidden="true"/><input type="search" aria-label={t.search} placeholder={t.search} value={query} onChange={e=>{setQuery(e.target.value);setLimit(2)}}/></label>
+   <select className={styles.statusSelect} aria-label={t.filterStatus} value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setLimit(2)}}>
     <option value="all">{t.allStatuses}</option>
     {['draft','submitted','published','changes_requested','archived'].map(value=><option key={value} value={value}>{shortStatus(value,ru)}</option>)}
    </select>
