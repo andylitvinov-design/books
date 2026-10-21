@@ -74,7 +74,7 @@ test("manual ZEN is an enquiry for actual cart total, not a payment provider", (
   assert.match(component, /no subscription|sin suscripción|без подписки/i);
 });
 
-test("occupied cart is visible in the mobile header while the narrow layout stays one row", () => {
+test("occupied Cart stays reachable in the menu and Cabinet remains visible on narrow phones", () => {
   const nav = read("components/commerce/cart-nav-link.tsx");
   const cartCss = read("components/commerce/cart-nav-link.module.css");
   const headerCss = read("app/holistic-house-home.css");
@@ -82,6 +82,6 @@ test("occupied cart is visible in the mobile header while the narrow layout stay
   assert.match(nav, /aria-label=\{\x60\$\{copy\[locale\]\} \(\$\{count\}\)\x60\}/);
   assert.match(cartCss, /position:absolute;top:-6px;right:-6px/);
   assert.match(headerCss, /@media \(max-width: 767px\)[\s\S]*data-cart-has-items="true"/);
-  assert.match(headerCss, /@media \(max-width: 490px\)[\s\S]*:has\(> a\[data-nav-item="cart"\]/);
+  assert.match(headerCss, /@media \(max-width: 490px\)[\s\S]*a\[data-nav-item="cart"\]\[data-cart-has-items="true"\]/);
   assert.match(headerCss, /> a\[data-nav-item="cart"\]\[data-cart-has-items="true"\]\s*\{\s*display:\s*none/);
 });
