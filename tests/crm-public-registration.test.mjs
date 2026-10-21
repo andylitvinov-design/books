@@ -96,7 +96,7 @@ test('guest registration creates an encrypted CRM contact in the same transactio
   assert.doesNotMatch(sql,/grant\s+(all|select|update|delete)\s+on\s+app\.crm_contacts\s+to\s+(anon|authenticated|hh_app_backend)/i)
   assert.doesNotMatch(sql,/security definer|marketing_consent|send_sms|send_email/i)
 })
-test('shared course/service chooser requires name, contact and opt-in before saving',()=>{
+test('shared course/service chooser requires a reply contact and opt-in; name is optional',()=>{
   const view=read('components/contact-channel-chooser.tsx')
   const styles=read('components/contact-channel-chooser.module.css')
   for (const term of ['autoComplete="name"','autoComplete="email"','autoComplete="tel"',

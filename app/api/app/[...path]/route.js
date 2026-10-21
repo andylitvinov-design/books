@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
+import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
 import { createAppRepository } from '@/lib/app/repository'
 import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/development-goals'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
@@ -83,16 +84,17 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native'])
-      const locale = body.locale === 'ru' ? 'ru' : 'en'
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath'])
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && body.continueTo === 'enquiry' ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
         program = body.program || null,
         requestId = body.requestId || null,
-        native = body.native === true
+        native = body.native === true,
+        returnPath = body.returnPath ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations', 'business'].includes(continueTo) &&
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'enquiry'].includes(continueTo) &&
         !['cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
@@ -100,6 +102,8 @@ async function handle(request, { params }) {
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
       if ((intentId && serviceId) || (continueTo && (intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((continueTo === 'enquiry' && (!safeEnquiryReturnPath(returnPath, locale) || native)) ||
+          (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       await consumeRate(
         config,
         {
@@ -113,7 +117,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -123,24 +127,28 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && url.searchParams.get('continue') === 'enquiry' ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
         continueTo = url.searchParams.get('continue'),
         program = url.searchParams.get('program'),
-        requestId = url.searchParams.get('request')
+        requestId = url.searchParams.get('request'),
+        returnPath = url.searchParams.get('returnPath')
+      if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
+          (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-tests','my-courses','reports','energywork','practitioner','enquiry'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
       // THIS SAME callback without native=1. Never transfer session tokens.
       if (url.searchParams.get('native') === '1') {
+        if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
         for (const key of ['locale','intent','service','continue','program','request','sb_flow_id']) {
           const value = url.searchParams.get(key)
@@ -157,6 +165,8 @@ async function handle(request, { params }) {
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
           : continueTo === 'consultations'
             ? `${origin}/${locale}/app/consultations?request=${encodeURIComponent(requestId)}`
+          : continueTo === 'enquiry'
+            ? `${origin}${returnPath}?hh_enquiry=google`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
@@ -200,6 +210,12 @@ async function handle(request, { params }) {
       return auth.apply(
         NextResponse.redirect(destination, { status: 303, headers: PRIVATE_HEADERS }),
       )
+    }
+    if (joined === 'auth/contact-profile' && method === 'GET') {
+      // Verified server-side Google identity only. Never create a lead, infer
+      // marketing consent or expose access tokens in the public contact form.
+      const actor = await auth.verified()
+      return json({ email: actor.email, displayName: actor.displayName })
     }
     if (joined === 'auth/logout' && method === 'POST') {
       const body = await readBody(request)

@@ -122,3 +122,49 @@
 .contactFields .phoneField{grid-column:1/-1;display:grid;gap:5px;min-width:0}
 .phoneField label{display:block}
 .contactFields .phoneField input,.contactFields .phoneField select{font-size:16px}
+
+/* Compact, opt-in registration: one reply field at a time and optional Google. */
+.googleButton {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  min-height:48px; width:100%; padding:9px 13px; border:1px solid #b9ccd8;
+  border-radius:11px; background:white; color:#243e5d; cursor:pointer;
+  font:750 14px/1.3 Arial,Helvetica,sans-serif;
+}
+.googleMark {
+  display:grid; place-items:center; width:22px; height:22px; flex:none;
+  font:800 20px/1 Arial,Helvetica,sans-serif;
+  color:#4285f4; background:white;
+}
+.googleButton:disabled { opacity:.6; cursor:wait; }
+.googleReady { margin:0; font:650 12px/1.4 Arial,Helvetica,sans-serif; color:#196756; }
+.separator { display:flex; align-items:center; gap:12px; margin:0; color:#65798b;
+  text-align:center; font:600 11px/1.5 Arial,Helvetica,sans-serif; }
+.separator::before,.separator::after { content:""; flex:1; border-top:1px solid #d5e0e7; }
+.methodChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px;
+  border-radius:11px; background:#e8f1f5; padding:4px; }
+.methodChoices button { min-height:44px; border:1px solid transparent; border-radius:8px;
+  padding:8px 5px; background:transparent; color:#34576e; cursor:pointer;
+  font:750 13px/1.3 Arial,Helvetica,sans-serif; }
+.methodChoices button[aria-pressed="true"] { background:white; color:#204b58;
+  border-color:#c4d9df; box-shadow:0 1px 3px rgba(25,54,84,.09); }
+.methodChoices button:disabled { cursor:not-allowed; opacity:.65; }
+.contactFields { grid-template-columns:minmax(0,1fr); gap:0; }
+.contactFields label:first-child { grid-column:auto; }
+.contactFields input,.optionalName input { font-size:16px; }
+.optionalName { border:1px solid #d1dee6; border-radius:10px; background:#fff; min-width:0; }
+.optionalName > summary { cursor:pointer; min-height:40px; padding:10px 12px; box-sizing:border-box;
+  font:650 12px/1.4 Arial,Helvetica,sans-serif; color:#3a6175; list-style-position:inside; }
+.optionalName > label { display:grid; gap:5px; margin:0 10px 10px; }
+.optionalName input { width:100%; min-height:44px; box-sizing:border-box; border:1px solid #bacbd9;
+  border-radius:9px; padding:9px 10px; color:#213c55; background:white; }
+.privacy { margin-top:8px; }
+.privacy > summary { cursor:pointer; font:600 11px/1.5 Arial,Helvetica,sans-serif; color:#65798b; }
+.privacy .note { margin-top:5px; }
+.googleButton:focus-visible,.methodChoices button:focus-visible,.optionalName summary:focus-visible,
+.optionalName input:focus-visible,.privacy summary:focus-visible {
+  outline:3px solid #80abc7; outline-offset:2px;
+}
+.enquiryForm input { scroll-margin-bottom:170px; }
+@container (max-width: 300px) {
+  .methodChoices { grid-template-columns:1fr; }
+}
