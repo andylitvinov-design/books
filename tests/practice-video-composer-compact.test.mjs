@@ -29,6 +29,8 @@ test('V4 has only five library tabs; video action opens website/YouTube dialog',
 })
 test('website direct MP4/MOV reuses existing signed private-intent flow; no premature published status',()=>{
  const transport=read('lib/practitioners/browser-presentation-upload.js')
+ const repository=read('lib/practitioners/repository.js')
+ assert.match(repository,/const nextStatus=hasPublic\?'approved':\['submitted','changes_requested'\]\.includes\(row\.status\)\?row\.status:'draft'/)
  assert.match(transport,/PRESENTATION_MAX_BYTES/)
  assert.match(transport,/uploadToSignedUrl/)
  assert.match(transport,/await request\('complete'/)
