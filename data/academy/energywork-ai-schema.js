@@ -137,6 +137,17 @@ export function energyworkSequence(_legacyPath = null) {
 }
 // Derive lesson lengths from the canonical sequence, not hard-coded totals.
 // end is exclusive; the two welcome slides are an introduction before lesson 1.
+// Revisiting an already reached slide is navigation, not another write. The
+// server cursor is monotonic; only a new/edited answer needs a fresh save.
+// This also avoids needless revision conflicts after a learner moves Back.
+export function energyworkAdvanceAlreadyStored(currentId, nextId, savedId, hasUnsavedAnswer) {
+  if (hasUnsavedAnswer) return false
+  const sequence = energyworkSequence()
+  const current = sequence.indexOf(currentId)
+  const next = sequence.indexOf(nextId)
+  const saved = sequence.indexOf(savedId)
+  return current >= 0 && next === current + 1 && saved >= next
+}
 export function energyworkLessonRanges(sequence = energyworkSequence()) {
   const starts = ENERGYWORK_LESSON_STARTS.map(id => sequence.indexOf(id))
   if (starts.some((value, index) => value < 0 || (index > 0 && value <= starts[index - 1])))
