@@ -64,6 +64,10 @@ const copy = {
     stopBatch: 'Остановить после текущего', metadataWarning: 'Запись загружена, но её название пока не сохранено; можно изменить его позже.',
     storageUsage: 'В этой папке', incompleteUsage: 'Показаны не все файлы — размер указан только для отображаемых.',
     descriptionHint: 'Название и описание доступны только мастеру. Публикация аудио происходит отдельно.',
+    recordStart:'Записать с микрофона',recordStop:'Завершить запись',recordHint:'На iPhone разрешите микрофон. Запись останется приватной до вашей отдельной загрузки.',
+    recordReady:'Запись готова. Прослушайте и нажмите «Загрузить в папку».',
+    recordUnavailable:'Этот браузер не поддерживает запись в M4A. Загрузите файл MP3, M4A или WAV.',
+    recordFailed:'Не удалось получить доступ к микрофону. Проверьте разрешения.',
   },
   en: {
     breadcrumbMaterials: 'Materials', breadcrumbCourses: 'Courses', course: 'Reiki Practitioner course',
@@ -110,6 +114,10 @@ const copy = {
     stopBatch: 'Stop after this file', metadataWarning: 'Audio uploaded, but its title was not saved. You can edit it later.',
     storageUsage: 'In this folder', incompleteUsage: 'Not all files are shown; size includes only displayed items.',
     descriptionHint: 'Names and notes are visible only to the owner. Publication is a separate action.',
+    recordStart:'Record with microphone',recordStop:'Finish recording',recordHint:'Allow microphone access on iPhone. The recording stays on your device until you upload it.',
+    recordReady:'Recording ready. Listen and choose “Upload to folder”.',
+    recordUnavailable:'This browser cannot record M4A audio. Upload an MP3, M4A or WAV instead.',
+    recordFailed:'Microphone access failed. Check browser permissions.',
   },
 }
 
@@ -135,13 +143,19 @@ function formatBytes(bytes) {
   return (bytes / 1024 / 1024).toFixed(1) + ' MB'
 }
 
-function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged,setOperationBusy,copy,metadataAvailable=true}) {
+function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged,setOperationBusy,copy,metadataAvailable=true,preferRecord=false}) {
   const [file,setFile] = useState(null)
   const [pendingFiles,setPendingFiles] = useState([])
   const [preview,setPreview] = useState(null)
   const [progress,setProgress] = useState('')
   const cancelAfterCurrent = useRef(false)
   const fileInputRef = useRef(null)
+  const uploadPanelRef = useRef(null)
+  const recorderRef = useRef(null)
+  const microphoneRef = useRef(null)
+  const recorderChunksRef = useRef([])
+  const aliveRef = useRef(true)
+  const [recording,setRecording] = useState(false)
   const [editing,setEditing] = useState(null)
   const [showArchived,setShowArchived] = useState(false)
   const [staged,setStaged] = useState(null)
@@ -155,6 +169,63 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
     setPreview(url)
     return () => URL.revokeObjectURL(url)
   }, [file])
+  useEffect(()=>{
+    aliveRef.current=true
+    return ()=>{
+      aliveRef.current=false
+      if(recorderRef.current?.state==='recording')recorderRef.current.stop()
+      microphoneRef.current?.getTracks().forEach(track=>track.stop())
+    }
+  },[])
+  useEffect(()=>{
+    if(!preferRecord)return
+    const frame=requestAnimationFrame(()=>uploadPanelRef.current?.scrollIntoView({block:'start',behavior:'auto'}))
+    return ()=>cancelAnimationFrame(frame)
+  },[preferRecord])
+
+  async function startRecording(){
+    if(busy||recording||staged)return
+    if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'||
+       !MediaRecorder.isTypeSupported?.('audio/mp4')){
+      setError(copy.recordUnavailable);return
+    }
+    setError('');setNotice('')
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true})
+      if(!aliveRef.current){stream.getTracks().forEach(track=>track.stop());return}
+      const recorder=new MediaRecorder(stream,{mimeType:'audio/mp4'})
+      recorderRef.current=recorder
+      microphoneRef.current=stream
+      recorderChunksRef.current=[]
+      recorder.ondataavailable=event=>{if(event.data?.size)recorderChunksRef.current.push(event.data)}
+      recorder.onerror=()=>{
+        stream.getTracks().forEach(track=>track.stop())
+        if(aliveRef.current){setError(copy.recordFailed);setRecording(false);setOperationBusy(false)}
+      }
+      recorder.onstop=()=>{
+        stream.getTracks().forEach(track=>track.stop())
+        microphoneRef.current=null
+        if(!aliveRef.current)return
+        setRecording(false);setOperationBusy(false)
+        const blob=new Blob(recorderChunksRef.current,{type:'audio/mp4'})
+        recorderChunksRef.current=[]
+        const recorded=new File([blob],'reiki-'+lesson.id+'-'+Date.now()+'.m4a',{type:'audio/mp4'})
+        if(recorded.size<512||recorded.size>REIKI_INTRO_MAX_BYTES){setError(copy.invalid);return}
+        setStaged(null);setFile(recorded);setPendingFiles([recorded])
+        if(fileInputRef.current)fileInputRef.current.value=''
+        setNotice(copy.recordReady)
+      }
+      setOperationBusy(true);setRecording(true)
+      recorder.start(1000)
+    }catch{
+      microphoneRef.current?.getTracks().forEach(track=>track.stop())
+      microphoneRef.current=null;setOperationBusy(false);setRecording(false)
+      if(aliveRef.current)setError(copy.recordFailed)
+    }
+  }
+  function stopRecording(){
+    if(recorderRef.current?.state==='recording')recorderRef.current.stop()
+  }
 
   const publishedUrl = reikiIntroPublicUrl(origin,current,lesson.id,locale)
   const stagedUrl = staged
@@ -430,11 +501,18 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
         onClick={publish}>{busy==='publish'?copy.publishing:copy.publish}</button>
     </div> : null}
 
-    <div className={styles.uploadPanel}>
+    <div ref={uploadPanelRef} className={styles.uploadPanel}>
+      <div className={styles.recorderControls} data-reiki-audio-microphone>
+        <button type="button" onClick={recording?stopRecording:()=>void startRecording()}
+          disabled={!!busy||!!staged}>
+          <Headphones size={17} aria-hidden="true"/>{recording?copy.recordStop:copy.recordStart}
+        </button>
+        <small>{copy.recordHint}</small>
+      </div>
       <label className={styles.filePicker}>
         <span><UploadCloud size={16} aria-hidden="true"/>{copy.choose}</span>
         <input ref={fileInputRef} type="file" multiple accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav"
-          onChange={select} disabled={!!busy}/>
+          onChange={select} disabled={!!busy||recording}/>
       </label>
       {preview && !staged ? <div className={styles.player}>
         <span>{copy.localPreview} · {file?.name}</span>
@@ -445,7 +523,7 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
       </strong> : null}
       {progress ? <p className={styles.progress} role="status">{progress}</p> : null}
       <div className={styles.uploadActions}>
-        <button type="button" className={styles.uploadButton} disabled={!file || !!busy || !!staged}
+        <button type="button" className={styles.uploadButton} disabled={!file || !!busy || !!staged||recording}
           onClick={upload}><UploadCloud size={18} aria-hidden="true"/>{busy==='upload'?copy.loading:copy.upload}</button>
         {busy==='upload' && pendingFiles.length>1 ?
           <button type="button" className={styles.stopUpload} onClick={()=>{cancelAfterCurrent.current=true}}>
@@ -459,7 +537,7 @@ function LessonAudioCard({lesson,locale,origin,current,files,truncated,onChanged
   </section>
 }
 
-export default function AdminReikiAudio({initialLocale='ru',initialLesson='flight'}) {
+export default function AdminReikiAudio({initialLocale='ru',initialLesson='flight',initialMode='upload'}) {
   const [locale,setLocale] = useState(initialLocale==='ru'?'ru':'en')
   const [selectedLesson,setSelectedLesson] = useState(
     lessons.some(item=>item.id===initialLesson)?initialLesson:'flight')
@@ -584,7 +662,7 @@ export default function AdminReikiAudio({initialLocale='ru',initialLesson='fligh
             {!metadataReady ? <p role="alert" className={styles.notice}>{t.metadataUnavailable}</p> : null}
             <LessonAudioCard key={chosen.id+':'+locale} lesson={chosen} locale={locale} origin={origin}
               current={active} files={files} truncated={truncated} copy={t}
-              metadataAvailable={metadataReady}
+              metadataAvailable={metadataReady} preferRecord={initialMode==='record'}
               onChanged={()=>refresh(chosen.id,locale)} setOperationBusy={setLocked}/>
           </>}
       </section>
