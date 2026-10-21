@@ -52,3 +52,21 @@ test("local illustrated hero and original books/news/film feed remain available 
   assert.match(spanish, /<IdeasNewsFeed locale="es"/);
   assert.match(localized, /<IdeasNewsFeed locale=\{locale as Locale\}/);
 });
+
+test("approved image-based reference renders a real Dao card, expandable meaning and sourced three-column aphorisms", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  const browser = read("scripts/verify-ideas-mobile-browser.mjs");
+  for(const marker of ["data-ideas-dao-card", "data-ideas-aphorisms", "daoInterpretation", "daoGlyphCard", "daoPoint", "daoExpanded", "t.topicStep[topic]"]) {
+    assert.ok(ui.includes(marker), marker + " missing in interactive component");
+  }
+  assert.match(ui, /<details className=\{styles\.daoExpanded\} open=\{example\}>/);
+  assert.match(ui, /getIdeasAphorismMatches\(question, answerLocale, result\.topic\)/);
+  assert.match(ui, /href=\{item\.source\.url\}/);
+  assert.match(ui, /accept="\.txt,\.md,text\/plain,text\/markdown"/);
+  assert.ok(!ui.includes("navigator.clipboard"), "question must not be copied implicitly");
+  assert.match(css, /ideas-pine-reference\.webp/);
+  assert.match(css, /\.aphorisms \{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.daoPoint p \{ font-size:12px/);
+  assert.match(browser, /Ideas mobile browser acceptance passed/);
+});
