@@ -88,4 +88,11 @@ test("browser-only conversation supports multiple turns, voice consent, accessib
   assert.match(css, /min-height: 44px/);
   assert.match(css, /:focus-visible/);
   assert.match(css, /-webkit-overflow-scrolling: touch/);
+  assert.match(css, /ideas-pine-reference\\.webp/, "share the approved Ideas landscape");
+  assert.match(css, /\\.quickChoices \\{ display: grid; grid-template-columns: repeat\\(3, minmax\\(0, 1fr\\)\\)/);
+  assert.match(css, /@media \\(max-width: 360px\\)/);
+  assert.match(component, /data-guide-phase=\\{turns\\.length === 0/);
+  assert.match(component, /className=\\{styles\\.inputRow\\}/);
+  assert.match(component, /<Send size=\\{19\\} aria-hidden="true" \\/><span>\\{t\\.send\\}<\\/span>/);
+  assert.doesNotMatch(component, /turns\\.length === 0 \\? <p className=\\{styles\\.guideBubble\\}/, "do not greet with a redundant bubble");
 });
