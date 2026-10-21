@@ -42,8 +42,8 @@ jobs:
           done
           status=0
           node scripts/verify-business-quiz-mobile.mjs || status=$?
-          node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-services-promo-browser.mjs || status=$?
+          node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
           node scripts/verify-service-cart-browser.mjs || status=$?
           node scripts/verify-storefront-shop-browser.mjs || status=$?
