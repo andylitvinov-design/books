@@ -5,7 +5,7 @@ test('no unverified fake model audit; real existing ChatGPT report remains deliv
  const source=readFileSync(new URL('../lib/practitioners/council-telegram-delivery.js',import.meta.url),'utf8')
  assert.ok(source.includes("status:'model_setup_required'"))
  assert.ok(source.includes("status:'model_responses_unavailable'"))
- assert.ok(source.includes('modelSettings(env)'))
+ assert.ok(source.includes('modelSettings(aiEnv)'))
  assert.ok(source.includes("reviews.gemini.status==='ok'"))
  assert.ok(source.includes("reviews.mistral.status==='ok'"))
  assert.ok(source.includes('else if(!entry.chatgpt)'))

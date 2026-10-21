@@ -92,3 +92,53 @@
 }
 /* Named legacy shortcuts remain part of the accepted free/paid enquiry contract. */
 .directPaths .cta,.directPaths .paidLink{color:#744a32}
+
+/* The consultation offer belongs to the first screen; the six-slide discovery
+   carousel remains underneath. Narrow phones retain two 44px tap targets. */
+.quickBooking {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 0 9px;
+  padding:12px 19px;
+  border:1px solid #e4d6c4;
+  border-radius:20px;
+  color:#422e25;
+  background:linear-gradient(115deg,#fffaf2,#f3e9da);
+}
+.quickBookingCopy { display:grid; gap:4px; min-width:0; }
+.quickBookingCopy p { margin:0; color:#885c40; font:700 10px/1.35 Arial,Helvetica,sans-serif; letter-spacing:.12em; }
+.quickBookingCopy strong { color:#3b2b22; font:700 16px/1.35 Arial,Helvetica,sans-serif; }
+.quickBookingActions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.quickBookingActions a {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-height:44px;
+  padding:10px 16px;
+  border:1px solid #986b4b;
+  border-radius:999px;
+  font:700 13px/1.25 Arial,Helvetica,sans-serif;
+  text-align:center;
+  text-decoration:none;
+}
+.quickBookingPaid { color:#fffaf3; background:#805035; }
+.quickBookingPaid:hover { color:#fff; background:#65402d; }
+.quickBookingFree { color:#684733; background:#fffaf3; }
+.quickBookingFree:hover { background:#f4e4d0; }
+.quickBookingActions a:focus-visible { outline:3px solid #a86a3e; outline-offset:3px; }
+@media (max-width:760px) {
+  .quickBooking { display:grid; gap:8px; margin-bottom:8px; padding:10px 12px 12px; border-radius:16px; }
+  .quickBookingCopy { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:3px 8px; }
+  .quickBookingCopy p { font-size:10px; letter-spacing:.07em; }
+  .quickBookingCopy strong { font-size:13px; }
+  .quickBookingActions { display:grid; grid-template-columns:minmax(0,1.17fr) minmax(0,1fr); gap:7px; width:100%; }
+  .quickBookingActions a { min-width:0; min-height:44px; padding:8px 7px; font-size:12px; }
+}
+@media (max-width:365px) {
+  .quickBookingCopy p { font-size:9px; }
+  .quickBookingCopy strong { font-size:12px; }
+  .quickBookingActions a { font-size:11px; gap:4px; }
+}

@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
-  GEMINI_MODEL,MISTRAL_DIRECT_MODEL,modelSettings,freeMistral,chooseFreeMistral,publicReviewPrompt,
+  GEMINI_MODEL,MISTRAL_DIRECT_MODEL,MISTRAL_STUDIO_ALIAS,modelSettings,freeMistral,chooseFreeMistral,publicReviewPrompt,
   reviewGemini,reviewMistral,reviewDailyCouncil,composeDailyCouncilTelegram
 } from '../lib/practitioners/council-free-models.mjs'
 import {pickPublicCouncilReports,readCouncilEvidence} from '../lib/practitioners/council-telegram-archive.mjs'
@@ -153,7 +153,7 @@ test('daily report is cached under one claimed private date before Telegram send
   assert.match(code,/report_markdown,model_outcomes/)
   assert.match(code,/report_markdown is null returning/)
   assert.match(code,/if\(!markdown\)/)
-  assert.match(code,/reviewDailyCouncil\(report,env,fetcher\)/)
+  assert.match(code,/reviewDailyCouncil\(report,aiEnv,fetcher\)/)
   assert.match(code,/composeDailyCouncilTelegram\(report,reviews\)/)
   assert.match(code,/One delivery per invocation/)
   assert.match(code,/status='failed'/)
@@ -230,4 +230,20 @@ test('Mistral Studio Free mode fail-closed on inaccessible model, 429 and substi
       }]}))
   assert.equal(altered.status,'error')
   assert.equal(altered.reason,'incomplete_or_short')
+})
+
+
+test('Mistral Studio Free mode supports the official Small latest alias',async()=>{
+ const env={HH_COUNCIL_MISTRAL_API_KEY:'synthetic-api-key',
+   HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true'}
+ const model=MISTRAL_STUDIO_ALIAS
+ const result=await reviewMistral(report,env,async(url,options)=>{
+   if(String(url).endsWith('/models'))return json({data:[{id:model}]})
+   const request=JSON.parse(options.body)
+   assert.equal(request.model,model)
+   return json({model:MISTRAL_DIRECT_MODEL,
+     choices:[{finish_reason:'stop',message:{content:long}}]})
+ })
+ assert.equal(result.status,'ok')
+ assert.equal(result.model,MISTRAL_DIRECT_MODEL)
 })

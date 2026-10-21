@@ -94,3 +94,29 @@
 .setupLinks a{font-size:13px;font-weight:650;color:#275d43;line-height:1.5;
  min-height:35px;display:inline-flex;align-items:center;text-underline-offset:4px;}
 .setupLinks a:focus-visible{outline:3px solid #67a789;outline-offset:2px;}
+
+/* Owner-only free-model setup: comfortable 320–430px tap targets. */
+.ownerAiSetup{margin:18px 0;padding:16px;border:1px solid #e5d8c4;border-radius:17px;
+  background:#fffaf2;display:grid;gap:12px;color:#503f31;}
+.ownerAiSetup h3{color:#583f2b;}
+.providerForm{margin:0;display:grid;gap:10px;padding:14px 0 17px;
+  border-bottom:1px solid #e5d8c4;}
+.providerForm strong{font-size:14px;color:#543d2a;}
+.providerForm>a{font-size:14px;font-weight:650;color:#704b31;text-decoration:underline;
+  text-underline-offset:3px;overflow-wrap:anywhere;}
+.providerForm>label{font-size:13px;line-height:1.4;color:#533f31;}
+.checkLine{display:flex;gap:10px;align-items:flex-start;cursor:pointer;}
+.checkLine input{flex:none;width:19px;height:19px;accent-color:#684c35;margin:1px 0 0;}
+.checkLine span{min-width:0;overflow-wrap:anywhere;}
+.secretInput{width:100%;min-width:0;min-height:48px;padding:11px 13px;
+  border:1px solid #c6ad8f;background:#fff;border-radius:11px;color:#37291f;font:inherit;
+  font-size:16px;}
+.secretInput:focus-visible,.providerForm a:focus-visible{outline:3px solid #ab835d;outline-offset:2px;}
+.disableForm{margin:-7px 0 8px;max-width:340px;}
+.disableForm .secondary{min-height:42px;font-size:13px;border-color:#dcc5ae;
+  color:#624b39;background:transparent;}
+@media(max-width:400px){
+  .ownerAiSetup{padding:12px;margin-inline:-4px;}
+  .providerForm{padding:12px 0;}
+  .disableForm{max-width:100%;}
+}
