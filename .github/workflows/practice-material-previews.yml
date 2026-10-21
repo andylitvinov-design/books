@@ -5,10 +5,20 @@ on:
     paths:
       - 'components/app/practice-material-preview.jsx'
       - 'components/app/practice-materials.jsx'
+      - 'components/app/practitioner-course-builder.*'
+      - 'components/public-practitioner-course*'
+      - 'app/api/app/practice/courses/**'
+      - 'app/api/practitioner-course-media/**'
+      - 'app/\[locale\]/courses/masters/**'
+      - 'lib/practitioners/course-*'
+      - 'supabase/migrations/*practitioner_course_builder*'
+      - 'tests/practitioner-course-builder.test.mjs'
       - 'components/app/practice-materials.module.css'
       - 'components/app/practice-report-materials.jsx'
       - 'lib/practitioners/material-preview.js'
       - 'tests/practice-material-preview-url.test.mjs'
+      - 'tests/practice-course-materials-navigation.test.mjs'
+      - 'tests/practitioner-approved-v4-ui.test.mjs'
       - '.github/workflows/practice-material-previews.yml'
 permissions:
   contents: read
@@ -28,9 +38,10 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - run: npm ci --no-audit --no-fund
+      # NODE_ENV=production must not omit TypeScript, ESLint or Next build tooling.
+      - run: npm ci --include=dev --no-audit --no-fund
       - name: Thumbnail URL safety and media source allowlist
-        run: node --test tests/practice-material-preview-url.test.mjs
+        run: node --test tests/practice-material-preview-url.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-approved-v4-ui.test.mjs tests/practitioner-course-builder.test.mjs
       - name: TypeScript regression
         run: npx --no-install tsc --noEmit
       - name: Production Next.js build

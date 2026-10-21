@@ -13,7 +13,7 @@ export const metadata = { robots: { index: false, follow: false }, title: 'Pract
 export default async function PrescriptionAdminLogin({ searchParams }) {
   const [params, jar] = await Promise.all([searchParams, cookies()])
   // Only named server-owned destinations. Never follow arbitrary query-provided URLs.
-  const destination = ['growth', 'seo', 'acquisition'].includes(params?.destination) ? params.destination : 'cabinet'
+  const destination = ['growth', 'seo', 'acquisition', 'tools'].includes(params?.destination) ? params.destination : 'cabinet'
   if (await requireAdminRequest()) redirect(practitionerDestination[destination])
   const locale = jar.get(uiLocaleCookie)?.value === 'ru' ? 'ru' : 'en'
   return <PractitionerAutoEntry locale={locale} destination={destination} authFailed={['failed', 'cancelled'].includes(params?.auth)} />

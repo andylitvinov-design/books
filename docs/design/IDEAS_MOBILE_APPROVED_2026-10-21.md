@@ -27,3 +27,9 @@ Run targeted Ideas tests, typecheck, lint, Next.js build and relevant public fee
 - Directly below: three topic-matched real aphorism catalog items, sourced with verified links for original paraphrases, or clearly labelled Holistic House editorials. Never use the mockup's unverified verbatim historical or contemporary attribution as a real quote.
 - Existing Aphorisms mode preserves its **next three** pagination; Personal guidance preserves the real free-intake links; EN/RU/ES remain mirrored. Answer language follows the question's basic text language detection.
 - Real UI is touch-usable down to 320px. Buttons fit one row; Dao details are initially collapsed after a real question to keep the first meaningful paragraph visible immediately.
+
+## Reconciliation with latest production
+- Reused the already approved PR #1483 rather than duplicating components.
+- Kept both consent-free handoff promo cards from PR #1499 in the expanded Dao result, after the short reflective paragraph; a click is not a CRM lead.
+- Preserved the 14 provenance-checked historic proverbs from PR #1498, including linked source/original language under new three-column visual tiles.
+- New compact 320px horizontal swipe affordance for sourced aphorism tiles; no tiny text or horizontal page overflow.

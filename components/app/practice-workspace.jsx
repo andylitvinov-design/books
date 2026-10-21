@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone } from 'lucide-react'
+import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeMaterials from './practice-materials'
@@ -215,7 +215,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     {destination:'videos',icon:Film,title:ru?'Видео сайта':locale==='es'?'Vídeos del sitio':'Website videos',description:ru?'Публичная видеобиблиотека и размещение.':locale==='es'?'Biblioteca y publicación de vídeos.':'Public video library and placement.'},
     {destination:'youtube',icon:CalendarDays,title:ru?'Загрузка YouTube':locale==='es'?'Subir a YouTube':'YouTube upload',description:ru?'Отдельная загрузка после проверки ролика и канала.':locale==='es'?'Subir tras revisar vídeo y canal.':'Separate upload after video and channel QA.'},
   ]
-  async function openOwner(destination,clientId) {
+  async function openOwner(destination,clientId,lesson) {
     if(busy||!isOwner)return
     setBusy(true);setError('')
     try {
@@ -228,7 +228,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       const result=await response.json()
       // The server validates ownership and maps only allowed admin destinations.
       if(typeof result.redirectUrl!=='string'||!result.redirectUrl.startsWith('/admin'))throw new Error('OPEN_UNAVAILABLE')
-      window.location.assign(result.redirectUrl)
+      // Select an allowed lesson only after the server authorizes this owner route.
+      const safeLesson=['flight','tantra','kundalini','yggdrasil','initiation'].includes(lesson)?lesson:null
+      const destinationUrl=destination==='reikiCourse'&&safeLesson&&
+        result.redirectUrl==='/admin/materials/courses/reiki-practitioner'
+        ?result.redirectUrl+'?lesson='+safeLesson+'&lang='+(locale==='ru'?'ru':'en')
+        :result.redirectUrl
+      window.location.assign(destinationUrl)
     } catch {
       setError(d.ownerError);setBusy(false)
     }
@@ -361,7 +367,179 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
-    {!needsOnboarding&&<section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
+    
+    {!needsOnboarding&&<section className="hh-practice-v4-launch" aria-label={ru?'Основные инструменты мастера':locale==='es'?'Herramientas del profesional':'Practitioner essentials'} data-practitioner-v4-dashboard>
+      <div className="hh-practice-v4-grid">
+        <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>
+          <UsersRound aria-hidden="true"/><span>{d.clients}</span><small>{ru?'Контакты':locale==='es'?'Contactos':'Contacts'}</small>
+        </button>
+        <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
+          <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
+        </button>
+        <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>
+          <Leaf aria-hidden="true"/><span>{d.services}</span><strong>{services.length}</strong>
+        </button>
+        <button type="button" onClick={()=>choosePanel('materials')} aria-pressed={activePanel==='materials'}>
+          <FileText aria-hidden="true"/><span>{ru?'Материалы':locale==='es'?'Materiales':'Materials'}</span><small>{ru?'Библиотека':locale==='es'?'Biblioteca':'Library'}</small>
+        </button>
+        <button type="button" onClick={()=>choosePanel('materials')} aria-pressed={activePanel==='materials'}>
+          <BookOpen aria-hidden="true"/><span>{ru?'Курсы':locale==='es'?'Cursos':'Courses'}</span><small>{ru?'Управление':locale==='es'?'Gestionar':'Manage'}</small>
+        </button>
+        <button type="button" onClick={()=>document.getElementById('hh-practice-v4-analytics')?.scrollIntoView({behavior:'smooth',block:'start'})}>
+          <BarChart3 aria-hidden="true"/><span>{ru?'Аналитика':locale==='es'?'Analíticas':'Insights'}</span><small>{ru?'Практика':locale==='es'?'Práctica':'Practice'}</small>
+        </button>
+      </div>
+      <button type="button" className="hh-practice-v4-materials-cta" onClick={()=>choosePanel('materials')}>
+        <Headphones aria-hidden="true"/><span><strong>{ru?'Создавайте и делитесь знаниями':locale==='es'?'Crea y comparte conocimientos':'Create and share knowledge'}</strong><small>{ru?'Статьи, услуги, курсы, медитации и видео':locale==='es'?'Artículos, servicios, cursos, audio y vídeo':'Articles, services, courses, meditations and videos'}</small></span><ChevronRight aria-hidden="true"/>
+      </button>
+    </section>}
+
+    <div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
+      canAdd={serviceQuota.canAdd}
+      onAddService={needsOnboarding
+        ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
+        : addService}
+      onViewAll={()=>{setActivePanel('requests');setError('')}} /></div>
+    {readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
+      <div className="hh-practice-setup-head">
+        <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
+        <span>{readySteps}/3</span>
+      </div>
+      <div className="hh-practice-setup-progress" aria-hidden="true"><span style={{width:(readySteps/3*100)+'%'}} /></div>
+      <ol>{setupSteps.map((step,index)=><li key={step.name}>
+        <button type="button" disabled={step.done||(index===2&&!profileLive)} onClick={()=>openSetupStep(index)}>
+          <span className={'hh-practice-setup-number'+(step.done?' is-complete':'')}>{step.done?<CheckCircle2 aria-hidden="true" />:index+1}</span>
+          <span className="hh-practice-setup-copy"><strong>{step.name}</strong><small>{step.hint}</small></span>
+          {!step.done&&index!==2&&<ChevronRight aria-hidden="true" />}
+        </button>
+      </li>)}</ol>
+    </section>}
+    {!needsOnboarding&&<div className="hh-practice-overview" aria-label={ru?'Обзор практики':'Practice overview'}>
+      <div><strong>{newRequests}</strong><span>{ru?'Новые заявки':'New requests'}</span></div>
+      <div><strong>{publishedCount}</strong><span>{ru?'Опубликованные услуги':'Published services'}</span></div>
+      <div><strong>{pendingServices}</strong><span>{ru?'Ждут проверки':'Under review'}</span></div>
+    </div>}
+    {!needsOnboarding&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics"><PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} /></div>}
+    {!needsOnboarding&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
+      <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
+        {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>
+      </Link>
+      <button type="button" onClick={shareProfile}><Share2 aria-hidden="true" />{ru?'Поделиться':'Share'}</button>
+    </p>}
+    {!needsOnboarding&&<>
+      <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
+        {isOwner?<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
+          <FileText aria-hidden="true" />{d.createReport}
+        </button>:<button type="button" aria-pressed={activePanel==='requests'}
+          onClick={()=>choosePanel('requests')}><ClipboardList aria-hidden="true" />{t.requests}</button>}
+        <button type="button" onClick={shareProfile}>
+          <Share2 aria-hidden="true" />{profileLive?(ru?'Пригласить клиента':'Invite client'):(ru?'Мой профиль':'My profile')}
+        </button>
+      </nav>
+      <details className="hh-practice-v4-extra" data-practice-more-tools>
+        <summary><BarChart3 aria-hidden="true"/><span>{ru?'Другие инструменты':locale==='es'?'Otras herramientas':'More tools'}</span><ChevronRight aria-hidden="true"/></summary>
+      <section aria-labelledby="hh-practice-tools-title" className="hh-practice-tools">
+        <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{isOwner?d.privateTitle:d.publicTools}</h2></div>
+        <div className="hh-practice-tool-grid">
+          <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
+            onClick={()=>choosePanel('clients')} active={activePanel==='clients'} />
+          {isOwner&&<PracticeTile Icon={Megaphone}
+            title={locale==='ru'?'Маркетинг':locale==='es'?'Marketing':'Marketing'}
+            description={locale==='ru'?'Growth Studio, SEO, кампании и видео.':locale==='es'?'Growth Studio, SEO, campañas y vídeos.':'Growth Studio, SEO, campaigns and video.'}
+            onClick={()=>choosePanel('marketing')} active={activePanel==='marketing'} />}
+          {isOwner&&<PracticeTile Icon={UsersRound}
+            title={locale==='ru'?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
+            description={locale==='ru'?'Контакты, статусы и подписчики.':locale==='es'?'Contactos, estados y suscriptores.':'Contacts, stages and subscribers.'}
+            onClick={()=>choosePanel('crm')} active={activePanel==='crm'} />}
+          <PracticeTile Icon={Film} title={ru?'Материалы':'Materials'} description={isOwner?(ru?'Курсы, медитации, статьи и видео.':locale==='es'?'Cursos, meditaciones, artículos y vídeos.':'Courses, meditations, articles and videos.'):ru?'Ваши статьи и видео: добавляйте, редактируйте и публикуйте после проверки.':'Your articles and videos: add, edit and submit for review.'}
+            onClick={()=>choosePanel('materials')} active={activePanel==='materials'} />
+          <PracticeTile Icon={CalendarDays} title={locale==='ru'?'Мероприятия':locale==='es'?'Eventos':'Events'}
+            description={locale==='ru'?'Создавайте встречи и семинары, управляйте датами и публикациями.':locale==='es'?'Organiza encuentros, talleres y publicaciones.':'Create workshops and gatherings, manage dates and publication.'}
+            onClick={()=>choosePanel('events')} active={activePanel==='events'} />
+          <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
+            onClick={()=>choosePanel('services')} active={activePanel==='services'} />
+          {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
+            onClick={()=>openOwner('reports')} />}
+          {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}
+            onClick={()=>openOwner('payment')} />:
+          <PracticeTile Icon={IdCard} title={d.myData} description={t.profile}
+            onClick={()=>choosePanel('profile')} active={activePanel==='profile'} />}
+        </div>
+        <button className="hh-practice-activity" type="button" aria-pressed={activePanel==='requests'}
+          onClick={()=>choosePanel('requests')}>
+          <span className="hh-practice-tool-icon"><BarChart3 aria-hidden="true" /></span>
+          <span className="hh-practice-activity-copy">
+            <strong>{d.activity}</strong>
+            <small>{d.activityHint} · {openRequests} {d.requestsMetric.toLowerCase()}</small>
+          </span>
+          <ChevronRight className="hh-practice-tool-arrow" aria-hidden="true" />
+        </button>
+      </section>
+      </details>
+    </>}
+    {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
+        key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
+        data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
+        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
+      activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
+        <div className="hh-practice-form-heading">
+          <h2>{activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
+          <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
+        </div>
+        {activePanel==='marketing'&&isOwner&&<div className="hh-practice-marketing">
+          <p className="hh-practice-marketing-intro">{ru?'Ваши инструменты продвижения в одном месте. Автопубликация и реклама без отдельного подтверждения не запускаются.':locale==='es'?'Herramientas de promoción en un solo lugar. No se activan anuncios ni publicaciones automáticas.':'Your promotion tools in one place. No ads or automatic publishing are activated.'}</p>
+          <div className="hh-practice-marketing-grid">
+            {marketingTools.map(({destination,icon:Icon,title,description})=><button
+              key={destination} type="button" className="hh-practice-marketing-link" disabled={busy}
+              onClick={()=>openOwner(destination)}>
+              <span className="hh-practice-marketing-icon"><Icon aria-hidden="true" /></span>
+              <span className="hh-practice-marketing-copy"><strong>{title}</strong><small>{description}</small></span>
+              <ChevronRight aria-hidden="true" className="hh-practice-marketing-arrow"/>
+            </button>)}
+          </div>
+        </div>}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={lesson=>openOwner('reikiCourse',undefined,lesson)} onOpenServices={()=>choosePanel('services')} accountId={accountId}
+           onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
+             profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
+           onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
+        {activePanel==='events'&&<PracticeEvents locale={locale} accountId={accountId} />}
+
+        {activePanel==='clients'&&
+          <PractitionerClientProfiles items={requests} services={services}
+            practitionerTasks={data.practitionerTasks||[]}
+            practitionerTaskSummary={data.practitionerTaskSummary}
+            locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
+            onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
+            onRefresh={()=>load()}
+            focusRequestId={focusRequestId}
+            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
+            onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
+        {activePanel==='crm'&&isOwner&&accountId&&
+          <CrmManager key={accountId} locale={locale} accountId={accountId}/>} 
+        {activePanel==='profile'&&<>
+          <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy}
+            onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))}
+            onSubmit={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />
+          <details className="hh-practice-saved-services"><summary>{d.credentials} ({(data.credentials||[]).length})</summary>
+            <Credentials items={data.credentials||[]} t={t} busy={busy}
+              onCreate={value=>act(()=>practiceFetch('/credentials',value))}
+              onDelete={id=>act(()=>practiceFetch('/credentials/'+id,{action:'delete'}))} />
+          </details>
+        </>}
+        {activePanel==='requests'&&<>
+          <div className="hh-practice-metrics">
+            <div><strong>{services.length}</strong><span>{d.servicesMetric}</span></div>
+            <div><strong>{publishedCount}</strong><span>{d.active}</span></div>
+            <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
+          </div>
+          <Requests items={requests} t={t} locale={locale} busy={busy}
+            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
+            onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
+        </>}
+      </section>}
+    {!needsOnboarding&&<details className="hh-practice-v4-community">
+      <summary><Leaf aria-hidden="true"/><span>{marketplaceCopy.latest}</span><ChevronRight aria-hidden="true"/></summary>
+      <section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
       <div className="hh-practice-marketplace-heading">
         <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
         <div>
@@ -409,151 +587,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
         </p>}
       </div>
-    </section>}
-    <PracticeRequestsOverview requests={requests} services={services} locale={locale}
-      canAdd={serviceQuota.canAdd}
-      onAddService={needsOnboarding
-        ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
-        : addService}
-      onViewAll={()=>{setActivePanel('requests');setError('')}} />
-    {readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
-      <div className="hh-practice-setup-head">
-        <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
-        <span>{readySteps}/3</span>
-      </div>
-      <div className="hh-practice-setup-progress" aria-hidden="true"><span style={{width:(readySteps/3*100)+'%'}} /></div>
-      <ol>{setupSteps.map((step,index)=><li key={step.name}>
-        <button type="button" disabled={step.done||(index===2&&!profileLive)} onClick={()=>openSetupStep(index)}>
-          <span className={'hh-practice-setup-number'+(step.done?' is-complete':'')}>{step.done?<CheckCircle2 aria-hidden="true" />:index+1}</span>
-          <span className="hh-practice-setup-copy"><strong>{step.name}</strong><small>{step.hint}</small></span>
-          {!step.done&&index!==2&&<ChevronRight aria-hidden="true" />}
-        </button>
-      </li>)}</ol>
-    </section>}
-    {!needsOnboarding&&<div className="hh-practice-overview" aria-label={ru?'Обзор практики':'Practice overview'}>
-      <div><strong>{newRequests}</strong><span>{ru?'Новые заявки':'New requests'}</span></div>
-      <div><strong>{publishedCount}</strong><span>{ru?'Опубликованные услуги':'Published services'}</span></div>
-      <div><strong>{pendingServices}</strong><span>{ru?'Ждут проверки':'Under review'}</span></div>
-    </div>}
-    {!needsOnboarding&&<PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} />}
-    {!needsOnboarding&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
-      <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
-        {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>
-      </Link>
-      <button type="button" onClick={shareProfile}><Share2 aria-hidden="true" />{ru?'Поделиться':'Share'}</button>
-    </p>}
-    {!needsOnboarding&&<>
-      <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
-        {isOwner?<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
-          <FileText aria-hidden="true" />{d.createReport}
-        </button>:<button type="button" aria-pressed={activePanel==='requests'}
-          onClick={()=>choosePanel('requests')}><ClipboardList aria-hidden="true" />{t.requests}</button>}
-        <button type="button" onClick={shareProfile}>
-          <Share2 aria-hidden="true" />{profileLive?(ru?'Пригласить клиента':'Invite client'):(ru?'Мой профиль':'My profile')}
-        </button>
-      </nav>
-      <section aria-labelledby="hh-practice-tools-title" className="hh-practice-tools">
-        <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{isOwner?d.privateTitle:d.publicTools}</h2></div>
-        <div className="hh-practice-tool-grid">
-          <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
-            onClick={()=>choosePanel('clients')} active={activePanel==='clients'} />
-          {isOwner&&<PracticeTile Icon={Megaphone}
-            title={locale==='ru'?'Маркетинг':locale==='es'?'Marketing':'Marketing'}
-            description={locale==='ru'?'Growth Studio, SEO, кампании и видео.':locale==='es'?'Growth Studio, SEO, campañas y vídeos.':'Growth Studio, SEO, campaigns and video.'}
-            onClick={()=>choosePanel('marketing')} active={activePanel==='marketing'} />}
-          {isOwner&&<PracticeTile Icon={UsersRound}
-            title={locale==='ru'?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
-            description={locale==='ru'?'Контакты, статусы и подписчики.':locale==='es'?'Contactos, estados y suscriptores.':'Contacts, stages and subscribers.'}
-            onClick={()=>choosePanel('crm')} active={activePanel==='crm'} />}
-          <PracticeTile Icon={Film} title={ru?'Материалы':'Materials'} description={isOwner?(ru?'Курсы, медитации, статьи и видео.':locale==='es'?'Cursos, meditaciones, artículos y vídeos.':'Courses, meditations, articles and videos.'):ru?'Ваши статьи и видео: добавляйте, редактируйте и публикуйте после проверки.':'Your articles and videos: add, edit and submit for review.'}
-            onClick={()=>choosePanel('materials')} active={activePanel==='materials'} />
-          <PracticeTile Icon={CalendarDays} title={locale==='ru'?'Мероприятия':locale==='es'?'Eventos':'Events'}
-            description={locale==='ru'?'Создавайте встречи и семинары, управляйте датами и публикациями.':locale==='es'?'Organiza encuentros, talleres y publicaciones.':'Create workshops and gatherings, manage dates and publication.'}
-            onClick={()=>choosePanel('events')} active={activePanel==='events'} />
-          <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
-            onClick={()=>choosePanel('services')} active={activePanel==='services'} />
-          {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
-            onClick={()=>openOwner('reports')} />}
-          {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}
-            onClick={()=>openOwner('payment')} />:
-          <PracticeTile Icon={IdCard} title={d.myData} description={t.profile}
-            onClick={()=>choosePanel('profile')} active={activePanel==='profile'} />}
-        </div>
-        <button className="hh-practice-activity" type="button" aria-pressed={activePanel==='requests'}
-          onClick={()=>choosePanel('requests')}>
-          <span className="hh-practice-tool-icon"><BarChart3 aria-hidden="true" /></span>
-          <span className="hh-practice-activity-copy">
-            <strong>{d.activity}</strong>
-            <small>{d.activityHint} · {openRequests} {d.requestsMetric.toLowerCase()}</small>
-          </span>
-          <ChevronRight className="hh-practice-tool-arrow" aria-hidden="true" />
-        </button>
-      </section>
-    </>}
-    {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
-        key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
-        data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
-        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
-      activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
-        <div className="hh-practice-form-heading">
-          <h2>{activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
-          <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
-        </div>
-        {activePanel==='marketing'&&isOwner&&<div className="hh-practice-marketing">
-          <p className="hh-practice-marketing-intro">{ru?'Ваши инструменты продвижения в одном месте. Автопубликация и реклама без отдельного подтверждения не запускаются.':locale==='es'?'Herramientas de promoción en un solo lugar. No se activan anuncios ni publicaciones automáticas.':'Your promotion tools in one place. No ads or automatic publishing are activated.'}</p>
-          <div className="hh-practice-marketing-grid">
-            {marketingTools.map(({destination,icon:Icon,title,description})=><button
-              key={destination} type="button" className="hh-practice-marketing-link" disabled={busy}
-              onClick={()=>openOwner(destination)}>
-              <span className="hh-practice-marketing-icon"><Icon aria-hidden="true" /></span>
-              <span className="hh-practice-marketing-copy"><strong>{title}</strong><small>{description}</small></span>
-              <ChevronRight aria-hidden="true" className="hh-practice-marketing-arrow"/>
-            </button>)}
-          </div>
-        </div>}
-        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy}
-           onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
-             profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
-           onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
-        {activePanel==='events'&&<PracticeEvents locale={locale} accountId={accountId} />}
+    </section>
+    </details>}
 
-        {activePanel==='clients'&&
-          <PractitionerClientProfiles items={requests} services={services}
-            practitionerTasks={data.practitionerTasks||[]}
-            practitionerTaskSummary={data.practitionerTaskSummary}
-            locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
-            onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
-            onRefresh={()=>load()}
-            focusRequestId={focusRequestId}
-            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
-            onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
-        {activePanel==='crm'&&isOwner&&accountId&&
-          <CrmManager key={accountId} locale={locale} accountId={accountId}/>} 
-        {activePanel==='profile'&&<>
-          <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy}
-            onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))}
-            onSubmit={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />
-          <details className="hh-practice-saved-services"><summary>{d.credentials} ({(data.credentials||[]).length})</summary>
-            <Credentials items={data.credentials||[]} t={t} busy={busy}
-              onCreate={value=>act(()=>practiceFetch('/credentials',value))}
-              onDelete={id=>act(()=>practiceFetch('/credentials/'+id,{action:'delete'}))} />
-          </details>
-        </>}
-        {activePanel==='requests'&&<>
-          <div className="hh-practice-metrics">
-            <div><strong>{services.length}</strong><span>{d.servicesMetric}</span></div>
-            <div><strong>{publishedCount}</strong><span>{d.active}</span></div>
-            <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
-          </div>
-          <Requests items={requests} t={t} locale={locale} busy={busy}
-            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
-            onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
-        </>}
-      </section>}
     {ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
-      <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button></div>
+      <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button><button type="button" className="hh-practice-new-service" disabled={busy} onClick={()=>openOwner('tools')}>{ru?'Дополнительные инструменты администратора':'Additional administrative tools'} →</button></div>
     </details>}
     {shareNotice&&<p role="status" className="hh-practice-share-notice">{shareNotice}</p>}
     {error&&<p role="alert" className="hh-practice-error">{error==='SERVICE_LIMIT_REACHED'?(ru?'На бесплатном тарифе Hobby можно сохранить до 10 услуг. Редактирование существующих услуг доступно.':'The free Hobby plan allows up to 10 saved services. You can still edit existing services.'):error}</p>}

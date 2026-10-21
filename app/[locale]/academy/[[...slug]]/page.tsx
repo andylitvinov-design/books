@@ -7,6 +7,7 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
 import { PublicGrowthCourses } from "@/components/public-growth-courses";
+import PublicPractitionerCourses from "@/components/public-practitioner-courses";
 import { KundaliniReikiCourse } from "@/components/kundalini-reiki-course";
 import { PrinciplesOfEnergywork, KundaliniFreeInitiation } from "@/components/principles-of-energywork";
 import { EnergyworkAiLearner } from "@/components/energywork-ai-learner";
@@ -165,7 +166,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
     return <AcademyHub locale={locale} view={view} />;
   }
 
-  if (key === "free-ai-courses") return <PublicGrowthCourses locale={locale} />;
+  if (key === "free-ai-courses") return <><PublicGrowthCourses locale={locale} /><PublicPractitionerCourses locale={locale} /></>;
   if (key === "reiki/free-practitioner-course") return <ReikiReferralLanding locale={locale} />;
   if (key === "principles-of-energywork/learn") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} startAtExperience={query.start === "1"} />;
   if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} />;

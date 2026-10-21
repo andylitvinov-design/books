@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Flower2, Paperclip, Quote, RefreshCw, Send, Sparkles, Sprout, Sun } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, Quote, RefreshCw, Send, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
@@ -61,8 +61,8 @@ const copy = {
     loadingReading: "Загружаем полное толкование…", unavailableReading: "Полное толкование не загрузилось. Откройте карточку гексаграммы.",
     again: "Другой символ",
     card: "Прочитать толкование",
-    aphorismNote: "Подбор по смыслу вопроса. Редакционные афоризмы и авторские переложения классических идей — не дословные цитаты исторических авторов.",
-    more: "Ещё 3 афоризма", inspiredBy: "Источник идеи · по мотивам", sourceLabel: "Источник", editorial: "Holistic House · авторский афоризм",
+    aphorismNote: "Подбор по смыслу вопроса: редакционные афоризмы, авторские переложения и исторические народные пословицы. Переводы пословиц смысловые, с указанием оригинала и проверяемого сборника.",
+    more: "Ещё 3 афоризма", inspiredBy: "Источник идеи · по мотивам", sourceLabel: "Источник", proverbSource: "Происхождение", originalLabel: "Оригинал", editorial: "Holistic House · авторский афоризм",
     personalNote: "Это тематический подбор, не индивидуальная оценка. Выберите формат и заполните существующую форму на странице услуги.",
     guidanceIntro: "Выберите один вариант, с которого хочется начать.",
     guidanceMatch: "Рекомендуем по теме запроса",
@@ -70,6 +70,19 @@ const copy = {
     free: "Бесплатно",
     go: "Открыть",
     reset: "Новый вопрос",
+    daoPromoLabel: "Персональная помощь после подсказки",
+    daoPromoReading: {
+      eyebrow: "ЛИЧНОЕ ТОЛКОВАНИЕ",
+      title: "Получите персональное даосское гадание и подсказки от Мастера",
+      description: "Обсудите вопрос с Андреем. Формат, сроки и стоимость уточняются лично.",
+      action: "Спросить Мастера",
+    },
+    daoPromoGift: {
+      eyebrow: "ПОДАРОК · БЕСПЛАТНО",
+      title: "Получите личную диагностику и разбор ситуации",
+      description: "Коучинг-анкета и рисунок «Я — цель — проблема» для личного письменного разбора. Не медицинский диагноз.",
+      action: "Получить в подарок",
+    },
     service: {
       review: { title: "Бесплатный разбор ситуации", description: "Опишите вопрос и получите персональный письменный разбор возможных шагов.", action: "Отправить запрос" },
       tests: { title: "Стресс и психопрофиль", description: "Пройдите бесплатные тесты самооценки и увидьте, на что обратить внимание.", action: "Выбрать тесты" },
@@ -121,8 +134,8 @@ const copy = {
     loadingReading: "Loading full interpretation…", unavailableReading: "The full reading could not be loaded. Open the hexagram page instead.",
     again: "Draw another",
     card: "Read interpretation",
-    aphorismNote: "Topic-matched editorial aphorisms and original paraphrases inspired by classics, not verbatim historical quotations.",
-    more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", editorial: "Holistic House editorial · original aphorism",
+    aphorismNote: "Topic-matched original reflections and historical folk proverbs, with cited collections. New proverb translations convey the original meaning; inspired reflections are not verbatim historical quotations.",
+    more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", proverbSource: "Provenance", originalLabel: "Original", editorial: "Holistic House editorial · original aphorism",
     personalNote: "These are topic-based options, not a personal assessment. Choose a format and complete its existing request form.",
     guidanceIntro: "Choose the starting point that feels right for you.",
     guidanceMatch: "Suggested for your topic",
@@ -130,6 +143,19 @@ const copy = {
     free: "Free",
     go: "Explore",
     reset: "New question",
+    daoPromoLabel: "Personal help after your insight",
+    daoPromoReading: {
+      eyebrow: "PERSONAL READING",
+      title: "Get a personal Daoist reading and insights from the Master",
+      description: "Ask Andrey about your question. Format, timing and price are confirmed personally.",
+      action: "Ask the Master",
+    },
+    daoPromoGift: {
+      eyebrow: "FREE GIFT",
+      title: "Get a personal situation assessment and written review",
+      description: "A coaching questionnaire and ME — GOAL — PROBLEM drawing for a personal written reflection. Not a medical diagnosis.",
+      action: "Claim your gift",
+    },
     service: {
       review: { title: "Free situation review", description: "Share your situation and request a personal written reflection on possible next steps.", action: "Request review" },
       tests: { title: "Stress & personal profile", description: "Explore free self-check scales and identify areas worth reflecting on.", action: "Explore tests" },
@@ -181,8 +207,8 @@ const copy = {
     loadingReading: "Cargando interpretación completa…", unavailableReading: "No se pudo cargar la interpretación. Abre la página del hexagrama.",
     again: "Otro símbolo",
     card: "Leer interpretación",
-    aphorismNote: "Aforismos editoriales y paráfrasis propias inspiradas en clásicos. No son citas literales.",
-    more: "Ver 3 aforismos más", inspiredBy: "Fuente · inspirado en", sourceLabel: "Fuente", editorial: "Holistic House · aforismo original",
+    aphorismNote: "Aforismos originales y refranes tradicionales con su colección citada. Las traducciones expresan el sentido; las paráfrasis no son citas históricas literales.",
+    more: "Ver 3 aforismos más", inspiredBy: "Fuente · inspirado en", sourceLabel: "Fuente", proverbSource: "Procedencia", originalLabel: "Original", editorial: "Holistic House · aforismo original",
     personalNote: "Son opciones por tema, no una evaluación personal. Elige una y completa el formulario existente de la página.",
     guidanceIntro: "Elige por dónde te gustaría empezar.",
     guidanceMatch: "Sugerido para tu tema",
@@ -190,6 +216,19 @@ const copy = {
     free: "Gratis",
     go: "Explorar",
     reset: "Otra pregunta",
+    daoPromoLabel: "Ayuda personal después de tu consejo",
+    daoPromoReading: {
+      eyebrow: "LECTURA PERSONAL",
+      title: "Recibe una lectura taoísta personal y consejos del Maestro",
+      description: "Consulta tu pregunta con Andrey. El formato, los plazos y el precio se confirman personalmente.",
+      action: "Consultar al Maestro",
+    },
+    daoPromoGift: {
+      eyebrow: "REGALO · GRATIS",
+      title: "Recibe una valoración personal y un análisis de tu situación",
+      description: "Un cuestionario y un dibujo YO — META — PROBLEMA para recibir una reflexión escrita personal. No es un diagnóstico médico.",
+      action: "Recibir mi regalo",
+    },
     service: {
       review: { title: "Revisión gratuita de tu situación", description: "Comparte tu pregunta y solicita una reflexión personal por escrito.", action: "Solicitar revisión" },
       tests: { title: "Estrés y perfil personal", description: "Explora pruebas gratuitas de autoevaluación y descubre temas para reflexionar.", action: "Ver pruebas" },
@@ -263,11 +302,14 @@ function AphorismTiles({ items, locale, heading }: {
             <span className={styles.number} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
             <div className={styles.aphorismBody}>
               <p>{item.text}</p>
-              {item.kind === "inspired" && item.source ? (
+              {item.kind !== "editorial" && item.source ? (
                 <a className={styles.aphorismSource} href={item.source.url} target="_blank" rel="noopener noreferrer">
-                  {t.inspiredBy}: {item.source.author} · {item.source.work}
+                  {item.kind === "proverb" ? t.proverbSource : t.inspiredBy}: {item.source.author} · {item.source.work}
                 </a>
               ) : <span className={styles.aphorismSource}>{t.editorial}</span>}
+              {item.kind === "proverb" && item.original ? (
+                <p className={styles.aphorismOriginal}><span>{t.originalLabel}: </span><span lang={item.original.language}>{item.original.text}</span></p>
+              ) : null}
             </div>
           </li>
         ))}
@@ -503,6 +545,20 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                   </>
                 ) : null}
               </div>
+              <aside className={styles.daoPromos} aria-label={answerCopy.daoPromoLabel} data-ideas-dao-promos>
+                <Link className={styles.daoPromo} href={"/" + answerLocale + "/services/free-consultation#intro-request"} prefetch={false}>
+                  <span className={styles.daoPromoEyebrow}><Compass size={17} aria-hidden="true" />{answerCopy.daoPromoReading.eyebrow}</span>
+                  <strong className={styles.daoPromoTitle}>{answerCopy.daoPromoReading.title}</strong>
+                  <span className={styles.daoPromoDescription}>{answerCopy.daoPromoReading.description}</span>
+                  <span className={styles.daoPromoAction}>{answerCopy.daoPromoReading.action}<ArrowRight size={17} aria-hidden="true" /></span>
+                </Link>
+                <Link className={`${styles.daoPromo} ${styles.daoPromoGift}`} href={"/" + answerLocale + "/services/free-situation-review#request-free-review"} prefetch={false}>
+                  <span className={styles.daoPromoEyebrow}><Gift size={17} aria-hidden="true" />{answerCopy.daoPromoGift.eyebrow}</span>
+                  <strong className={styles.daoPromoTitle}>{answerCopy.daoPromoGift.title}</strong>
+                  <span className={styles.daoPromoDescription}>{answerCopy.daoPromoGift.description}</span>
+                  <span className={styles.daoPromoAction}>{answerCopy.daoPromoGift.action}<ArrowRight size={17} aria-hidden="true" /></span>
+                </Link>
+              </aside>
             </div>
           ) : null}
           {result.mode === "dao" && hexagram ? (

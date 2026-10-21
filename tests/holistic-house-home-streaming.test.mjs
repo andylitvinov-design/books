@@ -47,7 +47,7 @@ test("EN/RU/ES first screen clearly distinguishes free written review, tests and
 
 test("canonical TTFB measurement and nonce safety remain intact", () => {
   const meter = read("scripts/measure-hh-public-ttfb.mjs");
-  assert.match(meter, /for \(const suffix of \['\/', '\/ru'\]\)/);
+  assert.match(meter, /for \(const suffix of \['\/', '\/ru', '\/es'\]\)/);
   assert.doesNotMatch(meter, /for \(const suffix of \['\/\?lang=en', '\/\?lang=ru'\]\)/);
   assert.match(meter, /response\.status !== 200/);
   assert.match(read("middleware.ts"), /private, no-store, max-age=0, must-revalidate/);

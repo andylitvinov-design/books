@@ -83,3 +83,25 @@
 .coverPreview img{display:block;flex:none;width:92px;height:92px;object-fit:cover;border-radius:10px;background:#eef4f4}
 .coverPreview span{font-size:.83rem;line-height:1.45;color:#416372;overflow-wrap:anywhere}
 @media(max-width:480px){.coverPreview img{width:76px;height:76px}}
+
+
+/* Practitioner V4 approved warm articles editor. Functional moderation unchanged. */
+.shell{color:#3d2e25}
+.top h3{font:400 clamp(21px,3vw,29px)/1.2 Georgia,serif;color:#382b23}
+.top p,.muted{color:#807064;font-size:12px}
+.primary{border-color:#0b7776;background:#0b7776;color:#fff;min-height:44px}
+.secondary{border-color:#d8c7b5;background:#fffdfa;color:#654d3c;min-height:42px}
+.folders{border-color:#e5d5c3;background:#faf3e9;border-radius:15px}
+.folderTitle{color:#795e4b}
+.folder{border-color:#e4d4c1;background:#fffcf7;color:#665142;min-height:43px}
+.folder[aria-pressed=true]{background:#dcefe9;border-color:#8bbdb3;color:#086e69}
+.folder small{background:#f1e8de;color:#7b6757}
+.folder[aria-pressed=true] small{background:#bcddd3;color:#086e69}
+.manage input,.search input,.editor input,.editor textarea,.editor select{border-color:#dccbb8;background:#fffdfa;color:#362c24;font-size:16px}
+.search{border-color:#e1d5c6;background:#f8f3ec}
+.search:focus-within{outline:3px solid #86bcb2}
+.card{border-color:#e5d8c9;background:#fffefa;border-radius:14px}
+.cardText{color:#45362d}
+.editor{border-color:#e3d3c1;background:#fffdfa}
+.shell :is(button,a,input,textarea,select,summary):focus-visible{outline:3px solid #66ab9f;outline-offset:2px}
+@media(max-width:390px){.top{gap:8px}.folders{padding:9px}.card{padding:10px}}
