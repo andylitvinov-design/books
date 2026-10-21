@@ -52,7 +52,8 @@ import ClientContactPhone from '@/components/app/client-contact-phone'
 import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
-import PostSignupInstallOffer from '@/components/app/post-signup-install-offer'
+import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
+import { shouldPauseNewSignupSave } from '@/lib/pwa/post-signup-flow'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
@@ -123,6 +124,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     [deleted, setDeleted] = useState(false),
     [nativeApp,setNativeApp] = useState(false),
     [installOfferAccountId,setInstallOfferAccountId] = useState(null)
+  // Ephemeral account-scoped handoff: no private Save or report URL in storage.
+  const pendingSaveInstallAccountId=useRef(null)
+  const savedExitDestination=useRef(null)
   useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
   const quickAuthAttempted = useRef(false)
   const signinAttempted = useRef(false)
@@ -205,6 +209,27 @@ export default function AppWorkspace({ locale, path = [] }) {
       window.removeEventListener('pagehide', hide)
     }
   }, [load, router])
+  function completeSaveContinuation(destination){
+    // After onboarding from a report, wait for server-confirmed Save before
+    // offering installation. Existing users continue directly to the result.
+    const currentAccountId=data?.account?.id
+    const pendingAccountId=pendingSaveInstallAccountId.current
+    pendingSaveInstallAccountId.current=null
+    if(shouldPauseNewSignupSave({
+      pendingAccountId,accountId:currentAccountId,installEligible:isPostSignupInstallEligible(),
+    })){
+      savedExitDestination.current=destination
+      setInstallOfferAccountId(currentAccountId)
+      return
+    }
+    router.replace(destination)
+  }
+  function dismissInstallOffer(){
+    setInstallOfferAccountId(null)
+    const destination=savedExitDestination.current
+    savedExitDestination.current=null
+    if(destination)router.replace(destination)
+  }
   async function signin() {
     signinAttempted.current = true
     setBusy(true)
@@ -288,6 +313,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     } finally {
       goSignedOut(setData)
       setInstallOfferAccountId(null)
+      pendingSaveInstallAccountId.current=null
+      savedExitDestination.current=null
       setState('signed-out')
       setBusy(false)
       router.replace(root)
@@ -531,7 +558,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
-      onDismiss={()=>setInstallOfferAccountId(null)} />
+      context={savedExitDestination.current ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
@@ -579,13 +606,15 @@ export default function AppWorkspace({ locale, path = [] }) {
           // completion can offer installation. Never show it on failed login,
           // unfinished onboarding, or a stale/different account.
           const fresh=await load()
-          if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id)
-            setInstallOfferAccountId(fresh.account.id)
+          if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
+            if(page==='continue') pendingSaveInstallAccountId.current=fresh.account.id
+            else setInstallOfferAccountId(fresh.account.id)
+          }
         }} />
       ) : (
         <>
           {page === 'continue' && (
-            <SaveContinuation data={data} locale={locale} reload={load} />
+            <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
             <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
@@ -736,7 +765,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   )
 }
 
-function SaveContinuation({ data, locale, reload }) {
+function SaveContinuation({ data, locale, reload, onComplete }) {
   const params = useSearchParams()
   const router = useRouter()
   const intentId = params.get('intent') || ''
@@ -785,7 +814,9 @@ function SaveContinuation({ data, locale, reload }) {
       const next=saved.sourceKind==='client_session' && typeof window!=='undefined'
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
-      router.replace(next||savedResourcePath(locale,saved.sourceKind,saved.resource.id))
+      const destination=next||savedResourcePath(locale,saved.sourceKind,saved.resource.id)
+      if(onComplete)onComplete(destination)
+      else router.replace(destination)
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
@@ -804,7 +835,7 @@ function SaveContinuation({ data, locale, reload }) {
       committing.current = false
       setBusy(false)
     }
-  }, [intentId, locale, reload, router, ru])
+  }, [intentId, locale, reload, router, ru, onComplete])
 
   // The explicit recipient click created an item-scoped HttpOnly save intent.
   // Resume only that selection after Google sign-in (and any new-account consent).
@@ -816,11 +847,13 @@ function SaveContinuation({ data, locale, reload }) {
       const next=intent.sourceKind==='client_session' && typeof window!=='undefined'
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
-      router.replace(next||savedResourcePath(locale,intent.sourceKind,intent.resourceId))
+      const destination=next||savedResourcePath(locale,intent.sourceKind,intent.resourceId)
+      if(onComplete)onComplete(destination)
+      else router.replace(destination)
       return
     }
     void commit()
-  }, [autoSave, authFailure, intent, intentId, commit, locale, router])
+  }, [autoSave, authFailure, intent, intentId, commit, locale, router, onComplete])
 
   const sourceTitle =
     intent?.sourceKind === 'client_session'
