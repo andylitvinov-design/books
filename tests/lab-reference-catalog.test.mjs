@@ -7,10 +7,10 @@ import { labRangeStatus } from '../lib/labs/analysis.mjs'
 const context = (name, birthDate, sampleDate, sex='male', unit='g/dL', specimen='blood') =>
   ({name,birthDate,sampleDate,sex,unit,specimen})
 test('catalog is versioned, sourced, multilingual and explicitly not clinically approved', () => {
-  assert.equal(LAB_CATALOG_VERSION,'2026-10-20-draft-1')
+  assert.equal(LAB_CATALOG_VERSION,'2026-10-20-draft-2')
   assert.equal(LAB_CLINICAL_APPROVAL,false)
   assert.ok(LAB_ANALYTES.length >= 60)
-  assert.ok(LAB_EDUCATIONAL_INTERVALS.length >= 50)
+  assert.ok(LAB_EDUCATIONAL_INTERVALS.length >= 65)
   const ids = new Set(LAB_ANALYTES.map(row=>row.id))
   assert.equal(ids.size,LAB_ANALYTES.length)
   assert.ok(new Set(LAB_ANALYTES.map(row=>row.group)).size>=10)
@@ -99,7 +99,7 @@ test('fail closed on absent context, unsupported assays, prematurity or pregnanc
   assert.equal(educationalLabReference({ ...adult, pregnant:true }).reason,'pregnancy-requires-lab-context')
   assert.equal(educationalLabReference({name:'HGB',sex:'male',unit:'g/dL',specimen:'blood'}).reason,'age-required')
   assert.equal(educationalLabReference({...context('HGB','2026-01-01','2026-01-05'),preterm:true}).reason,'preterm-infant-requires-lab-context')
-  assert.equal(educationalLabReference(context('Ferritin','1988-01-01','2026-10-20','male','ng/mL','serum')).reason,'no-reviewed-source-example')
+  assert.equal(educationalLabReference(context('Ferritin','2015-01-01','2026-10-20','male','ng/mL','plasma')).reason,'age-or-sex-range-not-available')
 })
 test('recognition can group data, but must not invent lab ranges or classify a number', () => {
   const output=groupLabMarkers([{name:'HGB',value:3},{name:'Ferritina',value:4},{name:'Unknown analysis',value:9}])
@@ -111,4 +111,23 @@ test('recognition can group data, but must not invent lab ranges or classify a n
   // The existing patient-specific engine remains strictly tied to the lab report's own bounds.
   assert.equal(labRangeStatus({name:'HGB',value:3,unit:'g/dL',lower:null,upper:null}),'unrated')
   assert.equal(labRangeStatus({name:'HGB',value:3,unit:'g/dL',lower:11,upper:17}),'low')
+})
+
+test('thyroid, creatinine and ferritin examples use named source assays, not generic population norms', () => {
+  const infantTsh=educationalLabReference(context('TSH','2026-01-01','2026-04-01','unspecified','mIU/L','plasma'))
+  assert.deepEqual([infantTsh.low,infantTsh.high],[1.03,6.8])
+  assert.equal(infantTsh.sourceId,'uiowa-tsh')
+  const adultTsh=educationalLabReference(context('TSH','1985-01-01','2026-10-20','unspecified','µIU/mL','plasma'))
+  assert.deepEqual([adultTsh.low,adultTsh.high],[0.27,4.2])
+  const neonatalTsh=educationalLabReference(context('TSH','2026-10-20','2026-10-21','unspecified','mIU/L','plasma'))
+  assert.equal(neonatalTsh.reason,'age-or-sex-range-not-available') // 48h age needs precise time.
+  const plasmaCreatinine=educationalLabReference(context('Creatinine','1970-01-01','2026-10-20','male','µmol/L','plasma'))
+  assert.equal(plasmaCreatinine.status,'educational-example')
+  assert.ok(Math.abs(plasmaCreatinine.low - 59.228)<0.001)
+  assert.ok(Math.abs(plasmaCreatinine.high - 103.428)<0.001)
+  assert.equal(plasmaCreatinine.sourceId,'uiowa-creatinine')
+  const ferritin=educationalLabReference(context('Ferritina','1980-01-01','2026-10-20','female','ng/mL','plasma'))
+  assert.deepEqual([ferritin.low,ferritin.high],[13,150])
+  assert.equal(ferritin.mayClassifyPatient,false)
+  assert.equal(educationalLabReference(context('Ferritina','1980-01-01','2026-10-20','female','ng/mL','serum')).reason,'specimen-unverified')
 })
