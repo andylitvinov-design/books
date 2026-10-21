@@ -35,6 +35,7 @@ import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySectio
 import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { PortraitRecommendations } from '@/components/app/portrait-recommendations'
+import { PortraitAnalyses } from '@/components/app/portrait-analyses'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
@@ -2193,9 +2194,9 @@ function PortfolioPage({ data, locale }) {
   }, [recommendationScrollRequest, activeTab])
 
   useEffect(() => {
-    if (!analysisScrollRequest || activeTab !== 'values') return
+    if (!analysisScrollRequest) return
     const frame = window.requestAnimationFrame(() => {
-      const target = document.getElementById('hh-insights-title')
+      const target = document.getElementById('hh-portrait-analyses')
       if (!target) return
       target.scrollIntoView({
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
@@ -2204,7 +2205,7 @@ function PortfolioPage({ data, locale }) {
       target.focus({ preventScroll: true })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [analysisScrollRequest, activeTab])
+  }, [analysisScrollRequest])
   const retakeDefinitions = useMemo(() => {
     const definitions = new Map()
     for (const result of data.results || []) {
@@ -2306,7 +2307,6 @@ function PortfolioPage({ data, locale }) {
             <button type="button" className="hh-portrait-quick-secondary hh-portrait-quick-analyses"
               data-testid="portrait-analyses-action"
               onClick={() => {
-                chooseView('values')
                 setAnalysisScrollRequest(current => current + 1)
               }}>
               <BarChart3 size={18} aria-hidden="true" />
@@ -2323,6 +2323,7 @@ function PortfolioPage({ data, locale }) {
             </button>
           </nav>} />
       </details>
+      <PortraitAnalyses results={data.results || []} locale={locale} />
       {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
       <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
       <nav className="hh-insights-view-tabs" role="tablist"
