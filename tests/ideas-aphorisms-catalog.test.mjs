@@ -186,7 +186,7 @@ test("traditional provenance, original shown beneath source, historical license 
   assert.match(ui, /item\.kind === "proverb" && item\.original/);
   assert.match(ui, /lang=\{item\.original\.language\}/);
   assert.match(ui, /href=\{item\.source\.url\}/);
-  assert.match(ui, /proverbSource: "Народная пословица"/);
+  assert.match(ui, /proverbSource: "Происхождение"/);
   assert.match(css, /\.aphorisms p\.aphorismOriginal/);
   assert.match(matcher, /Traditional proverb/);
   assert.match(migration, /CHECK \(kind IN \('editorial', 'inspired', 'proverb'\)\)/);
