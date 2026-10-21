@@ -146,10 +146,10 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
         onTouchStart={() => setManual(true)}>
         <div key={slide.kind} className={styles.slideMedia} style={{ objectPosition: slide.position }}>
           {slide.image === "/images/holistic-house/andy-about.png" ? (
-            <StaticPortrait src={slide.image} alt="" fill sizes="(max-width: 760px) 100vw, 1240px" className={styles.image} />
+            <StaticPortrait src={slide.image} alt="" fill sizes="(max-width: 760px) 100vw, 1240px" className={styles.image} style={{ objectPosition: slide.position }} />
           ) : (
             <Image src={slide.image} alt="" fill priority={index === 0 && !manual}
-              unoptimized sizes="(max-width: 760px) 100vw, 1240px" className={styles.image} />
+              unoptimized sizes="(max-width: 760px) 100vw, 1240px" className={styles.image} style={{ objectPosition: slide.position }} />
           )}
         </div>
         <div className={styles.gradient} aria-hidden="true" />
