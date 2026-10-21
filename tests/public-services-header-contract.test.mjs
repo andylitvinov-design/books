@@ -10,22 +10,20 @@ const verify = new (Object.getPrototypeOf(async function () {}).constructor)('pa
 
 function fixture(locale, width, changes = {}) {
   let open = false;
-  const library = { count: 1, visible: true, href: `/${locale}/library`, bounds: { x: 5, width: 90 }, ...changes.library };
-  const cabinet = { count: 1, visible: true, href: `/${locale}/app`, text: locale === 'ru' ? 'Мой дом' : 'My House', bounds: { x: 5, width: 120 }, ...changes.cabinet };
-  for (const item of [library, cabinet]) {
+  const cabinet = { count: 1, visible: true, href: `/${locale}/app`, bounds: { x: 5, width: 90 }, ...changes.cabinet };
+  const books = { count: 1, visible: true, href: `/${locale}/library?view=books`, text: locale === 'ru' ? 'Книги' : 'Books', bounds: { x: 5, width: 120 }, ...changes.books };
+  for (const item of [cabinet, books]) {
     item.getAttribute = async () => item.href;
     item.boundingBox = async () => item.bounds;
   }
-  const trigger = { visible: true, bounds: { x: 230, width: 70 }, ...changes.trigger };
-  trigger.boundingBox = async () => trigger.bounds;
-  trigger.click = async () => { open = !open; };
+  const trigger = { visible: true, bounds: { x: 230, width: 70 }, ...changes.trigger, async click() { open = !open; }, async boundingBox() { return this.bounds; } };
   const menu = { locator(selector) {
     if (selector === 'summary.site-main-menu-trigger') return trigger;
-    assert.equal(selector, `.site-main-menu-panel a[href="/${locale}/app"]`);
-    return cabinet;
+    assert.equal(selector, `.site-main-menu-panel a[href="/${locale}/library?view=books"]`);
+    return books;
   } };
   const header = { locator(selector) {
-    if (selector === 'a.site-library-entry') return library;
+    if (selector === 'a.site-cabinet-entry') return cabinet;
     assert.equal(selector, 'details.site-main-menu'); return menu;
   } };
   const page = { locator(selector) { assert.equal(selector, 'header.house-header--services'); return header; } };
@@ -35,29 +33,29 @@ function fixture(locale, width, changes = {}) {
     toHaveAttribute: async (name, value) => { assert.equal(name, 'open'); assert.equal(value, ''); assert.equal(open, true); },
     not: { toHaveAttribute: async () => assert.equal(open, false) },
   });
-  const visible = async item => { assert.equal(item.visible, true); if (item === cabinet) assert.equal(open, true); };
+  const visible = async item => { assert.equal(item.visible, true); if (item === books) assert.equal(open, true); };
   return async () => { await verify(page, expect, visible, assert, locale, width); assert.equal(open, false, 'Menu closes before remaining layout checks'); };
 }
 
 for (const locale of ['en', 'ru']) for (const width of [320, 360, 390, 1188]) {
-  test(`canonical header retains Library and reachable My House ${locale}/${width}`, fixture(locale, width));
+  test(`canonical header retains Cabinet and reachable Books ${locale}/${width}`, fixture(locale, width));
 }
 for (const [name, changes] of [
   ['hidden menu trigger', { trigger: { visible: false } }],
   ['overflowing menu trigger', { trigger: { bounds: { x: 300, width: 70 } } }],
-  ['missing Library', { library: { count: 0 } }],
-  ['wrong Library locale', { library: { href: '/ru/library' } }],
-  ['hidden Library', { library: { visible: false } }],
-  ['overflowing Library', { library: { bounds: { x: 300, width: 90 } } }],
-  ['missing My House', { cabinet: { count: 0 } }],
-  ['hidden My House', { cabinet: { visible: false } }],
-  ['wrong cabinet route', { cabinet: { href: '/en/client' } }],
-  ['wrong My House label', { cabinet: { text: 'Library' } }],
-  ['overflowing My House', { cabinet: { bounds: { x: -20, width: 90 } } }],
+  ['missing Cabinet', { cabinet: { count: 0 } }],
+  ['wrong Cabinet locale', { cabinet: { href: '/ru/app' } }],
+  ['hidden Cabinet', { cabinet: { visible: false } }],
+  ['overflowing Cabinet', { cabinet: { bounds: { x: 300, width: 90 } } }],
+  ['missing Books', { books: { count: 0 } }],
+  ['hidden Books', { books: { visible: false } }],
+  ['wrong Books route', { books: { href: '/en/app' } }],
+  ['wrong Books label', { books: { text: 'Cabinet' } }],
+  ['overflowing Books', { books: { bounds: { x: -20, width: 90 } } }],
 ]) test(`header acceptance rejects ${name}`, async () => { await assert.rejects(fixture('en', 320, changes)); });
 
-test('retired cabinet shortcut is not used and unrelated strict assertions remain', () => {
-  assert.ok(!source.includes('a.site-cabinet-entry'));
+test('Cabinet shortcut is verified without relaxing unrelated assertions', () => {
+  assert.ok(source.includes('a.site-cabinet-entry'));
   assert.ok(source.includes('await assertViewport(page, locale + "/services/" + width)'));
   assert.ok(source.includes('assert.deepEqual(diagnostics.pageErrors, []'));
   assert.ok(source.includes('"Unexpected browser console errors"'));

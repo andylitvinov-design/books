@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { BookOpen, Menu } from 'lucide-react';
+import { LayoutDashboard, Menu } from 'lucide-react';
 import { CartNavLink } from '@/components/commerce/cart-nav-link';
 import { compactNavigationIcons } from './compact-navigation-icons';
 import type { Locale } from '@/data/remedies';
@@ -13,10 +13,10 @@ import { useNavigationLocale } from './use-navigation-locale';
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
 
-const libraryEntryCopy = {
-  en: { full: 'Library', compact: 'Library', aria: 'Open library' },
-  ru: { full: 'Библиотека', compact: 'Библиотека', aria: 'Открыть библиотеку' },
-  es: { full: 'Biblioteca', compact: 'Biblioteca', aria: 'Abrir biblioteca' },
+const cabinetEntryCopy = {
+  en: { full: 'Cabinet', compact: 'Cabinet', aria: 'Open personal cabinet' },
+  ru: { full: 'Кабинет', compact: 'Кабинет', aria: 'Открыть личный кабинет' },
+  es: { full: 'Gabinete', compact: 'Gabinete', aria: 'Abrir gabinete personal' },
 } as const;
 
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
@@ -34,7 +34,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const preference = useNavigationLocale(locale);
   const activeLocale = locale ?? preference;
   const text = navigationCopy[activeLocale];
-  const library = libraryEntryCopy[activeLocale];
+  const cabinet = cabinetEntryCopy[activeLocale];
   const siteMenu = siteMenuCopy[activeLocale];
   const current = activeNavigationId(pathname);
   const menuCurrent = activeCompactNavigationId(pathname);
@@ -111,16 +111,17 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
     <Link
-      className="site-library-entry"
-      href={`/${activeLocale}/library`}
+      className="site-cabinet-entry"
+      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}
       prefetch={false}
-      data-nav-item="library"
-      aria-current={current === 'library' ? 'page' : undefined}
-      aria-label={library.aria}
+      data-nav-item="cabinet"
+      aria-current={current === 'cabinet' ? 'page' : undefined}
+      aria-label={cabinet.aria}
+      lang={activeLocale === 'es' ? 'en' : undefined}
     >
-      <BookOpen aria-hidden="true" />
-      <span className="site-library-entry__full">{library.full}</span>
-      <span className="site-library-entry__compact">{library.compact}</span>
+      <LayoutDashboard aria-hidden="true" />
+      <span className="site-cabinet-entry__full">{cabinet.full}</span>
+      <span className="site-cabinet-entry__compact">{cabinet.compact}</span>
     </Link>
     <Link className="site-nav-shop-entry" data-nav-item="shop" href={"/" + activeLocale + "/shop"}
       prefetch={false} aria-current={pathname === "/" + activeLocale + "/shop" ? "page" : undefined}>

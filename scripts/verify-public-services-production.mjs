@@ -150,14 +150,14 @@ try {
         "Method videos must not eagerly load third-party players");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // Canonical header: Library shortcut; Cabinet keeps account access in the menu.
+      // Canonical header: Cabinet is immediately accessible; Books occupies the bottom bar.
       const header = page.locator("header.house-header--services");
-      const libraryEntry = header.locator("a.site-library-entry");
-      await expect(libraryEntry).toHaveCount(1);
-      await visible(libraryEntry);
-      assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "top Library link keeps its locale");
-      const libraryBounds = await libraryEntry.boundingBox();
-      assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the visible header: " + locale + "/" + width);
+      const cabinetEntry = header.locator("a.site-cabinet-entry");
+      await expect(cabinetEntry).toHaveCount(1);
+      await visible(cabinetEntry);
+      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top Cabinet opens the authenticated app");
+      const cabinetBounds = await cabinetEntry.boundingBox();
+      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
       const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
@@ -167,13 +167,13 @@ try {
         "Public site menu must fit the header: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).toHaveAttribute("open", "");
-      const cabinetEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/app"]');
-      await expect(cabinetEntry).toHaveCount(1);
-      await visible(cabinetEntry);
-      await expect(cabinetEntry).toHaveText(locale === "ru" ? "Кабинет" : "Cabinet");
-      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "Cabinet opens the authenticated app");
-      const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the opened menu: " + locale + "/" + width);
+      const booksEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/library?view=books"]');
+      await expect(booksEntry).toHaveCount(1);
+      await visible(booksEntry);
+      await expect(booksEntry).toHaveText(locale === "ru" ? "Книги" : "Books");
+      assert.equal(await booksEntry.getAttribute("href"), "/" + locale + "/library?view=books", "Books opens the locale-specific library books view");
+      const booksBounds = await booksEntry.boundingBox();
+      assert.ok(booksBounds && booksBounds.x >= 0 && booksBounds.x + booksBounds.width <= width + 1, "Books entry must fit the opened menu: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);
