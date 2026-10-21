@@ -167,11 +167,11 @@ try {
         "Public site menu must fit the header: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).toHaveAttribute("open", "");
-      const booksEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/library?view=books"]');
+      const booksEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/books"]');
       await expect(booksEntry).toHaveCount(1);
       await visible(booksEntry);
-      await expect(booksEntry).toHaveText(locale === "ru" ? "Книги" : "Books");
-      assert.equal(await booksEntry.getAttribute("href"), "/" + locale + "/library?view=books", "Books opens the locale-specific library books view");
+      await expect(booksEntry).toHaveText(locale === "ru" ? "Идеи" : "Ideas");
+      assert.equal(await booksEntry.getAttribute("href"), "/" + locale + "/books", "Books opens the locale-specific library books view");
       const booksBounds = await booksEntry.boundingBox();
       assert.ok(booksBounds && booksBounds.x >= 0 && booksBounds.x + booksBounds.width <= width + 1, "Books entry must fit the opened menu: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();

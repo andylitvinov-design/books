@@ -15,12 +15,12 @@ type PageProps = {
 
 const meta = {
   ru: {
-    title: "Библиотека книг — Holistic House",
-    description: "Книги и методички Holistic House: авторские материалы об алхимии души, гомеопатии, традициях Дао и Майя. Откройте каталог и выберите книгу.",
+    title: "Идеи — подсказки, афоризмы и книги | Holistic House",
+    description: "Задайте вопрос: гексаграмма И-Цзин, три афоризма по теме или бесплатная личная подсказка. Ниже — книги и методички Holistic House.",
   },
   en: {
-    title: "Books & Library — Holistic House",
-    description: "Browse the Holistic House book catalog: guides on inner development, homeopathy, Daoist traditions and Maya culture. Discover original texts and editions.",
+    title: "Ideas — insights, aphorisms & books | Holistic House",
+    description: "Explore your question with an I Ching symbol, three topic-matched reflections or free personal guidance. Browse the Holistic House book catalog below.",
   },
 } as const;
 

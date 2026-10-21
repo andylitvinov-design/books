@@ -11,7 +11,7 @@ const verify = new (Object.getPrototypeOf(async function () {}).constructor)('pa
 function fixture(locale, width, changes = {}) {
   let open = false;
   const cabinet = { count: 1, visible: true, href: `/${locale}/app`, bounds: { x: 5, width: 90 }, ...changes.cabinet };
-  const books = { count: 1, visible: true, href: `/${locale}/library?view=books`, text: locale === 'ru' ? 'Книги' : 'Books', bounds: { x: 5, width: 120 }, ...changes.books };
+  const books = { count: 1, visible: true, href: `/${locale}/books`, text: locale === 'ru' ? 'Идеи' : 'Ideas', bounds: { x: 5, width: 120 }, ...changes.books };
   for (const item of [cabinet, books]) {
     item.getAttribute = async () => item.href;
     item.boundingBox = async () => item.bounds;
@@ -19,7 +19,7 @@ function fixture(locale, width, changes = {}) {
   const trigger = { visible: true, bounds: { x: 230, width: 70 }, ...changes.trigger, async click() { open = !open; }, async boundingBox() { return this.bounds; } };
   const menu = { locator(selector) {
     if (selector === 'summary.site-main-menu-trigger') return trigger;
-    assert.equal(selector, `.site-main-menu-panel a[href="/${locale}/library?view=books"]`);
+    assert.equal(selector, `.site-main-menu-panel a[href="/${locale}/books"]`);
     return books;
   } };
   const header = { locator(selector) {
@@ -38,7 +38,7 @@ function fixture(locale, width, changes = {}) {
 }
 
 for (const locale of ['en', 'ru']) for (const width of [320, 360, 390, 1188]) {
-  test(`canonical header retains Cabinet and reachable Books ${locale}/${width}`, fixture(locale, width));
+  test(`canonical header retains Cabinet and reachable Ideas ${locale}/${width}`, fixture(locale, width));
 }
 for (const [name, changes] of [
   ['hidden menu trigger', { trigger: { visible: false } }],
@@ -47,11 +47,11 @@ for (const [name, changes] of [
   ['wrong Cabinet locale', { cabinet: { href: '/ru/app' } }],
   ['hidden Cabinet', { cabinet: { visible: false } }],
   ['overflowing Cabinet', { cabinet: { bounds: { x: 300, width: 90 } } }],
-  ['missing Books', { books: { count: 0 } }],
-  ['hidden Books', { books: { visible: false } }],
-  ['wrong Books route', { books: { href: '/en/app' } }],
-  ['wrong Books label', { books: { text: 'Cabinet' } }],
-  ['overflowing Books', { books: { bounds: { x: -20, width: 90 } } }],
+  ['missing Ideas', { books: { count: 0 } }],
+  ['hidden Ideas', { books: { visible: false } }],
+  ['wrong Ideas route', { books: { href: '/en/app' } }],
+  ['wrong Ideas label', { books: { text: 'Cabinet' } }],
+  ['overflowing Ideas', { books: { bounds: { x: -20, width: 90 } } }],
 ]) test(`header acceptance rejects ${name}`, async () => { await assert.rejects(fixture('en', 320, changes)); });
 
 test('Cabinet shortcut is verified without relaxing unrelated assertions', () => {
