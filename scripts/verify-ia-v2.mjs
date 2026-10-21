@@ -140,6 +140,13 @@ async function verifyPublicHeaderMatrix(page, engine) {
         const trigger = menu.locator('summary')
         await expect(trigger).toHaveText(locale.toUpperCase())
         await expect(cabinetEntry).toHaveAttribute('href', '/' + (locale === 'es' ? 'en' : locale) + '/app')
+        // The direct cabinet entry must be readable on actual phone viewports:
+        // a dashboard icon or aria-label alone is not enough for discovery.
+        const cabinetText = { en: 'Cabinet', ru: 'Кабинет', es: 'Gabinete' }[locale]
+        const visibleCabinetLabel = cabinetEntry.locator(width <= 1023 ? '.site-cabinet-entry__compact' : '.site-cabinet-entry__full')
+        await expect(visibleCabinetLabel).toBeVisible()
+        await expect(visibleCabinetLabel).toHaveText(cabinetText)
+        if (width <= 767) await expect(cabinetEntry.locator('svg')).toBeHidden()
         await expect(menu).toHaveJSProperty('open', false)
         await inViewport(cabinetEntry, label + '/cabinet')
         await inViewport(trigger, label + '/language')

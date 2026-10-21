@@ -51,3 +51,16 @@ test("Cabinet chapter picker uses saved owner progress and forbids deep-link ski
   assert.match(repo, /COURSE_STEP_NOT_READY/)
   assert.match(learner, /onClick=\{\(\) => jumpToSlide\(lesson\.firstSlideId\)\}/)
 })
+
+
+test("The actual first lesson renders its final practice and congratulations before the consented save gate", () => {
+  const curriculum = read("data/academy/energywork-ai-curriculum.ts");
+  const expected = energyworkSequence();
+  const reportIndex = expected.indexOf("flight-04");
+  const practiceIndex = expected.indexOf("flight-03");
+  const doneIndex = expected.indexOf("flight-done");
+  const saveIndex = expected.indexOf("flight-save");
+  assert.ok(reportIndex < practiceIndex && practiceIndex < doneIndex && doneIndex < saveIndex);
+  assert.match(curriculum, /slide\.phase === "flight" && slide\.id !== "flight-save"/);
+  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "flight-save"\)!/);
+});

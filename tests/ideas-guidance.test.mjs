@@ -81,3 +81,23 @@ test("EN/RU/ES books now start with Ideas while retaining book catalogs and cano
     assert.equal(getSiteNavigation(locale).find(item => item.id === "library").href, "/" + locale + "/library");
   }
 });
+
+test("Personal guidance is one accessible editorial list, not three giant cards or left photos", () => {
+  const component = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  assert.match(component, /getIdeasFreeRecommendations\(result\.topic\)\.map\(\(id, index\)/);
+  assert.match(component, /<ol className=\{styles\.guidanceList\} data-ideas-guidance-list>/);
+  assert.match(component, /className=\{styles\.guidanceLink\} href=\{freeOfferHref\(locale, id\)\}/);
+  assert.match(component, /index === 0 \? t\.guidanceMatch : t\.guidanceOther/);
+  assert.match(component, /\{item\.action\}<ArrowRight/);
+  assert.doesNotMatch(component, /styles\.offers|styles\.offer\b|<Image|<img/);
+  assert.match(css, /\.guidanceList li \{/);
+  assert.match(css, /\.guidanceLink:focus-visible/);
+  assert.match(css, /@media \(max-width: 760px\)/);
+  assert.match(css, /\.actions \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); gap: 6px; \}/);
+  assert.match(css, /@media \(max-width: 360px\)/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
+  for (const localized of ["guidanceIntro", "guidanceMatch", "guidanceOther"]) {
+    assert.equal(component.split(localized + ":").length - 1, 3, localized + " must be present in RU/EN/ES");
+  }
+});

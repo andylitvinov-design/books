@@ -231,8 +231,9 @@ const tantraPracticeQuestion: EnergyworkQuestion = {
 
 const commonSlides: EnergyworkSlide[] = [
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
-    title: l("Reiki Practitioner — your first step", "Практик Рейки — начало пути"),
-    body: l("One course, five lessons in sequence: Flight to the Sun and three Reiki systems.", "Один курс из пяти последовательных уроков: «Полёт к Солнцу» и три системы Рейки.") },
+    title: l("Reiki Practitioner — a five-day journey", "Практик Рейки — пятидневный курс"),
+    body: l("Explore the principles of Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil. Each day brings a short exercise and a meditation to discover the character of each system through your own experience.",
+      "Познакомьтесь с принципами Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль. Каждый день вас ждут небольшое упражнение и медитация, чтобы на собственном опыте исследовать особенности каждой системы.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
     body: l("Not a test — just choose your experience.",
@@ -550,7 +551,11 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
 
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    ...withClosingPractices(commonSlides.filter((slide) => slide.phase === "flight"), ["flight-03"], "flight-done"),
+    // Finish the Sun practice and celebrate Lesson 1 before the Google-save gate.
+    // This must match the canonical p10 sequence: flight-03 → flight-done → flight-save.
+    ...withClosingPractices(commonSlides.filter((slide) =>
+      slide.phase === "flight" && slide.id !== "flight-save"), ["flight-03"], "flight-done"),
+    commonSlides.find((slide) => slide.id === "flight-save")!,
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),
