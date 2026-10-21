@@ -224,7 +224,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
      <span><strong>{ru?'Видеопрезентация профиля':es?'Presentación del perfil':'Profile video presentation'}</strong>
        <small>{sitePresentation.path.split('/').pop()} · {sitePresentationLive?t.published:t.pending}</small></span>
    </article>}
-   {editing===null&&(visibleVideos.length?<div className={styles.resourceList}>{visibleVideos.slice(0,showAll||query?visibleVideos.length:2).map((video,index)=>{
+   {editing===null&&visibleVideos.length>0&&<div className={styles.resourceList}>{visibleVideos.slice(0,showAll||query?visibleVideos.length:2).map((video,index)=>{
     const originalIndex=videos.indexOf(video)
     const live=published.some(p=>p.url===video.url&&p.title===video.title&&p.locale===video.locale&&p.description===video.description)
     return <article className={styles.resourceRow} key={video.url+'-'+index}>
@@ -244,7 +244,8 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
       </div>
      </div>
     </article>
-   })}</div>:!sitePresentation||sitePresentation.kind!=='upload'?<p className={styles.empty}>{t.empty}</p>:null)}
+   })}</div>}
+   {editing===null&&visibleVideos.length===0&&sitePresentation?.kind!=='upload'&&<p className={styles.empty}>{t.empty}</p>}
    {editing===null&&!query&&visibleVideos.length>2&&<button type="button" className={styles.showMore} aria-expanded={showAll} onClick={()=>setShowAll(v=>!v)}>{showAll?(ru?'Свернуть':es?'Ver menos':'Show fewer'):(ru?'Все видео ('+visibleVideos.length+') →':es?'Todos los vídeos ('+visibleVideos.length+') →':'All videos ('+visibleVideos.length+') →')}</button>
    {editing!==null&&<CompactVideoComposer
      key={editing==='new'?'new-video':'video-'+editing}
