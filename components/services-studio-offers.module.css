@@ -75,3 +75,9 @@
  .description{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.details summary svg{transition:none}}
+
+
+/* Keep the canonical cards mounted for enquiries, but genuinely remove non-matching offers from layout and keyboard navigation. */
+.resultsAnchor{width:min(1188px,calc(100% - 32px));height:0;margin:0 auto;scroll-margin-top:90px;outline:none}
+.section[hidden],.card[hidden]{display:none!important}
+@media(max-width:680px){.resultsAnchor{width:calc(100% - 24px);scroll-margin-top:72px}}
