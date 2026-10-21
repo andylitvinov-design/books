@@ -87,7 +87,7 @@ test("after saved course completion the free initiation is named, not confused w
   const course = read("components/energywork-ai-learner.tsx");
   assert.match(course, /Request free Level 1 introduction in/);
   assert.match(course, /Запросить бесплатную вводную инициацию I ступени/);
-  assert.match(course, /choice\.id === "tantra" \? "#apply-free"/);
+  assert.match(course, /t\.noInitiation/);
   assert.match(course, /savedInitiationReady/);
   assert.match(course, /!busy && !saveError && dirtyRef\.current\.size === 0/);
   assert.match(course, /t\.reviewPrivate/);

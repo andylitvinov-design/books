@@ -35,6 +35,9 @@ on:
       - 'app/api/app/\[...path\]/route.js'
       - 'app/\[locale\]/academy/\[\[...slug\]\]/page.tsx'
       - 'tests/energywork-ai-course-*.test.mjs'
+      - 'tests/energywork-lesson-progress.test.mjs'
+      - 'tests/reiki-lesson-tomorrow-choice.test.mjs'
+      - 'lib/academy/reiki-lesson-calendar.js'
       - 'tests/reiki-lesson-intro-audio.test.mjs'
       - 'tests/reiki-audio-library-v3.test.mjs'
       - 'lib/academy/reiki-audio-metadata.js'
@@ -72,7 +75,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Source, media, security and route contracts
-        run: node --test tests/energywork-kundalini-ygg-study.test.mjs tests/energywork-ai-course-preview.test.mjs tests/energywork-tantra-study-questions.test.mjs tests/reiki-scenic-course-design.test.mjs tests/reiki-practitioner-portrait-v3.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/reiki-crm-leads.test.mjs tests/reiki-course-reviews-public.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs tests/tantra-reiki-brand-symbol.test.mjs tests/tantra-reiki-promo-landing.test.mjs tests/reiki-referral-landing.test.mjs tests/reiki-free-course-cta-routing.test.mjs tests/reiki-lesson-intro-audio.test.mjs tests/reiki-audio-library-v3.test.mjs tests/reiki-ios-keyboard-cta.test.mjs tests/reiki-ios-viewport-anchor.test.mjs tests/reiki-mobile-text-question-one-screen.test.mjs
+        run: node --test tests/energywork-kundalini-ygg-study.test.mjs tests/energywork-lesson-progress.test.mjs tests/reiki-lesson-tomorrow-choice.test.mjs tests/energywork-ai-course-preview.test.mjs tests/energywork-tantra-study-questions.test.mjs tests/reiki-scenic-course-design.test.mjs tests/reiki-practitioner-portrait-v3.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/reiki-crm-leads.test.mjs tests/reiki-course-reviews-public.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs tests/tantra-reiki-brand-symbol.test.mjs tests/tantra-reiki-promo-landing.test.mjs tests/reiki-referral-landing.test.mjs tests/reiki-free-course-cta-routing.test.mjs tests/reiki-lesson-intro-audio.test.mjs tests/reiki-audio-library-v3.test.mjs tests/reiki-ios-keyboard-cta.test.mjs tests/reiki-ios-viewport-anchor.test.mjs tests/reiki-mobile-text-question-one-screen.test.mjs
       - name: Targeted ESLint
         run: npx eslint components/energywork-ai-learner.tsx components/reiki-my-reviews.jsx components/reiki-public-reviews.jsx components/app/course-entry-selector.jsx components/principles-of-energywork.tsx lib/academy/reiki-public-reviews.js app/api/reiki-course-reviews/route.js components/academy-free-course-banner.tsx components/app/cabinet-free-course-banners.jsx lib/academy/energywork-course-repository.js lib/academy/reiki-course-leads.js components/admin-reiki-leads.jsx components/admin-reiki-audio.jsx components/reiki-lesson-intro-audio.tsx lib/academy/reiki-intro-audio-model.js lib/academy/reiki-intro-audio-store.js app/admin/reiki-audio/page.jsx app/admin/reiki-audio/data/route.js app/api/reiki-intro-audio/route.js app/admin/materials/page.js app/admin/materials/audio/page.jsx app/admin/materials/audio/reiki-practitioner/page.jsx app/admin/reiki-leads/page.jsx app/admin/reiki-leads/data/route.js data/academy/energywork-ai-schema.js data/academy/energywork-ai-curriculum.ts app/api/app/'[...path]'/route.js lib/academy/reiki-audio-metadata.js
       - name: TypeScript verification
