@@ -323,3 +323,283 @@ a.aphorismSource:hover { color: #533b28; }
   .action, .question textarea { transition: none; }
   .action:hover { transform: none; }
 }
+
+
+/* Reference fidelity v3: the artwork is a small first-party crop of the
+   approved scenic design. All controls and answer text stay real HTML. */
+.root {
+  --ideas-ink: #30251e;
+  --ideas-muted: #6a615a;
+  --ideas-accent: #07575b;
+  --ideas-line: #e5d8c9;
+  margin: 7px 0 27px;
+  padding: clamp(9px, 1.7vw, 18px);
+  border-color: #e8dac7;
+  border-radius: 24px;
+  background: linear-gradient(158deg, #fffaf3 1%, #faf1e6 61%, #fffaf4 100%);
+}
+.heading {
+  min-height: clamp(190px, 24vw, 260px);
+  border: 0;
+  border-radius: 19px;
+  padding: clamp(19px, 3.5vw, 38px);
+  background-color: #fff9f1;
+  background-image: linear-gradient(90deg,#fffaf4 0%,rgba(255,250,244,.96) 30%,rgba(255,250,244,.45) 65%,rgba(255,250,244,0) 100%),url("/images/holistic-house/ideas-pine-reference.webp");
+  background-size: cover, auto 100%;
+  background-position: center, right center;
+  background-repeat: no-repeat;
+}
+.heading h1 { font-size: clamp(44px, 6.1vw, 76px); letter-spacing: -.05em; }
+.heading .lead { max-width: 420px; color: #594d42; text-wrap: balance; }
+.question {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #e7d7c7;
+  border-radius: 19px;
+  background: rgba(255,253,249,.97);
+  box-shadow: 0 8px 23px rgba(91,62,35,.05);
+}
+.questionFields { position: relative; display: block; }
+.question textarea {
+  width: 100%;
+  min-height: 56px;
+  max-height: 170px;
+  padding: 15px 47px 14px 46px;
+  border-color: #d7c5b5;
+  border-radius: 16px;
+  background: #fffefc;
+  line-height: 1.35;
+  resize: vertical;
+}
+.question textarea::placeholder { color:#827971; }
+.inputSparkle { position: absolute; top: 16px; left: 13px; color:#8c6545; pointer-events:none; }
+.fileInput { display: none; }
+.attach {
+  position:absolute;
+  top: 6px;
+  right: 7px;
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  padding:0;
+  border:0;
+  border-radius:13px;
+  color:#71543e;
+  background:transparent;
+  cursor:pointer;
+}
+.attach:hover { background:#f5ebe1; }
+.submit {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 8px;
+  border-radius: 15px;
+  background: linear-gradient(116deg,#af805d 0%,#82583e 97%);
+  font-size: 15px;
+  box-shadow: 0 7px 14px rgba(95,62,43,.12);
+}
+.submit:hover { background:linear-gradient(116deg,#9b6b4b,#6d4933); }
+.privacyDisclosure { color: #71655a; font-size: 12px; }
+.actions { gap: 8px; margin-top: 10px; }
+.action {
+  flex-direction: column;
+  justify-content:center;
+  gap: 7px;
+  min-height: 82px;
+  padding: 11px 7px;
+  border-radius: 17px;
+  border-color:#e3cbb3;
+  background:linear-gradient(143deg,#fffdf9,#fff4e7);
+  font-size: 14px;
+  color: #3a302a;
+}
+.action span:not(.modeYin) { flex:0 1 auto; }
+.action svg:last-child { margin:0; }
+.modeYin { color:#0d5b5c; font: 30px/1 Georgia,"Times New Roman",serif; }
+.action[aria-pressed="true"] {
+  background:linear-gradient(145deg,#dcf1ed,#dcebe6);
+  border-color:#55aba7;
+  color:#074e50;
+  box-shadow:inset 0 0 0 1px rgba(34,129,132,.12);
+}
+.results {
+  margin-top: 11px;
+  padding: clamp(11px,2vw,18px);
+  border: 1px solid #ecddcc;
+  border-radius: 21px;
+  background: #fffdf8;
+}
+.preview { background:linear-gradient(146deg,#fffdf9,#f7f1e8); }
+.daoReset { display:block; margin: -5px 0 5px auto; text-decoration:none; }
+.daoInsight {
+  position: relative;
+  overflow:hidden;
+  padding: clamp(10px,2.2vw,22px);
+  border:1px solid #ecdfce;
+  border-radius:19px;
+  background:linear-gradient(140deg,#fffdf8,#f7efe5 92%);
+  isolation:isolate;
+}
+.daoLandscape {
+  position:absolute;
+  z-index:-1;
+  width:56%;
+  height:170px;
+  right:0;
+  top:0;
+  background:linear-gradient(90deg,rgba(255,250,244,.8),rgba(255,250,244,0)),url("/images/holistic-house/ideas-pine-reference.webp") right top / auto 100% no-repeat;
+  opacity:.52;
+  pointer-events:none;
+}
+.daoEyebrow {
+  display:flex; align-items:center; gap:10px;
+  margin:0;
+  color:#3c3b32; font:800 11px/1.4 Arial,Helvetica,sans-serif;
+  letter-spacing:.17em;
+  text-transform:uppercase;
+}
+.yinYang { color:#34271d; font:34px/1 Georgia,"Times New Roman",serif; }
+.daoTitle {
+  max-width:660px;
+  margin:10px 0 0;
+  color:#32251d;
+  font:400 clamp(27px,3.5vw,44px)/1.14 Georgia,"Times New Roman",serif;
+  letter-spacing:-.028em;
+}
+.daoLead { max-width:700px; margin:8px 0 12px; color:#62584d; font-size:clamp(13px,1.5vw,16px); line-height:1.5; }
+.daoExpanded { margin: 7px 0 0; }
+.daoExpanded > summary {
+  width:fit-content;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+  padding:10px 0;
+  color:#0b5a60;
+  font-size:13px;
+  font-weight:750;
+  text-underline-offset:3px;
+  text-decoration:underline;
+}
+.daoExpanded > summary:focus-visible { outline:3px solid #137d81; outline-offset:2px; }
+.preview .daoExpanded > summary { display:none; }
+.daoInterpretation { display:grid; grid-template-columns:minmax(100px,35%) minmax(0,1fr); align-items:start; gap:14px; }
+.daoGlyphCard {
+  display:flex;
+  align-items:center;
+  flex-direction:column;
+  justify-content:center;
+  min-width:0;
+  min-height:222px;
+  padding:15px 10px;
+  border:1px solid #ecdcc8;
+  border-radius:17px;
+  background:linear-gradient(160deg,#fff7e9,#f9efdf);
+  text-align:center;
+}
+.daoGlyphCard strong { margin-top:17px; color:#39291e; font:400 34px/1.15 Georgia,serif; }
+.daoGlyphCard > span:last-child { margin-top:4px; font-size:12px; line-height:1.3; }
+.daoPoints { display:grid; gap:14px; min-width:0; }
+.daoPoint { display:grid; grid-template-columns:28px minmax(0,1fr); gap:9px; color:#885f3d; }
+.daoPoint svg { width:24px; height:24px; margin-top:2px; }
+.daoPoint strong { color:#5d422c; font-size:13px; line-height:1.3; }
+.daoPoint p { margin:4px 0 0; color:#66594f; font-size:13px; line-height:1.4; }
+.hexagramActions { margin:10px 1px 0; }
+.hexagramActions a { background:#0e5c5d; border-color:#0e5c5d; }
+.hexagramActions button { background:#fffaf4; }
+.relatedAphorisms {
+  min-width:0;
+  margin-top:12px;
+  padding:11px;
+  border-radius:17px;
+  background:linear-gradient(132deg,#f4e8dc,#fff7ec);
+  border:1px solid #ecdece;
+}
+.aphorismHeading {
+  display:flex; align-items:center; gap:8px;
+  margin:0 0 10px;
+  color:#69503d;
+  font:800 11px/1.3 Arial,Helvetica,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.13em;
+}
+.aphorismHeading svg { color:#886346; width:19px; height:19px; }
+.aphorisms { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin:0; padding:0; }
+.aphorisms li {
+  display:block;
+  min-width:0;
+  padding:14px 11px 12px;
+  border:1px solid #eaded1;
+  border-radius:14px;
+  background:rgba(255,253,250,.75);
+  box-shadow:0 4px 10px rgba(70,53,40,.025);
+}
+.aphorisms li:last-child { border:1px solid #eaded1; }
+.aphorisms .number { display:none; }
+.aphorismBody::before { content:"❞"; display:block; color:#8e684a; font:28px/.9 Georgia,serif; }
+.aphorisms p { margin:9px 0; color:#3f342d; font:400 clamp(12px,1.2vw,15px)/1.42 Arial,Helvetica,sans-serif; }
+.aphorismSource { display:block; font-size:10px; line-height:1.35; color:#7b6450; text-transform:none; overflow-wrap:anywhere; }
+.moreAphorisms { margin-top:12px; background:#76523a; border-color:#76523a; }
+.root :is(button,a,textarea,summary):focus-visible { outline:3px solid #15878b; outline-offset:3px; }
+@media (max-width:760px) {
+  .root { padding:7px; border-radius:20px; }
+  .heading { min-height:155px; padding:12px 13px; border-radius:14px; background-position:center,right center; }
+  .eyebrow { font-size:10px; }
+  .heading h1 { font-size:clamp(39px,10.6vw,48px); margin-top:5px; }
+  .heading .lead { margin-top:7px; max-width:81%; color:#5b5147; font-size:13.5px; line-height:1.36; }
+  .question { margin-top:6px; padding:7px; }
+  .questionFields { display:block; }
+  .question textarea { min-height:51px; max-height:130px; padding:13px 45px 12px 42px; font-size:16px; }
+  .inputSparkle { top:14px; left:13px; width:19px; }
+  .attach { top:4px; right:4px; }
+  .submit { width:100%; min-height:46px; padding:10px; margin-top:7px; }
+  .privacyDisclosure { font-size:11.5px; margin-top:6px; }
+  .actions { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:8px; }
+  .action { min-height:74px; padding:9px 3px; border-radius:13px; font-size:clamp(12px,3.15vw,14px); line-height:1.19; }
+  .action svg:first-child { width:23px; height:23px; }
+  .action span:not(.modeYin) { min-width:0; overflow-wrap:normal; text-wrap:balance; }
+  .action .modeYin { font-size:26px; }
+  .results { margin-top:9px; padding:7px; border-radius:17px; }
+  .daoInsight { padding:11px; border-radius:15px; }
+  .daoLandscape { height:115px; width:58%; opacity:.36; }
+  .daoEyebrow { gap:6px; font-size:10px; letter-spacing:.11em; }
+  .yinYang { font-size:24px; }
+  .daoTitle { margin-top:8px; font-size:clamp(23px,6.4vw,30px); line-height:1.18; }
+  .daoLead { margin:5px 0 10px; font-size:13px; line-height:1.38; }
+  .daoInterpretation { grid-template-columns:minmax(86px,38%) minmax(0,1fr); gap:8px; }
+  .daoGlyphCard { min-height:200px; padding:8px 5px; }
+  .daoGlyphCard strong { font-size:27px; margin-top:12px; }
+  .daoGlyphCard > span:last-child { font-size:11px; }
+  .daoPoints { gap:10px; }
+  .daoPoint { grid-template-columns:22px minmax(0,1fr); gap:5px; }
+  .daoPoint svg { width:20px; height:20px; }
+  .daoPoint strong { font-size:12px; }
+  .daoPoint p { font-size:12px; line-height:1.35; margin-top:3px; }
+  .relatedAphorisms { margin-top:8px; padding:8px 6px; border-radius:13px; }
+  .aphorismHeading { margin-bottom:7px; font-size:10px; gap:6px; }
+  .aphorismHeading svg { width:17px; height:17px; }
+  .aphorisms { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .aphorisms li { padding:9px 7px; border-radius:12px; }
+  .aphorismBody::before { font-size:22px; }
+  .aphorisms p { margin:6px 0 9px; font-size:12px; line-height:1.35; }
+  .aphorismSource { font-size:10px; line-height:1.25; }
+  .hexagramActions { gap:5px; margin-top:7px; }
+  .hexagramActions a,.hexagramActions button { min-height:44px; padding:8px 10px; font-size:11px; }
+}
+@media (max-width:360px) {
+  .root { padding:5px; }
+  .heading { padding:11px; min-height:145px; }
+  .heading .lead { max-width:83%; font-size:12.8px; }
+  .action { min-height:73px; font-size:12px; }
+  .daoInsight { padding:9px; }
+  .daoInterpretation { grid-template-columns:90px minmax(0,1fr); gap:7px; }
+  .daoPoint { grid-template-columns:19px minmax(0,1fr); gap:4px; }
+  .daoPoint svg { width:18px; height:18px; }
+  .daoPoint p { font-size:11.7px; }
+  .relatedAphorisms { padding:7px 4px; }
+  .aphorisms { gap:4px; }
+  .aphorisms li { padding:8px 5px; }
+  .aphorisms p { font-size:11.5px; }
+}
+@media (prefers-reduced-motion:reduce) { .attach,.submit,.daoExpanded summary { transition:none; } }
