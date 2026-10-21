@@ -148,6 +148,7 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
     setManual(true);
     setRequestOpen(false);
     setTopic(kind);
+    if (kind === "reiki" || kind === "free") setMode("online");
     window.requestAnimationFrame(() => {
       const target = document.getElementById("service-results");
       target?.focus({ preventScroll: true });
