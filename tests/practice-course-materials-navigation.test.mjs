@@ -15,7 +15,7 @@ const audio=source('components/admin-reiki-audio.jsx')
 
 test('My Practice Materials offers Reiki course recordings only to the owner',()=>{
   assert.match(workspace,/isOwner=\{isOwner\} onOpenReikiCourse=\{\(\)=>openOwner\('reikiCourse'\)\}/)
-  assert.match(materialTab,/\{isOwner&&<button[^>]+data-practice-materials-courses-tab/)
+  assert.match(materialTab,/\{isOwner&&<button[\s\S]{0,200}data-practice-materials-courses-tab/)
   assert.match(materialTab,/tab==='courses'&&isOwner\?<section/)
   assert.match(materialTab,/onClick=\{onOpenReikiCourse\} data-open-reiki-course-audio/)
   assert.match(materialTab,/Практик Рейки/)
