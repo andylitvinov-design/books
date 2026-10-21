@@ -2,6 +2,7 @@
 
 import {createContext,useCallback,useContext,useEffect,useRef,useState} from 'react'
 import {BookmarkCheck,House,LockKeyhole,ShieldCheck,X} from 'lucide-react'
+import {SESSION_SAVE_COPY} from './save-client-session-to-account'
 import {appFetch} from '@/lib/app/client-fetch'
 import {rememberSessionSaveTarget,safeSessionExitTarget,sessionExitActionTarget} from '@/lib/app/session-exit-navigation'
 import styles from './client-session.module.css'
@@ -14,6 +15,7 @@ export const useSessionExitNavigation=()=>useContext(NavigationContext)
 // No browser can promise a custom confirmation on tab close/OS shutdown.
 export function SessionExitSaveGuard({children,locale='en',selector,sessionId=null,cabinetMode=false,appAvailable=true}) {
   const ru=locale==='ru'
+  const saveCopy=SESSION_SAVE_COPY[locale]||SESSION_SAVE_COPY.en
   const [pending,setPending]=useState(null)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
@@ -154,9 +156,8 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
         <button type="button" className={styles.sessionSaveClose} aria-label={ru?'Закрыть':'Close'}
           onClick={close} disabled={busy}><X size={19}/></button>
         <div className={styles.sessionSaveModalIcon}><BookmarkCheck size={27}/></div>
-        <p className={styles.sessionSaveEyebrow}>HOLISTIC HOUSE · {ru?'МОЯ КОНСУЛЬТАЦИЯ':'MY CONSULTATION'}</p>
-        <h2 id="hh-session-save-title">{ru?'Сохранить консультацию в мой кабинет?':
-          'Save this consultation to your Cabinet?'}</h2>
+        <p className={styles.sessionSaveEyebrow}>HOLISTIC HOUSE · {saveCopy.kicker}</p>
+        <h2 id="hh-session-save-title">{saveCopy.modalTitle}</h2>
         <p id="hh-session-save-description" className={styles.sessionSaveDescription}>{ru?
           'Вы сможете снова открыть этот отчёт, назначения, аудио и видео в разделе «Мои отчёты» без гостевой ссылки.':
           'Keep this report, recommendations, audio and video under My Reports, accessible through your Google Cabinet.'}</p>
