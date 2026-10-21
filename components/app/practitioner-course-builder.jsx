@@ -21,7 +21,7 @@ const request=async(body)=>{
  if(!response.ok)throw new Error(data.error||'REQUEST_FAILED')
  return data
 }
-const fileAccept={image:'image/jpeg,image/png,image/webp',audio:'audio/mpeg,audio/mp4,audio/x-m4a',video:'video/mp4,video/quicktime'}
+const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',audio:'audio/mpeg,audio/mp4,audio/x-m4a',video:'video/mp4,video/quicktime'}
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
@@ -128,7 +128,7 @@ export default function PractitionerCourseBuilder({locale='en'}){
   try{
    const prepared=active.kind==='image'?await preparePhoto(file):file
    const mime=prepared.type.split(';')[0].toLowerCase()
-   if(!fileAccept[active.kind]?.split(',').includes(mime))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
+   if(!Object.keys({image:{'image/jpeg':1,'image/png':1,'image/webp':1},audio:{'audio/mpeg':1,'audio/mp4':1,'audio/x-m4a':1},video:{'video/mp4':1,'video/quicktime':1}}[active.kind]||{}).includes(mime))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
    const limit=active.kind==='image'?4000000:active.kind==='audio'?20000000:25000000
    if(prepared.size>limit||prepared.size<128)throw new Error('MEDIA_SIZE_NOT_ALLOWED')
    const {item:intent}=await request({action:'upload-intent',courseId:courseBefore,mime,bytes:prepared.size})
