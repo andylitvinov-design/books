@@ -31,3 +31,5 @@
 .private svg{flex:none;color:#398371;margin-top:1px}
 .root :is(button,.nativeCapture):focus-visible{outline:3px solid #69afa1;outline-offset:2px}
 @media(max-width:390px){.root{padding:10px}.recordActions{gap:6px}.start,.secondary,.stop{padding:9px 8px}}
+
+.iphoneTip{margin:0;color:#786b5a;font:480 11px/1.5 system-ui,sans-serif}
