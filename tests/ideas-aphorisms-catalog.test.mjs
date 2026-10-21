@@ -15,7 +15,7 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 
 test("142 curated Ideas texts in 16 themes and 10 documented sources, with three complete language versions", () => {
   assert.equal(catalog.items.length, 142);
-  assert.equal(new Set(catalog.items.map(item => item.id)).size, 128);
+  assert.equal(new Set(catalog.items.map(item => item.id)).size, catalog.items.length);
   assert.equal(new Set(catalog.items.map(item => item.topic)).size, 16);
   assert.equal(Object.keys(catalog.sources).length, 10);
   for (const locale of ["en", "ru", "es"]) {
