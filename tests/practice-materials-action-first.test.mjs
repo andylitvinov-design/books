@@ -23,7 +23,7 @@ test('every material tab exposes one meaningful primary action immediately after
  assert.match(hub,/tab==='audio'&&isOwner\?<>/)
  assert.match(hub,/className=\{styles\.actionPrimary\} disabled=\{locked\|\|editing!==null\} onClick=\{\(\)=>open\(\)\}/)
  assert.match(hub,/<CompactVideoComposer/)
- assert.match(hub,/\{isOwner&&<button[^\n]*onClick=\{\(\)=>open\(\)\}/)
+ assert.match(hub,/\{isOwner&&<button[^\n]*onClick=\{onOpenYoutube\}/)
  assert.match(articles,/data-material-primary-action="articles"/)
  assert.match(articles,/onClick=\{\(\)=>choose\(null\)\}/)
  assert.match(hub,/Создать курс/)
