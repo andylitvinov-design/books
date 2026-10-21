@@ -28,9 +28,10 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - run: npm ci --no-audit --no-fund
+      # NODE_ENV=production must not omit TypeScript, ESLint or Next build tooling.
+      - run: npm ci --include=dev --no-audit --no-fund
       - name: Thumbnail URL safety and media source allowlist
-        run: node --test tests/practice-material-preview-url.test.mjs
+        run: node --test tests/practice-material-preview-url.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-approved-v4-ui.test.mjs
       - name: TypeScript regression
         run: npx --no-install tsc --noEmit
       - name: Production Next.js build
