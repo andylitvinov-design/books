@@ -7,7 +7,6 @@ const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('private consultation uses site navigation and two consent-safe next actions on both access paths',()=>{
   const component=read('components/client-session-page.jsx')
   const save=read('components/save-client-session-to-account.jsx')
-  const copy=read('lib/clients/session-save-copy.js')
   const entry=read('components/client-session-cabinet-entry.jsx')
   const guest=read('app/[locale]/client/session/[shareSelector]/page.js')
   const cabinet=read('app/[locale]/client/[selector]/sessions/[sessionId]/page.js')
