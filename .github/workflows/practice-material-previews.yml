@@ -5,6 +5,10 @@ on:
     paths:
       - 'components/app/practice-material-preview.jsx'
       - 'components/app/practice-materials.jsx'
+      - 'components/app/practitioner-articles.*'
+      - 'components/admin-reiki-audio.*'
+      - 'app/admin/materials/courses/reiki-practitioner/page.jsx'
+      - 'tests/practice-materials-action-first.test.mjs'
       - 'components/app/practitioner-course-builder.*'
       - 'components/app/course-slide-recorder.*'
       - 'tests/course-slide-recorder.test.mjs'
@@ -43,7 +47,7 @@ jobs:
       # NODE_ENV=production must not omit TypeScript, ESLint or Next build tooling.
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Thumbnail URL safety and media source allowlist
-        run: node --test tests/practice-material-preview-url.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-approved-v4-ui.test.mjs tests/practitioner-course-builder.test.mjs tests/course-slide-recorder.test.mjs
+        run: node --test tests/practice-material-preview-url.test.mjs tests/practice-materials-action-first.test.mjs tests/practice-v4-visual-parity.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-approved-v4-ui.test.mjs tests/practitioner-course-builder.test.mjs tests/course-slide-recorder.test.mjs
       - name: TypeScript regression
         run: npx --no-install tsc --noEmit
       - name: Production Next.js build
