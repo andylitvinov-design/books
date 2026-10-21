@@ -419,7 +419,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       <div><strong>{publishedCount}</strong><span>{ru?'Опубликованные услуги':'Published services'}</span></div>
       <div><strong>{pendingServices}</strong><span>{ru?'Ждут проверки':'Under review'}</span></div>
     </div>}
-    {!needsOnboarding&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics"><PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} /></div>}
+    {!needsOnboarding&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics"><PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} /></div>}
     {!needsOnboarding&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
       <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
         {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>

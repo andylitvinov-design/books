@@ -7,6 +7,7 @@ import {practiceTelegramConfigured} from '@/lib/practitioners/daily-telegram-tra
 import {deliverDailyPracticeDigest} from '@/lib/practitioners/daily-telegram-digest'
 import {ensureOwnerTelegramPairing,resolvedOwnerTelegramEnv} from '@/lib/practitioners/telegram-owner-pairing'
 import {registerClientTelegramWebhook,verifyClientBot,ownerAiMenuReady} from '@/lib/app/client-telegram-transport'
+import {masterAnalyticsTelegramReady,scheduledMasterAnalyticsDigests} from '@/lib/practitioners/master-analytics-service'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -25,6 +26,12 @@ export async function GET(request){
     return NextResponse.json({status:'token_missing'},{headers:PRIVATE_HEADERS})
   try{
     const config=getAppConfig()
+    // Same existing once-daily Vercel cron; per-master opted-in receipts are
+    // claimed independently and provider sending remains disabled by default.
+    if(masterAnalyticsTelegramReady(process.env)){
+      try{await scheduledMasterAnalyticsDigests(config,{env:process.env})}
+      catch{console.error('HH_MASTER_ANALYTICS_SCHEDULE_FAILED')}
+    }
     const pairing=await ensureOwnerTelegramPairing(config)
     if(!['paired','already_configured'].includes(pairing.status))
       return NextResponse.json(pairing,{headers:PRIVATE_HEADERS})
