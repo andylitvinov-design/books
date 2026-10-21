@@ -17,6 +17,16 @@ const NEW_KEYS = [
   'ons-personal-wellbeing-4',
 ]
 
+
+// Explicit product starter policy, not a statement about validity or availability.
+const STARTER_ELIGIBILITY = Object.freeze({
+  'ipip-emotion-decision-making-9': false,
+  'ipip-responsive-joy-10': false,
+  'ipip-responsive-distress-10': false,
+  'ipip-empathic-concern-10': false,
+  'ons-personal-wellbeing-4': true,
+})
+
 test('five distinct, source-backed, fully startable professional questionnaires join the existing catalog', () => {
   const catalogKeys = new Set(MONITORING_CATALOG.map(item => item.key))
   const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
@@ -24,6 +34,8 @@ test('five distinct, source-backed, fully startable professional questionnaires 
   assert.equal(ADDITIONAL_PROFESSIONAL_DEFINITIONS.length, 5)
   assert.deepEqual(ADDITIONAL_PROFESSIONAL_CATALOG.map(item => item.key), NEW_KEYS)
   assert.equal(new Set(NEW_KEYS).size, NEW_KEYS.length)
+  assert.deepEqual(Object.keys(STARTER_ELIGIBILITY), NEW_KEYS)
+  assert.deepEqual(ADDITIONAL_PROFESSIONAL_DEFINITIONS.map(item => item.key), NEW_KEYS)
   assert.equal(catalogKeys.size, MONITORING_CATALOG.length)
   for (const key of NEW_KEYS) {
     const item = MONITORING_CATALOG.find(value => value.key === key)
@@ -35,7 +47,7 @@ test('five distinct, source-backed, fully startable professional questionnaires 
     assert.equal(item.instrumentLocale, 'en', key)
     assert.equal(item.questionCount, definition.questions.length, key)
     assert.equal(item.testStyle, 'professional', key)
-    assert.equal(item.starterEligible, true, key)
+    assert.equal(item.starterEligible, STARTER_ELIGIBILITY[key], key)
     assert.equal(entry.testKind, 'professional', key)
     assert.equal(testKindFor({ key, source: 'product', catalog: item, definition }), 'professional', key)
     assert.equal(entry.selectable, true, key)

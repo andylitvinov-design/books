@@ -1,5 +1,4 @@
-import { PublicSiteHeader } from "@/components/public-site-header";
-import { CoreServiceDetail } from "@/components/core-service-detail";
+import { FreeEntryLanding } from "@/components/free-entry-landing";
 import { spanishMetadata } from "@/lib/spanish-metadata";
 
 export const metadata = spanishMetadata(
@@ -9,5 +8,5 @@ export const metadata = spanishMetadata(
 );
 
 export default function SpanishCoreServicePage() {
-  return <><PublicSiteHeader locale="es" /><CoreServiceDetail locale="es" kind="dao" /></>;
+  return <FreeEntryLanding locale="es" kind="dao" />;
 }

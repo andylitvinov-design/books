@@ -10,14 +10,9 @@ import styles from "./free-resource-enquiry.module.css";
 type EnquiryKind = "situation" | "dao";
 const text = {
   en: {
-    name: "Your name (optional)",
-    namePlaceholder: "How should Andrey address you?",
     topic: "What would you like to explore?",
-    question: "A little about your question (optional)",
-    questionPlaceholder: "One or two sentences are enough.",
     action: "Continue with a free request",
-    copyDetails: "Copy my details", copied: "Copied. Paste these details in your chat.", copyError: "Copy unavailable: select and copy the note below.",
-    note: "Choose WhatsApp or Telegram to review the prepared message. Nothing is stored on this page or sent before you confirm it in the messenger.",
+    note: "Choose a topic, then enter your name, email or phone, and a short enquiry once in the request form. Submitting it sends those details and your reply consent to the site for CRM registration. After receipt confirmation, WhatsApp or Telegram is optional; you decide whether to send a message there.",
     situation: {
       title: "Your free written review",
       lead: "Start with one topic. Andrey will explain how to send the short questionnaire and your handwritten drawing.",
@@ -34,14 +29,9 @@ const text = {
     },
   },
   ru: {
-    name: "Как к вам обращаться? (необязательно)",
-    namePlaceholder: "Ваше имя",
     topic: "Какой вопрос хотите исследовать?",
-    question: "Пара слов о запросе (необязательно)",
-    questionPlaceholder: "Достаточно одного-двух предложений.",
     action: "Продолжить бесплатный запрос",
-    copyDetails: "Скопировать мой запрос", copied: "Скопировано. Вставьте эти детали в чат.", copyError: "Копирование недоступно: выделите текст ниже и скопируйте.",
-    note: "Выберите WhatsApp или Telegram, проверьте текст и сами подтвердите отправку. Сайт не сохраняет ответы и не отправляет их автоматически.",
+    note: "Выберите тему, затем один раз укажите имя, email или телефон и краткий запрос в форме заявки. При её отправке эти данные и согласие на личный ответ передаются на сайт для регистрации заявки в CRM. После подтверждения получения можно по желанию перейти в WhatsApp или Telegram; сообщение там отправляете вы сами.",
     situation: {
       title: "Ваш бесплатный письменный разбор",
       lead: "Выберите тему. Андрей подскажет, как прислать короткую анкету и рисунок от руки.",
@@ -58,14 +48,9 @@ const text = {
     },
   },
   es: {
-    name: "Tu nombre (opcional)",
-    namePlaceholder: "¿Cómo te llamas?",
     topic: "¿Qué te gustaría explorar?",
-    question: "Unas palabras sobre tu pregunta (opcional)",
-    questionPlaceholder: "Una o dos frases son suficientes.",
     action: "Continuar con la solicitud gratuita",
-    copyDetails: "Copiar mis detalles", copied: "Copiado. Pega estos detalles en el chat.", copyError: "No se pudo copiar: selecciona el texto siguiente.",
-    note: "Elige WhatsApp o Telegram, revisa el mensaje y confirma el envío tú mismo. Esta página no almacena ni envía tus respuestas automáticamente.",
+    note: "Elige un tema y completa una sola vez tu nombre, email o teléfono y una consulta breve en el formulario de solicitud. Al enviarlo, esos datos y tu consentimiento para una respuesta personal se envían al sitio para registrar la solicitud en el CRM. Tras la confirmación de recepción, WhatsApp o Telegram son opcionales; tú decides si envías un mensaje allí.",
     situation: {
       title: "Tu revisión gratuita por escrito",
       lead: "Elige un tema. Andrey te explicará cómo enviar el cuestionario breve y tu dibujo a mano.",
@@ -87,31 +72,15 @@ export function FreeResourceEnquiry({ locale, kind }: { locale: PublicLocale; ki
   const t = text[locale];
   const offer = t[kind];
   const [topic, setTopic] = useState(0);
-  const [name, setName] = useState("");
-  const [question, setQuestion] = useState("");
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
-  const privateContext = [
-    name.trim() ? t.name + ": " + name.trim().slice(0, 80) : "",
-    question.trim() ? t.question + ": " + question.trim().slice(0, 350) : "",
-  ].filter(Boolean).join(" | ");
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
     service: offer.service,
     request: offer.request,
     topic: offer.topics[topic],
     // Only the editorially approved broad topic is placed in either messenger URL.
-    // Visitor-specific name/question stay in the page until intentionally copied.
+    // Contact details and the short enquiry are entered once in the consented form below.
     pagePath: "/" + locale + "/services/" + (kind === "dao" ? "dao-health-profile" : "free-situation-review"),
   });
-  async function copyPrivateContext() {
-    if (!privateContext) return;
-    try {
-      await navigator.clipboard.writeText(privateContext);
-      setCopyStatus("copied");
-    } catch {
-      setCopyStatus("error");
-    }
-  }
 
   return (
     <section className={styles.form} data-free-resource-enquiry={kind} aria-label={offer.title}>
@@ -123,18 +92,7 @@ export function FreeResourceEnquiry({ locale, kind }: { locale: PublicLocale; ki
             {offer.topics.map((item, index) => <option key={item} value={index}>{item}</option>)}
           </select>
         </label>
-        <label>{t.name}
-          <input value={name} onChange={(event) => { setName(event.target.value); setCopyStatus("idle"); }} type="text" maxLength={80} autoComplete="name" placeholder={t.namePlaceholder} />
-        </label>
-        <label>{t.question}
-          <textarea rows={3} maxLength={350} value={question} onChange={(event) => { setQuestion(event.target.value); setCopyStatus("idle"); }} placeholder={t.questionPlaceholder} />
-        </label>
       </div>
-      {privateContext ? <div className={styles.copyRegion}>
-        <button type="button" className={styles.copyButton} onClick={() => { void copyPrivateContext(); }}>{t.copyDetails}</button>
-        <p className={styles.copyStatus} role="status">{copyStatus === "copied" ? t.copied : copyStatus === "error" ? t.copyError : null}</p>
-        {copyStatus === "error" ? <textarea readOnly value={privateContext} rows={3} aria-label={t.copyDetails} onFocus={(event) => event.currentTarget.select()} /> : null}
-      </div> : null}
       <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
         className={styles.action} event="service_request_start" attributes={{ "data-free-enquiry-kind": kind }} />
       <p className={styles.note}><ShieldCheck size={16} aria-hidden="true" />{t.note}</p>

@@ -63,6 +63,17 @@ if(!process.execArgv.includes('--conditions=react-server')){
     }
     assert.throws(()=>checkReviewInput({...base,serviceId:'fake'}),/INVALID_ID/)
     assert.throws(()=>checkReviewInput({...base,body:'bad'}),/INVALID_REVIEW/)
-    assert.throws(()=>checkReviewInput({...base,body:'Email me at test@example.com for results, please.'}),/REVIEW_PERSONAL_DATA/)
+  })
+  test('review privacy guards reject valid-length email, phone and control-character samples',()=>{
+    for(const body of [
+      'Email me at test@example.com for more details about this session, please.',
+      'Call me at +1 (202) 555-0100 for more details about this session, please.',
+      'A detailed first-hand account of the session contains a hidden \u0000 character.',
+    ]){
+      // Reach the privacy guard, rather than failing #1185's 50-character minimum.
+      assert.ok(Array.from(body.trim()).length>=50)
+      assert.ok(body.length<=1200)
+      assert.throws(()=>checkReviewInput({...base,body}),error=>error.code==='REVIEW_PERSONAL_DATA'&&error.status===422)
+    }
   })
 }

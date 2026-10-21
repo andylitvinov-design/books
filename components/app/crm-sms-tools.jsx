@@ -8,6 +8,7 @@ const WORDS={
   title:'SMS · text message',evidence:'Evidence of SMS consent (source and date)',
   example:'e.g. signed SMS opt-in on 19 Oct 2026',saveConsent:'Record existing SMS consent',
   consentWarning:'Record only consent you can substantiate. Saving a contact is NOT consent.',
+  phoneNotVerified:'Recording SMS consent does not verify that this phone belongs to the contact.',
   phoneNeeded:'Add a valid phone number (+country code) first.',blocked:'Contact has opted out of messages.',
   archived:'Archived contacts cannot receive SMS.',unsubscribed:'This number is excluded from SMS.',
   ready:'SMS consent recorded.',compose:'Write an SMS',message:'Message',send:'Send one SMS',
@@ -29,6 +30,7 @@ const WORDS={
   title:'SMS · сообщения',evidence:'Подтверждение согласия на SMS (источник и дата)',
   example:'Например, письменное согласие на SMS от 19.10.2026',saveConsent:'Записать имеющееся согласие',
   consentWarning:'Указывайте только подтверждаемое согласие. Сохранённый контакт — не согласие на SMS.',
+  phoneNotVerified:'Запись согласия на SMS не подтверждает, что номер принадлежит этому контакту.',
   phoneNeeded:'Сначала добавьте номер в международном формате (+код страны).',blocked:'Клиент отказался от сообщений.',
   archived:'Архивным контактам нельзя отправлять SMS.',unsubscribed:'Для этого номера SMS запрещены.',
   ready:'Согласие на SMS записано.',compose:'Написать SMS',message:'Текст сообщения',send:'Отправить одно SMS',
@@ -51,6 +53,7 @@ const WORDS={
   title:'SMS · mensajes',evidence:'Evidencia de consentimiento para SMS (origen y fecha)',
   example:'Por ejemplo: consentimiento firmado el 19/10/2026',saveConsent:'Registrar consentimiento existente',
   consentWarning:'Registra solo permisos demostrables. Guardar un contacto no implica consentimiento.',
+  phoneNotVerified:'Registrar el consentimiento para SMS no verifica que el teléfono pertenezca al contacto.',
   phoneNeeded:'Añade un teléfono internacional (+código de país).',blocked:'El contacto se dio de baja.',
   archived:'No se pueden enviar SMS a contactos archivados.',unsubscribed:'El número excluyó los SMS.',
   ready:'Consentimiento registrado.',compose:'Escribir SMS',message:'Mensaje',send:'Enviar un SMS',
@@ -126,6 +129,7 @@ export default function CrmSmsTools({
   {contact.lifecycle==='archived'?<p className={styles.warning}>{c.archived}</p>:
    contact.suppressed?<p className={styles.warning}>{c.blocked}</p>:
    !contact.phone?<p className={styles.warning}>{c.phoneNeeded}</p>:<>
+   <p>{c.phoneNotVerified}</p>
    {!allowed&&!isStop&&<form className={styles.form} onSubmit={record}>
     <p>{c.consentWarning}</p>
     <label>{c.evidence}

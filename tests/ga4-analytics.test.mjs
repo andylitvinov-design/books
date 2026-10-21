@@ -6,6 +6,7 @@ import { ACQUISITION_EVENTS } from "../data/local-acquisition.js";
 
 const analyticsModule = new URL("../components/ga4-analytics.tsx", import.meta.url);
 const consentModule = new URL("../components/analytics-consent.tsx", import.meta.url);
+const submissionModule = new URL("../lib/practitioners/public-enquiry-submission.js", import.meta.url);
 
 test("GA4 implementation has a dedicated consent-gated public analytics boundary", () => {
   assert.equal(existsSync(analyticsModule), true);
@@ -20,14 +21,15 @@ test("public conversion steps use separate allowlisted events without form paylo
     assert.match(intake, new RegExp(event));
   }
   const chooser = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
-  assertContactAnalyticsContract(intake, chooser);
+  const submission = readFileSync(submissionModule, "utf8");
+  assertContactAnalyticsContract(intake, chooser, submission);
   for (const event of ["academy_level_one_initiation_enquiry_click", "academy_personal_initiation_enquiry_click", "academy_study_material_request_click"]) {
     assert.match(course, new RegExp(event));
   }
   assert.doesNotMatch(intake, /emitPublicAnalyticsEvent\([^)]*(?:problem|goal|obstacle|tried|answers)/);
 });
 
-function assertContactAnalyticsContract(intake, chooser) {
+function assertContactAnalyticsContract(intake, chooser, submission) {
   assert.ok(ACQUISITION_EVENTS.includes("contact_click"), "The shared acquisition allowlist owns contact_click");
   const intakeChooser = intake.match(/<ContactChannelChooser\b[\s\S]*?\/>/)?.[0];
   assert.ok(intakeChooser, "Free review uses the shared chooser");
@@ -45,18 +47,23 @@ function assertContactAnalyticsContract(intake, chooser) {
   assert.match(trigger, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
   assert.doesNotMatch(trigger, /emit|analytics|dispatchEvent|onChannelClick|event=/);
   assert.doesNotMatch(chooser, /emitPublicAnalyticsEvent|dispatchEvent|sendBeacon|window\.gtag/);
-  assert.match(chooser, /fetch\("\/api\/service-enquiries", \{/);
-  assert.match(chooser, /method: "POST"/);
-  assert.doesNotMatch(chooser, /emitPublicAnalyticsEvent|dispatchEvent|sendBeacon|window\.gtag/);
+  assert.match(chooser, /import \{ createPublicEnquirySubmissionScope \} from "@\/lib\/practitioners\/public-enquiry-submission"/);
+  assert.match(chooser, /const scope = createPublicEnquirySubmissionScope\(\)/);
+  assert.match(chooser, /const result = await scope\.submit\(\{/);
+  assert.doesNotMatch(chooser, /fetch\s*\(/);
+  assert.match(submission, /fetchImpl\('\/api\/service-enquiries', \{/);
+  assert.match(submission, /method: 'POST', credentials: 'same-origin'/);
+  assert.doesNotMatch(chooser + submission, /emitPublicAnalyticsEvent|dispatchEvent|sendBeacon|window\.gtag|localStorage|sessionStorage/);
 }
 
 test("handoff analytics rejects caller drift and records channel selection only", () => {
   const intake = readFileSync(new URL("../components/free-drawing-intake.tsx", import.meta.url), "utf8");
   const chooser = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
-  assertContactAnalyticsContract(intake, chooser);
-  assert.throws(() => assertContactAnalyticsContract(intake.replace('event="contact_click"', 'event="unknown_event"'), chooser));
-  assert.throws(() => assertContactAnalyticsContract(intake, chooser.replace('event={event}', 'event="contact_click"')));
-  assert.throws(() => assertContactAnalyticsContract(intake, chooser.replace('onClick={() => setOpen((value) => !value)}', 'onClick={() => { emit(event); setOpen((value) => !value); }}')));
+  const submission = readFileSync(submissionModule, "utf8");
+  assertContactAnalyticsContract(intake, chooser, submission);
+  assert.throws(() => assertContactAnalyticsContract(intake.replace('event="contact_click"', 'event="unknown_event"'), chooser, submission));
+  assert.throws(() => assertContactAnalyticsContract(intake, chooser.replace('event={event}', 'event="contact_click"'), submission));
+  assert.throws(() => assertContactAnalyticsContract(intake, chooser.replace('onClick={() => setOpen((value) => !value)}', 'onClick={() => { emit(event); setOpen((value) => !value); }}'), submission));
   const links = readFileSync(new URL("../components/acquisition-event-link.tsx", import.meta.url), "utf8");
   assert.match(links, /if \(analyticsConsent !== "granted"\) return/);
   assert.match(links, /detail: \{ event \}/);
@@ -67,6 +74,31 @@ test("handoff analytics rejects caller drift and records channel selection only"
   assert.match(publicAnalytics, /PUBLIC_ANALYTICS_AVAILABLE = false/);
   assert.match(publicAnalytics, /if \(!PUBLIC_ANALYTICS_AVAILABLE\) return/);
   assert.match(analytics, /if \(!PUBLIC_ANALYTICS_AVAILABLE \|\|/);
+});
+
+test("extracted submission contract rejects disconnected transport and hidden analytics", () => {
+  const intake = readFileSync(new URL("../components/free-drawing-intake.tsx", import.meta.url), "utf8");
+  const chooser = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
+  const submission = readFileSync(submissionModule, "utf8");
+  assertContactAnalyticsContract(intake, chooser, submission);
+  for (const [before, after] of [
+    ['@/lib/practitioners/public-enquiry-submission', '@/lib/unrelated-submission'],
+    ['await scope.submit({', 'await other.submit({'],
+  ]) {
+    assert.ok(chooser.includes(before), before);
+    assert.throws(() => assertContactAnalyticsContract(intake, chooser.replace(before, after), submission));
+  }
+  for (const [before, after] of [
+    ["fetchImpl('/api/service-enquiries', {", "fetchImpl('https://example.invalid/collect', {"],
+    ["method: 'POST'", "method: 'GET'"],
+    ["credentials: 'same-origin'", "credentials: 'include'"],
+    ["body: payload", "body: payload, analytics: window.gtag('event', input)"],
+    ["body: payload", "body: payload, leak: navigator.sendBeacon('/collect', payload)"],
+    ["body: payload", "body: payload, persisted: localStorage.setItem('contact', payload)"],
+  ]) {
+    assert.ok(submission.includes(before), before);
+    assert.throws(() => assertContactAnalyticsContract(intake, chooser, submission.replace(before, after)));
+  }
 });
 
 test("robots policy excludes private cabinet, report and administration routes", () => {

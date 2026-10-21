@@ -1,3 +1,4 @@
+import { ADDITIONAL_PROFESSIONAL_CATALOG } from '../data/assessments/professional-additions-2026.js'
 import { IPIP_FIVE_CATALOG } from '../data/assessments/ipip-five-2026.js'
 import { IPIP_THREE_CATALOG } from '../data/assessments/ipip-three-2026.js'
 import { TRAUMA_SCREENING_CATALOG } from '../data/assessments/trauma-screening-catalog-2026.js'
@@ -24,9 +25,38 @@ const startable = () => MONITORING_CATALOG.filter((item) => item.startable)
 const answers = (definition, value) =>
   Object.fromEntries(definition.questions.map((q) => [q.id, value ?? q.min ?? definition.answerScale?.min ?? 0]))
 
+// These five source-cleared v1 additions are additive, not a replacement for
+// any historical questionnaire. Keep identities independent of catalog totals.
+const approvedAdditions = [
+  ['ipip-emotion-decision-making-9', '13deba1e-e350-5593-85c7-30f2c9815cbd'],
+  ['ipip-responsive-joy-10', '00089afb-3905-5e84-8efb-f0566342aff5'],
+  ['ipip-responsive-distress-10', 'eea5bd21-9620-5fd6-bc2a-9809e590fbd2'],
+  ['ipip-empathic-concern-10', '608dce45-8984-51bc-9f1d-5dc8aa9eac8e'],
+  ['ons-personal-wellbeing-4', '78e257f3-7d2d-5feb-a317-d39f8c2a8e19'],
+]
+
+test('five source-cleared additions retain their exact approved identities', () => {
+  assert.deepEqual(
+    ADDITIONAL_PROFESSIONAL_CATALOG.map(item => item.key).sort(),
+    approvedAdditions.map(([key]) => key).sort(),
+  )
+  for (const [key, id] of approvedAdditions) {
+    const catalog = ADDITIONAL_PROFESSIONAL_CATALOG.find(item => item.key === key)
+    assert.deepEqual(
+      [catalog.version, catalog.instrumentLocale, catalog.startable, catalog.rightsStatus],
+      ['v1', 'en', true, 'cleared'],
+      key,
+    )
+    const definition = getAssessmentDefinition(key, 'v1', 'en')
+    assert.deepEqual([definition.key, definition.id, definition.version, definition.instrumentLocale],
+      [key, id, 'v1', 'en'], key)
+    assert.equal(MONITORING_CATALOG.filter(item => item.key === key).length, 1, key)
+  }
+})
+
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 47 + TRAUMA_SCREENING_CATALOG.length + IPIP_THREE_CATALOG.length + IPIP_FIVE_CATALOG.length + RELATIONSHIPS_INTIMACY_KEYS.length + TANTRIC_REFLECTION_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length + PERSONALITY_TYPE_CATALOG.length + IPIP_VIA_R_COMPLETION_CATALOG.length + 2)
+  assert.equal(items.length, 47 + TRAUMA_SCREENING_CATALOG.length + IPIP_THREE_CATALOG.length + IPIP_FIVE_CATALOG.length + RELATIONSHIPS_INTIMACY_KEYS.length + TANTRIC_REFLECTION_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length + PERSONALITY_TYPE_CATALOG.length + IPIP_VIA_R_COMPLETION_CATALOG.length + ADDITIONAL_PROFESSIONAL_CATALOG.length + 2)
   assert.deepEqual(
     items.filter(item=>!TRAUMA_SCREENING_CATALOG.some(candidate=>candidate.key===item.key)&&!IPIP_VIA_R_COMPLETION_CATALOG.some(candidate=>candidate.key===item.key)).map((item) => item.key).sort(),
     [
@@ -91,6 +121,7 @@ test('all active published monitoring tests resolve to executable definitions', 
     ...IPIP_THREE_CATALOG.map((item) => item.key),
     ...IPIP_FIVE_CATALOG.map((item) => item.key),
     ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
+    ...ADDITIONAL_PROFESSIONAL_CATALOG.map((item) => item.key),
   ].sort(),
   )
   for (const item of items) {

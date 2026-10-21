@@ -4,7 +4,10 @@ import {readFileSync} from 'node:fs'
 import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
-import {mount,findButton,textOf} from './helpers/route-pipeline-harness.mjs'
+import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
+import {oporaExperienceSupport} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
+import {mount,findButton,findPart,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -13,32 +16,68 @@ function fixture(locale='en',day=1){
   const data={cycle:{id:'00000000-0000-4000-8000-000000008888',day,durationDays:14},
     programme:{id:'stress'},lesson,currentSession:null}
   let writes=0,exits=0
+  const payloads=[]
   const h=mount('opora-experience-player',{locale,data,onClose(){exits++},
-    onFinish(){exits++},onSession:async()=>{writes++;return true}})
-  return {h,get writes(){return writes},get exits(){return exits}}
+    onFinish(){exits++},onSession:async payload=>{writes++;payloads.push(structuredClone(payload));return true}})
+  return {h,payloads,get writes(){return writes},get exits(){return exits}}
 }
 async function click(h,label){
   const button=findButton(h.tree,label)
   assert.ok(button,'Missing button '+label+' in '+textOf(h.tree).slice(0,400))
+  assert.ok(!button.props.disabled,'Button must be enabled: '+label)
   button.props.onClick()
   await h.settle()
 }
 
+async function saveFromRecap(f,locale,day,next,save){
+  const scenes=day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
+  const copy=oporaEndingCopy(locale)
+  // The second visible screen is editorial support, not another persisted visit.
+  await click(f.h,next)
+  const support=oporaExperienceSupport(day,locale)
+  const supporting=nodes(f.h.tree).filter(node=>node.props?.['data-opora-daily-support']===day)
+  assert.equal(supporting.length,1,'Support must be the second visible screen')
+  assert.equal(textOf(nodes(f.h.tree).find(node=>node.type==='h2')),support.title)
+  assert.ok(textOf(supporting[0]).includes(support.body))
+  assert.equal(nodes(f.h.tree).filter(node=>node.props?.['aria-pressed']!==undefined).length,0,
+    'Editorial support must not ask for another answer or practice report')
+  assert.equal(f.writes,0,'Reading support must not save')
+  assert.equal(findPart(f.h.tree,'OporaOceanOutro'),undefined,'Support never starts optional audio')
+  await click(f.h,next)
+  for(let i=1;i<scenes.length;i++)await click(f.h,next)
+  assert.equal(f.writes,0,'Teaching screens never save')
+  assert.equal(findPart(f.h.tree,'OporaOceanOutro'),undefined,'Audio is unavailable before persistence')
+  assert.equal(textOf(nodes(f.h.tree).find(node=>node.type==='h2')),copy.recapTitle)
+  await click(f.h,save)
+  assert.equal(f.writes,0,'Missing recap selection must not save')
+  assert.ok(nodes(f.h.tree).some(node=>node.props?.role==='alert'&&textOf(node)===copy.required))
+  await click(f.h,copy.choices.find(([value])=>value==='explored')[1])
+  await click(f.h,save)
+  assert.equal(f.writes,1)
+  assert.deepEqual(f.payloads[0].visitedSlideKeys,[...scenes])
+  assert.deepEqual(f.payloads[0].opora54.answers,{lessonConfidence:'explored'})
+  assert.equal(f.payloads[0].practiceAttempt,null,'Recap reflection must not invent practice')
+  assert.equal(textOf(nodes(f.h.tree).find(node=>node.type==='h2')),
+    day===14?copy.congratsFinal:copy.congratsTitle.replace('{day}',String(day)))
+  assert.equal(findButton(f.h.tree,save),undefined)
+  assert.equal(findPart(f.h.tree,'OporaOceanOutro'),undefined,'Receipt does not start optional audio')
+}
+
 test('the ocean slide follows confirmed receipt, but neither it nor its audio are completion gates',async()=>{
   const f=fixture('en',1)
-  for(let i=0;i<8;i++)await click(f.h,'Continue')
-  await click(f.h,'Save my practice')
+  await saveFromRecap(f,'en',1,'Continue','Save my practice')
   assert.equal(f.writes,1)
-  assert.match(textOf(f.h.tree),/Your moment is saved/)
+  assert.match(textOf(f.h.tree),/Congratulations! Lesson 1 complete!/)
   assert.ok(findButton(f.h.tree,'My course map'),'Receipt must retain direct exit to the map')
   assert.ok(findButton(f.h.tree,'Relax with waves'),'The primary next step opens optional relaxation')
-  assert.match(textOf(f.h.tree),/10\s*\/\s*11/)
+  assert.match(textOf(f.h.tree),/12\s*\/\s*16/)
   await click(f.h,'Relax with waves')
   assert.equal(f.writes,1,'Opening audio never performs another save')
   assert.match(textOf(f.h.tree),/Two quiet minutes/)
-  assert.match(textOf(f.h.tree),/11\s*\/\s*11/)
+  assert.equal(findPart(f.h.tree,'OporaOceanOutro')?.props.locale,'en')
+  assert.match(textOf(f.h.tree),/13\s*\/\s*16/)
   await click(f.h,'Back')
-  assert.match(textOf(f.h.tree),/Your moment is saved/)
+  assert.match(textOf(f.h.tree),/Congratulations! Lesson 1 complete!/)
   await click(f.h,'My course map')
   assert.equal(f.exits,1)
   assert.equal(f.writes,1)
@@ -47,8 +86,7 @@ test('the ocean slide follows confirmed receipt, but neither it nor its audio ar
 
 test('the receipt can skip the audio entirely for short lessons',async()=>{
   const f=fixture('en',2)
-  for(let i=0;i<4;i++)await click(f.h,'Continue')
-  await click(f.h,'Save my practice')
+  await saveFromRecap(f,'en',2,'Continue','Save my practice')
   assert.equal(f.writes,1)
   await click(f.h,'My course map')
   assert.equal(f.exits,1)
@@ -63,13 +101,16 @@ test('the ocean slide remains localized and saves no extra practice response',as
   ]
   for(const [locale,next,save,audio,title,map] of labels){
     const f=fixture(locale,2)
-    for(let i=0;i<4;i++)await click(f.h,next)
-    await click(f.h,save)
+    await saveFromRecap(f,locale,2,next,save)
+    const saved=structuredClone(f.payloads[0])
     await click(f.h,audio)
     assert.match(textOf(f.h.tree),new RegExp(title))
+    assert.equal(findPart(f.h.tree,'OporaOceanOutro')?.props.locale,locale)
+    assert.match(textOf(f.h.tree),/9\s*\/\s*11/)
     assert.equal(f.writes,1)
     await click(f.h,map)
     assert.equal(f.exits,1)
+    assert.deepEqual(f.payloads,[saved],'Optional ocean and exit leave the one saved response unchanged')
     f.h.unmount()
   }
 })

@@ -1,8 +1,10 @@
 import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
 import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
-import { decodeReadyPoster } from './public-poster-readiness.mjs';
+import { verifyReleasePosters } from './helpers/release-services-poster-verifier.mjs';
+import { assertCabinetGuestEntry } from './helpers/cabinet-guest-entry-verifier.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { assertReleasePaidMode, verifyReleasePaidEnquiry } from './helpers/release-paid-enquiry-verifier.mjs';
+import { readReleaseImageryBuildDiagnostic } from './helpers/release-imagery-build-diagnostic.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
@@ -14,6 +16,8 @@ const url = new URL(origin);
 assert.ok(['127.0.0.1', 'localhost', 'holistichouse.vercel.app'].includes(url.hostname), 'Use only the local test build or canonical public site');
 assert.ok(!url.username && !url.password && !url.search && !url.hash);
 const label = process.env.REAUDIT_LABEL || 'local';
+assertReleasePaidMode({ origin, label }); // Reject unknown/mismatched mode before any browser/context/network work.
+const buildAttribution = label === 'local' ? readReleaseImageryBuildDiagnostic() : undefined;
 const evidence = '/tmp/release-reaudit';
 mkdirSync(evidence, { recursive: true });
 const results = [];
@@ -44,10 +48,9 @@ async function assertAnonymousPrivateNavigation(page) {
   assert.equal(response.status(), 200);
   await expect(page).toHaveURL(origin + '/en/app/portrait');
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
-  await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+  await assertCabinetGuestEntry(page, expect);
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
   await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
-  await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href', '/en/client');
 }
 
 async function verifyCspBfcache() {
@@ -248,15 +251,7 @@ async function exercise(engine, browserType, width) {
         publicDiagnostics.checkpoints.push({ type: 'assert', path, time: Date.now(), state: await page.evaluate(() => ({ probe: window.__publicAuditProbe, url: location.href, readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') })) });
         assert.deepEqual(errors, [], 'Unexpected page JS error');
         assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors in public documents');
-        // Snapshot the expected elements so index shifts or removed posters
-        // cannot reduce coverage. Each same element must load and strictly decode.
-        const posters = page.locator('.site-video-poster');
-        const posterImages = await posters.elementHandles();
-        for (const image of posterImages) {
-          await expect(posters).toHaveCount(posterImages.length);
-          await decodeReadyPoster(image, expect);
-        }
-        await expect(posters).toHaveCount(posterImages.length);
+        await verifyReleasePosters(page, { path, locale, origin }, expect);
         if (['/en/about', '/es/about', '/books/maya-tradition'].includes(path)) {
           await page.evaluate(() => scrollTo(0, 0));
           await page.screenshot({ path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`, fullPage: true });
@@ -359,45 +354,11 @@ async function exercise(engine, browserType, width) {
         assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
         return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
-      await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, async () => {
-        // Alchemy now has a dedicated form covered by verify-app-r1; retain the
-        // complete generic paid-selector contract on the actual imagery service.
-        await page.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
-        const capture = page.locator('[data-consultation-capture="service"]');
-        await expect(capture).toHaveCount(1);
-        await expect(capture.locator('[role="group"] button')).toHaveCount(3);
-        assert.equal(await capture.locator('form, input, textarea').count(), 0, 'No private intake fields in the enquiry selector');
-        let chooser = await openContactChannelChooser(capture, expect);
-        const assertPaidUrl = async (choice, minutes, price) => {
-          const { whatsapp, telegram, whatsappUrl: target } = await assertPreparedContactChannels(chooser, expect);
-          await expect(chooser.locator('[data-consultation-action]')).toHaveCount(2);
-          for (const action of [whatsapp, telegram]) await expect(action).toHaveAttribute('data-consultation-action', choice);
-          const message = target.searchParams.get('text');
-          assert.ok(message.includes(minutes) && message.includes(price), 'Prepared message must include the selected duration and price');
-          assert.ok(message.includes(await capture.locator('[aria-pressed="true"]').innerText()), 'Prepared message must mention the selected offer');
-          return target;
-        };
-        const originalUrl = await assertPaidUrl('session', '60', '€100');
-        await capture.locator('[role="group"] button').nth(1).click();
-        chooser = await openContactChannelChooser(capture, expect);
-        const changedUrl = await assertPaidUrl('questions', '30', '€50');
-        assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'));
-        await capture.locator('[role="group"] button').nth(2).click();
-        await expect(capture.locator('[data-contact-channel-chooser]')).toHaveCount(0);
-        const action = capture.locator('[data-consultation-action]');
-        await expect(action).toHaveCount(1);
-        await expect(action).toBeVisible();
-        await expect(action).toHaveAttribute('data-consultation-action', 'free');
-        assert.equal(await action.getAttribute('data-contact-channel'), null);
-        assert.equal(await action.getAttribute('target'), null);
-        const freeUrl = new URL(await action.getAttribute('href'), origin);
-        assert.equal(freeUrl.href, origin + `/${locale}/services/free-situation-review`);
-        await capture.locator('[role="group"] button').nth(0).click();
-        chooser = await openContactChannelChooser(capture, expect);
-        assert.equal((await assertPaidUrl('session', '60', '€100')).href, originalUrl.href, 'Reset must restore the exact paid request');
-        await expect(capture.locator('[data-contact-channel="telegram"]:not([data-consultation-action])')).toHaveCount(1);
-        return { messageSent: false, privateFieldsAbsent: true, paidPricesVerified: true, bothChannelsVerified: true, freeAssessmentInternal: true, resetVerified: true };
-      });
+      await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, () =>
+        // Preserve all 12 UI combinations without submitting or clicking a
+        // messenger. Save/retry belongs to the isolated public enquiry fixture;
+        // both price drafts and reset are additionally covered by pure tests.
+        verifyReleasePaidEnquiry(browser, { origin, label, locale, width }, expect));
     }
     if (width === 390) {
       if (['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) {
@@ -540,6 +501,9 @@ async function exercise(engine, browserType, width) {
           privatePage.on('pageerror', error => cspErrors.push({ phase: 'anonymous-private-account', time: Date.now(), message: error.message, stack: error.stack }));
           try {
             await assertAnonymousPrivateNavigation(privatePage);
+          } catch (error) {
+            const privateState = await privatePage.evaluate(() => ({ path: location.pathname, documentClass: document.body?.dataset.cspClass })).catch(() => null);
+            throw new Error(`Anonymous portrait entry failed; privateDocument=${JSON.stringify(privateState)}; ${error.message}`, { cause: error });
           } finally { await privatePage.close(); }
           // Leave discovery through its visible header wordmark, then use the
           // public About content link to preserve the cross-policy history test.
@@ -791,7 +755,7 @@ try {
   }
 } finally { await context.close(); await browser.close(); }
 const failed = results.filter(row => !row.ok);
-writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results }, null, 2));
-console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
+writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results, ...(label === 'local' ? { buildAttribution } : {}) }, null, 2));
+console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed, ...(label === 'local' ? { buildAttribution } : {}) }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');
 

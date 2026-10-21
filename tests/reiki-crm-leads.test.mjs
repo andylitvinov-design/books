@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { energyworkSequence } from '../data/academy/energywork-ai-schema.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url),'utf8')
 const sql=read('supabase/migrations/20261018184658_hh_reiki_course_private_crm_leads_20261018.sql')
@@ -70,10 +71,13 @@ test('After five lessons, the student explicitly submits an initiation-choice ap
   assert.match(learner,/onClick=\{applyForInitiation\}/)
 })
 
-test('All 70 steps, four meditation reports and course progress remain intact',()=>{
-  const slides=[...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
-  // Tantra Reiki now has five question screens; historical retired IDs remain private.
-  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,70)
+test('All 63 active p10 screens match the server registry while private reports and progress remain intact',()=>{
+  const slides=[...curriculum.matchAll(/id: "((?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+)"/g)]
+    .map(match => match[1]).filter(id => id !== 'tan-study-03')
+  // The secondary historic Tantra answer key stays private, not an active screen.
+  assert.equal(slides.length,63)
+  assert.equal(new Set(slides).size,63)
+  assert.deepEqual([...slides].sort(),[...energyworkSequence()].sort())
   assert.match(repo,/energyworkMeditationFeedbackComplete/)
   assert.match(repo,/COURSE_PROGRESS_CHANGED/)
   assert.match(repo,/updateSharedReikiJournal/)

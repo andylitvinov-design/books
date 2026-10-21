@@ -91,12 +91,12 @@ const copy = {
       { q: "Это медицинская диагностика?", a: "Нет. Расстановка и работа с образами служат для исследования переживаний и ситуаций, а не для установления медицинских диагнозов." },
       { q: "Нужна ли гомеопатия каждому?", a: "Нет. Гомеопатический компонент добровольный. Надёжных доказательств эффективности гомеопатии для лечения заболеваний нет." },
       { q: "Это можно делать онлайн?", a: "Да. Основной формат — онлайн. Возможность личной встречи в Торонто обсуждается индивидуально." },
-      { q: "Что будет после заявки?", a: "Откроется WhatsApp с подготовленным сообщением. Вы сами решите, отправлять ли его. Затем согласуем время и формат; никакого списания денег нет." },
+      { q: "Что будет после заявки?", a: "Форма отправляет контакты и краткий запрос на сайт для регистрации заявки в CRM с вашим согласием на личный ответ. После подтверждения получения можно по желанию перейти в WhatsApp или Telegram и самим отправить сообщение. Время и формат согласуем лично; автоматической записи и списания денег нет." },
     ],
 
     requestKicker: "ВАШ ПЕРВЫЙ ШАГ",
     requestTitle: "Начнём с вашего вопроса",
-    requestIntro: "Выберите формат и тему, затем удобный мессенджер — WhatsApp или Telegram.",
+    requestIntro: "Выберите формат и тему, затем заполните форму заявки. Переход в мессенджер необязателен и доступен после подтверждения получения.",
     safety: "Это авторская консультативная и символическая практика, не замена медицинской или психиатрической помощи. Гомеопатия не имеет надёжной доказательной эффективности при лечении заболеваний; не меняйте назначенное лечение без врача. Результаты не гарантируются.",
   },
   en: {
@@ -168,12 +168,12 @@ const copy = {
       { q: "Is this medical diagnosis?", a: "No. Constellation and imagery work explore experiences and situations. They do not establish medical diagnoses." },
       { q: "Is homeopathy required?", a: "No, it is optional. Homeopathy has no reliable evidence of effectiveness for treating medical or mental-health conditions." },
       { q: "Can we work online?", a: "Yes. Online is the main option, with in-person Toronto availability discussed individually." },
-      { q: "What happens when I enquire?", a: "WhatsApp opens a draft for your review; you choose whether to send it. We then discuss availability. There is no automatic booking or charge." },
+      { q: "What happens when I enquire?", a: "The form submits your contact details and short enquiry to the site for CRM registration, with your consent for a personal reply. After receipt confirmation, you can optionally open WhatsApp or Telegram and choose whether to send a message. We agree availability personally. There is no automatic booking or charge." },
     ],
 
     requestKicker: "YOUR FIRST STEP",
     requestTitle: "Start with your question",
-    requestIntro: "Choose a format and topic, then select WhatsApp or Telegram to request your booking.",
+    requestIntro: "Choose a format and topic, then complete the request form. Messenger follow-up is optional after receipt confirmation.",
     safety: "This is an author's reflective and symbolic consultation, not a replacement for medical or psychiatric care. Homeopathy has no reliable evidence for treating health conditions. Do not change prescribed medication without medical guidance. Outcomes are not guaranteed.",
   },
   es: {
@@ -245,12 +245,12 @@ const copy = {
       { q: "¿Es un diagnóstico médico?", a: "No. Las constelaciones y las imágenes guiadas permiten reflexionar sobre experiencias y situaciones, pero no establecen diagnósticos médicos." },
       { q: "¿Es necesaria la homeopatía?", a: "No, es opcional. La homeopatía carece de pruebas científicas fiables de eficacia para tratar enfermedades físicas o problemas de salud mental." },
       { q: "¿Podemos trabajar en línea?", a: "Sí. La modalidad principal es en línea. La posibilidad de una sesión presencial en Toronto se consulta individualmente." },
-      { q: "¿Qué ocurre al enviar una solicitud?", a: "Se abrirá WhatsApp con un borrador que podrás revisar y decidir si envías. Después acordamos la disponibilidad. No hay reserva ni cobro automáticos." },
+      { q: "¿Qué ocurre al enviar una solicitud?", a: "El formulario envía tus datos de contacto y una consulta breve al sitio para registrar la solicitud en el CRM, con tu consentimiento para una respuesta personal. Tras la confirmación de recepción, puedes abrir WhatsApp o Telegram de forma opcional y decidir si envías un mensaje. Acordamos la disponibilidad personalmente. No hay reserva ni cobro automáticos." },
     ],
 
     requestKicker: "TU PRIMER PASO",
     requestTitle: "Empecemos por tu pregunta",
-    requestIntro: "Elige el formato y el tema; después selecciona WhatsApp o Telegram para solicitar tu sesión.",
+    requestIntro: "Elige el formato y el tema y completa el formulario de solicitud. Continuar por mensajería es opcional tras la confirmación de recepción.",
     safety: "Esta es una consulta reflexiva y simbólica de autor, no un sustituto de la atención médica o psiquiátrica. La homeopatía no tiene pruebas fiables de eficacia para tratar problemas de salud. No cambies tratamientos prescritos sin orientación médica. No se garantizan resultados.",
   },
 } as const;

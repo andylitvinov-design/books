@@ -13,11 +13,50 @@ const back={en:'Back',ru:'Назад',es:'Atrás'}
 
 test('support is authored for 14 days in EN/RU/ES, with no homework or performance question',()=>{
   assert.equal(oporaExperienceSupportValid(),true)
+  // These exact owner-authored sentences deny an obligation; they do not assign one.
+  // Keep the exception limited to the authored locale/day/body and scan everything else.
+  const approvedSupport=[
+    {locale:'en',day:8,
+      sentence:'There is no pace you must keep up with, here or anywhere else.',
+      removed:'no '},
+    {locale:'es',day:10,
+      sentence:'El descanso y la suavidad también tienen lugar antes de terminar una tarea.',
+      removed:'antes de '},
+  ]
+  const assertSupportCopy=(copy,locale,day)=>{
+    const approved=approvedSupport.find(row=>row.locale===locale&&row.day===day)
+    const body=approved ? copy.body.replace(approved.sentence,'') : copy.body
+    assert.doesNotMatch(copy.title+' '+body,/\?|\b(how did that go|i tried it|you should|you must|your task|tarea|задание|оцените|сделайте|попробуйте)\b/iu,locale+' '+day)
+  }
+  for(const {locale,day,sentence,removed} of approvedSupport){
+    const copy=oporaExperienceSupport(day,locale)
+    assert.ok(copy.body.includes(sentence),locale+' '+day+' approved source sentence')
+    assertSupportCopy(copy,locale,day)
+    assert.throws(()=>assertSupportCopy({
+      ...copy,body:copy.body.replace(sentence,sentence.replace(removed,''))
+    },locale,day),{code:'ERR_ASSERTION'},'Removing the supportive qualifier must not bypass the guard')
+    for(const added of [
+      'You must keep up.','You should do this.','Your task is to finish.',
+      'I tried it.','How did that go?','Tu tarea es terminar.','Is this enough?',
+    ]){
+      assert.throws(()=>assertSupportCopy({
+        ...copy,body:copy.body+' '+added
+      },locale,day),{code:'ERR_ASSERTION'},'Added instruction or question: '+added)
+    }
+    assert.throws(()=>assertSupportCopy({
+      ...copy,title:sentence
+    },locale,day),{code:'ERR_ASSERTION'},'The allowance is body-only')
+    assert.throws(()=>assertSupportCopy({
+      ...copy,body:copy.body+' '+sentence
+    },locale,day),{code:'ERR_ASSERTION'},'Only one authored occurrence is allowed')
+    assert.throws(()=>assertSupportCopy(copy,locale,day+1),{code:'ERR_ASSERTION'},'The allowance is day-specific')
+    assert.throws(()=>assertSupportCopy(copy,locale==='en'?'es':'en',day),{code:'ERR_ASSERTION'},'The allowance is locale-specific')
+  }
   for(const locale of ['en','ru','es']){
     for(let day=1;day<=14;day++){
       const copy=oporaExperienceSupport(day,locale)
       assert.ok(copy?.title&&copy?.body,locale+' '+day)
-      assert.doesNotMatch(copy.title+' '+copy.body,/\?|\b(how did that go|i tried it|you should|you must|your task|tarea|задание|оцените|сделайте|попробуйте)\b/iu)
+      assertSupportCopy(copy,locale,day)
     }
   }
   for(const invalid of [0,15,-1,1.5,null,undefined,'2']){

@@ -1,10 +1,11 @@
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { assertSingleEntryEnquiryUi, exercisePublicEnquiryUi } from './helpers/public-enquiry-ui-verifier.mjs';
+import { assertPublicServiceMethods, isolatedServiceVideoFixture } from './helpers/public-service-methods-verifier.mjs';
+import { installPublicUiNetworkGuard } from './helpers/public-ui-network-guard.mjs';
+import { assertDaoLandingReady } from './helpers/dao-request-ui-verifier.mjs';
+import { assertFreeSituationLandingReady } from './helpers/free-situation-ui-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
-const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -12,22 +13,37 @@ const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) {
   throw new Error("Public acceptance may run only against an isolated loopback server");
 }
+// The save-gated chooser is tested only with explicit local UI fixtures. A
+// successful fixture is NOT evidence of backend persistence or message delivery.
+if (process.env.HH_PUBLIC_QA_ENQUIRY_FIXTURE !== "1") {
+  throw new Error("Set HH_PUBLIC_QA_ENQUIRY_FIXTURE=1 for isolated UI-only enquiry fixtures; real saves are not permitted");
+}
+const expectedServiceVideos = isolatedServiceVideoFixture({ origin, environment: process.env });
+const require = createRequire(import.meta.url);
+const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 const output = "artifacts/public-services-production";
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
-const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
+const diagnostics = { runtime: "next-start production", acceptanceScope: "loopback UI fixtures only", backendPersistenceVerified: false,
+  console: [], expectedFixtureErrors: [], enquiryFixtures: [], pageErrors: [], devIssueOverlay: false };
 let failure;
 try {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
+  const networkGuard = await installPublicUiNetworkGuard(context, origin);
+  diagnostics.blockedRequests = networkGuard.blocked;
   const pages = new Set();
   const attachDiagnostics = (page) => {
     pages.add(page);
     page.on("console", (message) => {
       if (message.type() === "error" || message.type() === "warning") {
-        let path = "";
-        try { path = new URL(message.location().url).pathname; } catch {}
-        diagnostics.console.push({ type: message.type(), text: message.text(), path });
+        let path = "", sourceOrigin = "", hasSearch = false;
+        try {
+          const location = new URL(message.location().url);
+          path = location.pathname; sourceOrigin = location.origin; hasSearch = Boolean(location.search);
+        } catch {}
+        diagnostics.console.push({ type: message.type(), text: message.text(), origin: sourceOrigin, path, hasSearch });
       }
     });
     page.on("pageerror", (error) => diagnostics.pageErrors.push(error.message));
@@ -58,6 +74,24 @@ try {
     attachDiagnostics(page);
     await page.setViewportSize({ width, height: 844 });
     return page;
+  };
+
+  const runEnquiryFixture = async (page, scope, options) => {
+    const start = diagnostics.console.length;
+    const prepared = await exercisePublicEnquiryUi(page, scope, expect, options);
+    // The fixture deliberately returns one 503 before retry recovery. Preserve
+    // every other browser error; only that exact endpoint/status is expected.
+    const expected = diagnostics.console.slice(start).filter(entry => entry.type === "error"
+      && entry.origin === origin && entry.hasSearch === false
+      && entry.path === "/api/service-enquiries"
+      && /^Failed to load resource: the server responded with a status of 503(?: \(.*\))?$/.test(entry.text));
+    assert.ok(expected.length <= 1, "At most one deliberate 503 per enquiry fixture");
+    diagnostics.expectedFixtureErrors.push(...expected);
+    diagnostics.console = diagnostics.console.filter(entry => !expected.includes(entry));
+    diagnostics.enquiryFixtures.push({ locale: options.locale, kind: options.kind,
+      mockedSave: prepared.mockedSave, requestCount: prepared.requestCount,
+      messengerLinksOpened: prepared.messengerLinksOpened });
+    return prepared;
   };
 
   // Spanish Alchemy has its own route. Check its untouched default state too;
@@ -143,14 +177,10 @@ try {
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
       }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
-      await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
-        { timeout: 15000 });
-      // Method posters are visible, while third-party players stay opt-in.
-      assert.equal(await page.locator("#method-videos iframe").count(), 0,
-        "Method videos must not eagerly load third-party players");
+      await assertPublicServiceMethods(page, expect, locale, expectedServiceVideos);
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // Canonical header: Library shortcut; Cabinet keeps account access in the menu.
+      // Canonical header: Library shortcut; Cabinet keeps authenticated app access in the menu.
       const header = page.locator("header.house-header--services");
       const libraryEntry = header.locator("a.site-library-entry");
       await expect(libraryEntry).toHaveCount(1);
@@ -296,6 +326,7 @@ try {
     const page = await createPage(390);
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
     await visible(page.locator('[data-services-studio-free]'));
+    await assertPublicServiceMethods(page, expect, "es", expectedServiceVideos);
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
     assert.equal(await page.locator("#find-your-service").count(), 0);
@@ -325,9 +356,9 @@ try {
     await page.close();
   }
 
-  // Real hydrated, non-submitting conversion journey for ALL personal service
-  // landing variants, including Spanish. Verify navigation, pricing, live
-  // thumbnails and message drafts; NEVER follow or send any messenger URL.
+  // Hydrated UI-only conversion journey for ALL personal service variants.
+  // First-party saves are intercepted local fixtures, not backend acceptance.
+  // Verify navigation, pricing and drafts; NEVER open or send messenger URLs.
   for (const locale of ["en", "ru", "es"]) {
     for (const service of ["imagery-therapy", "systemic-constellations"]) {
       const width = 390;
@@ -362,8 +393,7 @@ try {
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
-      const chooser = await openRegisteredContactChannelChooser(target, expect, page);
-      const prepared = await assertPreparedContactChannels(chooser, expect);
+      const prepared = await runEnquiryFixture(page, target, { locale, kind: service, requiredMessage: ["€50"] });
       assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
         "Express rate preserved in approved draft: " + label);
       await assertViewport(page, "personal-request/" + label);
@@ -399,15 +429,12 @@ try {
       await visible(offers.locator('[data-business-offer="' + kind + '"]'));
     }
     assert.ok((await offers.innerText()).includes("€50") && (await offers.innerText()).includes("€100"));
-    // The hero and the quick-start card both legitimately link to this section.
-    // Choose the visible hero CTA deterministically rather than violating Playwright strict mode.
-    const toOffers = main.locator('a[href="#business-offers"]').first();
-    await visible(toOffers);
-    await toOffers.click();
+    const paidHero = main.locator('section[aria-labelledby="business-hero-title"] a[href="#business-offers"]');
+    await visible(paidHero);
+    await paidHero.click();
     await page.waitForURL(/#business-offers$/);
     const express = offers.locator('[data-business-offer="express"]');
-    const chooser = await openRegisteredContactChannelChooser(express, expect, page);
-    const prepared = await assertPreparedContactChannels(chooser, expect);
+    const prepared = await runEnquiryFixture(page, express, { locale, kind: "business", requiredMessage: ["€50"] });
     assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
       "Business express €50 must survive messenger selection: " + label);
     await assertViewport(page, "business/" + label);
@@ -459,15 +486,41 @@ try {
         if (width === 390) {
           if (kind === "alchemy") {
             const form = main.locator('[data-alchemy-lead-form="single"]');
+            await assertSingleEntryEnquiryUi(form, expect);
             await form.scrollIntoViewIfNeeded();
             await visible(form.locator('[data-contact-order]'));
-            // Two editorial choices plus the separate international phone country selector.
-            // Check semantic controls instead of a fragile global select count.
-            await expect(form.locator('select[id$="-format"]')).toHaveCount(1);
-            await expect(form.locator('select[id$="-topic"]')).toHaveCount(1);
-            const countryCode = form.locator('[data-phone-country-input] select');
-            await expect(countryCode).toHaveCount(1);
-            await expect(countryCode).toHaveAttribute("aria-label", locale === "ru" ? "Код страны" : "Country calling code");
+            const controls = locale === "ru" ? {
+              format: "Формат", topic: "Тема",
+              formats: [["60", "Личная сессия · 60 минут · €100"], ["30", "Экспресс · 30 минут · €50"], ["month", "4 недели сопровождения · обсудить условия"]],
+              topics: [["relationships", "Отношения"], ["stress", "Стресс и внутренние блоки"], ["business", "Работа и деньги"], ["direction", "Цели и смысл"], ["other", "Другая тема"]],
+            } : {
+              format: "Session format", topic: "Topic",
+              formats: [["60", "Personal session · 60 min · €100"], ["30", "Express review · 30 min · €50"], ["month", "Four-week support · discuss details"]],
+              topics: [["relationships", "Relationships"], ["stress", "Stress and inner blocks"], ["business", "Work and money"], ["direction", "Goals and meaning"], ["other", "Another topic"]],
+            };
+            const format = form.getByRole('combobox', { name: controls.format, exact: true });
+            const topic = form.getByRole('combobox', { name: controls.topic, exact: true });
+            for (const [control, options] of [[format, controls.formats], [topic, controls.topics]]) {
+              await expect(control).toHaveCount(1);
+              await expect(control).toBeVisible();
+              await expect(control.locator('option')).toHaveText(options.map(([, text]) => text));
+              for (const [value, text] of options) {
+                const option = control.locator('option[value="' + value + '"]');
+                await expect(option).toHaveCount(1);
+                await expect(option).toHaveText(text);
+              }
+            }
+            await expect(format).toHaveValue("60");
+            await expect(topic).toHaveValue("relationships");
+            await format.selectOption("30");
+            await expect(format).toHaveValue("30");
+            await topic.selectOption("business");
+            await expect(topic).toHaveValue("business");
+            // The separate contact country control and private optional note
+            // are checked by this same strict save-gated fixture, not counted
+            // as service topic/format controls or disclosed in either draft.
+            await runEnquiryFixture(page, form, { locale, kind: "alchemy",
+              requiredMessage: [controls.formats[1][1], controls.topics[2][1]] });
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
               nodes.map(node => ({top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom})));
@@ -494,8 +547,7 @@ try {
               "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openRegisteredContactChannelChooser(pricing, expect, page);
-            const prepared = await assertPreparedContactChannels(channels, expect);
+            const prepared = await runEnquiryFixture(page, pricing, { locale, kind: "alchemy", requiredMessage: ["€50"] });
             assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
               "Selected express session must appear in prepared order draft");
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
@@ -504,9 +556,7 @@ try {
             const capture = main.locator('section:has(> details)');
             assert.equal(await capture.count(), 1, "Exactly one core-service footer");
             await capture.scrollIntoViewIfNeeded();
-            const chooser = await openRegisteredContactChannelChooser(capture, expect, page);
-            const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
-            assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
+            await runEnquiryFixture(page, capture, { locale, kind: "hypnotherapy" });
             const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
             assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
             await alternative.locator("summary").click();
@@ -531,6 +581,8 @@ try {
         await page.goto(origin + "/" + locale + "/" + slug, { waitUntil: "networkidle" });
         const main = page.locator('main[data-free-entry-landing="' + kind + '"]');
         await visible(main.locator('h1'));
+        const freeLanding = kind === "dao" ? await assertDaoLandingReady(page, expect, locale)
+          : kind === "situation" ? await assertFreeSituationLandingReady(page, expect, locale) : null;
         await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);
         await assertViewport(page, locale + "/" + slug + "/" + width);
 
@@ -561,44 +613,38 @@ try {
         }
 
         if (kind === "tests") {
-          await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());
+          // The shared header has a hidden menu link to the same explorer.
+          // Require the actual primary CTA, not the first matching navigation link.
+          const startTests = hero.locator('a[href="/' + locale + '/client/tests"]');
+          await expect(startTests).toHaveCount(1);
+          await visible(startTests);
           assert.equal(await main.locator('[data-free-resource-enquiry]').count(), 0,
             "Tests begin in the existing private test explorer, not a fake contact form");
         } else {
-          const form = main.locator('[data-free-resource-enquiry="' + kind + '"]');
+          const form = freeLanding.enquiry;
           await visible(form);
-          assert.equal(await form.locator('select').count(), 1);
-          assert.equal(await form.locator('input[type="text"]').count(), 1);
-          assert.equal(await form.locator('textarea').count(), 1);
-          const markerA = "Synthetic name marker - " + locale + "/" + kind;
-          const markerB = "Synthetic private context marker - " + locale + "/" + kind;
-          await form.locator('input[type="text"]').fill(markerA);
-          await form.locator('textarea').fill(markerB);
-          await visible(form.getByRole('button', {name: locale === "ru" ? "Скопировать мой запрос" : locale === "es" ? "Copiar mis detalles" : "Copy my details"}));
-          const chooser = await openRegisteredContactChannelChooser(form, expect, page);
-          const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(chooser, expect);
+          assert.equal(await freeLanding.topic.count(), 1, 'Exactly one selected public topic, independently of the contact country picker');
+          // The asserted CRM single-entry contract permits no duplicate optional fields.
+          const { whatsappUrl, telegramUrl } = await runEnquiryFixture(page, form, { locale, kind });
           assert.ok((whatsappUrl.searchParams.get("text") || "").length > 40);
-          for (const marker of [markerA, markerB]) {
-            assert.ok(!whatsappUrl.searchParams.get("text")?.includes(marker), "Private note must not leak in WhatsApp URL");
-            assert.ok(!telegramUrl.searchParams.get("text")?.includes(marker), "Private note must not leak in Telegram URL");
-            assert.ok(!decodeURIComponent(page.url()).includes(marker), "Private note must not leak in page URL");
-          }
+          assert.ok((telegramUrl.searchParams.get("text") || "").length > 40);
+          const markerA = "Synthetic drawing answer marker - " + locale;
+          const markerB = "Synthetic private drawing goal marker - " + locale;
           if (kind === "situation") {
             const detailedForm = main.locator('[data-free-drawing-intake]');
             await detailedForm.waitFor({ state: "hidden" });
-            const details = main.locator('details').filter({ has: detailedForm });
+            const details = freeLanding.advanced;
             assert.equal(await details.evaluate((element) => element.open), false,
               "The real hand-drawn situation questionnaire is available but initially compact");
             if (width === 390) {
               await details.locator(':scope > summary').click();
               await visible(detailedForm);
-              await detailedForm.locator('textarea').nth(0).fill(markerA);
-              await detailedForm.locator('textarea').nth(1).fill(markerB);
-              await detailedForm.locator('form button[type="submit"]').click();
+              await detailedForm.getByLabel(freeLanding.text.problem, { exact: true }).fill(markerA);
+              await detailedForm.getByLabel(freeLanding.text.goal, { exact: true }).fill(markerB);
+              await detailedForm.getByRole('button', { name: freeLanding.text.prepare, exact: true }).click();
               const ready = detailedForm.locator('[role="region"]');
               await visible(ready);
-              const intakeChannels = await openRegisteredContactChannelChooser(ready, expect, page);
-              const prepared = await assertPreparedContactChannels(intakeChannels, expect);
+              const prepared = await runEnquiryFixture(page, ready, { locale, kind: "drawing", privateValues: [markerA, markerB] });
               for (const marker of [markerA, markerB]) {
                 assert.ok(!prepared.whatsappUrl.searchParams.get("text")?.includes(marker));
                 assert.ok(!prepared.telegramUrl.searchParams.get("text")?.includes(marker));
@@ -614,6 +660,7 @@ try {
     }
   }
 
+  networkGuard.assertNoUnexpectedRequests();
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
   assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
@@ -625,4 +672,4 @@ try {
   await browser.close();
 }
 if (failure) throw failure;
-console.log("PASS public production service acceptance");
+console.log("PASS public service UI acceptance (loopback save fixtures only; backend persistence and messenger delivery NOT verified)");

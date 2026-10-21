@@ -276,7 +276,8 @@ export const ADDITIONAL_PROFESSIONAL_CATALOG = deepFreeze([
     questionCount: form.items.length, durationMinutes: 3, testStyle: 'professional',
     testLength: 'medium', suggestedRepeatDays: 90, cooldownDays: 30,
     startable: true, access: 'account', rightsStatus: 'cleared',
-    guestEligible: true, starterEligible: true, free: true,
+    // Narrow trait components stay available for deliberate selection, not automatic starters.
+    guestEligible: true, starterEligible: false, free: true,
     analysisAxes: form.axes, title: {en: 'IPIP — ' + form.name, ru: form.ru, es: 'IPIP — ' + form.name + ' (EN)'},
     description: {en: form.description, ru: form.descriptionRu, es: form.description},
   })),

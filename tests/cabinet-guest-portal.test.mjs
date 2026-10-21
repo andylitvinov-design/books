@@ -15,7 +15,20 @@ test('bottom-right compact navigation is Cabinet while retaining the existing ac
     assert.equal(item.href, '/' + (locale === 'es' ? 'en' : locale) + '/app')
     assert.equal(navigationCopy[locale].house, labels[locale])
   }
-  assert.match(read('components/mobile-bottom-navigation.tsx'), /house: LayoutDashboard/)
+  const mobile = read('components/mobile-bottom-navigation.tsx')
+  const icons = read('components/compact-navigation-icons.ts')
+  assert.match(mobile, /^import \{ compactNavigationIcons \} from '\.\/compact-navigation-icons';$/m,
+    'mobile Cabinet imports the shared icon map')
+  assert.match(icons, /^import \{[^}\n]*\bLayoutDashboard\b[^}\n]*\} from 'lucide-react';$/m,
+    'shared Cabinet icon is the lucide LayoutDashboard')
+  assert.match(icons, /export const compactNavigationIcons = \{[^}]*\bhouse: LayoutDashboard,/,
+    'shared icon map retains the Cabinet dashboard icon')
+  assert.match(mobile, /const mobileItems = getCompactNavigation\(locale\);/,
+    'mobile items come from the locale-aware navigation model')
+  assert.match(mobile, /\{mobileItems\.map\(item => \{\s*const Icon = compactNavigationIcons\[item\.id as keyof typeof compactNavigationIcons\];\s*const content = <><Icon aria-hidden="true" \/><span>\{item\.label\}<\/span><\/>;/,
+    'each rendered mobile item uses its shared icon and localized label')
+  assert.match(mobile, /<Link key=\{item\.id\} data-nav-item=\{item\.id\} href=\{item\.href\} prefetch=\{false\}[^>]*>\{content\}<\/Link>/,
+    'internal mobile links retain model destinations and shared content without prefetch')
 })
 
 test('portrait-only guest welcome explains growth tools and practitioner publishing', () => {

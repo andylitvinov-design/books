@@ -16,8 +16,6 @@ type Topic = "relationships" | "stress" | "business" | "direction" | "other";
 
 const copy = {
   ru: {
-    name: "Как к вам обращаться? (необязательно)",
-    namePlaceholder: "Ваше имя",
     format: "Формат",
     topics: "Тема",
     formatNames: {
@@ -33,18 +31,15 @@ const copy = {
       other: "Другая тема",
     },
     action: "Запросить сеанс",
-    note: "Оставьте контакт в форме записи. Время подтверждается лично; WhatsApp и Telegram — по желанию. Автоматической оплаты нет.",
+    note: "Форма отправляет на сайт ваши контакты, согласие на личный ответ и необязательный комментарий для регистрации заявки в CRM. После подтверждения получения можно по желанию открыть WhatsApp или Telegram. Время подтверждается лично, автоматической оплаты нет.",
     privacy: "Не вводите здесь диагнозы или медицинские сведения — подробности обсудим лично.",
     telegram: "Или напишите мне в Telegram",
     greeting: "Здравствуйте! Хочу заказать сеанс «Алхимия души / Психогомеопатия».",
     formatField: "Формат",
     topicField: "Тема",
-    nameField: "Имя",
     question: "Подскажите, пожалуйста, свободное время и следующие шаги.",
   },
   en: {
-    name: "Your name (optional)",
-    namePlaceholder: "How should I address you?",
     format: "Session format",
     topics: "Topic",
     formatNames: {
@@ -60,18 +55,15 @@ const copy = {
       other: "Another topic",
     },
     action: "Request a session",
-    note: "Leave your contact in the registration form. We agree the session time personally; WhatsApp and Telegram are optional, with no automatic charge.",
+    note: "The form sends your contact details, reply consent and optional note to the site for CRM registration. After receipt confirmation, WhatsApp and Telegram are optional. We confirm the session time personally; there is no automatic charge.",
     privacy: "Please don't enter diagnoses or confidential health details here. We can discuss your question directly.",
     telegram: "Or message me on Telegram",
     greeting: "Hello! I would like to book an Alchemy of the Soul / Psycho-homeopathy session.",
     formatField: "Format",
     topicField: "Topic",
-    nameField: "Name",
     question: "Please let me know availability and the next steps.",
   },
   es: {
-    name: "¿Cómo te llamas? (opcional)",
-    namePlaceholder: "Tu nombre",
     format: "Formato de la sesión",
     topics: "Tema",
     formatNames: {
@@ -87,13 +79,12 @@ const copy = {
       other: "Otro tema",
     },
     action: "Solicitar una sesión",
-    note: "Deja tu contacto en el formulario. Confirmaremos la hora personalmente; WhatsApp o Telegram son opcionales, sin cobro automático.",
+    note: "El formulario envía tus datos de contacto, consentimiento para una respuesta personal y nota opcional al sitio para registrar la solicitud en el CRM. Tras confirmar la recepción, WhatsApp y Telegram son opcionales. Confirmamos la hora personalmente; no hay cobro automático.",
     privacy: "No incluyas diagnósticos ni datos médicos confidenciales. Podemos hablar de los detalles personalmente.",
     telegram: "O escríbeme por Telegram",
     greeting: "¡Hola! Quisiera solicitar una sesión de Alquimia del Alma / Psicohomeopatía.",
     formatField: "Formato",
     topicField: "Tema",
-    nameField: "Nombre",
     question: "¿Podrías indicarme los horarios disponibles y los siguientes pasos?",
   },
 } as const;

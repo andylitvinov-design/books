@@ -550,7 +550,12 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
 
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    ...withClosingPractices(commonSlides.filter((slide) => slide.phase === "flight"), ["flight-03"], "flight-done"),
+    ...withClosingPractices(
+      commonSlides.filter((slide) => slide.phase === "flight" && slide.id !== "flight-save"),
+      ["flight-03"], "flight-done"),
+    // The save-only checkpoint follows practice and congratulations, matching
+    // the server sequence without adding or changing any private answer.
+    commonSlides.find((slide) => slide.id === "flight-save")!,
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),

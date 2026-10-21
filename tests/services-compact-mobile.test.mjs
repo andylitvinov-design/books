@@ -64,7 +64,7 @@ test("new DAO free page is independent of two existing personal service landings
   assert.match(shared, /<FreeResourceEnquiry locale=\{locale\} kind=\{kind\}/);
   assert.match(form, /<ContactChannelChooser/);
   assert.match(form, /whatsappEnquiryUrl\(\{/);
-  assert.match(form, /navigator\.clipboard\.writeText\(privateContext\)/);
+  assertSingleQuickEntry(form);
   for (const [slug, kind] of [["alchemy-of-soul", "alchemy"], ["hypnotherapy-course", "hypnotherapy"]]) {
     const route = read("app/[locale]/services/" + slug + "/page.tsx");
     assert.match(route, /generateMetadata/);
@@ -92,7 +92,7 @@ test("free diagnostic retains private-safe detailed form, drawing instructions, 
   assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
   assert.match(intake, /readyRef\.current\?\.focus\(\)/);
-  assert.match(intake, /Nothing has been sent/);
+  assertPreparedQuestionnaireCopy(intake);
   const draft = intake.slice(intake.indexOf("const whatsappUrl ="), intake.indexOf("function changeAnswer"));
   assert.match(draft, /request: t\.whatsappIntro/);
   assert.match(draft, /topic: t\.options\[topic\]/);
@@ -124,5 +124,40 @@ test("Business card price scope rejects missing prices, wrong destination and pr
     const mutation = source.replace(before, after);
     assert.notEqual(mutation, source);
     assert.throws(() => assertBusinessPriceScope(mutation));
+  }
+});
+
+function assertSingleQuickEntry(source) {
+  assert.match(source, /<select value=\{topic\}/);
+  assert.match(source, /topic: offer\.topics\[topic\]/);
+  assert.equal((source.match(/<ContactChannelChooser\b/g) || []).length, 1);
+  assert.doesNotMatch(source, /<input|<textarea|privateContext|navigator\.clipboard/);
+  assert.doesNotMatch(source, /fetch\(|sendBeacon|localStorage|sessionStorage/);
+  assert.match(source, /once in the request form/);
+  assert.match(source, /reply consent/);
+  assert.match(source, /CRM registration/);
+}
+function assertPreparedQuestionnaireCopy(source) {
+  assert.match(source, /Your questionnaire answers are ready to copy/);
+  assert.match(source, /separate form below is for registering your contact request, not uploading the questionnaire or drawing/);
+  assert.match(source, /You decide whether to send that chat message/);
+  assert.doesNotMatch(source, /Nothing has been sent/);
+}
+
+test("public intake compatibility rejects duplicate quick entry or changed prepared-questionnaire meaning", () => {
+  const quick = read("components/free-resource-enquiry.tsx");
+  const drawing = read("components/free-drawing-intake.tsx");
+  assertSingleQuickEntry(quick); assertPreparedQuestionnaireCopy(drawing);
+  for (const [source, check, before, after] of [
+    [quick, assertSingleQuickEntry, "<ContactChannelChooser", "<input /><ContactChannelChooser"],
+    [quick, assertSingleQuickEntry, "topic: offer.topics[topic]", "topic: undefined"],
+    [quick, assertSingleQuickEntry, "<ContactChannelChooser", "<OtherChooser"],
+    [quick, assertSingleQuickEntry, "reply consent", "no consent"],
+    [drawing, assertPreparedQuestionnaireCopy, "Your questionnaire answers are ready to copy.", "Nothing has been sent."],
+    [drawing, assertPreparedQuestionnaireCopy, "not uploading the questionnaire or drawing", "uploading all answers"],
+    [drawing, assertPreparedQuestionnaireCopy, "You decide whether to send that chat message", "The chat is sent automatically"],
+  ]) {
+    assert.ok(source.includes(before));
+    assert.throws(() => check(source.replace(before, after)));
   }
 });

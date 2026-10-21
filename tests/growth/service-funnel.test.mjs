@@ -1,9 +1,55 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import ts from 'typescript'
 
 const source = path => readFileSync(new URL('../../' + path, import.meta.url), 'utf8')
 const count = (sourceText, marker) => sourceText.split(marker).length - 1
+
+const reassuranceByLocale = {
+  en: 'Session times and conditions are confirmed before booking or payment.',
+  ru: 'Время встречи и условия подтверждаются до записи и оплаты.',
+  es: 'La hora y las condiciones se confirman antes de reservar o pagar.',
+}
+
+function assertRenderedServicesReassurance(sourceText) {
+  const file = ts.createSourceFile('services-conversion-hero.tsx', sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const descendants = root => {
+    const result = []
+    const visit = node => { result.push(node); ts.forEachChild(node, visit) }
+    visit(root)
+    return result
+  }
+  const unwrap = node => ts.isAsExpression(node) || ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node
+  const all = descendants(file)
+  const copy = all.filter(node => ts.isVariableDeclaration(node) && node.name.getText(file) === 'copy')
+  assert.equal(copy.length, 1, 'one Services copy declaration')
+  const object = unwrap(copy[0].initializer)
+  assert.ok(ts.isObjectLiteralExpression(object), 'literal localized Services copy')
+  for (const [locale, expected] of Object.entries(reassuranceByLocale)) {
+    const entries = object.properties.filter(node => ts.isPropertyAssignment(node) && node.name.getText(file) === locale)
+    assert.equal(entries.length, 1, `${locale} copy is unique`)
+    const localized = unwrap(entries[0].initializer)
+    assert.ok(ts.isObjectLiteralExpression(localized), `${locale} copy is literal`)
+    const messages = localized.properties.filter(node => ts.isPropertyAssignment(node) && node.name.getText(file) === 'reassurance')
+    assert.equal(messages.length, 1, `${locale} reassurance is unique`)
+    assert.ok(ts.isStringLiteral(messages[0].initializer), `${locale} reassurance is literal`)
+    assert.equal(messages[0].initializer.text, expected, `${locale} confirmation precedes booking/payment`)
+  }
+  const components = file.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'ServicesConversionHero')
+  assert.equal(components.length, 1, 'actual Services hero export')
+  const body = descendants(components[0].body)
+  const localeBindings = body.filter(node => ts.isVariableDeclaration(node) && node.name.getText(file) === 't')
+  assert.equal(localeBindings.length, 1, 'one localized hero binding')
+  assert.equal(localeBindings[0].initializer.getText(file), 'copy[locale]', 'hero copy follows actual locale')
+  const returns = components[0].body.statements.filter(ts.isReturnStatement)
+  assert.equal(returns.length, 1, 'one hero render return')
+  const paragraphs = descendants(returns[0].expression).filter(node => ts.isJsxElement(node) && node.openingElement.tagName.getText(file) === 'p' && node.openingElement.attributes.properties.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(file) === 'className' && ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression?.getText(file) === 'styles.reassurance'))
+  assert.equal(paragraphs.length, 1, 'one rendered reassurance paragraph')
+  const values = paragraphs[0].children.filter(ts.isJsxExpression)
+  assert.equal(values.length, 1, 'one rendered reassurance expression')
+  assert.equal(values[0].expression?.getText(file), 't.reassurance', 'rendered reassurance uses the localized confirmation')
+}
 
 test('EN/RU homepage promotes paid personal support with optional free choices', () => {
   const home = source('components/holistic-house-home.tsx')
@@ -50,7 +96,7 @@ test('services landing prioritizes three free paths, personal offers, intro, tes
   const hero=source('components/services-conversion-hero.tsx')
   assert.match(hero,/href="#consultation" data-service-hero-cta="paid"/)
   assert.match(hero,/href="#free-insights" data-service-hero-cta="free"/)
-  assert.match(hero,/time and payment are agreed separately/i)
+  assertRenderedServicesReassurance(hero)
   const directory=source('components/services-directory-page.tsx')
   assert.match(directory,/<ServicesSmartDiscovery/)
 })
@@ -104,4 +150,22 @@ test('SEO is about actual consultations and GA4 cannot turn on before its privac
   assert.match(ga4, /!isCanonicalProductionHost\(\)/)
   assert.match(ga4, /!isPublicAnalyticsPath\(pathname\)/)
   assert.match(ga4, /if \(!hasConsent\(\)/)
+})
+
+
+test('Services reassurance contract rejects changed locale disclosures and missing render binding', () => {
+  const hero = source('components/services-conversion-hero.tsx')
+  const faults = [
+    ...Object.entries(reassuranceByLocale).map(([locale, value]) => ({
+      source: hero.replace(value, 'Book and pay immediately.'),
+      reason: new RegExp(`${locale} confirmation precedes booking/payment`),
+    })),
+    { source: hero.replace('{t.reassurance}', '{null}'), reason: /rendered reassurance uses the localized confirmation/ },
+    { source: hero.replace('const t = copy[locale]', 'const t = copy.en'), reason: /hero copy follows actual locale/ },
+  ]
+  for (const fault of faults) {
+    assertRenderedServicesReassurance(hero)
+    assert.notEqual(fault.source, hero, 'mutation applies to actual hero source')
+    assert.throws(() => assertRenderedServicesReassurance(fault.source), fault.reason)
+  }
 })

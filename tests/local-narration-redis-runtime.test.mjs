@@ -5,9 +5,10 @@ import assert from 'node:assert/strict'
 import {execFileSync} from 'node:child_process'
 import {readFileSync} from 'node:fs'
 import {randomUUID} from 'node:crypto'
+import { isolatedNarrationRedisContainer } from './helpers/narration-redis-container.mjs'
 
 const code=readFileSync(new URL('../lib/clients/local-narration-redis.js',import.meta.url),'utf8')
-const container='andrey-voice-redis-ci'
+const container=isolatedNarrationRedisContainer(process.env)
 const ttl='1209600'
 const readyTtl='7776000'
 function lua(name) {

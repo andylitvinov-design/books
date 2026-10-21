@@ -240,7 +240,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 
   const p=data.practitioner
   const onboardingService=(data.services||[]).find(item=>item.pricingMode==='free'||item.draftCopy?.pricingMode==='free')||null
-  const needsOnboarding=!p||(!Object.keys(p.profile||{}).length&&['draft','submitted','changes_requested'].includes(p.status))
+  const needsOnboarding=data.practiceActivated!==true
   const requests=data.requests||[]
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
@@ -402,13 +402,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         </p>}
       </div>
     </section>}
-    <PracticeRequestsOverview requests={requests} services={services} locale={locale}
+    {!needsOnboarding&&<PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
       onAddService={needsOnboarding
         ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
         : addService}
-      onViewAll={()=>{setActivePanel('requests');setError('')}} />
-    {readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
+      onViewAll={()=>{setActivePanel('requests');setError('')}} />}
+    {!needsOnboarding&&readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
       <div className="hh-practice-setup-head">
         <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
         <span>{readySteps}/3</span>
@@ -530,7 +530,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
       </section>}
-    {ownerTools && <details className="hh-practice-more-tools">
+    {!needsOnboarding&&ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
       <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button></div>

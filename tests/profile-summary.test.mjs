@@ -1,5 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { ADDITIONAL_PROFESSIONAL_CATALOG } from '../data/assessments/professional-additions-2026.js'
+import { buildExplorerEntries, filterExplorerEntries, buildPublicStarterBattery, buildStarterBattery } from '../lib/assessments/test-explorer.js'
 
 import { getAssessmentDefinition, provenance } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
@@ -111,4 +114,116 @@ test('snapshot-only rows without verifiable source records do not assert profile
   assert.equal(profile.withheldRows, 5)
   assert.equal(profile.verificationRequired, true)
   assert.deepEqual(profile.recommendations, [])
+})
+
+const FACETS = Object.freeze([
+  'ipip-emotion-decision-making-9',
+  'ipip-responsive-joy-10',
+  'ipip-responsive-distress-10',
+  'ipip-empathic-concern-10',
+])
+const ONS = 'ons-personal-wellbeing-4'
+const ADDITIONS = [...FACETS, ONS]
+const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
+
+function scoredSample(key, fraction = 0.5) {
+  const definition = getAssessmentDefinition(key, 'v1', 'en')
+  const answers = Object.fromEntries(definition.questions.map(question => {
+    const min = question.min ?? definition.answerScale.min
+    const max = question.max ?? definition.answerScale.max
+    return [question.id, Math.round(min + (max - min) * fraction)]
+  }))
+  return { definition, dimensions: scoreAssessment(definition, answers).dimensions }
+}
+
+function completedProfile(key) {
+  const { definition, dimensions } = scoredSample(key)
+  const result = {
+    id: '11111111-1111-4111-8111-111111111111',
+    accountId: '22222222-2222-4222-8222-222222222222',
+    measurementAt: '2026-10-20T00:00:00.000Z',
+    ...provenance(definition), dimensions,
+  }
+  return {
+    results: [result],
+    snapshot: { dimensions: dimensions.map(dimension => ({
+      ...dimension, sourceResultId: result.id, sourceDefinitionId: definition.id,
+      measurementAt: result.measurementAt, instrumentLocale: result.instrumentLocale,
+      remeasured: true,
+    })) },
+  }
+}
+
+test('new narrow IPIP facets are deliberate-choice instruments while ONS remains starter eligible', () => {
+  assert.deepEqual(ADDITIONAL_PROFESSIONAL_CATALOG.map(item => item.key), ADDITIONS)
+  for (const item of ADDITIONAL_PROFESSIONAL_CATALOG) {
+    assert.equal(item.starterEligible, item.key === ONS, item.key)
+    assert.equal(item.startable, true, item.key)
+    assert.equal(item.rightsStatus, 'cleared', item.key)
+    assert.equal(item.free, true, item.key)
+    assert.equal(item.guestEligible, true, item.key)
+    assert.equal(item.version, 'v1', item.key)
+    assert.equal(item.instrumentLocale, 'en', item.key)
+  }
+  // Frozen pre-policy catalog, excluding only the deliberately changed flag.
+  assert.equal(hash(ADDITIONAL_PROFESSIONAL_CATALOG.map(({ starterEligible, ...item }) => item)),
+    '0c74b76f41560785baf6cb2e8f8ce459a2928c2d6bb45d11a609e32e80e7270d')
+})
+
+test('starter policy does not change instrument definitions or scored dimensions', () => {
+  // Independently captured from immutable head 2a4877 before the metadata-only change.
+  assert.equal(hash(ADDITIONS.map(key => getAssessmentDefinition(key, 'v1', 'en'))),
+    'c72b2a5395d7814b07b0598d9d2add6d2a7567cd49df6b9b3318443db9aebca8')
+  assert.equal(hash(ADDITIONS.map(key => [0, 0.5, 1].map(fraction => scoredSample(key, fraction).dimensions))),
+    '0889d6249fd2125558dd89f871824afd0d0a888183953781bd0fe9d54021365a')
+})
+
+test('all four facets remain manually selectable under professional medium English filters', () => {
+  for (const locale of ['en', 'ru', 'es']) for (const audience of ['guest', 'account']) {
+    const entries = buildExplorerEntries({ locale, audience })
+    const visible = filterExplorerEntries(entries, {
+      availability: 'available', styles: ['professional'], lengths: ['medium'],
+      language: 'english', freeOnly: true,
+    })
+    assert.deepEqual(visible.filter(entry => FACETS.includes(entry.key)).map(entry => entry.key).sort(),
+      [...FACETS].sort(), `${locale}/${audience}`)
+    for (const key of FACETS) {
+      const entry = entries.find(item => item.key === key)
+      assert.equal(entry.selectable, true, key)
+      assert.equal(entry.startable, true, key)
+      assert.equal(entry.starterEligible, false, key)
+      assert.equal(entry.definition.key, key)
+    }
+  }
+})
+
+test('automatic public and account starter builders exclude the four facets but keep ONS available', () => {
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const facets = FACETS.map(key => entries.find(entry => entry.key === key))
+  const ons = entries.find(entry => entry.key === ONS)
+  assert.deepEqual(buildPublicStarterBattery(facets), [])
+  assert.deepEqual(buildStarterBattery(facets), [])
+  assert.deepEqual(buildPublicStarterBattery([...facets, ons]).map(entry => entry.key), [ONS])
+  assert.deepEqual(buildStarterBattery([...facets, ons]).map(entry => entry.key), [ONS])
+})
+
+test('profile defaults keep broad Mini-IPIP while completed broad results retain all other missing axes', () => {
+  for (const locale of ['en', 'ru', 'es']) {
+    const empty = profileCompletionRecommendations({ locale })
+    assert.deepEqual(empty.recommendations.map(item => item.key), ['hh-weekly-pulse', 'mini-ipip-20'])
+    const completed = profileCompletionRecommendations({ ...completedProfile('mini-ipip-20'), locale })
+    assert.deepEqual(completed.coveredAxes, ['trait'])
+    assert.deepEqual(completed.missingAxes, ['state', 'symptoms', 'function', 'resources'])
+    assert.equal(completed.coveragePercent, 20)
+    assert.deepEqual(completed.recommendations.map(item => item.key), ['hh-weekly-pulse'])
+    assert.deepEqual(completed.recommendations[0].covers, ['state', 'symptoms', 'function', 'resources'])
+  }
+})
+
+test('starter selection does not redefine coarse trait coverage or imply broad construct equivalence', () => {
+  const narrow = profileCompletionRecommendations(completedProfile(FACETS[0]))
+  // Existing coverage counts layer classes, not the breadth or validity of a trait instrument.
+  assert.deepEqual(narrow.coveredAxes, ['trait'])
+  assert.equal(narrow.coveragePercent, 20)
+  assert.deepEqual(narrow.recommendations.map(item => item.key), ['hh-weekly-pulse'])
 })

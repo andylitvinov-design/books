@@ -100,7 +100,7 @@ const copy = {
       faq: [
         ["What is included for free?", "A personal written review of your coaching questionnaire and handwritten drawing. It does not include a video call or live consultation."],
         ["Do I need artistic skills?", "No. Three simple shapes or symbols on paper are enough; the drawing is a prompt for reflection, not an art test."],
-        ["Will you save my answers here?", "No. The form prepares text for you to copy and send yourself through your chosen messenger. Nothing is submitted automatically."],
+        ["Will you save my answers here?", "Your questionnaire answers remain in this page for you to copy. The separate request form sends your name, contact details, short enquiry and reply consent to the site for CRM registration when you submit it. You decide whether to send the questionnaire and drawing through a messenger."],
       ],
     },
     dao: {
@@ -203,7 +203,7 @@ const copy = {
       faq: [
         ["Что именно бесплатно?", "Личный письменный разбор по коучинг-анкете и рисунку. Он не включает видеозвонок или живую консультацию."],
         ["Нужно красиво рисовать?", "Нет. Достаточно трёх простых символов или фигур на бумаге — это материал для рефлексии, а не проверка художественных навыков."],
-        ["Где хранятся мои ответы?", "Сайт подготавливает текст для копирования. Вы сами решаете, отправлять ли его через мессенджер; автоматической передачи нет."],
+        ["Где хранятся мои ответы?", "Ответы анкеты остаются на странице для копирования. При отправке отдельной формы заявки имя, контакты, краткий запрос и согласие на личный ответ передаются на сайт для регистрации в CRM. Анкету и рисунок вы по своему решению отправляете через мессенджер."],
       ],
     },
     dao: {
@@ -306,7 +306,7 @@ const copy = {
       faq: [
         ["¿Qué incluye la oferta gratuita?", "Una revisión personal por escrito del cuestionario y un dibujo a mano. No incluye videollamada ni consulta en directo."],
         ["¿Debo saber dibujar?", "No. Unos símbolos o figuras sencillos en papel son suficientes."],
-        ["¿Se guardan mis respuestas?", "No. La página prepara texto para copiar; tú decides qué enviar por mensajería."],
+        ["¿Se guardan mis respuestas?", "Las respuestas del cuestionario permanecen en esta página para que las copies. Al enviar el formulario separado de solicitud, tu nombre, datos de contacto, consulta breve y consentimiento para una respuesta personal se envían al sitio para registrar la solicitud en el CRM. Tú decides si envías el cuestionario y el dibujo por mensajería."],
       ],
     },
     dao: {

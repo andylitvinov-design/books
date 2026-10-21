@@ -43,7 +43,7 @@ test('IPIP-50 original English questions, permission and immutable version are s
   assert.equal(IPIP_BIG_FIVE_50_CATALOG.length, 1)
   assert.equal(IPIP_BIG_FIVE_50_CATALOG[0].startable, true)
   assert.equal(IPIP_BIG_FIVE_50_CATALOG[0].starterEligible, false)
-  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 145)
+  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 150)
   const migration = await readFile('supabase/migrations/20261011170000_hh_ipip_big_five_50.sql', 'utf8')
   assert.ok(migration.includes(contentHash))
   assert.ok(migration.includes(definition.id))

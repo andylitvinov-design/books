@@ -28,16 +28,26 @@ async function assertSpanishNavigation(page, path) {
   const currentUrl = page.url();
   const navigation = page.locator('.site-navigation');
   await expect(navigation).toHaveCount(1);
-  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library'], 'Spanish direct destinations: ' + path);
-  const destinations = [
-    ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
-    ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
-    ['/es/academy', 'Academia'], ['/es/events', 'Eventos'],
-    ['/en/app', 'Gabinete'], ['/es/library', 'Biblioteca'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library', '/es/shop', '/es/cart'], 'Spanish direct destinations: ' + path);
+  assert.deepEqual(await navigation.locator(':scope > a[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), [
+    { id: 'services', href: '/es/services' }, { id: 'library', href: '/es/library' },
+    { id: 'shop', href: '/es/shop' }, { id: 'cart', href: '/es/cart' },
+  ], 'Spanish direct destination IDs: ' + path);
+  const mainDestinations = [
+    ['/es', 'Inicio'], ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
+    ['/es/academy', 'Academia'], ['/es/explore/business', 'Negocios'], ['/en/app', 'Gabinete'],
   ];
+  const moreDestinations = [
+    ['/es/shop', 'Tienda'], ['/es/cart', 'Carrito'], ['/es/library', 'Biblioteca'], ['/es/events', 'Eventos'],
+    ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+  ];
+  const destinations = [['/es#free-start', 'Empezar gratis'], ...mainDestinations, ...moreDestinations];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
-  const links = menu.locator('.site-main-menu-panel > a');
+  const links = menu.locator('.site-main-menu-panel a');
+  for (const [selector, expected] of [['.site-main-menu-panel > a', ['/es#free-start']], ['.site-main-menu-grid > a', mainDestinations.map(([href]) => href)], ['.site-main-menu-more > a', moreDestinations.map(([href]) => href)]]) {
+    assert.deepEqual(await menu.locator(selector).evaluateAll(elements => elements.map(el => el.getAttribute('href'))), expected, 'Spanish menu group: ' + selector);
+  }
   await expect(menu).toHaveCount(1);
   await expect(menu).toHaveJSProperty('open', false);
   await expect(trigger).toBeVisible();
@@ -110,6 +120,7 @@ import { mkdirSync, writeFileSync, createWriteStream, readFileSync } from 'node:
 import { chromium, webkit, expect } from '@playwright/test';
 import { getSpanishRemedySlugs } from '../data/remedies-es.js';
 import { assertUnsupportedSpanishPrivateLocale } from './helpers/es-private-denial-verifier.mjs';
+import { assertCabinetGuestEntry } from './helpers/cabinet-guest-entry-verifier.mjs';
 const live = process.argv.includes('--live');
 const origin = live ? 'https://holistichouse.vercel.app' : 'https://127.0.0.1:3443';
 const auditOrigin = live ? origin : 'http://127.0.0.1:3202';
@@ -236,7 +247,7 @@ try {
         await expect(accountMenu).toHaveJSProperty('open', false);
         await click(page.locator('.site-main-menu-trigger'));
         await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
+        const accountLink = page.locator('.site-main-menu-grid > a[data-nav-item="house"][href="/en/app"]');
         await expect(accountMenu.getByRole('link', { name: 'Gabinete', exact: true })).toHaveCount(1);
         await expect(accountLink).toHaveCount(1);
         await expect(accountLink).toHaveAccessibleName('Gabinete');
@@ -244,16 +255,14 @@ try {
         await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
-        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
-        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
+        await assertCabinetGuestEntry(page, expect);
         await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await assertCabinetGuestEntry(page, expect);
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();
@@ -285,7 +294,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eleven-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'six direct links with four exact IDs plus fourteen-entry grouped Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

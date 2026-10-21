@@ -1,13 +1,14 @@
 import {seedBachV2TestVersions} from './seed-bach-v2-versions.mjs'
 import {seedHhSplitTestVersions} from './seed-hh-split-versions.mjs'
 import {seedTraumaTestVersions} from './seed-trauma-versions.mjs'
+import {seedProfessionalAdditionTestVersions} from './seed-professional-addition-versions.mjs'
 import pg from 'pg'
 import {readFile} from 'node:fs/promises'
 import {seedApp} from '../../scripts/app-seed.mjs'
 import {seedEightIpipTestVersions} from './ipip-eight-db-seed.mjs'
 const{Client}=pg
 export const A='10000000-0000-4000-8000-000000000001',B='10000000-0000-4000-8000-000000000002',SA='20000000-0000-4000-8000-000000000001',SB='20000000-0000-4000-8000-000000000002'
-export function assertIsolated(){const url=new URL(process.env.HH_TEST_ADMIN_DATABASE_URL||'http://invalid');if(process.env.CI!=='true'||process.env.HH_APP_TEST_RUNTIME!=='isolated'||process.env.VERCEL||!['127.0.0.1','localhost'].includes(url.hostname)||url.pathname!=='/hh_app_test')throw new Error('Isolated loopback test database required');return url.toString()}
+export function assertIsolated(){const url=new URL(process.env.HH_TEST_ADMIN_DATABASE_URL||'http://invalid');if(process.env.CI!=='true'||process.env.HH_APP_TEST_RUNTIME!=='isolated'||process.env.VERCEL||!['127.0.0.1','localhost'].includes(url.hostname)||url.pathname!=='/hh_app_test'||!['postgres:','postgresql:'].includes(url.protocol)||url.search||url.hash)throw new Error('Isolated loopback test database required');return url.toString()}
 export async function adminClient(){const db=new Client({connectionString:assertIsolated()});await db.connect();return db}
 export async function setup(){const db=await adminClient();try{
  const occupied=(await db.query("select to_regclass('app.accounts') as present")).rows[0].present;if(occupied)throw new Error('Refusing to initialize nonempty test DB')
@@ -17,6 +18,16 @@ export async function setup(){const db=await adminClient();try{
  await db.query(await readFile(new URL('../../supabase/migrations/20261019172000_hh_practitioner_article_folders.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017122000_hh_practitioner_service_funnel_daily.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017183000_hh_test_catalog_social_proof.sql',import.meta.url),'utf8'))
+ // Existing runtime dependencies, including their original participant/owner RLS.
+ // Apply only to the guarded empty test database; do not synthesize wider grants.
+ for(const migration of [
+  '20261019121144_hh_practitioner_request_messages_20261019.sql',
+  '20261019152000_hh_public_service_enquiries_secure.sql',
+  '20261019174312_hh_practitioner_request_read_state_20261019.sql',
+  '20261019180000_hh_client_message_push_optin.sql',
+  '20261020123209_hh_practitioner_request_followup_tasks_20261020.sql',
+ ]) await db.query(await readFile(new URL('../../supabase/migrations/'+migration,import.meta.url),'utf8'))
+ await seedProfessionalAdditionTestVersions(db)
  // Isolated-fixture parity with the existing production schema observed 2026-10-17 17:13 UTC.
  // No corresponding photos migration exists in the repository at source 2a059799.
  // This stays inside setup()'s loopback/isolated/empty-database guard, never production DDL.
@@ -25,6 +36,14 @@ export async function setup(){const db=await adminClient();try{
 
  // Include the existing encrypted-goals schema in this isolated fixture so export is complete.
  await db.query(await readFile(new URL('../../supabase/migrations/20261017165000_hh_reports_development_goals.sql',import.meta.url),'utf8'))
+ // Housekeeping uses these existing session tables before the later ownership tests.
+ // Keep the exact canonical SQL and the existing isolated Storage test double.
+ await db.query('create schema if not exists storage')
+ await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
+ await db.query(await readFile(new URL('../../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8'))
+ // Inert stand-in for the canonical migration's REVOKE target, not a login or backend.
+ await db.query('create role service_role nologin noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls')
+ await db.query(await readFile(new URL('../../supabase/migrations/20261020192118_hh_report_engagement_opt_in_20261020.sql',import.meta.url),'utf8'))
  await db.query("create role hh_app_ci_login login noinherit nosuperuser nobypassrls password 'synthetic-ci-only';grant hh_app_backend,hh_app_inbox to hh_app_ci_login;grant usage on schema auth to hh_app_backend,hh_app_inbox;grant execute on function auth.uid(),auth.jwt() to hh_app_backend,hh_app_inbox;")
  for(const[id,session,email]of[[A,SA,'a@example.invalid'],[B,SB,'b@example.invalid']]){await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[session,id])}
  }finally{await db.end()}}

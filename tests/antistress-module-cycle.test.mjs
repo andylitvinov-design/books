@@ -27,6 +27,7 @@ const pureImports = [
   '../inner-growth/opora-state-journey.js', '../inner-growth/anti-stress-skills-v6.js',
   '../inner-growth/anti-stress-practice-lab.js', '../inner-growth/anti-stress-method-activities.js',
   '../inner-growth/course-slide-sequence.js',
+  '../assessments/verified-history.js',
   '../inner-growth/course-progress.js', '../inner-growth/opora-module-exercise.js',
 ]
 const modules = Object.fromEntries(await Promise.all(pureImports.map(async specifier =>
@@ -203,4 +204,18 @@ test('current educational route AS6 remains usable as a selected course', async 
   const h = harness(course)
   assertCreated(h, await h.create(), COURSE_CONTENT_V4, preferences('AS6'))
   assert.equal(course.concerns_ciphertext, ciphertext, 'stored choice must remain unchanged')
+})
+
+// Keep verification real: malformed historical rows never become trusted scores.
+test('real history verification rejects missing, sparse and unknown provenance', () => {
+  const { verifiedHistoryResult } = modules['../assessments/verified-history.js']
+  for (const row of [null, {}, { dimensions: [] }, { dimensions: new Array(1) },
+    { dimensions: [null] }, { dimensions: [{ key: 'synthetic.unknown', value: 1 }] }]) {
+    assert.equal(verifiedHistoryResult(row), false)
+  }
+})
+
+test('cycle loader rejects unknown imports and live transaction fallback', () => {
+  assert.throws(() => runtime.require('./unknown-synthetic-import.js'), /No unmocked database or unknown import/)
+  assert.throws(() => runtime.require('./database.js').transaction(), /Live transaction is forbidden/)
 })

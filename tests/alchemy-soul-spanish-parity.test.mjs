@@ -31,7 +31,7 @@ test("Spanish Alchemy booking formats, safe handoff and navigation mirror EN/RU"
   const landing = read("components/alchemy-soul-landing.tsx");
   const review = read("app/[locale]/services/free-situation-review/page.tsx");
   const redirect = read("app/[locale]/services/psychohomeopathy/page.tsx");
-  for (const phrase of ["Sesión personal · 60 minutos · €100", "Revisión exprés · 30 minutos · €50", "Acompañamiento de cuatro semanas", "¿Cómo te llamas?", "Elige WhatsApp o Telegram"]) {
+  for (const phrase of ["Sesión personal · 60 minutos · €100", "Revisión exprés · 30 minutos · €50", "Acompañamiento de cuatro semanas", "Tras confirmar la recepción, WhatsApp y Telegram son opcionales."]) {
     assert.ok(form.includes(phrase), phrase);
   }
   for (const selection of ["30", "60", "month"]) {
@@ -39,6 +39,7 @@ test("Spanish Alchemy booking formats, safe handoff and navigation mirror EN/RU"
   }
   assert.match(landing, /<AlchemySoulLeadForm locale=\{locale\} \/>/);
   assert.match(form, /<ContactChannelChooser locale=\{locale\}/);
+  assert.doesNotMatch(form, /<input|nameField|namePlaceholder|name\.trim/);
   assert.match(form, /pagePath: "\/" \+ locale \+ "\/services\/alchemy-of-soul"/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|sendBeacon|fetch\(/);
   assert.match(redirect, /permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/);

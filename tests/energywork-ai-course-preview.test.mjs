@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
-import { energyworkSequence } from '../data/academy/energywork-ai-schema.js'
+import ts from 'typescript'
+import { ENERGYWORK_QUESTIONS, energyworkSequence } from '../data/academy/energywork-ai-schema.js'
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 const curriculum = read('data/academy/energywork-ai-curriculum.ts')
@@ -12,6 +13,49 @@ const landing = read('components/principles-of-energywork.tsx')
 const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
+
+// Execute the real editorial builder and its local data dependencies. Comparing
+// source ID sets alone misses ordering drift introduced by withClosingPractices.
+const editorialModules = new Map()
+function loadEditorialModule(url) {
+  if (editorialModules.has(url.href)) return editorialModules.get(url.href)
+  const compiled = ts.transpileModule(readFileSync(url, 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText
+  const compiledModule = { exports: {} }
+  const require = name => {
+    assert.match(name, /^\.\//, 'Editorial runtime only imports local course data')
+    return loadEditorialModule(new URL(name + '.ts', url))
+  }
+  new Function('require', 'module', 'exports', compiled)(require, compiledModule, compiledModule.exports)
+  editorialModules.set(url.href, compiledModule.exports)
+  return compiledModule.exports
+}
+
+test('Rendered course and private-save registry agree on every slide, including the non-answer save checkpoint', () => {
+  const { energyworkSlides } = loadEditorialModule(new URL('../data/academy/energywork-ai-curriculum.ts', import.meta.url))
+  const sequence = energyworkSequence()
+  for (const legacyPath of [null, 'tantra', 'kundalini', 'yggdrasil']) {
+    const slides = energyworkSlides(legacyPath)
+    assert.deepEqual(slides.map(slide => slide.id), sequence,
+      'Rendered next/previous targets must match the server private-save sequence')
+    assert.equal(new Set(slides.map(slide => slide.id)).size, 63,
+      'Preserve all 63 p10 screens, including the standalone first-lesson save milestone')
+    assert.deepEqual(slides.slice(6, 11).map(slide => slide.id),
+      ['flight-04', 'flight-03', 'flight-done', 'flight-save', 'tan-01'],
+      'Review, practice and congratulations precede saving; Lesson 2 follows the save checkpoint')
+    const checkpoint = slides.find(slide => slide.id === 'flight-save')
+    assert.equal(checkpoint.kind, 'milestone')
+    assert.equal(checkpoint.question, undefined, 'Saving must not add a new learner question')
+    assert.equal(checkpoint.secondaryQuestion, undefined)
+    assert.equal(ENERGYWORK_QUESTIONS['flight-save'], undefined,
+      'The save checkpoint must not introduce another private answer key')
+    for (const slide of slides.filter(slide => slide.question)) {
+      assert.equal(slide.question.type, ENERGYWORK_QUESTIONS[slide.id],
+        slide.id + ' preserves its registered private-answer contract')
+    }
+  }
+})
 
 test('Unified Reiki Practitioner course has 63 published editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
@@ -78,7 +122,7 @@ test('Lesson 1 practice with music comes after reflections, immediately before c
   assert.match(lesson, /Sun’s light and warmth/)
   assert.match(lesson, /Удалось ли вам подняться к Солнцу во время медитации/)
   assert.match(lesson, /question: \{ type: "text"/)
-  assert.match(curriculum, /withClosingPractices\(commonSlides\.filter\(\(slide\) => slide\.phase === "flight"\), \["flight-03"\], "flight-done"\)/)
+  assert.match(curriculum, /withClosingPractices\(\s*commonSlides\.filter\(\(slide\) => slide\.phase === "flight" && slide\.id !== "flight-save"\),\s*\["flight-03"\], "flight-done"\)/)
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
 
@@ -170,7 +214,7 @@ test('Reiki opening explains a single sequential course and separate teacher ini
   assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
   assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
   assert.match(learner, /Want to go further\? You can explore personal Reiki initiation/)
-  assert.match(curriculum, /does not grant Level 1 initiation or certification/)
+  assert.match(curriculum, /Level 1 initiation is arranged separately; completing these lessons is not an initiation or certification/)
   assert.match(css, /welcomeSlide \.art/)
 })
 

@@ -6,9 +6,9 @@ import { groupViaRecommendations } from '../../lib/assessments/via-family.js'
 import { getCompactNavigation } from '../../lib/site-navigation-model.js'
 
 const COPY = {
-  en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
-  ru: { collections: 'Подборки тестов по темам', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
-  es: { collections: 'Colecciones de pruebas por tema', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
+  en: { collections: 'Test collections by topic (optional)', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
+  ru: { collections: 'Подборки тестов по темам (необязательно)', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
+  es: { collections: 'Colecciones de pruebas por tema (opcional)', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
 }
 const selectedKeys = picker => picker.locator('[data-public-selected-tests] [data-selected-test-key]')
 const readSelection = picker => selectedKeys(picker).evaluateAll(nodes => nodes.map(node => node.dataset.selectedTestKey))
@@ -31,13 +31,14 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
 export async function assertPublicCollectionChips(root, expect, locale, collections, width) {
   const copy = COPY[locale]
   assert.ok(Number.isFinite(width) && width > 0, 'Use the actual viewport for collapsed collection visibility')
-  const collapsedCount = Math.min(width <= 760 ? 4 : 8, collections.length)
+  const collapsedCount = Math.min(2, collections.length)
   await expect(root).toBeVisible()
   await expect(root).toHaveAttribute('data-expanded', 'false')
   await expect(root).toHaveAttribute('aria-labelledby', 'hh-test-curated-heading')
   await expect(root).toHaveAccessibleName(copy.collections)
   const heading = root.getByRole('heading', { name: copy.collections, level: 2, exact: true })
   await expect(heading).toHaveCount(1)
+  await expect(heading).toBeVisible()
   await expect(heading).toHaveAttribute('id', 'hh-test-curated-heading')
   const cards = root.locator('[data-test-collection]')
   await expect(cards).toHaveCount(collections.length)

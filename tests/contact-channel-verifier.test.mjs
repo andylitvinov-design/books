@@ -1,136 +1,53 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import ts from 'typescript';
 import { openContactChannelChooser, assertPreparedContactChannels } from '../scripts/helpers/contact-channel-verifier.mjs';
 import * as enquiries from '../lib/whatsapp-enquiry.js';
-import * as referrals from '../lib/organic-event-referrals.js';
+import { mountSavedChooser, openSavedContactChooser, savedSuffix } from './helpers/save-first-chooser-harness.mjs';
 import * as publicLead from '../lib/public-lead-capture.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} };
-function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}) {
-  let choice = 'session', externalClicks = 0, cursor = 0, dirty = true, pendingEffects = [];
-  const hooks = [], scrollCalls = [], channelClicks = [];
-  const location = { pathname: '/' + locale + '/services/psychohomeopathy', search: '', ...locationOptions };
-  // Render/commit/effect cycles preserve hook slots and dependencies. A no-op
-  // useEffect shim would silently miss the selected-request reset regression.
-  const react = {
-    useId: () => 'panel',
-    useState(initial) {
-      const index = cursor++;
-      if (!hooks[index]) hooks[index] = { value: initial };
-      return [hooks[index].value, update => {
-        if (fault === 'blocked trigger' && typeof update === 'function') return;
-        const value = typeof update === 'function' ? update(hooks[index].value) : update;
-        if (!Object.is(value, hooks[index].value)) { hooks[index].value = value; dirty = true; }
-      }];
-    },
-    useRef(initial) {
-      const index = cursor++;
-      if (!hooks[index]) hooks[index] = { current: initial };
-      return hooks[index];
-    },
-    useEffect(effect, dependencies) {
-      const index = cursor++, previous = hooks[index];
-      const changed = !previous || dependencies.some((value, i) => !Object.is(value, previous[i]));
-      hooks[index] = dependencies;
-      const skipSelectionReset = fault === 'missing selection reset' && previous && typeof dependencies[0] === 'string' && dependencies[0].startsWith('https://wa.me/');
-      if (changed && !skipSelectionReset) pendingEffects.push(effect);
-    },
-  };
-  const modules = {
-    'react/jsx-runtime': { jsx, jsxs: jsx },
-    react,
-    'next/navigation': { usePathname: () => location.pathname },
-    'lucide-react': Object.fromEntries(['ChevronDown', 'MessageCircle', 'Send', 'ShoppingBag'].map(name => [name, () => null])),
-    '@/components/acquisition-event-link': { AcquisitionEventLink: ({ attributes, ...props }) => jsx('a', { ...props, ...attributes }) },
-    '@/lib/whatsapp-enquiry': enquiries,
-    '@/lib/organic-event-referrals': referrals,
-    './contact-channel-chooser.module.css': { default: {} },
-  };
-  const exports = {};
-  const compiled = ts.transpileModule(read('components/contact-channel-chooser.tsx'), { fileName: 'chooser.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  runInNewContext(compiled, { exports, URLSearchParams, window: { location, matchMedia: () => ({ matches: reducedMotion }) }, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
-  function nodes() {
-    const message = choice === 'session' ? 'Personal session 60 minutes €100' : 'Questions 30 minutes €50';
-    let result;
-    for (let pass = 0; ; pass++) {
-      assert.ok(pass < 10, 'Chooser effects must settle');
-      cursor = 0; dirty = false; pendingEffects = []; result = [];
-      const tree = exports.ContactChannelChooser({ locale, whatsappUrl: enquiries.whatsappEnquiryUrl({ locale, service: 'Consultation', request: message, pagePath: '/' + locale + '/services/psychohomeopathy?private=never-share' }), attributes: { 'data-consultation-action': choice }, onChannelClick: channel => channelClicks.push(channel) });
-      function visit(node, hidden = false) {
-        if (!node || typeof node !== 'object') return;
-        if (Array.isArray(node)) { node.forEach(child => visit(child, hidden)); return; }
-        const invisible = hidden || Boolean(node.props.hidden);
-        if (node.props.ref) node.props.ref.current = { scrollIntoView: options => scrollCalls.push({ ...options }) };
-        if (!(fault === 'missing telegram' && node.props['data-contact-channel'] === 'telegram')) result.push({ ...node, hidden: invisible });
-        visit(node.props.children, invisible);
-      }
-      visit(tree);
-      pendingEffects.forEach(effect => effect());
-      if (!dirty) break;
-    }
-    if (fault === 'initially open') {
-      result.forEach(node => { node.hidden = false; if (Object.hasOwn(node.props, 'data-contact-order')) node.props['aria-expanded'] = true; });
-    }
-    const wa = result.find(node => node.props['data-contact-channel'] === 'whatsapp');
-    const tg = result.find(node => node.props['data-contact-channel'] === 'telegram');
-    if (fault === 'duplicate channel') result.push({ ...wa });
-    if (fault === 'wrong recipient') wa.props.href = wa.props.href.replace('14376066502', '10000000000');
-    if (fault === 'wrong host') tg.props.href = tg.props.href.replace('https://t.me', 'https://evil.example');
-    if (fault === 'extra query') wa.props.href += '&private=secret';
-    if (fault === 'empty message') wa.props.href = 'https://wa.me/14376066502?text=';
-    if (fault === 'changed telegram message') tg.props.href = 'https://t.me/AndyTherapist?text=other';
-    if (fault === 'missing safety rel') wa.props.rel = 'noreferrer';
-    if (fault === 'same tab') tg.props.target = '_self';
-    if (fault === 'hidden after open' && hooks[0].value) tg.hidden = true;
-    return result;
-  }
-  function locator(selector) {
-    const match = selector.match(/^(a|button)?\[([\w-]+)(?:="([^"]+)")?\]$/);
-    assert.ok(match, selector);
-    const selected = () => nodes().filter(node => (!match[1] || node.type === match[1]) && Object.hasOwn(node.props, match[2]) && (match[3] === undefined || node.props[match[2]] === match[3]));
-    return { locator, selected, async getAttribute(name) { const values = selected(); assert.equal(values.length, 1); return values[0].props[name] ?? null; }, async click() {
-      const values = selected(); assert.equal(values.length, 1);
-      if (values[0].type === 'a') { externalClicks++; assert.fail('Acceptance must not click external contact links'); }
-      values[0].props.onClick();
-    } };
-  }
-  const expect = actual => ({
-    async toHaveCount(n) { assert.equal(actual.selected().length, n); },
-    async toBeVisible() { assert.equal(actual.selected().length, 1); assert.equal(actual.selected()[0].hidden, false); },
-    async toBeHidden() { assert.equal(actual.selected().length, 1); assert.equal(actual.selected()[0].hidden, true); },
-    async toHaveAttribute(name, value) {
-      const raw = await actual.getAttribute(name); const actualValue = raw == null ? null : String(raw);
-      if (value instanceof RegExp) assert.match(actualValue, value); else assert.equal(actualValue, value);
-    },
-  });
-  return { scope: { locator }, expect, choose: value => { choice = value; }, navigate: (pathname, search) => Object.assign(location, { pathname, search }), externalClicks: () => externalClicks, scrollCalls, channelClicks };
+const activeMounts = new Set();
+function mountChooser(...args) {
+  const mounted = mountSavedChooser(...args);
+  activeMounts.add(mounted);
+  return mounted;
 }
+afterEach(() => { for (const mounted of activeMounts) mounted.unmount(); activeMounts.clear(); });
 
-for (const locale of ['en', 'ru', 'es']) test(locale + ' actual chooser opens exactly two safe channels and updates both prepared requests', async () => {
+for (const locale of ['en', 'ru', 'es']) test(locale + ' actual chooser exposes exactly two safe channels only after save and updates both prepared requests', async () => {
   const mounted = mountChooser(locale);
-  const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
+  const chooser = await openSavedContactChooser(mounted);
   const first = await assertPreparedContactChannels(chooser, mounted.expect);
   assert.match(first.whatsappUrl.searchParams.get('text'), /60 minutes €100/);
   assert.doesNotMatch(first.whatsappUrl.searchParams.get('text'), /private|never-share/);
   mounted.choose('questions');
-  await openContactChannelChooser(mounted.scope, mounted.expect);
+  await openSavedContactChooser(mounted);
   const next = await assertPreparedContactChannels(chooser, mounted.expect);
   assert.match(next.whatsappUrl.searchParams.get('text'), /30 minutes €50/);
   assert.notEqual(next.whatsappUrl.href, first.whatsappUrl.href);
   for (const link of [next.whatsapp, next.telegram]) assert.equal(await link.getAttribute('data-consultation-action'), 'questions');
   mounted.choose('session');
-  await openContactChannelChooser(mounted.scope, mounted.expect);
-  assert.equal((await assertPreparedContactChannels(chooser, mounted.expect)).whatsappUrl.href, first.whatsappUrl.href);
+  await openSavedContactChooser(mounted);
+  assert.equal((await assertPreparedContactChannels(chooser, mounted.expect)).whatsappUrl.searchParams.get('text'), plainRequest(locale) + savedSuffix(locale, mounted.referenceCode));
+  assert.equal(new Set(mounted.calls.map(call => JSON.parse(call.body).operationId)).size, 3, 'Each changed selection needs its own explicit synthetic save');
   assert.equal(mounted.externalClicks(), 0);
 });
 for (const fault of ['initially open', 'blocked trigger', 'missing telegram', 'duplicate channel', 'wrong recipient', 'wrong host', 'extra query', 'empty message', 'changed telegram message', 'missing safety rel', 'same tab', 'hidden after open']) {
   test('chooser acceptance rejects ' + fault, async () => {
     const mounted = mountChooser('en', fault);
-    await assert.rejects(openContactChannelChooser(mounted.scope, mounted.expect));
+    await assert.rejects(openSavedContactChooser(mounted));
+    if (['initially open', 'blocked trigger'].includes(fault)) {
+      assert.ok(mounted.mutations.includes(fault), 'Rejected the intended actual-component mutation');
+      assert.equal(mounted.attempts.length, 0);
+    } else {
+      assert.equal(mounted.calls.length, 1, 'Channel fault was reached after an actual synthetic save');
+      await mounted.expect(mounted.scope.locator('form')).toHaveCount(0);
+      await mounted.expect(mounted.scope.locator('[role="status"]')).toHaveCount(1);
+    }
     assert.equal(mounted.externalClicks(), 0);
   });
 }
@@ -139,28 +56,29 @@ for (const reducedMotion of [false, true]) test('chooser effects reset only chan
   const mounted = mountChooser('en', undefined, reducedMotion);
   await mounted.expect(mounted.scope.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
   assert.deepEqual(mounted.scrollCalls, []);
-  const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
-  assert.deepEqual(mounted.scrollCalls, [{ block: 'center', behavior: reducedMotion ? 'auto' : 'smooth' }]);
+  const chooser = await openSavedContactChooser(mounted);
+  assert.deepEqual(mounted.scrollCalls, Array.from({ length: 2 }, () => ({ block: 'center', behavior: reducedMotion ? 'auto' : 'smooth' })), 'Opening and confirmed save each reposition the intended target');
   mounted.choose('session');
   await assertPreparedContactChannels(chooser, mounted.expect);
-  assert.equal(mounted.scrollCalls.length, 1, 'Unchanged request must neither reset nor scroll again');
+  assert.equal(mounted.scrollCalls.length, 2, 'Unchanged request must neither reset nor scroll again');
   mounted.choose('questions');
   await mounted.expect(mounted.scope.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
-  for (const channel of ['whatsapp', 'telegram']) await mounted.expect(chooser.locator('a[data-contact-channel="' + channel + '"]')).toBeHidden();
-  assert.equal(mounted.scrollCalls.length, 1, 'Reset must not scroll the hidden panel');
-  await openContactChannelChooser(mounted.scope, mounted.expect);
-  assert.equal(mounted.scrollCalls.length, 2);
+  await mounted.expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  assert.equal(mounted.field('checkbox').props.checked, false, 'New selection cannot inherit consent');
+  assert.equal(mounted.scrollCalls.length, 2, 'Reset must not scroll the hidden panel');
+  await openSavedContactChooser(mounted);
+  assert.equal(mounted.scrollCalls.length, 4, 'New opening and confirmed save each reposition the intended target');
   await chooser.locator('button[data-contact-order]').click();
-  await openContactChannelChooser(mounted.scope, mounted.expect);
-  assert.equal(mounted.scrollCalls.length, 3, 'Manual dismissal must remain reopenable');
+  await openSavedContactChooser(mounted);
+  assert.equal(mounted.scrollCalls.length, 5, 'Manual dismissal must remain reopenable');
   assert.equal(mounted.externalClicks(), 0);
 });
 
-test('chooser acceptance rejects stale-open selection when its reset effect is missing', async () => {
+test('chooser acceptance rejects stale-open selection when its keyed scope reset is missing', async () => {
   const mounted = mountChooser('en', 'missing selection reset');
-  await openContactChannelChooser(mounted.scope, mounted.expect);
+  await openSavedContactChooser(mounted);
   mounted.choose('questions');
-  await assert.rejects(openContactChannelChooser(mounted.scope, mounted.expect));
+  await assert.rejects(openSavedContactChooser(mounted));
   assert.equal(mounted.externalClicks(), 0);
 });
 
@@ -171,11 +89,11 @@ function plainRequest(locale, choice = 'session') {
 for (const [locale, label] of [['en', 'Event referral'], ['ru', 'Источник мероприятия'], ['es', 'Origen del evento']]) {
   test(locale + ' actual chooser keeps approved referral on both channels, resets selection and refreshes public route attribution', async () => {
     const mounted = mountChooser(locale, undefined, false, { search: '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026&utm_content=listing' });
-    const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
+    const chooser = await openSavedContactChooser(mounted);
     async function assertDraft(choice, suffix = '') {
       const channels = await assertPreparedContactChannels(chooser, mounted.expect);
       for (const url of [channels.whatsappUrl, channels.telegramUrl]) {
-        assert.equal(url.searchParams.get('text'), plainRequest(locale, choice) + suffix);
+        assert.equal(url.searchParams.get('text'), plainRequest(locale, choice) + suffix + savedSuffix(locale, mounted.referenceCode));
         assert.doesNotMatch(url.searchParams.get('text'), /utm_|listing|private|never-share/);
       }
       for (const link of [channels.whatsapp, channels.telegram]) assert.equal(await link.getAttribute('data-consultation-action'), choice);
@@ -183,15 +101,18 @@ for (const [locale, label] of [['en', 'Event referral'], ['ru', 'Источни�
     const firstSuffix = '\n\n' + label + ': Eventbrite · public_event_2026';
     await assertDraft('session', firstSuffix);
     mounted.choose('questions');
-    await openContactChannelChooser(mounted.scope, mounted.expect);
+    await openSavedContactChooser(mounted);
     await assertDraft('questions', firstSuffix);
     mounted.navigate('/' + locale + '/services/free-situation-review', '?utm_source=meetup&utm_medium=organic_event&utm_campaign=next_public_event');
+    await openSavedContactChooser(mounted);
     await assertDraft('questions', '\n\n' + label + ': Meetup · next_public_event');
     mounted.navigate('/' + locale + '/app/tests', '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026');
+    await openSavedContactChooser(mounted);
     await assertDraft('questions');
     mounted.navigate('/' + locale + '/services/psychohomeopathy', '?utm_source=eventbrite&utm_medium=organic_event&utm_campaign=public_event_2026&email=must-not-share');
+    await openSavedContactChooser(mounted);
     await assertDraft('questions');
-    assert.equal(mounted.scrollCalls.length, 2, 'Referral refresh must not reopen or scroll the unchanged request');
+    assert.equal(mounted.scrollCalls.length, 10, 'Each changed route creates a closed scope, then deliberate reopen and confirmed save reposition their targets');
     assert.equal(mounted.externalClicks(), 0);
     assert.deepEqual(mounted.channelClicks, [], 'Preparing referrals must not invoke a contact action');
   });
@@ -209,31 +130,79 @@ test('actual chooser ignores invalid or personal referral parameters without cha
     valid.replace('public_event_2026', 'private%20answer'),
   ]) {
     const mounted = mountChooser('en', undefined, false, { search });
-    const chooser = await openContactChannelChooser(mounted.scope, mounted.expect);
+    const chooser = await openSavedContactChooser(mounted);
     const channels = await assertPreparedContactChannels(chooser, mounted.expect);
-    for (const url of [channels.whatsappUrl, channels.telegramUrl]) assert.equal(url.searchParams.get('text'), plainRequest('en'), search);
+    for (const url of [channels.whatsappUrl, channels.telegramUrl]) assert.equal(url.searchParams.get('text'), plainRequest('en') + savedSuffix('en', mounted.referenceCode), search);
     assert.equal(mounted.externalClicks(), 0);
     assert.deepEqual(mounted.channelClicks, []);
   }
 });
 
+function releasePaidContract(release, helper) {
+  const parse = text => ts.createSourceFile('contract.mjs', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const nodes = (root, predicate) => { const found = []; const visit = node => { if (predicate(node)) found.push(node); ts.forEachChild(node, visit); }; visit(root); return found; };
+  const tree = parse(release), helperTree = parse(helper);
+  const imports = nodes(tree, node => ts.isImportDeclaration(node) && node.moduleSpecifier.text === './helpers/release-paid-enquiry-verifier.mjs');
+  assert.equal(imports.length, 1, 'Paid helper import must be unique');
+  assert.ok(imports[0].importClause.namedBindings.elements.some(item => item.name.text === 'verifyReleasePaidEnquiry' && !item.propertyName), 'Bind the actual paid helper');
+  const calls = nodes(tree, node => ts.isCallExpression(node) && node.expression.getText(tree) === 'check' && node.arguments[0]?.text === 'paid-imagery-consultation-safe-handoff');
+  assert.equal(calls.length, 1, 'Paid audit caller must be unique');
+  const call = calls[0];
+  assert.ok(ts.isAwaitExpression(call.parent), 'Await the paid audit result');
+  assert.equal(call.arguments[1].getText(tree).replace(/\s/g, ''), '{engine,width,locale}', 'Retain the engine/viewport/locale matrix detail');
+  assert.ok(ts.isArrowFunction(call.arguments[2]), 'Paid caller delegates through its callback');
+  const sentinel = Promise.resolve('scoped paid result'), invocations = [], browser = {}, expect = {};
+  const callback = new Function('verifyReleasePaidEnquiry', 'browser', 'origin', 'label', 'locale', 'width', 'expect', `return (${call.arguments[2].getText(tree)});`)((...args) => { invocations.push(args); return sentinel; }, browser, 'http://127.0.0.1:3123', 'local', 'ru', 390, expect);
+  assert.equal(callback(), sentinel, 'Return the actual paid helper promise');
+  assert.equal(invocations.length, 1, 'Invoke only one paid helper');
+  assert.deepEqual(invocations[0], [browser, { origin: 'http://127.0.0.1:3123', label: 'local', locale: 'ru', width: 390 }, expect], 'Forward the exact audited policy options');
+  const declaration = name => { const list = helperTree.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === name); assert.equal(list.length, 1, 'Unique actual helper function ' + name); return list[0]; };
+  const ui = declaration('verifyPaidEnquiryUi'), uiText = ui.getText(helperTree);
+  const blanks = nodes(ui, node => ts.isCallExpression(node) && node.expression.getText(helperTree) === 'blank');
+  assert.deepEqual(blanks.map(node => node.arguments.map(arg => arg.text)), [['0', '60', '€100'], ['0', '60', '€100'], ['1', '30', '€50'], ['0', '60', '€100']], 'Retain both prices, reopen and exact reset');
+  for (const node of blanks) assert.ok(ts.isAwaitExpression(node.parent), 'Await each blank-form check');
+  assert.match(uiText, /assertPaidFormSnapshot\(await form\.evaluate\(readPaidForm\), policy\.locale\)/, 'Verify the actual blank private/contact schema');
+  assert.match(uiText, /chooser\.locator\('a, \[data-contact-channel\]'\)\)\.toHaveCount\(0\)/, 'No pre-save messenger links');
+  assert.match(uiText, /'\/' \+ policy\.locale \+ '\/services\/free-situation-review'/, 'Keep the exact locale-specific internal free route');
+  assert.match(uiText, /originalForm\.evaluate\(el => el\.isConnected\)\)\.toBe\(false\)/, 'Changing paid format must remount');
+  assert.match(uiText, /expressForm\.evaluate\(el => el\.isConnected\)\)\.toBe\(false\)/, 'Free choice must remove paid form');
+  assert.match(uiText, /el\.tagName === 'BUTTON' && el\.form === null/, 'Only standalone non-submit controls may be clicked');
+  assert.doesNotMatch(uiText, /\.(?:fill|check|press|submit)\s*\(/, 'Release paid audit never submits or fills private fields');
+  assert.match(uiText, /postSaveRuntimeVerified: false, preparedMessageRuntimeVerified: false, messageSent: false/, 'Do not claim post-save or delivery proof');
+  const policy = declaration('releasePaidPolicy').getText(helperTree);
+  assert.match(policy, /assertReleasePaidMode\(\{ origin, label \}\)/, 'Validate the explicit mode/origin');
+  assert.match(policy, /path: '\/' \+ locale \+ '\/services\/imagery-therapy'/, 'Audit the exact imagery public route');
+  const wrapper = declaration('verifyReleasePaidEnquiry').getText(helperTree);
+  assert.ok(wrapper.indexOf('releasePaidPolicy(options)') < wrapper.indexOf('browser.newContext('), 'Reject invalid policy before context/network');
+  assert.ok(wrapper.indexOf('await installPaidReadOnlyGuard(context, policy)') < wrapper.indexOf('await context.newPage()'), 'Install the read-only guard before navigation');
+  assert.match(wrapper, /serviceWorkers: 'block'/, 'Block service workers in the fresh context');
+  assert.match(wrapper, /await guard\.settle\(\);[\s\S]*guard\.assertClean\(\)/, 'Settle and fail on every denied network attempt');
+  assert.match(helper, /assert\.equal\(posts, 0, 'Paid read-only audit attempted a POST'\)/, 'Zero POST remains mandatory');
+  const freeStart = release.indexOf("await check('free-imagery-situation-review'");
+  const footer = release.slice(freeStart < 0 ? release.indexOf("const assertFreeUrl") : freeStart, call.pos);
+  assert.match(footer, /capture\.locator\('\[data-contact-channel="telegram"\]'\)\.count\(\), 1/, 'Retain the separate footer Telegram check');
+  assert.match(release, /assert\.deepEqual\(cspErrors, \[\]/, 'CSP errors remain fatal');
+}
+
 test('release retains explicit paid selection, free internal action, reset, privacy and separate footer Telegram checks', () => {
-  const source = read('scripts/verify-release-reaudit.mjs');
-  const paid = source.slice(source.indexOf("await check('paid-imagery-consultation-safe-handoff'"), source.indexOf("if (width === 390)"));
-  assert.match(paid, /services\/imagery-therapy/);
-  assert.match(paid, /openContactChannelChooser\(capture, expect\)/);
-  assert.match(paid, /assertPreparedContactChannels\(chooser, expect\)/);
-  assert.match(paid, /\[data-consultation-action\]'\)\)\.toHaveCount\(2\)/);
-  assert.match(paid, /for \(const action of \[whatsapp, telegram\]\)/);
-  assert.match(paid, /assertPaidUrl\('session', '60', '€100'\)/);
-  assert.match(paid, /nth\(1\)\.click\(\);\s*chooser = await openContactChannelChooser\(capture, expect\);\s*const changedUrl = await assertPaidUrl\('questions', '30', '€50'\)/);
-  assert.match(paid, /\[data-contact-channel-chooser\]'\)\)\.toHaveCount\(0\)/);
-  assert.match(paid, /await expect\(action\)\.toHaveCount\(1\)/);
-  assert.match(paid, /assert.equal\(freeUrl.href, origin \+ `\/\$\{locale\}\/services\/free-situation-review`\)/);
-  assert.match(paid, /Reset must restore the exact paid request/);
-  assert.match(paid, /telegram"\]:not\(\[data-consultation-action\]\)/);
-  assert.match(paid, /No private intake fields/);
-  assert.match(source, /assert\.deepEqual\(cspErrors, \[\]/);
+  releasePaidContract(read('scripts/verify-release-reaudit.mjs'), read('scripts/helpers/release-paid-enquiry-verifier.mjs'));
+});
+
+test('release paid helper wiring and no-submit guards reject intended source defects', () => {
+  const release = read('scripts/verify-release-reaudit.mjs'), helper = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
+  const cases = [
+    [release.replace("'./helpers/release-paid-enquiry-verifier.mjs'", "'./helpers/other.mjs'"), helper, /Paid helper import must be unique/],
+    [release.replace("await check('paid-imagery-consultation-safe-handoff'", "check('paid-imagery-consultation-safe-handoff'"), helper, /Await the paid audit result/],
+    [release.replace('verifyReleasePaidEnquiry(browser, { origin, label, locale, width }, expect)', "verifyReleasePaidEnquiry(browser, { origin, label, locale: 'en', width }, expect)"), helper, /Forward the exact audited policy options/],
+    [release, helper.replace("await blank(1, '30', '€50')", "await blank(1, '30', '€100')"), /Retain both prices, reopen and exact reset/],
+    [release, helper.replace("assert.equal(posts, 0, 'Paid read-only audit attempted a POST')", "assert.equal(posts, 1, 'Paid read-only audit attempted a POST')"), /Zero POST remains mandatory/],
+    [release, helper.replace('el.form === null', 'true'), /Only standalone non-submit controls/],
+  ];
+  for (const [changedRelease, changedHelper, reason] of cases) {
+    releasePaidContract(release, helper);
+    assert.ok(changedRelease !== release || changedHelper !== helper, 'Mutation changes its intended source');
+    assert.throws(() => releasePaidContract(changedRelease, changedHelper), reason);
+  }
 });
 
 test('both core-service scripts explicitly open the uniquely scoped chooser without changing unrelated direct handoffs', () => {
@@ -246,8 +215,7 @@ test('both core-service scripts explicitly open the uniquely scoped chooser with
   const production = read('scripts/verify-public-services-production.mjs');
   assert.match(production, /main.locator\('section:has\(> details\)'\)/);
   assert.match(production, /assert.equal\(await capture.count\(\), 1/);
-  assert.match(production, /openContactChannelChooser\(capture, expect\)/);
-  assert.match(production, /Prepared request must retain the selected service/);
+  assertPublicCoreSaveGatedCaller(production, read('scripts/helpers/public-enquiry-ui-verifier.mjs'));
   assert.match(production, /alternative starts collapsed/);
   assert.match(production, /Only|isolated loopback server/);
   assert.match(production, /require\(\(process.env.HH_PLAYWRIGHT_PACKAGE \|\| "playwright"\) \+ "\/test"\)/);
@@ -273,6 +241,7 @@ test('actual core JSX has one footer section with one chooser and the matching s
     react: { useEffect: () => {}, useState: initial => [initial === null ? pathname : initial, () => {}] },
     'next/navigation': { usePathname: () => pathname },
     '@/lib/public-lead-capture': publicLead,
+    '@/lib/public-card-artwork': loadPublicArtwork(),
     '@/components/consultation-choice-capture': { ConsultationChoiceCapture: () => null },
     '@/components/acquisition-event-link': { AcquisitionEventLink: props => jsx('a', props) },
     'next/image': { default: () => null },
@@ -332,7 +301,8 @@ function assertFreeReviewCallerContract(source, compact = false) {
 }
 
 test('free-review verifier callers open both channels, keep generic drafts and target only Copy answers', () => {
-  for (const [path, compact] of [['scripts/verify-app-r1.mjs', true], ['scripts/verify-public-services-production.mjs', false]]) {
+  // Keep the unrelated appR1 caller and all its original source assertions unchanged.
+  for (const [path, compact] of [['scripts/verify-app-r1.mjs', true]]) {
     const source = read(path);
     assertFreeReviewCallerContract(source, compact);
     for (const changed of [
@@ -341,6 +311,7 @@ test('free-review verifier callers open both channels, keep generic drafts and t
       ...(compact ? [source.replace(/name:\s*copy\.copyButton,\s*exact:\s*true/g, '')] : []),
     ]) assert.throws(() => assertFreeReviewCallerContract(changed, compact), path);
   }
+  assertPublicDrawingCallerContract(read('scripts/verify-public-services-production.mjs'), read('scripts/helpers/public-enquiry-ui-verifier.mjs'));
   const intake = read('components/free-drawing-intake.tsx');
   const draft = intake.slice(intake.indexOf('const whatsappUrl ='), intake.indexOf('function changeAnswer'));
   assert.match(draft, /request: t\.whatsappIntro/);
@@ -350,4 +321,250 @@ test('free-review verifier callers open both channels, keep generic drafts and t
   assert.match(temple, /<ContactChannelChooser/);
   assert.doesNotMatch(temple, /<a[^>]*href=\{whatsappUrl\}/);
   assert.match(read('scripts/verify-contact-channel-chooser-browser.mjs'), /verifyChooser\(page,templeChooser/);
+});
+
+function assertPublicCoreSaveGatedCaller(source, helper) {
+  assert.match(source, /import \{ assertSingleEntryEnquiryUi, exercisePublicEnquiryUi \} from '\.\/helpers\/public-enquiry-ui-verifier\.mjs'/);
+  assert.match(source, /const prepared = await exercisePublicEnquiryUi\(page, scope, expect, options\)/);
+  assert.match(source, /await runEnquiryFixture\(page, capture, \{ locale, kind: "hypnotherapy" \}\)/);
+  assert.match(source, /HH_PUBLIC_QA_ENQUIRY_FIXTURE !== "1"/);
+  assert.doesNotMatch(source, /openContactChannelChooser|assertPreparedContactChannels/);
+  const receipt = helper.indexOf("await expect(chooser.locator('[role=\"status\"]')).toContainText(referenceCode)");
+  const channels = helper.indexOf('const prepared = await assertPreparedContactChannels(chooser, expect)');
+  assert.ok(receipt >= 0 && channels > receipt, 'Prepared channels are checked only after the synthetic saved receipt');
+  assert.match(helper, /for \(const required of \[service\.title, \.\.\.requiredMessage, referenceCode\]\)/);
+  assert.match(helper, /for \(const privateValue of \[\.\.\.Object\.values\(contact\)\.filter\(Boolean\), \.\.\.\(description \? \[description\] : \[\]\), \.\.\.privateValues\]\)/);
+  assert.match(helper, /for \(const url of \[prepared\.whatsappUrl, prepared\.telegramUrl\]\)/);
+  assert.match(helper, /assert\.ok\(!url\.searchParams\.get\('text'\)\.includes\(privateValue\)/);
+  assert.match(helper, /assert\.ok\(!decodeURIComponent\(url\.href\)\.includes\(privateValue\)/);
+  assert.match(helper, /assert\.ok\(message\.includes\(required\)/);
+  assert.match(helper, /assert\.deepEqual\(request\.body, expectedBody\(requests\[0\]\.body\.operationId\),/);
+}
+
+test('public intake compatibility rejects unscoped or ungated core-service fixtures', () => {
+  const source = read('scripts/verify-public-services-production.mjs');
+  const helper = read('scripts/helpers/public-enquiry-ui-verifier.mjs');
+  assertPublicCoreSaveGatedCaller(source, helper);
+  for (const [before, after] of [
+    ['await exercisePublicEnquiryUi(page, scope, expect, options)', 'await otherFixture(page, scope, expect, options)'],
+    ['runEnquiryFixture(page, capture, { locale, kind: "hypnotherapy" })', 'runEnquiryFixture(page, main, { locale, kind: "hypnotherapy" })'],
+    ['HH_PUBLIC_QA_ENQUIRY_FIXTURE !== "1"', 'false'],
+  ]) {
+    assert.ok(source.includes(before));
+    assert.throws(() => assertPublicCoreSaveGatedCaller(source.replace(before, after), helper));
+  }
+  for (const [before, after] of [
+    ["await expect(chooser.locator('[role=\"status\"]')).toContainText(referenceCode)", '/* no receipt gate */'],
+    ['[service.title, ...requiredMessage, referenceCode]', '[...requiredMessage, referenceCode]'],
+    ['...(description ? [description] : [])', '...[]'],
+    ["!url.searchParams.get('text').includes(privateValue)", "url.searchParams.get('text').includes(privateValue)"],
+    ['!decodeURIComponent(url.href).includes(privateValue)', 'decodeURIComponent(url.href).includes(privateValue)'],
+    ['[prepared.whatsappUrl, prepared.telegramUrl]', '[prepared.whatsappUrl]'],
+    ['assert.deepEqual(request.body, expectedBody(requests[0].body.operationId)', 'assert.deepEqual(request.body, request.body'],
+  ]) {
+    assert.ok(helper.includes(before));
+    assert.throws(() => assertPublicCoreSaveGatedCaller(source, helper.replace(before, after)));
+  }
+});
+
+function loadPublicArtwork(source = read('lib/public-card-artwork.ts')) {
+  const modules = { '@/data/public-card-artwork-urls.json': JSON.parse(read('data/public-card-artwork-urls.json')) };
+  const exports = {};
+  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
+  runInNewContext(compiled, { exports, require: name => {
+    assert.ok(Object.hasOwn(modules, name), 'Unrecognized artwork dependency: ' + name);
+    return modules[name];
+  } });
+  return exports;
+}
+
+test('save-first harness fails closed on unknown imports and uses real public artwork registry', () => {
+  assert.throws(() => mountChooser('en', 'unrecognized dependency'), /Unrecognized dependency: @\/lib\/not-allowlisted/);
+  const source = read('lib/public-card-artwork.ts');
+  const artwork = loadPublicArtwork();
+  const registry = JSON.parse(read('data/public-card-artwork-urls.json'));
+  const [original, variants] = Object.entries(registry.images)[0];
+  assert.ok(original && variants.feature);
+  assert.equal(artwork.cardArtworkUrl(original, 'feature'), variants.feature);
+  assert.equal(artwork.hasCardArtwork(original), true);
+  assert.equal(artwork.cardArtworkUrl('/synthetic-unregistered.png'), '/synthetic-unregistered.png');
+  assert.equal(artwork.hasCardArtwork('/synthetic-unregistered.png'), false);
+  assert.throws(() => loadPublicArtwork(source.replace('@/data/public-card-artwork-urls.json', '@/data/unknown-registry.json')), /Unrecognized artwork dependency/);
+});
+
+test('save-first harness rejects the old immediate-link opener before consent or save', async () => {
+  const mounted = mountChooser('en');
+  await assert.rejects(openContactChannelChooser(mounted.scope, mounted.expect));
+  assert.equal(mounted.calls.length, 0);
+  await mounted.expect(mounted.scope.locator('a[data-contact-channel]')).toHaveCount(0);
+});
+
+for (const reply of ['error', 'not-saved', 'bad-reference']) test('save-first harness keeps channels absent for ' + reply, async () => {
+  const mounted = mountChooser('en');
+  await assert.rejects(openSavedContactChooser(mounted, reply));
+  await mounted.expect(mounted.scope.locator('a[data-contact-channel]')).toHaveCount(0);
+  await mounted.expect(mounted.scope.locator('[role="status"]')).toHaveCount(0);
+  assert.equal(mounted.calls.length, 1);
+  assert.equal(mounted.field('checkbox').props.disabled, true);
+  assert.equal(mounted.externalClicks(), 0);
+});
+
+test('save-first harness detects actual consent and receipt-gate mutations', async () => {
+  const consent = mountChooser('en', 'bypassed consent');
+  assert.ok(consent.mutations.includes('bypassed consent'));
+  await assert.rejects(openSavedContactChooser(consent), /No request without explicit reply consent/);
+  const receipt = mountChooser('en', 'invalid receipt accepted');
+  assert.ok(receipt.mutations.includes('invalid receipt accepted'));
+  await openSavedContactChooser(receipt, 'not-saved');
+  assert.throws(() => assert.equal(receipt.scope.locator('a[data-contact-channel]').selected().length, 0), 'Malformed saved:false receipt must be detected by the absent-channel contract');
+});
+
+test('save-first harness rejects a private optional note in both otherwise valid prepared drafts', async () => {
+  const note = 'Synthetic private optional note with spaces.';
+  const nominal = mountChooser('en');
+  await openSavedContactChooser(nominal, 'saved', note);
+  assert.equal(nominal.calls.length, 1);
+  assert.equal(JSON.parse(nominal.calls[0].body).description, note);
+  assert.equal(nominal.externalClicks(), 0);
+  const mounted = mountChooser('en');
+  const changedChannels = new Set();
+  // Negative fixture only: inspect the real post-receipt anchors, but corrupt
+  // their readback equally so channel equality cannot conceal a private note.
+  const wrap = locator => ({ ...locator,
+    locator: selector => wrap(locator.locator(selector)),
+    async getAttribute(name) {
+      const value = await locator.getAttribute(name);
+      if (name !== 'href' || !value) return value;
+      const url = new URL(value), text = url.searchParams.get('text');
+      const suffix = savedSuffix('en', mounted.referenceCode);
+      assert.ok(text.endsWith(suffix), 'Corrupt only an actual reference-bearing saved draft');
+      url.searchParams.set('text', text.slice(0, -suffix.length) + '\n\n' + note + suffix);
+      changedChannels.add(url.origin);
+      return url.href;
+    },
+  });
+  const originalLocator = mounted.scope.locator;
+  mounted.scope.locator = selector => wrap(originalLocator(selector));
+  await assert.rejects(openSavedContactChooser(mounted, 'saved', note), /Private contact and optional note stay out of messenger drafts/);
+  assert.deepEqual([...changedChannels].sort(), ['https://t.me', 'https://wa.me']);
+  assert.equal(mounted.calls.length, 1);
+  assert.equal(JSON.parse(mounted.calls[0].body).description, note);
+  assert.equal(mounted.externalClicks(), 0);
+});
+
+
+test('actual paid attribution dependency preserves only approved labels after explicit save', async () => {
+  const valid = '?utm_source=facebook&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_a';
+  for (const [pathname, search, suffix] of [
+    ['/en/services/free-situation-review', valid + '&fbclid=private-click-id', '\n\nAd referral: Facebook · hh_free_review_en_toronto_202610 · ad_a'],
+    ['/en/services/free-situation-review', valid + '&email=private-email', ''],
+    ['/en/services/free-situation-review', valid + '&utm_source=instagram', ''],
+    ['/en/app/tests', valid, ''],
+  ]) {
+    const mounted = mountChooser('en', undefined, false, { pathname, search });
+    const chooser = await openSavedContactChooser(mounted);
+    const channels = await assertPreparedContactChannels(chooser, mounted.expect);
+    for (const url of [channels.whatsappUrl, channels.telegramUrl]) {
+      assert.equal(url.searchParams.get('text'), plainRequest('en') + suffix + savedSuffix('en', mounted.referenceCode));
+      assert.doesNotMatch(url.searchParams.get('text'), /private-email|private-click-id|fbclid|utm_/);
+    }
+    assert.equal(mounted.calls.length, 1);
+    assert.deepEqual(mounted.channelClicks, []);
+    assert.equal(mounted.externalClicks(), 0);
+  }
+});
+
+
+function assertPublicDrawingCallerContract(source, helper) {
+  assertPublicCoreSaveGatedCaller(source, helper);
+  assert.match(source, /const detailedForm = main\.locator\('\[data-free-drawing-intake\]'\)/);
+  assert.match(source, /getByRole\('button', \{ name: freeLanding\.text\.prepare, exact: true \}\)\.click\(\)/);
+  assert.match(source, /const ready = detailedForm\.locator\('\[role="region"\]'\)/);
+  assert.match(source, /const prepared = await runEnquiryFixture\(page, ready, \{ locale, kind: "drawing", privateValues: \[markerA, markerB\] \}\)/);
+  for (const channel of ['whatsapp', 'telegram']) {
+    assert.ok(source.includes('!prepared.' + channel + 'Url.searchParams.get("text")?.includes(marker)'), channel + ' must reject private answer markers');
+  }
+  assert.doesNotMatch(source, /ready\.getByRole\('button'\)\.click/);
+  assert.match(helper, /await expect\(consent\)\.not\.toBeChecked\(\)/);
+  assert.match(helper, /await consent\.uncheck\(\);\s*await expect\(submit\)\.toBeDisabled\(\)/);
+  assert.match(helper, /assert\.equal\(requests\.length, 0, 'Contact details without explicit consent cannot submit'\)/);
+  assert.match(helper, /for \(const privateValue of \[\.\.\.Object\.values\(contact\)\.filter\(Boolean\), \.\.\.\(description \? \[description\] : \[\]\), \.\.\.privateValues\]\)/);
+  assert.match(helper, /assert\.ok\(!url\.searchParams\.get\('text'\)\.includes\(privateValue\)/);
+  assert.match(helper, /assert\.ok\(!decodeURIComponent\(url\.href\)\.includes\(privateValue\)/);
+  assert.match(helper, /assert\.ok\(!decodeURIComponent\(page\.url\(\)\)\.includes\(privateValue\)/);
+  // Execute the real expected-payload expression with synthetic values: a regex
+  // mentioning consent cannot hide added questionnaire fields or consent:false.
+  const declaration = helper.match(/const expectedBody = operationId => \(\{[\s\S]*?\}\);/)?.[0];
+  assert.ok(declaration, 'Inspect the exact allowlisted synthetic POST contract');
+  const contact = { displayName: 'Synthetic Visitor', email: 'visitor@example.test', phone: '' };
+  const body = new Function('service', 'description', 'current', 'locale', 'contact', declaration + '; return expectedBody("synthetic-operation");')(
+    { title: 'Synthetic drawing request' }, 'Synthetic separate enquiry', { pathname: '/en/services/free-situation-review' }, 'en', contact);
+  assert.deepEqual(body, { operationId: 'synthetic-operation', serviceTitle: 'Synthetic drawing request', description: 'Synthetic separate enquiry',
+    sourcePath: '/en/services/free-situation-review', locale: 'en', contact, contactConsent: true, website: '' });
+}
+
+test('public drawing caller executes its exact scoped consented fixture with both private markers', async () => {
+  const source = read('scripts/verify-public-services-production.mjs');
+  const helper = read('scripts/helpers/public-enquiry-ui-verifier.mjs');
+  assertPublicDrawingCallerContract(source, helper);
+  const statement = source.match(/const prepared = await runEnquiryFixture\(page, ready, \{ locale, kind: "drawing", privateValues: \[markerA, markerB\] \}\);/)?.[0];
+  assert.ok(statement);
+  const execute = new Function('runEnquiryFixture', 'page', 'ready', 'locale', 'markerA', 'markerB', 'return (async () => { ' + statement + ' return prepared; })();');
+  for (const locale of ['en', 'ru', 'es']) {
+    const page = {}, ready = {}, prepared = {}, calls = [];
+    const result = await execute(async (...args) => { calls.push(args); return prepared; }, page, ready, locale, 'Synthetic private problem', 'Synthetic private goal');
+    assert.equal(result, prepared);
+    assert.deepEqual(calls, [[page, ready, { locale, kind: 'drawing', privateValues: ['Synthetic private problem', 'Synthetic private goal'] }]]);
+  }
+});
+
+test('public drawing caller rejects widened scope, lost private markers, consent or payload guards', () => {
+  const source = read('scripts/verify-public-services-production.mjs');
+  const helper = read('scripts/helpers/public-enquiry-ui-verifier.mjs');
+  for (const [target, before, after] of [
+    ['source', 'runEnquiryFixture(page, ready, { locale, kind: "drawing", privateValues: [markerA, markerB] })', 'runEnquiryFixture(page, main, { locale, kind: "drawing", privateValues: [markerA, markerB] })'],
+    ['source', 'kind: "drawing", privateValues: [markerA, markerB]', 'kind: "drawing", privateValues: []'],
+    ['source', '!prepared.telegramUrl.searchParams.get("text")?.includes(marker)', 'true'],
+    ['source', 'name: freeLanding.text.prepare, exact: true', 'name: freeLanding.text.prepare, exact: false'],
+    ['helper', 'await expect(consent).not.toBeChecked()', 'await expect(consent).toBeChecked()'],
+    ['helper', 'await consent.uncheck();', '/* consent gate removed */'],
+    ['helper', "!url.searchParams.get('text').includes(privateValue)", 'true'],
+    ['helper', '!decodeURIComponent(url.href).includes(privateValue)', 'true'],
+    ['helper', '...(description ? [description] : [])', '...[]'],
+    ['helper', '!decodeURIComponent(page.url()).includes(privateValue)', 'true'],
+    ['helper', 'contactConsent: true', 'contactConsent: false'],
+    ['helper', "contact, contactConsent: true, website: ''", "contact, contactConsent: true, website: '', questionnaire: 'unexpected'"],
+  ]) {
+    const original = target === 'source' ? source : helper;
+    assert.ok(original.includes(before), 'Intended mutation applies: ' + before);
+    const changed = original.replace(before, after);
+    assert.throws(() => assertPublicDrawingCallerContract(target === 'source' ? changed : source, target === 'helper' ? changed : helper), before);
+  }
+});
+
+
+test('save-first opener rejects actual immediate unsaved links without a form before any request', async () => {
+  const mounted = mountChooser('en', 'immediate unsaved links');
+  assert.ok(mounted.mutations.includes('immediate unsaved links'));
+  await mounted.expect(mounted.scope.locator('form')).toHaveCount(0);
+  await mounted.expect(mounted.scope.locator('a[data-contact-channel]')).toHaveCount(2);
+  await assert.rejects(openSavedContactChooser(mounted), /prior confirmed synthetic receipt/);
+  assert.equal(mounted.attempts.length, 0);
+  assert.equal(mounted.calls.length, 0);
+  assert.equal(mounted.externalClicks(), 0);
+});
+
+test('save-first opener cannot reuse a prior synthetic receipt on a different keyed scope', async () => {
+  const mounted = mountChooser('en', 'stale receipt on remount');
+  assert.ok(mounted.mutations.includes('stale receipt on remount'));
+  await openSavedContactChooser(mounted);
+  assert.equal(mounted.calls.length, 1);
+  const priorScope = mounted.scopeIdentity;
+  mounted.navigate('/en/services/stale-fixture', '');
+  await mounted.expect(mounted.scope.locator('form')).toHaveCount(0);
+  await mounted.expect(mounted.scope.locator('[role="status"]')).toContainText(mounted.referenceCode);
+  assert.notEqual(mounted.scopeIdentity, priorScope);
+  await assert.rejects(openSavedContactChooser(mounted), /exact keyed form scope/);
+  assert.equal(mounted.attempts.length, 1, 'No new request or inherited consent on the changed route');
+  assert.equal(mounted.externalClicks(), 0);
 });

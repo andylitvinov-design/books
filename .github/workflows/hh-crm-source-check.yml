@@ -32,6 +32,18 @@ on:
       - 'components/app/crm-contact-activity.*'
       - 'supabase/migrations/*crm_*'
       - 'components/app/crm-sms-*.jsx'
+      - 'components/app/notification-settings.jsx'
+      - 'tests/notifications-device-onboarding.test.mjs'
+      - 'components/contact-channel-chooser.tsx'
+      - 'lib/practitioners/public-enquiry-submission.js'
+      - 'tests/public-enquiry-*.test.mjs'
+      - 'components/free-resource-enquiry.tsx'
+      - 'components/free-entry-landing.tsx'
+      - 'components/free-drawing-intake.tsx'
+      - 'components/alchemy-soul-landing.tsx'
+      - 'components/alchemy-soul-lead-form.tsx'
+      - 'tests/free-review-conversion.test.mjs'
+      - 'tests/alchemy-soul-spanish-parity.test.mjs'
       - 'components/app/crm-sms-tools.jsx'
       - 'components/app/crm-sms-setup.jsx'
       - 'components/app/crm-email-*.jsx'
@@ -88,6 +100,8 @@ jobs:
           cache: npm
       - name: Install pinned packages
         run: npm ci --no-audit --no-fund
+      - name: Verify intake lifecycle, public copy, device onboarding and recorded SMS consent
+        run: node --conditions=react-server --test tests/notifications-device-onboarding.test.mjs tests/crm-sms-recorded-consent.test.mjs tests/public-enquiry-submission.test.mjs tests/public-enquiry-component-lifecycle.test.mjs tests/crm-public-registration.test.mjs tests/public-enquiry-copy.test.mjs tests/public-enquiry-single-entry.test.mjs tests/free-review-conversion.test.mjs tests/alchemy-soul-spanish-parity.test.mjs
       - name: Compact enquiry and OAuth return policy
         run: node --test tests/compact-google-lead-entry.test.mjs tests/crm-public-registration.test.mjs tests/contact-channel-chooser.test.mjs tests/organic-event-referrals.test.mjs
       - name: Verify consent, ownership, actions and fail-closed client requests

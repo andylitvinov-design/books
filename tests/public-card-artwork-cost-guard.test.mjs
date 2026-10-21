@@ -11,6 +11,18 @@ const entries = [...Object.values(registry.books), ...Object.values(registry.ima
 
 const browserUrls = JSON.parse(read("data/public-card-artwork-urls.json"));
 
+const assertArtworkBuildCommands = scripts => {
+  const commands = value => {
+    assert.equal(typeof value, "string");
+    return value.split("&&").map(command => command.trim());
+  };
+  const melody = "node scripts/generate-soft-ocean-melody.mjs";
+  const artwork = "node scripts/build-public-card-artwork.mjs";
+  const pdf = "node scripts/build-report-pdf-art.mjs";
+  assert.deepEqual(commands(scripts.prebuild), [melody, artwork, pdf]);
+  assert.deepEqual(commands(scripts.predev), [melody, artwork]);
+};
+
 test("browser-only artwork URL map matches pinned source manifest without leaking heavy source metadata", () => {
   assert.deepEqual(browserUrls.books,
     Object.fromEntries(Object.entries(registry.books).map(([key, value]) => [key, value.url])));
@@ -81,9 +93,38 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
-  assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
+  assertArtworkBuildCommands(config.scripts);
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
+});
+
+test("artwork build command contract rejects missing, reordered or arbitrary generation steps", () => {
+  const scripts = JSON.parse(read("package.json")).scripts;
+  assertArtworkBuildCommands(scripts);
+  const melody = "node scripts/generate-soft-ocean-melody.mjs";
+  const artwork = "node scripts/build-public-card-artwork.mjs";
+  const pdf = "node scripts/build-report-pdf-art.mjs";
+  for (const prebuild of [
+    `${melody} && ${pdf}`,
+    `${melody} && ${artwork}`,
+    `${melody} && ${pdf} && ${artwork}`,
+    `${artwork} && ${melody} && ${pdf}`,
+    `node scripts/arbitrary-generator.mjs && ${artwork} && ${pdf}`,
+    `curl https://invalid.test/artwork && ${melody} && ${artwork} && ${pdf}`,
+    `${melody} && ${artwork} && ${pdf} && node scripts/arbitrary-generator.mjs`,
+    `${melody}; ${artwork} && ${pdf}`,
+  ]) {
+    assert.throws(() => assertArtworkBuildCommands({ ...scripts, prebuild }),
+      assert.AssertionError, prebuild);
+  }
+  for (const predev of [
+    melody,
+    `${artwork} && ${melody}`,
+    `node scripts/arbitrary-generator.mjs && ${artwork}`,
+    `${melody} && ${artwork} && ${pdf}`,
+  ]) {
+    assert.throws(() => assertArtworkBuildCommands({ ...scripts, predev }),
+      assert.AssertionError, predev);
+  }
 });
 
 test("source registry does not include private or user-uploaded client material", () => {

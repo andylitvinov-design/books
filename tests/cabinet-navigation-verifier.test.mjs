@@ -11,7 +11,7 @@ for (const locale of ['en', 'ru']) {
     const events = []
     const profile = { name: 'profile', getByRole(role, options) {
       assert.equal(role, 'heading')
-      assert.deepEqual(options, { name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true })
+      assert.deepEqual(options, { name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true })
       return { name: 'heading' }
     } }
     const link = { name: 'link', first() { return this }, async click() {
@@ -61,5 +61,26 @@ test('Spanish cabinet keeps its public root link and verifies the canonical port
   assert.ok(source.includes("toHaveAttribute('href','/en/app')"))
   assert.equal(source.split("toHaveURL(origin+'/en/app/portrait')").length - 1, 2)
   assert.ok(source.includes("toHaveAttribute('lang','en')"))
-  assert.ok(source.includes(".hh-app .hh-entry"))
+  assert.match(source, /^import \{ assertCabinetGuestEntry \} from '\.\/helpers\/cabinet-guest-entry-verifier\.mjs';$/m,
+    'Spanish verifier imports the shared read-only guest entry assertion')
+  const start = '        stage=`${engine} ${width} Spanish account navigation`;'
+  const end = '        stage=`${engine} ${width} search`;'
+  assert.equal(source.split(start).length - 1, 1, 'one Spanish account journey')
+  assert.equal(source.split(end).length - 1, 1, 'one following public search journey')
+  const journey = source.slice(source.indexOf(start), source.indexOf(end))
+  assert.match(journey, /await click\(accountLink\);\s*await expect\(page\)\.toHaveURL\(origin\+'\/en\/app\/portrait'\);\s*await assertCabinetGuestEntry\(page, expect\);/,
+    'Cabinet click verifies the canonical portrait and guest entry before reload')
+  assert.match(journey, /await page\.reload\(\); await settle\(\);\s*await expect\(page\)\.toHaveURL\(origin\+'\/en\/app\/portrait'\);\s*await expect\(page\.locator\('html'\)\)\.toHaveAttribute\('lang','en'\);\s*await assertCabinetGuestEntry\(page, expect\);/,
+    'Cabinet reload verifies the canonical portrait, English document and guest entry')
+  assert.equal(journey.split('await assertCabinetGuestEntry(page, expect);').length - 1, 2,
+    'guest entry is asserted once on arrival and once after reload')
+  assert.match(journey, /await expect\(page\.locator\('\[data-subscription-settings\], \[data-course-testing-complete\]'\)\)\.toHaveCount\(0\);/,
+    'public Cabinet journey excludes private subscription and course controls')
+  // The shared helper's actual component output, sign-in availability, no-write
+  // behavior and negative controls are exercised by cabinet-guest-entry-verifier.
+  const guest = read('scripts/helpers/cabinet-guest-entry-verifier.mjs')
+  assert.match(guest, /^export async function assertCabinetGuestEntry\(page, expect\) \{/m,
+    'bound guest assertion is exported by the shared helper')
+  assert.match(guest, /const guest = page\.locator\('main\.hh-app \[data-cabinet-guest-overview="true"\]'\);/,
+    'guest assertion targets the current Cabinet overview, not the retired entry')
 })

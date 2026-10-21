@@ -11,6 +11,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organic-event-referrals";
 import { readPaidAdReferral, withPaidAdReferral } from "@/lib/paid-ad-referrals";
+import { createPublicEnquirySubmissionScope } from "@/lib/practitioners/public-enquiry-submission";
 import styles from "./contact-channel-chooser.module.css";
 
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
@@ -36,7 +37,9 @@ const copy = {
     saved: "Thank you — your request was received",
     next: "Andrey can contact you using the details provided. A date or place is confirmed separately. WhatsApp or Telegram is optional.",
     messengers: "Continue in your preferred messenger",
-    error: "We could not save your request. Please try again; no enquiry has been recorded.",
+    error: "The request was not accepted. Check your details and try again.",
+    unknown: "We could not confirm whether your request was saved. Keep this page open and retry the same request. Your details are kept unchanged to avoid duplicates.",
+    retry: "Retry this same request",
     privateNote: "Please avoid medical records, diagnoses or sensitive personal details in this short enquiry.",
     note: "Only the contact details you submit here are stored securely. They are unverified and used for a personal reply, not advertising. Messenger handoff is optional.",
     situation: "Situation",
@@ -62,7 +65,9 @@ const copy = {
     saved: "Спасибо! Ваша заявка получена",
     next: "Андрей сможет связаться с вами по указанным контактам. Место и время подтверждаются отдельно. WhatsApp и Telegram — по желанию.",
     messengers: "Продолжить в удобном мессенджере",
-    error: "Не удалось сохранить заявку. Попробуйте ещё раз; обращение пока не зарегистрировано.",
+    error: "Заявка не принята. Проверьте данные и попробуйте ещё раз.",
+    unknown: "Не удалось подтвердить сохранение заявки. Не закрывайте страницу и повторите ту же заявку. Данные временно нельзя менять, чтобы не создать дубль.",
+    retry: "Повторить ту же заявку",
     privateNote: "Не указывайте здесь диагнозы, медицинские документы и другие чувствительные сведения.",
     note: "Сохраняем только указанные здесь контакты. Они не подтверждены и используются для ответа, а не для рекламы. Переход в мессенджер необязателен.",
     situation: "Ситуация",
@@ -88,7 +93,9 @@ const copy = {
     saved: "¡Gracias! Hemos recibido tu solicitud",
     next: "Andrey puede responder usando tus datos. Fecha y plaza se confirman por separado. WhatsApp y Telegram son opcionales.",
     messengers: "Continuar por mensajería",
-    error: "No pudimos guardar tu solicitud. Inténtalo de nuevo; no se ha registrado.",
+    error: "La solicitud no fue aceptada. Revisa los datos e inténtalo de nuevo.",
+    unknown: "No pudimos confirmar si se guardó la solicitud. Mantén esta página abierta y reintenta la misma solicitud. Conservamos los datos sin cambios para evitar duplicados.",
+    retry: "Reintentar la misma solicitud",
     privateNote: "Evita incluir diagnósticos, documentos médicos o datos personales sensibles.",
     note: "Solo guardamos los contactos que introduces aquí; no están verificados y se usan para responder, no para publicidad. El chat es opcional.",
     situation: "Situación",
@@ -110,10 +117,18 @@ type Props = {
 };
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
-export function ContactChannelChooser({
+export function ContactChannelChooser(props: Props) {
+  const pathname = usePathname();
+  // Remount before painting a new route/service: no previous contact, consent or
+  // late response may be rendered in a different enquiry form.
+  return <ContactChannelChooserForm key={JSON.stringify([pathname, props.whatsappUrl, props.locale])}
+    {...props} pathname={pathname} />;
+}
+
+function ContactChannelChooserForm({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id,
-}: Props) {
+  onChannelClick, attributes, id, pathname,
+}: Props & { pathname: string }) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -127,8 +142,8 @@ export function ContactChannelChooser({
   const [saved, setSaved] = useState<SavedEnquiry | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const operationId = useRef<string | null>(null);
-  const pathname = usePathname();
+  const [uncertain, setUncertain] = useState(false);
+  const submission = useRef<ReturnType<typeof createPublicEnquirySubmissionScope> | null>(null);
   const [publicEventSearch, setPublicEventSearch] = useState("");
   const [publicAdSearch, setPublicAdSearch] = useState("");
   const panelId = useId();
@@ -153,19 +168,13 @@ export function ContactChannelChooser({
   }, [pathname]);
 
   useEffect(() => {
-    setOpen(false);
-    setDescription("");
-    setDisplayName("");
-    setMethod("email");
-    setGoogleReady(false);
-    setEmail("");
-    setPhone("");
-    setConsent(false);
-    setWebsite("");
-    setSaved(null);
-    setError("");
-    operationId.current = null;
-  }, [whatsappUrl]);
+    const scope = createPublicEnquirySubmissionScope();
+    submission.current = scope;
+    return () => {
+      scope.close();
+      if (submission.current === scope) submission.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -209,7 +218,7 @@ export function ContactChannelChooser({
     fetch("/api/app/auth/contact-profile", { method: "GET", credentials: "same-origin", cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("NOT_SIGNED_IN")))
       .then(profile => {
-        if (!active) return;
+        if (!active || submission.current?.pending) return;
         const nextEmail = typeof profile.email === "string" ? profile.email.trim() : "";
         const nextName = typeof profile.displayName === "string" ? profile.displayName.trim() : "";
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) throw new Error("NO_EMAIL");
@@ -218,12 +227,13 @@ export function ContactChannelChooser({
         setMethod("email");
         setGoogleReady(true);
         setError("");
-      }).catch(() => { if (active) setError(c.googleError); });
+      }).catch(() => { if (active && !submission.current?.pending) setError(c.googleError); });
     return () => { active = false; };
   }, [pathname, serviceTitle, panelId, c.googleError]);
 
   async function startGoogle() {
-    if (googleBusy || busy) return;
+    const scope = submission.current;
+    if (!scope || scope.pending || googleBusy || busy || uncertain || saved) return;
     setGoogleBusy(true);
     setError("");
     try {
@@ -233,12 +243,16 @@ export function ContactChannelChooser({
         body: JSON.stringify({ locale, continueTo: "enquiry", returnPath: pathname }),
       });
       const data = await response.json().catch(() => ({}));
+      if (submission.current !== scope) return;
+      if (scope.pending) { setGoogleBusy(false); return; }
       if (!response.ok || typeof data.redirectUrl !== "string" ||
           new URL(data.redirectUrl).protocol !== "https:") throw new Error("GOOGLE_UNAVAILABLE");
       window.sessionStorage.setItem("hh-google-enquiry-return",
         JSON.stringify({ path: pathname, service: serviceTitle, panel: panelId }));
       window.location.assign(data.redirectUrl);
     } catch {
+      if (submission.current !== scope) return;
+      if (scope.pending) { setGoogleBusy(false); return; }
       window.sessionStorage.removeItem("hh-google-enquiry-return");
       setGoogleBusy(false);
       setError(c.googleError);
@@ -247,37 +261,35 @@ export function ContactChannelChooser({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || saved) return;
+    if (busy || googleBusy || saved) return;
     const cleanedPhone = phone.replace(/[\s().-]/g, "");
-    if ((method === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
+    if ((displayName.trim() && displayName.trim().length < 2) ||
+      displayName.trim().length > 120 || /[\u0000-\u001f\u007f]/.test(displayName.trim()) ||
+      (method === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
       (method === "phone" && ! /^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
       setError(c.contactError);
       return;
     }
-    const nextId = operationId.current || crypto.randomUUID();
-    operationId.current = nextId;
+    const scope = submission.current;
+    if (!scope) return;
     setBusy(true);
     setError("");
-    try {
-      const response = await fetch("/api/service-enquiries", {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          operationId: nextId, serviceTitle, description: description.trim(),
-          sourcePath: pathname, locale,
-          contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
-          contactConsent: consent, website,
-        }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.saved !== true || !/^HH-[A-F0-9]{12}$/.test(data.referenceCode || "")) {
-        throw new Error(data.error || "NOT_SAVED");
-      }
-      setSaved({ saved: true, referenceCode: data.referenceCode });
-    } catch {
+    const result = await scope.submit({
+      serviceTitle, description: description.trim(), sourcePath: pathname, locale,
+      contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
+      contactConsent: consent, website,
+    });
+    if (submission.current !== scope || result.kind === "stale" || result.kind === "busy") return;
+    setBusy(false);
+    if (result.kind === "saved") {
+      setUncertain(false);
+      setSaved({ saved: true, referenceCode: result.referenceCode });
+    } else if (result.kind === "rejected") {
+      setUncertain(false);
       setError(c.error);
-    } finally {
-      setBusy(false);
+    } else {
+      setUncertain(true);
+      setError(c.unknown);
     }
   }
 
@@ -302,38 +314,39 @@ export function ContactChannelChooser({
       <div ref={panelRef} className={styles.panel} id={panelId} hidden={!open}>
         <p className={styles.question}>{saved ? c.messengers : c.question}</p>
         {!saved ? (
-          <form onSubmit={submit} className={styles.enquiryForm}>
+          <form onSubmit={submit} className={styles.enquiryForm} aria-busy={busy || googleBusy}
+            aria-describedby={error ? panelId + "-error" : undefined}>
             <button type="button" className={styles.googleButton} onClick={startGoogle}
-              disabled={busy || googleBusy} aria-label={c.google}>
+              disabled={busy || googleBusy || uncertain} aria-label={c.google}>
               <span className={styles.googleMark} aria-hidden="true">G</span>
               {googleBusy ? c.googleBusy : c.google}
             </button>
             {googleReady && <p className={styles.googleReady} role="status">{c.googleReady}</p>}
             <p className={styles.separator}><span>{c.divider}</span></p>
             <div className={styles.methodChoices} role="group" aria-label={c.replyVia}>
-              <button type="button" aria-pressed={method === "email"} disabled={busy || googleBusy}
-                onClick={() => { setMethod("email"); setError(""); operationId.current = null; }}>
+              <button type="button" aria-pressed={method === "email"} disabled={busy || googleBusy || uncertain}
+                onClick={() => { setMethod("email"); setError(""); }}>
                 {c.email}
               </button>
-              <button type="button" aria-pressed={method === "phone"} disabled={busy || googleBusy}
-                onClick={() => { setMethod("phone"); setError(""); operationId.current = null; }}>
+              <button type="button" aria-pressed={method === "phone"} disabled={busy || googleBusy || uncertain}
+                onClick={() => { setMethod("phone"); setError(""); }}>
                 {c.phone}
               </button>
             </div>
             <div className={styles.contactFields}>
               {method === "email" ? (
                 <label>{c.email}
-                  <input type="email" autoComplete="email" maxLength={254} required disabled={busy || googleBusy}
+                  <input type="email" autoComplete="email" maxLength={254} required disabled={busy || googleBusy || uncertain}
                     value={email} onChange={event => {
-                      setEmail(event.target.value); setError(""); operationId.current = null;
+                      setEmail(event.target.value); setError("");
                     }} />
                 </label>
               ) : (
                 <div className={styles.phoneField}>
                   <label htmlFor={panelId + "-phone"}>{c.phone}</label>
                   <PhoneCountryInput id={panelId + "-phone"} locale={locale} required
-                    disabled={busy || googleBusy} value={phone} onChange={value => {
-                      setPhone(value); setError(""); operationId.current = null;
+                    disabled={busy || googleBusy || uncertain} value={phone} onChange={value => {
+                      setPhone(value); setError("");
                     }} />
                 </div>
               )}
@@ -342,8 +355,8 @@ export function ContactChannelChooser({
               <summary>{c.nameOptional}</summary>
               <label>{c.name}
                 <input type="text" autoComplete="name" minLength={2} maxLength={120}
-                  disabled={busy || googleBusy} value={displayName} onChange={event => {
-                    setDisplayName(event.target.value); setError(""); operationId.current = null;
+                  disabled={busy || googleBusy || uncertain} value={displayName} onChange={event => {
+                    setDisplayName(event.target.value); setError("");
                   }} />
               </label>
             </details>
@@ -352,27 +365,27 @@ export function ContactChannelChooser({
               <summary>{c.description}</summary>
               <textarea id={panelId + "-situation"} aria-label={c.description}
                 maxLength={1400} rows={2}
-                placeholder={c.placeholder} value={description} disabled={busy}
+                placeholder={c.placeholder} value={description} disabled={busy || googleBusy || uncertain}
                 onChange={event => {
-                  setDescription(event.target.value); setError(""); operationId.current = null;
+                  setDescription(event.target.value); setError("");
                 }} />
               <small className={styles.privateNote}>{c.privateNote}</small>
             </details>
             <label className={styles.consent}>
-              <input type="checkbox" required checked={consent} disabled={busy}
-                onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
+              <input type="checkbox" required checked={consent} disabled={busy || googleBusy || uncertain}
+                onChange={event => { setConsent(event.target.checked); }} />
               <span>{c.consent}</span>
             </label>
             <label className={styles.honeypot} aria-hidden="true">
               Website <input type="text" name="website" autoComplete="off" tabIndex={-1}
-                value={website} onChange={event => setWebsite(event.target.value)} />
+                disabled={busy || googleBusy || uncertain} value={website} onChange={event => setWebsite(event.target.value)} />
             </label>
             <button type="submit" className={styles.submit}
               disabled={busy || googleBusy ||
                 (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
-              <Send size={17} aria-hidden="true" />{busy ? c.sending : c.submit}
+              <Send size={17} aria-hidden="true" />{busy ? c.sending : uncertain ? c.retry : c.submit}
             </button>
-            {error && <p className={styles.error} role="alert">{error}</p>}
+            {error && <p id={panelId + "-error"} className={styles.error} role="alert">{error}</p>}
           </form>
         ) : (
           <>
@@ -398,7 +411,8 @@ export function ContactChannelChooser({
             <button type="button" className={styles.again} onClick={() => {
               setSaved(null); setDescription(""); setDisplayName(""); setEmail("");
               setMethod("email"); setGoogleReady(false);
-              setPhone(""); setConsent(false); setWebsite(""); setError(""); operationId.current = null;
+              setPhone(""); setConsent(false); setWebsite(""); setError("");
+              setUncertain(false); submission.current?.reset();
             }}>{c.again}</button>
           </>
         )}
@@ -410,3 +424,4 @@ export function ContactChannelChooser({
     </div>
   );
 }
+

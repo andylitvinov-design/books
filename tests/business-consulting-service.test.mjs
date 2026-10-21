@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { servicesStudioContract } from "./helpers/services-studio-contract.mjs";
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("business consulting has a localized standalone page and booking enquiry", () => {
@@ -15,10 +16,20 @@ test("business consulting has a localized standalone page and booking enquiry", 
   assert.match(copy, /Activar la meta/);
   assert.match(form, /PersonalConsultationForm/);
 });
-test("all service indexes and locale changes can find the new offer", () => {
+test("all service indexes and locale changes can find the new offer", async () => {
   assert.match(read("data/core-service-offers.ts"), /route: "business-consulting"/);
   assert.match(read("components/services-solutions.tsx"), /offer\.id === "business"/);
-  assert.match(read("app/es/services/page.tsx"), /\/es\/services\/business-consulting/);
+  for (const locale of ["en", "ru", "es"]) {
+    const view = await servicesStudioContract(locale);
+    const offer = view.core.find(offer => offer.id === "business");
+    assert.ok(offer, locale + ": Business has an actual shared data record");
+    assert.equal(offer.href, "/" + locale + "/services/business-consulting");
+    const card = view.cards.find(card => card.props["data-services-studio-card"] === "business");
+    assert.ok(card, locale + ": the real route mounts the real Business card");
+    assert.equal(card.props.hidden, false);
+    assert.equal(view.isVisible(card), true);
+    assert.ok(view.descendants(card).some(node => node.type === "a" && node.props.href === offer.href));
+  }
   assert.match(read("app/sitemap.ts"), /services\/business-consulting/);
   assert.match(read("lib/public-locales.ts"), /business-consulting/);
 });

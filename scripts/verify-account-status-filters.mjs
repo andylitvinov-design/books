@@ -19,7 +19,7 @@ page.on('pageerror', error => pageErrors.push(error.message))
 const passed = name => { checks.push(name); console.log('PASS ' + name) }
 try {
   await page.goto(origin + '/en/app')
-  await page.getByRole('button', { name: 'Continue with Google', exact: true }).click()
+  await page.getByRole('button', { name: 'Open my Cabinet with Google', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Create my private space', exact: true }).or(page.locator('[data-profile-domains]')).first()).toBeVisible({ timeout: 60000 })
   if (await page.getByRole('heading', { name: 'Create my private space', exact: true }).isVisible()) {
     await page.getByLabel('I am 18 or older.').check()

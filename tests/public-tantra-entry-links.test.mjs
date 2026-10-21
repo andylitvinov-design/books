@@ -14,8 +14,8 @@ const anchor = ({ href, children }) => React.createElement('a', { href }, childr
 
 // Render the real page components, stubbing unrelated child UI and framework
 // hooks so these checks need neither a server nor external data or requests.
-function loadComponent(path, imports) {
-  const compiled = ts.transpileModule(read(path), {
+function loadComponent(path, imports, source = read(path)) {
+  const compiled = ts.transpileModule(source, {
     fileName: path,
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
@@ -34,9 +34,10 @@ function loadComponent(path, imports) {
 const publicArtwork = loadComponent('lib/public-card-artwork.ts', { '@/data/public-card-artwork-urls.json': JSON.parse(read('data/public-card-artwork-urls.json')) });
 const shared = {
   '@/lib/public-card-artwork': publicArtwork,
+  react: React,
   'next/link': anchor,
   'next/image': empty,
-  'lucide-react': { ArrowUpRight: empty, FileText: empty, ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty },
+  'lucide-react': { ArrowUpRight: empty, FileText: empty, ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty, Quote: empty, BookOpen: empty, CalendarDays: empty, MapPin: empty, ChevronDown: empty },
   '@/components/static-portrait': { StaticPortrait: empty },
   '@/components/public-site-header': { PublicSiteHeader: empty },
 };
@@ -63,10 +64,26 @@ const home = loadComponent('components/holistic-house-home.tsx', {
     practitioner: { href: `/${locale}/about` },
   }])) },
 }).HolisticHouseHome;
+// Preserve the moved Spanish testimonial section by rendering its real components.
+// Only the unrelated video player is represented by the same ID-only test double.
+const testimonialVideo = { SiteVideoPlayer: ({ video }) => React.createElement('span', { 'data-video-id': video.youtubeId }) };
+const testimonialMore = loadComponent('components/home-testimonial-more.tsx', {
+  ...shared,
+  '@/components/site-video-player': testimonialVideo,
+  './personal-testimonials.module.css': {},
+});
+const testimonialDependencies = {
+  ...shared,
+  '@/components/site-video-player': testimonialVideo,
+  '@/components/home-testimonial-more': testimonialMore,
+  './personal-testimonials.module.css': {},
+};
+const personalTestimonials = loadComponent('components/personal-testimonials.tsx', testimonialDependencies);
 const spanishHome = loadComponent('app/es/page.tsx', {
   ...shared,
   '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },
-  '@/components/site-video-player': { SiteVideoPlayer: ({ video }) => React.createElement('span', { 'data-video-id': video.youtubeId }) },
+  '@/components/site-video-player': testimonialVideo,
+  '@/components/personal-testimonials': personalTestimonials,
   '@/components/public-consultation-cta': { PublicConsultationCta: empty },
   '@/lib/spanish-metadata': { spanishMetadata: empty },
 }).default;
@@ -82,6 +99,8 @@ const academyDiscovery = loadComponent('components/academy-discovery.tsx', {
 }).AcademyDiscovery;
 const academy = loadComponent('components/academy-hub.tsx', {
   ...shared,
+  '@/lib/academy/reiki-free-course': loadComponent('lib/academy/reiki-free-course.ts', {}),
+  '@/data/public-events': loadComponent('data/public-events.ts', {}),
   '@/components/academy-discovery': { AcademyDiscovery: academyDiscovery },
   '@/components/academy-video-courses': { AcademyVideoCourses: empty },
   '@/components/academy-course-capture': { AcademyCourseCapture: empty },
@@ -174,8 +193,10 @@ test('Spanish Tantra link belongs to the new learning card and preserves current
   assert.ok(links(html).some((link) => link.href === '/es/client/tests'));
   assert.ok(links(html).some((link) => link.href === '/es/about#testimonials-title'));
   assert.match(html, /Andrey Litvinov/);
-  assert.match(html, /data-video-id="m9RfDgK76PU"/);
-  assert.match(html, /data-video-id="5oj0BIbLT4w"/);
+  assertSpanishTestimonials(html);
+  const expanded = spanishTestimonialDisclosure().expanded;
+  assert.match(expanded, /data-video-id="m9RfDgK76PU"/);
+  assert.match(expanded, /data-video-id="5oj0BIbLT4w"/);
 });
 
 for (const locale of ['en', 'ru', 'es']) {
@@ -195,3 +216,78 @@ for (const locale of ['en', 'ru', 'es']) {
     assert.equal(links(learning).filter((link) => link.href === `/${locale}/academy/reiki/tantra-reiki/free-initiation`).length, 1);
   });
 }
+
+
+function assertSpanishTestimonials(html) {
+  assert.match(html, /data-personal-testimonials="home"/);
+  assert.match(html, /lang="es"/);
+  assert.match(html, /Audio original en inglés/);
+  assert.match(html, /data-home-testimonial-disclosure="true"/);
+  assert.ok(links(html).some(link => link.href === '/es/about#testimonials-title'));
+  assert.ok(links(html).some(link => link.href === '/es/services/free-situation-review'));
+  assert.deepEqual([...html.matchAll(/data-video-id="([^"]+)"/g)].map(match => match[1]), ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk']);
+}
+test('Spanish harness renders the actual moved testimonials and rejects missing or wrong-locale output', () => {
+  const html = renderToStaticMarkup(React.createElement(personalTestimonials.PersonalTestimonials, { locale: 'es' }));
+  assertSpanishTestimonials(html);
+  assert.throws(() => assertSpanishTestimonials(''));
+  assert.throws(() => assertSpanishTestimonials(html.replaceAll('/es/', '/en/')));
+  assert.throws(() => assertSpanishTestimonials(html.replace('data-video-id="Dk0LBmOivQo"', 'data-video-id="wrong"')));
+});
+test('Spanish harness fails closed for missing moved dependencies and unknown import or write APIs', () => {
+  const withoutMore = { ...testimonialDependencies };
+  delete withoutMore['@/components/home-testimonial-more'];
+  assert.throws(() => loadComponent('components/personal-testimonials.tsx', withoutMore), /Unexpected dependency in components\/personal-testimonials.tsx: @\/components\/home-testimonial-more/);
+  for (const name of ['unexpected-component', 'node:fs', 'node:child_process']) {
+    assert.throws(() => loadComponent('synthetic-dependency.ts', shared, `require(${JSON.stringify(name)});`), error => error.message === 'Unexpected dependency in synthetic-dependency.ts: ' + name);
+  }
+});
+
+
+// Drive the actual disclosure handler with its real parent-provided video props.
+// Only React state is controlled; no archive data or component output is invented.
+function spanishTestimonialDisclosure() {
+  let expanded = false;
+  const more = loadComponent('components/home-testimonial-more.tsx', {
+    ...shared,
+    react: { ...React, useState: () => [expanded, value => { expanded = value; }] },
+    '@/components/site-video-player': testimonialVideo,
+    './personal-testimonials.module.css': {},
+  });
+  const parent = loadComponent('components/personal-testimonials.tsx', {
+    ...testimonialDependencies,
+    '@/components/home-testimonial-more': more,
+  }).PersonalTestimonials;
+  const nodes = element => !React.isValidElement(element) ? [] : [element, ...React.Children.toArray(element.props.children).flatMap(nodes)];
+  const child = nodes(parent({ locale: 'es' })).find(node => node.type === more.HomeTestimonialMore);
+  assert.ok(child, 'actual Spanish parent includes the actual disclosure');
+  const render = () => renderToStaticMarkup(React.createElement(parent, { locale: 'es' }));
+  const initial = render();
+  more.HomeTestimonialMore(child.props).props.onToggle({ currentTarget: { open: true } });
+  const opened = render();
+  more.HomeTestimonialMore(child.props).props.onToggle({ currentTarget: { open: false } });
+  return { initial, expanded: opened, closed: render() };
+}
+const spanishArchiveIds = ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk', '4NrryHcEF1A', 'hYwRNMxIMjc', 'm9RfDgK76PU', 'MIVLm1GUTtM', 'ttQxUHopaUM', 'VABgpmn4ZYA', 'muOnIHllI7E', '5oj0BIbLT4w'];
+function assertExpandedSpanishTestimonials(html) {
+  const ids = [...html.matchAll(/data-video-id="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(ids, spanishArchiveIds, 'exact ordered Spanish 4 + 8 video archive');
+  assert.equal(new Set(ids).size, 12, 'no duplicate archive videos');
+  assert.match(html, /lang="es"/, 'Spanish testimonial locale');
+  assert.match(html, /Ver más testimonios/, 'Spanish disclosure label');
+  assert.match(html, /Más testimonios en inglés/, 'primary audio group label');
+  assert.match(html, /Testimonios en ruso/, 'secondary audio group label');
+  assert.ok(links(html).some(link => link.href === '/es/about#testimonials-title'), 'Spanish archive destination');
+  assert.ok(links(html).some(link => link.href === '/es/services/free-situation-review'), 'Spanish review destination');
+}
+test('Spanish actual disclosure preserves exact 4 + 8 archive through open and close', () => {
+  const html = spanishTestimonialDisclosure();
+  assertSpanishTestimonials(html.initial);
+  assertExpandedSpanishTestimonials(html.expanded);
+  assertSpanishTestimonials(html.closed);
+  for (const bad of [html.expanded.replace('data-video-id="m9RfDgK76PU"', 'data-video-id="wrong"'), html.expanded.replace('data-video-id="5oj0BIbLT4w"', 'data-video-id="m9RfDgK76PU"')]) {
+    assert.throws(() => assertExpandedSpanishTestimonials(bad), /exact ordered Spanish 4 \+ 8 video archive/);
+  }
+  assert.throws(() => assertExpandedSpanishTestimonials(html.expanded.replaceAll('/es/', '/en/')), /Spanish archive destination/);
+  assert.throws(() => assertExpandedSpanishTestimonials(html.expanded.replace('lang="es"', 'lang="en"')), /Spanish testimonial locale/);
+});

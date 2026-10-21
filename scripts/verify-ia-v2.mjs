@@ -72,12 +72,12 @@ async function assertPublicBottomNavigation(bottom, { locale, surface, label }) 
 async function verifyDirectNavigation(nav, { locale, surface, expected, label }) {
   const libraryHref = '/' + locale + '/library'
   const freeStartHref = (locale === 'en' ? '/' : '/' + locale) + '#free-start'
-  const expectedHeader = ['services', 'library'].map(id => { const item = expected.find(entry => entry.id === id); return { id, href: item.href } })
-  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeStartHref, '/' + locale + '/services', '/' + locale + '/about', libraryHref], label + ': exact direct header destinations')
-  assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
+  const expectedHeader = [...['services', 'library'].map(id => { const item = expected.find(entry => entry.id === id); return { id, href: item.href } }), { id: 'shop', href: '/' + locale + '/shop' }, { id: 'cart', href: '/' + locale + '/cart' }]
+  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeStartHref, '/' + locale + '/services', '/' + locale + '/about', libraryHref, '/' + locale + '/shop', '/' + locale + '/cart'], label + ': exact direct header destinations')
+  assert.deepEqual(await nav.locator(':scope > a[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
   const current = nav.locator(':scope > a[aria-current="page"]')
-  await expect(current).toHaveCount(surface === 'services' || surface === 'library' ? 1 : 0)
-  if (surface === 'services' || surface === 'library') await expect(current).toHaveAttribute('href', '/' + locale + '/' + surface)
+  await expect(current).toHaveCount(surface === 'services' || surface === 'library' || surface === 'shop' ? 1 : 0)
+  if (surface === 'services' || surface === 'library' || surface === 'shop') await expect(current).toHaveAttribute('href', '/' + locale + '/' + surface)
 }
 
 async function verifySiteMenu(page, header, { locale, surface, label, expectedMenu, inViewport }) {
@@ -132,7 +132,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
         const expected = getSiteNavigation(locale)
-        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
+        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...expected.filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const libraryEntry = header.locator('a.site-library-entry')
         const menu = header.locator('details.site-language-menu')

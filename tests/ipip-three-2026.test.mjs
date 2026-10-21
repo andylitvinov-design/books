@@ -91,11 +91,11 @@ for(const [index,d] of added.entries()) {
   }
  })
 }
-test('three additive versions: 145 runnable, 72 source-backed, 73 HH after exact registration; exact registration payload',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,145)
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,72)
+test('three additive versions: 150 runnable, 77 source-backed, 73 HH after exact registration; exact registration payload',()=>{
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,150)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,77)
  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.key.startsWith('hh-')).length,73)
- assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:145,registered:145,uncovered:[],obsolete:[]})
+ assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:150,registered:150,uncovered:[],obsolete:[]})
  assert.deepEqual(JSON.parse(readFileSync(new URL('../docs/assessments/ipip-three-registration.json',import.meta.url))),added)
  // Exclude only the six appended split-v2 IDs from this historical baseline.
  const splitV2Ids=new Set([
@@ -110,7 +110,23 @@ test('three additive versions: 145 runnable, 72 source-backed, 73 HH after exact
  // The separately approved Bach pair is additive; no historical ID is excluded.
  const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
- const prior=ASSESSMENT_DEFINITIONS.filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key)).filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>![...added,...IPIP_FIVE_DEFINITIONS].some(n=>n.id===d.id))
+ // These five owner-added v1 English forms are additive, not part of the frozen historical baseline.
+ const professionalAdditionIdentities = [
+  { key: 'ipip-emotion-decision-making-9', id: '13deba1e-e350-5593-85c7-30f2c9815cbd', version: 'v1', instrumentLocale: 'en' },
+  { key: 'ipip-responsive-joy-10', id: '00089afb-3905-5e84-8efb-f0566342aff5', version: 'v1', instrumentLocale: 'en' },
+  { key: 'ipip-responsive-distress-10', id: 'eea5bd21-9620-5fd6-bc2a-9809e590fbd2', version: 'v1', instrumentLocale: 'en' },
+  { key: 'ipip-empathic-concern-10', id: '608dce45-8984-51bc-9f1d-5dc8aa9eac8e', version: 'v1', instrumentLocale: 'en' },
+  { key: 'ons-personal-wellbeing-4', id: '78e257f3-7d2d-5feb-a317-d39f8c2a8e19', version: 'v1', instrumentLocale: 'en' },
+ ]
+ const professionalAdditionIds = new Set(professionalAdditionIdentities.map(d => d.id))
+ const professionalAdditionKeys = new Set(professionalAdditionIdentities.map(d => d.key))
+ assert.deepEqual(
+  ASSESSMENT_DEFINITIONS.filter(d => professionalAdditionIds.has(d.id) || professionalAdditionKeys.has(d.key))
+   .map(({ key, id, version, instrumentLocale }) => ({ key, id, version, instrumentLocale }))
+   .sort((a, b) => a.key.localeCompare(b.key)),
+  [...professionalAdditionIdentities].sort((a, b) => a.key.localeCompare(b.key)),
+ )
+ const prior=ASSESSMENT_DEFINITIONS.filter(d=>!professionalAdditionIds.has(d.id)).filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key)).filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>![...added,...IPIP_FIVE_DEFINITIONS].some(n=>n.id===d.id))
  assert.equal(createHash('sha256').update(canonicalJSON(prior)).digest('hex'),'7635478d0c3762d2af209716cef82788c786504fc097895d786d4115604108f1')
 })
 
