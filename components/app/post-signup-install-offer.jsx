@@ -8,6 +8,7 @@ const COPY={
     eyebrow:'HOLISTIC HOUSE · MOBILE',
     title:'Holistic House, right on your phone',
     intro:'Keep your private messages, courses and personal reports within easy reach.',
+    saved:'Saved to your Cabinet. Your material will open as soon as you continue.',
     install:'Install Holistic House',
     later:'I’ll do this later',
     close:'Close installation offer',
@@ -27,6 +28,7 @@ const COPY={
     eyebrow:'HOLISTIC HOUSE · НА ТЕЛЕФОН',
     title:'Holistic House всегда под рукой',
     intro:'Личные сообщения, курсы и отчёты — прямо с главного экрана вашего телефона.',
+    saved:'Сохранено в вашем кабинете. После этого предложения откроется ваш материал.',
     install:'Установить Holistic House',
     later:'Я сделаю это позже',
     close:'Закрыть предложение установки',
@@ -54,7 +56,11 @@ const mobileDevice=()=>{
     window.Capacitor?.isNativePlatform?.()===true
   return {mobile,installed,ios}
 }
-export default function PostSignupInstallOffer({locale='en',visible=false,onDismiss}){
+export function isPostSignupInstallEligible(){
+  const {mobile,installed}=mobileDevice()
+  return mobile&&!installed
+}
+export default function PostSignupInstallOffer({locale='en',visible=false,onDismiss,context='signup'}){
   const t=COPY[locale]||COPY.en
   const [device,setDevice]=useState({mobile:false,installed:false,ios:false})
   const [prompt,setPrompt]=useState(null)
@@ -63,11 +69,18 @@ export default function PostSignupInstallOffer({locale='en',visible=false,onDism
   const [working,setWorking]=useState(false)
   const layer=useRef(null)
   const close=useRef(null)
+  const offerVisible=useRef(false)
   close.current=onDismiss
+  useEffect(()=>{offerVisible.current=visible},[visible])
   useEffect(()=>{
     setDevice(mobileDevice())
     const unsubscribe=onPwaInstallPrompt(setPrompt)
-    const installed=()=>setDevice(mobileDevice())
+    const installed=()=>{
+      // The appinstalled event itself is proof: the original browser tab
+      // may remain non-standalone even after the PWA was installed.
+      setDevice({...mobileDevice(),installed:true})
+      if(offerVisible.current)close.current?.()
+    }
     window.addEventListener('appinstalled',installed)
     return ()=>{
       unsubscribe()
@@ -128,6 +141,7 @@ export default function PostSignupInstallOffer({locale='en',visible=false,onDism
         <p className={styles.eyebrow}>{t.eyebrow}</p>
         <h2 id="hh-install-offer-title">{t.title}</h2>
         <p id="hh-install-offer-description" className={styles.intro}>{t.intro}</p>
+        {context==='saved'&&<p className={styles.saved} role="status">✓ {t.saved}</p>}
         <div className={styles.art} aria-hidden="true">
           <div className={styles.orbit}/>
           <div className={styles.phone}>
@@ -152,7 +166,7 @@ export default function PostSignupInstallOffer({locale='en',visible=false,onDism
           {copyDone&&<p className={styles.copied}>{t.copied}</p>}
         </div>}
         <button type="button" className={styles.later} onClick={()=>onDismiss?.()}>{t.later}</button>
-        <a className={styles.guide} href={'/'+(locale==='ru'?'ru':'en')+'/install'}>{t.cta} →</a>
+        {context!=='saved'&&<a className={styles.guide} href={'/'+(locale==='ru'?'ru':'en')+'/install'}>{t.cta} →</a>}
         <p className={styles.privacy}>{t.privacy}</p>
       </div>
     </section>

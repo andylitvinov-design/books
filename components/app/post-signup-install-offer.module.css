@@ -23,6 +23,7 @@
  margin:0 0 10px;color:#1b2724}
 .intro{font:400 14px/1.55 system-ui,sans-serif;margin:0 auto 18px;
  color:#65716a;max-width:390px}
+.saved{margin:0 auto 12px;padding:9px 12px;max-width:405px;border:1px solid #c4dfd0;border-radius:12px;background:#f0f8f3;color:#275c46;font:700 12px/1.45 system-ui,sans-serif}
 .art{height:205px;border-radius:20px;background:linear-gradient(130deg,#e6eee5,#d3e8da 57%,#b4d4c7);
  overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;
  margin:0 0 22px;isolation:isolate}

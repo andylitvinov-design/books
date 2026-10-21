@@ -4,6 +4,15 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'lib/practitioners/daily-digest.mjs'
+      - 'lib/practitioners/analytics-subscription-policy.mjs'
+      - 'lib/practitioners/master-analytics-service.js'
+      - 'lib/app/client-telegram-transport.js'
+      - 'app/api/app/practice-analytics-notifications/route.js'
+      - 'components/app/practice-analytics-subscriptions.jsx'
+      - 'components/app/practice-service-statistics.jsx'
+      - 'components/app/practice-workspace.jsx'
+      - 'supabase/migrations/*master_analytics_subscriptions*.sql'
+      - 'tests/practitioner-analytics-subscriptions.test.mjs'
       - 'lib/practitioners/daily-telegram-digest.js'
       - 'lib/practitioners/daily-telegram-transport.mjs'
       - 'lib/app/housekeeping-cron.js'
@@ -29,10 +38,32 @@ jobs:
           node-version: '22'
       - name: Node syntax and Vercel cron config
         run: |
+          node --check lib/practitioners/analytics-subscription-policy.mjs
+          node --check lib/practitioners/master-analytics-service.js
+          node --check lib/app/client-telegram-transport.js
+          node --check app/api/app/practice-analytics-notifications/route.js
           node --check lib/practitioners/daily-digest.mjs
           node --check lib/practitioners/daily-telegram-digest.js
           node --check lib/practitioners/daily-telegram-transport.mjs
           node --check app/api/internal/practice-telegram-digest/route.js
           node -e "JSON.parse(require('node:fs').readFileSync('vercel.json','utf8'))"
       - name: Private digest unit and existing cron regressions
-        run: node --test tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
+        run: node --test tests/practitioner-analytics-subscriptions.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
+
+  production-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Targeted ESLint
+        run: npx eslint lib/practitioners/analytics-subscription-policy.mjs lib/practitioners/master-analytics-service.js lib/app/client-telegram-transport.js app/api/app/practice-analytics-notifications/route.js components/app/practice-analytics-subscriptions.jsx components/app/practice-service-statistics.jsx components/app/practice-workspace.jsx app/api/internal/practice-telegram-digest/route.js
+      - name: Next.js production build and TypeScript
+        run: npm run build

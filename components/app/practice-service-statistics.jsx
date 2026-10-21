@@ -1,5 +1,7 @@
 'use client'
 
+import PracticeAnalyticsSubscriptions from './practice-analytics-subscriptions'
+
 import {useMemo,useState} from 'react'
 
 const zero={impressions:0,orders:0,whatsapp:0,telegram:0}
@@ -33,7 +35,7 @@ const dateLabel=(day,ru)=>{
   const date=new Date(day+'T12:00:00Z')
   return new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{month:'short',day:'numeric',timeZone:'UTC'}).format(date)
 }
-export default function PracticeServiceStatistics({analytics,registrationStats,locale}){
+export default function PracticeServiceStatistics({analytics,registrationStats,locale,accountId}){
   const ru=locale==='ru',t=COPY[ru?'ru':'en']
   const [period,setPeriod]=useState('yesterday')
   const [showAllServices,setShowAllServices]=useState(false)
@@ -103,5 +105,6 @@ export default function PracticeServiceStatistics({analytics,registrationStats,l
         :"These are consented enquiries committed by the server. Revisiting the thank-you page does not increase the count. An enquiry is not a confirmed booking or payment."}</p>
     </section>}
     <p className="hh-practice-analytics-note">{t.disclaimer}</p>
+    <PracticeAnalyticsSubscriptions locale={locale} accountId={accountId}/>
   </section>
 }
