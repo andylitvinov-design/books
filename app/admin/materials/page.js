@@ -17,7 +17,7 @@ export default async function MaterialsPage(){
       ru:'Курсы и аудиомедитации мастера, а также фото, видео и ссылки для клиентских отчётов.',
       en:'Manage course meditations alongside private report materials, photos and videos.'
     }}/>
-    <section className={folders.collection} aria-labelledby="materials-course-folders" data-materials-audio-folder>
+    <section className={folders.collection} aria-labelledby="materials-course-folders" data-materials-course-folder>
       <h2 className={folders.sectionTitle} id="materials-course-folders">
         <FolderOpen aria-hidden="true" />{ru?'Курсы':'Courses'}
       </h2>
