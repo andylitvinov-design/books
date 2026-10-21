@@ -159,6 +159,39 @@
   box-shadow: 0 6px 24px rgba(65, 55, 43, .042);
   scroll-margin-top: 12px;
 }
+.daoQuick { min-width: 0; }
+.daoSummary {
+  margin: 0;
+  color: #51483f;
+  font: 400 clamp(16px, 1.6vw, 18px)/1.55 Arial, Helvetica, sans-serif;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.daoSummary strong { color: #154f54; font-weight: 800; }
+.expandDao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 9px;
+  padding: 9px 17px;
+  border: 1px solid #94bfbb;
+  border-radius: 999px;
+  background: #e9f4f0;
+  color: #125457;
+  font: 750 13px/1.25 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+.expandDao:hover { background: #dcefe9; border-color: #4b9e9d; }
+.expandDao svg { transition: transform .16s ease; }
+.expandDao[aria-expanded="true"] svg { transform: rotate(180deg); }
+.daoDetails { margin-top: 17px; padding-top: 15px; border-top: 1px solid #e3d9c9; }
+.daoReading { margin-top: 17px; padding: 14px 0 0; border-top: 1px solid #e7ddd0; }
+.daoProse { margin-top: 13px; color: #514a44; font-size: 14px; line-height: 1.7; }
+.daoProse p { margin: 0 0 14px; white-space: pre-line; overflow-wrap: anywhere; }
+.daoReadingStatus { margin: 0; color: #6c6259; font-size: 13px; line-height: 1.5; }
+
 .resultsHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
 .resultsHeading h2, .previewTitle {
   margin: 6px 0 0;
@@ -276,6 +309,11 @@ a.aphorismSource:hover { color: #533b28; }
   .action svg:last-child { display: none; }
   .action span { text-wrap: balance; }
   .results { margin-top: 9px; padding: 13px 12px; border-radius: 16px; }
+  .daoSummary { font-size: 16px; line-height: 1.5; }
+  .expandDao { width: 100%; min-height: 44px; font-size: 13px; }
+  .daoDetails { margin-top: 12px; padding-top: 12px; }
+  .daoReading { margin-top: 12px; padding-top: 12px; }
+  .daoProse { font-size: 14px; line-height: 1.6; }
   .resultsHeading { gap: 8px; margin-bottom: 10px; }
   .resultsHeading h2, .previewTitle { font-size: clamp(20px, 5.9vw, 26px); line-height: 1.14; }
   .tag { font-size: 10px; letter-spacing: .11em; }
@@ -320,6 +358,7 @@ a.aphorismSource:hover { color: #533b28; }
   .guidanceTitle { font-size: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .expandDao svg { transition: none; }
   .action, .question textarea { transition: none; }
   .action:hover { transform: none; }
 }

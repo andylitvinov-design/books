@@ -67,13 +67,38 @@ async function verify(browserType, locale, width) {
     const textarea = hub.locator("#ideas-question");
     assert.ok(await textarea.evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 16),
       label + ": iPhone input does not zoom");
+    // The submit action is always Dao-first, even if a visitor previously tapped another mode.
+    await modeButtons.nth(1).tap();
     await textarea.fill(phrases[locale]);
     await hub.locator('button[type="submit"]').tap();
-    await hub.locator('[data-ideas-result="dao"]').waitFor({ state: "visible" });
-    assert.equal(await hub.locator('[data-ideas-result="dao"] [role="img"]').count(), 1,
-      label + ": genuine I Ching hexagram");
-    const detailUrl = await hub.locator('[data-ideas-result="dao"] a[href*="/dao/hexagrams/"]').getAttribute("href");
+    const daoResult = hub.locator('[data-ideas-result="dao"]');
+    await daoResult.waitFor({ state: "visible" });
+    assert.equal(await daoResult.locator('[data-ideas-dao-summary]').count(), 1,
+      label + ": one compact Daoist paragraph");
+    assert.ok((await daoResult.locator('[data-ideas-dao-summary]').innerText()).length > 30,
+      label + ": useful brief reading");
+    assert.equal(await daoResult.locator('[role="img"]').count(), 0,
+      label + ": glyph and full reading hidden before expanding");
+    const compactSize = await daoResult.boundingBox();
+    assert.ok(compactSize && compactSize.height < 215, label + ": answer fits the first screen");
+    const expand = daoResult.locator('button[aria-expanded]');
+    assert.equal(await expand.getAttribute("aria-expanded"), "false", label + ": collapsed by default");
+    if (browserType === webkit && locale === "en" && width === 390) {
+      await page.screenshot({ path: output + "/ideas-dao-compact-webkit-390.png", fullPage: false });
+    }
+    await expand.tap();
+    await daoResult.locator('[data-ideas-dao-expanded="true"]').waitFor({ state: "visible" });
+    assert.equal(await expand.getAttribute("aria-expanded"), "true", label + ": accessible expanded state");
+    assert.equal(await daoResult.locator('[role="img"]').count(), 1, label + ": genuine I Ching glyph");
+    const detailUrl = await daoResult.locator('a[href*="/dao/hexagrams/"]').getAttribute("href");
     assert.match(detailUrl || "", new RegExp("^/" + locale + "/dao/hexagrams/(?:[1-9]|[1-5][0-9]|6[0-4])$"));
+    if (browserType === webkit && locale === "en" && width === 390) {
+      await daoResult.locator('[data-ideas-dao-reading] [lang="ru"] p').first()
+        .waitFor({ state: "visible", timeout: 30000 });
+    }
+    await expand.tap();
+    assert.equal(await expand.getAttribute("aria-expanded"), "false", label + ": can collapse again");
+    assert.equal(await daoResult.locator('[role="img"]').count(), 0, label + ": collapsed content removed");
 
     await modeButtons.nth(1).tap();
     await hub.locator('[data-ideas-result="aphorisms"]').waitFor({ state: "visible" });
