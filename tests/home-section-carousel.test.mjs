@@ -27,7 +27,7 @@ test("all slide imagery exists locally and preserves the low-cost static image p
   for (const [, src] of matches) assert.ok(existsSync(join(process.cwd(), "public", src)), "Missing homepage slide artwork: " + src);
   assert.match(carousel, /<StaticPortrait src="\/images\/holistic-house\/andy-about\.png"/);
   assert.match(carousel, /<Image src=\{slide.image\} alt="" fill unoptimized/);
-  assert.match(carousel, /priority=\{index === 0 && !manual\}/);
+  assert.match(carousel, /priority=\{index === 0\}/);
 });
 
 test("localized slider appears first on EN/RU/ES without removing existing consented offers", () => {
@@ -62,6 +62,32 @@ test("touch, focus, arrows, accessible dots and reduced motion are preserved on 
   assert.match(style, /:focus-visible/);
 });
 
+test("iPhone touch, arrow and dot interactions cannot permanently stop automatic rotation", () => {
+  assert.match(carousel, /setInterval\(\(\) => \{/);
+  assert.match(carousel, /\}, 7000\)/);
+  assert.match(carousel, /\[paused, interactionVersion\]/);
+  assert.match(carousel, /setInteractionVersion\(version => version \+ 1\)/);
+  assert.doesNotMatch(carousel, /setManual\(|paused \|\| manual/);
+  const touchStart = carousel.match(/onTouchStart=\{event => \{([^]*?)\}\}/)?.[1] || "";
+  assert.ok(touchStart.includes("touchStart.current"));
+  assert.doesNotMatch(touchStart, /setPaused\(|setInteractionVersion\(/);
+  assert.match(carousel, /\(hover: hover\) and \(pointer: fine\)/);
+  assert.match(carousel, /event\.target\.matches\(":focus-visible"\)/);
+  assert.match(carousel, /document\.visibilityState === "visible"/);
+  assert.match(carousel, /prefers-reduced-motion: reduce/);
+});
+
+test("the highlighted top category always follows the rendered slide, including Cabinet", () => {
+  assert.match(carousel, /aria-current=\{key === slide\.key \? "true" : undefined\}/);
+  assert.match(carousel, /data-home-nav-active=\{key === slide\.key \? "true" : "false"\}/);
+  assert.match(carousel, /ref=\{navScroller\}/);
+  assert.match(carousel, /querySelector<HTMLElement>\(`\[data-home-nav-section="/);
+  assert.match(carousel, /scroller\.scrollTo\(\{/);
+  assert.match(style, /\.sectionNavLink\[aria-current="true"\] \{ color:#ffdb80/);
+  assert.match(style, /\.sectionNavLink\[aria-current="true"\]::after/);
+  assert.doesNotMatch(style, /\.sectionNavLink\[aria-current="page"\]/);
+});
+
 test("all homepage slides describe real benefits in EN, RU and ES with compact mobile copy", () => {
   const ids = ["services", "tests", "academy", "business", "ideas", "cabinet"];
   const entries = [...carousel.matchAll(/^      (services|tests|academy|business|ideas|cabinet): \{ eyebrow: "([^"]+)", title: "([^"]+)", lead: "([^"]+)", action: "([^"]+)" \},$/gm)];
@@ -86,15 +112,15 @@ test("all homepage slides describe real benefits in EN, RU and ES with compact m
 });
 
 test("the approved photo hero has light text-only section links without replacing its slider", () => {
-  const sections = ["home", "tests", "services", "academy", "business", "ideas"];
-  assert.match(carousel, /const navKeys = \["home", "tests", "services", "academy", "business", "ideas"\] as const/);
+  const sections = ["home", "tests", "services", "academy", "business", "ideas", "cabinet"];
+  assert.match(carousel, /const navKeys = \["home", "tests", "services", "academy", "business", "ideas", "cabinet"\] as const/);
   assert.match(carousel, /<nav className=\{styles\.sectionNav\} aria-label=\{t\.navigationLabel\}/);
   assert.match(carousel, /data-home-nav-section=\{key\}/);
-  assert.match(carousel, /aria-current=\{key === "home" \? "page" : undefined\}/);
+  assert.match(carousel, /aria-current=\{key === slide\.key \? "true" : undefined\}/);
   assert.match(carousel, /slides\.find\(item => item\.key === key\)/);
   assert.match(carousel, /href=\{target \? `\/\$\{locale\}\$\{target\.href\}` : locale === "en" \? "\/" : `\/\$\{locale\}`\}/);
   for (const item of sections) assert.match(carousel, new RegExp(item + ': "'));
-  for (const label of ["Главная", "Тесты", "Услуги", "Академия", "Бизнес", "Идеи", "Inicio", "Pruebas", "Servicios", "Academia", "Negocios"]) {
+  for (const label of ["Главная", "Тесты", "Услуги", "Академия", "Бизнес", "Идеи", "Кабинет", "Inicio", "Pruebas", "Servicios", "Academia", "Negocios", "Mi espacio"]) {
     assert.ok(carousel.includes(label), "Missing localized top navigation label: " + label);
   }
   assert.ok(carousel.indexOf("className={styles.sectionNav}") > carousel.indexOf("className={styles.gradient}"));
@@ -102,7 +128,7 @@ test("the approved photo hero has light text-only section links without replacin
   assert.match(style, /\.sectionNav \{[^}]*position:absolute/);
   assert.match(style, /\.sectionNavScroller \{[^}]*overflow-x:auto/);
   assert.match(style, /\.sectionNavLink \{[^}]*min-height:44px/);
-  assert.match(style, /\.sectionNavLink\[aria-current="page"\]/);
+  assert.match(style, /\.sectionNavLink\[aria-current="true"\]/);
   assert.match(style, /@media \(max-width:365px\)/);
   assert.doesNotMatch(carousel, /navKeys\.map[^]*?<svg/);
 });
