@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, ChevronDown, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
-import { getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
@@ -34,7 +34,7 @@ const copy = {
     privacy: "Ваш текст обрабатывается только в браузере: не сохраняется, не передаётся в CRM или аналитику. Не указывайте конфиденциальные данные.",
     basedOn: "Тема запроса",
     generic: "Общий вопрос",
-    headings: { dao: "Символ Книги Перемен", aphorisms: "Три афоризма для размышления", personal: "Три способа начать" },
+    headings: { dao: "Символ Книги Перемен", aphorisms: "Афоризмы по вашему вопросу", personal: "Три способа начать" },
     topic: { relationships: "Отношения и близость", stress: "Тревога и внутреннее спокойствие", resources: "Ресурсы и энергия", work: "Работа и решения", direction: "Выбор и направление" },
     daoNote: "Одна из 64 гексаграмм выпадает случайно, независимо от смысла вопроса. Это образ для размышления, а не предсказание.",
     expandDao: "Развернуть всё", collapseDao: "Свернуть",
@@ -43,7 +43,7 @@ const copy = {
     again: "Другой символ",
     card: "Прочитать толкование",
     aphorismNote: "Подбор по смыслу вопроса. Редакционные афоризмы и авторские переложения классических идей — не дословные цитаты исторических авторов.",
-    more: "Ещё 3 афоризма", inspiredBy: "По мотивам", editorial: "Афоризм Holistic House",
+    more: "Ещё 3 афоризма", inspiredBy: "Источник идеи · по мотивам", sourceLabel: "Источник", editorial: "Holistic House · авторский афоризм",
     personalNote: "Это тематический подбор, не индивидуальная оценка. Выберите формат и заполните существующую форму на странице услуги.",
     guidanceIntro: "Выберите один вариант, с которого хочется начать.",
     guidanceMatch: "Рекомендуем по теме запроса",
@@ -75,7 +75,7 @@ const copy = {
     privacy: "Your text stays in this browser. It is not saved or sent to CRM or analytics. Avoid sharing sensitive personal details.",
     basedOn: "Topic",
     generic: "Open-ended question",
-    headings: { dao: "A symbol from the Book of Changes", aphorisms: "Three reflections for your topic", personal: "Three ways to begin" },
+    headings: { dao: "A symbol from the Book of Changes", aphorisms: "Reflections for your question", personal: "Three ways to begin" },
     topic: { relationships: "Relationships and connection", stress: "Stress and inner calm", resources: "Energy and resources", work: "Work and decisions", direction: "Choices and direction" },
     daoNote: "One of 64 hexagrams is drawn at random, independently of your question. It offers a symbol for reflection, not a prediction.",
     expandDao: "Expand all", collapseDao: "Show less",
@@ -84,7 +84,7 @@ const copy = {
     again: "Draw another",
     card: "Read interpretation",
     aphorismNote: "Topic-matched editorial aphorisms and original paraphrases inspired by classics, not verbatim historical quotations.",
-    more: "Show 3 more aphorisms", inspiredBy: "Inspired by", editorial: "Holistic House editorial",
+    more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", editorial: "Holistic House editorial · original aphorism",
     personalNote: "These are topic-based options, not a personal assessment. Choose a format and complete its existing request form.",
     guidanceIntro: "Choose the starting point that feels right for you.",
     guidanceMatch: "Suggested for your topic",
@@ -116,7 +116,7 @@ const copy = {
     privacy: "El texto permanece en este navegador. No se guarda ni se envía al CRM o a analítica. Evita datos personales sensibles.",
     basedOn: "Tema",
     generic: "Pregunta abierta",
-    headings: { dao: "Un símbolo del Libro de los Cambios", aphorisms: "Tres reflexiones sobre tu tema", personal: "Tres maneras de empezar" },
+    headings: { dao: "Un símbolo del Libro de los Cambios", aphorisms: "Reflexiones para tu pregunta", personal: "Tres maneras de empezar" },
     topic: { relationships: "Relaciones y cercanía", stress: "Estrés y calma interior", resources: "Energía y recursos", work: "Trabajo y decisiones", direction: "Opciones y rumbo" },
     daoNote: "Uno de los 64 hexagramas se elige al azar, independientemente de tu pregunta. Es un símbolo para reflexionar, no una predicción.",
     expandDao: "Desplegar todo", collapseDao: "Mostrar menos",
@@ -125,7 +125,7 @@ const copy = {
     again: "Otro símbolo",
     card: "Leer interpretación",
     aphorismNote: "Aforismos editoriales y paráfrasis propias inspiradas en clásicos. No son citas literales.",
-    more: "Ver 3 aforismos más", inspiredBy: "Inspirado en", editorial: "Aforismo editorial Holistic House",
+    more: "Ver 3 aforismos más", inspiredBy: "Fuente · inspirado en", sourceLabel: "Fuente", editorial: "Holistic House · aforismo original",
     personalNote: "Son opciones por tema, no una evaluación personal. Elige una y completa el formulario existente de la página.",
     guidanceIntro: "Elige por dónde te gustaría empezar.",
     guidanceMatch: "Sugerido para tu tema",
@@ -220,8 +220,10 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
 
   const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
-  const topicLabel = result ? (result.matched ? t.topic[result.topic] : t.generic) : "";
-  const aphorismMatches = result?.mode === "aphorisms" ? getIdeasAphorismMatches(question, locale, result.topic) : [];
+  const answerLocale = result ? detectIdeasQuestionLocale(question, locale) : locale;
+  const answerCopy = copy[answerLocale];
+  const topicLabel = result ? (result.matched ? answerCopy.topic[result.topic] : answerCopy.generic) : "";
+  const aphorismMatches = result?.mode === "aphorisms" ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
   return (
     <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
       <div className={styles.heading}>
@@ -265,25 +267,25 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       </div>
 
       {result ? (
-        <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode}>
+        <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode} data-question-language={answerLocale} lang={answerLocale}>
           {result.mode !== "dao" ? (
             <div className={styles.resultsHeading}>
               <div>
-                <p className={styles.tag}>{t.basedOn}: {topicLabel}</p>
-                <h2>{t.headings[result.mode]}</h2>
+                <p className={styles.tag}>{answerCopy.basedOn}: {topicLabel}</p>
+                <h2>{answerCopy.headings[result.mode]}</h2>
               </div>
-              <button type="button" className={styles.reset} onClick={() => { setResult(null); setQuestion(""); textareaRef.current?.focus(); }}>{t.reset} ×</button>
+              <button type="button" className={styles.reset} onClick={() => { setResult(null); setQuestion(""); textareaRef.current?.focus(); }}>{answerCopy.reset} ×</button>
             </div>
           ) : null}
           {result.mode === "dao" && hexagram ? (
             <div className={styles.daoQuick} data-ideas-dao>
               <p className={styles.daoSummary} data-ideas-dao-summary>
-                <strong>{t.dao} · {hexagramTitle(hexagram, locale)}.</strong>{" "}{hexagramEssence(hexagram, locale)}
+                <strong>{answerCopy.dao} · {hexagramTitle(hexagram, answerLocale)}.</strong>{" "}{hexagramEssence(hexagram, answerLocale)}
               </p>
               <button type="button" className={styles.expandDao}
                 aria-expanded={expandedDao} aria-controls="ideas-dao-details"
                 onClick={() => { setExpandedDao(open => !open); setDaoReadingError(false); }}>
-                {expandedDao ? t.collapseDao : t.expandDao}<ChevronDown aria-hidden="true" size={18} />
+                {expandedDao ? answerCopy.collapseDao : answerCopy.expandDao}<ChevronDown aria-hidden="true" size={18} />
               </button>
               <div id="ideas-dao-details" className={styles.daoDetails} hidden={!expandedDao}
                 data-ideas-dao-expanded={expandedDao ? "true" : undefined}>
@@ -291,12 +293,12 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                   <>
                     <div className={styles.resultsHeading}>
                       <div>
-                        <p className={styles.tag}>{t.basedOn}: {topicLabel}</p>
-                        <h2>{t.headings.dao}</h2>
+                        <p className={styles.tag}>{answerCopy.basedOn}: {topicLabel}</p>
+                        <h2>{answerCopy.headings.dao}</h2>
                       </div>
                       <button type="button" className={styles.reset}
                         onClick={() => { setResult(null); setQuestion(""); setExpandedDao(false); textareaRef.current?.focus(); }}>
-                        {t.reset} ×
+                        {answerCopy.reset} ×
                       </button>
                     </div>
                     <div className={styles.hexagramCard}>
@@ -305,31 +307,31 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                       </div>
                       <div className={styles.hexagramText}>
                         <p className={styles.tag}>№ {hexagram.number} · {hexagram.hanzi}</p>
-                        <h3>{hexagramTitle(hexagram, locale)}</h3>
+                        <h3>{hexagramTitle(hexagram, answerLocale)}</h3>
                       </div>
                     </div>
                     <div className={styles.daoReading} data-ideas-dao-reading>
                       {fullDaoReading?.number === hexagram.number ? (
                         <>
-                          <p className={styles.tag}>{fullDaoReading.kind === "original" ? t.originalReading : t.editorialReading}</p>
+                          <p className={styles.tag}>{fullDaoReading.kind === "original" ? answerCopy.originalReading : answerCopy.editorialReading}</p>
                           <div className={styles.daoProse} lang="ru">
                             {fullDaoReading.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
                           </div>
                         </>
-                      ) : <p className={styles.daoReadingStatus} role="status">{daoReadingError ? t.unavailableReading : t.loadingReading}</p>}
+                      ) : <p className={styles.daoReadingStatus} role="status">{daoReadingError ? answerCopy.unavailableReading : answerCopy.loadingReading}</p>}
                     </div>
                     <div className={styles.hexagramActions}>
-                      <Link href={"/" + locale + "/dao/hexagrams/" + hexagram.number} prefetch={false}>
-                        {t.card}<ArrowRight size={16} aria-hidden="true" />
+                      <Link href={"/" + answerLocale + "/dao/hexagrams/" + hexagram.number} prefetch={false}>
+                        {answerCopy.card}<ArrowRight size={16} aria-hidden="true" />
                       </Link>
                       <button type="button" onClick={() => {
                         setExpandedDao(false);
                         setFullDaoReading(null);
                         setDaoReadingError(false);
                         setResult({ ...result, hexagram: drawRandomHexagram() });
-                      }}><RefreshCw size={16} aria-hidden="true" />{t.again}</button>
+                      }}><RefreshCw size={16} aria-hidden="true" />{answerCopy.again}</button>
                     </div>
-                    <p className={styles.note}>{t.daoNote}</p>
+                    <p className={styles.note}>{answerCopy.daoNote}</p>
                   </>
                 ) : null}
               </div>
@@ -343,11 +345,17 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                     <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
                     <div className={styles.aphorismBody}>
                       <p>{item.text}</p>
-                      {item.kind === "inspired" && item.source ? (
-                        <a className={styles.aphorismSource} href={item.source.url} target="_blank" rel="noopener noreferrer">
-                          {t.inspiredBy}: {item.source.author} · {item.source.work}
-                        </a>
-                      ) : <span className={styles.aphorismSource}>{t.editorial}</span>}
+                      <div className={styles.aphorismAttribution}>
+                        <BookOpen size={14} aria-hidden="true" />
+                        <span className={styles.aphorismSourceLabel}>
+                          {item.kind === "inspired" && item.source ? answerCopy.inspiredBy : answerCopy.sourceLabel}:
+                        </span>
+                        {item.kind === "inspired" && item.source ? (
+                          <a className={styles.aphorismSource} href={item.source.url} target="_blank" rel="noopener noreferrer">
+                            {item.source.author} · <cite>{item.source.work}</cite><ArrowUpRight size={13} aria-hidden="true" />
+                          </a>
+                        ) : <span className={styles.aphorismSource}>{answerCopy.editorial}</span>}
+                      </div>
                     </div>
                   </li>
                 ))}
@@ -355,7 +363,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
               {visibleAphorisms < aphorismMatches.length ? (
                 <button type="button" className={styles.moreAphorisms}
                   onClick={() => setVisibleAphorisms(count => Math.min(count + 3, aphorismMatches.length))}>
-                  <Sparkles size={17} aria-hidden="true" />{t.more}<ArrowRight size={17} aria-hidden="true" />
+                  <Sparkles size={17} aria-hidden="true" />{answerCopy.more}<ArrowRight size={17} aria-hidden="true" />
                 </button>
               ) : null}
             </>
@@ -363,18 +371,18 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           {result.mode === "personal" ? (
             <div className={styles.guidance} data-ideas-guidance>
               <div className={styles.guidanceIntro}>
-                <p>{t.guidanceIntro}</p>
-                <span className={styles.guidanceFree}>{t.free}</span>
+                <p>{answerCopy.guidanceIntro}</p>
+                <span className={styles.guidanceFree}>{answerCopy.free}</span>
               </div>
               <ol className={styles.guidanceList} data-ideas-guidance-list>
                 {getIdeasFreeRecommendations(result.topic).map((id, index) => {
-                  const item = t.service[id];
+                  const item = answerCopy.service[id];
                   return (
                     <li className={index === 0 ? styles.guidancePriority : undefined} key={id}>
-                      <Link className={styles.guidanceLink} href={freeOfferHref(locale, id)} prefetch={false}>
+                      <Link className={styles.guidanceLink} href={freeOfferHref(answerLocale, id)} prefetch={false}>
                         <span className={styles.guidanceIndex} aria-hidden="true">0{index + 1}</span>
                         <span className={styles.guidanceContent}>
-                          <span className={styles.guidanceEyebrow}>{index === 0 ? t.guidanceMatch : t.guidanceOther}</span>
+                          <span className={styles.guidanceEyebrow}>{index === 0 ? answerCopy.guidanceMatch : answerCopy.guidanceOther}</span>
                           <strong className={styles.guidanceTitle}>{item.title}</strong>
                           <span className={styles.guidanceDescription}>{item.description}</span>
                           <span className={styles.guidanceAction}>{item.action}<ArrowRight size={14} aria-hidden="true" /></span>
@@ -387,7 +395,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
               </ol>
             </div>
           ) : null}
-          {result.mode !== "dao" ? <p className={styles.note}>{result.mode === "aphorisms" ? t.aphorismNote : t.personalNote}</p> : null}
+          {result.mode !== "dao" ? <p className={styles.note}>{result.mode === "aphorisms" ? answerCopy.aphorismNote : answerCopy.personalNote}</p> : null}
         </div>
       ) : exampleHexagram ? (
         <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}>
