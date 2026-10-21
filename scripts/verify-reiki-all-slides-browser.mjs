@@ -440,7 +440,8 @@ async function verifySaveThenInstall(page, locale) {
   });
   await page.route(bootstrapPattern, async route => {
     await route.fulfill({ status:200, contentType:"application/json",
-      body: JSON.stringify({ account: { id:accountId, displayName:"Test learner", onboardingState:"active" } }) });
+      body: JSON.stringify({ account: { id:accountId, displayName:"Test learner", onboardingState:"active" },
+        results: [], runs: [], requests: [], consents: [], services: [] }) });
   });
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
@@ -615,64 +616,79 @@ let introAudioFixture = null;
 let introAudioMetadataRequests = 0;
 const introAudioNetwork = [];
 const syntheticAudioUrl = "https://example.invalid/reiki-qa-intro.mp3";
-async function verifyOptionalIntroAudio(page) {
-  await page.setViewportSize({ width: 390, height: 844 });
-  let mediaRequests = 0;
-  await page.route(syntheticAudioUrl, async route => { mediaRequests += 1; await route.abort(); });
-  for (const published of [false, true]) {
-    introAudioFixture = published ? { src: syntheticAudioUrl, publishedAt: "2026-10-21T00:00:00Z" } : null;
-    const before = introAudioMetadataRequests;
-    await page.goto(origin + "/en/academy/principles-of-energywork/learn", { waitUntil: "domcontentloaded", timeout: 90000 });
-    await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
-    await page.locator('button[data-energywork-next]').click();
-    await page.locator('input[name="welcome-02"][value="beginner"]').check();
-    await page.locator('button[data-energywork-next]').click();
-    await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id', 'flight-01');
-    await page.screenshot({ path: output + "/" + engineName + "-optional-audio-" + (published ? "published" : "unpublished") + ".png", animations: "disabled", timeout: 30000 });
-    console.log("REIKI_AUDIO_METADATA_DIAGNOSTIC", JSON.stringify({ engine: engineName, published, requestsBefore: before, requestsNow: introAudioMetadataRequests, observed: introAudioNetwork }));
-    await expect.poll(() => introAudioMetadataRequests).toBeGreaterThan(before);
-    const player = page.locator('[data-reiki-lesson-intro-audio]');
-    if (published) {
-      await expect(player).toBeVisible();
-      const audio = player.locator('audio');
-      await expect(audio).toHaveAttribute('src', syntheticAudioUrl);
-      await expect(audio).toHaveAttribute('preload', 'none');
-      await expect(audio).toHaveAttribute('controls', '');
-      await expect(audio).not.toHaveAttribute('autoplay', /.*/);
-      await expect(audio).toHaveJSProperty('paused', true);
-    } else {
-      await expect(player).toHaveCount(0);
-      await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
+async function verifyOptionalIntroAudio() {
+  // Pure metadata/UI fixtures need deterministic routing. Keep the real guest,
+  // private-save and PWA journey context below service-worker enabled.
+  // This does not cover audio delivery through a production service worker.
+  const audioContext = await browser.newContext({ viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1, reducedMotion: "reduce", hasTouch: true, serviceWorkers: "block" });
+  const page = await audioContext.newPage();
+  page.on("pageerror", error => pageErrors.push(String(error.message).slice(0, 300)));
+  await installIntroMetadataFixture(page);
+  try {
+    let mediaRequests = 0;
+    await page.route(syntheticAudioUrl, async route => { mediaRequests += 1; await route.abort(); });
+    for (const published of [false, true]) {
+      introAudioFixture = published ? { src: syntheticAudioUrl, publishedAt: "2026-10-21T00:00:00Z" } : null;
+      const before = introAudioMetadataRequests;
+      await page.goto(origin + "/en/academy/principles-of-energywork/learn", { waitUntil: "domcontentloaded", timeout: 90000 });
+      await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
+      await page.locator('button[data-energywork-next]').click();
+      await page.locator('input[name="welcome-02"][value="beginner"]').check();
+      await page.locator('button[data-energywork-next]').click();
+      await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id', 'flight-01');
+      await page.screenshot({ path: output + "/" + engineName + "-optional-audio-" + (published ? "published" : "unpublished") + ".png", animations: "disabled", timeout: 30000 });
+      console.log("REIKI_AUDIO_METADATA_DIAGNOSTIC", JSON.stringify({ engine: engineName, published, requestsBefore: before, requestsNow: introAudioMetadataRequests, observed: introAudioNetwork, serviceWorkerControlled: await page.evaluate(() => Boolean(navigator.serviceWorker?.controller)) }));
+      await expect.poll(() => introAudioMetadataRequests).toBeGreaterThan(before);
+      const player = page.locator('[data-reiki-lesson-intro-audio]');
+      if (published) {
+        await expect(player).toBeVisible();
+        const audio = player.locator('audio');
+        await expect(audio).toHaveAttribute('src', syntheticAudioUrl);
+        await expect(audio).toHaveAttribute('preload', 'none');
+        await expect(audio).toHaveAttribute('controls', '');
+        await expect(audio).not.toHaveAttribute('autoplay', /.*/);
+        await expect(audio).toHaveJSProperty('paused', true);
+      } else {
+        await expect(player).toHaveCount(0);
+        await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
+      }
     }
+    assert.equal(mediaRequests, 0, 'Optional audio must not fetch or play before user interaction');
+    introAudioFixture = null;
+    await page.unroute(syntheticAudioUrl);
+    console.log('REIKI_OPTIONAL_AUDIO_UI_PASS', JSON.stringify({ engine: engineName, states: ['unpublished', 'published'], synthetic: true, serviceWorkers: 'blocked-only-for-ui-fixture' }));
+  } finally {
+    introAudioFixture = null;
+    await audioContext.close();
   }
-  assert.equal(mediaRequests, 0, 'Optional audio must not fetch or play before user interaction');
-  introAudioFixture = null;
-  await page.unroute(syntheticAudioUrl);
-  console.log('REIKI_OPTIONAL_AUDIO_UI_PASS', JSON.stringify({ engine: engineName, states: ['unpublished', 'published'], synthetic: true }));
 }
 
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
 const page = await context.newPage();
 page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)));
-page.on("request", request => {
+const introMetadataPattern = new RegExp("^" + origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "/api/reiki-intro-audio\\?lesson=(flight|tantra|kundalini|yggdrasil|initiation)&locale=(en|ru)$");
+async function installIntroMetadataFixture(targetPage) {
+targetPage.on("request", request => {
   if (new URL(request.url()).pathname === "/api/reiki-intro-audio")
     introAudioNetwork.push({ event: "request", url: request.url(), method: request.method() });
 });
-page.on("requestfailed", request => {
+targetPage.on("requestfailed", request => {
   if (new URL(request.url()).pathname === "/api/reiki-intro-audio")
     introAudioNetwork.push({ event: "failed", url: request.url(), reason: request.failure()?.errorText });
 });
-const introMetadataPattern = new RegExp("^" + origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "/api/reiki-intro-audio\\?lesson=(flight|tantra|kundalini|yggdrasil|initiation)&locale=(en|ru)$");
-await page.route(introMetadataPattern, async route => {
+  await targetPage.route(introMetadataPattern, async route => {
   assert.equal(route.request().method(), 'GET', 'Optional-audio metadata fixture is read-only');
   introAudioMetadataRequests += 1;
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ audio: introAudioFixture }) });
-});
+  });
+}
+await installIntroMetadataFixture(page);
 try {
   // Capture independent guest/mobile evidence before optional-metadata or full-tour
   // failures. No assertion is skipped and any failure still fails this job.
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
-  await verifyOptionalIntroAudio(page);
+  await verifyOptionalIntroAudio();
   const image = await page.request.get(origin+"/images/holistic-house/reiki-heaven-sky.svg");
   assert.equal(image.status(),200,"Approved local sky background must be served");
   assert.match(image.headers()["content-type"]||"",/image\/svg\+xml/);
