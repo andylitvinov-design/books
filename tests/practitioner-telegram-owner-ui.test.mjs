@@ -15,7 +15,7 @@ test('setup page requires owner session and only displays safe status',()=>{
 test('signed admin Server Actions are explicit, guarded, and preview-blocked',()=>{
  const s=read('app/admin/telegram-setup/actions.js')
  assert.match(s,/^'use server'/)
- assert.equal((s.match(/if\(!await requireAdminRequest\(\)\)/g)||[]).length,3)
+ assert.equal((s.match(/if\(!await requireAdminRequest\(\)\)/g)||[]).length,5)
  assert.match(s,/await ensureOwnerTelegramPairing\(config\)/)
  assert.match(s,/await sendOwnerTelegramTest\(config\)/)
  assert.match(s,/process\.env\.VERCEL_ENV==='preview'/)
@@ -45,4 +45,24 @@ test('owner-friendly page is reachable from admin navigation and mobile friendly
  assert.match(css,/@media\(max-width:400px\)/)
  assert.match(css,/safe-area-inset-bottom/)
  assert.match(css,/:focus-visible/)
+})
+
+
+test('owner AI setup is signed and requires explicit free mode plus no-paid confirmation',()=>{
+ const actions=read('app/admin/telegram-setup/actions.js')
+ const page=read('app/admin/telegram-setup/page.js')
+ assert.match(actions,/saveOwnerFreeProviderAction\(formData\)/)
+ assert.match(actions,/disableOwnerFreeProviderAction\(formData\)/)
+ assert.match(actions,/formData\?\.get\('free_confirmed'\)==='yes'/)
+ assert.match(actions,/formData\?\.get\('no_paid_billing'\)==='yes'/)
+ assert.match(actions,/requireAdminRequest\(\)/)
+ assert.match(actions,/VERCEL_ENV==='preview'/)
+ assert.match(page,/ownerAiProviderReadiness\(config\)/)
+ assert.match(page,/name="mistral_key" type="password"/)
+ assert.match(page,/autoComplete="off"/)
+ assert.match(page,/name="provider" value="gemini"/)
+ assert.match(page,/name="provider" value="mistral"/)
+ assert.match(page,/name="free_confirmed"/)
+ assert.match(page,/name="no_paid_billing"/)
+ assert.doesNotMatch(page,/formData\.get\('mistral_key'\)|\.apiKey/)
 })
