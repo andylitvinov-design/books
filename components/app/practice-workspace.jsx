@@ -223,7 +223,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     {destination:'videos',icon:Film,title:ru?'Видео сайта':locale==='es'?'Vídeos del sitio':'Website videos',description:ru?'Публичная видеобиблиотека и размещение.':locale==='es'?'Biblioteca y publicación de vídeos.':'Public video library and placement.'},
     {destination:'youtube',icon:CalendarDays,title:ru?'Загрузка YouTube':locale==='es'?'Subir a YouTube':'YouTube upload',description:ru?'Отдельная загрузка после проверки ролика и канала.':locale==='es'?'Subir tras revisar vídeo y canal.':'Separate upload after video and channel QA.'},
   ]
-  async function openOwner(destination,clientId,lesson) {
+  async function openOwner(destination,clientId,lesson,mode) {
     if(busy||!isOwner)return
     setBusy(true);setError('')
     try {
@@ -240,7 +240,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       const safeLesson=['flight','tantra','kundalini','yggdrasil','initiation'].includes(lesson)?lesson:null
       const destinationUrl=destination==='reikiCourse'&&safeLesson&&
         result.redirectUrl==='/admin/materials/courses/reiki-practitioner'
-        ?result.redirectUrl+'?lesson='+safeLesson+'&lang='+(locale==='ru'?'ru':'en')
+        ?result.redirectUrl+'?lesson='+safeLesson+'&lang='+(locale==='ru'?'ru':'en')+(mode==='record'?'&mode=record':'')
         :result.redirectUrl
       window.location.assign(destinationUrl)
     } catch {
@@ -506,7 +506,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
-        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={lesson=>openOwner('reikiCourse',undefined,lesson)} onOpenServices={()=>choosePanel('services')} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenServices={()=>choosePanel('services')} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
