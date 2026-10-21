@@ -31,3 +31,8 @@ test('existing entry, privacy and explicit teacher arrangement are preserved', (
     'Ваши заметки не отправляются Андрею автоматически', 'Tus notas no se envían automáticamente']) assert.ok(landing.includes(phrase), phrase);
   assert.doesNotMatch(landing, /<form|<input|fetch\(/);
 });
+
+test('Russian referral discloses the English course before its canonical entry', () => {
+  assert.match(landing, /actionNote: "Курс открывается на английском · Первый урок без регистрации/);
+  assert.match(landing, /const courseHref = REIKI_FREE_COURSE_PATH/);
+});
