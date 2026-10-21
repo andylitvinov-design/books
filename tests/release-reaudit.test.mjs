@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, constants as fsConstants } from 'node:fs';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import { projectReleaseImageryBuildManifest, readReleaseImageryBuildDiagnostic } from '../scripts/helpers/release-imagery-build-diagnostic.mjs';
 const read = path => readFileSync(path, 'utf8');
 // Execute the real effect callbacks, transpiling TypeScript without rewriting their logic.
 const navigationSource = read('components/site-navigation.tsx');
@@ -328,4 +329,277 @@ test('release poster audit delegates the full original image set to the disclosu
   assert.match(posters, /await decodeReadyPoster\(image, expect\)/);
   assert.match(posters, /Opening the disclosure must not replace an original poster source/);
   assert.doesNotMatch(posters, /:visible|waitForTimeout|setAttribute|\.filter\(|route\(|fetch\(/);
+});
+
+const imageryEntry = '/[locale]/services/imagery-therapy/page';
+const imageryFiles = [
+  'static/chunks/webpack-0123456789abcdef.js',
+  'static/chunks/main-app-0123456789abcdef.js',
+  'static/chunks/123-0123456789abcdef.js',
+  'static/chunks/4bd1b696-0123456789abcdef.js',
+  'static/chunks/app/layout-0123456789abcdef.js',
+  'static/chunks/app/[locale]/services/imagery-therapy/page-0123456789abcdef.js',
+];
+const imageryManifest = files => JSON.stringify({ pages: { [imageryEntry]: files } });
+const nominalImageryManifest = imageryManifest(imageryFiles);
+const nominalImageryProjection = { status: 'present', entrypoint: imageryEntry, files: imageryFiles };
+function assertNominalImageryProjection() {
+  assert.deepEqual(projectReleaseImageryBuildManifest(nominalImageryManifest), nominalImageryProjection);
+}
+function fakeImageryFs({ text = nominalImageryManifest, failAt, code = 'EACCES', directory = true,
+  symlink = false, regular = true, size = Buffer.byteLength(text), afterSize = size,
+  changed = false, readChunk = Infinity } = {}) {
+  const bytes = Buffer.from(text);
+  const calls = [];
+  let offset = 0;
+  let stats = 0;
+  const call = name => {
+    calls.push(name);
+    if (name === failAt) throw Object.assign(new Error('SECRET_BUILD_ERROR_CANARY'), { code });
+  };
+  return { calls, fs: {
+    lstatSync(path) {
+      assert.equal(path, '.next'); call('lstat');
+      return { isDirectory: () => directory, isSymbolicLink: () => symlink };
+    },
+    openSync(path, flags) {
+      assert.equal(path, '.next/app-build-manifest.json');
+      assert.equal(flags, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK);
+      call('open'); return 17;
+    },
+    fstatSync(fd) {
+      assert.equal(fd, 17); call('fstat'); stats += 1;
+      return { isFile: () => regular, size: stats === 1 ? size : afterSize,
+        mtimeMs: stats > 1 && changed ? 2 : 1, ino: 7, dev: 8 };
+    },
+    readSync(fd, buffer, start, length, position) {
+      assert.equal(fd, 17); assert.equal(position, null); call('read');
+      assert.ok(buffer.length <= 4 * 1024 * 1024 + 1);
+      const count = Math.min(bytes.length - offset, length, readChunk);
+      bytes.copy(buffer, start, offset, offset + count); offset += count;
+      return count;
+    },
+    closeSync(fd) { assert.equal(fd, 17); call('close'); },
+  } };
+}
+
+test('generated Imagery diagnostic projects one exact public entry and no other values', () => {
+  assertNominalImageryProjection();
+  const manifest = JSON.stringify({ pages: {
+    '/SECRET_PRIVATE_ROUTE_CANARY/page': ['SECRET_PRIVATE_FILE_CANARY'],
+    [imageryEntry]: imageryFiles,
+  } });
+  const output = projectReleaseImageryBuildManifest(manifest);
+  assert.deepEqual(output, nominalImageryProjection);
+  assert.doesNotMatch(JSON.stringify(output), /SECRET_/);
+  assert.ok(Buffer.byteLength(JSON.stringify(output)) < 11000);
+});
+
+const invalidImageryShapes = [
+  ['bad JSON', '{SECRET_JSON_CANARY', 'json'],
+  ['null root', 'null', 'shape'],
+  ['array root', '[]', 'shape'],
+  ['missing pages', '{}', 'shape'],
+  ['null pages', '{"pages":null}', 'shape'],
+  ['array pages', '{"pages":[]}', 'shape'],
+  ['unknown top field', JSON.stringify({ pages: { [imageryEntry]: imageryFiles }, secret: 'SECRET_FIELD_CANARY' }), 'shape'],
+  ['non-array files', imageryManifest({ secret: 'SECRET_FILES_CANARY' }), 'files'],
+  ['empty files', imageryManifest([]), 'files'],
+  ['too many files', imageryManifest(Array.from({ length: 65 }, (_, i) => `static/chunks/${i}-0123456789abcdef.js`)), 'files'],
+  ['duplicate files', imageryManifest([...imageryFiles, imageryFiles[0]]), 'duplicates'],
+  ['oversize text', ' '.repeat(4 * 1024 * 1024 + 1), 'size'],
+  ['non-text input', { secret: 'SECRET_OBJECT_CANARY' }, 'size'],
+];
+for (const [name, manifest, reason] of invalidImageryShapes) {
+  test(`generated Imagery projection rejects ${name} without a partial file list`, () => {
+    assertNominalImageryProjection();
+    const output = projectReleaseImageryBuildManifest(manifest);
+    assert.deepEqual(output, { status: 'invalid', reason });
+    assert.equal(Object.hasOwn(output, 'files'), false);
+    assert.doesNotMatch(JSON.stringify(output), /SECRET_|static\/chunks/);
+  });
+}
+
+const unsafeImageryFiles = [
+  null, 17, {}, ['SECRET_ARRAY_CANARY'],
+  'SECRET_FILENAME_CANARY',
+  'static/chunks/' + '1'.repeat(161) + '-0123456789abcdef.js',
+  '/static/chunks/123-0123456789abcdef.js',
+  'https://SECRET_HOST_CANARY/static/chunks/123-0123456789abcdef.js',
+  '//SECRET_HOST_CANARY/static/chunks/123-0123456789abcdef.js',
+  'static/chunks/../123-0123456789abcdef.js',
+  'static/chunks/./123-0123456789abcdef.js',
+  'static/chunks\\123-0123456789abcdef.js',
+  'static/chunks/123-0123456789abcdef.js?SECRET_QUERY_CANARY=secret',
+  'static/chunks/123-0123456789abcdef.js#SECRET_HASH_CANARY',
+  'static/chunks/123-0123456789abcdef.js\n',
+  'static/chunks/123-0123456789abcdef.js\r',
+  'static/chunks/123-0123456789abcdef.js\u2028',
+  'static/chunks/123-0123456789abcdef.js\u2029',
+  'static/chunks/123-0123456789abcdef.js\0',
+  'static/chunks/123-0123456789abcdef.js.map',
+  'static/chunks/123-0123456789abcdef.css',
+  'static/chunks/123-0123456789abcde.js',
+  'static/chunks/123-0123456789abcdef0.js',
+  'static/chunks/123-0123456789ABCDEF.js',
+  'static/chunks/polyfills-0123456789abcdef.js',
+  'static/chunks/app/[locale]/services/imagery-therapy/page-0123456789abcdef.js?x=SECRET_QUERY_CANARY',
+  'static/chunks/app/%5Blocale%5D/services/imagery-therapy/page-0123456789abcdef.js',
+  'static/chunks/app/%255Blocale%255D/services/imagery-therapy/page-0123456789abcdef.js',
+  'static/chunks/app/[locale]/layout-0123456789abcdef.js',
+  'static/chunks/app/[locale]/page-0123456789abcdef.js',
+  'static/chunks/app/[locale]/services/page-0123456789abcdef.js',
+  'static/chunks/app/[locale]/services/free-situation-review/page-0123456789abcdef.js',
+  'static/chunks/app/[locale]/client/page-0123456789abcdef.js',
+  'static/chunks/app/admin/page-0123456789abcdef.js',
+];
+for (const [index, unsafe] of unsafeImageryFiles.entries()) {
+  test(`generated Imagery projection rejects unsafe filename case ${index + 1}`, () => {
+    assertNominalImageryProjection();
+    const output = projectReleaseImageryBuildManifest(imageryManifest([...imageryFiles, unsafe]));
+    assert.deepEqual(output, { status: 'invalid', reason: 'filename' });
+    assert.equal(Object.hasOwn(output, 'files'), false);
+    assert.doesNotMatch(JSON.stringify(output), /SECRET_|static\/chunks/);
+  });
+}
+
+test('generated Imagery diagnostic distinguishes a missing exact key without visiting sibling entries', () => {
+  assertNominalImageryProjection();
+  for (const key of ['/en/services/imagery-therapy/page', imageryEntry + '/', '/[locale]/services/imagery-therapy', '/SECRET_ROUTE_CANARY']) {
+    assert.deepEqual(projectReleaseImageryBuildManifest(JSON.stringify({ pages: { [key]: ['SECRET_OTHER_CANARY'] } })),
+      { status: 'absent', reason: 'entrypoint' });
+  }
+});
+
+test('generated Imagery reader uses fixed paths, no-follow open, bounded reads and closes its descriptor', () => {
+  const fixture = fakeImageryFs({ readChunk: 7 });
+  assert.deepEqual(readReleaseImageryBuildDiagnostic(fixture.fs), nominalImageryProjection);
+  assert.equal(fixture.calls[0], 'lstat');
+  assert.equal(fixture.calls[1], 'open');
+  assert.equal(fixture.calls.at(-1), 'close');
+  assert.equal(fixture.calls.filter(call => call === 'close').length, 1);
+});
+
+const imageryReadFaults = [
+  ['missing directory', { failAt: 'lstat', code: 'ENOENT' }, { status: 'absent', reason: 'manifest' }],
+  ['missing manifest', { failAt: 'open', code: 'ENOENT' }, { status: 'absent', reason: 'manifest' }],
+  ['directory is a symlink', { symlink: true }, { status: 'invalid', reason: 'file-type' }],
+  ['directory is not a directory', { directory: false }, { status: 'invalid', reason: 'file-type' }],
+  ['manifest is a symlink', { failAt: 'open', code: 'ELOOP' }, { status: 'unreadable' }],
+  ['manifest is not regular', { regular: false }, { status: 'invalid', reason: 'file-type' }],
+  ['manifest is empty', { text: '' }, { status: 'invalid', reason: 'size' }],
+  ['file too large before read', { size: 4 * 1024 * 1024 + 1 }, { status: 'invalid', reason: 'size' }],
+  ['file grows beyond byte limit', { text: ' '.repeat(4 * 1024 * 1024 + 2), size: 1 }, { status: 'invalid', reason: 'size' }],
+  ['file shrinks during read', { size: Buffer.byteLength(nominalImageryManifest) + 1 }, { status: 'invalid', reason: 'changed' }],
+  ['file metadata changes', { changed: true }, { status: 'invalid', reason: 'changed' }],
+  ['file final size changes', { afterSize: 1 }, { status: 'invalid', reason: 'changed' }],
+  ...['lstat', 'open', 'fstat', 'read', 'close'].map(failAt => [`${failAt} fails`, { failAt }, { status: 'unreadable' }]),
+];
+for (const [name, options, expected] of imageryReadFaults) {
+  test(`generated Imagery reader safely records ${name}`, () => {
+    assert.deepEqual(readReleaseImageryBuildDiagnostic(fakeImageryFs().fs), nominalImageryProjection);
+    const fixture = fakeImageryFs(options);
+    const output = readReleaseImageryBuildDiagnostic(fixture.fs);
+    assert.deepEqual(output, expected);
+    assert.doesNotMatch(JSON.stringify(output), /SECRET_|static\/chunks/);
+    if (fixture.calls.includes('fstat')) assert.equal(fixture.calls.at(-1), 'close');
+    if (options.symlink || options.directory === false) assert.deepEqual(fixture.calls, ['lstat']);
+    if (options.regular === false || options.size > 4 * 1024 * 1024) assert.ok(!fixture.calls.includes('read'));
+  });
+}
+
+function runImageryDiagnosticCaller(source, { label = 'local', rows = [{ name: 'synthetic-paid-boundary', ok: false }],
+  diagnostic = nominalImageryProjection, observe = false } = {}) {
+  const ast = ts.createSourceFile('verify-release-reaudit.mjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const variables = ast.statements.filter(ts.isVariableStatement).flatMap(statement => [...statement.declarationList.declarations]);
+  const declaration = variables.filter(node => node.name.getText(ast) === 'buildAttribution');
+  assert.equal(declaration.length, 1);
+  const modeCheck = ast.statements.find(statement => ts.isExpressionStatement(statement)
+    && ts.isCallExpression(statement.expression) && statement.expression.expression.getText(ast) === 'assertReleasePaidMode');
+  assert.ok(modeCheck && modeCheck.end < declaration[0].pos, 'validate mode before diagnostic read');
+  const counts = { reads: 0 };
+  const buildAttribution = runInNewContext(declaration[0].initializer.getText(ast), {
+    label, readReleaseImageryBuildDiagnostic: () => { counts.reads += 1; return diagnostic; },
+  });
+  const firstTail = ast.statements.find(statement => ts.isVariableStatement(statement)
+    && statement.declarationList.declarations.some(node => node.name.getText(ast) === 'failed'));
+  assert.ok(firstTail);
+  const writes = [];
+  const logs = [];
+  let error;
+  try {
+    runInNewContext(source.slice(firstTail.getStart(ast)), {
+      results: rows, origin: label === 'local' ? 'http://127.0.0.1:3123' : 'https://holistichouse.vercel.app',
+      label, evidence: '/tmp/release-reaudit', buildAttribution,
+      process: { env: { GITHUB_SHA: '0123456789abcdef0123456789abcdef01234567' }, argv: observe ? ['--observe'] : [] },
+      writeFileSync: (path, content) => writes.push({ path, content: JSON.parse(content) }),
+      console: { log: text => logs.push(JSON.parse(text)) }, assert,
+    });
+  } catch (caught) { error = caught; }
+  return { counts, writes, logs, error };
+}
+function assertImageryCallerContract(source) {
+  assert.equal(source.split("import { readReleaseImageryBuildDiagnostic } from './helpers/release-imagery-build-diagnostic.mjs';").length - 1, 1);
+  for (const label of ['local', 'live']) {
+    for (const diagnostic of [nominalImageryProjection, { status: 'absent', reason: 'manifest' }, { status: 'invalid', reason: 'filename' }, { status: 'unreadable' }]) {
+      const result = runImageryDiagnosticCaller(source, { label, diagnostic });
+      assert.equal(result.counts.reads, label === 'local' ? 1 : 0, 'local-only manifest read');
+      assert.equal(result.writes.length, 1);
+      assert.equal(result.writes[0].path, `/tmp/release-reaudit/${label}-results.json`);
+      assert.equal(result.writes[0].content.total, 1);
+      assert.equal(result.writes[0].content.failed, 1, 'original failed count');
+      assert.deepEqual(result.writes[0].content.results, [{ name: 'synthetic-paid-boundary', ok: false }]);
+      assert.equal(Object.hasOwn(result.writes[0].content, 'buildAttribution'), label === 'local', 'no live projection');
+      if (label === 'local') assert.deepEqual(result.writes[0].content.buildAttribution, diagnostic);
+      assert.deepEqual(result.logs, [{ label, total: 1, failed: 1, failures: [{ name: 'synthetic-paid-boundary', ok: false }] }]);
+      assert.match(result.error?.message ?? '', /Re-audit failed; inspect evidence/, 'original failure remains fatal');
+    }
+  }
+}
+
+test('actual Release caller keeps every original failure fatal with only local diagnostic augmentation', () => {
+  const source = read('scripts/verify-release-reaudit.mjs');
+  assertImageryCallerContract(source);
+  const success = runImageryDiagnosticCaller(source, { rows: [{ name: 'synthetic-pass', ok: true }] });
+  assert.equal(success.error, undefined);
+  assert.equal(success.writes[0].content.failed, 0);
+  const observe = runImageryDiagnosticCaller(source, { observe: true });
+  assert.equal(observe.error, undefined);
+  assert.equal(observe.writes[0].content.failed, 1);
+});
+
+const imageryCallerMutants = [
+  ['live read', source => source.replace("label === 'local' ? readReleaseImageryBuildDiagnostic() : undefined", 'readReleaseImageryBuildDiagnostic()'), /local-only manifest read/],
+  ['live field', source => source.replace("...(label === 'local' ? { buildAttribution } : {})", "...{ buildAttribution: buildAttribution ?? { status: 'unreadable' } }"), /no live projection/],
+  ['missing field', source => source.replace(", ...(label === 'local' ? { buildAttribution } : {})", ''), /no live projection/],
+  ['wrong output path', source => source.replace('`${evidence}/${label}-results.json`', '`${evidence}/${label}-replacement.json`'), /results\.json/],
+  ['forged failed count', source => source.replace('failed: failed.length, results,', 'failed: 0, results,'), /original failed count/],
+  ['removed fatal assertion', source => source.replace("if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');", ''), /original failure remains fatal/],
+];
+for (const [name, mutate, message] of imageryCallerMutants) {
+  test(`generated Imagery caller contract rejects ${name} after a nominal execution`, () => {
+    const source = read('scripts/verify-release-reaudit.mjs');
+    assertImageryCallerContract(source);
+    const mutant = mutate(source);
+    assert.notEqual(mutant, source);
+    assert.throws(() => assertImageryCallerContract(mutant), message);
+  });
+}
+
+test('generated Imagery diagnostic is source-bound to the public route and existing local artifact contract', () => {
+  const route = read('app/[locale]/services/imagery-therapy/page.tsx');
+  assert.match(route, /PersonalServiceLanding/);
+  assert.match(route, /const service = "imagery-therapy" as const/);
+  assert.match(route, /return <PersonalServiceLanding locale=\{locale as ServicePageLocale\} service=\{service\} \/>/);
+  const lock = JSON.parse(read('package-lock.json'));
+  assert.equal(lock.packages['node_modules/next'].version, '15.5.21');
+  const workflow = read('.github/workflows/release-reaudit.yml');
+  assert.match(workflow, /name: Build exact proposed release\s+run: npm run build/);
+  assert.match(workflow, /node scripts\/verify-release-reaudit\.mjs\s+env:\s+REAUDIT_ORIGIN: http:\/\/127\.0\.0\.1:3123\s+REAUDIT_LABEL: local/);
+  assert.match(workflow, /name: release-reaudit-evidence\s+path: \/tmp\/release-reaudit\/\s+retention-days: 7/);
+  assert.match(workflow, /node --test[^\n]+tests\/release-reaudit\.test\.mjs/);
+  const helper = read('scripts/helpers/release-imagery-build-diagnostic.mjs');
+  assert.doesNotMatch(helper, /process\.env|process\.argv|fetch\(|request\.|writeFile|console\.|child_process|playwright|eval\(/);
+  const paid = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
+  assert.doesNotMatch(paid, /readReleaseImageryBuildDiagnostic|projectReleaseImageryBuildManifest|buildAttribution|app-build-manifest/);
 });

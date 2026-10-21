@@ -4,6 +4,7 @@ import { verifyReleasePosters } from './helpers/release-services-poster-verifier
 import { assertCabinetGuestEntry } from './helpers/cabinet-guest-entry-verifier.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
 import { assertReleasePaidMode, verifyReleasePaidEnquiry } from './helpers/release-paid-enquiry-verifier.mjs';
+import { readReleaseImageryBuildDiagnostic } from './helpers/release-imagery-build-diagnostic.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
@@ -16,6 +17,7 @@ assert.ok(['127.0.0.1', 'localhost', 'holistichouse.vercel.app'].includes(url.ho
 assert.ok(!url.username && !url.password && !url.search && !url.hash);
 const label = process.env.REAUDIT_LABEL || 'local';
 assertReleasePaidMode({ origin, label }); // Reject unknown/mismatched mode before any browser/context/network work.
+const buildAttribution = label === 'local' ? readReleaseImageryBuildDiagnostic() : undefined;
 const evidence = '/tmp/release-reaudit';
 mkdirSync(evidence, { recursive: true });
 const results = [];
@@ -753,7 +755,7 @@ try {
   }
 } finally { await context.close(); await browser.close(); }
 const failed = results.filter(row => !row.ok);
-writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results }, null, 2));
+writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results, ...(label === 'local' ? { buildAttribution } : {}) }, null, 2));
 console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');
 
