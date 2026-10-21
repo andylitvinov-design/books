@@ -220,3 +220,18 @@ test('Kundalini slide includes all three screenshot-supplied reflections in Engl
   assert.match(learner, /data-review-prev/)
   assert.match(css, /\.voiceQuote p \{[\s\S]*?overflow-y:auto;[\s\S]*?max-height:175px;/)
 })
+
+test('Flight to the Sun invites curiosity, removes clinical caveats and only offers published audio', () => {
+  const opening = curriculum.slice(curriculum.indexOf('id: "flight-01"'), curriculum.indexOf('id: "flight-02"'))
+  const audio = read('components/reiki-lesson-intro-audio.tsx')
+  assert.match(opening, /The Sun is calling\. Are you ready\?/)
+  assert.match(opening, /Солнце зовёт\. Готовы к полёту\?/)
+  assert.match(opening, /Andrey invites you on a guided journey through your imagination/)
+  assert.match(opening, /воображаемый полёт к Солнцу/)
+  assert.equal((opening.match(/\n\s+l\("/g) || []).length, 3)
+  assert.doesNotMatch(opening, /physical or medical claim|не медицинское утверждение/i)
+  assert.match(audio, /if \(!audio\) return null;/)
+  assert.doesNotMatch(audio, /will be added here|скоро появится/)
+  assert.match(css, /Flight to the Sun: warmer, more evocative opening/)
+  assert.match(css, /\[data-energywork-slide-id="flight-01"\] \.lessonIntroPanel/)
+})
