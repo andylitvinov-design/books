@@ -1262,7 +1262,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         .catch((error: { status?: number }) => { setSaveError(error.status === 409 ? t.conflict : t.saveFailed); });
     }, 950);
     return () => window.clearTimeout(timer);
-  }, [sync, slide.id, slide.question, slide.secondaryQuestion, answers, request, t.saveFailed]);
+  }, [sync, slide.id, slide.question, slide.secondaryQuestion, answers, request, t.conflict, t.saveFailed]);
   // Warn before losing a not-yet-confirmed private answer.
   useEffect(() => {
     if (!dirtyRef.current.size) return;
