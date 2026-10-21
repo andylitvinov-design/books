@@ -1,0 +1,70 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { readFileSync } from 'node:fs'
+import {
+  cabinetActionHref, cabinetActionIds, matchCabinetIntent,
+} from '../lib/app/cabinet-today.mjs'
+
+const component = readFileSync(new URL('../components/app/cabinet-today.jsx', import.meta.url), 'utf8')
+const stylesheet = readFileSync(new URL('../components/app/cabinet-today.module.css', import.meta.url), 'utf8')
+const workspace = readFileSync(new URL('../components/app/app-workspace.jsx', import.meta.url), 'utf8')
+
+test('cabinet actions go to existing editors and personal paths, never into user text or external sites', () => {
+  assert.equal(cabinetActionHref('course', 'en'), '/en/app/practice?panel=materials&materialTab=courses')
+  assert.equal(cabinetActionHref('article', 'ru'), '/ru/app/practice?panel=materials&materialTab=articles')
+  assert.equal(cabinetActionHref('video', 'en'), '/en/app/practice?panel=materials&materialTab=videos')
+  assert.equal(cabinetActionHref('audio', 'ru'), '/ru/app/practice?panel=materials&materialTab=audio')
+  assert.equal(cabinetActionHref('tests', 'ru'), '/ru/app/tests')
+  assert.equal(cabinetActionHref('reports', 'en'), '/en/app/portrait#personal-reports')
+  assert.equal(cabinetActionHref('lessons', 'en'), '/en/app/course?view=courses')
+  assert.equal(cabinetActionHref('ideas', 'en'), '/en/books')
+  assert.equal(cabinetActionHref('unsafe', 'en'), null)
+  assert.equal(cabinetActionHref('course', 'es'), '/en/app/practice?panel=materials&materialTab=courses')
+})
+
+test('material shortcuts are exposed to practitioners only; audio remains owner-only', () => {
+  assert.deepEqual(cabinetActionIds().slice(0,4), ['tests', 'reports', 'lessons', 'ideas'])
+  assert.ok(!cabinetActionIds().includes('course'))
+  assert.ok(!cabinetActionIds({practitioner:true}).includes('audio'))
+  assert.ok(!cabinetActionIds({owner:true}).includes('audio'))
+  assert.ok(cabinetActionIds({practitioner:true,owner:true}).includes('audio'))
+  assert.ok(cabinetActionIds({practitioner:true}).includes('article'))
+})
+
+test('typed RU/EN wishes select real tools without automatically creating or transmitting data', () => {
+  const owner = {practitioner:true,owner:true}
+  assert.equal(matchCabinetIntent('Хочу написать статью',owner), 'article')
+  assert.equal(matchCabinetIntent('Создать курс о бизнесе',owner), 'course')
+  assert.equal(matchCabinetIntent('Записать видео',owner), 'video')
+  assert.equal(matchCabinetIntent('Записать аудио',owner), 'audio')
+  assert.equal(matchCabinetIntent('Пройти тесты'), 'tests')
+  assert.equal(matchCabinetIntent('Покажи мои отчёты'), 'reports')
+  assert.equal(matchCabinetIntent('Read my reports'), 'reports')
+  assert.equal(matchCabinetIntent('Continue a course',owner), 'lessons')
+  assert.equal(matchCabinetIntent('Take a test'), 'tests')
+  assert.equal(matchCabinetIntent('Check my blood test'), 'labs')
+  assert.equal(matchCabinetIntent('Create a course'), 'lessons')
+  assert.equal(matchCabinetIntent('Написать статью'), 'ideas')
+  assert.equal(matchCabinetIntent('I need help'), 'review')
+  assert.equal(matchCabinetIntent(''), null)
+  assert.equal(matchCabinetIntent('Всё и сразу'), null)
+})
+
+test('signed-in portrait opens the compact task-first UI before preserved report archive', () => {
+  assert.match(workspace, /import CabinetToday from/)
+  const today = workspace.indexOf('<CabinetToday locale={locale}')
+  const archive = workspace.indexOf('<ProfileDomains locale={locale} mode="account"')
+  assert.ok(today > 0 && archive > today)
+  assert.match(workspace, /practitioner=\{Boolean\(data\.practitioner \|\| data\.practice\)\}/)
+  assert.match(workspace, /owner=\{Boolean\(data\.practitioner\)\}/)
+  assert.match(component, /data-cabinet-today/)
+  assert.match(component, /data-cabinet-wish-form/)
+  assert.match(component, /data-cabinet-action=\{id\}/)
+  assert.match(component, /role="status"/)
+  assert.match(component, /onSubmit=\{onSubmit\}/)
+  assert.match(component, /speechRef\.current\?\.stop/)
+  assert.doesNotMatch(component, /localStorage|sessionStorage|sendBeacon|fetch\(|JSON\.stringify\(wish\)/)
+  assert.match(stylesheet, /@media\(max-width:430px\)/)
+  assert.match(stylesheet, /@media\(max-width:350px\)/)
+  assert.match(stylesheet, /focus-visible/)
+})
