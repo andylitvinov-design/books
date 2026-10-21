@@ -99,11 +99,12 @@ test('guest registration creates an encrypted CRM contact in the same transactio
 test('shared course/service chooser requires a reply contact and opt-in; name is optional',()=>{
   const view=read('components/contact-channel-chooser.tsx')
   const styles=read('components/contact-channel-chooser.module.css')
-  for (const term of ['autoComplete="name"','autoComplete="email"','autoComplete="tel"',
+  for (const term of ['autoComplete="name"','autoComplete="email"',
     'contactConsent: consent', 'contact: { displayName:', 'type="checkbox" required',
     'setConsent(false)','setDisplayName("")','setPhone("")']) {
     assert.ok(view.includes(term),term)
   }
+  assert.match(read('components/phone-country-input.tsx'),/autoComplete="tel-national"/)
   assert.match(view,/sourcePath: pathname, locale/)
   assert.match(view,/fetch\("\/api\/service-enquiries"/)
   assert.match(view,/name:\s*"Ваше имя"/)
