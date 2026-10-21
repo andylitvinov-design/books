@@ -7,7 +7,7 @@ Canonical code: `lib/labs/reference-catalog.mjs` and `lib/labs/reference-engine.
 ## First data slice
 - **61 distinct analytes** across CBC, iron, glucose regulation, lipids, liver, kidney, electrolytes, thyroid, nutrition, inflammation and urinalysis.
 - EN/RU/ES display names, strict exact-match synonyms, category, specimen and a preferred storage/display unit for each analyte.
-- **54 structured interval records**, covering hemoglobin, WBC, RBC, MCV, hematocrit, platelets and plasma alkaline phosphatase, with age/sex partitions where their reference source actually supplies them.
+- **67 structured interval records**, covering hemoglobin, WBC, RBC, MCV, hematocrit, platelets, plasma alkaline phosphatase, plasma TSH, plasma creatinine and plasma ferritin, with age/sex partitions where their reference source actually supplies them.
 - The numbers are **source-laboratory-specific educational examples** (University of Iowa); they are **not verified ranges for Canadian labs or Holistic House users**. No data for another lab is synthesized or extrapolated. Entries are not clinically approved.
 - Sources include laboratory name, original URL, method, specimen, review date and explicit laboratory-specific scope.
 
@@ -20,6 +20,9 @@ Examples demonstrating why age matters (not universal medical cutoffs):
 | Hemoglobin | Age 18+, female reference partition | 11.9–15.5 | g/dL |
 | Plasma ALP | Age 13–<15 y, male reference partition | 116–468 | U/L |
 | Plasma ALP | Age 13–<15 y, female reference partition | 57–254 | U/L |
+| Plasma TSH | Age 1–<12 months, any sex partition | 1.03–6.80 | mIU/L |
+| Plasma TSH | Age 19+, any sex partition | 0.27–4.20 | mIU/L |
+| Plasma creatinine | Age 16+, male reference partition | 0.67–1.17 | mg/dL |
 
 These examples are only reproduced in the draft source-specific catalog with provenance, **never inserted into patient missing lower/upper bounds**.
 
@@ -28,9 +31,12 @@ These examples are only reproduced in the draft source-specific catalog with pro
 2. [University of Iowa — WBC Count](https://www.healthcare.uiowa.edu/path_handbook/handbook/test1977.html): EDTA whole blood, flow cytometry; age partitions.
 3. [University of Iowa — CBC](https://www.healthcare.uiowa.edu/path_handbook/rhandbook/test299.html): EDTA blood; RBC, MCV, adult hematocrit/platelets. Verify method-specific ranges before application.
 4. [University of Iowa — Alkaline Phosphatase](https://www.healthcare.uiowa.edu/path_handbook/rhandbook/test1487.html): plasma, colorimetric; age and sex partitions.
-5. [SickKids CALIPER pediatric reference database](https://caliperproject.ca/caliper/database/): future method/platform-specific enrichment after individual interval extraction, permissions/clinical validation and citations. **No CALIPER numerical data has yet been imported.**
-6. [MedlinePlus — Understanding Lab Results](https://medlineplus.gov/lab-tests/how-to-understand-your-lab-results/): lab-specific ranges, variable methods and individual context.
-7. [CLSI EP28](https://clsi.org/shop/standards/ep28/): clinical laboratory establishment/verification of reference intervals.
+5. [University of Iowa — TSH](https://www.healthcare.uiowa.edu/path_handbook/handbook/test1827.html): plasma, electrochemiluminescence immunoassay; adult and pediatric partitions updated April 2026. **Newborn <1 month TSH bands are deliberately omitted** because an exact 48-hour boundary cannot be resolved with date-only input.
+6. [University of Iowa — Creatinine](https://www.healthcare.uiowa.edu/path_handbook/rhandbook/test530.html): plasma, enzymatic colorimetric; neonatal/child/16+ partitions. Creatinine mg/dL → µmol/L factor 88.4 is whitelisted for reference example display only.
+7. [University of Iowa — Ferritin](https://www.healthcare.uiowa.edu/path_handbook/rhandbook/test793.html): plasma, ECL immunoassay; adult manufacturer interval. The **0–20 ng/mL clinical deficiency threshold is not a reference interval** and was NOT imported as a reference range.
+8. [SickKids CALIPER pediatric reference database](https://caliperproject.ca/caliper/database/): future method/platform-specific enrichment after individual interval extraction, permissions/clinical validation and citations. **No bulk/direct CALIPER database data has been imported**; the University of Iowa's TSH page credits CALIPER pediatric research.
+9. [MedlinePlus — Understanding Lab Results](https://medlineplus.gov/lab-tests/how-to-understand-your-lab-results/): lab-specific ranges, variable methods and individual context.
+10. [CLSI EP28](https://clsi.org/shop/standards/ep28/): clinical laboratory establishment/verification of reference intervals.
 
 Last manual source check: 2026-10-20. This is not a claim that a healthcare professional has reviewed the data.
 
