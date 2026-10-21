@@ -84,3 +84,25 @@ test("all homepage slides describe real benefits in EN, RU and ES with compact m
   assert.match(carousel, /title: "Курсы, уроки и медитации"/);
   assert.match(carousel, /title: "Nuevas ideas para tu pregunta"/);
 });
+
+test("the approved photo hero has light text-only section links without replacing its slider", () => {
+  const sections = ["home", "tests", "services", "academy", "business", "ideas"];
+  assert.match(carousel, /const navKeys = \["home", "tests", "services", "academy", "business", "ideas"\] as const/);
+  assert.match(carousel, /<nav className=\{styles\.sectionNav\} aria-label=\{t\.navigationLabel\}/);
+  assert.match(carousel, /data-home-nav-section=\{key\}/);
+  assert.match(carousel, /aria-current=\{key === "home" \? "page" : undefined\}/);
+  assert.match(carousel, /slides\.find\(item => item\.key === key\)/);
+  assert.match(carousel, /href=\{target \? `\/\$\{locale\}\$\{target\.href\}` : locale === "en" \? "\/" : `\/\$\{locale\}`\}/);
+  for (const item of sections) assert.match(carousel, new RegExp(item + ': "'));
+  for (const label of ["Главная", "Тесты", "Услуги", "Академия", "Бизнес", "Идеи", "Inicio", "Pruebas", "Servicios", "Academia", "Negocios"]) {
+    assert.ok(carousel.includes(label), "Missing localized top navigation label: " + label);
+  }
+  assert.ok(carousel.indexOf("className={styles.sectionNav}") > carousel.indexOf("className={styles.gradient}"));
+  assert.ok(carousel.indexOf("className={styles.sectionNav}") < carousel.indexOf("className={styles.slideCopy}"));
+  assert.match(style, /\.sectionNav \{[^}]*position:absolute/);
+  assert.match(style, /\.sectionNavScroller \{[^}]*overflow-x:auto/);
+  assert.match(style, /\.sectionNavLink \{[^}]*min-height:44px/);
+  assert.match(style, /\.sectionNavLink\[aria-current="page"\]/);
+  assert.match(style, /@media \(max-width:365px\)/);
+  assert.doesNotMatch(carousel, /navKeys\.map[^]*?<svg/);
+});
