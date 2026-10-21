@@ -453,7 +453,7 @@ async function verifySaveThenInstall(page, locale) {
   await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(0);
   await offer.locator("button").click();
   await expect(page.locator("[data-energywork-slide-id]"))
-    .toHaveAttribute("data-energywork-slide-id", "flight-save");
+    .toHaveAttribute("data-energywork-slide-id", "tan-01");
   await expect(page.locator("[data-reiki-install-offer]")).toHaveCount(0);
   await page.unroute(progressPattern);
   await page.unroute(bootstrapPattern);
