@@ -11,15 +11,16 @@ test("milestone save and continue actions appear on the slide instead of footer"
   assert.match(learner, /data-reiki-milestone-choices/);
   assert.match(learner, /data-reiki-tomorrow-choice/);
   assert.match(learner, /data-energywork-next/);
-  assert.match(learner, /tomorrowChoice: "Save and finish for today"/);
-  assert.match(learner, /tomorrowChoice: "Сохранить и закончить на сегодня"/);
+  assert.match(learner, /tomorrowChoice: "Save my lesson"/);
+  assert.match(learner, /tomorrowChoice: "Сохранить урок"/);
   assert.match(learner, /onClick=\{finishForToday\}/);
   assert.match(learner, /slide\.kind !== "milestone" && !completed/);
   assert.doesNotMatch(learner, /data-reiki-reminder-setup|reminderSetupOpen|downloadTomorrowReminder/);
   assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
   assert.match(css, /\.milestoneInlineChoices/);
   assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /min-height: 55px/);
+  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /min-height: 64px/);
 });
 test("guest must consent and authenticate before server save and post-save install", () => {
   assert.match(learner, /if \(sync === "guest" \|\| sync === "consent"\)/);
@@ -29,7 +30,7 @@ test("guest must consent and authenticate before server save and post-save insta
   assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value\)/);
   assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
   assert.match(learner, /hydrate\(value\); \/\/ Private server persistence is confirmed before the app offer\./);
-  assert.match(learner, /await store\(nextId\);\s*setShowInstallOffer\(true\)/);
+  assert.match(learner, /await store\(nextId\);[\s\S]*?window\.location\.assign\("\/" \+ locale \+ "\/app\/course\?view=courses"\)/);
   assert.match(learner, /if \(showInstallOffer && sync === "ready"\)/);
   assert.match(learner, /data-reiki-install-offer/);
   assert.match(learner, /href=\{"\/" \+ locale \+ "\/install"\}/);
@@ -47,4 +48,38 @@ test("optional calendar utility remains neutral but is not part of the save path
   assert.match(event, /BEGIN:VALARM\r\nACTION:DISPLAY\r\n/);
   assert.doesNotMatch(event, /patient|health|remedy|diagnos|assessment|token|\?slide=/i);
   assert.doesNotMatch(learner, /onClick=\{downloadTomorrowReminder\}/);
+});
+
+test("first lesson save is docked inside its slide, above progress and navigation", () => {
+  const slide = learner.slice(learner.indexOf('data-energywork-slide-id={slide.id}'));
+  const saveCardStart = slide.indexOf('data-reiki-first-lesson-save');
+  const saveCardEnd = slide.indexOf('</aside>', saveCardStart);
+  const dockStart = slide.indexOf('data-reiki-save-dock', saveCardEnd);
+  const dockEnd = slide.indexOf('</div>', dockStart);
+  const progressStart = slide.indexOf('<div className={styles.progressFooter}>');
+  assert.ok(saveCardStart > 0 && saveCardEnd > saveCardStart, "consent remains in save slide");
+  assert.ok(dockStart > saveCardEnd && dockEnd > dockStart && progressStart > dockEnd,
+    "save action is a separate in-slide row before course progress");
+  assert.doesNotMatch(slide.slice(saveCardStart, saveCardEnd), /data-reiki-first-lesson-google-save/);
+  assert.match(slide.slice(dockStart, dockEnd), /data-reiki-first-lesson-google-save/);
+  assert.equal((learner.match(/data-reiki-first-lesson-google-save/g) || []).length, 1,
+    "one save action, not a duplicate button");
+  assert.match(slide.slice(dockStart, dockEnd), /onClick=\{sync === "ready" \? next : saveLessonOneToCabinet\}/);
+  assert.match(slide.slice(dockStart, dockEnd), /!firstLessonConsent/,
+    "guest cannot save until opting into private storage");
+});
+
+test("small iPhones reserve an always-visible, tap-safe in-slide save row", () => {
+  const dockRules = css.slice(css.indexOf("/* Keep the first lesson's save button"));
+  assert.ok(dockRules.startsWith("/* Keep the first lesson's save button"));
+  const localRules = dockRules.split("/* App install is a separate optional page")[0];
+  assert.match(localRules, /grid-template-rows: minmax\(0, 1fr\) auto/);
+  assert.match(localRules, /\.firstLessonSaveDock\s*\{[\s\S]*?padding:/);
+  assert.match(localRules, /@media \(max-width: 760px\)[\s\S]*?display: flex;\s*flex-direction: column/);
+  assert.match(localRules, /\.slideMain\s*\{\s*flex: 1 1 auto;\s*min-height: 0;\s*height: auto/);
+  assert.match(localRules, /@media \(max-width: 380px\) and \(max-height: 700px\)/);
+  assert.match(localRules, /min-height: 44px/);
+  assert.doesNotMatch(localRules, /position:\s*(?:fixed|absolute)/,
+    "anchored button remains in normal layout, not overlapping content");
+  assert.match(css, /\.page\[data-course-one-screen\] \.slideMain\{[\s\S]*?overflow-y:auto/);
 });

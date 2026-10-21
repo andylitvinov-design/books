@@ -8,8 +8,8 @@ import { readUiLocale, saveUiLocale } from '@/lib/ui-locale'
 export function PrescriptionAdminHeader({ title, description, initialLocale = 'en', compactMarketing = false }) {
   const [locale, setLocale] = useState(initialLocale === 'ru' ? 'ru' : 'en')
   const labels = locale === 'ru'
-    ? { cabinet: 'Кабинет', practice: 'Моя практика', marketing: 'Маркетинг', acquisition: 'Кампании', newConsultation: 'Новая консультация', reports: 'Отчёты', clients: 'Клиенты', legacy: 'Архив', materials: 'Материалы', videos: 'Видео сайта', seo:'SEO', growth:'Продвижение', youtubeUploader: 'Загрузка в YouTube', reikiAudio: 'Рейки · Аудио', telegram: 'Telegram', logout: 'Выйти', language: 'Язык интерфейса' }
-    : { cabinet: 'Cabinet', practice: 'My Practice', marketing: 'Marketing', acquisition: 'Campaigns', newConsultation: 'New consultation', reports: 'Reports', clients: 'Clients', legacy: 'Legacy', materials: 'Materials', videos: 'Website videos', seo:'SEO', growth:'Growth Studio', youtubeUploader: 'YouTube upload', reikiAudio: 'Reiki audio', telegram: 'Telegram', logout: 'Logout', language: 'Interface language' }
+    ? { cabinet: 'Кабинет', practice: 'Моя практика', marketing: 'Маркетинг', acquisition: 'Кампании', newConsultation: 'Новая консультация', reports: 'Отчёты', clients: 'Клиенты', legacy: 'Архив', materials: 'Материалы', videos: 'Видео сайта', seo:'SEO', growth:'Продвижение', youtubeUploader: 'Загрузка в YouTube', reikiAudio: 'Курсы', telegram: 'Telegram', logout: 'Выйти', language: 'Язык интерфейса' }
+    : { cabinet: 'Cabinet', practice: 'My Practice', marketing: 'Marketing', acquisition: 'Campaigns', newConsultation: 'New consultation', reports: 'Reports', clients: 'Clients', legacy: 'Legacy', materials: 'Materials', videos: 'Website videos', seo:'SEO', growth:'Growth Studio', youtubeUploader: 'YouTube upload', reikiAudio: 'Courses', telegram: 'Telegram', logout: 'Logout', language: 'Interface language' }
 
   useEffect(() => setLocale(readUiLocale(document.cookie)), [])
 
@@ -59,7 +59,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
         <Link href="/admin/videos">{labels.videos}</Link>
         <Link href="/admin/youtube-upload">{labels.youtubeUploader}</Link>
         <Link href="/admin/telegram-setup">{labels.telegram}</Link>
-        <Link href="/admin/materials/audio/reiki-practitioner">{labels.reikiAudio}</Link>
+        <Link href="/admin/materials/courses">{labels.reikiAudio}</Link>
       </nav>}
     </header>
   )

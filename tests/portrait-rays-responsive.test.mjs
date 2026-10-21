@@ -108,6 +108,57 @@ test('All is the first of five views and shows only measurement coverage, not av
   }
 })
 
+test('All ray lengths equal the exact measured / total fraction of the 146-unit radius',()=>{
+  // The example values are 4/5, 2/3, 2/4 and 4/5, not normalized wellbeing scores.
+  const measured = ['stress','anxiety','sleep','energy','clarity','focus',
+    'relationships','intimacy','mood','emotional_regulation','resource','meaning']
+  const expected = {body:4/5,work:2/3,relationships:2/4,growth:4/5}
+  for(const locale of ['en','ru','es']){
+    const app = harness(locale,measured)
+    const groups = nodes(app.render(),'g',p=>p['data-summary-sector']!==undefined)
+    assert.equal(groups.length,4)
+    for(const group of groups){
+      const key = group.props['data-summary-sector']
+      const ray = nodes(group,'line',p=>p.className==='radarRay')
+      const dot = nodes(group,'circle',p=>p.className==='radarPoint')
+      assert.equal(ray.length,1,key)
+      assert.equal(dot.length,1,key)
+      const length = Math.hypot(ray[0].props.x2-180,ray[0].props.y2-182)
+      assert.ok(Math.abs(length-146*expected[key])<1e-8,`${locale}: ${key} expected ${expected[key]*100}% radius, got ${length/146*100}%`)
+      assert.ok(Math.abs(Math.hypot(dot[0].props.cx-180,dot[0].props.cy-182)-length)<1e-8,key+' dot matches ray')
+    }
+  }
+  const empty = harness('en',[]).render()
+  for(const group of nodes(empty,'g',p=>p['data-summary-sector']!==undefined)){
+    assert.equal(nodes(group,'line',p=>p.className==='radarRay').length,0)
+  }
+})
+
+test('individual current and previous rays use the full 0–100 scale with no artificial minimum length',()=>{
+  for(const locale of ['en','ru','es']){
+    const app = harness(locale,['stress','anxiety','sleep','energy'])
+    for(const [axis,percent] of [['stress',0],['anxiety',25],['sleep',50],['energy',100]]){
+      app.portrait.axes[axis].percent=percent
+    }
+    app.portrait.axes.sleep.previousPercent=25
+    const detail = app.choose('body')
+    for(const [axis,percent] of [['stress',0],['anxiety',25],['sleep',50],['energy',100]]){
+      const group=detailRays(detail).find(item=>item.props['data-detail-axis']===axis)
+      const ray=nodes(group,'line',p=>p.className==='radarRay')
+      const dot=nodes(group,'circle',p=>p.className==='radarPoint')
+      assert.equal(ray.length,1,axis)
+      assert.equal(dot.length,1,axis)
+      const length=Math.hypot(ray[0].props.x2-180,ray[0].props.y2-182)
+      assert.ok(Math.abs(length-146*percent/100)<1e-8,`${locale}: ${axis} ${length} vs ${percent}%`)
+      assert.ok(Math.abs(Math.hypot(dot[0].props.cx-180,dot[0].props.cy-182)-length)<1e-8,axis+' dot')
+    }
+    const sleep=detailRays(detail).find(item=>item.props['data-detail-axis']==='sleep')
+    const prior=nodes(sleep,'circle',p=>p.className==='radarPrior')
+    assert.equal(prior.length,1)
+    assert.ok(Math.abs(Math.hypot(prior[0].props.cx-180,prior[0].props.cy-182)-146*.25)<1e-8)
+  }
+})
+
 test('each category shows all its own 3–5 scales, spaced over the FULL 360-degree contour',()=>{
   for(const locale of ['en','ru','es']){
     const app=harness(locale)
