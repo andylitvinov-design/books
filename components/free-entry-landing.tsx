@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { FreeResourceEnquiry } from "@/components/free-resource-enquiry";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
@@ -342,13 +342,37 @@ const copy = {
   },
 } as const;
 
+const finalCopy = {
+  en: {
+    tests: { title: "Not sure which test to take?", lead: "Leave a contact. We’ll suggest a simple starting point." },
+    situation: { title: "Get your free written review", lead: "Leave a contact. Andrey will explain the next step." },
+    dao: { title: "Get your free Wu Xing profile", lead: "Leave a contact. Andrey will explain how to begin." },
+  },
+  ru: {
+    tests: { title: "Не знаете, какой тест выбрать?", lead: "Оставьте контакт — подскажем, с чего начать." },
+    situation: { title: "Получите бесплатный письменный разбор", lead: "Оставьте контакт — Андрей подскажет следующий шаг." },
+    dao: { title: "Получите бесплатный профиль У-Син", lead: "Оставьте контакт — Андрей объяснит, как начать." },
+  },
+  es: {
+    tests: { title: "¿No sabes qué prueba elegir?", lead: "Deja tu contacto y te orientaremos para empezar." },
+    situation: { title: "Recibe tu revisión gratuita por escrito", lead: "Deja un contacto y Andrey te explicará el siguiente paso." },
+    dao: { title: "Solicita tu perfil Wu Xing gratuito", lead: "Deja un contacto y Andrey te dirá cómo empezar." },
+  },
+} as const;
+
+const serviceTitles = {
+  tests: "Free test starting-point guidance",
+  situation: "Free written Situation Review",
+  dao: "Free symbolic Wu Xing Resource Profile",
+} as const;
+
 export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind: FreeEntryKind }) {
   const t = copy[locale][kind];
   const common = copy[locale].common;
   const images = art[kind];
   const captureId = kind === "dao" ? "request-free-wu-xing" : kind === "situation" ? "request-free-review" : "start-free";
   const testsHref = "/" + locale + "/client/tests";
-  const detailHref = kind === "dao" ? "/" + locale + "/wu-xing" : kind === "situation" ? "/" + locale + "/about" : testsHref;
+  const final = finalCopy[locale][kind];
 
   return (
     <main className={styles.page} lang={locale} data-free-entry-landing={kind}>
@@ -381,39 +405,12 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </figure>
         </section>
 
-        <section className={styles.capture} id={captureId} aria-labelledby="free-capture-title">
-          <div className={styles.captureIntro}>
-            <p className={styles.sectionLabel}>01 / {common.prepare}</p>
-            <h2 id="free-capture-title">{t.startTitle}</h2>
-            <p>{t.startLead}</p>
-            <div className={styles.miniPhoto}><Image src={images.outcome} alt="" fill sizes="(max-width: 800px) 100vw, 38vw" /></div>
-            <p className={styles.optional}><ShieldCheck size={18} aria-hidden="true" />{common.optional}</p>
-          </div>
-          <div className={styles.captureForm}>
-            {kind === "tests" ?
-              <div className={styles.testEntry}>
-                <span className={styles.badge}>{common.free}</span>
-                <p className={styles.testEntryHint}>{t.outcomeLead}</p>
-                <ul>{t.outcomes.map((item) => <li key={item.title}><CheckCircle2 size={17} aria-hidden="true" />{item.title}</li>)}</ul>
-                <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link>
-                <small>{common.privacy}</small>
-              </div> :
-              <FreeResourceEnquiry locale={locale} kind={kind} />}
-            {kind === "situation" ?
-              <details className={styles.fullQuestionnaire}>
-                <summary>{common.fullForm}</summary>
-                <FreeSituationReviewForm locale={locale} />
-              </details> : null}
-          </div>
-        </section>
-
-
         <section className={[styles.scene, styles.outcomeScene].join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
           <div className={styles.sceneImage}>
             <Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
           <div className={styles.sceneText}>
-            <p className={styles.sectionLabel}>02 / {common.benefits}</p>
+            <p className={styles.sectionLabel}>01 / {common.benefits}</p>
             <h2 id="free-outcomes-title">{t.outcomeTitle}</h2>
             <p className={styles.sectionLead}>{t.outcomeLead}</p>
             <div className={styles.outcomeList}>
@@ -426,7 +423,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
 
         <section className={[styles.scene, styles.processScene].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
           <div className={styles.sceneText}>
-            <p className={styles.sectionLabel}>03 / {common.process}</p>
+            <p className={styles.sectionLabel}>02 / {common.process}</p>
             <h2 id="free-process-title">{t.processTitle}</h2>
             <p className={styles.sectionLead}>{t.processLead}</p>
             <ol className={styles.steps}>
@@ -441,24 +438,24 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </div>
         </section>
 
+        {kind === "situation" ? (
+          <details className={styles.fullQuestionnaire} data-optional-written-review>
+            <summary>{common.fullForm}</summary>
+            <FreeSituationReviewForm locale={locale} />
+          </details>
+        ) : null}
+
         {kind !== "tests" ? <div className={styles.videoWrap}><ServiceVideoShowcase topic="overview" locale={locale} id="service-video" /></div> : null}
         {kind === "situation" ? <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="all" /> : null}
 
-        <section className={styles.end} aria-labelledby="free-questions-title">
-          <div>
-            <p className={styles.sectionLabel}>{common.more}</p>
-            <h2 id="free-questions-title">{common.more}</h2>
-            <div className={styles.faq}>
-              {t.faq.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
-            </div>
-          </div>
-          <aside className={styles.endLinks}>
-            <p>{common.optional}</p>
-            <Link href={detailHref} prefetch={false}>{kind === "dao" ? common.model : kind === "tests" ? common.aboutTests : common.about}<ArrowRight size={16} aria-hidden="true" /></Link>
-            <Link href={"/" + locale + "/services#free-insights"} prefetch={false}>{common.explore}<ArrowRight size={16} aria-hidden="true" /></Link>
-          </aside>
-        </section>
-        <p className={styles.safety}><ShieldCheck size={17} aria-hidden="true" />{common.limitations}</p>
+        <CompactLeadCapture
+          locale={locale}
+          id={captureId}
+          serviceTitle={serviceTitles[kind]}
+          title={final.title}
+          lead={final.lead}
+          disclaimer={common.limitations}
+        />
       </div>
     </main>
   );
