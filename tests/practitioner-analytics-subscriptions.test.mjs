@@ -51,12 +51,12 @@ test('weekly includes seven completed days only; Spanish copy and privacy',()=>{
  const r=makeMasterAnalyticsText({services:[service],daily:days,now:at,locale:'es',frequency:'weekly'})
  assert.deepEqual(r.totals,{impressions:20,orders:3,whatsapp:3,telegram:3})
  assert.match(r.text,/2026-10-19 — 2026-10-25/)
- assert.match(r.text,/Sin datos de clientes/)
+ assert.match(r.text,/sin datos de clientes/i)
 })
 test('empty reporting never claims absence of visitors, Russian localization',()=>{
  const r=makeMasterAnalyticsText({services:[],daily:[],now:at,locale:'ru',frequency:'daily'})
  assert.match(r.text,/не означает, что посещений не было/)
- assert.match(r.text,/Только цифры/)
+ assert.match(r.text,/Только общие счётчики/)
 })
 test('private REST endpoint authenticates, binds account, blocks cross-origin and does not accept recipient identity',()=>{
  const api=file('app/api/app/practice-analytics-notifications/route.js')
