@@ -168,3 +168,20 @@
 @container (max-width: 300px) {
   .methodChoices { grid-template-columns:1fr; }
 }
+
+/* Inline 1-step requests: no nested card or extra fields. Submission is an
+   affirmative reply-only action; never an advertising subscription. */
+.wrapper[data-quick="true"] { padding-bottom:0 !important; }
+.quickPanel { margin:0; padding:0; border:0; background:transparent; box-shadow:none; }
+.quickPanel .enquiryForm { gap:8px; }
+.quickPanel .googleButton { min-height:47px; }
+.quickPanel .contactFields { margin:2px 0 0; }
+.quickPanel .contactFields input { min-height:48px; border-radius:11px; }
+.quickPanel .submit { min-height:49px; background:#973e58; font-size:14px; }
+.quickPanel .submit:not(:disabled):hover { background:#843349; }
+.quickSwitch { justify-self:start; width:auto; padding:5px 1px; border:0; background:transparent;
+  color:#236c72; text-decoration:underline; text-underline-offset:3px; font:650 12px/1.4 Arial,Helvetica,sans-serif; cursor:pointer; }
+.quickSwitch:focus-visible { outline:3px solid #80abc7; outline-offset:3px; }
+.quickConsent { display:block; color:#496a6b; font:500 11px/1.45 Arial,Helvetica,sans-serif; }
+@media(max-width:430px){ .quickPanel .googleButton,.quickPanel .submit { min-height:46px; }
+  .quickPanel .contactFields input { min-height:46px; } }
