@@ -7,31 +7,43 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 
-test("all four lesson checkpoints offer tomorrow and continue-now choices without altering the 63-slide course", () => {
-  assert.match(learner, /slide\.kind === "milestone" && slide\.id !== "flight-save" && reminderSetupOpen/);
+test("all four lesson checkpoints get a separate save-or-continue screen without changing the 63-slide curriculum", () => {
+  assert.match(learner, /const milestoneDecision = slide\\.kind === "milestone"/);
+  assert.match(learner, /setMilestoneDecisionId\\(slide\\.id\\)/);
+  assert.match(learner, /data-reiki-lesson-choice-screen/);
+  assert.match(learner, /data-energywork-slide-kind=\\{milestoneDecision \\? "decision" : slide\\.kind\\}/);
+  assert.match(learner, /key=\\{slide\\.id \\+ \\(milestoneDecision \\? "-choice" : ""\\)\\}/);
+  assert.match(learner, /data-reiki-save-tomorrow/);
+  assert.match(learner, /data-reiki-continue-now/);
   assert.match(learner, /data-reiki-tomorrow-choice/);
   assert.match(learner, /data-reiki-reminder-setup/);
   assert.match(learner, /data-energywork-next/);
-  assert.match(learner, /continueNowSave: "Continue now — save lesson 1 first"/);
-  assert.match(learner, /continueNow: "I'd like to continue now — next lesson"/);
-  assert.match(learner, /tomorrowChoice: "Хорошая работа! До завтра — напомнить мне"/);
-  assert.match(learner, /finishForToday\(\)[\s\S]*?await store\(nextId\)/);
-  assert.match(learner, /sync === "ready" \? <button type="button" disabled=\{busy\}/);
-  assert.match(learner, /slide\.id === "flight-done"[\s\S]*?t\.signInForTomorrow/);
-  assert.match(learner, /href=\{"\/" \+ locale \+ "\/install"\}/);
-  assert.match(learner, /href=\{"\/" \+ locale \+ "\/app\/settings#hh-phone-notifications"\}/);
-  assert.match(learner, /app\/course\?view=courses/);
-  assert.match(learner, /useEffect\(\(\) => \{ setReminderSetupOpen\(false\)/);
+  assert.match(learner, /decisionSave: "Save and return tomorrow"/);
+  assert.match(learner, /decisionSave: "Сохранить и продолжить завтра"/);
+  assert.match(learner, /decisionContinue: "Continue now"/);
+  assert.match(learner, /decisionContinue: "Продолжить сейчас"/);
+  assert.match(learner, /finishForToday\\(\\)[\\s\\S]*?await store\\(nextId\\)/);
+  assert.match(learner, /async function chooseTomorrow\\(\\)[\\s\\S]*?await finishForToday\\(\\)/);
+  assert.match(learner, /if \\(milestoneDecision\\) \\{[\\s\\S]*?setMilestoneDecisionId\\(null\\)/);
+  assert.match(learner, /ENERGYWORK_RETURN_TOMORROW_KEY/);
+  assert.match(learner, /if \\(returnTomorrow\\) window\\.location\\.assign\\("/);
+  assert.match(learner, /sync === "ready" \\? <button type="button" disabled=\\{busy\\}/);
+  assert.match(learner, /slide\\.id === "flight-done"[\\s\\S]*?t\\.signInForTomorrow/);
+  assert.match(learner, /href=\\{"\\/" \\+ locale \\+ "\\/install"\\}/);
+  assert.match(learner, /href=\\{"\\/" \\+ locale \\+ "\\/app\\/settings#hh-phone-notifications"\\}/);
+  assert.match(learner, /app\\/course\\?view=courses/);
+  assert.match(learner, /useEffect\\(\\(\\) => \\{ setMilestoneDecisionId\\(null\\)/);
 });
-test("mobile choices are accessible and use no automatic push permission request", () => {
-  assert.match(css, /@media \(max-width: 430px\)/);
-  assert.match(css, /\.milestoneActions \.reminderChoice/);
-  assert.match(css, /min-height: 66px/);
-  assert.match(learner, /aria-expanded=\{reminderSetupOpen\}/);
+test("separate decision is mobile readable and reminder setup is explicit opt-in", () => {
+  assert.match(css, /@media \\(max-width: 430px\\)/);
+  assert.match(css, /\\.lessonDecision/);
+  assert.match(css, /\\.decisionActions/);
+  assert.match(css, /min-height: 75px/);
+  assert.match(learner, /aria-expanded=\\{reminderSetupOpen\\}/);
   assert.match(learner, /type="time"/);
   assert.match(learner, /calendarReady/);
   assert.match(learner, /pushNote: "Автоматические push-напоминания именно об уроках Рейки пока не работают/);
-  assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe|fetch\(["']https?:/);
+  assert.doesNotMatch(learner, /Notification\\.requestPermission|pushManager\\.subscribe|fetch\\(["']https?:/);
 });
 test("one-time calendar file is local-date-safe, neutral, and explicitly opt-in", () => {
   assert.equal(REIKI_LESSON_REMINDER_DEFAULT, "19:00");
