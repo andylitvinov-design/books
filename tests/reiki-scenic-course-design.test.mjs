@@ -102,7 +102,8 @@ test('Private consent and optimistic saving survive the visual design transition
   assert.match(learner, /data-reiki-first-lesson-save/)
   assert.match(learner, /t\.consentText/)
   assert.match(learner, /data-reiki-private-save-status/)
-  assert.match(learner, /className=\{styles\.saveSettings\}/)\n  assert.match(learner, /data-reiki-final-share-consent/)
+  assert.match(learner, /className=\{styles\.saveSettings\}/)
+  assert.match(learner, /data-reiki-final-share-consent/)
   assert.match(learner, /setSaveError\(t\.saveFailed\)/)
 })
 
