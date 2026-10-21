@@ -48,7 +48,7 @@
 .action svg { flex-shrink: 0; }
 .action:hover { transform: translateY(-1px); border-color: #996e4d; background: white; }
 .action[aria-pressed="true"] { border-color: #6b4630; background: #593e2d; color: #fff9ee; }
-.action:focus-visible, .reset:focus-visible, .hexagramActions a:focus-visible, .hexagramActions button:focus-visible, .offer a:focus-visible {
+.action:focus-visible, .reset:focus-visible, .hexagramActions a:focus-visible, .hexagramActions button:focus-visible, .guidanceLink:focus-visible {
   outline: 3px solid #98683a; outline-offset: 3px;
 }
 .results { margin-top: 19px; padding: clamp(15px, 3vw, 26px); border: 1px solid var(--ideas-line); border-radius: 17px; background: rgba(255,255,255,.65); }
@@ -65,39 +65,81 @@
 .hexagramText h3 { margin: 8px 0; font-family: Georgia, serif; font-size: 24px; font-weight: 500; }
 .hexagramText > p:not(.tag) { margin: 6px 0 0; font-size: 14px; line-height: 1.6; }
 .hexagramActions { display: flex; gap: 10px 20px; flex-wrap: wrap; margin-top: 17px; }
-.hexagramActions a, .hexagramActions button, .offer a {
+.hexagramActions a, .hexagramActions button {
   min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
   gap: 8px; padding: 10px 16px; border-radius: 999px; font-size: 12px;
   font-weight: 750; text-decoration: none; cursor: pointer;
 }
-.hexagramActions a, .offer a { color: #fffaf2; background: #61422f; border: 1px solid #61422f; }
+.hexagramActions a { color: #fffaf2; background: #61422f; border: 1px solid #61422f; }
 .hexagramActions button { color: #61422f; background: transparent; border: 1px solid #bda78e; }
 .aphorisms { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .aphorisms li { display: flex; align-items: baseline; gap: 16px; border-bottom: 1px solid #e3d5c2; padding: 10px 0 15px; }
 .aphorisms li:last-child { border: none; }
 .number { flex: 0 0 29px; color: #967452; font-size: 12px; font-weight: 800; }
 .aphorisms p { margin: 0; font-family: Georgia, serif; font-size: clamp(18px, 2.4vw, 23px); line-height: 1.35; }
-.offers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
-.offer { display: flex; flex-direction: column; min-width: 0; min-height: 225px; padding: 17px; border: 1px solid #dfd0bd; border-radius: 14px; background: #fffdfa; }
-.offerHead { display: flex; align-items: center; justify-content: space-between; color: #745439; }
-.offerHead span { background: #e9f0e2; color: #476043; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 800; }
-.offer h3 { font-family: Georgia, serif; font-size: 21px; font-weight: 500; margin: 14px 0 0; line-height: 1.17; }
-.offer p { margin: 9px 0 18px; font-size: 12px; line-height: 1.55; color: #6c5c51; flex: 1; }
-.offer a { align-self: stretch; }
+/* A single editorial list — never repeated marketing cards with thumbnails. */
+.personalResults { padding: clamp(14px, 2.4vw, 22px); }
+.personalResults .resultsHeading { margin-bottom: 12px; }
+.personalResults .resultsHeading h2 { font-size: clamp(24px, 2.7vw, 31px); }
+.guidance { min-width: 0; }
+.guidanceIntro { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.guidanceIntro p { margin: 0; color: #725d4a; font-size: 12px; line-height: 1.45; }
+.guidanceFree { flex-shrink: 0; padding: 5px 10px; border-radius: 999px; background: #e8ede1; color: #466044; font-weight: 750; font-size: 11px; }
+.guidanceList { margin: 0; padding: 0; list-style: none; border-top: 1px solid #decbb5; }
+.guidanceList li { position: relative; border-bottom: 1px solid #decbb5; }
+.guidanceLink {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) 34px; align-items: center; gap: 15px;
+  min-width: 0; padding: 16px 8px; border-radius: 9px;
+  color: #382a20; text-decoration: none;
+  transition: background-color .15s ease;
+}
+.guidanceLink:hover { background: rgba(230, 216, 197, .36); }
+.guidancePriority .guidanceLink { background: linear-gradient(110deg, rgba(231, 213, 185, .42), rgba(255, 253, 249, .35)); }
+.guidancePriority .guidanceLink:hover { background: rgba(231, 213, 185, .55); }
+.guidancePriority::before { position: absolute; content: ""; width: 3px; left: 0; top: 12px; bottom: 12px; border-radius: 3px; background: #a77f58; }
+.guidanceIndex { align-self: start; padding-top: 1px; font: 500 22px/1.2 Georgia, "Times New Roman", serif; color: #9d7b5a; }
+.guidanceContent { display: block; min-width: 0; }
+.guidanceEyebrow { display: block; color: #8b694b; font-size: 10px; font-weight: 750; letter-spacing: .035em; }
+.guidanceTitle { display: block; margin: 4px 0 0; font: 500 clamp(19px, 2.3vw, 23px)/1.2 Georgia, "Times New Roman", serif; overflow-wrap: anywhere; }
+.guidanceDescription { display: block; margin: 6px 0 0; color: #746154; font-size: 12px; line-height: 1.45; }
+.guidanceAction { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; color: #67452e; font-size: 12px; font-weight: 750; text-decoration: underline; text-underline-offset: 3px; }
+.guidanceArrow { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #dbc9b6; border-radius: 50%; color: #6d4d36; transition: transform .15s ease; }
+.guidanceLink:hover .guidanceArrow { transform: translate(2px, -2px); }
+
 @media (max-width: 760px) {
   .root { border-radius: 18px; padding: 20px 15px; }
   .heading { align-items: flex-start; }
   .decor { font-size: 58px; }
   .question { margin-top: 19px; }
-  .actions { grid-template-columns: 1fr; gap: 7px; }
-  .action { min-height: 50px; padding: 11px 13px; }
+  /* Keep all three choices visible side-by-side on a 320–430px phone. */
+  .actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .action { flex-direction: column; justify-content: center; align-items: center; gap: 5px; min-height: 65px; padding: 9px 4px; text-align: center; font-size: clamp(11px, 2.8vw, 13px); }
+  .action span { flex: 0 1 auto; width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .action svg:first-child { width: 19px; height: 19px; }
+  .action svg:last-child { display: none; }
   .resultsHeading { flex-wrap: wrap; }
-  .offers { grid-template-columns: 1fr; }
-  .offer { min-height: 0; }
+  .personalResults { padding: 13px 11px; }
+  .personalResults .resultsHeading { gap: 10px; }
+  .personalResults .resultsHeading h2 { font-size: 24px; }
+  .guidanceIntro { align-items: flex-start; }
+  .guidanceLink { grid-template-columns: 27px minmax(0, 1fr) 29px; gap: 9px; padding: 13px 4px; }
+  .guidanceIndex { font-size: 18px; }
+  .guidanceTitle { font-size: 18px; }
+  .guidanceDescription { font-size: 12px; }
+  .guidanceArrow { width: 29px; height: 29px; }
+  .guidanceArrow svg { width: 17px; height: 17px; }
   .hexagramCard { flex-direction: column; gap: 12px; }
   .hexagramMark { width: 100%; min-height: 105px; }
 }
+@media (max-width: 360px) {
+  .root { padding: 15px 10px; }
+  .personalResults { padding: 13px 9px; }
+  .guidanceLink { grid-template-columns: 24px minmax(0, 1fr) 26px; gap: 7px; }
+  .guidanceIntro p { font-size: 11px; }
+  .guidanceFree { padding: 4px 7px; }
+  .guidanceTitle { font-size: 17px; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .action, .question textarea { transition: none; }
-  .action:hover { transform: none; }
+  .action, .question textarea, .guidanceLink, .guidanceArrow { transition: none; }
+  .action:hover, .guidanceLink:hover .guidanceArrow { transform: none; }
 }
