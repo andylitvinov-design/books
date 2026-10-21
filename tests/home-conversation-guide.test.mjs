@@ -263,3 +263,16 @@ test("specific offer cards retain compact modal and bounded Safari microphone",(
  for(const term of ["fetch(","sendBeacon(","localStorage","sessionStorage","/api/"])
   assert.ok(!ui.includes(term),term);
 });
+
+
+test("urgent follow-ups override allowed natural-language choices before recommendations", () => {
+  const context = resolveHomeGuideQuestion("I need clients for my business");
+  for (const input of ["I want to die, I am just starting", "Хочу умереть, я начинаю бизнес", "Quiero morir, estoy empezando un negocio"]) {
+    assert.equal(resolveHomeGuideQuestion(input, context.lang, context).urgent, true);
+    assert.equal(matchHomeGuideReply(input, context), null);
+  }
+  const source = read("components/home-conversation-guide.tsx");
+  const ask = source.slice(source.indexOf("  function ask("), source.indexOf("  function submit("));
+  assert.ok(ask.indexOf("const result = resolveHomeGuideQuestion") < ask.indexOf("const replyId ="));
+  assert.match(ask, /const replyId = result.urgent \? null : matchHomeGuideReply/);
+});

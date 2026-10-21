@@ -472,7 +472,8 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
     setIsOpen(true);
-    const replyId = matchHomeGuideReply(question, context);
+    const result = resolveHomeGuideQuestion(question, locale, context);
+    const replyId = result.urgent ? null : matchHomeGuideReply(question, context);
     if (replyId && context && !context.urgent) {
       const selection = chooseHomeGuideOffer(context, replyId, context.lang);
       if (selection) {
@@ -486,7 +487,6 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
         return;
       }
     }
-    const result = resolveHomeGuideQuestion(question, locale, context);
     const responseCopy = copy[result.lang];
     const followup = homeGuideFollowup(result);
     const answer = result.urgent
@@ -889,3 +889,4 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     </section>
   );
 }
+
