@@ -96,7 +96,7 @@ try {
         const dialogBox = await dialog.boundingBox();
         assert.ok(dialogBox && dialogBox.x >= -1 && dialogBox.x + dialogBox.width <= width + 1,
           "Dialog extends beyond the mobile viewport");
-        const question = guide.locator("textarea");
+        const question = dialog.locator("textarea");
         await question.fill(scenario.text);
         await guide.getByRole("button", { name: scenario.send }).click();
         await expect(guide).toHaveAttribute("data-guide-phase", "conversation");
@@ -133,6 +133,14 @@ try {
         await page.keyboard.press("Escape");
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
+        // Full-width first-screen CTA should handle the written question directly.
+        await guide.locator("#home-guide-entry-question").fill(scenario.text);
+        await guide.locator("[data-home-guide-launcher]").click();
+        await expect(guide.locator("[data-home-guide-dialog]")).toBeVisible();
+        await expect(guide.locator('[role="log"]')).toContainText(scenario.text);
+        await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         assert.deepEqual(leak, [], "Private question must not leak through request URLs");
         assert.deepEqual(errors, [], "Homepage javascript error");
         evidence.cases.push({ locale: scenario.locale, width, visible: true, route: scenario.href, reset: true, noUrlLeak: true });
@@ -239,7 +247,7 @@ try {
         await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
         await expect(guide.locator('[role="alert"]')).toBeVisible();
         await guide.getByRole("button", { name: keyboardName[sample.locale] }).click();
-        await expect(guide.locator("textarea")).toBeFocused();
+        await expect(guide.locator("[data-home-guide-dialog] textarea")).toBeFocused();
       }
       if (sample.kind === "permission") {
         await expect(guide.locator("[data-home-voice-recording]")).toBeVisible();
@@ -247,7 +255,7 @@ try {
         await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
         await expect(guide.locator('[role="alert"]')).toBeVisible();
         await guide.getByRole("button", { name: keyboardName[sample.locale] }).click();
-        await expect(guide.locator("textarea")).toBeFocused();
+        await expect(guide.locator("[data-home-guide-dialog] textarea")).toBeFocused();
         assert.ok(!(await guide.locator('[role="log"]').innerText()).includes(sample.text),
           "Denied microphone must not create a question");
       }
