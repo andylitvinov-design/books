@@ -32,9 +32,9 @@ export default function SpanishBooksPage() {
       </section>
       <DaoHexagramLibraryLink locale="es" />
       <SpanishBookShowcase books={books} />
-      <IdeasNewsFeed locale="es" />
       <p className="remedy-disclaimer">Los materiales se ofrecen como archivo educativo de los textos del autor y no sustituyen el diagnóstico ni el tratamiento médico.</p>
       <PublicConsultationCta locale="es" />
+      <IdeasNewsFeed locale="es" />
     </main>
   );
 }
