@@ -162,7 +162,7 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState('')
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
@@ -238,12 +238,33 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       setError(d.ownerError);setBusy(false)
     }
   }
-  function choosePanel(panel) {
+  function setPanelRoute(panel,materialType){
+    const url=new URL(window.location.href)
+    if(panel)url.searchParams.set('panel',panel)
+    else url.searchParams.delete('panel')
+    if(materialType)url.searchParams.set('materialTab',materialType)
+    window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+  }
+  function choosePanel(panel){
     setActivePanel(panel)
+    setPanelRoute(panel)
+    setError('')
+  }
+  function closePanel(){
+    setActivePanel(null)
+    setPanelRoute(null)
+    setError('')
+  }
+  function openMaterialsPanel(tab){
+    setActivePanel('materials')
+    setMaterialTab(tab)
+    setMaterialShortcut(current=>({tab,nonce:current.nonce+1}))
+    setPanelRoute('materials',tab)
     setError('')
   }
   function addService(){
     setActivePanel('services')
+    setPanelRoute('services')
     setNewServiceRequest(current=>current+1)
     setError('')
   }
@@ -350,17 +371,23 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>
           <Leaf aria-hidden="true"/><span>{d.services}</span><strong>{services.length}</strong>
         </button>
-        <button type="button" onClick={()=>choosePanel('materials')} aria-pressed={activePanel==='materials'}>
+        <button type="button" onClick={()=>openMaterialsPanel('articles')} aria-pressed={activePanel==='materials'&&materialTab!=='courses'}>
           <FileText aria-hidden="true"/><span>{ru?'Материалы':locale==='es'?'Materiales':'Materials'}</span><small>{ru?'Библиотека':locale==='es'?'Biblioteca':'Library'}</small>
         </button>
-        <button type="button" onClick={()=>choosePanel('materials')} aria-pressed={activePanel==='materials'}>
+        <button type="button" onClick={()=>openMaterialsPanel('courses')} aria-pressed={activePanel==='materials'&&materialTab==='courses'}>
           <BookOpen aria-hidden="true"/><span>{ru?'Курсы':locale==='es'?'Cursos':'Courses'}</span><small>{ru?'Управление':locale==='es'?'Gestionar':'Manage'}</small>
         </button>
         <button type="button" onClick={()=>choosePanel('analytics')} aria-pressed={activePanel==='analytics'}>
           <BarChart3 aria-hidden="true"/><span>{ru?'Аналитика':locale==='es'?'Analíticas':'Insights'}</span><small>{ru?'Практика':locale==='es'?'Práctica':'Practice'}</small>
         </button>
+        <button type="button" onClick={()=>choosePanel('profile')} aria-pressed={activePanel==='profile'}>
+          <IdCard aria-hidden="true"/><span>{ru?'Профиль':locale==='es'?'Perfil':'Profile'}</span>
+        </button>
+        <button type="button" onClick={()=>choosePanel('more')} aria-pressed={['more','marketing','crm','events'].includes(activePanel)}>
+          <Plus aria-hidden="true"/><span>{ru?'Ещё':locale==='es'?'Más':'More'}</span>
+        </button>
       </div>
-      {!activePanel&&<button type="button" className="hh-practice-v4-materials-cta" onClick={()=>choosePanel('materials')}>
+      {!activePanel&&<button type="button" className="hh-practice-v4-materials-cta" onClick={()=>openMaterialsPanel('courses')}>
         <Headphones aria-hidden="true"/><span><strong>{ru?'Создавайте и делитесь знаниями':locale==='es'?'Crea y comparte conocimientos':'Create and share knowledge'}</strong><small>{ru?'Статьи, услуги, курсы, медитации и видео':locale==='es'?'Artículos, servicios, cursos, audio y vídeo':'Articles, services, courses, meditations and videos'}</small></span><ChevronRight aria-hidden="true"/>
       </button>}
     </section>}
@@ -454,9 +481,25 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel" data-practice-detail-panel={activePanel}>
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
-          <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
+          <h2>{activePanel==='more'?(ru?'Ещё инструменты':locale==='es'?'Más herramientas':'More tools'):activePanel==='analytics'?(ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'):activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
+          <button type="button" className="hh-practice-close" onClick={closePanel}>{d.close} ×</button>
         </div>
+        {activePanel==='more'&&<div className="hh-practice-inline-more" data-practice-inline-more>
+          <div className="hh-practice-tool-grid">
+            <PracticeTile Icon={CalendarDays} title={locale==='ru'?'Мероприятия':locale==='es'?'Eventos':'Events'}
+              description={ru?'Создать встречу или семинар':'Create a meeting or workshop'} onClick={()=>choosePanel('events')} />
+            {isOwner&&<PracticeTile Icon={Megaphone} title={ru?'Маркетинг':locale==='es'?'Marketing':'Marketing'}
+              description={ru?'Growth Studio, SEO и кампании':'Growth Studio, SEO & campaigns'} onClick={()=>choosePanel('marketing')} />}
+            {isOwner&&<PracticeTile Icon={UsersRound} title={ru?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
+              description={ru?'Контакты и подписчики':'Contacts and subscribers'} onClick={()=>choosePanel('crm')} />}
+            {isOwner&&<PracticeTile Icon={FileText} title={d.createReport}
+              description={ru?'Новый отчёт для клиента':'New client report'} onClick={()=>openOwner('report')} />}
+            {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint} onClick={()=>openOwner('reports')} />}
+            {isOwner&&<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint} onClick={()=>openOwner('payment')} />}
+            <PracticeTile Icon={Share2} title={ru?'Поделиться профилем':locale==='es'?'Compartir mi perfil':'Share my profile'}
+              description={ru?'Ссылка на мою публичную страницу':'Public profile link'} onClick={shareProfile} />
+          </div>
+        </div>}
         {activePanel==='marketing'&&isOwner&&<div className="hh-practice-marketing">
           <p className="hh-practice-marketing-intro">{ru?'Ваши инструменты продвижения в одном месте. Автопубликация и реклама без отдельного подтверждения не запускаются.':locale==='es'?'Herramientas de promoción en un solo lugar. No se activan anuncios ni publicaciones automáticas.':'Your promotion tools in one place. No ads or automatic publishing are activated.'}</p>
           <div className="hh-practice-marketing-grid">
@@ -469,7 +512,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
-        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSaveSitePresentation={video=>act(()=>practiceFetch('/profile',{action:'save',
