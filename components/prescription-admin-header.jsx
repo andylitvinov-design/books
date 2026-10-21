@@ -5,11 +5,11 @@ import { useEffect, useState } from 'react'
 import { logout } from '@/app/admin/logout/actions'
 import { readUiLocale, saveUiLocale } from '@/lib/ui-locale'
 
-export function PrescriptionAdminHeader({ title, description, initialLocale = 'en' }) {
+export function PrescriptionAdminHeader({ title, description, initialLocale = 'en', compactMarketing = false }) {
   const [locale, setLocale] = useState(initialLocale === 'ru' ? 'ru' : 'en')
   const labels = locale === 'ru'
-    ? { cabinet: 'Кабинет', newConsultation: 'Новая консультация', reports: 'Отчёты', clients: 'Клиенты', legacy: 'Архив', materials: 'Материалы', videos: 'Видео сайта', seo:'SEO', growth:'Продвижение', youtubeUploader: 'Загрузка в YouTube', reikiAudio: 'Курсы', telegram: 'Telegram', logout: 'Выйти', language: 'Язык интерфейса' }
-    : { cabinet: 'Cabinet', newConsultation: 'New consultation', reports: 'Reports', clients: 'Clients', legacy: 'Legacy', materials: 'Materials', videos: 'Website videos', seo:'SEO', growth:'Growth Studio', youtubeUploader: 'YouTube upload', reikiAudio: 'Courses', telegram: 'Telegram', logout: 'Logout', language: 'Interface language' }
+    ? { cabinet: 'Кабинет', practice: 'Моя практика', marketing: 'Маркетинг', acquisition: 'Кампании', newConsultation: 'Новая консультация', reports: 'Отчёты', clients: 'Клиенты', legacy: 'Архив', materials: 'Материалы', videos: 'Видео сайта', seo:'SEO', growth:'Продвижение', youtubeUploader: 'Загрузка в YouTube', reikiAudio: 'Курсы', telegram: 'Telegram', logout: 'Выйти', language: 'Язык интерфейса' }
+    : { cabinet: 'Cabinet', practice: 'My Practice', marketing: 'Marketing', acquisition: 'Campaigns', newConsultation: 'New consultation', reports: 'Reports', clients: 'Clients', legacy: 'Legacy', materials: 'Materials', videos: 'Website videos', seo:'SEO', growth:'Growth Studio', youtubeUploader: 'YouTube upload', reikiAudio: 'Courses', telegram: 'Telegram', logout: 'Logout', language: 'Interface language' }
 
   useEffect(() => setLocale(readUiLocale(document.cookie)), [])
 
@@ -26,7 +26,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
       <div className="prescription-admin-topbar">
         <Link className="prescription-admin-wordmark" href="/">
           <strong>Holistic House</strong>
-          <span>{labels.cabinet}</span>
+          <span>{compactMarketing ? labels.marketing : labels.cabinet}</span>
         </Link>
         <div className="prescription-admin-header-actions">
           <span aria-label={labels.language} className="site-language-switch">
@@ -42,7 +42,12 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
         {localizedDescription && <p className="prescription-admin-description">{localizedDescription}</p>}
       </div>
 
-      <nav aria-label={labels.cabinet} className="prescription-admin-navigation prescription-admin-navigation--tabs">
+      {compactMarketing ? <nav aria-label={labels.marketing} className="prescription-admin-navigation prescription-admin-navigation--tabs">
+        <Link href={`/${locale}/app/practice?panel=marketing`}>{labels.practice}</Link>
+        <Link href="/admin/growth-studio">{labels.growth}</Link>
+        <Link href="/admin/seo">{labels.seo}</Link>
+        <Link href="/admin/acquisition">{labels.acquisition}</Link>
+      </nav> : <nav aria-label={labels.cabinet} className="prescription-admin-navigation prescription-admin-navigation--tabs">
         <Link href="/admin">{labels.cabinet}</Link>
         <Link href="/admin/consultations/new">{labels.newConsultation}</Link>
         <Link href="/admin/reports">{labels.reports}</Link>
@@ -55,7 +60,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
         <Link href="/admin/youtube-upload">{labels.youtubeUploader}</Link>
         <Link href="/admin/telegram-setup">{labels.telegram}</Link>
         <Link href="/admin/materials/courses">{labels.reikiAudio}</Link>
-      </nav>
+      </nav>}
     </header>
   )
 }
