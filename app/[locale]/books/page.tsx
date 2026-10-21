@@ -59,8 +59,8 @@ export default async function LocalizedBooksPage({ params }: PageProps) {
         locale={locale as Locale}
         video={<PageVideo slot="books-intro" locale={locale} />}
       />
-      <IdeasNewsFeed locale={locale as Locale} />
       <PublicConsultationCta locale={locale as Locale} />
+      <IdeasNewsFeed locale={locale as Locale} />
     </>
   );
 }

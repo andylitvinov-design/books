@@ -9,6 +9,8 @@ test("Ideas keeps the original catalog and places the shared news feed below it 
   const spanish = read("app/es/books/page.tsx");
   assert.ok(books.indexOf("<BookCatalog") < books.indexOf("<IdeasNewsFeed"));
   assert.ok(spanish.indexOf("<SpanishBookShowcase") < spanish.indexOf("<IdeasNewsFeed"));
+  assert.ok(books.indexOf("<PublicConsultationCta") < books.indexOf("<IdeasNewsFeed"));
+  assert.ok(spanish.indexOf("<PublicConsultationCta") < spanish.indexOf("<IdeasNewsFeed"));
   assert.match(books, /<IdeasNewsFeed locale=\{locale as Locale\}/);
   assert.match(spanish, /<IdeasNewsFeed locale="es"/);
   assert.match(books, /dynamic = "force-dynamic"/);

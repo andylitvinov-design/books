@@ -72,20 +72,20 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
   const allBooks = {
     en: {
       title: "All books & guides",
-      subtitle: "One flat catalog",
-      description: "All published manuals and books in one searchable catalog. Alchemy, Dao and Maya stay as source labels rather than extra folders.",
+      subtitle: "Browse by collection",
+      description: "Choose Alchemy of the Soul, Daoist or Maya books first, then open the titles you need. Search is available across the catalog.",
       action: "Open book catalog",
     },
     ru: {
       title: "Все книги и методички",
-      subtitle: "Единый каталог",
-      description: "Все опубликованные методички и книги в одном каталоге. Алхимия, Дао и Майя остаются метками серии, а не дополнительными папками.",
+      subtitle: "Книги по категориям",
+      description: "Выберите Алхимию души, Даосскую традицию или Майя и откройте книги по теме. Поиск доступен по всему каталогу.",
       action: "Открыть каталог книг",
     },
     es: {
       title: "Todos los libros y guías",
-      subtitle: "Un solo catálogo",
-      description: "Todos los materiales publicados en un catálogo único. Alquimia, Dao y Maya quedan como etiquetas de origen, no como carpetas separadas.",
+      subtitle: "Libros por categoría",
+      description: "Elige Alquimia del Alma, la tradición taoísta o maya y encuentra los libros de esa colección.",
       action: "Abrir catálogo",
     },
   } as const;
