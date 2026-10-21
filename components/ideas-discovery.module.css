@@ -216,6 +216,12 @@
 .aphorisms { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .aphorisms li { display: flex; align-items: baseline; gap: 16px; padding: 10px 0 15px; border-bottom: 1px solid #e7dccd; }
 .aphorisms li:last-child { border: 0; }
+.aphorismBody { min-width: 0; flex: 1; }
+.aphorismSource { display: inline-block; margin-top: 9px; font-size: 11px; line-height: 1.5; color: #806b58; text-underline-offset: 3px; overflow-wrap: anywhere; }
+a.aphorismSource:hover { color: #533b28; }
+.moreAphorisms { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; margin-top: 14px; padding: 10px 19px; border-radius: 999px; border: 1px solid #674a36; background: #674a36; color: #fffaf2; font-size: 13px; font-weight: 750; cursor: pointer; }
+.moreAphorisms:hover { background: #4d3527; }
+.moreAphorisms:focus-visible, a.aphorismSource:focus-visible { outline: 3px solid #98683a; outline-offset: 3px; }
 .number { flex: 0 0 27px; color: #207077; font-size: 12px; font-weight: 800; }
 .aphorisms p { margin: 0; font: 400 clamp(18px, 2.1vw, 22px)/1.4 Georgia, "Times New Roman", serif; }
 /* A single editorial list — never repeated marketing cards with thumbnails. */
