@@ -394,59 +394,6 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </button>
     </section>}
 
-    {!needsOnboarding&&<details className="hh-practice-v4-community">
-      <summary><Leaf aria-hidden="true"/><span>{marketplaceCopy.latest}</span><ChevronRight aria-hidden="true"/></summary>
-      <section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
-      <div className="hh-practice-marketplace-heading">
-        <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
-        <div>
-          <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
-          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
-          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
-        </div>
-      </div>
-      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
-        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
-          aria-pressed={activePanel==='services'} onClick={addService}>
-          <Plus aria-hidden="true" />
-          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
-          <ChevronRight aria-hidden="true" />
-        </button>
-        <p className="hh-practice-marketplace-cta-note">
-          <span>{marketplaceCopy.hobby}</span>
-          <span aria-hidden="true">·</span>
-          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
-        </p>
-      </div>
-      <div className="hh-practice-marketplace-latest">
-        <div className="hh-practice-marketplace-latest-heading">
-          <h3>{marketplaceCopy.latest}</h3>
-          <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
-            {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
-          </Link>
-        </div>
-        {recentPublicServices.length?<ul className="hh-practice-marketplace-cards">
-          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
-            <Link className="hh-practice-marketplace-card"
-              href={getPublicServiceDetailHref(locale,item.practitionerSlug,item.slug)} prefetch={false}>
-              <ShowcaseCover item={item} />
-              <span className="hh-practice-marketplace-card-content">
-                <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>
-                <strong className="hh-practice-marketplace-card-title">{item.titles?.[locale]||item.titles?.en}</strong>
-                <span className="hh-practice-marketplace-card-summary">{item.shortDescriptions?.[locale]||item.shortDescriptions?.en||''}</span>
-                <span className="hh-practice-marketplace-card-foot">
-                  <span>{showcasePrice(item,locale,marketplaceCopy)}</span><ChevronRight aria-hidden="true" />
-                </span>
-              </span>
-            </Link>
-          </li>)}
-        </ul>:<p className="hh-practice-marketplace-empty" role="status">
-          {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
-        </p>}
-      </div>
-    </section>
-    </details>}
-
     <div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
       onAddService={needsOnboarding
@@ -587,6 +534,59 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
       </section>}
+    {!needsOnboarding&&<details className="hh-practice-v4-community">
+      <summary><Leaf aria-hidden="true"/><span>{marketplaceCopy.latest}</span><ChevronRight aria-hidden="true"/></summary>
+      <section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
+      <div className="hh-practice-marketplace-heading">
+        <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
+        <div>
+          <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
+          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
+          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
+        </div>
+      </div>
+      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
+        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
+          aria-pressed={activePanel==='services'} onClick={addService}>
+          <Plus aria-hidden="true" />
+          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        <p className="hh-practice-marketplace-cta-note">
+          <span>{marketplaceCopy.hobby}</span>
+          <span aria-hidden="true">·</span>
+          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
+        </p>
+      </div>
+      <div className="hh-practice-marketplace-latest">
+        <div className="hh-practice-marketplace-latest-heading">
+          <h3>{marketplaceCopy.latest}</h3>
+          <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
+            {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
+          </Link>
+        </div>
+        {recentPublicServices.length?<ul className="hh-practice-marketplace-cards">
+          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
+            <Link className="hh-practice-marketplace-card"
+              href={getPublicServiceDetailHref(locale,item.practitionerSlug,item.slug)} prefetch={false}>
+              <ShowcaseCover item={item} />
+              <span className="hh-practice-marketplace-card-content">
+                <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>
+                <strong className="hh-practice-marketplace-card-title">{item.titles?.[locale]||item.titles?.en}</strong>
+                <span className="hh-practice-marketplace-card-summary">{item.shortDescriptions?.[locale]||item.shortDescriptions?.en||''}</span>
+                <span className="hh-practice-marketplace-card-foot">
+                  <span>{showcasePrice(item,locale,marketplaceCopy)}</span><ChevronRight aria-hidden="true" />
+                </span>
+              </span>
+            </Link>
+          </li>)}
+        </ul>:<p className="hh-practice-marketplace-empty" role="status">
+          {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
+        </p>}
+      </div>
+    </section>
+    </details>}
+
     {ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
