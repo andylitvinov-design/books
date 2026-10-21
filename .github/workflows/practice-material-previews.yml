@@ -9,6 +9,8 @@ on:
       - 'components/app/practice-report-materials.jsx'
       - 'lib/practitioners/material-preview.js'
       - 'tests/practice-material-preview-url.test.mjs'
+      - 'tests/practice-course-materials-navigation.test.mjs'
+      - 'tests/practitioner-approved-v4-ui.test.mjs'
       - '.github/workflows/practice-material-previews.yml'
 permissions:
   contents: read
