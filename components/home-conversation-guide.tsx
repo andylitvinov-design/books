@@ -2,25 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Compass, Mic, MicOff, RotateCcw, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Mic, MicOff, RotateCcw, Send, ShieldCheck, Sparkles } from "lucide-react";
 
 import {
-  homeGuideDestinations,
-  homeGuideGoals,
+  homeGuideFollowup,
+  chooseHomeGuideOffer,
   resolveHomeGuideQuestion,
-  type HomeGuideGoal,
+  type HomeGuideContext,
+  type HomeGuideOffer,
 } from "@/lib/home-conversation.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-conversation-guide.module.css";
 
 type Turn = { id: number; role: "visitor" | "guide"; text: string };
-type Context = {
-  lang: PublicLocale;
-  topic: IdeasTopic | null;
-  matched: boolean;
-  urgent: boolean;
-};
+type Context = HomeGuideContext;
 type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
 type SpeechEngine = {
   lang: string;
@@ -50,9 +47,6 @@ type GuideCopy = {
   topics: string;
   unknown: string;
   followup: string;
-  goalLabels: Record<HomeGuideGoal, string>;
-  goalResponses: Record<HomeGuideGoal, string>;
-  goalActions: Record<HomeGuideGoal, string>;
   secondary: string;
   privacyShort: string;
   privacyDetail: string;
@@ -86,27 +80,6 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "It sounds like your question may relate to",
     unknown: "Thanks for sharing. We can find a starting point without labelling your situation.",
     followup: "What would help most right now?",
-    goalLabels: {
-      understand: "Understand my situation",
-      tests: "Explore free tests",
-      practice: "Try a practice or course",
-      consult: "Speak with a practitioner",
-      ideas: "Find ideas and inspiration",
-    },
-    goalResponses: {
-      understand: "A free written situation review is a good place to start. You'll complete a short form and, if you wish, a drawing. This is not a live call.",
-      tests: "You can begin with free self-check questionnaires, then explore the results at your own pace. They aren't medical diagnoses.",
-      practice: "The Academy has lessons and practices you can explore at your own pace. Choose what feels manageable today.",
-      consult: "For a personal conversation with Andrey, you can request a session: €50 for 30 minutes or €100 for 60 minutes. A request is not a confirmed booking.",
-      ideas: "The Ideas page offers an I Ching symbol, sourced reflections and books to help you look at your question from another angle.",
-    },
-    goalActions: {
-      understand: "Request a free written review",
-      tests: "Find my free tests",
-      practice: "Explore practices",
-      consult: "Request a session · from €50",
-      ideas: "Explore Ideas",
-    },
     secondary: "Another way to explore",
     privacyShort: "Private text · How this guide works",
     privacyDetail: "Your typed question stays in this browser while the page is open. It is not sent to our server, CRM, analytics or an AI provider. This is a local topic-based guide, not an AI therapist or a real-time human conversation. If you choose voice input, your browser or operating system may process audio through its speech recognition provider. You decide whether to enable the microphone. Do not include confidential personal details.",
@@ -138,27 +111,6 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "Похоже, вопрос касается темы",
     unknown: "Спасибо, что поделились. Необязательно давать ситуации название, чтобы найти первый шаг.",
     followup: "Что вам сейчас было бы полезнее?",
-    goalLabels: {
-      understand: "Разобраться в ситуации",
-      tests: "Бесплатные тесты",
-      practice: "Практика или курс",
-      consult: "Поговорить с мастером",
-      ideas: "Идеи и вдохновение",
-    },
-    goalResponses: {
-      understand: "Можно начать с бесплатного письменного разбора: короткая анкета и, по желанию, рисунок. Это не созвон и не медицинская диагностика.",
-      tests: "Начните с бесплатных опросников самонаблюдения. Результаты помогут увидеть темы для размышления, но не являются диагнозом.",
-      practice: "В Академии есть уроки, упражнения и практики. Выберите небольшой посильный шаг на сегодня.",
-      consult: "Можно запросить личную сессию с Андреем: €50 за 30 минут или €100 за 60 минут. Отправка запроса ещё не означает подтверждённую запись.",
-      ideas: "В разделе «Идеи» можно получить символ И-цзин, афоризмы с источниками и найти книги для нового взгляда на ситуацию.",
-    },
-    goalActions: {
-      understand: "Получить бесплатный разбор",
-      tests: "Выбрать тесты",
-      practice: "Открыть практики",
-      consult: "Запросить сессию · от €50",
-      ideas: "Открыть Идеи",
-    },
     secondary: "Другой способ разобраться",
     privacyShort: "Ваш вопрос приватен · Как это работает",
     privacyDetail: "Текст вопроса остаётся в этом браузере, пока открыта страница. Он не передаётся на наш сервер, в CRM, аналитику или AI-провайдеру. Это тематический помощник для навигации, а не AI-терапевт и не живой консультант. При голосовом вводе браузер или операционная система могут обрабатывать звук через сервис распознавания речи. Микрофон включается только по вашему действию. Не вводите конфиденциальные данные.",
@@ -190,27 +142,6 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "Parece que tu pregunta podría tratar sobre",
     unknown: "Gracias por compartirlo. No hace falta etiquetar tu situación para encontrar un primer paso.",
     followup: "¿Qué te ayudaría más ahora?",
-    goalLabels: {
-      understand: "Entender mi situación",
-      tests: "Pruebas gratuitas",
-      practice: "Práctica o curso",
-      consult: "Hablar con un profesional",
-      ideas: "Ideas e inspiración",
-    },
-    goalResponses: {
-      understand: "Puedes empezar con una revisión escrita gratuita: un formulario breve y, si quieres, un dibujo. No es una llamada ni un diagnóstico.",
-      tests: "Explora cuestionarios gratuitos de autoobservación. Los resultados no constituyen un diagnóstico médico.",
-      practice: "La Academia ofrece clases y prácticas a tu ritmo. Empieza con un paso pequeño.",
-      consult: "Puedes solicitar una sesión personal con Andrey: €50 por 30 minutos o €100 por 60 minutos. Una solicitud no confirma la reserva.",
-      ideas: "En Ideas encontrarás símbolos del I Ching, aforismos con fuentes y libros para explorar otra perspectiva.",
-    },
-    goalActions: {
-      understand: "Pedir revisión escrita gratis",
-      tests: "Explorar pruebas gratuitas",
-      practice: "Explorar prácticas",
-      consult: "Solicitar sesión · desde €50",
-      ideas: "Explorar Ideas",
-    },
     secondary: "Otra opción para explorar",
     privacyShort: "Texto privado · Cómo funciona",
     privacyDetail: "Tu texto permanece en este navegador mientras la página esté abierta. No se envía a nuestro servidor, CRM, analítica ni a un proveedor de IA. Esta guía local recomienda rutas por temas: no es una terapeuta de IA ni una conversación humana en directo. Si usas la voz, el navegador o sistema operativo puede enviar audio a su proveedor de reconocimiento. Solo activamos el micrófono cuando lo decides. Evita datos confidenciales.",
@@ -224,10 +155,15 @@ const copy: Record<PublicLocale, GuideCopy> = {
 
 export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const reikiEntry = {
+    en: ["Free Reiki Practitioner course", "Five lessons to explore three Reiki traditions, practices and meditations.", "Start the free course"],
+    ru: ["Бесплатный курс «Рейки Практик»", "Пять занятий: три системы Рейки, практики и медитации.", "Начать бесплатный курс"],
+    es: ["Curso gratuito de Reiki", "Cinco lecciones sobre tres tradiciones, prácticas y meditaciones. Curso en inglés.", "Empezar el curso en inglés"],
+  }[locale];
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [context, setContext] = useState<Context | null>(null);
-  const [goal, setGoal] = useState<HomeGuideGoal | null>(null);
+  const [recommendations, setRecommendations] = useState<HomeGuideOffer[]>([]);
   const [supportsVoice, setSupportsVoice] = useState(false);
   const [listening, setListening] = useState(false);
   const [voiceError, setVoiceError] = useState(false);
@@ -257,16 +193,17 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   function ask(text: string) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
-    const result = resolveHomeGuideQuestion(question, locale);
+    const result = resolveHomeGuideQuestion(question, locale, context);
     const responseCopy = copy[result.lang];
+    const nextQuestion = homeGuideFollowup(result);
     const answer = result.urgent
       ? responseCopy.urgent
       : (result.matched && result.topic
         ? responseCopy.topics + " «" + responseCopy.topic[result.topic] + "». "
-        : responseCopy.unknown + " ") + responseCopy.followup;
+        : responseCopy.unknown + " ") + (nextQuestion?.prompt[result.lang] ?? responseCopy.followup);
     appendExchange(question, answer);
     setContext(result);
-    setGoal(null);
+    setRecommendations([]);
     setDraft("");
     setVoiceError(false);
   }
@@ -276,11 +213,17 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     ask(draft);
   }
 
-  function chooseGoal(value: HomeGuideGoal) {
+  function chooseGoal(value: string) {
     if (!context || context.urgent) return;
-    const responseCopy = copy[context.lang];
-    appendExchange(responseCopy.goalLabels[value], responseCopy.goalResponses[value]);
-    setGoal(value);
+    const followup = homeGuideFollowup(context);
+    const selected = followup?.choices.find(item => item.id === value);
+    const result = chooseHomeGuideOffer(context, value, context.lang);
+    if (!selected || !result) return;
+    const nextQuestion = homeGuideFollowup(result.context);
+    const answer = result.response?.[context.lang] ?? nextQuestion?.prompt[context.lang];
+    if (answer) appendExchange(selected.label[context.lang], answer);
+    setContext(result.context);
+    setRecommendations(result.offers);
   }
 
   function toggleVoice() {
@@ -316,7 +259,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     speechRef.current?.stop();
     setListening(false);
     setContext(null);
-    setGoal(null);
+    setRecommendations([]);
     setDraft("");
     setTurns([]);
     setVoiceError(false);
@@ -324,9 +267,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   }
 
   const answerCopy = copy[context?.lang ?? locale];
-  const links = context && goal && !context.urgent
-    ? homeGuideDestinations({ goal, topic: context.topic, locale })
-    : null;
+  const followup = homeGuideFollowup(context);
 
   return (
     <section id="ask-holistic-house" className={styles.root} data-home-conversation-guide aria-labelledby="home-guide-title">
@@ -335,6 +276,11 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
         <h2 id="home-guide-title">{t.title}</h2>
         <p className={styles.lead}>{t.lead}</p>
         <div className={styles.scenery} aria-hidden="true" />
+        {!context?.urgent ? <div className={styles.reikiEntry} data-home-guide-reiki-entry>
+          <strong>{reikiEntry[0]}</strong>
+          <p>{reikiEntry[1]}</p>
+          <Link href={REIKI_FREE_COURSE_PATH} prefetch={false}>{reikiEntry[2]}<ArrowRight size={16} aria-hidden="true" /></Link>
+        </div> : null}
       </div>
       <div className={styles.conversation}>
         <div className={styles.log} role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
@@ -344,24 +290,28 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
           ))}
         </div>
 
-        {context && !context.urgent && goal === null ? (
-          <div className={styles.choices} role="group" aria-label={answerCopy.followup} data-home-guide-choices>
-            {homeGuideGoals.map(value => (
-              <button key={value} type="button" className={styles.choice} onClick={() => chooseGoal(value)}>
-                {answerCopy.goalLabels[value]}
+        {context && !context.urgent && recommendations.length === 0 && followup ? (
+          <div className={styles.choices} role="group" aria-label={followup.prompt[context.lang]} data-home-guide-choices>
+            {followup.choices.map(value => (
+              <button key={value.id} type="button" className={styles.choice} onClick={() => chooseGoal(value.id)}>
+                {value.label[context.lang]}
               </button>
             ))}
           </div>
         ) : null}
 
-        {links && goal ? (
+        {context && !context.urgent && recommendations.length > 0 ? (
           <div className={styles.result} data-home-guide-result>
-            <Link href={links.primary} className={styles.primaryAction} prefetch={false}>
-              {answerCopy.goalActions[goal]}<ArrowRight size={17} aria-hidden="true" />
-            </Link>
-            <Link href={links.secondary} className={styles.secondaryAction} prefetch={false}>
-              <Compass size={15} aria-hidden="true" />{answerCopy.secondary}<ArrowRight size={15} aria-hidden="true" />
-            </Link>
+            {recommendations.map((offer, index) => (
+              <article key={offer.id} className={styles.offer} data-home-guide-offer={offer.id}>
+                <h3>{offer.title}</h3>
+                <p>{offer.benefit}</p>
+                <p className={styles.offerDetail}>{offer.detail}</p>
+                <Link href={offer.href} className={index === 0 ? styles.primaryAction : styles.secondaryAction} prefetch={false}>
+                  {offer.action}<ArrowRight size={17} aria-hidden="true" />
+                </Link>
+              </article>
+            ))}
             <p className={styles.limitation}>{answerCopy.limitation}</p>
           </div>
         ) : null}
@@ -416,3 +366,4 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     </section>
   );
 }
+
