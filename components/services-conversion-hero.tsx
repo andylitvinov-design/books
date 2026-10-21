@@ -127,11 +127,10 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
   function navigate(direction: number) {
     setManual(true);
     setRequestOpen(false);
-    setIndex(current => {
-      const next = (current + direction + slides.length) % slides.length;
-      setTopic(slides[next].kind);
-      return next;
-    });
+    const next = (index + direction + slides.length) % slides.length;
+    setIndex(next);
+    setTopic(slides[next].kind);
+    if (slides[next].kind === "reiki" || slides[next].kind === "free") setMode("online");
   }
 
   function chooseTopic(kind: ServiceTopic) {
