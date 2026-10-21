@@ -1110,3 +1110,73 @@
 .hh-app .hh-practice-v4-extra .hh-practice-tools{padding:12px;margin:0;border:0;background:transparent}
 .hh-app .hh-practice-v4-extra :is(button,summary):focus-visible{outline:3px solid #69aca2;outline-offset:2px}
 @media(max-width:430px){.hh-app .hh-practice-v4-extra .hh-practice-tools{padding:9px}}
+
+
+/* Practice V4.1 — mobile visual parity with the approved warm workspace.
+   Scoped to the authenticated practice route; no global site redesign. */
+.hh-app .hh-practice-dashboard{--practice-ink:#352a22;--practice-stroke:#e3d4c3;gap:11px}
+.hh-app .hh-practice-head{
+ min-height:149px;padding:17px 17px 15px;border-color:#d9c3ad;
+ border-radius:20px;overflow:hidden;
+ background:linear-gradient(90deg,#fffbf4f7 0%,#fffbf4e8 50%,#fffbf4b5 100%),
+ url('/images/holistic-house/hero-olive-incense.webp') center/cover;
+ box-shadow:0 5px 18px #4a301012}
+.hh-app .hh-practice-breadcrumb{margin-bottom:8px;color:#705e4e}
+.hh-app .hh-practice-head h1{font-size:clamp(33px,4.7vw,46px);letter-spacing:-.035em}
+.hh-app .hh-practice-intro{font-size:13px;color:#57493d;max-width:37ch}
+.hh-app .hh-practice-status{gap:6px;margin-top:10px}
+.hh-app .hh-practice-status-chip{background:#fffdf9df;border-color:#e0cdb7;
+ padding:7px 10px;font-size:10px;box-shadow:0 2px 7px #4530200b}
+.hh-app .hh-practice-status-chip.is-approved{color:#126c5e;background:#e6f3edea;border-color:#b4d6c9}
+.hh-app .hh-practice-status-chip.is-approved .hh-practice-status-dot{background:#139077}
+.hh-app .hh-practice-v4-grid{gap:10px}
+.hh-app .hh-practice-v4-grid button{
+ min-height:105px;gap:5px;background:#fffcf7;border:1px solid #e0cfbc;
+ border-radius:18px;box-shadow:0 3px 13px #51371b10;
+ transition:background .15s ease,border-color .15s ease}
+.hh-app .hh-practice-v4-grid button svg{width:24px;height:24px}
+.hh-app .hh-practice-v4-grid button span{font-size:13px;color:#44362c}
+.hh-app .hh-practice-v4-grid button strong{font-size:15px}
+.hh-app .hh-practice-v4-grid button small{font-size:11px;color:#796a5a}
+.hh-app .hh-practice-v4-grid button[aria-pressed="true"]{background:#def0ea;border-color:#81bdb5}
+.hh-app .hh-practice-v4-materials-cta{
+ min-height:100px;margin-top:11px;padding:15px 17px;gap:12px;
+ border-color:#97785a;border-radius:18px;
+ background:linear-gradient(90deg,#35291fe6 0%,#473126d6 54%,#4431276b 100%),
+ url('/images/holistic-house/reiki-practitioner-sunrise.webp') center 51%/cover;
+ box-shadow:0 7px 20px #60402a25}
+.hh-app .hh-practice-v4-materials-cta > svg:first-child{width:30px;height:30px}
+.hh-app .hh-practice-v4-materials-cta strong{font:700 19px/1.23 Georgia,serif}
+.hh-app .hh-practice-v4-materials-cta small{font:500 12px/1.38 system-ui,sans-serif}
+.hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"]{
+ position:relative;margin:0;padding:0;border:0;background:transparent;
+ box-shadow:none;scroll-margin-top:12px}
+.hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"] > .hh-practice-form-heading{
+ position:absolute;top:9px;right:10px;z-index:2;margin:0}
+.hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"] > .hh-practice-form-heading h2{display:none}
+.hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"] .hh-practice-close{
+ min-height:39px;margin:0;padding:7px 11px;border-radius:999px;
+ border:1px solid #e2d1be;background:#fffcf7;color:#5e4d40;
+ font:650 12px/1 system-ui,sans-serif}
+@media(max-width:640px){
+ .hh-app .hh-practice-dashboard{gap:9px}
+ .hh-app .hh-practice-head{min-height:145px;padding:14px;border-radius:17px}
+ .hh-app .hh-practice-v4-grid{gap:7px}
+ .hh-app .hh-practice-v4-grid button{min-height:94px;padding:8px 4px;border-radius:14px}
+ .hh-app .hh-practice-v4-grid button span{font-size:12px}
+ .hh-app .hh-practice-v4-grid button strong{font-size:14px}
+ .hh-app .hh-practice-v4-grid button small{font-size:10px}
+ .hh-app .hh-practice-v4-materials-cta{min-height:92px;padding:13px 14px}
+ .hh-app .hh-practice-v4-materials-cta strong{font-size:17px}
+ .hh-app .hh-practice-v4-materials-cta small{font-size:11px}
+}
+@media(max-width:350px){
+ .hh-app .hh-practice-v4-grid{gap:6px}
+ .hh-app .hh-practice-v4-grid button{min-height:91px;padding:7px 2px}
+ .hh-app .hh-practice-v4-grid button span{font-size:11px}
+ .hh-app .hh-practice-v4-materials-cta strong{font-size:15px}
+ .hh-app .hh-practice-head h1{font-size:33px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hh-app .hh-practice-v4-grid button{transition:none}
+}

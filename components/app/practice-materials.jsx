@@ -1,6 +1,6 @@
 'use client'
 import {useEffect,useState} from 'react'
-import {BookOpen,ChevronRight,FileText,Headphones,Search,Leaf,Film,FolderOpen,LockKeyhole} from 'lucide-react'
+import {BookOpen,ChevronRight,FileText,Headphones,Search,Leaf,Film,FolderOpen,LockKeyhole,Plus} from 'lucide-react'
 import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
 import PractitionerCourseBuilder from './practitioner-course-builder'
@@ -47,6 +47,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  }
  const [tab,setTab]=useState(isOwner?'courses':'articles')
  const [query,setQuery]=useState('')
+ const [courseComposerOpen,setCourseComposerOpen]=useState(!isOwner)
  const activeTabs=['articles','services','courses',...(isOwner?['audio']:[]),'videos']
  useEffect(()=>{
    const requested=new URLSearchParams(window.location.search).get('materialTab')
@@ -155,17 +156,24 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   </label>}
   <div className={styles.activePanel} role="tabpanel" data-material-panel={tab}>
   {tab==='courses'?<section className={styles.body} data-practice-master-courses>
-    <PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query} onOpenYoutube={isOwner?onOpenYoutube:null}/>
-    {isOwner&&<div>
-    <p className={styles.intro}>{ru?'Выберите курс, чтобы управлять его уроками и медитациями.':es?'Elige un curso para gestionar sus lecciones.':'Choose a course to manage its lessons and meditations.'}</p>
-    {(!query||'Практик Рейки Reiki Practitioner Practicante de Reiki'.toLowerCase().includes(query.toLowerCase()))?
-      <button type="button" className={styles.mediaRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.()} data-open-reiki-course-audio>
-        <span className={styles.materialArtwork}><BookOpen size={27} aria-hidden="true"/></span>
-        <span className={styles.mediaRowCopy}><strong>{ru?'Практик Рейки':es?'Practicante de Reiki':'Reiki Practitioner'}</strong><small>{ru?'5 уроков · RU / EN · аудиомедитации':es?'5 lecciones · RU / EN · audio':'5 lessons · RU / EN · guided audio'}</small></span>
-        <ChevronRight size={20} aria-hidden="true"/>
+    {isOwner&&<div className={styles.featuredCourse}>
+     <p className={styles.featureKicker}>{ru?'МОИ КУРСЫ · АУДИО МЕДИТАЦИИ':es?'MIS CURSOS · MEDITACIONES':'MY COURSES · GUIDED MEDITATIONS'}</p>
+     {(!query||'Практик Рейки Reiki Practitioner Practicante de Reiki'.toLowerCase().includes(query.toLowerCase()))?
+      <button type="button" className={styles.mediaRow+' '+styles.featureRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.()} data-open-reiki-course-audio>
+       <span className={styles.materialArtwork+' '+styles.reikiArtwork}><BookOpen size={24} aria-hidden="true"/></span>
+       <span className={styles.mediaRowCopy}><strong>{ru?'Практик Рейки':es?'Practicante de Reiki':'Reiki Practitioner'}</strong><small>{ru?'5 уроков · RU / EN · аудио медитации':es?'5 lecciones · RU / EN · audio':'5 lessons · RU / EN · guided audio'}</small><span className={styles.courseAccess}>{ru?'Открыть уроки':es?'Abrir lecciones':'Open lessons'} <ChevronRight size={13} aria-hidden="true"/></span></span>
+       <ChevronRight size={20} aria-hidden="true"/>
       </button>:<p className={styles.empty}>{ru?'Курс не найден.':es?'Curso no encontrado.':'No matching course.'}</p>}
-    <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>{ru?'Записи приватны до отдельного подтверждения публикации.':es?'Las grabaciones siguen privadas antes de publicarse.':'Recordings stay private until explicit publication.'}</p>
+     <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>{ru?'Аудиозаписи закрыты до вашей публикации.':es?'El audio permanece privado hasta publicarlo.':'Audio stays private until you publish it.'}</p>
     </div>}
+    <div className={styles.courseComposer}>
+     <button className={styles.composerToggle} type="button" aria-expanded={courseComposerOpen} onClick={()=>setCourseComposerOpen(open=>!open)}>
+      <span className={styles.composerIcon}><Plus size={21} aria-hidden="true"/></span>
+      <span className={styles.composerCopy}><strong>{ru?'Создать или изменить свой курс':es?'Crear o editar un curso':'Create or edit a course'}</strong><small>{ru?'Слайды, фотографии, аудио и видео':es?'Diapositivas, fotos, audio y vídeo':'Slides, photos, audio and video'}</small></span>
+      <ChevronRight className={courseComposerOpen?styles.composerExpanded:''} size={20} aria-hidden="true"/>
+     </button>
+     {courseComposerOpen&&<div className={styles.composerPanel}><PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query} onOpenYoutube={isOwner?onOpenYoutube:null}/></div>}
+    </div>
    </section>:
    tab==='audio'&&isOwner?<section className={styles.body} data-practice-audio-lessons>
     <p className={styles.intro}>{ru?'Выберите папку урока, чтобы загрузить или прослушать медитацию.':es?'Selecciona la carpeta de lección para subir o escuchar audio.':'Choose a lesson folder to upload or preview audio.'}</p>

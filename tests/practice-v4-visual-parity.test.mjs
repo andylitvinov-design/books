@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import {readFileSync} from 'node:fs'
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+const workspace=read('components/app/practice-workspace.jsx')
+const dashboard=read('components/app/practice-dashboard.css')
+const materials=read('components/app/practice-materials.jsx')
+const materialCss=read('components/app/practice-materials.module.css')
+const builder=read('components/app/practitioner-course-builder.jsx')
+const builderCss=read('components/app/practitioner-course-builder.module.css')
+
+test('the approved mobile dashboard reuses a real image and opens a flattened library',()=>{
+ assert.match(dashboard,/Practice V4\.1/)
+ assert.match(dashboard,/reiki-practitioner-sunrise\.webp/)
+ assert.match(dashboard,/data-practice-detail-panel="materials"/)
+ assert.match(dashboard,/@media\(max-width:350px\)/)
+ assert.match(workspace,/data-practice-detail-panel=\{activePanel\}/)
+ assert.match(workspace,/document\.getElementById\('hh-practice-workspace-detail'\)\?\.scrollIntoView/)
+ assert.match(workspace,/data-practitioner-v4-dashboard/)
+})
+test('Reiki lessons are featured ahead of an opt-in new course editor',()=>{
+ const featured=materials.indexOf('data-open-reiki-course-audio')
+ const editor=materials.indexOf('<PractitionerCourseBuilder locale={locale}')
+ assert.ok(featured>0&&editor>featured,'Existing Reiki must appear before optional authoring')
+ assert.match(materials,/\{isOwner&&<div className=\{styles\.featuredCourse\}>/)
+ assert.match(materials,/aria-expanded=\{courseComposerOpen\}/)
+ assert.match(materials,/\{courseComposerOpen&&<div/)
+ assert.match(materials,/onClick=\{\(\)=>onOpenReikiCourse\?\.\(\)\}/)
+ assert.match(materialCss,/reiki-practitioner-sunrise\.webp/)
+ assert.match(materialCss,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/)
+ for(const width of [430,350])assert.match(materialCss,new RegExp('@media\\(max-width:'+width+'px\\)'))
+})
+test('failing new-course API does not claim that courses are empty or print raw errors',()=>{
+ assert.match(builder,/const \[loadFailed,setLoadFailed\]=useState\(false\)/)
+ assert.match(builder,/setItems\(\[\]\);setSelected\(null\);setDraft\(null\);setSlideId\(null\)/)
+ assert.match(builder,/\[accountId,retryKey\]/)
+ assert.match(builder,/loadFailed\?/)
+ assert.match(builder,/setRetryKey\(n=>n\+1\)/)
+ assert.match(builder,/error&&!loadFailed/)
+ assert.match(builder,/unavailable:'Не удалось загрузить новые курсы/)
+ assert.match(builder,/unavailable:'No se pudo cargar/)
+ assert.match(builderCss,/\.loadFailure/)
+ assert.doesNotMatch(materials,/fakeCourse|exampleCourse|123 courses/i)
+})

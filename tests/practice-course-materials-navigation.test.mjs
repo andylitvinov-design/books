@@ -19,7 +19,7 @@ test('My Practice Materials offers Reiki course recordings only to the owner',()
   assert.match(materialTab,/tab==='courses'\?<section/)
   // The universal authoring tool is visible to masters, but Reiki recordings
   // and owner-only lesson shortcuts are still guarded separately.
-  assert.match(materialTab,/\{isOwner&&<div>/)
+  assert.match(materialTab,/\{isOwner&&<div\b/)
   assert.match(materialTab,/onClick=\{\(\)=>onOpenReikiCourse\?\.\(\)\} data-open-reiki-course-audio/)
   assert.match(materialTab,/Практик Рейки/)
   assert.match(materialTab,/Reiki Practitioner/)

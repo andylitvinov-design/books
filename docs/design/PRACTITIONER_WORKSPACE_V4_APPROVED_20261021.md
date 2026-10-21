@@ -49,3 +49,21 @@
 ## Rollback / maintenance
 
 Scoped UI changes only; revert design PR to restore the old shell without altering persisted datasets. Keep this doc as the approved design baseline for further screens and do not invent future functionality from the illustrative artwork.
+
+## V4.1 mobile fidelity follow-up (2026-10-21)
+
+The original 10-screen visual remains the design authority. The already-implemented owner dashboard and Materials panel needed a tighter mobile presentation than their first deployment:
+- Keep the real, scoped six-button overview; use existing approved art in the hero and knowledge CTA.
+- Flatten the double "My materials" heading/card, retain the global PWA navigation and keyboard-sized 5-format switcher. Selecting Materials should scroll to the library on phones.
+- Put the **real** owner-only Reiki Practitioner (5 lessons, RU/EN audio) above the *optional* new course constructor. Do not label the separate Reiki course as a published new-builder record.
+- Mount the new-builder UI on user request for the owner, preserving the actual API, persistence, authorization, private uploads, and explicit publication. A failed fetch must show translated retry guidance rather than a raw `NOT_FOUND` next to a false "No courses yet" state.
+- Make the course list read as readable vertical rows on 320–430px, keeping only server-confirmed draft/published labels.
+- No data duplication, migration, new provider account, or mass import.
+
+### Verification gates
+- [ ] CI source/UI smoke tests, lint, typecheck, Next build
+- [ ] Responsive visual QA at 320/375/390/430px
+- [ ] Protected signed-in phone: Courses → Reiki lesson → private audio upload/save; new course → server persistence and reload
+- [ ] Exact production READY SHA and canonical domain alias checked
+
+**Status:** implementation pending PR/CI and authenticated owner E2E. A static test or HTTP 200 is not proof of saving or publishing.

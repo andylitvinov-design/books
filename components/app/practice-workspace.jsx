@@ -164,6 +164,14 @@ export function PracticeEntry({data,locale}){
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
   const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
+  // Bring the material library into view after it mounts, including deep links.
+  useEffect(()=>{
+    if(activePanel!=='materials'||!data?.practitioner)return
+    const frame=window.requestAnimationFrame(()=>{
+      document.getElementById('hh-practice-workspace-detail')?.scrollIntoView({behavior:'auto',block:'start'})
+    })
+    return ()=>window.cancelAnimationFrame(frame)
+  },[activePanel,data?.practitioner?.id])
   useEffect(()=>{load()},[])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
@@ -481,7 +489,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
         data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
-      activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
+      activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel" data-practice-detail-panel={activePanel}>
         <div className="hh-practice-form-heading">
           <h2>{activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>

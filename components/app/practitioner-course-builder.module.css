@@ -77,3 +77,41 @@
 .slideKindPicker button span{min-width:0;overflow-wrap:anywhere;text-align:center}
 .slideKindPicker button:focus-visible{outline:3px solid #67afa4;outline-offset:2px}
 @media(max-width:355px){.slideKindPicker{gap:3px}.slideKindPicker button{min-height:54px;font-size:10px;padding:5px 1px}}
+
+/* Nested course editor: a calm canvas rather than a second full-size card. */
+.root{border-color:#e8dccd;background:#fffaf3;padding:13px;box-shadow:none;border-radius:14px}
+.heading{margin-bottom:13px;gap:9px}
+.heading h3{font:730 18px/1.25 Georgia,serif;color:#493729}
+.heading p{font-size:12px;line-height:1.4}
+.primary{background:#0b7776;color:#fff;border-color:#0b7776;min-height:44px}
+.primary:hover{background:#096662}
+.secondary{min-height:44px}
+.courseList{gap:8px}
+.courseList button{min-height:62px;border-radius:12px;gap:5px;background:#fffefa}
+.courseList button:hover,.courseList .selected{background:#edf4ed;border-color:#83b8ad}
+.loadFailure{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+ padding:12px;border:1px solid #e5d8c9;border-radius:12px;background:#fffdf8}
+.loadFailure p{margin:0;color:#685748;font:500 12px/1.5 system-ui,sans-serif;flex:1 1 180px}
+.loadFailure button{font:700 12px/1.3 system-ui,sans-serif}
+@media(max-width:680px){
+ .root{padding:11px}
+ .courseList{flex-direction:column;max-height:280px;overflow-y:auto;overflow-x:hidden;padding:0}
+ .courseList button{flex:0 0 auto;min-height:57px;max-width:100%}
+ .heading{align-items:flex-start}
+ .heading h3{font-size:17px}
+ .heading > .primary{min-height:43px}
+}
+
+/* Course cards retain actual titles and server-confirmed publish state. */
+.courseList button{flex-direction:row;align-items:center;text-align:left;gap:10px;padding:9px 10px}
+.courseArtwork{display:grid;place-items:center;flex:none;width:44px;height:46px;
+ border-radius:10px;background:linear-gradient(145deg,#d9e6de,#ecdbbe);color:#287a73}
+.courseCardCopy{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.courseCardCopy strong{font:730 12px/1.3 system-ui,sans-serif;color:#3d3730;overflow-wrap:anywhere}
+.courseCardCopy small{font:500 10px/1.3 system-ui,sans-serif;color:#7f7265}
+.courseList button > svg:last-child{flex:none;color:#0d7772}
+.publishedTag,.draftTag{display:inline-flex;width:max-content;max-width:100%;
+ border-radius:999px;padding:3px 8px;font:710 10px/1.2 system-ui,sans-serif}
+.publishedTag{background:#def1e9;color:#236d60}
+.draftTag{background:#f3e9dd;color:#80644a}
+@media(max-width:680px){.courseArtwork{width:47px;height:47px}.courseList button{min-height:65px}}

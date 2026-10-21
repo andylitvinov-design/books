@@ -224,3 +224,75 @@
  .shell .tabs button{min-height:57px}
  .mediaRowCopy strong{font-size:13px}
 }
+
+
+/* Practice V4.1: one well-composed materials surface; real Reiki first. */
+.shell{padding:17px;background:linear-gradient(135deg,#fffcf7,#f9f2e8);border-color:#dfcbb7;
+ border-radius:19px;box-shadow:0 7px 20px #45331d0b}
+.hubHeader{padding-right:89px;margin:0 0 15px}
+.hubHeader .eyebrow{font-size:9px;letter-spacing:.13em;margin-bottom:3px}
+.hubHeader h3{font-size:clamp(29px,5vw,36px);letter-spacing:-.025em}
+.hubHeader p{font-size:12px;line-height:1.4}
+.shell .tabs{gap:7px;margin-bottom:13px}
+.shell .tabs button{min-height:69px;border-radius:13px;gap:6px;background:#fffcf8;border-color:#e3d5c6}
+.shell .tabs button:hover{background:#f4eee6;border-color:#c8ad97}
+.shell .tabs button[aria-selected="true"]{color:#096866;background:#d9eee9;border-color:#8cbbb2;box-shadow:inset 0 -2px #0d7772}
+.searchWrap{min-height:44px;background:#f6f1e9;border-color:#e7dacf}
+.featuredCourse{display:grid;gap:9px;margin:0 0 11px}
+.featureKicker{margin:0;color:#876c54;font:760 10px/1.3 system-ui,sans-serif;letter-spacing:.075em}
+.mediaRow.featureRow{padding:8px 10px;min-height:90px;background:#fffefa;border-color:#e6d8c8;gap:11px}
+.mediaRow.featureRow:hover{background:#fbf6ee;border-color:#8bbcb1}
+.reikiArtwork{width:73px;height:73px;border-radius:12px;
+ background:linear-gradient(120deg,#31271d47,#31271d12),
+ url('/images/holistic-house/reiki-practitioner-sunrise.webp') center/cover;
+ box-shadow:inset 0 0 0 1px #e6d3b644;color:#fff}
+.reikiArtwork svg{filter:drop-shadow(0 1px 3px #25190bba)}
+.featureRow .mediaRowCopy{gap:4px}
+.featureRow .mediaRowCopy strong{font:760 16px/1.25 system-ui,sans-serif;color:#25455b}
+.featureRow .mediaRowCopy small{font:500 11px/1.35 system-ui,sans-serif;color:#796b5e}
+.courseAccess{display:inline-flex;align-items:center;gap:3px;width:max-content;max-width:100%;
+ border-radius:999px;background:#e3f3ed;color:#0e665f;padding:4px 9px;
+ font:760 10px/1.2 system-ui,sans-serif}
+.featuredCourse .privacyNote{margin:1px 0 0;color:#827164}
+.courseComposer{display:grid;gap:8px}
+.composerToggle{display:flex;align-items:center;text-align:left;gap:11px;width:100%;min-height:61px;
+ padding:10px 12px;border:1px solid #0b7976;border-radius:13px;
+ background:linear-gradient(105deg,#0b7a77,#0b7774);color:#fff;cursor:pointer}
+.composerToggle:hover{background:linear-gradient(105deg,#096965,#08706e)}
+.composerToggle:focus-visible{outline:3px solid #8cc6bc;outline-offset:2px}
+.composerIcon{display:grid;place-items:center;flex:none;width:34px;height:34px;
+ border:1px solid #ffffff69;border-radius:9px;background:#ffffff17}
+.composerCopy{display:grid;flex:1;gap:3px;min-width:0}
+.composerCopy strong{font:740 13px/1.25 system-ui,sans-serif;color:#fff}
+.composerCopy small{font:500 10px/1.3 system-ui,sans-serif;color:#f1faf8}
+.composerToggle > svg:last-child{flex:none;transition:transform .16s}
+.composerExpanded{transform:rotate(90deg)}
+.composerPanel{min-width:0}
+@media(max-width:430px){
+ .shell{padding:12px;border-radius:16px}
+ .hubHeader{padding-right:75px;margin-bottom:12px}
+ .hubHeader h3{font-size:29px}
+ .shell .tabs{gap:5px;margin-bottom:11px}
+ .shell .tabs button{min-height:62px;padding:6px 1px;border-radius:10px}
+ .shell .tabs button span{font-size:10px}
+ .shell .tabs button svg{width:19px;height:19px}
+ .searchWrap{min-height:42px;margin-bottom:11px}
+ .mediaRow.featureRow{min-height:80px;padding:7px}
+ .reikiArtwork{width:62px;height:62px}
+ .featureRow .mediaRowCopy strong{font-size:14px}
+ .featureRow .mediaRowCopy small{font-size:10px}
+ .composerToggle{min-height:58px;padding:9px;gap:9px}
+ .composerCopy strong{font-size:12px}
+}
+@media(max-width:350px){
+ .hubHeader{padding-right:65px}
+ .hubHeader h3{font-size:26px}
+ .shell .tabs{gap:3px}
+ .shell .tabs button span{font-size:9px}
+ .shell .tabs button svg{width:17px;height:17px}
+ .reikiArtwork{width:54px;height:54px}
+ .featureRow .mediaRowCopy strong{font-size:13px}
+ .featureRow .mediaRowCopy small{font-size:9px}
+ .composerIcon{width:29px;height:29px}
+ .composerCopy strong{font-size:11px}
+}
