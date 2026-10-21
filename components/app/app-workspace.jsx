@@ -124,6 +124,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     [deleted, setDeleted] = useState(false),
     [nativeApp,setNativeApp] = useState(false),
     [installOfferAccountId,setInstallOfferAccountId] = useState(null)
+  const [savedInstallContext,setSavedInstallContext]=useState(false)
   // Ephemeral account-scoped handoff: no private Save or report URL in storage.
   const pendingSaveInstallAccountId=useRef(null)
   const savedExitDestination=useRef(null)
@@ -219,6 +220,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       pendingAccountId,accountId:currentAccountId,installEligible:isPostSignupInstallEligible(),
     })){
       savedExitDestination.current=destination
+      setSavedInstallContext(true)
       setInstallOfferAccountId(currentAccountId)
       return
     }
@@ -226,6 +228,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   }
   function dismissInstallOffer(){
     setInstallOfferAccountId(null)
+    setSavedInstallContext(false)
     const destination=savedExitDestination.current
     savedExitDestination.current=null
     if(destination)router.replace(destination)
@@ -313,6 +316,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     } finally {
       goSignedOut(setData)
       setInstallOfferAccountId(null)
+      setSavedInstallContext(false)
       pendingSaveInstallAccountId.current=null
       savedExitDestination.current=null
       setState('signed-out')
@@ -558,7 +562,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
-      context={savedExitDestination.current ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
+      context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
