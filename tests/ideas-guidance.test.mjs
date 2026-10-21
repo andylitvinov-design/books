@@ -88,7 +88,7 @@ test("Personal guidance is one accessible editorial list, not three giant cards 
   assert.match(component, /getIdeasFreeRecommendations\(result\.topic\)\.map\(\(id, index\)/);
   assert.match(component, /<ol className=\{styles\.guidanceList\} data-ideas-guidance-list>/);
   assert.match(component, /className=\{styles\.guidanceLink\} href=\{freeOfferHref\(locale, id\)\}/);
-  assert.match(component, /index === 0 \? t\.guidanceMatch : t\.guidanceOther/);
+  assert.match(component, /index === 0 \? answerCopy\.guidanceMatch : answerCopy\.guidanceOther/);
   assert.match(component, /\{item\.action\}<ArrowRight/);
   assert.doesNotMatch(component, /styles\.offers|styles\.offer\b|<Image|<img/);
   assert.match(css, /\.guidanceList li \{/);
