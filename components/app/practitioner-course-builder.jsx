@@ -2,16 +2,16 @@
 import {useEffect,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {preparePhoto} from '@/components/session-photo-uploader'
-import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink} from 'lucide-react'
+import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink,ChevronRight} from 'lucide-react'
 import CourseSlideRecorder from './course-slide-recorder'
 import styles from './practitioner-course-builder.module.css'
 
 const translations={
- en:{heading:'Build your own course',sub:'Create slides with text, photos, audio, videos or video links. Drafts and uploads stay private until you publish.',
+ en:{heading:'Course editor',sub:'Create lessons with text, photos, audio, video or links. Drafts stay private.',unavailable:'The new course library could not be loaded. Your other materials are safe.',retry:'Try again',
  new:'New course',name:'Course title',summary:'Short description',lang:'Language',slides:'Slides',add:'Add slide',slideTitle:'Slide title',body:'Text / instructions',type:'Content type',text:'Text',image:'Photo',audio:'Audio',video:'Video file',embed:'YouTube / Vimeo',link:'Video link',upload:'Upload file',uploading:'Uploading…',private:'Private until published',save:'Save draft',saving:'Saving…',publish:'Publish course',republish:'Update published course',hide:'Unpublish',delete:'Archive',published:'Published',draft:'Draft',unsaved:'Unsaved changes',saved:'Saved on server',limit:'Photo 4 MB · audio 20 MB · video 25 MB. No autoplay.',share:'Share course',copied:'Link copied',preview:'Preview course',confirm:'Publish these slides to anyone with the link and in the public course search? Confirm you own the content rights and there is no client data.',remove:'Archive this course? Published course will disappear from search and shared links.',empty:'No courses yet. Create the first one.',select:'Choose a course',choose:'Choose a slide',up:'Up',down:'Down',removeSlide:'Remove slide',error:'Could not save changes',rev:'The course changed elsewhere. Reload to edit the newest version.',approved:'Your practitioner profile must be approved before publication.',search:'Published courses appear in Academy course search.',fileReady:'File uploaded and verified',photoAlt:'Image on slide',youtubePrep:'Prepare for YouTube (later)',youtubeDownload:'Download original',youtubeUploader:'Open Holistic House YouTube uploader',youtubeStudio:'Open YouTube Studio',youtubeNote:'Your video stays private here. Download a copy first, then choose a channel and explicitly upload it to YouTube. No automatic publishing; do not send private client videos.'},
- ru:{heading:'Конструктор курсов',sub:'Создавайте слайды с текстом, фото, аудио, видео или ссылками. Черновики и файлы приватны до публикации.',
+ ru:{heading:'Редактор курсов',sub:'Уроки с текстом, фото, аудио, видео или ссылками. Черновики приватны.',unavailable:'Не удалось загрузить новые курсы. Остальные материалы доступны.',retry:'Повторить',
  new:'Новый курс',name:'Название курса',summary:'Краткое описание',lang:'Язык',slides:'Слайды',add:'Добавить слайд',slideTitle:'Заголовок слайда',body:'Текст / инструкция',type:'Тип содержимого',text:'Текст',image:'Фото',audio:'Аудио',video:'Видеофайл',embed:'YouTube / Vimeo',link:'Ссылка на видео',upload:'Загрузить файл',uploading:'Загрузка…',private:'Приватно до публикации',save:'Сохранить черновик',saving:'Сохраняем…',publish:'Опубликовать курс',republish:'Обновить публикацию',hide:'Снять с публикации',delete:'Архивировать',published:'Опубликован',draft:'Черновик',unsaved:'Не сохранено',saved:'Сохранено на сервере',limit:'Фото до 4 МБ · аудио до 20 МБ · видео до 25 МБ. Без автозапуска.',share:'Поделиться курсом',copied:'Ссылка скопирована',preview:'Открыть курс',confirm:'Опубликовать материалы для всех по ссылке и в поиске курсов? Подтвердите авторские права и отсутствие данных клиентов.',remove:'Архивировать курс? Публикация и ссылка перестанут работать.',empty:'Пока нет курсов. Создайте первый.',select:'Выберите курс',choose:'Выберите слайд',up:'Вверх',down:'Вниз',removeSlide:'Удалить слайд',error:'Не удалось сохранить',rev:'Курс изменён в другой вкладке. Обновите страницу.',approved:'Для публикации требуется одобренный профиль мастера.',search:'Опубликованные курсы появляются в поиске Академии.',fileReady:'Файл загружен и проверен',photoAlt:'Фото слайда',youtubePrep:'Подготовить для YouTube (позже)',youtubeDownload:'Скачать исходник',youtubeUploader:'Открыть загрузку YouTube',youtubeStudio:'Открыть YouTube Studio',youtubeNote:'Видео пока приватно. Сначала скачайте исходник, затем отдельно выберите канал и подтвердите загрузку в YouTube. Не отправляйте видео клиентов.'},
- es:{heading:'Creador de cursos',sub:'Crea diapositivas con texto, fotos, audio, vídeo o enlaces. Los borradores y archivos son privados hasta su publicación.',
+ es:{heading:'Editor de cursos',sub:'Lecciones con texto, fotos, audio, vídeo o enlaces. Los borradores son privados.',unavailable:'No se pudo cargar la biblioteca de cursos. Los otros materiales siguen disponibles.',retry:'Reintentar',
  new:'Nuevo curso',name:'Título del curso',summary:'Descripción breve',lang:'Idioma',slides:'Diapositivas',add:'Añadir diapositiva',slideTitle:'Título de la diapositiva',body:'Texto / instrucciones',type:'Tipo de contenido',text:'Texto',image:'Foto',audio:'Audio',video:'Archivo de vídeo',embed:'YouTube / Vimeo',link:'Enlace de vídeo',upload:'Subir archivo',uploading:'Subiendo…',private:'Privado hasta publicar',save:'Guardar borrador',saving:'Guardando…',publish:'Publicar curso',republish:'Actualizar curso publicado',hide:'Dejar de publicar',delete:'Archivar',published:'Publicado',draft:'Borrador',unsaved:'Cambios sin guardar',saved:'Guardado en servidor',limit:'Foto 4 MB · audio 20 MB · vídeo 25 MB. Sin reproducción automática.',share:'Compartir curso',copied:'Enlace copiado',preview:'Ver curso',confirm:'¿Publicar para todos con el enlace y en el buscador? Confirma los derechos sobre el material y que no contiene datos de clientes.',remove:'¿Archivar el curso? El enlace dejará de funcionar.',empty:'Aún no hay cursos. Crea el primero.',select:'Elige un curso',choose:'Elige una diapositiva',up:'Subir',down:'Bajar',removeSlide:'Quitar diapositiva',error:'No se pudieron guardar los cambios',rev:'Otro dispositivo ha modificado el curso. Recarga la página.',approved:'Para publicar necesitas un perfil profesional aprobado.',search:'Los cursos publicados aparecen en la búsqueda de la Academia.',fileReady:'Archivo subido y verificado',photoAlt:'Imagen de diapositiva',youtubePrep:'Preparar para YouTube (más tarde)',youtubeDownload:'Descargar original',youtubeUploader:'Abrir cargador de YouTube',youtubeStudio:'Abrir YouTube Studio',youtubeNote:'Este vídeo sigue privado. Descarga el original y sube una copia a un canal de YouTube por separado, con confirmación. Nunca subas vídeos de clientes.'}
 }
 const makeSlide=()=>({id:crypto.randomUUID(),kind:'text',title:'',body:''})
@@ -34,6 +34,8 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  const [draft,setDraft]=useState(null)
  const [slideId,setSlideId]=useState(null)
  const [loading,setLoading]=useState(true)
+ const [loadFailed,setLoadFailed]=useState(false)
+ const [retryKey,setRetryKey]=useState(0)
  const [busy,setBusy]=useState(false)
  const [uploading,setUploading]=useState(false)
  const [recording,setRecording]=useState(false)
@@ -51,15 +53,17 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  }
  useEffect(()=>{
   let alive=true
+  setLoading(true);setLoadFailed(false);setError('')
+  setItems([]);setSelected(null);setDraft(null);setSlideId(null)
   api().then(data=>{
    if(!alive)return
    const list=data.items||[]
    setItems(list)
    if(list.length){setSelected(list[0].id);setDraft(JSON.parse(JSON.stringify(list[0].draft)));setSlideId(list[0].draft?.slides?.[0]?.id||null)}
-  }).catch(e=>{if(alive)setError(e.message)})
+  }).catch(()=>{if(alive)setLoadFailed(true)})
     .finally(()=>{if(alive)setLoading(false)})
   return ()=>{alive=false}
- },[])
+ },[accountId,retryKey])
  function choose(item){
   if(busy||uploading||recording)return
   if(dirty&&!window.confirm(locale==='ru'?'Отменить несохранённые изменения?':'Discard unsaved changes?'))return
@@ -160,13 +164,17 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   <header className={styles.heading}><div><h3><BookOpen size={19}/>{t.heading}</h3><p>{t.sub}</p></div>
    <button type="button" className={styles.primary} disabled={busy||uploading||recording} onClick={create}><Plus size={17}/>{t.new}</button>
   </header>
-  {loading?<p aria-live="polite">…</p>:
+  {loading?<p aria-live="polite">…</p>:loadFailed?
+   <div className={styles.loadFailure} role="status"><p>{t.unavailable}</p><button type="button" className={styles.secondary} onClick={()=>setRetryKey(n=>n+1)}>{t.retry}</button></div>:
    <div className={styles.columns}>
     <aside className={styles.courseList} aria-label={t.select}>
      {items.length?items.filter(item=>[item.draft?.title,item.draft?.description].join(' ').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase())).map(item=><button type="button" key={item.id} disabled={busy||uploading||recording}
        className={item.id===selected?styles.selected:''} aria-pressed={item.id===selected} onClick={()=>choose(item)}>
-       <strong>{item.draft?.title||t.new}</strong>
-       <small>{item.draft?.locale?.toUpperCase()} · {item.draft?.slides?.length||0} {t.slides.toLowerCase()} · {item.status==='published'?t.published:t.draft}</small>
+       <span className={styles.courseArtwork}><BookOpen size={21} aria-hidden="true"/></span>
+       <span className={styles.courseCardCopy}><strong>{item.draft?.title||t.new}</strong>
+        <small>{item.draft?.locale?.toUpperCase()} · {item.draft?.slides?.length||0} {t.slides.toLowerCase()}</small>
+        <span className={item.status==='published'?styles.publishedTag:styles.draftTag}>{item.status==='published'?t.published:t.draft}</span>
+       </span><ChevronRight size={17} aria-hidden="true"/>
       </button>):<p className={styles.empty}>{t.empty}</p>}
     </aside>
     {current&&draft&&<div className={styles.editor}>
@@ -244,7 +252,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
      <button className={styles.archive} type="button" disabled={busy||uploading||recording} onClick={()=>void operate('archive')}>{t.delete}</button>
     </div>}
    </div>}
-  {error&&<p className={styles.error} role="alert">{error}</p>}
+  {error&&!loadFailed&&<p className={styles.error} role="alert">{error}</p>}
   {message&&<p className={styles.message} role="status" aria-live="polite">{message}</p>}
  </section>
 }

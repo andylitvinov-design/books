@@ -41,7 +41,7 @@ test('owner receives one compact Materials switcher for five actual resource typ
  assert.match(hub,/data-unified-material-nav/)
  for (const name of ['articles','services','courses','audio','videos']) assert.match(hub,new RegExp("chooseTab\\('"+name+"'\\)"))
  assert.match(hub,/tab==='courses'\?<section/)
- assert.match(hub,/\{isOwner&&<div>/)
+ assert.match(hub,/\{isOwner&&<div\b/)
  assert.match(hub,/tab==='audio'&&isOwner\?<section/)
  assert.match(hub,/tab==='services'\?<section/)
  assert.match(hub,/tab==='articles'\?<PractitionerArticles/)
