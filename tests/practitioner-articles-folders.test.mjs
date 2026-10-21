@@ -88,7 +88,9 @@ test('remedy editor keeps unfiled selection valid, protects unsaved edits and su
  assert.match(ui,/statusFilter/)
  assert.match(ui,/Submit for review/)
  assert.match(workspace,/params\.get\('panel'\)==='materials'/)
- assert.match(materials,/get\('materialTab'\)==='articles'/)
+ assert.match(materials,/get\('materialTab'\)/)
+ assert.match(materials,/activeTabs\.includes\(requested\)/)
+ assert.match(materials,/chooseTab\('articles'\)/)
 })
 
 test('folder names cannot be duplicated even with mixed case',()=>{
