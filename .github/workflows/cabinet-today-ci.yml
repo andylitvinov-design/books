@@ -1,0 +1,36 @@
+name: Cabinet today isolated checks
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/cabinet-today.*'
+      - 'components/app/app-workspace.jsx'
+      - 'lib/app/cabinet-today.mjs'
+      - 'tests/cabinet-today.test.mjs'
+      - '.github/workflows/cabinet-today-ci.yml'
+permissions:
+  contents: read
+concurrency:
+  group: cabinet-today-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --include=dev --no-audit --no-fund
+      - name: Task matching, locale and access regression
+        run: node --test tests/cabinet-today.test.mjs
+      - name: Scoped eslint
+        run: npx --no-install eslint components/app/cabinet-today.jsx components/app/app-workspace.jsx
+      - name: TypeScript
+        run: npx --no-install tsc --noEmit
+      - name: Next production build
+        run: npm run build

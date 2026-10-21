@@ -90,6 +90,39 @@ test("browser-only conversation supports multiple turns, voice consent, accessib
   assert.match(css, /-webkit-overflow-scrolling: touch/);
 });
 
+test("one-tap ChatGPT-style microphone is local, cancellable, and sends recognized words on finish", () => {
+  const component = read("components/home-conversation-guide.tsx");
+  const css = read("components/home-conversation-guide.module.css");
+  for (const token of [
+    'data-home-voice-recording',
+    'engine.interimResults = true',
+    'engine.onstart =',
+    'engine.onresult =',
+    'engine.onend =',
+    'submitOnEndRef.current = true',
+    'voiceDiscardRef.current = true',
+    'onClick={finishVoice}',
+    'onClick={cancelVoice}',
+    't.voiceKeyboard',
+    't.voicePrivacy',
+    'onKeyDown={event =>',
+    'voiceStartedAtRef.current = 0',
+    'setVoiceState("finishing")',
+  ]) assert.ok(component.includes(token), token);
+  assert.match(css, /\.recordingMessage\s*\{[^}]*text-overflow: ellipsis/);
+  assert.match(css, /\.quickChoices \{ display: grid; grid-template-columns: repeat\(3,/);
+  assert.match(css, /ideas-pine-reference\.webp/);
+  assert.match(css, /@media \(max-width: 360px\)/);
+  assert.match(component, /data-guide-phase=\{turns\.length === 0/);
+  assert.match(component, /className=\{styles\.inputRow\}/);
+  assert.doesNotMatch(component, />\{t\.welcome\}<\/p>/, "hide redundant welcome speech bubble");
+  assert.match(css, /\.form textarea \{[^}]*resize: none/);
+  assert.match(css, /\.recordingDot \{ animation: none;/);
+  for (const forbidden of ["MediaRecorder", "getUserMedia(", "fetch(", "localStorage", "sessionStorage"]) {
+    assert.ok(!component.includes(forbidden), "Speech-to-text should not save raw audio or send private text: " + forbidden);
+  }
+});
+
 
 const journeys = [
   ["I need clients for my business", "work-start", "business"],
@@ -176,4 +209,10 @@ test("homepage provides the single canonical free Reiki start without changing t
   assert.ok(component.includes("Курс откроется на английском"));
   assert.ok(component.includes("Начать курс на английском"));
   assert.doesNotMatch(component, /€39|Buy now|Купить сейчас/);
+});
+
+test("product routing preserves latest voice lifecycle and initial three-choice layout", () => {
+  const component = read("components/home-conversation-guide.tsx");
+  assert.ok(component.indexOf("data-home-guide-reiki-entry") > component.indexOf("className={styles.quickChoices}"), "Secondary course entry must not displace the approved hero or composer");
+  for (const token of ["voiceGenerationRef.current += 1", "elapsed >= 60", "}, 12000)", "}, 2500)", "voiceDiscardRef.current = true", "submitOnEndRef.current = false"]) assert.ok(component.includes(token), token);
 });

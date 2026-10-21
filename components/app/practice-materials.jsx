@@ -18,7 +18,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation,shortcut=null,onTabChange}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -57,11 +57,19 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  const activeTabs=['articles','services','courses',...(isOwner?['audio']:[]),'videos']
  useEffect(()=>{
    const requested=new URLSearchParams(window.location.search).get('materialTab')
-   if(activeTabs.includes(requested))setTab(requested)
- },[isOwner])
+   if(activeTabs.includes(requested)){setTab(requested);onTabChange?.(requested)}
+   else onTabChange?.(isOwner?'courses':'articles')
+ },[isOwner,onTabChange])
+ useEffect(()=>{
+   if(!shortcut?.nonce||!shortcut?.tab||(shortcut.tab==='audio'&&!isOwner))return
+   if(!['articles','services','courses','audio','videos'].includes(shortcut.tab))return
+   setTab(shortcut.tab)
+   setQuery('');setEditing(null);setError('')
+   setSearchOpen(false);setShowAll(false);setAudioAction('');setCourseComposerOpen(false)
+ },[shortcut?.nonce,shortcut?.tab,isOwner])
  function chooseTab(next){
    if(!activeTabs.includes(next))return
-   setTab(next);setQuery('');setEditing(null);setError('')
+   setTab(next);onTabChange?.(next);setQuery('');setEditing(null);setError('')
    setSearchOpen(false);setShowAll(false);setAudioAction('');setCourseComposerOpen(false)
    const url=new URL(window.location.href)
    url.searchParams.set('materialTab',next)
@@ -267,10 +275,13 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     <button type="button" className={styles.secondary} disabled={locked||dirty||editing!==null||practitioner?.status==='submitted'} onClick={onSubmitVideos}>{t.review}</button>
    </div>}
    {dirty&&<p className={styles.notice}>{t.unsaved}</p>}
-   <details className={styles.rules}><summary>{ru?'Правила и видимость видео':es?'Privacidad y publicación':'Privacy & publishing'}</summary><p>{t.note}</p><p>{t.autoSaved}</p><p>{t.moderation}</p></details>
-   {isOwner&&reportMode!=='not-owner'&&<details className={styles.privateLibrary}><summary><FolderOpen size={17} aria-hidden="true"/>{ru?'Приватные материалы клиентских отчётов':es?'Recursos privados de informes':'Private client report resources'}</summary>
-    <PracticeReportMaterials items={reportItems} locale={locale} loading={reportMode==='loading'} error={reportError} onRefresh={()=>setReportRefresh(n=>n+1)}/>
-   </details>}
+   <details className={styles.advancedOptions} data-practice-video-advanced>
+    <summary>{ru?'Дополнительно · приватность и публикация':es?'Opciones · privacidad y publicación':'More · privacy & publishing'}</summary>
+    <details className={styles.rules}><summary>{ru?'Правила публикации':es?'Normas de publicación':'Publishing rules'}</summary><p>{t.note}</p><p>{t.autoSaved}</p><p>{t.moderation}</p></details>
+    {isOwner&&reportMode!=='not-owner'&&<details className={styles.privateLibrary}><summary><FolderOpen size={17} aria-hidden="true"/>{ru?'Приватные материалы клиентских отчётов':es?'Recursos privados de informes':'Private client report resources'}</summary>
+     <PracticeReportMaterials items={reportItems} locale={locale} loading={reportMode==='loading'} error={reportError} onRefresh={()=>setReportRefresh(n=>1+n)}/>
+    </details>}
+   </details>
   </div>}
  </div>
  </div>

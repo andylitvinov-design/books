@@ -416,3 +416,14 @@
  .reikiArtwork{width:48px;height:48px}
  .mediaRowCopy strong{font-size:12px}
 }
+
+/* V4.3: the Video workbench keeps rare privacy options inside one disclosure. */
+.advancedOptions{margin:7px 0 0;border-top:1px solid #e8d9cb}
+.advancedOptions > summary{display:flex;align-items:center;min-height:44px;
+ padding:7px 3px;color:#836955;cursor:pointer;
+ font:700 11px/1.35 system-ui,sans-serif;list-style:none}
+.advancedOptions > summary::-webkit-details-marker{display:none}
+.advancedOptions > summary::after{content:'⌄';margin-left:auto;font-size:16px;color:#087a77}
+.advancedOptions[open] > summary::after{transform:rotate(180deg)}
+.advancedOptions :is(.rules,.privateLibrary){margin:6px 0 0}
+.advancedOptions > summary:focus-visible{outline:3px solid #63aba0;outline-offset:2px}
