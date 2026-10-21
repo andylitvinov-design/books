@@ -21,7 +21,9 @@ test("Andy portrait uses already-built responsive static variants on all audited
   const portrait = read("components/static-portrait.tsx");
   assert.match(player, /<StaticPortrait className="site-video-poster" src="\/images\/holistic-house\/andy-about\.png"/);
   assert.equal((home.match(/<StaticPortrait\b/g) || []).length, 2);
-  assert.match(serviceHero, /<StaticPortrait[\s\S]*?src="\/images\/holistic-house\/andy-about\.png"/);
+  assert.match(serviceHero, /\{ kind: "business", image: "\/images\/holistic-house\/andy-about\.png"/);
+  assert.match(serviceHero, /slide\.image === "\/images\/holistic-house\/andy-about\.png" \? \(/);
+  assert.match(serviceHero, /<StaticPortrait src=\{slide\.image\}/);
   assert.match(serviceCards, /<StaticPortrait src="\/images\/holistic-house\/andy-about\.png"/);
   assert.match(read("app/[locale]/services/free-situation-review/page.tsx"), /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
   assert.match(portrait, /unoptimized: true/);

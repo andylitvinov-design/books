@@ -12,7 +12,7 @@
 .card[data-home-explore-id="business"] .photo img{object-position:center 22%}
 .content{display:flex;min-width:0;flex-direction:column;align-items:flex-start;padding:7px 5px 5px 0}
 .eyebrow{color:#577263;font:750 10px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.065em;text-transform:uppercase}
-.title{display:block;margin-top:6px;font:400 clamp(21px,2vw,26px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.02em;text-wrap:balance}
+.title{display:block;margin:6px 0 0;font:400 clamp(21px,2vw,26px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.02em;text-wrap:balance}
 .benefit{display:block;margin-top:8px;color:#5f5b54;font:13px/1.48 Arial,Helvetica,sans-serif}
 .action{display:inline-flex;align-items:center;gap:7px;min-height:38px;margin-top:auto;padding-top:9px;color:#865338;font:750 12px/1.35 Arial,Helvetica,sans-serif}
 .action svg{flex:none;transition:transform .18s ease}

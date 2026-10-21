@@ -103,12 +103,12 @@ export function HomeExploreSections({ locale }: { locale: PublicLocale }) {
                   ? <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 359px) 78px, (max-width: 760px) 110px, 175px" loading="lazy" />
                   : <Image src={topic.image} alt="" fill unoptimized loading="lazy" sizes="(max-width: 359px) 78px, (max-width: 760px) 110px, 175px" />}
               </span>
-              <span className={styles.content}>
+              <div className={styles.content}>
                 <span className={styles.eyebrow}>{item.eyebrow}</span>
-                <span className={styles.title}>{item.title}</span>
+                <h3 className={styles.title}>{item.title}</h3>
                 <span className={styles.benefit}>{item.benefit}</span>
                 <span className={styles.action}>{item.action}<ArrowUpRight size={16} aria-hidden="true" /></span>
-              </span>
+              </div>
             </>
           );
           if (topic.id === "diagnostics" || topic.id === "tests") {
