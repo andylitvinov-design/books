@@ -1872,7 +1872,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   className={styles.next} data-energywork-next>
                   {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
                     slide.id === "flight-done" ? t.continueNowSave :
-                    slide.kind === "milestone" ? t.continueNow : t.continue
+                    slide.kind === "milestone" ? t.continueNow : t.continue}
                   <ArrowRight size={19} aria-hidden="true" />
                 </button>
               ) : null}
