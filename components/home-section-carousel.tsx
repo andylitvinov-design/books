@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -26,6 +27,10 @@ const copy = {
     previous: "Previous section",
     next: "Next section",
     choose: "Choose a site section",
+    quickHeading: "PERSONAL CONSULTATION · TORONTO & ONLINE",
+    quickPrice: "€50 / 30 min · €100 / 60 min",
+    quickBook: "Request a consultation",
+    quickFree: "Free written review",
     slides: {
       services: { eyebrow: "PERSONAL SUPPORT · SERVICES", title: "Personal growth & emotional clarity", lead: "Guided imagery, meaningful questions and space to explore your next step.", action: "View services" },
       tests: { eyebrow: "FREE SELF-CHECKS · TESTS", title: "Get to know your inner resources", lead: "Explore stress, mood and resilience with free self-checks and personal insights.", action: "Start free tests" },
@@ -40,6 +45,10 @@ const copy = {
     previous: "Предыдущий раздел",
     next: "Следующий раздел",
     choose: "Выберите раздел сайта",
+    quickHeading: "ЛИЧНАЯ КОНСУЛЬТАЦИЯ · ТОРОНТО И ОНЛАЙН",
+    quickPrice: "€50 / 30 мин · €100 / 60 мин",
+    quickBook: "Запросить консультацию",
+    quickFree: "Бесплатный письменный разбор",
     slides: {
       services: { eyebrow: "ЛИЧНАЯ РАБОТА · УСЛУГИ", title: "Личное развитие и внутренняя ясность", lead: "Работа с образами, важными вопросами и поддержка на пути к следующему шагу.", action: "Посмотреть услуги" },
       tests: { eyebrow: "БЕСПЛАТНО · ТЕСТЫ", title: "Узнайте больше о своих ресурсах", lead: "Исследуйте стресс, настроение и внутреннюю опору с помощью бесплатных тестов.", action: "Начать тестирование" },
@@ -54,6 +63,10 @@ const copy = {
     previous: "Sección anterior",
     next: "Sección siguiente",
     choose: "Elige una sección del sitio",
+    quickHeading: "CONSULTA PERSONAL · TORONTO Y EN LÍNEA",
+    quickPrice: "€50 / 30 min · €100 / 60 min",
+    quickBook: "Solicitar una consulta",
+    quickFree: "Revisión escrita gratis",
     slides: {
       services: { eyebrow: "APOYO PERSONAL · SERVICIOS", title: "Crecimiento personal y claridad", lead: "Imágenes guiadas, preguntas significativas y espacio para tu próximo paso.", action: "Ver servicios" },
       tests: { eyebrow: "GRATIS · PRUEBAS", title: "Conoce tus recursos interiores", lead: "Explora el estrés, el ánimo y la resiliencia con pruebas de autoobservación.", action: "Empezar las pruebas" },
@@ -104,6 +117,34 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
 
   return (
     <section className={styles.hero} data-home-section-carousel aria-label={t.region}>
+      {/* Always visible before the tall section slider, including on a 320px phone.
+          A click is interest in a service, never a confirmed lead or booking. */}
+      <div className={styles.quickBooking} data-home-quick-booking="true">
+        <div className={styles.quickBookingCopy}>
+          <p>{t.quickHeading}</p>
+          <strong>{t.quickPrice}</strong>
+        </div>
+        <div className={styles.quickBookingActions}>
+          <AcquisitionEventLink
+            className={styles.quickBookingPaid}
+            href={`/${locale}/services#consultation`}
+            event="service_view"
+            attributes={{ "data-home-quick-cta": "paid" }}
+            prefetch={false}
+          >
+            {t.quickBook}<ArrowRight size={16} aria-hidden="true" />
+          </AcquisitionEventLink>
+          <AcquisitionEventLink
+            className={styles.quickBookingFree}
+            href={`/${locale}/services/free-situation-review`}
+            event="service_request_start"
+            attributes={{ "data-home-quick-cta": "free-review" }}
+            prefetch={false}
+          >
+            {t.quickFree}
+          </AcquisitionEventLink>
+        </div>
+      </div>
       <div
         className={styles.slider}
         role="region"
