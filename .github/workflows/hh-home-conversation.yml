@@ -8,6 +8,7 @@ on:
       - 'app/es/page.tsx'
       - 'lib/home-conversation.*'
       - 'tests/home-conversation-guide.test.mjs'
+      - 'tests/home-conversation-browser.mjs'
       - '.github/workflows/hh-home-conversation.yml'
   push:
     branches: ['codex/public-book-library']
@@ -46,3 +47,21 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Install isolated Chromium and WebKit for mobile journey
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
+          npm install --prefix /tmp/hh-home-guide-playwright --no-package-lock --ignore-scripts --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-home-guide-playwright/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-home-guide-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Real EN/RU/ES Next mobile dialogue in Chromium and WebKit
+        run: |
+          HH_TEST_BROWSER=chromium node tests/home-conversation-browser.mjs
+          HH_TEST_BROWSER=webkit node tests/home-conversation-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-home-conversation-browser
+          path: artifacts/home-conversation/
+          retention-days: 7
