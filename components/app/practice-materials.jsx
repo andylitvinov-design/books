@@ -48,7 +48,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  useEffect(()=>{
   const requested=new URLSearchParams(window.location.search).get('materialTab')
   if(requested==='articles'||(requested==='courses'&&isOwner))setTab(requested)
- },[])
+ },[isOwner])
  const [reportItems,setReportItems]=useState([])
  const [reportMode,setReportMode]=useState('loading')
  const [reportError,setReportError]=useState('')
