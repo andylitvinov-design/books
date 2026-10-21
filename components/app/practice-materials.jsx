@@ -1,6 +1,6 @@
 'use client'
 import {useEffect,useState} from 'react'
-import {BookOpen,ChevronRight,FileText,Globe2,Headphones,Search,Leaf,Film,FolderOpen,LockKeyhole} from 'lucide-react'
+import {BookOpen,ChevronRight,FileText,Headphones,Search,Leaf,Film,FolderOpen,LockKeyhole} from 'lucide-react'
 import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
 import PracticeReportMaterials from './practice-report-materials'
@@ -85,7 +85,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  const dirty=JSON.stringify(videos)!==JSON.stringify(original)
  const locked=busy||saving
  const visibleVideos=videos.filter(v=>!query||[v.title,v.description,v.locale].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
- const visibleServices=services.filter(v=>!query||[v.localizedCopy?.[locale]?.title,v.localizedCopy?.en?.title,v.draftCopy?.copy?.[locale]?.title].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+ const visibleServices=services.filter(v=>!query||[v.localizedCopy?.[locale]?.title,v.copy?.title,v.localizedCopy?.en?.title,v.draftCopy?.copy?.[locale]?.title].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
  const lessonEntries=[
   {id:'flight',ru:'Полёт к Солнцу',en:'Flight to the Sun'},
   {id:'tantra',ru:'Тантра Рейки',en:'Tantra Reiki'},
@@ -179,7 +179,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
       <button type="button" className={styles.primary} disabled={busy} onClick={onOpenServices}>{ru?'Управлять':es?'Gestionar':'Manage'}</button>
     </div>
     {visibleServices.length?<div className={styles.mediaRows}>{visibleServices.map((item,i)=>{
-     const title=item.localizedCopy?.[locale]?.title||item.draftCopy?.copy?.[locale]?.title||item.localizedCopy?.en?.title||item.draftCopy?.copy?.en?.title||(ru?'Услуга':es?'Servicio':'Service')
+     const title=item.localizedCopy?.[locale]?.title||item.copy?.title||item.draftCopy?.copy?.[locale]?.title||item.localizedCopy?.en?.title||item.draftCopy?.copy?.en?.title||(ru?'Услуга':es?'Servicio':'Service')
      return <button type="button" key={item.id||i} className={styles.mediaRow} disabled={busy} onClick={onOpenServices}>
        <span className={styles.materialArtwork}><Leaf size={23} aria-hidden="true"/></span>
        <span className={styles.mediaRowCopy}><strong>{title}</strong><small>{item.status||''} · {item.deliveryFormat||''}</small></span><ChevronRight size={18} aria-hidden="true"/>
