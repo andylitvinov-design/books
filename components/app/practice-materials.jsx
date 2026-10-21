@@ -15,7 +15,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,isOwner=false,onOpenReikiCourse,onSaveVideos,onSubmitVideos}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onSaveVideos,onSubmitVideos}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -139,7 +139,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    </button>
   </div>
   {tab==='courses'?<section className={styles.body} data-practice-master-courses>
-    <PractitionerCourseBuilder locale={locale}/>
+    <PractitionerCourseBuilder locale={locale} accountId={accountId}/>
     {isOwner&&<div>
     <p className={styles.intro}>{ru?'Выберите учебную программу, чтобы управлять её медитациями и аудиозаписями.':es?'Selecciona un curso para gestionar sus meditaciones y grabaciones.':'Choose a course to manage its meditations and audio recordings.'}</p>
     <div className={styles.courseFolder}>
