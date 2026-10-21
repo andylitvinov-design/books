@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { releasePaidPolicy, classifyPaidRequest, installPaidReadOnlyGuard, expectedPaidForm, readPaidForm, assertPaidFormSnapshot, verifyPaidEnquiryUi, verifyReleasePaidEnquiry } from '../scripts/helpers/release-paid-enquiry-verifier.mjs';
+import { releasePaidPolicy, classifyPaidRequest, deniedPaidRequestMetadata, installPaidReadOnlyGuard, expectedPaidForm, readPaidForm, assertPaidFormSnapshot, verifyPaidEnquiryUi, verifyReleasePaidEnquiry } from '../scripts/helpers/release-paid-enquiry-verifier.mjs';
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from '../lib/whatsapp-enquiry.js';
 import ts from 'typescript';
 import { PHONE_COUNTRIES, phoneCountryFromValue, phoneNationalPart, composeCountryPhone } from '../lib/contact/phone-country.js';
@@ -386,4 +386,72 @@ test('Release caller retains matrix, explicit label, and no unsafe helper or run
   const helper = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
   assert.doesNotMatch(helper, /\.fill\(|\.check\(|\.submit\(|connectToServer\(|storageState:|process\.env|route\.continue\(/);
   assert.match(helper, /postSaveRuntimeVerified: false, preparedMessageRuntimeVerified: false, messageSent: false/);
+});
+
+// These synthetic canaries model sensitive input. Neither values nor unknown
+// key strings may reach a guard assertion; only the approved bounded metadata.
+const DIAGNOSTIC_CANARY = 'SYNTHETIC_SECRET_MUST_NOT_APPEAR';
+const metadataKeys = ['resourceType', 'sameOrigin', 'pathClass', 'knownQueryKeys', 'unknownQueryKeyCount', 'hasPercent', 'hasBackslash', 'hasHash', 'hasUserinfo'];
+test('denied metadata reports only approved schema and never makes a query allowable', () => {
+  const policy = releasePaidPolicy(base);
+  const req = request(policy, '/_next/static/chunks/app/%5Blocale%5D/page.js?_rsc=' + DIAGNOSTIC_CANARY + '&v=' + DIAGNOSTIC_CANARY + '&dpl=' + DIAGNOSTIC_CANARY + '&' + DIAGNOSTIC_CANARY + '=hidden', 'GET', 'script');
+  assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL');
+  const metadata = deniedPaidRequestMetadata(policy, req);
+  assert.deepEqual(Object.keys(metadata), metadataKeys);
+  assert.deepEqual(metadata, { resourceType: 'script', sameOrigin: true, pathClass: 'next-static', knownQueryKeys: ['_rsc', 'v', 'dpl'], unknownQueryKeyCount: 1, hasPercent: true, hasBackslash: false, hasHash: false, hasUserinfo: false });
+  assert.doesNotMatch(JSON.stringify(metadata), new RegExp(DIAGNOSTIC_CANARY));
+  assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL', 'Metadata must not normalize or allow the request');
+});
+for (const [name, make, expected] of [
+  ['audited page query', p => request(p, p.path + '?_rsc=' + DIAGNOSTIC_CANARY), { pathClass: 'exact-audited-page', sameOrigin: true, knownQueryKeys: ['_rsc'], unknownQueryKeyCount: 0 }],
+  ['public image query', p => request(p, '/images/holistic-house/' + DIAGNOSTIC_CANARY + '.webp?url=' + DIAGNOSTIC_CANARY + '&w=640&q=75', 'GET', 'image'), { pathClass: 'image', sameOrigin: true, knownQueryKeys: [], unknownQueryKeyCount: 3 }],
+  ['foreign host and private path', p => request(p, '/' + DIAGNOSTIC_CANARY + '?v=' + DIAGNOSTIC_CANARY, 'GET', 'fetch', 'https://' + DIAGNOSTIC_CANARY.toLowerCase() + '.invalid'), { pathClass: 'other', sameOrigin: false, knownQueryKeys: ['v'] }],
+  ['userinfo and fragment', p => request(p, '/_next/static/a.js#' + DIAGNOSTIC_CANARY, 'GET', 'script', 'http://' + DIAGNOSTIC_CANARY + ':hidden@127.0.0.1:3123'), { sameOrigin: true, hasUserinfo: true, hasHash: true }],
+  ['backslash', p => ({ ...request(p), url: () => p.origin + '/_next/static/' + DIAGNOSTIC_CANARY + '\\file.js' }), { hasBackslash: true }],
+  ['malformed URL', p => ({ ...request(p), url: () => DIAGNOSTIC_CANARY }), { sameOrigin: false, pathClass: 'other' }],
+  ['unknown resource type', p => ({ ...request(p, p.path + '?private=' + DIAGNOSTIC_CANARY), resourceType: () => DIAGNOSTIC_CANARY }), { resourceType: 'other', unknownQueryKeyCount: 1 }],
+]) test('diagnostic redaction for ' + name + ' preserves abort and fatal failure', async () => {
+  const policy = releasePaidPolicy(base), { context } = network();
+  const guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  const req = make(policy), metadata = deniedPaidRequestMetadata(policy, req);
+  for (const [key, value] of Object.entries(expected)) assert.deepEqual(metadata[key], value);
+  assert.deepEqual(Object.keys(metadata), metadataKeys);
+  assert.deepEqual(await context.send(req), ['abort']);
+  assert.throws(() => guard.assertClean(), error => {
+    assert.match(error.message, /Paid read-only network boundary violated/);
+    assert.doesNotMatch(error.message, new RegExp(DIAGNOSTIC_CANARY, 'i'));
+    assert.doesNotMatch(JSON.stringify(error.actual), new RegExp(DIAGNOSTIC_CANARY, 'i'));
+    assert.doesNotMatch(error.message, /https?:\/\/|\/images\/|\/_next\//);
+    return true;
+  });
+});
+test('known key labels are finite, deduplicated and case-sensitive; unknown count is capped', () => {
+  const policy = releasePaidPolicy(base);
+  const query = ['v=one', 'v=two', 'DPL=unknown', ...Array.from({ length: 200 }, (_, i) => DIAGNOSTIC_CANARY + i + '=hidden')].join('&');
+  const metadata = deniedPaidRequestMetadata(policy, request(policy, policy.path + '?' + query));
+  assert.deepEqual(metadata.knownQueryKeys, ['v']); assert.equal(metadata.unknownQueryKeyCount, 100);
+  assert.doesNotMatch(JSON.stringify(metadata), new RegExp(DIAGNOSTIC_CANARY));
+});
+test('duplicate blocked requests remain three attempts, never a distinct-URL claim', async () => {
+  const policy = releasePaidPolicy(base), { context } = network();
+  const guard = await installPaidReadOnlyGuard(context, policy);
+  for (let i = 0; i < 3; i++) assert.deepEqual(await context.send(request(policy, policy.path + '?v=' + DIAGNOSTIC_CANARY)), ['abort']);
+  assert.throws(() => guard.assertClean(), error => {
+    assert.equal(error.actual.length, 3); assert.ok(error.actual.every(row => row.reason === 'noncanonical URL'));
+    assert.doesNotMatch(JSON.stringify(error.actual), new RegExp(DIAGNOSTIC_CANARY)); return true;
+  });
+});
+
+test('metadata exception retains the original denied reason and aborts before fetch', async () => {
+  const policy = releasePaidPolicy(base), { context } = network();
+  const guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  const req = { ...request(policy, policy.path + '?v=' + DIAGNOSTIC_CANARY), resourceType() { throw new Error(DIAGNOSTIC_CANARY); } };
+  assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL');
+  assert.deepEqual(await context.send(req), ['abort']);
+  assert.throws(() => guard.assertClean(), error => {
+    assert.deepEqual(error.actual, ['noncanonical URL']);
+    assert.doesNotMatch(error.message, new RegExp(DIAGNOSTIC_CANARY)); return true;
+  });
 });

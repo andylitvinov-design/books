@@ -10,7 +10,7 @@ const identity = el => ({ src: el.getAttribute('src'), srcset: el.getAttribute('
 // Audit every original poster, including lazy descendants of Services' native
 // disclosure. Opening that disclosure is a user-visible precondition, not a
 // reason to skip hidden images, change their sources, or weaken strict decode.
-export async function verifyReleasePosters(page, { path, locale }, expect) {
+export async function verifyReleasePosters(page, { path, locale, origin }, expect) {
   let disclosure, summary, openedHere = false;
   const posters = page.locator('.site-video-poster');
   const images = await posters.elementHandles();
@@ -18,6 +18,8 @@ export async function verifyReleasePosters(page, { path, locale }, expect) {
     const sources = await Promise.all(images.map(image => image.evaluate(identity)));
     if (/^\/(en|ru|es)\/services$/.test(path)) {
       assert.equal(path, '/' + locale + '/services', 'Services locale must match its audited route');
+      assert.ok(['http://127.0.0.1:3123', 'https://holistichouse.vercel.app'].includes(origin), 'Services posters require the exact audited origin');
+      assert.equal(page.url(), origin + path, 'Services posters require the exact audited page URL');
       const section = page.locator('[data-personal-testimonials="services"]');
       await expect(section).toHaveCount(1);
       await expect(section).toHaveAttribute('lang', locale);
@@ -30,9 +32,15 @@ export async function verifyReleasePosters(page, { path, locale }, expect) {
       for (const id of serviceVideoIds[locale]) {
         const image = section.locator('[data-testimonial-video-id="' + id + '"] .site-video-poster');
         await expect(image).toHaveCount(1);
-        await expect(image).toHaveAttribute('src', remotePosterIds.has(id)
+        const raw = await image.getAttribute('src');
+        const expected = remotePosterIds.has(id)
           ? 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg'
-          : '/images/holistic-house/testimonial-posters/' + id + '.webp');
+          : '/images/holistic-house/testimonial-posters/' + id + '.webp';
+        // Next 15.5.21's onError ref self-assigns img.src after hydration,
+        // making a root-relative attribute absolute. Accept only these two
+        // literal spellings, never URL normalization or a changed asset.
+        assert.ok(raw === expected || (!remotePosterIds.has(id) && raw === origin + expected),
+          'Preserve exact Services poster asset and audited origin');
       }
       summary = disclosure.locator(':scope > summary');
       await expect(summary).toHaveCount(1);

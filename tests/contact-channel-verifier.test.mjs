@@ -138,23 +138,71 @@ test('actual chooser ignores invalid or personal referral parameters without cha
   }
 });
 
+function releasePaidContract(release, helper) {
+  const parse = text => ts.createSourceFile('contract.mjs', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const nodes = (root, predicate) => { const found = []; const visit = node => { if (predicate(node)) found.push(node); ts.forEachChild(node, visit); }; visit(root); return found; };
+  const tree = parse(release), helperTree = parse(helper);
+  const imports = nodes(tree, node => ts.isImportDeclaration(node) && node.moduleSpecifier.text === './helpers/release-paid-enquiry-verifier.mjs');
+  assert.equal(imports.length, 1, 'Paid helper import must be unique');
+  assert.ok(imports[0].importClause.namedBindings.elements.some(item => item.name.text === 'verifyReleasePaidEnquiry' && !item.propertyName), 'Bind the actual paid helper');
+  const calls = nodes(tree, node => ts.isCallExpression(node) && node.expression.getText(tree) === 'check' && node.arguments[0]?.text === 'paid-imagery-consultation-safe-handoff');
+  assert.equal(calls.length, 1, 'Paid audit caller must be unique');
+  const call = calls[0];
+  assert.ok(ts.isAwaitExpression(call.parent), 'Await the paid audit result');
+  assert.equal(call.arguments[1].getText(tree).replace(/\s/g, ''), '{engine,width,locale}', 'Retain the engine/viewport/locale matrix detail');
+  assert.ok(ts.isArrowFunction(call.arguments[2]), 'Paid caller delegates through its callback');
+  const sentinel = Promise.resolve('scoped paid result'), invocations = [], browser = {}, expect = {};
+  const callback = new Function('verifyReleasePaidEnquiry', 'browser', 'origin', 'label', 'locale', 'width', 'expect', `return (${call.arguments[2].getText(tree)});`)((...args) => { invocations.push(args); return sentinel; }, browser, 'http://127.0.0.1:3123', 'local', 'ru', 390, expect);
+  assert.equal(callback(), sentinel, 'Return the actual paid helper promise');
+  assert.equal(invocations.length, 1, 'Invoke only one paid helper');
+  assert.deepEqual(invocations[0], [browser, { origin: 'http://127.0.0.1:3123', label: 'local', locale: 'ru', width: 390 }, expect], 'Forward the exact audited policy options');
+  const declaration = name => { const list = helperTree.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === name); assert.equal(list.length, 1, 'Unique actual helper function ' + name); return list[0]; };
+  const ui = declaration('verifyPaidEnquiryUi'), uiText = ui.getText(helperTree);
+  const blanks = nodes(ui, node => ts.isCallExpression(node) && node.expression.getText(helperTree) === 'blank');
+  assert.deepEqual(blanks.map(node => node.arguments.map(arg => arg.text)), [['0', '60', '€100'], ['0', '60', '€100'], ['1', '30', '€50'], ['0', '60', '€100']], 'Retain both prices, reopen and exact reset');
+  for (const node of blanks) assert.ok(ts.isAwaitExpression(node.parent), 'Await each blank-form check');
+  assert.match(uiText, /assertPaidFormSnapshot\(await form\.evaluate\(readPaidForm\), policy\.locale\)/, 'Verify the actual blank private/contact schema');
+  assert.match(uiText, /chooser\.locator\('a, \[data-contact-channel\]'\)\)\.toHaveCount\(0\)/, 'No pre-save messenger links');
+  assert.match(uiText, /'\/' \+ policy\.locale \+ '\/services\/free-situation-review'/, 'Keep the exact locale-specific internal free route');
+  assert.match(uiText, /originalForm\.evaluate\(el => el\.isConnected\)\)\.toBe\(false\)/, 'Changing paid format must remount');
+  assert.match(uiText, /expressForm\.evaluate\(el => el\.isConnected\)\)\.toBe\(false\)/, 'Free choice must remove paid form');
+  assert.match(uiText, /el\.tagName === 'BUTTON' && el\.form === null/, 'Only standalone non-submit controls may be clicked');
+  assert.doesNotMatch(uiText, /\.(?:fill|check|press|submit)\s*\(/, 'Release paid audit never submits or fills private fields');
+  assert.match(uiText, /postSaveRuntimeVerified: false, preparedMessageRuntimeVerified: false, messageSent: false/, 'Do not claim post-save or delivery proof');
+  const policy = declaration('releasePaidPolicy').getText(helperTree);
+  assert.match(policy, /assertReleasePaidMode\(\{ origin, label \}\)/, 'Validate the explicit mode/origin');
+  assert.match(policy, /path: '\/' \+ locale \+ '\/services\/imagery-therapy'/, 'Audit the exact imagery public route');
+  const wrapper = declaration('verifyReleasePaidEnquiry').getText(helperTree);
+  assert.ok(wrapper.indexOf('releasePaidPolicy(options)') < wrapper.indexOf('browser.newContext('), 'Reject invalid policy before context/network');
+  assert.ok(wrapper.indexOf('await installPaidReadOnlyGuard(context, policy)') < wrapper.indexOf('await context.newPage()'), 'Install the read-only guard before navigation');
+  assert.match(wrapper, /serviceWorkers: 'block'/, 'Block service workers in the fresh context');
+  assert.match(wrapper, /await guard\.settle\(\);[\s\S]*guard\.assertClean\(\)/, 'Settle and fail on every denied network attempt');
+  assert.match(helper, /assert\.equal\(posts, 0, 'Paid read-only audit attempted a POST'\)/, 'Zero POST remains mandatory');
+  const freeStart = release.indexOf("await check('free-imagery-situation-review'");
+  const footer = release.slice(freeStart < 0 ? release.indexOf("const assertFreeUrl") : freeStart, call.pos);
+  assert.match(footer, /capture\.locator\('\[data-contact-channel="telegram"\]'\)\.count\(\), 1/, 'Retain the separate footer Telegram check');
+  assert.match(release, /assert\.deepEqual\(cspErrors, \[\]/, 'CSP errors remain fatal');
+}
+
 test('release retains explicit paid selection, free internal action, reset, privacy and separate footer Telegram checks', () => {
-  const source = read('scripts/verify-release-reaudit.mjs');
-  const paid = source.slice(source.indexOf("await check('paid-imagery-consultation-safe-handoff'"), source.indexOf("if (width === 390)"));
-  assert.match(paid, /services\/imagery-therapy/);
-  assert.match(paid, /openContactChannelChooser\(capture, expect\)/);
-  assert.match(paid, /assertPreparedContactChannels\(chooser, expect\)/);
-  assert.match(paid, /\[data-consultation-action\]'\)\)\.toHaveCount\(2\)/);
-  assert.match(paid, /for \(const action of \[whatsapp, telegram\]\)/);
-  assert.match(paid, /assertPaidUrl\('session', '60', '€100'\)/);
-  assert.match(paid, /nth\(1\)\.click\(\);\s*chooser = await openContactChannelChooser\(capture, expect\);\s*const changedUrl = await assertPaidUrl\('questions', '30', '€50'\)/);
-  assert.match(paid, /\[data-contact-channel-chooser\]'\)\)\.toHaveCount\(0\)/);
-  assert.match(paid, /await expect\(action\)\.toHaveCount\(1\)/);
-  assert.match(paid, /assert.equal\(freeUrl.href, origin \+ `\/\$\{locale\}\/services\/free-situation-review`\)/);
-  assert.match(paid, /Reset must restore the exact paid request/);
-  assert.match(paid, /telegram"\]:not\(\[data-consultation-action\]\)/);
-  assert.match(paid, /No private intake fields/);
-  assert.match(source, /assert\.deepEqual\(cspErrors, \[\]/);
+  releasePaidContract(read('scripts/verify-release-reaudit.mjs'), read('scripts/helpers/release-paid-enquiry-verifier.mjs'));
+});
+
+test('release paid helper wiring and no-submit guards reject intended source defects', () => {
+  const release = read('scripts/verify-release-reaudit.mjs'), helper = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
+  const cases = [
+    [release.replace("'./helpers/release-paid-enquiry-verifier.mjs'", "'./helpers/other.mjs'"), helper, /Paid helper import must be unique/],
+    [release.replace("await check('paid-imagery-consultation-safe-handoff'", "check('paid-imagery-consultation-safe-handoff'"), helper, /Await the paid audit result/],
+    [release.replace('verifyReleasePaidEnquiry(browser, { origin, label, locale, width }, expect)', "verifyReleasePaidEnquiry(browser, { origin, label, locale: 'en', width }, expect)"), helper, /Forward the exact audited policy options/],
+    [release, helper.replace("await blank(1, '30', '€50')", "await blank(1, '30', '€100')"), /Retain both prices, reopen and exact reset/],
+    [release, helper.replace("assert.equal(posts, 0, 'Paid read-only audit attempted a POST')", "assert.equal(posts, 1, 'Paid read-only audit attempted a POST')"), /Zero POST remains mandatory/],
+    [release, helper.replace('el.form === null', 'true'), /Only standalone non-submit controls/],
+  ];
+  for (const [changedRelease, changedHelper, reason] of cases) {
+    releasePaidContract(release, helper);
+    assert.ok(changedRelease !== release || changedHelper !== helper, 'Mutation changes its intended source');
+    assert.throws(() => releasePaidContract(changedRelease, changedHelper), reason);
+  }
 });
 
 test('both core-service scripts explicitly open the uniquely scoped chooser without changing unrelated direct handoffs', () => {

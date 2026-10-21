@@ -1,3 +1,4 @@
+import ts from 'typescript';
 import { attachCatalogStatsResponseDiagnostic } from '../scripts/catalog-stats-request-diagnostics.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -69,10 +70,64 @@ test('actual page collector isolates late retired requests, but new pending requ
   assert.equal(diagnostics.pageErrors.length, 1);
   assert.equal(diagnostics.requests.length, 2, 'Prior diagnostics are retained');
 });
+const posterSource = readFileSync(new URL('../scripts/helpers/release-services-poster-verifier.mjs', import.meta.url), 'utf8');
+function assertPosterCaller(text) {
+  const tree = ts.createSourceFile('release.mjs', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const all = []; const visit = node => { all.push(node); ts.forEachChild(node, visit); }; visit(tree);
+  const imports = tree.statements.filter(node => ts.isImportDeclaration(node) && node.moduleSpecifier.text === './helpers/release-services-poster-verifier.mjs');
+  assert.equal(imports.length, 1, 'One actual poster helper import');
+  assert.ok(imports[0].importClause.namedBindings.elements.some(node => node.name.text === 'verifyReleasePosters' && !node.propertyName), 'Bind the named poster helper');
+  const calls = all.filter(node => ts.isCallExpression(node) && node.expression.getText(tree) === 'verifyReleasePosters');
+  assert.equal(calls.length, 1, 'One poster helper invocation');
+  const call = calls[0]; assert.ok(ts.isAwaitExpression(call.parent), 'Await all original poster decoding');
+  const observed = [], page = {}, expect = {}, result = Promise.resolve();
+  const returned = new Function('verifyReleasePosters', 'page', 'path', 'locale', 'origin', 'expect', `return ${call.getText(tree)};`)((...args) => { observed.push(args); return result; }, page, '/es/services', 'es', 'http://127.0.0.1:3123', expect);
+  assert.equal(returned, result);
+  assert.deepEqual(observed, [[page, { path: '/es/services', locale: 'es', origin: 'http://127.0.0.1:3123' }, expect]], 'Forward exact audited poster page, locale and origin');
+}
+async function exercisePosterHandles(text, change = '') {
+  const decoded = [], sources = ['/one.webp', '/two.webp', '/three.webp'];
+  const images = sources.map((src, index) => ({ index, attrs: { src, srcset: null }, getAttribute(name) { return this.attrs[name]; }, async evaluate(fn) { return fn(this); }, async dispose() {} }));
+  const decode = async image => { decoded.push(image.index); if (change === 'replace-next' && image.index === 0) images[1].attrs.src = '/replacement.webp'; if (change === 'decode-fails') throw Error('sentinel strict decode failure'); };
+  const exports = {};
+  const js = ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
+  runInNewContext(js, { exports, require: name => { if (name === 'node:assert/strict') return assert; if (name === '../public-poster-readiness.mjs') return { decodeReadyPoster: decode }; throw Error('Unknown poster helper dependency: ' + name); } }, { timeout: 1000 });
+  let handleReads = 0;
+  const posters = { async elementHandles() { handleReads++; return images; } };
+  const page = { locator(selector) { assert.equal(selector, '.site-video-poster'); return posters; } };
+  const expect = subject => ({ async toHaveCount(count) { assert.equal(subject, posters); assert.equal(count, images.length, 'Preserve original poster cardinality'); } });
+  await exports.verifyReleasePosters(page, { path: '/en/about', locale: 'en', origin: 'http://127.0.0.1:3123' }, expect);
+  assert.equal(handleReads, 1, 'Snapshot original handles once');
+  assert.deepEqual(decoded, [0, 1, 2], 'Strictly decode every original handle in order');
+}
+
+test('extracted poster helper retains every original handle, identity and strict decode failure', async () => {
+  assertPosterCaller(source);
+  await exercisePosterHandles(posterSource);
+  await assert.rejects(exercisePosterHandles(posterSource, 'replace-next'), /must not replace an original poster source/);
+  await exercisePosterHandles(posterSource);
+  await assert.rejects(exercisePosterHandles(posterSource, 'decode-fails'), /sentinel strict decode failure/);
+});
+
+test('poster import, awaited call and complete snapshot reject intended source defects', async () => {
+  for (const [changed, reason] of [
+    [source.replace("'./helpers/release-services-poster-verifier.mjs'", "'./helpers/other.mjs'"), /One actual poster helper import/],
+    [source.replace('await verifyReleasePosters(', 'verifyReleasePosters('), /Await all original poster decoding/],
+    [source.replace('{ path, locale, origin }, expect)', "{ path, locale: 'en', origin }, expect)"), /Forward exact audited poster page, locale and origin/],
+  ]) {
+    assertPosterCaller(source); assert.notEqual(changed, source);
+    assert.throws(() => assertPosterCaller(changed), reason);
+  }
+  await exercisePosterHandles(posterSource);
+  const changed = posterSource.replace('await decodeReadyPoster(image, expect);', 'if (index > 0) await decodeReadyPoster(image, expect);');
+  assert.notEqual(changed, posterSource);
+  await assert.rejects(exercisePosterHandles(changed), /Strictly decode every original handle in order/);
+});
+
 test('route isolation is failure-only and original failure result is retained', () => {
   assert.match(source, /if \(!routePassed\) \{[\s\S]*?retiredDocuments\.push[\s\S]*?await page\.close\(\);[\s\S]*?publicPageState = await createPublicPage\(\)/);
-  assert.match(source, /const posterImages = await posters\.elementHandles\(\);/);
-  assert.doesNotMatch(source, /i >= await posters\.count\(\)/);
+  assertPosterCaller(source);
+  assert.doesNotMatch(source + posterSource, /i >= await posters\.count\(\)/);
   assert.doesNotMatch(source, /pendingPublicRequests\.clear\(|EncodingError.*continue/);
   assert.match(source, /catch \(error\) \{ results\.push\(\{ name, \.\.\.detail, ok: false/);
   assert.match(source, /if \(readiness !== 'loaded-history'\) return;/);

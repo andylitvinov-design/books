@@ -9,25 +9,29 @@ assert.ok(records, 'Use the actual source testimonial catalogue');
 const catalog = new Function('return ' + records)();
 const remote = new Set(['m9RfDgK76PU', '5oj0BIbLT4w']);
 
-async function scenario({ locale = 'en', path = '/' + locale + '/services', initiallyOpen = false, fault } = {}) {
+async function scenario({ locale = 'en', path = '/' + locale + '/services', origin = 'http://127.0.0.1:3123', absolute = false, initiallyOpen = false, fault } = {}) {
   const ids = catalog[locale].map(item => item.id);
   const calls = [];
   let open = initiallyOpen;
   const services = /^\/(en|ru|es)\/services$/.test(path);
-  const doc = { visibilityState: 'visible', baseURI: 'http://127.0.0.1:3123/' };
+  const doc = { visibilityState: 'visible', baseURI: origin + '/' };
   const images = ids.map((id, index) => {
-    const source = remote.has(id) ? 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg' : '/images/holistic-house/testimonial-posters/' + id + '.webp';
+    const relative = '/images/holistic-house/testimonial-posters/' + id + '.webp';
+    let source = remote.has(id) ? 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg' : (absolute ? origin : '') + relative;
+    if (sourceFaults[fault] && index === (sourceFaults[fault].remote ? 0 : 4)) source = sourceFaults[fault].change(source, relative, origin);
     const el = {
       isConnected: true, ownerDocument: doc, src: fault === 'wrong source' && index === 4 ? '/wrong.webp' : source,
-      getAttribute(name) { return name === 'src' ? this.src : null; },
+      srcset: null,
+      getAttribute(name) { return name === 'src' ? this.src : name === 'srcset' ? this.srcset : null; },
       get complete() { return (!services || open || index < 4) && !(fault === 'not loaded' && index === 4); },
       get naturalWidth() { return this.complete && !(fault === 'zero width' && index === 4) ? 480 : 0; },
       get naturalHeight() { return this.complete && !(fault === 'zero height' && index === 4) ? 360 : 0; },
-      get currentSrc() { return this.complete ? 'http://127.0.0.1:3123' + this.src : ''; },
+      get currentSrc() { return this.complete ? new URL(this.src, doc.baseURI).href : ''; },
       async decode() {
         calls.push(['decode', id]);
         if (fault === 'decode rejects' && index === 4) throw new Error('strict decode failed');
         if (fault === 'changed during decode' && index === 4) this.src = '/replacement.webp';
+        if (fault === 'equivalent spelling changed during decode' && index === 4) this.src = absolute ? relative : origin + relative;
       },
     };
     return {
@@ -52,6 +56,8 @@ async function scenario({ locale = 'en', path = '/' + locale + '/services', init
       if (fault === 'does not close' && open) return;
       open = !open;
       if (fault === 'changed on open' && open) images[4].el.src = '/replacement.webp';
+      if (fault === 'equivalent spelling changed on open' && open) images[4].el.src = absolute ? '/images/holistic-house/testimonial-posters/' + ids[4] + '.webp' : origin + images[4].el.src;
+      if (fault === 'srcset changed on open' && open) images[4].el.srcset = '/replacement.webp 2x';
       if (fault === 'detached on open' && open) images[4].el.isConnected = false;
     },
   };
@@ -87,7 +93,7 @@ async function scenario({ locale = 'en', path = '/' + locale + '/services', init
     get count() { return images.length - Number(fault === 'removed on open' && open); },
     async elementHandles() { calls.push(['snapshot', open]); return images; },
   };
-  const page = { locator(selector) {
+  const page = { url: () => pageFaults[fault] ? pageFaults[fault](origin, path) : origin + path, locator(selector) {
     if (selector === '.site-video-poster') return posters;
     assert.equal(selector, '[data-personal-testimonials="services"]');
     calls.push(['services-scope']);
@@ -101,10 +107,10 @@ async function scenario({ locale = 'en', path = '/' + locale + '/services', init
   });
   expect.poll = callback => ({ async toBe(value) { assert.equal(await callback(), value, 'strict load readiness'); } });
   let error;
-  try { await verifyReleasePosters(page, { path, locale }, expect); } catch (caught) { error = caught; }
+  try { await verifyReleasePosters(page, { path: fault === 'route locale mismatch' ? '/ru/services' : path, locale, origin: fault === 'missing origin' ? undefined : fault === 'unapproved origin' ? 'https://example.invalid' : origin }, expect); } catch (caught) { error = caught; }
   if (fault) {
     assert.ok(error, 'Fault must be rejected: ' + fault);
-    assert.match(error.message, faultDiagnostics[fault], 'Reject the injected fault, not an unrelated earlier failure: ' + fault);
+    assert.match(error.message, faultDiagnostics[fault] || /Preserve exact Services poster asset and audited origin/, 'Reject the injected fault, not an unrelated earlier failure: ' + fault);
   } else if (error) throw error;
   if (fault !== 'does not close') assert.equal(open, initiallyOpen, 'Restore initial disclosure state even on failure');
   for (const id of ids) assert.ok(calls.some(([kind, value]) => kind === 'dispose' && value === id), 'Every snapshot handle is released');
@@ -117,9 +123,10 @@ async function scenario({ locale = 'en', path = '/' + locale + '/services', init
   }
 }
 
-for (const locale of ['en', 'ru', 'es']) {
-  test(locale + ' reveals all six source-bound testimonial posters then restores closed state', () => scenario({ locale }));
-  test(locale + ' preserves an already-open disclosure', () => scenario({ locale, initiallyOpen: true }));
+for (const locale of ['en', 'ru', 'es']) for (const origin of ['http://127.0.0.1:3123', 'https://holistichouse.vercel.app']) for (const absolute of [false, true]) {
+  const label = locale + ' ' + origin + ' ' + (absolute ? 'absolute' : 'relative');
+  test(label + ' reveals all six source-bound testimonial posters then restores closed state', () => scenario({ locale, origin, absolute }));
+  test(label + ' preserves an already-open disclosure', () => scenario({ locale, origin, absolute, initiallyOpen: true }));
 }
 test('non-Services pages retain strict poster verification without disclosure interaction', () => scenario({ path: '/en/about' }));
 const faultDiagnostics = {
@@ -135,7 +142,7 @@ const faultDiagnostics = {
   'hidden summary': /Expected summary visible/,
   'missing card poster': /Expected card poster count/,
   'duplicate card poster': /Expected card poster count/,
-  'wrong source': /Expected card poster src/,
+  'wrong source': /Preserve exact Services poster asset and audited origin/,
   'does not open': /Expected disclosure open/,
   'does not close': /Expected disclosure absence of open/,
   'changed on open': /Opening the disclosure must not replace an original poster source/,
@@ -148,12 +155,52 @@ const faultDiagnostics = {
   'changed during decode': /Poster identity\/readiness changed during decode/,
 };
 assert.equal(Object.keys(faultDiagnostics).length, 23, 'Retain every original fault case');
-for (const fault of Object.keys(faultDiagnostics)) {
+const sourceFaults = {
+  'foreign host': { change: (_s, p) => 'https://example.invalid' + p },
+  'other approved origin': { change: (_s, p, o) => (o.startsWith('http:') ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3123') + p },
+  'wrong port': { change: (_s, p) => 'http://127.0.0.1:3000' + p },
+  'query': { change: s => s + '?v=synthetic' },
+  'fragment': { change: s => s + '#synthetic' },
+  'userinfo': { change: (_s, p) => 'http://synthetic@127.0.0.1:3123' + p },
+  'encoded path': { change: (_s, p) => p.replace('/images/', '/%69mages/') },
+  'dot segment': { change: (_s, p) => '/unused/..' + p },
+  'protocol relative': { change: (_s, p, o) => o.replace(/^https?:/, '') + p },
+  'backslash spelling': { change: (_s, p) => p.replace('/images/', '/images\\') },
+  'wrong filename': { change: (_s, p) => p.replace('.webp', '-wrong.webp') },
+  'remote protocol relative': { remote: true, change: s => s.replace('https:', '') },
+  'remote HTTP': { remote: true, change: s => s.replace('https:', 'http:') },
+  'remote query': { remote: true, change: s => s + '?v=synthetic' },
+  'remote fragment': { remote: true, change: s => s + '#synthetic' },
+  'remote audited-origin proxy': { remote: true, change: (s, _p, o) => o + new URL(s).pathname },
+};
+const pageFaults = {
+  'page query': (o, p) => o + p + '?v=synthetic',
+  'page fragment': (o, p) => o + p + '#synthetic',
+  'page foreign origin': (_o, p) => 'https://example.invalid' + p,
+  'page wrong locale': o => o + '/ru/services',
+};
+Object.assign(faultDiagnostics, {
+  'missing origin': /Services posters require the exact audited origin/,
+  'unapproved origin': /Services posters require the exact audited origin/,
+  'route locale mismatch': /Services locale must match its audited route/,
+  'equivalent spelling changed on open': /Opening the disclosure must not replace an original poster source/,
+  'srcset changed on open': /Opening the disclosure must not replace an original poster source/,
+  'equivalent spelling changed during decode': /Poster identity\/readiness changed during decode/,
+  ...Object.fromEntries(Object.keys(pageFaults).map(name => [name, /Services posters require the exact audited page URL/])),
+});
+for (const fault of [...Object.keys(faultDiagnostics), ...Object.keys(sourceFaults)]) {
   test('strict Services poster contract rejects ' + fault, async () => {
-    await scenario(); // Prove the same harness passes before this isolated mutation.
-    await scenario({ fault });
+    const locale = sourceFaults[fault]?.remote ? 'ru' : 'en';
+    // Both exact spellings pass first. Each mutation must then fail for its
+    // own diagnostic, without normalizing raw identity during open/decode.
+    for (const absolute of [false, true]) await scenario({ locale, absolute });
+    for (const absolute of [false, true]) await scenario({ locale, absolute, fault });
   });
 }
+test('caller supplies configured audit origin rather than inferring it from poster URLs', () => {
+  const caller = readFileSync(new URL('../scripts/verify-release-reaudit.mjs', import.meta.url), 'utf8');
+  assert.match(caller, /verifyReleasePosters\(page, \{ path, locale, origin \}, expect\)/);
+});
 test('source still renders the exact additional set in a closed lazy disclosure', () => {
   assert.match(component, /<details className=\{styles\.moreVideos\} data-more-services-testimonials>/);
   assert.match(component, /renderVideoCards\(testimonialVideos\[locale\]\.slice\(4\)\)/);

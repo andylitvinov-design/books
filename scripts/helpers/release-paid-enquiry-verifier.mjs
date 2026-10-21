@@ -32,6 +32,34 @@ export function classifyPaidRequest(policy, request) {
   return 'unallowlisted public resource';
 }
 
+// Diagnostics only. This never participates in the allow/deny decision.
+// Keep values, arbitrary keys, paths, hosts and payloads out of failure logs.
+export function deniedPaidRequestMetadata(policy, request) {
+  const raw = request.url();
+  let url;
+  try { url = new URL(raw); } catch { /* Only bounded categories below. */ }
+  const resourceTypes = ['document', 'stylesheet', 'image', 'media', 'font', 'script', 'texttrack', 'xhr', 'fetch', 'eventsource', 'websocket', 'manifest', 'other'];
+  const resourceType = request.resourceType();
+  const known = ['_rsc', 'v', 'dpl'];
+  const present = new Set();
+  let unknownQueryKeyCount = 0;
+  if (url) for (const key of url.searchParams.keys()) {
+    if (known.includes(key)) present.add(key);
+    else unknownQueryKeyCount = Math.min(100, unknownQueryKeyCount + 1);
+  }
+  const path = url?.pathname;
+  return {
+    resourceType: resourceTypes.includes(resourceType) ? resourceType : 'other',
+    sameOrigin: url?.origin === policy.origin,
+    pathClass: path === policy.path ? 'exact-audited-page'
+      : path?.startsWith('/_next/static/') ? 'next-static'
+        : path?.startsWith('/images/holistic-house/') ? 'image' : 'other',
+    knownQueryKeys: known.filter(key => present.has(key)), unknownQueryKeyCount,
+    hasPercent: raw.includes('%'), hasBackslash: raw.includes('\\'),
+    hasHash: Boolean(url?.hash), hasUserinfo: Boolean(url?.username || url?.password),
+  };
+}
+
 export async function installPaidReadOnlyGuard(context, policy) {
   const violations = [];
   const pending = new Set();
@@ -42,12 +70,17 @@ export async function installPaidReadOnlyGuard(context, policy) {
   };
   const abort = route => route.abort('blockedbyclient').catch(() => {});
   let posts = 0, allowedGets = 0;
-  const record = reason => violations.push(reason); // Reasons only, never URLs or request payloads.
+  const record = diagnostic => violations.push(diagnostic); // Bounded categories only, never raw request data.
   await context.route('**/*', route => track(async () => {
     const request = route.request();
     if (request.method() === 'POST') posts++;
     const denied = classifyPaidRequest(policy, request);
-    if (denied) { record(denied); await abort(route); return; }
+    if (denied) {
+      let diagnostic = denied;
+      try { diagnostic = { reason: denied, ...deniedPaidRequestMetadata(policy, request) }; }
+      catch { /* Metadata must never interrupt the original record/abort path. */ }
+      record(diagnostic); await abort(route); return;
+    }
     try {
       // Continuing blindly could follow a redirect outside the reviewed boundary.
       const response = await route.fetch({ maxRedirects: 0, maxRetries: 0 });
