@@ -52,6 +52,7 @@ test('video is draft-only until explicit checked publication, with no default au
     slot:'thank-you',locale:'ru',intent:'publish',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks',reviewed:false,
   }))
   assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideos/)
+  assert.match(source('components/site-video-manager.tsx'),/\["about-intro", "thank-you"\]\.includes\(item\.id\)/)
   assert.match(source('components/service-enquiry-thank-you.tsx'),/\{video && \(/)
 })
 
