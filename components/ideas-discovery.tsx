@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, Flower2, Leaf, Paperclip, Quote, RefreshCw, Send, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
@@ -18,11 +18,30 @@ const copy = {
   ru: {
     eyebrow: "ИДЕИ · ПОДСКАЗКИ ДЛЯ ВАС",
     title: "Идеи",
-    lead: "Задайте вопрос, получите вдохновение и полезную подсказку.",
+    lead: "Задайте вопрос, найдите вдохновение и практическую подсказку.",
     question: "О чём хотите спросить?",
-    placeholder: "Задайте вопрос или опишите, что вас волнует…",
+    placeholder: "Ваш вопрос или тема…",
     choose: "Выберите способ получить подсказку",
     ask: "Задать вопрос",
+    hexagramWord: "Гексаграмма", meaning: "Смысл", message: "Ключевая идея", step: "Практический шаг",
+    expand: "Развернуть подсказку", aphorismsForYou: "Три афоризма для вас", sampleAphorisms: "Три афоризма · пример",
+    attach: "Добавить текст из файла .txt или .md (только в браузере)",
+    attachError: "Можно добавить только текстовый файл до 16 КБ.",
+    previewShort: "ПРИМЕР",
+    topicMessage: {
+      relationships: "Доброта и ясные границы могут сосуществовать.",
+      stress: "Маленькие устойчивые действия ценнее спешки.",
+      resources: "Рост требует бережного отношения к собственным силам.",
+      work: "Постоянство помогает превратить намерение в результат.",
+      direction: "Путь открывается через последовательные шаги.",
+    },
+    topicStep: {
+      relationships: "Сегодня сделайте один небольшой шаг навстречу честному диалогу.",
+      stress: "Выберите одно спокойное, посильное действие на сегодня.",
+      resources: "Уделите время небольшому восстанавливающему действию.",
+      work: "Наметьте одну конкретную задачу, которую можно выполнить сегодня.",
+      direction: "Запишите ближайший шаг, не пытаясь решить всё сразу.",
+    },
     preview: "ПРИМЕР · КНИГА ПЕРЕМЕН",
     previewNote: "Пример для знакомства. Напишите вопрос, чтобы получить собственную подсказку.",
     dao: "Даосская подсказка",
@@ -56,11 +75,30 @@ const copy = {
   en: {
     eyebrow: "IDEAS & GUIDANCE",
     title: "Ideas",
-    lead: "Ask a question, find inspiration and a practical next step.",
+    lead: "Ask a question, get inspiration and practical guidance.",
     question: "What would you like guidance on?",
-    placeholder: "Ask a question or share what is on your mind…",
+    placeholder: "Ask a question or share your thoughts…",
     choose: "Choose how to explore your question",
     ask: "Get guidance",
+    hexagramWord: "Hexagram", meaning: "Meaning", message: "Key message", step: "Practical step",
+    expand: "Expand the full insight", aphorismsForYou: "Three aphorisms for you", sampleAphorisms: "Three aphorisms · example",
+    attach: "Add a .txt or .md file locally in this browser",
+    attachError: "Only text files up to 16 KB are supported.",
+    previewShort: "EXAMPLE",
+    topicMessage: {
+      relationships: "Kindness and clear boundaries can exist together.",
+      stress: "Small, steady actions can be more useful than rushing.",
+      resources: "Growth also requires care for your own resources.",
+      work: "Consistency can turn intentions into tangible progress.",
+      direction: "A path becomes clearer through successive small steps.",
+    },
+    topicStep: {
+      relationships: "Take one small step toward an honest conversation today.",
+      stress: "Choose one calm and manageable action for today.",
+      resources: "Make room for one small restoring action.",
+      work: "Choose one concrete task you can complete today.",
+      direction: "Write down the next step without solving the whole journey.",
+    },
     preview: "EXAMPLE · BOOK OF CHANGES",
     previewNote: "A sample, not a response to you. Ask a question above to get your own guidance.",
     dao: "Daoist insight",
@@ -94,11 +132,30 @@ const copy = {
   es: {
     eyebrow: "IDEAS Y ORIENTACIÓN",
     title: "Ideas",
-    lead: "Haz una pregunta, encuentra inspiración y un primer paso útil.",
+    lead: "Haz una pregunta, encuentra inspiración y orientación práctica.",
     question: "¿Sobre qué quieres una orientación?",
-    placeholder: "Escribe tu pregunta o lo que te preocupa…",
+    placeholder: "Tu pregunta o inquietud…",
     choose: "Elige cómo explorar tu pregunta",
     ask: "Pedir orientación",
+    hexagramWord: "Hexagrama", meaning: "Significado", message: "Mensaje clave", step: "Paso práctico",
+    expand: "Desplegar toda la orientación", aphorismsForYou: "Tres aforismos para ti", sampleAphorisms: "Tres aforismos · ejemplo",
+    attach: "Añadir un archivo .txt o .md solo en este navegador",
+    attachError: "Solo se admiten archivos de texto de hasta 16 KB.",
+    previewShort: "EJEMPLO",
+    topicMessage: {
+      relationships: "La bondad y los límites claros pueden coexistir.",
+      stress: "Los pasos pequeños y constantes ayudan más que la prisa.",
+      resources: "Crecer también implica cuidar tus propios recursos.",
+      work: "La constancia transforma las intenciones en resultados.",
+      direction: "El camino se aclara con pequeños pasos sucesivos.",
+    },
+    topicStep: {
+      relationships: "Da hoy un pequeño paso hacia una conversación honesta.",
+      stress: "Elige hoy una acción tranquila y manejable.",
+      resources: "Dedica un momento a una pequeña acción reparadora.",
+      work: "Elige una tarea concreta que puedas completar hoy.",
+      direction: "Anota el próximo paso sin intentar resolverlo todo.",
+    },
     preview: "EJEMPLO · LIBRO DE LOS CAMBIOS",
     previewNote: "Es un ejemplo, no una respuesta personal. Escribe tu pregunta para continuar.",
     dao: "Consejo taoísta",
@@ -137,14 +194,88 @@ function freeOfferHref(locale: PublicLocale, id: "review" | "tests" | "dao") {
   return "/" + (locale === "es" ? "en" : locale) + "/services/dao-health-profile#request-free-wu-xing";
 }
 
+
+type Match = ReturnType<typeof getIdeasAphorismMatches>[number];
+type HexagramEntry = NonNullable<ReturnType<typeof getHexagram>>;
+
+// Shared presentation for the real Dao draw and the unmistakably labelled initial example.
+function DaoInsightPanel({ entry, locale, topic, example = false }: {
+  entry: HexagramEntry; locale: PublicLocale; topic: IdeasTopic; example?: boolean;
+}) {
+  const t = copy[locale];
+  return (
+    <article className={styles.daoInsight} data-ideas-dao-card>
+      <div className={styles.daoLandscape} aria-hidden="true" />
+      <p className={styles.daoEyebrow}>
+        <span className={styles.yinYang} aria-hidden="true">☯</span>
+        <span>{t.dao}{example ? " · " + t.previewShort : ""}</span>
+      </p>
+      <h2 className={styles.daoTitle}>{t.hexagramWord} {entry.number} — {hexagramTitle(entry, locale)}</h2>
+      <p className={styles.daoLead}>{hexagramEssence(entry, locale)}</p>
+      <details className={styles.daoExpanded} open={example}>
+        <summary>{t.expand}</summary>
+        <div className={styles.daoInterpretation}>
+          <div className={styles.daoGlyphCard}>
+            <DaoHexagramGlyph upper={entry.upper} lower={entry.lower} label={"Hexagram " + entry.number} />
+            <strong>{entry.number}</strong>
+            <span>{hexagramTitle(entry, locale)}</span>
+          </div>
+          <div className={styles.daoPoints}>
+            <div className={styles.daoPoint}>
+              <Sprout size={24} aria-hidden="true" />
+              <div><strong>{t.meaning}</strong><p>{hexagramEssence(entry, locale)}</p></div>
+            </div>
+            <div className={styles.daoPoint}>
+              <Flower2 size={24} aria-hidden="true" />
+              <div><strong>{t.message}</strong><p>{t.topicMessage[topic]}</p></div>
+            </div>
+            <div className={styles.daoPoint}>
+              <Sun size={24} aria-hidden="true" />
+              <div><strong>{t.step}</strong><p>{t.topicStep[topic]}</p></div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </article>
+  );
+}
+
+function AphorismTiles({ items, locale, heading }: {
+  items: Match[]; locale: PublicLocale; heading: string;
+}) {
+  const t = copy[locale];
+  return (
+    <section className={styles.relatedAphorisms} data-ideas-aphorisms aria-label={heading}>
+      <h3 className={styles.aphorismHeading}><Quote size={24} aria-hidden="true" />{heading}</h3>
+      <ol className={styles.aphorisms}>
+        {items.map((item, index) => (
+          <li key={item.id}>
+            <span className={styles.number} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+            <div className={styles.aphorismBody}>
+              <p>{item.text}</p>
+              {item.kind === "inspired" && item.source ? (
+                <a className={styles.aphorismSource} href={item.source.url} target="_blank" rel="noopener noreferrer">
+                  {t.inspiredBy}: {item.source.author} · {item.source.work}
+                </a>
+              ) : <span className={styles.aphorismSource}>{t.editorial}</span>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const [question, setQuestion] = useState("");
   const [error, setError] = useState(false);
+  const [attachmentError, setAttachmentError] = useState(false);
   const [visibleAphorisms, setVisibleAphorisms] = useState(3);
   const [result, setResult] = useState<Result | null>(null);
   const [activeMode, setActiveMode] = useState<Mode>("dao");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function choose(mode: Mode) {
     setActiveMode(mode);
@@ -172,7 +303,9 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
   const topicLabel = result ? (result.matched ? t.topic[result.topic] : t.generic) : "";
-  const aphorismMatches = result?.mode === "aphorisms" ? getIdeasAphorismMatches(question, locale, result.topic) : [];
+  const answerLocale = /[а-яёіїєґ]/i.test(question) ? "ru" : /[áéíóúñ¿¡]/i.test(question) ? "es" : /\b(?:como|para|quiero|tengo|sobre|relacion|trabajo|miedo|ayuda)\b/i.test(question) ? "es" : /\b(?:how|what|why|when|where|can|need|feel|work|help)\b/i.test(question) ? "en" : locale;
+  const answerCopy = copy[answerLocale];
+  const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
   return (
     <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
       <div className={styles.heading}>
@@ -187,15 +320,37 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       <form className={styles.question} onSubmit={submitQuestion}>
         <label htmlFor="ideas-question">{t.question}</label>
         <div className={styles.questionFields}>
+          <Sparkles className={styles.inputSparkle} size={21} aria-hidden="true" />
           <textarea
             id="ideas-question" ref={textareaRef} maxLength={500} rows={1} autoComplete="off"
-            placeholder={t.placeholder} value={question} aria-invalid={error}
-            aria-describedby={error ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
-            onChange={(event) => { setQuestion(event.target.value); setError(false); setResult(null); setVisibleAphorisms(3); }}
+            placeholder={t.placeholder} value={question} aria-invalid={error || attachmentError}
+            aria-describedby={error || attachmentError ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
+            onChange={(event) => { setQuestion(event.target.value); setError(false); setAttachmentError(false); setResult(null); setVisibleAphorisms(3); }}
           />
-          <button type="submit" className={styles.submit}><Sparkles size={17} aria-hidden="true" />{t.ask}</button>
+          <input ref={fileInputRef} className={styles.fileInput} type="file" tabIndex={-1}
+            accept=".txt,.md,text/plain,text/markdown"
+            onChange={async (event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (!file) return;
+              if (file.size > 16384 || !/\.(txt|md)$/i.test(file.name)) {
+                setAttachmentError(true); return;
+              }
+              try {
+                const excerpt = (await file.text()).trim();
+                setQuestion(current => [current, excerpt].filter(Boolean).join(" ").slice(0, 500));
+                setAttachmentError(false); setError(false); setResult(null); setVisibleAphorisms(3);
+                textareaRef.current?.focus();
+              } catch { setAttachmentError(true); }
+            }}
+          />
+          <button type="button" className={styles.attach} aria-label={t.attach}
+            title={t.attach} onClick={() => fileInputRef.current?.click()}>
+            <Paperclip size={20} aria-hidden="true" />
+          </button>
         </div>
-        {error ? <p className={styles.error} role="alert" id="ideas-question-error">{t.error}</p> : null}
+        <button type="submit" className={styles.submit}><Send size={18} aria-hidden="true" />{t.ask}</button>
+        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
         <details className={styles.privacyDisclosure}>
           <summary id="ideas-question-privacy">{t.privacyShort}</summary>
           <p className={styles.privacy}>{t.privacy}</p>
@@ -205,58 +360,38 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       <p className={styles.actionLabel}>{t.choose}</p>
       <div className={styles.actions}>
         <button type="button" onClick={() => choose("dao")} aria-pressed={activeMode === "dao"} className={styles.action}>
-          <Compass aria-hidden="true" size={21} /><span>{t.dao}</span><ArrowRight aria-hidden="true" size={16} />
+          <span className={styles.modeYin} aria-hidden="true">☯</span><span>{t.dao}</span>
         </button>
         <button type="button" onClick={() => choose("aphorisms")} aria-pressed={activeMode === "aphorisms"} className={styles.action}>
-          <Quote aria-hidden="true" size={21} /><span>{t.aphorisms}</span><ArrowRight aria-hidden="true" size={16} />
+          <Quote aria-hidden="true" size={22} /><span>{t.aphorisms}</span>
         </button>
         <button type="button" onClick={() => choose("personal")} aria-pressed={activeMode === "personal"} className={styles.action}>
-          <HandHeart aria-hidden="true" size={21} /><span>{t.personal}</span><ArrowRight aria-hidden="true" size={16} />
+          <Sprout aria-hidden="true" size={22} /><span>{t.personal}</span>
         </button>
       </div>
 
       {result ? (
-        <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode}>
-          <div className={styles.resultsHeading}>
+        <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode} lang={answerLocale}>
+          {result.mode !== "dao" ? <div className={styles.resultsHeading}>
             <div>
               <p className={styles.tag}>{t.basedOn}: {topicLabel}</p>
               <h2>{t.headings[result.mode]}</h2>
             </div>
             <button type="button" className={styles.reset} onClick={() => { setResult(null); setQuestion(""); textareaRef.current?.focus(); }}>{t.reset} ×</button>
-          </div>
+          </div> : <button type="button" className={styles.reset + " " + styles.daoReset} onClick={() => { setResult(null); setQuestion(""); textareaRef.current?.focus(); }}>{t.reset} ×</button>}
           {result.mode === "dao" && hexagram ? (
-            <article className={styles.hexagramCard}>
-              <div className={styles.hexagramMark}>
-                <DaoHexagramGlyph upper={hexagram.upper} lower={hexagram.lower} label={"Hexagram " + hexagram.number} />
+            <>
+              <DaoInsightPanel entry={hexagram} locale={answerLocale} topic={result.topic} />
+              <div className={styles.hexagramActions}>
+                <Link href={"/" + answerLocale + "/dao/hexagrams/" + hexagram.number} prefetch={false}>{t.card}<ArrowRight size={16} aria-hidden="true" /></Link>
+                <button type="button" onClick={() => setResult({ ...result, hexagram: drawRandomHexagram() })}><RefreshCw size={16} aria-hidden="true" />{t.again}</button>
               </div>
-              <div className={styles.hexagramText}>
-                <p className={styles.tag}>№ {hexagram.number} · {hexagram.hanzi}</p>
-                <h3>{hexagramTitle(hexagram, locale)}</h3>
-                <p>{hexagramEssence(hexagram, locale)}</p>
-                <div className={styles.hexagramActions}>
-                  <Link href={"/" + locale + "/dao/hexagrams/" + hexagram.number} prefetch={false}>{t.card}<ArrowRight size={16} aria-hidden="true" /></Link>
-                  <button type="button" onClick={() => setResult({ ...result, hexagram: drawRandomHexagram() })}><RefreshCw size={16} aria-hidden="true" />{t.again}</button>
-                </div>
-              </div>
-            </article>
+              <AphorismTiles items={aphorismMatches.slice(0, 3)} locale={answerLocale} heading={answerCopy.aphorismsForYou} />
+            </>
           ) : null}
           {result.mode === "aphorisms" ? (
             <>
-              <ol className={styles.aphorisms}>
-                {aphorismMatches.slice(0, visibleAphorisms).map((item, index) => (
-                  <li key={item.id}>
-                    <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
-                    <div className={styles.aphorismBody}>
-                      <p>{item.text}</p>
-                      {item.kind === "inspired" && item.source ? (
-                        <a className={styles.aphorismSource} href={item.source.url} target="_blank" rel="noopener noreferrer">
-                          {t.inspiredBy}: {item.source.author} · {item.source.work}
-                        </a>
-                      ) : <span className={styles.aphorismSource}>{t.editorial}</span>}
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <AphorismTiles items={aphorismMatches.slice(0, visibleAphorisms)} locale={answerLocale} heading={answerCopy.aphorismsForYou} />
               {visibleAphorisms < aphorismMatches.length ? (
                 <button type="button" className={styles.moreAphorisms}
                   onClick={() => setVisibleAphorisms(count => Math.min(count + 3, aphorismMatches.length))}>
@@ -296,16 +431,9 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
         </div>
       ) : exampleHexagram ? (
         <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}>
-          <p className={styles.tag}><Leaf size={15} aria-hidden="true" />{t.preview}</p>
-          <div className={styles.hexagramCard}>
-            <div className={styles.hexagramMark}>
-              <DaoHexagramGlyph upper={exampleHexagram.upper} lower={exampleHexagram.lower} label={"Hexagram 42"} />
-            </div>
-            <div className={styles.hexagramText}>
-              <h2 className={styles.previewTitle}>42 · {hexagramTitle(exampleHexagram, locale)}</h2>
-              <p>{hexagramEssence(exampleHexagram, locale)}</p>
-            </div>
-          </div>
+          <DaoInsightPanel entry={exampleHexagram} locale={locale} topic="resources" example />
+          <AphorismTiles items={getIdeasAphorismMatches("growth", locale, "resources").slice(0, 3)}
+            locale={locale} heading={t.sampleAphorisms} />
           <p className={styles.note}>{t.previewNote}</p>
         </div>
       ) : null}
