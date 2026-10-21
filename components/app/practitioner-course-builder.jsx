@@ -25,7 +25,7 @@ const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
-export default function PractitionerCourseBuilder({locale='en',accountId=null}){
+export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery=''}){
  const t=translations[locale]||translations.en
  const api=body=>request(body,accountId)
  const [items,setItems]=useState([])
@@ -157,7 +157,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null}){
   {loading?<p aria-live="polite">…</p>:
    <div className={styles.columns}>
     <aside className={styles.courseList} aria-label={t.select}>
-     {items.length?items.map(item=><button type="button" key={item.id} disabled={busy||uploading}
+     {items.length?items.filter(item=>[item.draft?.title,item.draft?.description].join(' ').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase())).map(item=><button type="button" key={item.id} disabled={busy||uploading}
        className={item.id===selected?styles.selected:''} aria-pressed={item.id===selected} onClick={()=>choose(item)}>
        <strong>{item.draft?.title||t.new}</strong>
        <small>{item.draft?.locale?.toUpperCase()} · {item.draft?.slides?.length||0} {t.slides.toLowerCase()} · {item.status==='published'?t.published:t.draft}</small>
