@@ -54,16 +54,14 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   } else await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
   if (withName) {
     // Name is an explicit opt-in field, hidden until requested.
-    await form.locator('details').filter({has:form.locator('input[autocomplete="name"]')})
-      .locator('summary').click();
+    await form.locator('details:has(input[autocomplete="name"]) > summary').click();
     await form.locator('input[autocomplete="name"]').fill("QA Visitor");
   }
   // Alternate private note / no-note requests without expanding optional name.
   const privateNote = "PRIVATE_QA_NOTE_NOT_FOR_MESSENGER";
   const hasNote = submissions.length % 2 === 0;
   if (hasNote) {
-    await form.locator('details').filter({has:form.locator('textarea')})
-      .locator('summary').click();
+    await form.locator('details:has(textarea) > summary').click();
     await form.locator('textarea').fill(privateNote);
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
