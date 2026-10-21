@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
+import { HomeSectionCarousel } from '@/components/home-section-carousel';
 import Link from 'next/link';
 import { BriefcaseBusiness, Flower2, Sparkles } from 'lucide-react';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
@@ -17,8 +18,9 @@ const cards = [
 export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
-    <section className="service-home-hero" aria-labelledby="house-title">
-      <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
+    <HomeSectionCarousel locale="es" />
+    <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
+      <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
       <div className="service-home-hero-copy">
         <p className="service-home-kicker">Acompañamiento personal · Toronto y en línea</p>
         <h1 id="house-title"><span>¿Dudas en tus relaciones, tu trabajo o una decisión importante?</span></h1>

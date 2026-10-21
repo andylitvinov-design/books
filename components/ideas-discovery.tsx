@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { ArrowRight, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles, ClipboardCheck } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, HandHeart, Quote, RefreshCw, Sparkles } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
-import { getIdeasAphorisms, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
@@ -29,13 +29,17 @@ const copy = {
     privacy: "Ваш текст обрабатывается только в браузере: не сохраняется, не передаётся в CRM или аналитику. Не указывайте конфиденциальные данные.",
     basedOn: "Тема запроса",
     generic: "Общий вопрос",
-    headings: { dao: "Символ Книги Перемен", aphorisms: "Три афоризма для размышления", personal: "Ваши бесплатные варианты" },
+    headings: { dao: "Символ Книги Перемен", aphorisms: "Три афоризма для размышления", personal: "Три способа начать" },
     topic: { relationships: "Отношения и близость", stress: "Тревога и внутреннее спокойствие", resources: "Ресурсы и энергия", work: "Работа и решения", direction: "Выбор и направление" },
     daoNote: "Одна из 64 гексаграмм выпадает случайно, независимо от смысла вопроса. Это образ для размышления, а не предсказание.",
     again: "Другой символ",
     card: "Прочитать толкование",
-    aphorismNote: "Оригинальные редакционные размышления по приблизительно определённой теме — не цитаты древних авторов.",
+    aphorismNote: "Подбор по смыслу вопроса. Редакционные афоризмы и авторские переложения классических идей — не дословные цитаты исторических авторов.",
+    more: "Ещё 3 афоризма", inspiredBy: "По мотивам", editorial: "Афоризм Holistic House",
     personalNote: "Это тематический подбор, не индивидуальная оценка. Выберите формат и заполните существующую форму на странице услуги.",
+    guidanceIntro: "Выберите один вариант, с которого хочется начать.",
+    guidanceMatch: "Рекомендуем по теме запроса",
+    guidanceOther: "Ещё один вариант",
     free: "Бесплатно",
     go: "Открыть",
     reset: "Новый вопрос",
@@ -59,13 +63,17 @@ const copy = {
     privacy: "Your text stays in this browser. It is not saved or sent to CRM or analytics. Avoid sharing sensitive personal details.",
     basedOn: "Topic",
     generic: "Open-ended question",
-    headings: { dao: "A symbol from the Book of Changes", aphorisms: "Three reflections for your topic", personal: "Your free starting points" },
+    headings: { dao: "A symbol from the Book of Changes", aphorisms: "Three reflections for your topic", personal: "Three ways to begin" },
     topic: { relationships: "Relationships and connection", stress: "Stress and inner calm", resources: "Energy and resources", work: "Work and decisions", direction: "Choices and direction" },
     daoNote: "One of 64 hexagrams is drawn at random, independently of your question. It offers a symbol for reflection, not a prediction.",
     again: "Draw another",
     card: "Read interpretation",
-    aphorismNote: "New editorial reflections matched by approximate topic, not quotations attributed to historical thinkers.",
+    aphorismNote: "Topic-matched editorial aphorisms and original paraphrases inspired by classics, not verbatim historical quotations.",
+    more: "Show 3 more aphorisms", inspiredBy: "Inspired by", editorial: "Holistic House editorial",
     personalNote: "These are topic-based options, not a personal assessment. Choose a format and complete its existing request form.",
+    guidanceIntro: "Choose the starting point that feels right for you.",
+    guidanceMatch: "Suggested for your topic",
+    guidanceOther: "Another option",
     free: "Free",
     go: "Explore",
     reset: "New question",
@@ -89,13 +97,17 @@ const copy = {
     privacy: "El texto permanece en este navegador. No se guarda ni se envía al CRM o a analítica. Evita datos personales sensibles.",
     basedOn: "Tema",
     generic: "Pregunta abierta",
-    headings: { dao: "Un símbolo del Libro de los Cambios", aphorisms: "Tres reflexiones sobre tu tema", personal: "Tus primeros pasos gratuitos" },
+    headings: { dao: "Un símbolo del Libro de los Cambios", aphorisms: "Tres reflexiones sobre tu tema", personal: "Tres maneras de empezar" },
     topic: { relationships: "Relaciones y cercanía", stress: "Estrés y calma interior", resources: "Energía y recursos", work: "Trabajo y decisiones", direction: "Opciones y rumbo" },
     daoNote: "Uno de los 64 hexagramas se elige al azar, independientemente de tu pregunta. Es un símbolo para reflexionar, no una predicción.",
     again: "Otro símbolo",
     card: "Leer interpretación",
-    aphorismNote: "Reflexiones editoriales originales por tema aproximado; no son citas atribuidas a autores históricos.",
+    aphorismNote: "Aforismos editoriales y paráfrasis propias inspiradas en clásicos. No son citas literales.",
+    more: "Ver 3 aforismos más", inspiredBy: "Inspirado en", editorial: "Aforismo editorial Holistic House",
     personalNote: "Son opciones por tema, no una evaluación personal. Elige una y completa el formulario existente de la página.",
+    guidanceIntro: "Elige por dónde te gustaría empezar.",
+    guidanceMatch: "Sugerido para tu tema",
+    guidanceOther: "Otra opción",
     free: "Gratis",
     go: "Explorar",
     reset: "Otra pregunta",
@@ -107,8 +119,6 @@ const copy = {
   },
 } as const;
 
-const icons = { review: HandHeart, tests: ClipboardCheck, dao: Leaf } as const;
-
 function freeOfferHref(locale: PublicLocale, id: "review" | "tests" | "dao") {
   if (id === "tests") return "/" + (locale === "es" ? "en" : locale) + "/client/tests";
   if (id === "review") return "/" + locale + "/services/free-situation-review#request-free-review";
@@ -119,6 +129,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const [question, setQuestion] = useState("");
   const [error, setError] = useState(false);
+  const [visibleAphorisms, setVisibleAphorisms] = useState(3);
   const [result, setResult] = useState<Result | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -130,11 +141,13 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     }
     const matched = matchIdeasTopic(question);
     setError(false);
+    setVisibleAphorisms(3);
     setResult({ mode, ...matched, hexagram: mode === "dao" ? drawRandomHexagram() : undefined });
   }
 
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
   const topicLabel = result ? (result.matched ? t.topic[result.topic] : t.generic) : "";
+  const aphorismMatches = result?.mode === "aphorisms" ? getIdeasAphorismMatches(question, locale, result.topic) : [];
   return (
     <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
       <div className={styles.heading}>
@@ -152,7 +165,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           id="ideas-question" ref={textareaRef} maxLength={500} rows={2} autoComplete="off"
           placeholder={t.placeholder} value={question} aria-invalid={error}
           aria-describedby={error ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
-          onChange={(event) => { setQuestion(event.target.value); setError(false); setResult(null); }}
+          onChange={(event) => { setQuestion(event.target.value); setError(false); setResult(null); setVisibleAphorisms(3); }}
         />
         {error ? <p className={styles.error} role="alert" id="ideas-question-error">{t.error}</p> : null}
         <p id="ideas-question-privacy" className={styles.privacy}>{t.privacy}</p>
@@ -172,7 +185,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       </div>
 
       {result ? (
-        <div className={styles.results} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode}>
+        <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode}>
           <div className={styles.resultsHeading}>
             <div>
               <p className={styles.tag}>{t.basedOn}: {topicLabel}</p>
@@ -197,26 +210,55 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             </article>
           ) : null}
           {result.mode === "aphorisms" ? (
-            <ol className={styles.aphorisms}>
-              {getIdeasAphorisms(result.topic, locale).map((line, index) => (
-                <li key={index}><span className={styles.number}>0{index + 1}</span><p>{line}</p></li>
-              ))}
-            </ol>
+            <>
+              <ol className={styles.aphorisms}>
+                {aphorismMatches.slice(0, visibleAphorisms).map((item, index) => (
+                  <li key={item.id}>
+                    <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
+                    <div className={styles.aphorismBody}>
+                      <p>{item.text}</p>
+                      {item.kind === "inspired" && item.source ? (
+                        <a className={styles.aphorismSource} href={item.source.url} target="_blank" rel="noopener noreferrer">
+                          {t.inspiredBy}: {item.source.author} · {item.source.work}
+                        </a>
+                      ) : <span className={styles.aphorismSource}>{t.editorial}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              {visibleAphorisms < aphorismMatches.length ? (
+                <button type="button" className={styles.moreAphorisms}
+                  onClick={() => setVisibleAphorisms(count => Math.min(count + 3, aphorismMatches.length))}>
+                  <Sparkles size={17} aria-hidden="true" />{t.more}<ArrowRight size={17} aria-hidden="true" />
+                </button>
+              ) : null}
+            </>
           ) : null}
           {result.mode === "personal" ? (
-            <div className={styles.offers}>
-              {getIdeasFreeRecommendations(result.topic).map((id) => {
-                const item = t.service[id];
-                const Icon = icons[id];
-                return (
-                  <article className={styles.offer} key={id}>
-                    <div className={styles.offerHead}><Icon size={19} aria-hidden="true" /><span>{t.free}</span></div>
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
-                    <Link href={freeOfferHref(locale, id)} prefetch={false}>{item.action}<ArrowRight size={16} aria-hidden="true" /></Link>
-                  </article>
-                );
-              })}
+            <div className={styles.guidance} data-ideas-guidance>
+              <div className={styles.guidanceIntro}>
+                <p>{t.guidanceIntro}</p>
+                <span className={styles.guidanceFree}>{t.free}</span>
+              </div>
+              <ol className={styles.guidanceList} data-ideas-guidance-list>
+                {getIdeasFreeRecommendations(result.topic).map((id, index) => {
+                  const item = t.service[id];
+                  return (
+                    <li className={index === 0 ? styles.guidancePriority : undefined} key={id}>
+                      <Link className={styles.guidanceLink} href={freeOfferHref(locale, id)} prefetch={false}>
+                        <span className={styles.guidanceIndex} aria-hidden="true">0{index + 1}</span>
+                        <span className={styles.guidanceContent}>
+                          <span className={styles.guidanceEyebrow}>{index === 0 ? t.guidanceMatch : t.guidanceOther}</span>
+                          <strong className={styles.guidanceTitle}>{item.title}</strong>
+                          <span className={styles.guidanceDescription}>{item.description}</span>
+                          <span className={styles.guidanceAction}>{item.action}<ArrowRight size={14} aria-hidden="true" /></span>
+                        </span>
+                        <span className={styles.guidanceArrow} aria-hidden="true"><ArrowUpRight size={19} /></span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           ) : null}
           <p className={styles.note}>{result.mode === "dao" ? t.daoNote : result.mode === "aphorisms" ? t.aphorismNote : t.personalNote}</p>

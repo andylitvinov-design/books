@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
+import { HomeSectionCarousel } from "@/components/home-section-carousel";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { HomeExploreSections } from "@/components/home-explore-sections";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
@@ -65,13 +66,14 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         <SiteNavigation locale={locale} />
       </header>
 
-      <section className="service-home-hero" aria-labelledby="house-title">
+      <HomeSectionCarousel locale={locale} />
+
+      <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
           <StaticPortrait
             src="/images/holistic-house/andy-about.png"
             alt=""
             fill
-            priority
             sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px"
           />
         </div>
