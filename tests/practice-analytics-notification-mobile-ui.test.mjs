@@ -39,7 +39,7 @@ test('copy never implies WhatsApp delivery is ready and retains provider and pri
     assert.ok(ui.includes(phrase),phrase)
   }
   for(const phrase of ['telegramVerified','telegramSendingEnabled','telegramLinkAvailable','begin_telegram',
-    'MESSENGER_CONTACT_NOTICE_VERSION','consentVersion:VERSION','action:\'disable\'','send_now']) {
+    'MESSENGER_CONTACT_NOTICE_VERSION','consentVersion:VERSION',"kind==='disable'?'disable'",'send_now']) {
     assert.ok(ui.includes(phrase),phrase)
   }
   assert.match(ui,/Only counts and public service titles/)
