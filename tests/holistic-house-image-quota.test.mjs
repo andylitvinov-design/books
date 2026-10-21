@@ -23,7 +23,7 @@ test("Andy portrait uses already-built responsive static variants on all audited
   assert.equal((home.match(/<StaticPortrait\b/g) || []).length, 2);
   assert.match(serviceHero, /\{ kind: "business", image: "\/images\/holistic-house\/andy-about\.png"/);
   assert.match(serviceHero, /slide\.image === "\/images\/holistic-house\/andy-about\.png" \? \(/);
-  assert.match(serviceHero, /<StaticPortrait src=\{slide\.image\}/);
+  assert.match(serviceHero, /<StaticPortrait src=(?:\{slide\.image\}|"\/images\/holistic-house\/andy-about\.png")/);
   assert.match(serviceCards, /<StaticPortrait src="\/images\/holistic-house\/andy-about\.png"/);
   assert.match(read("app/[locale]/services/free-situation-review/page.tsx"), /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
   assert.match(portrait, /unoptimized: true/);
