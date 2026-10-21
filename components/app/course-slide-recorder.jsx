@@ -11,7 +11,7 @@ const copy={
  ru:{
   heading:'Записать прямо на слайде',
   video:'Записать видео',audio:'Записать голос',stop:'Завершить запись',
-  start:'Начать запись',attach:'Прикрепить к слайду',retry:'Перезаписать',
+  start:'Начать запись',attach:'Прикрепить к слайду',retry:'Удалить / перезаписать',
   front:'Фронтальная камера',back:'Основная камера',flip:'Сменить камеру',
   requesting:'Запрашиваем разрешение камеры и микрофона…',finalizing:'Подготавливаем запись…',
   recording:'Идёт запись',preview:'Прослушайте или просмотрите запись перед добавлением.',
@@ -28,7 +28,7 @@ const copy={
  en:{
   heading:'Record on this slide',
   video:'Record video',audio:'Record voice',stop:'Finish recording',
-  start:'Start recording',attach:'Attach to slide',retry:'Record again',
+  start:'Start recording',attach:'Attach to slide',retry:'Discard / record again',
   front:'Front camera',back:'Rear camera',flip:'Switch camera',
   requesting:'Requesting camera and microphone access…',finalizing:'Preparing recording…',
   recording:'Recording',preview:'Review the recording before attaching it.',
@@ -45,7 +45,7 @@ const copy={
  es:{
   heading:'Grabar en esta diapositiva',
   video:'Grabar vídeo',audio:'Grabar voz',stop:'Terminar grabación',
-  start:'Iniciar grabación',attach:'Añadir a la diapositiva',retry:'Grabar de nuevo',
+  start:'Iniciar grabación',attach:'Añadir a la diapositiva',retry:'Descartar / grabar de nuevo',
   front:'Cámara frontal',back:'Cámara trasera',flip:'Cambiar cámara',
   requesting:'Solicitando acceso a cámara y micrófono…',finalizing:'Preparando la grabación…',
   recording:'Grabando',preview:'Revisa la grabación antes de añadirla.',
@@ -137,12 +137,12 @@ export default function CourseSlideRecorder({kind='audio',locale='en',busy=false
    recorder.onerror=()=>{if(mountedRef.current)setError(t.failed)}
    recorder.onstop=()=>{
     release();recorderRef.current=null
-    onRecordingChange?.(false)
     if(!mountedRef.current)return
     const recordedMime=normalizeCourseRecordingMime(recorder.mimeType||mime,kind)
     const byteCount=chunks.reduce((sum,part)=>sum+part.size,0)
     if(!recordedMime||byteCount<128||byteCount>max.bytes){
      setError(!recordedMime?t.unsupported:byteCount>max.bytes?t.tooLarge:t.empty)
+     onRecordingChange?.(false)
      setStatus('idle');return
     }
     const file=new File(chunks,'course-'+kind+'-'+Date.now()+'.'+max.extension,{type:recordedMime,lastModified:Date.now()})
@@ -179,13 +179,14 @@ export default function CourseSlideRecorder({kind='audio',locale='en',busy=false
    const ok=await onUpload?.(capture.file)
    if(ok===false)throw new Error('UPLOAD_FAILED')
    removePreview()
+   onRecordingChange?.(false)
    setStatus('idle')
   }catch{setError(t.uploadFailed);setStatus('preview')}
  }
 
  function retry(){
   if(busy)return
-  removePreview();setElapsed(0);setError('');setStatus('idle')
+  removePreview();onRecordingChange?.(false);setElapsed(0);setError('');setStatus('idle')
  }
  const disabled=busy||status==='requesting'||status==='attaching'||status==='finalizing'
  return <section className={styles.root} data-course-slide-recorder={kind} aria-label={t.heading}>
