@@ -8,7 +8,6 @@ import {ensureOwnerTelegramPairing} from '@/lib/practitioners/telegram-owner-pai
 import {sendOwnerTelegramTest} from '@/lib/practitioners/telegram-owner-setup'
 import {deliverArchivedCouncilReports} from '@/lib/practitioners/council-telegram-delivery'
 import {resolvedOwnerTelegramEnv} from '@/lib/practitioners/telegram-owner-pairing'
-import {modelSettings} from '@/lib/practitioners/council-free-models.mjs'
 import {
   resolvedOwnerAiEnvironment,confirmOwnerGeminiFreeTier,
   saveOwnerMistralFreeKey,disableOwnerFreeModel
@@ -75,18 +74,17 @@ export async function sendDailyCouncilReportAction(){
   try{
     const config=getAppConfig()
     const env=await resolvedOwnerTelegramEnv(config)
-    const aiEnv=await resolvedOwnerAiEnvironment(config,env)
-    const models=modelSettings(aiEnv)
-    if(!models.geminiKeyPresent&&!models.mistralKeyPresent||
-      !models.geminiFreeConfirmed&&!models.mistralKeyPresent)
-      outcome='council_missing_keys'
-    else if(!env.HH_PRACTICE_TG_CHAT_ID)
+    // A verified ChatGPT daily report can be sent without any AI-provider
+    // credentials; independent model inference is still free-mode gated.
+    if(!env.HH_PRACTICE_TG_CHAT_ID)
       outcome='council_not_paired'
     else{
+      const aiEnv=await resolvedOwnerAiEnvironment(config,env)
       const result=await deliverArchivedCouncilReports(config,{env:aiEnv})
       if(result.status==='accepted')outcome='council_sent'
       else if(result.status==='already_claimed')outcome='council_duplicate'
-      else if(result.status==='no_archived_reports')outcome='council_no_archive'
+      else if(result.status==='no_archived_reports'||result.status==='model_setup_required')
+        outcome='council_no_archive'
     }
   }catch{outcome='council_unavailable'}
   finally{await closeDatabase().catch(()=>{})}
