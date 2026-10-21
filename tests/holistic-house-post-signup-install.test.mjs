@@ -78,7 +78,7 @@ test('Square-inspired install offer is optional, mobile-only and does not enable
   assert.match(ui,/window\.Capacitor\?\.isNativePlatform/)
   assert.match(ui,/navigator\.clipboard\.writeText/)
   assert.match(ui,/event\.key==='Escape'/)
-  assert.match(ui,/event\.key==='Tab'/)
+  assert.match(ui,/event\.key!=='Tab'/)
   assert.doesNotMatch(ui,/PushManager|Notification\.requestPermission|registerNativePushToken|sendTwilioSms|sendMessage|App Store download/)
   const css=read('components/app/post-signup-install-offer.module.css')
   assert.match(css,/@media\(max-width:360px\)/)
