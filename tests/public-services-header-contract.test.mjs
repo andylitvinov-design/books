@@ -16,7 +16,7 @@ function fixture(locale, width, changes = {}) {
     item.getAttribute = async () => item.href;
     item.boundingBox = async () => item.bounds;
   }
-  const trigger = { visible: true, bounds: { x: 230, width: 70 }, ...changes.trigger };
+  const trigger = { visible: true, bounds: { x: 230, width: 70 }, ...changes.trigger, async click() { open = !open; }, async boundingBox() { return this.bounds; } };
   const menu = { locator(selector) {
     if (selector === 'summary.site-main-menu-trigger') return trigger;
     assert.equal(selector, `.site-main-menu-panel a[href="/${locale}/library?view=books"]`);
