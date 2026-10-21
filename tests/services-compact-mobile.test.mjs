@@ -45,8 +45,10 @@ test("homepage restores photo-left four services while keeping tests and Academy
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.match(home, /event="self_check_start"/);
-  assert.match(home, /\{text\.academyAction\}/);
-  assert.match(home, /\{text\.libraryAction\}/);
+  const explore = read("components/home-explore-sections.tsx");
+  assert.match(home, /<HomeExploreSections locale=\{locale\} \/>/);
+  assert.match(explore, /"\/academy"/);
+  assert.match(explore, /"\/library"/);
   assert.doesNotMatch(home, /heroIntro: "[^"]*ME \/ GOAL/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });

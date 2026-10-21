@@ -65,10 +65,11 @@ test("SEO benefits and accessible FAQs are translated and non-diagnostic", () =>
 test("public guide remains discoverable from three homepages without forcing a signup", () => {
   const sharedHome = read("components/holistic-house-home.tsx");
   const spanishHome = read("app/es/page.tsx");
-  assert.ok(sharedHome.includes("How free self-checks work"));
-  assert.ok(sharedHome.includes("Как работают бесплатные тесты"));
-  assert.match(sharedHome, /client\/tests/);
-  assert.match(sharedHome, /\/tests/);
-  assert.match(spanishHome, /href="\/es\/tests"/);
-  assert.match(spanishHome, /href="\/es\/client\/tests"/);
+  const explore = read("components/home-explore-sections.tsx");
+  assert.match(sharedHome, /<HomeExploreSections locale=\{locale\} \/>/);
+  assert.match(spanishHome, /<HomeExploreSections locale="es" \/>/);
+  for (const text of ["How free self-checks work", "Как работают бесплатные тесты", "Cómo funcionan las pruebas"]) assert.ok(explore.includes(text));
+  assert.match(explore, /href=\{"\/" \+ locale \+ "\/tests"\}/);
+  assert.match(explore, /path: "\/client\/tests"/);
+  assert.match(explore, /href=\{"\/" \+ locale \+ "\/library"\}/);
 });

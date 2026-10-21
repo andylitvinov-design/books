@@ -28,6 +28,7 @@ type ExploreCopy = {
   returnLabel: string;
   cabinetAction: string;
   libraryAction: string;
+  testGuideAction: string;
 };
 
 const copy: Record<PublicLocale, ExploreCopy> = {
@@ -46,6 +47,7 @@ const copy: Record<PublicLocale, ExploreCopy> = {
     returnLabel: "Already exploring? Your saved materials are in your private space.",
     cabinetAction: "Open my Cabinet",
     libraryAction: "Browse the Library",
+    testGuideAction: "How free self-checks work",
   },
   ru: {
     kicker: "ВОЗМОЖНОСТИ HOLISTIC HOUSE",
@@ -62,6 +64,7 @@ const copy: Record<PublicLocale, ExploreCopy> = {
     returnLabel: "Уже начали? Сохранённые материалы находятся в вашем кабинете.",
     cabinetAction: "Открыть мой кабинет",
     libraryAction: "Посмотреть библиотеку",
+    testGuideAction: "Как работают бесплатные тесты",
   },
   es: {
     kicker: "DESCUBRE HOLISTIC HOUSE",
@@ -78,6 +81,7 @@ const copy: Record<PublicLocale, ExploreCopy> = {
     returnLabel: "¿Ya has empezado? Tus materiales guardados están en tu espacio privado.",
     cabinetAction: "Abrir mi espacio (EN)",
     libraryAction: "Explorar la biblioteca",
+    testGuideAction: "Cómo funcionan las pruebas",
   },
 };
 
@@ -130,6 +134,9 @@ export function HomeExploreSections({ locale }: { locale: PublicLocale }) {
       </div>
       <nav className={styles.quicklinks} aria-label={locale === "ru" ? "Кабинет и библиотека" : locale === "es" ? "Espacio y biblioteca" : "Cabinet and Library"}>
         <span className={styles.returnLabel}>{t.returnLabel}</span>
+        <Link href={"/" + locale + "/tests"} prefetch={false}>
+          <BookOpen size={16} aria-hidden="true" />{t.testGuideAction}<ArrowUpRight size={15} aria-hidden="true" />
+        </Link>
         <Link href={"/" + cabinetLocale + "/app"} prefetch={false}>
           <LockKeyhole size={16} aria-hidden="true" />{t.cabinetAction}<ArrowUpRight size={15} aria-hidden="true" />
         </Link>

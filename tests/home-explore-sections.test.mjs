@@ -45,6 +45,7 @@ test("every key section has an actual route and approved local photo", () => {
   assert.match(component, /event=\{topic\.id === "tests" \? "self_check_start" : "service_request_start"\}/);
   assert.match(component, /href=\{"\/" \+ cabinetLocale \+ "\/app"\}/);
   assert.match(component, /href=\{"\/" \+ locale \+ "\/library"\}/);
+  assert.match(component, /href=\{"\/" \+ locale \+ "\/tests"\}/);
   assert.match(component, /const cabinetLocale = locale === "es" \? "en" : locale/);
 });
 
