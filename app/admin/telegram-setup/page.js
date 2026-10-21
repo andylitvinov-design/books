@@ -205,7 +205,7 @@ export default async function TelegramSetupPage({searchParams}){
               <input type="hidden" name="provider" value="gemini"/>
               <strong>1. Gemini · Google AI Studio</strong>
               <a href="https://aistudio.google.com/app/projects" target="_blank" rel="noopener noreferrer">
-                {ru?'Проверить Free Tier своего проекта ↗':'Verify your project's Free Tier ↗'}
+                {ru?'Проверить Free Tier своего проекта ↗':'Verify the Free Tier for this project ↗'}
               </a>
               <label className={styles.checkLine}>
                 <input name="free_confirmed" type="checkbox" value="yes" required/>
