@@ -49,5 +49,5 @@ test("Cabinet chapter picker uses saved owner progress and forbids deep-link ski
   assert.match(cabinet, /aria-disabled="true"/)
   assert.match(learner, /requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex/)
   assert.match(repo, /COURSE_STEP_NOT_READY/)
-  assert.match(learner, /onClick=\{\(\) => void jumpToSlide\(lesson\.firstSlideId\)\}/)
+  assert.match(learner, /onClick=\{\(\) => jumpToSlide\(lesson\.firstSlideId\)\}/)
 })
