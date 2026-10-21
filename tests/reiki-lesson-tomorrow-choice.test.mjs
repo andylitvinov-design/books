@@ -88,3 +88,10 @@ test("small iPhones reserve an always-visible, tap-safe in-slide save row", () =
     "anchored button remains in normal layout, not overlapping content");
   assert.match(css, /\.page\[data-course-one-screen\] \.slideMain\{[\s\S]*?overflow-y:auto/);
 });
+
+test("back from the separate screen does not advance the saved lesson", () => {
+  assert.match(learner, /if \(milestoneDecision\) \{\s*setMilestoneDecisionId\(null\);/);
+  assert.match(learner, /setMilestoneDecisionId\(slide\.id\);/);
+  assert.match(learner, /async function next\(\)[\s\S]+await store\(nextId\)/);
+  assert.match(learner, /data-energywork-slide-id=\{milestoneDecision \? slide\.id \+ "-choice" : slide\.id\}/);
+});
