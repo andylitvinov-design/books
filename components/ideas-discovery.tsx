@@ -190,22 +190,23 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   useEffect(() => {
     const number = result?.mode === "dao" ? result.hexagram : undefined;
     if (!expandedDao || !number || fullDaoReading?.number === number) return;
+    const selectedNumber: number = number;
     let cancelled = false;
     async function loadReading() {
       try {
-        if (daoAuthorHexagramNumbers.includes(number)) {
+        if (daoAuthorHexagramNumbers.includes(selectedNumber)) {
           const { default: records } = await import("@/data/dao-hexagram-author.json");
-          const text = records.find(record => record.number === number)?.text;
+          const text = records.find(record => record.number === selectedNumber)?.text;
           if (!cancelled) {
-            if (text) setFullDaoReading({ number, text, kind: "original" });
+            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "original" });
             else setDaoReadingError(true);
           }
         } else {
           // The 52 full editorial readings are intentionally code-split.
           const { getDaoEditorialHexagramText } = await import("@/data/dao-hexagrams-editorial.mjs");
-          const text = getDaoEditorialHexagramText(number);
+          const text = getDaoEditorialHexagramText(selectedNumber);
           if (!cancelled) {
-            if (text) setFullDaoReading({ number, text, kind: "editorial" });
+            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "editorial" });
             else setDaoReadingError(true);
           }
         }
