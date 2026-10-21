@@ -66,3 +66,10 @@ test('owner AI setup is signed and requires explicit free mode plus no-paid conf
  assert.match(page,/name="no_paid_billing"/)
  assert.doesNotMatch(page,/formData\.get\('mistral_key'\)|\.apiKey/)
 })
+
+
+test('English Free Tier project link remains a valid quoted JSX string',()=>{
+ const page=read('app/admin/telegram-setup/page.js')
+ assert.match(page,/Verify the Free Tier for this project/)
+ assert.doesNotMatch(page,/Verify your project's Free Tier/)
+})
