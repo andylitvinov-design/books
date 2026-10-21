@@ -1,0 +1,9 @@
+stable_key,acronym,form_items,respondent_locale,source_doi,evidence_scope,usage_status
+dkas-zakharov2026-ruru25-dementiaknowledge,DKAS-R-25,25,ru-RU,10.1177/25424823251409406,Russian validation one N533 study,research_only_permission_required
+dkas-zakharov2026-ruru20-dementiaknowledge,DKAS-R-20,20,ru-RU,10.1177/25424823251409406,Short form same study as DKAS-R25,research_only_permission_required
+das-zakharov2026-ruru20-dementiaattitudes,DAS-R-20,20,ru-RU,10.1177/25424823251409406,Original adapted form model fit qualified,research_only_permission_required
+das-zakharov2026-ruru14-dementiaattitudes,DAS-R-14,14,ru-RU,10.1177/25424823251409406,Reduced form from same N533 study,research_only_permission_required
+code-zakharov2026-ruru9-dementiacareconfidence,CODE-R-9,9,ru-RU,10.1177/25424823251409406,One-factor Russian version in same study,research_only_permission_required
+mhcstate-ploke2026-dede14-dailydiary,MHC-STATE-DE-14,14,de-DE,10.3389/fpsyg.2026.1887563,Daily state German-speaking sample N262,research_only_permission_required
+# RU study article CC BY-NC; DE study article CC BY but MHC-SF questionnaire reuse requires separate rights audit.
+# These are research metadata only. No test item text scoring algorithms or patient information. No deployment.
