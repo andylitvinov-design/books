@@ -90,6 +90,27 @@
   .viewButton:hover { transform:none; }
   .dot::after,.dotActive::after { transition:none; }
 }
+
+/* Quiet text-only navigation over the photo, independent of carousel slide state. */
+.sectionNav { position:absolute; z-index:4; top:15px; right:22px; max-width:calc(100% - 44px); }
+.sectionNavScroller { display:flex; align-items:center; max-width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
+.sectionNavScroller::-webkit-scrollbar { display:none; }
+.sectionNavLink { position:relative; display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; min-height:44px; padding:0 10px; color:#fffaf2; text-decoration:none; white-space:nowrap; text-shadow:0 1px 5px rgba(24,25,21,.75); font:600 13px/1.2 Arial,Helvetica,sans-serif; }
+.sectionNavLink + .sectionNavLink::before { content:""; position:absolute; left:0; top:50%; transform:translateY(-50%); width:1px; height:15px; background:rgba(255,250,241,.56); }
+.sectionNavLink[aria-current="page"] { color:#ffd19c; font-weight:750; }
+.sectionNavLink[aria-current="page"]::after { content:""; position:absolute; bottom:6px; left:10px; right:10px; height:2px; border-radius:999px; background:#ffd19c; }
+.sectionNavLink:hover { color:#ffd19c; }
+@media (max-width:760px) {
+  .sectionNav { top:8px; right:12px; left:12px; max-width:none; }
+  .sectionNavScroller { width:100%; }
+  .sectionNavLink { min-height:44px; padding:0 8px; font-size:12px; }
+  .sectionNavLink[aria-current="page"]::after { left:8px; right:8px; }
+}
+@media (max-width:365px) {
+  .sectionNavLink { padding:0 6px; font-size:11px; }
+  .sectionNavLink[aria-current="page"]::after { left:6px; right:6px; }
+}
+
 /* Named legacy shortcuts remain part of the accepted free/paid enquiry contract. */
 .directPaths .cta,.directPaths .paidLink{color:#744a32}
 
