@@ -37,7 +37,7 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   const src = read("components/contact-channel-chooser.tsx");
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
-    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open}',
+    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open && !quick}',
     'Оставьте контакт, чтобы записаться или узнать подробности',
     'Leave your contact to enquire or join',
     'Deja tus datos para consultar o inscribirte', 'WhatsApp', 'Telegram',
