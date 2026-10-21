@@ -338,7 +338,7 @@ test('Wood redesign has complete CSS Module bindings without impacting other cou
   assert.ok(publicPage.includes("locale==='ru'?'ru':'en'"))
   assert.ok(promoCss.includes('linear-gradient(105deg,#67462f,#483023)'))
   assert.ok(courseListCss.includes('.businessTrack'))
-  assert.ok(courseListCss.includes('background:linear-gradient(115deg,#fffaf1,#f0dfc7'))
+  assert.ok(courseListCss.includes('background:linear-gradient(118deg,#1c4e61,#1a314b')) // #1407 photo-left navy card.
   assert.ok(css.includes('data-wood-mode=dark'))
 })
 
