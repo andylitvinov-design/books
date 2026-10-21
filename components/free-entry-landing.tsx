@@ -36,7 +36,7 @@ const copy = {
       back: "All services", free: "COMPLETELY FREE", details: "See what you receive",
       benefits: "What you will take away", process: "How it works",
       prepare: "Start with one small step", more: "Questions before you begin",
-      privacy: "No payment required. A personal request is only sent when you confirm it in your chosen messenger.",
+      privacy: "No payment is required. Your reply contact is saved only when you submit a request. This is not a confirmed appointment.",
       limitations: "These self-reflection approaches are educational and symbolic. They do not diagnose or treat health conditions and do not replace qualified medical or mental-health care.",
       about: "More about Andrey", model: "Read about the Wu Xing model", aboutTests: "Explore all tests",
       fullForm: "Have your question and drawing ready? Open the full free questionnaire",
@@ -94,13 +94,13 @@ const copy = {
         { title: "Send both to Andrey", text: "Use WhatsApp or Telegram to share your answers and drawing for a written review." },
       ],
       startTitle: "Tell me what you would like to explore",
-      startLead: "A couple of words are enough to request instructions. If you already know your question, open the full questionnaire below.",
+      startLead: "Leave one contact to receive instructions. The full questionnaire remains optional below.",
       cta: "Request my free review", secondary: "See how it works",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Lighthouse on the coast", processAlt: "Calm, sunlit room",
       faq: [
         ["What is included for free?", "A personal written review of your coaching questionnaire and handwritten drawing. It does not include a video call or live consultation."],
         ["Do I need artistic skills?", "No. Three simple shapes or symbols on paper are enough; the drawing is a prompt for reflection, not an art test."],
-        ["Will you save my answers here?", "No. The form prepares text for you to copy and send yourself through your chosen messenger. Nothing is submitted automatically."],
+        ["Will you save my answers here?", "Only the contact you submit to request instructions is saved. The separate questionnaire stays on your device until you choose to share it."],
       ],
     },
     dao: {
@@ -124,7 +124,7 @@ const copy = {
         { title: "Request your profile", text: "Send a prepared message and agree on the next steps for the free symbolic review." },
       ],
       startTitle: "Begin your free Wu Xing profile",
-      startLead: "Tell Andrey which part of life or personal energy interests you. Your message is prepared for review; it is never sent automatically.",
+      startLead: "One contact is enough. Your free profile request is sent only when you tap Send.",
       cta: "Request my free profile", secondary: "Discover the model",
       photoAlt: "Traditional East Asian mountain temple", outcomeAlt: "Soft sunrise over a landscape", processAlt: "Lighthouse overlooking the sea",
       faq: [
@@ -139,7 +139,7 @@ const copy = {
       back: "Все услуги", free: "БЕСПЛАТНО", details: "Что вы получите",
       benefits: "В результате", process: "Как это происходит",
       prepare: "Начните с простого шага", more: "Вопросы перед началом",
-      privacy: "Оплата не требуется. Личный запрос отправляется только после вашего подтверждения в выбранном мессенджере.",
+      privacy: "Оплата не требуется. Контакт сохраняется после отправки заявки; это не подтверждённая запись.",
       limitations: "Эти методики предназначены для самоисследования и символической рефлексии. Они не диагностируют и не лечат заболевания и не заменяют медицинскую или психиатрическую помощь.",
       about: "Об Андрее", model: "Подробнее о модели У-Син", aboutTests: "Открыть все тесты",
       fullForm: "Уже готовы вопрос и рисунок? Откройте полную бесплатную анкету",
@@ -197,13 +197,13 @@ const copy = {
         { title: "Отправьте Андрею", text: "Пришлите анкету и фото рисунка в WhatsApp или Telegram." },
       ],
       startTitle: "С чего хотите начать?",
-      startLead: "Пары слов достаточно, чтобы запросить инструкции. Если запрос уже сформирован, ниже можно раскрыть полную анкету.",
+      startLead: "Оставьте один контакт для инструкций. Полная анкета — по желанию ниже.",
       cta: "Запросить бесплатный разбор", secondary: "Как проходит разбор",
       photoAlt: "Андрей Литвинов", outcomeAlt: "Маяк на побережье", processAlt: "Спокойная комната с утренним светом",
       faq: [
         ["Что именно бесплатно?", "Личный письменный разбор по коучинг-анкете и рисунку. Он не включает видеозвонок или живую консультацию."],
         ["Нужно красиво рисовать?", "Нет. Достаточно трёх простых символов или фигур на бумаге — это материал для рефлексии, а не проверка художественных навыков."],
-        ["Где хранятся мои ответы?", "Сайт подготавливает текст для копирования. Вы сами решаете, отправлять ли его через мессенджер; автоматической передачи нет."],
+        ["Где хранятся мои ответы?", "Контакт сохраняется после отправки заявки. Отдельная анкета остаётся на вашем устройстве до выбранной вами передачи."],
       ],
     },
     dao: {
@@ -227,7 +227,7 @@ const copy = {
         { title: "Запросите профиль", text: "Отправьте сообщение и согласуйте дальнейший формат бесплатного разбора." },
       ],
       startTitle: "Начните свой бесплатный профиль У-Син",
-      startLead: "Расскажите, какая сфера жизни или вашего ресурса интересует вас сейчас. Без вашего подтверждения сообщение не отправляется.",
+      startLead: "Достаточно одного контакта: бесплатная заявка отправится только после нажатия кнопки.",
       cta: "Запросить профиль У-Син", secondary: "Подробнее о модели",
       photoAlt: "Восточноазиатский храм в горах", outcomeAlt: "Мягкий рассвет над природой", processAlt: "Маяк над морем",
       faq: [
@@ -242,7 +242,7 @@ const copy = {
       back: "Todos los servicios", free: "GRATIS", details: "Qué vas a recibir",
       benefits: "Qué te llevas", process: "Cómo funciona",
       prepare: "Empieza con un paso sencillo", more: "Preguntas frecuentes",
-      privacy: "No hay pago. La solicitud solo se envía cuando la confirmas en tu aplicación de mensajería.",
+      privacy: "No necesitas pagar. El contacto se guarda solo cuando envías la solicitud; no es una reserva confirmada.",
       limitations: "Estas prácticas simbólicas y de autoobservación son educativas. No diagnostican ni tratan enfermedades y no sustituyen la atención médica o psicológica profesional.",
       about: "Sobre Andrey", model: "Conoce el modelo Wu Xing", aboutTests: "Explora todos los tests",
       fullForm: "¿Ya tienes tu pregunta y dibujo? Abre el cuestionario completo y gratuito",
@@ -300,13 +300,13 @@ const copy = {
         { title: "Envía ambos materiales", text: "Comparte las respuestas y la foto por WhatsApp o Telegram." },
       ],
       startTitle: "¿Qué te gustaría explorar?",
-      startLead: "Unas pocas palabras bastan para pedir instrucciones. Si ya estás preparado, abre el cuestionario completo.",
+      startLead: "Deja un contacto para recibir las instrucciones. El cuestionario completo es opcional.",
       cta: "Solicitar revisión gratis", secondary: "Cómo funciona",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Faro en la costa", processAlt: "Espacio tranquilo con luz matinal",
       faq: [
         ["¿Qué incluye la oferta gratuita?", "Una revisión personal por escrito del cuestionario y un dibujo a mano. No incluye videollamada ni consulta en directo."],
         ["¿Debo saber dibujar?", "No. Unos símbolos o figuras sencillos en papel son suficientes."],
-        ["¿Se guardan mis respuestas?", "No. La página prepara texto para copiar; tú decides qué enviar por mensajería."],
+        ["¿Se guardan mis respuestas?", "Solo se guarda el contacto al enviar la solicitud. El cuestionario completo permanece en tu dispositivo hasta que decidas compartirlo."],
       ],
     },
     dao: {
@@ -330,7 +330,7 @@ const copy = {
         { title: "Solicita tu perfil", text: "Envía un mensaje preparado y acuerda el siguiente paso." },
       ],
       startTitle: "Comienza tu perfil Wu Xing gratuito",
-      startLead: "Dinos qué aspecto de tu energía personal te interesa. El mensaje no se envía sin tu confirmación.",
+      startLead: "Un contacto es suficiente. La solicitud gratuita se envía solo cuando pulsas Enviar.",
       cta: "Solicitar perfil gratuito", secondary: "Conocer el modelo",
       photoAlt: "Templo asiático tradicional en las montañas", outcomeAlt: "Paisaje al amanecer", processAlt: "Faro sobre el mar",
       faq: [
@@ -381,42 +381,9 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </figure>
         </section>
 
-        <section className={[styles.scene, styles.outcomeScene].join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
-          <div className={styles.sceneImage}>
-            <Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
-          </div>
-          <div className={styles.sceneText}>
-            <p className={styles.sectionLabel}>01 / {common.benefits}</p>
-            <h2 id="free-outcomes-title">{t.outcomeTitle}</h2>
-            <p className={styles.sectionLead}>{t.outcomeLead}</p>
-            <div className={styles.outcomeList}>
-              {t.outcomes.map((item, i) => <article key={item.title}>
-                <span>{String(i + 1).padStart(2, "0")}</span><div><h3>{item.title}</h3><p>{item.text}</p></div>
-              </article>)}
-            </div>
-          </div>
-        </section>
-
-        <section className={[styles.scene, styles.processScene].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
-          <div className={styles.sceneText}>
-            <p className={styles.sectionLabel}>02 / {common.process}</p>
-            <h2 id="free-process-title">{t.processTitle}</h2>
-            <p className={styles.sectionLead}>{t.processLead}</p>
-            <ol className={styles.steps}>
-              {t.steps.map((item, i) => <li key={item.title}>
-                <span>{String(i + 1).padStart(2, "0")}</span>
-                <div><h3>{item.title}</h3><p>{item.text}</p></div>
-              </li>)}
-            </ol>
-          </div>
-          <div className={styles.sceneImage}>
-            <Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
-          </div>
-        </section>
-
         <section className={styles.capture} id={captureId} aria-labelledby="free-capture-title">
           <div className={styles.captureIntro}>
-            <p className={styles.sectionLabel}>03 / {common.prepare}</p>
+            <p className={styles.sectionLabel}>01 / {common.prepare}</p>
             <h2 id="free-capture-title">{t.startTitle}</h2>
             <p>{t.startLead}</p>
             <div className={styles.miniPhoto}><Image src={images.outcome} alt="" fill sizes="(max-width: 800px) 100vw, 38vw" /></div>
@@ -437,6 +404,40 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                 <summary>{common.fullForm}</summary>
                 <FreeSituationReviewForm locale={locale} />
               </details> : null}
+          </div>
+        </section>
+
+
+        <section className={[styles.scene, styles.outcomeScene].join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
+          <div className={styles.sceneImage}>
+            <Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
+          </div>
+          <div className={styles.sceneText}>
+            <p className={styles.sectionLabel}>02 / {common.benefits}</p>
+            <h2 id="free-outcomes-title">{t.outcomeTitle}</h2>
+            <p className={styles.sectionLead}>{t.outcomeLead}</p>
+            <div className={styles.outcomeList}>
+              {t.outcomes.map((item, i) => <article key={item.title}>
+                <span>{String(i + 1).padStart(2, "0")}</span><div><h3>{item.title}</h3><p>{item.text}</p></div>
+              </article>)}
+            </div>
+          </div>
+        </section>
+
+        <section className={[styles.scene, styles.processScene].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
+          <div className={styles.sceneText}>
+            <p className={styles.sectionLabel}>03 / {common.process}</p>
+            <h2 id="free-process-title">{t.processTitle}</h2>
+            <p className={styles.sectionLead}>{t.processLead}</p>
+            <ol className={styles.steps}>
+              {t.steps.map((item, i) => <li key={item.title}>
+                <span>{String(i + 1).padStart(2, "0")}</span>
+                <div><h3>{item.title}</h3><p>{item.text}</p></div>
+              </li>)}
+            </ol>
+          </div>
+          <div className={styles.sceneImage}>
+            <Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
         </section>
 
