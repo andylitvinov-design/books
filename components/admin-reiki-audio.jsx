@@ -20,7 +20,7 @@ const lessons = [
 ]
 const copy = {
   ru: {
-    breadcrumbMaterials: 'Материалы', breadcrumbAudio: 'Аудио', course: 'Курс Reiki Practitioner',
+    breadcrumbMaterials: 'Материалы', breadcrumbCourses: 'Курсы', course: 'Курс Reiki Practitioner',
     folderTitle: 'Папки уроков', lesson: 'Урок',
     language: 'Язык материала', languageHint: 'Выберите язык до загрузки. RU и EN хранятся отдельно.',
     intro: 'Выберите папку урока, затем язык записи. Можно хранить несколько аудиофайлов и отмечать один для воспроизведения ученику.',
@@ -66,7 +66,7 @@ const copy = {
     descriptionHint: 'Название и описание доступны только мастеру. Публикация аудио происходит отдельно.',
   },
   en: {
-    breadcrumbMaterials: 'Materials', breadcrumbAudio: 'Audio', course: 'Reiki Practitioner course',
+    breadcrumbMaterials: 'Materials', breadcrumbCourses: 'Courses', course: 'Reiki Practitioner course',
     folderTitle: 'Lesson folders', lesson: 'Lesson',
     language: 'Recording language', languageHint: 'Choose the language before uploading. RU and EN are kept separately.',
     intro: 'Choose a lesson folder, then a recording language. Keep several files and select one to play on the learner slide.',
@@ -524,7 +524,7 @@ export default function AdminReikiAudio({initialLocale='ru',initialLesson='fligh
   return <div className={styles.page} data-reiki-intro-audio-manager data-materials-reiki-folder-view>
     <nav className={styles.breadcrumb} aria-label="Breadcrumb">
       <Link href="/admin/materials">{t.breadcrumbMaterials}</Link><ChevronRight size={15} aria-hidden="true"/>
-      <Link href="/admin/materials/audio">{t.breadcrumbAudio}</Link><ChevronRight size={15} aria-hidden="true"/>
+      <Link href="/admin/materials/courses">{t.breadcrumbCourses}</Link><ChevronRight size={15} aria-hidden="true"/>
       <span>{t.course}</span>
     </nav>
     <header className={styles.courseHeader}>
@@ -576,7 +576,7 @@ export default function AdminReikiAudio({initialLocale='ru',initialLesson='fligh
           !ready ? <p role="alert" className={styles.error}>{error||t.unavailable}</p> :
           <>
             <div className={styles.folderToolbar}>
-              <span>{t.breadcrumbAudio} / {t.course} / {t.lesson} {chosen.number} / {locale.toUpperCase()}</span>
+              <span>{t.breadcrumbCourses} / {t.course} / {t.lesson} {chosen.number} / {locale.toUpperCase()}</span>
               <button type="button" onClick={()=>void refresh(selectedLesson,locale)}
                 disabled={refreshing||locked}><RefreshCw size={15} aria-hidden="true"/>{t.refresh}</button>
             </div>
