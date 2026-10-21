@@ -38,6 +38,7 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/lib/ui-locale': { localePath: (path, locale) => '/' + locale + path, saveUiLocale() {} },
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
+  '@/components/commerce/cart-nav-link': { CartNavLink: () => null },
   './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
 });
