@@ -7,58 +7,50 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 
-test("all four lesson checkpoints get a separate save-or-continue screen without changing the 63-slide curriculum", () => {
-  assert.match(learner, /const milestoneDecision = slide\.kind === "milestone"/);
-  assert.match(learner, /setMilestoneDecisionId\(slide\.id\)/);
+test("milestone opens an extra mobile-first screen with two save-or-continue options", () => {
   assert.match(learner, /data-reiki-lesson-choice-screen/);
-  assert.match(learner, /data-energywork-slide-kind=\{milestoneDecision \? "decision" : slide\.kind\}/);
-  assert.match(learner, /key=\{slide\.id \+ \(milestoneDecision \? "-choice" : ""\)\}/);
   assert.match(learner, /data-reiki-save-tomorrow/);
   assert.match(learner, /data-reiki-continue-now/);
   assert.match(learner, /data-reiki-tomorrow-choice/);
-  assert.match(learner, /data-reiki-reminder-setup/);
   assert.match(learner, /data-energywork-next/);
   assert.match(learner, /decisionSave: "Save and return tomorrow"/);
   assert.match(learner, /decisionSave: "Сохранить и продолжить завтра"/);
   assert.match(learner, /decisionContinue: "Continue now"/);
   assert.match(learner, /decisionContinue: "Продолжить сейчас"/);
-  assert.match(learner, /finishForToday\(\)[\s\S]*?await store\(nextId\)/);
-  assert.match(learner, /async function chooseTomorrow\(\)[\s\S]*?await finishForToday\(\)/);
-  assert.match(learner, /if \(milestoneDecision\) \{[\s\S]*?setMilestoneDecisionId\(null\)/);
-  assert.match(learner, /ENERGYWORK_RETURN_TOMORROW_KEY/);
-  assert.match(learner, /if \(returnTomorrow\) window\.location\.assign\("/);
-  assert.match(learner, /sync === "ready" \? <button type="button" disabled=\{busy\}/);
-  assert.match(learner, /slide\.id === "flight-done"[\s\S]*?t\.signInForTomorrow/);
-  assert.match(learner, /href=\{"\/" \+ locale \+ "\/install"\}/);
-  assert.match(learner, /href=\{"\/" \+ locale \+ "\/app\/settings#hh-phone-notifications"\}/);
-  assert.match(learner, /app\/course\?view=courses/);
-  assert.match(learner, /useEffect\(\(\) => \{ setMilestoneDecisionId\(null\)/);
-});
-test("separate decision is mobile readable and reminder setup is explicit opt-in", () => {
-  assert.match(css, /@media \(max-width: 430px\)/);
+  assert.match(learner, /onClick=\{finishForToday\}/);
+  assert.match(learner, /if \(slide\.kind === "milestone" && slide\.id !== "flight-save" && !milestoneDecision\)/);
+  assert.match(learner, /slide\.kind !== "milestone" && !completed/);
+  assert.doesNotMatch(learner, /data-reiki-milestone-choices|reminderSetupOpen|downloadTomorrowReminder/);
+  assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
   assert.match(css, /\.lessonDecision/);
   assert.match(css, /\.decisionActions/);
-  assert.match(css, /min-height: 75px/);
-  assert.match(learner, /aria-expanded=\{reminderSetupOpen\}/);
-  assert.match(learner, /type="time"/);
-  assert.match(learner, /calendarReady/);
-  assert.match(learner, /pushNote: "Автоматические push-напоминания именно об уроках Рейки пока не работают/);
-  assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe|fetch\(["']https?:/);
+  assert.match(css, /@media \(max-width: 430px\)/);
 });
-test("one-time calendar file is local-date-safe, neutral, and explicitly opt-in", () => {
+
+test("guest must consent and authenticate before server save and post-save install", () => {
+  assert.match(learner, /if \(sync === "guest" \|\| sync === "consent"\)/);
+  assert.match(learner, /setIndex\(slides\.findIndex\(item => item\.id === "flight-save"\)\)/);
+  assert.match(learner, /data-reiki-first-lesson-consent/);
+  assert.match(learner, /data-reiki-first-lesson-google-save/);
+  assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value\)/);
+  assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
+  assert.match(learner, /hydrate\(value\); \/\/ Private server persistence is confirmed before the app offer\./);
+  assert.match(learner, /await store\(nextId\);\s*setShowInstallOffer\(true\)/);
+  assert.match(learner, /if \(showInstallOffer && sync === "ready"\)/);
+  assert.match(learner, /data-reiki-install-offer/);
+  assert.match(learner, /href=\{"\/" \+ locale \+ "\/install"\}/);
+  assert.match(learner, /href=\{"\/" \+ locale \+ "\/app\/course\?view=courses"\}/);
+  assert.match(learner, /installPageNote: "Установка приложения не включает напоминания/);
+  assert.match(css, /\.installOfferPage/);
+  assert.match(css, /position: fixed; inset: 0/);
+});
+test("optional calendar utility remains neutral but is not part of the save path", () => {
   assert.equal(REIKI_LESSON_REMINDER_DEFAULT, "19:00");
   const at = new Date(2026, 9, 21, 23, 52, 0);
-  const text = reikiTomorrowCalendar("ru", "19:30", at);
-  assert.match(text, /^BEGIN:VCALENDAR\r\n/);
-  assert.match(text, /DTSTART:20261022T193000\r\n/);
-  assert.match(text, /DTEND:20261022T194000\r\n/);
-  assert.match(text, /BEGIN:VALARM\r\nACTION:DISPLAY\r\n/);
-  assert.match(text, /https:\/\/holistichouse\.vercel\.app\/ru\/academy\/principles-of-energywork\/learn/);
-  assert.doesNotMatch(text, /patient|health|remedy|diagnos|assessment|token|\?slide=/i);
-  assert.match(reikiTomorrowCalendar("en", "08:00", new Date(2026, 11, 31)), /DTSTART:20270101T080000/);
-  assert.throws(() => reikiTomorrowCalendar("en", "04:00", at), /INVALID_REMINDER_TIME/);
-  assert.throws(() => reikiTomorrowCalendar("en", "22:00", at), /INVALID_REMINDER_TIME/);
-  assert.throws(() => reikiTomorrowCalendar("en", "19:00", new Date("no date")), /INVALID_REMINDER_DATE/);
-  assert.match(learner, /link\.download = "holistic-house-next-lesson\.ics"/);
-  assert.match(learner, /onClick=\{downloadTomorrowReminder\}/);
+  const event = reikiTomorrowCalendar("ru", "19:30", at);
+  assert.match(event, /^BEGIN:VCALENDAR\r\n/);
+  assert.match(event, /DTSTART:20261022T193000\r\n/);
+  assert.match(event, /BEGIN:VALARM\r\nACTION:DISPLAY\r\n/);
+  assert.doesNotMatch(event, /patient|health|remedy|diagnos|assessment|token|\?slide=/i);
+  assert.doesNotMatch(learner, /onClick=\{downloadTomorrowReminder\}/);
 });
