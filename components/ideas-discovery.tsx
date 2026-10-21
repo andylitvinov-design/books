@@ -29,6 +29,7 @@ const copy = {
     aphorisms: "Афоризмы",
     personal: "Личная подсказка",
     error: "Сначала напишите вопрос или тему.",
+    privacyShort: "Текст остаётся в браузере · О приватности",
     privacy: "Ваш текст обрабатывается только в браузере: не сохраняется, не передаётся в CRM или аналитику. Не указывайте конфиденциальные данные.",
     basedOn: "Тема запроса",
     generic: "Общий вопрос",
@@ -62,6 +63,7 @@ const copy = {
     aphorisms: "Aphorisms",
     personal: "Personal guidance",
     error: "Please enter a question or topic first.",
+    privacyShort: "Private in this browser · More information",
     privacy: "Your text stays in this browser. It is not saved or sent to CRM or analytics. Avoid sharing sensitive personal details.",
     basedOn: "Topic",
     generic: "Open-ended question",
@@ -95,6 +97,7 @@ const copy = {
     aphorisms: "Aforismos",
     personal: "Orientación personal",
     error: "Primero escribe tu pregunta o tema.",
+    privacyShort: "Solo en tu navegador · Privacidad",
     privacy: "El texto permanece en este navegador. No se guarda ni se envía al CRM o a analítica. Evita datos personales sensibles.",
     basedOn: "Tema",
     generic: "Pregunta abierta",
@@ -180,7 +183,10 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           <button type="submit" className={styles.submit}><Sparkles size={17} aria-hidden="true" />{t.ask}</button>
         </div>
         {error ? <p className={styles.error} role="alert" id="ideas-question-error">{t.error}</p> : null}
-        <p id="ideas-question-privacy" className={styles.privacy}>{t.privacy}</p>
+        <details className={styles.privacyDisclosure}>
+          <summary id="ideas-question-privacy">{t.privacyShort}</summary>
+          <p className={styles.privacy}>{t.privacy}</p>
+        </details>
       </form>
 
       <p className={styles.actionLabel}>{t.choose}</p>
