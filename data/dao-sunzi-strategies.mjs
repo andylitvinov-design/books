@@ -856,7 +856,7 @@ export const sunTzuHexagramStrategies = Object.freeze([
     "quote": "q",
     "strategy": {
       "ru": "После завершения успеха сохраняйте готовность к новым переменам.",
-      "en": "After success, stay prepared for new changes.",
+      "en": "After success, stay carefully prepared for future changes.",
       "es": "Tras el éxito, mantente preparado para nuevos cambios."
     }
   },
