@@ -400,6 +400,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setVoiceTranscript("");
     setVoiceElapsed(0);
     setVoiceError(null);
+    voiceStartedAtRef.current = 0;
     engine.lang = locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-US";
     engine.interimResults = true;
     engine.continuous = true;
