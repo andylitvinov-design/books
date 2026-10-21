@@ -5,22 +5,20 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { ArrowRight, ArrowUp, Check, Compass, Heart, Mic, RotateCcw, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
 
 import {
-  homeGuideDestinations,
-  homeGuideGoals,
+  homeGuideFollowup,
+  chooseHomeGuideOffer,
+  matchHomeGuideReply,
   resolveHomeGuideQuestion,
+  type HomeGuideContext,
   type HomeGuideGoal,
+  type HomeGuideOffer,
 } from "@/lib/home-conversation.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-conversation-guide.module.css";
 
 type Turn = { id: number; role: "visitor" | "guide"; text: string };
-type Context = {
-  lang: PublicLocale;
-  topic: IdeasTopic | null;
-  matched: boolean;
-  urgent: boolean;
-};
+type Context = HomeGuideContext;
 type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> };
 type SpeechEngine = {
   lang: string;
@@ -316,23 +314,13 @@ const copy: Record<PublicLocale, GuideCopy> = {
 
 const quickStartIcons = [Waves, Heart, Compass] as const;
 
-// Offer choices stay limited to three relevant options in the chat; the other
-// existing routes remain explicitly available via "Other options".
-const goalSuggestions: Record<IdeasTopic, HomeGuideGoal[]> = {
-  relationships: ["understand", "practice", "consult"],
-  stress: ["tests", "practice", "understand"],
-  resources: ["practice", "tests", "understand"],
-  work: ["practice", "tests", "consult"],
-  direction: ["understand", "ideas", "tests"],
-};
-
 export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [context, setContext] = useState<Context | null>(null);
-  const [goal, setGoal] = useState<HomeGuideGoal | null>(null);
+  const [recommendations, setRecommendations] = useState<HomeGuideOffer[]>([]);
   const [supportsVoice, setSupportsVoice] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -413,7 +401,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     if (isOpen && chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [isOpen, turns, context, goal]);
+  }, [isOpen, turns, context, recommendations]);
 
   useEffect(() => {
     const speechWindow = window as typeof window & {
@@ -484,16 +472,29 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
     setIsOpen(true);
-    const result = resolveHomeGuideQuestion(question, locale);
+    const replyId = matchHomeGuideReply(question, context);
+    if (replyId && context && !context.urgent) {
+      const selection = chooseHomeGuideOffer(context, replyId, context.lang);
+      if (selection) {
+        const next = homeGuideFollowup(selection.context);
+        const response = selection.response?.[context.lang] ?? next?.prompt[context.lang] ?? copy[context.lang].followup;
+        appendExchange(question, response);
+        setContext(selection.context);
+        setRecommendations(selection.offers);
+        setDraft("");
+        setVoiceError(null);
+        return;
+      }
+    }
+    const result = resolveHomeGuideQuestion(question, locale, context);
     const responseCopy = copy[result.lang];
+    const followup = homeGuideFollowup(result);
     const answer = result.urgent
       ? responseCopy.urgent
-      : result.matched && result.topic
-        ? responseCopy.topicPrompt[result.topic]
-        : responseCopy.unknown + " " + responseCopy.followup;
+      : followup?.prompt[result.lang] ?? responseCopy.unknown + " " + responseCopy.followup;
     appendExchange(question, answer);
     setContext(result);
-    setGoal(null);
+    setRecommendations([]);
     setDraft("");
     setVoiceError(null);
   }
@@ -503,11 +504,17 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     ask(draft);
   }
 
-  function chooseGoal(value: HomeGuideGoal) {
+  function chooseGoal(choiceId: string) {
     if (!context || context.urgent) return;
-    const responseCopy = copy[context.lang];
-    appendExchange(responseCopy.goalLabels[value], responseCopy.goalResponses[value]);
-    setGoal(value);
+    const active = homeGuideFollowup(context);
+    const selected = active?.choices.find(choice => choice.id === choiceId);
+    const result = chooseHomeGuideOffer(context, choiceId, context.lang);
+    if (!selected || !result) return;
+    const next = homeGuideFollowup(result.context);
+    const answer = result.response?.[context.lang] ?? next?.prompt[context.lang] ?? copy[context.lang].followup;
+    appendExchange(selected.label[context.lang], answer);
+    setContext(result.context);
+    setRecommendations(result.offers);
   }
 
   // Browser speech recognition does not guarantee onend/onerror on iOS Safari.
@@ -689,22 +696,17 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   function reset() {
     cancelVoice();
     setContext(null);
-    setGoal(null);
+    setRecommendations([]);
     setDraft("");
     setTurns([]);
     questionRef.current?.focus();
   }
 
   const answerCopy = copy[context?.lang ?? locale];
-  const links = context && goal && !context.urgent
-    ? homeGuideDestinations({ goal, topic: context.topic, locale })
-    : null;
+  const followup = homeGuideFollowup(context);
   const recording = voiceState !== "idle";
   const recordingLabel = voiceState === "starting" ? t.voiceStarting : voiceState === "finishing" ? t.voiceFinishing : t.voiceListening;
   const voiceTime = `${String(Math.floor(voiceElapsed / 60)).padStart(2, "0")}:${String(voiceElapsed % 60).padStart(2, "0")}`;
-  const recommendedGoals: HomeGuideGoal[] = context?.topic
-    ? goalSuggestions[context.topic]
-    : ["understand", "tests", "practice"];
 
   return (
     <section id="ask-holistic-house" className={styles.root} data-home-conversation-guide
@@ -780,37 +782,50 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                   ))}
                 </div>
 
-                {context && !context.urgent && goal === null ? (
+                {context && !context.urgent && recommendations.length === 0 && followup ? (
                   <div className={styles.choiceGroup}>
-                    <p className={styles.choiceCaption}>{answerCopy.followup}</p>
-                    <div className={styles.choices} role="group" aria-label={answerCopy.followup} data-home-guide-choices>
-                      {recommendedGoals.map(value => (
-                        <button key={value} type="button" className={styles.choice} onClick={() => chooseGoal(value)}>
-                          {answerCopy.goalLabels[value]}<ArrowRight size={16} aria-hidden="true" />
+                    <p className={styles.choiceCaption}>{followup.prompt[context.lang]}</p>
+                    <div className={styles.choices} role="group" aria-label={followup.prompt[context.lang]} data-home-guide-choices>
+                      {followup.choices.slice(0, 3).map(choice => (
+                        <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
+                          {choice.label[context.lang]}<ArrowRight size={16} aria-hidden="true" />
                         </button>
                       ))}
                     </div>
-                    <details className={styles.extraChoices}>
-                      <summary>{t.moreWays}</summary>
-                      <div className={styles.choices}>
-                        {homeGuideGoals.filter(value => !recommendedGoals.includes(value)).map(value => (
-                          <button key={value} type="button" className={styles.choice} onClick={() => chooseGoal(value)}>
-                            {answerCopy.goalLabels[value]}<ArrowRight size={16} aria-hidden="true" />
-                          </button>
-                        ))}
-                      </div>
-                    </details>
+                    {followup.choices.length > 3 ? (
+                      <details className={styles.extraChoices}>
+                        <summary>{t.moreWays}</summary>
+                        <div className={styles.choices}>
+                          {followup.choices.slice(3).map(choice => (
+                            <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
+                              {choice.label[context.lang]}<ArrowRight size={16} aria-hidden="true" />
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    ) : null}
                   </div>
                 ) : null}
 
-                {links && goal ? (
+                {context && !context.urgent && recommendations.length > 0 ? (
                   <div className={styles.result} data-home-guide-result>
-                    <Link href={links.primary} className={styles.primaryAction} prefetch={false}>
-                      {answerCopy.goalActions[goal]}<ArrowRight size={17} aria-hidden="true" />
-                    </Link>
-                    <Link href={links.secondary} className={styles.secondaryAction} prefetch={false}>
-                      <Compass size={15} aria-hidden="true" />{answerCopy.secondary}<ArrowRight size={15} aria-hidden="true" />
-                    </Link>
+                    {recommendations.map((offer, index) => (
+                      <article key={offer.id} className={styles.offer} data-home-guide-offer={offer.id}>
+                        <span className={styles.offerTag}>{index === 0
+                          ? {en:"Suggested first step",ru:"Рекомендуем начать",es:"Primer paso sugerido"}[context.lang]
+                          : {en:"Another option",ru:"Другой вариант",es:"Otra opción"}[context.lang]}</span>
+                        <h3>{offer.title}</h3>
+                        <p>{offer.benefit}</p>
+                        <p className={styles.offerDetail}>{offer.detail}</p>
+                        <Link href={offer.href} className={index === 0 ? styles.primaryAction : styles.secondaryAction} prefetch={false}>
+                          {offer.action}<ArrowRight size={17} aria-hidden="true" />
+                        </Link>
+                      </article>
+                    ))}
+                    <button type="button" className={styles.changeChoice} data-home-guide-change
+                      onClick={() => setRecommendations([])}>
+                      {{en:"Change my answer",ru:"Изменить выбор",es:"Cambiar respuesta"}[context.lang]}
+                    </button>
                     <p className={styles.limitation}>{answerCopy.limitation}</p>
                   </div>
                 ) : null}

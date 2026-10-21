@@ -37,6 +37,12 @@ const scenarios = [
   { locale: "en", path: "/", text: "I'm anxious about work and need support", send: "Get guidance", goal: "Explore free tests", reset: "Start over", href: "/en/client/tests" },
   { locale: "ru", path: "/ru", text: "Я тревожусь и испытываю стресс", send: "Получить подсказку", goal: "Бесплатные тесты", reset: "Новый разговор", href: "/ru/client/tests" },
   { locale: "es", path: "/es", text: "Tengo miedo y mucha ansiedad", send: "Recibir orientación", goal: "Pruebas gratuitas", reset: "Nueva conversación", href: "/en/client/tests" },
+  { locale: "en", path: "/", text: "I need clients for my business", send: "Get guidance", goal: "Developing my business", reset: "Start over", href: "/en/app/business" },
+  { locale: "ru", path: "/ru", text: "Мне нужны клиенты для бизнеса", send: "Получить подсказку", goal: "Развиваю своё дело", reset: "Новый разговор", href: "/ru/app/business" },
+  { locale: "es", path: "/es", text: "Necesito ayuda con mi negocio", send: "Recibir orientación", goal: "Desarrollo mi negocio", reset: "Nueva conversación", href: "/en/app/business" },
+  { locale: "en", path: "/", text: "I want to learn Reiki", send: "Get guidance", goal: "Explore the free course", reset: "Start over", href: "/en/academy/reiki/free-practitioner-course" },
+  { locale: "ru", path: "/ru", text: "Хочу познакомиться с Рейки", send: "Получить подсказку", goal: "Пройти бесплатный курс", reset: "Новый разговор", href: "/ru/academy/reiki/free-practitioner-course" },
+  { locale: "es", path: "/es", text: "Quiero aprender Reiki", send: "Recibir orientación", goal: "Explorar el curso gratis", reset: "Nueva conversación", href: "/es/academy/reiki/free-practitioner-course" },
 ];
 let browser;
 try {
@@ -50,7 +56,8 @@ try {
       const leak = [];
       page.on("pageerror", err => errors.push(err.message));
       page.on("request", req => {
-        if (req.url().includes(encodeURIComponent(scenario.text)) || req.url().includes(scenario.text)) leak.push(req.url());
+        const outbound = req.url() + " " + (req.postData() || "");
+        if (outbound.includes(encodeURIComponent(scenario.text)) || outbound.includes(scenario.text)) leak.push(req.url());
       });
       try {
         await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -94,11 +101,19 @@ try {
         await guide.getByRole("button", { name: scenario.send }).click();
         await expect(guide).toHaveAttribute("data-guide-phase", "conversation");
         await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
-        await expect(guide.locator("[data-home-guide-choices] button")).toHaveCount(3);
+        const currentChoices = await guide.locator("[data-home-guide-choices] button").count();
+        assert.ok(currentChoices >= 2 && currentChoices <= 3, "At most three contextual choices");
         await guide.getByRole("button", { name: scenario.goal, exact: true }).click();
         const primary = guide.locator("[data-home-guide-result] a").first();
         await expect(primary).toHaveAttribute("href", scenario.href);
         await expect(primary).toBeVisible();
+        assert.ok(await guide.locator("[data-home-guide-offer]").count() <= 2, "No more than two specific offers");
+        await expect(guide.locator("[data-home-guide-change]")).toBeVisible();
+        if (scenario.href.endsWith("/app/business") && width === 390) {
+          await question.fill({ en: "I'm just starting", ru: "Я только начинаю", es: "Estoy empezando" }[scenario.locale]);
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result] a").first()).toHaveAttribute("href", scenario.href);
+        }
         if (width === 390) {
           await page.screenshot({ path: `artifacts/home-conversation/${engineName}-${scenario.locale}-dialog.png` });
         }
@@ -108,6 +123,13 @@ try {
         await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
         await expect(question).toHaveValue("");
         await expect(guide).toHaveAttribute("data-guide-phase", "ready");
+        if (width === 320) {
+          await question.fill("I want to kill myself");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
+          await dialog.getByRole("button", { name: scenario.reset }).click();
+        }
         await page.keyboard.press("Escape");
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
@@ -121,7 +143,7 @@ try {
   }
   // Simulated browser recognition tests the full 2-tap UI without capturing audio
   // or relying on Safari's remote recognition/permission provider.
-  for (const scenario of scenarios) {
+  for (const scenario of scenarios.slice(0, 3)) {
     const context = await browser.newContext({ viewport: { width: 390, height: 820 }, serviceWorkers: "block" });
     await context.addInitScript(() => {
       class FakeSpeechRecognition {

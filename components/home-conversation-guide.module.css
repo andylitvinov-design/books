@@ -454,3 +454,21 @@
   .root * { scroll-behavior: auto; transition: none; }
   .recordingDot { animation: none; }
 }
+
+
+/* Verified topic-specific courses within the existing compact iPhone dialog. */
+.offer { display: grid; min-width: 0; gap: 5px; padding: 8px 7px; }
+.offer + .offer { border-top: 1px solid #e2d5c7; padding-top: 12px; }
+.offerTag { color: #276965; font: 800 10px/1.35 Arial, Helvetica, sans-serif; }
+.offer h3 { margin: 0; color: #264c49; font: 750 15px/1.3 Arial, Helvetica, sans-serif; }
+.offer p { margin: 0; color: #54493f; font-size: 12px; line-height: 1.45; }
+.offer .offerDetail { color: #78685a; font-size: 11px; }
+.offer :is(a) { min-height: 44px; width: 100%; overflow-wrap: anywhere; }
+.offer .secondaryAction { min-height: 44px; justify-content: space-between; }
+.changeChoice { display: inline-flex; align-items: center; min-height: 44px; justify-self: start; border: 0; background: transparent; color: #175f5b; cursor: pointer; font: 750 12px/1.4 Arial, Helvetica, sans-serif; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 760px) {
+  .offer { gap: 4px; padding: 6px 5px; }
+  .offer h3 { font-size: 14px; }
+  .offer p { font-size: 11px; }
+  .offer .offerDetail { font-size: 10.5px; }
+}
