@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useRef, useState } from "react";
-import { ArrowRight, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles, ClipboardCheck } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, HandHeart, Quote, RefreshCw, Sparkles } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
@@ -33,13 +33,16 @@ const copy = {
     privacy: "Ваш текст обрабатывается только в браузере: не сохраняется, не передаётся в CRM или аналитику. Не указывайте конфиденциальные данные.",
     basedOn: "Тема запроса",
     generic: "Общий вопрос",
-    headings: { dao: "Символ Книги Перемен", aphorisms: "Три афоризма для размышления", personal: "Ваши бесплатные варианты" },
+    headings: { dao: "Символ Книги Перемен", aphorisms: "Три афоризма для размышления", personal: "Три способа начать" },
     topic: { relationships: "Отношения и близость", stress: "Тревога и внутреннее спокойствие", resources: "Ресурсы и энергия", work: "Работа и решения", direction: "Выбор и направление" },
     daoNote: "Одна из 64 гексаграмм выпадает случайно, независимо от смысла вопроса. Это образ для размышления, а не предсказание.",
     again: "Другой символ",
     card: "Прочитать толкование",
     aphorismNote: "Оригинальные редакционные размышления по приблизительно определённой теме — не цитаты древних авторов.",
     personalNote: "Это тематический подбор, не индивидуальная оценка. Выберите формат и заполните существующую форму на странице услуги.",
+    guidanceIntro: "Выберите один вариант, с которого хочется начать.",
+    guidanceMatch: "Рекомендуем по теме запроса",
+    guidanceOther: "Ещё один вариант",
     free: "Бесплатно",
     go: "Открыть",
     reset: "Новый вопрос",
@@ -67,13 +70,16 @@ const copy = {
     privacy: "Your text stays in this browser. It is not saved or sent to CRM or analytics. Avoid sharing sensitive personal details.",
     basedOn: "Topic",
     generic: "Open-ended question",
-    headings: { dao: "A symbol from the Book of Changes", aphorisms: "Three reflections for your topic", personal: "Your free starting points" },
+    headings: { dao: "A symbol from the Book of Changes", aphorisms: "Three reflections for your topic", personal: "Three ways to begin" },
     topic: { relationships: "Relationships and connection", stress: "Stress and inner calm", resources: "Energy and resources", work: "Work and decisions", direction: "Choices and direction" },
     daoNote: "One of 64 hexagrams is drawn at random, independently of your question. It offers a symbol for reflection, not a prediction.",
     again: "Draw another",
     card: "Read interpretation",
     aphorismNote: "New editorial reflections matched by approximate topic, not quotations attributed to historical thinkers.",
     personalNote: "These are topic-based options, not a personal assessment. Choose a format and complete its existing request form.",
+    guidanceIntro: "Choose the starting point that feels right for you.",
+    guidanceMatch: "Suggested for your topic",
+    guidanceOther: "Another option",
     free: "Free",
     go: "Explore",
     reset: "New question",
@@ -101,13 +107,16 @@ const copy = {
     privacy: "El texto permanece en este navegador. No se guarda ni se envía al CRM o a analítica. Evita datos personales sensibles.",
     basedOn: "Tema",
     generic: "Pregunta abierta",
-    headings: { dao: "Un símbolo del Libro de los Cambios", aphorisms: "Tres reflexiones sobre tu tema", personal: "Tus primeros pasos gratuitos" },
+    headings: { dao: "Un símbolo del Libro de los Cambios", aphorisms: "Tres reflexiones sobre tu tema", personal: "Tres maneras de empezar" },
     topic: { relationships: "Relaciones y cercanía", stress: "Estrés y calma interior", resources: "Energía y recursos", work: "Trabajo y decisiones", direction: "Opciones y rumbo" },
     daoNote: "Uno de los 64 hexagramas se elige al azar, independientemente de tu pregunta. Es un símbolo para reflexionar, no una predicción.",
     again: "Otro símbolo",
     card: "Leer interpretación",
     aphorismNote: "Reflexiones editoriales originales por tema aproximado; no son citas atribuidas a autores históricos.",
     personalNote: "Son opciones por tema, no una evaluación personal. Elige una y completa el formulario existente de la página.",
+    guidanceIntro: "Elige por dónde te gustaría empezar.",
+    guidanceMatch: "Sugerido para tu tema",
+    guidanceOther: "Otra opción",
     free: "Gratis",
     go: "Explorar",
     reset: "Otra pregunta",
@@ -118,8 +127,6 @@ const copy = {
     },
   },
 } as const;
-
-const icons = { review: HandHeart, tests: ClipboardCheck, dao: Leaf } as const;
 
 function freeOfferHref(locale: PublicLocale, id: "review" | "tests" | "dao") {
   if (id === "tests") return "/" + (locale === "es" ? "en" : locale) + "/client/tests";
@@ -203,7 +210,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       </div>
 
       {result ? (
-        <div className={styles.results} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode}>
+        <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode}>
           <div className={styles.resultsHeading}>
             <div>
               <p className={styles.tag}>{t.basedOn}: {topicLabel}</p>
@@ -235,19 +242,30 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             </ol>
           ) : null}
           {result.mode === "personal" ? (
-            <div className={styles.offers}>
-              {getIdeasFreeRecommendations(result.topic).map((id) => {
-                const item = t.service[id];
-                const Icon = icons[id];
-                return (
-                  <article className={styles.offer} key={id}>
-                    <div className={styles.offerHead}><Icon size={19} aria-hidden="true" /><span>{t.free}</span></div>
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
-                    <Link href={freeOfferHref(locale, id)} prefetch={false}>{item.action}<ArrowRight size={16} aria-hidden="true" /></Link>
-                  </article>
-                );
-              })}
+            <div className={styles.guidance} data-ideas-guidance>
+              <div className={styles.guidanceIntro}>
+                <p>{t.guidanceIntro}</p>
+                <span className={styles.guidanceFree}>{t.free}</span>
+              </div>
+              <ol className={styles.guidanceList} data-ideas-guidance-list>
+                {getIdeasFreeRecommendations(result.topic).map((id, index) => {
+                  const item = t.service[id];
+                  return (
+                    <li className={index === 0 ? styles.guidancePriority : undefined} key={id}>
+                      <Link className={styles.guidanceLink} href={freeOfferHref(locale, id)} prefetch={false}>
+                        <span className={styles.guidanceIndex} aria-hidden="true">0{index + 1}</span>
+                        <span className={styles.guidanceContent}>
+                          <span className={styles.guidanceEyebrow}>{index === 0 ? t.guidanceMatch : t.guidanceOther}</span>
+                          <strong className={styles.guidanceTitle}>{item.title}</strong>
+                          <span className={styles.guidanceDescription}>{item.description}</span>
+                          <span className={styles.guidanceAction}>{item.action}<ArrowRight size={14} aria-hidden="true" /></span>
+                        </span>
+                        <span className={styles.guidanceArrow} aria-hidden="true"><ArrowUpRight size={19} /></span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           ) : null}
           <p className={styles.note}>{result.mode === "dao" ? t.daoNote : result.mode === "aphorisms" ? t.aphorismNote : t.personalNote}</p>
