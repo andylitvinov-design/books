@@ -7,6 +7,7 @@ import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
+import {verifyMetricoolSiteBrand} from '@/lib/growth-studio/metricool.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
@@ -139,6 +140,18 @@ export async function checkGrowthStudioProviderReadinessAction(){
     return {ok:true,...result}
   }catch{
     return {ok:false,error:'readiness_unavailable'}
+  }
+}
+
+// Owner-session-only official Metricool API readback; no posting API is
+// called and no userToken/userId is sent to the client. "verified_read_only"
+// proves exact brand membership, NOT scheduled/posting rights.
+export async function checkGrowthMetricoolBrandAction(){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  try{
+    return {ok:true,...await verifyMetricoolSiteBrand()}
+  }catch{
+    return {ok:false,error:'metricool_unavailable'}
   }
 }
 
