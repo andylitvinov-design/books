@@ -28,6 +28,7 @@ import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
 type AnswerMap = Record<string, string>;
+const ENERGYWORK_RETURN_TOMORROW_KEY = "hh-reiki-save-and-return-tomorrow";
 const TANTRA_STUDY_HINT_ANCHORS: Record<string, string> = {
   "tan-06": "#tantra-original-author-research",
   "tan-study-02": "#tantra-original-author-research",
@@ -94,6 +95,19 @@ const copy = {
     slidesWord: "slides",
     saveAndContinue: "Save progress & continue",
     returnAnytime: "Pick up here anytime from My Courses.",
+    chooseNext: "Choose how to continue",
+    decisionKicker: "Lesson complete",
+    decisionTitle: "Your progress, your pace",
+    decisionIntro: "Would you like to save your place and return tomorrow, or explore the next lesson now?",
+    decisionStep: "Lesson complete · Next step",
+    decisionSave: "Save and return tomorrow",
+    decisionGuestSave: "Sign in to save for tomorrow",
+    decisionSaveDetail: "Your progress and private notes will be waiting in My Courses.",
+    decisionGuestSaveDetail: "Use Google sign-in to save lesson one securely.",
+    decisionContinue: "Continue now",
+    decisionContinueDetail: "Go straight to the next lesson with your progress kept safe.",
+    decisionContinueGuestDetail: "First save lesson one to unlock the next lesson.",
+    decisionRemind: "Set a reminder for tomorrow (optional)",
     tomorrowChoice: "Great work! See you tomorrow — remind me",
     continueNow: "I'd like to continue now — next lesson",
     continueNowSave: "Continue now — save lesson 1 first",
@@ -252,6 +266,19 @@ const copy = {
     slidesWord: "слайдов",
     saveAndContinue: "Сохранить прогресс и продолжить",
     returnAnytime: "Вернуться к уроку можно через «Мои курсы».",
+    chooseNext: "Выбрать следующий шаг",
+    decisionKicker: "Урок завершён",
+    decisionTitle: "Ваш прогресс — в вашем ритме",
+    decisionIntro: "Сохранить результаты и вернуться завтра или перейти к следующему уроку прямо сейчас?",
+    decisionStep: "Урок завершён · Следующий шаг",
+    decisionSave: "Сохранить и продолжить завтра",
+    decisionGuestSave: "Войти и сохранить до завтра",
+    decisionSaveDetail: "Прогресс и личные записи будут ждать вас в «Моих курсах».",
+    decisionGuestSaveDetail: "Для приватного сохранения первого урока потребуется вход через Google.",
+    decisionContinue: "Продолжить сейчас",
+    decisionContinueDetail: "Перейти к следующему уроку с сохранением прогресса.",
+    decisionContinueGuestDetail: "Для следующего урока сначала нужно сохранить первый.",
+    decisionRemind: "Напомнить об уроке завтра (необязательно)",
     tomorrowChoice: "Хорошая работа! До завтра — напомнить мне",
     continueNow: "Хочу продолжить сейчас — следующий урок",
     continueNowSave: "Продолжить сейчас — сохранить первый урок",
@@ -745,6 +772,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const pageRef = useRef<HTMLElement | null>(null);
   const [programmeOpen, setProgrammeOpen] = useState(false);
   const [reminderSetupOpen, setReminderSetupOpen] = useState(false);
+  const [milestoneDecisionId, setMilestoneDecisionId] = useState<string | null>(null);
   const [reminderTime, setReminderTime] = useState(REIKI_LESSON_REMINDER_DEFAULT);
   const [calendarExported, setCalendarExported] = useState(false);
   const [reviewReturn, setReviewReturn] = useState(false);
@@ -846,8 +874,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         throw new Error("INVALID_FIRST_LESSON_RESPONSE");
       }
       hydrate(value); // The saved cursor is at least tan-01: the next lesson.
+      const returnTomorrow = window.sessionStorage.getItem(ENERGYWORK_RETURN_TOMORROW_KEY) === "1";
       window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY);
+      window.sessionStorage.removeItem(ENERGYWORK_RETURN_TOMORROW_KEY);
       setFirstLessonConsent(false);
+      if (returnTomorrow) window.location.assign("/" + locale + "/app/course?view=courses");
     } catch (error) {
       // A network error must never masquerade as a successful saved course.
       // Retain the short-lived, same-tab handoff for a deliberate retry.
@@ -1006,6 +1037,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
   const slides = useMemo(() => energyworkSlides(), []);
   const slide = slides[index] ?? slides[0]!;
+  const milestoneDecision = slide.kind === "milestone" && slide.id !== "flight-save" && milestoneDecisionId === slide.id;
   const total = slides.length;
   const lessonRanges = useMemo(() => energyworkLessonRanges(), []);
   const currentLessonRange = lessonRanges.find((range) => index >= range.start && index < range.end);
@@ -1017,7 +1049,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
   // An old milestone must never leave its reminder panel open on another lesson.
-  useEffect(() => { setReminderSetupOpen(false); setCalendarExported(false); }, [slide.id]);
+  useEffect(() => { setMilestoneDecisionId(null); setReminderSetupOpen(false); setCalendarExported(false); }, [slide.id]);
   function downloadTomorrowReminder() {
     try {
       const calendar = reikiTomorrowCalendar(locale, reminderTime, new Date());
@@ -1148,11 +1180,21 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     }
     setReviewReturn(id === "paths-04" ? false :
       slide.id === "paths-04" || slide.kind === "finish" ? true : reviewReturn);
+    setMilestoneDecisionId(null);
     setIndex(target);
   }
   async function next() {
     if (busy || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing ||
         (slide.id === "flight-save" && sync !== "ready")) return;
+    // The choice is a separate visual step, not an extra server slide or a new answer.
+    if (slide.kind === "milestone" && slide.id !== "flight-save" && !milestoneDecision) {
+      setSaveError(null);
+      setMilestoneDecisionId(slide.id);
+      return;
+    }
+    if (milestoneDecision && slide.id === "flight-done") {
+      try { window.sessionStorage.removeItem(ENERGYWORK_RETURN_TOMORROW_KEY); } catch { /* Optional guest intent only. */ }
+    }
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -1165,6 +1207,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setBusy(false);
     }
     setIndex((current) => Math.min(current + 1, slides.length - 1));
+  }
+  async function chooseTomorrow() {
+    if (busy || sync === "checking" || sync === "unavailable" || !milestoneDecision) return;
+    if (sync === "ready") { await finishForToday(); return; }
+    if (slide.id === "flight-done" && (sync === "guest" || sync === "consent")) {
+      try { window.sessionStorage.setItem(ENERGYWORK_RETURN_TOMORROW_KEY, "1"); }
+      catch { /* The consented save flow still works without this preference. */ }
+      // The first lesson has an existing consented Google/private-save gate.
+      setIndex((current) => Math.min(current + 1, slides.length - 1));
+      return;
+    }
+    setSaveError(t.accountError);
   }
   async function finishForToday() {
     if (busy || sync !== "ready" || slide.kind !== "milestone" || slide.id === "flight-save") return;
@@ -1180,6 +1234,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
   async function previous() {
     if (index === 0 || busy) return;
+    if (milestoneDecision) {
+      setMilestoneDecisionId(null);
+      setReminderSetupOpen(false);
+      setSaveError(null);
+      return;
+    }
     if (sync === "ready" && slide.question &&
       (dirtyRef.current.has(slide.id) ||
         Boolean(slide.secondaryQuestion && dirtyRef.current.has(slide.secondaryQuestion.id)))) {
@@ -1298,7 +1358,82 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </ol>
         </nav>
 
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id + (milestoneDecision ? "-choice" : "")} data-energywork-slide-kind={milestoneDecision ? "decision" : slide.kind} data-energywork-slide-id={milestoneDecision ? slide.id + "-choice" : slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
+          {milestoneDecision ? (
+            <div className={styles.lessonDecision} data-reiki-lesson-choice-screen>
+              <span className={styles.decisionSeal}><Award size={28} aria-hidden="true" /></span>
+              <span className={styles.decisionKicker}>{t.decisionKicker} · {t.lesson} {currentLessonRange?.lesson}</span>
+              <h1 id="energywork-slide-title">{t.decisionTitle}</h1>
+              <p className={styles.decisionIntro}>{t.decisionIntro}</p>
+              <div className={styles.decisionActions}>
+                <button type="button" className={styles.decisionSave} data-reiki-save-tomorrow
+                  onClick={chooseTomorrow} disabled={busy || sync === "checking" || sync === "unavailable"}>
+                  <Check size={23} aria-hidden="true" />
+                  <span><strong>{sync === "ready" ? t.decisionSave : t.decisionGuestSave}</strong>
+                    <small>{sync === "ready" ? t.decisionSaveDetail : t.decisionGuestSaveDetail}</small></span>
+                  <ArrowRight size={19} aria-hidden="true" />
+                </button>
+                <button type="button" className={styles.decisionContinue} data-reiki-continue-now
+                  onClick={next} disabled={busy || sync === "checking" || sync === "unavailable"}>
+                  <ArrowRight size={23} aria-hidden="true" />
+                  <span><strong>{t.decisionContinue}</strong>
+                    <small>{slide.id === "flight-done" && sync !== "ready" ? t.decisionContinueGuestDetail : t.decisionContinueDetail}</small></span>
+                  <ArrowRight size={19} aria-hidden="true" />
+                </button>
+              </div>
+              <button type="button" className={styles.decisionRemind} data-reiki-tomorrow-choice
+                disabled={busy || sync === "checking"}
+                aria-expanded={reminderSetupOpen}
+                aria-controls="reiki-reminder-setup"
+                onClick={() => setReminderSetupOpen(open => !open)}>
+                <BellRing size={17} aria-hidden="true" />{t.decisionRemind}
+                <ChevronDown size={17} aria-hidden="true" />
+              </button>
+              {slide.kind === "milestone" && slide.id !== "flight-save" && reminderSetupOpen ? (
+                <section id="reiki-reminder-setup" className={styles.reminderSetup}
+                  data-reiki-reminder-setup aria-label={t.reminderSetupTitle}>
+                  <div className={styles.reminderSetupHeading}>
+                    <CalendarDays size={21} aria-hidden="true" />
+                    <h2>{t.reminderSetupTitle}</h2>
+                  </div>
+                  <p>{t.reminderSetupIntro}</p>
+                  <label className={styles.reminderTime}>
+                    {t.reminderTime}
+                    <input type="time" value={reminderTime}
+                      min="08:00" max="21:59" step={60}
+                      onChange={event => { setReminderTime(event.target.value); setCalendarExported(false); }}
+                      aria-label={t.reminderTime} />
+                  </label>
+                  <button type="button" className={styles.reminderCalendar}
+                    onClick={downloadTomorrowReminder} data-reiki-calendar-reminder>
+                    <CalendarDays size={17} aria-hidden="true" />{t.calendarOption}
+                  </button>
+                  {calendarExported ? <p className={styles.reminderFeedback} role="status">{t.calendarReady}</p> : null}
+                  <div className={styles.reminderLinks}>
+                    <Link href={"/" + locale + "/install"} prefetch={false}>
+                      <Smartphone size={17} aria-hidden="true" />{t.installOption}
+                    </Link>
+                    {sync === "ready" ? (
+                      <Link href={"/" + locale + "/app/settings#hh-phone-notifications"} prefetch={false}>
+                        <BellRing size={17} aria-hidden="true" />{t.phoneSettingsOption}
+                      </Link>
+                    ) : slide.id === "flight-done" ? (
+                      <button type="button" disabled={busy || sync === "checking"}
+                        onClick={next}>{t.signInForTomorrow}<ArrowRight size={15} aria-hidden="true" /></button>
+                    ) : null}
+                  </div>
+                  {sync === "ready" ? <button type="button" disabled={busy}
+                    className={styles.reminderFinish} onClick={finishForToday}>
+                    <Check size={17} aria-hidden="true" />{t.saveForTomorrow}
+                  </button> : null}
+                  <p className={styles.reminderFinePrint}>{t.pushNote}</p>
+                  <button type="button" className={styles.reminderHide}
+                    onClick={() => setReminderSetupOpen(false)}>{t.backToCelebration}</button>
+                </section>
+              ) : null}
+              {saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
+            </div>
+          ) : (
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
@@ -1381,48 +1516,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                   </div>
                 </div>
-              ) : null}
-              {slide.kind === "milestone" && slide.id !== "flight-save" && reminderSetupOpen ? (
-                <section id="reiki-reminder-setup" className={styles.reminderSetup}
-                  data-reiki-reminder-setup aria-label={t.reminderSetupTitle}>
-                  <div className={styles.reminderSetupHeading}>
-                    <CalendarDays size={21} aria-hidden="true" />
-                    <h2>{t.reminderSetupTitle}</h2>
-                  </div>
-                  <p>{t.reminderSetupIntro}</p>
-                  <label className={styles.reminderTime}>
-                    {t.reminderTime}
-                    <input type="time" value={reminderTime}
-                      min="08:00" max="21:59" step={60}
-                      onChange={event => { setReminderTime(event.target.value); setCalendarExported(false); }}
-                      aria-label={t.reminderTime} />
-                  </label>
-                  <button type="button" className={styles.reminderCalendar}
-                    onClick={downloadTomorrowReminder} data-reiki-calendar-reminder>
-                    <CalendarDays size={17} aria-hidden="true" />{t.calendarOption}
-                  </button>
-                  {calendarExported ? <p className={styles.reminderFeedback} role="status">{t.calendarReady}</p> : null}
-                  <div className={styles.reminderLinks}>
-                    <Link href={"/" + locale + "/install"} prefetch={false}>
-                      <Smartphone size={17} aria-hidden="true" />{t.installOption}
-                    </Link>
-                    {sync === "ready" ? (
-                      <Link href={"/" + locale + "/app/settings#hh-phone-notifications"} prefetch={false}>
-                        <BellRing size={17} aria-hidden="true" />{t.phoneSettingsOption}
-                      </Link>
-                    ) : slide.id === "flight-done" ? (
-                      <button type="button" disabled={busy || sync === "checking"}
-                        onClick={next}>{t.signInForTomorrow}<ArrowRight size={15} aria-hidden="true" /></button>
-                    ) : null}
-                  </div>
-                  {sync === "ready" ? <button type="button" disabled={busy}
-                    className={styles.reminderFinish} onClick={finishForToday}>
-                    <Check size={17} aria-hidden="true" />{t.saveForTomorrow}
-                  </button> : null}
-                  <p className={styles.reminderFinePrint}>{t.pushNote}</p>
-                  <button type="button" className={styles.reminderHide}
-                    onClick={() => setReminderSetupOpen(false)}>{t.backToCelebration}</button>
-                </section>
               ) : null}
               {(slide.id === "tan-done" || slide.id === "kun-done") ? (
                  <aside className={styles.personalInitiationNote} data-reiki-personal-initiation-note>
@@ -1762,11 +1855,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               </div>
             ) : null}
           </div>
+          )}
         </section>
 
         <div className={styles.progressFooter}>
           <div className={styles.progressHeader}>
-            <span className={styles.progressStep}>{lessonProgressLabel}</span>
+            <span className={styles.progressStep}>{milestoneDecision ? t.decisionStep : lessonProgressLabel}</span>
             <div className={styles.progressStatus}>
               <span>{progressPercent}% {t.completedLabel}</span>
               <details className={styles.saveManager}>
@@ -1869,26 +1963,16 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               )}
-              {slide.kind === "milestone" && slide.id !== "flight-save" ? (
-                <button type="button" onClick={() => setReminderSetupOpen(open => !open)}
-                  disabled={busy || sync === "checking"} className={styles.reminderChoice}
-                  aria-expanded={reminderSetupOpen}
-                  aria-controls={reminderSetupOpen ? "reiki-reminder-setup" : undefined}
-                  data-reiki-tomorrow-choice>
-                  <BellRing size={18} aria-hidden="true" /><span>{t.tomorrowChoice}</span>
-                </button>
-              ) : null}
-              {!completed && slide.id !== "flight-save" ? (
+              {!completed && slide.id !== "flight-save" && !milestoneDecision ? (
                 <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
                   className={styles.next} data-energywork-next>
                   {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
-                    slide.id === "flight-done" ? t.continueNowSave :
-                    slide.kind === "milestone" ? t.continueNow : t.continue}
+                    slide.kind === "milestone" ? t.chooseNext : t.continue}
                   <ArrowRight size={19} aria-hidden="true" />
                 </button>
               ) : null}
           </div>
-          {slide.kind === "milestone" && slide.id !== "flight-save" && saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
+          {slide.kind === "milestone" && slide.id !== "flight-save" && !milestoneDecision && saveError ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
         </footer>
       </div>
     </main>
