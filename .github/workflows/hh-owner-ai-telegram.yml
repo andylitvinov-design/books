@@ -5,6 +5,8 @@ on:
     paths:
       - 'lib/practitioners/owner-ai-telegram.mjs'
       - 'lib/practitioners/owner-ai-telegram-service.js'
+      - 'lib/practitioners/owner-ai-provider-settings.js'
+      - 'tests/practitioner-owner-ai-provider-setup.test.mjs'
       - 'lib/practitioners/council-free-models.mjs'
       - 'lib/app/client-telegram-transport.js'
       - 'app/api/app/notification-channels/telegram/**'
@@ -43,10 +45,11 @@ jobs:
           node --check app/api/internal/practice-telegram-digest/route.js
           node --check lib/practitioners/owner-ai-telegram.mjs
           node --check lib/practitioners/owner-ai-telegram-service.js
+          node --check lib/practitioners/owner-ai-provider-settings.js
           node --check lib/practitioners/council-free-models.mjs
           node --check lib/app/client-telegram-transport.js
           node --check app/api/app/notification-channels/telegram/webhook/route.js
           node --check app/api/app/notification-channels/telegram/setup/route.js
       - name: Owner-only chat, free-cost model verification and customer pairing regressions
         run: |
-          node --test tests/practitioner-council-provider-readiness.test.mjs tests/practitioner-owner-ai-bootstrap.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/practitioner-council-free-models.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/practitioner-telegram-hub.test.mjs
+          node --test tests/practitioner-owner-ai-provider-setup.test.mjs tests/practitioner-council-provider-readiness.test.mjs tests/practitioner-owner-ai-bootstrap.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/practitioner-council-free-models.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/practitioner-telegram-hub.test.mjs
