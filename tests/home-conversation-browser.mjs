@@ -85,6 +85,58 @@ try {
       }
     }
   }
+  // Simulated browser recognition tests the full 2-tap UI without capturing audio
+  // or relying on Safari's remote recognition/permission provider.
+  for (const scenario of scenarios) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 820 }, serviceWorkers: "block" });
+    await context.addInitScript(() => {
+      class FakeSpeechRecognition {
+        start() { window.__homeVoiceMock = this; this.onstart?.(); }
+        stop() { this.onend?.(); }
+        abort() { this.onend?.(); }
+      }
+      window.SpeechRecognition = FakeSpeechRecognition;
+      window.webkitSpeechRecognition = FakeSpeechRecognition;
+    });
+    const page = await context.newPage();
+    const errors = [];
+    const leakedRequests = [];
+    page.on("pageerror", err => errors.push(err.message));
+    page.on("request", req => {
+      if (req.url().includes(encodeURIComponent(scenario.text))) leakedRequests.push(req.url());
+    });
+    try {
+      await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+      const guide = page.locator("[data-home-conversation-guide]");
+      const microphone = guide.getByRole("button", { name: {
+        en: "Dictate a question with microphone", ru: "Продиктовать вопрос", es: "Dictar una pregunta",
+      }[scenario.locale] });
+      const cancel = { en: "Cancel recording", ru: "Отменить запись", es: "Cancelar grabación" }[scenario.locale];
+      const finish = { en: "Finish and send", ru: "Завершить и отправить", es: "Terminar y enviar" }[scenario.locale];
+      await microphone.click();
+      await expect(guide.locator("[data-home-voice-recording]")).toBeVisible();
+      await page.evaluate(text => {
+        window.__homeVoiceMock.onresult({ results: [[{ transcript: text }]] });
+      }, scenario.text);
+      await expect(guide.locator("[data-home-voice-recording]")).toContainText(scenario.text);
+      await guide.getByRole("button", { name: cancel }).click();
+      await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
+      assert.ok(!(await guide.locator('[role="log"]').innerText()).includes(scenario.text), "Cancel must not send");
+      await microphone.click();
+      await page.evaluate(text => {
+        window.__homeVoiceMock.onresult({ results: [[{ transcript: text }]] });
+      }, scenario.text);
+      await guide.getByRole("button", { name: finish }).click();
+      await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
+      await expect(guide.locator('[role="log"]')).toContainText(scenario.text);
+      await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
+      assert.deepEqual(errors, [], "Voice UI JS error");
+      assert.deepEqual(leakedRequests, [], "Spoken question must never leak through a request URL");
+      evidence.cases.push({ locale: scenario.locale, width: 390, voiceMock: true, cancel: true, finishSends: true, noUrlLeak: true });
+    } finally {
+      await context.close();
+    }
+  }
   console.log(JSON.stringify(evidence, null, 2));
 } finally {
   writeFileSync("artifacts/home-conversation/" + engineName + ".json", JSON.stringify({ ...evidence, serverLogs: logs.slice(-3000) }, null, 2));
