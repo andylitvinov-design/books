@@ -35,12 +35,17 @@ test("all three Services free cards open their own benefit-first, photo-led land
 });
 
 test("free landings explain benefits before closing with one short capture", () => {
-  const hero = landing.indexOf('className={styles.hero}');
-  const outcome = landing.indexOf('className={[styles.scene, styles.outcomeScene]');
-  const process = landing.indexOf('className={[styles.scene, styles.processScene]');
+  // Layout now uses conditional class names; check visible section order via stable anchors.
+  const hero = landing.indexOf('aria-labelledby="free-entry-title"');
+  const outcome = landing.indexOf('id="what-you-get"');
+  const process = landing.indexOf('id="how-it-works"');
   const video = landing.indexOf('<ServiceVideoShowcase');
   const final = landing.lastIndexOf("<CompactLeadCapture");
   assert.ok(hero > 0 && hero < outcome && outcome < process && process < video && video < final);
+  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene\]/,
+    "Only Wu Xing hides the redundant process section");
+  assert.match(landing, /kind === "situation" \? <div className=\{styles\.videoWrap\}/,
+    "Generic overview video is retained for the written-review service");
   assert.match(landing, /t\.bullets\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /t\.steps\.map/);
@@ -60,8 +65,12 @@ test("all three locales explain real service advantages without health claims or
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
     "See your situation from a fresh perspective", "Взгляните на свою ситуацию", "Mira tu situación",
-    "Explore your inner resources through Wu Xing", "Исследуйте свои внутренние ресурсы",
-    "Explora tus recursos interiores", "not a medical assessment", "не медицинское заключение",
+    "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
+    "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
+    "Символическая модель для самоисследования, а не медицинский тест.",
+    "Un modelo simbólico de reflexión, no una prueba médica.",
+    "Illustrative example — not your personal result.",
+    "Условный пример — не ваш персональный профиль.",
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
   for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
