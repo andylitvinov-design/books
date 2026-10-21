@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, MapPin, MonitorPlay } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
+import { ServicesHeroQuickRequest } from "@/components/services-hero-quick-request";
 import { matchingServicesCount, serviceTopics, useServicesExplorer, type ServiceTopic } from "@/components/services-explorer-state";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-conversion-hero.module.css";
@@ -22,6 +23,7 @@ const copy = {
     heading: "Personal guidance for relationships, work and life decisions",
     eyebrow: "HOLISTIC HOUSE · WAYS TO WORK TOGETHER",
     explore: "View services",
+    quickRequest: "Request a session",
     previous: "Previous service type",
     next: "Next service type",
     modeTitle: "Where would you like to meet?",
@@ -49,6 +51,7 @@ const copy = {
     heading: "Личная работа с вашим вопросом: отношения, работа и решения",
     eyebrow: "HOLISTIC HOUSE · ВЫБЕРИТЕ СВОЙ ФОРМАТ",
     explore: "Просмотреть услуги",
+    quickRequest: "Быстрая запись",
     previous: "Предыдущий тип услуг",
     next: "Следующий тип услуг",
     modeTitle: "Как вам удобно встретиться?",
@@ -76,6 +79,7 @@ const copy = {
     heading: "Acompañamiento personal para relaciones, trabajo y decisiones",
     eyebrow: "HOLISTIC HOUSE · FORMAS DE TRABAJAR JUNTOS",
     explore: "Ver servicios",
+    quickRequest: "Solicitar una sesión",
     previous: "Tipo de servicio anterior",
     next: "Siguiente tipo de servicio",
     modeTitle: "¿Dónde prefieres reunirnos?",
@@ -107,26 +111,44 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [manual, setManual] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
   const slide = slides[index];
   const words = t.slides[slide.kind];
   const count = matchingServicesCount(mode, topic);
 
   useEffect(() => {
-    if (paused || manual || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (paused || manual || requestOpen || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") setIndex(current => (current + 1) % slides.length);
     }, 7000);
     return () => window.clearInterval(timer);
-  }, [paused, manual]);
+  }, [paused, manual, requestOpen]);
 
   function navigate(direction: number) {
     setManual(true);
-    setIndex(current => (current + direction + slides.length) % slides.length);
+    setRequestOpen(false);
+    const next = (index + direction + slides.length) % slides.length;
+    setIndex(next);
+    setTopic(slides[next].kind);
+    if (slides[next].kind === "reiki" || slides[next].kind === "free") setMode("online");
+  }
+
+  function chooseTopic(kind: ServiceTopic) {
+    setManual(true);
+    setRequestOpen(false);
+    setTopic(kind);
+    if (kind !== "all") {
+      const position = slides.findIndex(item => item.kind === kind);
+      if (position >= 0) setIndex(position);
+      if (kind === "reiki" || kind === "free") setMode("online");
+    }
   }
 
   function explore(kind: Exclude<ServiceTopic, "all">) {
     setManual(true);
+    setRequestOpen(false);
     setTopic(kind);
+    if (kind === "reiki" || kind === "free") setMode("online");
     window.requestAnimationFrame(() => {
       const target = document.getElementById("service-results");
       target?.focus({ preventScroll: true });
@@ -139,7 +161,7 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
 
   return (
     <section className={styles.hero} aria-label={t.heading} data-services-showcase-hero>
-      <div className={styles.slider} role="region" aria-roledescription="carousel" aria-label={t.eyebrow}
+      <div className={styles.slider} data-request-open={requestOpen} role="region" aria-roledescription="carousel" aria-label={t.eyebrow}
         onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
         onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}
@@ -153,21 +175,34 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
           )}
         </div>
         <div className={styles.gradient} aria-hidden="true" />
-        <div className={styles.slideCopy} data-services-slide={slide.kind}>
-          <p className={styles.eyebrow}>{words.eyebrow}</p>
-          <h1 id="services-conversion-title">{words.title}</h1>
-          <p className={styles.slideLead}>{words.lead}</p>
-          <button type="button" className={styles.viewButton} onClick={() => explore(slide.kind)}
-            data-services-slide-action={slide.kind}>
-            {t.explore}<ArrowRight size={19} aria-hidden="true" />
-          </button>
-        </div>
+        {requestOpen && slide.kind !== "free" ? (
+          <ServicesHeroQuickRequest key={slide.kind} locale={locale} service={words.title}
+            mode={slide.kind === "reiki" ? "online" : mode} onClose={() => setRequestOpen(false)} />
+        ) : (
+          <div className={styles.slideCopy} data-services-slide={slide.kind}>
+            <p className={styles.eyebrow}>{words.eyebrow}</p>
+            <h1 id="services-conversion-title">{words.title}</h1>
+            <p className={styles.slideLead}>{words.lead}</p>
+            <div className={styles.slideActions}>
+              {slide.kind !== "free" ? (
+                <button type="button" className={styles.requestButton} data-services-slide-request={slide.kind}
+                  onClick={() => { setManual(true); setRequestOpen(true); }}>
+                  {t.quickRequest}<ArrowRight size={18} aria-hidden="true" />
+                </button>
+              ) : null}
+              <button type="button" className={styles.viewButton} onClick={() => explore(slide.kind)}
+                data-services-slide-action={slide.kind}>
+                {t.explore}<ArrowRight size={18} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
         <div className={styles.controls}>
           <div className={styles.dots} role="group" aria-label={t.eyebrow}>
             {slides.map((item, position) => (
               <button type="button" key={item.kind} className={position === index ? styles.dotActive : styles.dot}
                 aria-label={t.slides[item.kind].title} aria-current={position === index ? "true" : undefined}
-                data-services-slide-dot={item.kind} onClick={() => { setManual(true); setIndex(position); }} />
+                data-services-slide-dot={item.kind} onClick={() => { setManual(true); setRequestOpen(false); setIndex(position); setTopic(item.kind); if (item.kind === "reiki" || item.kind === "free") setMode("online"); }} />
             ))}
           </div>
           <div className={styles.arrows}>
@@ -178,6 +213,19 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
       </div>
 
       <div className={styles.finder} data-services-category-filter>
+        <div className={styles.filterHeader}>
+          <div>
+            <h2>{t.filterTitle}</h2>
+            <p>{t.filterLead}</p>
+          </div>
+        </div>
+        <div className={styles.topicList} role="group" aria-label={t.filterTitle}>
+          {serviceTopics.map(kind => (
+            <button type="button" key={kind} aria-pressed={topic === kind} data-services-kind={kind}
+              className={topic === kind ? styles.topicActive : styles.topic}
+              onClick={() => chooseTopic(kind)}>{t.topics[kind]}</button>
+          ))}
+        </div>
         <div className={styles.finderTop}>
           <div>
             <p className={styles.finderEyebrow}>{t.modeTitle}</p>
@@ -193,19 +241,6 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
             </div>
           </div>
           <p className={styles.reassurance}>{t.reassurance}</p>
-        </div>
-        <div className={styles.filterHeader}>
-          <div>
-            <h2>{t.filterTitle}</h2>
-            <p>{t.filterLead}</p>
-          </div>
-        </div>
-        <div className={styles.topicList} role="group" aria-label={t.filterTitle}>
-          {serviceTopics.map(kind => (
-            <button type="button" key={kind} aria-pressed={topic === kind} data-services-kind={kind}
-              className={topic === kind ? styles.topicActive : styles.topic}
-              onClick={() => setTopic(kind)}>{t.topics[kind]}</button>
-          ))}
         </div>
         <div className={styles.finderFooter}>
           <p role="status" aria-live="polite" data-services-match-count>
