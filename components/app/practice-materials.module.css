@@ -296,3 +296,36 @@
  .composerIcon{width:29px;height:29px}
  .composerCopy strong{font-size:11px}
 }
+
+/* Phone-first resource hub: five real categories remain accessible, but optional
+   search and long edit forms no longer push the video action off the screen. */
+@media(max-width:430px){
+ .shell{padding:10px;border-radius:15px}
+ .hubHeader{margin-bottom:7px}
+ .hubHeader .eyebrow{display:none}
+ .hubHeader h3{font-size:25px;line-height:1.08}
+ .hubHeader p{font-size:11px}
+ .shell .tabs{gap:4px;margin-bottom:7px}
+ .shell .tabs button{min-height:48px;padding:5px 1px;border-radius:10px;gap:2px}
+ .shell .tabs button svg{width:17px;height:17px}
+ .shell .tabs button span{font-size:10px}
+ .searchWrap{min-height:38px;margin-bottom:7px}
+ .activePanel .intro{margin-bottom:7px}
+ .activePanel .heading{margin-bottom:7px}
+ .activePanel .heading h3{font-size:17px}
+ .activePanel .resourceRow{padding:8px}
+ .activePanel .empty{padding:10px;font-size:12px}
+}
+@media(max-width:350px){
+ .shell .tabs button{min-height:46px}
+ .shell .tabs button span{font-size:9px}
+}
+
+/* A site-file upload belongs to the existing single profile presentation slot.
+   Show it in Video so a real saved file never looks like an empty library. */
+.uploadedPresentation{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:10px;
+ min-width:0;border:1px solid #c0dcd0;border-radius:11px;background:#eef7f0;color:#2f6955}
+.uploadedPresentation svg{flex:none}
+.uploadedPresentation span{display:grid;min-width:0;gap:3px}
+.uploadedPresentation strong{font:750 12px/1.35 system-ui,sans-serif}
+.uploadedPresentation small{font:550 11px/1.3 system-ui,sans-serif;color:#5e7467;overflow-wrap:anywhere}
