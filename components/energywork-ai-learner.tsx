@@ -939,7 +939,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     setBusy(true);
     try {
       const result = await appFetch("academy-energywork", {
-        action: "start", consent: true, teacherConsent: false, version: ENERGYWORK_COURSE_VERSION,
+        action: "start", consent: true, teacherConsent: shareConsented, version: ENERGYWORK_COURSE_VERSION,
       }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
       hydrate(result);
       setConsented(false);
