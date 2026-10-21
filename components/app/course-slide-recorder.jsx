@@ -16,7 +16,7 @@ const copy={
   requesting:'Запрашиваем разрешение камеры и микрофона…',finalizing:'Подготавливаем запись…',
   recording:'Идёт запись',preview:'Прослушайте или просмотрите запись перед добавлением.',
   private:'Запись остаётся приватной до отдельной публикации курса.',
-  fallback:'На iPhone можно также записать видео системной камерой.',
+  fallback:'Для записи через браузер держите iPhone горизонтально. Для вертикального видео выбирайте «Снять видео телефоном»: так сохранится правильная ориентация.',
   native:'Снять видео телефоном',
   unsupported:'Браузер не умеет записывать MP4/M4A. Откройте Safari на iPhone либо запишите файл в Камере/Диктофоне и загрузите его выше. WebM не переименовывается в MP4.',
   unavailable:'Для записи нужен HTTPS и доступ к камере/микрофону. Проверьте разрешение браузера.',
@@ -33,7 +33,7 @@ const copy={
   requesting:'Requesting camera and microphone access…',finalizing:'Preparing recording…',
   recording:'Recording',preview:'Review the recording before attaching it.',
   private:'Your recording stays private until you separately publish the course.',
-  fallback:'On iPhone, you can also use the built-in camera.',
+  fallback:'Hold your iPhone horizontally for in-browser recording. For portrait video, use the phone camera option to preserve orientation.',
   native:'Record with phone camera',
   unsupported:'This browser cannot record MP4/M4A. Try Safari on iPhone, or record in Camera/Voice Memos and upload the file above. WebM is never renamed as MP4.',
   unavailable:'Recording needs HTTPS and camera/microphone permissions. Check browser settings.',
@@ -50,7 +50,7 @@ const copy={
   requesting:'Solicitando acceso a cámara y micrófono…',finalizing:'Preparando la grabación…',
   recording:'Grabando',preview:'Revisa la grabación antes de añadirla.',
   private:'La grabación es privada hasta que publiques el curso.',
-  fallback:'En iPhone, puedes usar la cámara nativa.',
+  fallback:'Graba en horizontal desde el navegador. Para vídeo vertical en iPhone, usa la cámara del teléfono para conservar la orientación.',
   native:'Grabar con la cámara del móvil',
   unsupported:'Este navegador no graba MP4/M4A. Usa Safari en iPhone o graba con Cámara/Notas de Voz y sube el archivo. No se renombra WebM como MP4.',
   unavailable:'Se requiere HTTPS y permiso para cámara/micrófono.',
@@ -226,6 +226,7 @@ export default function CourseSlideRecorder({kind='audio',locale='en',busy=false
    <input type="file" accept="video/mp4,video/quicktime" capture="environment"
     disabled={busy} onChange={e=>{const file=e.currentTarget.files?.[0];e.currentTarget.value='';if(file)void onUpload?.(file)}}/>
   </label>}
+  {kind==='video'&&status==='idle'&&<p className={styles.iphoneTip}>{t.fallback}</p>}
   {error&&<p className={styles.error} role="alert">{error}</p>}
   <p className={styles.private}><ShieldCheck size={15}/> {t.private}</p>
  </section>
