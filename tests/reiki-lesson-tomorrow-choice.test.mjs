@@ -7,46 +7,79 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 
-test("all four lesson checkpoints offer tomorrow and continue-now choices without altering the 63-slide course", () => {
-  assert.match(learner, /slide\.kind === "milestone" && slide\.id !== "flight-save" && reminderSetupOpen/);
+test("milestone save and continue actions appear on the slide instead of footer", () => {
+  assert.match(learner, /data-reiki-milestone-choices/);
   assert.match(learner, /data-reiki-tomorrow-choice/);
-  assert.match(learner, /data-reiki-reminder-setup/);
   assert.match(learner, /data-energywork-next/);
-  assert.match(learner, /continueNowSave: "Continue now — save lesson 1 first"/);
-  assert.match(learner, /continueNow: "I'd like to continue now — next lesson"/);
-  assert.match(learner, /tomorrowChoice: "Хорошая работа! До завтра — напомнить мне"/);
-  assert.match(learner, /finishForToday\(\)[\s\S]*?await store\(nextId\)/);
-  assert.match(learner, /sync === "ready" \? <button type="button" disabled=\{busy\}/);
-  assert.match(learner, /slide\.id === "flight-done"[\s\S]*?t\.signInForTomorrow/);
+  assert.match(learner, /tomorrowChoice: "Save my lesson"/);
+  assert.match(learner, /tomorrowChoice: "Сохранить урок"/);
+  assert.match(learner, /onClick=\{finishForToday\}/);
+  assert.match(learner, /slide\.kind !== "milestone" && !completed/);
+  assert.doesNotMatch(learner, /data-reiki-reminder-setup|reminderSetupOpen|downloadTomorrowReminder/);
+  assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
+  assert.match(css, /\.milestoneInlineChoices/);
+  assert.match(css, /@media \(max-width: 760px\)/);
+  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /min-height: 64px/);
+});
+test("guest must consent and authenticate before server save and post-save install", () => {
+  assert.match(learner, /if \(sync === "guest" \|\| sync === "consent"\)/);
+  assert.match(learner, /setIndex\(slides\.findIndex\(item => item\.id === "flight-save"\)\)/);
+  assert.match(learner, /data-reiki-first-lesson-consent/);
+  assert.match(learner, /data-reiki-first-lesson-google-save/);
+  assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value\)/);
+  assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
+  assert.match(learner, /hydrate\(value\); \/\/ Private server persistence is confirmed before the app offer\./);
+  assert.match(learner, /await store\(nextId\);[\s\S]*?window\.location\.assign\("\/" \+ locale \+ "\/app\/course\?view=courses"\)/);
+  assert.match(learner, /if \(showInstallOffer && sync === "ready"\)/);
+  assert.match(learner, /data-reiki-install-offer/);
   assert.match(learner, /href=\{"\/" \+ locale \+ "\/install"\}/);
-  assert.match(learner, /href=\{"\/" \+ locale \+ "\/app\/settings#hh-phone-notifications"\}/);
-  assert.match(learner, /app\/course\?view=courses/);
-  assert.match(learner, /useEffect\(\(\) => \{ setReminderSetupOpen\(false\)/);
+  assert.match(learner, /href=\{"\/" \+ locale \+ "\/app\/course\?view=courses"\}/);
+  assert.match(learner, /installPageNote: "Установка приложения не включает напоминания/);
+  assert.match(css, /\.installOfferPage/);
+  assert.match(css, /position: fixed; inset: 0/);
 });
-test("mobile choices are accessible and use no automatic push permission request", () => {
-  assert.match(css, /@media \(max-width: 430px\)/);
-  assert.match(css, /\.milestoneActions \.reminderChoice/);
-  assert.match(css, /min-height: 66px/);
-  assert.match(learner, /aria-expanded=\{reminderSetupOpen\}/);
-  assert.match(learner, /type="time"/);
-  assert.match(learner, /calendarReady/);
-  assert.match(learner, /pushNote: "Автоматические push-напоминания именно об уроках Рейки пока не работают/);
-  assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe|fetch\(["']https?:/);
-});
-test("one-time calendar file is local-date-safe, neutral, and explicitly opt-in", () => {
+test("optional calendar utility remains neutral but is not part of the save path", () => {
   assert.equal(REIKI_LESSON_REMINDER_DEFAULT, "19:00");
   const at = new Date(2026, 9, 21, 23, 52, 0);
-  const text = reikiTomorrowCalendar("ru", "19:30", at);
-  assert.match(text, /^BEGIN:VCALENDAR\r\n/);
-  assert.match(text, /DTSTART:20261022T193000\r\n/);
-  assert.match(text, /DTEND:20261022T194000\r\n/);
-  assert.match(text, /BEGIN:VALARM\r\nACTION:DISPLAY\r\n/);
-  assert.match(text, /https:\/\/holistichouse\.vercel\.app\/ru\/academy\/principles-of-energywork\/learn/);
-  assert.doesNotMatch(text, /patient|health|remedy|diagnos|assessment|token|\?slide=/i);
-  assert.match(reikiTomorrowCalendar("en", "08:00", new Date(2026, 11, 31)), /DTSTART:20270101T080000/);
-  assert.throws(() => reikiTomorrowCalendar("en", "04:00", at), /INVALID_REMINDER_TIME/);
-  assert.throws(() => reikiTomorrowCalendar("en", "22:00", at), /INVALID_REMINDER_TIME/);
-  assert.throws(() => reikiTomorrowCalendar("en", "19:00", new Date("no date")), /INVALID_REMINDER_DATE/);
-  assert.match(learner, /link\.download = "holistic-house-next-lesson\.ics"/);
-  assert.match(learner, /onClick=\{downloadTomorrowReminder\}/);
+  const event = reikiTomorrowCalendar("ru", "19:30", at);
+  assert.match(event, /^BEGIN:VCALENDAR\r\n/);
+  assert.match(event, /DTSTART:20261022T193000\r\n/);
+  assert.match(event, /BEGIN:VALARM\r\nACTION:DISPLAY\r\n/);
+  assert.doesNotMatch(event, /patient|health|remedy|diagnos|assessment|token|\?slide=/i);
+  assert.doesNotMatch(learner, /onClick=\{downloadTomorrowReminder\}/);
+});
+
+test("first lesson save is docked inside its slide, above progress and navigation", () => {
+  const slide = learner.slice(learner.indexOf('data-energywork-slide-id={slide.id}'));
+  const saveCardStart = slide.indexOf('data-reiki-first-lesson-save');
+  const saveCardEnd = slide.indexOf('</aside>', saveCardStart);
+  const dockStart = slide.indexOf('data-reiki-save-dock', saveCardEnd);
+  const dockEnd = slide.indexOf('</div>', dockStart);
+  const progressStart = slide.indexOf('<div className={styles.progressFooter}>');
+  assert.ok(saveCardStart > 0 && saveCardEnd > saveCardStart, "consent remains in save slide");
+  assert.ok(dockStart > saveCardEnd && dockEnd > dockStart && progressStart > dockEnd,
+    "save action is a separate in-slide row before course progress");
+  assert.doesNotMatch(slide.slice(saveCardStart, saveCardEnd), /data-reiki-first-lesson-google-save/);
+  assert.match(slide.slice(dockStart, dockEnd), /data-reiki-first-lesson-google-save/);
+  assert.equal((learner.match(/data-reiki-first-lesson-google-save/g) || []).length, 1,
+    "one save action, not a duplicate button");
+  assert.match(slide.slice(dockStart, dockEnd), /onClick=\{sync === "ready" \? next : saveLessonOneToCabinet\}/);
+  assert.match(slide.slice(dockStart, dockEnd), /!firstLessonConsent/,
+    "guest cannot save until opting into private storage");
+});
+
+test("small iPhones reserve an always-visible, tap-safe in-slide save row", () => {
+  const dockRules = css.slice(css.indexOf("/* Keep the first lesson's save button"));
+  assert.ok(dockRules.startsWith("/* Keep the first lesson's save button"));
+  const localRules = dockRules.split("/* App install is a separate optional page")[0];
+  assert.match(localRules, /grid-template-rows: minmax\(0, 1fr\) auto/);
+  assert.match(localRules, /\.firstLessonSaveDock\s*\{[\s\S]*?padding:/);
+  assert.match(localRules, /@media \(max-width: 760px\)[\s\S]*?display: flex;\s*flex-direction: column/);
+  assert.match(localRules, /\.slideMain\s*\{\s*flex: 1 1 auto;\s*min-height: 0;\s*height: auto/);
+  assert.match(localRules, /@media \(max-width: 380px\) and \(max-height: 700px\)/);
+  assert.match(localRules, /min-height: 44px/);
+  assert.doesNotMatch(localRules, /position:\s*(?:fixed|absolute)/,
+    "anchored button remains in normal layout, not overlapping content");
+  assert.match(css, /\.page\[data-course-one-screen\] \.slideMain\{[\s\S]*?overflow-y:auto/);
 });

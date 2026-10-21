@@ -8,7 +8,7 @@ test("Growth Studio is owner-admin only, not publicly writable",()=>{
  const page=read("app/admin/growth-studio/page.js");
  const actions=read("app/admin/growth-studio/actions.js");
  assert.match(page,/requireAdminRequest\(\)/);
- assert.match(page,/redirect\('\/admin\/login'\)/);
+ assert.match(page,/redirect\('\/admin\/login\?destination=growth'\)/);
  assert.match(page,/robots:\{index:false,follow:false\}/);
  for(const action of ["listGrowthStudioPostsAction","updateGrowthStudioPostAction","createGrowthStudioBulkAction","checkGrowthTelegramPublisherAction","publishGrowthTelegramNowAction"]){
   const start=actions.indexOf("export async function "+action);
@@ -22,7 +22,10 @@ test("new owner Growth Studio links do not replace practitioner onboarding, CRM 
  const admin=read("components/prescription-admin-header.jsx");
  const cabinet=read("components/practitioner-cabinet.jsx");
  assert.match(practice,/isOwner&&<PracticeTile Icon=\{Megaphone\}/);
- assert.match(practice,/window\.location\.assign\('\/admin\/growth-studio'\)/);
+ assert.match(practice,/onClick=\{\(\)=>choosePanel\('marketing'\)\}/);
+ assert.match(practice,/activePanel==='marketing'&&isOwner/);
+ assert.match(practice,/onClick=\{\(\)=>openOwner\(destination\)\}/);
+ assert.doesNotMatch(practice,/window\.location\.assign\('\/admin\/growth-studio'\)/);
  assert.match(practice,/needsOnboarding/);
  // The current live onboarding no longer uses the older showSignup toggle.
  // Preserve the actual onboarding component and its new entry point instead.

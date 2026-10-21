@@ -80,18 +80,18 @@ const copy = {
 }
 
 export default async function AcquisitionPage({ searchParams }) {
-  if (!await requireAdminRequest()) redirect('/admin/login')
+  if (!await requireAdminRequest()) redirect('/admin/login?destination=acquisition')
   const params = await searchParams
   const savedLocale = (await cookies()).get(uiLocaleCookie)?.value
   const locale = ['en', 'ru', 'es'].includes(params?.lang) ? params.lang : savedLocale === 'ru' ? 'ru' : 'en'
   const report = await readAcquisitionReport(params?.days)
-  if (report.status === 'forbidden') redirect('/admin/login')
+  if (report.status === 'forbidden') redirect('/admin/login?destination=acquisition')
   const t = copy[locale]
   const counts = report.counters.totals
   const query = (lang, days) => `/admin/acquisition?lang=${lang}&days=${days}`
   return <main className={styles.page} lang={locale} data-acquisition-admin>
     <header className={styles.header}>
-      <div><Link href="/admin" className={styles.back}>{t.back}</Link><p className={styles.eyebrow}>HOLISTIC HOUSE</p><h1>{t.title}</h1><p className={styles.lead}>{t.lead}</p></div>
+      <div><Link href={`/${locale === "ru" ? "ru" : "en"}/app/practice?panel=marketing`} className={styles.back}>{t.back}</Link><p className={styles.eyebrow}>HOLISTIC HOUSE</p><h1>{t.title}</h1><p className={styles.lead}>{t.lead}</p></div>
       <nav className={styles.languages} aria-label="Language">{['en', 'ru', 'es'].map(lang => <Link key={lang} href={query(lang, report.range.days)} hrefLang={lang} aria-current={lang === locale ? 'page' : undefined}>{lang.toUpperCase()}</Link>)}</nav>
     </header>
     <div className={styles.toolbar}><nav className={styles.periods} aria-label={t.calendar}>{[1, 7, 30].map((days, index) => <Link key={days} href={query(locale, days)} aria-current={days === report.range.days ? 'page' : undefined}>{t.periods[index]}</Link>)}</nav><p>{report.range.start} — {report.range.end}<br/><span>{t.calendar} · {report.range.timeZone}</span></p></div>

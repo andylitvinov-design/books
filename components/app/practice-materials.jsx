@@ -1,6 +1,6 @@
 'use client'
 import {useEffect,useState} from 'react'
-import {BookOpen,FileText,Globe2} from 'lucide-react'
+import {BookOpen,ChevronRight,FileText,Globe2,Headphones} from 'lucide-react'
 import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
 import PracticeReportMaterials from './practice-report-materials'
@@ -14,7 +14,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,onSaveVideos,onSubmitVideos}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',busy=false,isOwner=false,onOpenReikiCourse,onSaveVideos,onSubmitVideos}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -46,8 +46,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  }
  const [tab,setTab]=useState('reports')
  useEffect(()=>{
-  if(new URLSearchParams(window.location.search).get('materialTab')==='articles')setTab('articles')
- },[])
+  const requested=new URLSearchParams(window.location.search).get('materialTab')
+  if(requested==='articles'||(requested==='courses'&&isOwner))setTab(requested)
+ },[isOwner])
  const [reportItems,setReportItems]=useState([])
  const [reportMode,setReportMode]=useState('loading')
  const [reportError,setReportError]=useState('')
@@ -132,8 +133,27 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    <button type="button" aria-pressed={tab==='articles'} onClick={()=>setTab('articles')}>
      <BookOpen size={16} aria-hidden="true"/><span>{t.articles}</span>
    </button>
+   {isOwner&&<button type="button" aria-pressed={tab==='courses'} onClick={()=>setTab('courses')} data-practice-materials-courses-tab>
+     <Headphones size={16} aria-hidden="true"/><span>{ru?'Курсы':es?'Cursos':'Courses'}</span>
+   </button>}
   </div>
-  {tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
+  {tab==='courses'&&isOwner?<section className={styles.body} data-practice-master-courses>
+    <p className={styles.intro}>{ru?'Выберите учебную программу, чтобы управлять её медитациями и аудиозаписями.':es?'Selecciona un curso para gestionar sus meditaciones y grabaciones.':'Choose a course to manage its meditations and audio recordings.'}</p>
+    <div className={styles.courseFolder}>
+      <span className={styles.courseFolderIcon}><Headphones size={24} aria-hidden="true"/></span>
+      <div className={styles.courseFolderCopy}>
+        <h3>{ru?'Практик Рейки':es?'Practicante de Reiki':'Reiki Practitioner'}</h3>
+        <p>{ru?'Пять уроков: Полёт к Солнцу, Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и личная инициация.':es?'Cinco lecciones: Vuelo al Sol, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil e iniciación personal.':'Five lessons: Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and personal initiation.'}</p>
+        <small>{ru?'Аудиомедитации · RU / EN · приватные черновики':es?'Meditaciones de audio · RU / EN · borradores privados':'Audio meditations · RU / EN · private drafts'}</small>
+      </div>
+      <button type="button" className={styles.courseFolderButton} disabled={busy||typeof onOpenReikiCourse!=='function'}
+        onClick={onOpenReikiCourse} data-open-reiki-course-audio>
+        {ru?'Открыть записи':es?'Abrir grabaciones':'Open recordings'}<ChevronRight size={16} aria-hidden="true"/>
+      </button>
+    </div>
+    <p className={styles.notice}>{ru?'Загружайте MP3, M4A или WAV до 20 МБ. Файл остаётся приватным, пока вы отдельно не одобрите публикацию на уроке.':es?'Sube archivos MP3, M4A o WAV de hasta 20 MB. Seguirán privados hasta que apruebes su publicación.':'Upload MP3, M4A or WAV up to 20 MB. Recordings remain private until you separately approve publishing them to a lesson.'}</p>
+  </section>:
+  tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
    tab==='reports'?<PracticeReportMaterials items={reportItems} locale={locale}
     loading={reportMode==='loading'} error={reportError}
     onRefresh={()=>setReportRefresh(n=>n+1)}/>:

@@ -169,6 +169,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     if(params.get('panel')==='materials')setActivePanel('materials')
+    if(params.get('panel')==='marketing')setActivePanel('marketing')
     // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
     if(params.get('panel')==='crm')setActivePanel('crm')
     if(params.get('panel')==='clients'){
@@ -207,6 +208,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   async function act(fn,{rethrow=false}={}){setBusy(true);setError('');try{await fn();await load()}catch(e){setError(e.code||e.message);if(rethrow)throw e}finally{setBusy(false)}}
   const d=DASHBOARD_COPY[ru?'ru':'en']
   const isOwner=Boolean(ownerTools)
+  const marketingTools=[
+    {destination:'growth',icon:Megaphone,title:'Growth Studio',description:ru?'Публикации, черновики и ручной календарь.':locale==='es'?'Publicaciones, borradores y calendario manual.':'Posts, drafts and manual calendar.'},
+    {destination:'seo',icon:BarChart3,title:ru?'SEO и поиск':locale==='es'?'SEO y búsqueda':'SEO & search',description:ru?'Проверенные данные поиска и индексации.':locale==='es'?'Búsqueda e indexación verificadas.':'Verified search and indexing data.'},
+    {destination:'acquisition',icon:ClipboardList,title:ru?'Кампании и заявки':locale==='es'?'Campañas y consultas':'Campaigns & enquiries',description:ru?'Счётчики, источники и этапы воронки.':locale==='es'?'Medición y etapas del embudo.':'Measurement and funnel stages.'},
+    {destination:'videos',icon:Film,title:ru?'Видео сайта':locale==='es'?'Vídeos del sitio':'Website videos',description:ru?'Публичная видеобиблиотека и размещение.':locale==='es'?'Biblioteca y publicación de vídeos.':'Public video library and placement.'},
+    {destination:'youtube',icon:CalendarDays,title:ru?'Загрузка YouTube':locale==='es'?'Subir a YouTube':'YouTube upload',description:ru?'Отдельная загрузка после проверки ролика и канала.':locale==='es'?'Subir tras revisar vídeo y canal.':'Separate upload after video and channel QA.'},
+  ]
   async function openOwner(destination,clientId) {
     if(busy||!isOwner)return
     setBusy(true);setError('')
@@ -450,14 +458,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
             onClick={()=>choosePanel('clients')} active={activePanel==='clients'} />
           {isOwner&&<PracticeTile Icon={Megaphone}
-            title={locale==='ru'?'Продвижение · Growth Studio':locale==='es'?'Promoción · Growth Studio':'Marketing · Growth Studio'}
-            description={locale==='ru'?'Контент, черновики и календарь публикаций.':locale==='es'?'Calendario y borradores de publicaciones.':'Create and plan posts for your channels.'}
-            onClick={()=>window.location.assign('/admin/growth-studio')} />}
+            title={locale==='ru'?'Маркетинг':locale==='es'?'Marketing':'Marketing'}
+            description={locale==='ru'?'Growth Studio, SEO, кампании и видео.':locale==='es'?'Growth Studio, SEO, campañas y vídeos.':'Growth Studio, SEO, campaigns and video.'}
+            onClick={()=>choosePanel('marketing')} active={activePanel==='marketing'} />}
           {isOwner&&<PracticeTile Icon={UsersRound}
             title={locale==='ru'?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
             description={locale==='ru'?'Контакты, статусы и подписчики.':locale==='es'?'Contactos, estados y suscriptores.':'Contacts, stages and subscribers.'}
             onClick={()=>choosePanel('crm')} active={activePanel==='crm'} />}
-          <PracticeTile Icon={Film} title={ru?'Материалы':'Materials'} description={ru?'Ваши статьи и видео: добавляйте, редактируйте и публикуйте после проверки.':'Your articles and videos: add, edit and submit for review.'}
+          <PracticeTile Icon={Film} title={ru?'Материалы':'Materials'} description={isOwner?(ru?'Курсы, медитации, статьи и видео.':locale==='es'?'Cursos, meditaciones, artículos y vídeos.':'Courses, meditations, articles and videos.'):ru?'Ваши статьи и видео: добавляйте, редактируйте и публикуйте после проверки.':'Your articles and videos: add, edit and submit for review.'}
             onClick={()=>choosePanel('materials')} active={activePanel==='materials'} />
           <PracticeTile Icon={CalendarDays} title={locale==='ru'?'Мероприятия':locale==='es'?'Eventos':'Events'}
             description={locale==='ru'?'Создавайте встречи и семинары, управляйте датами и публикациями.':locale==='es'?'Organiza encuentros, talleres y publicaciones.':'Create workshops and gatherings, manage dates and publication.'}
@@ -488,9 +496,21 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
+          <h2>{activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
+        {activePanel==='marketing'&&isOwner&&<div className="hh-practice-marketing">
+          <p className="hh-practice-marketing-intro">{ru?'Ваши инструменты продвижения в одном месте. Автопубликация и реклама без отдельного подтверждения не запускаются.':locale==='es'?'Herramientas de promoción en un solo lugar. No se activan anuncios ni publicaciones automáticas.':'Your promotion tools in one place. No ads or automatic publishing are activated.'}</p>
+          <div className="hh-practice-marketing-grid">
+            {marketingTools.map(({destination,icon:Icon,title,description})=><button
+              key={destination} type="button" className="hh-practice-marketing-link" disabled={busy}
+              onClick={()=>openOwner(destination)}>
+              <span className="hh-practice-marketing-icon"><Icon aria-hidden="true" /></span>
+              <span className="hh-practice-marketing-copy"><strong>{title}</strong><small>{description}</small></span>
+              <ChevronRight aria-hidden="true" className="hh-practice-marketing-arrow"/>
+            </button>)}
+          </div>
+        </div>}
         {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}

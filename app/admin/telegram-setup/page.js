@@ -45,7 +45,7 @@ const resultNotes={
   setup_unavailable:{ru:'Сервис проверки временно недоступен.',en:'Connection verification temporarily unavailable.'},
   council_sent:{ru:'AI-отчёт принят Telegram. Проверь чат Dot.',en:'AI report accepted by Telegram. Check Dot.'},
   council_duplicate:{ru:'Этот отчёт уже отправлен или выполняется. Без дубля.',en:'Already sent or running. No duplicate.'},
-  council_missing_keys:{ru:'Подключи оба ключа и подтверди бесплатный Gemini.',en:'Connect both keys and confirm Gemini Free Tier.'},
+  council_missing_keys:{ru:'Подтверди Gemini Free Tier и подключи бесплатный Mistral (OpenRouter или Studio Free mode).',en:'Confirm Gemini Free Tier and connect Mistral via OpenRouter free or Studio Free mode.'},
   council_no_archive:{ru:'Публичный HTML-аудит ещё не создан.',en:'Public HTML audit not archived yet.'},
   council_not_paired:{ru:'Личный чат ещё не подтверждён.',en:'Private Telegram chat not verified.'},
   council_unavailable:{ru:'Доставка не подтверждена. Проверь статус отчёта.',en:'Delivery unconfirmed. Check report status.'},
@@ -155,11 +155,20 @@ export default async function TelegramSetupPage({searchParams}){
                 ?ru?'Ключ сохранён; требуется подтверждение Free Tier':'Key saved; Free Tier confirmation required'
                 :ru?'API-ключ не подключён':'API key missing'
           }</strong></p>
-          <p>Mistral: <strong>{
-            models.mistralKeyPresent
-              ?ru?'Ключ OpenRouter сохранён; цена модели проверяется при каждом запуске':
-                'OpenRouter key saved; model price checked on every run'
-              :ru?'Бесплатный API OpenRouter не подключён':'Free OpenRouter API not connected'
+          <p>Mistral · OpenRouter: <strong>{
+            models.mistralOpenRouterKeyPresent
+              ?ru?'Ключ сохранён; модель :free и цена проверяются при запуске':
+                'Key saved; :free model and price checked per run'
+              :ru?'Нет ключа':'No key'
+          }</strong></p>
+          <p>Mistral · Studio Free mode: <strong>{
+            models.mistralDirectKeyPresent
+              ?models.mistralDirectFreeConfirmed
+                ?ru?'Ключ сохранён; Free mode подтверждён владельцем; доступность модели проверяется при запуске':
+                  'Key saved; owner-confirmed Free mode; model access checked per run'
+                :ru?'Ключ сохранён; требуется подтверждение Free mode без pay-as-you-go':
+                  'Key saved; confirm Free mode with pay-as-you-go disabled'
+              :ru?'Не подключён':'Not connected'
           }</strong></p>
           <p className={styles.footnote}>{
             ru?'Аудиты выполняются только по публичным страницам; платные модели автоматически не используются.':
@@ -180,10 +189,12 @@ export default async function TelegramSetupPage({searchParams}){
             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
               Gemini · Google AI Studio ↗</a>
             <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">
-              Mistral · OpenRouter ↗</a>
+              Mistral · OpenRouter (:free) ↗</a>
+            <a href="https://console.mistral.ai/" target="_blank" rel="noopener noreferrer">
+              Mistral · Studio Free mode ↗</a>
             <a href="https://vercel.com/super10/codex-public-book-library/settings/environment-variables"
                target="_blank" rel="noopener noreferrer">
-              {ru?'Подключить оба ключа в Vercel ↗':'Add both keys in Vercel ↗'}</a>
+              {ru?'Настроить ключи и Free mode в Vercel ↗':'Configure keys and Free mode in Vercel ↗'}</a>
           </div>
         </div>
         <p className={styles.footnote}>
