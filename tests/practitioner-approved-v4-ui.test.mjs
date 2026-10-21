@@ -37,7 +37,7 @@ test('My Practice surfaces actual working tools before a collapsed community sec
 
 test('owner receives one compact Materials switcher for five actual resource types',()=>{
  assert.match(workspace,/isOwner=\{isOwner\}/)
- assert.match(workspace,/onOpenReikiCourse=\{lesson=>openOwner\('reikiCourse',undefined,lesson\)\}/)
+ assert.match(workspace,/onOpenReikiCourse=\{\(lesson,mode\)=>openOwner\('reikiCourse',undefined,lesson,mode\)\}/)
  assert.match(hub,/data-unified-material-nav/)
  for (const name of ['articles','services','courses','audio','videos']) assert.match(hub,new RegExp("chooseTab\\('"+name+"'\\)"))
  assert.match(hub,/tab==='courses'\?<section/)
