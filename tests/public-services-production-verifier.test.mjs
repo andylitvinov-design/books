@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import { isolatedServiceVideoFixture } from '../scripts/helpers/public-service-methods-verifier.mjs';
+import { mountPublicConversion } from './helpers/public-conversion-ui-harness.mjs';
+import { assertSingleEntryEnquiryUi, exercisePublicEnquiryUi } from '../scripts/helpers/public-enquiry-ui-verifier.mjs';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const source = read('scripts/verify-public-services-production.mjs');
@@ -169,5 +171,82 @@ for (const locale of ['en', 'ru', 'es']) {
     await assert.rejects(checkTestsStart(locale, { hiddenHero: true, visibleNavigation: true }), /Intended CTA must be visible/);
     await assert.rejects(checkTestsStart(locale, { duplicateHero: true }), /Exactly one intended hero CTA/);
     await assert.rejects(checkTestsStart(locale, { fakeForm: true }), /not a fake contact form/);
+  });
+}
+
+
+// Execute this exact production block, not a separately rewritten Alchemy flow.
+// The actual component and strict save helper run in the source harness; main
+// denotes that fixture's root, not a claim of real browser/layout execution.
+const alchemyLeadBlock = source.match(/const form = main\.locator\('\[data-alchemy-lead-form="single"\]'\);([\s\S]*?)\n            const reviewStack =/);
+assert.ok(alchemyLeadBlock, 'Production Alchemy lead block must remain explicitly scoped');
+const alchemyLeadSource = 'const form = main.locator(\'[data-alchemy-lead-form="single"]\');' + alchemyLeadBlock[1];
+const runAlchemyLead = new Function('main', 'page', 'locale', 'expect', 'assertSingleEntryEnquiryUi', 'visible', 'runEnquiryFixture',
+  'return (async () => {' + alchemyLeadSource + '\n})()');
+async function checkAlchemyLead(mounted, locale, expect = mounted.expect) {
+  return runAlchemyLead(mounted.page, mounted.page, locale, expect, assertSingleEntryEnquiryUi,
+    locator => expect(locator).toBeVisible(), async (page, scope, options) => {
+      assert.equal(mounted.fetchCount(), 0, 'Choosing public format/topic never auto-posts');
+      return exercisePublicEnquiryUi(page, scope, expect, options);
+    });
+}
+for (const locale of ['en', 'ru']) {
+  test(locale + ' exact production Alchemy block distinguishes topic/format from the country selector and preserves the private save gate', async () => {
+    const mounted = mountPublicConversion(locale, 'alchemy');
+    const form = mounted.page.locator('[data-alchemy-lead-form="single"]');
+    // Reproduce the hosted regression on the actual current nested source.
+    await assert.rejects(() => mounted.expect(form.locator('select')).toHaveCount(2), error => {
+      assert.equal(error.code, 'ERR_ASSERTION'); assert.equal(error.actual, 3); assert.equal(error.expected, 2); return true;
+    });
+    await mounted.expect(form.getByRole('combobox', { name: locale === 'ru' ? 'Код страны' : 'Country calling code', exact: true, includeHidden: true })).toHaveCount(1);
+    assert.equal(mounted.fetchCount(), 0);
+    await checkAlchemyLead(mounted, locale);
+    assert.equal(mounted.fetchCount(), 4);
+    assert.ok(mounted.requests.every(body => body.contactConsent === true && body.contact.displayName === 'Synthetic Visitor'));
+    assert.equal(mounted.externalClicks(), 0);
+    assert.equal(mounted.intercepted(), false);
+    mounted.unmount(); assert.deepEqual(mounted.writesAfterUnmount, []);
+  });
+
+  const faults = [
+    ...['format', 'topic'].flatMap(field => [
+      ...['missing', 'duplicate', 'hidden', 'wrong name', 'wrong role'].map(fault => ['alchemy ' + field + ' ' + fault, 'toHaveCount', 0]),
+      ...['missing option', 'wrong option'].map(fault => ['alchemy ' + field + ' ' + fault, 'toHaveText', 0]),
+      ['alchemy ' + field + ' wrong option value', 'toHaveCount', 0],
+      ['alchemy ' + field + ' wrong default', 'toHaveValue', 0],
+      ['alchemy ' + field + ' stuck selection', 'toHaveValue', 0],
+    ]),
+    ['missing country', 'toHaveCount', 0], ['duplicate country', 'toHaveCount', 0],
+    ['wrong country name', 'toHaveCount', 0], ['wrong country option value', 'toHaveCount', 0], ['stuck country', 'toHaveValue', 0],
+    ['stale alchemy lead format', null, 4, 'Prepared alchemy request must retain'],
+    ['stale alchemy topic', null, 4, 'Prepared alchemy request must retain'],
+    ['contact URL leak', null, 4, 'Contact and separately entered private details never enter messenger URLs'],
+    ['private note URL leak', null, 4, 'Contact and separately entered private details never enter messenger URLs'],
+  ];
+  for (const [fault, matcher, requests, diagnostic] of faults) test(locale + ' exact production Alchemy block rejects ' + fault + ' at its intended guard', async () => {
+    const nominal = mountPublicConversion(locale, 'alchemy');
+    await checkAlchemyLead(nominal, locale);
+    assert.equal(nominal.fetchCount(), 4); nominal.unmount();
+    const mounted = mountPublicConversion(locale, 'alchemy', fault);
+    mounted.page.locator('[data-alchemy-lead-form="single"]').selected();
+    const mutationPath = fault.includes('country') ? 'components/phone-country-input.tsx'
+      : fault.endsWith('URL leak') ? 'components/contact-channel-chooser.tsx' : 'components/alchemy-soul-lead-form.tsx';
+    assert.ok(mounted.mutationReceipts.some(receipt => receipt.fault === fault && receipt.path === mutationPath), 'Mutate the actual compiled dependency');
+    let failedMatcher;
+    const expect = actual => Object.fromEntries(Object.entries(mounted.expect(actual)).map(([name, method]) => [name,
+      typeof method !== 'function' ? method : async (...args) => {
+        try { return await method(...args); } catch (error) { failedMatcher = name; throw error; }
+      }]));
+    expect.poll = mounted.expect.poll;
+    await assert.rejects(() => checkAlchemyLead(mounted, locale, expect), error => {
+      assert.equal(error.code, 'ERR_ASSERTION');
+      if (matcher) assert.equal(failedMatcher, matcher);
+      else assert.ok(error.message.includes(diagnostic), error.message);
+      return true;
+    });
+    assert.equal(mounted.fetchCount(), requests);
+    assert.equal(mounted.externalClicks(), 0);
+    assert.equal(mounted.intercepted(), false);
+    mounted.unmount(); assert.deepEqual(mounted.writesAfterUnmount, []);
   });
 }

@@ -302,6 +302,28 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
   modules['@/components/core-service-detail'] = compile('components/core-service-detail.tsx');
   const { SitewideLeadCapture } = compile('components/sitewide-lead-capture.tsx');
   const { AlchemySoulFormatSelector, AlchemySoulLeadForm } = compile('components/alchemy-soul-lead-form.tsx', source => {
+    for (const field of ['format', 'topic']) {
+      const prefix = 'alchemy ' + field + ' ';
+      const label = field === 'format' ? /<label htmlFor=\{formId \+ "-format"\}>[\s\S]*?<\/label>/ : /<label htmlFor=\{formId \+ "-topic"\}>[\s\S]*?<\/label>/;
+      const select = '<select id={formId + "-' + field + '"}';
+      const copy = field === 'format' ? 't.format' : 't.topics';
+      if (fault === prefix + 'missing') return source.replace(label, '');
+      if (fault === prefix + 'duplicate') return source.replace(label, markup => markup + markup.replaceAll('"-' + field + '"', '"-' + field + '-duplicate"'));
+      if (fault === prefix + 'hidden') return source.replace(select, select + ' hidden');
+      if (fault === prefix + 'wrong name') return source.replace('>{' + copy + '}\n', '>{' + copy + ' + " wrong"}\n');
+      if (fault === prefix + 'wrong role') return source.replace(select, select + ' role="listbox"');
+      if (fault === prefix + 'stuck selection') return source.replace('set' + (field === 'format' ? 'Format' : 'Topic') + '(value.target.value as ' + (field === 'format' ? 'Format' : 'Topic') + ')',
+        'set' + (field === 'format' ? 'Format' : 'Topic') + '("' + (field === 'format' ? '60' : 'relationships') + '")');
+    }
+    if (fault === 'alchemy format missing option') return source.replace('<option value="30">{t.formatNames["30"]}</option>', '');
+    if (fault === 'alchemy format wrong option') return source.replace('<option value="30">{t.formatNames["30"]}</option>', '<option value="30">Wrong format</option>');
+    if (fault === 'alchemy format wrong option value') return source.replace('<option value="30">', '<option value="31">');
+    if (fault === 'alchemy topic missing option') return source.replace('["relationships", "stress", "business", "direction", "other"] as const', '["relationships", "stress", "direction", "other"] as const');
+    if (fault === 'alchemy topic wrong option') return source.replace('{t.topicNames[key]}</option>', '{key === "business" ? "Wrong topic" : t.topicNames[key]}</option>');
+    if (fault === 'alchemy topic wrong option value') return source.replace('<option value={key} key={key}>', '<option value={key === "business" ? "wrong" : key} key={key}>');
+    if (fault === 'alchemy format wrong default') return source.replace('useState<Format>("60")', 'useState<Format>("30")');
+    if (fault === 'alchemy topic wrong default') return source.replace('useState<Topic>("relationships")', 'useState<Topic>("business")');
+    if (fault === 'stale alchemy lead format') return source.replace('option: t.formatNames[format],', 'option: t.formatNames["60"],');
     if (fault === 'stale alchemy format') return source.replace('option: t.formatNames[selected],', 'option: t.formatNames["60"],');
     if (fault === 'stale alchemy topic') return source.replace('topic: t.topicNames[topic],', 'topic: t.topicNames.relationships,');
     return source;

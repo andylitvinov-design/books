@@ -300,9 +300,12 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('paid-imagery-consultation-safe-handoff'/);
   assert.match(verifier, /data-consultation-action/);
   assert.match(verifier, /searchParams\.get\('topic'\)/);
-  assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);
-  assert.match(verifier, /assertPaidUrl\('questions', '30', '€50'\)/);
-  assert.match(verifier, /Reset must restore the exact paid request/);
+  assert.match(verifier, /import \{ assertReleasePaidMode, verifyReleasePaidEnquiry \} from '\.\/helpers\/release-paid-enquiry-verifier\.mjs'/);
+  assert.match(verifier, /verifyReleasePaidEnquiry\(browser, \{ origin, label, locale, width \}, expect\)/);
+  assert.match(verifier, /exercise\('chromium', chromium, 390\).*exercise\('chromium', chromium, 1365\).*exercise\('webkit', webkit, 390\).*exercise\('webkit', webkit, 1365\)/);
+  const paid = verifier.match(/check\('paid-imagery-consultation-safe-handoff'[\s\S]*?verifyReleasePaidEnquiry[^;]+;/)?.[0];
+  assert.ok(paid);
+  assert.doesNotMatch(paid, /page\.goto|openContactChannelChooser|assertPreparedContactChannels|privateFieldsAbsent|bothChannelsVerified/);
   assert.match(verifier, /check\('csp-navigation-and-history'/);
   assert.match(verifier, /privateIframeBlocked: true/);
   assert.match(verifier, /ignoreDefaultArgs: \['--disable-back-forward-cache'\]/);
@@ -313,4 +316,16 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /assert\.deepEqual\(cspErrors, \[\]/);
   assert.match(verifier, /decodedPlaybackClaimed: false/);
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
+});
+
+test('release poster audit delegates the full original image set to the disclosure-aware strict verifier', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const posters = read('scripts/helpers/release-services-poster-verifier.mjs');
+  assert.match(verifier, /import \{ verifyReleasePosters \} from '\.\/helpers\/release-services-poster-verifier\.mjs';/);
+  assert.equal(verifier.split('await verifyReleasePosters(page, { path, locale }, expect);').length - 1, 1);
+  assert.match(posters, /const images = await posters\.elementHandles\(\)/);
+  assert.ok(posters.indexOf('const images = await posters.elementHandles()') < posters.indexOf('await summary.click()'));
+  assert.match(posters, /await decodeReadyPoster\(image, expect\)/);
+  assert.match(posters, /Opening the disclosure must not replace an original poster source/);
+  assert.doesNotMatch(posters, /:visible|waitForTimeout|setAttribute|\.filter\(|route\(|fetch\(/);
 });

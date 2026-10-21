@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { extractReportProgress } from '../lib/documents/report-progress.js'
+import { extractReportProgress, resolveReportProgress } from '../lib/documents/report-progress.js'
 import { reportPdfFilename } from '../lib/documents/report-filename.js'
 import { getOwnerReportTextTemplate } from '../lib/consultations/owner-report-template.js'
 import { remedyDescriptionBlocks } from '../lib/documents/report-appendices.js'
@@ -79,7 +79,22 @@ test('mobile HTML shares explicit progress data and print-safe visual hierarchy'
   const document = readFileSync('components/prescription-document.jsx', 'utf8')
   const css = readFileSync('components/consultation-report.css', 'utf8')
   const preview = readFileSync('components/consultation-draft-preview.jsx', 'utf8')
-  assert.match(document, /extractReportProgress\(document\.analysis\)/)
+  assert.match(document, /import \{ resolveReportProgress \} from '@\/lib\/documents\/report-progress'/)
+  assert.match(document, /const progress = resolveReportProgress\(document\)/)
+  const analysis = 'Before: 2/10\nAfter: 3/10'
+  assert.deepEqual(resolveReportProgress({ analysis, progressBefore: 0, progressAfter: 10 }),
+    { before: 0, after: 10 }, 'saved boundary scores take priority, including zero')
+  assert.deepEqual(resolveReportProgress({ analysis, progressBefore: '4,5', progressAfter: '8.5' }),
+    { before: 4.5, after: 8.5 })
+  assert.deepEqual(resolveReportProgress({ analysis }), { before: 2, after: 3 }, 'legacy narrative fallback')
+  for (const scores of [
+    { progressBefore: null, progressAfter: null },
+    { progressBefore: '', progressAfter: '' },
+    { progressBefore: 0 }, { progressAfter: 10 },
+    ...[-1, 11, '10.1', '3.25', 'NaN'].map(progressBefore => ({ progressBefore, progressAfter: 6 })),
+  ]) assert.equal(resolveReportProgress({ analysis, ...scores }), null,
+    'cleared, partial or invalid saved ratings must not resurrect narrative scores')
+  assert.equal(resolveReportProgress({ analysis: 'Before: 2/10\nFuture goal: 8/10' }), null)
   assert.match(document, /canonical-progress-grid/)
   assert.match(document, /<DocumentSignature date=\{document\.dateIssued\} locale=\{locale\} compact/)
   assert.match(css, /\.canonical-progress-grid/)

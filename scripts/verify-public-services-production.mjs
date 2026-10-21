@@ -445,7 +445,38 @@ try {
             await assertSingleEntryEnquiryUi(form, expect);
             await form.scrollIntoViewIfNeeded();
             await visible(form.locator('[data-contact-order]'));
-            await expect(form.locator('select')).toHaveCount(2);
+            const controls = locale === "ru" ? {
+              format: "Формат", topic: "Тема",
+              formats: [["60", "Личная сессия · 60 минут · €100"], ["30", "Экспресс · 30 минут · €50"], ["month", "4 недели сопровождения · обсудить условия"]],
+              topics: [["relationships", "Отношения"], ["stress", "Стресс и внутренние блоки"], ["business", "Работа и деньги"], ["direction", "Цели и смысл"], ["other", "Другая тема"]],
+            } : {
+              format: "Session format", topic: "Topic",
+              formats: [["60", "Personal session · 60 min · €100"], ["30", "Express review · 30 min · €50"], ["month", "Four-week support · discuss details"]],
+              topics: [["relationships", "Relationships"], ["stress", "Stress and inner blocks"], ["business", "Work and money"], ["direction", "Goals and meaning"], ["other", "Another topic"]],
+            };
+            const format = form.getByRole('combobox', { name: controls.format, exact: true });
+            const topic = form.getByRole('combobox', { name: controls.topic, exact: true });
+            for (const [control, options] of [[format, controls.formats], [topic, controls.topics]]) {
+              await expect(control).toHaveCount(1);
+              await expect(control).toBeVisible();
+              await expect(control.locator('option')).toHaveText(options.map(([, text]) => text));
+              for (const [value, text] of options) {
+                const option = control.locator('option[value="' + value + '"]');
+                await expect(option).toHaveCount(1);
+                await expect(option).toHaveText(text);
+              }
+            }
+            await expect(format).toHaveValue("60");
+            await expect(topic).toHaveValue("relationships");
+            await format.selectOption("30");
+            await expect(format).toHaveValue("30");
+            await topic.selectOption("business");
+            await expect(topic).toHaveValue("business");
+            // The separate contact country control and private optional note
+            // are checked by this same strict save-gated fixture, not counted
+            // as service topic/format controls or disclosed in either draft.
+            await runEnquiryFixture(page, form, { locale, kind: "alchemy",
+              requiredMessage: [controls.formats[1][1], controls.topics[2][1]] });
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
               nodes.map(node => ({top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom})));

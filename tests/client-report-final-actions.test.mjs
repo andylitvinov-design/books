@@ -69,9 +69,29 @@ test('owner preview stays read-only and never saves private client reports in th
 
 test('PDF preview is inline for authorized client routes, while download stays an attachment',()=>{
   const report=source('components/client-session-page.jsx')
-  assert.match(report,/href=\{pdfPath\+'&preview=1&layout=a4'\}/)
-  assert.match(report,/target="_blank" rel="noopener noreferrer"/)
-  assert.match(report,/href=\{pdfPath\} className=\{styles\.downloadButton\} download/)
+  const anchors=report.match(/<a\b[^>]*>/g)||[]
+  const actionAnchor=kind=>{
+    const matches=anchors.filter(tag=>tag.includes('data-hh-engagement-action="'+kind+'"'))
+    assert.equal(matches.length,1,'Expected one '+kind+' anchor')
+    return matches[0]
+  }
+  const preview=actionAnchor('pdf_preview'),download=actionAnchor('pdf_download')
+  assert.match(preview,/\shref=\{pdfPath\+'&preview=1&layout=a4'\}(?=\s|>)/)
+  assert.match(preview,/\sclassName=\{styles\.reportPdfPreviewButton\}(?=\s|>)/)
+  assert.match(preview,/\starget="_blank"(?=\s|>)/)
+  assert.match(preview,/\srel="noopener noreferrer"(?=\s|>)/)
+  assert.doesNotMatch(preview,/\sdownload(?:\s|=|>)/)
+  assert.match(download,/\shref=\{pdfPath\}(?=\s|>)/)
+  assert.match(download,/\sclassName=\{styles\.downloadButton\}(?=\s|>)/)
+  assert.match(download,/\sdownload(?=\s|>)/)
+  const engagement=source('components/client-session-engagement.jsx')
+  assert.match(report,/mode==='guest'&&<ClientSessionEngagement/)
+  assert.match(engagement,/if\(!ready\|\|!accepted\)return/)
+  assert.match(engagement,/if\(!marked\|\|!root\?\.contains\(marked\)\)return/)
+  assert.doesNotMatch(engagement,/preventDefault|stopPropagation/,'optional tracking cannot intercept PDF navigation')
+  const insights=source('components/admin-session-engagement.jsx')
+  assert.match(insights,/pdf_preview:'PDF preview requested'/)
+  assert.match(insights,/pdf_download:'PDF download requested'/,'a click is not a completed download')
   assert.match(report,/Просмотреть PDF-отчёт/)
   assert.match(report,/Скачать отчёт/)
   for(const path of [
