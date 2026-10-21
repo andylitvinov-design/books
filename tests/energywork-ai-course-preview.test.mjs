@@ -79,7 +79,8 @@ test('Lesson 1 practice with music comes after reflections, immediately before c
   assert.match(lesson, /Sun’s light and warmth/)
   assert.match(lesson, /Удалось ли вам подняться к Солнцу во время медитации/)
   assert.match(lesson, /question: \{ type: "text"/)
-  assert.match(curriculum, /withClosingPractices\(commonSlides\.filter\(\(slide\) => slide\.phase === "flight"\), \["flight-03"\], "flight-done"\)/)
+  assert.match(curriculum, /slide\.phase === "flight" && slide\.id !== "flight-save"/)
+  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "flight-save"\)!/)
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
 
