@@ -76,7 +76,7 @@ using (
     where c.id=course_id and c.practitioner_id=practitioner_id
       and c.status='published' and c.published<>'{}'::jsonb
       and p.active and p.status='approved' and p.public_profile<>'{}'::jsonb
-      and c.published->'slides' @> jsonb_build_array(jsonb_build_object('assetId',id::text))
+      and c.published->'slides' @> jsonb_build_array(jsonb_build_object('assetId',app.practitioner_course_assets.id::text))
   ))
 );
 drop policy if exists practitioner_course_assets_insert on app.practitioner_course_assets;
