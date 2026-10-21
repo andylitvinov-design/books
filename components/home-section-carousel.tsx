@@ -21,8 +21,14 @@ const slides = [
   { key: "cabinet", href: "/app", image: "/academy/reiki-yggdrasil/source/program-overview.jpg", position: "center" },
 ] as const;
 
+// Mirror the lightweight top-right links in the approved mobile hero.
+// Reuse slide routes below; the Cabinet already has a persistent header link.
+const navKeys = ["home", "tests", "services", "academy", "business", "ideas"] as const;
+
 const copy = {
   en: {
+    navigationLabel: "Explore site sections",
+    nav: { home: "Home", tests: "Tests", services: "Services", academy: "Academy", business: "Business", ideas: "Ideas" },
     region: "Explore Holistic House",
     previous: "Previous section",
     next: "Next section",
@@ -41,6 +47,8 @@ const copy = {
     },
   },
   ru: {
+    navigationLabel: "Разделы сайта",
+    nav: { home: "Главная", tests: "Тесты", services: "Услуги", academy: "Академия", business: "Бизнес", ideas: "Идеи" },
     region: "Разделы Holistic House",
     previous: "Предыдущий раздел",
     next: "Следующий раздел",
@@ -59,6 +67,8 @@ const copy = {
     },
   },
   es: {
+    navigationLabel: "Secciones del sitio",
+    nav: { home: "Inicio", tests: "Pruebas", services: "Servicios", academy: "Academia", business: "Negocios", ideas: "Ideas" },
     region: "Explora Holistic House",
     previous: "Sección anterior",
     next: "Sección siguiente",
@@ -172,6 +182,26 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
           )}
         </div>
         <div className={styles.gradient} aria-hidden="true" />
+        <nav className={styles.sectionNav} aria-label={t.navigationLabel} data-home-hero-nav="true">
+          <div className={styles.sectionNavScroller}>
+            {navKeys.map(key => {
+              const target = key === "home" ? undefined : slides.find(item => item.key === key);
+              if (key !== "home" && !target) return null;
+              return (
+                <Link
+                  key={key}
+                  className={styles.sectionNavLink}
+                  href={target ? `/${locale}${target.href}` : locale === "en" ? "/" : `/${locale}`}
+                  aria-current={key === "home" ? "page" : undefined}
+                  prefetch={false}
+                  data-home-nav-section={key}
+                >
+                  {t.nav[key]}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
         <div className={styles.slideCopy} data-home-slide={slide.key}>
           <p className={styles.eyebrow}>{words.eyebrow}</p>
           <h2 id="home-section-slide-title">{words.title}</h2>
