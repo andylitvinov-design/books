@@ -6,7 +6,7 @@ import { ArrowRight, ArrowUpRight, Compass, Flower2, Leaf, Paperclip, Quote, Ref
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
-import { getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
@@ -303,7 +303,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
   const topicLabel = result ? (result.matched ? t.topic[result.topic] : t.generic) : "";
-  const answerLocale = /[а-яёіїєґ]/i.test(question) ? "ru" : /[áéíóúñ¿¡]/i.test(question) ? "es" : /\b(?:como|para|quiero|tengo|sobre|relacion|trabajo|miedo|ayuda)\b/i.test(question) ? "es" : /\b(?:how|what|why|when|where|can|need|feel|work|help)\b/i.test(question) ? "en" : locale;
+  const answerLocale = detectIdeasQuestionLocale(question, locale);
   const answerCopy = copy[answerLocale];
   const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
   return (
