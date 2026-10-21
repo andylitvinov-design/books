@@ -1162,7 +1162,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     setBusy(true);
     try {
       await store(nextId);
-      setShowInstallOffer(true);
+      // Returning learners finish immediately; do not repeat the install
+      // offer at every checkpoint or pretend that a reminder was scheduled.
+      window.location.assign("/" + locale + "/app/course?view=courses");
     } catch (error) {
       setSaveError((error as { status?: number })?.status === 409 ? t.conflict : t.saveFailed);
     } finally { setBusy(false); }
