@@ -8,7 +8,7 @@ test('setup page requires owner session and only displays safe status',()=>{
  assert.match(s,/requireAdminRequest\(\)/)
  assert.match(s,/redirect\('\/admin\/login'\)/)
  assert.match(s,/robots:\{index:false,follow:false\}/)
- assert.match(s,/ownerTelegramSetupStatus\(getAppConfig\(\)\)/)
+ assert.match(s,/ownerTelegramSetupStatus\(config\)/)
  assert.match(s,/connectAndTestTelegramAction/)
  assert.doesNotMatch(s,/HH_PRACTICE_TG_BOT_TOKEN|\.chatId|chat_id\s*=/)
 })
