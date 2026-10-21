@@ -72,7 +72,7 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
   assert.match(mobile, /getCompactNavigation/)
   const icons = await readFile('components/compact-navigation-icons.ts', 'utf8')
   assert.match(mobile, /compactNavigationIcons/)
-  assert.match(icons, /house: LayoutDashboard/)
+  assert.match(icons, /books: BookOpen/)
   assert.match(icons, /tests: ClipboardList/)
   assert.match(icons, /business: BriefcaseBusiness/)
   assert.match(mobile, /ia222-bottom-height/)
@@ -246,7 +246,7 @@ test('compact language menu and cabinet next-step remain available after IA inte
   assert.match(esPublicVerifier, /site-language-menu-trigger/)
 })
 
-test('top site header puts Library next to language while My House retains cabinet access', async () => {
+test('top site header opens Cabinet while mobile bottom bar promotes Books', async () => {
   const [nav, home, header, styles] = await Promise.all([
     readFile('components/site-navigation.tsx', 'utf8'),
     readFile('components/holistic-house-home.tsx', 'utf8'),
@@ -259,13 +259,13 @@ test('top site header puts Library next to language while My House retains cabin
   assert.match(nav, /filter\(item => item\.id === 'services'\)/)
   assert.match(nav, /site-nav-free-entry/)
   assert.match(nav, /site-nav-about-entry/)
-  assert.match(nav, /className="site-library-entry"/)
-  assert.match(nav, /href=\{\`\/\$\{activeLocale\}\/library\`\}/)
-  assert.match(nav, /data-nav-item="library"/)
-  for (const localeCopy of ['Library', 'Библиотека', 'Biblioteca']) assert.ok(nav.includes(localeCopy))
-  assert.match(styles, /\.house-header--services \.site-navigation > \.site-library-entry/)
+  assert.match(nav, /className="site-cabinet-entry"/)
+  assert.match(nav, /data-nav-item="cabinet"/)
+  assert.match(nav, /activeLocale === 'es' \? 'en' : activeLocale/)
+  for (const localeCopy of ['Cabinet', 'Кабинет', 'Gabinete']) assert.ok(nav.includes(localeCopy))
+  assert.match(styles, /\.house-header--services \.site-navigation > \.site-cabinet-entry/)
   assert.match(styles, /\.house-header--services \.site-navigation > a \{ display: none; \}/)
-  assert.match(styles, /\.house-header--services \.site-library-entry__compact/)
+  assert.match(styles, /\.house-header--services \.site-cabinet-entry__compact/)
   assert.match(styles, /@media \(max-width: 374px\)/)
 })
 
