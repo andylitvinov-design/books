@@ -1,0 +1,9 @@
+key,instrument,doi,item_count,language_evidence,status
+"seq-khouryvergara2026-enca20-suffering","SEQ-20","10.1177/10731911261437561","20","EN-CA original English study; RU/ES not validated","research_only;permission_required"
+"seqsf-khouryvergara2026-enca10-suffering","SEQ-10","10.1177/10731911261437561","10","EN-CA derived same study; RU/ES not validated","research_only;permission_required"
+"pbssr-siegel2021-enus8-original","PBSS-R original","10.1016/j.bodyim.2021.06.001","8","EN original US/Canada women; RU distinct adaptation","research_only;permission_required"
+"pbssr-polskaya2026-ruru8-girls","PBSS-R Russian","10.51217/npsyresearch_2026_06_01_09","8","RU-RU adapted on 551 girls/women 13-21","research_only;permission_required"
+"yses-birdee2016-enus12-original","YSES original","10.1186/s12906-015-0981-0","12","EN original 309 USA yoga practitioners","research_only;permission_required"
+"yses-kulizhnikov2026-ruru12-adapted","YSES Russian","10.51217/npsyresearch_2026_06_01_12","12 verify Russian retention","RU-RU 186 practitioners; hierarchical three dimensions","research_only;permission_required"
+"ptrem-mccabe2021-enca49-prototype","P-TREM development","10.1080/21679169.2020.1868572","49","EN-CA preliminary content validated, NOT score validated","research_only;permission_required"
+"ptrem-mccabe2021-enca30-validated","P-TREM final","10.1080/21679169.2021.2005138","30","EN-CA study n163 established in-person physiotherapy","research_only;permission_required"
