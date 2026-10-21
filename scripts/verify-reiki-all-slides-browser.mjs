@@ -141,7 +141,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   // meditation video. Audio is optional until the author uploads his file.
   if (["flight-01","tan-01","kun-01","ygg-01"].includes(id)) {
     await expect(page.locator('[data-reiki-lesson-intro]')).toBeVisible();
-    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toBeVisible();
+    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toHaveCount(0);
     await expect(page.locator('[data-reiki-lesson-intro] li')).toHaveCount(3);
     await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
   }
@@ -501,6 +501,11 @@ async function verifyShortViewport(page,locale) {
         milestoneBadge:within('[class*="milestoneCard"]'),
       };
     });
+    if (id === "flight-02") {
+      // Keep direct visual evidence even when the fit assertion fails.
+      await page.screenshot({ path: output + "/" + engineName + "-" + locale + "-375-short-flight-02.png", animations: "disabled", timeout: 30000 });
+      console.log("REIKI_SHORT_VIDEO_BOUNDS", JSON.stringify({ engine: engineName, locale, ...dimensions }));
+    }
     // Welcome and introductory photo/video slides should fit by design.
     // Dense translated answers or timer+reflection may scroll naturally:
     // never make the type tiny or hide the five course stage names to force fit.
@@ -589,10 +594,56 @@ async function verifyShortViewport(page,locale) {
   console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:10}));
 }
 
+// Only the public optional-audio metadata is synthesized here. This proves UI
+// states, not production recording availability or real audio playback. Course
+// save/consent requests and the existing guest/security assertions are unchanged.
+let introAudioFixture = null;
+let introAudioMetadataRequests = 0;
+const syntheticAudioUrl = "https://example.invalid/reiki-qa-intro.mp3";
+async function verifyOptionalIntroAudio(page) {
+  let mediaRequests = 0;
+  await page.route(syntheticAudioUrl, async route => { mediaRequests += 1; await route.abort(); });
+  for (const published of [false, true]) {
+    introAudioFixture = published ? { src: syntheticAudioUrl, publishedAt: "2026-10-21T00:00:00Z" } : null;
+    const before = introAudioMetadataRequests;
+    await page.goto(origin + "/en/academy/principles-of-energywork/learn", { waitUntil: "domcontentloaded", timeout: 90000 });
+    await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
+    await page.locator('button[data-energywork-next]').click();
+    await page.locator('input[name="welcome-02"][value="beginner"]').check();
+    await page.locator('button[data-energywork-next]').click();
+    await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id', 'flight-01');
+    await expect.poll(() => introAudioMetadataRequests).toBeGreaterThan(before);
+    const player = page.locator('[data-reiki-lesson-intro-audio]');
+    if (published) {
+      await expect(player).toBeVisible();
+      const audio = player.locator('audio');
+      await expect(audio).toHaveAttribute('src', syntheticAudioUrl);
+      await expect(audio).toHaveAttribute('preload', 'none');
+      await expect(audio).toHaveAttribute('controls', '');
+      await expect(audio).not.toHaveAttribute('autoplay', /.*/);
+      await expect(audio).toHaveJSProperty('paused', true);
+    } else {
+      await expect(player).toHaveCount(0);
+      await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
+    }
+  }
+  assert.equal(mediaRequests, 0, 'Optional audio must not fetch or play before user interaction');
+  introAudioFixture = null;
+  await page.unroute(syntheticAudioUrl);
+  console.log('REIKI_OPTIONAL_AUDIO_UI_PASS', JSON.stringify({ engine: engineName, states: ['unpublished', 'published'], synthetic: true }));
+}
+
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
 const page = await context.newPage();
 page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)));
+const introMetadataPattern = new RegExp("^" + origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "/api/reiki-intro-audio\\?lesson=(flight|tantra|kundalini|yggdrasil|initiation)&locale=(en|ru)$");
+await page.route(introMetadataPattern, async route => {
+  assert.equal(route.request().method(), 'GET', 'Optional-audio metadata fixture is read-only');
+  introAudioMetadataRequests += 1;
+  await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ audio: introAudioFixture }) });
+});
 try {
+  await verifyOptionalIntroAudio(page);
   const image = await page.request.get(origin+"/images/holistic-house/reiki-heaven-sky.svg");
   assert.equal(image.status(),200,"Approved local sky background must be served");
   assert.match(image.headers()["content-type"]||"",/image\/svg\+xml/);

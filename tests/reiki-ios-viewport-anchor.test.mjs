@@ -29,3 +29,16 @@ test("course and bottom controls stay attached to the dynamic viewport", () => {
   assert.match(learner, /window\.addEventListener\("pageshow", keepCourseAtTop\)/);
   assert.match(learner, /\}, \[index\]\);/);
 });
+
+
+test("short Russian video lessons reclaim only vertical whitespace", () => {
+  const styles = read("components/energywork-ai-learner.module.css");
+  const compact = styles.slice(styles.indexOf("/* Preserve the RU video poster width"));
+  assert.ok(compact.startsWith("/* Preserve the RU video poster width"));
+  assert.match(compact, /@media \(max-width: 760px\) and \(max-height: 700px\)/);
+  const video = '.page[lang="ru"][data-course-portrait="v3"] [data-energywork-slide-kind="video"]';
+  assert.ok(compact.includes(video + ' .video {\n    padding: 3px 9px;'));
+  assert.ok(compact.includes(video + ' .slideMain {\n    gap: 6px;\n    padding-block: 8px;'));
+  assert.doesNotMatch(compact, /^\s*(?:font-size|line-height|display|overflow|height|width|clip|opacity):/m);
+  assert.doesNotMatch(compact, /data-energywork-slide-id/); // Covers all four videos, not just the failing first one.
+});
