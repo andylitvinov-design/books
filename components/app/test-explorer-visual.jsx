@@ -16,6 +16,9 @@ const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 // A personality trait is descriptive and must never be presented as an ideal-to-reach ray.
 const PORTRAIT_AXES = TEST_EXPLORER_AXES.filter((axis) => axis !== 'personality')
 const PORTRAIT_COLLAPSED_COUNT = 10 // Five rows × two columns; the full list is one tap away.
+const PORTRAIT_RADAR_RADIUS = 146
+// No minimum offset: 0 maps to the centre and a half-scale value to half the ring.
+const proportionalRadius = (value, maximum) => PORTRAIT_RADAR_RADIUS * value / maximum
 
 export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false, portraitActions = null }) {
   const [variant, setVariant] = useState('male')
@@ -45,9 +48,10 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       displayLabel: sector.key === 'growth'
         ? (ru ? 'Дух / развитие' : es ? 'Espíritu / desarrollo' : 'Spirit / Growth')
         : (sector.label[locale] || sector.label.en),
-      ideal: project(146),
-      // Length in All indicates TEST COVERAGE, never an average wellbeing grade.
-      end: sector.measured === 0 ? null : project(14 + sector.coveragePercent / 100 * 132),
+      ideal: project(PORTRAIT_RADAR_RADIUS),
+      // All plots the exact measured / total fraction, without rounding to whole percent.
+      // This is TEST COVERAGE, never an average wellbeing grade.
+      end: sector.measured === 0 ? null : project(proportionalRadius(sector.measured, sector.total)),
       value: project(110),
     }
   }) : []
@@ -68,11 +72,11 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     const measure = portrait?.axes?.[axis] || null
     const percent = measure?.percent ?? null
     const project = (r) => ({ x: 180 + Math.cos(angle) * r, y: 182 + Math.sin(angle) * r })
-    const radius = value => 14 + (value / 100) * 132
+    const radius = value => proportionalRadius(value, 100)
     return { axis, percent,
       end: percent === null ? null : project(radius(percent)),
       previousEnd: measure?.previousPercent == null ? null : project(radius(measure.previousPercent)),
-      ideal: project(146) }
+      ideal: project(PORTRAIT_RADAR_RADIUS) }
   })
   const polygon = (kind) => rays.map((ray) => `${ray[kind].x},${ray[kind].y}`).join(' ')
   const rayLabels = portrait ? layoutPortraitRayLabels(rays.map((ray) => ({
