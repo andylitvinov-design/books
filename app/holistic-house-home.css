@@ -1007,21 +1007,35 @@ a.service-home-start-card:hover {
   .house-header--services .site-navigation > a:not(.site-cabinet-entry) { display: none; }
 }
 
-@media (max-width: 600px) {
-  /* Preserve logo + Cabinet + language + menu on a single phone-width row. */
-  .house-header--services .site-navigation { gap: 6px; }
+/* Mobile priority: the personal Cabinet is a WORD, not an unlabeled icon.
+   Free space with the familiar menu glyph, not by shrinking touch targets.
+   This applies to every public page using the shared services header. */
+@media (max-width: 767px) {
+  .house-header--services { gap: 5px; padding-inline: clamp(8px, 3vw, 16px); }
+  .house-header--services .house-wordmark { font-size: clamp(18px, 5.4vw, 24px); }
+  .house-header--services .site-navigation { gap: 5px; }
   .house-header--services .site-navigation > .site-cabinet-entry {
-    width: 44px;
-    padding-inline: 0;
+    width: auto;
+    min-width: 66px;
+    padding: 8px 10px;
+    font-size: 12px;
   }
-  .house-header--services .site-cabinet-entry__compact { display: none; }
+  .house-header--services .site-cabinet-entry svg { display: none; }
+  .house-header--services .site-cabinet-entry__compact { display: inline; }
+  .house-header--services .site-main-menu-trigger { width: 44px; min-width: 44px; padding: 0; }
+  .house-header--services .site-main-menu-trigger__label { display: none; }
   .house-header--services .site-language-switch > * { padding-inline: 0; }
-  .house-header--services .site-language-menu-trigger { padding-inline: 9px; }
+  .house-header--services .site-language-menu-trigger { padding-inline: 8px; }
 }
 
 @media (max-width: 359px) {
   .house-header--services .house-wordmark { font-size: 17px; }
   .house-header--services .site-navigation { gap: 4px; }
+  .house-header--services .site-navigation > .site-cabinet-entry {
+    min-width: 62px;
+    padding-inline: 6px;
+    font-size: 11px;
+  }
   .house-header--services .site-language-menu-trigger { padding-inline: 6px; }
 }
 
