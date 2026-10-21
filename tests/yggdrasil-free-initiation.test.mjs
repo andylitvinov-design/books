@@ -15,6 +15,74 @@ const capture = read("components/reiki-choice-capture.tsx");
 const sourceGuide = read("components/yggdrasil-source-study-guide.tsx");
 const audit = read("docs/yggdrasil-superskills-audit-2026-10-09.md");
 
+// Owner PR1272 preserves the public EN/RU/ES questions exactly, in this order.
+const approvedPreparationQuestions = {
+  "en": [
+    "Which is more fundamental to the Runic Reiki system: Reiki, runes, or their combination?",
+    "What differences does the author claim between Runic Reiki and classical Usui Reiki, and how are these claims explained within the tradition?",
+    "What does Yggdrasil, the World Tree, represent in Scandinavian tradition and in the course?",
+    "What is the Healing stream or attunement in Runic Reiki, and how is it traditionally described as being used?",
+    "How is the Protection stream described, and in what situations do students practise it?",
+    "What is the Money Stream Activation attunement, and what symbolic or practical purposes does the course associate with it?",
+    "Which pantheons and deities does the course introduce for study at Level 5?"
+  ],
+  "ru": [
+    "Что лежит в основе системы Рейки Иггдрасиль — Рейки, руны или их сочетание?",
+    "Чем автор системы объясняет заявленные отличия Рейки Иггдрасиль от классического Усуи Рейки?",
+    "Что такое Иггдрасиль — Мировое Древо — в скандинавской традиции и в системе обучения?",
+    "Что означает поток или настройка «Целительство» и как его традиционно описывают?",
+    "Как описывается работа потока «Защита» и в каких ситуациях его практикуют?",
+    "В чём идея настройки «Активация денежного потока» и какие символические задачи с ней связывают?",
+    "С какими пантеонами и богами предполагается знакомство на пятой ступени Рейки Иггдрасиль?"
+  ],
+  "es": [
+    "¿Reiki, runas o su combinación: qué fundamenta Reiki Yggdrasil?",
+    "¿Cómo explica el autor las diferencias que afirma entre Reiki Yggdrasil y Usui Reiki?",
+    "¿Qué es Yggdrasil, el Árbol del Mundo?",
+    "¿Qué representa la corriente de Sanación y cómo se describe su práctica?",
+    "¿Cómo se describe la corriente de Protección?",
+    "¿En qué consiste la llamada Activación del flujo de dinero?",
+    "¿Qué panteones y deidades se estudian en el quinto nivel?"
+  ]
+};
+
+function sharedPreparationQuestions(landingSource) {
+  const source = read("data/academy/yggdrasil-preparation-questions.ts");
+  const object = /^export const yggdrasilPreparationQuestions = \{\n([\s\S]*?)^\} as const;$/m.exec(source);
+  assert.ok(object, "Shared preparation-question export is missing");
+  const localeArrays = /^  ([a-z]{2}): \[\n([\s\S]*?)^  \],$/gm;
+  const lists = [...object[1].matchAll(localeArrays)];
+  assert.deepEqual(lists.map((match) => match[1]), ["en", "ru", "es"], "Exact question locales and order");
+  assert.equal(object[1].replace(localeArrays, "").trim(), "", "Only literal locale arrays belong to the question source");
+  const questions = Object.fromEntries(lists.map((match) => [
+    match[1], JSON.parse("[" + match[2].trim().replace(/,$/, "") + "]"),
+  ]));
+  assert.deepEqual(questions, approvedPreparationQuestions, "All 21 approved questions retain their exact text and order");
+
+  assert.match(landingSource, /^import \{ yggdrasilPreparationQuestions \} from "@\/data\/academy\/yggdrasil-preparation-questions";$/m);
+  const copyObject = /^const copy: Record<PublicLocale, LocaleStrings> = \{\n([\s\S]*?)^\};$/m.exec(landingSource);
+  assert.ok(copyObject, "Public locale copy is missing");
+  const localeObjects = /^  ([a-z]{2}): \{\n([\s\S]*?)^  \},?$/gm;
+  const copies = [...copyObject[1].matchAll(localeObjects)];
+  assert.deepEqual(copies.map((match) => match[1]), ["en", "ru", "es"], "Exact public-copy locale objects");
+  assert.equal(copyObject[1].replace(localeObjects, "").trim(), "", "Question bindings must belong to these locale objects");
+  for (const [ , locale, body ] of copies) {
+    assert.equal((body.match(/^    questions:/gm) ?? []).length, 1, "One questions binding for " + locale);
+    assert.match(body, new RegExp("^    questions: \\[\\.\\.\\.yggdrasilPreparationQuestions\\." + locale + "\\],$", "m"),
+      "The " + locale + " copy must use its own shared questions");
+  }
+
+  const component = /^export function YggdrasilFreeInitiation\(\{ locale \}: \{ locale: PublicLocale \}\) \{([\s\S]*?)^\}/m.exec(landingSource);
+  assert.ok(component, "Public initiation component is missing");
+  assert.match(component[1], /^  const c = copy\[locale\];$/m, "The displayed copy must follow the selected locale");
+  const returnStart = component[1].indexOf("  return (");
+  assert.ok(returnStart >= 0, "Public initiation render is missing");
+  assert.match(component[1].slice(returnStart),
+    /<ol className=\{styles\.questions\}>\{c\.questions\.map\(\(question\) => <li key=\{question\}>\{question\}<\/li>\)\}<\/ol>/,
+    "The actual question list must render the selected locale's questions");
+  return questions;
+}
+
 test("free initiation is the single EN/RU/ES six-stage landing in the revised order", () => {
   assert.match(routes, /if \(child === "free-initiation"\) return <YggdrasilFreeInitiation locale=\{locale\} \/>/);
   assert.match(routes, /languages: \{ en:.*ru:.*es:/);
@@ -55,10 +123,9 @@ test("three visible preparation steps lead to the videos, two study links and se
 });
 
 test("seven original questions remain high-contrast and available in an initially closed disclosure", () => {
-  const blocks = [...page.matchAll(/    questions: \[([\s\S]*?)\n    \],\n    statement:/g)];
-  assert.equal(blocks.length,3);
-  for (const [i, m] of blocks.entries()) {
-    assert.equal(m[1].split("\n").filter(l => /^\s*"/.test(l)).length,7,"seven for locale " + i);
+  const questions = sharedPreparationQuestions(page);
+  for (const [locale, items] of Object.entries(questions)) {
+    assert.equal(items.length, 7, "seven for locale " + locale);
   }
   assert.match(page, /<details className=\{styles\.questionsDisclosure\}>/);
   assert.match(page, /<summary className=\{styles\.questionsSummary\}>/);
@@ -66,10 +133,10 @@ test("seven original questions remain high-contrast and available in an initiall
   assert.match(page, /<span className=\{styles\.questionsSummaryHeading\} role="heading" aria-level=\{2\}/);
   for (const label of ["Show 7 questions", "Показать 7 вопросов", "Ver las 7 preguntas"]) assert.ok(page.includes(label), label);
   assert.match(page, /<ol className=\{styles\.questions\}>/);
-  assert.match(page, /What differences does the author claim/);
-  assert.match(page, /Чем автор системы объясняет/);
-  assert.match(page, /¿Cómo explica el autor/);
-  assert.match(page, /Money Stream Activation/);
+  assert.match(questions.en.join("\n"), /What differences does the author claim/);
+  assert.match(questions.ru.join("\n"), /Чем автор системы объясняет/);
+  assert.match(questions.es.join("\n"), /¿Cómo explica el autor/);
+  assert.match(questions.en.join("\n"), /Money Stream Activation/);
   assert.match(page, /not established medical facts|не доказанными медицинскими фактами/);
   assert.match(layout, /\.questionsSlide\s*\{[\s\S]*?background: linear-gradient\(147deg,#153c55/);
   assert.match(layout, /\.questionsSlide \.questions li\s*\{[\s\S]*?font: 650 17px/);
