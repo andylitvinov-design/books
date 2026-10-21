@@ -32,7 +32,7 @@ test('Growth Studio OAuth deep link preserves bounded destination without open r
   assert.match(studio, /requireAdminRequest\(\)/)
   assert.match(studio, /redirect\('\/admin\/login\?destination=growth'\)/)
   assert.match(studio, /compactMarketing/)
-  assert.match(login, /\['growth', 'seo', 'acquisition'\]\.includes\(params\?\.destination\)/)
+  assert.match(login, /\['growth', 'seo', 'acquisition', 'tools'\]\.includes\(params\?\.destination\)/)
   assert.match(login, /practitionerDestination\[destination\]/)
   assert.match(entry, /response\.redirectUrl !== ADMIN_DESTINATIONS\[safeDestination\]/)
   for (const name of ['growth','seo','acquisition']) {
