@@ -57,8 +57,8 @@
 .house-header--services .site-language-switch { font-size: 12px; }
 .house-header--services .site-language-switch > * { min-height: 44px; padding-inline: 8px; }
 
-/* Direct Library shortcut beside the language picker; My House remains on the bottom bar. */
-.house-header--services .site-navigation > .site-library-entry {
+/* Direct Cabinet entry beside the language picker; Books stays in the mobile bar. */
+.house-header--services .site-navigation > .site-cabinet-entry {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
@@ -77,21 +77,21 @@
   white-space: nowrap;
   transition: background-color .15s ease, border-color .15s ease;
 }
-.house-header--services .site-library-entry svg { width: 18px; height: 18px; flex: 0 0 18px; stroke-width: 1.8; }
-.house-header--services .site-library-entry__compact { display: none; }
-.house-header--services .site-navigation > .site-library-entry:hover,
-.house-header--services .site-navigation > .site-library-entry[aria-current="page"] {
+.house-header--services .site-cabinet-entry svg { width: 18px; height: 18px; flex: 0 0 18px; stroke-width: 1.8; }
+.house-header--services .site-cabinet-entry__compact { display: none; }
+.house-header--services .site-navigation > .site-cabinet-entry:hover,
+.house-header--services .site-navigation > .site-cabinet-entry[aria-current="page"] {
   border-color: #a77b5d;
   background: #e9d7c5;
   color: #513222;
 }
-.house-header--services .site-navigation > .site-library-entry:focus-visible {
+.house-header--services .site-navigation > .site-cabinet-entry:focus-visible {
   outline: 3px solid #9b7056;
   outline-offset: 3px;
 }
 @media (max-width: 1023px) {
-  .house-header--services .site-library-entry__full { display: none; }
-  .house-header--services .site-library-entry__compact { display: inline; }
+  .house-header--services .site-cabinet-entry__full { display: none; }
+  .house-header--services .site-cabinet-entry__compact { display: inline; }
 }
 
 .service-home-hero {
@@ -504,14 +504,14 @@ a.service-home-start-card:hover {
   .house-header--services { gap: 8px; padding-inline: clamp(12px, 3.8vw, 22px); }
   .house-header--services .house-wordmark { min-width: 0; flex-shrink: 1; font-size: clamp(21px, 6vw, 27px); }
   .house-header--services .site-navigation { gap: 7px; flex-wrap: nowrap; }
-  .house-header--services .site-navigation > .site-library-entry {
+  .house-header--services .site-navigation > .site-cabinet-entry {
     display: inline-flex;
     min-height: 44px;
     gap: 5px;
     padding: 8px 10px;
     font-size: 11px;
   }
-  .house-header--services .site-library-entry svg { width: 17px; height: 17px; flex-basis: 17px; }
+  .house-header--services .site-cabinet-entry svg { width: 17px; height: 17px; flex-basis: 17px; }
   .house-header--services .site-language-switch { margin: 0; font-size: 12px; }
   .house-header--services .site-language-switch > * { padding-inline: 7px; }
   .service-home-hero { min-height: 410px; align-items: flex-start; }
@@ -571,8 +571,8 @@ a.service-home-start-card:hover {
   .house-header--services { padding-inline: 8px; gap: 2px; }
   .house-header--services .house-wordmark { font-size: 19px; }
   .house-header--services .house-wordmark span { font-size: 7px; }
-  .house-header--services .site-library-entry__compact { display: none; }
-  .house-header--services .site-navigation > .site-library-entry { width: 44px; padding-inline: 0; }
+  .house-header--services .site-cabinet-entry__compact { display: none; }
+  .house-header--services .site-navigation > .site-cabinet-entry { width: 44px; padding-inline: 0; }
   .service-home-hero-copy { padding-inline: 16px; }
   .service-home-intro { max-width: 80%; }
   .house-header--services .site-main-menu-trigger__label { display: none; }
@@ -827,7 +827,7 @@ a.service-home-start-card:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .house-header--services .site-navigation > .site-library-entry { transition: none; }
+  .house-header--services .site-navigation > .site-cabinet-entry { transition: none; }
 }
 
 /* Give the free written review and paid one-to-one session equal clarity in the hero. */
@@ -1004,17 +1004,17 @@ a.service-home-start-card:hover {
 
 @media (min-width: 768px) and (max-width: 1140px) {
   .house-header--services .site-navigation { flex-wrap: nowrap; }
-  .house-header--services .site-navigation > a:not(.site-library-entry) { display: none; }
+  .house-header--services .site-navigation > a:not(.site-cabinet-entry) { display: none; }
 }
 
 @media (max-width: 600px) {
-  /* Preserve logo + Library + language + menu on a single phone-width row. */
+  /* Preserve logo + Cabinet + language + menu on a single phone-width row. */
   .house-header--services .site-navigation { gap: 6px; }
-  .house-header--services .site-navigation > .site-library-entry {
+  .house-header--services .site-navigation > .site-cabinet-entry {
     width: 44px;
     padding-inline: 0;
   }
-  .house-header--services .site-library-entry__compact { display: none; }
+  .house-header--services .site-cabinet-entry__compact { display: none; }
   .house-header--services .site-language-switch > * { padding-inline: 0; }
   .house-header--services .site-language-menu-trigger { padding-inline: 9px; }
 }
@@ -1138,9 +1138,8 @@ a.service-home-start-card:hover {
   }
 }
 
-/* Mobile checkout shortcut: show the basket only when an item is selected.
-   On narrow phones it takes the secondary Library shortcut’s place, avoiding overflow.
-   Library remains available through the site menu and on the desktop. */
+/* Keep Cabinet visible on narrow phones. When there is no space for both
+   Cabinet and an occupied Cart button, Cart remains reachable in the menu. */
 @media (max-width: 767px) {
   .house-header--services .site-navigation > a[data-nav-item="cart"][data-cart-has-items="true"] {
     display: inline-flex;
@@ -1150,7 +1149,7 @@ a.service-home-start-card:hover {
   }
 }
 @media (max-width: 490px) {
-  .house-header--services .site-navigation:has(> a[data-nav-item="cart"][data-cart-has-items="true"]) > .site-library-entry {
+  .house-header--services .site-navigation > a[data-nav-item="cart"][data-cart-has-items="true"] {
     display: none;
   }
 }
