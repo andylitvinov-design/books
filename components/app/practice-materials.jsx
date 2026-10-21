@@ -5,8 +5,11 @@ import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
 import PractitionerCourseBuilder from './practitioner-course-builder'
 import PracticeReportMaterials from './practice-report-materials'
+import dynamic from 'next/dynamic'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract.js'
 import styles from './practice-materials.module.css'
+
+const CompactVideoComposer=dynamic(()=>import('./compact-video-composer'),{ssr:false})
 
 const fresh=locale=>({locale:['en','ru','es'].includes(locale)?locale:'en',title:'',description:'',url:''})
 // Use exactly the same YouTube/Vimeo parsing as the server. Shared links with
@@ -15,7 +18,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -88,6 +91,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   return ()=>{alive=false}
  },[reportRefresh])
  const published=practitioner?.profile?.videoMaterials||[]
+ const sitePresentation=practitioner?.draftProfile?.videoPresentation
+ const sitePresentationLive=sitePresentation?.kind==='upload'&&
+   JSON.stringify(practitioner?.profile?.videoPresentation)===JSON.stringify(sitePresentation)
  const dirty=JSON.stringify(videos)!==JSON.stringify(original)
  const locked=busy||saving
  const visibleVideos=videos.filter(v=>!query||[v.title,v.description,v.locale].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
@@ -123,18 +129,19 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   }catch(error){showSaveError(error);return false}
   finally{setSaving(false)}
  }
- async function apply(event){
-  event.preventDefault()
-  if(locked)return
-  const canonicalUrl=canonicalVideoUrl(form.url)
-  if(!canonicalUrl||!form.title.trim()){setError(t.invalid);return}
-  const normalized={title:form.title.trim(),description:form.description.trim(),url:canonicalUrl,locale:form.locale}
+ async function apply(event,values=form){
+  event?.preventDefault()
+  if(locked)return false
+  const canonicalUrl=canonicalVideoUrl(values.url)
+  if(!canonicalUrl||!values.title.trim()){setError(t.invalid);return false}
+  const normalized={title:values.title.trim(),description:String(values.description||'').trim(),url:canonicalUrl,locale:values.locale}
   if(videos.some((video,index)=>index!==editing&&video.locale===normalized.locale&&canonicalVideoUrl(video.url)===canonicalUrl)){
-   setError(t.duplicate);return
+   setError(t.duplicate);return false
   }
   const next=editing==='new'?[...videos,normalized]:videos.map((video,index)=>index===editing?normalized:video)
-  if(next.length>12){setError('Maximum 12 videos');return}
-  if(await persist(next,t.saved)){setEditing(null);setForm(fresh(locale))}
+  if(next.length>12){setError('Maximum 12 videos');return false}
+  if(await persist(next,t.saved)){setEditing(null);setForm(fresh(locale));return true}
+  return false
  }
  async function remove(index){
   if(locked||!window.confirm(t.confirmRemove))return
@@ -161,8 +168,8 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
      <button type="button" className={styles.actionPrimary} aria-pressed={audioAction==='upload'} onClick={()=>setAudioAction(mode=>mode==='upload'?'':'upload')}><Plus size={18} aria-hidden="true"/>{ru?'Загрузить аудио':es?'Subir audio':'Upload audio'}</button>
      <button type="button" className={styles.actionSecondary} aria-pressed={audioAction==='record'} onClick={()=>setAudioAction(mode=>mode==='record'?'':'record')}><Headphones size={17} aria-hidden="true"/>{ru?'Записать':es?'Grabar':'Record'}</button>
     </>:<>
-     <button type="button" className={styles.actionPrimary} disabled={locked||(isOwner&&typeof onOpenYoutube!=='function')} onClick={isOwner?onOpenYoutube:()=>open()}><Plus size={18} aria-hidden="true"/>{isOwner?(ru?'Загрузить видео':es?'Subir vídeo':'Upload video'):(ru?'Добавить видео':es?'Añadir vídeo':'Add video')}</button>
-     {isOwner&&<button type="button" className={styles.actionSecondary} disabled={locked||editing!==null||videos.length>=12} onClick={()=>open()}>{ru?'Вставить ссылку':es?'Añadir enlace':'Add link'}</button>}
+     <button type="button" className={styles.actionPrimary} disabled={locked||editing!==null} onClick={()=>open()}><Plus size={18} aria-hidden="true"/>{isOwner?(ru?'Загрузить видео':es?'Subir vídeo':'Upload video'):(ru?'Добавить видео':es?'Añadir vídeo':'Add video')}</button>
+     {isOwner&&<button type="button" className={styles.actionSecondary} disabled={locked||typeof onOpenYoutube!=='function'} onClick={onOpenYoutube}>YouTube</button>}
     </>}
    <button type="button" className={styles.actionSearch} aria-label={ru?'Поиск по материалам':es?'Buscar materiales':'Search materials'} aria-expanded={searchOpen} onClick={()=>setSearchOpen(open=>!open)}><Search size={20} aria-hidden="true"/></button>
   </div>}
@@ -212,6 +219,11 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
   <div className={styles.body}>
    <p className={styles.sectionCount}>{t.videos} · {videos.length}</p>
+   {editing===null&&sitePresentation?.kind==='upload'&&<article className={styles.uploadedPresentation} data-website-video-presentation>
+     <Film size={18} aria-hidden="true"/>
+     <span><strong>{ru?'Видеопрезентация профиля':es?'Presentación del perfil':'Profile video presentation'}</strong>
+       <small>{sitePresentation.path.split('/').pop()} · {sitePresentationLive?t.published:t.pending}</small></span>
+   </article>}
    {editing===null&&(visibleVideos.length?<div className={styles.resourceList}>{visibleVideos.slice(0,showAll||query?visibleVideos.length:2).map((video,index)=>{
     const originalIndex=videos.indexOf(video)
     const live=published.some(p=>p.url===video.url&&p.title===video.title&&p.locale===video.locale&&p.description===video.description)
@@ -232,22 +244,21 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
       </div>
      </div>
     </article>
-   })}</div>:<p className={styles.empty}>{t.empty}</p>)}
-   {editing===null&&!query&&visibleVideos.length>2&&<button type="button" className={styles.showMore} aria-expanded={showAll} onClick={()=>setShowAll(v=>!v)}>{showAll?(ru?'Свернуть':es?'Ver menos':'Show fewer'):(ru?'Все видео ('+visibleVideos.length+') →':es?'Todos los vídeos ('+visibleVideos.length+') →':'All videos ('+visibleVideos.length+') →')}</button>}
-   {editing!==null&&<form className={styles.editor} onSubmit={apply} aria-busy={saving}>
-    <h4>{editing==='new'?t.new:t.edit}</h4>
-    <label>{t.title}<input required disabled={locked} maxLength={140} value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
-    <label>{t.url}<input required disabled={locked} type="url" maxLength={500} value={form.url} placeholder="https://youtu.be/..." onChange={e=>setForm({...form,url:e.target.value})}/></label>
-    <label>{t.language}<select disabled={locked} value={form.locale} onChange={e=>setForm({...form,locale:e.target.value})}>
-     <option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option>
-    </select></label>
-    <label>{t.description}<textarea disabled={locked} rows={3} maxLength={500} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
-    {error&&<p className={styles.error} role="alert">{error}</p>}
-    <div className={styles.editorActions}>
-     <button className={styles.primary} type="submit" disabled={locked}>{saving?t.saving:editing==='new'?t.addToList:t.update}</button>
-     <button type="button" className={styles.secondary} disabled={locked} onClick={()=>{setEditing(null);setError('')}}>{t.cancel}</button>
-    </div>
-   </form>}
+   })}</div>:!sitePresentation||sitePresentation.kind!=='upload'?<p className={styles.empty}>{t.empty}</p>:null)}
+   {editing===null&&!query&&visibleVideos.length>2&&<button type="button" className={styles.showMore} aria-expanded={showAll} onClick={()=>setShowAll(v=>!v)}>{showAll?(ru?'Свернуть':es?'Ver menos':'Show fewer'):(ru?'Все видео ('+visibleVideos.length+') →':es?'Todos los vídeos ('+visibleVideos.length+') →':'All videos ('+visibleVideos.length+') →')}</button>
+   {editing!==null&&<CompactVideoComposer
+     key={editing==='new'?'new-video':'video-'+editing}
+     locale={locale} isOwner={isOwner} initial={form} existing={editing!=='new'}
+     hasPresentation={Boolean(practitioner?.draftProfile?.videoPresentation)}
+     onClose={()=>{setEditing(null);setError('')}}
+     onSaveLink={values=>apply(null,values)}
+     onSaveSiteFile={async video=>{
+       if(typeof onSaveSitePresentation!=='function')throw Error('SITE_UPLOAD_UNAVAILABLE')
+       await onSaveSitePresentation(video)
+       setEditing(null);setFeedback(ru?'Видеопрезентация сохранена в черновике профиля.':es?'La presentación se guardó como borrador.':'Video presentation saved in your profile draft.')
+     }}
+     onSiteError={error}
+   />}
    {feedback&&<p className={styles.success} role="status" aria-live="polite">{feedback}</p>}
    {error&&editing===null&&<p className={styles.error} role="alert">{error}</p>}
    {videos.length>0&&<div className={styles.compactReview}>

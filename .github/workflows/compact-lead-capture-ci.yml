@@ -1,0 +1,55 @@
+name: Holistic House compact lead-capture verification
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - "components/compact-lead-capture.tsx"
+      - "components/compact-lead-capture.module.css"
+      - "components/free-entry-landing.tsx"
+      - "components/sitewide-lead-capture.tsx"
+      - "components/sitewide-lead-capture.module.css"
+      - "lib/public-lead-capture.js"
+      - "tests/free-review-conversion.test.mjs"
+      - "tests/sitewide-lead-capture.test.mjs"
+      - "tests/contact-channel-chooser.test.mjs"
+      - ".github/workflows/compact-lead-capture-ci.yml"
+  push:
+    branches: [codex/public-book-library]
+    paths:
+      - "components/compact-lead-capture.tsx"
+      - "components/compact-lead-capture.module.css"
+      - "components/free-entry-landing.tsx"
+      - "components/sitewide-lead-capture.tsx"
+      - "lib/public-lead-capture.js"
+
+permissions:
+  contents: read
+
+jobs:
+  focused-conversion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify compact footer, locale conversion and existing contact flows
+        run: >-
+          node --test
+          tests/sitewide-lead-capture.test.mjs
+          tests/free-review-conversion.test.mjs
+          tests/contact-channel-chooser.test.mjs
+          tests/services-hero-quick-request.test.mjs
+      - name: Lint modified UI and lead classifier
+        run: >-
+          npx --no-install eslint
+          components/compact-lead-capture.tsx
+          components/free-entry-landing.tsx
+          components/sitewide-lead-capture.tsx
+          lib/public-lead-capture.js

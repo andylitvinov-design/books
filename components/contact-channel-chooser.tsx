@@ -43,6 +43,9 @@ const copy = {
     situation: "Situation",
     reference: "Enquiry",
     again: "New enquiry",
+    quickSubmit: "Send free request", quickReady: "Google email is ready",
+    quickPhone: "Use phone / WhatsApp instead", quickEmail: "Use email instead",
+    quickConsent: "By tapping Send, you agree to one personal reply about this request. No marketing, charge or confirmed booking.",
   },
   ru: {
     order: "Оставить заявку",
@@ -69,6 +72,9 @@ const copy = {
     situation: "Ситуация",
     reference: "Заявка",
     again: "Новый запрос",
+    quickSubmit: "Отправить бесплатный запрос", quickReady: "Email Google готов",
+    quickPhone: "Вместо email — телефон / WhatsApp", quickEmail: "Использовать email",
+    quickConsent: "Нажимая «Отправить», вы соглашаетесь на один личный ответ по запросу. Без рекламы, оплаты и автоматической записи.",
   },
   es: {
     order: "Solicitar plaza",
@@ -95,6 +101,9 @@ const copy = {
     situation: "Situación",
     reference: "Solicitud",
     again: "Nueva solicitud",
+    quickSubmit: "Enviar solicitud gratis", quickReady: "Correo de Google listo",
+    quickPhone: "Usar teléfono / WhatsApp", quickEmail: "Usar correo electrónico",
+    quickConsent: "Al pulsar Enviar, aceptas una respuesta personal a esta solicitud. Sin publicidad, cobro ni reserva confirmada.",
   },
 } as const;
 
@@ -108,12 +117,15 @@ type Props = {
   onChannelClick?: (channel: "whatsapp" | "telegram") => void;
   attributes?: Record<string, string>;
   id?: string;
+  quick?: boolean;
+  resetKey?: string;
+  publicTopic?: string;
 };
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id,
+  onChannelClick, attributes, id, quick = false, resetKey, publicTopic,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -123,7 +135,7 @@ export function ContactChannelChooser({
   const [googleBusy, setGoogleBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [consent, setConsent] = useState(false);
+  const [consent, setConsent] = useState(quick);
   const [website, setWebsite] = useState("");
   const [saved, setSaved] = useState<SavedEnquiry | null>(null);
   const [busy, setBusy] = useState(false);
@@ -136,6 +148,7 @@ export function ContactChannelChooser({
   const panelId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const c = copy[locale];
+  const enquiryResetKey = resetKey || whatsappUrl;
 
   useEffect(() => {
     const referral = readOrganicEventReferral(window.location.search, window.location.pathname);
@@ -162,15 +175,15 @@ export function ContactChannelChooser({
     setGoogleReady(false);
     setEmail("");
     setPhone("");
-    setConsent(false);
+    setConsent(quick);
     setWebsite("");
     setSaved(null);
     setError("");
     operationId.current = null;
-  }, [whatsappUrl]);
+  }, [enquiryResetKey, quick]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !(quick && saved)) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // On iPhone, the form shrinks after save and the messenger actions can fall
     // under the fixed bottom navigation. Reposition the saved actions, not just
@@ -179,7 +192,7 @@ export function ContactChannelChooser({
       ? panelRef.current?.querySelector('[data-contact-channel="whatsapp"]')
       : panelRef.current;
     target?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
-  }, [open, saved]);
+  }, [open, saved, quick]);
 
   const referredWhatsappUrl = withPaidAdReferral(
     withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale),
@@ -224,6 +237,25 @@ export function ContactChannelChooser({
     return () => { active = false; };
   }, [pathname, serviceTitle, panelId, c.googleError]);
 
+  // Prefill from a verified account without silently creating a lead.
+  // Consent is the explicit Submit tap after the reply-only disclosure.
+  useEffect(() => {
+    if (!quick) return;
+    let active = true;
+    fetch("/api/app/auth/contact-profile", { method: "GET", credentials: "same-origin", cache: "no-store" })
+      .then(response => response.ok ? response.json() : null)
+      .then(profile => {
+        if (!active || !profile) return;
+        const nextEmail = typeof profile.email === "string" ? profile.email.trim() : "";
+        const nextName = typeof profile.displayName === "string" ? profile.displayName.trim() : "";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) return;
+        setEmail(current => current || nextEmail);
+        if (nextName.length >= 2 && nextName.length <= 120) setDisplayName(current => current || nextName);
+        setGoogleReady(true);
+      }).catch(() => { /* A guest can submit a request without Google. */ });
+    return () => { active = false; };
+  }, [quick]);
+
   async function startGoogle() {
     if (googleBusy || busy) return;
     setGoogleBusy(true);
@@ -265,7 +297,8 @@ export function ContactChannelChooser({
         method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          operationId: nextId, serviceTitle, description: description.trim(),
+          operationId: nextId, serviceTitle,
+          description: description.trim() || (quick ? publicTopic?.trim() || "" : ""),
           sourcePath: pathname, locale,
           contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
           contactConsent: consent, website,
@@ -304,26 +337,26 @@ export function ContactChannelChooser({
   }
 
   return (
-    <div className={styles.wrapper} data-contact-channel-chooser data-open={open}>
-      <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
+    <div className={styles.wrapper} data-contact-channel-chooser data-open={open || quick} data-quick={quick}>
+      {!quick && <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
         aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}
         data-contact-order>
         <ShoppingBag size={20} aria-hidden="true" />
         <span>{label || c.order}</span>
         <ChevronDown className={styles.chevron} size={21} aria-hidden="true" />
-      </button>
-      <div ref={panelRef} className={styles.panel} id={panelId} hidden={!open}>
-        <p className={styles.question}>{saved ? c.messengers : c.question}</p>
+      </button>}
+      <div ref={panelRef} className={[styles.panel, quick ? styles.quickPanel : ""].join(" ")} id={panelId} hidden={!open && !quick}>
+        {(!quick || saved) && <p className={styles.question}>{saved ? c.messengers : c.question}</p>}
         {!saved ? (
           <form onSubmit={submit} className={styles.enquiryForm}>
-            <button type="button" className={styles.googleButton} onClick={startGoogle}
+            {(!quick || !googleReady) && <button type="button" className={styles.googleButton} onClick={startGoogle}
               disabled={busy || googleBusy} aria-label={c.google}>
               <span className={styles.googleMark} aria-hidden="true">G</span>
               {googleBusy ? c.googleBusy : c.google}
-            </button>
-            {googleReady && <p className={styles.googleReady} role="status">{c.googleReady}</p>}
-            <p className={styles.separator}><span>{c.divider}</span></p>
-            <div className={styles.methodChoices} role="group" aria-label={c.replyVia}>
+            </button>}
+            {googleReady && method === "email" && <p className={styles.googleReady} role="status">{quick ? c.quickReady : c.googleReady}</p>}
+            {(!quick || !googleReady) && <p className={styles.separator}><span>{c.divider}</span></p>}
+            {!quick && <div className={styles.methodChoices} role="group" aria-label={c.replyVia}>
               <button type="button" aria-pressed={method === "email"} disabled={busy || googleBusy}
                 onClick={() => { setMethod("email"); setError(""); operationId.current = null; }}>
                 {c.email}
@@ -332,7 +365,7 @@ export function ContactChannelChooser({
                 onClick={() => { setMethod("phone"); setError(""); operationId.current = null; }}>
                 {c.phone}
               </button>
-            </div>
+            </div>}
             <div className={styles.contactFields}>
               {method === "email" ? (
                 <label>{c.email}
@@ -351,7 +384,7 @@ export function ContactChannelChooser({
                 </div>
               )}
             </div>
-            <details className={styles.optionalName}>
+            {!quick && <><details className={styles.optionalName}>
               <summary>{c.nameOptional}</summary>
               <label>{c.name}
                 <input type="text" autoComplete="name" minLength={2} maxLength={120}
@@ -375,7 +408,12 @@ export function ContactChannelChooser({
               <input type="checkbox" required checked={consent} disabled={busy}
                 onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
               <span>{c.consent}</span>
-            </label>
+            </label></>}
+            {quick && <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
+              onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>
+              {method === "email" ? c.quickPhone : c.quickEmail}
+            </button>}
+            {quick && <small className={styles.quickConsent}>{c.quickConsent}</small>}
             <label className={styles.honeypot} aria-hidden="true">
               Website <input type="text" name="website" autoComplete="off" tabIndex={-1}
                 value={website} onChange={event => setWebsite(event.target.value)} />
@@ -383,7 +421,7 @@ export function ContactChannelChooser({
             <button type="submit" className={styles.submit}
               disabled={busy || googleBusy ||
                 (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
-              <Send size={17} aria-hidden="true" />{busy ? c.sending : c.submit}
+              <Send size={17} aria-hidden="true" />{busy ? c.sending : (quick ? c.quickSubmit : c.submit)}
             </button>
             {error && <p className={styles.error} role="alert">{error}</p>}
           </form>
@@ -411,7 +449,7 @@ export function ContactChannelChooser({
             <button type="button" className={styles.again} onClick={() => {
               setSaved(null); setDescription(""); setDisplayName(""); setEmail("");
               setMethod("email"); setGoogleReady(false);
-              setPhone(""); setConsent(false); setWebsite(""); setError(""); operationId.current = null;
+              setPhone(""); setConsent(quick); setWebsite(""); setError(""); operationId.current = null;
             }}>{c.again}</button>
           </>
         )}

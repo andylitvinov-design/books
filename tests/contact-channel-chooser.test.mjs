@@ -37,7 +37,7 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   const src = read("components/contact-channel-chooser.tsx");
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
-    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open}',
+    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open && !quick}',
     'Оставьте контакт, чтобы записаться или узнать подробности',
     'Leave your contact to enquire or join',
     'Deja tus datos para consultar o inscribirte', 'WhatsApp', 'Telegram',
@@ -72,7 +72,6 @@ test("primary capture components render channel chooser after service selection 
     "components/academy-course-capture.tsx",
     "components/energywork-reiki-capture.tsx",
     "components/consultation-choice-capture.tsx",
-    "components/sitewide-lead-capture.tsx",
     "components/core-service-detail.tsx",
     "components/yggdrasil-initiation-form.tsx",
     "components/tantra-initiation-form.tsx",
@@ -87,4 +86,9 @@ test("primary capture components render channel chooser after service selection 
   assert.match(read("components/yggdrasil-initiation-form.tsx"), /href=\{pdfUrl\} download/);
   assert.match(read("components/reiki-choice-capture.tsx"), /href=\{guideUrl\}/);
   assert.match(read("components/consultation-choice-capture.tsx"), /isPaidRequest \? \(/);
+  // The global last-slide lead form uses the committed CRM intake directly.
+  const footer = read("components/sitewide-lead-capture.tsx");
+  assert.match(footer, /<CompactLeadCapture/);
+  assert.doesNotMatch(footer, /<ContactChannelChooser/);
+
 });

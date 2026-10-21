@@ -262,7 +262,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 
   const p=data.practitioner
   const onboardingService=(data.services||[]).find(item=>item.pricingMode==='free'||item.draftCopy?.pricingMode==='free')||null
-  const needsOnboarding=!p||(!Object.keys(p.profile||{}).length&&['draft','submitted','changes_requested'].includes(p.status))
+  const needsOnboarding=!data.practiceActivated
   const requests=data.requests||[]
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
@@ -509,6 +509,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
+           onSaveSitePresentation={video=>act(()=>practiceFetch('/profile',{action:'save',
+             profile:{...emptyProfile,...(p?.draftProfile||{}),videoPresentation:video},expectedRevision:p.revision}),{rethrow:true})}
            onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
         {activePanel==='events'&&<PracticeEvents locale={locale} accountId={accountId} />}
 
