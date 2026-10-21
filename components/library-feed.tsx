@@ -57,11 +57,12 @@ function dateLabel(date: string | undefined, locale: PublicLocale) {
     new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(parsed);
 }
 
-export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false }: {
+export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false, timeline = false }: {
   locale: PublicLocale;
   items: LibraryFeedItem[];
   videosOnly?: boolean;
   guidesOnly?: boolean;
+  timeline?: boolean;
 }) {
   const copy = words[locale];
   const [kind, setKind] = useState<"all" | LibraryFeedItem["kind"]>("all");
@@ -85,7 +86,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
     { id: "guide", label: copy.filterGuides },
   ] as const;
 
-  return <section className={styles.feed} aria-label={videosOnly ? copy.videos : guidesOnly ? copy.guides : copy.latest}>
+  return <section className={[styles.feed, timeline && styles.timeline].filter(Boolean).join(" ")} aria-label={videosOnly ? copy.videos : guidesOnly ? copy.guides : copy.latest}>
     <div className={styles.toolbar}>
       {!videosOnly && !guidesOnly && <div className={styles.filters} role="group" aria-label={copy.latest}>
         {filters.map(filter => <button type="button" key={filter.id}
