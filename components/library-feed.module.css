@@ -82,3 +82,24 @@
  .filters button{padding:5px 10px}
 }
 @media(prefers-reduced-motion:reduce){.image,.card{transition:none}}
+
+/* The Ideas page presents the same approved feed as a familiar single-column news stream. */
+.timeline{width:min(100%,780px)}
+.timeline .list{grid-template-columns:minmax(0,1fr);gap:14px}
+.timeline .card,.timeline .playing{display:block;grid-column:auto;min-height:0;border-color:#c9e1df;border-radius:16px;background:#fff;box-shadow:0 6px 22px rgba(27,104,103,.065)}
+.timeline .visual,.timeline .playing .visual{width:auto;min-height:0;height:auto;aspect-ratio:16/9;margin:10px 10px 0;border-radius:11px;background:#dcefeb}
+.timeline .playButton,.timeline .pictureLink{min-height:0}
+.timeline .details,.timeline .playing .details{padding:14px 18px 18px;gap:8px}
+.timeline .details h2{font-size:clamp(20px,3.5vw,25px)}
+.timeline .description{font-size:13px;-webkit-line-clamp:3}
+.timeline .meta{font-size:11px}
+.timeline .primaryAction{font-size:12px;color:#087577}
+.timeline .filters button[aria-pressed="true"]{background:#087577;border-color:#087577;color:#fff}
+.timeline .more{border-color:#9bc9c5;background:#e9f7f4;color:#126d6c}
+@media(max-width:640px){
+ .timeline .list{gap:10px}
+ .timeline .visual,.timeline .playing .visual{margin:7px 7px 0;aspect-ratio:16/9}
+ .timeline .details,.timeline .playing .details{padding:12px 13px 15px;gap:6px}
+ .timeline .details h2{font-size:19px}
+ .timeline .description{font-size:12px;-webkit-line-clamp:2}
+}

@@ -2,12 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookCatalog } from "@/components/book-catalog";
+import { IdeasNewsFeed } from "@/components/ideas-news-feed";
 import { PageVideo } from "@/components/page-video";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { books } from "@/data/library";
 import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+
+// A removed or unpublished item must not linger in a public cached feed.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -54,6 +59,7 @@ export default async function LocalizedBooksPage({ params }: PageProps) {
         locale={locale as Locale}
         video={<PageVideo slot="books-intro" locale={locale} />}
       />
+      <IdeasNewsFeed locale={locale as Locale} />
       <PublicConsultationCta locale={locale as Locale} />
     </>
   );

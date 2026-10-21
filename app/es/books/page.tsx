@@ -1,11 +1,16 @@
 import { LibraryBackLink } from "@/components/library-hub";
 import { IdeasDiscovery } from "@/components/ideas-discovery";
+import { IdeasNewsFeed } from "@/components/ideas-news-feed";
 import { DaoHexagramLibraryLink } from "@/components/dao-hexagram-library-link";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { SpanishBookShowcase } from "@/components/spanish-book-showcase";
 import { books } from "@/data/library";
 import { spanishMetadata } from "@/lib/spanish-metadata";
+
+// A removed or unpublished item must not linger in a public cached feed.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata = spanishMetadata(
   "/es/books",
@@ -27,6 +32,7 @@ export default function SpanishBooksPage() {
       </section>
       <DaoHexagramLibraryLink locale="es" />
       <SpanishBookShowcase books={books} />
+      <IdeasNewsFeed locale="es" />
       <p className="remedy-disclaimer">Los materiales se ofrecen como archivo educativo de los textos del autor y no sustituyen el diagnóstico ni el tratamiento médico.</p>
       <PublicConsultationCta locale="es" />
     </main>

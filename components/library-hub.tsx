@@ -209,13 +209,13 @@ const videoYouTubeIds: Record<PublicLocale, Record<string, string>> = {
   es: {},
 };
 
-export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [] }: {
-  locale: PublicLocale;
-  view?: LibraryView;
-  publishedVideos?: LibraryPublicVideo[];
-  articles?: LibraryPublicArticle[];
-}) {
-  const text = libraryCopy[locale];
+
+/** The Library and Ideas surfaces share a single published-media feed, including deduplication. */
+export function buildLibraryFeedItems(
+  locale: PublicLocale,
+  publishedVideos: LibraryPublicVideo[] = [],
+  articles: LibraryPublicArticle[] = [],
+): { feedItems: LibraryFeedItem[]; guideFeed: LibraryFeedItem[] } {
   const guides = bookItems(locale);
   const publishedIds = new Set(publishedVideos.map(video => video.youtubeId));
   const publicFeed: LibraryFeedItem[] = publishedVideos.map(video => ({
@@ -260,6 +260,17 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
   const dated = [...publicFeed, ...articleFeed].sort((a, b) =>
     (Date.parse(b.publishedAt || "") || 0) - (Date.parse(a.publishedAt || "") || 0));
   const feedItems = [...dated, ...siteVideoFeed, ...growthFeed, ...guideFeed];
+  return { feedItems, guideFeed };
+}
+
+export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [] }: {
+  locale: PublicLocale;
+  view?: LibraryView;
+  publishedVideos?: LibraryPublicVideo[];
+  articles?: LibraryPublicArticle[];
+}) {
+  const text = libraryCopy[locale];
+  const { feedItems, guideFeed } = buildLibraryFeedItems(locale, publishedVideos, articles);
 
   return (
     <main className="library-shell" lang={locale}>
