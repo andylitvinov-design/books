@@ -103,7 +103,7 @@ export function deniedPaidRequestMetadata(policy, request) {
 }
 
 // Diagnostic only: exact source-linked destinations, never a fetch permission.
-// Read one named, nonsecret marker only for the three eligible public families.
+// Read one named, nonsecret marker only for source-linked speculative routes.
 export async function deniedPaidFetchMetadata(policy, request) {
   const result = { publicFetchDestination: 'unknown', nextRouterPrefetch: 'unavailable', rscQueryKeyCount: 0 };
   let raw, url;
@@ -125,8 +125,11 @@ export async function deniedPaidFetchMetadata(policy, request) {
     else if (url.pathname === '/' + policy.locale + '/services/free-situation-review') result.publicFetchDestination = 'free-review';
     else if (url.pathname === '/' + policy.locale + '/cart') result.publicFetchDestination = 'cart';
   } catch { return result; }
-  // A cart Link is source-proven, but cart state and headers are not in scope.
-  if (!['home', 'services', 'free-review'].includes(result.publicFetchDestination)) return result;
+  if (!['home', 'services', 'free-review', 'cart'].includes(result.publicFetchDestination)) return result;
+  // Cart state stays out of scope. Its one marker is read only for this exact
+  // nonempty single-field query, never for a cart navigation or malformed query.
+  if (result.publicFetchDestination === 'cart'
+    && (result.rscQueryKeyCount !== 1 || !/^\?_rsc=[^&]+(?![\s\S])/.test(url.search))) return result;
   let timer;
   try {
     result.nextRouterPrefetch = await Promise.race([
@@ -160,13 +163,13 @@ export async function installPaidReadOnlyGuard(context, policy) {
       try {
         diagnostic = { reason: denied, ...deniedPaidRequestMetadata(policy, request), ...await deniedPaidFetchMetadata(policy, request) };
         suppressPrefetch = denied === 'noncanonical URL'
-          && ['home', 'services', 'free-review'].includes(diagnostic.publicFetchDestination)
+          && ['home', 'services', 'free-review', 'cart'].includes(diagnostic.publicFetchDestination)
           && diagnostic.nextRouterPrefetch === 'one' && diagnostic.rscQueryKeyCount === 1
           && /^\?_rsc=[^&]+(?![\s\S])/.test(new URL(request.url()).search);
       }
       catch { /* Metadata must never interrupt the original record/abort path. */ }
-      // Explicit test-only exception: abort speculative public prefetch without
-      // fetching it. Never count this as a successful GET or suppress cart.
+      // Explicit test-only exception: abort source-linked speculative prefetch
+      // without fetching it or reading cart state. This is not a successful GET.
       if (suppressPrefetch) {
         intentionallySuppressedPrefetches++;
         await abort(route); return;
