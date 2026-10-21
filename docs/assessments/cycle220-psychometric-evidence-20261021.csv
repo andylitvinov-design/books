@@ -1,0 +1,7 @@
+key,instrument,item_count,edition_context,source_doi,rights_gate,status
+eswang-cervin2026-enus-adult60,E-SWAN-G adult initial full,60,US adult self-report,10.1177/10731911261429639,commercial_permission_unverified,research_only
+eswang-cervin2026-enus-youthparent60,E-SWAN-G youth parent initial full,60,US parent proxy,10.1177/10731911261429639,commercial_permission_unverified,research_only
+eswang-cervin2026-enus-adult32,E-SWAN-G adult short,32,US adult self-report derived,10.1177/10731911261429639,commercial_permission_unverified,research_only
+eswang-cervin2026-enus-youthparent32,E-SWAN-G youth parent short,32,US parent proxy derived,10.1177/10731911261429639,commercial_permission_unverified,research_only
+isparx-padgett2025-nuca-inuit39,I-SPARX Inuit youth wellness,39,Nunavut Inuit youth actual administration locale unverified,10.32799/ijih.v21i1.45548,noncommercial_repository_rights_and_community_review_required,research_only
+edsobstigma-susoribera2026-eses36,ED obesity societal stigma scale,36,Spain Spanish speaking exact administered wording unverified,10.3390/ijerph23030399,commercial_permission_unverified,research_only
