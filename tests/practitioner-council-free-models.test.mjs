@@ -153,7 +153,7 @@ test('daily report is cached under one claimed private date before Telegram send
   assert.match(code,/report_markdown,model_outcomes/)
   assert.match(code,/report_markdown is null returning/)
   assert.match(code,/if\(!markdown\)/)
-  assert.match(code,/reviewDailyCouncil\(report,env,fetcher\)/)
+  assert.match(code,/reviewDailyCouncil\(report,aiEnv,fetcher\)/)
   assert.match(code,/composeDailyCouncilTelegram\(report,reviews\)/)
   assert.match(code,/One delivery per invocation/)
   assert.match(code,/status='failed'/)
