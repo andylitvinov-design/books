@@ -215,7 +215,9 @@ test('Mistral Studio Free mode fail-closed on inaccessible model, 429 and substi
   })
   assert.equal(missing.status,'unavailable')
   assert.equal(missing.reason,'MODEL_NOT_IN_WORKSPACE')
-  assert.equal(count,1)
+  // A blocked Studio Small model can check OpenRouter's public free catalog
+  // once; no POST occurs unless a price-zero Mistral is available.
+  assert.equal(count,2)
   const quota=await reviewMistral(report,env,async(url)=>
     String(url).endsWith('/models')
       ?json({data:[{id:MISTRAL_DIRECT_MODEL}]})
