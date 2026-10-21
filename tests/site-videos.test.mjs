@@ -575,10 +575,12 @@ test('a hung storage request is aborted after the bounded timeout', async t => {
   await assert.rejects(pending, codeIs('storage'))
 })
 
-test('Spanish is enabled only for its public About video, never private or unwired placements', () => {
+test('Spanish public videos are enabled only for About and the registered thank-you route', () => {
   assert.equal(videoKey('about-intro', 'es'), 'about-intro:es')
   assert.equal(videoPagePath('about-intro', 'es'), '/es/about')
-  for (const slot of SITE_VIDEO_SLOTS.filter(slot => slot.id !== 'about-intro')) {
+  assert.equal(videoKey('thank-you', 'es'), 'thank-you:es')
+  assert.equal(videoPagePath('thank-you', 'es'), '/es/thank-you')
+  for (const slot of SITE_VIDEO_SLOTS.filter(slot => !['about-intro','thank-you'].includes(slot.id))) {
     assert.throws(() => videoKey(slot.id, 'es', slot.entityType ? 'valid' : ''), codeIs('validation'))
   }
   const record = published({ slot: 'about-intro', locale: 'es' })
