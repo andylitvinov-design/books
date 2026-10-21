@@ -71,14 +71,15 @@ export default function PostSignupInstallOffer({locale='en',visible=false,onDism
   const close=useRef(null)
   const offerVisible=useRef(false)
   close.current=onDismiss
-  offerVisible.current=visible
+  useEffect(()=>{offerVisible.current=visible},[visible])
   useEffect(()=>{
     setDevice(mobileDevice())
     const unsubscribe=onPwaInstallPrompt(setPrompt)
     const installed=()=>{
-      const updated=mobileDevice()
-      setDevice(updated)
-      if(offerVisible.current&&updated.installed)close.current?.()
+      // The appinstalled event itself is proof: the original browser tab
+      // may remain non-standalone even after the PWA was installed.
+      setDevice({...mobileDevice(),installed:true})
+      if(offerVisible.current)close.current?.()
     }
     window.addEventListener('appinstalled',installed)
     return ()=>{
@@ -165,7 +166,7 @@ export default function PostSignupInstallOffer({locale='en',visible=false,onDism
           {copyDone&&<p className={styles.copied}>{t.copied}</p>}
         </div>}
         <button type="button" className={styles.later} onClick={()=>onDismiss?.()}>{t.later}</button>
-        <a className={styles.guide} href={'/'+(locale==='ru'?'ru':'en')+'/install'}>{t.cta} →</a>
+        {context!=='saved'&&<a className={styles.guide} href={'/'+(locale==='ru'?'ru':'en')+'/install'}>{t.cta} →</a>}
         <p className={styles.privacy}>{t.privacy}</p>
       </div>
     </section>
