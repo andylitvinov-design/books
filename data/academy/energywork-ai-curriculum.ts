@@ -551,7 +551,11 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
 
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    ...withClosingPractices(commonSlides.filter((slide) => slide.phase === "flight"), ["flight-03"], "flight-done"),
+    // Finish the Sun practice and celebrate Lesson 1 before the Google-save gate.
+    // This must match the canonical p10 sequence: flight-03 → flight-done → flight-save.
+    ...withClosingPractices(commonSlides.filter((slide) =>
+      slide.phase === "flight" && slide.id !== "flight-save"), ["flight-03"], "flight-done"),
+    commonSlides.find((slide) => slide.id === "flight-save")!,
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),
