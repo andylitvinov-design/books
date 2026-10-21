@@ -11,15 +11,16 @@ test("milestone save and continue actions appear on the slide instead of footer"
   assert.match(learner, /data-reiki-milestone-choices/);
   assert.match(learner, /data-reiki-tomorrow-choice/);
   assert.match(learner, /data-energywork-next/);
-  assert.match(learner, /tomorrowChoice: "Save and finish for today"/);
-  assert.match(learner, /tomorrowChoice: "Сохранить и закончить на сегодня"/);
+  assert.match(learner, /tomorrowChoice: "Save my lesson"/);
+  assert.match(learner, /tomorrowChoice: "Сохранить урок"/);
   assert.match(learner, /onClick=\{finishForToday\}/);
   assert.match(learner, /slide\.kind !== "milestone" && !completed/);
   assert.doesNotMatch(learner, /data-reiki-reminder-setup|reminderSetupOpen|downloadTomorrowReminder/);
   assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
   assert.match(css, /\.milestoneInlineChoices/);
   assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /min-height: 55px/);
+  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /min-height: 64px/);
 });
 test("guest must consent and authenticate before server save and post-save install", () => {
   assert.match(learner, /if \(sync === "guest" \|\| sync === "consent"\)/);
