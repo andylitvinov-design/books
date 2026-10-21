@@ -29,7 +29,7 @@ const copy = {
     choose: "Choose a site section",
     quickHeading: "PERSONAL CONSULTATION · TORONTO & ONLINE",
     quickPrice: "€50 / 30 min · €100 / 60 min",
-    quickBook: "Request a consultation",
+    quickBook: "Request a consultation · from €50",
     quickFree: "Free written review",
     slides: {
       services: { eyebrow: "PERSONAL SUPPORT · SERVICES", title: "Personal growth & emotional clarity", lead: "Guided imagery, meaningful questions and space to explore your next step.", action: "View services" },
@@ -47,7 +47,7 @@ const copy = {
     choose: "Выберите раздел сайта",
     quickHeading: "ЛИЧНАЯ КОНСУЛЬТАЦИЯ · ТОРОНТО И ОНЛАЙН",
     quickPrice: "€50 / 30 мин · €100 / 60 мин",
-    quickBook: "Запросить консультацию",
+    quickBook: "Запросить консультацию · от €50",
     quickFree: "Бесплатный письменный разбор",
     slides: {
       services: { eyebrow: "ЛИЧНАЯ РАБОТА · УСЛУГИ", title: "Личное развитие и внутренняя ясность", lead: "Работа с образами, важными вопросами и поддержка на пути к следующему шагу.", action: "Посмотреть услуги" },
@@ -65,7 +65,7 @@ const copy = {
     choose: "Elige una sección del sitio",
     quickHeading: "CONSULTA PERSONAL · TORONTO Y EN LÍNEA",
     quickPrice: "€50 / 30 min · €100 / 60 min",
-    quickBook: "Solicitar una consulta",
+    quickBook: "Solicitar una consulta · desde €50",
     quickFree: "Revisión escrita gratis",
     slides: {
       services: { eyebrow: "APOYO PERSONAL · SERVICIOS", title: "Crecimiento personal y claridad", lead: "Imágenes guiadas, preguntas significativas y espacio para tu próximo paso.", action: "Ver servicios" },
