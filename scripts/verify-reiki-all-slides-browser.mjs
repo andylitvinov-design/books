@@ -393,7 +393,36 @@ async function exerciseJourney(page, locale, width) {
 }
 
 async function verifySaveThenInstall(page, locale) {
-  const removeMock = await installLocalAccountMock(page);
+  // This models an already Google-authenticated first-time enrollee.
+  // It exercises the real consented start API path, never a fabricated
+  // completed OAuth redirect or a live person's private progress.
+  const accountId = "00000000-0000-4000-8000-000000000001";
+  const progress = { accountId, enrolled: false, slideId: "welcome-01",
+    answers: {}, revision: 0, savedAt: null, sharingWithTeacher: false };
+  const progressPattern = "**/api/app/academy-energywork";
+  const bootstrapPattern = "**/api/app/bootstrap";
+  await page.route(progressPattern, async route => {
+    if (route.request().method() === "POST") {
+      const body = route.request().postDataJSON();
+      if (body.action !== "start" || body.consent !== true ||
+          !body.firstLesson?.answers?.["flight-04"]) {
+        await route.fulfill({ status:409, contentType:"application/json",
+          body: JSON.stringify({ error:"SAVE_NOT_CONFIRMED" }) });
+        return;
+      }
+      progress.enrolled = true;
+      progress.slideId = "tan-01";
+      progress.answers = body.firstLesson.answers;
+      progress.revision = 1;
+      progress.savedAt = new Date().toISOString();
+    }
+    await route.fulfill({ status:200, contentType:"application/json",
+      body: JSON.stringify(progress) });
+  });
+  await page.route(bootstrapPattern, async route => {
+    await route.fulfill({ status:200, contentType:"application/json",
+      body: JSON.stringify({ account: { id:accountId, displayName:"Test learner", onboardingState:"active" } }) });
+  });
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
     { waitUntil: "domcontentloaded", timeout: 90000 });
@@ -412,6 +441,11 @@ async function verifySaveThenInstall(page, locale) {
     .toHaveAttribute("data-energywork-slide-id", "flight-done");
   await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(2);
   await page.locator('button[data-reiki-tomorrow-choice]').click();
+  await expect(page.locator("[data-energywork-slide-id]"))
+    .toHaveAttribute("data-energywork-slide-id", "flight-save");
+  await expect(page.locator("[data-reiki-install-offer]")).toHaveCount(0);
+  await page.locator("[data-reiki-first-lesson-consent]").check();
+  await page.locator("button[data-reiki-first-lesson-google-save]").click();
   const offer = page.locator("[data-reiki-install-offer]");
   await expect(offer).toBeVisible();
   await expect(offer.locator("a[href='/" + locale + "/install']")).toBeVisible();
@@ -421,8 +455,9 @@ async function verifySaveThenInstall(page, locale) {
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "flight-save");
   await expect(page.locator("[data-reiki-install-offer]")).toHaveCount(0);
-  await removeMock();
-  console.log("REIKI_SAVE_INSTALL_OFFER_PASS", JSON.stringify({engine:engineName,locale,width:375}));
+  await page.unroute(progressPattern);
+  await page.unroute(bootstrapPattern);
+  console.log("REIKI_CONSENTED_SAVE_INSTALL_PASS", JSON.stringify({engine:engineName,locale,width:375}));
 }
 
 /* Screenshot-equivalent short mobile viewport: first-view course instructions should
