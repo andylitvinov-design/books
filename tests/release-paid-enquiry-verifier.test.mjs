@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { releasePaidPolicy, classifyPaidRequest, deniedPaidRequestMetadata, installPaidReadOnlyGuard, expectedPaidForm, readPaidForm, assertPaidFormSnapshot, verifyPaidEnquiryUi, verifyReleasePaidEnquiry } from '../scripts/helpers/release-paid-enquiry-verifier.mjs';
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from '../lib/whatsapp-enquiry.js';
@@ -391,14 +392,14 @@ test('Release caller retains matrix, explicit label, and no unsafe helper or run
 // These synthetic canaries model sensitive input. Neither values nor unknown
 // key strings may reach a guard assertion; only the approved bounded metadata.
 const DIAGNOSTIC_CANARY = 'SYNTHETIC_SECRET_MUST_NOT_APPEAR';
-const metadataKeys = ['resourceType', 'sameOrigin', 'pathClass', 'knownQueryKeys', 'unknownQueryKeyCount', 'hasPercent', 'hasBackslash', 'hasHash', 'hasUserinfo'];
+const metadataKeys = ['resourceType', 'sameOrigin', 'pathClass', 'knownQueryKeys', 'unknownQueryKeyCount', 'hasPercent', 'hasBackslash', 'hasHash', 'hasUserinfo', 'publicScriptRoute', 'publicScriptBrackets'];
 test('denied metadata reports only approved schema and never makes a query allowable', () => {
   const policy = releasePaidPolicy(base);
   const req = request(policy, '/_next/static/chunks/app/%5Blocale%5D/page.js?_rsc=' + DIAGNOSTIC_CANARY + '&v=' + DIAGNOSTIC_CANARY + '&dpl=' + DIAGNOSTIC_CANARY + '&' + DIAGNOSTIC_CANARY + '=hidden', 'GET', 'script');
   assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL');
   const metadata = deniedPaidRequestMetadata(policy, req);
   assert.deepEqual(Object.keys(metadata), metadataKeys);
-  assert.deepEqual(metadata, { resourceType: 'script', sameOrigin: true, pathClass: 'next-static', knownQueryKeys: ['_rsc', 'v', 'dpl'], unknownQueryKeyCount: 1, hasPercent: true, hasBackslash: false, hasHash: false, hasUserinfo: false });
+  assert.deepEqual(metadata, { resourceType: 'script', sameOrigin: true, pathClass: 'next-static', knownQueryKeys: ['_rsc', 'v', 'dpl'], unknownQueryKeyCount: 1, hasPercent: true, hasBackslash: false, hasHash: false, hasUserinfo: false, publicScriptRoute: 'unknown', publicScriptBrackets: 'unknown' });
   assert.doesNotMatch(JSON.stringify(metadata), new RegExp(DIAGNOSTIC_CANARY));
   assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL', 'Metadata must not normalize or allow the request');
 });
@@ -472,6 +473,189 @@ const chunkPath = hash => '/_next/static/chunks/' + imageryRouteFile.replace(/\.
 const nominalChunk = chunkPath('0123456789abcdef');
 const portraitPath = width => '/_next/image?url=' + encodeURIComponent(portraitAsset) + '&w=' + width + '&q=75';
 const nominalPortrait = portraitPath(64);
+
+// Only these current physical page files may receive a public diagnostic label.
+// This is not evidence that a request came from prefetch or from this build.
+const publicScriptSources = [
+  ['app/page.tsx', 'home', 'HomePage', 'locale="en"'],
+  ['app/[locale]/page.tsx', 'home', 'RussianHomePage', 'if ((await params).locale !== "ru") notFound();'],
+  ['app/es/page.tsx', 'home', 'SpanishHomePage', 'lang="es"'],
+  ['app/[locale]/services/page.tsx', 'services', 'ServicesPage', '<ServicesConversionHero locale={locale as Locale} />'],
+  ['app/es/services/page.tsx', 'services', 'SpanishServicesPage', '<ServicesConversionHero locale="es" />'],
+  ['app/[locale]/services/free-situation-review/page.tsx', 'free-review', 'FreeSituationReviewPage', 'return <FreeEntryLanding locale={locale} kind="situation" />;'],
+  ['app/[locale]/services/imagery-therapy/page.tsx', 'imagery', 'ServicePage', 'return <PersonalServiceLanding locale={locale as ServicePageLocale} service={service} />;'],
+];
+function assertPublicScriptSource(text, name, marker) {
+  const ast = ts.createSourceFile('public-page.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const exports = ast.statements.filter(node => ts.isFunctionDeclaration(node)
+    && node.modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword));
+  assert.equal(exports.length, 1, 'One physical public default page');
+  assert.equal(exports[0].name?.text, name, 'Exact public page identity');
+  assert.ok(text.includes(marker), 'Exact public page content marker');
+}
+const scriptShapes = publicScriptSources.flatMap(([file, route]) => {
+  const physical = file.replace(/\.tsx$/, '');
+  const spellings = physical.includes('[locale]')
+    ? [['encoded-uppercase', '%5Blocale%5D'], ['encoded-lowercase', '%5blocale%5d'], ['literal', '[locale]']]
+    : [['none', null]];
+  return spellings.map(([brackets, segment]) => ({ route, brackets,
+    path: '/_next/static/chunks/' + (segment ? physical.replace('[locale]', segment) : physical) + '-0123456789abcdef.js' }));
+});
+const publicFields = metadata => ({ publicScriptRoute: metadata.publicScriptRoute, publicScriptBrackets: metadata.publicScriptBrackets });
+const unknownScript = { publicScriptRoute: 'unknown', publicScriptBrackets: 'unknown' };
+const nominalPublicScript = scriptShapes.find(item => item.route === 'free-review' && item.brackets === 'encoded-uppercase');
+function assertNominalPublicScript(policy) {
+  const req = request(policy, nominalPublicScript.path, 'GET', 'script');
+  assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL');
+  assert.deepEqual(publicFields(deniedPaidRequestMetadata(policy, req)), { publicScriptRoute: 'free-review', publicScriptBrackets: 'encoded-uppercase' });
+  return req;
+}
+
+for (const [file, , name, marker] of publicScriptSources) test('diagnostic physical page binding: ' + file, () => {
+  const text = read(file);
+  assertPublicScriptSource(text, name, marker);
+  assert.throws(() => assertPublicScriptSource(text.replace('function ' + name + '(', 'function MissingPage('), name, marker), /Exact public page identity/);
+  assert.throws(() => assertPublicScriptSource(text.replaceAll(marker, ''), name, marker), /Exact public page content marker/);
+  assert.throws(() => assertPublicScriptSource('', name, marker), /One physical public default page/);
+});
+
+test('diagnostic addition preserves exact classifier and guard execution blocks', () => {
+  const text = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
+  const ast = ts.createSourceFile('guard.mjs', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const expected = {
+    classifyPaidRequest: '374db363c80abdf4193e0af508bae18b41bfd065d27a51b9ca54601e0b597346',
+    installPaidReadOnlyGuard: '4e563df7b87afc886507f887bd6a7ff2b5d4f4b749216da57ae33e5195f852be',
+  };
+  for (const [name, digest] of Object.entries(expected)) {
+    const declarations = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
+    assert.equal(declarations.length, 1);
+    const block = declarations[0].getText(ast);
+    const hash = value => createHash('sha256').update(value).digest('hex');
+    assert.equal(hash(block), digest, 'Original permission/abort/fatal block unchanged: ' + name);
+    assert.notEqual(hash(block.replace(name, 'Mutated')), digest, 'Byte-identity control is active');
+  }
+});
+
+for (const mode of [base, live]) for (const shape of scriptShapes) test(`${mode.label} finite ${shape.route}/${shape.brackets}/${shape.path.includes('/es/') ? 'es' : 'physical'} diagnostic preserves decision`, async () => {
+  const policy = releasePaidPolicy(mode), req = request(policy, shape.path, 'GET', 'script');
+  const expectedReason = shape.brackets === 'none' || (shape.route === 'imagery' && shape.brackets === 'encoded-uppercase')
+    ? null : shape.brackets === 'literal' ? 'unallowlisted public resource' : 'noncanonical URL';
+  assert.equal(classifyPaidRequest(policy, req), expectedReason);
+  assert.deepEqual(publicFields(deniedPaidRequestMetadata(policy, req)), { publicScriptRoute: shape.route, publicScriptBrackets: shape.brackets });
+  assert.equal(classifyPaidRequest(policy, req), expectedReason, 'Diagnostics do not affect permission');
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  assert.deepEqual(await context.send(req), expectedReason ? ['abort'] : ['fetch', 'fulfill']);
+  if (!expectedReason) assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+  else assert.throws(() => guard.assertClean(), error => {
+    assert.match(error.message, /Paid read-only network boundary violated/);
+    assert.deepEqual(error.actual, [{ reason: expectedReason, ...deniedPaidRequestMetadata(policy, req) }]);
+    assert.doesNotMatch(error.message, /https?:\/\/|\/_next\/|0123456789abcdef/);
+    return true;
+  });
+});
+
+const scriptShapeFaults = [
+  ['unknown public route', p => p.replace('free-situation-review', 'other-service')],
+  ['private route', p => p.replace('services/free-situation-review', 'client/records')],
+  ['admin route', p => p.replace('services/free-situation-review', 'admin/clients')],
+  ['secret segment', p => p.replace('free-situation-review', DIAGNOSTIC_CANARY)],
+  ['unproved locale layout', p => p.replace('services/free-situation-review/page', 'layout')],
+  ['unproved static Spanish sibling', p => p.replace('%5Blocale%5D', 'es'), null],
+  ['unproved static English sibling', p => p.replace('%5Blocale%5D', 'en'), null],
+  ['different parameter name', p => p.replace('locale', 'language')],
+  ['catch-all parameter', p => p.replace('locale', '...locale')],
+  ['mixed bracket case', p => p.replace('%5D', '%5d')],
+  ['double encoded brackets', p => p.replaceAll('%5', '%255')],
+  ['encoded separator', p => p.replace('/services/', '%2Fservices/')],
+  ['encoded letter', p => p.replace('services', '%73ervices')],
+  ['literal dot traversal', p => p.replace('/services/', '/extra/../services/')],
+  ['encoded dot traversal', p => p.replace('/services/', '/%2e%2e/services/')],
+  ['backslash', p => p.replace('/services/', '\\services/')],
+  ['wrong static prefix', p => p.replace('/_next/static/', '/private/static/')],
+  ['double slash', p => p.replace('/chunks/', '/chunks//')],
+  ['short hash', p => p.replace('0123456789abcdef', '0123456789abcde')],
+  ['long hash', p => p.replace('0123456789abcdef', '0123456789abcdef0')],
+  ['uppercase hash', p => p.replace('abcdef', 'ABCDEF')],
+  ['nonhex hash', p => p.replace('abcdef', 'ghijkl')],
+  ['empty hash', p => p.replace('0123456789abcdef', '')],
+  ['secret hash', p => p.replace('0123456789abcdef', DIAGNOSTIC_CANARY)],
+  ['dotted chunk basename', p => p.replace('page-', 'page.')],
+  ['source map', p => p + '.map'],
+  ['CSS', p => p.replace('.js', '.css')],
+  ['trailing path', p => p + '/extra'],
+  ['trailing newline', p => p + '\n'],
+  ['leading whitespace', p => ' ' + p, 'malformed URL'],
+  ['bare query', p => p + '?'],
+  ['known query', p => p + '?v=' + DIAGNOSTIC_CANARY],
+  ['unknown secret query', p => p + '?' + DIAGNOSTIC_CANARY + '=' + DIAGNOSTIC_CANARY],
+  ['bare hash', p => p + '#'],
+  ['secret fragment', p => p + '#' + DIAGNOSTIC_CANARY],
+];
+for (const mode of [base, live]) for (const [name, mutate, expectedReason = 'noncanonical URL'] of scriptShapeFaults) test(`${mode.label} unknown script metadata for ${name} after nominal`, async () => {
+  const policy = releasePaidPolicy(mode); assertNominalPublicScript(policy);
+  const req = request(policy, mutate(nominalPublicScript.path), 'GET', 'script');
+  const reason = classifyPaidRequest(policy, req); assert.equal(reason, expectedReason);
+  const metadata = deniedPaidRequestMetadata(policy, req);
+  assert.deepEqual(publicFields(metadata), unknownScript);
+  assert.deepEqual(Object.keys(metadata), metadataKeys);
+  assert.equal(classifyPaidRequest(policy, req), reason);
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  // Unknown diagnostics do not revoke the original generic ASCII static rule.
+  assert.deepEqual(await context.send(req), reason ? ['abort'] : ['fetch', 'fulfill']);
+  if (!reason) assert.deepEqual(guard.assertClean(), { postAttempts: 0, blockedRequests: 0, allowedGets: 2 });
+  else assert.throws(() => guard.assertClean(), error => {
+    assert.match(error.message, /Paid read-only network boundary violated/);
+    assert.equal(error.actual[0].reason, reason);
+    assert.deepEqual(publicFields(error.actual[0]), unknownScript);
+    assert.doesNotMatch(error.message + JSON.stringify(error.actual), new RegExp(DIAGNOSTIC_CANARY, 'i'));
+    assert.doesNotMatch(error.message, /https?:\/\/|\/_next\/|client\/|admin\//);
+    return true;
+  });
+});
+
+const scriptRequestFaults = [
+  ['non-GET', req => ({ ...req, method: () => 'POST' })],
+  ['wrong type', req => ({ ...req, resourceType: () => 'fetch' })],
+  ['unknown type', req => ({ ...req, resourceType: () => DIAGNOSTIC_CANARY })],
+  ['navigation', req => ({ ...req, isNavigationRequest: () => true })],
+  ['missing navigation value', req => ({ ...req, isNavigationRequest: () => undefined })],
+  ['external origin', req => ({ ...req, url: () => req.url().replace(/https?:\/\/[^/]+/, 'https://example.invalid') })],
+  ['wrong scheme', req => ({ ...req, url: () => req.url().replace(/^https?/, 'ftp') })],
+  ['userinfo', req => ({ ...req, url: () => req.url().replace('://', '://' + DIAGNOSTIC_CANARY + ':hidden@') })],
+  ['malformed URL', req => ({ ...req, url: () => DIAGNOSTIC_CANARY })],
+];
+for (const mode of [base, live]) for (const [name, mutate] of scriptRequestFaults) test(`${mode.label} ineligible script metadata for ${name} after nominal`, async () => {
+  const policy = releasePaidPolicy(mode), nominal = assertNominalPublicScript(policy), req = mutate(nominal);
+  const reason = classifyPaidRequest(policy, req); assert.notEqual(reason, null);
+  assert.deepEqual(publicFields(deniedPaidRequestMetadata(policy, req)), unknownScript);
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  assert.deepEqual(await context.send(req), ['abort']);
+  assert.throws(() => guard.assertClean(), error => {
+    assert.match(error.message, name === 'non-GET' ? /attempted a POST/ : /network boundary violated/);
+    assert.doesNotMatch(error.message + JSON.stringify(error.actual), new RegExp(DIAGNOSTIC_CANARY, 'i'));
+    return true;
+  });
+});
+
+for (const broken of ['missing', 'throwing']) test('script diagnostic ' + broken + ' navigation metadata retains original fatal denial', async () => {
+  const policy = releasePaidPolicy(base), nominal = assertNominalPublicScript(policy);
+  const req = { ...nominal };
+  if (broken === 'missing') delete req.isNavigationRequest;
+  else req.isNavigationRequest = () => { throw new Error(DIAGNOSTIC_CANARY); };
+  assert.equal(classifyPaidRequest(policy, req), 'noncanonical URL');
+  const { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  assert.deepEqual(await context.send(req), ['abort']);
+  assert.throws(() => guard.assertClean(), error => {
+    assert.match(error.message, /Paid read-only network boundary violated/);
+    assert.deepEqual(error.actual, ['noncanonical URL']);
+    assert.doesNotMatch(error.message, new RegExp(DIAGNOSTIC_CANARY));
+    return true;
+  });
+});
 
 test('public chunk and twelve portrait URLs remain bound to actual route, JSX and image config', () => {
   assert.match(imageryRouteSource, /const service = "imagery-therapy" as const;/);

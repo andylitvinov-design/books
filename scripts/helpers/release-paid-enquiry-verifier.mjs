@@ -48,6 +48,25 @@ export function classifyPaidRequest(policy, request) {
 
 // Diagnostics only. This never participates in the allow/deny decision.
 // Keep values, arbitrary keys, paths, hosts and payloads out of failure logs.
+function publicScriptMetadata(policy, request, raw, url, resourceType) {
+  const unknown = { publicScriptRoute: 'unknown', publicScriptBrackets: 'unknown' };
+  if (!url || request.method() !== 'GET' || resourceType !== 'script'
+    || request.isNavigationRequest() !== false || url.origin !== policy.origin
+    || raw !== policy.origin + url.pathname || url.href !== raw
+    || url.search || url.hash || url.username || url.password || raw.includes('\\')) return unknown;
+  // Exact physical public page files, not generic locale routes. The dynamic
+  // home serves Russian only; English and Spanish have separate page files.
+  // Next 15.5.21 emits app/<physical page>-<16 hex>.js. Lowercase/literal
+  // brackets describe an alternate spelling only; they never authorize it.
+  const plain = /^\/_next\/static\/chunks\/app\/(page|es\/page|es\/services\/page)-[0-9a-f]{16}\.js(?![\s\S])/.exec(url.pathname);
+  if (plain) return { publicScriptRoute: plain[1] === 'es/services/page' ? 'services' : 'home', publicScriptBrackets: 'none' };
+  const dynamic = /^\/_next\/static\/chunks\/app\/(%5Blocale%5D|%5blocale%5d|\[locale\])\/(page|services\/page|services\/free-situation-review\/page|services\/imagery-therapy\/page)-[0-9a-f]{16}\.js(?![\s\S])/.exec(url.pathname);
+  if (!dynamic) return unknown;
+  const routes = { page: 'home', 'services/page': 'services', 'services/free-situation-review/page': 'free-review', 'services/imagery-therapy/page': 'imagery' };
+  const brackets = { '%5Blocale%5D': 'encoded-uppercase', '%5blocale%5d': 'encoded-lowercase', '[locale]': 'literal' };
+  return { publicScriptRoute: routes[dynamic[2]], publicScriptBrackets: brackets[dynamic[1]] };
+}
+
 export function deniedPaidRequestMetadata(policy, request) {
   const raw = request.url();
   let url;
@@ -71,6 +90,7 @@ export function deniedPaidRequestMetadata(policy, request) {
     knownQueryKeys: known.filter(key => present.has(key)), unknownQueryKeyCount,
     hasPercent: raw.includes('%'), hasBackslash: raw.includes('\\'),
     hasHash: Boolean(url?.hash), hasUserinfo: Boolean(url?.username || url?.password),
+    ...publicScriptMetadata(policy, request, raw, url, resourceType),
   };
 }
 

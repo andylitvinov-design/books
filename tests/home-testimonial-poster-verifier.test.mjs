@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const component = read('components/personal-testimonials.tsx');
@@ -115,7 +117,139 @@ test('source fixture retains six catalogue IDs per locale, four Services videos 
   }
 });
 
-test('remaining free-entry targets still match actual homepage links and destination markup', () => {
+
+// Exercise the actual route and shared landing without loading Next, React or enquiry code.
+const daoRoutePath = 'app/[locale]/services/dao-health-profile/page.tsx';
+const daoRouteSource = read(daoRoutePath);
+const freeEntrySource = read('components/free-entry-landing.tsx');
+const daoTitles = {
+  en: 'Explore your inner resources through Wu Xing.',
+  ru: 'Исследуйте свои внутренние ресурсы через У-Син.',
+  es: 'Explora tus recursos interiores con Wu Xing.',
+};
+
+function loadDaoSource(source, fileName, modules) {
+  const compiled = ts.transpileModule(source, { fileName, reportDiagnostics: true,
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } });
+  assert.equal((compiled.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error).length, 0,
+    'DAO source must transpile before its route contract is exercised');
+  const exports = {};
+  runInNewContext(compiled.outputText, { exports, require(name) {
+    assert.ok(Object.hasOwn(modules, name), 'DAO source must only use audited synthetic imports: ' + name);
+    return modules[name];
+  } }, { filename: fileName, timeout: 1000 });
+  return exports;
+}
+
+function daoNodes(tree) {
+  if (!tree || typeof tree !== 'object') return [];
+  if (Array.isArray(tree)) return [...tree].flatMap(daoNodes);
+  return [tree, ...daoNodes(tree.props?.children)];
+}
+
+async function assertDaoLandingContract(routeSource = daoRouteSource, landingSource = freeEntrySource) {
+  const jsx = (type, props) => ({ type, props: props ?? {} });
+  const sentinel = name => Object.assign(() => assert.fail('Do not execute real child modules: ' + name), { fixtureName: name });
+  const Link = sentinel('Link');
+  const Enquiry = sentinel('FreeResourceEnquiry');
+  const SituationForm = sentinel('FreeSituationReviewForm');
+  const Header = sentinel('PublicSiteHeader');
+  const landing = loadDaoSource(landingSource, 'free-entry-landing.tsx', {
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'next/image': { default: sentinel('Image') },
+    'next/link': { default: Link },
+    'lucide-react': Object.fromEntries(['ArrowLeft', 'ArrowRight', 'CheckCircle2', 'ShieldCheck', 'Sparkles'].map(name => [name, sentinel(name)])),
+    '@/components/public-site-header': { PublicSiteHeader: Header },
+    '@/components/free-resource-enquiry': { FreeResourceEnquiry: Enquiry },
+    '@/components/free-situation-review-form': { FreeSituationReviewForm: SituationForm },
+    '@/components/service-video-showcase': { ServiceVideoShowcase: sentinel('ServiceVideoShowcase') },
+    '@/components/personal-testimonials': { PersonalTestimonials: sentinel('PersonalTestimonials') },
+    './free-entry-landing.module.css': { default: new Proxy({}, { get: (_, name) => String(name) }) },
+  });
+  assert.equal(typeof landing.FreeEntryLanding, 'function', 'Use the actual exported shared FreeEntryLanding');
+  const invalidLocale = new Error('synthetic DAO notFound');
+  const route = loadDaoSource(routeSource, daoRoutePath, {
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'next/navigation': { notFound() { throw invalidLocale; } },
+    '@/components/free-entry-landing': landing,
+    '@/data/academy/catalog': { isPublicLocale: locale => Object.hasOwn(daoTitles, locale) },
+    '@/data/site-metadata': { metadataBaseFor: () => new URL('https://synthetic.example') },
+  });
+  assert.equal(typeof route.default, 'function', 'DAO page must keep its default route export');
+  assert.equal(typeof route.generateMetadata, 'function', 'DAO page must keep localized route metadata');
+  for (const locale of Object.keys(daoTitles)) {
+    const page = await route.default({ params: Promise.resolve({ locale }) });
+    assert.equal(page?.type, landing.FreeEntryLanding, 'DAO route must render its imported real FreeEntryLanding');
+    assert.equal(page.props.kind, 'dao', 'DAO route must pass the exact DAO kind');
+    assert.equal(page.props.locale, locale, 'DAO route must forward the requested locale');
+    const metadata = await route.generateMetadata({ params: Promise.resolve({ locale }) });
+    assert.equal(metadata.alternates?.canonical, '/' + locale + '/services/dao-health-profile', 'DAO route must keep its exact canonical destination');
+    assert.equal(metadata.openGraph?.url, '/' + locale + '/services/dao-health-profile', 'DAO route must keep its exact share destination');
+    for (const language of Object.keys(daoTitles)) {
+      assert.equal(metadata.alternates?.languages?.[language], '/' + language + '/services/dao-health-profile', 'DAO route must keep every localized alternate');
+    }
+    assert.equal(metadata.alternates?.languages?.['x-default'], '/en/services/dao-health-profile', 'DAO route must keep its English default alternate');
+    const tree = page.type(page.props);
+    const elements = daoNodes(tree);
+    assert.equal(tree.type, 'main', 'DAO shared landing must render the real main landmark');
+    assert.equal(tree.props.lang, locale, 'DAO shared landing must preserve the route locale');
+    assert.equal(tree.props['data-free-entry-landing'], 'dao', 'DAO shared landing must expose its actual kind');
+    const headings = elements.filter(node => node.type === 'h1');
+    assert.equal(headings.length, 1, 'DAO shared landing must expose one real primary heading');
+    assert.equal(headings[0].props.id, 'free-entry-title', 'DAO shared landing must retain its destination heading marker');
+    assert.equal(headings[0].props.children, daoTitles[locale], 'DAO heading must select the requested locale and DAO copy');
+    const headers = elements.filter(node => node.type === Header);
+    assert.equal(headers.length, 1, 'DAO landing must retain its public header');
+    assert.equal(headers[0].props.locale, locale, 'DAO header must preserve the route locale');
+    const capture = elements.filter(node => node.type === 'section' && node.props.id === 'request-free-wu-xing');
+    assert.equal(capture.length, 1, 'DAO landing must retain its real Wu Xing capture section');
+    assert.equal(capture[0].props['aria-labelledby'], 'free-capture-title', 'DAO capture must retain its accessible heading binding');
+    assert.equal(elements.filter(node => node.type === 'a' && node.props.href === '#request-free-wu-xing').length, 1,
+      'DAO primary action must target its own capture section');
+    const enquiries = daoNodes(capture[0]).filter(node => node.type === Enquiry);
+    assert.equal(enquiries.length, 1, 'DAO capture must render the real enquiry import once');
+    assert.equal(enquiries[0].props.kind, 'dao', 'DAO enquiry must retain the exact DAO kind');
+    assert.equal(enquiries[0].props.locale, locale, 'DAO enquiry must retain the requested locale');
+    assert.equal(elements.filter(node => node.type === SituationForm).length, 0, 'DAO must not render the situation-only questionnaire');
+    const modelLinks = elements.filter(node => node.type === Link && node.props.href === '/' + locale + '/wu-xing');
+    assert.equal(modelLinks.length, 1, 'DAO model link must preserve its localized destination');
+    assert.equal(modelLinks[0].props.prefetch, false, 'DAO model link must preserve explicit no-prefetch navigation');
+  }
+  await assert.rejects(route.default({ params: Promise.resolve({ locale: 'not-a-public-locale' }) }),
+    error => error === invalidLocale, 'DAO route must reject an unsupported locale before rendering');
+}
+
+const daoSourceMutations = [
+  ['wrong canonical route', 'route', 'canonical: "/" + locale + "/services/dao-health-profile"', 'canonical: "/" + locale + "/services/free-situation-review"', 'DAO route must keep its exact canonical destination'],
+  ['wrong route kind', 'route', 'kind="dao"', 'kind="situation"', 'DAO route must pass the exact DAO kind'],
+  ['wrong route locale', 'route', '<FreeEntryLanding locale={locale}', '<FreeEntryLanding locale="en"', 'DAO route must forward the requested locale'],
+  ['unbound route import', 'route', 'from "@/components/free-entry-landing"', 'from "@/components/core-service-detail"', 'DAO source must only use audited synthetic imports'],
+  ['unrendered imported component', 'route', 'return <FreeEntryLanding locale={locale} kind="dao" />;', 'const unused = <FreeEntryLanding locale={locale} kind="dao" />; return <main />;', 'DAO route must render its imported real FreeEntryLanding'],
+  ['missing default route export', 'route', 'export default async function WuXingProfilePage', 'export async function WuXingProfilePage', 'DAO page must keep its default route export'],
+  ['missing locale rejection', 'route', 'if (!isPublicLocale(locale)) notFound();', '', 'DAO route must reject an unsupported locale before rendering'],
+  ['wrong shared kind marker', 'landing', 'data-free-entry-landing={kind}', 'data-free-entry-landing="situation"', 'DAO shared landing must expose its actual kind'],
+  ['wrong shared language', 'landing', 'lang={locale}', 'lang="en"', 'DAO shared landing must preserve the route locale'],
+  ['wrong shared copy selection', 'landing', 'const t = copy[locale][kind];', 'const t = copy[locale].situation;', 'DAO heading must select the requested locale and DAO copy'],
+  ['missing destination heading', 'landing', 'id="free-entry-title"', 'id="unrelated-title"', 'DAO shared landing must retain its destination heading marker'],
+  ['wrong capture section', 'landing', 'id={captureId}', 'id="request-free-review"', 'DAO landing must retain its real Wu Xing capture section'],
+  ['wrong capture action', 'landing', 'href={"#" + captureId}', 'href="#request-free-review"', 'DAO primary action must target its own capture section'],
+  ['wrong enquiry kind', 'landing', '<FreeResourceEnquiry locale={locale} kind={kind}', '<FreeResourceEnquiry locale={locale} kind="situation"', 'DAO enquiry must retain the exact DAO kind'],
+  ['wrong enquiry locale', 'landing', '<FreeResourceEnquiry locale={locale} kind={kind}', '<FreeResourceEnquiry locale="en" kind={kind}', 'DAO enquiry must retain the requested locale'],
+  ['wrong model destination', 'landing', 'kind === "dao" ? "/" + locale + "/wu-xing"', 'kind === "dao" ? "/" + locale + "/about"', 'DAO model link must preserve its localized destination'],
+  ['eager model prefetch', 'landing', '<Link href={detailHref} prefetch={false}', '<Link href={detailHref} prefetch={true}', 'DAO model link must preserve explicit no-prefetch navigation'],
+];
+for (const [name, target, before, after, diagnostic] of daoSourceMutations) {
+  test('DAO source contract rejects ' + name, async () => {
+    await assertDaoLandingContract();
+    const source = target === 'route' ? daoRouteSource : freeEntrySource;
+    assert.ok(source.includes(before), 'Require the exact source mutation anchor: ' + name);
+    const changed = source.replace(before, after);
+    await assert.rejects(assertDaoLandingContract(target === 'route' ? changed : daoRouteSource,
+      target === 'landing' ? changed : freeEntrySource), error => error?.code === 'ERR_ASSERTION' && error.message.includes(diagnostic));
+  });
+}
+
+test('remaining free-entry targets still match actual homepage links and destination markup', async () => {
   const capture = read('components/homepage-free-capture.tsx');
   for (const suffix of ['/client/tests', '/services/free-situation-review', '/academy/principles-of-energywork/learn']) {
     assert.ok(capture.includes('`/${locale}' + suffix + '`'));
@@ -123,7 +257,7 @@ test('remaining free-entry targets still match actual homepage links and destina
   }
   assert.match(read('app/[locale]/services/free-situation-review/page.tsx'), /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
   assert.match(read('components/free-entry-landing.tsx'), /<h1 id="free-entry-title">\{t\.title\}<\/h1>/);
-  assert.match(read('app/[locale]/services/dao-health-profile/page.tsx'), /const kind = "dao" as const/);
+  await assertDaoLandingContract();
   const dao = read('components/core-service-detail.tsx');
   assert.match(dao, /data-core-service-detail=\{kind\}/);
   assert.match(dao, /<h1>\{t\.title\}<\/h1>/);
