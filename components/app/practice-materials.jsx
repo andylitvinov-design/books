@@ -3,6 +3,7 @@ import {useEffect,useState} from 'react'
 import {BookOpen,ChevronRight,FileText,Globe2,Headphones} from 'lucide-react'
 import PracticeMaterialPreview from './practice-material-preview'
 import PractitionerArticles from './practitioner-articles'
+import PractitionerCourseBuilder from './practitioner-course-builder'
 import PracticeReportMaterials from './practice-report-materials'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract.js'
 import styles from './practice-materials.module.css'
@@ -47,7 +48,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  const [tab,setTab]=useState('reports')
  useEffect(()=>{
   const requested=new URLSearchParams(window.location.search).get('materialTab')
-  if(requested==='articles'||(requested==='courses'&&isOwner))setTab(requested)
+  if(requested==='articles'||requested==='courses')setTab(requested)
  },[isOwner])
  const [reportItems,setReportItems]=useState([])
  const [reportMode,setReportMode]=useState('loading')
@@ -133,11 +134,13 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    <button type="button" aria-pressed={tab==='articles'} onClick={()=>setTab('articles')}>
      <BookOpen size={16} aria-hidden="true"/><span>{t.articles}</span>
    </button>
-   {isOwner&&<button type="button" aria-pressed={tab==='courses'} onClick={()=>setTab('courses')} data-practice-materials-courses-tab>
+   <button type="button" aria-pressed={tab==='courses'} onClick={()=>setTab('courses')} data-practice-materials-courses-tab>
      <Headphones size={16} aria-hidden="true"/><span>{ru?'Курсы':es?'Cursos':'Courses'}</span>
-   </button>}
+   </button>
   </div>
-  {tab==='courses'&&isOwner?<section className={styles.body} data-practice-master-courses>
+  {tab==='courses'?<section className={styles.body} data-practice-master-courses>
+    <PractitionerCourseBuilder locale={locale}/>
+    {isOwner&&<div>
     <p className={styles.intro}>{ru?'Выберите учебную программу, чтобы управлять её медитациями и аудиозаписями.':es?'Selecciona un curso para gestionar sus meditaciones y grabaciones.':'Choose a course to manage its meditations and audio recordings.'}</p>
     <div className={styles.courseFolder}>
       <span className={styles.courseFolderIcon}><Headphones size={24} aria-hidden="true"/></span>
@@ -152,6 +155,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
       </button>
     </div>
     <p className={styles.notice}>{ru?'Загружайте MP3, M4A или WAV до 20 МБ. Файл остаётся приватным, пока вы отдельно не одобрите публикацию на уроке.':es?'Sube archivos MP3, M4A o WAV de hasta 20 MB. Seguirán privados hasta que apruebes su publicación.':'Upload MP3, M4A or WAV up to 20 MB. Recordings remain private until you separately approve publishing them to a lesson.'}</p>
+    </div>}
   </section>:
   tab==='articles'?<PractitionerArticles locale={locale} services={services}/>:
    tab==='reports'?<PracticeReportMaterials items={reportItems} locale={locale}
