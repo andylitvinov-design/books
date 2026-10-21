@@ -1,10 +1,16 @@
+import {cookies} from 'next/headers'
 import {redirect} from 'next/navigation'
-import {PractitionerCabinet} from '@/components/practitioner-cabinet'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
-import {appEnabled} from '@/lib/app/config'
+import {uiLocaleCookie} from '@/lib/ui-locale'
+
 export const dynamic='force-dynamic'
-export const metadata={title:'Practitioner Cabinet',robots:{index:false,follow:false}}
+export const revalidate=0
+export const metadata={title:'My Practice · Holistic House',robots:{index:false,follow:false},referrer:'no-referrer'}
+
+// The historical /admin URL is a private compatibility entry, not a second cabinet.
+// Admin actions, client records and historical tools remain on their existing routes.
 export default async function AdminPage(){
   if(!await requireAdminRequest())redirect('/admin/login')
-  return <PractitionerCabinet appRequestsEnabled={appEnabled()}/>
+  const locale=(await cookies()).get(uiLocaleCookie)?.value==='ru'?'ru':'en'
+  redirect('/'+locale+'/app/practice')
 }
