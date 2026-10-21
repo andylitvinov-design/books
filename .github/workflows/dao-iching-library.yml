@@ -51,7 +51,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Validate 64 symbols, provenance, photos and privacy without network
-        run: node --test tests/dao-hexagrams.test.mjs tests/dao-divination.test.mjs tests/dao-hexagrams-editorial.test.mjs
+        run: node --test tests/dao-hexagrams.test.mjs tests/dao-divination.test.mjs tests/dao-hexagrams-editorial.test.mjs tests/dao-sunzi-strategies.test.mjs
       - name: Install lockfile dependencies
         run: npm ci --no-audit --no-fund
       - name: Lint the new and touched TypeScript files
@@ -67,6 +67,7 @@ jobs:
             'components/dao-hexagram-library-section.tsx' \
             'components/dao-hexagram-directory.tsx' \
             'components/dao-hexagram-pages.tsx' \
+            'components/dao-sunzi-strategy.tsx' \
             'components/dao-hexagram-glyph.tsx' \
             'components/dao-hexagram-library-link.tsx' \
             'components/library-hub.tsx' \
