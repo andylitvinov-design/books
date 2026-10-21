@@ -183,9 +183,18 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
      </div>
      {active&&<div className={styles.slideEditor} key={active.id}>
        <div className={styles.slideTools}>
-        <label>{t.type}<select value={active.kind} disabled={busy||uploading||recording} onChange={e=>updateSlide({kind:e.target.value,assetId:null,videoUrl:''})}>
-         <option value="text">{t.text}</option><option value="image">{t.image}</option><option value="audio">{t.audio}</option><option value="video">{t.video}</option><option value="embed">{t.embed}</option>
-        </select></label>
+        <div className={styles.slideKindPicker} role="group" aria-label={t.type} data-course-slide-types>
+         {[
+          {kind:'text',label:t.text,Icon:BookOpen},
+          {kind:'image',label:t.image,Icon:ImageIcon},
+          {kind:'audio',label:t.audio,Icon:Headphones},
+          {kind:'video',label:t.video,Icon:Film},
+          {kind:'embed',label:t.embed,Icon:Link2},
+         ].map(({kind,label,Icon})=><button key={kind} type="button" aria-pressed={active.kind===kind}
+           disabled={busy||uploading||recording} onClick={()=>updateSlide({kind,assetId:null,videoUrl:''})}>
+           <Icon size={17} aria-hidden="true"/><span>{label}</span>
+         </button>)}
+        </div>
         <div className={styles.reorder}>
          <button type="button" title={t.up} aria-label={t.up} onClick={()=>moveSlide(-1)} disabled={busy||uploading||recording}><ArrowUp size={17}/></button>
          <button type="button" title={t.down} aria-label={t.down} onClick={()=>moveSlide(1)} disabled={busy||uploading||recording}><ArrowDown size={17}/></button>
