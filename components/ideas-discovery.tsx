@@ -42,8 +42,8 @@ const copy = {
     loadingReading: "Загружаем полное толкование…", unavailableReading: "Полное толкование не загрузилось. Откройте карточку гексаграммы.",
     again: "Другой символ",
     card: "Прочитать толкование",
-    aphorismNote: "Подбор по смыслу вопроса. Редакционные афоризмы и авторские переложения классических идей — не дословные цитаты исторических авторов.",
-    more: "Ещё 3 афоризма", inspiredBy: "Источник идеи · по мотивам", sourceLabel: "Источник", editorial: "Holistic House · авторский афоризм",
+    aphorismNote: "Подбор по смыслу вопроса: редакционные афоризмы, авторские переложения и исторические народные пословицы. Переводы пословиц смысловые, с указанием оригинала и проверяемого сборника.",
+    more: "Ещё 3 афоризма", inspiredBy: "Источник идеи · по мотивам", sourceLabel: "Источник", proverbSource: "Народная пословица", originalLabel: "Оригинал", editorial: "Holistic House · авторский афоризм",
     personalNote: "Это тематический подбор, не индивидуальная оценка. Выберите формат и заполните существующую форму на странице услуги.",
     guidanceIntro: "Выберите один вариант, с которого хочется начать.",
     guidanceMatch: "Рекомендуем по теме запроса",
@@ -83,8 +83,8 @@ const copy = {
     loadingReading: "Loading full interpretation…", unavailableReading: "The full reading could not be loaded. Open the hexagram page instead.",
     again: "Draw another",
     card: "Read interpretation",
-    aphorismNote: "Topic-matched editorial aphorisms and original paraphrases inspired by classics, not verbatim historical quotations.",
-    more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", editorial: "Holistic House editorial · original aphorism",
+    aphorismNote: "Topic-matched original reflections and historical folk proverbs, with cited collections. New proverb translations convey the original meaning; inspired reflections are not verbatim historical quotations.",
+    more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", proverbSource: "Traditional proverb", originalLabel: "Original", editorial: "Holistic House editorial · original aphorism",
     personalNote: "These are topic-based options, not a personal assessment. Choose a format and complete its existing request form.",
     guidanceIntro: "Choose the starting point that feels right for you.",
     guidanceMatch: "Suggested for your topic",
@@ -124,8 +124,8 @@ const copy = {
     loadingReading: "Cargando interpretación completa…", unavailableReading: "No se pudo cargar la interpretación. Abre la página del hexagrama.",
     again: "Otro símbolo",
     card: "Leer interpretación",
-    aphorismNote: "Aforismos editoriales y paráfrasis propias inspiradas en clásicos. No son citas literales.",
-    more: "Ver 3 aforismos más", inspiredBy: "Fuente · inspirado en", sourceLabel: "Fuente", editorial: "Holistic House · aforismo original",
+    aphorismNote: "Aforismos originales y refranes tradicionales con su colección citada. Las traducciones expresan el sentido; las paráfrasis no son citas históricas literales.",
+    more: "Ver 3 aforismos más", inspiredBy: "Fuente · inspirado en", sourceLabel: "Fuente", proverbSource: "Refrán tradicional", originalLabel: "Original", editorial: "Holistic House · aforismo original",
     personalNote: "Son opciones por tema, no una evaluación personal. Elige una y completa el formulario existente de la página.",
     guidanceIntro: "Elige por dónde te gustaría empezar.",
     guidanceMatch: "Sugerido para tu tema",
@@ -348,14 +348,19 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                       <div className={styles.aphorismAttribution}>
                         <BookOpen size={14} aria-hidden="true" />
                         <span className={styles.aphorismSourceLabel}>
-                          {item.kind === "inspired" && item.source ? answerCopy.inspiredBy : answerCopy.sourceLabel}:
+                          {item.kind === "proverb" ? answerCopy.proverbSource : item.kind === "inspired" && item.source ? answerCopy.inspiredBy : answerCopy.sourceLabel}:
                         </span>
-                        {item.kind === "inspired" && item.source ? (
+                        {item.kind !== "editorial" && item.source ? (
                           <a className={styles.aphorismSource} href={item.source.url} target="_blank" rel="noopener noreferrer">
                             {item.source.author} · <cite>{item.source.work}</cite><ArrowUpRight size={13} aria-hidden="true" />
                           </a>
                         ) : <span className={styles.aphorismSource}>{answerCopy.editorial}</span>}
                       </div>
+                      {item.kind === "proverb" && item.original ? (
+                        <p className={styles.aphorismOriginal} lang={item.original.language}>
+                          <span>{answerCopy.originalLabel}: </span>{item.original.text}
+                        </p>
+                      ) : null}
                     </div>
                   </li>
                 ))}
