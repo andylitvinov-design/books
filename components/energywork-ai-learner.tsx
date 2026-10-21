@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BellRing, CalendarDays, Smartphone, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { appFetch } from "@/lib/app/client-fetch";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { useOceanPracticeAudio } from "./ocean-practice-audio";
+import { reikiTomorrowCalendar, REIKI_LESSON_REMINDER_DEFAULT } from "@/lib/academy/reiki-lesson-calendar";
 import OceanSoundToggle from "./ocean-sound-toggle";
 import {
   ENERGYWORK_COURSE_ID, ENERGYWORK_COURSE_VERSION,
@@ -93,6 +94,21 @@ const copy = {
     slidesWord: "slides",
     saveAndContinue: "Save progress & continue",
     returnAnytime: "Pick up here anytime from My Courses.",
+    tomorrowChoice: "Great work! See you tomorrow — remind me",
+    continueNow: "I'd like to continue now — next lesson",
+    continueNowSave: "Continue now — save lesson 1 first",
+    reminderSetupTitle: "Your next lesson, when you're ready",
+    reminderSetupIntro: "Take the rest of today for yourself. Choose an optional way to remember your next lesson tomorrow.",
+    reminderTime: "Tomorrow, local time",
+    calendarOption: "Add tomorrow's reminder to my calendar",
+    calendarReady: "The calendar file is ready. Open it and confirm adding the event on your phone; downloading alone does not schedule an alert.",
+    calendarUnavailable: "The calendar file couldn't be prepared on this device.",
+    installOption: "Install Holistic House on my phone",
+    phoneSettingsOption: "Phone notification settings",
+    saveForTomorrow: "Save my place and finish for today",
+    signInForTomorrow: "Save lesson 1 with Google",
+    pushNote: "Reiki-specific automatic app push reminders are not active yet. The calendar option works without push. Install is optional; phone notifications require separate consent.",
+    backToCelebration: "Hide reminder options",
     backCourse: "Course details",
     step: "Slide",
     of: "of",
@@ -234,6 +250,21 @@ const copy = {
     slidesWord: "слайдов",
     saveAndContinue: "Сохранить прогресс и продолжить",
     returnAnytime: "Вернуться к уроку можно через «Мои курсы».",
+    tomorrowChoice: "Хорошая работа! До завтра — напомнить мне",
+    continueNow: "Хочу продолжить сейчас — следующий урок",
+    continueNowSave: "Продолжить сейчас — сохранить первый урок",
+    reminderSetupTitle: "Следующий урок — в вашем ритме",
+    reminderSetupIntro: "Можно закончить на сегодня и вернуться завтра. Выберите удобный способ напомнить себе об уроке.",
+    reminderTime: "Завтра, по местному времени",
+    calendarOption: "Добавить напоминание в календарь",
+    calendarReady: "Файл календаря подготовлен. Откройте его и подтвердите добавление события на телефоне. Одной загрузки для напоминания недостаточно.",
+    calendarUnavailable: "Не удалось подготовить файл календаря на этом устройстве.",
+    installOption: "Установить Holistic House на телефон",
+    phoneSettingsOption: "Настройки уведомлений на телефоне",
+    saveForTomorrow: "Сохранить прогресс и закончить на сегодня",
+    signInForTomorrow: "Сохранить первый урок через Google",
+    pushNote: "Автоматические push-напоминания именно об уроках Рейки пока не работают. Напоминание через календарь не требует push. Установка приложения добровольная; уведомления включаются отдельно с вашего разрешения.",
+    backToCelebration: "Скрыть варианты напоминания",
     backCourse: "Описание курса",
     step: "Слайд",
     of: "из",
@@ -709,6 +740,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const [index, setIndex] = useState(startAtExperience ? 1 : 0);
   const pageRef = useRef<HTMLElement | null>(null);
   const [programmeOpen, setProgrammeOpen] = useState(false);
+  const [reminderSetupOpen, setReminderSetupOpen] = useState(false);
+  const [reminderTime, setReminderTime] = useState(REIKI_LESSON_REMINDER_DEFAULT);
+  const [calendarExported, setCalendarExported] = useState(false);
   const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const answersRef = useRef<AnswerMap>({});
@@ -978,6 +1012,26 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
     : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
+  // An old milestone must never leave its reminder panel open on another lesson.
+  useEffect(() => { setReminderSetupOpen(false); setCalendarExported(false); }, [slide.id]);
+  function downloadTomorrowReminder() {
+    try {
+      const calendar = reikiTomorrowCalendar(locale, reminderTime, new Date());
+      const url = window.URL.createObjectURL(new Blob([calendar], { type: "text/calendar;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "holistic-house-next-lesson.ics";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+      setCalendarExported(true);
+      setSaveError(null);
+    } catch {
+      setCalendarExported(false);
+      setSaveError(t.calendarUnavailable);
+    }
+  }
   // Messenger links contain only a generic public service request — no learner data.
   // Neither link sends automatically; the visitor must confirm in the chat app.
   const reikiWhatsAppUrl = whatsappEnquiryUrl({
@@ -1107,6 +1161,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setBusy(false);
     }
     setIndex((current) => Math.min(current + 1, slides.length - 1));
+  }
+  async function finishForToday() {
+    if (busy || sync !== "ready" || slide.kind !== "milestone" || slide.id === "flight-save") return;
+    // Save the NEXT slide as the resume cursor; never mark a guest's progress saved.
+    const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
+    setBusy(true);
+    try {
+      await store(nextId);
+      window.location.assign("/" + locale + "/app/course?view=courses");
+    } catch {
+      setSaveError(t.saveFailed);
+    } finally { setBusy(false); }
   }
   async function previous() {
     if (index === 0 || busy) return;
@@ -1304,6 +1370,48 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                   </div>
                 </div>
+              ) : null}
+              {slide.kind === "milestone" && slide.id !== "flight-save" && reminderSetupOpen ? (
+                <section id="reiki-reminder-setup" className={styles.reminderSetup}
+                  data-reiki-reminder-setup aria-label={t.reminderSetupTitle}>
+                  <div className={styles.reminderSetupHeading}>
+                    <CalendarDays size={21} aria-hidden="true" />
+                    <h2>{t.reminderSetupTitle}</h2>
+                  </div>
+                  <p>{t.reminderSetupIntro}</p>
+                  <label className={styles.reminderTime}>
+                    {t.reminderTime}
+                    <input type="time" value={reminderTime}
+                      min="08:00" max="21:59" step={60}
+                      onChange={event => { setReminderTime(event.target.value); setCalendarExported(false); }}
+                      aria-label={t.reminderTime} />
+                  </label>
+                  <button type="button" className={styles.reminderCalendar}
+                    onClick={downloadTomorrowReminder} data-reiki-calendar-reminder>
+                    <CalendarDays size={17} aria-hidden="true" />{t.calendarOption}
+                  </button>
+                  {calendarExported ? <p className={styles.reminderFeedback} role="status">{t.calendarReady}</p> : null}
+                  <div className={styles.reminderLinks}>
+                    <Link href={"/" + locale + "/install"} prefetch={false}>
+                      <Smartphone size={17} aria-hidden="true" />{t.installOption}
+                    </Link>
+                    {sync === "ready" ? (
+                      <Link href={"/" + locale + "/app/settings#hh-phone-notifications"} prefetch={false}>
+                        <BellRing size={17} aria-hidden="true" />{t.phoneSettingsOption}
+                      </Link>
+                    ) : slide.id === "flight-done" ? (
+                      <button type="button" disabled={busy || sync === "checking"}
+                        onClick={next}>{t.signInForTomorrow}<ArrowRight size={15} aria-hidden="true" /></button>
+                    ) : null}
+                  </div>
+                  {sync === "ready" ? <button type="button" disabled={busy}
+                    className={styles.reminderFinish} onClick={finishForToday}>
+                    <Check size={17} aria-hidden="true" />{t.saveForTomorrow}
+                  </button> : null}
+                  <p className={styles.reminderFinePrint}>{t.pushNote}</p>
+                  <button type="button" className={styles.reminderHide}
+                    onClick={() => setReminderSetupOpen(false)}>{t.backToCelebration}</button>
+                </section>
               ) : null}
               {(slide.id === "tan-done" || slide.id === "kun-done") ? (
                  <aside className={styles.personalInitiationNote} data-reiki-personal-initiation-note>
@@ -1750,12 +1858,21 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               )}
+              {slide.kind === "milestone" && slide.id !== "flight-save" ? (
+                <button type="button" onClick={() => setReminderSetupOpen(open => !open)}
+                  disabled={busy || sync === "checking"} className={styles.reminderChoice}
+                  aria-expanded={reminderSetupOpen}
+                  aria-controls={reminderSetupOpen ? "reiki-reminder-setup" : undefined}
+                  data-reiki-tomorrow-choice>
+                  <BellRing size={18} aria-hidden="true" /><span>{t.tomorrowChoice}</span>
+                </button>
+              ) : null}
               {!completed && slide.id !== "flight-save" ? (
                 <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
                   className={styles.next} data-energywork-next>
                   {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
-                    slide.id === "flight-done" ? t.firstSaveNext :
-                    slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continuePath) : t.continue}
+                    slide.id === "flight-done" ? t.continueNowSave :
+                    slide.kind === "milestone" ? t.continueNow : t.continue
                   <ArrowRight size={19} aria-hidden="true" />
                 </button>
               ) : null}
