@@ -201,10 +201,11 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   } else if (data.kind === "milestone") {
     await expect(page.locator("button[data-energywork-next]")).toHaveText(
       id === "flight-done"
-        ? (locale === "ru" ? "Продолжить к сохранению" : "Continue to saving")
-        : (locale === "ru" ? "Сохранить прогресс и продолжить" : "Save progress & continue"));
+        ? (locale === "ru" ? "Продолжить сейчас — сохранить первый урок" : "Continue now — save lesson 1 first")
+        : (locale === "ru" ? "Хочу продолжить сейчас — следующий урок" : "I'd like to continue now — next lesson"));
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
-    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(2);
+    await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(1);
+    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(3);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }
@@ -219,7 +220,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
 async function installLocalAccountMock(page) {
   const progress = {
     enrolled: true, accountId: "00000000-0000-4000-8000-000000000001",
-    courseId: "academy-energywork-principles", courseVersion: "2026-10-19.p9",
+    courseId: "academy-energywork-principles", courseVersion: "2026-10-20.p10",
     slideId: "welcome-01", status: "active", answers: {}, revision: 0,
     savedAt: null, sharingWithTeacher: false, applicationLead: null,
   };
@@ -254,7 +255,7 @@ async function exerciseJourney(page, locale, width) {
   const root = page.locator("[data-energywork-ai-learner]");
   await expect(root).toBeVisible({timeout:90000});
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
-  await expect(root).toHaveAttribute("data-course-version","2026-10-19.p9");
+  await expect(root).toHaveAttribute("data-course-version","2026-10-20.p10");
 
   // Opening the bottom hint should consume height in the flex column,
   // shrinking the slide instead of overlaying its contents.

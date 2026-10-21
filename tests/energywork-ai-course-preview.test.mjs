@@ -79,7 +79,8 @@ test('Lesson 1 practice with music comes after reflections, immediately before c
   assert.match(lesson, /Sun’s light and warmth/)
   assert.match(lesson, /Удалось ли вам подняться к Солнцу во время медитации/)
   assert.match(lesson, /question: \{ type: "text"/)
-  assert.match(curriculum, /withClosingPractices\(commonSlides\.filter\(\(slide\) => slide\.phase === "flight"\), \["flight-03"\], "flight-done"\)/)
+  assert.match(curriculum, /slide\.phase === "flight" && slide\.id !== "flight-save"/)
+  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "flight-save"\)!/)
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
 
@@ -166,8 +167,14 @@ test('Mobile course uses teal five-step rail and remains accessible', () => {
 
 test('Reiki opening explains a single sequential course and separate teacher initiations', () => {
   const opening = curriculum.split('id: "welcome-01"')[1].split('id: "welcome-02"')[0]
-  assert.match(opening, /One course, five lessons in sequence/)
-  assert.match(opening, /Один курс из пяти последовательных уроков/)
+  assert.match(opening, /Reiki Practitioner — a five-day journey/)
+  assert.match(opening, /Практик Рейки — пятидневный курс/)
+  assert.match(opening, /Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil/)
+  assert.match(opening, /Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль/)
+  assert.match(opening, /Each day brings a short exercise and a meditation/)
+  assert.match(opening, /Каждый день вас ждут небольшое упражнение и медитация/)
+  assert.match(learner, /welcomeGiftText: "After all five lessons and your application/)
+  assert.match(learner, /в одной из трёх систем на выбор/)
   assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
   assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
   assert.match(learner, /Want to go further\? You can explore personal Reiki initiation/)
