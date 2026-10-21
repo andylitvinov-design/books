@@ -114,7 +114,7 @@
   /* Keep all three choices visible side-by-side on a 320–430px phone. */
   .actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .action { flex-direction: column; justify-content: center; align-items: center; gap: 5px; min-height: 65px; padding: 9px 4px; text-align: center; font-size: clamp(11px, 2.8vw, 13px); }
-  .action span { flex: 0 0 auto; }
+  .action span { flex: 0 1 auto; width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
   .action svg:first-child { width: 19px; height: 19px; }
   .action svg:last-child { display: none; }
   .resultsHeading { flex-wrap: wrap; }
