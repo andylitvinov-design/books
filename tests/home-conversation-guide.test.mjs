@@ -110,7 +110,12 @@ test("one-tap ChatGPT-style microphone is local, cancellable, and sends recogniz
     'setVoiceState("finishing")',
   ]) assert.ok(component.includes(token), token);
   assert.match(css, /\.recordingMessage\s*\{[^}]*text-overflow: ellipsis/);
-  assert.match(css, /\.examples \{ display: grid; grid-template-columns: repeat\(2,/);
+  assert.match(css, /\.quickChoices \{ display: grid; grid-template-columns: repeat\(3,/);
+  assert.match(css, /ideas-pine-reference\.webp/);
+  assert.match(css, /@media \(max-width: 360px\)/);
+  assert.match(component, /data-guide-phase=\{turns\.length === 0/);
+  assert.match(component, /className=\{styles\.inputRow\}/);
+  assert.doesNotMatch(component, />\{t\.welcome\}<\/p>/, "hide redundant welcome speech bubble");
   assert.match(css, /\.form textarea \{[^}]*resize: none/);
   assert.match(css, /\.recordingDot \{ animation: none;/);
   for (const forbidden of ["MediaRecorder", "getUserMedia(", "fetch(", "localStorage", "sessionStorage"]) {
