@@ -14,7 +14,7 @@ export function DaoSunTzuStrategy({ number, locale }: { number: number; locale: 
   if (!entry) return null;
   const t = labels[locale];
   return (
-    <section className={styles.block} aria-label={t.heading}>
+    <section className={styles.block} lang={locale} aria-label={t.heading}>
       <h3>⚔️ {t.heading} · {locale === "ru" ? "Гексаграмма" : locale === "es" ? "Hexagrama" : "Hexagram"} {number}</h3>
       <blockquote>«{entry.quote}»</blockquote>
       <small className={styles.source}>— {t.book}, {t.chapter} {entry.chapter}. <a href={entry.source} target="_blank" rel="noopener noreferrer" title={entry.original}>{locale === "ru" ? "Оригинал ↗" : locale === "es" ? "Original ↗" : "Original ↗"}</a></small>
