@@ -96,6 +96,7 @@
 .sectionNavScroller { display:flex; align-items:center; max-width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
 .sectionNavScroller::-webkit-scrollbar { display:none; }
 .sectionNavLink { position:relative; display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; min-height:44px; padding:0 10px; color:#fffaf2; text-decoration:none; white-space:nowrap; text-shadow:0 1px 5px rgba(24,25,21,.75); font:600 13px/1.2 Arial,Helvetica,sans-serif; }
+.sectionNavLink:first-child { margin-left:auto; } /* Right-aligned when it fits; scrollable from the start on narrow screens. */
 .sectionNavLink + .sectionNavLink::before { content:""; position:absolute; left:0; top:50%; transform:translateY(-50%); width:1px; height:15px; background:rgba(255,250,241,.56); }
 .sectionNavLink[aria-current="page"] { color:#ffd19c; font-weight:750; }
 .sectionNavLink[aria-current="page"]::after { content:""; position:absolute; bottom:6px; left:10px; right:10px; height:2px; border-radius:999px; background:#ffd19c; }
