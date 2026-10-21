@@ -190,7 +190,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     <p className={styles.sectionCount}>{audioAction==='record'?(ru?'Выберите урок для записи аудио.':es?'Elige una lección para grabar.':'Choose a lesson to record audio.') :audioAction==='upload'?(ru?'Выберите урок для загрузки.':es?'Elige una lección para subir.':'Choose a lesson to upload.'):(ru?'5 уроков · RU / EN':es?'5 lecciones · RU / EN':'5 lessons · RU / EN')}</p>
     <div className={styles.mediaRows}>
      {lessonEntries.filter(lesson=>!query||[lesson.en,lesson.ru].join(' ').toLowerCase().includes(query.toLowerCase())).slice(0,showAll||query?5:2).map((lesson,i)=>
-      <button key={lesson.id} type="button" className={styles.mediaRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.(lesson.id)} data-reiki-audio-shortcut={lesson.id}>
+      <button key={lesson.id} type="button" className={styles.mediaRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.(lesson.id,audioAction)} data-reiki-audio-shortcut={lesson.id}>
        <span className={styles.materialArtwork}><Headphones size={23} aria-hidden="true"/></span>
        <span className={styles.mediaRowCopy}><strong>{ru?'Урок':es?'Lección':'Lesson'} {lessonEntries.indexOf(lesson)+1} · {ru?lesson.ru:lesson.en}</strong><small>RU / EN · MP3, M4A, WAV</small></span>
        <ChevronRight size={19} aria-hidden="true"/>
