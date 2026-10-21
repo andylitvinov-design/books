@@ -201,10 +201,11 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   } else if (data.kind === "milestone") {
     await expect(page.locator("button[data-energywork-next]")).toHaveText(
       id === "flight-done"
-        ? (locale === "ru" ? "Продолжить к сохранению" : "Continue to saving")
-        : (locale === "ru" ? "Сохранить прогресс и продолжить" : "Save progress & continue"));
+        ? (locale === "ru" ? "Продолжить сейчас — сохранить первый урок" : "Continue now — save lesson 1 first")
+        : (locale === "ru" ? "Хочу продолжить сейчас — следующий урок" : "I'd like to continue now — next lesson"));
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
-    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(2);
+    await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(1);
+    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(3);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }
