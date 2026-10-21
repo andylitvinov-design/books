@@ -1,7 +1,9 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {appFetch} from '@/lib/app/client-fetch'
-import {DEFAULT_MESSENGER_TOPICS,MESSENGER_CONTACT_NOTICE_VERSION} from '@/lib/app/messenger-notification-policy'
+import {MESSENGER_CONTACT_NOTICE_VERSION} from '@/lib/app/messenger-notification-policy'
+
+const NO_OTHER_NOTIFICATIONS={messages:false,booking:false,reports:false,courses:false,news:false}
 
 const VERSION='hh-master-aggregate-stats-v1'
 const COPY={
@@ -18,7 +20,7 @@ const COPY={
   disabled:'Scheduling remains paused until Holistic House enables the verified Telegram delivery pilot.',
   ready:'Telegram delivery available for your verified chat.',notReady:'Connect Telegram first to receive reports.',
   accepted:'Telegram accepted the report. Delivery/read status is not confirmed.',
-  stopped:'Reports disabled.',saved:'Preferences saved.',queued:'Subscription saved; no message was sent.',
+  stopped:'Reports disabled.',saved:'Preferences saved.',queued:'Report already requested today or channel not ready; no new message sent.',
   previewTitle:'Report preview',error:'Could not save these settings. Please try again.',
   sending:'Processing…',privacy:'Only counts and public service titles. No names, health data, private messages or test results.',
   note:'A view is a tracked service impression, not a unique visitor. Clicks are not bookings or payments.',
@@ -37,7 +39,7 @@ const COPY={
   disabled:'Рассылка не включена, пока Holistic House не завершит проверку Telegram-доставки.',
   ready:'Telegram-доставка доступна для подтверждённого чата.',notReady:'Сначала подключите Telegram, чтобы получать отчёты.',
   accepted:'Telegram принял сообщение. Доставка и прочтение не подтверждены.',
-  stopped:'Рассылка отключена.',saved:'Настройки сохранены.',queued:'Подписка сохранена, сообщение не отправлялось.',
+  stopped:'Рассылка отключена.',saved:'Настройки сохранены.',queued:'Сегодня отчёт уже запрашивали или канал не готов. Повторной отправки не было.',
   previewTitle:'Предпросмотр отчёта',error:'Не удалось сохранить настройки. Попробуйте снова.',
   sending:'Выполняем…',privacy:'Только цифры и названия публичных услуг. Никаких имён, диагнозов, переписок и результатов тестов.',
   note:'Показ — зафиксированное отображение услуги, не уникальный посетитель. Клики не означают запись или оплату.',
@@ -56,7 +58,7 @@ const COPY={
   disabled:'Los envíos están pausados hasta aprobar la entrega por Telegram de Holistic House.',
   ready:'Entrega Telegram habilitada para tu chat verificado.',notReady:'Verifica Telegram para recibir informes.',
   accepted:'Telegram aceptó el mensaje. No se confirma entrega ni lectura.',
-  stopped:'Informes desactivados.',saved:'Preferencias guardadas.',queued:'Suscripción guardada; no se envió ningún mensaje.',
+  stopped:'Informes desactivados.',saved:'Preferencias guardadas.',queued:'El informe ya se solicitó hoy o el canal no está listo; no hubo otro envío.',
   previewTitle:'Vista previa',error:'No se pudieron guardar las preferencias.',
   sending:'Procesando…',privacy:'Solo cifras y nombres de servicios públicos. Sin datos de clientes, diagnósticos ni pruebas.',
   note:'Una vista es una impresión registrada, no un visitante único. Los clics no confirman una reserva o pago.',
@@ -88,9 +90,12 @@ export default function PracticeAnalyticsSubscriptions({locale='en',accountId}){
   try{
    let next
    if(kind==='connect'){
+    const stored=await appFetch('notification-channels',undefined,undefined,{accountId})
+    const current=stored.channels?.telegram
+    const topics=current?.status==='not_connected'?NO_OTHER_NOTIFICATIONS:(current?.topics||NO_OTHER_NOTIFICATIONS)
     next=await appFetch('notification-channels',{
      action:'begin_telegram',channel:'telegram',
-     topics:{...DEFAULT_MESSENGER_TOPICS},locale:lang,
+     topics:{...topics},locale:lang,
      noticeVersion:MESSENGER_CONTACT_NOTICE_VERSION,permissionAccepted:true,
     },undefined,{accountId})
     if(next.linkUrl&&/^https:\/\/t\.me\/[a-z0-9_]+\?start=[a-zA-Z0-9_-]{32}$/i.test(next.linkUrl)){
@@ -99,9 +104,12 @@ export default function PracticeAnalyticsSubscriptions({locale='en',accountId}){
     }
     setNotice(t.pending)
    }else if(kind==='saveWhatsApp'){
+    const stored=await appFetch('notification-channels',undefined,undefined,{accountId})
+    const current=stored.channels?.whatsapp
+    const topics=current?.status==='not_connected'?NO_OTHER_NOTIFICATIONS:(current?.topics||NO_OTHER_NOTIFICATIONS)
     await appFetch('notification-channels',{
      action:'save',channel:'whatsapp',destination:phone,
-     topics:{...DEFAULT_MESSENGER_TOPICS},locale:lang,
+     topics:{...topics},locale:lang,
      noticeVersion:MESSENGER_CONTACT_NOTICE_VERSION,permissionAccepted:true,
     },undefined,{accountId})
     setPhone('');setNotice(t.waPending)
