@@ -29,6 +29,7 @@ const copy = {
 
 const ADMIN_DESTINATIONS = Object.freeze({
   cabinet: '/admin',
+  tools: '/admin/tools',
   growth: '/admin/growth-studio',
   seo: '/admin/seo',
   acquisition: '/admin/acquisition',

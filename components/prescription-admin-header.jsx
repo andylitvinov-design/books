@@ -24,9 +24,9 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
   return (
     <header className="prescription-admin-header prescription-admin-header--refined">
       <div className="prescription-admin-topbar">
-        <Link className="prescription-admin-wordmark" href="/">
+        <Link className="prescription-admin-wordmark" href={"/"+locale+"/app/practice"}>
           <strong>Holistic House</strong>
-          <span>{compactMarketing ? labels.marketing : labels.cabinet}</span>
+          <span>{compactMarketing ? labels.marketing : labels.practice}</span>
         </Link>
         <div className="prescription-admin-header-actions">
           <span aria-label={labels.language} className="site-language-switch">
@@ -57,7 +57,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
         </nav>
         <details className="prescription-admin-v4-more"><summary>{labels.more} ▾</summary>
           <nav aria-label={labels.more} className="prescription-admin-navigation prescription-admin-navigation--tabs">
-            <Link href="/admin">{labels.cabinet}</Link>
+            <Link href="/admin/tools">{labels.more}</Link>
             <Link href="/admin/consultations/new">{labels.newConsultation}</Link>
             <Link href="/admin/seo">{labels.seo}</Link>
             <Link href="/admin/growth-studio">{labels.growth}</Link>

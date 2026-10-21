@@ -593,7 +593,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     {ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
-      <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button></div>
+      <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button><button type="button" className="hh-practice-new-service" disabled={busy} onClick={()=>openOwner('tools')}>{ru?'Дополнительные инструменты администратора':'Additional administrative tools'} →</button></div>
     </details>}
     {shareNotice&&<p role="status" className="hh-practice-share-notice">{shareNotice}</p>}
     {error&&<p role="alert" className="hh-practice-error">{error==='SERVICE_LIMIT_REACHED'?(ru?'На бесплатном тарифе Hobby можно сохранить до 10 услуг. Редактирование существующих услуг доступно.':'The free Hobby plan allows up to 10 saved services. You can still edit existing services.'):error}</p>}

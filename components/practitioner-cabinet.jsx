@@ -1,10 +1,11 @@
 'use client'
 
-import {Archive, BadgeCheck, FileText, Film, Headphones, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Megaphone, Users} from 'lucide-react'
+import {Archive, BadgeCheck, ChevronDown, ChevronRight, FileText, Film, Headphones, Images, Inbox, PlusCircle, ReceiptText, Users} from 'lucide-react'
 import Link from 'next/link'
 import {useEffect, useState} from 'react'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {readUiLocale} from '@/lib/ui-locale'
+import styles from './practitioner-cabinet.module.css'
 
 const copy = {
   ru: {
@@ -44,42 +45,79 @@ const copy = {
 }
 export function PractitionerCabinet({appRequestsEnabled=false}) {
   const [locale,setLocale]=useState('en')
-  const text=copy[locale]
+  const t=copy[locale]
   useEffect(()=>{
-    const updateLocale=event=>setLocale(event.detail==='ru'?'ru':'en')
+    const change=event=>setLocale(event.detail==='ru'?'ru':'en')
     setLocale(readUiLocale(document.cookie))
-    window.addEventListener('holistic-house-ui-locale',updateLocale)
-    return()=>window.removeEventListener('holistic-house-ui-locale',updateLocale)
+    window.addEventListener('holistic-house-ui-locale',change)
+    return()=>window.removeEventListener('holistic-house-ui-locale',change)
   },[])
-  const actions=[
-    {href:'/admin/seo',icon:SearchCheck,title:text.seo,body:text.seoText},
-    {href:'/admin/growth-studio',icon:Megaphone,title:text.growth,body:text.growthText},
-    {href:'/admin/acquisition',icon:SearchCheck,title:text.acquisition,body:text.acquisitionText},
-    {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
-     {href:'/admin/reports',icon:FileText,title:text.reports,body:text.reportsText},
-    {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
-    {href:'/admin/reiki-leads',icon:Inbox,title:text.reikiLeads,body:text.reikiLeadsText},
-    {href:'/admin/materials/courses/reiki-practitioner',icon:Headphones,title:text.reikiAudio,body:text.reikiAudioText},
-    {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},
-    {href:'/admin/prescriptions/new',icon:FileText,title:text.prescription,body:text.prescriptionText},
-    {href:'/admin/payments/new',icon:ReceiptText,title:text.invoice,body:text.invoiceText},
-    {href:'/admin/manual-billing',icon:ReceiptText,title:text.manualBilling,body:text.manualBillingText},
-    ...(appRequestsEnabled?[{href:'/admin/app-requests',icon:Inbox,title:text.appRequests,body:text.appRequestsText},{href:'/admin/practitioners',icon:BadgeCheck,title:text.network,body:text.networkText}]:[]),
-    {href:'/admin/clients/legacy',icon:Archive,title:text.legacy,body:text.legacyText},
-    {href:'/admin/videos',icon:Film,title:text.videos,body:text.videosText},
+  // Legacy routes are reusable, owner-only functions; this is not a second cabinet.
+  // Marketing editing/metrics live in the current My Practice → Marketing hub.
+  const ru=locale==='ru'
+  const groups=[
+    {key:'records',title:ru?'Клиенты и документы':'Clients & documents',
+      hint:ru?'Клиенты, история, рекомендации и счета':'Clients, history, recommendations and invoices',
+      items:[
+        {href:'/admin/clients',icon:Users,title:t.clients,body:t.clientsText},
+        {href:'/admin/consultations/new',icon:PlusCircle,title:t.newConsultation,body:t.newConsultationText},
+        {href:'/admin/reports',icon:FileText,title:t.reports,body:t.reportsText},
+        {href:'/admin/prescriptions/new',icon:FileText,title:t.prescription,body:t.prescriptionText},
+        {href:'/admin/payments/new',icon:ReceiptText,title:t.invoice,body:t.invoiceText},
+        {href:'/admin/clients/legacy',icon:Archive,title:t.legacy,body:t.legacyText},
+        {href:'/admin/manual-billing',icon:ReceiptText,title:t.manualBilling,body:t.manualBillingText},
+      ]},
+    {key:'materials',title:ru?'Материалы и курсы':'Materials & courses',
+      hint:ru?'Управление библиотекой без копирования материалов':'Library management without duplicating files',
+      items:[
+        {href:'/admin/materials',icon:Images,title:t.materials,body:t.materialsText},
+        {href:'/admin/materials/courses/reiki-practitioner',icon:Headphones,title:t.reikiAudio,body:t.reikiAudioText},
+        {href:'/admin/videos',icon:Film,title:t.videos,body:t.videosText},
+        {href:'/admin/youtube-upload',icon:Film,title:ru?'Загрузить видео в YouTube':'Upload video to YouTube',
+          body:ru?'Выберите подтверждённый канал и загрузите видео после проверки.':'Choose an authorized channel and upload after video QA.'},
+      ]},
+    {key:'operations',title:ru?'Администрирование':'Administration',
+      hint:ru?'Заявки, модерация и настройки каналов':'Requests, moderation and channel settings',
+      items:[
+        {href:'/admin/reiki-leads',icon:Inbox,title:t.reikiLeads,body:t.reikiLeadsText},
+        ...(appRequestsEnabled?[
+          {href:'/admin/app-requests',icon:Inbox,title:t.appRequests,body:t.appRequestsText},
+          {href:'/admin/practitioners',icon:BadgeCheck,title:t.network,body:t.networkText},
+        ]:[]),
+        {href:'/admin/telegram-setup',icon:Inbox,title:ru?'Telegram · настройки':'Telegram · settings',
+          body:ru?'Настройка канала, без автоматической отправки.':'Connection setup; no automatic send.'},
+      ]},
   ]
-  return (
-    <main className="prescription-admin-shell practitioner-cabinet-shell">
-      <PrescriptionAdminHeader title={text.title} description={text.description}/>
-      <section className="master-workflow-strip" aria-label={text.workflow}><strong>{text.workflow}</strong><ol><li>{text.step1}</li><li>{text.step2}</li><li>{text.step3}</li></ol></section>
-      <section aria-label={text.actions} className="practitioner-cabinet-actions practitioner-cabinet-grid">
-        {actions.map(({href,icon:Icon,title,body})=>(
-          <Link href={href} key={href} prefetch={false}>
-            <span className="practitioner-cabinet-icon" aria-hidden="true"><Icon/></span>
-            <div><h2>{title}</h2><p>{body}</p><strong aria-hidden="true">→</strong></div>
-          </Link>
-        ))}
-      </section>
-    </main>
-  )
+  return <main className={"prescription-admin-shell "+styles.page}>
+    <PrescriptionAdminHeader
+      title={{en:'Additional tools',ru:'Дополнительные инструменты'}}
+      description={{en:'Specialized owner functions — without a second practitioner cabinet.',ru:'Специальные функции владельца без второго кабинета мастера.'}}
+    />
+    <section className={styles.shell} aria-label={ru?'Дополнительные инструменты':'Additional tools'}>
+      <div className={styles.intro}>
+        <p>{ru?'Всё основное — в «Моей практике». Ниже — только дополнительные инструменты; данные и права остались прежними.':'Your main workspace is My Practice. These are specialized tools; existing data and permissions stay unchanged.'}</p>
+        <nav className={styles.navigation} aria-label={ru?'Вернуться в кабинет':'Back to My Practice'}>
+          <Link href={'/'+locale+'/app/practice'} prefetch={false}>{ru?'← Моя практика':'← My Practice'}</Link>
+          <Link href={'/'+locale+'/app/practice?panel=marketing'} prefetch={false}>{ru?'Маркетинг →':'Marketing →'}</Link>
+        </nav>
+      </div>
+      {groups.map((group,index)=><details className={styles.group} key={group.key} open={index===0}>
+        <summary>
+          <span className={styles.groupTitle}>
+            <strong>{group.title}</strong>
+            <small>{group.hint}</small>
+          </span>
+          <span className={styles.count}>{group.items.length}</span>
+          <ChevronDown className={styles.arrow} aria-hidden="true"/>
+        </summary>
+        <nav className={styles.grid} aria-label={group.title}>
+          {group.items.map(({href,icon:Icon,title,body})=><Link key={href} href={href} prefetch={false} className={styles.tool}>
+            <span className={styles.icon}><Icon aria-hidden="true"/></span>
+            <span className={styles.detail}><b>{title}</b><span>{body}</span></span>
+            <ChevronRight className={styles.toolArrow} aria-hidden="true"/>
+          </Link>)}
+        </nav>
+      </details>)}
+    </section>
+  </main>
 }
