@@ -44,6 +44,8 @@ test('Direct course recording has no autoplay, previews before owner-only signed
  assert.match(ui,/capture="environment"/)
  assert.doesNotMatch(ui,/autoPlay|autoplay|youtube\.com|createSignedUploadUrl/)
  assert.match(builder,/onRecordingChange=\{setRecording\}/)
+ assert.match(builder,/data-course-slide-types/)
+ assert.match(builder,/aria-pressed=\{active\.kind===kind\}/)
  assert.match(builder,/onUpload=\{file=>upload\(file,true\)\}/)
  assert.match(builder,/if\(!active\|\|!file\|\|uploading\|\|busy\|\|\(recording&&!fromCapture\)\)return false/)
  assert.match(builder,/uploadToSignedUrl\(/)
