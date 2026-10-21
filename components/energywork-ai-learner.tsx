@@ -21,7 +21,7 @@ import {
   ENERGYWORK_FIRST_LESSON_NEXT, ENERGYWORK_FIRST_LESSON_STORAGE_KEY,
   energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
 } from "@/data/academy/energywork-first-lesson";
-import { energyworkLessonRanges, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
+import { energyworkLessonRanges, energyworkAdvanceAlreadyStored, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
 import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest } from "@/data/academy/reiki-initiation-request.js";
 import styles from "./energywork-ai-learner.module.css";
 
@@ -765,14 +765,40 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
   const dirtyRef = useRef(new Set<string>());
   const progressRef = useRef("welcome-01");
+  const syncedAnswersRef = useRef<AnswerMap>({});
   const request = useCallback((body: SaveCommand) => {
     const task = queueRef.current.catch(() => {}).then(async () => {
-      const value = await appFetch("academy-energywork", {
+      const submit = () => appFetch("academy-energywork", {
         ...body, expectedRevision: revisionRef.current,
-      }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
+      }, "POST", { accountId: accountIdRef.current || undefined }) as Promise<StoredProgress>;
+      let value: StoredProgress;
+      try {
+        value = await submit();
+      } catch (error) {
+        // Another tab can update the revision while this one is reviewing
+        // earlier slides. Rebase once, but never overwrite a different answer
+        // to this same question without an explicit owner decision.
+        if ((error as { code?: string }).code !== "COURSE_PROGRESS_CHANGED") throw error;
+        const latest = await appFetch("academy-energywork", undefined, "GET", {
+          accountId: accountIdRef.current || undefined,
+        }) as StoredProgress;
+        if (!latest.enrolled || latest.accountId !== accountIdRef.current ||
+            !Number.isSafeInteger(latest.revision)) throw error;
+        const changedElsewhere = (id: string, submitted: string | undefined) =>
+          submitted !== undefined &&
+          (latest.answers?.[id] ?? "") !== (syncedAnswersRef.current[id] ?? "") &&
+          (latest.answers?.[id] ?? "") !== submitted;
+        if (changedElsewhere(body.slideId, body.answer) ||
+            changedElsewhere("tan-study-03", body.secondaryAnswer)) throw error;
+        revisionRef.current = latest.revision!;
+        progressRef.current = latest.slideId ?? "welcome-01";
+        syncedAnswersRef.current = { ...(latest.answers ?? {}) };
+        value = await submit();
+      }
       if (!value.enrolled || !Number.isSafeInteger(value.revision)) throw new Error("INVALID_PROGRESS_RESPONSE");
       revisionRef.current = value.revision!;
       progressRef.current = value.slideId ?? "welcome-01";
+      syncedAnswersRef.current = { ...(value.answers ?? {}) };
       setSavedAt(value.savedAt || null);
       setSaveError(null);
       return value;
@@ -792,6 +818,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     revisionRef.current = value.revision ?? 0;
     progressRef.current = value.slideId ?? "welcome-01";
     const restoredAnswers = value.answers ?? {};
+    syncedAnswersRef.current = { ...restoredAnswers };
     answersRef.current = restoredAnswers;
     setAnswers(restoredAnswers);
     const savedIndex = Math.max(0, restored.findIndex((item) => item.id === value.slideId));
@@ -1132,7 +1159,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     if (busy || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing ||
         (slide.id === "flight-save" && sync !== "ready")) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
-    if (sync === "ready") {
+    // Back / Save review on an already reached slide should move immediately
+    // if its answer is unchanged. No duplicate server revision or cursor write.
+    const alreadyStored = sync === "ready" && energyworkAdvanceAlreadyStored(
+      slide.id, nextId, progressRef.current,
+      dirtyRef.current.has(slide.id) ||
+        Boolean(slide.secondaryQuestion && dirtyRef.current.has(slide.secondaryQuestion.id)));
+    if (sync === "ready" && !alreadyStored) {
       setBusy(true);
       try { await store(nextId); }
       catch (error) {
@@ -1142,6 +1175,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       }
       setBusy(false);
     }
+    setSaveError(null);
     setIndex((current) => Math.min(current + 1, slides.length - 1));
   }
   async function finishForToday() {
@@ -1214,10 +1248,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           if (secondaryId && secondary === (answersRef.current[secondaryId] ?? ""))
             dirtyRef.current.delete(secondaryId);
         })
-        .catch(() => { setSaveError(t.saveFailed); });
+        .catch((error: { status?: number }) => { setSaveError(error.status === 409 ? t.conflict : t.saveFailed); });
     }, 950);
     return () => window.clearTimeout(timer);
-  }, [sync, slide.id, slide.question, slide.secondaryQuestion, answers, request, t.saveFailed]);
+  }, [sync, slide.id, slide.question, slide.secondaryQuestion, answers, request, t.conflict, t.saveFailed]);
   // Warn before losing a not-yet-confirmed private answer.
   useEffect(() => {
     if (!dirtyRef.current.size) return;
@@ -1865,6 +1899,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </div>
           {slide.kind === "milestone" && slide.id !== "flight-save" && saveError
             ? <p className={styles.milestoneSaveError} role="alert">{saveError}</p> : null}
+          {slide.kind !== "milestone" && slide.id !== "flight-save" && saveError ?
+            <p className={styles.inlineSaveError} role="alert">{saveError}</p> : null}
         </footer>
       </div>
     </main>
