@@ -89,7 +89,7 @@ try {
         const dialogBox = await dialog.boundingBox();
         assert.ok(dialogBox && dialogBox.x >= -1 && dialogBox.x + dialogBox.width <= width + 1,
           "Dialog extends beyond the mobile viewport");
-        const question = guide.locator("textarea");
+        const question = dialog.locator("textarea");
         await question.fill(scenario.text);
         await guide.getByRole("button", { name: scenario.send }).click();
         await expect(guide).toHaveAttribute("data-guide-phase", "conversation");
@@ -111,6 +111,15 @@ try {
         await page.keyboard.press("Escape");
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
+        // First-screen textarea and full-width CTA process a question in one submit,
+        // while the chat sheet remains available for follow-up.
+        await guide.locator("#home-guide-entry-question").fill(scenario.text);
+        await guide.locator("[data-home-guide-launcher]").click();
+        await expect(guide.locator("[data-home-guide-dialog]")).toBeVisible();
+        await expect(guide.locator('[role="log"]')).toContainText(scenario.text);
+        await expect(guide.locator("[data-home-guide-choices] button")).toHaveCount(3);
+        await page.keyboard.press("Escape");
+        await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         assert.deepEqual(leak, [], "Private question must not leak through request URLs");
         assert.deepEqual(errors, [], "Homepage javascript error");
         evidence.cases.push({ locale: scenario.locale, width, visible: true, route: scenario.href, reset: true, noUrlLeak: true });
