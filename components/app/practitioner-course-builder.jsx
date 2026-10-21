@@ -14,9 +14,9 @@ const translations={
  new:'Nuevo curso',name:'Título del curso',summary:'Descripción breve',lang:'Idioma',slides:'Diapositivas',add:'Añadir diapositiva',slideTitle:'Título de la diapositiva',body:'Texto / instrucciones',type:'Tipo de contenido',text:'Texto',image:'Foto',audio:'Audio',video:'Archivo de vídeo',embed:'YouTube / Vimeo',link:'Enlace de vídeo',upload:'Subir archivo',uploading:'Subiendo…',private:'Privado hasta publicar',save:'Guardar borrador',saving:'Guardando…',publish:'Publicar curso',republish:'Actualizar curso publicado',hide:'Dejar de publicar',delete:'Archivar',published:'Publicado',draft:'Borrador',unsaved:'Cambios sin guardar',saved:'Guardado en servidor',limit:'Foto 4 MB · audio 20 MB · vídeo 25 MB. Sin reproducción automática.',share:'Compartir curso',copied:'Enlace copiado',preview:'Ver curso',confirm:'¿Publicar para todos con el enlace y en el buscador? Confirma los derechos sobre el material y que no contiene datos de clientes.',remove:'¿Archivar el curso? El enlace dejará de funcionar.',empty:'Aún no hay cursos. Crea el primero.',select:'Elige un curso',choose:'Elige una diapositiva',up:'Subir',down:'Bajar',removeSlide:'Quitar diapositiva',error:'No se pudieron guardar los cambios',rev:'Otro dispositivo ha modificado el curso. Recarga la página.',approved:'Para publicar necesitas un perfil profesional aprobado.',search:'Los cursos publicados aparecen en la búsqueda de la Academia.',fileReady:'Archivo subido y verificado',photoAlt:'Imagen de diapositiva'}
 }
 const makeSlide=()=>({id:crypto.randomUUID(),kind:'text',title:'',body:''})
-const request=async(body)=>{
+const request=async(body,accountId)=>{
  const response=await fetch('/api/app/practice/courses',{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',
-  ...(body?{headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{})})
+  ...(body?{headers:{'content-type':'application/json',...(accountId?{'x-hh-account-id':accountId}:{})},body:JSON.stringify(body)}:{headers:accountId?{'x-hh-account-id':accountId}:undefined})})
  const data=await response.json().catch(()=>({}))
  if(!response.ok)throw new Error(data.error||'REQUEST_FAILED')
  return data
@@ -25,8 +25,9 @@ const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
-export default function PractitionerCourseBuilder({locale='en'}){
+export default function PractitionerCourseBuilder({locale='en',accountId=null}){
  const t=translations[locale]||translations.en
+ const api=body=>request(body,accountId)
  const [items,setItems]=useState([])
  const [selected,setSelected]=useState(null)
  const [draft,setDraft]=useState(null)
@@ -48,7 +49,7 @@ export default function PractitionerCourseBuilder({locale='en'}){
  }
  useEffect(()=>{
   let alive=true
-  request().then(data=>{
+  api().then(data=>{
    if(!alive)return
    const list=data.items||[]
    setItems(list)
@@ -90,7 +91,7 @@ export default function PractitionerCourseBuilder({locale='en'}){
   setBusy(true);setError('');setMessage('')
   try{
    const course={title:t.new,description:'',locale:['en','ru','es'].includes(locale)?locale:'en',slides:[]}
-   const {item}=await request({action:'create',course})
+   const {item}=await api({action:'create',course})
    applyItem(item);setMessage(t.saved)
   }catch(e){setError(e.message)}
   finally{setBusy(false)}
@@ -98,7 +99,7 @@ export default function PractitionerCourseBuilder({locale='en'}){
  async function save(){
   if(!current||!draft)return null
   if(!dirty)return current
-  const {item}=await request({action:'save',id:current.id,expectedRevision:current.revision,course:draft})
+  const {item}=await api({action:'save',id:current.id,expectedRevision:current.revision,course:draft})
   applyItem(item)
   return item
  }
@@ -112,7 +113,7 @@ export default function PractitionerCourseBuilder({locale='en'}){
     await save();setMessage(t.saved)
    }else{
     const saved=action==='publish'?await save():current
-    const {item}=await request({action,id:saved.id,expectedRevision:saved.revision,reviewed:action==='publish'})
+    const {item}=await api({action,id:saved.id,expectedRevision:saved.revision,reviewed:action==='publish'})
     if(action==='archive'){
      setItems(list=>list.filter(x=>x.id!==item.id));setSelected(null);setDraft(null);setSlideId(null)
     }else applyItem(item)
@@ -131,11 +132,11 @@ export default function PractitionerCourseBuilder({locale='en'}){
    if(!Object.keys({image:{'image/jpeg':1,'image/png':1,'image/webp':1},audio:{'audio/mpeg':1,'audio/mp4':1,'audio/x-m4a':1},video:{'video/mp4':1,'video/quicktime':1}}[active.kind]||{}).includes(mime))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
    const limit=active.kind==='image'?4000000:active.kind==='audio'?20000000:25000000
    if(prepared.size>limit||prepared.size<128)throw new Error('MEDIA_SIZE_NOT_ALLOWED')
-   const {item:intent}=await request({action:'upload-intent',courseId:courseBefore,mime,bytes:prepared.size})
+   const {item:intent}=await api({action:'upload-intent',courseId:courseBefore,mime,bytes:prepared.size})
    const client=createClient(intent.supabaseUrl,intent.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}})
    const result=await client.storage.from(intent.bucket).uploadToSignedUrl(intent.objectKey,intent.token,prepared,{contentType:mime,upsert:false})
    if(result.error)throw new Error(result.error.message||'MEDIA_UPLOAD_FAILED')
-   await request({action:'upload-complete',assetId:intent.assetId})
+   await api({action:'upload-complete',assetId:intent.assetId})
    if(selected!==courseBefore)throw new Error('ACCOUNT_CHANGED')
    setDraft(d=>({...d,slides:d.slides.map(s=>s.id===slideBefore?{...s,assetId:intent.assetId}:s)}))
    setMessage(t.fileReady+' · '+t.save)
