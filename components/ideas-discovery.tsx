@@ -6,7 +6,7 @@ import { ArrowRight, ArrowUpRight, Compass, HandHeart, Leaf, Quote, RefreshCw, S
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
-import { getIdeasAphorisms, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
@@ -38,7 +38,8 @@ const copy = {
     daoNote: "Одна из 64 гексаграмм выпадает случайно, независимо от смысла вопроса. Это образ для размышления, а не предсказание.",
     again: "Другой символ",
     card: "Прочитать толкование",
-    aphorismNote: "Оригинальные редакционные размышления по приблизительно определённой теме — не цитаты древних авторов.",
+    aphorismNote: "Подбор по смыслу вопроса. Редакционные афоризмы и авторские переложения классических идей — не дословные цитаты исторических авторов.",
+    more: "Ещё 3 афоризма", inspiredBy: "По мотивам", editorial: "Афоризм Holistic House",
     personalNote: "Это тематический подбор, не индивидуальная оценка. Выберите формат и заполните существующую форму на странице услуги.",
     guidanceIntro: "Выберите один вариант, с которого хочется начать.",
     guidanceMatch: "Рекомендуем по теме запроса",
@@ -75,7 +76,8 @@ const copy = {
     daoNote: "One of 64 hexagrams is drawn at random, independently of your question. It offers a symbol for reflection, not a prediction.",
     again: "Draw another",
     card: "Read interpretation",
-    aphorismNote: "New editorial reflections matched by approximate topic, not quotations attributed to historical thinkers.",
+    aphorismNote: "Topic-matched editorial aphorisms and original paraphrases inspired by classics, not verbatim historical quotations.",
+    more: "Show 3 more aphorisms", inspiredBy: "Inspired by", editorial: "Holistic House editorial",
     personalNote: "These are topic-based options, not a personal assessment. Choose a format and complete its existing request form.",
     guidanceIntro: "Choose the starting point that feels right for you.",
     guidanceMatch: "Suggested for your topic",
@@ -112,7 +114,8 @@ const copy = {
     daoNote: "Uno de los 64 hexagramas se elige al azar, independientemente de tu pregunta. Es un símbolo para reflexionar, no una predicción.",
     again: "Otro símbolo",
     card: "Leer interpretación",
-    aphorismNote: "Reflexiones editoriales originales por tema aproximado; no son citas atribuidas a autores históricos.",
+    aphorismNote: "Aforismos editoriales y paráfrasis propias inspiradas en clásicos. No son citas literales.",
+    more: "Ver 3 aforismos más", inspiredBy: "Inspirado en", editorial: "Aforismo editorial Holistic House",
     personalNote: "Son opciones por tema, no una evaluación personal. Elige una y completa el formulario existente de la página.",
     guidanceIntro: "Elige por dónde te gustaría empezar.",
     guidanceMatch: "Sugerido para tu tema",
@@ -138,6 +141,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const [question, setQuestion] = useState("");
   const [error, setError] = useState(false);
+  const [visibleAphorisms, setVisibleAphorisms] = useState(3);
   const [result, setResult] = useState<Result | null>(null);
   const [activeMode, setActiveMode] = useState<Mode>("dao");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -151,6 +155,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     }
     const matched = matchIdeasTopic(question);
     setError(false);
+    setVisibleAphorisms(3);
     setResult({ mode, ...matched, hexagram: mode === "dao" ? drawRandomHexagram() : undefined });
   }
 
@@ -167,6 +172,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
   const topicLabel = result ? (result.matched ? t.topic[result.topic] : t.generic) : "";
+  const aphorismMatches = result?.mode === "aphorisms" ? getIdeasAphorismMatches(question, locale, result.topic) : [];
   return (
     <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
       <div className={styles.heading}>
@@ -185,7 +191,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             id="ideas-question" ref={textareaRef} maxLength={500} rows={1} autoComplete="off"
             placeholder={t.placeholder} value={question} aria-invalid={error}
             aria-describedby={error ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
-            onChange={(event) => { setQuestion(event.target.value); setError(false); setResult(null); }}
+            onChange={(event) => { setQuestion(event.target.value); setError(false); setResult(null); setVisibleAphorisms(3); }}
           />
           <button type="submit" className={styles.submit}><Sparkles size={17} aria-hidden="true" />{t.ask}</button>
         </div>
@@ -235,11 +241,29 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             </article>
           ) : null}
           {result.mode === "aphorisms" ? (
-            <ol className={styles.aphorisms}>
-              {getIdeasAphorisms(result.topic, locale).map((line, index) => (
-                <li key={index}><span className={styles.number}>0{index + 1}</span><p>{line}</p></li>
-              ))}
-            </ol>
+            <>
+              <ol className={styles.aphorisms}>
+                {aphorismMatches.slice(0, visibleAphorisms).map((item, index) => (
+                  <li key={item.id}>
+                    <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
+                    <div className={styles.aphorismBody}>
+                      <p>{item.text}</p>
+                      {item.kind === "inspired" && item.source ? (
+                        <a className={styles.aphorismSource} href={item.source.url} target="_blank" rel="noopener noreferrer">
+                          {t.inspiredBy}: {item.source.author} · {item.source.work}
+                        </a>
+                      ) : <span className={styles.aphorismSource}>{t.editorial}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              {visibleAphorisms < aphorismMatches.length ? (
+                <button type="button" className={styles.moreAphorisms}
+                  onClick={() => setVisibleAphorisms(count => Math.min(count + 3, aphorismMatches.length))}>
+                  <Sparkles size={17} aria-hidden="true" />{t.more}<ArrowRight size={17} aria-hidden="true" />
+                </button>
+              ) : null}
+            </>
           ) : null}
           {result.mode === "personal" ? (
             <div className={styles.guidance} data-ideas-guidance>
