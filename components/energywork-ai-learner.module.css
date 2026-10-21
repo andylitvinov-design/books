@@ -5041,11 +5041,11 @@
 
 /* Flight to the Sun: warmer, more evocative opening without sacrificing text contrast.
    Scoped to flight-01; preserves the existing 320–430px lesson/navigation layout. */
-.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .slideMain > .art img {
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"][data-energywork-slide-id="flight-01"] .slideMain > .art img {
   opacity: .42;
   object-position: 58% 42%;
 }
-.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .slideMain > .art::after {
+.page[data-course-portrait="v3"] .slide[data-reiki-art-layout="background"][data-energywork-slide-id="flight-01"] .slideMain > .art::after {
   background: linear-gradient(105deg, rgba(255, 252, 247, .94), rgba(255, 250, 241, .74) 54%, rgba(247, 251, 248, .46));
 }
 .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-01"] .content h1 {
