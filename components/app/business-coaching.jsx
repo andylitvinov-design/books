@@ -223,10 +223,10 @@ export default function BusinessCoaching({locale='en',accountId}){
   const themePicker=<div className={styles.themeBar}>
     <span className={styles.eyebrow}><BriefcaseBusiness size={17}/>{t.courseKicker}</span>
     <div className={styles.themeToggle} role="group" aria-label={t.woodTheme}>
-      <button type="button" aria-pressed={woodMode==='light'} onClick={()=>chooseWoodMode('light')}>
+      <button type="button" aria-label={t.woodLight} aria-pressed={woodMode==='light'} onClick={()=>chooseWoodMode('light')}>
         <Sun size={16} aria-hidden="true"/><span>{t.woodLight}</span>
       </button>
-      <button type="button" aria-pressed={woodMode==='dark'} onClick={()=>chooseWoodMode('dark')}>
+      <button type="button" aria-label={t.woodDark} aria-pressed={woodMode==='dark'} onClick={()=>chooseWoodMode('dark')}>
         <Moon size={16} aria-hidden="true"/><span>{t.woodDark}</span>
       </button>
     </div>
