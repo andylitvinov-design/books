@@ -35,7 +35,7 @@ const copy = {
     noResults: "There are no in-person Toronto offers in this category. Try Online or a different topic.",
     switchOnline: "See online options",
     reassurance: "Session times and conditions are confirmed before booking or payment.",
-    freeCta: "See the 3 free options",
+    freeCta: "Start free · 3 options",
     paidCta: "Ask about a personal session · from €50",
     slides: {
       personal: { eyebrow: "PERSONAL SUPPORT", title: "Personal growth & emotional clarity", lead: "Guided imagery, meaningful questions and space to explore your next step." },
@@ -212,10 +212,10 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
             <strong>{count}</strong> {count === 1 ? t.oneResult : t.results} · {mode === "online" ? t.online : t.toronto}
           </p>
           <div className={styles.directPaths}>
-            <Link href="#free-insights" data-service-hero-cta="free" onClick={() => { setMode("online"); setTopic("free"); }}>
+            <Link className={styles.cta} href="#free-insights" data-service-hero-cta="free" onClick={() => { setMode("online"); setTopic("free"); }}>
               {t.freeCta}<ArrowRight size={15} aria-hidden="true" />
             </Link>
-            <Link href="#consultation" data-service-hero-cta="paid">
+            <Link className={styles.paidLink} href="#consultation" data-service-hero-cta="paid">
               {t.paidCta}<ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
