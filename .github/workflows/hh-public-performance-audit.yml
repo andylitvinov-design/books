@@ -16,6 +16,9 @@ on:
       - 'components/services-studio-offers.tsx'
       - 'tests/holistic-house-image-quota.test.mjs'
       - 'components/holistic-house-home.tsx'
+      - 'components/home-section-carousel.tsx'
+      - 'components/services-conversion-hero.module.css'
+      - 'tests/home-carousel-first-screen-cta.test.mjs'
       - 'components/home-intro-video-section.tsx'
       - 'app/holistic-house-home.css'
       - 'app/page.tsx'
@@ -45,6 +48,9 @@ on:
       - 'components/services-studio-offers.tsx'
       - 'tests/holistic-house-image-quota.test.mjs'
       - 'components/holistic-house-home.tsx'
+      - 'components/home-section-carousel.tsx'
+      - 'components/services-conversion-hero.module.css'
+      - 'tests/home-carousel-first-screen-cta.test.mjs'
       - 'components/home-intro-video-section.tsx'
       - 'app/holistic-house-home.css'
       - 'app/page.tsx'
@@ -72,7 +78,7 @@ jobs:
         with:
           node-version: 22
       - name: Validate targeted safety and booking contracts
-        run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
+        run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)
         env:
           TTFB_SAMPLES: '7'
@@ -80,8 +86,8 @@ jobs:
           HH_INLINE_WARN_KIB: '60'
         run: |
           node scripts/measure-hh-public-ttfb.mjs https://holistichouse.vercel.app | tee hh-public-ttfb.txt
-          echo '## Public EN/RU TTFB and HTML payload audit' >> "$GITHUB_STEP_SUMMARY"
-          echo 'TTFB is measured independently of decoded HTML bytes, inline scripts and Next RSC payload. Warning budgets are observational, not CI failures; not Lighthouse, LCP, or transferred/compressed bytes.' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Public EN/RU/ES TTFB and HTML/RSC payload audit' >> "$GITHUB_STEP_SUMMARY"
+          echo 'TTFB is measured independently of decoded HTML bytes, inline scripts and Next RSC payload, including decoded Flight chunks and safe size bands. Warning budgets are observational, not CI failures; not Lighthouse, LCP, or transferred/compressed bytes.' >> "$GITHUB_STEP_SUMMARY"
           echo '```json' >> "$GITHUB_STEP_SUMMARY"
           cat hh-public-ttfb.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
