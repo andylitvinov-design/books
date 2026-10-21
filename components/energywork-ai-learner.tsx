@@ -128,6 +128,8 @@ const copy = {
     unavailable: "This recording is not available. You can continue using the written teaching.",
     welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
     welcomeRequirement: "Study all five lessons in order.",
+    welcomeGiftTitle: "A personal initiation with Andrey — your gift",
+    welcomeGiftText: "After all five lessons and your application, arrange a free personal introductory Level 1 initiation in one of the three Reiki systems of your choice. After the initiation, you can begin practising that system at the introductory level.",
     welcomeTeacher: "Want to go further? You can explore personal Reiki initiation with Andrey when you feel ready.",
     pathway: "All lessons are part of your course",
     picked: "Completed",
@@ -284,6 +286,8 @@ const copy = {
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
     welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
     welcomeRequirement: "Проходите все пять уроков по очереди.",
+    welcomeGiftTitle: "Личная инициация с Андреем — в подарок",
+    welcomeGiftText: "После пяти уроков и заполнения заявки вас ждёт бесплатная персональная вводная инициация I ступени в одной из трёх систем на выбор. Андрей лично согласует с вами встречу. После инициации вы сможете начать практику в выбранной системе.",
     welcomeTeacher: "Захочется пойти дальше? Когда будете готовы, можно обсудить с Андреем личную Рейки-инициацию.",
     pathway: "Все уроки входят в одну программу",
     picked: "Завершено",
@@ -1350,6 +1354,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     {energyworkPathChoices.map((choice) => <li key={choice.id}>{choice.title[locale]}</li>)}
                   </ul>
                   <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
+                  <div className={styles.welcomeGift} data-reiki-initiation-gift>
+                    <Award size={22} aria-hidden="true" />
+                    <div>
+                      <strong>{t.welcomeGiftTitle}</strong>
+                      <p>{t.welcomeGiftText}</p>
+                    </div>
+                  </div>
                 </div>
               ) : null}
               {slide.kind === "welcome" ? (
