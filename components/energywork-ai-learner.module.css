@@ -5103,3 +5103,18 @@
     margin-top: 9px;
   }
 }
+
+/* Navigation/save errors must be visible beside the bottom CTA, not tucked
+   into the collapsed account manager (especially on iPhone). */
+.page[data-course-portrait="v3"] .inlineSaveError {
+  margin: 6px 2px 0;
+  padding: 8px 10px;
+  color: #8a2437;
+  background: #fff7f3;
+  border: 1px solid #e5bfc1;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: left;
+}

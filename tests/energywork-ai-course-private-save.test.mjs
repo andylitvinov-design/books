@@ -8,7 +8,7 @@ import {
   ENERGYWORK_INITIATION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_STARTS,
   ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
   ENERGYWORK_MEDITATION_REPORT_IDS, energyworkMeditationFeedbackComplete,
-  energyworkSequence, energyworkAnswerValid, energyworkInitiationReady,
+  energyworkSequence, energyworkAnswerValid, energyworkInitiationReady, energyworkAdvanceAlreadyStored,
   energyworkLegacyResumeId, energyworkPreviousResumeId, energyworkP2ResumeId, energyworkP3ResumeId, energyworkP4ResumeId,
 } from '../data/academy/energywork-ai-schema.js'
 
@@ -227,4 +227,42 @@ test('Client writes before navigation, retries conflict and can print protected 
   assert.match(learner,/if \(busy \|\| !firstLessonConsent/)
   assert.match(learner,/window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
   assert.match(learner,/window\.sessionStorage\.removeItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
+})
+
+test('Save review after Back uses the already-saved cursor without another server write', () => {
+  const sequence = energyworkSequence()
+  const final = sequence.at(-1)
+  assert.equal(final, 'end-02')
+  for (const current of ENERGYWORK_MEDITATION_REPORT_IDS) {
+    const position = sequence.indexOf(current)
+    assert.ok(position >= 0, current)
+    const next = sequence[position + 1]
+    assert.equal(energyworkAdvanceAlreadyStored(current, next, final, false), true, current + ' revisited')
+    assert.equal(energyworkAdvanceAlreadyStored(current, next, final, true), false, current + ' edited')
+    assert.equal(energyworkAdvanceAlreadyStored(current, next, current, false), false, current + ' first visit')
+    assert.equal(energyworkAdvanceAlreadyStored(current, current, final, false), false, current + ' invalid transition')
+    assert.equal(energyworkAdvanceAlreadyStored(current, final, final, false), false, current + ' cannot skip')
+    assert.equal(energyworkAdvanceAlreadyStored(current, next, 'welcome-02', false), false, current + ' not reached')
+  }
+  assert.equal(energyworkAdvanceAlreadyStored('missing', 'flight-02', final, false), false)
+  assert.match(learner, /sync === "ready" && energyworkAdvanceAlreadyStored\(/)
+  assert.match(learner, /if \(sync === "ready" && !alreadyStored\) \{[\s\S]*?await store\(nextId\)/)
+  assert.match(learner, /setSaveError\(null\);\s*setIndex\(\(current\) => Math\.min\(current \+ 1/)
+  assert.match(learner, /onClick=\{next\}[^>]*data-energywork-next/)
+  assert.match(learner, /isMeditationFeedback \? t\.saveReview/)
+})
+
+test('Changed review keeps private save, safe single conflict retry and visible error', () => {
+  assert.match(learner, /const syncedAnswersRef = useRef<AnswerMap>\(\{\}\)/)
+  assert.match(learner, /const changedElsewhere = \(id: string, submitted: string \| undefined\)/)
+  assert.match(learner, /changedElsewhere\(body\.slideId, body\.answer\)/)
+  assert.match(learner, /if \(changedElsewhere\(body\.slideId, body\.answer\)[\s\S]*?throw error/)
+  assert.match(learner, /if \(\(error as \{ code\?: string \}\)\.code !== "COURSE_PROGRESS_CHANGED"\) throw error/)
+  assert.match(learner, /revisionRef\.current = latest\.revision!;[\s\S]*?value = await submit\(\);/)
+  assert.match(learner, /syncedAnswersRef\.current = \{ \.\.\.restoredAnswers \}/)
+  assert.match(learner, /className=\{styles\.inlineSaveError\} role="alert">\{saveError\}/)
+  assert.match(read('components/energywork-ai-learner.module.css'), /\.inlineSaveError \{/)
+  assert.match(repository, /const resumeIndex=Math\.max\(maxBefore,nextIndex\)/)
+  // Public sharing remains separately opt-in. Editing does not publish feedback.
+  assert.match(repository, /await revokePublicReviewOnEdit\(db,actor,body\.slideId\)/)
 })
