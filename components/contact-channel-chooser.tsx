@@ -248,7 +248,7 @@ export function ContactChannelChooser({
         if (!active || !profile) return;
         const nextEmail = typeof profile.email === "string" ? profile.email.trim() : "";
         const nextName = typeof profile.displayName === "string" ? profile.displayName.trim() : "";
-        if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nextEmail)) return;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) return;
         setEmail(current => current || nextEmail);
         if (nextName.length >= 2 && nextName.length <= 120) setDisplayName(current => current || nextName);
         setGoogleReady(true);
