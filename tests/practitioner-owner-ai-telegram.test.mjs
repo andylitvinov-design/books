@@ -49,13 +49,14 @@ test('owner inline keyboard is bot-authored and a ForceReply selects the next mo
     reply_to_message:{from:{is_bot:true,username:'Andydotbot'},text:ownerAiPrompt('mistral').text}
   })
   assert.equal(parseOwnerAiUpdate(reply,now).mode,'mistral')
-  assert.equal(parseOwnerAiUpdate(event('Как улучшить CRM?'),now).mode,'both')
+  assert.equal(parseOwnerAiUpdate(event('Как улучшить CRM?'),now),null)
+  assert.equal(parseOwnerAiUpdate(event('/ai Как улучшить CRM?'),now).mode,'both')
 })
 test('secret, contacts and oversized client content is stopped before any model request',()=>{
-  assert.equal(parseOwnerAiUpdate(event('Код 123456789:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'),now).action,'sensitive')
-  assert.equal(parseOwnerAiUpdate(event('Напиши клиенту person@example.com'),now).action,'sensitive')
-  assert.equal(parseOwnerAiUpdate(event('Ваш телефон +1 647 555 0199'),now).action,'sensitive')
-  assert.equal(parseOwnerAiUpdate(event('a'.repeat(2001)),now).action,'too_long')
+  assert.equal(parseOwnerAiUpdate(event('/ai Код 123456789:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'),now).action,'sensitive')
+  assert.equal(parseOwnerAiUpdate(event('/ai Напиши клиенту person@example.com'),now).action,'sensitive')
+  assert.equal(parseOwnerAiUpdate(event('/ai Ваш телефон +1 647 555 0199'),now).action,'sensitive')
+  assert.equal(parseOwnerAiUpdate(event('/ai '+ 'a'.repeat(2001)),now).action,'too_long')
   assert.throws(()=>ownerCouncilPrompt('x'.repeat(2001)),/INVALID_OWNER_COUNCIL_QUESTION/)
 })
 test('absent AI keys never generate fabricated advice or call outside providers',async()=>{
@@ -132,6 +133,8 @@ test('signed existing webhook, DB dedup, owner isolation and private RLS are man
   assert.match(service,/event.chatId!==credentials.chat\|\|event.userId!==credentials.chat/)
   assert.match(service,/on conflict\(update_id\) do nothing/)
   assert.match(service,/consumeRate\(config,/)
+  assert.match(service,/registerClientTelegramWebhook\(env,\{config\}\)/)
+  assert.match(service,/verifyClientBot\(env,\{requireWebhook:true\}\)/)
   assert.match(service,/10,3600/)
   assert.match(service,/HH_OWNER_AI_TG_ENABLED!=='true'/)
   assert.doesNotMatch(service,/from app\.crm_contacts|from app\.assessment_results|console\.log/)

@@ -374,7 +374,8 @@ try {
       "Business practitioner portrait should load: " + label);
     const free = main.locator('a[data-business-cta="free-hero"]');
     const href = await free.getAttribute("href");
-    assert.equal(href, "/" + locale + "/services/free-situation-review?topic=business");
+    assert.equal(href, "/" + locale + "/services/free-situation-review?topic=business",
+      "Free Business hero must reach the separate written situation review, not imply a live session");
     const requestForm = main.locator("[data-business-website-enquiry]");
     await visible(requestForm);
     assert.equal(await requestForm.locator("select[data-business-field=\"format\"]").count(),1);

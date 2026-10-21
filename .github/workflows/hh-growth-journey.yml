@@ -11,8 +11,12 @@ on:
       - 'components/topic-journey-selector.module.css'
       - 'components/business-consultation-finder.tsx'
       - 'components/business-consultation-finder.module.css'
+      - 'components/business-service-browser.tsx'
+      - 'components/business-service-browser.module.css'
       - 'lib/business-consulting/consultation-finder.js'
       - 'tests/business-consultation-finder.test.mjs'
+      - 'tests/business-service-browser.test.mjs'
+      - 'tests/topic-journey-account-scope.test.mjs'
       - 'tests/business-journey-consultation-banner.test.mjs'
       - 'components/library-hub.tsx'
       - 'components/app/portrait-recommendations.jsx'
@@ -50,6 +54,8 @@ jobs:
           node --test
           tests/growth-journey-public.test.mjs
           tests/business-consultation-finder.test.mjs
+          tests/business-service-browser.test.mjs
+          tests/topic-journey-account-scope.test.mjs
           tests/business-journey-consultation-banner.test.mjs
       - name: Lint changed JS and TypeScript
         run: >-
@@ -58,8 +64,11 @@ jobs:
           components/topic-growth-guide.tsx
           components/topic-journey-selector.tsx
           components/business-consultation-finder.tsx
+          components/business-service-browser.tsx
           lib/business-consulting/consultation-finder.js
           tests/business-consultation-finder.test.mjs
+          tests/business-service-browser.test.mjs
+          tests/topic-journey-account-scope.test.mjs
           tests/business-journey-consultation-banner.test.mjs
           components/library-hub.tsx
           components/app/portrait-recommendations.jsx
