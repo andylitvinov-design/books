@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import catalog from "../data/ideas-aphorisms.json" with { type: "json" };
 import {
+  detectIdeasQuestionLocale,
   getIdeasAphorismMatches,
   getIdeasAphorisms,
   ideaTopics,
@@ -86,10 +87,16 @@ test("mobile and privacy contract: question stays local, source labels and Show 
   const style = read("components/ideas-discovery.module.css");
   const lib = read("lib/ideas-guidance.mjs");
   const schema = read("supabase/migrations/20261021125100_hh_public_ideas_aphorisms.sql");
-  assert.match(component, /getIdeasAphorismMatches\(question, locale, result\.topic\)/);
+  assert.match(component, /getIdeasAphorismMatches\(question, answerLocale, result\.topic\)/);
   assert.match(component, /Math\.min\(count \+ 3, aphorismMatches\.length\)/);
   assert.match(component, /item\.id/);
   assert.match(component, /item\.source\.url/);
+  assert.match(component, /className=\{styles\.aphorismAttribution\}/);
+  assert.match(component, /answerCopy\.sourceLabel/);
+  assert.match(component, /data-question-language=\{answerLocale\}/);
+  assert.match(component, /lang=\{answerLocale\}/);
+  assert.match(component, /detectIdeasQuestionLocale\(question, locale\)/);
+  assert.match(style, /\.aphorismAttribution \{/);
   assert.match(component, /visibleAphorisms/);
   assert.match(style, /\.moreAphorisms:focus-visible/);
   assert.match(style, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
@@ -101,4 +108,36 @@ test("mobile and privacy contract: question stays local, source labels and Show 
   assert.match(schema, /TO anon, authenticated USING \(is_published = true\)/);
   assert.match(schema, /REVOKE ALL ON public\.hh_ideas_aphorisms FROM PUBLIC, anon, authenticated/);
   assert.match(schema, /GRANT SELECT ON public\.hh_ideas_aphorisms TO anon, authenticated/);
+});
+
+test("answer language follows the question regardless of page locale; sources remain labeled", () => {
+  const samples = [
+    ["Как перестать тревожиться из-за работы?", "en", "ru"],
+    ["Я хочу change и новый путь", "en", "ru"],
+    ["I need courage to choose a new job", "ru", "en"],
+    ["How do I feel better today?", "es", "en"],
+    ["¿Cómo mejorar mi trabajo y mi vida?", "en", "es"],
+    ["Tengo miedo de cambiar de trabajo", "ru", "es"],
+    ["!?", "ru", "ru"],
+  ];
+  for (const [question, pageLocale, answerLocale] of samples) {
+    assert.equal(detectIdeasQuestionLocale(question, pageLocale), answerLocale, question);
+    const topic = matchIdeasTopic(question).topic;
+    const matches = getIdeasAphorismMatches(question, answerLocale, topic);
+    assert.equal(matches.length >= 6, true);
+    assert.equal(matches[0].text, catalog.items.find(item => item.id === matches[0].id)["text_" + answerLocale]);
+    assert.ok(matches.every(item => item.kind === "editorial" || item.source?.url.startsWith("https://")));
+  }
+  const ruSource = getIdeasAphorismMatches("партнер и отношения", "ru", "relationships").find(item => item.kind === "inspired");
+  const enSource = getIdeasAphorismMatches("partner and relationships", "en", "relationships").find(item => item.kind === "inspired");
+  assert.match(ruSource?.source?.author ?? "", /[А-Яа-яЁё]/);
+  assert.match(ruSource?.source?.work ?? "", /[А-Яа-яЁё]/);
+  assert.match(enSource?.source?.work ?? "", /[A-Za-z]/);
+  assert.equal(ruSource?.source?.url, enSource?.source?.url);
+  const ui = read("components/ideas-discovery.tsx");
+  assert.match(ui, /Source · inspired by/);
+  assert.match(ui, /Источник идеи · по мотивам/);
+  assert.match(ui, /Holistic House · авторский афоризм/);
+  assert.match(ui, /getIdeasAphorismMatches\(question, answerLocale, result\.topic\)/);
+  assert.ok(!ui.includes("fetch("));
 });
