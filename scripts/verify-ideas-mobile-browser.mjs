@@ -41,8 +41,16 @@ async function verify(browserType, locale, width) {
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
     await hub.locator("[data-ideas-preview]").waitFor({ state: "visible" });
+    const previewAphorisms = hub.locator("[data-ideas-preview] [data-ideas-aphorisms] ol li");
+    assert.equal(await previewAphorisms.count(), 3, label + ": three source-labelled example aphorisms");
+    const previewSources = await hub.locator("[data-ideas-preview] [class*=aphorismSource]").allTextContents();
+    assert.equal(previewSources.length, 3, label + ": every sample aphorism has a source label");
+    assert.ok(previewSources.every(value => value.trim()), label + ": never blank source label");
+    assert.equal(await hub.locator("[data-ideas-preview] details").first().evaluate(node => node.open), true,
+      label + ": full visual example is initially expanded");
+
     assert.equal(await hub.locator("[data-ideas-result]").count(), 0, label + ": example not a false result");
-    const initialPreviewLabel = await hub.locator("[data-ideas-preview] [class*=tag]").first().innerText();
+    const initialPreviewLabel = await hub.locator("[data-ideas-preview] [class*=daoEyebrow]").first().innerText();
     assert.ok(initialPreviewLabel.length > 4, label + ": clearly labelled editorial preview");
     const modeButtons = hub.locator("button[aria-pressed]");
     assert.equal(await modeButtons.count(), 3, label + ": exactly three choices");
@@ -65,6 +73,12 @@ async function verify(browserType, locale, width) {
     }
 
     const textarea = hub.locator("#ideas-question");
+    if (locale === "en" && width === 390 && browserType === webkit) {
+      await hub.locator('input[type="file"]').setInputFiles({
+        name: "note.txt", mimeType: "text/plain", buffer: Buffer.from("An idea about courage"),
+      });
+      await page.waitForFunction(() => document.querySelector("#ideas-question")?.value?.includes("courage"));
+    }
     assert.ok(await textarea.evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 16),
       label + ": iPhone input does not zoom");
     // The submit action is always Dao-first, even if a visitor previously tapped another mode.
@@ -79,8 +93,8 @@ async function verify(browserType, locale, width) {
       label + ": useful brief reading");
     assert.equal(await daoResult.locator('[role="img"]').count(), 0,
       label + ": glyph and full reading hidden before expanding");
-    const compactSize = await daoResult.boundingBox();
-    assert.ok(compactSize && compactSize.height < 215, label + ": answer fits the first screen");
+    const compactSize = await daoResult.locator("[data-ideas-dao]").boundingBox();
+    assert.ok(compactSize && compactSize.height < 320, label + ": compact Dao paragraph and expand control");
     const expand = daoResult.locator('button[aria-expanded]');
     assert.equal(await expand.getAttribute("aria-expanded"), "false", label + ": collapsed by default");
     if (browserType === webkit && locale === "en" && width === 390) {
@@ -88,6 +102,11 @@ async function verify(browserType, locale, width) {
     }
     await expand.tap();
     await daoResult.locator('[data-ideas-dao-expanded="true"]').waitFor({ state: "visible" });
+    assert.equal(await daoResult.locator('[data-ideas-dao-meaning] [class*=daoPoint]').count(), 3,
+      label + ": meaning, key message and practical step all visible");
+    assert.equal(await daoResult.locator('[data-ideas-aphorisms] ol li').count(), 3,
+      label + ": Dao response has three topical sourced aphorisms");
+
     assert.equal(await expand.getAttribute("aria-expanded"), "true", label + ": accessible expanded state");
     assert.equal(await daoResult.locator('[role="img"]').count(), 1, label + ": genuine I Ching glyph");
     const detailUrl = await daoResult.locator('a[href*="/dao/hexagrams/"]').getAttribute("href");
