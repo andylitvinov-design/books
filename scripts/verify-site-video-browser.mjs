@@ -234,7 +234,7 @@ try {
       await target.goto(`${origin}/admin/videos`)
       await target.locator('.prescription-admin-header button[lang="en"]').click()
       await expect(target.locator('.site-video-manager')).toHaveAttribute('lang', 'en')
-      await expect(target.locator('.site-video-placement-list button')).toHaveCount(15)
+      await expect(target.locator('.site-video-placement-list button')).toHaveCount(SITE_VIDEO_SLOTS.length)
       assert.equal(await target.getByText('Video storage is currently unavailable.', { exact: false }).count(), 0)
     }
     async function choose(slot, locale = 'en', target = editor) {
@@ -331,7 +331,9 @@ try {
     await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
     pass('Hide persists, retains draft and leaves other language unchanged')
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
-    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(1)
+    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(
+      SITE_VIDEO_SLOTS.filter(slot => ['about-intro', 'thank-you'].includes(slot.id)).length)
+    await expect(editor.locator('.site-video-placement-list button').filter({ hasText: 'Registration — thank you' })).toHaveCount(1)
     await expect(editor.locator('.site-video-editor-heading > a')).toHaveAttribute('href', '/es/about')
     await fill('QA Spanish About independent publication')
     await save('publish')
