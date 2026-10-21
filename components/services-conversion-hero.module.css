@@ -90,3 +90,5 @@
   .viewButton:hover { transform:none; }
   .dot::after,.dotActive::after { transition:none; }
 }
+/* Named legacy shortcuts remain part of the accepted free/paid enquiry contract. */
+.directPaths .cta,.directPaths .paidLink{color:#744a32}
