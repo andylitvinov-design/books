@@ -199,13 +199,18 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(page.locator("[data-reiki-first-lesson-save]")).toBeVisible();
     await expect(page.locator("[data-reiki-first-lesson-consent]")).toHaveCount(0);
   } else if (data.kind === "milestone") {
-    await expect(page.locator("button[data-energywork-next]")).toHaveText(
-      id === "flight-done"
-        ? (locale === "ru" ? "Продолжить сейчас — сохранить первый урок" : "Continue now — save lesson 1 first")
-        : (locale === "ru" ? "Хочу продолжить сейчас — следующий урок" : "I'd like to continue now — next lesson"));
+    // Both choices now live inside the teaching slide. The footer contains
+    // only Back: no modal calendar, hidden push setting or secondary Save flow.
+    const inSlide = page.locator('[data-energywork-slide-id] [data-reiki-milestone-choices]');
+    await expect(inSlide).toBeVisible();
+    await expect(inSlide.locator("button")).toHaveCount(2);
+    await expect(inSlide.locator("button[data-energywork-next]")).toContainText(
+      locale === "ru" ? "Продолжить обучение" : "Continue learning");
+    await expect(inSlide.locator("button[data-reiki-tomorrow-choice]")).toContainText(
+      locale === "ru" ? "Сохранить урок" : "Save my lesson");
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
-    await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(1);
-    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(3);
+    await expect(page.locator("[data-reiki-reminder-setup]")).toHaveCount(0);
+    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(1);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }
@@ -387,6 +392,39 @@ async function exerciseJourney(page, locale, width) {
   await removeMock();
 }
 
+async function verifySaveThenInstall(page, locale) {
+  const removeMock = await installLocalAccountMock(page);
+  await page.setViewportSize({ width: 375, height: 844 });
+  await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
+    { waitUntil: "domcontentloaded", timeout: 90000 });
+  await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
+  for (const id of ["welcome-01","welcome-02","flight-01","flight-02","flight-voices",
+    "flight-05","flight-04","flight-03"]) {
+    await expect(page.locator("[data-energywork-slide-id]"))
+      .toHaveAttribute("data-energywork-slide-id", id);
+    if (id === "welcome-02") await page.locator('input[name="welcome-02"][value="beginner"]').check();
+    if (id === "flight-04") await page.locator('#answer-flight-04')
+      .fill(locale === "ru" ? "Я заметил(а), что дыхание стало спокойнее и тепло разлилось по рукам."
+        : "I noticed my breath slowing down, and warmth spreading through my hands.");
+    await page.locator('button[data-energywork-next]').click();
+  }
+  await expect(page.locator("[data-energywork-slide-id]"))
+    .toHaveAttribute("data-energywork-slide-id", "flight-done");
+  await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(2);
+  await page.locator('button[data-reiki-tomorrow-choice]').click();
+  const offer = page.locator("[data-reiki-install-offer]");
+  await expect(offer).toBeVisible();
+  await expect(offer.locator("a[href='/" + locale + "/install']")).toBeVisible();
+  await expect(offer.locator("a[href='/" + locale + "/app/course?view=courses']")).toBeVisible();
+  await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(0);
+  await offer.locator("button").click();
+  await expect(page.locator("[data-energywork-slide-id]"))
+    .toHaveAttribute("data-energywork-slide-id", "flight-save");
+  await expect(page.locator("[data-reiki-install-offer]")).toHaveCount(0);
+  await removeMock();
+  console.log("REIKI_SAVE_INSTALL_OFFER_PASS", JSON.stringify({engine:engineName,locale,width:375}));
+}
+
 /* Screenshot-equivalent short mobile viewport: first-view course instructions should
    fit without scrolling the inner teaching panel. Videos and extensive lessons
    remain scrollable, but these introductory controls must fit. */
@@ -524,6 +562,8 @@ try {
   if (engineName === "chromium") {
     for (const [locale,width] of [["en",390],["ru",320]]) await exerciseJourney(page,locale,width);
   }
+  // Account-scoped synthetic save must succeed before an optional install screen appears.
+  if (engineName === "chromium") await verifySaveThenInstall(page,"ru");
   // Additional layout sizes: these reuse the guest route, no persistence.
   for (const [locale,width] of [["en",375],["ru",430]]) {
     await page.setViewportSize({width,height:844});
