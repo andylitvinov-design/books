@@ -14,6 +14,8 @@ test('V4 has only five library tabs; video action opens website/YouTube dialog',
  assert.match(library,/data-unified-material-nav/)
  for(const tab of ['articles','services','courses','audio','videos'])assert.match(library,new RegExp("chooseTab\\('"+tab+"'\\)"))
  assert.match(library,/CompactVideoComposer/)
+ assert.match(library,/data-website-video-presentation/)
+ assert.match(library,/sitePresentationLive/)
  assert.match(composer,/role="dialog" aria-modal="true"/)
  assert.doesNotMatch(composer,/autoFocus required/)
  assert.match(composer,/data-mobile-video-composer/)

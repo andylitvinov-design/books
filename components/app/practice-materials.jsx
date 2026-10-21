@@ -87,6 +87,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   return ()=>{alive=false}
  },[reportRefresh])
  const published=practitioner?.profile?.videoMaterials||[]
+ const sitePresentation=practitioner?.draftProfile?.videoPresentation
+ const sitePresentationLive=sitePresentation?.kind==='upload'&&
+   JSON.stringify(practitioner?.profile?.videoPresentation)===JSON.stringify(sitePresentation)
  const dirty=JSON.stringify(videos)!==JSON.stringify(original)
  const locked=busy||saving
  const visibleVideos=videos.filter(v=>!query||[v.title,v.description,v.locale].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
@@ -207,8 +210,13 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    <p className={styles.intro}>{t.note}</p>
    <div className={styles.heading}>
     <h3>{t.videos}</h3>
-    <button type="button" className={styles.primary} onClick={()=>open()} disabled={locked||editing!==null||videos.length>=12}>{t.add}</button>
+    <button type="button" className={styles.primary} onClick={()=>open()} disabled={locked||editing!==null}>{t.add}</button>
    </div>
+   {sitePresentation?.kind==='upload'&&<article className={styles.uploadedPresentation} data-website-video-presentation>
+     <Film size={18} aria-hidden="true"/>
+     <span><strong>{ru?'Видеопрезентация профиля':es?'Presentación del perfil':'Profile video presentation'}</strong>
+       <small>{sitePresentation.path.split('/').pop()} · {sitePresentationLive?t.published:t.pending}</small></span>
+   </article>}
    {visibleVideos.length?<div className={styles.resourceList}>{visibleVideos.map((video,index)=>{
     const originalIndex=videos.indexOf(video)
     const live=published.some(p=>p.url===video.url&&p.title===video.title&&p.locale===video.locale&&p.description===video.description)
@@ -229,7 +237,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
       </div>
      </div>
     </article>
-   })}</div>:<p className={styles.empty}>{t.empty}</p>}
+   })}</div>:!sitePresentation||sitePresentation.kind!=='upload'?<p className={styles.empty}>{t.empty}</p>:null}
    {editing!==null&&<CompactVideoComposer
      key={editing==='new'?'new-video':'video-'+editing}
      locale={locale} isOwner={isOwner} initial={form} existing={editing!=='new'}
