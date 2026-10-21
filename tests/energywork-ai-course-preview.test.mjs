@@ -233,6 +233,6 @@ test('Flight to the Sun invites curiosity, removes clinical caveats and only off
   assert.match(audio, /if \(!audio\) return null;/)
   assert.doesNotMatch(audio, /will be added here|скоро появится/)
   assert.match(css, /Flight to the Sun: warmer, more evocative opening/)
-  assert.match(css, /\\.slide\\[data-reiki-art-layout="background"\\]\\[data-energywork-slide-id="flight-01"\\] \\.slideMain > \\.art img/)
+  assert.ok(css.includes('.slide[data-reiki-art-layout="background"][data-energywork-slide-id="flight-01"] .slideMain > .art img'))
   assert.match(css, /\[data-energywork-slide-id="flight-01"\] \.lessonIntroPanel/)
 })
