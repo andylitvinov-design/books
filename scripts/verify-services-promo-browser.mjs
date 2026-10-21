@@ -34,7 +34,6 @@ try {
       await expect(promo).toBeVisible();
       await expect(promo).toHaveAttribute("data-services-promo-active", "tests");
       await expect(promo.locator('[data-services-promo-dot]')).toHaveCount(3);
-      const header = page.locator("header.house-header--services");
       const hero = page.locator("[data-services-showcase-hero]");
       assert.equal(await promo.evaluate((node, h) => {
         const target = document.querySelector(h);
