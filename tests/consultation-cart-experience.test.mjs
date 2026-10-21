@@ -83,5 +83,5 @@ test("occupied cart is visible in the mobile header while the narrow layout stay
   assert.match(cartCss, /position:absolute;top:-6px;right:-6px/);
   assert.match(headerCss, /@media \(max-width: 767px\)[\s\S]*data-cart-has-items="true"/);
   assert.match(headerCss, /@media \(max-width: 490px\)[\s\S]*:has\(> a\[data-nav-item="cart"\]/);
-  assert.match(headerCss, /> \.site-library-entry\s*\{\s*display:\s*none/);
+  assert.match(headerCss, /> a\[data-nav-item="cart"\]\[data-cart-has-items="true"\]\s*\{\s*display:\s*none/);
 });
