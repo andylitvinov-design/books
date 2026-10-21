@@ -64,7 +64,7 @@ test("touch, focus, arrows, accessible dots and reduced motion are preserved on 
 
 test("all homepage slides describe real benefits in EN, RU and ES with compact mobile copy", () => {
   const ids = ["services", "tests", "academy", "business", "ideas", "cabinet"];
-  const entries = [...carousel.matchAll(/^      (services|tests|academy|business|ideas|cabinet): \\{ eyebrow: "([^"]+)", title: "([^"]+)", lead: "([^"]+)", action: "([^"]+)" \\},$/gm)];
+  const entries = [...carousel.matchAll(/^      (services|tests|academy|business|ideas|cabinet): \{ eyebrow: "([^"]+)", title: "([^"]+)", lead: "([^"]+)", action: "([^"]+)" \},$/gm)];
   assert.equal(entries.length, 18, "Six complete benefit statements are required in every locale");
 
   for (let languageIndex = 0; languageIndex < 3; languageIndex++) {
