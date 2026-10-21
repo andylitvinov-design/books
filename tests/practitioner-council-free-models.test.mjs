@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
   GEMINI_MODEL,MISTRAL_DIRECT_MODEL,MISTRAL_STUDIO_ALIAS,modelSettings,freeMistral,chooseFreeMistral,publicReviewPrompt,
-  reviewGemini,reviewMistral,reviewDailyCouncil,composeDailyCouncilTelegram
+  reviewGemini,reviewMistral,inspectMistralStudioKey,reviewDailyCouncil,composeDailyCouncilTelegram
 } from '../lib/practitioners/council-free-models.mjs'
 import {pickPublicCouncilReports,readCouncilEvidence} from '../lib/practitioners/council-telegram-archive.mjs'
 
@@ -215,7 +215,9 @@ test('Mistral Studio Free mode fail-closed on inaccessible model, 429 and substi
   })
   assert.equal(missing.status,'unavailable')
   assert.equal(missing.reason,'MODEL_NOT_IN_WORKSPACE')
-  assert.equal(count,1)
+  // A blocked Studio Small model can check OpenRouter's public free catalog
+  // once; no POST occurs unless a price-zero Mistral is available.
+  assert.equal(count,2)
   const quota=await reviewMistral(report,env,async(url)=>
     String(url).endsWith('/models')
       ?json({data:[{id:MISTRAL_DIRECT_MODEL}]})
@@ -246,4 +248,87 @@ test('Mistral Studio Free mode supports the official Small latest alias',async()
  })
  assert.equal(result.status,'ok')
  assert.equal(result.model,MISTRAL_DIRECT_MODEL)
+})
+
+test('read-only Mistral Studio access check never submits inference',async()=>{
+  const key='synthetic-read-only-key'
+  const getCalls=[]
+  const ready=await inspectMistralStudioKey(key,async(url,options)=>{
+    getCalls.push(url)
+    assert.equal(url,'https://api.mistral.ai/v1/models')
+    assert.equal(options.method,'GET')
+    assert.equal(options.headers.Authorization,'Bearer '+key)
+    assert.equal(options.body,undefined)
+    return json({data:[{id:MISTRAL_STUDIO_ALIAS}]})
+  })
+  assert.deepEqual(getCalls,['https://api.mistral.ai/v1/models'])
+  assert.equal(ready.status,'ready')
+  assert.equal(ready.model,MISTRAL_STUDIO_ALIAS)
+  const disabled=await inspectMistralStudioKey('',noNet)
+  assert.equal(disabled.status,'not_configured')
+  const denied=await inspectMistralStudioKey(key,async()=>json({},403))
+  assert.equal(denied.status,'access_denied')
+  assert.equal(denied.httpStatus,403)
+  const invalid=await inspectMistralStudioKey(key,async()=>json({data:[]}))
+  assert.equal(invalid.status,'model_unavailable')
+  const rate=await inspectMistralStudioKey(key,async()=>json({},429))
+  assert.equal(rate.status,'rate_limited')
+  const network=await inspectMistralStudioKey(key,async()=>{throw Error('synthetic connection')})
+  assert.equal(network.status,'unavailable')
+})
+test('Studio API access denied can fall back only to verified zero-cost Mistral on OpenRouter',async()=>{
+  const direct='https://api.mistral.ai/v1/models'
+  const router='https://openrouter.ai/api/v1/'
+  const freeModel='mistralai/mistral-nemo:free'
+  const seen=[]
+  const env={
+    HH_COUNCIL_MISTRAL_API_KEY:'synthetic-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'router-synthetic'
+  }
+  const result=await reviewMistral(report,env,async(url,options)=>{
+    seen.push(String(url))
+    if(url===direct)return json({},403)
+    if(url===router+'models')return json({data:[
+      {id:'mistralai/expensive',pricing:{prompt:'1',completion:'1'}},
+      {id:freeModel,pricing:{prompt:'0',completion:'0'}}
+    ]})
+    assert.equal(url,router+'chat/completions')
+    const body=JSON.parse(options.body)
+    assert.equal(body.model,freeModel)
+    assert.equal(body.provider.allow_fallbacks,false)
+    assert.equal(body.provider.max_price.prompt,0)
+    return json({model:freeModel,usage:{cost:0},
+      choices:[{finish_reason:'stop',message:{content:long}}]})
+  })
+  assert.equal(result.status,'ok')
+  assert.equal(result.model,freeModel)
+  assert.deepEqual(seen,[direct,router+'models',router+'chat/completions'])
+  const noFree=await reviewMistral(report,env,async(url)=>{
+    if(url===direct)return json({},403)
+    assert.equal(url,router+'models')
+    return json({data:[]})
+  })
+  assert.equal(noFree.status,'error')
+  assert.equal(noFree.reason,'HTTP 403')
+})
+test('Studio inference timeout or truncated output must not trigger a second provider call',async()=>{
+  const env={
+    HH_COUNCIL_MISTRAL_API_KEY:'synthetic-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'router-synthetic'
+  }
+  const calls=[]
+  const result=await reviewMistral(report,env,async url=>{
+    calls.push(String(url))
+    if(String(url).endsWith('/models'))
+      return json({data:[{id:MISTRAL_DIRECT_MODEL}]})
+    return json({model:MISTRAL_DIRECT_MODEL,
+      choices:[{finish_reason:'length',message:{content:long}}]})
+  })
+  assert.equal(result.status,'error')
+  assert.deepEqual(calls,[
+    'https://api.mistral.ai/v1/models',
+    'https://api.mistral.ai/v1/chat/completions'
+  ])
 })
