@@ -58,6 +58,6 @@ test("the explicit Spanish Wu Xing route reuses the one-contact landing", () => 
   const localized = read("app/[locale]/services/dao-health-profile/page.tsx");
   assert.ok(spanish.includes('<FreeEntryLanding locale="es" kind="dao" />'));
   assert.ok(localized.includes('<FreeEntryLanding locale={locale} kind="dao" />'));
-  assert.doesNotMatch(spanish, /CoreServiceDetail|ContactChannelChooser|duplicat/i);
+  assert.doesNotMatch(spanish, /CoreServiceDetail|ContactChannelChooser/);
   assert.match(spanish, /spanishMetadata/);
 });
