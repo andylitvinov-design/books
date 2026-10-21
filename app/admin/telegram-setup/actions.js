@@ -9,6 +9,10 @@ import {sendOwnerTelegramTest} from '@/lib/practitioners/telegram-owner-setup'
 import {deliverArchivedCouncilReports} from '@/lib/practitioners/council-telegram-delivery'
 import {resolvedOwnerTelegramEnv} from '@/lib/practitioners/telegram-owner-pairing'
 import {modelSettings} from '@/lib/practitioners/council-free-models.mjs'
+import {
+  resolvedOwnerAiEnvironment,confirmOwnerGeminiFreeTier,
+  saveOwnerMistralFreeKey,disableOwnerFreeModel
+} from '@/lib/practitioners/owner-ai-provider-settings'
 
 const allow=new Set([
   'accepted','already_accepted','paired','already_configured',
@@ -18,7 +22,10 @@ const allow=new Set([
   'uncertain_previously_attempted','delivery_unconfirmed','already_started',
   'setup_unavailable',
   'council_sent','council_duplicate','council_missing_keys',
-  'council_no_archive','council_not_paired','council_unavailable'
+  'council_no_archive','council_not_paired','council_unavailable',
+  'gemini_free_saved','mistral_free_saved','gemini_disabled','mistral_disabled',
+  'free_setup_confirmation_required','free_setup_invalid_key',
+  'free_setup_unavailable'
 ])
 const destination=status=>'/admin/telegram-setup?result='+
   encodeURIComponent(allow.has(status)?status:'setup_unavailable')
@@ -64,22 +71,71 @@ export async function checkTelegramConnectionAction(){
 export async function sendDailyCouncilReportAction(){
   if(!await requireAdminRequest())redirect('/admin/login')
   if(process.env.VERCEL_ENV==='preview')redirect(destination('council_unavailable'))
-  const models=modelSettings(process.env)
-  if(!models.geminiKeyPresent||!models.geminiFreeConfirmed||!models.mistralKeyPresent)
-    redirect(destination('council_missing_keys'))
   let outcome='council_unavailable'
   try{
     const config=getAppConfig()
     const env=await resolvedOwnerTelegramEnv(config)
-    if(!env.HH_PRACTICE_TG_CHAT_ID)
+    const aiEnv=await resolvedOwnerAiEnvironment(config,env)
+    const models=modelSettings(aiEnv)
+    if(!models.geminiKeyPresent&&!models.mistralKeyPresent||
+      !models.geminiFreeConfirmed&&!models.mistralKeyPresent)
+      outcome='council_missing_keys'
+    else if(!env.HH_PRACTICE_TG_CHAT_ID)
       outcome='council_not_paired'
     else{
-      const result=await deliverArchivedCouncilReports(config,{env})
+      const result=await deliverArchivedCouncilReports(config,{env:aiEnv})
       if(result.status==='accepted')outcome='council_sent'
       else if(result.status==='already_claimed')outcome='council_duplicate'
       else if(result.status==='no_archived_reports')outcome='council_no_archive'
     }
   }catch{outcome='council_unavailable'}
   finally{await closeDatabase().catch(()=>{})}
+  redirect(destination(outcome))
+}
+
+
+// One signed, admin-only, same-origin mobile form replaces owner-managed
+// Vercel flag editing. It stores *explicit* Free Tier/Free mode consent.
+// No provider inference, paid request, Bot API send or new bot occurs here.
+export async function saveOwnerFreeProviderAction(formData){
+  if(!await requireAdminRequest())redirect('/admin/login')
+  if(process.env.VERCEL_ENV==='preview')redirect(destination('free_setup_unavailable'))
+  const provider=formData?.get('provider')
+  const free=formData?.get('free_confirmed')==='yes'
+  const unpaid=formData?.get('no_paid_billing')==='yes'
+  if(!free||!unpaid||!['gemini','mistral'].includes(provider))
+    redirect(destination('free_setup_confirmation_required'))
+  let outcome='free_setup_unavailable'
+  try{
+    const config=getAppConfig()
+    if(provider==='gemini'){
+      outcome=(await confirmOwnerGeminiFreeTier(config)).status==='gemini_confirmed'
+        ?'gemini_free_saved':'free_setup_unavailable'
+    }else{
+      const key=formData.get('mistral_key')
+      const saved=await saveOwnerMistralFreeKey(config,key)
+      outcome=saved.status==='mistral_saved'?'mistral_free_saved':'free_setup_invalid_key'
+    }
+  }catch{
+    outcome='free_setup_unavailable'
+  }finally{
+    await closeDatabase().catch(()=>{})
+  }
+  redirect(destination(outcome))
+}
+export async function disableOwnerFreeProviderAction(formData){
+  if(!await requireAdminRequest())redirect('/admin/login')
+  if(process.env.VERCEL_ENV==='preview')redirect(destination('free_setup_unavailable'))
+  let outcome='free_setup_unavailable'
+  const provider=formData?.get('provider')
+  try{
+    if(['gemini','mistral'].includes(provider)){
+      outcome=(await disableOwnerFreeModel(getAppConfig(),provider)).status
+    }
+  }catch{
+    outcome='free_setup_unavailable'
+  }finally{
+    await closeDatabase().catch(()=>{})
+  }
   redirect(destination(outcome))
 }
