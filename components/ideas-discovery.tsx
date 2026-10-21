@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Compass, HandHeart, Quote, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, HandHeart, Leaf, Quote, RefreshCw, Sparkles } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
