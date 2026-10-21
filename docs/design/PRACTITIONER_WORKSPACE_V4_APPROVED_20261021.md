@@ -67,3 +67,26 @@ The original 10-screen visual remains the design authority. The already-implemen
 - [ ] Exact production READY SHA and canonical domain alias checked
 
 **Status:** implementation pending PR/CI and authenticated owner E2E. A static test or HTTP 200 is not proof of saving or publishing.
+
+
+## V4.2 action-first Materials mobile update · 2026-10-21
+
+Owner supplied five real iPhone screenshots of **Articles, Services, Courses, Audio and Video**. Each screen had the correct warm style but excessive vertical copy, a search box ahead of primary actions, and workflow triggers too low in the viewport.
+
+- Keep one existing **Materials** hub and five tab switcher; no new storage or duplicated admin screens.
+- Directly under active tab put a **high-contrast, >=44px primary action**: New article / Add service / Create course / Upload audio / Upload video; audio also has Record, owner video also has Add link. Non-owner Video remains moderated link editing.
+- After the action, show 0–2 real content rows, count/status and a compact "All ..." disclosure when applicable; search and article folders/filters are opt-in. Do not hide useful errors or fabricate articles.
+- The real Reiki Practitioner course and protected five-lesson RU/EN audio folder remain. New-builder is mounted only after the Create course action. Editing article hides its list; video editor likewise prioritizes the active form.
+- Article API `SERVICE_UNAVAILABLE` is translated into recoverable error + Retry; **a friendly message is not a fix to backend service availability**.
+- Owner audio Record uses microphone permission and local `MediaRecorder` only when native M4A is supported, with private preview and a **separate explicit server upload**. Owner gate remains `/api/app/practitioner/open`; publishing still requires independent confirmation. Unsupported devices get an upload fallback; never infer live recording support from static tests.
+- Owner video Upload reuses the existing authorized uploader handoff. Personal Google OAuth/two-channel upload E2E remains tracked in #623 / PR #1488 and must not be marked complete here.
+- EN/RU/ES UI labels, existing service editor, public moderation, protected client reports, bottom navigation, auth/RLS and prices are unchanged.
+
+### V4.2 acceptance checklist
+- [ ] GitHub CI: source contracts, existing materials/article/reiki audio suites, TypeScript, lint, Next production build
+- [ ] Mobile view: 320/375/390/430 px, action visible immediately beneath tab switcher, no x-scroll or overlay with bottom navigation
+- [ ] Real signed-in master on iPhone: Create course → slide → save/reopen; Add article → draft save/reopen; Add service → editor; Audio Record → preview → private upload → refresh; Video public link → moderation
+- [ ] Vercel production READY on exact merged SHA, canonical `holistichouse.vercel.app` alias
+- [ ] Investigate/retest articles API if SERVICE_UNAVAILABLE persists
+
+**Status:** implementation under review; authenticated live owner E2E not established by source or build tests.
