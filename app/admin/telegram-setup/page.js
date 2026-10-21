@@ -93,10 +93,9 @@ export default async function TelegramSetupPage({searchParams}){
     ?resultNotes.setup_unavailable[lang]
     :returned?.[lang]
   const canCheck=state.token_saved&&!unavailable
+  // The main ChatGPT daily report is always deliverable when archived:
+  // no Gemini/Mistral Free Tier attestation is required for Telegram transport.
   const canCouncil=canCheck&&state.pairing==='paired'&&state.telegram_enabled&&
-    (provider.geminiKeyPresent&&provider.geminiFreeConfirmed||
-      provider.mistralOpenRouterKeyPresent||
-      provider.mistralStudioKeyPresent&&provider.mistralFreeConfirmed)&&
     state.council?.status!=='sending'
   const canSend=canCheck&&state.telegram_enabled&&!state.test_accepted&&
     !['sending','uncertain'].includes(state.test)
@@ -272,9 +271,13 @@ export default async function TelegramSetupPage({searchParams}){
                 ' · Gemini '+state.council.gemini+' / Mistral '+state.council.mistral
               :ru?'Нет подтверждённого отчёта':'No confirmed report yet'
           }</strong></p>
+          <p className={styles.footnote}>
+            {ru?'Можно отправить отчёт ChatGPT без подключения Mistral и Gemini. Ответы независимых моделей добавляются только после подтверждения бесплатных тарифов и реальной проверки API. Повтор того же отчёта не отправляется.':
+              'You can send a ChatGPT report without Gemini or Mistral credentials. Independent model answers are included only after verified free-tier setup and real API responses. The same daily report cannot be resent.'}
+          </p>
           <form action={sendDailyCouncilReportAction} className={styles.sendForm}>
             <button type="submit" className={styles.primary} disabled={!canCouncil}>
-              {ru?'Отправить анализ Gemini и Mistral сейчас':'Send Gemini + Mistral audit now'}
+              {ru?'Отправить доступный отчёт сегодня':'Send available daily report now'}
             </button>
           </form>
           <div className={styles.setupLinks}>
