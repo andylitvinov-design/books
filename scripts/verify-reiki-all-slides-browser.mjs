@@ -199,13 +199,17 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(page.locator("[data-reiki-first-lesson-save]")).toBeVisible();
     await expect(page.locator("[data-reiki-first-lesson-consent]")).toHaveCount(0);
   } else if (data.kind === "milestone") {
-    await expect(page.locator("button[data-energywork-next]")).toHaveText(
-      id === "flight-done"
-        ? (locale === "ru" ? "Продолжить сейчас — сохранить первый урок" : "Continue now — save lesson 1 first")
-        : (locale === "ru" ? "Хочу продолжить сейчас — следующий урок" : "I'd like to continue now — next lesson"));
+    const choices = page.locator("[data-reiki-milestone-choices]");
+    await expect(choices).toBeVisible();
+    await expect(choices.locator("button")).toHaveCount(2);
+    // Both primary choices belong inside the lesson, never in the pinned footer.
+    await expect(choices.locator("button[data-energywork-next]")).toHaveText(
+      locale === "ru" ? "Продолжить следующий урок" : "Continue to the next lesson");
+    await expect(choices.locator("button[data-reiki-tomorrow-choice]")).toContainText(
+      locale === "ru" ? "Сохранить и закончить на сегодня" : "Save and finish for today");
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
-    await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(1);
-    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(3);
+    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(1);
+    await expect(page.locator("[data-reiki-reminder-setup]")).toHaveCount(0);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }
@@ -376,6 +380,23 @@ async function exerciseJourney(page, locale, width) {
       await page.locator("button[data-reiki-first-lesson-google-save]").click();
       continue;
     }
+    if (id === "tan-done") {
+      // Real account-scoped save is acknowledged before the install offer.
+      await page.locator("button[data-reiki-tomorrow-choice]").click();
+      const installOffer = page.locator("[data-reiki-install-offer]");
+      await expect(installOffer).toBeVisible({timeout:30000});
+      await expect(installOffer.locator("h1")).toHaveText(
+        locale === "ru" ? "Ваш курс Рейки всегда рядом" : "Your Reiki course, always close");
+      await expect(installOffer.locator('a[href="/' + locale + '/install"]')).toHaveCount(1);
+      await expect(installOffer.locator('a[href="/' + locale + '/app/course?view=courses"]')).toHaveCount(1);
+      await expect(page.locator("[data-energywork-slide-id]")).toHaveCount(0);
+      await page.screenshot({path:output+"/"+engineName+"-"+locale+"-"+width+"-after-save-install.png",
+        animations:"disabled",timeout:30000});
+      await installOffer.locator("button[class*='installOfferContinue']").click();
+      await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute(
+        "data-energywork-slide-id",expectedSequence[n+1],{timeout:30000});
+      continue;
+    }
     const next = page.locator("button[data-energywork-next]");
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
@@ -493,8 +514,11 @@ async function verifyShortViewport(page,locale) {
   await expect(page.locator('[data-energywork-slide-id="flight-done"] [class*="milestoneCard"]'))
     .not.toContainText(/Personal initiation and group membership|Инициация и вступление в сообщество/);
   await page.screenshot({path:output+"/"+engineName+"-"+locale+"-375-short-flight-done.png",animations:"disabled",timeout:30000});
-  // Guest must be explicitly asked to save, with no second forward/skip action.
-  await page.locator('button[data-energywork-next]').click();
+  // Guest's inline Save leads to explicit Google/private-storage consent,
+  // never the authenticated install offer or an unsaved-success message.
+  await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(2);
+  await page.locator("button[data-reiki-tomorrow-choice]").click();
+  await expect(page.locator("[data-reiki-install-offer]")).toHaveCount(0);
   await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-save');
   const saveAction = page.locator('button[data-reiki-first-lesson-google-save]');
   await expect(saveAction).toBeDisabled();
