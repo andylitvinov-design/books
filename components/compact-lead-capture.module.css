@@ -1,0 +1,32 @@
+.section { box-sizing:border-box; width:min(1050px,calc(100% - 24px)); margin:24px auto calc(95px + env(safe-area-inset-bottom)); padding:clamp(20px,3vw,34px); background:#f1eee6; border:1px solid #ddd7cb; border-radius:23px; color:#343b32; font-family:Arial,Helvetica,sans-serif; }
+.section * { box-sizing:border-box; }
+.head h2 { margin:0 0 7px; font:400 clamp(25px,3vw,36px)/1.15 Georgia,"Times New Roman",serif; letter-spacing:-.025em; }
+.head p { margin:0 0 18px; font-size:14px; line-height:1.5; color:#5a625c; }
+.form { display:grid; gap:11px; }
+.fieldRow { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:end; }
+.field { min-width:0; display:grid; gap:5px; font-size:12px; font-weight:750; color:#47594d; }
+.field input { width:100%; height:48px; border:1px solid #a8b9aa; border-radius:12px; background:#fffdfa; color:#24372d; padding:0 14px; font-size:15px; }
+.field input::placeholder { color:#7a897f; }
+.submit { display:inline-flex; justify-content:center; align-items:center; gap:9px; min-width:195px; min-height:48px; border:0; border-radius:12px; background:#315842; color:#fff; padding:12px 18px; font-size:14px; line-height:1.2; font-weight:750; cursor:pointer; }
+.submit:hover:not(:disabled) { background:#234332; }
+.submit:disabled { cursor:not-allowed; opacity:.57; }
+.consent { display:flex; align-items:flex-start; gap:9px; font-size:12px; line-height:1.4; color:#485b50; cursor:pointer; }
+.consent input { flex:none; width:16px; height:16px; margin:1px 0 0; accent-color:#315842; }
+.notice,.disclaimer { margin:0; color:#64716a; font-size:11px; line-height:1.45; }
+.disclaimer { border-top:1px solid #dcded5; padding-top:9px; margin-top:14px; }
+.error { margin:0; color:#8e3c30; font-size:12px; line-height:1.4; }
+.error a { color:inherit; text-decoration:underline; }
+.receipt { display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:12px; row-gap:4px; align-items:center; padding:10px 0; color:#265d3d; }
+.receipt svg { grid-row:1/4; }
+.receipt p,.receipt small { margin:0; color:#3d624b; font-size:13px; }
+.section :is(input,button,a):focus-visible { outline:3px solid #b87c44; outline-offset:3px; }
+@media(max-width:600px) {
+  .section { margin:12px auto calc(85px + env(safe-area-inset-bottom)); padding:19px 16px; border-radius:19px; }
+  .head h2 { font-size:clamp(24px,6.8vw,31px); }
+  .head p { font-size:12px; margin-bottom:14px; }
+  .fieldRow { grid-template-columns:1fr; gap:9px; }
+  .field input,.submit { width:100%; height:46px; min-height:46px; }
+  .field { font-size:11px; }
+  .consent { font-size:11px; }
+}
+@media(prefers-reduced-motion:reduce) { .submit { transition:none; } }
