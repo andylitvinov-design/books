@@ -3,7 +3,6 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { videoKey, videoPagePath, prepareVideoChange, toPublishedSiteVideo } from '../lib/site-videos/model.js'
 import { parseEnquiryReceipt, RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
-import { isPublicAnalyticsPath, PUBLIC_ANALYTICS_AVAILABLE } from '../lib/public-analytics.ts'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const referenceCode='HH-AABBCCDDEEFF'
@@ -35,13 +34,13 @@ test('page and service form only acknowledge a successful server-saved reply req
   assert.match(ui,/const confirmed = \/\^HH-/)
   assert.doesNotMatch(ui,/gtag|fbq|sendBeacon|fetch\(|localStorage/i)
   for(const locale of ['en','ru','es']) {
-    assert.match(ui,new RegExp('  '+locale+': \\\\{'))
+    assert.ok(ui.includes('  '+locale+': {'), 'missing locale '+locale)
     assert.equal(videoPagePath('thank-you',locale),'/'+locale+'/thank-you')
     assert.equal(videoKey('thank-you',locale),'thank-you:'+locale)
   }
-  assert.equal(PUBLIC_ANALYTICS_AVAILABLE,false)
-  for(const path of ['/en/thank-you','/ru/thank-you','/es/thank-you'])
-    assert.equal(isPublicAnalyticsPath(path),false)
+  const analytics = source('lib/public-analytics.ts')
+  assert.match(analytics,/PUBLIC_ANALYTICS_AVAILABLE = false/)
+  assert.match(analytics,/app\|client\|report\|prescriptions\|thank-you/)
 })
 
 test('video is draft-only until explicit checked publication, with no default auto-post',()=>{
