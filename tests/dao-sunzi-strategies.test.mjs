@@ -35,6 +35,7 @@ test("display removes original unverified pastiche but does not rewrite source r
   for (const entry of original) {
     const displayed=prepareDaoReadingForSunTzu(entry.text);
     assert.equal(displayed.split(SUN_TZU_PLACEHOLDER).length,2,"one sourced slot "+entry.number);
+    assert.ok(displayed.split(/\n\n+/).some(part=>part.trim()===SUN_TZU_PLACEHOLDER),"standalone block "+entry.number);
     assert.ok(!/Сунь-Цзы — стратегия|Императорская стратегия в духе Сунь-цзы/u.test(displayed),"no unsourced strategy "+entry.number);
     assert.ok(displayed.length>350,"keep full author reading "+entry.number);
   }
