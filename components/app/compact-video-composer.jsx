@@ -36,7 +36,7 @@ const languageCopy={
   error:'No se pudo guardar. Revisa los datos e inténtalo de nuevo.',google:'Entra con Google aquí, elige tu canal y sube el vídeo.'},
 }
 export default function CompactVideoComposer({
- locale='en',initial,existing=false,hasPresentation=false,onClose,onSaveLink,onSaveSiteFile,onSiteError,
+ locale='en',initial,existing=false,isOwner=false,hasPresentation=false,onClose,onSaveLink,onSaveSiteFile,onSiteError,
 }){
  const t=languageCopy[locale]||languageCopy.en
  const id=useId(),closeRef=useRef(null),sheetRef=useRef(null)
@@ -121,7 +121,8 @@ export default function CompactVideoComposer({
      </div>
      <div className={styles.body}>
        {destination==='youtube'?<div className={styles.youtube} data-composer-youtube>
-         <PracticeYoutubeUploader locale={locale} compact onTransferLockChange={setGoogleLocked}/>
+         <p className={styles.privacy}>{t.warning}</p>
+         <PracticeYoutubeUploader locale={locale} compact canConfigure={isOwner} onTransferLockChange={setGoogleLocked}/>
        </div>:<form id={id+'-site'} className={styles.siteForm} onSubmit={save} data-composer-website>
          {!existing&&<div className={styles.method} role="group" aria-label={t.site}>
            <button type="button" disabled={busy||!!staged} aria-pressed={siteMethod==='link'} onClick={()=>{setSiteMethod('link');setError('')}}><Link2 size={15}/>{t.link}</button>

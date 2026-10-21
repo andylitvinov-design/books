@@ -67,7 +67,7 @@ async function request(method,body){
   if(!response.ok)throw new Error(data.error||'YOUTUBE_UNAVAILABLE')
   return data
 }
-export default function PracticeYoutubeUploader({locale='en',onTransferLockChange,compact=false}){
+export default function PracticeYoutubeUploader({locale='en',onTransferLockChange,compact=false,canConfigure=false}){
   const t=translations[locale]||translations.en
   const [state,setState]=useState(null)
   const [slot,setSlot]=useState('1')
@@ -263,7 +263,17 @@ export default function PracticeYoutubeUploader({locale='en',onTransferLockChang
   return <section className={styles.panel+(compact?' '+styles.compact:'')} aria-label={t.title} data-practitioner-youtube-uploader>
     {!compact&&<><h3>{t.title}</h3><p className={styles.intro}>{t.lead}</p></>}
     {!state&&!error&&<p role="status">…</p>}
-    {state&&!state.enabled&&<p className={styles.warning} role="status">{t.setup}</p>}
+    {state&&!state.enabled&&<div className={styles.warning} role="status">
+      <p>{t.setup}</p>
+      <div className={styles.configActions}>
+        {canConfigure&&<a href="/admin/youtube-upload" target="_blank" rel="noopener noreferrer">
+          {locale==='ru'?'Настроить Google OAuth ↗':locale==='es'?'Configurar Google OAuth ↗':'Configure Google OAuth ↗'}
+        </a>}
+        <button type="button" className={styles.neutral} onClick={()=>request('GET').then(next=>{setState(next);setError('')}).catch(e=>setError(e.message))}>
+          {locale==='ru'?'Проверить подключение':locale==='es'?'Volver a comprobar':'Check connection'}
+        </button>
+      </div>
+    </div>}
     {state?.enabled&&<>
       <fieldset className={styles.choices} disabled={busy||authPending}>
         <legend>{t.channel}</legend>

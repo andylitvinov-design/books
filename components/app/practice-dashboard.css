@@ -1201,3 +1201,18 @@
  .hh-app .hh-practice-v4-materials-cta small{font-size:10px}
  .hh-app .hh-practice-form-panel[data-practice-detail-panel="materials"]{scroll-margin-top:4px}
 }
+
+/* Consistent short service/profile editor controls on 320–430px, without
+   hiding advanced fields or weakening their explicit save/submit gates. */
+@media(max-width:430px){
+ .hh-app .hh-practice-form-panel{margin-top:9px;padding:10px;border-radius:13px}
+ .hh-app .hh-practice-form-panel .hh-practice-form-heading{margin-bottom:7px}
+ .hh-app .hh-practice-form-panel .hh-practice-form-heading h2{font-size:19px;line-height:1.2}
+ .hh-app .hh-practice-form-panel .hh-practice-close{min-height:44px}
+ .hh-app .hh-practice-presentation{gap:8px;margin:8px 0;padding:10px;border-radius:11px}
+ .hh-app .hh-practice-presentation-head{gap:3px}
+ .hh-app .hh-practice-presentation-head strong{font-size:13px}
+ .hh-app .hh-practice-presentation-head small{font-size:11px;line-height:1.35}
+ .hh-app .hh-practice-presentation-options button{min-height:44px}
+ .hh-app .hh-practice-presentation-input :is(input,textarea){font-size:16px}
+}

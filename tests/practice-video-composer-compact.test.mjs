@@ -41,6 +41,9 @@ test('website direct MP4/MOV reuses existing signed private-intent flow; no prem
 })
 test('inline Google OAuth is channel-bound, resumable, and cannot escape CSP policy boundary',()=>{
  assert.match(composer,/PracticeYoutubeUploader locale=\{locale\} compact/)
+ assert.match(composer,/canConfigure=\{isOwner\}/)
+ assert.match(youtube,/href="\/admin\/youtube-upload"/)
+ assert.match(composer,/\{t\.warning\}/)
  assert.match(youtube,/initTokenClient/)
  assert.match(youtube,/requestAccessToken/)
  assert.match(youtube,/beginUpload\(file,auth.token/)

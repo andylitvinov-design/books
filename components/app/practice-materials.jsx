@@ -232,7 +232,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    })}</div>:<p className={styles.empty}>{t.empty}</p>}
    {editing!==null&&<CompactVideoComposer
      key={editing==='new'?'new-video':'video-'+editing}
-     locale={locale} initial={form} existing={editing!=='new'}
+     locale={locale} isOwner={isOwner} initial={form} existing={editing!=='new'}
      hasPresentation={Boolean(practitioner?.draftProfile?.videoPresentation)}
      onClose={()=>{setEditing(null);setError('')}}
      onSaveLink={values=>apply(null,values)}
