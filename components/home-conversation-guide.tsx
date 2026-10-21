@@ -247,11 +247,11 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   function appendExchange(question: string, answer: string) {
     const firstId = nextId.current;
     nextId.current += 2;
-    setTurns(current => [
-      ...current,
+    const exchange: Turn[] = [
       { id: firstId, role: "visitor", text: question },
       { id: firstId + 1, role: "guide", text: answer },
-    ].slice(-8));
+    ];
+    setTurns(current => [...current, ...exchange].slice(-8));
   }
 
   function ask(text: string) {
