@@ -59,7 +59,7 @@ test('Google owner tool transition is allowlisted end-to-end with no open redire
   assert.match(route,/!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)/)
   assert.match(route,/issueTrustedAdminSession/)
   assert.match(practice,/onClick=\{\(\)=>openOwner\('tools'\)\}/)
-  assert.match(practice,/ownerTools && <details/)
+  assert.match(practice,/ownerTools && !activePanel && <details/)
   assert.doesNotMatch(practice,/window\.location\.assign\('\/admin\/tools'\)/)
 })
 
