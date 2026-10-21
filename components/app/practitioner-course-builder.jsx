@@ -127,8 +127,8 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   }catch(e){setError(e.message==='REVISION_CONFLICT'?t.rev:e.message==='PRACTITIONER_REVIEW_REQUIRED'?t.approved:e.message||t.error)}
   finally{setBusy(false)}
  }
- async function upload(file){
-  if(!active||!file||uploading||busy||recording)return false
+ async function upload(file,fromCapture=false){
+  if(!active||!file||uploading||busy||(recording&&!fromCapture))return false
   setUploading(true);setError('');setMessage('')
   const slideBefore=active.id,courseBefore=current.id
   try{
@@ -203,7 +203,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
         </label>
         {['audio','video'].includes(active.kind)&&<CourseSlideRecorder key={active.id+':'+active.kind}
          kind={active.kind} locale={locale} busy={busy||uploading}
-         onRecordingChange={setRecording} onUpload={file=>upload(file)}/>}
+         onRecordingChange={setRecording} onUpload={file=>upload(file,true)}/>}
         {active.assetId&&<div className={styles.preview}>
          {active.kind==='image'?<img loading="lazy" src={'/api/practitioner-course-media/'+active.assetId} alt={active.title||t.photoAlt}/>:
           active.kind==='audio'?<audio controls preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>:
