@@ -160,6 +160,8 @@ test("routes use explicit EN fallbacks and never invent a paid checkout", () => 
   const reiki = chooseHomeGuideOffer(resolveHomeGuideQuestion("Reiki", "es"), "reiki-course", "es").offers[0];
   assert.equal(reiki.href, "/es/academy/reiki/free-practitioner-course");
   assert.match(reiki.detail, /inglés/);
+  const russianReiki = chooseHomeGuideOffer(resolveHomeGuideQuestion("Хочу Рейки", "ru"), "reiki-course", "ru").offers[0];
+  assert.match(russianReiki.detail, /Курс откроется на английском/);
   assert.equal(chooseHomeGuideOffer(resolveHomeGuideQuestion("work"), "https://evil.test"), null);
   const source = read("lib/home-conversation.mjs");
   for (const forbidden of ["fetch(", "sendBeacon(", "localStorage", "sessionStorage", "/api/"]) assert.ok(!source.includes(forbidden));
@@ -171,5 +173,7 @@ test("homepage provides the single canonical free Reiki start without changing t
   assert.ok(component.includes("!context?.urgent ? <div className={styles.reikiEntry}"), "Static course promotion must also disappear in crisis");
   assert.ok(component.includes("href={REIKI_FREE_COURSE_PATH}"));
   assert.ok(component.includes("Curso en inglés"));
+  assert.ok(component.includes("Курс откроется на английском"));
+  assert.ok(component.includes("Начать курс на английском"));
   assert.doesNotMatch(component, /€39|Buy now|Купить сейчас/);
 });

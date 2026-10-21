@@ -157,7 +157,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const reikiEntry = {
     en: ["Free Reiki Practitioner course", "Five lessons to explore three Reiki traditions, practices and meditations.", "Start the free course"],
-    ru: ["Бесплатный курс «Рейки Практик»", "Пять занятий: три системы Рейки, практики и медитации.", "Начать бесплатный курс"],
+    ru: ["Бесплатный курс «Рейки Практик»", "Пять занятий: три системы Рейки, практики и медитации. Курс откроется на английском.", "Начать курс на английском"],
     es: ["Curso gratuito de Reiki", "Cinco lecciones sobre tres tradiciones, prácticas y meditaciones. Curso en inglés.", "Empezar el curso en inglés"],
   }[locale];
   const [draft, setDraft] = useState("");
