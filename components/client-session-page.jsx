@@ -6,7 +6,7 @@ import { DaoStageDisclosure } from './dao-resource-stage'
 import { PublicSiteHeader } from './public-site-header'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/shared-education-model'
-import { SaveClientSessionToAccount } from './save-client-session-to-account'
+import { SaveClientSessionToAccount, SESSION_SAVE_COPY } from './save-client-session-to-account'
 import { SessionExitSaveGuard } from './session-exit-save-guard'
 import { SessionYouTubePlayer } from './session-youtube-player'
 import { ClientSessionEngagement } from './client-session-engagement'
@@ -135,6 +135,7 @@ export function ClientSessionVoiceMessage({session,selector,locale='en',mode='gu
 }
 export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false,audioEmbedded=false}) {
   const ru=locale==='ru'
+  const saveCopy=SESSION_SAVE_COPY[locale]||SESSION_SAVE_COPY.en
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
     .format(new Date(session.occurredOn+'T12:00:00Z'))
   const plan=session.plan||{}
@@ -393,19 +394,24 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     <nav className={styles.sessionBottomActions} data-hh-report-next-actions data-hh-engagement-action="cabinet"
       aria-label={ru?'Сохранить отчёт в кабинете':'Save the report to your Cabinet'}>
       <div className={styles.sessionBottomHeading}>
-        <span className={styles.sectionKicker}>{ru?'СОХРАНИТЕ И ПРОДОЛЖАЙТЕ':'SAVE & CONTINUE'}</span>
-        <h2>{ru?'Ваши следующие шаги':'Your next steps'}</h2>
+        <span className={styles.sectionKicker}>{saveCopy.kicker}</span>
+        <h2>{mode==='saved'?saveCopy.savedTitle:saveCopy.title}</h2>
+        <p className={styles.sessionBottomDescription}>
+          {mode==='saved'?saveCopy.savedDescription:saveCopy.description}
+        </p>
       </div>
       {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount
         locale={locale} appAvailable={appAvailable} compact/>}
       {mode==='owner'&&<button className={styles.sessionBottomPrimary} type="button" disabled>
         <BookmarkCheck size={20} aria-hidden="true"/>
-        {ru?'Войти в мой кабинет и сохранить отчёт':'Sign in to my Cabinet and save report'}
+        <span className={styles.sessionBottomPrimaryCopy}>
+          <strong>{saveCopy.save}</strong><small>{saveCopy.google}</small>
+        </span>
       </button>}
       {mode==='saved'&&<a href={'/'+locale+'/app/portrait#personal-reports'}
         className={styles.sessionBottomPrimary}>
         <BookmarkCheck size={20} aria-hidden="true"/>
-        {ru?'Открыть мой кабинет — отчёт сохранён':'Open my Cabinet — report saved'}
+        {saveCopy.open}
       </a>}
       {mode==='owner'&&<p className={styles.sessionBottomHint} role="note">
         {ru?'Предпросмотр специалиста: кнопка сохранения становится активной у клиента по защищённой ссылке.':
