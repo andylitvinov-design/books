@@ -57,6 +57,34 @@ for (const engine of [chromium, webkit]) {
           const freeHref = await free.getAttribute('href');
           assert.equal(paidHref, '/' + locale + '/services#consultation', label + ': existing booking destination');
           assert.equal(freeHref, '/' + locale + '/services/free-situation-review', label + ': free written review');
+          // The approved reference keeps the original photo and overlays only
+          // quiet text navigation. Verify touch sizing, locality and true paths.
+          const sectionNav = page.locator('[data-home-hero-nav="true"]');
+          await sectionNav.waitFor({ state: 'visible', timeout: 30000 });
+          const sectionLinks = sectionNav.locator('a[data-home-nav-section]');
+          assert.equal(await sectionLinks.count(), 6, label + ': six plain text site sections');
+          assert.equal(await sectionNav.locator('svg, img').count(), 0, label + ': no icons in the hero navigation');
+          assert.ok((await sectionNav.getAttribute('aria-label'))?.length > 3, label + ': accessible section list');
+          const keys = ['home', 'tests', 'services', 'academy', 'business', 'ideas'];
+          const suffixes = ['', '/client/tests', '/services', '/academy', '/explore/business', '/books'];
+          for (let i = 0; i < keys.length; i++) {
+            const link = sectionLinks.nth(i);
+            assert.equal(await link.getAttribute('data-home-nav-section'), keys[i], label + ': navigation order');
+            assert.equal(await link.getAttribute('href'),
+              suffixes[i] ? '/' + locale + suffixes[i] : locale === 'en' ? '/' : '/' + locale,
+              label + ': real localized route for ' + keys[i]);
+            const target = await link.boundingBox();
+            assert.ok(target && target.height >= 44, label + ': touch target for ' + keys[i]);
+          }
+          assert.equal(await sectionLinks.first().getAttribute('aria-current'), 'page', label + ': active homepage');
+          const [navBox, copyBox] = await Promise.all([
+            sectionNav.boundingBox(), page.locator('[data-home-slide]').boundingBox(),
+          ]);
+          assert.ok(navBox && copyBox, label + ': nav and photo copy are laid out');
+          assert.ok(navBox.y >= slider.y - 1 && navBox.y + navBox.height <= copyBox.y + 4,
+            label + ': lightweight nav stays above the title without overlapping it');
+          assert.ok(navBox.x >= slider.x - 1 && navBox.x + navBox.width <= slider.x + slider.width + 1,
+            label + ': nav stays within the existing photo');
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
           assert.ok(overflow <= 1, label + ': no horizontal overflow');
           const visiblePixels = { cardY: Math.round(card.y), cardHeight: Math.round(card.height),
@@ -72,6 +100,9 @@ for (const engine of [chromium, webkit]) {
             const freeTarget = await page.request.get(origin + freeHref, { timeout: 30000 });
             assert.equal(paidTarget.status(), 200, label + ': paid target HTTP 200');
             assert.equal(freeTarget.status(), 200, label + ': free target HTTP 200');
+            // A real touch navigation must reach the requested public section.
+            await sectionNav.locator('[data-home-nav-section="tests"]').tap();
+            await page.waitForURL(url => url.pathname === '/' + locale + '/client/tests', { timeout: 30000 });
           }
         } finally {
           await page.close();
