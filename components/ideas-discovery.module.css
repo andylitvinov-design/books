@@ -277,6 +277,8 @@
   color: #625343; min-width: 0; overflow-wrap: anywhere;
 }
 .aphorismSource cite { font-style: normal; }
+.aphorisms p.aphorismOriginal { margin-top: 6px; color: #76695d; font: italic 11px/1.45 Georgia, "Times New Roman", serif; }
+.aphorismOriginal span { color: #7f6c5c; font-style: normal; font-weight: 650; }
 .aphorismSource svg { flex: 0 0 auto; }
 a.aphorismSource { text-underline-offset: 3px; text-decoration-color: #b59f87; padding: 7px 0; margin: -7px 0; }
 a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
