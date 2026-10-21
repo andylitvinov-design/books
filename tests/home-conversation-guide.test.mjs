@@ -89,3 +89,31 @@ test("browser-only conversation supports multiple turns, voice consent, accessib
   assert.match(css, /:focus-visible/);
   assert.match(css, /-webkit-overflow-scrolling: touch/);
 });
+
+test("one-tap ChatGPT-style microphone is local, cancellable, and sends recognized words on finish", () => {
+  const component = read("components/home-conversation-guide.tsx");
+  const css = read("components/home-conversation-guide.module.css");
+  for (const token of [
+    'data-home-voice-recording',
+    'engine.interimResults = true',
+    'engine.onstart =',
+    'engine.onresult =',
+    'engine.onend =',
+    'submitOnEndRef.current = true',
+    'voiceDiscardRef.current = true',
+    'onClick={finishVoice}',
+    'onClick={cancelVoice}',
+    't.voiceKeyboard',
+    't.voicePrivacy',
+    'onKeyDown={event =>',
+    'voiceStartedAtRef.current = 0',
+    'setVoiceState("finishing")',
+  ]) assert.ok(component.includes(token), token);
+  assert.match(css, /\.recordingMessage\s*\{[^}]*text-overflow: ellipsis/);
+  assert.match(css, /\.examples \{ display: grid; grid-template-columns: repeat\(2,/);
+  assert.match(css, /\.form textarea \{[^}]*resize: none/);
+  assert.match(css, /\.recordingDot \{ animation: none;/);
+  for (const forbidden of ["MediaRecorder", "getUserMedia(", "fetch(", "localStorage", "sessionStorage"]) {
+    assert.ok(!component.includes(forbidden), "Speech-to-text should not save raw audio or send private text: " + forbidden);
+  }
+});
