@@ -638,3 +638,104 @@ for (const [name, manifest, expected] of imageryConsoleCanaries) {
     }
   });
 }
+
+const imageryCssFiles = ['static/css/0123456789abcdef.css', 'static/css/fedcba9876543210.css'];
+function assertNominalMixedImageryProjection() {
+  assertNominalImageryProjection();
+  const mixed = [imageryFiles[0], imageryCssFiles[0], ...imageryFiles.slice(1), imageryCssFiles[1]];
+  const expected = { ...nominalImageryProjection, cssCount: 2 };
+  assert.deepEqual(projectReleaseImageryBuildManifest(imageryManifest(mixed)), expected);
+  return { mixed, expected };
+}
+
+test('generated Imagery diagnostic validates mixed entries but exposes only JS names and a CSS count', () => {
+  const { mixed, expected } = assertNominalMixedImageryProjection();
+  const result = readReleaseImageryBuildDiagnostic(fakeImageryFs({ text: imageryManifest(mixed) }).fs);
+  assert.deepEqual(result, expected);
+  assert.doesNotMatch(JSON.stringify(result), /static\/css|\.css/);
+  const maxFiles = [imageryFiles[0], ...Array.from({ length: 63 }, (_, i) => `static/css/${i.toString(16).padStart(16, '0')}.css`)];
+  assert.deepEqual(projectReleaseImageryBuildManifest(imageryManifest(maxFiles)), {
+    status: 'present', entrypoint: imageryEntry, files: [imageryFiles[0]], cssCount: 63,
+  });
+});
+
+const unsafeImageryCss = [
+  'static/css/01234567.css',
+  'static/css/0123456789abcde.css',
+  'static/css/0123456789abcdef0.css',
+  'static/css/0123456789ABCDEF.css',
+  'static/css/0123456789abcdeg.css',
+  'static/css/SECRET_CSS_CANARY.css',
+  'static/css/0123456789abcdef.css?',
+  'static/css/0123456789abcdef.css?SECRET_QUERY_CANARY=value',
+  'static/css/0123456789abcdef.css#SECRET_HASH_CANARY',
+  'static/css/0123456789abcdef.css.map',
+  'static/css/0123456789abcdef.css.js',
+  'static/css/0123456789abcdef.css\n',
+  'static/css/0123456789abcdef.css\r',
+  'static/css/0123456789abcdef.css\u2028',
+  'static/css/0123456789abcdef.css\u2029',
+  'static/css/0123456789abcdef.css\0',
+  '/static/css/0123456789abcdef.css',
+  '//SECRET_HOST_CANARY/static/css/0123456789abcdef.css',
+  'https://SECRET_HOST_CANARY/static/css/0123456789abcdef.css',
+  'static/css/../css/0123456789abcdef.css',
+  'static/css/./0123456789abcdef.css',
+  'static/css//0123456789abcdef.css',
+  'static/css\\0123456789abcdef.css',
+  'static%2Fcss%2F0123456789abcdef.css',
+  'static/css/%30%31%32%33%34%35%36%37%38%39abcdef.css',
+  'static/css/%2530%2531%2532%2533%2534%2535%2536%2537%2538%2539abcdef.css',
+  'static/css/0123456789abcdef%2Ecss',
+  'static/private/0123456789abcdef.css',
+  'static/chunks/app/[locale]/client/0123456789abcdef.css',
+  'static/css/' + 'a'.repeat(161) + '.css',
+];
+for (const [index, unsafe] of unsafeImageryCss.entries()) {
+  test(`generated Imagery CSS partition rejects unsafe case ${index + 1} without partial metadata`, () => {
+    const { mixed } = assertNominalMixedImageryProjection();
+    const result = projectReleaseImageryBuildManifest(imageryManifest([...mixed, unsafe]));
+    assert.deepEqual(result, { status: 'invalid', reason: 'filename' });
+    assert.doesNotMatch(JSON.stringify(result), /SECRET_|files|cssCount|static\//);
+  });
+}
+
+for (const [name, files, reason] of [
+  ['duplicate CSS', [...imageryFiles, ...imageryCssFiles, imageryCssFiles[0]], 'duplicates'],
+  ['duplicate JS in mixed list', [...imageryFiles, ...imageryCssFiles, imageryFiles[0]], 'duplicates'],
+  ['CSS without any approved JS', imageryCssFiles, 'files'],
+  ['too many mixed entries', [imageryFiles[0], ...Array.from({ length: 64 }, (_, i) => `static/css/${i.toString(16).padStart(16, '0')}.css`)], 'files'],
+]) {
+  test(`generated Imagery CSS partition rejects ${name}`, () => {
+    assertNominalMixedImageryProjection();
+    assert.deepEqual(projectReleaseImageryBuildManifest(imageryManifest(files)), { status: 'invalid', reason });
+  });
+}
+
+test('actual caller emits CSS count locally without revealing CSS names or changing failures', () => {
+  const source = read('scripts/verify-release-reaudit.mjs');
+  assertImageryCallerContract(source);
+  const { mixed, expected } = assertNominalMixedImageryProjection();
+  const diagnostic = projectReleaseImageryBuildManifest(imageryManifest(mixed));
+  for (const label of ['local', 'live']) {
+    const result = runImageryDiagnosticCaller(source, { label, diagnostic });
+    assert.equal(result.counts.reads, label === 'local' ? 1 : 0);
+    assert.equal(Object.hasOwn(result.logs[0], 'buildAttribution'), label === 'local');
+    assert.equal(Object.hasOwn(result.writes[0].content, 'buildAttribution'), label === 'local');
+    if (label === 'local') {
+      assert.deepEqual(result.logs[0].buildAttribution, expected);
+      assert.deepEqual(result.writes[0].content.buildAttribution, expected);
+    }
+    assert.doesNotMatch(JSON.stringify([result.logs, result.writes]), /static\/css|\.css/);
+    assert.equal(result.logs[0].failed, 1);
+    assert.deepEqual(result.logs[0].failures, [{ name: 'synthetic-paid-boundary', ok: false }]);
+    assert.match(result.error?.message ?? '', /Re-audit failed; inspect evidence/);
+  }
+});
+
+test('CSS partition retains the pinned standard build with no repository hash override', () => {
+  const lock = JSON.parse(read('package-lock.json'));
+  assert.equal(lock.packages['node_modules/next'].version, '15.5.21');
+  assert.equal(JSON.parse(read('package.json')).scripts.build, 'next build');
+  assert.doesNotMatch(read('next.config.ts'), /webpack|hashDigest|hashFunction|rspack|turbopack/);
+});

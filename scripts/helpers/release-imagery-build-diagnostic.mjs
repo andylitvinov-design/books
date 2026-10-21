@@ -12,6 +12,10 @@ const publicJavascript = [
   /^static\/chunks\/app\/layout-[0-9a-f]{16}\.js(?![\s\S])/,
   /^static\/chunks\/app\/\[locale\]\/services\/imagery-therapy\/page-[0-9a-f]{16}\.js(?![\s\S])/,
 ];
+// Next 15.5.21's production CSS extractor uses static/css/[contenthash].css.
+// Its pinned webpack 5.98.0 uses hex, with Next's xxhash64/16 output options.
+// CSS is counted only; these filenames are never emitted or network-authorized.
+const publicCss = /^static\/css\/[0-9a-f]{16}\.css(?![\s\S])/;
 const invalid = reason => ({ status: 'invalid', reason });
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -26,10 +30,17 @@ export function projectReleaseImageryBuildManifest(text) {
   if (!Object.hasOwn(manifest.pages, entrypoint)) return { status: 'absent', reason: 'entrypoint' };
   const files = manifest.pages[entrypoint];
   if (!Array.isArray(files) || files.length === 0 || files.length > maxFiles) return invalid('files');
-  if (files.some(file => typeof file !== 'string' || file.length > maxFilenameLength
-    || !publicJavascript.some(pattern => pattern.test(file)))) return invalid('filename');
+  const javascript = [];
+  let cssCount = 0;
+  for (const file of files) {
+    if (typeof file !== 'string' || file.length > maxFilenameLength) return invalid('filename');
+    if (publicJavascript.some(pattern => pattern.test(file))) javascript.push(file);
+    else if (publicCss.test(file)) cssCount += 1;
+    else return invalid('filename');
+  }
   if (new Set(files).size !== files.length) return invalid('duplicates');
-  return { status: 'present', entrypoint, files: [...files] };
+  if (javascript.length === 0) return invalid('files');
+  return { status: 'present', entrypoint, files: javascript, ...(cssCount > 0 ? { cssCount } : {}) };
 }
 
 export function readReleaseImageryBuildDiagnostic(fs = nodeFs) {
