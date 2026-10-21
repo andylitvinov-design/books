@@ -25,7 +25,7 @@ test("all 52 new readings carry the complete author's 10-part archetypal framewo
   const required = [
     "Гексаграмма ", "Императорская формула:", "Смысл и образ стихий:",
     "Ключевой смысл:", "Тактика и путь:", "Опасности:",
-    "Императорская подсказка:", "Стратегия в духе Сунь-цзы",
+    "Императорская подсказка:", "__HH_SUN_TZU_STRATEGY__",
     "Психотерапевтический смысл:", "Аффирмации:", "Образ:",
   ];
   const texts = new Set();
@@ -37,7 +37,7 @@ test("all 52 new readings carry the complete author's 10-part archetypal framewo
     assert.ok(content.startsWith("Гексаграмма " + number + ". " + item.hanzi), "misnumbered author-style text " + number);
     assert.ok(content.length >= 1800 && content.length <= 6000, "author-format length outlier " + number + ": " + content.length);
     for (const part of required) assert.ok(content.includes(part), number + " missing " + part);
-    assert.ok(content.includes("не цитата"), "attribution disclaimer " + number);
+    assert.ok(!content.includes("Стратегия в духе Сунь-цзы"), "remove unsourced pastiche " + number);
     assert.ok(!content.includes("docs.google.com"), "must not leak private source");
     texts.add(content);
   }
