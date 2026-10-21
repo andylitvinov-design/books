@@ -70,7 +70,7 @@ test("browser-only conversation supports multiple turns, voice consent, accessib
     'aria-live="polite"',
     'maxLength={500}',
     'onSubmit={submit}',
-    'homeGuideGoals.map',
+    'recommendedGoals.map',
     "appendExchange",
     "new Speech()",
     "engine.start()",
@@ -110,12 +110,18 @@ test("one-tap ChatGPT-style microphone is local, cancellable, and sends recogniz
     'setVoiceState("finishing")',
   ]) assert.ok(component.includes(token), token);
   assert.match(css, /\.recordingMessage\s*\{[^}]*text-overflow: ellipsis/);
-  assert.match(css, /\.quickChoices \{ display: grid; grid-template-columns: repeat\(3,/);
+  assert.match(css, /\.quickChoices\s*\{[^}]*grid-template-columns: repeat\(3,/);
   assert.match(css, /ideas-pine-reference\.webp/);
   assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(component, /data-guide-phase=\{turns\.length === 0/);
   assert.match(component, /className=\{styles\.inputRow\}/);
-  assert.doesNotMatch(component, />\{t\.welcome\}<\/p>/, "hide redundant welcome speech bubble");
+  assert.match(component, /role="dialog" aria-modal="true"/, "conversation lives in a dialog");
+  assert.match(component, /data-home-guide-launcher/, "homepage only shows a compact launcher");
+  assert.match(component, /data-home-guide-launcher-mic/, "one-tap microphone opens the dialog");
+  assert.match(component, /goalSuggestions/, "only contextual choices should be prominent");
+  assert.match(component, /document.body.style.overflow = "hidden"/, "mobile chat keeps the page from scrolling");
+  assert.match(css, /\.chatScroll\s*\{[^}]*overflow-y: auto/, "messages scroll inside the dialog");
+  assert.match(css, /\.dialog\s*\{[^}]*flex-direction: column/, "mobile dialog has a fixed header and composer");
   assert.match(css, /\.form textarea \{[^}]*resize: none/);
   assert.match(css, /\.recordingDot \{ animation: none;/);
   for (const forbidden of ["MediaRecorder", "getUserMedia(", "fetch(", "localStorage", "sessionStorage"]) {
