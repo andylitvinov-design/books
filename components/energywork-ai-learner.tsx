@@ -1445,14 +1445,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     </>
                   )}
                   {saveError ? <p className={styles.firstLessonError} role="alert">{saveError}</p> : null}
-                  <button type="button" className={styles.firstLessonSaveAction}
-                    onClick={sync === "ready" ? next : saveLessonOneToCabinet}
-                    disabled={busy || sync === "checking" || sync === "unavailable" || (sync !== "ready" && !firstLessonConsent)}
-                    data-reiki-first-lesson-google-save>
-                    {sync === "guest" ? <span className={styles.googleMark} aria-hidden="true">G</span> : <Check size={18} aria-hidden="true" />}
-                    {busy ? t.saving : sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount}
-                    <ArrowRight size={19} aria-hidden="true" />
-                  </button>
                 </aside>
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
@@ -1747,6 +1739,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               </div>
             ) : null}
           </div>
+          {slide.id === "flight-save" ? (
+            <div className={styles.firstLessonSaveDock} data-reiki-save-dock>
+              <button type="button" className={styles.firstLessonSaveAction}
+                onClick={sync === "ready" ? next : saveLessonOneToCabinet}
+                disabled={busy || sync === "checking" || sync === "unavailable" || (sync !== "ready" && !firstLessonConsent)}
+                data-reiki-first-lesson-google-save>
+                {sync === "guest" ? <span className={styles.googleMark} aria-hidden="true">G</span> : <Check size={18} aria-hidden="true" />}
+                {busy ? t.saving : sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount}
+                <ArrowRight size={19} aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
         </section>
 
         <div className={styles.progressFooter}>
