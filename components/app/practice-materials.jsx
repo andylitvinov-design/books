@@ -246,7 +246,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     </article>
    })}</div>}
    {editing===null&&visibleVideos.length===0&&sitePresentation?.kind!=='upload'&&<p className={styles.empty}>{t.empty}</p>}
-   {editing===null&&!query&&visibleVideos.length>2&&<button type="button" className={styles.showMore} aria-expanded={showAll} onClick={()=>setShowAll(v=>!v)}>{showAll?(ru?'Свернуть':es?'Ver menos':'Show fewer'):(ru?'Все видео ('+visibleVideos.length+') →':es?'Todos los vídeos ('+visibleVideos.length+') →':'All videos ('+visibleVideos.length+') →')}</button>
+   {editing===null&&!query&&visibleVideos.length>2&&<button type="button" className={styles.showMore} aria-expanded={showAll} onClick={()=>setShowAll(v=>!v)}>{showAll?(ru?'Свернуть':es?'Ver menos':'Show fewer'):(ru?'Все видео ('+visibleVideos.length+') →':es?'Todos los vídeos ('+visibleVideos.length+') →':'All videos ('+visibleVideos.length+') →')}</button>}
    {editing!==null&&<CompactVideoComposer
      key={editing==='new'?'new-video':'video-'+editing}
      locale={locale} isOwner={isOwner} initial={form} existing={editing!=='new'}
