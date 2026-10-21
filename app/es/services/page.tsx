@@ -1,6 +1,7 @@
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { redirect } from "next/navigation";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
@@ -20,8 +21,10 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
   return (
     <main className="services-shell services-shell--studio" lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
-      <ServicesConversionHero locale="es" />
-      <ServicesStudioOffers locale="es" />
+      <ServicesExplorerProvider>
+        <ServicesConversionHero locale="es" />
+        <ServicesStudioOffers locale="es" />
+      </ServicesExplorerProvider>
       <ServicesIntroMedia locale="es" />
       <PersonalTestimonials locale="es" variant="services" />
       <ServicesMethodVideos locale="es" />
