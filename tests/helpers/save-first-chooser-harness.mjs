@@ -25,6 +25,8 @@ export function mountSavedChooser(locale, fault, reducedMotion = false, location
   let choice = 'session', instance, active, tree, dirty = true, disposed = false, serial = 0, uuid = 0, externalClicks = 0;
   const calls = [], attempts = [], queue = [], scrollCalls = [], channelClicks = [], stateAfterUnmount = [], mutations = [];
   const location = { pathname: '/' + locale + '/services/psychohomeopathy', search: '', ...locationOptions };
+  Object.defineProperty(location, 'href', { get: () => 'http://127.0.0.1:3100' + location.pathname + location.search });
+  location.assign = () => assert.fail('Provider navigation is forbidden');
   const hooks = {
     useState(initial) { const inst = active, index = inst.cursor++;
       inst.slots[index] ??= { value: typeof initial === 'function' ? initial() : initial };
@@ -198,9 +200,10 @@ export async function openSavedContactChooser(mounted, reply = 'saved', note = d
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(hasForm ? 0 : 2);
   if (hasForm) {
     assert.equal(mounted.field('name').props.value, ''); assert.equal(mounted.field('checkbox').props.checked, false);
-    assert.equal(mounted.field('tel').props.value, '');
-    assert.equal(chooser.locator('select').selected()[0].props.value, 'CA');
-    const noteDisclosure = chooser.locator('details').selected();
+    assert.equal(mounted.field('email').props.value, '');
+    assert.equal(mounted.field('tel'), undefined, 'Phone child is absent until selected');
+    assert.equal(chooser.locator('select').selected().length, 0);
+    const noteDisclosure = chooser.locator('details').selected().filter(node => node.props.children.some?.(child => child?.type === 'textarea'));
     assert.equal(noteDisclosure.length, 1);
     assert.equal(Boolean(noteDisclosure[0].props.open), false, 'Optional note starts collapsed');
     assert.equal(Boolean(chooser.locator('textarea').selected()[0].props.required), false);

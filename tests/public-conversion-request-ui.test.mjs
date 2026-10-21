@@ -75,9 +75,8 @@ test('label fidelity preserves nested consent text and explicit private-note ari
   const mounted = mountPublicConversion('en', 'situation');
   const scope = mounted.page.locator('[data-free-resource-enquiry="situation"]');
   const fields = [
-    ['Your name *', 'input[autocomplete="name"]'],
+    ['Your name', 'input[autocomplete="name"]'],
     ['Email', 'input[type="email"]'],
-    ['Phone number', 'input[type="tel"]'],
     ['Add a short note (optional)', 'textarea'],
     ['I agree to be contacted personally about this enquiry only. No marketing subscription.', 'input[type="checkbox"]'],
   ];
@@ -91,6 +90,10 @@ test('label fidelity preserves nested consent text and explicit private-note ari
     await mounted.expect(scope.getByLabel(label.toUpperCase(), { exact: false })).toHaveCount(1);
     await mounted.expect(scope.getByLabel(label + ' incorrect', { exact: true })).toHaveCount(0);
   }
+  await scope.locator('button[data-contact-order]').click();
+  await scope.getByRole('button', { name: 'Phone / WhatsApp', exact: true }).click();
+  await mounted.expect(scope.getByLabel('Phone number', { exact: true })).toHaveCount(1);
+  await mounted.expect(scope.locator('input[type="email"]')).toHaveCount(0);
   await mounted.expect(scope.locator('input[type="checkbox"]')).not.toBeChecked();
   assert.equal(mounted.fetchCount(), 0);
   assert.equal(mounted.externalClicks(), 0);
@@ -133,7 +136,7 @@ for (const locale of ['en', 'ru']) {
     await expect(capture).toBeVisible();
     const prepared = await exercisePublicEnquiryUi(page, capture, expect, { locale, kind: 'hypnotherapy' });
     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes(locale === 'ru' ? 'Курс гипнотерапии' : 'Guided Imagery Hypnotherapy'));
-    const alternative = capture.locator('details');
+    const alternative = capture.locator('details:has(a[href="/' + locale + '/services/free-situation-review"])');
     assert.equal(await alternative.evaluate(node => node.open), false);
     await alternative.locator('summary').click();
     await expect(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]')).toBeVisible();
@@ -316,9 +319,10 @@ for (const locale of ['en', 'ru', 'es']) {
     const label = { en: 'New enquiry', ru: 'Новый запрос', es: 'Nueva solicitud' }[locale];
     await scope.getByRole('button', { name: label, exact: true }).click();
     await expect(scope.locator('form')).toHaveCount(1);
-    for (const selector of ['input[autocomplete="name"]', 'input[type="email"]', 'input[type="tel"]', 'textarea']) {
+    for (const selector of ['input[autocomplete="name"]', 'input[type="email"]', 'textarea']) {
       await expect(scope.locator('form').locator(selector)).toHaveValue('');
     }
+    await expect(scope.locator('input[type="tel"]')).toHaveCount(0);
     await expect(scope.locator('input[type="checkbox"]')).not.toBeChecked();
     await expect(scope.locator('a[data-contact-channel]')).toHaveCount(0);
     await expect(scope.locator('button[type="submit"]')).toBeDisabled();
@@ -328,7 +332,7 @@ for (const locale of ['en', 'ru', 'es']) {
   });
 }
 
-for (const locale of ['en', 'ru', 'es']) for (const contactMode of ['phone', 'both']) {
+for (const locale of ['en', 'ru', 'es']) for (const contactMode of ['phone', 'email']) {
   test(locale + ' exact ' + contactMode + ' contact payload completes all four consented save attempts', async () => {
     const mounted = mountPublicConversion(locale, 'business');
     await exercisePublicEnquiryUi(mounted.page, mounted.page.locator('[data-business-offer="express"]'),
@@ -336,7 +340,7 @@ for (const locale of ['en', 'ru', 'es']) for (const contactMode of ['phone', 'bo
     assert.equal(mounted.fetchCount(), 4);
     for (const request of mounted.requests) {
       assert.equal(request.contact.email, contactMode === 'phone' ? '' : 'visitor@example.test');
-      assert.equal(request.contact.phone, '+447700900123');
+      assert.equal(request.contact.phone, contactMode === 'phone' ? '+447700900123' : '');
       assert.equal(request.contactConsent, true);
     }
     assert.equal(mounted.externalClicks(), 0);
@@ -392,9 +396,10 @@ for (const kind of ['dao', 'situation']) test(kind + ' keyed topic change create
   const { enquiry, topic } = await freeTopicContracts[kind].ready(mounted.page, mounted.expect, 'en');
   const chooser = enquiry.locator('[data-contact-channel-chooser]');
   await chooser.locator('button[data-contact-order]').click();
-  const note = chooser.locator('details');
+  const note = chooser.locator('form').locator('details:has(textarea)');
   await note.locator(':scope > summary').click();
   await chooser.locator('textarea').fill('Private note from old keyed scope');
+  await chooser.getByRole('button', { name: 'Phone / WhatsApp', exact: true }).click();
   await chooser.getByRole('combobox', { name: 'Country calling code', exact: true }).selectOption('GB');
   assert.equal(await note.evaluate(node => node.open), true);
   await topic.selectOption('1');
@@ -403,6 +408,8 @@ for (const kind of ['dao', 'situation']) test(kind + ' keyed topic change create
   assert.equal(await note.evaluate(node => node.open), false, 'New native disclosure cannot inherit old open state');
   await mounted.expect(chooser.locator('textarea')).toBeHidden();
   await mounted.expect(chooser.locator('textarea')).toHaveValue('');
+  await mounted.expect(chooser.locator('input[type="tel"]')).toHaveCount(0);
+  await chooser.getByRole('button', { name: 'Phone / WhatsApp', exact: true }).click();
   await mounted.expect(chooser.getByRole('combobox', { name: 'Country calling code', exact: true })).toHaveValue('CA');
   assert.equal(mounted.fetchCount(), 0);
   assert.equal(mounted.externalClicks(), 0);
@@ -416,7 +423,7 @@ for (const locale of ['en', 'ru', 'es']) {
     const { main, enquiry, advanced, intake } = await assertFreeSituationLandingReady(page, expect, locale);
     const capture = main.locator('section#request-free-review');
     const form = enquiry.locator('[data-contact-channel-chooser]').locator('form');
-    const note = form.locator('details');
+    const note = form.locator('details:has(textarea)');
     const formTextarea = form.locator('textarea');
     // The actual page has both a contact-note disclosure and a separate full
     // drawing disclosure. Global intersection would incorrectly accept these
@@ -454,7 +461,7 @@ for (const locale of ['en', 'ru', 'es']) {
       const scope = mounted.page.locator('[data-consultation-capture="service"]');
       const form = scope.locator('[data-contact-channel-chooser]').locator('form');
       await mounted.expect(form).toHaveCount(1);
-      await mounted.expect(form.locator('details')).toHaveCount(disclosures);
+      await mounted.expect(form.locator('details')).toHaveCount(disclosures + 1);
       await mounted.expect(form.locator('textarea')).toHaveCount(formTextareas);
       await mounted.expect(form.locator('details').locator('textarea')).toHaveCount(noteTextareas);
       assert.ok(mounted.mutationReceipts.some(receipt => receipt.fault === fault

@@ -68,6 +68,8 @@ const attr = (node, name) => {
   return value == null || value === false ? null : value === true ? '' : String(value);
 };
 function matches(node, selector) {
+  const has = selector.match(/^([^:]+):has\(([^()]+)\)$/);
+  if (has) return matches(node, has[1]) && descendants(node).some(child => matches(child, has[2]));
   const tag = selector.match(/^[a-z0-9]+/i)?.[0];
   const id = selector.match(/^[^[\]]*#([\w-]+)/)?.[1];
   const attributes = [...selector.matchAll(/\[([\w-]+)(?:="([^"]*)")?\]/g)];
@@ -91,7 +93,7 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
     URL, URLSearchParams, AbortController,
     crypto: { randomUUID: () => '01234567-89ab-4def-8123-456789abcdef' },
     window: {
-      location: { pathname, search: '', hash: '' }, addEventListener() {}, removeEventListener() {}, matchMedia: () => ({ matches: true }),
+      location: { pathname, search: '', hash: '', href: origin + pathname, assign() { assert.fail('Provider navigation is forbidden'); } }, addEventListener() {}, removeEventListener() {}, matchMedia: () => ({ matches: true }),
       dispatchEvent: event => events.push(event.detail),
     },
     document: { documentElement: { dataset: { analyticsConsent: 'granted' } } },
@@ -217,27 +219,35 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
     return source;
   });
   modules['@/components/contact-channel-chooser'] = compile('components/contact-channel-chooser.tsx', source => {
+    if (fault === 'compact always-mounted phone') {
+      const actualPhone = source.match(/<PhoneCountryInput\b[\s\S]*?\/>/)?.[0];
+      assert.ok(actualPhone, 'Reuse the actual stateful phone child markup');
+      return source.replace('<details className={styles.optionalName}>', actualPhone + '\n            <details className={styles.optionalName}>');
+    }
+    if (fault === 'compact wrong initial method') return source.replace('useState<"email" | "phone">("email")', 'useState<"email" | "phone">("phone")');
+    if (fault === 'compact ignored phone selection') return source.replace('setMethod("phone");', 'setMethod("email");');
+
     if (fault === 'links while pending') return source.replace('setBusy(true);', 'setBusy(true); setSaved({saved:true,referenceCode:"HH-0123456789AB"});');
-    if (fault === 'submit enabled while pending') return source.replace('disabled={busy || displayName.trim().length < 2 ||', 'disabled={displayName.trim().length < 2 ||');
-    if (fault === 'details editable while pending') return source.replace('value={description} disabled={busy || uncertain}', 'value={description} disabled={false}');
+    if (fault === 'submit enabled while pending') return source.replace('disabled={busy || googleBusy ||\n                ', 'disabled={googleBusy ||\n                ');
+    if (fault === 'details editable while pending') return source.replace('value={description} disabled={busy || googleBusy || uncertain}', 'value={description} disabled={false}');
     if (fault === 'hidden name') return source.replace('<input type="text" autoComplete="name"', '<input hidden type="text" autoComplete="name"');
     if (fault === 'hidden question') return source.replace('<textarea id={panelId', '<textarea hidden id={panelId');
     if (fault === 'prechecked consent') return source.replace('[consent, setConsent] = useState(false)', '[consent, setConsent] = useState(true)').replaceAll('setConsent(false)', 'setConsent(true)');
-    if (fault === 'both contacts required') return source.replace('(!email.trim() && !phone.trim())', '(!email.trim() || !phone.trim())');
+    if (fault === 'both contacts required') return source.replace('(method === "email" ? !email.trim() : !phone.trim())', '(!email.trim() || !phone.trim())');
     if (fault === 'missing consent gate') return source.replaceAll(' || !consent', '');
-    if (fault === 'invalid phone accepted') return source.replace('(cleanedPhone && !/^\\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || ', '');
-    if (fault === 'missing contact payload') return source.replace('contact: { displayName: displayName.trim(), email: email.trim(), phone: cleanedPhone },', '');
+    if (fault === 'invalid phone accepted') return source.replace('(method === "phone" && ! /^\\+[1-9][0-9]{7,14}$/.test(cleanedPhone))', 'false');
+    if (fault === 'missing contact payload') return source.replace('contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },', '');
     if (fault === 'consent payload false') return source.replace('contactConsent: consent,', 'contactConsent: false,');
     if (fault === 'contact URL leak') return source.replace('originalMessage + "\\n\\n" + c.reference', 'originalMessage + displayName + "\\n\\n" + c.reference');
     if (fault === 'private note URL leak') return source.replace('originalMessage + "\\n\\n" + c.reference', 'originalMessage + description + "\\n\\n" + c.reference');
-    if (fault === 'missing note disclosure') return source.replace('<details className={styles.optionalNote}>', '<div className={styles.optionalNote}>').replace('</details>', '</div>');
+    if (fault === 'missing note disclosure') return source.replace(/<details className=\{styles\.optionalNote\}>[\s\S]*?<\/details>/, markup => markup.replace('<details', '<div').replace('</details>', '</div>'));
     if (fault === 'duplicate note disclosure') return source.replace(/<details className=\{styles\.optionalNote\}>[\s\S]*?<\/details>/, '$&$&');
     if (fault === 'wrong note descendant') return source.replace(/(<details className=\{styles\.optionalNote\}>)([\s\S]*?)(<textarea[\s\S]*?\/>)([\s\S]*?)(<\/details>)/, '$3$1$2$4$5');
     if (fault === 'wrong note label') return source.replace('aria-label={c.description}', 'aria-label={c.description + " wrong"}');
     if (fault === 'required private note') return source.replace('<textarea id={panelId', '<textarea required id={panelId');
     if (fault === 'minimum private note') return source.replace('maxLength={1400} rows={2}', 'minLength={10} maxLength={1400} rows={2}');
     if (fault === 'expanded private note') return source.replace('<details className={styles.optionalNote}>', '<details open className={styles.optionalNote}>');
-    if (fault === 'private note blocks contact only') return source.replace('disabled={busy || displayName.trim().length', 'disabled={busy || description.trim().length < 10 || displayName.trim().length');
+    if (fault === 'private note blocks contact only') return source.replace('disabled={busy || googleBusy ||\n                ', 'disabled={busy || googleBusy || description.trim().length < 10 ||\n                ');
     if (fault === 'wrong service title') return source.replace('serviceTitle, description:', 'serviceTitle: "Unrelated service", description:');
     if (fault === 'extra payload field') return source.replace('sourcePath: pathname, locale,', 'sourcePath: pathname, locale, privateAnswer: "unexpected answer",');
     if (fault === 'wrong source path') return source.replace('sourcePath: pathname, locale,', 'sourcePath: "/en/services/unrelated", locale,');
@@ -513,7 +523,7 @@ export function mountPublicConversion(locale, kind = 'dao', fault = '', origin =
   });
   expect.poll = callback => ({ async toBe(value) { assert.equal(await callback(), value); } });
   return { page, expect, fetchCount: () => fetchCount, externalClicks: () => externalClicks, intercepted: () => Boolean(interception), copiedValues, events, requests, writesAfterUnmount, mutationReceipts, routeMetadata: SpanishDaoModule?.metadata,
-    navigate(path) { pathname = path; browserGlobals.window.location.pathname = path; render(); },
+    navigate(path) { pathname = path; browserGlobals.window.location.pathname = path; browserGlobals.window.location.href = origin + path; render(); },
     unmount() { mounted = false; instances.forEach(cleanup); instances.clear(); },
   };
 }

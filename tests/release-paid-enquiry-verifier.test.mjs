@@ -125,47 +125,62 @@ test('missing WebSocket interception fails before page creation', async () => {
   await assert.rejects(installPaidReadOnlyGuard(context, releasePaidPolicy(base)), /requires pre-navigation WebSocket interception/);
 });
 
-for (const locale of ['en', 'ru', 'es']) test(locale + ' schema is bound to actual contact and phone source', () => {
-  const expected = expectedPaidForm(locale), c = contactCopy[locale];
-  assert.equal(expected.country, phoneCountryFromValue(''));
+for (const locale of ['en', 'ru', 'es']) for (const method of ['email', 'phone']) test(locale + '/' + method + ' schema is bound to actual contact and phone source', () => {
+  const expected = expectedPaidForm(locale, method), c = contactCopy[locale];
+  assert.equal(expected.country, method === 'phone' ? phoneCountryFromValue('') : null);
   assert.equal(expected.consent, c.consent); assert.equal(expected.privacy, c.privateNote);
   assert.equal(expected.description, c.description); assert.equal(expected.submit, c.submit);
-  assert.equal(expected.controls[0].visibleLabel, c.name + ' *');
-  assert.equal(expected.controls[1].visibleLabel, c.email); assert.equal(expected.controls[3].visibleLabel, c.phone);
+  assert.equal(expected.nameDescription, c.nameOptional); assert.equal(expected.replyVia, c.replyVia);
+  assert.equal(expected.controls[0].label, c.google);
+  assert.deepEqual(expected.controls.slice(1, 3).map(item => [item.buttonName, item.pressed]), [[c.email, String(method === 'email')], [c.phone, String(method === 'phone')]]);
+  const name = expected.controls.find(item => item.autocomplete === 'name');
+  assert.equal(name.visibleLabel, c.name); assert.equal(name.required, false);
   const captions = new Function('return ' + phoneSource.match(/const captions=(\{[\s\S]*?\});/)[1])()[locale];
-  assert.equal(expected.controls[2].label, captions.country); assert.equal(expected.controls[3].label, captions.number);
-  assert.deepEqual(expected.countries.map(c => c.value), PHONE_COUNTRIES.map(c => c.iso));
-  assert.match(chooserSource, /<input type="text" autoComplete="name" required minLength=\{2\} maxLength=\{120\}/);
-  assert.match(chooserSource, /<input type="email" autoComplete="email" maxLength=\{254\}/);
+  if (method === 'phone') {
+    assert.equal(expected.controls[3].label, captions.country); assert.equal(expected.controls[4].label, captions.number);
+    assert.equal(expected.controls[4].visibleLabel, c.phone); assert.equal(expected.controls[4].required, true);
+    assert.deepEqual(expected.countries.map(item => item.value), PHONE_COUNTRIES.map(item => item.iso));
+  } else {
+    assert.equal(expected.controls[3].visibleLabel, c.email); assert.equal(expected.controls[3].required, true);
+    assert.deepEqual(expected.countries, []);
+  }
+  assert.match(chooserSource, /<input type="text" autoComplete="name" minLength=\{2\} maxLength=\{120\}/);
+  assert.match(chooserSource, /<input type="email" autoComplete="email" maxLength=\{254\} required/);
+  assert.match(chooserSource, /<PhoneCountryInput id=\{panelId \+ "-phone"\} locale=\{locale\} required/);
   assert.match(chooserSource, /<input type="checkbox" required checked=\{consent\}/);
   assert.match(chooserSource, /maxLength=\{1400\} rows=\{2\}/);
   assert.match(chooserSource, /const \[consent, setConsent\] = useState\(false\)/);
   assert.match(phoneSource, /type="tel" inputMode="tel" autoComplete="tel-national"/);
   assert.match(phoneSource, /required=\{required\} maxLength=\{24\}/);
 });
-// Execute the real initial JSX of both components without React effects,
-// networking, or a browser. Only DOM-shaped traversal/property behavior is fake.
-// Unlike the sequencing mock, this fixture is not built from expectedPaidForm.
-function sourceForm(locale) {
+// Execute the actual JSX and only its inert contact-method handlers. No effects,
+// browser, auth, submission, storage or network. The model is NOT expectedPaidForm.
+function sourceForms(locale, actualSource = chooserSource) {
   const React = { createElement(type, props, ...children) {
     const flat = children.flat(Infinity).filter(child => child !== null && child !== undefined && typeof child !== 'boolean');
     if (typeof type === 'function') return type({ ...props, children: flat });
     return { tagName: type.toUpperCase(), props: props || {}, children: flat };
   } };
-  const hooks = { useId: () => 'source-form', useState: value => [typeof value === 'function' ? value() : value, () => {}], useEffect: () => {}, useRef: value => ({ current: value }) };
+  const idleHooks = { useId: () => 'source-form', useState: value => [typeof value === 'function' ? value() : value, () => {}], useEffect: () => {}, useRef: value => ({ current: value }) };
+  const state = []; let cursor = 0;
+  const hooks = { ...idleHooks, useState(initial) {
+    const index = cursor++;
+    if (!(index in state)) state[index] = typeof initial === 'function' ? initial() : initial;
+    return [state[index], value => { state[index] = typeof value === 'function' ? value(state[index]) : value; }];
+  } };
   const compile = (text, functionName, globals) => {
-    const source = text.slice(text.indexOf('function ' + functionName));
-    const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React } }).outputText;
+    const start = text.indexOf('function ' + functionName); assert.ok(start >= 0, 'Actual component function');
+    const code = ts.transpileModule(text.slice(start), { compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React } }).outputText;
     return new Function(...Object.keys(globals), code + '; return ' + functionName)(...Object.values(globals));
   };
+  const forbidden = () => { throw Error('No auth, submit, storage or network in source-form fixture'); };
   const captions = new Function('return ' + phoneSource.match(/const captions=(\{[\s\S]*?\});/)[1])();
-  const phone = compile(phoneSource, 'PhoneCountryInput', { ...hooks, React, styles: {}, captions, PHONE_COUNTRIES, phoneCountryFromValue, phoneNationalPart, composeCountryPhone });
-  const formComponent = compile(chooserSource, 'ContactChannelChooserForm', { ...hooks, React, copy: contactCopy, styles: {}, PhoneCountryInput: phone,
+  const phone = compile(phoneSource, 'PhoneCountryInput', { ...idleHooks, React, styles: {}, captions, PHONE_COUNTRIES, phoneCountryFromValue, phoneNationalPart, composeCountryPhone });
+  const formComponent = compile(actualSource, 'ContactChannelChooserForm', { ...hooks, React, copy: contactCopy, styles: {}, PhoneCountryInput: phone,
     ShoppingBag: () => null, ChevronDown: () => null, Send: () => null,
     withPaidAdReferral: value => value, withOrganicEventReferral: value => value,
+    fetch: forbidden, window: new Proxy({}, { get: forbidden }), createPublicEnquirySubmissionScope: forbidden,
   });
-  const tree = formComponent({ locale, whatsappUrl: whatsappEnquiryUrl({ locale, service: 'Imagery therapy', request: 'Public enquiry' }), pathname: '/' + locale + '/services/imagery-therapy' });
-  const all = [];
   const attribute = { autoComplete: 'autocomplete', minLength: 'minlength', maxLength: 'maxlength', tabIndex: 'tabindex', htmlFor: 'for' };
   const matches = (node, selector) => {
     if (selector.startsWith('[contenteditable]')) return node.getAttribute('contenteditable') !== null && node.getAttribute('contenteditable') !== 'false';
@@ -173,119 +188,190 @@ function sourceForm(locale) {
     assert.ok(match, 'Explicit DOM fixture selector: ' + selector);
     return (!match[1] || node.tagName === match[1].toUpperCase()) && (!match[2] || node.getAttribute(match[2]) === match[3]);
   };
-  function decorate(node, parent = null) {
-    if (typeof node === 'string' || typeof node === 'number') return node;
-    all.push(node); node.parent = parent;
-    node.children = node.children.map(child => decorate(child, node));
-    node.attrs = Object.fromEntries(Object.entries(node.props).filter(([name, value]) => !name.startsWith('on') && value !== undefined && value !== null && (typeof value !== 'boolean' || name.startsWith('aria-') || value)).map(([name, value]) => [attribute[name] || name, typeof value === 'boolean' && !name.startsWith('aria-') ? '' : String(value)]));
-    node.getAttribute = name => node.attrs[name] ?? null;
-    node.querySelectorAll = selector => {
-      const result = [], selectors = selector.split(',').map(item => item.trim());
-      const walk = entry => { for (const child of entry.children) if (typeof child === 'object') { if (selectors.some(s => matches(child, s))) result.push(child); walk(child); } };
-      walk(node); return result;
-    };
-    node.querySelector = selector => node.querySelectorAll(selector)[0] || null;
-    node.closest = selector => { let item = node; while (item && !matches(item, selector)) item = item.parent; return item; };
-    Object.defineProperties(node, {
-      textContent: { get: () => node.children.map(child => typeof child === 'object' ? child.textContent : child).join('') },
-      required: { get: () => ['INPUT', 'SELECT', 'TEXTAREA'].includes(node.tagName) ? !!node.props.required : undefined },
-      disabled: { get: () => !!node.props.disabled },
-      value: { get: () => node.props.value ?? (node.tagName === 'INPUT' && node.props.type === 'checkbox' ? 'on' : '') },
-      type: { get: () => node.props.type }, checked: { get: () => !!node.props.checked }, open: { get: () => !!node.props.open },
-      options: { get: () => node.querySelectorAll('option') },
-      labels: { get: () => all.filter(label => label.tagName === 'LABEL' && ((node.props.id && label.props.htmlFor === node.props.id) || node.closest('label') === label)) },
-    });
-    return node;
+  function render() {
+    cursor = 0;
+    const tree = formComponent({ locale, whatsappUrl: whatsappEnquiryUrl({ locale, service: 'Imagery therapy', request: 'Public enquiry' }), pathname: '/' + locale + '/services/imagery-therapy' });
+    const all = [];
+    function decorate(node, parent = null) {
+      if (typeof node === 'string' || typeof node === 'number') return node;
+      all.push(node); node.parent = parent;
+      node.children = node.children.map(child => decorate(child, node));
+      node.attrs = Object.fromEntries(Object.entries(node.props).filter(([name, value]) => !name.startsWith('on') && value !== undefined && value !== null && (typeof value !== 'boolean' || name.startsWith('aria-') || value)).map(([name, value]) => [attribute[name] || name, typeof value === 'boolean' && !name.startsWith('aria-') ? '' : String(value)]));
+      node.getAttribute = name => node.attrs[name] ?? null;
+      node.querySelectorAll = selector => {
+        const result = [], selectors = selector.split(',').map(item => item.trim());
+        const walk = entry => { for (const child of entry.children) if (typeof child === 'object') { if (selectors.some(s => matches(child, s))) result.push(child); walk(child); } };
+        walk(node); return result;
+      };
+      node.querySelector = selector => node.querySelectorAll(selector)[0] || null;
+      node.closest = selector => { let item = node; while (item && !matches(item, selector)) item = item.parent; return item; };
+      Object.defineProperties(node, {
+        textContent: { get: () => node.children.map(child => typeof child === 'object' ? child.textContent : child).join('') },
+        required: { get: () => ['INPUT', 'SELECT', 'TEXTAREA'].includes(node.tagName) ? !!node.props.required : undefined },
+        disabled: { get: () => !!node.props.disabled },
+        value: { get: () => node.props.value ?? (node.tagName === 'INPUT' && node.props.type === 'checkbox' ? 'on' : '') },
+        type: { get: () => node.props.type }, checked: { get: () => !!node.props.checked }, open: { get: () => !!node.props.open },
+        options: { get: () => node.querySelectorAll('option') },
+        labels: { get: () => all.filter(label => label.tagName === 'LABEL' && ((node.props.id && label.props.htmlFor === node.props.id) || node.closest('label') === label)) },
+      });
+      return node;
+    }
+    return decorate(tree).querySelector('form');
   }
-  return decorate(tree).querySelector('form');
+  let form = render();
+  return { get form() { return form; }, choose(method) {
+    assert.ok(['email', 'phone'].includes(method));
+    const buttons = form.querySelector('[role="group"]').querySelectorAll('button');
+    assert.equal(buttons.length, 2);
+    const button = buttons[method === 'email' ? 0 : 1];
+    assert.equal(button.props.type, 'button'); assert.equal(button.textContent.trim(), contactCopy[locale][method]);
+    button.props.onClick(); form = render(); return form;
+  } };
 }
-for (const locale of ['en', 'ru', 'es']) test(locale + ' actual source JSX passes the real DOM serializer', () => {
-  assertPaidFormSnapshot(readPaidForm(sourceForm(locale)), locale);
+const sourceForm = (locale, method = 'email') => { const forms = sourceForms(locale); return method === 'email' ? forms.form : forms.choose(method); };
+for (const locale of ['en', 'ru', 'es']) test(locale + ' actual email → phone → email JSX passes the real DOM serializer without Google or submission', () => {
+  const forms = sourceForms(locale);
+  assertPaidFormSnapshot(readPaidForm(forms.form), locale);
+  assertPaidFormSnapshot(readPaidForm(forms.choose('phone')), locale, 'phone');
+  assertPaidFormSnapshot(readPaidForm(forms.choose('email')), locale);
 });
-for (const [name, mutate] of [
-  ['missing email', form => { const email = form.querySelector('input[type="email"]'); email.parent.children = email.parent.children.filter(child => child !== email); }],
-  ['extra file input', form => { const input = form.querySelector('input[type="email"]'); input.attrs.type = 'file'; form.children.push(input); }],
-  ['wrong name type', form => { form.querySelector('input[type="text"]').attrs.type = 'password'; }],
-  ['medical label', form => { const label = form.querySelector('input[type="text"]').closest('label'); label.children[0] = 'Diagnosis'; }],
-  ['missing privacy note', form => { const small = form.querySelector('details').querySelector('small'); small.children = []; }],
-  ['note becomes required', form => { form.querySelector('textarea').props.required = true; }],
+for (const [name, method, mutate] of [
+  ['missing email', 'email', form => { const email = form.querySelector('input[type="email"]'); email.parent.children = email.parent.children.filter(child => child !== email); }],
+  ['extra file input', 'email', form => { const input = form.querySelector('input[type="email"]'); input.attrs.type = 'file'; form.children.push(input); }],
+  ['email not required', 'email', form => { form.querySelector('input[type="email"]').props.required = false; }],
+  ['phone not required', 'phone', form => { form.querySelector('input[type="tel"]').props.required = false; }],
+  ['missing country', 'phone', form => { const country = form.querySelector('select'); country.parent.children = country.parent.children.filter(child => child !== country); }],
+  ['both contact methods mounted', 'phone', form => { form.children.push(sourceForm('en').querySelector('input[type="email"]')); }],
+  ['name becomes required', 'email', form => { form.querySelector('input[autocomplete="name"]').props.required = true; }],
+  ['wrong name type', 'email', form => { form.querySelector('input[autocomplete="name"]').attrs.type = 'password'; }],
+  ['medical label', 'email', form => { const label = form.querySelector('input[autocomplete="name"]').closest('label'); label.children[0] = 'Diagnosis'; }],
+  ['missing privacy note', 'email', form => { form.querySelector('textarea').closest('details').querySelector('small').children = []; }],
+  ['note becomes required', 'email', form => { form.querySelector('textarea').props.required = true; }],
+  ['name initially open', 'email', form => { form.querySelector('input[autocomplete="name"]').closest('details').props.open = true; }],
+  ['note initially open', 'email', form => { form.querySelector('textarea').closest('details').props.open = true; }],
+  ['prechecked consent', 'phone', form => { form.querySelector('input[type="checkbox"]').props.checked = true; }],
+  ['Google becomes submit', 'email', form => { form.querySelector('button').attrs.type = 'submit'; }],
+  ['Google becomes mandatory', 'email', form => { form.querySelector('input[type="email"]').props.disabled = true; }],
+  ['method button becomes submit', 'email', form => { form.querySelector('[role="group"]').querySelector('button').attrs.type = 'submit'; }],
+  ['wrong selected method', 'phone', form => { form.querySelector('[role="group"]').querySelector('button').attrs['aria-pressed'] = 'true'; }],
+  ['extra method group', 'email', form => { form.children.push(form.querySelector('[role="group"]')); }],
 ]) test('real DOM extraction rejects ' + name, () => {
-  assertPaidFormSnapshot(readPaidForm(sourceForm('en')), 'en');
-  const form = sourceForm('en'); mutate(form);
-  assert.throws(() => assertPaidFormSnapshot(readPaidForm(form), 'en'), /Exact blank contact-only enquiry schema/);
+  assertPaidFormSnapshot(readPaidForm(sourceForm('en', method)), 'en', method);
+  const form = sourceForm('en', method); mutate(form);
+  assert.throws(() => assertPaidFormSnapshot(readPaidForm(form), 'en', method), /Exact blank contact-only enquiry schema/);
+});
+test('actual method handler mutation is detected, rather than forcing a synthetic hook value', () => {
+  const changed = chooserSource.replace('setMethod("phone"); setError("");', 'setMethod("email"); setError("");');
+  assert.notEqual(changed, chooserSource);
+  const nominal = sourceForms('en'); assertPaidFormSnapshot(readPaidForm(nominal.choose('phone')), 'en', 'phone');
+  const mutant = sourceForms('en', changed); assertPaidFormSnapshot(readPaidForm(mutant.form), 'en');
+  assert.throws(() => assertPaidFormSnapshot(readPaidForm(mutant.choose('phone')), 'en', 'phone'), /Exact blank contact-only/);
 });
 
+const field = (s, selector) => s.controls.find(selector);
 const schemaFaults = {
   'extra field': s => s.controls.push({ tag: 'INPUT', type: 'file' }),
-  'same-count medical field': s => { s.controls[0].autocomplete = 'off'; s.controls[0].name = 'diagnosis'; },
-  'medical relabel': s => { s.controls[0].visibleLabel = 'Medical diagnosis'; },
-  'file upload replacing email': s => { s.controls[1].type = 'file'; },
-  'private note mandatory': s => { s.controls[4].required = true; },
-  'private note minimum': s => { s.controls[4].min = '20'; },
-  'unbounded note': s => { s.controls[4].max = null; },
+  'same-count medical field': s => { field(s, c => c.autocomplete === 'name').name = 'diagnosis'; },
+  'medical relabel': s => { field(s, c => c.autocomplete === 'name').visibleLabel = 'Medical diagnosis'; },
+  'file upload replacing contact': s => { field(s, c => ['email', 'tel'].includes(c.type)).type = 'file'; },
+  'private name mandatory': s => { field(s, c => c.autocomplete === 'name').required = true; },
+  'private note mandatory': s => { field(s, c => c.tag === 'TEXTAREA').required = true; },
+  'private note minimum': s => { field(s, c => c.tag === 'TEXTAREA').min = '20'; },
+  'unbounded note': s => { field(s, c => c.tag === 'TEXTAREA').max = null; },
+  'name outside disclosure': s => { s.nameContainsOnlyName = false; },
   'note outside disclosure': s => { s.noteContainsOnlyTextarea = false; },
+  'name initially open': s => { s.nameClosed = false; },
   'note initially open': s => { s.noteClosed = false; },
-  'prechecked consent': s => { s.controls[5].checked = true; },
+  'prechecked consent': s => { field(s, c => c.type === 'checkbox').checked = true; },
   'marketing consent': s => { s.consent = 'Subscribe to advertising'; },
   'missing medical warning': s => { s.privacy = ''; },
-  'filled contact': s => { s.controls[0].empty = false; },
-  'enabled submit': s => { s.controls[7].disabled = false; },
+  'filled contact': s => { field(s, c => ['email', 'tel'].includes(c.type)).empty = false; },
+  'enabled submit': s => { field(s, c => c.type === 'submit').disabled = false; },
   'busy form': s => { s.busy = 'true'; },
-  'missing country': s => { s.countries.pop(); },
   'wrong default country': s => { s.country = 'US'; },
   'honeypot visible to assistive tech': s => { s.honeypotHidden = false; },
   'custom medical editor': s => { s.customControls = 1; },
+  'extra optional detail': s => { s.optionalDetails++; },
+  'missing optional Google': s => { s.controls.shift(); },
+  'Google consent implied': s => { field(s, c => c.type === 'checkbox').required = false; },
+  'wrong method caption': s => { s.controls[2].buttonName = 'Continue with Google'; },
+  'both alternatives selected': s => { s.controls[1].pressed = s.controls[2].pressed = 'true'; },
 };
-for (const [name, mutate] of Object.entries(schemaFaults)) test('exact contact schema rejects ' + name, () => {
-  assertPaidFormSnapshot(expectedPaidForm('en'), 'en');
-  const snapshot = structuredClone(expectedPaidForm('en')); mutate(snapshot);
-  assert.throws(() => assertPaidFormSnapshot(snapshot, 'en'), /Exact blank contact-only enquiry schema/);
+for (const method of ['email', 'phone']) for (const [name, mutate] of Object.entries(schemaFaults)) test(method + ' exact contact schema rejects ' + name, () => {
+  assertPaidFormSnapshot(expectedPaidForm('en', method), 'en', method);
+  const snapshot = structuredClone(expectedPaidForm('en', method)); mutate(snapshot);
+  assert.throws(() => assertPaidFormSnapshot(snapshot, 'en', method), /Exact blank contact-only enquiry schema/);
+});
+test('phone schema rejects missing country and email cannot silently include phone countries', () => {
+  for (const method of ['email', 'phone']) {
+    const nominal = expectedPaidForm('en', method); assertPaidFormSnapshot(nominal, 'en', method);
+    const changed = structuredClone(nominal);
+    if (method === 'phone') changed.countries.pop(); else changed.countries = expectedPaidForm('en', 'phone').countries;
+    assert.throws(() => assertPaidFormSnapshot(changed, 'en', method), /Exact blank contact-only/);
+  }
+  assert.throws(() => expectedPaidForm('en', 'google'), /Unsupported paid contact method/);
 });
 
 function ui(options, fault) {
   const policy = releasePaidPolicy(options), calls = [];
-  let choice = 0, open = false, note = false;
+  let choice = 0, open = false, note = false, name = false, method = 'email';
   const handles = [];
   let current = { connected: true };
   const controls = ['session', 'questions', 'free'];
   const loc = (kind, index) => ({
     kind,
     get count() {
-      if (kind === 'choices') return 3;
-      if (kind === 'all fields') return 7;
+      if (kind === 'choices') return fault === 'wrong price group' ? 0 : 3;
+      if (kind === 'ambiguous choices') return 5; // Price + compact method buttons; never flatten both groups.
+      if (kind === 'methods') return fault === 'extra method button' ? 3 : 2;
+      if (kind === 'details') return 2;
+      if (kind === 'all fields') return method === 'email' ? 5 : 6;
       if (kind === 'anchors') return fault === 'pre-save messenger' ? 1 : 0;
       if (kind === 'custom' || kind === 'summary children') return 0;
       if (kind === 'chooser') return choice === 2 ? 0 : 1;
       return 1;
     },
-    get visible() { return kind !== 'form' || open; },
-    async getAttribute(name) {
-      if (kind === 'choice' && name === 'aria-pressed') return String(choice === index);
-      if (kind === 'chooser' && name === 'data-open') return String(open);
-      if (kind === 'trigger' && name === 'aria-expanded') return String(open);
-      if (['choice', 'trigger'].includes(kind) && name === 'type') return fault === 'submit trigger' && kind === 'trigger' ? 'submit' : 'button';
-      if (['choice', 'trigger'].includes(kind) && name === 'form') return fault === 'associated trigger' && kind === 'trigger' ? 'unexpected-form' : null;
-      if (kind === 'free') return ({ 'data-consultation-action': 'free', href: '/' + policy.locale + '/services/free-situation-review', target: fault === 'external free target' ? '_blank' : null })[name] ?? null;
+    get visible() { return kind === 'form' ? open : kind === 'textarea' ? note : kind === 'name field' ? name : true; },
+    async getAttribute(attr) {
+      if (kind === 'choice' && attr === 'aria-pressed') return String(choice === index);
+      if (kind === 'method' && attr === 'aria-pressed') return String(method === (index === 0 ? 'email' : 'phone'));
+      if (kind === 'chooser' && attr === 'data-open') return String(open);
+      if (kind === 'trigger' && attr === 'aria-expanded') return String(open);
+      if (['choice', 'trigger', 'method'].includes(kind) && attr === 'type') return (fault === 'submit trigger' && kind === 'trigger') || (fault === 'submit method' && kind === 'method') ? 'submit' : 'button';
+      if (['choice', 'trigger', 'method'].includes(kind) && attr === 'form') return (fault === 'associated trigger' && kind === 'trigger') || (fault === 'associated method' && kind === 'method') ? 'unexpected-form' : null;
+      if (kind === 'method' && attr === 'aria-label' && fault === 'Google substituted') return contactCopy[policy.locale].google;
+      if (kind === 'free') return ({ 'data-consultation-action': 'free', href: '/' + policy.locale + '/services/free-situation-review', target: fault === 'external free target' ? '_blank' : null })[attr] ?? null;
       return null;
     },
-    async innerText() { return fault === 'wrong price' ? 'wrong' : copy[policy.locale].serviceOptions[controls[index]]; },
-    nth(index) { assert.equal(kind, 'choices'); return loc('choice', index); },
+    async innerText() {
+      if (kind === 'method') return fault === 'wrong method caption' ? 'Google' : contactCopy[policy.locale][index === 0 ? 'email' : 'phone'];
+      return fault === 'wrong price' ? 'wrong' : copy[policy.locale].serviceOptions[controls[index]];
+    },
+    nth(index) { assert.ok(['choices', 'methods'].includes(kind)); return loc(kind === 'choices' ? 'choice' : 'method', index); },
     locator(selector) {
       const map = {
-        capture: { '[role="group"] button': 'choices', '[data-contact-channel-chooser]': 'chooser', '[data-consultation-action]': 'free', form: 'form', 'input, textarea, select': 'all fields', '[contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="checkbox"], [role="combobox"]': 'custom' },
+        capture: { '[data-choice-layout="service"][role="group"] > button': 'choices', '[role="group"] button': 'ambiguous choices', '[data-contact-channel-chooser]': 'chooser', '[data-consultation-action]': 'free', form: 'form', 'input, textarea, select': 'all fields', '[contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="checkbox"], [role="combobox"]': 'custom' },
         chooser: { 'button[data-contact-order]': 'trigger', form: 'form', 'a, [data-contact-channel]': 'anchors' },
-        form: { details: 'note', textarea: 'textarea' }, note: { ':scope > summary': 'summary' }, summary: { 'a, button, input, select, textarea': 'summary children' },
+        form: { details: 'details', 'details:has(input[autocomplete="name"])': 'name', 'details:has(textarea)': 'note', 'input[autocomplete="name"]': 'name field', textarea: 'textarea', '[role="group"] > button': 'methods' },
+        note: { ':scope > summary': 'note summary' }, name: { ':scope > summary': 'name summary' },
+        'note summary': { 'a, button, input, select, textarea': 'summary children' }, 'name summary': { 'a, button, input, select, textarea': 'summary children' },
       };
       assert.ok(map[kind]?.[selector], 'Reviewed UI selector: ' + kind + ' / ' + selector);
       return loc(map[kind][selector]);
     },
     async evaluate(fn) {
       if (kind === 'form') {
-        assert.equal(fn, readPaidForm); const snapshot = structuredClone(expectedPaidForm(policy.locale));
-        snapshot.noteClosed = !note; if (fault === 'filled form') snapshot.controls[0].empty = false;
+        assert.equal(fn, readPaidForm); const snapshot = structuredClone(expectedPaidForm(policy.locale, method));
+        snapshot.noteClosed = !note; snapshot.nameClosed = !name;
+        if (fault === 'filled form') field(snapshot, c => ['email', 'tel'].includes(c.type)).empty = false;
+        if (fault === 'consent after switch' && method === 'phone') field(snapshot, c => c.type === 'checkbox').checked = true;
         return snapshot;
       }
-      assert.ok(['choice', 'trigger'].includes(kind));
+      assert.ok(['choice', 'trigger', 'method'].includes(kind));
+      if (kind === 'method') {
+        const form = {}, parentElement = { getAttribute: attr => attr === 'role' ? 'group' : null, parentElement: fault === 'foreign method form' ? {} : form };
+        return fn({ tagName: 'BUTTON', disabled: fault === 'disabled method', form, parentElement });
+      }
       return fn({ tagName: 'BUTTON', form: fault === 'ancestor form' ? {} : null });
     },
     async elementHandle() {
@@ -296,11 +382,13 @@ function ui(options, fault) {
     async click() {
       calls.push([kind, index]);
       if (kind === 'trigger') { open = !open; return; }
-      if (kind === 'summary') { note = !note; return; }
-      assert.equal(kind, 'choice', 'Never click submit, free link, or a messenger');
+      if (kind === 'note summary') { note = !note; return; }
+      if (kind === 'name summary') { name = !name; return; }
+      if (kind === 'method') { if (fault !== 'method not switched') method = index === 0 ? 'email' : 'phone'; return; }
+      assert.equal(kind, 'choice', 'Never click Google, submit, free link, or a messenger');
       if (choice !== index) {
         if (fault !== 'form not remounted') current.connected = false;
-        current = { connected: true }; open = false; note = false; choice = index;
+        current = { connected: true }; open = false; note = false; name = false; method = 'email'; choice = index;
       }
     },
   });
@@ -318,6 +406,8 @@ for (const engine of ['chromium', 'webkit']) for (const width of [390, 1365]) fo
   const mock = ui({ ...base, width, locale });
   const result = await verifyPaidEnquiryUi(mock.page, mock.policy, mock.expect);
   assert.deepEqual(mock.calls.filter(([kind]) => kind === 'choice').map(([, index]) => index), [1, 2, 0]);
+  assert.deepEqual(mock.calls.filter(([kind]) => kind === 'method').map(([, index]) => index), [1, 0, 1, 0, 1, 0, 1, 0]);
+  assert.ok(mock.calls.every(([kind]) => ['trigger', 'choice', 'name summary', 'note summary', 'method'].includes(kind)));
   assert.ok(mock.handles.every(handle => handle.disposed));
   assert.equal(result.messageSent, false); assert.equal(result.postSaveRuntimeVerified, false); assert.equal(result.preparedMessageRuntimeVerified, false);
 });
@@ -325,11 +415,42 @@ for (const [fault, error] of [
   ['pre-save messenger', /anchors count/], ['submit trigger', /trigger attribute type/], ['associated trigger', /No form-associated audit click/],
   ['ancestor form', /Only standalone non-submit buttons/], ['wrong price', /Selected paid duration and price/],
   ['filled form', /Exact blank contact-only/], ['form not remounted', /Old form must be detached/], ['external free target', /strictly equal/],
+  ['wrong price group', /choices count/], ['extra method button', /methods count/], ['submit method', /method attribute type/],
+  ['associated method', /No substituted contact-method action/], ['Google substituted', /No substituted contact-method action/],
+  ['foreign method form', /Only direct contact-method buttons/], ['disabled method', /Only direct contact-method buttons/],
+  ['wrong method caption', /Exact inert contact alternative/], ['method not switched', /all fields count/], ['consent after switch', /Exact blank contact-only/],
 ]) test('UI contract rejects ' + fault, async () => {
   const good = ui(base); await verifyPaidEnquiryUi(good.page, good.policy, good.expect);
   const bad = ui(base, fault); await assert.rejects(verifyPaidEnquiryUi(bad.page, bad.policy, bad.expect), error);
-  if (['pre-save messenger', 'submit trigger', 'associated trigger', 'ancestor form', 'wrong price', 'filled form'].includes(fault)) assert.deepEqual(bad.calls, []);
+  if (['pre-save messenger', 'submit trigger', 'associated trigger', 'ancestor form', 'wrong price', 'filled form', 'wrong price group'].includes(fault)) assert.deepEqual(bad.calls, []);
+  if (['extra method button', 'submit method', 'associated method', 'Google substituted', 'foreign method form', 'disabled method', 'wrong method caption'].includes(fault)) assert.equal(bad.calls.some(([kind]) => kind === 'method'), false, 'Reject before the unsafe method click');
 });
+test('source-bound price group stays separate from compact-method and decoy group buttons', async () => {
+  assert.match(source, /data-choice-layout=\{isService \? "service" : "topic"\} role="group"/);
+  assert.match(chooserSource, /role="group" aria-label=\{c.replyVia\}/);
+  const helper = read('scripts/helpers/release-paid-enquiry-verifier.mjs');
+  const start = helper.indexOf('export async function verifyPaidEnquiryUi('), end = helper.indexOf('export async function verifyReleasePaidEnquiry(');
+  const body = helper.slice(start, end).replace('export async function', 'async function');
+  const changed = body.replace('[data-choice-layout="service"][role="group"] > button', '[role="group"] button');
+  assert.notEqual(changed, body);
+  const make = text => new Function('assert', 'readPaidForm', 'assertPaidFormSnapshot', 'formCopy', text + '; return verifyPaidEnquiryUi;')(assert, readPaidForm, assertPaidFormSnapshot, contactCopy);
+  const good = ui(base); await make(body)(good.page, good.policy, good.expect);
+  const bad = ui(base); await assert.rejects(make(changed)(bad.page, bad.policy, bad.expect), /ambiguous choices count/); assert.deepEqual(bad.calls, []);
+});
+
+for (const mode of [base, live]) for (const [name, path, method, origin, reason] of [
+  ['Google start', '/api/app/auth/start', 'POST', null, 'non-GET'],
+  ['authenticated contact profile', '/api/app/auth/contact-profile', 'GET', null, 'unallowlisted public resource'],
+  ['Google provider', '/o/oauth2/v2/auth', 'GET', 'https://accounts.google.com', 'external origin'],
+]) test(mode.label + ' optional Google never expands the no-submit boundary: ' + name, async () => {
+  const policy = releasePaidPolicy(mode), { context } = network(), guard = await installPaidReadOnlyGuard(context, policy);
+  assert.deepEqual(await context.send(request(policy)), ['fetch', 'fulfill']);
+  const req = request(policy, path, method, 'fetch', origin || policy.origin);
+  assert.equal(classifyPaidRequest(policy, req), reason);
+  assert.deepEqual(await context.send(req), ['abort']);
+  assert.throws(() => guard.assertClean(), method === 'POST' ? /attempted a POST/ : /network boundary violated/);
+});
+
 for (const options of [base, live]) test(options.label + ' wrapper installs both guards before page/navigation and closes fresh context', async () => {
   const mock = ui(options), { context, events } = network();
   context.newPage = async () => {

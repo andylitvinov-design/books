@@ -207,45 +207,56 @@ const formCopy = {
   en: {
     consent: 'I agree to be contacted personally about this enquiry only. No marketing subscription.',
     privacy: 'Please avoid medical records, diagnoses or sensitive personal details in this short enquiry.',
-    description: 'Add a short note (optional)',
-    name: 'Your name *', email: 'Email', phone: 'Phone / WhatsApp',
+    description: 'Add a short note (optional)', nameOptional: 'Add your name (optional)',
+    name: 'Your name', email: 'Email', phone: 'Phone / WhatsApp',
+    google: 'Continue with Google', replyVia: 'How should Andrey reply?',
     country: 'Country calling code', number: 'Phone number', submit: 'Register my request',
   },
   ru: {
     consent: 'Согласен(на) на личный ответ по этой заявке. На рекламную рассылку не подписываюсь.',
     privacy: 'Не указывайте здесь диагнозы, медицинские документы и другие чувствительные сведения.',
-    description: 'Добавить комментарий (необязательно)',
-    name: 'Ваше имя *', email: 'Электронная почта', phone: 'Телефон / WhatsApp',
+    description: 'Добавить комментарий (необязательно)', nameOptional: 'Добавить имя (необязательно)',
+    name: 'Ваше имя', email: 'Электронная почта', phone: 'Телефон / WhatsApp',
+    google: 'Продолжить с Google', replyVia: 'Как вам ответить?',
     country: 'Код страны', number: 'Номер телефона', submit: 'Оставить заявку',
   },
   es: {
     consent: 'Acepto que me contacten solamente sobre esta solicitud. No me suscribo a publicidad.',
     privacy: 'Evita incluir diagnósticos, documentos médicos o datos personales sensibles.',
-    description: 'Añadir una nota (opcional)',
-    name: 'Tu nombre *', email: 'Correo electrónico', phone: 'Teléfono / WhatsApp',
+    description: 'Añadir una nota (opcional)', nameOptional: 'Añadir tu nombre (opcional)',
+    name: 'Tu nombre', email: 'Correo electrónico', phone: 'Teléfono / WhatsApp',
+    google: 'Continuar con Google', replyVia: '¿Cómo prefieres recibir la respuesta?',
     country: 'Prefijo del país', number: 'Número de teléfono', submit: 'Registrar mi solicitud',
   },
 };
 
-export function expectedPaidForm(locale) {
+export function expectedPaidForm(locale, method = 'email') {
+  assert.ok(Object.hasOwn(formCopy, locale), 'Unsupported paid form locale');
+  assert.ok(['email', 'phone'].includes(method), 'Unsupported paid contact method');
   const c = formCopy[locale];
   const control = (tag, type, extra = {}) => ({ tag, type, required: false, disabled: false, empty: true, autocomplete: null, min: null, max: null, name: null, label: null, visibleLabel: null, tab: null, ...extra });
+  const button = (type, buttonName, extra = {}) => control('BUTTON', type, { buttonName, pressed: null, ...extra });
   return {
-    busy: 'false', customControls: 0,
-    // Exact schema, not a blanket count of seven. A diagnosis/file/hidden-field
-    // addition changes this schema and must fail even if total count is stable.
+    busy: 'false', customControls: 0, methodGroups: 1, replyVia: c.replyVia,
+    // Exact schema for each alternative, not a looser total field count. Google
+    // is inspected only: this verifier must never start authentication.
     controls: [
-      control('INPUT', 'text', { required: true, autocomplete: 'name', visibleLabel: c.name, min: '2', max: '120' }),
-      control('INPUT', 'email', { autocomplete: 'email', visibleLabel: c.email, max: '254' }),
-      control('SELECT', null, { empty: false, label: c.country }),
-      control('INPUT', 'tel', { autocomplete: 'tel-national', max: '24', label: c.number, visibleLabel: c.phone }),
+      button('button', c.google, { label: c.google }),
+      button('button', c.email, { pressed: String(method === 'email') }),
+      button('button', c.phone, { pressed: String(method === 'phone') }),
+      ...(method === 'email'
+        ? [control('INPUT', 'email', { required: true, autocomplete: 'email', visibleLabel: c.email, max: '254' })]
+        : [control('SELECT', null, { empty: false, label: c.country }),
+          control('INPUT', 'tel', { required: true, autocomplete: 'tel-national', max: '24', label: c.number, visibleLabel: c.phone })]),
+      control('INPUT', 'text', { autocomplete: 'name', visibleLabel: c.name, min: '2', max: '120' }),
       control('TEXTAREA', null, { max: '1400', label: c.description }),
       control('INPUT', 'checkbox', { required: true, empty: false, checked: false, visibleLabel: c.consent }),
       control('INPUT', 'text', { autocomplete: 'off', name: 'website', tab: '-1', visibleLabel: 'Website' }),
-      control('BUTTON', 'submit', { disabled: true }),
+      button('submit', c.submit, { disabled: true }),
     ],
-    countries: PHONE_COUNTRIES.map(item => ({ value: item.iso, text: `${item.flag} ${item.dial || '+'} · ${item.names[locale] || item.names.en}` })),
-    country: 'CA', consent: c.consent, privacy: c.privacy, description: c.description,
+    countries: method === 'phone' ? PHONE_COUNTRIES.map(item => ({ value: item.iso, text: `${item.flag} ${item.dial || '+'} · ${item.names[locale] || item.names.en}` })) : [],
+    country: method === 'phone' ? 'CA' : null, consent: c.consent, privacy: c.privacy, description: c.description,
+    optionalDetails: 2, nameDescription: c.nameOptional, nameClosed: true, nameContainsOnlyName: true,
     noteClosed: true, noteContainsOnlyTextarea: true, honeypotHidden: true, submit: c.submit,
   };
 }
@@ -253,36 +264,42 @@ export function expectedPaidForm(locale) {
 // This snapshot contains schema and empty-state booleans only. Never collect
 // personal field values, storage, cookies, requests, or client-page content.
 export function readPaidForm(form) {
-  const note = form.querySelector('details');
+  const note = form.querySelector('textarea')?.closest('details');
+  const name = form.querySelector('input[autocomplete="name"]')?.closest('details');
   const consent = form.querySelector('input[type="checkbox"]');
   const country = form.querySelector('select');
   const honeypot = form.querySelector('input[name="website"]');
+  const method = form.querySelector('[role="group"]');
   return {
     busy: form.getAttribute('aria-busy'),
     customControls: form.querySelectorAll('[contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="checkbox"], [role="combobox"]').length,
+    methodGroups: form.querySelectorAll('[role="group"]').length, replyVia: method?.getAttribute('aria-label'),
     controls: [...form.querySelectorAll('input, textarea, select, button')].map(el => ({
       tag: el.tagName, type: el.getAttribute('type'), required: el.required === true, disabled: el.disabled === true,
       empty: el.value === '', autocomplete: el.getAttribute('autocomplete'), min: el.getAttribute('minlength'), max: el.getAttribute('maxlength'),
       name: el.getAttribute('name'), label: el.getAttribute('aria-label'), visibleLabel: el.labels?.length ? el.labels[0].textContent.trim() : null, tab: el.getAttribute('tabindex'),
       ...(el.type === 'checkbox' ? { checked: el.checked } : {}),
+      ...(el.tagName === 'BUTTON' ? { buttonName: el.getAttribute('aria-label') || el.textContent.trim(), pressed: el.getAttribute('aria-pressed') } : {}),
     })),
     countries: [...(country?.options || [])].map(option => ({ value: option.value, text: option.textContent.trim() })),
-    country: country?.value, consent: consent?.closest('label')?.querySelector('span')?.textContent.trim(),
+    country: country?.value ?? null, consent: consent?.closest('label')?.querySelector('span')?.textContent.trim(),
     privacy: note?.querySelector('small')?.textContent.trim(), description: note?.querySelector('summary')?.textContent.trim(),
+    optionalDetails: form.querySelectorAll('details').length, nameDescription: name?.querySelector('summary')?.textContent.trim(),
+    nameClosed: name?.open === false, nameContainsOnlyName: name?.querySelectorAll('input, textarea, select').length === 1 && !!name.querySelector('input[autocomplete="name"]'),
     noteClosed: note?.open === false, noteContainsOnlyTextarea: note?.querySelectorAll('input, textarea, select').length === 1 && !!note.querySelector('textarea'),
     honeypotHidden: honeypot?.closest('label')?.getAttribute('aria-hidden') === 'true',
     submit: form.querySelector('button[type="submit"]')?.textContent.trim(),
   };
 }
 
-export function assertPaidFormSnapshot(snapshot, locale) {
-  assert.deepEqual(snapshot, expectedPaidForm(locale), 'Exact blank contact-only enquiry schema, optional note, unchecked consent and disabled submit');
+export function assertPaidFormSnapshot(snapshot, locale, method = 'email') {
+  assert.deepEqual(snapshot, expectedPaidForm(locale, method), 'Exact blank contact-only enquiry schema, optional name/note, unchecked consent and disabled submit');
 }
 
 export async function verifyPaidEnquiryUi(page, policy, expect) {
   const capture = page.locator('[data-consultation-capture="service"]');
   await expect(capture).toHaveCount(1);
-  const choices = capture.locator('[role="group"] button');
+  const choices = capture.locator('[data-choice-layout="service"][role="group"] > button');
   await expect(choices).toHaveCount(3);
   const chooser = capture.locator('[data-contact-channel-chooser]');
   const trigger = chooser.locator('button[data-contact-order]');
@@ -294,6 +311,21 @@ export async function verifyPaidEnquiryUi(page, policy, expect) {
     assert.equal(await button.evaluate(el => el.tagName === 'BUTTON' && el.form === null), true, 'Only standalone non-submit buttons may be clicked');
     await button.click();
   };
+  // The sole permitted in-form clicks are the exact two contact alternatives.
+  // Never use this path for Google, submit, links or an arbitrary form button.
+  const clickMethod = async index => {
+    const methods = form.locator('[role="group"] > button');
+    await expect(methods).toHaveCount(2);
+    const button = methods.nth(index);
+    await expect(button).toHaveCount(1);
+    await expect(button).toHaveAttribute('type', 'button');
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    assert.equal(await button.innerText(), formCopy[policy.locale][index === 0 ? 'email' : 'phone'], 'Exact inert contact alternative');
+    for (const name of ['form', 'formaction', 'formmethod', 'aria-label']) assert.equal(await button.getAttribute(name), null, 'No substituted contact-method action');
+    assert.equal(await button.evaluate(el => el.tagName === 'BUTTON' && !el.disabled && el.form !== null
+      && el.parentElement?.getAttribute('role') === 'group' && el.parentElement.parentElement === el.form), true, 'Only direct contact-method buttons of this form may be clicked');
+    await button.click();
+  };
   const blank = async (index, minutes, price) => {
     await expect(choices.nth(index)).toHaveAttribute('aria-pressed', 'true');
     const option = await choices.nth(index).innerText();
@@ -303,7 +335,7 @@ export async function verifyPaidEnquiryUi(page, policy, expect) {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(form).toHaveCount(1);
     await expect(capture.locator('form')).toHaveCount(1);
-    await expect(capture.locator('input, textarea, select')).toHaveCount(7);
+    await expect(capture.locator('input, textarea, select')).toHaveCount(5);
     await expect(capture.locator('[contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="checkbox"], [role="combobox"]')).toHaveCount(0);
     assertPaidFormSnapshot(await form.evaluate(readPaidForm), policy.locale);
     await expect(chooser.locator('a, [data-contact-channel]')).toHaveCount(0);
@@ -311,14 +343,24 @@ export async function verifyPaidEnquiryUi(page, policy, expect) {
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(form).toBeVisible();
     await expect(chooser.locator('a, [data-contact-channel]')).toHaveCount(0);
-    const note = form.locator('details');
-    await expect(note).toHaveCount(1);
-    const summary = note.locator(':scope > summary');
-    await expect(summary).toHaveCount(1);
-    await expect(summary.locator('a, button, input, select, textarea')).toHaveCount(0);
-    await summary.click();
-    await expect(form.locator('textarea')).toBeVisible();
-    await summary.click();
+    await expect(form.locator('details')).toHaveCount(2);
+    for (const [selector, field] of [['details:has(input[autocomplete="name"])', 'input[autocomplete="name"]'], ['details:has(textarea)', 'textarea']]) {
+      const detail = form.locator(selector);
+      await expect(detail).toHaveCount(1);
+      const summary = detail.locator(':scope > summary');
+      await expect(summary).toHaveCount(1);
+      await expect(summary.locator('a, button, input, select, textarea')).toHaveCount(0);
+      await summary.click();
+      await expect(form.locator(field)).toBeVisible();
+      await summary.click();
+    }
+    assertPaidFormSnapshot(await form.evaluate(readPaidForm), policy.locale);
+    await clickMethod(1);
+    await expect(capture.locator('input, textarea, select')).toHaveCount(6);
+    assertPaidFormSnapshot(await form.evaluate(readPaidForm), policy.locale, 'phone');
+    await expect(chooser.locator('a, [data-contact-channel]')).toHaveCount(0);
+    await clickMethod(0);
+    await expect(capture.locator('input, textarea, select')).toHaveCount(5);
     assertPaidFormSnapshot(await form.evaluate(readPaidForm), policy.locale);
   };
   await blank(0, '60', '€100');

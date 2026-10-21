@@ -78,7 +78,7 @@ test('CRM single-entry production checks do not resurrect duplicate optional fie
   assert.match(read('scripts/helpers/dao-request-ui-verifier.mjs'), /assertSingleEntryEnquiryUi\(enquiry, expect\)/);
   assert.match(read('scripts/helpers/free-situation-ui-verifier.mjs'), /assertSingleEntryEnquiryUi\(enquiry, expect\)/);
   const helper = read('scripts/helpers/public-enquiry-ui-verifier.mjs');
-  for (const field of ['contact, contactConsent: true, website:', 'name, email, phone, consent', 'Object.values(contact)']) {
+  for (const field of ['contact, contactConsent: true, website:', 'details, name, consent, emailMethod, phoneMethod, google', "contactMode === 'email' ? [email] : [phone, country]", 'Object.values(contact)']) {
     assert.ok(helper.includes(field), field);
   }
 });
@@ -194,11 +194,10 @@ for (const locale of ['en', 'ru']) {
   test(locale + ' exact production Alchemy block distinguishes topic/format from the country selector and preserves the private save gate', async () => {
     const mounted = mountPublicConversion(locale, 'alchemy');
     const form = mounted.page.locator('[data-alchemy-lead-form="single"]');
-    // Reproduce the hosted regression on the actual current nested source.
-    await assert.rejects(() => mounted.expect(form.locator('select')).toHaveCount(2), error => {
-      assert.equal(error.code, 'ERR_ASSERTION'); assert.equal(error.actual, 3); assert.equal(error.expected, 2); return true;
-    });
-    await mounted.expect(form.getByRole('combobox', { name: locale === 'ru' ? 'Код страны' : 'Country calling code', exact: true, includeHidden: true })).toHaveCount(1);
+    // Owner compact intake mounts no country child until phone is selected.
+    // Topic/format remain selected by their exact independent role/name contract.
+    await mounted.expect(form.locator('select')).toHaveCount(2);
+    await mounted.expect(form.getByRole('combobox', { name: locale === 'ru' ? 'Код страны' : 'Country calling code', exact: true, includeHidden: true })).toHaveCount(0);
     assert.equal(mounted.fetchCount(), 0);
     await checkAlchemyLead(mounted, locale);
     assert.equal(mounted.fetchCount(), 4);
@@ -209,6 +208,9 @@ for (const locale of ['en', 'ru']) {
   });
 
   const faults = [
+    ['compact always-mounted phone', 'toHaveCount', 0],
+    ['compact wrong initial method', 'toHaveCount', 0],
+    ['compact ignored phone selection', 'toHaveAttribute', 0],
     ...['format', 'topic'].flatMap(field => [
       ...['missing', 'duplicate', 'hidden', 'wrong name', 'wrong role'].map(fault => ['alchemy ' + field + ' ' + fault, 'toHaveCount', 0]),
       ...['missing option', 'wrong option'].map(fault => ['alchemy ' + field + ' ' + fault, 'toHaveText', 0]),
@@ -230,7 +232,7 @@ for (const locale of ['en', 'ru']) {
     const mounted = mountPublicConversion(locale, 'alchemy', fault);
     mounted.page.locator('[data-alchemy-lead-form="single"]').selected();
     const mutationPath = fault.includes('country') ? 'components/phone-country-input.tsx'
-      : fault.endsWith('URL leak') ? 'components/contact-channel-chooser.tsx' : 'components/alchemy-soul-lead-form.tsx';
+      : (fault.startsWith('compact ') || fault.endsWith('URL leak')) ? 'components/contact-channel-chooser.tsx' : 'components/alchemy-soul-lead-form.tsx';
     assert.ok(mounted.mutationReceipts.some(receipt => receipt.fault === fault && receipt.path === mutationPath), 'Mutate the actual compiled dependency');
     let failedMatcher;
     const expect = actual => Object.fromEntries(Object.entries(mounted.expect(actual)).map(([name, method]) => [name,

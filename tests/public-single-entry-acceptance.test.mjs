@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mountPublicConversion } from './helpers/public-conversion-ui-harness.mjs';
-import { publicEnquiryUiVariant } from '../scripts/helpers/public-enquiry-ui-verifier.mjs';
+import { publicEnquiryUiVariant, exercisePublicEnquiryUi } from '../scripts/helpers/public-enquiry-ui-verifier.mjs';
 import { exerciseDaoRequestUi } from '../scripts/helpers/dao-request-ui-verifier.mjs';
 import { exerciseFreeSituationRequestUi } from '../scripts/helpers/free-situation-ui-verifier.mjs';
 
@@ -9,7 +9,7 @@ import { exerciseFreeSituationRequestUi } from '../scripts/helpers/free-situatio
 // private note and country picker. The actual static Spanish route is retained.
 // This is executed TSX/hook evidence, not mounted React, browser layout or storage.
 test('public acceptance selects one explicit single-entry contract, not an optional legacy fallback', () => {
-  assert.equal(publicEnquiryUiVariant, 'crm-single-entry-optional-private-note-v2');
+  assert.equal(publicEnquiryUiVariant, 'crm-single-entry-compact-contact-optional-name-v3');
 });
 const topicName = { en: 'What would you like to explore?', ru: 'Какой вопрос хотите исследовать?', es: '¿Qué te gustaría explorar?' };
 function assertNoAutomaticRequests(mounted) {
@@ -65,4 +65,21 @@ for (const locale of ['en', 'ru', 'es']) for (const kind of ['dao', 'situation']
       assert.deepEqual(mounted.writesAfterUnmount, []);
     });
   }
+}
+
+for (const locale of ['en', 'ru', 'es']) for (const contactMode of ['email', 'phone']) for (const noteMode of ['absent', 'supplied']) {
+  test(`${locale} compact ${contactMode} entry accepts absent name and ${noteMode} private note without automatic requests`, async () => {
+    const mounted = mountPublicConversion(locale, 'situation');
+    assertNoAutomaticRequests(mounted);
+    const result = await exercisePublicEnquiryUi(mounted.page, mounted.page.locator('[data-free-resource-enquiry="situation"]'), mounted.expect,
+      { locale, kind: 'situation', contactMode, noteMode, nameMode: 'absent' });
+    assert.equal(result.requestCount, 4);
+    for (const request of mounted.requests) {
+      assert.equal(request.contact.displayName, '');
+      assert.equal(request.contact.email, contactMode === 'email' ? 'visitor@example.test' : '');
+      assert.equal(request.contact.phone, contactMode === 'phone' ? '+447700900123' : '');
+      assert.equal(request.contactConsent, true);
+    }
+    assert.equal(mounted.externalClicks(), 0); mounted.unmount(); assert.deepEqual(mounted.writesAfterUnmount, []);
+  });
 }

@@ -60,7 +60,7 @@ function mount(kind, locale) {
     const context = { exports: {}, URL, URLSearchParams, AbortController,
       require(name) { if (name.endsWith('.module.css')) return { default: new Proxy({}, { get: (_, key) => key }) };
         assert.ok(modules[name], 'Unexpected import: ' + name); return modules[name]; },
-      window: { location: { search: '', pathname: path }, matchMedia: () => ({ matches: true }) },
+      window: { location: { search: '', pathname: path, href: 'http://127.0.0.1:3100' + path, assign() { assert.fail('Provider navigation is forbidden'); } }, matchMedia: () => ({ matches: true }) },
       navigator: { clipboard: { writeText() { throw Error('Quick entry must not copy private text'); } } },
       crypto: { randomUUID: () => `00000000-0000-4000-8000-${String(++uuid).padStart(12, '0')}` },
       fetch: async (url, options) => { assert.equal(url, '/api/service-enquiries'); assert.ok(queue.length, 'Unexpected automatic request');
