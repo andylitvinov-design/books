@@ -26,7 +26,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
       <div className="prescription-admin-topbar">
         <Link className="prescription-admin-wordmark" href={"/"+locale+"/app/practice"}>
           <strong>Holistic House</strong>
-          <span>{compactMarketing ? labels.marketing : labels.cabinet}</span>
+          <span>{compactMarketing ? labels.marketing : labels.practice}</span>
         </Link>
         <div className="prescription-admin-header-actions">
           <span aria-label={labels.language} className="site-language-switch">
