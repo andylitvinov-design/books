@@ -21,14 +21,14 @@ const slides = [
   { key: "cabinet", href: "/app", image: "/academy/reiki-yggdrasil/source/program-overview.jpg", position: "center" },
 ] as const;
 
-// Mirror the lightweight top-right links in the approved mobile hero.
-// Reuse slide routes below; the Cabinet already has a persistent header link.
-const navKeys = ["home", "tests", "services", "academy", "business", "ideas"] as const;
+// Keep all six slides paired with their named category above the photograph.
+// Home remains a page link; Cabinet is a slide category as well as a header entry.
+const navKeys = ["home", "tests", "services", "academy", "business", "ideas", "cabinet"] as const;
 
 const copy = {
   en: {
     navigationLabel: "Explore site sections",
-    nav: { home: "Home", tests: "Tests", services: "Services", academy: "Academy", business: "Business", ideas: "Ideas" },
+    nav: { home: "Home", tests: "Tests", services: "Services", academy: "Academy", business: "Business", ideas: "Ideas", cabinet: "Cabinet" },
     region: "Explore Holistic House",
     previous: "Previous section",
     next: "Next section",
@@ -48,7 +48,7 @@ const copy = {
   },
   ru: {
     navigationLabel: "Разделы сайта",
-    nav: { home: "Главная", tests: "Тесты", services: "Услуги", academy: "Академия", business: "Бизнес", ideas: "Идеи" },
+    nav: { home: "Главная", tests: "Тесты", services: "Услуги", academy: "Академия", business: "Бизнес", ideas: "Идеи", cabinet: "Кабинет" },
     region: "Разделы Holistic House",
     previous: "Предыдущий раздел",
     next: "Следующий раздел",
@@ -68,7 +68,7 @@ const copy = {
   },
   es: {
     navigationLabel: "Secciones del sitio",
-    nav: { home: "Inicio", tests: "Pruebas", services: "Servicios", academy: "Academia", business: "Negocios", ideas: "Ideas" },
+    nav: { home: "Inicio", tests: "Pruebas", services: "Servicios", academy: "Academia", business: "Negocios", ideas: "Ideas", cabinet: "Mi espacio" },
     region: "Explora Holistic House",
     previous: "Sección anterior",
     next: "Sección siguiente",
@@ -92,8 +92,10 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [manual, setManual] = useState(false);
+  // A manual change resets the seven-second clock; it must not disable autoplay.
+  const [interactionVersion, setInteractionVersion] = useState(0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const navScroller = useRef<HTMLDivElement | null>(null);
   const slide = slides[index];
   const words = t.slides[slide.key];
   // The Spanish public entry is localized; the full private app currently
@@ -101,17 +103,32 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
   const href = slide.key === "cabinet" && locale === "es" ? "/en/app" : "/" + locale + slide.href;
 
   useEffect(() => {
-    if (paused || manual || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") {
         setIndex(current => (current + 1) % slides.length);
       }
     }, 7000);
     return () => window.clearInterval(timer);
-  }, [paused, manual]);
+  }, [paused, interactionVersion]);
+
+  // The seventh, "Cabinet", label may be outside the 320px navigation viewport.
+  // Scroll only the horizontal label strip, never the document itself.
+  useEffect(() => {
+    const scroller = navScroller.current;
+    const active = scroller?.querySelector<HTMLElement>(`[data-home-nav-section="${slide.key}"]`);
+    if (!scroller || !active || scroller.scrollWidth <= scroller.clientWidth) return;
+    const item = active.getBoundingClientRect();
+    const strip = scroller.getBoundingClientRect();
+    const left = scroller.scrollLeft + item.left - strip.left - (scroller.clientWidth - item.width) / 2;
+    scroller.scrollTo({
+      left: Math.max(0, left),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }, [index, locale]);
 
   function navigate(direction: number) {
-    setManual(true);
+    setInteractionVersion(version => version + 1);
     setIndex(current => (current + direction + slides.length) % slides.length);
   }
 
@@ -160,12 +177,17 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
         role="region"
         aria-roledescription="carousel"
         aria-label={t.region}
-        onMouseEnter={() => setPaused(true)}
+        onMouseEnter={() => {
+          // Mobile Safari may synthesize mouse events after tapping.
+          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) setPaused(true);
+        }}
         onMouseLeave={() => setPaused(false)}
-        onFocusCapture={() => setPaused(true)}
+        onFocusCapture={event => {
+          // Pause for keyboard focus, not for a touch-focused dot or arrow.
+          if (event.target instanceof HTMLElement && event.target.matches(":focus-visible")) setPaused(true);
+        }}
         onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}
         onTouchStart={event => {
-          setManual(true);
           touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
         }}
         onTouchEnd={endSwipe}
@@ -176,14 +198,14 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
             <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 760px) 100vw, 1240px"
               className={styles.image} style={{ objectPosition: slide.position }} />
           ) : (
-            <Image src={slide.image} alt="" fill unoptimized priority={index === 0 && !manual}
+            <Image src={slide.image} alt="" fill unoptimized priority={index === 0}
               sizes="(max-width: 760px) 100vw, 1240px"
               className={styles.image} style={{ objectPosition: slide.position }} />
           )}
         </div>
         <div className={styles.gradient} aria-hidden="true" />
         <nav className={styles.sectionNav} aria-label={t.navigationLabel} data-home-hero-nav="true">
-          <div className={styles.sectionNavScroller}>
+          <div className={styles.sectionNavScroller} ref={navScroller}>
             {navKeys.map(key => {
               const target = key === "home" ? undefined : slides.find(item => item.key === key);
               if (key !== "home" && !target) return null;
@@ -192,7 +214,8 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
                   key={key}
                   className={styles.sectionNavLink}
                   href={target ? `/${locale}${target.href}` : locale === "en" ? "/" : `/${locale}`}
-                  aria-current={key === "home" ? "page" : undefined}
+                  aria-current={key === slide.key ? "true" : undefined}
+                  data-home-nav-active={key === slide.key ? "true" : "false"}
                   prefetch={false}
                   data-home-nav-section={key}
                 >
@@ -218,7 +241,7 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
                 aria-label={t.slides[item.key].title}
                 aria-current={position === index ? "true" : undefined}
                 data-home-slide-dot={item.key}
-                onClick={() => { setManual(true); setIndex(position); }} />
+                onClick={() => { setInteractionVersion(version => version + 1); setIndex(position); }} />
             ))}
           </div>
           <div className={styles.arrows}>
