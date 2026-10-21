@@ -34,16 +34,16 @@ async function waitForServer() {
   throw new Error("Next server was not ready: " + logs.slice(-2000));
 }
 const scenarios = [
-  { locale: "en", path: "/", text: "I'm anxious about work and need support", send: "Let's talk", goal: "Explore free tests", reset: "Start over", href: "/en/client/tests" },
-  { locale: "ru", path: "/ru", text: "Я тревожусь и испытываю стресс", send: "Обсудить", goal: "Бесплатные тесты", reset: "Новый разговор", href: "/ru/client/tests" },
-  { locale: "es", path: "/es", text: "Tengo miedo y mucha ansiedad", send: "Conversemos", goal: "Pruebas gratuitas", reset: "Nueva conversación", href: "/en/client/tests" },
+  { locale: "en", path: "/", text: "I'm anxious about work and need support", send: "Get guidance", goal: "Explore free tests", reset: "Start over", href: "/en/client/tests" },
+  { locale: "ru", path: "/ru", text: "Я тревожусь и испытываю стресс", send: "Получить подсказку", goal: "Бесплатные тесты", reset: "Новый разговор", href: "/ru/client/tests" },
+  { locale: "es", path: "/es", text: "Tengo miedo y mucha ansiedad", send: "Recibir orientación", goal: "Pruebas gratuitas", reset: "Nueva conversación", href: "/en/client/tests" },
 ];
 let browser;
 try {
   await waitForServer();
   browser = await browserType.launch();
   for (const scenario of scenarios) {
-    for (const width of [320, 390, 430]) {
+    for (const width of [320, 375, 390, 430]) {
       const context = await browser.newContext({ viewport: { width, height: 820 }, serviceWorkers: "block" });
       const page = await context.newPage();
       const errors = [];
@@ -57,6 +57,9 @@ try {
         const guide = page.locator("[data-home-conversation-guide]");
         await expect(guide).toHaveCount(1);
         await expect(guide).toBeVisible();
+        await expect(guide).toHaveAttribute("data-guide-phase", "ready");
+        await expect(guide.locator("div[class*=quickChoices] button")).toHaveCount(3);
+        await expect(guide.getByRole("button", { name: scenario.send })).toHaveCSS("min-height", "46px");
         await expect(page.locator("[data-home-section-carousel]")).toHaveCount(1);
         const geometry = await guide.evaluate(node => {
           const rect = node.getBoundingClientRect();
@@ -67,6 +70,7 @@ try {
         const question = guide.locator("textarea");
         await question.fill(scenario.text);
         await guide.getByRole("button", { name: scenario.send }).click();
+        await expect(guide).toHaveAttribute("data-guide-phase", "conversation");
         await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
         await guide.getByRole("button", { name: scenario.goal, exact: true }).click();
         const primary = guide.locator("[data-home-guide-result] a").first();
@@ -77,6 +81,7 @@ try {
         await guide.getByRole("button", { name: scenario.reset }).click();
         await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
         await expect(question).toHaveValue("");
+        await expect(guide).toHaveAttribute("data-guide-phase", "ready");
         assert.deepEqual(leak, [], "Private question must not leak through request URLs");
         assert.deepEqual(errors, [], "Homepage javascript error");
         evidence.cases.push({ locale: scenario.locale, width, visible: true, route: scenario.href, reset: true, noUrlLeak: true });
