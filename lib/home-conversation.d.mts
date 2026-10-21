@@ -26,3 +26,5 @@ export declare function homeGuideFollowup(context: HomeGuideContext | null): {
 export declare function chooseHomeGuideOffer(context: HomeGuideContext | null, choiceId: string, pageLocale?: PublicLocale): {
   context: HomeGuideContext; response: LocalizedText | null; offers: HomeGuideOffer[];
 } | null;
+
+export declare function matchHomeGuideReply(input: string, context: HomeGuideContext | null): string | null;

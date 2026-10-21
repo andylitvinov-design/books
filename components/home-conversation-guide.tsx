@@ -7,6 +7,7 @@ import { ArrowRight, Check, Compass, Heart, Mic, RotateCcw, Send, ShieldCheck, S
 import {
   homeGuideFollowup,
   chooseHomeGuideOffer,
+  matchHomeGuideReply,
   resolveHomeGuideQuestion,
   type HomeGuideContext,
   type HomeGuideOffer,
@@ -222,6 +223,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const submitOnEndRef = useRef(false);
   const voiceStartedAtRef = useRef(0);
   const nextId = useRef(1);
+  const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const speechWindow = window as typeof window & {
@@ -256,6 +258,10 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     return () => window.clearInterval(interval);
   }, [voiceState]);
 
+  useEffect(() => {
+    if (turns.length) logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+  }, [turns]);
+
   function appendExchange(question: string, answer: string) {
     const firstId = nextId.current;
     nextId.current += 2;
@@ -269,6 +275,21 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   function ask(text: string) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
+    // The next reply may be spoken or typed. Never send it off-device.
+    const chosenId = matchHomeGuideReply(question, context);
+    if (chosenId && context && !context.urgent) {
+      const selected = chooseHomeGuideOffer(context, chosenId, context.lang);
+      if (selected) {
+        const next = homeGuideFollowup(selected.context);
+        const answer = selected.response?.[context.lang] ?? next?.prompt[context.lang] ?? copy[context.lang].followup;
+        appendExchange(question, answer);
+        setContext(selected.context);
+        setRecommendations(selected.offers);
+        setDraft("");
+        setVoiceError(null);
+        return;
+      }
+    }
     const result = resolveHomeGuideQuestion(question, locale, context);
     const responseCopy = copy[result.lang];
     const nextQuestion = homeGuideFollowup(result);
@@ -437,7 +458,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       </div>
 
       <div className={styles.conversation}>
-        <div className={styles.log} data-has-turns={turns.length > 0 ? "true" : "false"}
+        <div ref={logRef} className={styles.log} data-has-turns={turns.length > 0 ? "true" : "false"}
           role="log" aria-live="polite" aria-label={t.title} aria-relevant="additions text">
           {turns.map(turn => (
             <p key={turn.id} className={turn.role === "guide" ? styles.guideBubble : styles.visitorBubble}>{turn.text}</p>
@@ -466,6 +487,11 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                 </Link>
               </article>
             ))}
+            <div className={styles.restart}>
+              <button type="button" data-home-guide-change onClick={() => setRecommendations([])}>
+                {{ en: "Change my answer", ru: "Изменить выбор", es: "Cambiar respuesta" }[context.lang]}
+              </button>
+            </div>
             <p className={styles.limitation}>{answerCopy.limitation}</p>
           </div>
         ) : null}

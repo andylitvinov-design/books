@@ -85,6 +85,14 @@ try {
         await expect(primary).toBeVisible();
         assert.ok(await guide.locator("[data-home-guide-offer]").count() <= 2);
         await expect(guide.locator("[data-home-guide-reiki-entry] a")).toHaveAttribute("href", "/en/academy/principles-of-energywork/learn");
+        await expect(guide.locator("[data-home-guide-change]")).toBeVisible();
+        if (width === 390 && scenario.href.endsWith("/app/business")) {
+          const reply = { en: "I'm just starting", ru: "Я только начинаю", es: "Estoy empezando" }[scenario.locale];
+          await question.fill(reply);
+          await guide.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result] a").first()).toHaveAttribute("href", scenario.href);
+          await expect(guide.locator('[role="log"]')).toContainText(reply);
+        }
         const bubbleText = await guide.locator('[role="log"]').innerText();
         assert.ok(bubbleText.includes(scenario.text), "Question should remain visible only in local dialogue");
         await guide.getByRole("button", { name: scenario.reset }).click();

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { homeGuideDestinations, homeGuideGoals, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer } from "../lib/home-conversation.mjs";
+import { homeGuideDestinations, homeGuideGoals, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply } from "../lib/home-conversation.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -215,4 +215,26 @@ test("product routing preserves latest voice lifecycle and initial three-choice 
   const component = read("components/home-conversation-guide.tsx");
   assert.ok(component.indexOf("data-home-guide-reiki-entry") > component.indexOf("className={styles.quickChoices}"), "Secondary course entry must not displace the approved hero or composer");
   for (const token of ["voiceGenerationRef.current += 1", "elapsed >= 60", "}, 12000)", "}, 2500)", "voiceDiscardRef.current = true", "submitOnEndRef.current = false"]) assert.ok(component.includes(token), token);
+});
+
+
+test("spoken and typed answers use only the currently permitted contextual choices", () => {
+  const business = resolveHomeGuideQuestion("I need clients for my business");
+  assert.equal(matchHomeGuideReply("I'm just starting", business), "work-start");
+  assert.equal(matchHomeGuideReply("I already have customers", business), "work-grow");
+  assert.equal(matchHomeGuideReply("Я развиваю карьеру", business), "work-career");
+  assert.equal(matchHomeGuideReply("something different", business), null);
+  assert.equal(matchHomeGuideReply("I'd like a consultation", business), "personal");
+  const stress = resolveHomeGuideQuestion("Постоянная тревога");
+  assert.equal(matchHomeGuideReply("Хочу попробовать практику", stress), "calm-practice");
+  assert.equal(matchHomeGuideReply("Пройду тест", stress), "self-check");
+  assert.equal(matchHomeGuideReply("I want to grow my business", stress), null);
+  const unknown = resolveHomeGuideQuestion("Something complicated");
+  assert.equal(matchHomeGuideReply("Quiero negocio", unknown), "topic-work");
+  assert.equal(matchHomeGuideReply("new project", null), null);
+  assert.equal(matchHomeGuideReply("personal", resolveHomeGuideQuestion("I want to die")), null);
+  const ui = read("components/home-conversation-guide.tsx");
+  assert.match(ui, /data-home-guide-change/);
+  assert.match(ui, /matchHomeGuideReply\(question, context\)/);
+  assert.match(ui, /logRef\.current\?\.scrollTo/);
 });
