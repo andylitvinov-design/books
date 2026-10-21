@@ -30,7 +30,7 @@ test("guest must consent and authenticate before server save and post-save insta
   assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value\)/);
   assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
   assert.match(learner, /hydrate\(value\); \/\/ Private server persistence is confirmed before the app offer\./);
-  assert.match(learner, /await store\(nextId\);\s*setShowInstallOffer\(true\)/);
+  assert.match(learner, /await store\(nextId\);[\s\S]*?window\.location\.assign\("\/" \+ locale \+ "\/app\/course\?view=courses"\)/);
   assert.match(learner, /if \(showInstallOffer && sync === "ready"\)/);
   assert.match(learner, /data-reiki-install-offer/);
   assert.match(learner, /href=\{"\/" \+ locale \+ "\/install"\}/);
