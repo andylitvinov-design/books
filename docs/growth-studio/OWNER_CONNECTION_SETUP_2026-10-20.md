@@ -94,3 +94,24 @@ Only synthetic, generic non-client data is ever written; the main `holistic-hous
 The narrow mobile layout now keeps the important privacy notices while reducing excessive empty vertical space before the editor. The `0/16 channels` count still refers exclusively to actual verified **site-side** publisher credentials; a Redis success does NOT alter that value. HYPD and Metricool connection through ChatGPT do not provide the Holistic House production server with publisher OAuth.
 
 **Important limitation:** an isolated synthetic Redis hash roundtrip validates connectivity and CAS semantics. It does **not** assert that a real owner-created marketing post has been reviewed and saved, nor that iPhone Safari E2E, account credentials, remote scheduling or provider delivery were verified. A screenshot alone of the editor cannot establish a successful Save/Reload flow. No automated public posts, paid ads, subscriptions or video renders are authorized.
+
+---
+
+## 2026-10-20 — Official site-side Metricool API **read-only verification**, no new subscription
+
+Existing Growth Studio code now supports **one owner-clicked, read-only Metricool API brand verification** through `lib/growth-studio/metricool.mjs` and owner-protected `checkGrowthMetricoolBrandAction()`. This does **not** create a scheduled post, prove Facebook/Instagram publishing rights, or reuse the separate ChatGPT Metricool OAuth. It does not perform an automatic network request on every page load.
+
+**Requirements before pressing Check Metricool API:**
+1. In https://app.metricool.com/ verify the exact account, owned brand and its name; for a website REST API token the official provider requires **Advanced/Custom**, not Free/Starter. Do not upgrade or pay without explicit owner approval. ChatGPT Metricool MCP works on Free but cannot be used as the site's REST token.
+2. Configure these **server-side Production** variables at https://vercel.com/super10/codex-public-book-library/settings/environment-variables (never paste token in GitHub, chat or public URL):
+   - `METRICOOL_USER_TOKEN` = official API token from Metricool Account Settings → API, Sensitive
+   - `METRICOOL_USER_ID` = exact user ID verified by owner
+   - `METRICOOL_BLOG_ID` = exact brand ID verified by owner
+   - `METRICOOL_BRAND_NAME` = exact brand name returned by the official brand list (fail-closed on mismatch)
+3. Apply via a normal cost-conscious production deployment. Open https://holistichouse.vercel.app/admin/growth-studio as the owner → Connections → **Check Metricool API (read only)**.
+4. The server sends **one GET only** to Metricool's documented `https://app.metricool.com/api/admin/simpleProfiles?userId=<userId>` with the token in `X-Mc-Auth`. An exact `blogId` **and brand name** match is needed for `verified_read_only`. A 401/403, mismatch, malformed, or too-large response fails closed. Only the selected public brand ID/name and sanitized readiness status reach the browser.
+5. Even green read-only status **never** increases the "verified publishing channels" count. Publishing requires separate approved platform/account/role scopes, per-post approval and provider receipt. Keep manual publishing / ChatGPT Metricool MCP until site API entitlement and publisher rights are real.
+
+Official API documentation: https://help.metricool.com/basic-guide-for-api-integration-r97af and https://help.metricool.com/mcp-vs-api-access-what-is-the-difference-5y3ib.
+
+**Current no-secrets readback:** ChatGPT Metricool lists one user/brand connected to a RU YouTube channel. Facebook/Instagram account rights and website token are not present in the production environment. Thus at rollout the appropriate site readiness remains **not_connected**, not falsely "verified."
