@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
+import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
 import { HomeConversationGuide } from "@/components/home-conversation-guide";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { HomeExploreSections } from "@/components/home-explore-sections";
@@ -67,8 +68,9 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         <SiteNavigation locale={locale} />
       </header>
 
-      <HomeConversationGuide locale={locale} />
       <HomeSectionCarousel locale={locale} />
+      <HomeFreeDiagnosisBanner locale={locale} />
+      <HomeConversationGuide locale={locale} />
 
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
