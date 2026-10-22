@@ -6,7 +6,7 @@ import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '@/lib/inner-growth/course-slide-sequence'
 import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
 import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,oporaExperienceTransferChoices,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import styles from './opora-experience-player.module.css'
@@ -19,7 +19,7 @@ const WORDS={
     day:'День',of:'из',pause:'Пауза',close:'Закончить',back:'Назад',next:'Продолжить',
     save:'Сохранить мою практику',saving:'Сохраняем…',finish:'К карте курса',
     minute:'СНАЧАЛА — ВЫ',learn:'Маленькая практика',feel:'Что изменилось?',
-    quote:'Мысль сегодняшнего дня',keep:'Возьмите с собой',
+    quote:'Афоризм дня',keep:'ПЛАН НА ПОТОМ',
     arriveTitle:'Как вы сейчас себя чувствуете?',
     arriveText:'Выберите то, что ближе. Здесь нет правильного ответа.',
     arriveSkip:'Можно продолжить и без ответа.',
@@ -42,15 +42,20 @@ const WORDS={
     feelText:'Заметьте, изменилось ли что-то хотя бы немного.',
     feelingBetter:'Стало немного легче',feelingSame:'Примерно так же',feelingPartial:'Есть небольшие изменения',feelingHard:'Стало некомфортно',
     feelingThanks:'Спасибо, что заметили. Любой ответ подходит; состояние не оценивается баллами.',
-    quoteText:'Откликается ли вам эта мысль?',
-    agree:'Откликается',unsure:'Пока не уверен(а)',disagree:'Не согласен(на)',
+    quoteText:'Вы согласны с этой мыслью?',
+    agree:'Согласен',unsure:'Нужно подумать',disagree:'Не согласен',
     quoteThanks:'Это только ваша позиция, правильного ответа нет.',
-    keepText:'Выберите одно напоминание на сегодня.',
-    plan:'Хочу запомнить этот вариант',noPlan:'Пока без плана',
+    keepText:'Как применить сегодняшний навык? Выберите один маленький шаг на потом — или пропустите.',
+    plan:'Попробую позже',noPlan:'Не сегодня',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
-    audioTitle:'Две минуты спокойствия',audioKicker:'МЯГКОЕ ЗАВЕРШЕНИЕ',audioNext:'Послушать волны',
+    meditationTitle:'Медитация «Опора» · 2 минуты (по желанию)',
+    meditationSteps:[
+      'Сядьте удобно и почувствуйте опору стула или пола. Дышите естественно.',
+      'Включите таймер: с волнами или без звука мягко возвращайте внимание к этой опоре.',
+      'Когда пройдут две минуты, осмотритесь и назовите про себя один предмет вокруг.',
+    ],
     attempted:'Вы попробовали упражнение',readOnly:'Сегодня только ознакомление — выполнение не отмечено',
-    takeaway:'Ваш возможный следующий шаг',
+    takeaway:'Возможный следующий шаг',
     feedback:'Ваше наблюдение',noResult:'Можно закончить без оценок самочувствия.',
     noSave:'Сохранение не подтверждено. Проверьте соединение и повторите.',
     incomplete:'Сначала откройте оставшиеся моменты занятия.',
@@ -59,7 +64,7 @@ const WORDS={
     neutralAnchor:'Если хочется, посмотрите на один обычный предмет вокруг.',
     neutralSafety:'Можно остановиться; дыхание менять не нужно.',
     safetyNeutral:'Вернуться с нейтральной опорой',safetyBack:'Вернуться',safetyEnd:'Закончить без сохранения',
-    ideaTitle:'Бережная мысль',reminderTitle:'Одно напоминание',feelTitle:'Как сейчас?',
+    ideaTitle:'Афоризм дня',reminderTitle:'Маленький шаг в жизни',feelTitle:'Как сейчас?',
     learnMore:'Показать мягкую подсказку',noMedical:'Самостоятельная практика, не диагностика и не лечение.',
     preview:{
       weekOneKicker:'ДНИ 1–7',weekOneTitle:'Первая неделя: найти опору',
@@ -84,7 +89,7 @@ const WORDS={
     day:'Day',of:'of',pause:'Pause',close:'End lesson',back:'Back',next:'Continue',
     save:'Save my practice',saving:'Saving…',finish:'My course map',
     minute:'A MOMENT FOR YOU',learn:'A small practice',feel:'What do you notice?',
-    quote:'A thought for today',keep:'Take this with you',
+    quote:'TODAY’S THOUGHT',keep:'A PLAN FOR LATER',
     arriveTitle:'How are you feeling right now?',
     arriveText:'Choose what feels closest. There is no right answer.',
     arriveSkip:'You can continue without answering.',
@@ -107,15 +112,20 @@ const WORDS={
     feelText:'Notice whether anything feels a little different.',
     feelingBetter:'A little easier',feelingSame:'About the same',feelingPartial:'A small shift',feelingHard:'Uncomfortable',
     feelingThanks:'Thank you for noticing. There is no score or right answer.',
-    quoteText:'Does this idea resonate with you?',
-    agree:'This resonates',unsure:'Not sure yet',disagree:'I disagree',
+    quoteText:'Do you agree with this thought?',
+    agree:'Agree',unsure:'Need to think',disagree:'Disagree',
     quoteThanks:'Your response is yours. There is no correct answer.',
-    keepText:'Choose one gentle reminder for today.',
-    plan:'Keep this reminder',noPlan:'No plan today',
+    keepText:'How might you use today’s skill? Choose one small step for later, or skip.',
+    plan:'I might try this',noPlan:'Not today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
-    audioTitle:'Two quiet minutes',audioKicker:'A GENTLE ENDING',audioNext:'Relax with waves',
+    meditationTitle:'2-minute grounding meditation · optional',
+    meditationSteps:[
+      'Sit comfortably and notice the chair or floor supporting you. Breathe naturally.',
+      'Start the timer: with waves or in silence, gently bring your attention back to that support.',
+      'After two minutes, look around and silently name one object you can see.',
+    ],
     attempted:'You reported trying the exercise',readOnly:'Explored the idea only — no attempt recorded',
-    takeaway:'Your possible next step',feedback:'Your observation',noResult:'You can finish without rating yourself.',
+    takeaway:'Possible next step',feedback:'Your observation',noResult:'You can finish without rating yourself.',
     noSave:'Saving was not confirmed. Check the connection and try again.',
     incomplete:'Please open the remaining moments before saving.',
     safetyTitle:'You may stop here',
@@ -123,7 +133,7 @@ const WORDS={
     neutralAnchor:'If you wish, look at one ordinary object around you.',
     neutralSafety:'You can stop; no need to change your breathing.',
     safetyNeutral:'Return with a neutral anchor',safetyBack:'Go back',safetyEnd:'End without saving',
-    ideaTitle:'A gentle idea',reminderTitle:'One reminder',feelTitle:'How do you feel now?',
+    ideaTitle:'Today’s thought',reminderTitle:'A small step in real life',feelTitle:'How do you feel now?',
     learnMore:'Show gentle guidance',noMedical:'Self-guided learning, not diagnosis or treatment.',
     preview:{
       weekOneKicker:'DAYS 1–7',weekOneTitle:'Week 1: Find your supports',
@@ -150,7 +160,7 @@ WORDS.es = {
   day:'Día',pause:'Pausa',close:'Cerrar lección',back:'Atrás',next:'Continuar',
   save:'Guardar mi práctica',saving:'Guardando…',finish:'Mapa del curso',
   minute:'UN MOMENTO PARA TI',learn:'Una práctica pequeña',feel:'¿Qué notas?',
-  quote:'UNA IDEA PARA HOY',keep:'LLÉVATE ESTO',
+  quote:'UNA IDEA PARA HOY',keep:'UN PASO PARA DESPUÉS',
   arriveTitle:'¿Cómo te sientes ahora?',
   arriveText:'Elige lo que más se acerque. No hay respuesta correcta.',
   arriveSkip:'Puedes continuar sin responder.',
@@ -171,12 +181,17 @@ WORDS.es = {
   gentle:'Si te incomoda, mira un objeto neutro.',
   feelText:'Nota si algo cambió, aunque sea un poco.',
   feelingBetter:'Un poco mejor',feelingSame:'Más o menos igual',feelingPartial:'Un pequeño cambio',feelingHard:'Incómodo',
-  quoteText:'¿Te resuena esta idea?',agree:'Me resuena',unsure:'Aún no sé',disagree:'No estoy de acuerdo',
-  keepText:'Elige un recordatorio amable para hoy.',plan:'Recordar esta idea',noPlan:'Hoy sin plan',
+  quoteText:'¿Estás de acuerdo con esta idea?',agree:'De acuerdo',unsure:'Quiero pensarlo',disagree:'En desacuerdo',
+  keepText:'¿Cómo podrías usar esta habilidad? Elige un gesto pequeño para más tarde o sáltalo.',plan:'Quizá lo intente',noPlan:'Hoy no',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
-  audioTitle:'Dos minutos de calma',audioKicker:'UN FINAL SUAVE',audioNext:'Escuchar las olas',
+  meditationTitle:'Meditación de apoyo · 2 minutos (opcional)',
+  meditationSteps:[
+    'Siéntate cómodamente y siente el apoyo de la silla o del suelo. Respira con naturalidad.',
+    'Inicia el temporizador: con olas o en silencio, vuelve suavemente a notar ese apoyo.',
+    'Al terminar los dos minutos, mira alrededor y nombra mentalmente un objeto.',
+  ],
   attempted:'Has indicado que probaste la práctica',readOnly:'Solo exploraste la idea; no registraste un intento',
-  takeaway:'Tu recordatorio',feedback:'Tu sensación',noResult:'Puedes terminar sin evaluarte.',
+  takeaway:'Posible siguiente paso',feedback:'Tu sensación',noResult:'Puedes terminar sin evaluarte.',
   noSave:'No se confirmó el guardado. Revisa la conexión e inténtalo otra vez.',
   incomplete:'Abre los momentos restantes antes de guardar.',
   safetyTitle:'Puedes parar aquí',
@@ -203,7 +218,7 @@ WORDS.es = {
   habitBenefit:'Añade OPORA a la pantalla de inicio y configura la pausa solo si lo deseas.',
   habitConfigure:'Configurar',habitLater:'Ahora no',
   habitFallback:'También puedes configurarlo en la página del curso de Holistic House.',
-  ideaTitle:'Una idea amable',reminderTitle:'Un recordatorio',feelTitle:'¿Cómo estás ahora?',
+  ideaTitle:'Idea del día',reminderTitle:'Un paso en la vida real',feelTitle:'¿Cómo estás ahora?',
 }
 // The five original lesson-one opening screens stay separate, and precede action.
 const OPENING={
@@ -351,7 +366,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [habitSetup,setHabitSetup]=useState(false)
   const [inviteOpen,setInviteOpen]=useState(false)
   const [saved,setSaved]=useState(hasSaved)
-  const [outroOpen,setOutroOpen]=useState(false)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [welcomeFeeling,setWelcomeFeeling]=useState(data?.currentSession?.signals?.welcomeFeeling||null)
   const [openingResource,setOpeningResource]=useState(data?.currentSession?.signals?.oporaOpening?.resource??null)
@@ -378,16 +392,19 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const previewScreens=cycle.day===1?['nextStep','habit']:['nextStep']
   const inPreview=receipt&&previewIndex>=0&&!inviteOpen
   const moment=inviteOpen?'invite':inPreview?previewScreens[previewIndex]:
-    outroOpen?'ocean':recap?'recap':receipt?'receipt':displayScenes[step]
-  const previewTotal=displayScenes.length+4+previewScreens.length
-  const previewStep=inviteOpen?previewTotal:inPreview?displayScenes.length+4+previewIndex:
-    outroOpen?displayScenes.length+3:receipt?displayScenes.length+2:Math.min(step+1,previewTotal)
+    recap?'recap':receipt?'receipt':displayScenes[step]
+  const previewTotal=displayScenes.length+3+previewScreens.length
+  const previewStep=inviteOpen?previewTotal:inPreview?displayScenes.length+3+previewIndex:
+    receipt?displayScenes.length+2:Math.min(step+1,previewTotal)
   const opening=OPENING[lang]
   const c=oporaEndingCopy(lang)
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   const support=oporaExperienceSupport(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
-  const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
+  const legacyPlan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
+  const transferChoices=oporaExperienceTransferChoices(cycle.day,lang)
+  const selectedTransfer=transferChoices.find(choice=>choice.value===answers.transferChoice)?.label
+  const plan=answers.transferChoice==='one'?legacyPlan:selectedTransfer||''
   const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
   const quote=cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
   const rating=answers.reflection
@@ -401,7 +418,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   useEffect(()=>{
     if(step<displayScenes.length&&displayScenes[step]!=='support')visited.current.add(displayScenes[step])
     heading.current?.focus?.()
-  },[step,receipt,previewIndex,outroOpen,inviteOpen])
+  },[step,receipt,previewIndex,inviteOpen])
   useEffect(()=>{
     if(safety){wasPaused.current=true;safetyPrimary.current?.focus?.()}
     else if(wasPaused.current)safetyTrigger.current?.focus?.()
@@ -441,7 +458,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   }
   function openPreview(){
     if(locked||!receipt)return
-    setOutroOpen(false)
     setPreviewIndex(0)
   }
   function advancePreview(){
@@ -506,7 +522,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const title=moment==='habit'?t.habitTitle:moment==='recap'?c.recapTitle:
     moment==='invite'?(cycle.day===14?c.inviteFinal:c.inviteTitle):
     moment==='nextStep'?t.preview.nextTitle:
-    outroOpen?t.audioTitle:moment==='receipt'?(cycle.day===14?c.congratsFinal:c.congratsTitle.replace('{day}',String(cycle.day))):
+    moment==='receipt'?(cycle.day===14?c.congratsFinal:c.congratsTitle.replace('{day}',String(cycle.day))):
     moment==='welcome'?opening.welcome:
     moment==='baseline'?opening.baseline:
     moment==='checkin'?opening.checkin:
@@ -529,9 +545,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         :lang==='es'?'Puedes elegir «Más o menos igual» o continuar sin responder.'
         :'You may choose “About the same” or continue without answering.')
     :moment==='save'
-      ?(lang==='ru'?'Выберите одно короткое напоминание или оставьте его на другой день.'
-        :lang==='es'?'Elige un recordatorio sencillo o déjalo para otro día.'
-        :'Choose one small reminder, or leave it for another day.')
+      ?(lang==='ru'?'Это возможный план на потом, а не отчёт о выполнении. Можно выбрать «Не сегодня».'
+        :lang==='es'?'Es un plan posible, no una tarea completada. Puedes elegir «Hoy no».'
+        :'This is a possible plan, not a completed action. You can choose “Not today”.')
     :null
   const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
@@ -567,9 +583,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {moment==='habit'?t.habitKicker:t.preview.nextKicker}
             {' · '}{previewIndex+1}/{previewScreens.length}
           </span>}
-          {(!receipt||outroOpen||inviteOpen)&&<span className={styles.eyebrow}>
+          {(!receipt||inviteOpen)&&<span className={styles.eyebrow}>
             {moment==='recap'?c.recapKicker:moment==='invite'?c.inviteKicker:
-             moment==='ocean'?t.audioKicker:moment==='welcome'?opening.welcomeKicker:
+             moment==='welcome'?opening.welcomeKicker:
             moment==='baseline'?opening.baselineKicker:
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
@@ -651,15 +667,19 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
             {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
+            <div className={styles.inlinePracticeAudio} data-opora-inline-practice-audio="true">
+              <div className={styles.meditationGuide} data-opora-guided-meditation="true">
+                <strong>{t.meditationTitle}</strong>
+                <ol>{t.meditationSteps.map((instruction,index)=><li key={index}>{instruction}</li>)}</ol>
+              </div>
+              <OporaOceanOutro locale={lang} paused={safety} compact/>
+            </div>
             <p className={styles.miniLabel}>{cycle.day===1?t.tryPrompt:t.tryAfter}</p>
             <div className={styles.chips} role="group"
               aria-label={cycle.day===1?t.tryPrompt:t.tryAfter}>
               {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
-            </div>
-            <div className={styles.inlinePracticeAudio} data-opora-inline-practice-audio="true">
-              <OporaOceanOutro locale={lang} paused={safety} compact/>
             </div>
           </>}
           {moment==='feel'&&<>
@@ -679,19 +699,21 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={vote===value} onClick={()=>setAnswers(a=>({...a,aphorism:value}))}>{label}</button>)}
             </div>
-            {vote&&cycle.day===1&&<p className={styles.soft} role="status">{opening.response}</p>}
+            {vote&&<p className={styles.soft} role="status">{cycle.day===1?opening.response:t.quoteThanks}</p>}
           </>}
           {moment==='save'&&<>
             <p className={styles.lead}>{t.keepText}</p>
-            <p className={styles.action}>{plan}</p>
-            <div className={styles.chips} role="group" aria-label={t.keep}>
+            <div className={styles.chips+' '+styles.microChoices} role="group" aria-label={t.keep}
+              data-opora-everyday-choice="two-actions-or-skip">
+              {transferChoices.map(choice=><button type="button" key={choice.value} disabled={locked}
+                aria-pressed={answers.transfer==='planned'&&answers.transferChoice===choice.value}
+                onClick={()=>setAnswers(a=>({...a,transferChoice:choice.value,transfer:'planned'}))}>{choice.label}</button>)}
               <button type="button" disabled={locked}
-                aria-pressed={answers.transfer==='planned'} onClick={()=>setAnswers(a=>({...a,transferChoice:'one',transfer:'planned'}))}>{t.plan}</button>
-              <button type="button" disabled={locked}
-                aria-pressed={answers.transfer==='not_planning'} onClick={()=>setAnswers(a=>({...a,transferChoice:undefined,transfer:'not_planning'}))}>{t.noPlan}</button>
+                aria-pressed={answers.transfer==='not_planning'}
+                onClick={()=>setAnswers(a=>({...a,transferChoice:undefined,transfer:'not_planning'}))}>{t.noPlan}</button>
             </div>
             <p className={styles.soft}>{reportedAttempt?t.attempted:t.readOnly}</p>
-          </>}
+          </>
           {moment==='nextStep'&&<OporaCoursePath locale={lang} cycle={cycle}
             saved={saved} roadmap={data?.roadmap} words={t}/>}
           {moment==='habit'&&<>
@@ -710,7 +732,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
                 <div><strong>{c.skill}: {dayCopy?.title||t.learn}</strong><small>{practiceGuide}</small></div></div>
               <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
-                <div><strong>{c.reminder}</strong><small>{plan}</small></div></div>
+                <div><strong>{t.takeaway}</strong><small>{plan||(answers.transfer==='not_planning'?t.noPlan:t.keepText)}</small></div></div>
             </div>
             <p className={styles.miniLabel}>{c.question}</p>
             <div className={styles.confidenceChoices} role="group" aria-label={c.question}
@@ -733,10 +755,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
-          {outroOpen&&<OporaOceanOutro locale={lang} paused={safety}/>}
-          {outroOpen&&<button type="button" className={styles.linkHint} disabled={locked}
-            onClick={onFinish||onClose}>{t.finish}</button>}
-
           {moment==='invite'&&<>
             <p className={styles.lead}>{cycle.day===14?c.inviteFinalLead:c.inviteLead}</p>
             <nav className={styles.offerList} aria-label={c.inviteKicker}
@@ -767,17 +785,17 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           <ArrowLeft size={17}/>{t.back}</button>:
         receipt?<button type="button" className={styles.back} disabled={locked}
           onClick={moment==='habit'&&habitSetup?()=>setHabitSetup(false)
-            :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):()=>setStep(displayScenes.length-1)}>
+            :inPreview?backFromPreview:()=>setStep(displayScenes.length-1)}>
           <ArrowLeft size={17}/>{t.back}
         </button>:<button type="button" className={styles.back}
           onClick={step===0?onClose:back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
           onClick={inviteOpen?(onFinish||onClose):
             moment==='habit'?(habitSetup?()=>{setPreviewIndex(-1);setInviteOpen(true)}:()=>setHabitSetup(true)):
-            inPreview?advancePreview:outroOpen?openPreview:receipt?()=>setOutroOpen(true):recap?submit:next}>
+            inPreview?advancePreview:receipt?openPreview:recap?submit:next}>
           {inviteOpen?t.finish:moment==='habit'?(habitSetup?t.next:t.habitConfigure):
             inPreview?(moment==='nextStep'&&cycle.day===1?c.commit:previewIndex===previewScreens.length-1?c.commit:t.next):
-            outroOpen?t.seeProgram:receipt?t.audioNext:recap?(saving?t.saving:t.save):t.next}
+            receipt?t.seeProgram:recap?(saving?t.saving:t.save):t.next}
           {inviteOpen||recap||(moment==='habit'&&habitSetup)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
