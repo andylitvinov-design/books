@@ -5242,8 +5242,12 @@
     padding: 5px;
   }
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .video :global(.academy-video-choice) {
-    max-width: 228px;
+    max-width: 216px;
     margin-inline: auto;
+  }
+  /* On very short phones the selector explains the two choices on its own. */
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .description {
+    display: none;
   }
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .videoCaption {
     display: none;

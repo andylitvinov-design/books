@@ -95,7 +95,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
   }
-  assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
+  // This consented save gate has a fixed bottom dock and intentionally aligns at top.
+  assert.ok(data.slideJustify.includes(id === "flight-save" ? "flex-start" : "center"),
+    where + ": lesson content uses the expected vertical alignment");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
   assert.ok(data.privateSaveStatus.length > 0, where + ": current guest, consent or private-save status is visible");
   assert.equal(data.programmeOpen, false, where + ": journey hint is collapsed unless requested");
