@@ -8,7 +8,7 @@ import {
 } from '../lib/business-coaching/program.js'
 import {
   BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule,
-  businessDayResult, businessWeekProgress,
+  businessDayResult, businessWeekProgress, BUSINESS_TRACK_EXAMPLES, businessTrackExample, BUSINESS_WEEK_SKILLS, businessWeekSkill,
 } from '../lib/business-coaching/week-modules.js'
 
 test('90-day track is complete, bilingual, stable, nonduplicated and bounded',()=>{
@@ -211,13 +211,13 @@ test('weekly module progress preserves earlier checked-only days without miscoun
 })
 test('server pins result labels and rejects blank new-version completions while retaining old API compatibility',()=>{
   const source=readFileSync(new URL('../lib/app/business-coaching.js',import.meta.url),'utf8')
-  assert.match(source,/onlyKeys\(input,\['action','revision','day','done','note','result','contentVersion'\]\)/)
+  assert.match(source,/onlyKeys\(input,\['action','revision','day','done','note','result','contentVersion','reflectionChoice'\]\)/)
   assert.match(source,/BUSINESS_WEEKLY_CONTENT_VERSION/)
   assert.match(source,/BUSINESS_DAILY_RESULT_REQUIRED/)
   assert.match(source,/input\.done===true && input\.contentVersion===BUSINESS_WEEKLY_CONTENT_VERSION && result\.length<6/)
   assert.match(source,/resultLabelSnapshot:names\|\|prior\.resultLabelSnapshot\|\|null/)
   assert.match(source,/const result=input\.result===undefined\?\(prior\.result\|\|''\)/)
-  assert.match(source,/result,contentVersion:version/)
+  assert.match(source,/result,reflectionChoice,contentVersion:version/)
   assert.match(source,/transaction\(config,actor,async db=>/)
   assert.match(source,/select payload_ciphertext,revision,updated_at from app_private\.business_coaching_programs/)
 })
@@ -379,23 +379,28 @@ test('One-idea lesson slides retain encrypted daily results, completion and prio
   const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
   const repo=readFileSync(new URL('../lib/app/business-coaching.js',import.meta.url),'utf8')
   assert.ok(ui.includes('data-business-one-screen-lesson'))
+  assert.ok(ui.includes('function changeLessonStage(next){setFocusRunning(false);setLessonStage(next)}'))
+  assert.ok(ui.includes('function changeTab(next){setFocusRunning(false);setTab(next)}'))
   assert.ok(ui.includes('data-business-lesson-slide data-lesson-stage={lessonStage}'))
   assert.ok(ui.includes('data-business-lesson-save'))
   assert.ok(ui.includes('const [lessonStage,setLessonStage]=useState(0)'))
   assert.ok(ui.includes('lessonStage===0&&'))
   assert.ok(ui.includes('lessonStage===1&&'))
   assert.ok(ui.includes('lessonStage===2&&'))
+  assert.ok(ui.includes('lessonStage===3&&'))
+  assert.ok(ui.includes('lessonStage===4&&savedDay.done&&!hasUnsavedDay&&'))
   assert.ok(ui.includes("async function saveDayAndContinue(complete=false)"))
-  assert.ok(ui.includes("day:current,done:persistedDone,note:dayNote,result:dayResult,"))
+  assert.ok(ui.includes("day,done:persistedDone,note:dayNote,result:dayResult,"))
   assert.ok(ui.includes('const persistedDone=complete || Boolean(savedDay.done)'))
   assert.ok(ui.includes("onClick={()=>void saveDayAndContinue(false)}"))
   assert.ok(ui.includes("else void saveDayAndContinue(true)"))
-  assert.ok(ui.includes('if(ok && advance)'))
+  assert.ok(ui.includes('if(complete)changeLessonStage(4)'))
+  assert.ok(!ui.includes('if(ok && advance)'))
   assert.ok(ui.includes("course?.days?.[next]?.result||''"))
-  assert.ok(ui.includes("const savedLessonCanContinue=!hasUnsavedDay && Boolean(savedDay.done) && day<90"))
+  assert.ok(ui.includes("if(savedDay.done&&!hasUnsavedDay)changeLessonStage(4)"))
   assert.ok(ui.includes("if(savedLessonCanContinue)chooseDay(day+1;")===false)
-  assert.ok(ui.includes("if(savedLessonCanContinue)chooseDay(day+1);else void saveDayAndContinue(true)"))
-  assert.ok(ui.includes('(!savedLessonCanContinue&&dayResult.trim().length<6)'))
+  assert.ok(ui.includes("else void saveDayAndContinue(true)"))
+  assert.ok(ui.includes('dayResult.trim().length<6'))
   assert.ok(ui.includes('if(next!==day && course?.status'))
   assert.ok(ui.includes('window.confirm(t.unsavedResult)'))
   assert.ok(ui.includes('aria-valuemax={currentWeekProgress.total}'))
@@ -424,6 +429,80 @@ test('Small-screen course keeps the actual Continue action visible and optional 
   assert.ok(ui.includes('<details className={styles.review} key={week}>'))
   assert.ok(ui.includes("nextLesson:'Next lesson'"))
   assert.ok(ui.includes("nextLesson:'Следующий урок'"))
+})
+
+test('Business mirrors Reiki / OPORA: skill recap, one thought per day, real action and post-save celebration',()=>{
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
+  const repo=readFileSync(new URL('../lib/app/business-coaching.js',import.meta.url),'utf8')
+  for(const marker of [
+    'data-business-skill-brief','data-business-real-practice',
+    'data-business-one-reflection','data-business-private-result',
+    'data-business-saved-celebration','data-business-focus-timer',
+  ])assert.ok(ui.includes(marker),marker)
+  assert.ok(ui.includes('const previousSkills=Array.from({length:day-1}'))
+  assert.ok(ui.includes(".filter(previous=>course?.days?.[previous]?.done)"))
+  assert.ok(ui.includes('selected.resultLabel'))
+  assert.ok(ui.includes('selected.doneWhen'))
+  assert.ok(ui.includes('day<90?chooseDay(day+1):changeTab(\'report\')'))
+  assert.ok(ui.includes('savedDay.done&&!hasUnsavedDay'))
+  assert.ok(ui.includes('aria-pressed={reflectionChoice===value}'))
+  assert.ok(ui.includes('reflectionChoice,contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION'))
+  assert.ok(ui.includes('reflectionChoice!==(savedDay.reflectionChoice||\'\')'))
+  assert.ok(ui.includes('if(complete)changeLessonStage(4)'))
+  assert.ok(!ui.includes('if(ok && advance)'))
+  assert.ok(!ui.includes('setDay(next)\n      setLessonStage(0)\n      setModuleWeek')) // no silent post-save advancement
+  assert.ok(ui.includes('disabled={lessonStage===0&&day===1}'))
+  assert.ok(css.includes('.lessonStageNav{grid-template-columns:repeat(5,minmax(0,1fr))}'))
+  assert.ok(css.includes('.reflectionChoices button[aria-pressed=true]'))
+  assert.ok(css.includes('.focusControls button'))
+  assert.ok(css.includes('.savedCelebration'))
+  assert.ok(css.includes('@media(max-width:350px)'))
+  assert.ok(repo.includes("onlyKeys(input,['action','revision','day','done','note','result','contentVersion','reflectionChoice'])"))
+  assert.ok(repo.includes("!['','agree','disagree','unsure'].includes(reflectionChoice)"))
+  assert.ok(repo.includes("reflectionChoice=input.reflectionChoice===undefined?(prior.reflectionChoice||''):input.reflectionChoice"))
+  assert.ok(repo.includes('result,reflectionChoice,contentVersion:version,'))
+  assert.ok(repo.includes('payload_ciphertext'))
+  assert.ok(ui.includes("saveContinue:'Save my lesson and continue'"))
+  assert.ok(ui.includes("saveContinue:'Сохранить урок и продолжить'"))
+  // No forged business video, messaging reminder, or externally transmitted quiz/health payload.
+  assert.ok(ui.includes('no automatic reminder is sent'))
+  assert.ok(!ui.includes('autoplay'))
+})
+
+test('real-world coaching examples are contextual, bilingual, voluntary and cover all 13 modules',()=>{
+  assert.deepEqual(Object.keys(BUSINESS_TRACK_EXAMPLES).sort(),['career','idea','owner'])
+  assert.equal(BUSINESS_WEEK_SKILLS.length,13)
+  for(let week=1;week<=13;week++){
+    assert.ok(businessWeekSkill(week,'en')?.length>20)
+    assert.ok(businessWeekSkill(week,'ru')?.length>20)
+  }
+  assert.equal(businessWeekSkill(0),null)
+  assert.equal(businessWeekSkill(14),null)
+  for(const track of ['career','idea','owner']){
+    assert.equal(BUSINESS_TRACK_EXAMPLES[track].length,13)
+    for(const lang of ['en','ru']){
+      for(let week=1;week<=13;week++){
+        const example=businessTrackExample(week,track,lang)
+        assert.ok(typeof example==='string'&&example.length>20,track+':'+lang+':'+week)
+      }
+    }
+  }
+  assert.equal(businessTrackExample(0,'idea','en'),null)
+  assert.equal(businessTrackExample(14,'owner','ru'),null)
+  assert.equal(businessTrackExample(1,'unknown','en'),null)
+  const career=BUSINESS_TRACK_EXAMPLES.career.map(row=>row.en).join(' ')
+  assert.doesNotMatch(career,/guaranteed salary|guaranteed revenue|cold-message volume without/i)
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
+  assert.ok(ui.includes('businessTrackExample(week,course?.track,lang)'))
+  assert.ok(ui.includes('businessWeekSkill(week,lang)'))
+  assert.ok(ui.includes('<p className={styles.skillTarget}>{transferableSkill}</p>'))
+  assert.ok(ui.includes('data-business-path-example'))
+  assert.ok(ui.includes('trackExample&&<details'))
+  assert.ok(ui.includes("exampleForMyPath:'Example for my direction (optional)'"))
+  assert.ok(ui.includes("exampleForMyPath:'Пример для моего направления (по желанию)'"))
+  assert.ok(css.includes('.trackExample summary'))
 })
 
 test('business promotion matches the saved course photo-left design at phone widths',()=>{
