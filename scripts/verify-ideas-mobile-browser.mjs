@@ -135,7 +135,7 @@ async function verify(browserType, locale, width) {
     }
     await expand.tap();
     await daoResult.locator('[data-ideas-dao-expanded="true"]').waitFor({ state: "visible" });
-    assert.equal(await daoResult.locator('[data-ideas-dao-meaning] [class*=daoPoint]').count(), 3,
+    assert.equal(await daoResult.locator('[data-ideas-dao-meaning] [class*=daoPoints] > [class*=daoPoint]').count(), 3,
       label + ": meaning, key message and practical step all visible");
     assert.equal(await daoResult.locator('[data-ideas-aphorisms] ol li').count(), 3,
       label + ": Dao response has three topical sourced aphorisms");
