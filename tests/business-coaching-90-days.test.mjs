@@ -8,7 +8,7 @@ import {
 } from '../lib/business-coaching/program.js'
 import {
   BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule,
-  businessDayResult, businessWeekProgress, BUSINESS_TRACK_EXAMPLES, businessTrackExample,
+  businessDayResult, businessWeekProgress, BUSINESS_TRACK_EXAMPLES, businessTrackExample, BUSINESS_WEEK_SKILLS, businessWeekSkill,
 } from '../lib/business-coaching/week-modules.js'
 
 test('90-day track is complete, bilingual, stable, nonduplicated and bounded',()=>{
@@ -472,6 +472,13 @@ test('Business mirrors Reiki / OPORA: skill recap, one thought per day, real act
 
 test('real-world coaching examples are contextual, bilingual, voluntary and cover all 13 modules',()=>{
   assert.deepEqual(Object.keys(BUSINESS_TRACK_EXAMPLES).sort(),['career','idea','owner'])
+  assert.equal(BUSINESS_WEEK_SKILLS.length,13)
+  for(let week=1;week<=13;week++){
+    assert.ok(businessWeekSkill(week,'en')?.length>20)
+    assert.ok(businessWeekSkill(week,'ru')?.length>20)
+  }
+  assert.equal(businessWeekSkill(0),null)
+  assert.equal(businessWeekSkill(14),null)
   for(const track of ['career','idea','owner']){
     assert.equal(BUSINESS_TRACK_EXAMPLES[track].length,13)
     for(const lang of ['en','ru']){
@@ -489,6 +496,8 @@ test('real-world coaching examples are contextual, bilingual, voluntary and cove
   const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
   assert.ok(ui.includes('businessTrackExample(week,course?.track,lang)'))
+  assert.ok(ui.includes('businessWeekSkill(week,lang)'))
+  assert.ok(ui.includes('<p className={styles.skillTarget}>{transferableSkill}</p>'))
   assert.ok(ui.includes('data-business-path-example'))
   assert.ok(ui.includes('trackExample&&<details'))
   assert.ok(ui.includes("exampleForMyPath:'Example for my direction (optional)'"))
