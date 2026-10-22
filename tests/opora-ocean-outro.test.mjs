@@ -66,7 +66,7 @@ test('inline guided two-minute meditation is a part of day 3 practice, not a new
   assert.ok(!playerNode(h.tree),'No audio stage after congratulations')
   assert.ok(!meditationNode(h.tree),'No repeated practice after congratulations')
   await click(h,languages.en.map)
-  assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-course-map']==='all-14-days'))
+  assert.match(textOf(h.tree),/Your complete 14-day journey/)
   assert.equal(f.writes,1)
   h.unmount()
 })
@@ -81,7 +81,7 @@ test('EN/RU/ES all have actionable meditation steps and direct map after saved r
     assert.match(textOf(h.tree),d.finish)
     assert.ok(!playerNode(h.tree))
     await click(h,d.map)
-    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-course-map']==='all-14-days'))
+    assert.match(textOf(h.tree),lang==='ru'?/Ваш путь из 14 дней/:lang==='es'?/Tu recorrido completo de 14 días/:/Your complete 14-day journey/)
     assert.equal(f.writes,1)
     h.unmount()
   }
