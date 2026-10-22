@@ -3,6 +3,7 @@ import {useEffect,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {preparePhoto} from '@/components/session-photo-uploader'
 import {normalizePhoneAudioFile} from '@/lib/clients/phone-audio-file'
+import {canProxyOwnerAudio} from '@/lib/clients/owner-audio-upload'
 import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink,ChevronRight} from 'lucide-react'
 import CourseSlideRecorder from './course-slide-recorder'
 import styles from './practitioner-course-builder.module.css'
@@ -147,9 +148,18 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
    const limit=active.kind==='image'?4000000:active.kind==='audio'?20000000:25000000
    if(prepared.size>limit||prepared.size<128)throw new Error('MEDIA_SIZE_NOT_ALLOWED')
    const {item:intent}=await api({action:'upload-intent',courseId:courseBefore,mime,bytes:prepared.size})
-   const client=createClient(intent.supabaseUrl,intent.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}})
-   const result=await client.storage.from(intent.bucket).uploadToSignedUrl(intent.objectKey,intent.token,prepared,{contentType:mime,upsert:false})
-   if(result.error)throw new Error(result.error.message||'MEDIA_UPLOAD_FAILED')
+   if(active.kind==='audio'&&canProxyOwnerAudio(prepared)){
+    const response=await fetch('/api/app/practice/courses/'+encodeURIComponent(intent.assetId)+'/audio-upload',{
+     method:'POST',credentials:'same-origin',cache:'no-store',body:prepared,
+     headers:{'content-type':mime,...(accountId?{'x-hh-account-id':accountId}:{})},
+    })
+    const result=await response.json().catch(()=>({}))
+    if(!response.ok||result.item?.uploaded!==true)throw new Error(result.error||'MEDIA_UPLOAD_FAILED')
+   }else{
+    const client=createClient(intent.supabaseUrl,intent.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}})
+    const result=await client.storage.from(intent.bucket).uploadToSignedUrl(intent.objectKey,intent.token,prepared,{contentType:mime,upsert:false})
+    if(result.error)throw new Error(result.error.message||'MEDIA_UPLOAD_FAILED')
+   }
    await api({action:'upload-complete',assetId:intent.assetId})
    if(selected!==courseBefore)throw new Error('ACCOUNT_CHANGED')
    setDraft(d=>({...d,slides:d.slides.map(s=>s.id===slideBefore?{...s,assetId:intent.assetId}:s)}))
