@@ -27,7 +27,11 @@ test("personal payments page offers immediate Interac enquiry per priced service
 test("optional Square CTA requires fully verified configured amount", () => {
   assert.match(page, /configuredSquarePaymentLinks\(\)/);
   assert.match(page, /buildSquarePaymentForServices\(\[product\.id\], squareLinks\)/);
-  assert.match(page, /squarePayment \? <a/);
+  const squareBlock = page.match(/\{squarePayment \? <div data-square-payment-options=[\s\S]*?<\/div> : null\}/)?.[0];
+  assert.ok(squareBlock);
+  assert.match(squareBlock, /href=\{squarePayment\.url\}/);
+  assert.match(squareBlock, /data-square-manual-confirmation=\{product\.id\}/);
+  assert.match(squareBlock, /squareReceiptUrl\(locale, product\.title, formatSquareCadAmount\(squarePayment\.amountMinor, locale\)!\)/);
   assert.match(page, /data-square-personal-link=\{product\.id\}/);
   assert.equal(buildSquarePaymentForServices([ids[0]], {}), null);
   assert.doesNotMatch(page, /data-stripe-checkout|markAsPaid|grantEntitlement/);
