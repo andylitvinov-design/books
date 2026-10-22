@@ -448,7 +448,12 @@ async function verifySaveThenInstall(page, locale) {
   });
   await page.route(bootstrapPattern, async route => {
     await route.fulfill({ status:200, contentType:"application/json",
-      body: JSON.stringify({ account: { id:accountId, displayName:"Test learner", onboardingState:"active" } }) });
+      // Mirror the validated public bootstrap contract, not just its account field.
+      // A malformed mock would be rejected by appFetch before any consented save.
+      body: JSON.stringify({
+        account: { id:accountId, displayName:"Test learner", onboardingState:"active" },
+        results:[], runs:[], requests:[], consents:[], services:[],
+      }) });
   });
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
