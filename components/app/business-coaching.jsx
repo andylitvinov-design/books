@@ -38,8 +38,18 @@ const copy = {
     nextStep:'Continue', previousStep:'Back', skipCheck:'Skip self-reflection for now', optionalCheck:'Optional · 18 short questions',
     overviewLabel:'What happens next', overviewText:'Each day opens one practical lesson. You choose the pace; your results stay in your private Cabinet.',
     lessonEyebrow:'ONE LESSON · ONE PRACTICAL RESULT', startHeading:'Start with what matters to you',
-    draftAction:'Save draft', saveContinue:'Finish & continue', nextLesson:'Next lesson', alreadySaved:'All changes saved',
-    ideaSlide:'The idea', actionSlide:'Try it', resultSlide:'My result', goalCanEdit:'You can add habits and indicators later in Edit goals.',
+    draftAction:'Save draft', saveContinue:'Save my lesson and continue', nextLesson:'Next lesson', alreadySaved:'All changes saved',
+    ideaSlide:'Skill', actionSlide:'Practice', reflectionSlide:'Reflect', resultSlide:'Result', doneSlide:'Saved',
+    learnedBefore:'Previously practised', firstSkill:'Your first practice starts here.', todaySkill:'Today’s skill',
+    focusHelp:'Optional: start with two quiet minutes. This timer does not mark the action complete.',
+    focusStart:'Start 2 minutes', focusPause:'Pause', focusReset:'Reset', focusDone:'Two minutes done. Continue the real-world task at your own pace.',
+    reflectionTitle:'A thought for today', reflectionPrompt:'Does today’s step seem useful for your own goal?',
+    reflectAgree:'Yes', reflectDisagree:'No', reflectUnsure:'I need to think',
+    reflectOptional:'Optional. This is your opinion, not a test or a completed business action.',
+    savedCelebration:'Your lesson is saved', practisedSkill:'Skill you practised',
+    celebrationHelp:'Your actual result is in your private journal. Review any slide or continue when ready.',
+    showSaved:'Review saved lesson', returnLater:'You can return tomorrow; no automatic reminder is sent.',
+    goalCanEdit:'You can add habits and indicators later in Edit goals.',
     unsaved:'Not saved yet', courseMap:'Course map', privateJournal:'Private learning journal',
     completedDays:'Completed days', moduleDay:'Lesson', modulePace:'One step at a time', finishedDay:'Completed',
     description:'Define an achievable goal, explore your working habits, practise small actions and track real changes privately.',
@@ -93,8 +103,18 @@ const copy = {
     nextStep:'Продолжить', previousStep:'Назад', skipCheck:'Пропустить опрос пока', optionalCheck:'Необязательно · 18 коротких вопросов',
     overviewLabel:'Как устроен курс', overviewText:'Каждый день — одно практическое задание. Темп выбираете вы; результаты хранятся в личном кабинете.',
     lessonEyebrow:'ОДИН УРОК · ОДИН КОНКРЕТНЫЙ РЕЗУЛЬТАТ', startHeading:'Начните с того, что важно именно вам',
-    draftAction:'Черновик', saveContinue:'Выполнено · далее', nextLesson:'Следующий урок', alreadySaved:'Все изменения сохранены',
-    ideaSlide:'Идея', actionSlide:'Попробовать', resultSlide:'Мой результат', goalCanEdit:'Привычки и показатели можно добавить позже через «Изменить цели».',
+    draftAction:'Сохранить черновик', saveContinue:'Сохранить урок и продолжить', nextLesson:'Следующий урок', alreadySaved:'Все изменения сохранены',
+    ideaSlide:'Навык', actionSlide:'Практика', reflectionSlide:'Мнение', resultSlide:'Итог', doneSlide:'Готово',
+    learnedBefore:'Ранее практиковали', firstSkill:'Это ваша первая практика.', todaySkill:'Навык на сегодня',
+    focusHelp:'Если трудно начать — попробуйте две минуты. Таймер сам по себе не означает выполнения задания.',
+    focusStart:'Начать 2 минуты', focusPause:'Пауза', focusReset:'Сброс', focusDone:'Две минуты прошли. Продолжайте реальное задание в удобном темпе.',
+    reflectionTitle:'Мысль на сегодня', reflectionPrompt:'Насколько этот шаг полезен для вашей цели?',
+    reflectAgree:'Да', reflectDisagree:'Нет', reflectUnsure:'Надо подумать',
+    reflectOptional:'Необязательно. Это ваше мнение, а не тест и не отметка о выполненной работе.',
+    savedCelebration:'Ваш урок сохранён', practisedSkill:'Навык, который вы практиковали',
+    celebrationHelp:'Фактический результат сохранён в личном дневнике. Вы можете вернуться к любому слайду или продолжить.',
+    showSaved:'Просмотреть сохранённый урок', returnLater:'Можно продолжить завтра; автоматическое напоминание не отправляется.',
+    goalCanEdit:'Привычки и показатели можно добавить позже через «Изменить цели».',
     unsaved:'Пока не сохранено', courseMap:'Карта курса', privateJournal:'Личный дневник',
     completedDays:'Пройдено дней', moduleDay:'Урок', modulePace:'Один шаг за раз', finishedDay:'Завершено',
     description:'Определите реалистичную цель, исследуйте рабочие привычки, выполняйте небольшие задания и сохраняйте реальные результаты.',
@@ -204,8 +224,26 @@ export default function BusinessCoaching({locale='en',accountId}){
   const [dayResult,setDayResult]=useState(''),[moduleWeek,setModuleWeek]=useState(1)
   const [reviewNote,setReviewNote]=useState(''),[metricForm,setMetricForm]=useState(initialMetric)
   const [retestAnswers,setRetestAnswers]=useState({}),[goalEditing,setGoalEditing]=useState(false)
-  const [lessonStage,setLessonStage]=useState(0) // 0 idea, 1 action, 2 private result
+  const [lessonStage,setLessonStage]=useState(0) // 0 skill, 1 action, 2 reflection, 3 result, 4 saved celebration
+  const [reflectionChoice,setReflectionChoice]=useState('')
+  const [focusRemaining,setFocusRemaining]=useState(120),[focusRunning,setFocusRunning]=useState(false)
   const course=state?.course,revision=state?.revision||0
+  // A local optional focus timer: it neither sends personal data nor marks a day completed.
+  useEffect(()=>{
+    if(!focusRunning||tab!=='today'||lessonStage!==1||course?.status!=='active')return
+    const timer=window.setInterval(()=>setFocusRemaining(seconds=>{
+      if(seconds<=1){setFocusRunning(false);return 0}
+      return seconds-1
+    }),1000)
+    return()=>window.clearInterval(timer)
+  },[focusRunning,tab,lessonStage,course?.status])
+  useEffect(()=>{setFocusRunning(false)},[lessonStage,tab])
+  useEffect(()=>{setFocusRunning(false);setFocusRemaining(120)},[day])
+  useEffect(()=>{
+    const pauseOnHide=()=>{if(document.hidden)setFocusRunning(false)}
+    document.addEventListener('visibilitychange',pauseOnHide)
+    return()=>document.removeEventListener('visibilitychange',pauseOnHide)
+  },[])
   // Cosmetic preference only, never stored with the encrypted client course.
   // Restore after hydration so SSR and the first paint remain consistent.
   useEffect(()=>{
@@ -245,6 +283,7 @@ export default function BusinessCoaching({locale='en',accountId}){
           setDayNote(result.course.days?.[next]?.note||'')
           setDayResult(result.course.days?.[next]?.result||'')
           setDayDone(Boolean(result.course.days?.[next]?.done))
+          setReflectionChoice(result.course.days?.[next]?.reflectionChoice||'')
           setReviewNote(result.course.reviews?.[Math.ceil(next/7)]?.note||'')
         }
       }
@@ -254,12 +293,18 @@ export default function BusinessCoaching({locale='en',accountId}){
   const progress=useMemo(()=>businessProgress(course),[course])
   const savedDay=course?.days?.[day]||{}
   const hasUnsavedDay=dayResult!==(savedDay.result||'')||dayNote!==(savedDay.note||'')||
-    dayDone!==Boolean(savedDay.done)
+    reflectionChoice!==(savedDay.reflectionChoice||'')||dayDone!==Boolean(savedDay.done)
   const savedLessonCanContinue=!hasUnsavedDay && Boolean(savedDay.done) && day<90
   const selected=businessDayResult(day,lang)
   const week=selected?.week||1
   const currentModule=businessWeekModule(week,lang)
   const currentWeekProgress=businessWeekProgress(course,week)
+  const previousSkills=Array.from({length:day-1},(_,index)=>day-1-index)
+    .filter(previous=>course?.days?.[previous]?.done).slice(0,2).reverse()
+    .map(previous=>({
+      day:previous,
+      skill:course.days[previous].resultLabelSnapshot?.[lang]||businessDayResult(previous,lang).resultLabel,
+    }))
   const openedModule=businessWeekModule(moduleWeek,lang)
   const openedProgress=businessWeekProgress(course,moduleWeek)
   const baseline=course?.surveys?.[0]
@@ -291,7 +336,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   function chooseDay(next){
     const previous=course?.days?.[day]||{}
     const unsaved=dayResult!==(previous.result||'') || dayNote!==(previous.note||'') ||
-      dayDone!==Boolean(previous.done)
+      reflectionChoice!==(previous.reflectionChoice||'') || dayDone!==Boolean(previous.done)
     if(next!==day && course?.status==='active' && unsaved && !window.confirm(t.unsavedResult))return
     setDay(next)
     setLessonStage(0)
@@ -299,6 +344,7 @@ export default function BusinessCoaching({locale='en',accountId}){
     setDayNote(course?.days?.[next]?.note||'')
     setDayResult(course?.days?.[next]?.result||'')
     setDayDone(Boolean(course?.days?.[next]?.done))
+    setReflectionChoice(course?.days?.[next]?.reflectionChoice||'')
     setReviewNote(course?.reviews?.[next<=84?Math.ceil(next/7):13]?.note||'')
     setTab('today')
   }
@@ -306,28 +352,19 @@ export default function BusinessCoaching({locale='en',accountId}){
     e.preventDefault()
     if(!consent||startStep!==3)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
-    if(yes){setTab('today');setDay(1);setLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setStartStep(1)}
+    if(yes){setTab('today');setDay(1);setLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setReflectionChoice('');setStartStep(1)}
   }
   async function saveDayAndContinue(complete=false){
-    const current=day
-    const advance=complete && current<90
-    // Editing a previously completed day must not silently erase completion.
-    // An unfinished draft on a new day does not mark that day complete.
+    // Actual completion stays server-validated, and the congratulation screen
+    // opens only after a successful encrypted save. Never auto-advance on failure.
     const persistedDone=complete || Boolean(savedDay.done)
     const ok=await command('day',{
-      day:current,done:persistedDone,note:dayNote,result:dayResult,
-      contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
+      day,done:persistedDone,note:dayNote,result:dayResult,
+      reflectionChoice,contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
     })
-    if(ok)setDayDone(persistedDone)
-    if(ok && advance){
-      const next=current+1
-      setDay(next)
-      setLessonStage(0)
-      setModuleWeek(Math.min(13,Math.ceil(next/7)))
-      setDayNote(course?.days?.[next]?.note||'')
-      setDayResult(course?.days?.[next]?.result||'')
-      setDayDone(Boolean(course?.days?.[next]?.done))
-      setReviewNote(course?.reviews?.[Math.min(13,Math.ceil(next/7))]?.note||'')
+    if(ok){
+      setDayDone(persistedDone)
+      if(complete)setLessonStage(4)
     }
   }
   async function saveMetric(e) {
