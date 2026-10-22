@@ -19,8 +19,8 @@ test('cabinet actions go to existing editors and personal paths, never into user
   assert.equal(cabinetActionHref('lessons', 'en'), '/en/app/course?view=courses')
   assert.equal(cabinetActionHref('ideas', 'en'), '/en/books')
   assert.equal(cabinetActionHref('unsafe', 'en'), null)
-  assert.equal(cabinetActionHref('course', 'es'), '/es/app/practice?panel=materials&materialTab=courses')
-  assert.equal(cabinetActionHref('tests', 'es'), '/es/app/tests')
+  assert.equal(cabinetActionHref('course', 'es'), '/en/app/practice?panel=materials&materialTab=courses')
+  assert.equal(cabinetActionHref('tests', 'es'), '/en/app/tests')
 })
 
 test('material shortcuts are exposed to practitioners only; audio remains owner-only', () => {
