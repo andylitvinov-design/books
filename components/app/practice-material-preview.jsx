@@ -28,7 +28,7 @@ export default function PracticeMaterialPreview({
       width={256} height={160} sizes="116px" loading="lazy" alt=""
       onError={()=>setImageFailed(true)}/>}
     {kind==='video'&&mediaUrl&&<SessionPrivateVideoPoster src={mediaUrl}/>}
-    {((kind==='image'&&imageFailed)||(kind==='youtube'&&!previewImage))&&
+    {(kind==='audio'||(kind==='image'&&imageFailed)||(kind==='youtube'&&!previewImage))&&
       <span className={styles.thumbnailFallback}>
         {kind==='image'?<ImageIcon size={25}/>:kind==='audio'?<Headphones size={25}/>:<Film size={25}/>}
         {isVimeo&&<small>Vimeo</small>}
