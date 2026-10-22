@@ -444,7 +444,7 @@ test('Business mirrors Reiki / OPORA: skill recap, one thought per day, real act
   assert.ok(ui.includes(".filter(previous=>course?.days?.[previous]?.done)"))
   assert.ok(ui.includes('selected.resultLabel'))
   assert.ok(ui.includes('selected.doneWhen'))
-  assert.ok(ui.includes('day<90?chooseDay(day+1):setTab(\'report\')'))
+  assert.ok(ui.includes('day<90?chooseDay(day+1):changeTab(\'report\')'))
   assert.ok(ui.includes('savedDay.done&&!hasUnsavedDay'))
   assert.ok(ui.includes('aria-pressed={reflectionChoice===value}'))
   assert.ok(ui.includes('reflectionChoice,contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION'))
