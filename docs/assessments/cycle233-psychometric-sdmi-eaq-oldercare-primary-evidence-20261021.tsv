@@ -1,0 +1,9 @@
+stable_key	edition	item_count	respondent_locale_verified	locale_evidence	primary_DOI	population_validation_limits	commercial_digital_rights	activation_status
+sdmi-membrivesbarniol2026-caes29-ipds	SDMI-IPDS-CA-ES-29	29	CA-ES	independent respondent-edition study; same cohort as ES	10.1111/jar.70295	n266 Catalan interviews, N510 combined	permission_required	research_only
+sdmi-membrivesbarniol2026-eses29-itda	SDMI-ITDA-ES-ES-29	29	ES-ES	independent respondent-edition study; same cohort as Catalan	10.1111/jar.70295	n244 Spanish interviews, N510 combined	permission_required	research_only
+eaq22-sala2026-eses22-youngadult	EAQ-ES-ES-22	22	ES-ES	studied respondent-language adaptation	10.1186/s12889-026-29761-4	n292 Spain, gender metric invariance NOT supported	permission_required	research_only
+stdssoa-zhao2026-cn19-olderadult	StDSS-OA-19	19	unverified	China site, exact item-language not verified	10.1186/s12888-026-08742-2	n354 older nursing-home residents, 5 factors (labels pending)	permission_required	research_only
+nvbts-kuleyin2026-tr30-topics	NVBTS-30	30	unverified	Türkiye setting, exact respondent edition not verified	10.1186/s12912-026-05530-x	n890 combined with NVBMS and NVBOS; five factors	permission_required	research_only
+nvbms-kuleyin2026-tr12-methods	NVBMS-12	12	unverified	Türkiye setting, exact respondent edition not verified	10.1186/s12912-026-05530-x	n890 shared study; three factors	permission_required	research_only
+nvbos-kuleyin2026-tr10-negativeoutcomes	NVBOS-10	10	unverified	Türkiye setting, exact respondent edition not verified	10.1186/s12912-026-05530-x	n890 shared study; one factor	permission_required	research_only
+ciis-andres2026-esco9-colombianwomen	CII-S-ES-CO-9	9	ES-CO	studied respondent-language adaptation	10.1016/j.bodyim.2026.102142	n505 Colombian women; two factors curvy and breast size	permission_required	research_only
