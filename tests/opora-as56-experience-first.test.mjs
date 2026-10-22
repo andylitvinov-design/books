@@ -117,7 +117,7 @@ test('day one restores five opening screens and all days add untracked support a
     }
     assert.match(textOf(h.tree),new RegExp(d.saved))
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
-    assert.equal(findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),null,
+    assert.ok(!findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),
       'Do not show a second meditation after congratulations')
     await click(h,lang==='ru'?'Посмотреть, что дальше':"See what's next")
     // A single long route replaces the duplicated 3-day teaser and two
