@@ -55,3 +55,13 @@ test("The owner still selects the published RU\/EN recording through the existin
   assert.match(ownerUi,/lesson/i)
   assert.doesNotMatch(player,/secretKey|createSignedUploadUrl/)
 })
+
+test("Historical encrypted progress migration tables keep their original ordinal positions", () => {
+  const registry = read("data/academy/energywork-ai-schema.js")
+  const start = registry.indexOf("// Removed lesson-five screens must not reset existing p9")
+  assert.ok(start > 0)
+  const legacy = registry.slice(start)
+  assert.doesNotMatch(legacy,/\b(?:flight|tan|kun|ygg)-audio\b/)
+  assert.match(legacy,/const PREVIOUS_FLIGHT = Object\.freeze\(\['flight-01','flight-02'/)
+  assert.match(legacy,/const P9_FLIGHT = Object\.freeze\(\['flight-01','flight-02'/)
+})
