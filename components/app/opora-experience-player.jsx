@@ -43,8 +43,14 @@ const WORDS={
     feelingBetter:'Стало немного легче',feelingSame:'Примерно так же',feelingPartial:'Есть небольшие изменения',feelingHard:'Стало некомфортно',
     feelingThanks:'Спасибо, что заметили. Любой ответ подходит; состояние не оценивается баллами.',
     quoteText:'Откликается ли вам эта мысль?',
-    agree:'Откликается',unsure:'Пока не уверен(а)',disagree:'Не согласен(на)',
+    agree:'Откликается',unsure:'Пока не уверен(а)',disagree:'Не согласен(на)',reflect:'Надо подумать',
     quoteThanks:'Это только ваша позиция, правильного ответа нет.',
+    reactionReplies:{
+      agree:'Эта мысль вам близка. Возьмите её с собой, если она поддерживает.',
+      disagree:'Необязательно соглашаться. Ваш собственный взгляд важен.',
+      unsure:'Можно пока оставить вопрос открытым.',
+      reflect:'Вы можете вернуться к этой мысли позже. Спешить не нужно.',
+    },
     keepText:'Выберите одно напоминание на сегодня.',
     plan:'Хочу запомнить этот вариант',noPlan:'Пока без плана',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
@@ -108,8 +114,14 @@ const WORDS={
     feelingBetter:'A little easier',feelingSame:'About the same',feelingPartial:'A small shift',feelingHard:'Uncomfortable',
     feelingThanks:'Thank you for noticing. There is no score or right answer.',
     quoteText:'Does this idea resonate with you?',
-    agree:'This resonates',unsure:'Not sure yet',disagree:'I disagree',
+    agree:'This resonates',unsure:'Not sure yet',disagree:'I disagree',reflect:'Need to think',
     quoteThanks:'Your response is yours. There is no correct answer.',
+    reactionReplies:{
+      agree:'This thought feels relevant. You may keep it if it supports you.',
+      disagree:'You do not have to agree. Your own perspective matters.',
+      unsure:'It is fine to leave this question open.',
+      reflect:'You can return to this thought later. There is no hurry.',
+    },
     keepText:'Choose one gentle reminder for today.',
     plan:'Keep this reminder',noPlan:'No plan today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
@@ -171,7 +183,13 @@ WORDS.es = {
   gentle:'Si te incomoda, mira un objeto neutro.',
   feelText:'Nota si algo cambió, aunque sea un poco.',
   feelingBetter:'Un poco mejor',feelingSame:'Más o menos igual',feelingPartial:'Un pequeño cambio',feelingHard:'Incómodo',
-  quoteText:'¿Te resuena esta idea?',agree:'Me resuena',unsure:'Aún no sé',disagree:'No estoy de acuerdo',
+  quoteText:'¿Te resuena esta idea?',agree:'Me resuena',unsure:'Aún no sé',disagree:'No estoy de acuerdo',reflect:'Necesito pensarlo',
+  reactionReplies:{
+    agree:'Esta idea te resulta cercana. Puedes conservarla si te ayuda.',
+    disagree:'No tienes que estar de acuerdo. Tu propia perspectiva importa.',
+    unsure:'Puedes dejar la pregunta abierta por ahora.',
+    reflect:'Puedes volver a esta idea más adelante, sin prisa.',
+  },
   keepText:'Elige un recordatorio amable para hoy.',plan:'Recordar esta idea',noPlan:'Hoy sin plan',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
   audioTitle:'Dos minutos de calma',audioKicker:'UN FINAL SUAVE',audioNext:'Escuchar las olas',
@@ -274,6 +292,22 @@ function OpeningRating({label,value,onChange,disabled,low,high}){
   </>
 }
 
+function renderQuoteReaction({words,value,onChange,disabled,kind,label}){
+  return <div className={styles.quoteReaction} data-opora-quote-reaction={kind}>
+    <p className={styles.reactionPrompt}>{label}</p>
+    <div className={styles.chips} role="group" aria-label={label}>
+      {[[words.agree,'agree'],[words.disagree,'disagree'],
+        [words.unsure,'unsure'],[words.reflect,'reflect']].map(([text,answer])=>
+        <button key={answer} type="button" disabled={disabled}
+          aria-pressed={value===answer} onClick={()=>onChange(value===answer?undefined:answer)}>
+          {text}
+        </button>)}
+    </div>
+    {value&&<p className={styles.reactionReply} role="status" aria-live="polite">
+      {words.reactionReplies[value]||words.quoteThanks}
+    </p>}
+  </div>
+}
 
 /**
  * Read-only course roadmap. Previewing a locked card never changes the
@@ -392,6 +426,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const quote=cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
   const rating=answers.reflection
   const vote=answers.aphorism
+  const supportVote=answers.supportResponse
   const chosenFeeling=t.moods.find(item=>item.value===welcomeFeeling)
   const chosenFeelingLabel=cycle.day===1
     ?welcomeFeelingChoices(cycle.activeGoal||cycle.primaryGoal,lang).find(item=>item.id===welcomeFeeling)?.label
@@ -641,8 +676,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </>}
           </>}
           {moment==='support'&&<div className={styles.supportMessage} data-opora-daily-support={cycle.day}>
-             <p className={styles.supportBody}>{support?.body}</p>
-           </div>}
+              <p className={styles.supportBody}>{support?.body}</p>
+              {renderQuoteReaction({words:t,value:supportVote,disabled:locked,kind:'support',
+                label:t.quoteText,onChange:value=>setAnswers(a=>({...a,supportResponse:value}))})}
+            </div>}
            {moment==='practice'&&<>
             {!neutralSupport&&cycle.day===1&&dayCopy?.purpose&&
               <div className={styles.coreWhy} data-opora-core-purpose="true">
@@ -671,13 +708,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </>}
           {moment==='affirmation'&&<>
             <blockquote className={styles.quotation}>{quote}</blockquote>
-            <p className={styles.subtle}>{cycle.day===1?opening.thoughtLead:t.quoteText}</p>
-            <div className={styles.chips} role="group" aria-label={t.quote}>
-              {[[t.agree,'agree'],[t.unsure,'unsure'],[t.disagree,'disagree']].map(([label,value])=>
-                <button type="button" key={value} disabled={locked}
-                  aria-pressed={vote===value} onClick={()=>setAnswers(a=>({...a,aphorism:value}))}>{label}</button>)}
-            </div>
-            {vote&&cycle.day===1&&<p className={styles.soft} role="status">{opening.response}</p>}
+            {renderQuoteReaction({words:t,value:vote,disabled:locked,kind:'aphorism',
+              label:cycle.day===1?opening.thoughtLead:t.quoteText,
+              onChange:value=>setAnswers(a=>({...a,aphorism:value}))})}
           </>}
           {moment==='save'&&<>
             <p className={styles.lead}>{t.keepText}</p>
