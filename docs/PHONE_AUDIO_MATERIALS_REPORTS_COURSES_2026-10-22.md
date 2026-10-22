@@ -26,11 +26,13 @@ phone/browser/provider playback checks pass.
    Personal consultation recordings remain in the separate client-session
    upload path; scope=practitioner stays hidden.
 5. **My Practice → Courses → editor → Audio slide**: upload directly from phone
-   with the same format allowlist, or, as verified owner/admin, select an
+   with the same format allowlist, or, as the verified owner account, select an
    existing general library audio and use it on the current slide. The import
    copies the validated educational original between two PRIVATE buckets,
-   creates a course-owned media ID, is quota-bound and checks both owner
-   identities. Course publishing remains an independent explicit decision.
+   creates a course-owned media ID, is quota-bound and checks the owner's verified email and course ownership. The trusted admin
+   cookie is deliberately scoped only to /admin and /api/admin, so the
+   /api/app course endpoint enforces the server-side practitioner allowlist
+   instead of incorrectly relying on that cookie. Course publishing remains an independent explicit decision.
 6. **Reiki Practitioner intro audio** is unchanged: its private owner drafts,
    lesson/language folders and explicit approval for educational public copies
    remain separate. Never route client recordings into its public bucket.
