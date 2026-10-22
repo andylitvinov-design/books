@@ -129,3 +129,301 @@
  .resourceMain{gap:8px}
  .resourceCopy h4{font-size:13px}
 }
+
+/* Owner-only course picker. Private recording bytes never pass through this UI. */
+.courseFolder{display:flex;align-items:center;gap:13px;min-width:0;margin:12px 0;padding:16px;
+  border:1px solid #ddd4c1;border-radius:17px;background:linear-gradient(125deg,#fdf9f0,#f4eee3)}
+.courseFolderIcon{display:grid;place-items:center;flex:none;width:49px;height:49px;border-radius:14px;
+  background:#e7ddd0;color:#79583f}
+.courseFolderCopy{flex:1;min-width:0;overflow-wrap:anywhere}
+.courseFolderCopy h3{margin:0 0 6px;font:700 19px/1.25 Georgia,serif;color:#493b30}
+.courseFolderCopy p{margin:0 0 7px;color:#6f6255;font-size:13px;line-height:1.5}
+.courseFolderCopy small{font-size:12px;color:#796d5e}
+.courseFolderButton{display:flex;align-items:center;justify-content:center;gap:5px;flex:none;
+  min-height:44px;padding:10px 12px;border:1px solid #725944;border-radius:11px;
+  background:#725944;color:#fff;font:700 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.courseFolderButton:disabled{opacity:.6;cursor:not-allowed}
+:global(.hh-app) .shell .courseFolderButton{background:#725944;color:#fff;border-color:#725944;min-height:44px}
+@media(max-width:640px){.courseFolder{align-items:flex-start;flex-wrap:wrap;padding:13px;gap:10px}
+  .courseFolderButton{flex:1 0 100%}.courseFolderIcon{width:42px;height:42px}
+  .courseFolderCopy h3{font-size:17px}}
+@media(max-width:360px){.tabs button{gap:2px;font-size:10px;padding:6px 2px}.courseFolder{padding:10px}}
+
+/* Approved practitioner V4: one compact five-format library (2026-10-21). */
+.shell{--v4-cream:#fffcf7;--v4-teal:#0b7776;--v4-stroke:#e3d4c3;
+ padding:clamp(11px,2.5vw,20px);border:1px solid var(--v4-stroke);
+ border-radius:21px;background:linear-gradient(150deg,#fffcf7,#f8f2e8);
+ box-shadow:0 8px 26px #543b250b;color:#352a22}
+.hubHeader{margin:0 0 13px}
+.hubHeader .eyebrow{font:750 10px/1.5 system-ui,sans-serif;letter-spacing:.11em;color:#9b7256;margin:0 0 3px}
+.hubHeader h3{font:400 clamp(25px,4vw,32px)/1.13 Georgia,serif;color:#38291f;margin:0 0 4px}
+.hubHeader p{font:400 12px/1.45 system-ui,sans-serif;color:#786b5e;margin:0}
+.shell .tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 0 13px;
+ background:transparent;border:0;padding:0;border-radius:0}
+.shell .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+ min-width:0;min-height:66px;padding:9px 2px;border:1px solid #e6d9c8;border-radius:13px;
+ color:#705949;background:#fffaf4;box-shadow:none;cursor:pointer;white-space:normal}
+.shell .tabs button svg{display:block;flex:none;width:20px;height:20px}
+.shell .tabs button span{font:720 11px/1.2 system-ui,sans-serif;overflow:visible;text-overflow:clip;
+ overflow-wrap:anywhere}
+.shell .tabs button[aria-selected="true"]{background:#daefeb;border-color:#8cbdb6;
+ color:#086a69;box-shadow:0 2px 8px #14615b13}
+.shell .tabs button:focus-visible,.mediaRow:focus-visible,.searchWrap:focus-within{
+ outline:3px solid #63aba0;outline-offset:2px}
+.searchWrap{display:flex;align-items:center;gap:7px;margin:0 0 13px;padding:0 12px;
+ min-height:43px;border:1px solid #e2d8cc;border-radius:12px;
+ background:#f5f0e8;color:#927f6f}
+.searchWrap input{flex:1;min-width:0;width:100%;padding:8px 0;background:transparent;color:#352a22;
+ border:0;box-shadow:none;outline:none;font:400 14px/1.45 system-ui,sans-serif}
+.searchWrap input::placeholder{color:#928a82}
+.visuallyHidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+ clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.activePanel{min-height:80px;min-width:0}
+.activePanel .body{color:#352a22}
+.activePanel .intro{font-size:12px;color:#79695c;margin:0 0 12px}
+.activePanel .heading{gap:8px}
+.activePanel .heading h3{font:650 20px/1.2 Georgia,serif;color:#38291f}
+.activePanel .heading h3 small{font:600 12px/1 system-ui,sans-serif;color:#8b7c6d}
+.mediaRows{display:grid;gap:8px}
+.mediaRow{display:flex;align-items:center;width:100%;gap:12px;text-align:left;min-width:0;
+ padding:10px;border:1px solid #ebdfd2;background:#fffefa;border-radius:14px;
+ cursor:pointer;color:#0a7777;min-height:73px;box-shadow:0 2px 7px #59391f08}
+.mediaRow:hover{background:#f8f0e7;border-color:#bbd3ca}
+.mediaRow:disabled{opacity:.55;cursor:not-allowed}
+.materialArtwork{display:grid;place-items:center;flex:none;width:48px;height:48px;
+ border-radius:12px;background:linear-gradient(135deg,#e1ede6,#f5e9df);color:#327e74}
+.mediaRowCopy{display:grid;flex:1;gap:5px;min-width:0;overflow-wrap:anywhere}
+.mediaRowCopy strong{color:#3a2c23;font:700 15px/1.3 Georgia,serif}
+.mediaRowCopy small{font:500 11px/1.35 system-ui,sans-serif;color:#877567}
+.mediaRow > svg:last-child{flex:none}
+.activePanel .privacyNote{display:flex;align-items:center;gap:7px;
+ color:#756b5c;margin-top:12px;font:500 11px/1.4 system-ui,sans-serif}
+.activePanel .primary{background:#087978;border:1px solid #087978;color:#fff;
+ min-height:42px;border-radius:11px;font:750 12px/1.3 system-ui,sans-serif}
+:global(.hh-app) .shell .activePanel .primary{background:#087978;border-color:#087978}
+.activePanel .resourceRow{background:#fffefa;border-color:#e6d8c9}
+.activePanel .resourceCopy h4{color:#352e26}
+.privateLibrary{margin-top:14px;padding:12px;border:1px solid #e3d4c3;
+ border-radius:13px;background:#fffefa}
+.privateLibrary > summary{display:flex;align-items:center;gap:8px;color:#705848;
+ font:750 12px/1.4 system-ui,sans-serif;cursor:pointer;min-height:36px}
+.privateLibrary[open] > summary{margin-bottom:12px}
+@media(max-width:430px){
+ .shell{padding:10px;border-radius:16px}
+ .shell .tabs{gap:4px}
+ .shell .tabs button{min-height:59px;border-radius:10px;padding:7px 1px}
+ .shell .tabs button span{font-size:10px}
+ .shell .tabs button svg{width:19px;height:19px}
+ .mediaRow{min-height:65px;gap:9px;padding:9px}
+ .materialArtwork{width:42px;height:42px}
+ .mediaRowCopy strong{font-size:14px}
+}
+@media(max-width:350px){
+ .shell .tabs button span{font-size:9px}
+ .shell .tabs button svg{display:block;width:18px;height:18px}
+ .shell .tabs button{min-height:57px}
+ .mediaRowCopy strong{font-size:13px}
+}
+
+
+/* Practice V4.1: one well-composed materials surface; real Reiki first. */
+.shell{padding:17px;background:linear-gradient(135deg,#fffcf7,#f9f2e8);border-color:#dfcbb7;
+ border-radius:19px;box-shadow:0 7px 20px #45331d0b}
+.hubHeader{padding-right:89px;margin:0 0 15px}
+.hubHeader .eyebrow{font-size:9px;letter-spacing:.13em;margin-bottom:3px}
+.hubHeader h3{font-size:clamp(29px,5vw,36px);letter-spacing:-.025em}
+.hubHeader p{font-size:12px;line-height:1.4}
+.shell .tabs{gap:7px;margin-bottom:13px}
+.shell .tabs button{min-height:69px;border-radius:13px;gap:6px;background:#fffcf8;border-color:#e3d5c6}
+.shell .tabs button:hover{background:#f4eee6;border-color:#c8ad97}
+.shell .tabs button[aria-selected="true"]{color:#096866;background:#d9eee9;border-color:#8cbbb2;box-shadow:inset 0 -2px #0d7772}
+.searchWrap{min-height:44px;background:#f6f1e9;border-color:#e7dacf}
+.featuredCourse{display:grid;gap:9px;margin:0 0 11px}
+.featureKicker{margin:0;color:#876c54;font:760 10px/1.3 system-ui,sans-serif;letter-spacing:.075em}
+.mediaRow.featureRow{padding:8px 10px;min-height:90px;background:#fffefa;border-color:#e6d8c8;gap:11px}
+.mediaRow.featureRow:hover{background:#fbf6ee;border-color:#8bbcb1}
+.reikiArtwork{width:73px;height:73px;border-radius:12px;
+ background:linear-gradient(120deg,#31271d47,#31271d12),
+ url('/images/holistic-house/reiki-practitioner-sunrise.webp') center/cover;
+ box-shadow:inset 0 0 0 1px #e6d3b644;color:#fff}
+.reikiArtwork svg{filter:drop-shadow(0 1px 3px #25190bba)}
+.featureRow .mediaRowCopy{gap:4px}
+.featureRow .mediaRowCopy strong{font:760 16px/1.25 system-ui,sans-serif;color:#25455b}
+.featureRow .mediaRowCopy small{font:500 11px/1.35 system-ui,sans-serif;color:#796b5e}
+.courseAccess{display:inline-flex;align-items:center;gap:3px;width:max-content;max-width:100%;
+ border-radius:999px;background:#e3f3ed;color:#0e665f;padding:4px 9px;
+ font:760 10px/1.2 system-ui,sans-serif}
+.featuredCourse .privacyNote{margin:1px 0 0;color:#827164}
+.courseComposer{display:grid;gap:8px}
+.composerToggle{display:flex;align-items:center;text-align:left;gap:11px;width:100%;min-height:61px;
+ padding:10px 12px;border:1px solid #0b7976;border-radius:13px;
+ background:linear-gradient(105deg,#0b7a77,#0b7774);color:#fff;cursor:pointer}
+.composerToggle:hover{background:linear-gradient(105deg,#096965,#08706e)}
+.composerToggle:focus-visible{outline:3px solid #8cc6bc;outline-offset:2px}
+.composerIcon{display:grid;place-items:center;flex:none;width:34px;height:34px;
+ border:1px solid #ffffff69;border-radius:9px;background:#ffffff17}
+.composerCopy{display:grid;flex:1;gap:3px;min-width:0}
+.composerCopy strong{font:740 13px/1.25 system-ui,sans-serif;color:#fff}
+.composerCopy small{font:500 10px/1.3 system-ui,sans-serif;color:#f1faf8}
+.composerToggle > svg:last-child{flex:none;transition:transform .16s}
+.composerExpanded{transform:rotate(90deg)}
+.composerPanel{min-width:0}
+@media(max-width:430px){
+ .shell{padding:12px;border-radius:16px}
+ .hubHeader{padding-right:75px;margin-bottom:12px}
+ .hubHeader h3{font-size:29px}
+ .shell .tabs{gap:5px;margin-bottom:11px}
+ .shell .tabs button{min-height:62px;padding:6px 1px;border-radius:10px}
+ .shell .tabs button span{font-size:10px}
+ .shell .tabs button svg{width:19px;height:19px}
+ .searchWrap{min-height:42px;margin-bottom:11px}
+ .mediaRow.featureRow{min-height:80px;padding:7px}
+ .reikiArtwork{width:62px;height:62px}
+ .featureRow .mediaRowCopy strong{font-size:14px}
+ .featureRow .mediaRowCopy small{font-size:10px}
+ .composerToggle{min-height:58px;padding:9px;gap:9px}
+ .composerCopy strong{font-size:12px}
+}
+@media(max-width:350px){
+ .hubHeader{padding-right:65px}
+ .hubHeader h3{font-size:26px}
+ .shell .tabs{gap:3px}
+ .shell .tabs button span{font-size:9px}
+ .shell .tabs button svg{width:17px;height:17px}
+ .reikiArtwork{width:54px;height:54px}
+ .featureRow .mediaRowCopy strong{font-size:13px}
+ .featureRow .mediaRowCopy small{font-size:9px}
+ .composerIcon{width:29px;height:29px}
+ .composerCopy strong{font-size:11px}
+}
+
+/* Phone-first resource hub: five real categories remain accessible, but optional
+   search and long edit forms no longer push the video action off the screen. */
+@media(max-width:430px){
+ .shell{padding:10px;border-radius:15px}
+ .hubHeader{margin-bottom:7px}
+ .hubHeader .eyebrow{display:none}
+ .hubHeader h3{font-size:25px;line-height:1.08}
+ .hubHeader p{font-size:11px}
+ .shell .tabs{gap:4px;margin-bottom:7px}
+ .shell .tabs button{min-height:48px;padding:5px 1px;border-radius:10px;gap:2px}
+ .shell .tabs button svg{width:17px;height:17px}
+ .shell .tabs button span{font-size:10px}
+ .searchWrap{min-height:38px;margin-bottom:7px}
+ .activePanel .intro{margin-bottom:7px}
+ .activePanel .heading{margin-bottom:7px}
+ .activePanel .heading h3{font-size:17px}
+ .activePanel .resourceRow{padding:8px}
+ .activePanel .empty{padding:10px;font-size:12px}
+}
+@media(max-width:350px){
+ .shell .tabs button{min-height:46px}
+ .shell .tabs button span{font-size:9px}
+}
+
+/* A site-file upload belongs to the existing single profile presentation slot.
+   Show it in Video so a real saved file never looks like an empty library. */
+.uploadedPresentation{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:10px;
+ min-width:0;border:1px solid #c0dcd0;border-radius:11px;background:#eef7f0;color:#2f6955}
+.uploadedPresentation svg{flex:none}
+.uploadedPresentation span{display:grid;min-width:0;gap:3px}
+.uploadedPresentation strong{font:750 12px/1.35 system-ui,sans-serif}
+.uploadedPresentation small{font:550 11px/1.3 system-ui,sans-serif;color:#5e7467;overflow-wrap:anywhere}
+
+
+/* V4.2 first-screen actions: one selected material, one clear action, short list.
+   Keeps the six-item app bottom navigation untouched. */
+.shell{padding:10px 12px 12px;box-shadow:none}
+.hubHeader{margin:0 0 9px;padding-right:72px}
+.hubHeader .eyebrow,.hubHeader > p:last-child{display:none}
+.hubHeader h3{font:400 24px/1.2 Georgia,serif;letter-spacing:-.025em}
+.shell .tabs{gap:5px;margin-bottom:9px}
+.shell .tabs button{min-height:52px;padding:5px 2px;border-radius:11px;gap:3px}
+.shell .tabs button svg{width:18px;height:18px}
+.shell .tabs button span{font-size:10px;line-height:1.17}
+.actionBar{display:flex;align-items:stretch;gap:7px;min-width:0;margin:0 0 10px}
+.actionPrimary,.actionSecondary,.actionSearch{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-width:0;min-height:47px;border-radius:11px;padding:8px 12px;cursor:pointer;
+ font:760 13px/1.2 system-ui,sans-serif;transition:background .15s ease}
+.actionPrimary{flex:1 1 auto;background:#0b7976;border:1px solid #0b7976;color:#fff;white-space:normal}
+.actionSecondary{flex:0 1 auto;background:#fffdfa;border:1px solid #d9c6b2;color:#745744;font-size:11px}
+.actionSecondary[aria-pressed="true"]{background:#dcefe8;color:#086c66;border-color:#8bbdb3}
+.actionSearch{flex:0 0 46px;width:46px;padding:0;border:1px solid #dcc9b7;background:#fffdfa;color:#786453}
+.actionSearch[aria-expanded="true"]{background:#dcefe8;color:#086c66;border-color:#8bbdb3}
+.actionBar button:disabled{opacity:.55;cursor:not-allowed}
+.actionBar button:focus-visible,.showMore:focus-visible,.rules summary:focus-visible{outline:3px solid #63aba0;outline-offset:2px}
+:global(.hh-app) .shell .actionPrimary{background:#0b7976;color:#fff;border:1px solid #0b7976;min-height:47px}
+:global(.hh-app) .shell .actionSecondary{background:#fffdfa;color:#745744;border:1px solid #d9c6b2;min-height:47px}
+:global(.hh-app) .shell .actionSearch{background:#fffdfa;color:#786453;border:1px solid #dcc9b7;min-height:47px}
+:global(.hh-app) .shell .actionSearch[aria-expanded="true"],:global(.hh-app) .shell .actionSecondary[aria-pressed="true"]{background:#dcefe8;color:#086c66}
+.actionBar svg{flex:none}
+.searchWrap{min-height:42px;margin:0 0 8px}
+.sectionCount{margin:1px 0 7px;font:700 11px/1.35 system-ui,sans-serif;color:#8b705c}
+.mediaRows{gap:6px}
+.mediaRow,.mediaRow.featureRow{min-height:65px;padding:7px 9px;border-radius:12px;gap:9px}
+.materialArtwork{width:40px;height:40px;border-radius:10px}
+.mediaRowCopy{gap:2px}
+.mediaRowCopy strong{font:700 13px/1.24 Georgia,serif}
+.mediaRowCopy small{font-size:10px}
+.mediaRow.featureRow{min-height:75px}
+.reikiArtwork{width:58px;height:58px}
+.featureRow .mediaRowCopy strong{font-size:14px}
+.featureRow .mediaRowCopy small{font-size:10px}
+.featuredCourse{gap:4px;margin:0}
+.featuredCourse[hidden]{display:none!important}
+.featureKicker{font-size:10px;letter-spacing:.04em}
+.featuredCourse .privacyNote{font-size:10px;margin:5px 0 0}
+.courseAccess{font-size:10px;padding:3px 7px}
+.showMore{display:flex;justify-content:center;width:100%;min-height:35px;align-items:center;
+ border:0;background:transparent;color:#0b7776;font:730 12px/1.2 system-ui,sans-serif;
+ margin-top:7px;padding:5px;cursor:pointer}
+:global(.hh-app) .shell .showMore{border:0;background:transparent;color:#0b7776;min-height:35px}
+.activePanel{min-height:0}
+.activePanel .empty{margin:0;padding:13px 10px;border-radius:11px;text-align:center;font-size:12px}
+.activePanel .resourceRow{padding:7px}
+.compactReview{display:flex;align-items:center;justify-content:space-between;gap:7px;
+ padding:7px 0;margin-top:7px;border-top:1px solid #e4d7c8}
+.compactReview span{font:620 11px/1.3 system-ui,sans-serif;color:#786a5f}
+.compactReview button{min-height:39px;font-size:11px;padding:7px 9px}
+.rules{margin:7px 0 0;color:#796c5d;font-size:11px}
+.rules summary{cursor:pointer;min-height:31px;display:flex;align-items:center}
+.rules p{margin:5px 0;line-height:1.45}
+.privateLibrary{margin-top:7px;padding:8px 10px}
+.privateLibrary > summary{min-height:32px}
+@media(max-width:430px){
+ .shell{padding:9px 10px 11px}
+ .hubHeader{margin-bottom:8px;padding-right:70px}
+ .hubHeader h3{font-size:23px}
+ .shell .tabs{gap:4px;margin-bottom:8px}
+ .shell .tabs button{min-height:51px;padding:5px 1px}
+ .shell .tabs button svg{width:17px;height:17px}
+ .shell .tabs button span{font-size:10px}
+ .actionBar{gap:6px;margin-bottom:9px}
+ .actionPrimary,.actionSecondary{padding:8px 9px;font-size:12px}
+ .actionSecondary{font-size:10px}
+ .actionSearch{flex-basis:42px;width:42px}
+ .mediaRow,.mediaRow.featureRow{min-height:60px;padding:6px 8px}
+ .mediaRowCopy strong{font-size:13px}
+}
+@media(max-width:350px){
+ .hubHeader h3{font-size:22px}
+ .shell .tabs{gap:3px}
+ .shell .tabs button{min-height:49px}
+ .shell .tabs button span{font-size:9px}
+ .actionPrimary,.actionSecondary{font-size:10px;padding:7px 6px;gap:4px}
+ .actionBar svg{width:15px;height:15px}
+ .actionSearch{flex-basis:40px;width:40px}
+ .reikiArtwork{width:48px;height:48px}
+ .mediaRowCopy strong{font-size:12px}
+}
+
+/* V4.3: the Video workbench keeps rare privacy options inside one disclosure. */
+.advancedOptions{margin:7px 0 0;border-top:1px solid #e8d9cb}
+.advancedOptions > summary{display:flex;align-items:center;min-height:44px;
+ padding:7px 3px;color:#836955;cursor:pointer;
+ font:700 11px/1.35 system-ui,sans-serif;list-style:none}
+.advancedOptions > summary::-webkit-details-marker{display:none}
+.advancedOptions > summary::after{content:'⌄';margin-left:auto;font-size:16px;color:#087a77}
+.advancedOptions[open] > summary::after{transform:rotate(180deg)}
+.advancedOptions :is(.rules,.privateLibrary){margin:6px 0 0}
+.advancedOptions > summary:focus-visible{outline:3px solid #63aba0;outline-offset:2px}

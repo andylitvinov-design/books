@@ -4,7 +4,7 @@ import styles from './crm-email-tools.module.css'
 
 const COPY={
  en:{
-  title:'SMS provider setup',connected:'Sending is enabled',pilot:'Test-only mode',
+  title:'SMS provider setup',stepsTitle:'To activate real carrier SMS:',step1:'1. Open Twilio, confirm sender identity, obtain a two-way number and Messaging Service (may incur charges).',step2:'2. Add the Twilio Account SID, Auth Token and Messaging Service SID only as Production secrets in Vercel.',step3:'3. Check your public sender contact details and Twilio STOP/HELP. Run a test to an owned number before requesting live activation.',vercel:'Open Vercel Production secrets',senderPage:'Check public contact page',costNote:'Manual SMS from your own phone costs no API fees, but your mobile plan may charge. Automatic carrier SMS uses paid provider fees.',connected:'Sending is enabled',pilot:'Test-only mode',
   off:'Sending is OFF until a verified Twilio account and sender are connected.',
   missing:'Missing server-side configuration',ready:'Credentials are present. Verify the service before a controlled SMS test.',
   check:'Check Twilio connection (no SMS sent)',checking:'Checking configuration…',
@@ -24,7 +24,7 @@ const COPY={
   yes:'Yes',no:'Not verified',setup:'Connection checks',
  },
  ru:{
-  title:'Подключение SMS-провайдера',connected:'Отправка разрешена',pilot:'Только тестовый режим',
+  title:'Подключение SMS-провайдера',stepsTitle:'Чтобы заработали настоящие автоматические SMS:',step1:'1. Откройте Twilio, подтвердите отправителя, подключите номер для ответных SMS и Messaging Service (возможна оплата).',step2:'2. Добавьте Account SID, Auth Token и Messaging Service SID только в защищённые Production-настройки Vercel.',step3:'3. Проверьте публичные контакты отправителя, STOP/HELP и доставку одной тестовой SMS на свой номер. До этого не включайте массовую отправку.',vercel:'Открыть защищённые переменные Vercel',senderPage:'Проверить контакты отправителя',costNote:'Ручные SMS с вашего телефона не требуют платного API, но мобильный оператор может брать плату. Автоматические SMS платные.',connected:'Отправка разрешена',pilot:'Только тестовый режим',
   off:'Отправка отключена до подключения проверенного Twilio-аккаунта и номера.',
   missing:'Недостающие защищённые настройки сервера',ready:'Ключи добавлены. Проверьте сервис перед тестовой SMS.',
   check:'Проверить Twilio без отправки SMS',checking:'Проверяю подключение…',
@@ -44,7 +44,7 @@ const COPY={
   yes:'Да',no:'Не подтверждено',setup:'Проверка подключения',
  },
  es:{
-  title:'Conexión del proveedor SMS',connected:'Envío habilitado',pilot:'Solo modo de prueba',
+  title:'Conexión del proveedor SMS',stepsTitle:'Para activar SMS reales con entrega automática:',step1:'1. Abre Twilio, verifica la identidad del remitente y configura un número bidireccional y Messaging Service (pueden tener costo).',step2:'2. Introduce Account SID, Auth Token y Messaging Service SID como secretos de Production en Vercel.',step3:'3. Confirma datos públicos del remitente y STOP/HELP, y prueba una entrega en un teléfono tuyo antes de habilitar clientes.',vercel:'Abrir secretos Production de Vercel',senderPage:'Revisar datos públicos de contacto',costNote:'Los SMS manuales no cobran API, pero tu operador puede cobrar. Los SMS automáticos usan un proveedor de pago.',connected:'Envío habilitado',pilot:'Solo modo de prueba',
   off:'El envío está desactivado hasta conectar Twilio y un remitente verificado.',
   missing:'Configuración privada del servidor pendiente',ready:'Las credenciales están presentes. Verifica el servicio antes del SMS de prueba.',
   check:'Verificar Twilio (no envía SMS)',checking:'Verificando…',
@@ -93,7 +93,15 @@ export default function CrmSmsSetup({locale='en',setup,onAction,busy=false}) {
   <p><code style={{overflowWrap:'anywhere'}}>{setup.webhookUrl}</code></p>
   <button type="button" disabled={busy} onClick={copyWebhook}>{c.copy}</button>
   {copyMessage&&<p role="status">{copyMessage}</p>}
-  <p><a href="https://console.twilio.com/" target="_blank" rel="noopener noreferrer">{c.how} ↗</a></p>
+  <h4>{c.stepsTitle}</h4>
+  <ol>
+   <li>{c.step1} <a href="https://console.twilio.com/" target="_blank" rel="noopener noreferrer">{c.how} ↗</a></li>
+   <li>{c.step2} <a href="https://vercel.com/super10/codex-public-book-library/settings/environment-variables"
+      target="_blank" rel="noopener noreferrer">{c.vercel} ↗</a></li>
+   <li>{c.step3} <a href="https://holistichouse.vercel.app/en/contact"
+      target="_blank" rel="noopener noreferrer">{c.senderPage} ↗</a></li>
+  </ol>
+  <p>{c.costNote}</p>
   <p>{c.caution}</p>
   <button type="button" disabled={!setup.credentialsPresent||checking||busy} onClick={testConnection}>
    {checking?c.checking:c.check}

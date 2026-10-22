@@ -12,6 +12,11 @@ on:
       - 'tests/youtube-upload-history.test.mjs'
       - 'tests/youtube-upload-readback.test.mjs'
       - '.github/workflows/youtube-phone-uploader.yml'
+      - 'components/app/compact-video-composer.*'
+      - 'components/app/practice-youtube-uploader.*'
+      - 'lib/practitioners/browser-presentation-upload.js'
+      - 'app/api/app/practice/youtube/**'
+      - 'tests/practice-video-composer-compact.test.mjs'
   workflow_dispatch:
 jobs:
   test:
@@ -26,19 +31,24 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - name: Protocol + persistent history unit tests
-        run: node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs tests/youtube-upload-readback.test.mjs
+        run: node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs tests/youtube-upload-readback.test.mjs tests/youtube-practitioner-store.test.mjs tests/practice-video-composer-compact.test.mjs
       - name: Browser transport and server history syntax
         run: |
           node --check lib/youtube/phone-upload-protocol.mjs
           node --check lib/youtube/upload-history-model.mjs
           node --check lib/youtube/upload-history-store.js
           node --check lib/youtube/browser-upload.js
+          node --check lib/youtube/practitioner-upload-model.mjs
+          node --check lib/youtube/practitioner-upload-store.js
+          node --check app/api/app/practice/youtube/route.js
           node --check app/admin/youtube-upload/actions.js
           node --check scripts/verify-youtube-phone-mobile.mjs
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: TypeScript check
         run: npx tsc --noEmit
+      - name: Lint practitioner YouTube implementation
+        run: npx eslint lib/youtube/practitioner-upload-model.mjs lib/youtube/practitioner-upload-store.js app/api/app/practice/youtube/route.js components/app/practice-youtube-uploader.jsx components/app/compact-video-composer.jsx lib/practitioners/browser-presentation-upload.js
       - name: Next.js production build
         run: npm run build
       - name: Install isolated Chromium and WebKit for phone UX acceptance

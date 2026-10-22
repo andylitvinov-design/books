@@ -32,7 +32,7 @@ export default async function SpanishRemedyPage({ params }: Props) {
       <img src={remedy.primary_image} alt={alt} width={800} height={800}
          fetchPriority="high" loading="eager" decoding="async" />
     </figure>}
-    <SpanishRemedyContent description={remedy.description} />
+    <SpanishRemedyContent description={remedy.description} slug={slug} />
     <details className="remedy-source-reference"><summary>Fuentes y traducción</summary><div><strong>{remedy.source_author}</strong><p>La traducción conserva el contenido del archivo publicado y sus referencias. Consulta las versiones originales para comprobar cualquier término o matiz.</p><a href={`/en/homeopathy/remedies/${slug}`} target="_blank" rel="noopener noreferrer">Abrir versión de origen en inglés ↗</a><a href={`/ru/homeopathy/remedies/${slug}`} target="_blank" rel="noopener noreferrer">Abrir original en ruso ↗</a>{remedy.primary_source_url && <a href={remedy.primary_source_url} target="_blank" rel="noopener noreferrer">Fuente original en Telegram ↗</a>}<span>Referencia: {remedy.primary_source_message || remedy.source_heading}</span>{remedy.source_date && <span>Fecha de la fuente: {remedy.source_date}</span>}</div></details>
     {supporting.length > 0 && <section className="remedy-supporting-gallery" aria-label="Imágenes adicionales de la fuente"><p>Imágenes adicionales de los mensajes originales relacionados</p><div>{supporting.map((image, index) => (
       // eslint-disable-next-line @next/next/no-img-element

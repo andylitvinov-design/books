@@ -8,3 +8,7 @@
 .player{display:block;width:100%;height:100%;border:0;object-fit:contain}
 .note{margin:.65rem 0 0;font-size:.8rem;opacity:.7}
 @media(max-width:640px){.section{padding:0 .75rem;margin:1rem auto 1.5rem}.screen{border-radius:12px}.play{width:54px;height:54px}}
+
+/* Full poster can navigate to the original public YouTube source. */
+.poster{text-decoration:none}
+.poster:hover{text-decoration:none}

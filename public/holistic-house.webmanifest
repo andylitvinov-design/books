@@ -1,25 +1,49 @@
 {
   "name": "Holistic House",
   "short_name": "Holistic House",
-  "description": "My courses, insights, tests and wellbeing practice from Holistic House",
+  "description": "Your private Holistic House cabinet: messages, consultations, tests, reports and courses",
   "lang": "en",
-  "start_url": "/en/app",
+  "start_url": "/en/app/portrait",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f5faf7",
-  "theme_color": "#234f48",
+  "orientation": "portrait",
+  "background_color": "#f4faf7",
+  "theme_color": "#163d38",
   "icons": [
     {
-      "src": "/holistic-house-app.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/holistic-house-icon/192",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/holistic-house-app.svg",
+      "src": "/holistic-house-icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/holistic-house-teal.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "url": "/en/app/consultations"
+    },
+    {
+      "name": "My tests",
+      "short_name": "Tests",
+      "url": "/en/app/tests"
+    },
+    {
+      "name": "My courses",
+      "short_name": "Courses",
+      "url": "/en/app/course"
     }
   ],
   "id": "/en/app"

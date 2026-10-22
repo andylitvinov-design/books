@@ -9,7 +9,7 @@ test("SEO access is gated by same signed admin session as the existing cabinet",
   const page = read("app/admin/seo/page.jsx");
   const exportRoute = read("app/admin/seo/export/route.js");
   assert.match(page, /requireAdminRequest\(\)/);
-  assert.match(page, /redirect\("\/admin\/login"\)/);
+  assert.match(page, /redirect\("\/admin\/login\?destination=seo"\)/);
   assert.match(page, /robots: \{ index: false, follow: false \}/);
   assert.match(page, /dynamic = "force-dynamic"/);
   assert.match(exportRoute, /if \(!\(await requireAdminRequest\(\)\)\)/);

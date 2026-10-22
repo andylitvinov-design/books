@@ -82,7 +82,7 @@ export async function POST(request) {
   } catch (error) {
     const code = typeof error?.code === 'string' ? error.code : 'REIKI_AUDIO_STORAGE_UNAVAILABLE'
     const status = code.startsWith('INVALID_') ? 400
-      : ['REIKI_AUDIO_UPLOAD_NOT_FOUND','REIKI_AUDIO_ACTIVE_ON_SLIDE','REIKI_AUDIO_ARCHIVE_FIRST'].includes(code) ? 409
+      : ['REIKI_AUDIO_UPLOAD_NOT_FOUND','REIKI_AUDIO_ACTIVE_ON_SLIDE','REIKI_AUDIO_ARCHIVE_FIRST','REIKI_AUDIO_ARCHIVED'].includes(code) ? 409
       : 503
     return result({ error: code }, status)
   }

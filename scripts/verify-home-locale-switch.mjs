@@ -130,7 +130,7 @@ async function exerciseFreeJourneys(page, engine, width) {
   for (const locale of ['en', 'ru']) {
     for (const [id, suffix, target] of [
       ['selfTest', '/client/tests', '[data-prelogin-test-picker]'],
-      ['analysis', '/services/free-situation-review', '#review-hero-title'],
+      ['analysis', '/services/free-situation-review', '#free-entry-title'],
       ['reiki', '/academy/principles-of-energywork/learn', '[data-energywork-ai-learner]'],
     ]) {
       await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });
@@ -159,17 +159,17 @@ async function exerciseFreeJourneys(page, engine, width) {
 }
 
 async function verifyHomeTestimonialPosters(page) {
-  // The published compact Home shows the first two EN sources. The full six-source
-  // catalog, three-video Services selection and written story remain independent.
-  const expectedIds = ['Dk0LBmOivQo', 'aUJde6A-9p0'];
+  // The Home public layout shows the first four exact EN originals with archived stills.
+  // Two more originals remain in the expandable archive.
+  const expectedIds = ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk'];
   const testimonials = page.locator('[data-personal-testimonials="home"]');
   await expect(testimonials).toHaveCount(1);
   await expect(testimonials).toHaveAttribute('lang', 'en');
   const cards = testimonials.locator('[data-testimonial-video-id]');
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(expectedIds.length);
   assert.deepEqual(await cards.evaluateAll(items => items.map(item => item.dataset.testimonialVideoId)), expectedIds);
   const videoPosters = testimonials.locator('.site-video-fallback-poster');
-  await expect(videoPosters).toHaveCount(2);
+  await expect(videoPosters).toHaveCount(expectedIds.length);
   await expect(testimonials.locator('blockquote')).toHaveCount(1);
   await expect(testimonials.locator('blockquote')).toBeVisible();
   for (const id of expectedIds) {
@@ -235,8 +235,10 @@ async function exercise(engine, browserType, width) {
       await expect(page).toHaveURL(origin + homePath(from));
       await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
       const current = page.locator(`[data-video-slot="home-intro"][data-video-locale="${from}"]`);
-      if (await current.locator('iframe').count() === 0) await current.locator('.site-video-play').click();
-      await expect(current.locator('iframe')).toHaveCount(1);
+      await expect(current.locator('iframe')).toHaveCount(0);
+      await current.locator('button.site-video-play').click();
+      const fromYouTubeId = from === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      await expect(current.locator('iframe')).toHaveAttribute('src', new RegExp('^https://www\\.youtube-nocookie\\.com/embed/' + fromYouTubeId + '\\?'));
       const countBefore = heldRequests;
       delayedRscGate = new Promise(resolve => { releaseHeldRsc = resolve; });
       delayedLocale = to;
@@ -252,12 +254,12 @@ async function exercise(engine, browserType, width) {
       await expect(next).toHaveCount(1, { timeout: 20000 });
       transport.assertHealthy();
       await expect(next.locator('iframe')).toHaveCount(0);
-      await next.locator('.site-video-play').click();
-      const expectedId = to === 'en' ? 'ed202847a43a96b918308aa972177b34' : '388a04b39ebf215ae656bcd22d0d0847';
-      await expect(next.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${expectedId}`);
+      const toYouTubeId = to === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      await next.locator('button.site-video-play').click();
+      await expect(next.locator('iframe')).toHaveAttribute('src', new RegExp('^https://www\\.youtube-nocookie\\.com/embed/' + toYouTubeId + '\\?'));
       const frame = await next.locator('iframe').elementHandle();
       await pause(2200);
-      assert.ok(await frame.evaluate(element => element.isConnected), 'First-click iframe was discarded after navigation');
+      assert.ok(await frame.evaluate(element => element.isConnected), 'First-click YouTube iframe was discarded after navigation');
       await expect(page).toHaveURL(origin + homePath(to));
       delayedLocale = null;
       results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
@@ -328,8 +330,8 @@ async function exercise(engine, browserType, width) {
     assert.ok(measurements.contactBackground?.includes('linear-gradient'), 'Blue capture gradient must render');
     results.push({ engine, width, homeVisual: true, ...measurements });
     await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-${engine}-${width}.png`, fullPage: true });
-    // One tap must replace the poster with a working YouTube embed URL.
-    await firstReview.locator('.site-video-play').click();
+    // Poster click must load the exact YouTube original inside this card.
+    await firstReview.locator('button.site-video-play').click();
     await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
     await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0);
 
@@ -386,7 +388,7 @@ try {
   assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'Locale-switch regression failed; inspect artifact');
   assert.equal(results.filter(result => result.firstClickRetained).length, 8);
   assert.equal(results.filter(result => result.freeJourney).length, 24);
-  console.log('PASS: eight delayed-RSC EN/RU switches, Chromium/WebKit, mobile/desktop; no lost first click');
+  console.log('PASS: eight delayed-RSC EN/RU switches, Chromium/WebKit, mobile/desktop; no lost inline YouTube playback');
 } finally {
   await writeFile(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ origin, results, fullPlayback: 'Not claimed by this interaction-only test' }, null, 2));
   app?.kill('SIGTERM');

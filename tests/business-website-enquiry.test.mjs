@@ -10,7 +10,8 @@ test("business intake requires explicit consent and a real reply channel",()=>{
   assert.throws(()=>validateBusinessEnquiry({...valid,contactConsent:false}),/CONSENT_REQUIRED/);
   assert.throws(()=>validateBusinessEnquiry({...valid,email:"",phone:""}),/CONTACT_REQUIRED/);
   assert.throws(()=>validateBusinessEnquiry({...valid,phone:"12345",email:""}),/INVALID_CONTACT/);
-  assert.throws(()=>validateBusinessEnquiry({...valid,question:""}),/INVALID_QUESTION/);
+  assert.equal(validateBusinessEnquiry({...valid,question:""}).question,"");
+  assert.throws(()=>validateBusinessEnquiry({...valid,question:"hi"}),/INVALID_QUESTION/);
 });
 test("only public parameters are accepted and campaign values are bounded",()=>{
   assert.throws(()=>validateBusinessEnquiry({...valid,ownerId:"other"}),/INVALID_REQUEST/);
@@ -57,4 +58,18 @@ test("owner business inbox contract ignores formatting but rejects a lost or cha
     assertBusinessInboxCall(source.replace(call,"businessEnquiries:"+spacing+"await store.listBusinessEnquiries()"));
   for(const replacement of ["", "businessEnquiries:store.listBusinessEnquiries()", "businessEnquiries:await store.listContacts()", "other:await store.listBusinessEnquiries()"])
     assert.throws(()=>assertBusinessInboxCall(source.replace(call,replacement)));
+});
+
+test("mobile enquiry collects a single explicit reply contact, with an optional visible question",()=>{
+  const form=read("components/business-website-enquiry.tsx");
+  const css=read("components/business-website-enquiry.module.css");
+  assert.match(form,/parseBusinessReplyContact\(contact\)/);
+  assert.match(form,/\.\.\.reply,question:showQuestion\?question:""/);
+  assert.match(form,/aria-expanded=\{showQuestion\}/);
+  assert.match(form,/setShowQuestion\(true\)/);
+  assert.match(form,/disabled=\{!showQuestion\}/);
+  assert.doesNotMatch(form,/setReplyChannel|setEmail|setPhone|data-business-field="reply-channel"/);
+  assert.match(css,/font:500 16px/);
+  assert.match(css,/@media\(max-width:350px\)/);
+  for(const lang of ["en","ru","es"])assert.match(form,new RegExp(lang+": \\{"));
 });

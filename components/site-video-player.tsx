@@ -66,7 +66,7 @@ const approvedAndyPosters: Readonly<Record<string, string>> = {
 // Approved Unlisted YouTube mirror links for these exact public HeyGen masters.
 // Prefer these identity-verified YouTube copies for public playback when HeyGen embeds fail.
 // Preserve the original HeyGen record, artwork, transcript and owner editor state.
-const existingYouTubeMirrors: Readonly<Record<string, string>> = {
+export const existingYouTubeMirrors: Readonly<Record<string, string>> = {
   ed202847a43a96b918308aa972177b34: "Y4K4piEwwA8",
   "48105a2f2228e7cb3a67391e97acaf8b": "s30Y42IwPcg",
   "34df311e461509433b45929908a9097a": "ILyRWyHtJoE",
@@ -168,7 +168,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
     <figure className={["site-video-player", compact && "site-video-player--compact", minimal && "site-video-player--minimal", minimal && styles.minimal, className].filter(Boolean).join(" ")} aria-labelledby={titleId} lang={locale}>
       <div className="site-video-frame">
         {playing ? (
-          <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
+          <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => { setShowRecovery(false); setPlaying(true); }}>
             {!isHeygen && fallbackPoster && !localPosterFailed && (

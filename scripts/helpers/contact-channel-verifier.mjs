@@ -48,3 +48,51 @@ export async function openContactChannelChooser(scope, expect) {
   await assertPreparedContactChannels(chooser, expect);
   return chooser;
 }
+
+/**
+ * Verify the REAL public two-stage flow against a hydrated local Next server.
+ * Mock only the POST response to avoid writing fake contacts into Supabase.
+ * A messenger link cannot exist until an explicitly consented enquiry is saved.
+ */
+export async function openRegisteredContactChannelChooser(scope, expect, page) {
+  const chooser = scope.locator('[data-contact-channel-chooser]');
+  await expect(chooser).toHaveCount(1);
+  const trigger = chooser.locator('button[data-contact-order]');
+  await expect(trigger).toHaveCount(1);
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded','false');
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  const submissions = [];
+  await page.route('**/api/service-enquiries', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    submissions.push(route.request().postDataJSON());
+    await route.fulfill({ status:201, contentType:'application/json',
+      body:JSON.stringify({saved:true,referenceCode:'HH-ABCD1234EF56'}) });
+  });
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded','true');
+  const form = chooser.locator('form');
+  await expect(form).toBeVisible();
+  const submit = form.locator('button[type="submit"]');
+  await expect(submit).toBeDisabled();
+  await form.locator('input[autocomplete="name"]').fill('Public QA Visitor');
+  await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
+  await expect(submit).toBeDisabled();
+  await form.locator('input[type="checkbox"]').check();
+  await submit.click();
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);
+  assert.equal(submissions.length,1,'Exactly one explicitly consented synthetic registration');
+  const data=submissions[0];
+  assert.equal(data.contact.displayName,'Public QA Visitor');
+  assert.equal(data.contact.email,'enquiry-qa@example.test');
+  assert.equal(data.contactConsent,true);
+  assert.equal(data.description,'','Optional personal note must not be required');
+  assert.ok(data.serviceTitle && typeof data.serviceTitle==='string');
+  assert.ok(data.operationId && /^[a-f0-9-]{36}$/i.test(data.operationId));
+  assert.equal(data.website,'');
+  const prepared = await assertPreparedContactChannels(chooser,expect);
+  assert.doesNotMatch(prepared.whatsappUrl.searchParams.get('text')||'',
+    /Public QA Visitor|enquiry-qa@example\.test/,'No synthetic contact data in a messenger URL');
+  assert.match(prepared.whatsappUrl.searchParams.get('text')||'',/HH-ABCD1234EF56/);
+  return chooser;
+}

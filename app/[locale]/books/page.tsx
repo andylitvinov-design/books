@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookCatalog } from "@/components/book-catalog";
+import { IdeasNewsFeed } from "@/components/ideas-news-feed";
 import { PageVideo } from "@/components/page-video";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { books } from "@/data/library";
@@ -9,18 +10,22 @@ import { isSupportedLocale } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 
+// A removed or unpublished item must not linger in a public cached feed.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type PageProps = {
   params: Promise<{ locale: string }>;
 };
 
 const meta = {
   ru: {
-    title: "Библиотека книг — Holistic House",
-    description: "Книги и методички Holistic House: авторские материалы об алхимии души, гомеопатии, традициях Дао и Майя. Откройте каталог и выберите книгу.",
+    title: "Идеи — подсказки, афоризмы и книги | Holistic House",
+    description: "Задайте вопрос: гексаграмма И-Цзин, три афоризма по теме или бесплатная личная подсказка. Ниже — книги и методички Holistic House.",
   },
   en: {
-    title: "Books & Library — Holistic House",
-    description: "Browse the Holistic House book catalog: guides on inner development, homeopathy, Daoist traditions and Maya culture. Discover original texts and editions.",
+    title: "Ideas — insights, aphorisms & books | Holistic House",
+    description: "Explore your question with an I Ching symbol, three topic-matched reflections or free personal guidance. Browse the Holistic House book catalog below.",
   },
 } as const;
 
@@ -55,6 +60,7 @@ export default async function LocalizedBooksPage({ params }: PageProps) {
         video={<PageVideo slot="books-intro" locale={locale} />}
       />
       <PublicConsultationCta locale={locale as Locale} />
+      <IdeasNewsFeed locale={locale as Locale} />
     </>
   );
 }

@@ -57,8 +57,8 @@
 .house-header--services .site-language-switch { font-size: 12px; }
 .house-header--services .site-language-switch > * { min-height: 44px; padding-inline: 8px; }
 
-/* Direct Library shortcut beside the language picker; My House remains on the bottom bar. */
-.house-header--services .site-navigation > .site-library-entry {
+/* Direct Cabinet entry beside the language picker; Books stays in the mobile bar. */
+.house-header--services .site-navigation > .site-cabinet-entry {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
@@ -77,21 +77,21 @@
   white-space: nowrap;
   transition: background-color .15s ease, border-color .15s ease;
 }
-.house-header--services .site-library-entry svg { width: 18px; height: 18px; flex: 0 0 18px; stroke-width: 1.8; }
-.house-header--services .site-library-entry__compact { display: none; }
-.house-header--services .site-navigation > .site-library-entry:hover,
-.house-header--services .site-navigation > .site-library-entry[aria-current="page"] {
+.house-header--services .site-cabinet-entry svg { width: 18px; height: 18px; flex: 0 0 18px; stroke-width: 1.8; }
+.house-header--services .site-cabinet-entry__compact { display: none; }
+.house-header--services .site-navigation > .site-cabinet-entry:hover,
+.house-header--services .site-navigation > .site-cabinet-entry[aria-current="page"] {
   border-color: #a77b5d;
   background: #e9d7c5;
   color: #513222;
 }
-.house-header--services .site-navigation > .site-library-entry:focus-visible {
+.house-header--services .site-navigation > .site-cabinet-entry:focus-visible {
   outline: 3px solid #9b7056;
   outline-offset: 3px;
 }
 @media (max-width: 1023px) {
-  .house-header--services .site-library-entry__full { display: none; }
-  .house-header--services .site-library-entry__compact { display: inline; }
+  .house-header--services .site-cabinet-entry__full { display: none; }
+  .house-header--services .site-cabinet-entry__compact { display: inline; }
 }
 
 .service-home-hero {
@@ -504,14 +504,14 @@ a.service-home-start-card:hover {
   .house-header--services { gap: 8px; padding-inline: clamp(12px, 3.8vw, 22px); }
   .house-header--services .house-wordmark { min-width: 0; flex-shrink: 1; font-size: clamp(21px, 6vw, 27px); }
   .house-header--services .site-navigation { gap: 7px; flex-wrap: nowrap; }
-  .house-header--services .site-navigation > .site-library-entry {
+  .house-header--services .site-navigation > .site-cabinet-entry {
     display: inline-flex;
     min-height: 44px;
     gap: 5px;
     padding: 8px 10px;
     font-size: 11px;
   }
-  .house-header--services .site-library-entry svg { width: 17px; height: 17px; flex-basis: 17px; }
+  .house-header--services .site-cabinet-entry svg { width: 17px; height: 17px; flex-basis: 17px; }
   .house-header--services .site-language-switch { margin: 0; font-size: 12px; }
   .house-header--services .site-language-switch > * { padding-inline: 7px; }
   .service-home-hero { min-height: 410px; align-items: flex-start; }
@@ -571,8 +571,8 @@ a.service-home-start-card:hover {
   .house-header--services { padding-inline: 8px; gap: 2px; }
   .house-header--services .house-wordmark { font-size: 19px; }
   .house-header--services .house-wordmark span { font-size: 7px; }
-  .house-header--services .site-library-entry__compact { display: none; }
-  .house-header--services .site-navigation > .site-library-entry { width: 44px; padding-inline: 0; }
+  .house-header--services .site-cabinet-entry__compact { display: none; }
+  .house-header--services .site-navigation > .site-cabinet-entry { width: 44px; padding-inline: 0; }
   .service-home-hero-copy { padding-inline: 16px; }
   .service-home-intro { max-width: 80%; }
   .house-header--services .site-main-menu-trigger__label { display: none; }
@@ -827,7 +827,7 @@ a.service-home-start-card:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .house-header--services .site-navigation > .site-library-entry { transition: none; }
+  .house-header--services .site-navigation > .site-cabinet-entry { transition: none; }
 }
 
 /* Give the free written review and paid one-to-one session equal clarity in the hero. */
@@ -895,22 +895,24 @@ a.service-home-start-card:hover {
   z-index: 80;
   top: calc(100% + 10px);
   right: 0;
-  width: min(336px, calc(100vw - 20px));
+  width: min(352px, calc(100vw - 24px));
   max-height: min(70dvh, calc(100dvh - 220px), 550px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   border: 1px solid #d8c6b4;
-  border-radius: 18px;
-  padding: 12px;
-  background: #fffaf3;
-  box-shadow: 0 18px 44px rgb(55 36 26 / .19);
+  border-radius: 19px;
+  padding: 13px;
+  background: #fffaf5;
+  box-shadow: 0 20px 46px rgb(55 36 26 / .16);
 }
 
 .site-navigation .site-main-menu-heading {
-  margin: 2px 9px 9px;
-  color: #8a6854;
+  margin: 2px 5px 11px;
+  color: #846451;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .09em;
+  font-weight: 750;
+  letter-spacing: .075em;
   text-transform: uppercase;
 }
 
@@ -929,8 +931,8 @@ a.service-home-start-card:hover {
 
 /* Six large shortcuts match the mobile bar, without making the menu taller. */
 .site-navigation .site-main-menu-group-label {
-  margin: 12px 4px 7px;
-  color: #8a6854;
+  margin: 14px 4px 8px;
+  color: #896b57;
   font-size: 10px;
   font-weight: 750;
   letter-spacing: .09em;
@@ -940,20 +942,21 @@ a.service-home-start-card:hover {
 .site-navigation .site-main-menu-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
+  gap: 8px;
 }
 
 .site-navigation .site-main-menu-grid a {
   display: grid;
   min-width: 0;
-  min-height: 76px;
+  min-height: 74px;
   justify-items: center;
   align-content: center;
   gap: 6px;
   border: 1px solid #eadccc;
-  padding: 9px 3px;
-  background: #faf3eb;
-  font-size: 11px;
+  border-radius: 13px;
+  padding: 9px 4px;
+  background: #fcf6ef;
+  font-size: 11.5px;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
@@ -966,19 +969,56 @@ a.service-home-start-card:hover {
   stroke-width: 1.5;
 }
 
+.site-navigation .site-main-menu-more {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
 .site-navigation .site-main-menu-more a {
-  min-height: 40px;
-  padding-block: 7px;
-  font-size: 13px;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #eee0d2;
+  border-radius: 11px;
+  padding: 8px 10px;
+  background: #fbf6ef;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
 }
 
 .site-navigation .site-main-menu-panel .site-main-menu-free {
-  min-height: 42px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 18px;
+  gap: 11px;
+  align-items: center;
+  min-height: 84px;
+  padding: 13px;
+  border: 1px solid #782d46;
+  border-radius: 15px;
   background: #782d46;
   color: #fffaf4;
-  font-size: 13px;
+  box-shadow: 0 7px 18px rgb(94 39 58 / .13);
 }
+
+.site-main-menu-free__icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: rgb(255 255 255 / .14);
+}
+
+.site-main-menu-free__icon svg { width: 20px; height: 20px; stroke-width: 1.7; }
+
+.site-main-menu-free__copy { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
+
+.site-main-menu-free__title { font-size: 15px; font-weight: 750; line-height: 1.2; }
+
+.site-main-menu-free__detail { color: #f5dfdf; font-size: 11.5px; font-weight: 500; line-height: 1.35; }
+
+.site-main-menu-free__arrow { width: 18px; height: 18px; stroke-width: 1.8; }
 
 .site-navigation .site-main-menu-panel a[aria-current="page"] {
   background: #f0e1d2;
@@ -1004,24 +1044,38 @@ a.service-home-start-card:hover {
 
 @media (min-width: 768px) and (max-width: 1140px) {
   .house-header--services .site-navigation { flex-wrap: nowrap; }
-  .house-header--services .site-navigation > a:not(.site-library-entry) { display: none; }
+  .house-header--services .site-navigation > a:not(.site-cabinet-entry) { display: none; }
 }
 
-@media (max-width: 600px) {
-  /* Preserve logo + Library + language + menu on a single phone-width row. */
-  .house-header--services .site-navigation { gap: 6px; }
-  .house-header--services .site-navigation > .site-library-entry {
-    width: 44px;
-    padding-inline: 0;
+/* Mobile priority: the personal Cabinet is a WORD, not an unlabeled icon.
+   Free space with the familiar menu glyph, not by shrinking touch targets.
+   This applies to every public page using the shared services header. */
+@media (max-width: 767px) {
+  .house-header--services { gap: 5px; padding-inline: clamp(8px, 3vw, 16px); }
+  .house-header--services .house-wordmark { font-size: clamp(19px, 6vw, 26px); }
+  .house-header--services .site-navigation { gap: 5px; }
+  .house-header--services .site-navigation > .site-cabinet-entry {
+    width: auto;
+    min-width: 66px;
+    padding: 8px 10px;
+    font-size: 12px;
   }
-  .house-header--services .site-library-entry__compact { display: none; }
+  .house-header--services .site-cabinet-entry svg { display: none; }
+  .house-header--services .site-cabinet-entry__compact { display: inline; }
+  .house-header--services .site-main-menu-trigger { width: 44px; min-width: 44px; padding: 0; }
+  .house-header--services .site-main-menu-trigger__label { display: none; }
   .house-header--services .site-language-switch > * { padding-inline: 0; }
-  .house-header--services .site-language-menu-trigger { padding-inline: 9px; }
+  .house-header--services .site-language-menu-trigger { padding-inline: 8px; }
 }
 
 @media (max-width: 359px) {
-  .house-header--services .house-wordmark { font-size: 17px; }
+  .house-header--services .house-wordmark { font-size: clamp(17px, 5.6vw, 20px); }
   .house-header--services .site-navigation { gap: 4px; }
+  .house-header--services .site-navigation > .site-cabinet-entry {
+    min-width: 62px;
+    padding-inline: 6px;
+    font-size: 11px;
+  }
   .house-header--services .site-language-menu-trigger { padding-inline: 6px; }
 }
 
@@ -1138,9 +1192,8 @@ a.service-home-start-card:hover {
   }
 }
 
-/* Mobile checkout shortcut: show the basket only when an item is selected.
-   On narrow phones it takes the secondary Library shortcut’s place, avoiding overflow.
-   Library remains available through the site menu and on the desktop. */
+/* Keep Cabinet visible on narrow phones. When there is no space for both
+   Cabinet and an occupied Cart button, Cart remains reachable in the menu. */
 @media (max-width: 767px) {
   .house-header--services .site-navigation > a[data-nav-item="cart"][data-cart-has-items="true"] {
     display: inline-flex;
@@ -1150,7 +1203,44 @@ a.service-home-start-card:hover {
   }
 }
 @media (max-width: 490px) {
-  .house-header--services .site-navigation:has(> a[data-nav-item="cart"][data-cart-has-items="true"]) > .site-library-entry {
+  .house-header--services .site-navigation > a[data-nav-item="cart"][data-cart-has-items="true"] {
     display: none;
   }
+}
+
+/* Keep the existing paid, free-review and free-test CTAs as a compact
+   invitation below the navigation carousel, not a second full-screen hero. */
+.house-home--services [data-home-featured-intro] {
+  width: min(1240px, calc(100% - 28px));
+  min-height: 290px;
+  margin: 14px auto 0;
+  border: 1px solid #e8dcca;
+  border-radius: 24px;
+  background: #fbf5eb;
+}
+.house-home--services [data-home-featured-intro] .service-home-hero-copy {
+  padding: 26px clamp(20px, 4vw, 48px) 29px;
+}
+.house-home--services [data-home-featured-intro] h1 {
+  max-width: 780px;
+  margin: 10px 0 12px;
+  font-size: clamp(29px, 3.2vw, 39px);
+  line-height: 1.13;
+}
+.house-home--services [data-home-featured-intro] h1::after { margin-top: 12px; }
+.house-home--services [data-home-featured-intro] .service-home-hero-photo { width: 37%; max-width: none; }
+.house-home--services [data-home-featured-intro] .service-home-intro { max-width: 61%; font-size: 14px; line-height: 1.43; }
+.house-home--services [data-home-featured-intro] .service-home-actions { margin-top: 15px; }
+@media (max-width: 767px) {
+  .house-home--services [data-home-featured-intro] {
+    width: calc(100% - 16px);
+    min-height: 0;
+    border-radius: 18px;
+  }
+  .house-home--services [data-home-featured-intro] .service-home-hero-photo { width: 100%; opacity: .28; }
+  .house-home--services [data-home-featured-intro] .service-home-hero-copy { padding: 19px 17px 21px; }
+  .house-home--services [data-home-featured-intro] h1 { max-width: 100%; margin: 7px 0 9px; font-size: clamp(25px, 6.7vw, 30px); }
+  .house-home--services [data-home-featured-intro] .service-home-intro { max-width: 100%; font-size: 13px; line-height: 1.43; }
+  .house-home--services [data-home-featured-intro] .service-home-actions { max-width: 100%; }
+  .house-home--services [data-home-featured-intro] .service-home-offer-note { max-width: 100%; }
 }

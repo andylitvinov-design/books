@@ -1,4 +1,6 @@
-// Rebuild the original, royalty-free and intentionally quiet 20-second ambient loop.
+// Original, locally generated and intentionally quiet 96-second ambient composition.
+// The evolving 12-chord / 48-note score is NOT a repeated 15- or 20-second sample.
+// Native HTML audio (rather than WebAudio) preserves iPhone playback reliability.
 // Usage: node scripts/generate-soft-ocean-melody.mjs
 // The browser uses a static WAV (not WebAudio) for iPhone media reliability.
 import { writeFileSync } from "node:fs";
@@ -6,16 +8,33 @@ import { writeFileSync } from "node:fs";
 function synthSoftMelody() {
   // Uncompressed 24 kHz PCM is used for reliable iPhone Safari HTMLMediaElement playback.
   // The built-in asset stays gently mixed even if iOS ignores audio.volume.
-  const SR=24000, DURATION=20, FRAMES=SR*DURATION, TAU=2*Math.PI;
+  const SR=24000, DURATION=96, FRAMES=SR*DURATION, TAU=2*Math.PI;
+  // Twelve eight-second harmonic changes provide a developing piece, not a short loop.
   const chords=[
-    [261.626,329.628,391.995,493.883], // Cmaj7
-    [220.000,261.626,329.628,391.995], // Am7
-    [174.614,220.000,261.626,329.628], // Fmaj7
-    [195.998,246.942,293.665,329.628], // G6
+    [146.832,185.000,220.000,277.183,329.628], // Dmaj9
+    [123.471,185.000,246.942,293.665,369.994], // Bm7
+    [195.998,246.942,293.665,369.994,440.000], // Gmaj9
+    [164.814,220.000,261.626,329.628,391.995], // Em7
+    [146.832,185.000,220.000,277.183,369.994], // D6
+    [138.591,185.000,220.000,277.183,329.628], // C# half-diminished colour
+    [123.471,185.000,246.942,293.665,440.000], // Bm add11
+    [220.000,277.183,329.628,369.994,493.883], // Aadd9
+    [195.998,246.942,293.665,369.994,493.883], // Gmaj7
+    [164.814,195.998,246.942,293.665,369.994], // Em9
+    [220.000,261.626,329.628,391.995,493.883], // A7sus
+    [146.832,185.000,220.000,277.183,329.628], // Dmaj9 resolution
   ];
-  const melody=[659.255,783.991,659.255,523.251,440.000,659.255,493.883,587.330];
+  // One fresh melodic event every two seconds; the entire sequence lasts 96 s.
+  const melody=[
+    440,493.883,587.330,659.255,587.330,493.883,440,369.994,
+    369.994,440,493.883,587.330,659.255,587.330,493.883,440,
+    493.883,587.330,739.989,659.255,587.330,493.883,440,493.883,
+    440,369.994,440,554.365,493.883,440,369.994,329.628,
+    369.994,440,493.883,587.330,739.989,659.255,587.330,493.883,
+    440,493.883,554.365,493.883,440,369.994,329.628,293.665,
+  ];
   const tones=[...new Set([...chords.flat(),...melody])];
-  // Integer cycle counts keep music continuous where the soundtrack loops.
+  // Integer cycle counts minimize clicks; opening and closing envelopes bring the full 96 s to silence.
   const cycleFrequencies=new Map(tones.map(f=>[f,Math.round(f*DURATION)/DURATION]));
   const samples=new Float32Array(FRAMES);
   let seed=0x2c149621, low=0, lower=0;
@@ -30,27 +49,23 @@ function synthSoftMelody() {
     return sum/chord.length;
   }
   for(let i=0;i<FRAMES;i++){
-    const t=i/SR, section=Math.floor(t/5), sectionTime=t%5;
-    const next=(section+1)%4, mix=smooth((sectionTime-3.5)/1.5);
+    const t=i/SR, section=Math.min(chords.length-1,Math.floor(t/8)), sectionTime=t%8;
+    const next=(section+1)%chords.length, mix=smooth((sectionTime-6.1)/1.9);
     const chord=(1-mix)*chordSignal(chords[section],t)+mix*chordSignal(chords[next],t);
-    const breath=0.94+0.06*Math.cos(TAU*t/10);
-    let bell=0;
-    for(let s=0;s<8;s++){
-      const age=(t-s*2.5+DURATION)%DURATION;
-      if(age>=3.2)continue;
-      const rise=1-Math.exp(-age/0.12);
-      const fall=Math.exp(-age/1.3);
-      const tail=1-smooth((age-2.5)/0.7);
-      const rad=TAU*cycleFrequencies.get(melody[s])*t;
-      bell+=rise*fall*tail*(sin(rad)+0.16*sin(2*rad));
-    }
+    const breath=0.94+0.06*Math.cos(TAU*t/11);
+    const noteIndex=Math.min(melody.length-1,Math.floor(t/2));
+    const age=t-noteIndex*2;
+    const rise=1-Math.exp(-age/0.12), fall=Math.exp(-age/1.3);
+    const phrase=0.86+0.14*Math.cos(TAU*noteIndex/melody.length);
+    const rad=TAU*cycleFrequencies.get(melody[noteIndex])*t;
+    const bell=phrase*rise*fall*(sin(rad)+0.16*sin(2*rad));
     seed=(Math.imul(seed,1664525)+1013904223)>>>0;
     const white=2*(seed/4294967296)-1;
     low=low*0.83+white*0.17;
     lower=lower*0.979+white*0.021;
-    const swell=Math.pow(0.5+0.5*Math.sin(TAU*t*3/DURATION-1),2);
+    const swell=Math.pow(0.5+0.5*Math.sin(TAU*t/8.7+0.17*Math.sin(t/23)),2);
     const waveGain=0.16+0.84*swell;
-    const seamFade=smooth(Math.min(t/0.6,(DURATION-t)/0.6,1));
+    const seamFade=smooth(Math.min(t/1.0,(DURATION-t)/1.1,1));
     // A quiet wash of filtered surf sits well behind the melody, not on top of it.
     const surf=(0.78*low+0.22*lower)*0.075*waveGain*seamFade;
     samples[i]=0.142*chord*breath+0.043*bell+surf;
@@ -72,7 +87,7 @@ function synthSoftMelody() {
   return {pcm,rms:Math.sqrt(rms/FRAMES),peak,seamDiff:Math.abs(dv.getInt16(44,true)-dv.getInt16(pcm.length-2,true))};
 }
 
-const output = new URL("../public/audio/holistic-house-soft-melody-gentle-waves-20s.wav", import.meta.url);
+const output = new URL("../public/audio/holistic-house-soft-melody-gentle-waves-96s.wav", import.meta.url);
 const result = synthSoftMelody();
 writeFileSync(output, result.pcm);
 console.log("Generated", output.pathname, "RMS", result.rms.toFixed(4), "peak", result.peak.toFixed(4), "seam", result.seamDiff);

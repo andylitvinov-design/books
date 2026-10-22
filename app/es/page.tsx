@@ -1,8 +1,11 @@
 import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
+import { HomeSectionCarousel } from '@/components/home-section-carousel';
+import { HomeConversationGuide } from '@/components/home-conversation-guide';
 import Link from 'next/link';
-import { BriefcaseBusiness, ClipboardCheck, Flower2, GraduationCap, Sparkles } from 'lucide-react';
+import { BriefcaseBusiness, Flower2, Sparkles } from 'lucide-react';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
+import { HomeExploreSections } from '@/components/home-explore-sections';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { AcquisitionEventLink } from '@/components/acquisition-event-link';
@@ -16,8 +19,10 @@ const cards = [
 export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
-    <section className="service-home-hero" aria-labelledby="house-title">
-      <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
+    <HomeConversationGuide locale="es" />
+    <HomeSectionCarousel locale="es" />
+    <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
+      <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
       <div className="service-home-hero-copy">
         <p className="service-home-kicker">Acompañamiento personal · Toronto y en línea</p>
         <h1 id="house-title"><span>¿Dudas en tus relaciones, tu trabajo o una decisión importante?</span></h1>
@@ -26,7 +31,7 @@ export default function SpanishHomePage() {
           <AcquisitionEventLink className="service-home-button service-home-button--primary"
             href="/es/services#consultation" event="service_view"
             attributes={{ "data-hero-cta": "paid-sessions" }} prefetch={false}>
-            Solicitar sesión personal · desde €50<span aria-hidden="true">→</span>
+            Solicitar una consulta · desde €50<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
           <AcquisitionEventLink className="service-home-button service-home-button--secondary"
             href="/es/services/free-situation-review" event="service_request_start"
@@ -43,34 +48,7 @@ export default function SpanishHomePage() {
       </div>
     </section>
     <section className="service-home-services" aria-labelledby="service-home-services-title"><div className="service-home-section-heading"><h2 id="service-home-services-title">Tres maneras de trabajar conmigo</h2><Link href="/es/services">Ver todos los servicios<span aria-hidden="true">→</span></Link></div><div className="service-home-card-grid">{cards.map(({ icon: Icon, ...card }) => <Link className="service-home-card" href={card.href} key={card.title}><span className="service-home-card-photo" aria-hidden="true"><Image unoptimized src={card.image} alt="" fill sizes="(max-width: 640px) 100vw, 320px" loading="lazy" /></span><span className="service-home-card-symbol" aria-hidden="true"><Icon /></span><h3>{card.title}</h3><p>{card.text}</p><span className="service-home-card-action">Saber más<span aria-hidden="true">→</span></span></Link>)}</div></section>
-    <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
-      <header className="service-home-start__heading">
-        <p className="service-home-kicker">Herramientas gratuitas y aprendizaje</p>
-        <h2 id="service-home-start-title">Explora a tu ritmo</h2>
-        <p>Comienza con autoobservación gratuita, cursos educativos o libros. No necesitas contratar una sesión individual.</p>
-      </header>
-      <div className="service-home-start__grid">
-        <Link className="service-home-start-card" href="/es/client/tests">
-          <span className="service-home-start-card__icon" aria-hidden="true"><ClipboardCheck /></span>
-          <span className="service-home-start-card__eyebrow">1 · Evaluación gratuita</span>
-          <h3>Bienestar y recursos personales</h3>
-          <p>Explora el estrés, el estado de ánimo y tus recursos. Las preguntas y los informes de algunas pruebas aún están disponibles en inglés o ruso.</p>
-          <strong>Explorar las pruebas gratuitas <span aria-hidden="true">→</span></strong>
-        </Link>
-        <article className="service-home-start-card service-home-start-card--learning">
-          <span className="service-home-start-card__icon" aria-hidden="true"><GraduationCap /></span>
-          <span className="service-home-start-card__eyebrow">2 · Cursos y lecturas</span>
-          <h3>Academia y biblioteca</h3>
-          <p>Descubre cursos, libros, materiales y prácticas para el desarrollo personal, con información sobre el idioma original de cada recurso.</p>
-          <div className="service-home-start-card__actions">
-            <Link href="/es/academy">Academia <span aria-hidden="true">→</span></Link>
-            <Link href="/es/library">Biblioteca <span aria-hidden="true">→</span></Link>
-            <Link href="/es/academy/reiki/tantra-reiki/free-initiation">Tantra Reiki · iniciación gratuita de Nivel 1 <span aria-hidden="true">→</span></Link>
-          </div>
-        </article>
-      </div>
-      <p className="service-home-start__returning"><Link href="/es/tests">Cómo funcionan las pruebas gratuitas <span aria-hidden="true">→</span></Link><span aria-hidden="true"> · </span>¿Ya tienes resultados o un perfil? <Link href="/es/client">Abrir mi espacio <span aria-hidden="true">→</span></Link></p>
-    </section>
+    <HomeExploreSections locale="es" />
     <PersonalTestimonials locale="es" variant="home" />
     <section className="service-home-about" aria-labelledby="service-home-about-title"><div><p className="service-home-kicker">Sobre mí</p><h2 id="service-home-about-title">Andrey Litvinov</h2></div><div><p>Consultor, facilitador y docente. Llevo más de 20 años trabajando con grupos y prácticas de desarrollo interior, combinando constelaciones sistémicas, trabajo con imágenes, enfoques corporales y exploración arquetípica.</p><Link href="/es/about">Conoce mi trabajo<span aria-hidden="true">→</span></Link></div></section>
     <section className="service-home-library" aria-labelledby="service-home-library-title"><Image unoptimized src="/images/holistic-house/books-library.webp" alt="" fill sizes="(max-width: 767px) 100vw, 1200px" className="service-home-library-photo" /><div className="service-home-library-copy"><p className="service-home-kicker">Libro del autor</p><h2 id="service-home-library-title">El poder de la vida</h2><p className="service-home-library-intro">Mi libro sobre desarrollo interior, psicohomeopatía y un enfoque integrador del trabajo con los estados humanos.</p><Link href="/es/books">Explorar la biblioteca<span aria-hidden="true">→</span></Link></div></section>

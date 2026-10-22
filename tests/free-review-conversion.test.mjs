@@ -8,8 +8,8 @@ const daoPage = read("app/[locale]/services/dao-health-profile/page.tsx");
 const testsPage = read("app/[locale]/tests/page.tsx");
 const landing = read("components/free-entry-landing.tsx");
 const css = read("components/free-entry-landing.module.css");
-const enquiry = read("components/free-resource-enquiry.tsx");
-const enquiryCss = read("components/free-resource-enquiry.module.css");
+const capture = read("components/compact-lead-capture.tsx");
+const captureCss = read("components/compact-lead-capture.module.css");
 const form = read("components/free-situation-review-form.tsx");
 const intake = read("components/free-drawing-intake.tsx");
 const intakeCss = read("components/free-drawing-intake.module.css");
@@ -34,13 +34,18 @@ test("all three Services free cards open their own benefit-first, photo-led land
   }
 });
 
-test("each landing begins with the explicit personal benefit, then separate outcomes, steps and capture", () => {
-  const hero = landing.indexOf('className={styles.hero}');
-  const outcome = landing.indexOf('className={[styles.scene, styles.outcomeScene]');
-  const process = landing.indexOf('className={[styles.scene, styles.processScene]');
-  const capture = landing.indexOf('className={styles.capture}');
+test("free landings explain benefits before closing with one short capture", () => {
+  // Layout now uses conditional class names; check visible section order via stable anchors.
+  const hero = landing.indexOf('aria-labelledby="free-entry-title"');
+  const outcome = landing.indexOf('id="what-you-get"');
+  const process = landing.indexOf('id="how-it-works"');
   const video = landing.indexOf('<ServiceVideoShowcase');
-  assert.ok(hero > 0 && hero < outcome && outcome < process && process < capture && capture < video);
+  const final = landing.lastIndexOf("<CompactLeadCapture");
+  assert.ok(hero > 0 && hero < outcome && outcome < process && process < video && video < final);
+  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene\]/,
+    "Only Wu Xing hides the redundant process section");
+  assert.match(landing, /kind === "situation" \? <div className=\{styles\.videoWrap\}/,
+    "Generic overview video is retained for the written-review service");
   assert.match(landing, /t\.bullets\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /t\.steps\.map/);
@@ -50,7 +55,9 @@ test("each landing begins with the explicit personal benefit, then separate outc
   assert.match(landing, /id=\{captureId\}/);
   assert.match(landing, /id="what-you-get"/);
   assert.match(landing, /id="how-it-works"/);
-  assert.match(landing, /<FreeResourceEnquiry locale=\{locale\} kind=\{kind\}/);
+  assert.match(landing, /serviceTitle=\{serviceTitles\[kind\]\}/);
+  assert.doesNotMatch(landing, /<FreeResourceEnquiry/);
+  assert.doesNotMatch(landing, /className=\{styles\.end\}/);
   assert.match(landing, /<Link className=\{styles\.primary\} href=\{testsHref\}/);
 });
 
@@ -58,21 +65,25 @@ test("all three locales explain real service advantages without health claims or
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
     "See your situation from a fresh perspective", "Взгляните на свою ситуацию", "Mira tu situación",
-    "Explore your inner resources through Wu Xing", "Исследуйте свои внутренние ресурсы",
-    "Explora tus recursos interiores", "not a medical assessment", "не медицинское заключение",
+    "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
+    "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
+    "Символическая модель для самоисследования, а не медицинский тест.",
+    "Un modelo simbólico de reflexión, no una prueba médica.",
+    "Illustrative example — not your personal result.",
+    "Условный пример — не ваш персональный профиль.",
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
   for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
     "Revisión escrita gratuita", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
-  assert.doesNotMatch(landing + enquiry, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
-  assert.doesNotMatch(landing + enquiry, /€50|€100/, "The free offering must not be upsold before being explained");
+  assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
+  assert.doesNotMatch(landing + capture, /€50|€100/, "The free offering must not be upsold before being explained");
 });
 
 test("the real free drawing questionnaire remains reachable and keeps answers local until deliberate copy", () => {
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\}>/);
+  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/);
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
   for (const field of ["problem", "goal", "obstacle", "tried"]) assert.ok(intake.includes("set" + field[0].toUpperCase() + field.slice(1)), field);
   assert.match(intake, /<form onSubmit=/);
@@ -87,20 +98,20 @@ test("the real free drawing questionnaire remains reachable and keeps answers lo
   assert.match(intakeCss, /@media\(max-width:767px\)/);
 });
 
-test("new DAO and free situation lead capture prepares real WhatsApp/Telegram drafts, with no URL leak of personal notes", () => {
-  for (const label of ["Relationships & family", "Отношения и семья", "Relaciones y familia",
-    "Balance & everyday energy", "Баланс и энергия", "Equilibrio y energía diaria"]) assert.ok(enquiry.includes(label), label);
-  assert.match(enquiry, /<select value=\{topic\}/);
-  assert.match(enquiry, /<input value=\{name\}/);
-  assert.match(enquiry, /<textarea rows=\{3\} maxLength=\{350\}/);
-  assert.match(enquiry, /whatsappEnquiryUrl\(\{/);
-  assert.match(enquiry, /topic: offer\.topics\[topic\]/);
-  assert.match(enquiry, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{whatsappUrl\}/);
-  assert.match(enquiry, /navigator\.clipboard\.writeText\(privateContext\)/);
-  assert.match(enquiry, /copyStatus === "error"/);
-  assert.doesNotMatch(enquiry, /\n\s+context,\n/, "Personal free-form notes must never enter messenger query URL");
-  assert.doesNotMatch(enquiry, /localStorage|sessionStorage|fetch\(|sendBeacon|<\/form>/);
-  assert.match(enquiryCss, /focus-visible/);
+test("new DAO and situation footer submits a consented contact to the existing private CRM API", () => {
+  for (const locale of ["en:", "ru:", "es:"]) assert.ok(capture.includes(locale));
+  assert.match(landing, /const serviceTitles = \{/);
+  assert.match(capture, /<form className=\{styles\.form\}/);
+  assert.match(capture, /<input type="text" name="contact"/);
+  assert.match(capture, /<input type="checkbox" required checked=\{consent\}/);
+  assert.match(capture, /fetch\("\/api\/service-enquiries"/);
+  assert.match(capture, /contactConsent: true/);
+  assert.match(capture, /result\?\.saved !== true/);
+  assert.match(capture, /setReference\(result.referenceCode\)/);
+  assert.match(capture, /Please do not enter health details/);
+  assert.doesNotMatch(capture, /whatsappEnquiryUrl|encodeURIComponent\(address\)|localStorage|sendBeacon|gtag\(/);
+  assert.match(captureCss, /:focus-visible/);
+  assert.match(captureCss, /@media\(max-width:600px\)/);
 });
 
 test("mobile layout offers one meaning per screen, authentic images, and accessible forms", () => {

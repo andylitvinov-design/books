@@ -9,9 +9,9 @@ const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 const browser = read("scripts/verify-reiki-all-slides-browser.mjs");
 
-test("Four meditation review screens remain in the correct slots among 53 original steps", () => {
+test("Four meditation review screens remain in the correct slots among 63 active screens", () => {
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)];
-  assert.equal(ids.length, 53);
+  assert.equal(ids.length, 63);
   for (const sequence of [["flight-03","flight-voices","flight-04"],
     ["tan-03","tan-voices","tan-04"],["kun-03","kun-voices","kun-04"],
     ["ygg-03","ygg-voices","ygg-04"]]) {

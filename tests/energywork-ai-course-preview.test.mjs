@@ -13,12 +13,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 70 stable editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 63 published editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-19.p9"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 70)
+  assert.equal(ids.length, 63)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -39,7 +39,8 @@ test('New peer voices and celebrations appear between the existing lessons', () 
   for(const id of ['flight-voices','tan-voices','kun-voices','ygg-voices','flight-done','tan-done','kun-done','ygg-done'])
     assert.ok(curriculum.includes('id: "'+id+'"'),id)
   assert.match(learner,/data-meditation-voices/)
-  assert.match(learner,/t\.saveAndContinue/)
+  assert.match(learner,/t\.continueNow/)
+  assert.match(learner,/data-reiki-tomorrow-choice/)
   assert.match(learner,/t\.voicesComments/)
   assert.doesNotMatch(learner,/data-meditation-feeling/)
   assert.match(learner,/t\.saveReview/)
@@ -78,7 +79,8 @@ test('Lesson 1 practice with music comes after reflections, immediately before c
   assert.match(lesson, /Sun’s light and warmth/)
   assert.match(lesson, /Удалось ли вам подняться к Солнцу во время медитации/)
   assert.match(lesson, /question: \{ type: "text"/)
-  assert.match(curriculum, /withClosingPractices\(commonSlides\.filter\(\(slide\) => slide\.phase === "flight"\), \["flight-03"\], "flight-done"\)/)
+  assert.match(curriculum, /slide\.phase === "flight" && slide\.id !== "flight-save"/)
+  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "flight-save"\)!/)
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
 
@@ -96,17 +98,18 @@ test('Sun practice uses two optional choices for the one-minute exercise', () =>
   assert.match(css, /\.choices/)
 })
 
-test('Five lessons have separate post-meditation reports and question answers', () => {
+test('Five lesson reports and four sets of study questions gate initiation', () => {
   const assignments = [
     ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-study-04'],
     ['kundalini','kun-04','kun-study-v2-01'], ['yggdrasil','ygg-04','ygg-study-v2-01'],
-    ['initiation','end-01','init-01'],
   ]
   for (const [name,report,question] of assignments) {
     assert.ok(curriculum.includes('lesson: "'+name+'", reportId: "'+report+'", questionId: "'+question+'"'))
     assert.ok(curriculum.includes('id: "'+report+'"'))
     assert.ok(curriculum.includes('id: "'+question+'"'))
   }
+  assert.match(curriculum, /lesson: "initiation", reportId: "end-01", questionId: "end-01", questionIds: \[\]/)
+  assert.doesNotMatch(curriculum, /id: "init-01", phase:/)
   assert.match(learner, /const initiationItems = energyworkInitiationRequirements\.map/)
   assert.match(learner, /readyTargetCount/)
   assert.match(learner, /savedInitiationReady = initiationReady && sync === "ready"/)
@@ -148,7 +151,7 @@ test('Course remains available in Academy, guest cabinet and course page routes'
 test('Mobile course uses teal five-step rail and remains accessible', () => {
   assert.match(learner, /<section className=\{styles\.programme\} data-expanded=/)
   assert.match(learner, /aria-expanded=\{programmeOpen\}/)
-  assert.match(learner, /<details className=\{styles\.saveManager\}>/)
+  assert.match(learner, /<ReikiCourseReferralShare locale=\{locale\} \/>/)
   assert.match(learner, /energyworkLessons\.map/)
   assert.match(learner, /role="progressbar"/)
   assert.match(learner, /aria-labelledby="energywork-slide-title"/)
@@ -164,12 +167,18 @@ test('Mobile course uses teal five-step rail and remains accessible', () => {
 
 test('Reiki opening explains a single sequential course and separate teacher initiations', () => {
   const opening = curriculum.split('id: "welcome-01"')[1].split('id: "welcome-02"')[0]
-  assert.match(opening, /One course, five lessons in sequence/)
-  assert.match(opening, /Один курс из пяти последовательных уроков/)
+  assert.match(opening, /Reiki Practitioner — a five-day journey/)
+  assert.match(opening, /Практик Рейки — пятидневный курс/)
+  assert.match(opening, /Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil/)
+  assert.match(opening, /Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль/)
+  assert.match(opening, /Each day brings a short exercise and a meditation/)
+  assert.match(opening, /Каждый день вас ждут небольшое упражнение и медитация/)
+  assert.match(learner, /welcomeGiftText: "After all five lessons and your application/)
+  assert.match(learner, /в одной из трёх систем на выбор/)
   assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
   assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
   assert.match(learner, /Want to go further\? You can explore personal Reiki initiation/)
-  assert.match(curriculum, /does not grant Level 1 initiation or certification/)
+  assert.match(curriculum, /not an initiation or certification/)
   assert.match(css, /welcomeSlide \.art/)
 })
 
@@ -210,4 +219,20 @@ test('Kundalini slide includes all three screenshot-supplied reflections in Engl
   assert.match(learner, /data-review-next/)
   assert.match(learner, /data-review-prev/)
   assert.match(css, /\.voiceQuote p \{[\s\S]*?overflow-y:auto;[\s\S]*?max-height:175px;/)
+})
+
+test('Flight to the Sun invites curiosity, removes clinical caveats and only offers published audio', () => {
+  const opening = curriculum.slice(curriculum.indexOf('id: "flight-01"'), curriculum.indexOf('id: "flight-02"'))
+  const audio = read('components/reiki-lesson-intro-audio.tsx')
+  assert.match(opening, /The Sun is calling\. Are you ready\?/)
+  assert.match(opening, /Солнце зовёт\. Готовы к полёту\?/)
+  assert.match(opening, /Andrey invites you on a guided journey through your imagination/)
+  assert.match(opening, /воображаемый полёт к Солнцу/)
+  assert.equal((opening.match(/\n\s+l\("/g) || []).length, 3)
+  assert.doesNotMatch(opening, /physical or medical claim|не медицинское утверждение/i)
+  assert.match(audio, /if \(!audio\) return null;/)
+  assert.doesNotMatch(audio, /will be added here|скоро появится/)
+  assert.match(css, /Flight to the Sun: warmer, more evocative opening/)
+  assert.ok(css.includes('.slide[data-reiki-art-layout="background"][data-energywork-slide-id="flight-01"] .slideMain > .art img'))
+  assert.match(css, /\[data-energywork-slide-id="flight-01"\] \.lessonIntroPanel/)
 })

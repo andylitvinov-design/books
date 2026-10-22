@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { FreeResourceEnquiry } from "@/components/free-resource-enquiry";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
@@ -36,7 +36,7 @@ const copy = {
       back: "All services", free: "COMPLETELY FREE", details: "See what you receive",
       benefits: "What you will take away", process: "How it works",
       prepare: "Start with one small step", more: "Questions before you begin",
-      privacy: "No payment required. A personal request is only sent when you confirm it in your chosen messenger.",
+      privacy: "Explore tests without an account. Google sign-in is only needed if you choose to save available results.",
       limitations: "These self-reflection approaches are educational and symbolic. They do not diagnose or treat health conditions and do not replace qualified medical or mental-health care.",
       about: "More about Andrey", model: "Read about the Wu Xing model", aboutTests: "Explore all tests",
       fullForm: "Have your question and drawing ready? Open the full free questionnaire",
@@ -94,43 +94,43 @@ const copy = {
         { title: "Send both to Andrey", text: "Use WhatsApp or Telegram to share your answers and drawing for a written review." },
       ],
       startTitle: "Tell me what you would like to explore",
-      startLead: "A couple of words are enough to request instructions. If you already know your question, open the full questionnaire below.",
+      startLead: "Leave one contact to receive instructions. The full questionnaire remains optional below.",
       cta: "Request my free review", secondary: "See how it works",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Lighthouse on the coast", processAlt: "Calm, sunlit room",
       faq: [
         ["What is included for free?", "A personal written review of your coaching questionnaire and handwritten drawing. It does not include a video call or live consultation."],
         ["Do I need artistic skills?", "No. Three simple shapes or symbols on paper are enough; the drawing is a prompt for reflection, not an art test."],
-        ["Will you save my answers here?", "No. The form prepares text for you to copy and send yourself through your chosen messenger. Nothing is submitted automatically."],
+        ["Will you save my answers here?", "Only the contact you submit to request instructions is saved. The separate questionnaire stays on your device until you choose to share it."],
       ],
     },
     dao: {
-      eyebrow: "DAO · FIVE ELEMENTS · SYMBOLIC RESOURCE PROFILE",
-      title: "Explore your inner resources through Wu Xing.",
-      lead: "Use the Five Elements as a gentle symbolic lens for your energy, balance and everyday challenges. This free, author-led reflection helps you name what supports you and what deserves attention.",
-      value: "A new language for understanding your resources — not a medical assessment.",
-      bullets: ["Reflect on your current balance and sources of strength.", "Explore the Five Elements as a symbolic map.", "Identify areas you would like to nurture or investigate."],
-      outcomeTitle: "A wider view of your resources",
-      outcomeLead: "The model offers prompts for reflection. It does not assign a clinical health score.",
+      eyebrow: "WU XING · YOUR RESOURCE MAP",
+      title: "Discover what gives you strength.",
+      lead: "A free personal reflection using the Five Elements — no prior knowledge needed.",
+      value: "A symbolic guide for reflection — not a medical test.",
+      bullets: ["Your strengths", "What needs care", "Your next step"],
+      outcomeTitle: "What could your profile show?",
+      outcomeLead: "Illustrative example — not your personal result.",
       outcomes: [
-        { title: "What supports you", text: "Notice where you feel steadiness, motivation and connection." },
-        { title: "Where energy is stretched", text: "Describe everyday demands and patterns of strain in your own words." },
-        { title: "What to explore next", text: "Consider practical questions and the qualities you want to develop." },
+        { title: "Wood · initiative", text: "You enjoy starting things and finding direction." },
+        { title: "Water · recovery", text: "A little more quiet time may help you recharge." },
+        { title: "One small step", text: "Make space for a pause before your next decision." },
       ],
-      processTitle: "Your profile begins with a conversation",
-      processLead: "You do not need to know Daoist theory or complete a medical-style questionnaire.",
+      processTitle: "Three small steps",
+      processLead: "Choose a focus, leave a contact and agree how the personal reflection will work.",
       steps: [
-        { title: "Choose your area", text: "Select a resource or life area you would like to reflect on." },
-        { title: "Share a few words", text: "Add a short question if you wish." },
-        { title: "Request your profile", text: "Send a prepared message and agree on the next steps for the free symbolic review." },
+        { title: "Choose a focus", text: "Pick one area you want to explore." },
+        { title: "Leave a contact", text: "Confirm how Andrey can reply." },
+        { title: "Agree the next step", text: "Receive instructions for your symbolic review." },
       ],
-      startTitle: "Begin your free Wu Xing profile",
-      startLead: "Tell Andrey which part of life or personal energy interests you. Your message is prepared for review; it is never sent automatically.",
-      cta: "Request my free profile", secondary: "Discover the model",
+      startTitle: "Request your free profile",
+      startLead: "One contact is enough. Your free profile request is sent only when you tap Send.",
+      cta: "Get my free profile", secondary: "See an example",
       photoAlt: "Traditional East Asian mountain temple", outcomeAlt: "Soft sunrise over a landscape", processAlt: "Lighthouse overlooking the sea",
       faq: [
-        ["Is this a medical diagnosis?", "No. Wu Xing is used here as an author's symbolic framework, not as a medically validated diagnostic instrument."],
-        ["Do I need prior experience?", "No. You can describe your energy, priorities or everyday experiences in ordinary language."],
-        ["Is the profile free?", "Yes. The initial symbolic resource review is free; a personal paid session is entirely optional and separately agreed."],
+        ["What is free?", "The initial personal symbolic resource review is free. Any paid session is separate and optional."],
+        ["Do I need an account?", "No. Choose a topic and a contact method, then confirm your request."],
+        ["Is this a medical test?", "No. Wu Xing is used here for symbolic self-reflection, not diagnosis or treatment."],
       ],
     },
   },
@@ -139,7 +139,7 @@ const copy = {
       back: "Все услуги", free: "БЕСПЛАТНО", details: "Что вы получите",
       benefits: "В результате", process: "Как это происходит",
       prepare: "Начните с простого шага", more: "Вопросы перед началом",
-      privacy: "Оплата не требуется. Личный запрос отправляется только после вашего подтверждения в выбранном мессенджере.",
+      privacy: "Изучайте тесты без регистрации. Google-вход может понадобиться только для сохранения результатов.",
       limitations: "Эти методики предназначены для самоисследования и символической рефлексии. Они не диагностируют и не лечат заболевания и не заменяют медицинскую или психиатрическую помощь.",
       about: "Об Андрее", model: "Подробнее о модели У-Син", aboutTests: "Открыть все тесты",
       fullForm: "Уже готовы вопрос и рисунок? Откройте полную бесплатную анкету",
@@ -197,43 +197,43 @@ const copy = {
         { title: "Отправьте Андрею", text: "Пришлите анкету и фото рисунка в WhatsApp или Telegram." },
       ],
       startTitle: "С чего хотите начать?",
-      startLead: "Пары слов достаточно, чтобы запросить инструкции. Если запрос уже сформирован, ниже можно раскрыть полную анкету.",
+      startLead: "Оставьте один контакт для инструкций. Полная анкета — по желанию ниже.",
       cta: "Запросить бесплатный разбор", secondary: "Как проходит разбор",
       photoAlt: "Андрей Литвинов", outcomeAlt: "Маяк на побережье", processAlt: "Спокойная комната с утренним светом",
       faq: [
         ["Что именно бесплатно?", "Личный письменный разбор по коучинг-анкете и рисунку. Он не включает видеозвонок или живую консультацию."],
         ["Нужно красиво рисовать?", "Нет. Достаточно трёх простых символов или фигур на бумаге — это материал для рефлексии, а не проверка художественных навыков."],
-        ["Где хранятся мои ответы?", "Сайт подготавливает текст для копирования. Вы сами решаете, отправлять ли его через мессенджер; автоматической передачи нет."],
+        ["Где хранятся мои ответы?", "Контакт сохраняется после отправки заявки. Отдельная анкета остаётся на вашем устройстве до выбранной вами передачи."],
       ],
     },
     dao: {
-      eyebrow: "ДАО · ПЯТЬ ЭЛЕМЕНТОВ · РЕСУРСЫ",
-      title: "Исследуйте свои внутренние ресурсы через У-Син.",
-      lead: "Пять элементов становятся мягкой символической картой вашего баланса, энергии и жизненных задач. Бесплатный авторский разбор помогает назвать опоры и увидеть, чему вы хотели бы уделить внимание.",
-      value: "Новый язык для понимания своих ресурсов — не медицинское заключение.",
-      bullets: ["Рассмотрите баланс и источники собственной силы.", "Познакомьтесь с символической моделью пяти элементов.", "Выберите качества, которые хотите развивать."],
-      outcomeTitle: "Более широкий взгляд на свой ресурс",
-      outcomeLead: "Модель предлагает темы для размышления, а не клинические показатели здоровья.",
+      eyebrow: "У-СИН · КАРТА ВАШИХ РЕСУРСОВ",
+      title: "Узнайте, что даёт вам внутреннюю опору.",
+      lead: "Бесплатный личный разбор по Пяти элементам — знать даосскую теорию не нужно.",
+      value: "Символическая модель для самоисследования, а не медицинский тест.",
+      bullets: ["Ваши опоры", "Что требует заботы", "Следующий шаг"],
+      outcomeTitle: "Как может выглядеть результат?",
+      outcomeLead: "Условный пример — не ваш персональный профиль.",
       outcomes: [
-        { title: "Что поддерживает", text: "Заметьте, где ощущаете устойчивость, мотивацию и связь." },
-        { title: "Где не хватает ресурса", text: "Опишите нагрузки и переживаемое напряжение своими словами." },
-        { title: "Куда двигаться дальше", text: "Определите вопросы и качества, которые хочется исследовать." },
+        { title: "Дерево · инициатива", text: "Вам нравится начинать новое и находить направление." },
+        { title: "Вода · восстановление", text: "Возможно, стоит чаще выделять время для отдыха." },
+        { title: "Один небольшой шаг", text: "Сделайте паузу перед следующим важным решением." },
       ],
-      processTitle: "Профиль начинается с разговора",
-      processLead: "Не нужно заранее изучать даосскую теорию или проходить медицинскую анкету.",
+      processTitle: "Три простых шага",
+      processLead: "Выберите тему, оставьте контакт и согласуйте следующий шаг.",
       steps: [
-        { title: "Выберите область", text: "Что в жизни или ощущении ресурса вам интересно?" },
-        { title: "Напишите пару слов", text: "При желании добавьте короткий вопрос." },
-        { title: "Запросите профиль", text: "Отправьте сообщение и согласуйте дальнейший формат бесплатного разбора." },
+        { title: "Выберите тему", text: "Что вам хочется исследовать?" },
+        { title: "Оставьте контакт", text: "Подтвердите удобный способ ответа." },
+        { title: "Согласуйте следующий шаг", text: "Получите инструкцию для разбора." },
       ],
-      startTitle: "Начните свой бесплатный профиль У-Син",
-      startLead: "Расскажите, какая сфера жизни или вашего ресурса интересует вас сейчас. Без вашего подтверждения сообщение не отправляется.",
-      cta: "Запросить профиль У-Син", secondary: "Подробнее о модели",
-      photoAlt: "Восточноазиатский храм в горах", outcomeAlt: "Мягкий рассвет над природой", processAlt: "Маяк над морем",
+      startTitle: "Запросить бесплатный профиль",
+      startLead: "Достаточно одного контакта: бесплатная заявка отправится только после нажатия кнопки.",
+      cta: "Получить бесплатный профиль", secondary: "Посмотреть пример",
+      photoAlt: "Восточный горный храм", outcomeAlt: "Мягкий свет рассвета", processAlt: "Маяк над морем",
       faq: [
-        ["Это медицинская диагностика?", "Нет. Здесь У-Син — авторская символическая система, а не медицинский диагностический инструмент."],
-        ["Нужно ли знать теорию?", "Нет. Опишите самочувствие, приоритеты или повседневные переживания обычными словами."],
-        ["Профиль действительно бесплатный?", "Да, первичный символический разбор ресурсов бесплатный. Личная платная сессия — только по отдельной договорённости."],
+        ["Что бесплатно?", "Первичный личный символический разбор ресурсов. Платная сессия — отдельно и только по желанию."],
+        ["Нужен аккаунт?", "Нет. Выберите тему и контакт, затем подтвердите отправку заявки."],
+        ["Это медицинский тест?", "Нет. У-Син применяется здесь для символического самоисследования, не для диагностики или лечения."],
       ],
     },
   },
@@ -242,7 +242,7 @@ const copy = {
       back: "Todos los servicios", free: "GRATIS", details: "Qué vas a recibir",
       benefits: "Qué te llevas", process: "Cómo funciona",
       prepare: "Empieza con un paso sencillo", more: "Preguntas frecuentes",
-      privacy: "No hay pago. La solicitud solo se envía cuando la confirmas en tu aplicación de mensajería.",
+      privacy: "Explora las pruebas sin crear una cuenta. Google solo puede ser necesario para guardar resultados.",
       limitations: "Estas prácticas simbólicas y de autoobservación son educativas. No diagnostican ni tratan enfermedades y no sustituyen la atención médica o psicológica profesional.",
       about: "Sobre Andrey", model: "Conoce el modelo Wu Xing", aboutTests: "Explora todos los tests",
       fullForm: "¿Ya tienes tu pregunta y dibujo? Abre el cuestionario completo y gratuito",
@@ -300,46 +300,70 @@ const copy = {
         { title: "Envía ambos materiales", text: "Comparte las respuestas y la foto por WhatsApp o Telegram." },
       ],
       startTitle: "¿Qué te gustaría explorar?",
-      startLead: "Unas pocas palabras bastan para pedir instrucciones. Si ya estás preparado, abre el cuestionario completo.",
+      startLead: "Deja un contacto para recibir las instrucciones. El cuestionario completo es opcional.",
       cta: "Solicitar revisión gratis", secondary: "Cómo funciona",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Faro en la costa", processAlt: "Espacio tranquilo con luz matinal",
       faq: [
         ["¿Qué incluye la oferta gratuita?", "Una revisión personal por escrito del cuestionario y un dibujo a mano. No incluye videollamada ni consulta en directo."],
         ["¿Debo saber dibujar?", "No. Unos símbolos o figuras sencillos en papel son suficientes."],
-        ["¿Se guardan mis respuestas?", "No. La página prepara texto para copiar; tú decides qué enviar por mensajería."],
+        ["¿Se guardan mis respuestas?", "Solo se guarda el contacto al enviar la solicitud. El cuestionario completo permanece en tu dispositivo hasta que decidas compartirlo."],
       ],
     },
     dao: {
-      eyebrow: "DAO · CINCO ELEMENTOS · RECURSOS",
-      title: "Explora tus recursos interiores con Wu Xing.",
-      lead: "Utiliza los Cinco Elementos como un mapa simbólico de tu equilibrio, energía y retos cotidianos. Esta reflexión gratuita te ayuda a reconocer lo que te sostiene y merece atención.",
-      value: "Otro lenguaje para conocer tus recursos; no es una evaluación médica.",
-      bullets: ["Reflexiona sobre equilibrio y fortalezas.", "Explora el mapa simbólico de los Cinco Elementos.", "Elige qué cualidades quieres cultivar."],
-      outcomeTitle: "Una visión más amplia de tus recursos",
-      outcomeLead: "Es una herramienta de reflexión, no una puntuación médica.",
+      eyebrow: "WU XING · TU MAPA DE RECURSOS",
+      title: "Descubre qué te da fuerza.",
+      lead: "Una reflexión personal gratuita basada en los Cinco Elementos. No necesitas conocimientos previos.",
+      value: "Un modelo simbólico de reflexión, no una prueba médica.",
+      bullets: ["Tus fortalezas", "Lo que cuidar", "Próximo paso"],
+      outcomeTitle: "¿Qué podría mostrar tu perfil?",
+      outcomeLead: "Ejemplo ilustrativo; no es tu resultado personal.",
       outcomes: [
-        { title: "Lo que te sostiene", text: "Observa dónde sientes estabilidad, motivación y conexión." },
-        { title: "Dónde falta energía", text: "Describe tus exigencias y tensiones cotidianas." },
-        { title: "Qué explorar después", text: "Considera preguntas y cualidades que te gustaría desarrollar." },
+        { title: "Madera · iniciativa", text: "Disfrutas empezando proyectos y buscando dirección." },
+        { title: "Agua · descanso", text: "Quizá necesites más tiempo tranquilo para recargar energías." },
+        { title: "Un pequeño paso", text: "Haz una pausa antes de tu próxima decisión." },
       ],
-      processTitle: "Todo empieza con una conversación",
-      processLead: "No necesitas conocer teoría daoísta ni rellenar una evaluación clínica.",
+      processTitle: "Tres pasos sencillos",
+      processLead: "Elige un tema, deja tu contacto y acuerda el siguiente paso.",
       steps: [
-        { title: "Elige un área", text: "Piensa qué aspecto de tus recursos te interesa." },
-        { title: "Escribe unas palabras", text: "Añade una pregunta breve si quieres." },
-        { title: "Solicita tu perfil", text: "Envía un mensaje preparado y acuerda el siguiente paso." },
+        { title: "Elige un tema", text: "Selecciona lo que deseas explorar." },
+        { title: "Deja tu contacto", text: "Confirma cómo puede responder Andrey." },
+        { title: "Acuerda el siguiente paso", text: "Recibe las instrucciones para la reflexión." },
       ],
-      startTitle: "Comienza tu perfil Wu Xing gratuito",
-      startLead: "Dinos qué aspecto de tu energía personal te interesa. El mensaje no se envía sin tu confirmación.",
-      cta: "Solicitar perfil gratuito", secondary: "Conocer el modelo",
-      photoAlt: "Templo asiático tradicional en las montañas", outcomeAlt: "Paisaje al amanecer", processAlt: "Faro sobre el mar",
+      startTitle: "Solicita tu perfil gratuito",
+      startLead: "Un contacto es suficiente. La solicitud gratuita se envía solo cuando pulsas Enviar.",
+      cta: "Obtener mi perfil gratis", secondary: "Ver un ejemplo",
+      photoAlt: "Templo tradicional en las montañas", outcomeAlt: "Amanecer suave", processAlt: "Faro frente al mar",
       faq: [
-        ["¿Es un diagnóstico médico?", "No. Es un modelo simbólico del autor, no una prueba médica validada."],
-        ["¿Necesito experiencia previa?", "No. Describe tus recursos o preocupaciones con tus propias palabras."],
-        ["¿Es gratuito?", "Sí, la primera revisión simbólica es gratuita; cualquier sesión de pago es opcional."],
+        ["¿Qué es gratuito?", "La primera revisión personal y simbólica de recursos. Una sesión de pago es opcional y aparte."],
+        ["¿Necesito una cuenta?", "No. Elige un tema y un medio de contacto; después confirma la solicitud."],
+        ["¿Es una prueba médica?", "No. Wu Xing se usa aquí para la reflexión simbólica, no para diagnosticar ni tratar."],
       ],
     },
   },
+} as const;
+
+const finalCopy = {
+  en: {
+    tests: { title: "Not sure which test to take?", lead: "Leave a contact. We’ll suggest a simple starting point." },
+    situation: { title: "Get your free written review", lead: "Leave a contact. Andrey will explain the next step." },
+    dao: { title: "Get your free Wu Xing profile", lead: "Leave a contact. Andrey will explain how to begin." },
+  },
+  ru: {
+    tests: { title: "Не знаете, какой тест выбрать?", lead: "Оставьте контакт — подскажем, с чего начать." },
+    situation: { title: "Получите бесплатный письменный разбор", lead: "Оставьте контакт — Андрей подскажет следующий шаг." },
+    dao: { title: "Получите бесплатный профиль У-Син", lead: "Оставьте контакт — Андрей объяснит, как начать." },
+  },
+  es: {
+    tests: { title: "¿No sabes qué prueba elegir?", lead: "Deja tu contacto y te orientaremos para empezar." },
+    situation: { title: "Recibe tu revisión gratuita por escrito", lead: "Deja un contacto y Andrey te explicará el siguiente paso." },
+    dao: { title: "Solicita tu perfil Wu Xing gratuito", lead: "Deja un contacto y Andrey te dirá cómo empezar." },
+  },
+} as const;
+
+const serviceTitles = {
+  tests: "Free test starting-point guidance",
+  situation: "Free written Situation Review",
+  dao: "Free symbolic Wu Xing Resource Profile",
 } as const;
 
 export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind: FreeEntryKind }) {
@@ -348,7 +372,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
   const images = art[kind];
   const captureId = kind === "dao" ? "request-free-wu-xing" : kind === "situation" ? "request-free-review" : "start-free";
   const testsHref = "/" + locale + "/client/tests";
-  const detailHref = kind === "dao" ? "/" + locale + "/wu-xing" : kind === "situation" ? "/" + locale + "/about" : testsHref;
+  const final = finalCopy[locale][kind];
 
   return (
     <main className={styles.page} lang={locale} data-free-entry-landing={kind}>
@@ -359,29 +383,36 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           <span aria-hidden="true">/</span><span>{common.free}</span>
         </nav>
 
-        <section className={styles.hero} aria-labelledby="free-entry-title">
+        <section className={[styles.hero, kind === "dao" ? styles.daoHero : ""].filter(Boolean).join(" ")} aria-labelledby="free-entry-title">
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
             <span className={styles.badge}>{common.free}</span>
             <h1 id="free-entry-title">{t.title}</h1>
             <p className={styles.lead}>{t.lead}</p>
-            <p className={styles.promise}>{t.value}</p>
-            <ul className={styles.bulletList}>
-              {t.bullets.map((benefit) => <li key={benefit}><CheckCircle2 size={17} aria-hidden="true" />{benefit}</li>)}
-            </ul>
+            {kind === "dao" ?
+              <ul className={styles.daoBenefits} aria-label={locale === "ru" ? "Что вы получите" : locale === "es" ? "Qué recibirás" : "What you get"}>
+                {t.bullets.map((benefit) => <li key={benefit}><CheckCircle2 size={17} aria-hidden="true" /><span>{benefit}</span></li>)}
+              </ul> :
+              <>
+                <p className={styles.promise}>{t.value}</p>
+                <ul className={styles.bulletList}>
+                  {t.bullets.map((benefit) => <li key={benefit}><CheckCircle2 size={17} aria-hidden="true" />{benefit}</li>)}
+                </ul>
+              </>}
             <div className={styles.actions}>
               {kind === "tests" ? <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link> :
                 <a className={styles.primary} href={"#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
-              <a className={styles.secondary} href="#what-you-get">{common.details}</a>
+              <a className={styles.secondary} href="#what-you-get">{kind === "dao" ? t.secondary : common.details}</a>
             </div>
+            {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
           </div>
           <figure className={styles.heroVisual}>
             <Image src={images.hero} alt={t.photoAlt} fill priority sizes="(max-width: 800px) 100vw, 48vw" />
-            <figcaption>{t.value}</figcaption>
+            {kind !== "dao" ? <figcaption>{t.value}</figcaption> : null}
           </figure>
         </section>
 
-        <section className={[styles.scene, styles.outcomeScene].join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
+        <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
           <div className={styles.sceneImage}>
             <Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
@@ -389,7 +420,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <p className={styles.sectionLabel}>01 / {common.benefits}</p>
             <h2 id="free-outcomes-title">{t.outcomeTitle}</h2>
             <p className={styles.sectionLead}>{t.outcomeLead}</p>
-            <div className={styles.outcomeList}>
+            <div className={[styles.outcomeList, kind === "dao" ? styles.daoOutcomeList : ""].filter(Boolean).join(" ")}>
               {t.outcomes.map((item, i) => <article key={item.title}>
                 <span>{String(i + 1).padStart(2, "0")}</span><div><h3>{item.title}</h3><p>{item.text}</p></div>
               </article>)}
@@ -397,7 +428,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </div>
         </section>
 
-        <section className={[styles.scene, styles.processScene].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
+        {kind !== "dao" ? <section className={[styles.scene, styles.processScene].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
           <div className={styles.sceneText}>
             <p className={styles.sectionLabel}>02 / {common.process}</p>
             <h2 id="free-process-title">{t.processTitle}</h2>
@@ -412,52 +443,26 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           <div className={styles.sceneImage}>
             <Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
-        </section>
+        </section> : null}
 
-        <section className={styles.capture} id={captureId} aria-labelledby="free-capture-title">
-          <div className={styles.captureIntro}>
-            <p className={styles.sectionLabel}>03 / {common.prepare}</p>
-            <h2 id="free-capture-title">{t.startTitle}</h2>
-            <p>{t.startLead}</p>
-            <div className={styles.miniPhoto}><Image src={images.outcome} alt="" fill sizes="(max-width: 800px) 100vw, 38vw" /></div>
-            <p className={styles.optional}><ShieldCheck size={18} aria-hidden="true" />{common.optional}</p>
-          </div>
-          <div className={styles.captureForm}>
-            {kind === "tests" ?
-              <div className={styles.testEntry}>
-                <span className={styles.badge}>{common.free}</span>
-                <p className={styles.testEntryHint}>{t.outcomeLead}</p>
-                <ul>{t.outcomes.map((item) => <li key={item.title}><CheckCircle2 size={17} aria-hidden="true" />{item.title}</li>)}</ul>
-                <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link>
-                <small>{common.privacy}</small>
-              </div> :
-              <FreeResourceEnquiry locale={locale} kind={kind} />}
-            {kind === "situation" ?
-              <details className={styles.fullQuestionnaire}>
-                <summary>{common.fullForm}</summary>
-                <FreeSituationReviewForm locale={locale} />
-              </details> : null}
-          </div>
-        </section>
+        {kind === "situation" ? (
+          <details className={styles.fullQuestionnaire} data-optional-written-review>
+            <summary>{common.fullForm}</summary>
+            <FreeSituationReviewForm locale={locale} />
+          </details>
+        ) : null}
 
-        {kind !== "tests" ? <div className={styles.videoWrap}><ServiceVideoShowcase topic="overview" locale={locale} id="service-video" /></div> : null}
+        {kind === "situation" ? <div className={styles.videoWrap}><ServiceVideoShowcase topic="overview" locale={locale} id="service-video" /></div> : null}
         {kind === "situation" ? <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="all" /> : null}
 
-        <section className={styles.end} aria-labelledby="free-questions-title">
-          <div>
-            <p className={styles.sectionLabel}>{common.more}</p>
-            <h2 id="free-questions-title">{common.more}</h2>
-            <div className={styles.faq}>
-              {t.faq.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
-            </div>
-          </div>
-          <aside className={styles.endLinks}>
-            <p>{common.optional}</p>
-            <Link href={detailHref} prefetch={false}>{kind === "dao" ? common.model : kind === "tests" ? common.aboutTests : common.about}<ArrowRight size={16} aria-hidden="true" /></Link>
-            <Link href={"/" + locale + "/services#free-insights"} prefetch={false}>{common.explore}<ArrowRight size={16} aria-hidden="true" /></Link>
-          </aside>
-        </section>
-        <p className={styles.safety}><ShieldCheck size={17} aria-hidden="true" />{common.limitations}</p>
+        <CompactLeadCapture
+          locale={locale}
+          id={captureId}
+          serviceTitle={serviceTitles[kind]}
+          title={final.title}
+          lead={final.lead}
+          disclaimer={common.limitations}
+        />
       </div>
     </main>
   );

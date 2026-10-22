@@ -21,5 +21,5 @@ export function emitPublicAnalyticsEvent(event: PublicAnalyticsEvent) {
 }
 
 export function isPublicAnalyticsPath(pathname: string) {
-  return !/^\/(?:admin|api|document-preview)(?:\/|$)|^\/(?:en|ru|es)\/(?:app|client|report|prescriptions)(?:\/|$)/.test(pathname);
+  return !/^\/(?:admin|api|document-preview)(?:\/|$)|^\/(?:en|ru|es)\/(?:app|client|report|prescriptions|thank-you)(?:\/|$)/.test(pathname);
 }

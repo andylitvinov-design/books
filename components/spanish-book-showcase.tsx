@@ -1,19 +1,28 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { bookCoverArtworkUrl, hasBookCoverArtwork } from "@/lib/public-card-artwork";
 import { BookOpen } from "lucide-react";
+import { BookCategoryPicker } from "@/components/book-category-picker";
 
 import { featuredBookUrls } from "@/data/featured-books";
 import type { Book } from "@/data/library";
+import type { BookSectionKey } from "@/data/library-sections";
 import { getBookMaterialRole } from "@/data/library-structure";
 import { spanishBookText } from "@/data/spanish-books";
 
 const roleLabels = { foundation: "Fundamentos", theory: "Teoría", practice: "Práctica", reference: "Referencia", project: "Guía del proyecto" } as const;
 
 export function SpanishBookShowcase({ books }: { books: Book[] }) {
-  const visibleBooks = books;
-  const showFeatured = true;
+  const [activeCategory, setActiveCategory] = useState<BookSectionKey | null>(null);
+  const visibleBooks = activeCategory ? books.filter(book => book.mediaSeries === activeCategory) : [];
+  const showFeatured = activeCategory === "alchemy";
 
   return (
+    <>
+      <BookCategoryPicker books={books} locale="es" activeCategory={activeCategory} onSelect={setActiveCategory} />
+      {activeCategory ? (
     <section className="catalog-grid remedies-book-grid" aria-label="Catálogo de libros">
       {showFeatured ? (
         <a
@@ -67,5 +76,7 @@ export function SpanishBookShowcase({ books }: { books: Book[] }) {
         );
       })}
     </section>
+      ) : null}
+    </>
   );
 }

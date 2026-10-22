@@ -8,7 +8,7 @@ import {
   ENERGYWORK_INITIATION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_STARTS,
   ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
   ENERGYWORK_MEDITATION_REPORT_IDS, energyworkMeditationFeedbackComplete,
-  energyworkSequence, energyworkAnswerValid, energyworkInitiationReady,
+  energyworkSequence, energyworkAnswerValid, energyworkInitiationReady, energyworkAdvanceAlreadyStored,
   energyworkLegacyResumeId, energyworkPreviousResumeId, energyworkP2ResumeId, energyworkP3ResumeId, energyworkP4ResumeId,
 } from '../data/academy/energywork-ai-schema.js'
 
@@ -24,13 +24,14 @@ const p6Migration = read('supabase/migrations/20261019170000_hh_academy_reiki_ku
 const p7Migration = read('supabase/migrations/20261019180000_hh_academy_reiki_kundalini_nine_questions_p7_20261019.sql')
 const p8Migration = read('supabase/migrations/20261019190500_hh_academy_reiki_tantra_five_questions_p8_20261019.sql')
 const p9Migration = read('supabase/migrations/20261019203000_hh_academy_reiki_yggdrasil_source_questions_p9_20261019.sql')
+const p10Migration = read('supabase/migrations/20261020212000_hh_academy_reiki_trim_lesson5_p10_20261020.sql')
 const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
-test('Server registry includes exactly 70 editorial IDs in one fixed five-lesson order', () => {
+test('Server registry includes exactly 63 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
-  assert.equal(ENERGYWORK_VERSION, '2026-10-19.p9')
+  assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.equal(ENERGYWORK_P4_VERSION, '2026-10-19.p4')
   assert.equal(ENERGYWORK_P3_VERSION, '2026-10-19.p3')
   assert.equal(ENERGYWORK_P2_VERSION, '2026-10-19.p2')
@@ -39,11 +40,11 @@ test('Server registry includes exactly 70 editorial IDs in one fixed five-lesson
   const editorial = [...source.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match=>match[0].slice(5,-1)).filter(id=>id !== 'tan-study-03')
   const registered = [...ENERGYWORK_COMMON,...Object.values(ENERGYWORK_BRANCH).flat(),...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH]
-  assert.equal(editorial.length, 70)
-  assert.equal(new Set(registered).size,70)
+  assert.equal(editorial.length, 63)
+  assert.equal(new Set(registered).size,63)
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
-  assert.equal(sequence.length,70)
+  assert.equal(sequence.length,63)
   assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
   assert.equal(sequence[9],'flight-save')
   assert.equal(sequence[10],'tan-01')
@@ -78,7 +79,7 @@ test('Meditation feedback gates the next screen; five reports and answers gate i
   assert.match(repository,/MEDITATION_FEEDBACK_REQUIRED/)
   assert.match(learner,/feedbackMissing = isMeditationFeedback/)
   assert.match(learner,/experienceMissing \|\| feedbackMissing/)
-  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','init-01'])
+  assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07'])
   assert.equal(energyworkInitiationReady(null),false)
   assert.equal(energyworkInitiationReady({}),false)
   const complete = Object.fromEntries([...ENERGYWORK_REPORT_IDS,...ENERGYWORK_LESSON_ANSWER_IDS].map(id=>[id,'My own note']))
@@ -152,6 +153,8 @@ test('Existing encrypted owner-only RLS is retained and version upgrade is addit
   assert.doesNotMatch(p8Migration, /drop table|delete from|drop policy|drop column/i)
   assert.match(p9Migration, /alter column course_version set default '2026-10-19\.p9'/)
   assert.doesNotMatch(p9Migration, /drop table|delete from|drop policy|drop column/i)
+  assert.match(p10Migration, /alter column course_version set default '2026-10-20\.p10'/)
+  assert.doesNotMatch(p10Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p4Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(p3Migration, /drop table|delete from|drop policy|drop column/i)
   assert.doesNotMatch(upgrade,/drop table|delete from|drop policy|drop column/i)
@@ -224,4 +227,42 @@ test('Client writes before navigation, retries conflict and can print protected 
   assert.match(learner,/if \(busy \|\| !firstLessonConsent/)
   assert.match(learner,/window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
   assert.match(learner,/window\.sessionStorage\.removeItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
+})
+
+test('Save review after Back uses the already-saved cursor without another server write', () => {
+  const sequence = energyworkSequence()
+  const final = sequence.at(-1)
+  assert.equal(final, 'end-02')
+  for (const current of ENERGYWORK_MEDITATION_REPORT_IDS) {
+    const position = sequence.indexOf(current)
+    assert.ok(position >= 0, current)
+    const next = sequence[position + 1]
+    assert.equal(energyworkAdvanceAlreadyStored(current, next, final, false), true, current + ' revisited')
+    assert.equal(energyworkAdvanceAlreadyStored(current, next, final, true), false, current + ' edited')
+    assert.equal(energyworkAdvanceAlreadyStored(current, next, current, false), false, current + ' first visit')
+    assert.equal(energyworkAdvanceAlreadyStored(current, current, final, false), false, current + ' invalid transition')
+    assert.equal(energyworkAdvanceAlreadyStored(current, final, final, false), false, current + ' cannot skip')
+    assert.equal(energyworkAdvanceAlreadyStored(current, next, 'welcome-02', false), false, current + ' not reached')
+  }
+  assert.equal(energyworkAdvanceAlreadyStored('missing', 'flight-02', final, false), false)
+  assert.match(learner, /sync === "ready" && energyworkAdvanceAlreadyStored\(/)
+  assert.match(learner, /if \(sync === "ready" && !alreadyStored\) \{[\s\S]*?await store\(nextId\)/)
+  assert.match(learner, /setSaveError\(null\);\s*setIndex\(\(current\) => Math\.min\(current \+ 1/)
+  assert.match(learner, /onClick=\{next\}[^>]*data-energywork-next/)
+  assert.match(learner, /isMeditationFeedback \? t\.saveReview/)
+})
+
+test('Changed review keeps private save, safe single conflict retry and visible error', () => {
+  assert.match(learner, /const syncedAnswersRef = useRef<AnswerMap>\(\{\}\)/)
+  assert.match(learner, /const changedElsewhere = \(id: string, submitted: string \| undefined\)/)
+  assert.match(learner, /changedElsewhere\(body\.slideId, body\.answer\)/)
+  assert.match(learner, /if \(changedElsewhere\(body\.slideId, body\.answer\)[\s\S]*?throw error/)
+  assert.match(learner, /if \(\(error as \{ code\?: string \}\)\.code !== "COURSE_PROGRESS_CHANGED"\) throw error/)
+  assert.match(learner, /revisionRef\.current = latest\.revision!;[\s\S]*?value = await submit\(\);/)
+  assert.match(learner, /syncedAnswersRef\.current = \{ \.\.\.restoredAnswers \}/)
+  assert.match(learner, /className=\{styles\.inlineSaveError\} role="alert">\{saveError\}/)
+  assert.match(read('components/energywork-ai-learner.module.css'), /\.inlineSaveError \{/)
+  assert.match(repository, /const resumeIndex=Math\.max\(maxBefore,nextIndex\)/)
+  // Public sharing remains separately opt-in. Editing does not publish feedback.
+  assert.match(repository, /await revokePublicReviewOnEdit\(db,actor,body\.slideId\)/)
 })

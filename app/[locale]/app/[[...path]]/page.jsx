@@ -7,18 +7,24 @@ import '@/components/app/psi-monitoring.css'
 import '@/components/app/refinements.css'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const { locale, path = [] } = await params
+  const query = await searchParams || {}
+  // Only the dedicated OPORA stress entry should offer a separate OPORA install.
+  // Other course/consultation screens all install the SAME Holistic House app.
+  const oporaInstall = path[0] === 'course' && query.program === 'stress'
   const titles = {
     portrait: locale === 'ru' ? 'Мои личные отчёты' : 'My personal reports',
     tests: locale === 'ru' ? 'Мои тесты' : 'My tests',
     portfolio: locale === 'ru' ? 'Мои результаты' : 'My results',
     course: locale === 'ru' ? 'Мои курсы' : 'My courses',
     business: locale === 'ru' ? 'Мой бизнес-курс на 90 дней' : 'My 90-day business programme',
+    labs: locale === 'ru' ? 'Мои лабораторные анализы' : 'My laboratory results',
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
-  manifest: path[0] === 'course' ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : '/holistic-house.webmanifest',
+  manifest: oporaInstall ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : (locale === 'ru' ? '/holistic-house-app-ru.webmanifest' : '/holistic-house-app.webmanifest'),
+  icons: { icon: '/icons/holistic-house-teal.svg', apple: '/holistic-house-icon/180' },
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
   }
@@ -37,7 +43,7 @@ export default async function AppPage({ params }) {
       redirect('/' + locale + '/app/document-view/' + path[1])
     }
   }
-  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course','business'].includes(path[0]) && path.length)) notFound()
+  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course','business','labs'].includes(path[0]) && path.length)) notFound()
   // Existing Analysis bookmarks are permanently useful: open the merged report archive.
   if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait#personal-reports')
   // A tab-specific workspace cannot briefly render full screens with a

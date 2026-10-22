@@ -1,10 +1,12 @@
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { redirect } from "next/navigation";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { spanishMetadata } from "@/lib/spanish-metadata";
@@ -20,8 +22,10 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
   return (
     <main className="services-shell services-shell--studio" lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
-      <ServicesConversionHero locale="es" />
-      <ServicesStudioOffers locale="es" />
+      <ServicesExplorerProvider>
+        <ServicesConversionHero locale="es" />
+        <ServicesStudioOffers locale="es" />
+      </ServicesExplorerProvider>
       <ServicesIntroMedia locale="es" />
       <PersonalTestimonials locale="es" variant="services" />
       <ServicesMethodVideos locale="es" />
@@ -30,6 +34,8 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
       <p className="remedy-disclaimer services-disclaimer">
         La homeopatía no tiene evidencia fiable para tratar problemas de salud. Los métodos simbólicos no sustituyen la atención médica o de salud mental, incluidos los servicios urgentes. Los resultados individuales no están garantizados.
       </p>
+      <CompactLeadCapture locale="es" serviceTitle="Personal service selection with Andrey"
+        title="¿No sabes por dónde empezar?" lead="Deja tu contacto y Andrey te ayudará a elegir el primer paso." />
     </main>
   );
 }

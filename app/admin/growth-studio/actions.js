@@ -2,13 +2,48 @@
 import {randomUUID} from 'node:crypto'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {GrowthStudioError, nextGrowthPost} from '@/lib/growth-studio/model.mjs'
+import {previewPublicGrowthSource} from '@/lib/growth-studio/source-preview.mjs'
 import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
+import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
+import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
-  ['invalid_post','invalid_action','invalid_transition','not_found','conflict','capacity_reached'].includes(error.code)
+  ['invalid_post','invalid_action','invalid_transition','not_found','conflict','capacity_reached','invalid_recurrence','invalid_source'].includes(error.code)
     ? error.code : 'storage_unavailable'
+
+// Read-only public-page metadata preview, explicitly invoked by the owner.
+// No save, provider side effect, AI translation or automatic publication.
+export async function previewPublicGrowthSourceAction(input) {
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  try{
+    const preview=await previewPublicGrowthSource(input)
+    return {ok:true,preview}
+  }catch(error){
+    const allowed=new Set(['invalid_source','source_unavailable','source_not_public',
+      'source_not_html','source_invalid_html','source_too_large','source_missing_metadata'])
+    return {ok:false,error:error instanceof GrowthStudioError && allowed.has(error.code)
+      ?error.code:'source_unavailable'}
+  }
+}
+
+// An explicit owner click verifies the existing Redis REST connection by
+// creating, reading, CAS-updating and deleting ONE expiring synthetic Redis hash.
+// No editorial posts or client data are read; no publish, Ads or video APIs.
+export async function checkGrowthStudioStorageAction() {
+  if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
+  try {
+    const store = getGrowthStudioStore()
+    if (!store) return {ok:false,error:'storage_unavailable'}
+    const verified = await store.verifyEditorialRoundTrip()
+    return verified === true
+      ? {ok:true,verified:true}
+      : {ok:false,error:'storage_unavailable'}
+  } catch {
+    return {ok:false,error:'storage_unavailable'}
+  }
+}
 
 export async function listGrowthStudioPostsAction() {
   if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
@@ -23,10 +58,13 @@ export async function listGrowthStudioPostsAction() {
 export async function updateGrowthStudioPostAction(input) {
   if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
   if (!input || typeof input !== 'object' || Array.isArray(input) ||
-      Object.keys(input).some(key => !['action','id','expectedRevision','fields'].includes(key)) ||
-      !['save','approve','plan','archive','reopen'].includes(input.action) ||
+      Object.keys(input).some(key => !['action','id','expectedRevision','fields','confirmed'].includes(key)) ||
+      !['save','approve','plan','archive','reopen','complete_manual','undo_manual'].includes(input.action) ||
       !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0 ||
-      (input.action !== 'save' && input.fields !== undefined)) return {ok:false,error:'invalid_post'}
+      (input.action !== 'save' && input.fields !== undefined) ||
+      (input.action === 'complete_manual' && input.confirmed !== true) ||
+      (input.action !== 'complete_manual' && input.confirmed !== undefined))
+    return {ok:false,error:'invalid_post'}
   try {
     const store = getGrowthStudioStore()
     if (!store) return {ok:false,error:'storage_unavailable'}
@@ -63,7 +101,47 @@ export async function createGrowthStudioBulkAction(input) {
 }
 
 
+// Evergreen reuse is explicitly owner-requested and drafts-only.
+// Atomic source-revision check prevents a concurrently edited/unapproved
+// original from silently generating previously approved marketing copy.
+export async function createGrowthEvergreenDraftsAction(input){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+      Object.keys(input).some(key=>!['sourceId','expectedRevision','batchId','cadence','count','startAt'].includes(key))||
+      typeof input.sourceId!=='string'|| !/^[0-9a-f-]{36}$/i.test(input.sourceId))
+    return {ok:false,error:'invalid_recurrence'}
+  try{
+    const store=getGrowthStudioStore()
+    if(!store)return {ok:false,error:'storage_unavailable'}
+    const source=await store.get(input.sourceId)
+    if(!source)return {ok:false,error:'not_found'}
+    const {sourceId,...params}=input
+    const drafts=prepareEvergreenGrowthDrafts(params,{source})
+    const current=await Promise.all(drafts.map(item=>store.get(item.id)))
+    if(current.every(Boolean)){
+      if(!current.every((item,index)=>sameGrowthDraft(item,drafts[index])))
+        return {ok:false,error:'conflict'}
+      return {ok:true,records:current,reused:true}
+    }
+    if(current.some(Boolean))return {ok:false,error:'conflict'}
+    await store.batchCreateFromSource(drafts,sourceId,input.expectedRevision)
+    return {ok:true,records:drafts,reused:false}
+  }catch(error){return {ok:false,error:safeError(error)}}
+}
+
 // Read-only account readiness. No provider write, no bot secrets returned to UI.
+// Owner-gated, read-only local setup audit: no tokens, customer data,
+// publishing, Ads or provider OAuth are accessed or returned to the browser.
+export async function checkGrowthStudioProviderReadinessAction(){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  try{
+    const result=await readGrowthStudioProviderReadiness()
+    return {ok:true,...result}
+  }catch{
+    return {ok:false,error:'readiness_unavailable'}
+  }
+}
+
 export async function checkGrowthTelegramPublisherAction(){
   if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
   if(!telegramConfig().ready)return {ok:false,error:'telegram_unconfigured'}

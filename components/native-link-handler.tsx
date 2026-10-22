@@ -12,6 +12,7 @@ export function NativeLinkHandler() {
   useEffect(() => {
     if (!isNativePsiAlchemy()) return
     let listener: { remove: () => Promise<void> } | undefined
+    let pushListener: { remove: () => Promise<void> } | undefined
     let active = true
     const handled = new Set<string>()
     function navigate(url: string) {
@@ -42,7 +43,25 @@ export function NativeLinkHandler() {
       const initial = await App.getLaunchUrl()
       if (initial?.url) navigate(initial.url)
     }).catch(() => {})
-    return () => { active = false; void listener?.remove() }
+    if (isNativeHolisticHouse()) {
+      void import('@capacitor/core').then(async ({ registerPlugin }) => {
+        const PushNotifications = registerPlugin<{
+          addListener:(event:string,callback:(value:{notification?:{data?:{kind?:string,requestId?:string,locale?:string}}})=>void)=>Promise<{remove:()=>Promise<void>}>
+        }>('PushNotifications')
+        const subscribed = await PushNotifications.addListener(
+          'pushNotificationActionPerformed',({notification}) => {
+            const data=notification?.data
+            if(data?.kind!=='client-message'||typeof data.requestId!=='string')return
+            const lang=data.locale==='ru'?'ru':'en'
+            const link=classifyHolisticHouseNativeLink(
+              'holistichouse://app/consultations?lang='+lang+'&request='+encodeURIComponent(data.requestId))
+            if(active&&link.kind==='hh-consultation'&&link.path)router.push(link.path)
+          })
+        if(!active){await subscribed.remove();return}
+        pushListener=subscribed
+      }).catch(() => {})
+    }
+    return () => { active = false; void listener?.remove(); void pushListener?.remove() }
   }, [router])
 
   return null

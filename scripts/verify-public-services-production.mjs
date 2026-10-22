@@ -1,5 +1,5 @@
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -143,18 +143,21 @@ try {
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
       }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
-      assert.equal(await page.locator("#method-videos").getAttribute("open"), null,
-        "Extended method videos stay collapsed by default");
+      await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
+        { timeout: 15000 });
+      // Method posters are visible, while third-party players stay opt-in.
+      assert.equal(await page.locator("#method-videos iframe").count(), 0,
+        "Method videos must not eagerly load third-party players");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // Canonical header: Library shortcut; My House keeps cabinet access in the menu.
+      // Canonical header: Cabinet is immediately accessible; Books occupies the bottom bar.
       const header = page.locator("header.house-header--services");
-      const libraryEntry = header.locator("a.site-library-entry");
-      await expect(libraryEntry).toHaveCount(1);
-      await visible(libraryEntry);
-      assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "top Library link keeps its locale");
-      const libraryBounds = await libraryEntry.boundingBox();
-      assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the visible header: " + locale + "/" + width);
+      const cabinetEntry = header.locator("a.site-cabinet-entry");
+      await expect(cabinetEntry).toHaveCount(1);
+      await visible(cabinetEntry);
+      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top Cabinet opens the authenticated app");
+      const cabinetBounds = await cabinetEntry.boundingBox();
+      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
       const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
@@ -164,13 +167,13 @@ try {
         "Public site menu must fit the header: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).toHaveAttribute("open", "");
-      const cabinetEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/app"]');
-      await expect(cabinetEntry).toHaveCount(1);
-      await visible(cabinetEntry);
-      await expect(cabinetEntry).toHaveText(locale === "ru" ? "Мой дом" : "My House");
-      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "My House opens the authenticated app");
-      const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My House entry must fit the opened menu: " + locale + "/" + width);
+      const booksEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/books"]');
+      await expect(booksEntry).toHaveCount(1);
+      await visible(booksEntry);
+      await expect(booksEntry).toHaveText(locale === "ru" ? "Идеи" : "Ideas");
+      assert.equal(await booksEntry.getAttribute("href"), "/" + locale + "/books", "Books opens the locale-specific library books view");
+      const booksBounds = await booksEntry.boundingBox();
+      assert.ok(booksBounds && booksBounds.x >= 0 && booksBounds.x + booksBounds.width <= width + 1, "Books entry must fit the opened menu: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);
@@ -181,6 +184,34 @@ try {
         const insights = page.locator("[data-services-studio-free]#free-insights");
         await insights.scrollIntoViewIfNeeded();
         await insights.screenshot({ path: output + "/services-" + locale + "-free-insights-390.png" });
+      }
+      // Category slider and Online/Toronto choice: real client interactions,
+      // never registering a lead, sending messages or initiating payment.
+      if (width === 320 || width === 390) {
+        const showcase = page.locator("[data-services-showcase-hero]");
+        await showcase.locator('[data-services-slide-dot="personal"]').click();
+        await visible(showcase.locator('[data-services-slide="personal"]'));
+        assert.equal(await showcase.locator("[data-services-slide-dot]").count(), 5);
+        await showcase.locator('[data-services-slide-dot="business"]').click();
+        await visible(showcase.locator('[data-services-slide="business"]'));
+        await showcase.locator('[data-services-slide-action="business"]').click();
+        await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
+        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
+        await showcase.locator('[data-services-mode="toronto"]').click();
+        await expect(page.locator("[data-services-studio-free]")).toBeHidden();
+        await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
+        await showcase.locator('[data-services-kind="reiki"]').click();
+        await visible(showcase.locator("[data-services-empty]"));
+        await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
+        await showcase.locator("[data-services-empty] button").click();
+        await expect(showcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+        await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+        await showcase.locator('[data-services-kind="free"]').click();
+        await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
+        await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
+        await showcase.locator('[data-services-kind="all"]').click();
+        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+        await assertViewport(page, locale + "/services/slider-filter/" + width);
       }
       // Keep the advanced matching UX available on a separate, dedicated
       // directory page, instead of duplicating it below personal offers.
@@ -268,6 +299,22 @@ try {
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
     assert.equal(await page.locator("#find-your-service").count(), 0);
+    // Verify the same service mode and topic filtering in Spanish.
+    const esShowcase = page.locator("[data-services-showcase-hero]");
+    await esShowcase.locator('[data-services-slide-dot="business"]').click();
+    await esShowcase.locator('[data-services-slide-action="business"]').click();
+    await expect(esShowcase.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
+    await esShowcase.locator('[data-services-mode="toronto"]').click();
+    await expect(page.locator("[data-services-studio-free]")).toBeHidden();
+    await esShowcase.locator('[data-services-kind="reiki"]').click();
+    await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
+    await esShowcase.locator('[data-services-mode="online"]').click();
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await esShowcase.locator('[data-services-kind="all"]').click();
+    await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
+    await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+    await assertViewport(page, "es/services/slider-filter/390");
     await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);
@@ -315,7 +362,7 @@ try {
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
-      const chooser = await openContactChannelChooser(target, expect);
+      const chooser = await openRegisteredContactChannelChooser(target, expect, page);
       const prepared = await assertPreparedContactChannels(chooser, expect);
       assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
         "Express rate preserved in approved draft: " + label);
@@ -341,7 +388,8 @@ try {
       "Business practitioner portrait should load: " + label);
     const free = main.locator('a[data-business-cta="free-hero"]');
     const href = await free.getAttribute("href");
-    assert.equal(href, "#business-direct-request");
+    assert.equal(href, "/" + locale + "/services/free-situation-review?topic=business",
+      "Free Business hero must reach the separate written situation review, not imply a live session");
     const requestForm = main.locator("[data-business-website-enquiry]");
     await visible(requestForm);
     assert.equal(await requestForm.locator("select[data-business-field=\"format\"]").count(),1);
@@ -351,11 +399,14 @@ try {
       await visible(offers.locator('[data-business-offer="' + kind + '"]'));
     }
     assert.ok((await offers.innerText()).includes("€50") && (await offers.innerText()).includes("€100"));
-    await visible(main.locator('a[href="#business-offers"]'));
-    await main.locator('a[href="#business-offers"]').click();
+    // The hero and the quick-start card both legitimately link to this section.
+    // Choose the visible hero CTA deterministically rather than violating Playwright strict mode.
+    const toOffers = main.locator('a[href="#business-offers"]').first();
+    await visible(toOffers);
+    await toOffers.click();
     await page.waitForURL(/#business-offers$/);
     const express = offers.locator('[data-business-offer="express"]');
-    const chooser = await openContactChannelChooser(express, expect);
+    const chooser = await openRegisteredContactChannelChooser(express, expect, page);
     const prepared = await assertPreparedContactChannels(chooser, expect);
     assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
       "Business express €50 must survive messenger selection: " + label);
@@ -410,7 +461,13 @@ try {
             const form = main.locator('[data-alchemy-lead-form="single"]');
             await form.scrollIntoViewIfNeeded();
             await visible(form.locator('[data-contact-order]'));
-            await expect(form.locator('select')).toHaveCount(2);
+            // Two editorial choices plus the separate international phone country selector.
+            // Check semantic controls instead of a fragile global select count.
+            await expect(form.locator('select[id$="-format"]')).toHaveCount(1);
+            await expect(form.locator('select[id$="-topic"]')).toHaveCount(1);
+            const countryCode = form.locator('[data-phone-country-input] select');
+            await expect(countryCode).toHaveCount(1);
+            await expect(countryCode).toHaveAttribute("aria-label", locale === "ru" ? "Код страны" : "Country calling code");
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
               nodes.map(node => ({top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom})));
@@ -437,7 +494,7 @@ try {
               "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openContactChannelChooser(pricing, expect);
+            const channels = await openRegisteredContactChannelChooser(pricing, expect, page);
             const prepared = await assertPreparedContactChannels(channels, expect);
             assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
               "Selected express session must appear in prepared order draft");
@@ -447,7 +504,7 @@ try {
             const capture = main.locator('section:has(> details)');
             assert.equal(await capture.count(), 1, "Exactly one core-service footer");
             await capture.scrollIntoViewIfNeeded();
-            const chooser = await openContactChannelChooser(capture, expect);
+            const chooser = await openRegisteredContactChannelChooser(capture, expect, page);
             const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
             assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
             const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
@@ -518,7 +575,7 @@ try {
           await form.locator('input[type="text"]').fill(markerA);
           await form.locator('textarea').fill(markerB);
           await visible(form.getByRole('button', {name: locale === "ru" ? "Скопировать мой запрос" : locale === "es" ? "Copiar mis detalles" : "Copy my details"}));
-          const chooser = await openContactChannelChooser(form, expect);
+          const chooser = await openRegisteredContactChannelChooser(form, expect, page);
           const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(chooser, expect);
           assert.ok((whatsappUrl.searchParams.get("text") || "").length > 40);
           for (const marker of [markerA, markerB]) {
@@ -540,7 +597,7 @@ try {
               await detailedForm.locator('form button[type="submit"]').click();
               const ready = detailedForm.locator('[role="region"]');
               await visible(ready);
-              const intakeChannels = await openContactChannelChooser(ready, expect);
+              const intakeChannels = await openRegisteredContactChannelChooser(ready, expect, page);
               const prepared = await assertPreparedContactChannels(intakeChannels, expect);
               for (const marker of [markerA, markerB]) {
                 assert.ok(!prepared.whatsappUrl.searchParams.get("text")?.includes(marker));

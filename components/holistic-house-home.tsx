@@ -1,11 +1,13 @@
-import { ClipboardCheck, GraduationCap } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
+import { HomeSectionCarousel } from "@/components/home-section-carousel";
+import { HomeConversationGuide } from "@/components/home-conversation-guide";
 import { ServicesSolutions } from "@/components/services-solutions";
+import { HomeExploreSections } from "@/components/home-explore-sections";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { TestSelectionCourseBanner } from "@/components/sitewide-antistress-banner";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
@@ -20,28 +22,8 @@ const copy = {
     heroTitle: "Сложности в отношениях, работе или важном решении?",
     heroIntro: "Обсудите один важный вопрос с Андреем Литвиновым через системные расстановки и работу с образами. Личные сессии в Торонто и онлайн; можно начать и с бесплатного письменного разбора.",
     heroPrimary: "Получить бесплатный разбор",
-    heroBook: "Запросить личную сессию · от €50",
+    heroBook: "Запросить консультацию · от €50",
     heroSecondary: "Пройти бесплатные тесты",
-    startKicker: "Другие возможности",
-    startTitle: "Исследуйте самостоятельно",
-    startIntro: "Мониторинг состояния, книги и программы — в дополнение к личной работе.",
-    personalEyebrow: "1 · Личная работа",
-    personalTitle: "Личная консультация",
-    personalText: "Разобраться в вашем вопросе и вариантах действий.",
-    personalAction: "Посмотреть форматы",
-    checkEyebrow: "2 · Бесплатный мониторинг",
-    checkTitle: "Психологическое состояние и ресурсы",
-    checkText: "Оцените стресс, настроение, сон и внутреннюю опору. Получите рекомендации и отслеживайте изменения.",
-    checkAction: "Начать бесплатный мониторинг",
-    learnEyebrow: "3 · Учиться и исследовать",
-    learnTitle: "Курсы и библиотека",
-    learnText: "Курсы, книги и практические материалы.",
-    academyAction: "Academy",
-    libraryAction: "Library",
-    tantraAction: "Тантра Рейки · бесплатная инициация 1-й ступени",
-    returning: "Уже есть профиль или результаты?",
-    cabinetAction: "Открыть кабинет",
-    testGuideAction: "Как работают бесплатные тесты",
     videoKicker: "Короткое знакомство",
     videoTitle: "О Holistic House за полминуты",
     aboutKicker: "Лично об Андрее",
@@ -55,28 +37,8 @@ const copy = {
     heroTitle: "Stuck in relationships, work or an important decision?",
     heroIntro: "Explore one real question with Andrey Litvinov through systemic constellations and guided imagery. Personal sessions in Toronto or online; a free written review is also available.",
     heroPrimary: "Get a free written review",
-    heroBook: "Ask about a session · from €50",
+    heroBook: "Request a consultation · from €50",
     heroSecondary: "Take free self-checks",
-    startKicker: "Other ways to explore",
-    startTitle: "Explore at your own pace",
-    startIntro: "Free wellbeing monitoring, courses and books to complement personal work.",
-    personalEyebrow: "1 · Personal work",
-    personalTitle: "Personal sessions",
-    personalText: "Explore your question and possible next steps.",
-    personalAction: "Explore personal work",
-    checkEyebrow: "2 · Free monitoring",
-    checkTitle: "Wellbeing & inner resources",
-    checkText: "Check stress, mood, sleep and resilience. Get practical guidance and track changes over time.",
-    checkAction: "Start free monitoring",
-    learnEyebrow: "3 · Learn & explore",
-    learnTitle: "Courses & Library",
-    learnText: "Courses, books and practical guides.",
-    academyAction: "Academy",
-    libraryAction: "Library",
-    tantraAction: "Tantra Reiki · free Level 1 initiation",
-    returning: "Already have a profile or previous results?",
-    cabinetAction: "Open Cabinet",
-    testGuideAction: "How free self-checks work",
     videoKicker: "A short introduction",
     videoTitle: "Holistic House in half a minute",
     aboutKicker: "Meet your practitioner",
@@ -105,13 +67,15 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         <SiteNavigation locale={locale} />
       </header>
 
-      <section className="service-home-hero" aria-labelledby="house-title">
+      <HomeConversationGuide locale={locale} />
+      <HomeSectionCarousel locale={locale} />
+
+      <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
           <StaticPortrait
             src="/images/holistic-house/andy-about.png"
             alt=""
             fill
-            priority
             sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px"
           />
         </div>
@@ -157,45 +121,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomepageTopicJourneys locale={locale} />
       <TestSelectionCourseBanner locale={locale} />
 
-      <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
-        <header className="service-home-start__heading">
-          <p className="service-home-kicker">{text.startKicker}</p>
-          <h2 id="service-home-start-title">{text.startTitle}</h2>
-          <p>{text.startIntro}</p>
-        </header>
-
-        <div className="service-home-start__grid">
-          <AcquisitionEventLink
-            className="service-home-start-card"
-            href={entry.selfCheck.href}
-            event="self_check_start"
-           prefetch={false}>
-            <span className="service-home-start-card__icon" aria-hidden="true"><ClipboardCheck /></span>
-            <span className="service-home-start-card__eyebrow">{text.checkEyebrow}</span>
-            <h3>{text.checkTitle}</h3>
-            <p>{text.checkText}</p>
-            <strong>{text.checkAction}<span aria-hidden="true">→</span></strong>
-          </AcquisitionEventLink>
-
-          <article className="service-home-start-card service-home-start-card--learning">
-            <span className="service-home-start-card__icon" aria-hidden="true"><GraduationCap /></span>
-            <span className="service-home-start-card__eyebrow">{text.learnEyebrow}</span>
-            <h3>{text.learnTitle}</h3>
-            <p>{text.learnText}</p>
-            <div className="service-home-start-card__actions">
-              <Link href={`/${locale}/academy`} prefetch={false}>{text.academyAction}<span aria-hidden="true">→</span></Link>
-              <Link href={`/${locale}/library`} prefetch={false}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
-              <Link href={`/${locale}/academy/reiki/tantra-reiki/free-initiation`} prefetch={false}>{text.tantraAction}<span aria-hidden="true">→</span></Link>
-            </div>
-          </article>
-        </div>
-
-        <p className="service-home-start__returning">
-          <Link href={`/${locale}/tests`} prefetch={false}>{text.testGuideAction}<span aria-hidden="true">→</span></Link>
-          <span aria-hidden="true"> · </span>
-          {text.returning} <Link href={`/${locale}/client`} prefetch={false}>{text.cabinetAction}<span aria-hidden="true">→</span></Link>
-        </p>
-      </section>
+      <HomeExploreSections locale={locale} />
 
       {introVideoContent}
 

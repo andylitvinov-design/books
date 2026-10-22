@@ -69,7 +69,8 @@ test('Square requires three distinct verified Square links, no custom destinatio
 test('public cart defaults to personal PayPal and never advertises unconfigured card checkout',()=>{
   const cart=read('components/commerce/personal-cart.tsx')
   const page=read('app/[locale]/cart/page.tsx')
-  assert.match(cart,/paypalEnabled \? "paypal"/)
+  assert.match(cart,/paypalEnabled \|\| verifiedPayPalEnabled \|\| Object\.keys\(hostedPayPalLinks\)\.length \? "paypal"/)
+  assert.match(cart,/data-cart-paypal-hosted/)
   assert.match(page,/configuredSquarePaymentLinks/)
   assert.match(cart,/buildSquarePaymentForServices/)
   assert.match(cart,/data-cart-square-payment-link/)
@@ -78,4 +79,16 @@ test('public cart defaults to personal PayPal and never advertises unconfigured 
   assert.match(cart,/data-interac-transfer-inquiry="cart"/)
   assert.doesNotMatch(cart,/Hosted by Stripe|Оплата на сайте Stripe|Pago alojado en Stripe/)
   assert.doesNotMatch(cart,/data-cart-card-link-inquiry|orderStatus\s*=\s*["']paid/)
+})
+
+test('PayPal.Me discloses required PayPal sign-in and no guest card checkout in all locales',()=>{
+  const cart=read('components/commerce/personal-cart.tsx')
+  const payments=read('app/[locale]/payments/page.tsx')
+  assert.match(cart,/PayPal\.Me requires a PayPal account/)
+  assert.match(cart,/нужен аккаунт PayPal/)
+  assert.match(cart,/requiere una cuenta PayPal/)
+  assert.match(payments,/not guest card checkout/)
+  assert.match(payments,/не гостевая оплата картой/)
+  assert.match(payments,/pago con tarjeta como invitado/)
+  assert.doesNotMatch(cart,/PayPal\.Me.*pay by card without/i)
 })

@@ -34,7 +34,7 @@ const words={
 test('confirmed Day 1 save leads to programme, commitment, optional phone setup, then tomorrow',async()=>{
   for(const locale of ['en','ru']){
     const f=fixture(locale,1),w=words[locale]
-    for(let i=0;i<9;i++)await press(f.h,w.next)
+    for(let i=0;i<10;i++)await press(f.h,w.next)
     await press(f.h,locale==='ru'?'Получилось немного':'I managed a little')
     await press(f.h,w.save)
     assert.equal(f.saved.length,1)
@@ -75,7 +75,7 @@ test('confirmed Day 1 save leads to programme, commitment, optional phone setup,
 test('Days 2-13 show the real next lesson after saving; Day 14 shows completion, not Day 15',async()=>{
   for(const day of [2,13,14]){
     const f=fixture('en',day),w=words.en
-    for(let i=0;i<OPORA_EXPERIENCE_PRE_SAVE_KEYS.length;i++)await press(f.h,w.next)
+    for(let i=0;i<OPORA_EXPERIENCE_PRE_SAVE_KEYS.length+1;i++)await press(f.h,w.next)
     await press(f.h,'I managed a little')
     await press(f.h,w.save)
     assert.equal(f.saved.length,1)
@@ -101,7 +101,7 @@ test('Days 2-13 show the real next lesson after saving; Day 14 shows completion,
 
 test('declining the first lesson phone reminder keeps the lesson saved and still shows tomorrow', async () => {
   const f=fixture('en',1),w=words.en
-  for(let i=0;i<9;i++)await press(f.h,w.next)
+  for(let i=0;i<10;i++)await press(f.h,w.next)
   await press(f.h,'I managed a little')
   await press(f.h,w.save)
   await press(f.h,w.audio)

@@ -87,3 +87,151 @@ listening QA remains mandatory. The synthetic unit tests are
 `python3 -m unittest discover -s tests -p test_andrey_voice_reference.py`.
 
 No audio, voice models, transcripts or patient data are committed to the repository.
+
+## 10. Backend staging work — 2026-10-20, NOT ACTIVE
+
+A feature-flagged backend implementation was prepared separately from the previous
+pure-state foundation. The queue uses existing private Redis/Upstash REST
+(`PRESCRIPTIONS_KV_REST_API_URL`, `PRESCRIPTIONS_KV_REST_API_TOKEN`)
+rather than provisioning a new SQL database schema. The job text is encrypted
+server-side with the existing AES-256-GCM `seal/openSealed` facilities before
+Redis receives it, and the queue key is an HMAC of the exact approved text
+and authorized report reference. Redis Lua operations allow atomic create,
+claim/lease, retry and finalization. No client report names, plaintext text,
+voice samples or bearer tokens are stored in queue metadata.
+
+Staged source (not evidence of an operating service):
+- `lib/clients/report-narration-access.js` — shared approved report authorization.
+- `lib/clients/local-narration-redis.js` — bounded encrypted Redis queue.
+- `lib/clients/local-narration-service.js` — enqueue, worker claim and readback.
+- `lib/clients/local-narration-media.js` — private bucket validation and
+  MP3 integrity checks, explicit Range playback.
+- `app/api/report-narration/local/route.js` — same-origin opt-in queue/status.
+- `app/api/report-narration/local/audio/route.js` — reauthorized private audio.
+- `app/api/report-narration/local/worker/claim/route.js` — bearer-only Mac work claim.
+- `components/local-report-narration-player.jsx` — mobile queue-aware player.
+- `scripts/andrey-voice/local_worker.py` — owner-operated Mac worker prototype
+  using the privately installed `andrey_tts.py` with no paid synthesis API.
+
+**Not implemented or verified:** worker complete/failed HTTP handlers; production
+end-to-end Redis and signed Supabase upload; actual Mac MLX synthesis and RU/EN
+timbre; iPhone playback QA. These are blockers for activation, not minor polish.
+
+The staged local feature is deliberately disabled unless ALL conditions hold:
+- `HH_LOCAL_NARRATION_ENABLED=true`
+- `HH_LOCAL_NARRATION_OWNER_APPROVED=true`
+- `HH_LOCAL_NARRATION_END_TO_END_VERIFIED=true`
+- `HH_LOCAL_NARRATION_WORKER_TOKEN` is a securely generated token of 40+ bytes
+  provisioned through encrypted Vercel env and the Mac's private credential store.
+
+No such activation is requested or justified yet. Do not set those flags true
+until the missing routes, test suites, security/privacy QA and real owner
+voice-quality approval are complete.
+
+No new server schema or database migration was applied. Existing RLS warnings in
+Supabase must be reviewed separately; do NOT auto-alter unrelated tables.
+
+
+## 11. Queued-source revocation and revalidation
+
+Before disclosing queued clinical text to Mac, the worker claim now rechecks
+the underlying authorized source and compares the exact approved text for
+the requested part. It verifies current guest grant version, nonrevocation,
+cabinet selector or valid saved-account source under its originally verified
+session context. Expired/revoked saved sessions fail closed. These checks
+are integrated in `currentApprovedAnalysisForWorker` and occur before
+upload signing or exposing the job text to Mac.
+
+**Still not production-ready:** Auth/database integration with realistic
+revoked/expired synthetic fixtures, crash/retry/renewed failed-job behaviour,
+orphaned Supabase object cleanup, personal RU/EN voice QA and real iPhone
+Safari playback have not been independently verified. Do not set any
+`HH_LOCAL_NARRATION_*` activation flag yet.
+
+## 12. Mac preflight and free installation (not executed remotely)
+
+On the owner's Apple Silicon Mac, `zsh scripts/andrey-voice/setup_macos.sh`
+only inspects CPU, macOS, memory and available storage. Running the same file
+with `--install` creates a user-private Python MLX environment after ensuring
+a compatible Python 3.11/3.12 and ffmpeg are present. No sudo, no paid inference
+and no voice model/client data is fetched by the preflight.
+
+Mac is currently not connected to Desktop Commander Remote. The above scripts
+are staged only: the site's approval flags must remain false until an
+authorized owner-only RU/EN audio test and verification of job revocation.
+
+
+## 13. Security and cost hardening — 2026-10-20
+
+This revision preserves the feature's **OFF** state. Deployment of code is not
+permission to process client records.
+
+- The claim-time source proof now includes the individual guest viewer's
+  session ID/hashed cookie proof and the exact cabinet session digest, not
+  merely the broader grant/client selector. Revoking either session prevents
+  an old queued job from disclosing its text to Mac.
+- Revoked queued jobs are canceled atomically through Lua instead of retried
+  three times. Mac completion rechecks the approved version before the MP3
+  can become ready and removes a canceled private upload when possible.
+- Redis erases sealed report text and viewer session proof when a job becomes
+  ready or reaches terminal failure. Playback still recomputes the published
+  version and client authorization for every audio request.
+- Idle phones back off status polling from 30 seconds to at most 5 minutes
+  rather than saturating the shared Upstash free tier.
+- Mac report text is piped over private stdin to the local CLI (no plaintext
+  `report-part.txt` persisted), and synthetic offline Redis Lua tests cover
+  duplicate enqueues, atomic leases, retries, revocation and payload erasure.
+- Mac agent preparation installs only code and a **disabled** launchd plist.
+  Activating auto-poll every five minutes requires both owner-approved RU/EN
+  reference hashes and a macOS Keychain-held worker credential, plus the site's
+  separate three-part activation flags. Running the Mac is not a prerequisite
+  to streaming an audio file that is already ready.
+- A 20-minute lease allows the bounded local synthesizer and MP3 compression
+  to complete on a slower compatible Mac; generation itself times out earlier.
+
+**Remaining preactivation gates**: actual Mac connectivity/Apple Silicon
+compatibility, approved audible RU/EN samples, real synthetic end-to-end
+storage+Range tests, explicit treatment of medical-content privacy, and
+production data-retention/cleanup design. Currently a Redis ready job expires
+after 14 days while its private MP3 may remain in storage; this must be
+reconciled before production enablement, rather than promising unlimited
+retention or free storage.
+
+Until those gates are verified keep `HH_LOCAL_NARRATION_ENABLED=false`,
+`HH_LOCAL_NARRATION_OWNER_APPROVED=false`,
+`HH_LOCAL_NARRATION_END_TO_END_VERIFIED=false` and
+`HH_REPORT_NARRATION_ENABLED=false`. No credentials are committed.
+
+
+## 14. Bounded no-cloud-charge audio lifecycle (2026-10-20)
+
+- Pending encrypted jobs expire after 14 days (a powered-off Mac does not
+  force the site to rent a paid GPU).
+- Successful jobs keep metadata and playable private MP3s for **90 days**.
+  The job's sealed clinical text and viewer proof are dropped upon success.
+- The Redis Lua completion records only the opaque private Storage path in a
+  sorted expiry index. Failed, canceled and timeout-reclaimed leases also
+  enqueue their possible orphaned MP3 paths there.
+- An authenticated Mac idle poll requests deletion of at most two expired
+  objects at a time, using the site's private server-side Supabase client.
+  Failed deletions are retryable after ten minutes, and cleanup does not
+  transmit client report text or invoke AI inference.
+- When Mac stays offline beyond expiry, a ready file may physically remain
+  in the private bucket until the Mac returns, but its authorization-bound
+  site metadata expires and the client can no longer open it. No *new* media
+  files are generated while the Mac is off.
+- This is a **bounded retention** choice to stay within the existing storage
+  free tier, not a promise of lifetime storage. Future owner-approved
+  longer retention requires a storage-capacity/consent review.
+
+The worker uses macOS Keychain for its bearer credential and can run every
+five minutes on login via a LaunchAgent, but the installer only prepares an
+inactive agent. Both real voice source checksums must match the owner's
+approved QA marker before enabling it. No medical content goes to the
+client phone except audio authorized on every request.
+
+**Still blocked for actual client rollout:** connected Mac agent, measured
+local RU/EN speech, owner approval, integration on an allowed synthetic
+test account across the six report scopes, and real iPhone Safari playback.
+Never preemptively switch on the production flags just because code is
+merged or Vercel is READY.

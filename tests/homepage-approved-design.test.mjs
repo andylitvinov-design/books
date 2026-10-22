@@ -30,9 +30,11 @@ test("approved 2026-10-09 home design keeps all three service directions and ori
   assert.match(home, /className="service-home-hero"/);
   assert.match(home, /event="self_check_start"/);
   assert.match(home, /event="service_view"/);
-  assert.match(home, /\{text\.academyAction\}/);
-  assert.match(home, /\{text\.libraryAction\}/);
-  assert.match(home, /\{text\.cabinetAction\}/);
+  const explore = read("components/home-explore-sections.tsx");
+  assert.match(home, /<HomeExploreSections locale=\{locale\} \/>/);
+  assert.match(explore, /academyAction: "Browse courses"/);
+  assert.match(explore, /cabinetAction: "Open my Cabinet"/);
+  assert.match(explore, /libraryAction: "Browse the Library"/);
 });
 
 test("homeopathy card has a complete local illustration instead of the observed broken image", () => {

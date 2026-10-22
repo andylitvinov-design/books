@@ -49,10 +49,12 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
 
   assert.match(home, /восстановление · практика · поддержка/)
   assert.match(home, /healing · practice · guidance/)
-  assert.match(home, /Исследуйте самостоятельно/)
-  assert.match(home, /Explore at your own pace/)
-  assert.match(home, /Курсы и библиотека/)
-  assert.match(home, /Courses & Library/)
+  const explore = await readFile('components/home-explore-sections.tsx', 'utf8')
+  assert.match(home, /<HomeExploreSections locale=\{locale\} \/>/)
+  assert.match(explore, /Выберите свой следующий шаг/)
+  assert.match(explore, /Find your next step/)
+  assert.match(explore, /Академия и курсы/)
+  assert.match(explore, /Academy & courses/)
   assert.match(page, /locale="en"/)
   assert.match(page, /requested === "ru" \|\| requested === "es"/)
   assert.match(page, /redirect\(`\/\$\{requested\}`\)/)
@@ -72,7 +74,7 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
   assert.match(mobile, /getCompactNavigation/)
   const icons = await readFile('components/compact-navigation-icons.ts', 'utf8')
   assert.match(mobile, /compactNavigationIcons/)
-  assert.match(icons, /house: LayoutDashboard/)
+  assert.match(icons, /books: BookOpen/)
   assert.match(icons, /tests: ClipboardList/)
   assert.match(icons, /business: BriefcaseBusiness/)
   assert.match(mobile, /ia222-bottom-height/)
@@ -246,7 +248,7 @@ test('compact language menu and cabinet next-step remain available after IA inte
   assert.match(esPublicVerifier, /site-language-menu-trigger/)
 })
 
-test('top site header puts Library next to language while My House retains cabinet access', async () => {
+test('top site header opens Cabinet while mobile bottom bar promotes Books', async () => {
   const [nav, home, header, styles] = await Promise.all([
     readFile('components/site-navigation.tsx', 'utf8'),
     readFile('components/holistic-house-home.tsx', 'utf8'),
@@ -259,13 +261,13 @@ test('top site header puts Library next to language while My House retains cabin
   assert.match(nav, /filter\(item => item\.id === 'services'\)/)
   assert.match(nav, /site-nav-free-entry/)
   assert.match(nav, /site-nav-about-entry/)
-  assert.match(nav, /className="site-library-entry"/)
-  assert.match(nav, /href=\{\`\/\$\{activeLocale\}\/library\`\}/)
-  assert.match(nav, /data-nav-item="library"/)
-  for (const localeCopy of ['Library', 'Библиотека', 'Biblioteca']) assert.ok(nav.includes(localeCopy))
-  assert.match(styles, /\.house-header--services \.site-navigation > \.site-library-entry/)
+  assert.match(nav, /className="site-cabinet-entry"/)
+  assert.match(nav, /data-nav-item="cabinet"/)
+  assert.match(nav, /activeLocale === 'es' \? 'en' : activeLocale/)
+  for (const localeCopy of ['Cabinet', 'Кабинет', 'Gabinete']) assert.ok(nav.includes(localeCopy))
+  assert.match(styles, /\.house-header--services \.site-navigation > \.site-cabinet-entry/)
   assert.match(styles, /\.house-header--services \.site-navigation > a \{ display: none; \}/)
-  assert.match(styles, /\.house-header--services \.site-library-entry__compact/)
+  assert.match(styles, /\.house-header--services \.site-cabinet-entry__compact/)
   assert.match(styles, /@media \(max-width: 374px\)/)
 })
 

@@ -1,0 +1,75 @@
+name: Holistic House Mobile Install
+
+on:
+  pull_request:
+    paths:
+      - 'public/holistic-house*.webmanifest'
+      - 'app/holistic-house-icon/**'
+      - 'app/[locale]/install/**'
+      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'app/[locale]/app/layout.jsx'
+      - 'components/app/install-holistic-house.jsx'
+      - 'components/app/post-signup-install-offer.*'
+      - 'components/app/app-workspace.jsx'
+      - 'components/pwa-registration.tsx'
+      - 'lib/pwa/install-prompt.js'
+      - 'tests/holistic-house-post-signup-install.test.mjs'
+      - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/holistic-house-install-push-regression.test.mjs'
+      - '.github/workflows/holistic-house-mobile-install.yml'
+  push:
+    branches:
+      - codex/public-book-library
+    paths:
+      - 'public/holistic-house*.webmanifest'
+      - 'app/holistic-house-icon/**'
+      - 'app/[locale]/install/**'
+      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'components/app/install-holistic-house.jsx'
+      - 'components/app/post-signup-install-offer.*'
+      - 'components/app/app-workspace.jsx'
+      - 'components/pwa-registration.tsx'
+      - 'lib/pwa/install-prompt.js'
+      - 'tests/holistic-house-post-signup-install.test.mjs'
+      - 'tests/holistic-house-pwa.test.mjs'
+      - '.github/workflows/holistic-house-mobile-install.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-mobile-install-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  install-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify install manifests and private-message safety
+        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs
+      - name: Lint signed-in install prompt, global PWA registration and onboarding
+        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js
+      - name: Build public phone installation pages without credentials
+        run: npm run build
+      - name: Check EN/RU install pages and real PNG icons
+        run: |
+          PORT=3098 npm run start -- --port 3098 > /tmp/hh-install-next.log 2>&1 &
+          child=$!
+          trap 'kill "$child" 2>/dev/null || true' EXIT
+          for n in $(seq 1 55); do
+            if curl --fail --silent http://127.0.0.1:3098/en/install >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
+          grep -q 'Holistic House' /tmp/hh-install-ru.html
+          for size in 180 192 512; do
+            curl --fail --silent --show-error -D /tmp/hh-icon-headers -o /tmp/hh-icon.png "http://127.0.0.1:3098/holistic-house-icon/$size"
+            grep -qi '^content-type: image/png' /tmp/hh-icon-headers
+            file /tmp/hh-icon.png | grep -q "PNG image data, $size x $size"
+          done
+          curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
+          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/portrait'||!f.shortcuts.some(x=>x.url==='/ru/app/consultations'))process.exit(1)"

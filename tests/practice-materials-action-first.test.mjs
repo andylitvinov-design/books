@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import {readFileSync} from 'node:fs'
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+const hub=read('components/app/practice-materials.jsx')
+const hubCss=read('components/app/practice-materials.module.css')
+const articles=read('components/app/practitioner-articles.jsx')
+const articleCss=read('components/app/practitioner-articles.module.css')
+const workspace=read('components/app/practice-workspace.jsx')
+const audio=read('components/admin-reiki-audio.jsx')
+const audioCss=read('components/admin-reiki-audio.module.css')
+const courseRoute=read('app/admin/materials/courses/reiki-practitioner/page.jsx')
+
+test('every material tab exposes one meaningful primary action immediately after the tab switcher',()=>{
+ const tabs=hub.indexOf('data-unified-material-nav')
+ const actions=hub.indexOf('data-material-primary-action={tab}')
+ const content=hub.indexOf('data-material-panel={tab}')
+ assert.ok(tabs>=0&&actions>tabs&&content>actions)
+ assert.match(hub,/tab==='services'\?<button/)
+ assert.match(hub,/onClick=\{onAddService\|\|onOpenServices\}/)
+ assert.match(hub,/tab==='courses'\?<button/)
+ assert.match(hub,/tab==='audio'&&isOwner\?<>/)
+ assert.match(hub,/className=\{styles\.actionPrimary\} disabled=\{locked\|\|editing!==null\} onClick=\{\(\)=>open\(\)\}/)
+ assert.match(hub,/<CompactVideoComposer/)
+ assert.match(hub,/\{isOwner&&<button[^\n]*onClick=\{onOpenYoutube\}/)
+ assert.match(articles,/data-material-primary-action="articles"/)
+ assert.match(articles,/onClick=\{\(\)=>choose\(null\)\}/)
+ assert.match(hub,/Создать курс/)
+ assert.match(hub,/Загрузить аудио/)
+ assert.match(hub,/Record/)
+ assert.match(hub,/Upload video/)
+})
+
+test('default mobile view shows no pre-action search, at most two materials and expandable advanced controls',()=>{
+ assert.match(hub,/const \[searchOpen,setSearchOpen\]=useState\(false\)/)
+ assert.match(hub,/const \[showAll,setShowAll\]=useState\(false\)/)
+ assert.match(hub,/searchOpen&&<label/)
+ assert.match(hub,/visibleServices\.slice\(0,showAll\|\|query\?visibleServices\.length:2\)/)
+ assert.match(hub,/visibleVideos\.slice\(0,showAll\|\|query\?visibleVideos\.length:2\)/)
+ assert.match(hub,/\.slice\(0,showAll\|\|query\?5:2\)/)
+ assert.match(hub,/setShowAll\(v=>!v\)/)
+ assert.match(articles,/<details className=\{styles\.libraryTools\}>/)
+ assert.match(articles,/refreshList/)
+ assert.match(articles,/serverUnavailable/)
+ for(const css of [hubCss,articleCss]){
+  assert.match(css,/min-height:4[467]px/)
+  assert.match(css,/@media\(max-width:430px\)/)
+ }
+ assert.match(hubCss,/@media\(max-width:350px\)/)
+})
+
+test('voice capture is permissioned, opt-in and remains in protected Reiki editor',()=>{
+ assert.match(workspace,/fetch\('\/api\/app\/practitioner\/open'/)
+ assert.match(workspace,/mode==='record'\?'&mode=record':''/)
+ assert.match(courseRoute,/requireAdminRequest\(\)/)
+ assert.match(courseRoute,/query\?\.mode==='record'/)
+ assert.match(audio,/navigator\.mediaDevices\.getUserMedia\(\{audio:true\}\)/)
+ assert.match(audio,/MediaRecorder\.isTypeSupported\?\.\('audio\/mp4'\)/)
+ assert.match(audio,/new File\(\[blob\],/)
+ assert.match(audio,/setPendingFiles\(\[recorded\]\)/)
+ assert.match(audio,/data-reiki-audio-microphone/)
+ assert.match(audio,/if \(!file \|\| busy \|\| !pendingFiles\.length\) return/)
+ assert.match(audio,/uploadToSignedUrl/)
+ assert.match(audio,/window\.confirm\(copy\.confirmPublish\)/)
+ assert.match(audioCss,/\.recorderControls/)
+ assert.doesNotMatch(hub,/navigator\.mediaDevices\.getUserMedia/)
+})

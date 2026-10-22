@@ -1,18 +1,21 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmSmsTools from './crm-sms-tools'
 import CrmSmsSetup from './crm-sms-setup'
 import CrmIntegrationDiagnostics from './crm-integration-diagnostics'
+import CustomerTelegramBotSetup from './customer-telegram-bot-setup'
 import CrmFreeSmsPanel from './crm-free-sms'
 import CrmFreeEmail from './crm-free-email'
 import CrmContactEditor from './crm-contact-editor'
 import CrmExportTools from './crm-export-tools'
 import CrmMessengerPanel from './crm-messenger'
+import CrmMessagesNavigation from './crm-messages-navigation'
 import CrmBusinessEnquiries from './crm-business-enquiries'
 import CrmMarketingPanel from './crm-marketing'
 import { CrmWorkflowOverview, CrmContactWorkflow } from './crm-workflow'
+import CrmLeadTriage from './crm-lead-triage'
 import styles from './crm-manager.module.css'
 const COPY = {
   en: { title: 'Clients & subscribers', privacy: 'Business contact details only. Do not enter health information here.', name: 'Name', email: 'Email', add: 'Add contact', loading: 'Loading…', error: 'CRM is not available yet. Your information was not saved.', noContacts: 'No contacts yet.', noConsent: 'Marketing consent is separate from a paid subscription.', draft: 'Prepare an update', saveDraft: 'Save draft', drafts: 'Drafts', off: 'Automatic campaigns are off. Individual opted-in emails are handled in each contact.', saved: 'Saved.', unverified: 'Address not verified', suppressed: 'Do not contact', locale: 'Language' },
@@ -34,16 +37,21 @@ const EXTRA_COPY = {
   ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Поиск и фильтры работают по загруженным контактам. Для остальных нажмите «Загрузить ещё».', stage: 'Статус контакта', conflict: 'Контакт изменён в другой вкладке. Обновите страницу.' },
   es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'La búsqueda y los filtros abarcan los contactos cargados. Carga más para ver los demás.', stage: 'Estado del contacto', conflict: 'El contacto cambió en otra pestaña. Actualiza la página.' },
 }
+const CRM_SECTION_IDS=new Set(['overview','tasks','messages','sms','integrations','contacts'])
 export default function CrmManager({ locale = 'en', accountId }) {
   const language = COPY[locale] ? locale : 'en'
   const c = { ...COPY[language], ...EXTRA_COPY[language] }
   const billing = BILLING_COPY[language]
   const [data, setData] = useState(null)
   const sessionRef = useRef(null)
+  const loadVersionRef=useRef(0)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [pageBusy, setPageBusy] = useState(false)
   const [pageError, setPageError] = useState(false)
+  const [taskPageBusy,setTaskPageBusy]=useState(false)
+  const [taskPageError,setTaskPageError]=useState(false)
+  const taskPageAbortRef=useRef(null)
   const [displayName, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -56,22 +64,57 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [lifecycle, setLifecycle] = useState('lead')
   const [source, setSource] = useState('manual')
   const [activeSection, setActiveSection] = useState('overview')
-  async function load(session) {
-    const response = await fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: session.controller.signal, headers: { 'X-HH-Account-Id': session.accountId } })
-    if (!response.ok) throw new Error('unavailable')
-    const result = await response.json(); if (sessionRef.current === session) setData(result)
+  function switchSection(next){
+    if(!CRM_SECTION_IDS.has(next))return
+    setActiveSection(next)
+    if(typeof window==='undefined')return
+    const url=new URL(window.location.href)
+    // Navigation state only; no client/contact/message IDs in URLs.
+    if(url.pathname.endsWith('/app/practice')){
+      url.searchParams.set('panel','crm')
+      if(next==='overview')url.searchParams.delete('crmTab')
+      else url.searchParams.set('crmTab',next)
+      window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+    }
   }
+  const [focusedContactId,setFocusedContactId]=useState('')
+  const [focusBusy,setFocusBusy]=useState(false)
+  const [focusError,setFocusError]=useState('')
+  const contactAnchorRef=useRef(null)
+  const focusAbortRef=useRef(null)
+  const focusedIdRef=useRef('')
+  const load=useCallback(async (session)=>{
+    // Only the newest response from this exact account may replace CRM state.
+    // Prevent delayed initial GET from undoing a just-saved follow-up mutation.
+    const version=++loadVersionRef.current
+    const response=await fetch('/api/app/crm',{
+      credentials:'same-origin',cache:'no-store',signal:session.controller.signal,
+      headers:{'X-HH-Account-Id':session.accountId},
+    })
+    if(!response.ok)throw new Error('unavailable')
+    const result=await response.json()
+    if(sessionRef.current!==session||version!==loadVersionRef.current)return
+    setData(previous=>{
+      const focused=previous?.contacts?.find(contact=>contact.id===focusedIdRef.current)
+      if(!focused||result.contacts?.some(contact=>contact.id===focused.id))return result
+      return {...result,contacts:[focused,...result.contacts]}
+    })
+  },[])
   useEffect(() => {
     if (!accountId) return
     const controller = new AbortController()
     const session = { accountId, controller }
     sessionRef.current = session
-    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection('overview')
-    fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'X-HH-Account-Id': accountId } })
-      .then(async (response) => { if (!response.ok) throw new Error('unavailable'); const result = await response.json(); if (sessionRef.current === session) setData(result) })
-      .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
-    return () => { controller.abort(); if (sessionRef.current === session) sessionRef.current = null }
-  }, [c.error, accountId])
+    focusAbortRef.current?.abort();taskPageAbortRef.current?.abort()
+    focusedIdRef.current='';setFocusedContactId('');setFocusError('');setFocusBusy(false)
+    setTaskPageBusy(false);setTaskPageError(false)
+    const initialTab=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('crmTab'):null
+    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection(CRM_SECTION_IDS.has(initialTab)?initialTab:'overview')
+    void load(session).catch(error=>{
+      if(error.name!=='AbortError'&&sessionRef.current===session)setNotice(c.error)
+    })
+    return () => { controller.abort();focusAbortRef.current?.abort();taskPageAbortRef.current?.abort(); if (sessionRef.current === session) sessionRef.current = null }
+  }, [c.error, accountId, load])
   useEffect(()=>{
     const q=search.trim()
     if(!['contacts','sms'].includes(activeSection)||!accountId||!data||q.length<2) {
@@ -111,10 +154,20 @@ export default function CrmManager({ locale = 'en', accountId }) {
     try {
       const response = await fetch('/api/app/crm', { method: 'POST', credentials: 'same-origin', signal: session.controller.signal, headers: { 'Content-Type': 'application/json', 'X-HH-Account-Id': session.accountId }, body: JSON.stringify({ action, payload }) })
       const result = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','CONTACT_CHANNEL_REQUIRED','INVALID_PHONE','EMAIL_ADDRESS_REQUIRED','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY','INVALID_BUSINESS_LEAD','INVALID_CONTACT_EDIT','EMAIL_CHANGE_REQUIRES_NEW_CONTACT','PHONE_LINKED_TO_MESSAGES','CONTACT_ARCHIVED','SMS_PHONE_CHANGE_REQUIRES_NEW_CONTACT','SMS_NOT_CONFIGURED','SMS_DELIVERY_UNCONFIRMED','SMS_CONTACT_BLOCKED','SMS_CONSENT_REQUIRED','SMS_DAILY_LIMIT','SMS_RECENT_DUPLICATE','INVALID_SMS_MESSAGE','SMS_TOO_LONG','PRIVATE_CONTENT_BLOCKED','SMS_PILOT_ONLY','SMS_CONSENT_CHANGED','SMS_STATUS_UNAVAILABLE','SMS_STATUS_UNCONFIRMED'].includes(result.error) ? result.error : 'unavailable')
+      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','CONTACT_CHANNEL_REQUIRED','INVALID_PHONE','EMAIL_ADDRESS_REQUIRED','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','CRM_LEAD_NOT_ELIGIBLE','INVALID_CRM_LEAD','INVALID_CRM_ACTIVITY','INVALID_BUSINESS_LEAD','INVALID_BUSINESS_CONTACT_IMPORT','BUSINESS_CONTACT_NO_REPLY_PERMISSION','INVALID_CONTACT_EDIT','EMAIL_CHANGE_REQUIRES_NEW_CONTACT','PHONE_LINKED_TO_MESSAGES','CONTACT_ARCHIVED','SMS_PHONE_CHANGE_REQUIRES_NEW_CONTACT','SMS_NOT_CONFIGURED','SMS_DELIVERY_UNCONFIRMED','SMS_CONTACT_BLOCKED','SMS_CONSENT_REQUIRED','SMS_DAILY_LIMIT','SMS_RECENT_DUPLICATE','INVALID_SMS_MESSAGE','SMS_TOO_LONG','PRIVATE_CONTENT_BLOCKED','SMS_PILOT_ONLY','SMS_CONSENT_CHANGED','SMS_STATUS_UNAVAILABLE','SMS_STATUS_UNCONFIRMED'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
       setNotice(action==='check_sms_status'?(language==='ru'?'Статус SMS проверен у Twilio. Обновлена история доставки.':language==='es'?'Estado consultado en Twilio. Historial actualizado.':'Twilio delivery status checked. History updated.'):action==='check_sms_connection'?'':action==='send_sms'?(result.accepted?(language==='ru'?'SMS принято провайдером; это ещё не подтверждение доставки.':language==='es'?'SMS aceptado por el proveedor, no confirmado como entregado.':'SMS accepted by provider; delivery not confirmed.'):(language==='ru'?'Отправка SMS не подтверждена.':'SMS status is unconfirmed.')):action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setPhone(''); setLifecycle('lead'); setSource('manual') }
+      if(result.id&&['set_lifecycle','edit_contact','suppress_contact'].includes(action)) {
+        setData(previous=>previous?{...previous,contacts:previous.contacts.map(contact=>{
+          if(contact.id!==result.id)return contact
+          if(action==='set_lifecycle')return {...contact,lifecycle:payload.lifecycle,revision:result.revision??contact.revision}
+          if(action==='edit_contact')return {...contact,displayName:payload.displayName,
+            email:payload.email,phone:payload.phone,source:payload.source,locale:payload.locale,
+            revision:result.revision??contact.revision}
+          return {...contact,suppressed:true}
+        })}:previous)
+      }
       await load(session).catch(() => {})
       setSearchRefresh(v=>v+1)
       return result
@@ -144,9 +197,13 @@ export default function CrmManager({ locale = 'en', accountId }) {
           INVALID_EMAIL_MESSAGE:language==='ru'?'Проверьте текст и тему письма.':'Check the email subject and body.',
           INVALID_FOLLOWUP:language==='ru'?'Проверьте дату и вид действия.':'Check follow-up date and type.',
           CRM_FOLLOWUP_LIMIT:language==='ru'?'У контакта слишком много открытых задач.':'Too many open follow-ups for this contact.',
+          CRM_LEAD_NOT_ELIGIBLE:language==='ru'?'Контакт уже не является доступным лидом. Обновите список.':'Lead is no longer available. Refresh the list.',
+          INVALID_CRM_LEAD:language==='ru'?'Неверный лид. Повторите выбор.':'Invalid lead. Choose again.',
           CRM_CONTACT_ARCHIVED:language==='ru'?'Контакт в архиве; новые действия недоступны.':'Archived contact cannot receive new tasks.',
           INVALID_CRM_ACTIVITY:language==='ru'?'Действие не поддерживается.':'This activity is not supported.',
           INVALID_BUSINESS_LEAD:language==='ru'?'Проверьте статус заявки.':'Check the business enquiry status.',
+          INVALID_BUSINESS_CONTACT_IMPORT:language==='ru'?'Проверьте имя и контакты заявки.':'Check the business enquiry name and contact details.',
+          BUSINESS_CONTACT_NO_REPLY_PERMISSION:language==='ru'?'Нет согласия на ответ по заявке.':'The enquiry has no reply permission.',
           INVALID_CONTACT_EDIT:language==='ru'?'Проверьте исправленные контактные данные.':'Check the contact details.',
           EMAIL_CHANGE_REQUIRES_NEW_CONTACT:language==='ru'?'Этот email уже имеет историю согласий или подтверждения. Создайте отдельный контакт для нового адреса.':'This email has verification or consent history. Create a separate contact for the new address.',
           PHONE_LINKED_TO_MESSAGES:language==='ru'?'Телефон связан с историей переписки. Изменять его здесь нельзя.':'Phone is linked to message history and cannot be changed here.',
@@ -186,6 +243,106 @@ export default function CrmManager({ locale = 'en', accountId }) {
       if(sessionRef.current===session&&error?.name!=='AbortError')setPageError(true)
     } finally {if(sessionRef.current===session)setPageBusy(false)}
   }
+  // Refresh a paused CRM tab when the Toronto day changes; no polling.
+  const rolloverRef=useRef('')
+  useEffect(()=>{
+    const asOf=data?.overview?.asOf
+    if(!accountId||!asOf)return
+    const check=()=>{
+      if(document.visibilityState==='hidden')return
+      const parts=new Intl.DateTimeFormat('en-US',{
+        timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',
+      }).formatToParts(new Date())
+      const field=kind=>parts.find(item=>item.type===kind)?.value
+      const today=[field('year'),field('month'),field('day')].join('-')
+      if(today===asOf||rolloverRef.current===today)return
+      const session=sessionRef.current
+      if(!session||session.accountId!==accountId)return
+      rolloverRef.current=today
+      void load(session).catch(()=>{}).finally(()=>{
+        if(sessionRef.current===session)rolloverRef.current=''
+      })
+    }
+    document.addEventListener('visibilitychange',check)
+    window.addEventListener('focus',check)
+    return ()=>{
+      document.removeEventListener('visibilitychange',check)
+      window.removeEventListener('focus',check)
+    }
+  },[accountId,data?.overview?.asOf,load])
+  async function loadMoreFollowups() {
+    const session=sessionRef.current
+    const cursor=data?.followupsNextCursor
+    if(!session||session.accountId!==accountId||!cursor||taskPageBusy||busy)return
+    taskPageAbortRef.current?.abort()
+    const controller=new AbortController()
+    taskPageAbortRef.current=controller
+    setTaskPageBusy(true);setTaskPageError(false)
+    try {
+      const response=await fetch('/api/app/crm/followups',{
+        method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json','X-HH-Account-Id':session.accountId},
+        body:JSON.stringify({cursor}),
+      })
+      if(!response.ok)throw new Error('FOLLOWUPS_PAGE_UNAVAILABLE')
+      const page=await response.json()
+      if(!Array.isArray(page.followups)||page.followups.length>100||
+         (page.nextCursor!==null&&typeof page.nextCursor!=='string'))
+        throw new Error('FOLLOWUPS_PAGE_UNAVAILABLE')
+      if(controller.signal.aborted||sessionRef.current!==session)return
+      setData(previous=>{
+        if(!previous||previous.followupsNextCursor!==cursor)return previous
+        const known=new Set((previous.followups||[]).map(task=>task.id))
+        const extra=page.followups.filter(task=>!known.has(task.id))
+        return {...previous,followups:[...(previous.followups||[]),...extra],
+          followupsNextCursor:page.nextCursor}
+      })
+    }catch(error) {
+      if(error?.name!=='AbortError'&&!controller.signal.aborted&&sessionRef.current===session)
+        setTaskPageError(true)
+    }finally {
+      if(sessionRef.current===session&&!controller.signal.aborted)setTaskPageBusy(false)
+    }
+  }
+  async function focusContact(id) {
+    const session=sessionRef.current
+    if(!session||session.accountId!==accountId)return
+    focusAbortRef.current?.abort();setFocusBusy(false)
+    focusedIdRef.current=id
+    setFocusedContactId(id);setFocusError('')
+    setActiveSection('contacts');setFilter('all');setSearch('')
+    if(data?.contacts?.some(contact=>contact.id===id))return
+    const controller=new AbortController()
+    focusAbortRef.current=controller
+    setFocusBusy(true)
+    try {
+      const response=await fetch('/api/app/crm/contact',{
+        method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json','X-HH-Account-Id':session.accountId},
+        body:JSON.stringify({contactId:id}),
+      })
+      if(!response.ok)throw new Error('CONTACT_LOOKUP_UNAVAILABLE')
+      const result=await response.json()
+      if(!result.contact||result.contact.id!==id)throw new Error('CONTACT_LOOKUP_UNAVAILABLE')
+      if(controller.signal.aborted||sessionRef.current!==session||focusedIdRef.current!==id)return
+      setData(previous=>{
+        if(!previous||previous.contacts.some(contact=>contact.id===id))return previous
+        return {...previous,contacts:[result.contact,...previous.contacts]}
+      })
+    }catch(error) {
+      if(error?.name!=='AbortError'&&!controller.signal.aborted&&sessionRef.current===session)
+        setFocusError(language==='ru'?'Не удалось открыть контакт. Обновите CRM и попробуйте снова.':
+          language==='es'?'No se pudo abrir el contacto. Actualiza CRM e inténtalo de nuevo.':
+          'Could not open this contact. Refresh the CRM and retry.')
+    }finally{if(sessionRef.current===session&&!controller.signal.aborted)setFocusBusy(false)}
+  }
+  useEffect(()=>{
+    if(activeSection!=='contacts'||!focusedContactId||!contactAnchorRef.current)return
+    const element=contactAnchorRef.current
+    if(element.dataset.contactId!==focusedContactId)return
+    element.scrollIntoView({block:'center',behavior:'auto'})
+    element.focus({preventScroll:true})
+  },[activeSection,focusedContactId,data?.contacts])
   if (!accountId) return null
   const globalSearch=search.trim().length>=2
   const contacts=(globalSearch?(serverSearchStatus==='done'?serverResults?.contacts||[]:[]):data?.contacts||[]).filter(contact=>{
@@ -208,13 +365,15 @@ export default function CrmManager({ locale = 'en', accountId }) {
     <nav className={styles.sectionTabs} aria-label={language==='ru'?'Разделы CRM':language==='es'?'Secciones CRM':'CRM sections'}>
       {[
         ['overview',language==='ru'?'Обзор':language==='es'?'Resumen':'Overview'],
+        ['tasks',language==='ru'?'Задачи':language==='es'?'Tareas':'Tasks'],
+        ['leads',language==='ru'?'Лиды':language==='es'?'Leads':'Leads'],
         ['messages',language==='ru'?'Сообщения':language==='es'?'Mensajes':'Messages'],
         ['sms','SMS'],
         ['integrations',language==='ru'?'Подключения':language==='es'?'Conexiones':'Connections'],
         ['contacts',language==='ru'?'Контакты':language==='es'?'Contactos':'Contacts'],
       ].map(([id,label])=><button key={id} type="button" aria-pressed={activeSection===id}
         className={activeSection===id?styles.sectionTabActive:styles.sectionTab}
-        onClick={()=>setActiveSection(id)}>{label}</button>)}
+        onClick={()=>{if(id!=='contacts'){focusAbortRef.current?.abort();setFocusBusy(false);focusedIdRef.current='';setFocusedContactId('')}switchSection(id)}}>{label}</button>)}
     </nav>
     {activeSection!=='messages'&&<div className={styles.privacy}>
       <strong>{language==='ru'?'Только деловые контакты':'Business contacts only'}</strong>
@@ -224,8 +383,15 @@ export default function CrmManager({ locale = 'en', accountId }) {
       <p>{notice||c.loading}</p>
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
-    {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />}
-    {activeSection==='integrations'&&data&&<CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />}
+    {activeSection==='messages'&&<>
+      <CrmMessagesNavigation locale={language} setup={data?.integrationSetup}
+        onSms={()=>switchSection('sms')} onIntegrations={()=>switchSection('integrations')} onOverview={()=>switchSection('overview')}/>
+      <CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />
+    </>}
+    {activeSection==='integrations'&&data&&<>
+       <CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />
+       <CustomerTelegramBotSetup locale={language} accountId={accountId} />
+     </>}
     {activeSection==='sms'&&data&&<div className={styles.formCard}>
       <h3>SMS · {language==='ru'?'сообщения клиентам':language==='es'?'mensajes a clientes':'client messages'}</h3>
       <input type="search" aria-label={language==='ru'?'Найти контакт для SMS':language==='es'?'Buscar contacto para SMS':'Find contact for SMS'}
@@ -256,14 +422,31 @@ export default function CrmManager({ locale = 'en', accountId }) {
     </div>}
     {data&&<>
       {activeSection==='overview'&&<>
+       <button type="button" className={styles.leadShortcut} onClick={()=>setActiveSection('leads')}>
+         {language==='ru'?'Лиды без открытой задачи':language==='es'?'Leads sin tarea abierta':'Leads without an open task'} · {data.overview?.unplannedLeads??0} →
+       </button>
       <p><a href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
       {language==='ru'?'Открыть CRM по Reiki-курсу: лиды и письма →':language==='es'?'Abrir CRM de Reiki: solicitudes y cartas →':'Open Reiki CRM: course leads and initiation letters →'}
     </a></p>
-      <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]} busy={busy} onAction={save} />
+      <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]}
+         busy={busy} onAction={save} onOpenContact={focusContact} onViewTasks={()=>setActiveSection('tasks')} />
       <CrmBusinessEnquiries locale={language} enquiries={data.businessEnquiries||[]} busy={busy} onAction={save} />
       <CrmMarketingPanel key={accountId+'-marketing'} accountId={accountId} contacts={data.contacts||[]} locale={language} />
       </>}
-      {activeSection==='contacts'&&<>
+      {activeSection==='leads'&&<CrmLeadTriage key={accountId+'-'+language}
+         accountId={accountId} locale={language} busy={busy} onAction={save} onOpenContact={focusContact}/>}
+       {activeSection==='tasks'&&<>
+         <CrmWorkflowOverview mode="tasks" locale={language} overview={data.overview}
+           followups={data.followups||[]} busy={busy} onAction={save} onOpenContact={focusContact}
+           nextCursor={data.followupsNextCursor||null} onLoadMore={loadMoreFollowups}
+           pageBusy={taskPageBusy} pageError={taskPageError}/>
+         {notice&&<p role="status" className={styles.notice}>{notice}</p>}
+       </>}
+       {activeSection==='contacts'&&<>
+         {focusBusy&&<p role="status" className={styles.searchInfo}>
+           {language==='ru'?'Открываю карточку клиента…':language==='es'?'Abriendo contacto…':'Opening contact…'}
+         </p>}
+         {focusError&&<p role="alert" className={styles.searchError}>{focusError}</p>}
       <div className={styles.formCard}>
         <h3>{language==='ru'?'Добавить контакт':'Add new contact'}</h3>
         <form className={styles.form} onSubmit={(event) => {
@@ -313,9 +496,19 @@ export default function CrmManager({ locale = 'en', accountId }) {
       </p>}
       {!data.emailEnabled&&<p className={styles.privacy} role="status">{language==='ru'?'Отправка email пока не подключена: требуется проверенный почтовый домен, Resend и подтверждённые настройки отправителя.':language==='es'?'Para enviar correo debes conectar Resend y un dominio de remitente verificado.':'Connect Resend and a verified sender domain to enable actual email delivery.'}</p>}
       <ul className={styles.list}>
-        {contacts.length?contacts.map(contact=><li key={contact.id} className={styles.emailContactRow}>
+        {contacts.length?contacts.map(contact=><li key={contact.id}
+           data-contact-id={contact.id} tabIndex={contact.id===focusedContactId?-1:undefined}
+           ref={contact.id===focusedContactId?contactAnchorRef:undefined}
+           className={contact.id===focusedContactId?styles.emailContactRow+' '+styles.focusedContact:styles.emailContactRow}>
           <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
-          <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{[contact.email,contact.phone].filter(Boolean).join(' · ')}</small></span>
+          <span className={styles.contactInfo}>
+            <strong>{contact.displayName}</strong>
+            <small>{[contact.email,contact.phone].filter(Boolean).join(' · ')}</small>
+            {contact.enquiry?.serviceTitle&&<small title={contact.enquiry.referenceCode}>
+              {SOURCE_CHOICES[language]?.[contact.source]||contact.source} · {contact.enquiry.serviceTitle}
+              {contact.enquiry.referenceCode&&' · '+contact.enquiry.referenceCode}
+            </small>}
+          </span>
           <label className={styles.stageLabel}><span>{c.stage}</span>
             <select aria-label={c.stage+' — '+contact.displayName} disabled={busy} value={contact.lifecycle} onChange={(event)=>save('set_lifecycle',{id:contact.id,lifecycle:event.target.value,expectedRevision:contact.revision})}>
               <option value="lead">{c.leads}</option><option value="client">{c.clients}</option><option value="archived">{c.archived}</option>

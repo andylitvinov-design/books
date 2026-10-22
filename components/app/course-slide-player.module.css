@@ -381,7 +381,7 @@
 }
 .overlay .fullscreenScene::before{
   content:"";position:absolute;inset:-65px;
-  background:url('/images/holistic-house/course-focus-mountain-boy.webp') center 35%/cover no-repeat;
+  background:url('/images/holistic-house/report-lighthouse-coast.webp') center 35%/cover no-repeat;
   filter:blur(38px);opacity:.22;
 }
 .overlay .fullscreenScenePhoto{

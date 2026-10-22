@@ -35,6 +35,7 @@ import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySectio
 import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { PortraitRecommendations } from '@/components/app/portrait-recommendations'
+import { PortraitAnalyses } from '@/components/app/portrait-analyses'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
@@ -47,13 +48,18 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
+import ClientContactPhone from '@/components/app/client-contact-phone'
+import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
+import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
+import { shouldPauseNewSignupSave } from '@/lib/pwa/post-signup-flow'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
+import CabinetToday from '@/components/app/cabinet-today'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -69,6 +75,7 @@ const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
+const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
@@ -115,7 +122,14 @@ export default function AppWorkspace({ locale, path = [] }) {
     [state, setState] = useState('loading'),
     [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
-    [deleted, setDeleted] = useState(false)
+    [deleted, setDeleted] = useState(false),
+    [nativeApp,setNativeApp] = useState(false),
+    [installOfferAccountId,setInstallOfferAccountId] = useState(null)
+  const [savedInstallContext,setSavedInstallContext]=useState(false)
+  // Ephemeral account-scoped handoff: no private Save or report URL in storage.
+  const pendingSaveInstallAccountId=useRef(null)
+  const savedExitDestination=useRef(null)
+  useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
   const quickAuthAttempted = useRef(false)
   const signinAttempted = useRef(false)
   const page = path[0] || 'portrait',
@@ -141,6 +155,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
+      return fresh
     } catch (e) {
       if (epoch !== loadEpoch.current) return
       setData(null)
@@ -196,6 +211,29 @@ export default function AppWorkspace({ locale, path = [] }) {
       window.removeEventListener('pagehide', hide)
     }
   }, [load, router])
+  function completeSaveContinuation(destination){
+    // After onboarding from a report, wait for server-confirmed Save before
+    // offering installation. Existing users continue directly to the result.
+    const currentAccountId=data?.account?.id
+    const pendingAccountId=pendingSaveInstallAccountId.current
+    pendingSaveInstallAccountId.current=null
+    if(shouldPauseNewSignupSave({
+      pendingAccountId,accountId:currentAccountId,installEligible:isPostSignupInstallEligible(),
+    })){
+      savedExitDestination.current=destination
+      setSavedInstallContext(true)
+      setInstallOfferAccountId(currentAccountId)
+      return
+    }
+    router.replace(destination)
+  }
+  function dismissInstallOffer(){
+    setInstallOfferAccountId(null)
+    setSavedInstallContext(false)
+    const destination=savedExitDestination.current
+    savedExitDestination.current=null
+    if(destination)router.replace(destination)
+  }
   async function signin() {
     signinAttempted.current = true
     setBusy(true)
@@ -241,6 +279,16 @@ export default function AppWorkspace({ locale, path = [] }) {
   async function logout(allDevices = false) {
     setBusy(true)
     try {
+      // Revoke native phone tokens *before* clearing this account's session.
+      // A failed or revoked server session still blocks delivery through the
+      // session-bound native_push_devices lookup.
+      if(isNativeHolisticHouse() && data?.account?.id){
+        try{
+          await appFetch('notifications/native/disable',{},'POST',{accountId:data.account.id})
+          const {registerPlugin}=await import('@capacitor/core')
+          await registerPlugin('PushNotifications').unregister()
+        }catch{/* Sign-out must continue; server also requires a live Auth session. */}
+      }
       // End account-bound Live Activities before clearing the verified session.
       if (isNativePsiAlchemy()) {
         try {
@@ -268,6 +316,10 @@ export default function AppWorkspace({ locale, path = [] }) {
       setError(e)
     } finally {
       goSignedOut(setData)
+      setInstallOfferAccountId(null)
+      setSavedInstallContext(false)
+      pendingSaveInstallAccountId.current=null
+      savedExitDestination.current=null
       setState('signed-out')
       setBusy(false)
       router.replace(root)
@@ -501,6 +553,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
   ]
   const navIsActive = (id) => page === id ||
+    (id === 'portrait' && page === 'labs') ||
     (id === 'course' && page === 'business') ||
     (id === 'portfolio' && ['reports', 'history', 'monitoring', 'results'].includes(page))
   const documentReader = Boolean(recordId) &&
@@ -508,6 +561,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     page === 'reports'
   return (
     <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
+    <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
+      visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
+      context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
@@ -526,6 +582,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <div className="hh-account-menu-secondary">
               <details className="hh-account-more">
                 <summary>{locale === 'ru' ? 'Дополнительно' : 'More options'}</summary>
+                <Link href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</Link>
                 <Link href={root + '/history'} prefetch={false}>{c.history}</Link>
                 <Link href={root + '/monitoring'} prefetch={false}>{c.monitoring}</Link>
                 <Link href={root + '/settings'} prefetch={false}>{c.settings}</Link>
@@ -549,16 +606,29 @@ export default function AppWorkspace({ locale, path = [] }) {
         </nav>
       )}
       {data.account.onboardingState !== 'active' ? (
-        <Preferences data={data} locale={locale} onboarding onDone={load} />
+        <Preferences data={data} locale={locale} onboarding onDone={async()=>{
+          // Only a successful server-authenticated bootstrap after consent
+          // completion can offer installation. Never show it on failed login,
+          // unfinished onboarding, or a stale/different account.
+          const fresh=await load()
+          if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
+            if(page==='continue') pendingSaveInstallAccountId.current=fresh.account.id
+            else setInstallOfferAccountId(fresh.account.id)
+          }
+        }} />
       ) : (
         <>
           {page === 'continue' && (
-            <SaveContinuation data={data} locale={locale} reload={load} />
+            <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
-            <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
-              reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />} />
+            <>
+              <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+              <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
+                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />} />
+            </>
           )}
+          {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
@@ -665,8 +735,11 @@ export default function AppWorkspace({ locale, path = [] }) {
               <Preferences data={data} locale={locale} onDone={load} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+              <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
               <InstallHolisticHouse locale={locale} />
-              <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
+              {nativeApp
+                ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
+                : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
               <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
@@ -700,7 +773,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   )
 }
 
-function SaveContinuation({ data, locale, reload }) {
+function SaveContinuation({ data, locale, reload, onComplete }) {
   const params = useSearchParams()
   const router = useRouter()
   const intentId = params.get('intent') || ''
@@ -749,7 +822,9 @@ function SaveContinuation({ data, locale, reload }) {
       const next=saved.sourceKind==='client_session' && typeof window!=='undefined'
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
-      router.replace(next||savedResourcePath(locale,saved.sourceKind,saved.resource.id))
+      const destination=next||savedResourcePath(locale,saved.sourceKind,saved.resource.id)
+      if(onComplete)onComplete(destination)
+      else router.replace(destination)
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
@@ -768,7 +843,7 @@ function SaveContinuation({ data, locale, reload }) {
       committing.current = false
       setBusy(false)
     }
-  }, [intentId, locale, reload, router, ru])
+  }, [intentId, locale, reload, router, ru, onComplete])
 
   // The explicit recipient click created an item-scoped HttpOnly save intent.
   // Resume only that selection after Google sign-in (and any new-account consent).
@@ -780,11 +855,13 @@ function SaveContinuation({ data, locale, reload }) {
       const next=intent.sourceKind==='client_session' && typeof window!=='undefined'
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
-      router.replace(next||savedResourcePath(locale,intent.sourceKind,intent.resourceId))
+      const destination=next||savedResourcePath(locale,intent.sourceKind,intent.resourceId)
+      if(onComplete)onComplete(destination)
+      else router.replace(destination)
       return
     }
     void commit()
-  }, [autoSave, authFailure, intent, intentId, commit, locale, router])
+  }, [autoSave, authFailure, intent, intentId, commit, locale, router, onComplete])
 
   const sourceTitle =
     intent?.sourceKind === 'client_session'
@@ -2158,9 +2235,9 @@ function PortfolioPage({ data, locale }) {
   }, [recommendationScrollRequest, activeTab])
 
   useEffect(() => {
-    if (!analysisScrollRequest || activeTab !== 'values') return
+    if (!analysisScrollRequest) return
     const frame = window.requestAnimationFrame(() => {
-      const target = document.getElementById('hh-insights-title')
+      const target = document.getElementById('hh-portrait-analyses')
       if (!target) return
       target.scrollIntoView({
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
@@ -2169,7 +2246,7 @@ function PortfolioPage({ data, locale }) {
       target.focus({ preventScroll: true })
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [analysisScrollRequest, activeTab])
+  }, [analysisScrollRequest])
   const retakeDefinitions = useMemo(() => {
     const definitions = new Map()
     for (const result of data.results || []) {
@@ -2271,7 +2348,6 @@ function PortfolioPage({ data, locale }) {
             <button type="button" className="hh-portrait-quick-secondary hh-portrait-quick-analyses"
               data-testid="portrait-analyses-action"
               onClick={() => {
-                chooseView('values')
                 setAnalysisScrollRequest(current => current + 1)
               }}>
               <BarChart3 size={18} aria-hidden="true" />
@@ -2288,6 +2364,7 @@ function PortfolioPage({ data, locale }) {
             </button>
           </nav>} />
       </details>
+      <PortraitAnalyses results={data.results || []} locale={locale} />
       {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
       <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
       <nav className="hh-insights-view-tabs" role="tablist"

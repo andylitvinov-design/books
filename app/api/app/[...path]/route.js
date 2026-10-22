@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
+import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
 import { createAppRepository } from '@/lib/app/repository'
 import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/development-goals'
+import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
+import {createNativePushRepository} from '@/lib/app/native-push-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-course-repository'
@@ -81,23 +84,26 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native'])
-      const locale = body.locale === 'ru' ? 'ru' : 'en'
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath'])
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && body.continueTo === 'enquiry' ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
         program = body.program || null,
         requestId = body.requestId || null,
-        native = body.native === true
+        native = body.native === true,
+        returnPath = body.returnPath ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations', 'business'].includes(continueTo) &&
-        !['cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'enquiry'].includes(continueTo) &&
+        !['cabinet','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
       if ((intentId && serviceId) || (continueTo && (intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((continueTo === 'enquiry' && (!safeEnquiryReturnPath(returnPath, locale) || native)) ||
+          (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       await consumeRate(
         config,
         {
@@ -111,7 +117,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -121,24 +127,28 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && url.searchParams.get('continue') === 'enquiry' ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
         continueTo = url.searchParams.get('continue'),
         program = url.searchParams.get('program'),
-        requestId = url.searchParams.get('request')
+        requestId = url.searchParams.get('request'),
+        returnPath = url.searchParams.get('returnPath')
+      if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
+          (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-tests','my-courses','reports','energywork','practitioner'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner','enquiry'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
       // THIS SAME callback without native=1. Never transfer session tokens.
       if (url.searchParams.get('native') === '1') {
+        if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
         for (const key of ['locale','intent','service','continue','program','request','sb_flow_id']) {
           const value = url.searchParams.get(key)
@@ -155,6 +165,8 @@ async function handle(request, { params }) {
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
           : continueTo === 'consultations'
             ? `${origin}/${locale}/app/consultations?request=${encodeURIComponent(requestId)}`
+          : continueTo === 'enquiry'
+            ? `${origin}${returnPath}?hh_enquiry=google`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
@@ -169,6 +181,14 @@ async function handle(request, { params }) {
                     ? `${origin}/${locale}/app/course`
                     : continueTo === 'reports'
                       ? `${origin}/${locale}/app/portrait#personal-reports`
+                      : continueTo === 'practitioner-growth'
+                        ? `${origin}/admin/login?destination=growth`
+                      : continueTo === 'practitioner-seo'
+                        ? `${origin}/admin/login?destination=seo`
+                      : continueTo === 'practitioner-acquisition'
+                        ? `${origin}/admin/login?destination=acquisition`
+                      : continueTo === 'practitioner-tools'
+                        ? `${origin}/admin/login?destination=tools`
                       : continueTo === 'practitioner'
                         ? `${origin}/admin/login`
                         : continueTo === 'energywork'
@@ -198,6 +218,12 @@ async function handle(request, { params }) {
       return auth.apply(
         NextResponse.redirect(destination, { status: 303, headers: PRIVATE_HEADERS }),
       )
+    }
+    if (joined === 'auth/contact-profile' && method === 'GET') {
+      // Verified server-side Google identity only. Never create a lead, infer
+      // marketing consent or expose access tokens in the public contact form.
+      const actor = await auth.verified()
+      return json({ email: actor.email, displayName: actor.displayName })
     }
     if (joined === 'auth/logout' && method === 'POST') {
       const body = await readBody(request)
@@ -446,6 +472,19 @@ async function handle(request, { params }) {
     if (path[0] === 'notifications') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
       const notifications = createNotificationRepository(config)
+      const nativePush = createNativePushRepository(config)
+      if(joined==='notifications/native' && method==='GET'){
+        const query=new URL(request.url).searchParams
+        if([...query.keys()].some(k=>k!=='platform')||query.getAll('platform').length!==1)
+          throw new AppError('INVALID_REQUEST',400)
+        return json(await nativePush.state(actor,query.get('platform')))
+      }
+      if(joined==='notifications/native/register' && method==='POST')
+        return json(await nativePush.register(actor,await readBody(request,8192)),201)
+      if(joined==='notifications/native/disable' && method==='POST'){
+        onlyKeys(await readBody(request,1024),[])
+        return json(await nativePush.disable(actor))
+      }
       if (joined === 'notifications' && method === 'GET')
         return json(await notifications.state(actor))
       if (joined === 'notifications/live-token' && method === 'POST')
@@ -512,6 +551,19 @@ async function handle(request, { params }) {
       if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',503)
       onlyKeys(await readBody(request),[])
       return json(await removeSavedSession(config,actor,path[1]))
+    }
+    if (joined === 'labs' || (path[0] === 'labs' && path.length === 3 && path[2] === 'delete')) {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (joined === 'labs' && method === 'GET') return json(await listLabReports(config, actor))
+      if (joined === 'labs' && method === 'POST') {
+        await consumeRate(config, { op: 'lab-save', actor: actor.id }, 12, 3600)
+        return json(await saveLabReport(config, actor, await readBody(request, 40000)), 201)
+      }
+      if (path.length === 3 && method === 'POST') {
+        onlyKeys(await readBody(request, 1024), [])
+        return json(await deleteLabReport(config, actor, path[1]))
+      }
+      throw new AppError('NOT_FOUND', 404)
     }
     if (joined === 'development-goals') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
@@ -661,6 +713,7 @@ async function handle(request, { params }) {
         exported.savedSessions=exportedSessions
       }
       exported.developmentGoals = await readDevelopmentGoals(config, actor)
+      exported.labReports = (await listLabReports(config, actor)).reports
       exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)

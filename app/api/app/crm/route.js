@@ -43,11 +43,12 @@ async function handle(request) {
       } else {
         data=await repo.withOwner(actor,async store=>{
           const page=await store.listContactsPage(null)
+          const followupPage=await store.listFollowupsSnapshot()
           return {
             contacts:page.contacts,contactsNextCursor:page.nextCursor,
+            followups:followupPage.followups,followupsNextCursor:followupPage.nextCursor,
             businessEnquiries:await store.listBusinessEnquiries(),
             overview:await store.overview(),
-            followups:await store.listFollowups(),
             activity:await store.listRecentActivity(),
             recentExports:await store.listOwnerExportAudit(),
             drafts:await store.listDrafts(),
@@ -73,7 +74,7 @@ async function handle(request) {
     } else {
       const body = await readBody(request, 8192)
       onlyKeys(body, ['action', 'payload'])
-      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'send_sms', 'check_sms_connection', 'check_sms_status', 'create_followup', 'change_followup', 'log_activity', 'update_business_enquiry', 'edit_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
+      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'send_sms', 'check_sms_connection', 'check_sms_status', 'create_followup', 'change_followup', 'plan_lead_reply', 'log_activity', 'update_business_enquiry', 'import_business_contact', 'edit_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
       if (body.action === 'send_verification') data = await sendCrmVerification({repo,actor,payload:body.payload})
       else if (body.action === 'send_email') data = await sendCrmMessage({repo,actor,payload:body.payload})
       else if (body.action === 'send_sms') data = await sendCrmSms({repo,actor,payload:body.payload})
@@ -83,9 +84,14 @@ async function handle(request) {
           throw new AppError('INVALID_SMS_SETUP_REQUEST',400)
         data=await probeTwilioSmsConnection()
       }
-      else data = await repo.withOwner(actor, (store) => {
+      else data = await repo.withOwner(actor, async (store) => {
+        if (body.action === 'import_business_contact') {
+          const draft=await store.businessContactDraft(body.payload)
+          return store.createContact(draft) // no SMS/email consent or verified address
+        }
         if (body.action === 'update_business_enquiry') return store.updateBusinessEnquiry(body.payload)
         if (body.action === 'create_followup') return store.createFollowup(body.payload)
+        if (body.action === 'plan_lead_reply') return store.planLeadReply(body.payload)
         if (body.action === 'change_followup') return store.changeFollowup(body.payload)
         if (body.action === 'log_activity') return store.logBusinessActivity(body.payload)
         if (body.action === 'edit_contact') return store.editContact(body.payload)

@@ -1,0 +1,67 @@
+name: Holistic House conversation entry verification
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/home-conversation-guide.*'
+      - 'components/holistic-house-home.tsx'
+      - 'app/es/page.tsx'
+      - 'lib/home-conversation.*'
+      - 'tests/home-conversation-guide.test.mjs'
+      - 'tests/home-conversation-browser.mjs'
+      - '.github/workflows/hh-home-conversation.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/home-conversation-guide.*'
+      - 'components/holistic-house-home.tsx'
+      - 'app/es/page.tsx'
+      - 'lib/home-conversation.*'
+      - 'tests/home-conversation-guide.test.mjs'
+      - '.github/workflows/hh-home-conversation.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-home-conversation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  conversation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Localized conversation, topic routing and existing carousel regressions
+        run: node --test tests/home-conversation-guide.test.mjs tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs
+      - name: Check affected TypeScript and React UI
+        run: |
+          npx tsc --noEmit
+          npx eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx
+      - name: Build with the project's production dependencies
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Install isolated Chromium and WebKit for mobile journey
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
+          npm install --prefix /tmp/hh-home-guide-playwright --no-package-lock --ignore-scripts --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-home-guide-playwright/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-home-guide-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Real EN/RU/ES Next mobile dialogue in Chromium and WebKit
+        run: |
+          HH_TEST_BROWSER=chromium node tests/home-conversation-browser.mjs
+          HH_TEST_BROWSER=webkit node tests/home-conversation-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-home-conversation-browser
+          path: artifacts/home-conversation/
+          retention-days: 7

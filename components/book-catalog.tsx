@@ -8,10 +8,14 @@ import { useDeferredValue, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { LibraryBackLink } from "@/components/library-hub";
+import { IdeasDiscovery } from "@/components/ideas-discovery";
+import { BookCategoryPicker } from "@/components/book-category-picker";
+import { DaoHexagramLibraryLink } from "@/components/dao-hexagram-library-link";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { featuredBookUrls } from "@/data/featured-books";
 import { filterLibraryBooks } from "@/data/library";
 import type { Book } from "@/data/library";
+import type { BookSectionKey } from "@/data/library-sections";
 import { localizedBookText } from "@/data/library-localization";
 import {
   getBookMaterialRole,
@@ -31,7 +35,7 @@ const copy = {
   ru: {
     kicker: "Собрание текстов",
     heading: "Книги и методички",
-    lead: "Все книги собраны в одном каталоге. Серия показывает происхождение материала, а метка — его роль: основы, теория, практика или справочник.",
+    lead: "Выберите интересующую категорию — книги появятся только по этой теме. Или найдите нужный материал через поиск.",
     search: "Поиск по каталогу",
     placeholder: "Найти книгу, тему или главу",
     chapters: "Разделов",
@@ -49,7 +53,7 @@ const copy = {
   en: {
     kicker: "Published collection",
     heading: "Books & guides",
-    lead: "Everything is kept in one catalog. The series shows where a text comes from; the label shows whether it is a foundation, theory, practice, or reference.",
+    lead: "Choose a collection to explore books on that topic, or search across the entire catalog.",
     search: "Search the catalog",
     placeholder: "Find a book, topic, or chapter",
     chapters: "Sections",
@@ -69,12 +73,15 @@ const copy = {
 export function BookCatalog({ books, locale, video }: BookCatalogProps) {
   const text = copy[locale];
   const [query, setQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<BookSectionKey | null>(null);
   const deferredQuery = useDeferredValue(query);
 
-  const visibleBooks = useMemo(
-    () => filterLibraryBooks(books, { query: deferredQuery }),
-    [books, deferredQuery],
-  );
+  const visibleBooks = useMemo(() => {
+    const matches = filterLibraryBooks(books, { query: deferredQuery });
+    return activeCategory && !deferredQuery.trim()
+      ? matches.filter(book => book.mediaSeries === activeCategory)
+      : matches;
+  }, [books, deferredQuery, activeCategory]);
 
   const pathBooks = useMemo(
     () => recommendedReadingPath.map((id) => books.find((book) => book.id === id)).filter(Boolean),
@@ -88,18 +95,20 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
     text.authorEdition,
     text.onlineEdition,
   ].join(" ").toLocaleLowerCase().includes(normalizedQuery);
-  const showFeatured = !normalizedQuery || featuredMatches;
+  const showFeatured = (activeCategory === "alchemy" && !normalizedQuery) || (Boolean(normalizedQuery) && featuredMatches);
+  const showCatalog = Boolean(activeCategory || normalizedQuery);
   const hasResults = showFeatured || visibleBooks.length > 0;
 
   return (
     <main className="catalog-shell" lang={locale}>
       <PublicSiteHeader locale={locale} />
+      <IdeasDiscovery locale={locale} />
       <LibraryBackLink locale={locale} />
 
       <header className="catalog-header">
         <div className="catalog-header-copy">
           <p className="catalog-kicker">{text.kicker}</p>
-          <h1>{text.heading}</h1>
+          <h2 className="mt-2 font-serif text-5xl leading-none text-[#2c2119] sm:text-6xl">{text.heading}</h2>
           <p>{text.lead}</p>
         </div>
 
@@ -108,16 +117,31 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
           <span className="sr-only">{text.search}</span>
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              if (event.target.value.trim()) setActiveCategory(null);
+            }}
             placeholder={text.placeholder}
             type="search"
           />
         </label>
       </header>
 
-      {video}
+      <BookCategoryPicker
+        books={books}
+        locale={locale}
+        activeCategory={activeCategory}
+        onSelect={(category) => {
+          setActiveCategory(category);
+          setQuery("");
+        }}
+      />
 
-      {!normalizedQuery ? (
+      {!normalizedQuery && !activeCategory ? <DaoHexagramLibraryLink locale={locale} /> : null}
+
+      {!normalizedQuery && !activeCategory ? video : null}
+
+      {!normalizedQuery && !activeCategory ? (
         <section className="catalog-reading-path" aria-labelledby="catalog-reading-path-title">
           <div className="catalog-reading-path-heading">
             <p className="catalog-kicker">{locale === "ru" ? "Маршрут чтения" : "Reading path"}</p>
@@ -139,7 +163,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
         </section>
       ) : null}
 
-      {hasResults ? (
+      {showCatalog && (hasResults ? (
         <section aria-label={text.heading} className="catalog-grid">
           {showFeatured ? (
             <a
@@ -207,7 +231,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
           <h2>{text.emptyTitle}</h2>
           <p>{text.emptyText}</p>
         </section>
-      )}
+      ))}
     </main>
   );
 }

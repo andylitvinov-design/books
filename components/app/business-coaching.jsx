@@ -2,18 +2,46 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, LockKeyhole, PauseCircle, PlayCircle, Target, TrendingUp } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, Moon, PauseCircle, PlayCircle, Sun, Target, TrendingUp, ListChecks } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import {
   BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
-  BUSINESS_RESPONSE_LABELS, BUSINESS_WEEKS, BUSINESS_METRICS,
-  businessSnapshotScores, businessSuggestions, businessProgress, businessDay, businessSurveyChanges, businessMetricChanges,
+  BUSINESS_RESPONSE_LABELS, BUSINESS_METRICS,
+  businessSnapshotScores, businessSuggestions, businessProgress, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
+import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress } from '@/lib/business-coaching/week-modules'
 import styles from './business-coaching.module.css'
+
+// Decorative first-party CSS illustration: executive notebook on a walnut desk.
+// No remote photography, no new image requests, no user data in the artwork.
+function ExecutiveDeskScene(){
+  return <div className={styles.deskScene} aria-hidden="true">
+    <span className={styles.deskCoffee}/>
+    <div className={styles.deskNotebook}>
+      <span className={styles.deskNotebookMark}>HH</span>
+      <span className={styles.deskNotebookNumber}>90</span>
+      <span className={styles.deskNotebookRule}/>
+      <span className={styles.deskNotebookAccent}/>
+    </div>
+    <span className={styles.deskPen}/>
+    <span className={styles.deskBookmark}/>
+  </div>
+}
+
 
 const copy = {
   en: {
     eyebrow:'BUSINESS & CAREER · MY DEVELOPMENT PATH', title:'My 90-day business journey',
+    courseKicker:'HOLISTIC HOUSE · MY COURSES', pathway:'12 weekly modules · 90 learning days',
+    woodTheme:'Choose course appearance', woodLight:'Light wood', woodDark:'Executive walnut',
+    startStep1:'My direction', startStep2:'One clear goal', startStep3:'Start privately',
+    nextStep:'Continue', previousStep:'Back', skipCheck:'Skip self-reflection for now', optionalCheck:'Optional · 18 short questions',
+    overviewLabel:'What happens next', overviewText:'Each day opens one practical lesson. You choose the pace; your results stay in your private Cabinet.',
+    lessonEyebrow:'ONE LESSON · ONE PRACTICAL RESULT', startHeading:'Start with what matters to you',
+    draftAction:'Save draft', saveContinue:'Finish & continue', nextLesson:'Next lesson', alreadySaved:'All changes saved',
+    ideaSlide:'The idea', actionSlide:'Try it', resultSlide:'My result', goalCanEdit:'You can add habits and indicators later in Edit goals.',
+    unsaved:'Not saved yet', courseMap:'Course map', privateJournal:'Private learning journal',
+    completedDays:'Completed days', moduleDay:'Lesson', modulePace:'One step at a time', finishedDay:'Completed',
     description:'Define an achievable goal, explore your working habits, practise small actions and track real changes privately.',
     begin:'Build my free plan', start:'Start my 90-day programme',
     track:'Where are you now?', goal:'My main goal for 90 days', supporting:'A supporting goal (optional)',
@@ -44,6 +72,14 @@ const copy = {
     inactive:'Resume the programme to make changes.', noSurvey:'No initial survey was saved; nothing is scored as zero.',
     insight:'Your own answers can guide elective skill-practice topics. They are not professional psychometrics.',
     status:'Programme status', saveGoal:'Update my goals', editGoal:'Edit goals', back:'Back',
+    selectModule:'Choose a weekly module', weeklyObjective:'This week’s concrete outcome', weekArtifact:'Final weekly document',
+    dailyArtifact:'Result to save today', doneWhen:'Completion check', myResult:'My actual result (private)',
+    resultPlaceholder:'Write a short, factual result: what you prepared, decided, observed or actually tried. A draft or an honest “not yet” is fine.',
+    resultRequired:'Write at least 6 characters describing the actual result before marking the lesson complete. You may save an unfinished draft instead.',
+    unsavedResult:'Your current day has unsaved changes. Leave this day without saving them?',
+    moduleComplete:'Days done', moduleDocumented:'With saved results', finalModule:'Final integration · 6 days',
+    weeklyResults:'Results saved by module', legacyCompletion:'Previously completed without a written result',
+    optionalNote:'Optional reflections (separate from the concrete result)',
     daySaved:'Saved', checkinDue:'Check-ins may only be repeated after 21 days.', export:'Export all my Cabinet data',
     relatedTests:'Explore other tests in My Tests', describeChange:'Comparable changes', noComparison:'At least two compatible measurements are needed before we can compare outcomes.',
     differenceNote:'Changes below are descriptive, not evidence that the course caused the result.', editCancel:'Cancel',
@@ -51,6 +87,16 @@ const copy = {
   },
   ru: {
     eyebrow:'БИЗНЕС И КАРЬЕРА · МОЙ МАРШРУТ РАЗВИТИЯ', title:'Мои 90 дней развития',
+    courseKicker:'HOLISTIC HOUSE · МОИ КУРСЫ', pathway:'12 недельных модулей · 90 учебных дней',
+    woodTheme:'Оформление курса', woodLight:'Светлое дерево', woodDark:'Тёмный кабинет',
+    startStep1:'Моё направление', startStep2:'Одна ясная цель', startStep3:'Личный старт',
+    nextStep:'Продолжить', previousStep:'Назад', skipCheck:'Пропустить опрос пока', optionalCheck:'Необязательно · 18 коротких вопросов',
+    overviewLabel:'Как устроен курс', overviewText:'Каждый день — одно практическое задание. Темп выбираете вы; результаты хранятся в личном кабинете.',
+    lessonEyebrow:'ОДИН УРОК · ОДИН КОНКРЕТНЫЙ РЕЗУЛЬТАТ', startHeading:'Начните с того, что важно именно вам',
+    draftAction:'Черновик', saveContinue:'Выполнено · далее', nextLesson:'Следующий урок', alreadySaved:'Все изменения сохранены',
+    ideaSlide:'Идея', actionSlide:'Попробовать', resultSlide:'Мой результат', goalCanEdit:'Привычки и показатели можно добавить позже через «Изменить цели».',
+    unsaved:'Пока не сохранено', courseMap:'Карта курса', privateJournal:'Личный дневник',
+    completedDays:'Пройдено дней', moduleDay:'Урок', modulePace:'Один шаг за раз', finishedDay:'Завершено',
     description:'Определите реалистичную цель, исследуйте рабочие привычки, выполняйте небольшие задания и сохраняйте реальные результаты.',
     begin:'Создать мой бесплатный план', start:'Начать мою программу',
     track:'Ваша текущая ситуация', goal:'Моя главная цель на 90 дней', supporting:'Дополнительная цель (необязательно)',
@@ -81,6 +127,14 @@ const copy = {
     inactive:'Продолжите курс, чтобы вносить изменения.', noSurvey:'Первоначальный опрос не сохранён; пропущенные ответы не считаются нулём.',
     insight:'Ответы могут подсказать добровольные учебные темы, но не заменяют профессиональную психометрию.',
     status:'Статус программы', saveGoal:'Обновить цели', editGoal:'Изменить цели', back:'Назад',
+    selectModule:'Выберите недельный модуль', weeklyObjective:'Конкретный результат недели', weekArtifact:'Итоговый документ недели',
+    dailyArtifact:'Результат, который сохраняем сегодня', doneWhen:'Критерий готовности', myResult:'Мой фактический результат (личная запись)',
+    resultPlaceholder:'Кратко запишите конкретный результат: что подготовили, решили, заметили или действительно попробовали. Черновик или честное «пока нет» тоже подходит.',
+    resultRequired:'Чтобы отметить день завершённым, опишите реальный результат хотя бы шестью символами. Незавершённый черновик можно сохранить без галочки.',
+    unsavedResult:'В текущем дне остались несохранённые изменения. Перейти к другому дню, не сохраняя их?',
+    moduleComplete:'Дней выполнено', moduleDocumented:'С записанным результатом', finalModule:'Закрепление · 6 дней',
+    weeklyResults:'Сохранённые результаты по модулям', legacyCompletion:'Ранее отмечено выполненным без записи результата',
+    optionalNote:'Личные размышления (отдельно от конкретного результата)',
     daySaved:'Сохранено', checkinDue:'Повторный опрос доступен через 21 день.', export:'Экспортировать все данные кабинета',
     relatedTests:'Посмотреть другие тесты в «Моих тестах»', describeChange:'Сопоставимые изменения', noComparison:'Для сравнения необходимы хотя бы два сопоставимых наблюдения.',
     differenceNote:'Изменения носят описательный характер и не доказывают, что их вызвал курс.', editCancel:'Отмена',
@@ -92,24 +146,42 @@ const initialMetric = ()=>({metric:'enquiries',value:'',from:new Date().toISOStr
 function scoreLabel(score,t) { return score?.mean===null||score?.mean===undefined?t.notMeasured:score.mean.toFixed(1)+' / 4' }
 function dateLabel(value,lang) {if(!value)return '—'; const d=new Date(value);return Number.isFinite(d.valueOf())?d.toLocaleDateString(lang==='ru'?'ru-RU':'en-CA'):'—'}
 function Questionnaire({ answers, onChange, lang, t, disabled=false }) {
-  return <div className={styles.questionnaire} data-business-snapshot>
-    <h3>{t.questionnaire}</h3><p>{t.questionnaireHelp}</p><small>{t.scoring}</small>
-    {BUSINESS_DOMAINS.map(domain=><fieldset key={domain.id} className={styles.domain}>
-      <legend>{domain[lang]}</legend>
-      {BUSINESS_QUESTIONS.filter(question=>question.domain===domain.id).map(q=><label key={q.id} className={styles.question}>
-        <span>{q[lang]}</span>
-        <select value={answers[q.id]??''} disabled={disabled} onChange={e=>{
-          const v=e.target.value
-          const next={...answers}
-          if(v==='')delete next[q.id];else next[q.id]=Number(v)
-          onChange(next)
-        }} aria-label={q[lang]}>
-          <option value="">— {t.notMeasured} —</option>
-          {BUSINESS_RESPONSE_LABELS[lang].map((label,i)=><option value={i} key={i}>{i} · {label}</option>)}
-        </select>
-      </label>)}
-    </fieldset>)}
-  </div>
+  // Optional business self-observation is itself one question per screen.
+  // Missing or skipped answers are intentionally not scored as zero.
+  const [questionIndex,setQuestionIndex]=useState(0)
+  const question=BUSINESS_QUESTIONS[questionIndex]
+  const domain=BUSINESS_DOMAINS.find(item=>item.id===question.domain)
+  const answered=BUSINESS_QUESTIONS.filter(item=>Number.isInteger(answers[item.id])).length
+  return <section className={styles.questionnaire} data-business-snapshot
+    data-business-domain={domain?.id} data-business-question={question.id}>
+    <header className={styles.questionHeader}>
+      <span className={styles.moduleEyebrow}>{domain?.[lang]||t.questionnaire}</span>
+      <strong>{questionIndex+1} / {BUSINESS_QUESTIONS.length}</strong>
+    </header>
+    <div className={styles.questionProgress} aria-label={t.questionnaire}
+      role="progressbar" aria-valuemin={0} aria-valuemax={BUSINESS_QUESTIONS.length}
+      aria-valuenow={questionIndex+1}><span style={{width:(questionIndex+1)/BUSINESS_QUESTIONS.length*100+'%'}}/></div>
+    <label className={styles.questionSingle}>
+      <span>{question[lang]}</span>
+      <select value={answers[question.id]??''} disabled={disabled} onChange={e=>{
+        const next={...answers}
+        if(e.target.value==='')delete next[question.id];else next[question.id]=Number(e.target.value)
+        onChange(next)
+      }}>
+        <option value="">— {t.notMeasured} —</option>
+        {BUSINESS_RESPONSE_LABELS[lang].map((label,i)=><option value={i} key={i}>{i} · {label}</option>)}
+      </select>
+    </label>
+    <nav className={styles.questionControls} aria-label={t.questionnaire}>
+      <button type="button" disabled={questionIndex===0} onClick={()=>setQuestionIndex(i=>Math.max(0,i-1))}>
+        <ArrowLeft size={16}/>{t.previousStep}</button>
+      <small>{answered} / {BUSINESS_QUESTIONS.length}</small>
+      <button type="button" disabled={questionIndex===BUSINESS_QUESTIONS.length-1}
+        onClick={()=>setQuestionIndex(i=>Math.min(BUSINESS_QUESTIONS.length-1,i+1))}>
+        {t.nextStep}<ArrowRight size={16}/></button>
+    </nav>
+    <details className={styles.questionHelp}><summary>{t.questionnaireHelp}</summary><small>{t.scoring}</small></details>
+  </section>
 }
 function ScoreTable({answers={},lang,t}){
   const scores=businessSnapshotScores(answers)
@@ -126,10 +198,39 @@ export default function BusinessCoaching({locale='en',accountId}){
   const [state,setState]=useState(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [goal,setGoal]=useState(initialGoal),[consent,setConsent]=useState(false),[answers,setAnswers]=useState({})
+  const [startStep,setStartStep]=useState(1)
+  const [woodMode,setWoodMode]=useState('light')
   const [tab,setTab]=useState('today'),[day,setDay]=useState(1),[dayNote,setDayNote]=useState(''),[dayDone,setDayDone]=useState(false)
+  const [dayResult,setDayResult]=useState(''),[moduleWeek,setModuleWeek]=useState(1)
   const [reviewNote,setReviewNote]=useState(''),[metricForm,setMetricForm]=useState(initialMetric)
   const [retestAnswers,setRetestAnswers]=useState({}),[goalEditing,setGoalEditing]=useState(false)
+  const [lessonStage,setLessonStage]=useState(0) // 0 idea, 1 action, 2 private result
   const course=state?.course,revision=state?.revision||0
+  // Cosmetic preference only, never stored with the encrypted client course.
+  // Restore after hydration so SSR and the first paint remain consistent.
+  useEffect(()=>{
+    try {
+      const saved=window.localStorage.getItem('hh-business-coaching-wood-mode')
+      if(saved==='light'||saved==='dark')setWoodMode(saved)
+    }catch{ /* Private browsing or blocked storage: default to light wood. */ }
+  },[])
+  function chooseWoodMode(next){
+    if(next!=='light'&&next!=='dark')return
+    setWoodMode(next)
+    try{window.localStorage.setItem('hh-business-coaching-wood-mode',next)}
+    catch{ /* Appearance remains selectable for this visit. */ }
+  }
+  const themePicker=<div className={styles.themeBar}>
+    <span className={styles.eyebrow}><BriefcaseBusiness size={17}/>{t.courseKicker}</span>
+    <div className={styles.themeToggle} role="group" aria-label={t.woodTheme}>
+      <button type="button" aria-label={t.woodLight} aria-pressed={woodMode==='light'} onClick={()=>chooseWoodMode('light')}>
+        <Sun size={16} aria-hidden="true"/><span>{t.woodLight}</span>
+      </button>
+      <button type="button" aria-label={t.woodDark} aria-pressed={woodMode==='dark'} onClick={()=>chooseWoodMode('dark')}>
+        <Moon size={16} aria-hidden="true"/><span>{t.woodDark}</span>
+      </button>
+    </div>
+  </div>
   useEffect(()=>{
     if(!accountId)return
     let active=true
@@ -140,7 +241,9 @@ export default function BusinessCoaching({locale='en',accountId}){
         if(result.course){
           const next=Array.from({length:90},(_,i)=>i+1).find(i=>!result.course.days?.[i]?.done)||90
           setDay(next)
+          setModuleWeek(Math.min(13,Math.ceil(next/7)))
           setDayNote(result.course.days?.[next]?.note||'')
+          setDayResult(result.course.days?.[next]?.result||'')
           setDayDone(Boolean(result.course.days?.[next]?.done))
           setReviewNote(result.course.reviews?.[Math.ceil(next/7)]?.note||'')
         }
@@ -149,8 +252,16 @@ export default function BusinessCoaching({locale='en',accountId}){
     return()=>{active=false}
   },[accountId,t.loadError])
   const progress=useMemo(()=>businessProgress(course),[course])
-  const selected=businessDay(day,lang)
+  const savedDay=course?.days?.[day]||{}
+  const hasUnsavedDay=dayResult!==(savedDay.result||'')||dayNote!==(savedDay.note||'')||
+    dayDone!==Boolean(savedDay.done)
+  const savedLessonCanContinue=!hasUnsavedDay && Boolean(savedDay.done) && day<90
+  const selected=businessDayResult(day,lang)
   const week=selected?.week||1
+  const currentModule=businessWeekModule(week,lang)
+  const currentWeekProgress=businessWeekProgress(course,week)
+  const openedModule=businessWeekModule(moduleWeek,lang)
+  const openedProgress=businessWeekProgress(course,moduleWeek)
   const baseline=course?.surveys?.[0]
   const latest=course?.surveys?.at(-1)
   const surveyChanges=businessSurveyChanges(baseline,latest)
@@ -178,17 +289,46 @@ export default function BusinessCoaching({locale='en',accountId}){
     }finally{setBusy(false)}
   }
   function chooseDay(next){
+    const previous=course?.days?.[day]||{}
+    const unsaved=dayResult!==(previous.result||'') || dayNote!==(previous.note||'') ||
+      dayDone!==Boolean(previous.done)
+    if(next!==day && course?.status==='active' && unsaved && !window.confirm(t.unsavedResult))return
     setDay(next)
+    setLessonStage(0)
+    setModuleWeek(Math.min(13,Math.ceil(next/7)))
     setDayNote(course?.days?.[next]?.note||'')
+    setDayResult(course?.days?.[next]?.result||'')
     setDayDone(Boolean(course?.days?.[next]?.done))
     setReviewNote(course?.reviews?.[next<=84?Math.ceil(next/7):13]?.note||'')
     setTab('today')
   }
   async function saveStart(e){
     e.preventDefault()
-    if(!consent)return
+    if(!consent||startStep!==3)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
-    if(yes){setTab('today');setDay(1);setDayNote('');setDayDone(false)}
+    if(yes){setTab('today');setDay(1);setLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setStartStep(1)}
+  }
+  async function saveDayAndContinue(complete=false){
+    const current=day
+    const advance=complete && current<90
+    // Editing a previously completed day must not silently erase completion.
+    // An unfinished draft on a new day does not mark that day complete.
+    const persistedDone=complete || Boolean(savedDay.done)
+    const ok=await command('day',{
+      day:current,done:persistedDone,note:dayNote,result:dayResult,
+      contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
+    })
+    if(ok)setDayDone(persistedDone)
+    if(ok && advance){
+      const next=current+1
+      setDay(next)
+      setLessonStage(0)
+      setModuleWeek(Math.min(13,Math.ceil(next/7)))
+      setDayNote(course?.days?.[next]?.note||'')
+      setDayResult(course?.days?.[next]?.result||'')
+      setDayDone(Boolean(course?.days?.[next]?.done))
+      setReviewNote(course?.reviews?.[Math.min(13,Math.ceil(next/7))]?.note||'')
+    }
   }
   async function saveMetric(e) {
     e.preventDefault()
@@ -220,34 +360,223 @@ export default function BusinessCoaching({locale='en',accountId}){
       <small>{t.targetHelp}</small>
     </div>
   }
-  if(loading)return <section className={'hh-panel '+styles.root} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
-  if(!state)return <section className={'hh-panel '+styles.root}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
-  if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching>
-    <div className={styles.eyebrow}><Target size={17}/>{t.eyebrow}</div>
-    <header className={styles.hero}><h1>{t.title}</h1><p>{t.description}</p>
-      <span className={styles.heroInfo}><LockKeyhole size={15}/>{t.privacy}</span>
-    </header>
-    <form onSubmit={saveStart} className={styles.startForm}>
-      <h2>{t.begin}</h2>{goalFields()}
-      <Questionnaire lang={lang} t={t} answers={answers} onChange={setAnswers}/>
-      <label className={styles.consent}><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-        <span>{t.consent}</span></label>
-      {error&&<p role="alert" className={styles.error}>{error}</p>}
-      <button className={styles.primary} type="submit" disabled={busy||!consent||goal.primaryGoal.trim().length<4}>
-        <PlayCircle size={18}/>{busy?'…':t.start}<ArrowRight size={16}/></button>
-    </form>
-  </section>
-  return <section className={'hh-panel '+styles.root} data-business-coaching>
-    <div className={styles.eyebrow}><Target size={17}/>{t.eyebrow}</div>
+  if(loading)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
+  if(!state)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
+  if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching
+    data-course-visual="executive-wood-v2" data-wood-mode={woodMode} data-business-course-screen="welcome">
+    {themePicker}
     <header className={styles.hero}>
-      <h1>{t.title}</h1><p>{course.goal.primaryGoal}</p>
-      <div className={styles.statRow}>
-        <span><CheckCircle2 size={17}/><strong>{progress.completed} / 90</strong> {t.progress}</span>
-        <span><CalendarDays size={17}/>{dateLabel(course.startedAt,lang)}</span>
-        <span><LockKeyhole size={17}/>{t.private}</span>
+      <div className={styles.heroCopy}>
+        <span className={styles.heroKicker}><BriefcaseBusiness size={14} aria-hidden="true"/>{t.pathway}</span>
+        <h1>{t.title}</h1><p>{t.description}</p>
+        <span className={styles.heroInfo}><LockKeyhole size={15}/>{t.privacy}</span>
       </div>
-      <div className={styles.overallTrack}><span style={{width:progress.percent+'%'}}/></div>
+      <div className={styles.heroArt}><ExecutiveDeskScene/></div>
     </header>
+    <section className={styles.intake} data-business-one-screen-onboarding>
+      <header className={styles.intakeHeader}>
+        <div><span className={styles.moduleEyebrow}>{t.begin}</span>
+          <h2>{startStep===1?t.track:startStep===2?t.goal:t.startStep3}</h2></div>
+        <span className={styles.intakeCount}>{startStep} / 3</span>
+      </header>
+      <nav className={styles.intakeSteps} aria-label={t.begin}>
+        {[t.startStep1,t.startStep2,t.startStep3].map((name,i)=>
+          <span key={name} aria-current={startStep===i+1?'step':undefined} data-completed={startStep>i+1}>
+            <b>{startStep>i+1?'✓':i+1}</b><small>{name}</small>
+          </span>)}
+      </nav>
+      <form onSubmit={saveStart} className={styles.startForm}>
+        {startStep===1&&<section className={styles.intakeBody} data-coaching-intake-step="goals">
+          <div className={styles.trackChoices} role="group" aria-label={t.track}>
+            {BUSINESS_TRACKS.map(track=><button key={track.id} type="button"
+              aria-pressed={goal.track===track.id} onClick={()=>setGoal(v=>({...v,track:track.id}))}>
+              {track[lang]}<CheckCircle2 size={18} aria-hidden="true"/>
+            </button>)}
+          </div>
+          <div className={styles.intakeControls}>
+            <button className={styles.primary} type="button" onClick={()=>setStartStep(2)}>
+              {t.nextStep}<ArrowRight size={17}/></button>
+          </div>
+        </section>}
+        {startStep===2&&<section className={styles.intakeBody} data-coaching-intake-step="reflection">
+          <label className={styles.textareaLabel}>{t.goal}
+            <textarea rows={3} required minLength={4} maxLength={240} value={goal.primaryGoal}
+              onChange={e=>setGoal(v=>({...v,primaryGoal:e.target.value}))}
+              placeholder={lang==='ru'?'Например: получать больше целевых обращений':'For example: attract more relevant enquiries'}/>
+          </label>
+          <p className={styles.intakeOptionalHint}>{t.goalCanEdit}</p>
+          <div className={styles.intakeControls}>
+            <button type="button" className={styles.backButton} onClick={()=>setStartStep(1)}>
+              <ArrowLeft size={17}/>{t.previousStep}</button>
+            <button type="button" className={styles.primary} disabled={goal.primaryGoal.trim().length<4}
+              onClick={()=>setStartStep(3)}>{t.nextStep}<ArrowRight size={17}/></button>
+          </div>
+        </section>}
+        {startStep===3&&<section className={styles.intakeBody} data-coaching-intake-step="consent">
+          <div className={styles.intakeSummary}>
+            <Target size={20} aria-hidden="true"/>
+            <div><strong>{t.goal}</strong><p>{goal.primaryGoal}</p></div>
+          </div>
+          <label className={styles.consent}><input type="checkbox" checked={consent}
+            onChange={e=>setConsent(e.target.checked)}/><span>{t.consent}</span></label>
+          {error&&<p role="alert" className={styles.error}>{error}</p>}
+          <div className={styles.intakeControls}>
+            <button type="button" className={styles.backButton} onClick={()=>setStartStep(2)}>
+              <ArrowLeft size={17}/>{t.previousStep}</button>
+            <button className={styles.primary} type="submit"
+              disabled={busy||!consent||goal.primaryGoal.trim().length<4}>
+              <PlayCircle size={18}/>{busy?'…':t.start}<ArrowRight size={16}/></button>
+          </div>
+        </section>}
+      </form>
+    </section>
+  </section>
+  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-wood-mode={woodMode}>
+    {themePicker}
+    <header className={styles.hero}>
+      <div className={styles.heroCopy}>
+        <span className={styles.heroKicker}><BriefcaseBusiness size={14} aria-hidden="true"/>{t.pathway}</span>
+        <h1>{t.title}</h1><p>{course.goal.primaryGoal}</p>
+        <div className={styles.statRow}>
+          <span><CheckCircle2 size={17}/><strong>{progress.completed} / 90</strong> {t.progress}</span>
+          <span><CalendarDays size={17}/>{dateLabel(course.startedAt,lang)}</span>
+          <span><LockKeyhole size={17}/>{t.private}</span>
+        </div>
+        <div className={styles.progressMeta}>
+          <strong>{t.completedDays}</strong><span>{progress.percent}%</span>
+        </div>
+        <div className={styles.overallTrack} role="progressbar" aria-valuemin={0}
+          aria-valuemax={90} aria-valuenow={progress.completed} aria-label={t.progress}>
+          <span style={{width:progress.percent+'%'}}/>
+        </div>
+      </div>
+      <div className={styles.heroArt}><ExecutiveDeskScene/></div>
+    </header>
+    <nav className={styles.tabs} aria-label={t.title}>
+      {[['today',t.today,BookOpen],['plan',t.plan,CalendarDays],['survey',t.survey,ClipboardCheck],
+        ['metrics',t.metrics,TrendingUp],['report',t.report,Download]].map(([id,label,Icon])=>
+        <button key={id} aria-current={tab===id?'page':undefined} onClick={()=>setTab(id)} type="button"><Icon size={16}/>{label}</button>)}
+    </nav>
+    {error&&<p role="alert" className={styles.error}>{error}</p>}
+    {notice&&<p role="status" className={styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
+    {course.status!=='active'&&<p className={styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
+    {tab==='today'&&<div className={styles.panel} data-business-weekly-lesson data-business-one-screen-lesson>
+      <header className={styles.moduleCompact}>
+        <div><span className={styles.moduleEyebrow}>
+          {week===13?t.finalModule:t.week+' '+week+' / 12'}</span>
+          <strong>{currentModule.title}</strong></div>
+        <div className={styles.moduleStat}>
+          <strong>{currentWeekProgress.complete}<span> / {currentWeekProgress.total}</span></strong>
+          <div className={styles.moduleStatTrack} role="progressbar" aria-label={t.moduleComplete}
+            aria-valuemin={0} aria-valuemax={currentWeekProgress.total} aria-valuenow={currentWeekProgress.complete}>
+            <span style={{width:(currentWeekProgress.complete/currentWeekProgress.total*100)+'%'}}/>
+          </div>
+        </div>
+      </header>
+      <details className={styles.lessonBrowse}>
+        <summary><ListChecks size={16} aria-hidden="true"/>{t.courseMap}
+          <span>{t.day} {day} / 90</span><ChevronDown size={16} aria-hidden="true"/></summary>
+        <div className={styles.lessonNavigation}>
+          <label className={styles.moduleChooser}>{t.selectModule}
+            <select value={week} onChange={e=>chooseDay((Number(e.target.value)-1)*7+1)}>
+              {BUSINESS_WEEK_MODULES.map(m=><option key={m.week} value={m.week}>
+                {m.week===13?t.finalModule:t.week+' '+m.week+' · '+m.title[lang]}
+              </option>)}
+            </select>
+          </label>
+          <button className={styles.courseMapButton} type="button" onClick={()=>{setModuleWeek(week);setTab('plan')}}>
+            <ListChecks size={18} aria-hidden="true"/>{t.courseMap}<ArrowRight size={15} aria-hidden="true"/>
+          </button>
+        </div>
+        <nav className={styles.weekDayNav} aria-label={t.selectDay}>
+          {currentModule.days.map((item,index)=>{
+            const record=course.days?.[item.day]
+            const dayStatus=record?.done?'done':record?.result?'draft':'new'
+            return <button type="button" key={item.day} aria-current={item.day===day?'step':undefined}
+              aria-label={t.moduleDay+' '+(index+1)+': '+item.resultLabel} onClick={()=>chooseDay(item.day)}
+              data-day-status={dayStatus} className={item.day===day?styles.weekDayActive:''}>
+              <span>{record?.done?<CheckCircle2 size={19} aria-hidden="true"/>:index+1}</span>
+              <small>{t.day}</small>
+            </button>
+          })}
+        </nav>
+      <details className={styles.review} key={week}>
+        <summary>{t.weeklyReview} · {t.week} {week}<ChevronDown size={17}/></summary>
+        <textarea rows={3} maxLength={1500} value={reviewNote} onChange={e=>setReviewNote(e.target.value)}
+          placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
+        <button type="button" disabled={busy||course.status!=='active'}
+          onClick={()=>command('weekly-review',{week,note:reviewNote})}>{t.saveReview}</button>
+      </details>
+      </details>
+      <nav className={styles.lessonStageNav} aria-label={t.lessonEyebrow}>
+        {[t.ideaSlide,t.actionSlide,t.resultSlide].map((label,index)=>
+          <button type="button" key={label} aria-current={lessonStage===index?'step':undefined}
+            onClick={()=>setLessonStage(index)} aria-label={label}>
+            <span>{index+1}</span>{label}
+          </button>)}
+      </nav>
+      <article className={styles.lessonSlide} data-business-lesson-slide data-lesson-stage={lessonStage}>
+        <div className={styles.lessonIdentity}>
+          <span className={styles.lessonNumber}>{t.day} {day} / 90</span>
+          <span className={styles.lessonFormat}>{t.lessonEyebrow}</span>
+        </div>
+        {lessonStage===0&&<div className={styles.oneIdea}>
+          <h2>{selected.resultLabel}</h2>
+          <p>{selected.intro}</p>
+        </div>}
+        {lessonStage===1&&<div className={styles.oneIdea}>
+          <h2>{t.practice}</h2>
+          <p>{selected.action}</p>
+          <small><CheckCircle2 size={16} aria-hidden="true"/>{t.doneWhen}: {selected.doneWhen}</small>
+        </div>}
+        {lessonStage===2&&<div className={styles.oneIdea}>
+          <h2>{t.myResult}</h2>
+          <p>{selected.resultLabel}</p>
+          <label className={styles.textareaLabel}>
+            <span className={styles.visuallyHidden}>{t.myResult}</span>
+            <textarea rows={3} value={dayResult} maxLength={1200} onChange={e=>setDayResult(e.target.value)}
+              placeholder={t.resultPlaceholder} disabled={course.status!=='active'}/>
+          </label>
+          <details className={styles.optionalNotes}>
+            <summary>{t.optionalNote}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <label className={styles.textareaLabel}>{t.note}
+              <textarea rows={3} value={dayNote} maxLength={900} onChange={e=>setDayNote(e.target.value)}
+                placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
+            </label>
+          </details>
+          {course.days?.[day]?.done&&!course.days?.[day]?.result&&<p className={styles.legacyNote}>{t.legacyCompletion}</p>}
+        </div>}
+      </article>
+      <div className={styles.lessonSaveBar} data-business-lesson-save>
+        {lessonStage>0&&<button className={styles.backButton} type="button"
+          onClick={()=>setLessonStage(v=>Math.max(0,v-1))}>
+          <ArrowLeft size={16}/>{t.previousStep}</button>}
+        {lessonStage<2?<button className={styles.primary} type="button"
+          onClick={()=>setLessonStage(v=>Math.min(2,v+1))}>
+          {t.nextStep}<ArrowRight size={17} aria-hidden="true"/></button>:
+          <>
+            <span className={styles.lessonSaveState} aria-live="polite">
+              {hasUnsavedDay?<span className={styles.unsavedDot} aria-hidden="true"/>:
+                <CheckCircle2 size={17} aria-hidden="true"/>}
+              {hasUnsavedDay?t.unsaved:t.alreadySaved}
+            </span>
+            <button type="button" className={styles.draftButton}
+              disabled={busy||course.status!=='active'||!hasUnsavedDay}
+              onClick={()=>void saveDayAndContinue(false)}>{t.draftAction}</button>
+            <button type="button" className={styles.primary}
+              disabled={busy||course.status!=='active'||
+                (!savedLessonCanContinue&&dayResult.trim().length<6)||
+                (!hasUnsavedDay&&day===90&&Boolean(savedDay.done))}
+              onClick={()=>{if(savedLessonCanContinue)chooseDay(day+1);else void saveDayAndContinue(true)}}>
+              {savedLessonCanContinue?t.nextLesson:day<90?t.saveContinue:t.saveAction}
+              {day<90?<ArrowRight size={18} aria-hidden="true"/>:null}
+            </button>
+          </>}
+      </div>
+      {lessonStage===2&&dayResult.trim().length>0&&dayResult.trim().length<6&&
+        <p className={styles.inlineHelp} role="status">{t.resultRequired}</p>}
+
+    </div>}
     {course.status==='active'&&<div className={styles.goalEditor}>
       {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
         setGoal({...course.goal,target:course.goal.target??''})
@@ -265,59 +594,51 @@ export default function BusinessCoaching({locale='en',accountId}){
         </div>
       </form>}
     </div>}
-    <nav className={styles.tabs} aria-label={t.title}>
-      {[['today',t.today,BookOpen],['plan',t.plan,CalendarDays],['survey',t.survey,ClipboardCheck],
-        ['metrics',t.metrics,TrendingUp],['report',t.report,Download]].map(([id,label,Icon])=>
-        <button key={id} aria-current={tab===id?'page':undefined} onClick={()=>setTab(id)} type="button"><Icon size={16}/>{label}</button>)}
-    </nav>
-    {error&&<p role="alert" className={styles.error}>{error}</p>}
-    {notice&&<p role="status" className={styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
-    {course.status!=='active'&&<p className={styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
-    {tab==='today'&&<div className={styles.panel}>
-      <div className={styles.dayHeading}>
-        <div><small>{t.week} {week} · {t.day} {day} / 90</small><h2>{selected.title}</h2><p>{selected.intro}</p></div>
-        <label>{t.selectDay}<select value={day} onChange={e=>chooseDay(Number(e.target.value))}>
-          {Array.from({length:90},(_,i)=>i+1).map(n=><option value={n} key={n}>{t.day} {n}{course.days?.[n]?.done?' ✓':''}</option>)}
-        </select></label>
-      </div>
-      <div className={styles.actionCard}><div className={styles.actionIcon}><Target size={20}/></div>
-        <div><strong>{t.practice}</strong><p>{selected.action}</p></div>
-      </div>
-      <label className={styles.textareaLabel}>{t.note}
-        <textarea rows={4} value={dayNote} maxLength={900} onChange={e=>setDayNote(e.target.value)}
-          placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
-      </label>
-      <label className={styles.checkbox}><input type="checkbox" checked={dayDone} disabled={course.status!=='active'}
-        onChange={e=>setDayDone(e.target.checked)}/>{t.completed}</label>
-      <button type="button" className={styles.primary} disabled={busy||course.status!=='active'}
-        onClick={()=>command('day',{day,done:dayDone,note:dayNote})}><CheckCircle2 size={17}/>{t.saveAction}</button>
-      <hr className={styles.divider}/>
-      <details className={styles.review} key={week}><summary>{t.weeklyReview} · {t.week} {week}<ChevronDown size={17}/></summary>
-        <textarea rows={3} maxLength={1500} value={reviewNote} onChange={e=>setReviewNote(e.target.value)}
-          placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
-        <button type="button" disabled={busy||course.status!=='active'} onClick={()=>command('weekly-review',{week,note:reviewNote})}>{t.saveReview}</button>
-      </details>
-      <div className={styles.paging}><button disabled={day===1} onClick={()=>chooseDay(day-1)} type="button">← {t.day} {day-1}</button>
-        <button disabled={day===90} onClick={()=>chooseDay(day+1)} type="button">{t.day} {day+1} →</button></div>
-    </div>}
     {tab==='plan'&&<div className={styles.panel} data-business-plan>
-      <p>{t.planIntro}</p><div className={styles.weekList}>
-        {BUSINESS_WEEKS.map(w=>{
-          const completed=w.tasks.filter(item=>course.days?.[item.day]?.done).length
-          return <details key={w.week} className={styles.week} open={w.week===week||undefined}>
-            <summary><span className={styles.weekNumber}>{String(w.week).padStart(2,'0')}</span>
-              <span className={styles.weekTitle}><strong>{w.title[lang]}</strong><small>{w.introduction[lang]}</small></span>
-              <span className={styles.weekCount}>{completed}/7</span><ChevronDown size={17}/></summary>
-            <div className={styles.tasks}>{w.tasks.map(d=><button key={d.day} type="button" onClick={()=>chooseDay(d.day)}>
-              <span className={course.days?.[d.day]?.done?styles.doneMark:styles.emptyMark}>{course.days?.[d.day]?.done?'✓':d.day}</span>
-              {d[lang]}</button>)}</div>
-          </details>
-        })}
-        <div className={styles.finalWeek}><strong>{lang==='ru'?'Дни 85–90 · Закрепление':'Days 85–90 · Integration'}</strong>
-          <div className={styles.tasks}>{Array.from({length:6},(_,i)=>businessDay(i+85,lang)).map(d=>
-            <button key={d.day} onClick={()=>chooseDay(d.day)} type="button">
-              <span className={course.days?.[d.day]?.done?styles.doneMark:styles.emptyMark}>{course.days?.[d.day]?.done?'✓':d.day}</span>{d.action}
-            </button>)}</div></div>
+      <p>{t.planIntro}</p>
+      <div className={styles.moduleBrowser} data-business-weekly-modules>
+        <nav className={styles.moduleIndex} aria-label={t.selectModule}>
+          {BUSINESS_WEEK_MODULES.map(weekModule=>{
+            const numbers=businessWeekProgress(course,weekModule.week)
+            return <button type="button" key={weekModule.id} aria-current={weekModule.week===moduleWeek?'page':undefined}
+              onClick={()=>setModuleWeek(weekModule.week)} className={weekModule.week===moduleWeek?styles.moduleSelected:''}>
+              <span className={styles.moduleNumber}>{weekModule.week===13?'★':String(weekModule.week).padStart(2,'0')}</span>
+              <span className={styles.moduleIndexCopy}>
+                <strong>{weekModule.week===13?t.finalModule:weekModule.title[lang]}</strong>
+                <small>{weekModule.outcome[lang]}</small>
+                <span>{numbers.complete}/{numbers.total} · {t.moduleDocumented}: {numbers.documented}</span>
+              </span>
+              <ChevronDown size={16} className={weekModule.week===moduleWeek?styles.moduleArrow:''}/>
+            </button>
+          })}
+        </nav>
+        <section className={styles.moduleDetail} data-selected-business-week={moduleWeek}>
+          <span className={styles.moduleEyebrow}>{moduleWeek===13?t.finalModule:t.week+' '+moduleWeek+' / 12'}</span>
+          <h2>{openedModule.title}</h2>
+          <p>{openedModule.intro}</p>
+          <div className={styles.moduleOutcome}>
+            <strong>{t.weeklyObjective}</strong><p>{openedModule.outcome}</p>
+            <strong>{t.weekArtifact}</strong><p>{openedModule.capstone}</p>
+            <small>{t.moduleComplete}: {openedProgress.complete} / {openedProgress.total} · {t.moduleDocumented}: {openedProgress.documented}</small>
+          </div>
+          <div className={styles.moduleDays} role="group" aria-label={t.week+' '+moduleWeek}>
+            {openedModule.days.map((entry,index)=>{
+              const record=course.days?.[entry.day]
+              return <button type="button" key={entry.day} onClick={()=>chooseDay(entry.day)}
+                aria-label={t.day+' '+entry.day+': '+entry.resultLabel}>
+                <span className={record?.done?styles.doneMark:styles.emptyMark}>{record?.done?'✓':index+1}</span>
+                <span className={styles.moduleDayText}>
+                  <strong>{t.day} {entry.day} · {entry.resultLabel}</strong>
+                  <small>{entry.action}</small>
+                  <small><b>{t.doneWhen}:</b> {entry.doneWhen}</small>
+                  {record?.result&&<em>{record.result.length>135?record.result.slice(0,135)+'…':record.result}</em>}
+                  {record?.done&&!record?.result&&<em>{t.legacyCompletion}</em>}
+                </span>
+                <ArrowRight size={15} aria-hidden="true"/>
+              </button>
+            })}
+          </div>
+        </section>
       </div>
     </div>}
     {tab==='survey'&&<div className={styles.panel}>
@@ -392,10 +713,25 @@ export default function BusinessCoaching({locale='en',accountId}){
         {surveyChanges.map(m=><p key={m.id}>{BUSINESS_DOMAINS.find(d=>d.id===m.id)?.[lang]}:
           {' '}{m.previous.toFixed(1)} → {m.latest.toFixed(1)} ({m.delta>0?'+':''}{m.delta.toFixed(1)})</p>)}
       </div>}
-      <div className={styles.reportBlock}><h3>{t.actions}</h3>
-        {Object.entries(course.days).filter(([,d])=>d.done).sort((a,b)=>Number(a[0])-Number(b[0])).map(([k,d])=>
-          <p key={k}><strong>{t.day} {k}.</strong> {businessDay(Number(k),lang)?.action}{d.note?' — '+d.note:''}</p>)}
-        {!progress.completed&&<p>—</p>}
+      <div className={styles.reportBlock} data-business-weekly-report>
+        <h3>{t.weeklyResults}</h3>
+        {BUSINESS_WEEK_MODULES.map(weekModule=>{
+          const entries=weekModule.days.map(item=>({day:item.day,record:course.days?.[item.day],spec:item}))
+            .filter(row=>row.record && (row.record.done || row.record.result || row.record.note))
+          if(!entries.length)return null
+          return <section key={weekModule.id} className={styles.reportModule}>
+            <h4>{t.week} {weekModule.week} · {weekModule.title[lang]}</h4>
+            <p><strong>{t.weekArtifact}:</strong> {weekModule.capstone[lang]}</p>
+            {entries.map(({day:recordDay,record,spec})=><p key={recordDay}>
+              <strong>{t.day} {recordDay} · {record.resultLabelSnapshot?.[lang]||spec.result[lang]}</strong>
+              {' · '}{record.done?t.completed:t.daySaved}
+              {record.result?<span> — {record.result}</span>:
+                record.done?<span> — {t.legacyCompletion}</span>:null}
+              {record.note?<span> · {t.notes}: {record.note}</span>:null}
+            </p>)}
+          </section>
+        })}
+        {!Object.values(course.days).some(item=>item?.done||item?.result||item?.note)&&<p>—</p>}
       </div>
       <div className={styles.reportBlock}><h3>{t.notes}</h3>
         {Object.entries(course.reviews).sort((a,b)=>Number(a[0])-Number(b[0])).map(([k,d])=>

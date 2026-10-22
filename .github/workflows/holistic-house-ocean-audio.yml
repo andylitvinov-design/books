@@ -7,7 +7,12 @@ on:
       - 'components/app/opora-ocean-outro.jsx'
       - 'components/app/course-guided-timer.jsx'
       - 'components/energywork-ai-learner.tsx'
+      - 'components/app/opora-experience-player.jsx'
+      - 'components/app/opora-experience-player.module.css'
+      - 'tests/opora-midlesson-music.test.mjs'
       - 'public/audio/**'
+      - 'scripts/generate-soft-ocean-melody.mjs'
+      - 'package.json'
       - 'tests/ocean-practice-audio*.test.mjs'
       - '.github/workflows/holistic-house-ocean-audio.yml'
   push:
@@ -17,7 +22,12 @@ on:
       - 'components/app/opora-ocean-outro.jsx'
       - 'components/app/course-guided-timer.jsx'
       - 'components/energywork-ai-learner.tsx'
+      - 'components/app/opora-experience-player.jsx'
+      - 'components/app/opora-experience-player.module.css'
+      - 'tests/opora-midlesson-music.test.mjs'
       - 'public/audio/**'
+      - 'scripts/generate-soft-ocean-melody.mjs'
+      - 'package.json'
       - 'tests/ocean-practice-audio*.test.mjs'
       - '.github/workflows/holistic-house-ocean-audio.yml'
   workflow_dispatch:
@@ -42,5 +52,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       # Course-navigation/receipt tests have a separate 17-slide migration lifecycle.
       # Here only the shared sound engine and the three audio consumers are gated.
-      - name: Verify audible WAV and native media lifecycle across practice timers
-        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs
+      - name: Generate the complete 96-second original score
+        run: node scripts/generate-soft-ocean-melody.mjs
+      - name: Verify full-length WAV and native media lifecycle across practice timers
+        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs tests/opora-midlesson-music.test.mjs

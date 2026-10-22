@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" role="img" aria-label="Soft mountain valley and a pine tree at sunrise" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#fffaf2"/><stop offset=".54" stop-color="#f7eadd"/><stop offset="1" stop-color="#dfebe8"/></linearGradient>
+    <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9bb9b8"/><stop offset="1" stop-color="#d6e4e0"/></linearGradient>
+    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#657f7d"/><stop offset="1" stop-color="#b6c6bf"/></linearGradient>
+    <radialGradient id="sun"><stop stop-color="#fff4d9" stop-opacity=".95"/><stop offset="1" stop-color="#fff4d9" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="960" height="300" fill="url(#sky)"/>
+  <circle cx="754" cy="80" r="108" fill="url(#sun)"/>
+  <circle cx="754" cy="84" r="52" fill="#ffeed6" opacity=".86"/>
+  <path d="M315 236 462 108l60 60 77-103 106 144 53-53 148 112H315z" fill="#d4e1dc" opacity=".63"/>
+  <path d="m412 257 139-122 56 46 78-111 116 154 80-70 105 111H412z" fill="url(#ridge)" opacity=".81"/>
+  <path d="m500 300 113-102 52 43 72-105 136 122 60-33 83 75H500z" fill="url(#front)" opacity=".54"/>
+  <path d="M0 275q200-33 370-17t325-16 265 13v45H0z" fill="#fdfaf2" opacity=".38"/>
+  <path d="M370 281q134-38 253-15t337-21v55H370z" fill="#f8f6ef" opacity=".48"/>
+  <g fill="none" stroke="#415d58" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M895 308q-27-54-21-125t-25-73" stroke-width="20"/>
+    <path d="M874 188q-29-41-101-65M874 162q30-57 58-111M872 230q36-39 79-52" stroke-width="11"/>
+  </g>
+  <g fill="#426b62" opacity=".95">
+    <path d="M837 106q-61-30-107-15 22-37 75-31 44 5 72 30-28-2-40 16z"/>
+    <path d="M792 123q-55 10-94-14 7-25 49-29 42-4 83 23z"/>
+    <path d="M883 81q7-65 59-72 30-5 62 20-46-4-79 23z"/>
+    <path d="M914 131q10-46 70-50l49 23-62 21z"/>
+    <path d="M880 208q20-38 78-36l48 25q-55-6-97 19z"/>
+  </g>
+  <g fill="#759488" opacity=".65">
+    <path d="M740 99q35-28 88-10-26 17-49 18z"/>
+    <path d="M926 49q16-25 50-22-15 17-40 25z"/>
+  </g>
+</svg>

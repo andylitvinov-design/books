@@ -75,7 +75,10 @@ test('not connected account does not sneak into already verified channel permiss
  assert.match(store,/checkGrowthTelegramPublisherAction/)
  assert.match(actions,/requireAdminRequest\(\)/)
  assert.match(actions,/verifyTelegramPostingPermissions\(\)/)
- assert.doesNotMatch(store,/process\.env|HH_GROWTH_TELEGRAM_BOT_TOKEN/)
+ // Server-side environment names may be shown as setup instructions, but
+ // credential VALUES must never be imported into or fetched by the browser.
+ assert.doesNotMatch(store,/process\.env|PRESCRIPTIONS_KV_REST_API_TOKEN|\baccessToken\b/)
+ assert.match(store,/t\.setupNoSecrets/)
  const {status,...fields}=publicCopy
  const model=normalizePostFields(fields)
  assert.equal(model.brand,'holistic_house')

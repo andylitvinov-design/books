@@ -26,7 +26,7 @@ const median = values => {
 };
 
 // Measure actual canonical documents: legacy /?lang=ru is a 308 redirect.
-for (const suffix of ['/', '/ru']) {
+for (const suffix of ['/', '/ru', '/es']) {
   const url = new URL(suffix, base);
   const measurements = [];
   for (let i = 0; i < samples; i++) {
@@ -50,9 +50,13 @@ for (const suffix of ['/', '/ru']) {
   const warmedHtml = measurements.slice(1).map(v => v.decodedHtmlBytes);
   const warmedInline = measurements.slice(1).map(v => v.inlineScriptBytes);
   const warmedRsc = measurements.slice(1).map(v => v.rscInlineBytes);
+  const warmedFlight = measurements.slice(1).map(v => v.decodedFlightBytes);
+  const warmedHtmlWithoutInlineScripts = measurements.slice(1).map(v => v.htmlExcludingInlineScriptBodiesBytes);
   const medianHtmlBytes = Math.round(median(warmedHtml));
   const medianInlineBytes = Math.round(median(warmedInline));
   const medianRscBytes = Math.round(median(warmedRsc));
+  const medianFlightBytes = Math.round(median(warmedFlight));
+  const medianMarkupBytes = Math.round(median(warmedHtmlWithoutInlineScripts));
   const budgetWarnings = [];
   if (medianHtmlBytes > htmlWarnBytes) budgetWarnings.push(`decoded HTML above ${htmlWarnBytes} bytes`);
   if (medianInlineBytes > inlineWarnBytes) budgetWarnings.push(`inline scripts above ${inlineWarnBytes} bytes`);
@@ -66,8 +70,14 @@ for (const suffix of ['/', '/ru']) {
     medianDecodedHtmlBytes: medianHtmlBytes,
     medianInlineScriptBytes: medianInlineBytes,
     medianRscInlineBytes: medianRscBytes,
+    medianDecodedFlightBytes: medianFlightBytes,
+    medianFlightEncodingOverheadBytes: medianRscBytes - medianFlightBytes,
+    rscScriptSizeBands: measurements[measurements.length - 1].rscSizeBands,
+    flightChunksParsed: measurements[measurements.length - 1].parsedFlightChunks,
+    medianHtmlExcludingInlineScriptBodiesBytes: medianMarkupBytes,
+    medianRscHtmlSharePct: Math.round((medianRscBytes / medianHtmlBytes) * 1000) / 10,
     htmlWarnBytes, inlineWarnBytes, budgetWarnings,
     samples: measurements,
-    note: 'TTFB is header latency only. HTML size is decoded UTF-8, not compressed transfer bytes. Inline Next RSC is a subset of inline scripts; not a browser LCP measurement.',
+    note: 'TTFB is header latency only. HTML size is decoded UTF-8, not compressed transfer bytes. Next RSC scripts include JavaScript escaping/overhead; decoded Flight counts only confidently parsed [1, string] chunks, and is not a full semantic component attribution. No Flight content is logged. Not a browser LCP measurement.',
   }, null, 2));
 }

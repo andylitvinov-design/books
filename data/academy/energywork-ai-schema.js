@@ -4,7 +4,8 @@ import { reikiInitiationRequestValid } from './reiki-initiation-request.js'
 // The bilingual editorial content lives in data/academy/energywork-ai-curriculum.ts.
 // Keep this registry aligned with that file; tests enforce exact ID parity.
 export const ENERGYWORK_KEY = 'academy-energywork-principles'
-export const ENERGYWORK_VERSION = '2026-10-19.p9'
+export const ENERGYWORK_VERSION = '2026-10-20.p10'
+export const ENERGYWORK_P9_VERSION = '2026-10-19.p9'
 export const ENERGYWORK_P8_VERSION = '2026-10-19.p8'
 export const ENERGYWORK_P7_VERSION = '2026-10-19.p7'
 export const ENERGYWORK_P6_VERSION = '2026-10-19.p6'
@@ -19,16 +20,15 @@ export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-01','welcome-02',
   'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
   'presence-01','presence-04','tan-done',
-  'intention-01','intention-02','intention-03','intention-04',
-  'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
-  'paths-01','paths-02','paths-03','paths-04',
+  'intention-01','intention-03','intention-04',
+  'paths-01','paths-03','paths-04',
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
   yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
   tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02'],
   kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
 })
-export const ENERGYWORK_INITIATION = Object.freeze(['init-01','init-02'])
+export const ENERGYWORK_INITIATION = Object.freeze(['init-02'])
 export const ENERGYWORK_FINISH = Object.freeze(['end-01','end-02'])
 export const ENERGYWORK_LESSON_STARTS = Object.freeze(['flight-01','tan-01','kun-01','ygg-01','paths-01'])
 export const ENERGYWORK_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04','end-01'])
@@ -44,7 +44,7 @@ export function energyworkMeditationFeedbackComplete(answer) {
   }
   return Array.from(answer.trim()).length >= ENERGYWORK_REVIEW_MIN_CHARS
 }
-export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','init-01'])
+export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07'])
 // Only five active Tantra Reiki answers are required; historical keys stay readable.
 // Drafts may still be saved blank, but a whitespace-only answer is not complete.
 export const ENERGYWORK_TANTRA_STUDY_QUESTION_IDS = Object.freeze([
@@ -128,13 +128,23 @@ export function energyworkSequence(_legacyPath = null) {
     // Lesson 5 now begins with its own introduction and ends with its practices.
     ...withClosingPractices([
       'paths-01',
-      'intention-01','intention-02','intention-03','intention-04',
-      'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
-      'paths-02','paths-03',
+      'intention-01','intention-03','intention-04',
+      'paths-03',
       ...ENERGYWORK_INITIATION,
       'end-01','paths-04','end-02',
-    ], ['intention-04','boundaries-03'], 'end-02'),
+    ], ['intention-04'], 'end-02'),
   ]
+}
+// Revisiting an already reached slide is navigation, not another write. The
+// server cursor is monotonic; only a new/edited answer needs a fresh save.
+// This also avoids needless revision conflicts after a learner moves Back.
+export function energyworkAdvanceAlreadyStored(currentId, nextId, savedId, hasUnsavedAnswer) {
+  if (hasUnsavedAnswer) return false
+  const sequence = energyworkSequence()
+  const current = sequence.indexOf(currentId)
+  const next = sequence.indexOf(nextId)
+  const saved = sequence.indexOf(savedId)
+  return current >= 0 && next === current + 1 && saved >= next
 }
 // Derive lesson lengths from the canonical sequence, not hard-coded totals.
 // end is exclusive; the two welcome slides are an introduction before lesson 1.
@@ -147,6 +157,20 @@ export function energyworkLessonRanges(sequence = energyworkSequence()) {
     return { lesson: index + 1, firstSlideId: ENERGYWORK_LESSON_STARTS[index], start, end, count: end - start }
   })
 }
+// Removed lesson-five screens must not reset existing p9 (or older) owner progress.
+// Move the saved cursor to the next retained screen; encrypted historic answers
+// remain stored under their original IDs and are never deleted by this mapping.
+export const ENERGYWORK_P9_REMOVED_SLIDE_FALLBACKS = Object.freeze({
+  'intention-02': 'intention-03',
+  'boundaries-01': 'paths-03',
+  'boundaries-02': 'paths-03',
+  'boundaries-04': 'paths-03',
+  'paths-02': 'paths-03',
+  'init-01': 'init-02',
+  'boundaries-03': 'end-02',
+})
+export const energyworkP9ResumeId = slideId => ENERGYWORK_P9_REMOVED_SLIDE_FALLBACKS[slideId] ?? slideId
+
 // Keep encrypted private answers. Legacy progress returns to the introductory
 // lesson when the three previously exclusive systems become sequential.
 export function energyworkLegacyResumeId(slideId) {

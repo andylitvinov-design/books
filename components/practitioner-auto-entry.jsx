@@ -27,23 +27,33 @@ const copy = {
   },
 }
 
-export function PractitionerAutoEntry({ locale = 'en', authFailed = false }) {
+const ADMIN_DESTINATIONS = Object.freeze({
+  cabinet: '/admin',
+  tools: '/admin/tools',
+  growth: '/admin/growth-studio',
+  seo: '/admin/seo',
+  acquisition: '/admin/acquisition',
+})
+
+export function PractitionerAutoEntry({ locale = 'en', authFailed = false, destination = 'cabinet' }) {
   const [state, setState] = useState(authFailed ? 'retry' : 'opening')
   const started = useRef(false)
   const text = copy[locale] || copy.en
+  const safeDestination = Object.hasOwn(ADMIN_DESTINATIONS, destination) ? destination : 'cabinet'
 
   async function open() {
     setState('opening')
     try {
       // Server checks the verified Google account and owner-only practitioner role.
-      const response = await appFetch('practitioner/open', { destination: 'cabinet' })
-      if (response.redirectUrl !== '/admin') throw new Error('Unexpected destination')
-      window.location.replace('/admin')
+      const response = await appFetch('practitioner/open', { destination: safeDestination })
+      // Never follow arbitrary redirects even when the private bridge issued a session.
+      if (response.redirectUrl !== ADMIN_DESTINATIONS[safeDestination]) throw new Error('Unexpected destination')
+      window.location.replace(ADMIN_DESTINATIONS[safeDestination])
     } catch (error) {
       if (error?.status === 401) {
         try {
           // Resume this private entry after Google OAuth without exposing a PIN.
-          const result = await appFetch('auth/start', { locale, continueTo: 'practitioner' })
+          const result = await appFetch('auth/start', { locale, continueTo: safeDestination === 'cabinet' ? 'practitioner' : `practitioner-${safeDestination}` })
           window.location.assign(result.redirectUrl)
           return
         } catch {

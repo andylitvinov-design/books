@@ -19,7 +19,9 @@ const adminUi = read('components/admin-reiki-audio.jsx')
 const adminPage = read('app/admin/reiki-audio/page.jsx')
 const materialsPage = read('app/admin/materials/page.js')
 const audioFolderPage = read('app/admin/materials/audio/page.jsx')
-const courseFolderPage = read('app/admin/materials/audio/reiki-practitioner/page.jsx')
+const coursesPage = read('app/admin/materials/courses/page.jsx')
+const courseFolderPage = read('app/admin/materials/courses/reiki-practitioner/page.jsx')
+const oldCourseFolderPage = read('app/admin/materials/audio/reiki-practitioner/page.jsx')
 const foldersCss = read('components/materials-audio-folders.module.css')
 const audioCss = read('components/admin-reiki-audio.module.css')
 const ownerRoute = read('app/admin/reiki-audio/data/route.js')
@@ -31,7 +33,7 @@ const header = read('components/prescription-admin-header.jsx')
 const css = read('components/energywork-ai-learner.module.css')
 
 test('Four meditation introductions and the fifth initiation lesson preserve all existing slide IDs', () => {
-  assert.equal(energyworkSequence().length, 70)
+  assert.equal(energyworkSequence().length, 63)
   const ids = [
     ['flight-01','flight-02','flight'],
     ['tan-01','tan-02','tantra'],
@@ -50,7 +52,7 @@ test('Four meditation introductions and the fifth initiation lesson preserve all
     assert.equal((block.match(/\n\s+l\("/g)||[]).length >= 3,true)
     assert.ok(block.includes('introAudioKey: "'+key+'"'))
   }
-  const fifth = curriculum.split('id: "paths-01"')[1]?.split('id: "paths-02"')[0] || ''
+  const fifth = curriculum.split('id: "paths-01"')[1]?.split('id: "paths-03"')[0] || ''
   assert.match(fifth,/introAudioKey: "initiation"/)
   assert.match(fifth,/introTopics: \[/)
   assert.ok(energyworkSequence().includes('paths-01'))
@@ -140,8 +142,8 @@ test('Native audio stays optional, zero autoplay, and is managed from the practi
   assert.match(adminUi,/setStaged/)
   assert.match(adminUi,/action:\s*'publish'/)
   assert.match(adminUi,/action:\s*'unpublish'/)
-  assert.match(cabinet,/href:'\/admin\/materials\/audio\/reiki-practitioner'/)
-  assert.match(header,/href="\/admin\/materials\/audio\/reiki-practitioner"/)
+  assert.match(cabinet,/href:'\/admin\/materials\/courses\/reiki-practitioner'/)
+  assert.match(header,/href="\/admin\/materials\/courses"/)
   assert.match(csp,/reikiIntroAudioManager/)
   assert.match(csp,/reikiLessonAudioPage/)
   assert.match(csp,/reikiIntroAudioOrigin/)
@@ -149,21 +151,23 @@ test('Native audio stays optional, zero autoplay, and is managed from the practi
 })
 
 
-test('Materials displays a true Audio → Reiki Practitioner → five lesson folder hierarchy', () => {
-  assert.match(materialsPage,/data-materials-audio-folder/)
-  assert.match(materialsPage,/href="\/admin\/materials\/audio"/)
-  assert.match(audioFolderPage,/requireAdminRequest\(\)/)
-  assert.match(audioFolderPage,/data-reiki-course-folder/)
-  assert.match(audioFolderPage,/href="\/admin\/materials\/audio\/reiki-practitioner"/)
+test('Materials exposes protected Courses > Reiki Practitioner > five lesson folders', () => {
+  assert.match(materialsPage,/data-materials-course-folder/)
+  assert.match(materialsPage,/href="\/admin\/materials\/courses"/)
+  assert.match(coursesPage,/requireAdminRequest\(\)/)
+  assert.match(coursesPage,/data-master-course-reiki-practitioner/)
+  assert.match(coursesPage,/href="\/admin\/materials\/courses\/reiki-practitioner"/)
   assert.match(courseFolderPage,/requireAdminRequest\(\)/)
   assert.match(courseFolderPage,/data-master-reiki-lesson-audio-folders/)
   assert.match(courseFolderPage,/REIKI_INTRO_LESSONS\.includes\(query\?\.lesson\)/)
   assert.match(courseFolderPage,/initialLocale=\{language\} initialLesson=\{lesson\}/)
-  assert.match(adminPage,/redirect\('\/admin\/materials\/audio\/reiki-practitioner'\)/)
+  assert.match(audioFolderPage,/redirect\('\/admin\/materials\/courses'\)/)
+  assert.match(oldCourseFolderPage,/redirect\('\/admin\/materials\/courses\/reiki-practitioner'\+suffix\)/)
+  assert.match(adminPage,/redirect\('\/admin\/materials\/courses\/reiki-practitioner'\)/)
   assert.match(foldersCss,/folderLink/)
   assert.match(audioCss,/folderButtons/)
   assert.match(audioCss,/grid-template-columns:\s*repeat\(2,minmax\(0,1fr\)\)/)
-  assert.match(csp,/admin\\\/materials\\\/audio\\\/reiki-practitioner/)
+  assert.match(csp,/const reikiIntroAudioManager = .*courses/)
 })
 
 test('Language toggle selects the same lesson with a distinct EN/RU audio folder', () => {

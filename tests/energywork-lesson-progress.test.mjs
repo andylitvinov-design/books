@@ -11,10 +11,10 @@ const repo = read("lib/academy/energywork-course-repository.js")
 test("The visible slide counter uses five real lesson lengths and a separate introduction", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges(sequence)
-  assert.equal(sequence.length, 69)
-  assert.deepEqual(sequence.slice(2,9), ["flight-01","flight-02","flight-03","flight-voices","flight-05","flight-04","flight-done"], "Lesson 1 slide 5 is Sun thought and slide 6 is meditation review")
+  assert.equal(sequence.length, 63)
+  assert.deepEqual(sequence.slice(2,9), ["flight-01","flight-02","flight-voices","flight-05","flight-04","flight-03","flight-done"], "Lesson 1 ends after the timed practice")
   assert.equal(ranges[0].start, 2, "Two introductory slides are outside lesson 1")
-  assert.deepEqual(ranges.map(range => range.count), [7, 14, 16, 22, 8])
+  assert.deepEqual(ranges.map(range => range.count), [8, 14, 16, 14, 9])
   assert.deepEqual(ranges.map(range => range.firstSlideId),
     ["flight-01", "tan-01", "kun-01", "ygg-01", "paths-01"])
   for (let i = 0; i < ranges.length; i++) {
@@ -34,7 +34,8 @@ test("A single checkpoint action saves before advancing and does not promise gue
   assert.match(learner, /returnAnytime: "Pick up here anytime from My Courses\."/);
   assert.match(learner, /returnAnytime: "Вернуться к уроку можно через «Мои курсы»\."/);
   assert.match(learner, /async function next\(\) \{[\s\S]*?if \(sync === "ready"\) \{[\s\S]*?await store\(nextId\);[\s\S]*?setIndex\(\(current\) => Math\.min\(current \+ 1, slides\.length - 1\)\)/);
-  assert.match(learner, /slide\.kind === "milestone" \? \(sync === "ready" \? t\.saveAndContinue : t\.continuePath\)/);
+  assert.match(learner, /data-reiki-milestone-choices/);
+  assert.match(learner, /data-reiki-tomorrow-choice/);
   assert.match(learner, /data-energywork-next/);
   assert.match(repo, /MEDITATION_FEEDBACK_REQUIRED/);
   assert.match(repo, /nextIndex < slideIndex \|\| nextIndex > slideIndex\+1/);
@@ -48,5 +49,18 @@ test("Cabinet chapter picker uses saved owner progress and forbids deep-link ski
   assert.match(cabinet, /aria-disabled="true"/)
   assert.match(learner, /requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex/)
   assert.match(repo, /COURSE_STEP_NOT_READY/)
-  assert.match(learner, /onClick=\{\(\) => void jumpToSlide\(lesson\.firstSlideId\)\}/)
+  assert.match(learner, /onClick=\{\(\) => jumpToSlide\(lesson\.firstSlideId\)\}/)
 })
+
+
+test("The actual first lesson renders its final practice and congratulations before the consented save gate", () => {
+  const curriculum = read("data/academy/energywork-ai-curriculum.ts");
+  const expected = energyworkSequence();
+  const reportIndex = expected.indexOf("flight-04");
+  const practiceIndex = expected.indexOf("flight-03");
+  const doneIndex = expected.indexOf("flight-done");
+  const saveIndex = expected.indexOf("flight-save");
+  assert.ok(reportIndex < practiceIndex && practiceIndex < doneIndex && doneIndex < saveIndex);
+  assert.match(curriculum, /slide\.phase === "flight" && slide\.id !== "flight-save"/);
+  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "flight-save"\)!/);
+});

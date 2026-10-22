@@ -43,6 +43,7 @@ function mount(locale = 'en', options = {}) {
     '@/lib/app/repository': { createAppRepository: () => repo },
     '@/lib/practitioners/repository': { createPractitionerRepository: () => ({}) },
     '@/lib/practitioners/article-repository': { createArticleRepository: () => ({}) },
+    '@/lib/practitioners/events-repository': { createPractitionerEventsRepository: () => ({}) },
     '@/lib/app/guest-repository': { createGuestRepository: () => ({}) },
     '@/lib/app/database': { consumeRate: async () => {} },
     '@/lib/app/http': { PRIVATE_HEADERS: {}, readBody: request => request.json(), safeError: error => ({ code: error.code || error.message, status: error.status || 500 }) },
@@ -77,6 +78,7 @@ function mount(locale = 'en', options = {}) {
     '@/components/acquisition-event-link': { AcquisitionEventLink: 'TrackedLink' },
     '@/components/discovery-section-tabs': { DiscoverySectionTabs: 'DiscoverySectionTabs' },
     '@/components/business-consultation-finder': { BusinessConsultationFinder: 'BusinessConsultationFinder' },
+    '@/components/business-service-browser': { BusinessServiceBrowser: 'BusinessServiceBrowser' },
     'lucide-react': new Proxy({}, { get: (_, key) => String(key) }), '@/lib/assessments/topic-journeys': journeys,
     '@/lib/app/test-selection-intent': intents, './topic-journey-selector.module.css': { default: new Proxy({}, { get: (_, key) => String(key) }) } }
   const runtime = { exports: {}, require: name => { assert.ok(modules[name], name); return modules[name] }, window, document,

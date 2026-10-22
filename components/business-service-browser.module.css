@@ -1,0 +1,60 @@
+/* Direct service discovery is separate from the quiz: filters remain closed. */
+.root{max-width:100%;min-width:0;margin:0 0 22px;color:#263d45}
+.root *{box-sizing:border-box;min-width:0}
+.filters{margin:0 0 19px;border:1px solid #d5c6b0;border-radius:16px;background:#fffdf9;overflow:hidden}
+.filters>summary{display:flex;align-items:center;gap:12px;min-height:67px;padding:12px 16px;cursor:pointer;list-style:none}
+.filters>summary::-webkit-details-marker{display:none}
+.filters>summary::marker{display:none}
+.filterIcon{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#f1e5d4;color:#8c613e}
+.filters>summary>span:nth-child(2){display:grid;flex:1;gap:3px}
+.filters>summary strong{font:800 14px/1.3 system-ui,sans-serif;color:#264651}
+.filters>summary small{font:450 12px/1.3 system-ui,sans-serif;color:#667c80}
+.chevron{flex:none;color:#7f5b40;transition:transform .15s}
+.filters[open] .chevron{transform:rotate(180deg)}
+.filterBody{display:grid;gap:14px;padding:5px 16px 17px;border-top:1px solid #ebe0d3}
+.filterBody fieldset{min-inline-size:0;margin:0;padding:0;border:0}
+.filterBody legend{display:block;margin:10px 0 7px;color:#39515b;font:800 12px/1.35 system-ui,sans-serif}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chips button{min-height:40px;padding:8px 13px;border:1px solid #dbcab4;border-radius:99px;background:#fff;color:#34525c;font:650 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.chips button[aria-pressed="true"]{background:#304c55;border-color:#304c55;color:#fff}
+.reset{display:inline-flex;align-items:center;gap:6px;justify-self:start;min-height:36px;padding:4px 0;border:0;background:none;color:#89643f;font:700 11px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.catalog{padding:0}
+.kicker{margin:0 0 5px;color:#95633c;font:800 10px/1.4 system-ui,sans-serif;letter-spacing:.08em}
+.catalog h2{margin:0 0 5px;color:#213b45;font:500 clamp(24px,3vw,32px)/1.14 Georgia,"Times New Roman",serif}
+.lead{margin:0 0 14px;color:#627880;font:450 13px/1.45 system-ui,sans-serif}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:9px;min-width:0;padding:16px;border:1px solid #dcd0bf;border-radius:16px;background:#fffefa;box-shadow:0 4px 14px rgb(51 39 25 / 5%)}
+.cardTop{display:flex;align-items:center;justify-content:space-between;color:#9f744e}
+.num{font:800 11px/1.3 system-ui,sans-serif;color:#91745d}
+.card h3{margin:0;color:#25424b;font:550 clamp(17px,2vw,21px)/1.2 Georgia,"Times New Roman",serif}
+.card p{flex:1;min-height:0;margin:0;color:#62767b;font:450 12px/1.5 system-ui,sans-serif}
+.price{color:#916036;font:850 14px/1.3 system-ui,sans-serif}
+.action{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;margin-top:2px;padding:10px 12px;border-radius:10px;background:#284752;color:#fff!important;font:750 12px/1.3 system-ui,sans-serif;text-decoration:none}
+.action:hover{background:#3b5d66}
+.action svg{flex:none}
+.showMore{display:flex;align-items:center;justify-content:center;gap:11px;min-height:47px;width:100%;margin:15px 0 0;padding:10px 14px;border:1px solid #be996b;border-radius:12px;background:#f2e4d0;color:#4c3a29;font:800 13px/1.3 system-ui,sans-serif;cursor:pointer}
+.showMore:hover{background:#e9d3b6}
+.showMore span{display:grid;place-items:center;min-width:32px;padding:4px 7px;border-radius:99px;background:#e5cba5;color:#60452c}
+.empty{padding:16px;border:1px dashed #bfab91;border-radius:12px;color:#6b5c4a;background:#fffcf6;font:550 13px/1.5 system-ui,sans-serif}
+.disclaimer{margin:13px 0 0;color:#7b8888;font:400 10px/1.45 system-ui,sans-serif}
+.root :is(button,a,summary):focus-visible{outline:3px solid #be8959;outline-offset:3px}
+@media(max-width:760px){
+  .cards{grid-template-columns:1fr;gap:10px}
+  .card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;padding:13px 14px}
+  .cardTop{grid-column:1/-1}
+  .card h3{grid-column:1/-1;font-size:20px}
+  .card p{grid-column:1/-1;font-size:12px}
+  .price{grid-column:1}
+  .action{grid-column:1/-1;margin-top:0}
+  .filters{margin-bottom:18px}
+}
+@media(max-width:390px){
+  .filters>summary{gap:9px;padding:10px 11px}
+  .filters>summary strong{font-size:13px}
+  .filters>summary small{font-size:11px}
+  .filterIcon{width:35px;height:35px}
+  .card h3{font-size:19px}
+  .filterBody{padding:4px 11px 14px}
+  .chips button{padding:8px 10px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.chevron{transition:none}}

@@ -45,7 +45,7 @@ test('bot schedule is daily and independent of the existing housekeeping job',()
   assert.deepEqual(config.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13 * * *'},
-    {path:'/api/internal/council-archive-telegram',schedule:'0 15 * * *'},
+    {path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'},
   ])
 })
 test('cron owner auth denies anonymous caller and allows only correct CRON_SECRET',()=>{
@@ -59,7 +59,9 @@ test('cron route is fail-closed, no client data and safe bounded receipts',()=>{
   const source=readFileSync(new URL('../app/api/internal/practice-telegram-digest/route.js',import.meta.url),'utf8')
   const backend=readFileSync(new URL('../lib/practitioners/daily-telegram-digest.js',import.meta.url),'utf8')
   assert.match(source,/cronAuthorized\(request,process\.env\)/)
-  assert.match(source,/practiceTelegramConfigured\(process\.env\)/)
+  assert.match(source,/ensureOwnerTelegramPairing\(config\)/)
+  assert.match(source,/practiceTelegramConfigured\(env\)/)
+  assert.match(source,/resolvedOwnerTelegramEnv\(config\)/)
   assert.ok(source.includes("from '@/lib/practitioners/daily-telegram-transport.mjs'"))
   assert.ok(source.includes("from '@/lib/practitioners/daily-telegram-digest'"))
   assert.match(source,/PRIVATE_HEADERS/)

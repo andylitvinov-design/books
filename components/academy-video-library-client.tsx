@@ -234,27 +234,33 @@ export function AcademyVideoLibraryClient({
                                             {lesson.unavailable ? <div className={styles.lessonToggle} role="note">
                                               <span className={styles.lessonTitle}>{lesson.title}</span>
                                               <span>{t.unavailable}</span>
-                                            </div> : <button
-                                              className={styles.lessonToggle + (playing ? " " + styles.selected : "")}
-                                              type="button"
-                                              onClick={() => openVideoById(key)}
-                                              aria-expanded={playing}
-                                              aria-label={t.watch + ": " + lesson.title}
-                                            >
-                                              <span className={styles.lessonPoster}><Image src={poster(lesson.id)} unoptimized width={80} height={45} sizes="62px" alt="" loading="lazy" /></span>
-                                              <span className={styles.lessonTitle}>{lesson.title}</span>
-                                              <Play size={17} aria-hidden="true" />
-                                            </button>}
+                                            </div> : (
+                                              <div className={styles.lessonActions}>
+                                                <button className={styles.lessonToggle + (playing ? " " + styles.selected : "")}
+                                                  type="button" onClick={() => openVideoById(key)} aria-expanded={playing}
+                                                  aria-label={t.watch + ": " + lesson.title}>
+                                                  <span className={styles.lessonPoster}><Image src={poster(lesson.id)} unoptimized width={80} height={45} sizes="62px" alt="" loading="lazy" /></span>
+                                                  <span className={styles.lessonTitle}>{lesson.title}</span>
+                                                  <Play size={17} aria-hidden="true" />
+                                                </button>
+                                                <a className={styles.lessonInlineToggle}
+                                                  href={"https://www.youtube.com/watch?v=" + lesson.id} target="_blank" rel="noopener noreferrer"
+                                                  aria-label={t.youtube + ": " + lesson.title} title={t.youtube}>
+                                                  <ArrowUpRight size={17} aria-hidden="true" />
+                                                </a>
+                                              </div>
+                                            )}
                                             {playing ? (
                                               <div className={styles.player}>
                                                 <div className={styles.frame}>
                                                   <iframe
                                                     key={lesson.id}
-                                                    src={"https://www.youtube-nocookie.com/embed/" + encodeURIComponent(lesson.id) + "?autoplay=1&rel=0"}
+                                                    src={"https://www.youtube-nocookie.com/embed/" + encodeURIComponent(lesson.id) + "?autoplay=1&playsinline=1&rel=0"}
                                                     title={lesson.title}
                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                     allowFullScreen
-                                                    loading="lazy"
+                                                    loading="eager"
+                                                    referrerPolicy="strict-origin-when-cross-origin"
                                                   />
                                                 </div>
                                                 <a href={"https://www.youtube.com/watch?v=" + lesson.id} target="_blank" rel="noopener noreferrer">

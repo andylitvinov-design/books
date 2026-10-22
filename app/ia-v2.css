@@ -54,6 +54,24 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   .ia222-bottom-navigation a span { font-size: clamp(9px,2.5vw,11px); white-space: nowrap; overflow-wrap: normal; }
   body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,76px) !important; }
   body:has(.ia222-bottom-navigation) :is(input,textarea,button,a) { scroll-margin-bottom: calc(var(--ia222-bottom-height,76px) + 24px); }
+  /* iOS Safari lifts position:fixed bars when the software keyboard opens.
+     Hide the bar while editing, then restore it at bottom:0 after focus ends. */
+  body:has(:is(
+    textarea,
+    select,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]),
+    [contenteditable="true"]
+  ):focus) {
+    --ia222-bottom-height: 0px !important;
+  }
+  body:has(:is(
+    textarea,
+    select,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]),
+    [contenteditable="true"]
+  ):focus) .ia222-bottom-navigation {
+    display: none !important;
+  }
 }
 @media (max-width: 600px) {
   .ia222-bottom-navigation { grid-template-columns: repeat(6,minmax(0,1fr)); }
@@ -2040,4 +2058,21 @@ body:has(.client-entry-shell .cabinet-guest-tests) {
 }
 @media (prefers-reduced-motion: reduce) {
   .hh-app .hh-tests-mood-disclosure > summary svg { transition: none; }
+}
+
+/* The Library has four destinations now, including the Dao reading.
+   Keep every tab visible, keyboard reachable and 44px high on narrow phones. */
+.library-media-switch {
+  width: min(560px, 100%);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.library-media-switch a {
+  min-height: 44px;
+  padding: 5px 3px;
+  text-align: center;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 380px) {
+  .library-media-switch a { font-size: 10px; }
 }
