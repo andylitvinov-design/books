@@ -45,7 +45,7 @@
 @media(max-height:680px){
   .support .panel{padding:clamp(14px,3.4vw,20px)}
   .support .title{font-size:clamp(23px,6vw,28px)}
-  .lessonBrief{gap:7px}
+  .support .lessonBrief{gap:7px}
 }
 .supportMessage{display:grid;gap:10px}
 /* The post-mood orientation keeps previously completed topics ahead of today's
