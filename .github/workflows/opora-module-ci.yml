@@ -43,7 +43,7 @@ jobs:
       - name: Verify AS-5.5 keyboard focus trap, process honesty, no-plan and individual exercise cases
         run: node --test tests/opora-as55-safe-learning-live.test.mjs
       - name: Verify experience-first AS-5.6 practices, real bilingual feedback and safe V7-only save
-        run: node --test tests/opora-as56-experience-first.test.mjs tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs tests/opora-post-save-course-program.test.mjs tests/opora-owl-guidance-across-slides.test.mjs
+        run: node --test tests/opora-as56-experience-first.test.mjs tests/opora-support-second-screen.test.mjs tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs tests/opora-post-save-course-program.test.mjs tests/opora-owl-guidance-across-slides.test.mjs
       - name: Verify 28 full AS-5.5 bilingual lesson sessions and trilingual public course promises
         run: node --test tests/opora-as55-28-day-end-to-end-acceptance.test.mjs tests/opora-as55-active-passport.test.mjs
       - name: Verify photo-first calm Day 1, optional check-ins and compact iPhone UI
