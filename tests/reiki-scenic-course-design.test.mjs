@@ -21,7 +21,7 @@ test('Approved scenic design is preserved across new unified five-lesson course'
   assert.match(design, /Owner approval:.*18 October 2026/)
   assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
-  assert.equal(energyworkSequence().length,63)
+  assert.equal(energyworkSequence().length,67)
   for(const legacyPath of ['yggdrasil','tantra','kundalini'])
     assert.deepEqual(energyworkSequence(legacyPath),energyworkSequence())
 })

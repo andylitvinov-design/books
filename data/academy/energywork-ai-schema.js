@@ -18,15 +18,15 @@ export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-01','welcome-02',
-  'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
+  'flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
   'presence-01','presence-04','tan-done',
   'intention-01','intention-03','intention-04',
   'paths-01','paths-03','paths-04',
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
-  yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
-  tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02'],
-  kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
+  yggdrasil: ['ygg-01','ygg-audio','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
+  tantra: ['tan-01','tan-audio','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02'],
+  kundalini: ['kun-01','kun-audio','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
 })
 export const ENERGYWORK_INITIATION = Object.freeze(['init-02'])
 export const ENERGYWORK_FINISH = Object.freeze(['end-01','end-02'])
@@ -116,7 +116,7 @@ export function energyworkSequence(_legacyPath = null) {
   return [
     'welcome-01','welcome-02',
     ...withClosingPractices(
-      ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
+      ['flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
       ['flight-03'], 'flight-done'),
     'flight-save',
     ...withClosingPractices(

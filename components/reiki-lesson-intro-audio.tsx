@@ -7,7 +7,7 @@ type Locale = "en" | "ru";
 type Lesson = "flight" | "tantra" | "kundalini" | "yggdrasil" | "initiation";
 type PublishedAudio = { src: string; publishedAt: string };
 
-export function ReikiLessonIntroAudio({ lesson, locale }: { lesson: Lesson; locale: Locale }) {
+export function ReikiLessonIntroAudio({ lesson, locale, showEmpty = false }: { lesson: Lesson; locale: Locale; showEmpty?: boolean }) {
   const [audio, setAudio] = useState<PublishedAudio | null>(null);
 
   useEffect(() => {
@@ -28,9 +28,18 @@ export function ReikiLessonIntroAudio({ lesson, locale }: { lesson: Lesson; loca
     return () => controller.abort();
   }, [lesson, locale]);
 
-  // Do not advertise an unpublished recording or show a placeholder on the opening slide.
-  // Publishing audio in the existing owner workflow reveals the player automatically.
-  if (!audio) return null;
+  // Only a dedicated greeting slide explains unavailable audio; opening slides stay compact.
+  if (!audio) return showEmpty ? (
+    <div className="reiki-intro-audio" data-reiki-lesson-intro-audio={lesson} data-audio-status="unavailable">
+      <div className="reiki-intro-audio-heading">
+        <Headphones size={18} aria-hidden="true" />
+        <strong>{locale === "ru" ? "Личное обращение Андрея" : "A personal introduction from Andrey"}</strong>
+      </div>
+      <p role="status">{locale === "ru"
+        ? "Аудиозапись пока недоступна. Можно сразу перейти к видео."
+        : "The audio is not available yet. You can continue straight to the video."}</p>
+    </div>
+  ) : null;
 
   const ru = locale === "ru";
   return (

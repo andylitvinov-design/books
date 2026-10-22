@@ -29,8 +29,8 @@ test('Seven screenshots are absent from all active screens in both languages', (
   const ranges = energyworkLessonRanges(sequence)
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.equal(ENERGYWORK_P9_VERSION, '2026-10-19.p9')
-  assert.equal(sequence.length, 63)
-  assert.deepEqual(ranges.map(range => range.count), [8, 14, 16, 14, 9])
+  assert.equal(sequence.length, 67)
+  assert.deepEqual(ranges.map(range => range.count), [9, 15, 17, 15, 9])
   assert.deepEqual(sequence.slice(ranges[4].start), [
     'paths-01','intention-01','intention-03','paths-03',
     'init-02','end-01','paths-04','intention-04','end-02',

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Award, Smartphone, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, Smartphone, BookOpen, Headphones, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-share";
@@ -113,6 +113,7 @@ const copy = {
     step: "Slide",
     of: "of",
     continue: "Continue",
+    toVideo: "Continue to video",
     back: "Back",
     stop: "Explore all five steps now. Sign in to save your place as you learn.",
     stopSaved: "Your progress is saved in My Courses. Revisit any step you have reached.",
@@ -267,6 +268,7 @@ const copy = {
     step: "Слайд",
     of: "из",
     continue: "Продолжить",
+    toVideo: "Перейти к видео",
     back: "Назад",
     stop: "Изучайте все пять этапов. Войдите в кабинет, чтобы сохранять свой прогресс.",
     stopSaved: "Ваш прогресс сохранён в разделе «Мои курсы». Возвращайтесь к пройденным урокам.",
@@ -1361,8 +1363,27 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       <li key={index}><Check size={15} aria-hidden="true" />{topic[locale]}</li>
                     ))}
                   </ul>
+                  {slide.introAudioKey === "initiation" ? (
+                    <ReikiLessonIntroAudio key={slide.introAudioKey + "-" + locale}
+                      lesson={slide.introAudioKey} locale={locale} />
+                  ) : null}
+                </section>
+              ) : null}
+              {slide.kind === "audio-intro" && slide.introAudioKey ? (
+                <section className={styles.audioWelcomeCard} data-reiki-audio-welcome={slide.introAudioKey}
+                  aria-label={locale === "ru" ? "Аудиопрезентация Андрея" : "Andrey's audio welcome"}>
+                  <div className={styles.audioWelcomeAuthor}>
+                    <Headphones size={21} aria-hidden="true" />
+                    <span>
+                      <small>{locale === "ru" ? "ОТ АВТОРА КУРСА" : "FROM YOUR COURSE GUIDE"}</small>
+                      <strong>Andrey Litvinov</strong>
+                    </span>
+                  </div>
                   <ReikiLessonIntroAudio key={slide.introAudioKey + "-" + locale}
-                    lesson={slide.introAudioKey} locale={locale} />
+                    lesson={slide.introAudioKey} locale={locale} showEmpty />
+                  <p className={styles.audioWelcomeHint}>{locale === "ru"
+                    ? "Прослушивание необязательно. Далее — видеопрактика."
+                    : "Listening is optional. The video practice is next."}</p>
                 </section>
               ) : null}
               {slide.id === "tan-05" ? (
@@ -1864,7 +1885,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <button type="button" onClick={next}
                 disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
                 className={styles.next} data-energywork-next>
-                {slide.kind === "milestone" ? t.saveAndContinue : isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : t.continue}
+                {slide.kind === "milestone" ? t.saveAndContinue : isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : slide.kind === "audio-intro" ? t.toVideo : t.continue}
                 <ArrowRight size={19} aria-hidden="true" />
               </button>
             ) : null}
