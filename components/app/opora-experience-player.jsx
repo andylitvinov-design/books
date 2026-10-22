@@ -34,7 +34,7 @@ const WORDS={
     arrivalWarmText:'Найдите взглядом одну приятную или нейтральную деталь вокруг.',
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
-    supportKicker:'МОМЕНТ ПОДДЕРЖКИ',priorSkills:'ПРОЙДЕННЫЕ ЗАНЯТИЯ',todaySkill:'ГЛАВНЫЙ НАВЫК СЕГОДНЯ',todayPractice:'Упражнение',firstDay:'Это первое занятие. Начнём с одного небольшого навыка.',olderDays:'Ещё пройденные дни',gentleNote:'Бережное напоминание',stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
+    supportKicker:'МОМЕНТ ПОДДЕРЖКИ',priorSkills:'ПРОЙДЕННЫЕ ЗАНЯТИЯ',todaySkill:'ГЛАВНЫЙ НАВЫК СЕГОДНЯ',todayPractice:'Упражнение',firstDay:'Это первое занятие. Начнём с одного небольшого навыка.',noPrevious:'В предыдущих днях пока нет сохранённых занятий.',olderDays:'Ещё пройденные дни',gentleNote:'Бережное напоминание',stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
     coreWhy:'ЗАЧЕМ ЭТО НУЖНО',tryPrompt:'Получилось попробовать?',
     start:'Я попробую этот шаг',alternative:'Другой мягкий вариант',tryAfter:'Как прошло?',
     tried:'Я попробовал(а)',partly:'Удалось немного',read:'Сегодня только знакомлюсь',
@@ -100,7 +100,7 @@ const WORDS={
     arrivalWarmText:'Find one calm or pleasant detail around you.',
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
-    supportKicker:'A MOMENT OF SUPPORT',priorSkills:'PREVIOUS LESSONS',todaySkill:'TODAY’S KEY SKILL',todayPractice:'Exercise',firstDay:'This is your first lesson. Start with one small skill.',olderDays:'More completed days',gentleNote:'A gentle reminder',stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
+    supportKicker:'A MOMENT OF SUPPORT',priorSkills:'PREVIOUS LESSONS',todaySkill:'TODAY’S KEY SKILL',todayPractice:'Exercise',firstDay:'This is your first lesson. Start with one small skill.',noPrevious:'No previous lessons are saved yet.',olderDays:'More completed days',gentleNote:'A gentle reminder',stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
     coreWhy:'WHY IT HELPS',tryPrompt:'Did you try it?',
     start:'I will try this step',alternative:'Another gentle option',tryAfter:'How did that go?',
     tried:'I tried it',partly:'I tried a little',read:'Just reading today',
@@ -167,7 +167,7 @@ WORDS.es = {
     arrivalWarmText:'Encuentra con la mirada un detalle agradable o neutro.',
     arriveHint:'Mira un objeto estable a tu alrededor; no necesitas cambiar tu respiración.',
     practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
-  supportKicker:'UN MOMENTO DE APOYO',priorSkills:'LECCIONES ANTERIORES',todaySkill:'HABILIDAD CLAVE DE HOY',todayPractice:'Ejercicio',firstDay:'Esta es tu primera lección. Empezamos con una habilidad sencilla.',olderDays:'Más días completados',gentleNote:'Un recordatorio amable',stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
+  supportKicker:'UN MOMENTO DE APOYO',priorSkills:'LECCIONES ANTERIORES',todaySkill:'HABILIDAD CLAVE DE HOY',todayPractice:'Ejercicio',firstDay:'Esta es tu primera lección. Empezamos con una habilidad sencilla.',noPrevious:'Aún no hay lecciones anteriores guardadas.',olderDays:'Más días completados',gentleNote:'Un recordatorio amable',stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
   coreWhy:'POR QUÉ AYUDA',tryPrompt:'¿Lo intentaste?',tryAfter:'¿Cómo te fue?',
   tried:'Lo intenté',partly:'Un poquito',read:'Hoy solo leo',
   gentle:'Si te incomoda, mira un objeto neutro.',
@@ -667,7 +667,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                    </li>)}
                  </ol>
                </details>}
-             </>:<p className={styles.briefFirst}>{t.firstDay}</p>}
+             </>:<p className={styles.briefFirst}>{cycle.day===1?t.firstDay:t.noPrevious}</p>}
              <div className={styles.todayBrief} data-opora-today-skill="true">
                <span className={styles.briefKicker}>{t.todaySkill}</span>
                <strong>{skillBrief?.skill||dayCopy?.title}</strong>
