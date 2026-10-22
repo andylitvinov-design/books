@@ -54,7 +54,7 @@ test('Every type of teaching screen uses existing glass typography and safe cont
 test('Welcome keeps the free course scenic illustration and three benefits while describing all five lessons', () => {
   assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
   assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
-  assert.match(learner, /Want to go further\? You can explore personal Reiki initiation/)
+  assert.match(learner, /Want individual guidance\? Ask about a personal session with Andrey/)
   assert.match(learner, /styles\.welcomeReward/)
   assert.match(learner, /styles\.benefits/)
   for(const name of ['Short lessons','Practical tasks','Private progress'])
