@@ -154,6 +154,7 @@ export function AcademyCourseCapture({ locale }: { locale: PublicLocale }) {
       </div>
 
       <ContactChannelChooser
+        stayAfterSave
         locale={locale}
         whatsappUrl={enquiryUrl}
         className={styles.action}

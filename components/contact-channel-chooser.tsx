@@ -118,6 +118,8 @@ type Props = {
   attributes?: Record<string, string>;
   id?: string;
   quick?: boolean;
+  /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
+  stayAfterSave?: boolean;
   resetKey?: string;
   publicTopic?: string;
 };
@@ -125,7 +127,7 @@ type Props = {
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, resetKey, publicTopic,
+  onChannelClick, attributes, id, quick = false, stayAfterSave = false, resetKey, publicTopic,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -315,7 +317,7 @@ export function ContactChannelChooser({
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
           referenceCode: data.referenceCode, createdAt: Date.now(),
         }));
-        router.push("/" + locale + "/thank-you");
+        if (!stayAfterSave) router.push("/" + locale + "/thank-you");
       } catch {
         // Private browsing may block sessionStorage. The existing in-place
         // confirmation and optional messenger handoff remain available.
