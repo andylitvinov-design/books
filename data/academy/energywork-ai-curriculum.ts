@@ -306,8 +306,8 @@ const commonSlides: EnergyworkSlide[] = [
 
   { id: "paths-01", phase: "initiation", kind: "lesson",
     title: l("Your next step: personal initiation", "Следующий шаг: личная инициация"),
-    body: l("A personal initiation is separate from this course and needs Andrey's confirmation. Here's how to choose and send a request.",
-      "Личная инициация проходит отдельно от курса и требует подтверждения Андрея. Узнайте, как выбрать направление и подать заявку."),
+    body: l("Watch Andrey’s introduction to lesson five. This recording is not an initiation; a personal session is arranged separately after your request.",
+      "Посмотрите вводное видео Андрея к пятому уроку. Запись не является инициацией: личная встреча согласуется отдельно после вашей заявки."),
     introAudioKey: "initiation",
     introTopics: [
       l("Compare three Reiki traditions", "Сравниваем три традиции Рейки"),
