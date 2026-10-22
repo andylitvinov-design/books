@@ -5196,3 +5196,63 @@
   line-height: 1.35;
   text-align: left;
 }
+
+
+/* Reiki Practitioner lesson videos: two compact sources, one player, no extra slide. */
+.lessonVideoChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 8px;
+  width: 100%;
+}
+.lessonVideoChoice {
+  min-width: 0;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid rgba(23, 85, 83, .24);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .84);
+  color: #31524e;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.lessonVideoChoice[aria-pressed="true"] {
+  background: #e4f2e8;
+  border-color: #427967;
+  color: #214d3e;
+}
+.lessonVideoChoice:focus-visible {
+  outline: 2px solid #326d72;
+  outline-offset: 2px;
+}
+@media (max-width: 380px), (max-height: 700px) {
+  .lessonVideoChoices { gap: 4px; margin-bottom: 5px; }
+  .lessonVideoChoice { padding: 5px 6px; font-size: 11px; }
+}
+
+
+/* Compact portrait videos on short phones: preserve the 16:9 player and action dock.
+   Only the video card is narrower; other lesson content retains readable typography. */
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .video {
+    padding: 5px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .video :global(.academy-video-choice) {
+    max-width: 216px;
+    margin-inline: auto;
+  }
+  /* On very short phones the selector explains the two choices on its own. */
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .description {
+    display: none;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .videoCaption {
+    display: none;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .lessonVideoChoice {
+    min-height: 30px;
+  }
+}

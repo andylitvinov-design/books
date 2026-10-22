@@ -29,8 +29,8 @@ test("The visible slide counter uses five real lesson lengths and a separate int
 
 test("A single checkpoint action saves before advancing and does not promise guest saving", () => {
   assert.doesNotMatch(learner, /data-energywork-save-progress|saveAndLeave/);
-  assert.match(learner, /saveAndContinue: "Save progress & continue"/);
-  assert.match(learner, /saveAndContinue: "Сохранить прогресс и продолжить"/);
+  assert.match(learner, /saveAndContinue: "Save my lesson and continue"/);
+  assert.match(learner, /saveAndContinue: "Сохранить урок и продолжить"/);
   assert.match(learner, /returnAnytime: "Pick up here anytime from My Courses\."/);
   assert.match(learner, /returnAnytime: "Вернуться к уроку можно через «Мои курсы»\."/);
   // Revisited unchanged slides skip duplicate writes; changed slides must persist before moving on.
