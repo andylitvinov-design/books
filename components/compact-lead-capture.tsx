@@ -65,7 +65,7 @@ function parseContact(raw: string): { email: string; phone: string } | null {
 
 /** One clear final action; a CRM lead only exists after the API confirms a DB commit. */
 export function CompactLeadCapture({
-  locale, serviceTitle, title, lead, id, disclaimer, sourcePath,
+  locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant,
 }: {
   locale: PublicLocale;
   serviceTitle: string;
@@ -75,6 +75,7 @@ export function CompactLeadCapture({
   disclaimer?: string;
   /** Trustworthy service route for a form embedded on /, which is not an allowed enquiry source. */
   sourcePath?: string;
+  variant?: "inline";
 }) {
   const t = copy[locale];
   const pathname = usePathname();
@@ -128,7 +129,9 @@ export function CompactLeadCapture({
   }
 
   return (
-    <section id={id} className={styles.section} data-compact-last-slide data-service-lead-capture
+    <section id={id} className={[styles.section, variant === "inline" ? styles.inline : ""].filter(Boolean).join(" ")}
+      data-compact-last-slide={variant === "inline" ? undefined : ""}
+      data-inline-offer-form={variant === "inline" ? "" : undefined} data-service-lead-capture
       lang={locale} aria-label={title}>
       <div className={styles.head}>
         <h2>{title}</h2>

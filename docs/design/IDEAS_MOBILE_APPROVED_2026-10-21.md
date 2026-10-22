@@ -33,3 +33,16 @@ Run targeted Ideas tests, typecheck, lint, Next.js build and relevant public fee
 - Kept both consent-free handoff promo cards from PR #1499 in the expanded Dao result, after the short reflective paragraph; a click is not a CRM lead.
 - Preserved the 14 provenance-checked historic proverbs from PR #1498, including linked source/original language under new three-column visual tiles.
 - New compact 320px horizontal swipe affordance for sourced aphorism tiles; no tiny text or horizontal page overflow.
+
+
+## Owner revision · 2026-10-22 — vertical sequence and inline enquiries
+
+This section supersedes the 2026-10-21 three-column quote treatment and embedded Dao promo layout above.
+
+1. Immediately after the question and existing topic-mode selector, present **three full-width horizontal aphorism rows**, one below another (not three narrow columns and not a horizontal swipe carousel), with readable attribution. Render this order both for the visibly marked educational preview and for a real submitted question.
+2. Next present the **Daoist block**, retaining random 1–64 selection after the question, collapsed long reading, optional full interpretation, and honest example labeling before a question.
+3. After Dao display **two existing photographic promotional cards**. The card's primary button ("Заказать" for the personal interpretation; "Получить в подарок" for the free written review) opens a **small inline contact/consent form immediately below that card**. Only one inline form stays expanded at a time. The detailed first-party service routes remain accessible beneath each expanded form.
+4. Reuse the existing CompactLeadCapture and /api/service-enquiries → encrypted public enquiry + CRM lead transaction; never create another lead endpoint. The private question text is **not** included in the enquiry. Form submission requires explicit visitor contact, opt-in and a confirmed saved:true reference receipt; clicking a button is not a booking, delivery or payment.
+5. Keep EN/RU/ES equivalents, 320/375/390/430px responsive rows, legible typography, keyboard/focus, screen-reader expanded states, and all existing Books/Library/latest-publications sections.
+
+**Acceptance gates:** tests/ideas-mobile-ui.test.mjs and scripts/verify-ideas-mobile-browser.mjs cover vertical ordering, page overflow and form disclosure; focused lint/typecheck/build/Chromium/WebKit must pass before asserting production. Server/CRM end-to-end delivery can only be claimed after a consented real test through the live provider; do not submit a visitor enquiry as a synthetic test or close the funnel issue based on UI checks alone.

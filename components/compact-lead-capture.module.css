@@ -30,3 +30,22 @@
   .consent { font-size:11px; }
 }
 @media(prefers-reduced-motion:reduce) { .submit { transition:none; } }
+
+/* Compact in-place offer disclosure. Standalone service final slides are unchanged. */
+.section.inline {
+  width:100%; max-width:100%; margin:8px 0 0; padding:12px;
+  border:1px solid #d9cabb; border-radius:15px; background:#fffaf3;
+  box-shadow:inset 0 1px rgba(255,255,255,.8);
+}
+.inline .head h2 { margin:0 0 3px; font:700 16px/1.25 Arial,Helvetica,sans-serif; }
+.inline .head p { margin:0 0 9px; font-size:12px; line-height:1.35; }
+.inline .fieldRow { gap:8px; }
+.inline .field input { height:44px; font-size:16px; }
+.inline .submit { min-width:135px; min-height:44px; padding:10px; font-size:12px; }
+.inline .consent { font-size:11px; }
+.inline .notice { font-size:10.5px; }
+@media(max-width:600px) {
+  .section.inline { margin:8px 0 0; padding:11px; }
+  .inline .fieldRow { grid-template-columns:minmax(0,1fr); gap:8px; }
+  .inline .field input,.inline .submit { width:100%; min-height:44px; height:44px; }
+}
