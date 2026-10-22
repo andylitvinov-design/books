@@ -331,6 +331,12 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
   onToggle: (offer: Offer) => void;
 }) {
   const t = copy[locale];
+  // Preserve the in-flight request/receipt if a visitor closes and reopens an offer.
+  const [revealedOffers, setRevealedOffers] = useState<Offer[]>([]);
+  function reveal(offer: Offer) {
+    setRevealedOffers(current => current.includes(offer) ? current : [...current, offer]);
+    onToggle(offer);
+  }
   return (
     <aside className={styles.daoPromos} aria-label={t.daoPromoLabel} data-ideas-dao-promos>
       <div className={styles.daoPromoWrapper}>
@@ -340,12 +346,12 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
           <span className={styles.daoPromoDescription}>{t.daoPromoReading.description}</span>
           <button type="button" className={styles.daoPromoAction} data-ideas-order-button="reading"
             aria-expanded={openOffer === "reading"} aria-controls="ideas-offer-reading"
-            onClick={() => onToggle("reading")}>
+            onClick={() => reveal("reading")}>
             {t.order}<ArrowRight size={17} aria-hidden="true" />
           </button>
         </article>
         <div id="ideas-offer-reading" hidden={openOffer !== "reading"}>
-          {openOffer === "reading" ? (
+          {revealedOffers.includes("reading") ? (
             <>
               <CompactLeadCapture locale={locale} variant="inline" serviceTitle={t.daoPromoReading.title}
                 title={t.requestTitle} lead={t.requestLead} />
@@ -363,12 +369,12 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
           <span className={styles.daoPromoDescription}>{t.daoPromoGift.description}</span>
           <button type="button" className={styles.daoPromoAction} data-ideas-order-button="gift"
             aria-expanded={openOffer === "gift"} aria-controls="ideas-offer-gift"
-            onClick={() => onToggle("gift")}>
+            onClick={() => reveal("gift")}>
             {t.daoPromoGift.action}<ArrowRight size={17} aria-hidden="true" />
           </button>
         </article>
         <div id="ideas-offer-gift" hidden={openOffer !== "gift"}>
-          {openOffer === "gift" ? (
+          {revealedOffers.includes("gift") ? (
             <>
               <CompactLeadCapture locale={locale} variant="inline" serviceTitle={t.daoPromoGift.title}
                 title={t.requestTitle} lead={t.requestLead} />
