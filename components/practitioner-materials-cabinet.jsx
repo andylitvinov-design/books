@@ -178,7 +178,7 @@ export function PractitionerMaterialsCabinet(){
           :<label>{type==='image'?(ru?'Фотографии':'Photos'):type==='audio'?(ru?'Аудиофайлы с телефона':'Phone audio files'):(ru?'Видео MP4 / MOV':'MP4 / MOV video')}
             <input type="file" required accept={type==='image'?
               'image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif':
-              type==='audio'?'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.flac,.aac':
+              type==='audio'?'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.opus,.flac,.aac':
               'video/mp4,video/quicktime,.mp4,.mov'} multiple={type==='image'||type==='audio'}
               key={type} onChange={e=>setFiles(Array.from(e.target.files||[]))}/>
           </label>}
