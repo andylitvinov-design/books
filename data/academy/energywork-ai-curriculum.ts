@@ -293,16 +293,12 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Second lesson completed!", "Второй урок пройден!"),
     body: l("Keep going through all five lessons to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Пройдите остальные уроки, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки и энергопрактик.") },
 
-  { id: "intention-01", phase: "initiation", kind: "lesson", image: image.sun,
-    title: l("What is intention?", "Что такое намерение?"),
-    body: l("In these traditions, intention gives a practice direction. It is a personal purpose, not a promise that an outcome must happen.", "В этих традициях намерение задаёт направление практики. Это личная цель, а не обещание обязательного результата.") },
-  { id: "intention-03", phase: "initiation", kind: "reflection",
-    title: l("Write your own intention", "Запишите своё намерение"),
-    body: l("Keep it simple and within your influence, such as making room for a short quiet pause.", "Пусть оно будет простым и посильным, например выделить пару минут для спокойной паузы."),
-    question: { type: "text", prompt: l("My intention for this course…", "Моё намерение для курса…") } },
+  // The original two intention explanation/writing screens were retired on 22 Oct.
+  // The existing closing timer and answer ID stay, with a neutral stand-alone exercise.
   { id: "intention-04", phase: "initiation", kind: "practice", question: practiceQuestion,
-    title: l("Try your intention gently", "Мягко вспомните намерение"),
-    body: l("For a few moments, notice your intention while staying aware of your surroundings. It is fine to change it later.", "На несколько мгновений вспомните своё намерение, оставаясь в контакте с окружающим. Позже его можно изменить.") },
+    title: l("A short pause before finishing", "Короткая пауза перед завершением"),
+    body: l("For two minutes, gently notice how you feel after this lesson. You may stop or skip at any time.",
+      "В течение двух минут мягко прислушайтесь к своему состоянию после урока. Можно остановиться или пропустить практику.") },
 
   { id: "paths-01", phase: "initiation", kind: "lesson",
     title: l("Your next step: Reiki initiation", "Следующий шаг: Рейки-инициация"),
@@ -317,9 +313,6 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "paths-03", phase: "initiation", kind: "lesson", image: image.tantra,
     title: l("One course, several initiation options", "Один курс — несколько вариантов инициации"),
     body: l("You may discuss initiation in any of the three traditions, one at a time. Completion of this educational course does not mean an initiation has taken place.", "Вы можете обсудить инициацию в любой из трёх традиций, по очереди. Прохождение учебного курса само по себе не означает получения инициации.") },
-  { id: "paths-04", phase: "initiation", kind: "lesson",
-    title: l("Prepare your Reiki initiation request", "Подготовьте заявку на Рейки-инициацию"),
-    body: l("Review the five lesson reports and answers. They stay private unless you choose to share them with the teacher. A request only starts a discussion; it never grants initiation automatically.", "Проверьте отчёты и ответы по пяти урокам. Они остаются приватными, пока вы сами не решите показать их преподавателю. Заявка лишь начинает обсуждение, а не предоставляет инициацию автоматически.") },
 ];
 
 const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
@@ -547,10 +540,9 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
   const finalLesson = [
     commonSlides.find((slide) => slide.id === "paths-01")!,
     ...commonSlides.filter((slide) => slide.phase === "initiation" &&
-      slide.id !== "paths-01" && slide.id !== "paths-04"),
+      slide.id !== "paths-01"),
     ...initiationSlides,
     endSlides[0]!,
-    commonSlides.find((slide) => slide.id === "paths-04")!,
     endSlides[1]!,
   ];
 
@@ -568,7 +560,7 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
     ...withClosingPractices(pathSlides.kundalini, ["kun-03"], "kun-done"),
     ...withClosingPractices(pathSlides.yggdrasil, ["ygg-03"], "ygg-done"),
     // The fifth lesson starts at paths-01, not in the previous Yggdrasil lesson.
-    // The remaining intention practice stays before the final congratulations.
+    // The short optional closing pause stays before the final congratulations.
     ...withClosingPractices(finalLesson, ["intention-04"], "end-02"),
   ];
 }
