@@ -75,6 +75,9 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
     "components/reiki-choice-capture.tsx",
     "components/energywork-reiki-capture.tsx",
     "components/reiki-landing-forms.tsx",
+    "components/yggdrasil-initiation-form.tsx",
+    "components/tantra-initiation-form.tsx",
+    "components/principles-of-energywork.tsx",
   ]) {
     const source = await read(file);
     assert.match(source, /<ContactChannelChooser/);
