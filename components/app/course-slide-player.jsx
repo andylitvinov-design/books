@@ -375,6 +375,7 @@ function RoutePracticeLab({plan,...props}) {
 
 export default function CourseSlidePlayer({
   locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
+  reviewOnly = false,
 }) {
   const words = WORDS[locale] || WORDS.en
   const learning = INTERACTIVE_STRESS[locale] || INTERACTIVE_STRESS.en
@@ -418,7 +419,7 @@ export default function CourseSlidePlayer({
     checking:promotion.checking,alreadyDone:alreadyDone||earned,
   }),[baseSlides,cycle.day,cycle.durationDays,promotion.show,promotion.checking,alreadyDone,earned])
   const visitedSlideKeys=useRef(new Set(baseSlides[0] ? [baseSlides[0].key] : []))
-  const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
+  const [index, setIndex] = useState(reviewOnly ? 0 : alreadyDone ? slides.length : 0)
   const [severity, setSeverity] = useState(today?.severity ?? null)
   const [reflection, setReflection] = useState(session?.reflection || '')
   function appendRouteReflection(addition){
@@ -543,7 +544,7 @@ export default function CourseSlidePlayer({
   function goBack() { setError(''); setIndex(current => Math.max(0, current - 1)) }
 
   async function saveCheckin() {
-    if (!Number.isInteger(severity) || (today && severity === today.severity)) { goNext(); return }
+    if (reviewOnly || !Number.isInteger(severity) || (today && severity === today.severity)) { goNext(); return }
     if (submitting.current) return
     submitting.current = true
     setSaving(true); setError('')
@@ -563,7 +564,7 @@ export default function CourseSlidePlayer({
   }
 
   async function updatePreferences(change) {
-    if (submitting.current) return
+    if (reviewOnly || submitting.current) return
     submitting.current = true
     setSaving(true); setError('')
     try {
@@ -676,7 +677,8 @@ export default function CourseSlidePlayer({
     data-course-slide-player data-course-skills-v5={isSkillV5?'true':undefined} data-opora-first-lesson={isDayOne?"as-1.9":undefined}
     data-opora-module={isOporaModule?lesson.oporaModule.id:undefined}
     data-opora-day={isOporaModule?cycle.day:undefined}
-    data-opora-state-journey={isOporaStateJourney?"v1":undefined} data-course-one-screen="v1" ref={frame}>
+    data-opora-state-journey={isOporaStateJourney?"v1":undefined} data-course-one-screen="v1"
+    data-course-history-review={reviewOnly?'true':undefined} ref={frame}>
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
@@ -1304,10 +1306,11 @@ export default function CourseSlidePlayer({
         {error && <p className={styles.error} role="alert">{error}</p>}
       </main>
       <footer className={styles.footer}>
-        {!finished && !discomfortOpen && <div className={styles.subactions}>
-          {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
-            <ArrowLeft size={16}/>{words.back}</button>}
-          {!isSkillV5&&!isDayOne&&(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)) && <button
+        {!discomfortOpen && <div className={styles.subactions}>
+          <button type="button" disabled={locked} className={styles.back}
+            onClick={index===0?onClose:goBack}>
+            <ArrowLeft size={16}/>{words.back}</button>
+          {!finished&&!isSkillV5&&!isDayOne&&(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
