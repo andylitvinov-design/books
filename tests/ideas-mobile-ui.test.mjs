@@ -81,8 +81,8 @@ test("Dao insight offers two localized cards with in-place consented enquiries a
   const free = read("app/[locale]/services/free-situation-review/page.tsx");
   assert.match(ui, /data-ideas-dao-promos/);
   assert.match(ui, /result\.mode === "dao" && hexagram[\s\S]*?<DaoOfferCards locale=\{answerLocale\}[\s\S]*?result\.mode === "aphorisms"/);
-  assert.match(ui, /answerCopy\.daoPromoReading\.title/);
-  assert.match(ui, /answerCopy\.daoPromoGift\.title/);
+  assert.match(ui, /t\.daoPromoReading\.title/);
+  assert.match(ui, /t\.daoPromoGift\.title/);
   assert.match(ui, /\/services\/free-consultation#intro-request/);
   assert.match(ui, /\/services\/free-situation-review#request-free-review/);
   assert.match(intro, /id="intro-request"/);
@@ -121,7 +121,7 @@ test("visual reference retains current Dao promos and verified historic proverbs
   assert.match(ui, /data-ideas-dao-promos/);
   assert.match(ui, /item\.kind === "proverb" \? t\.proverbSource/);
   assert.match(ui, /item\.kind === "proverb" && item\.original/);
-  assert.match(ui, /answerCopy\.daoPromoGift\.title/);
+  assert.match(ui, /t\.daoPromoGift\.title/);
   assert.match(css, /\.relatedAphorisms \.aphorisms/);
 });
 
