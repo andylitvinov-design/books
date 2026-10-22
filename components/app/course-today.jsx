@@ -154,9 +154,10 @@ const UI={
   symbolSafety:'Образ используется только для личной рефлексии, не является диагнозом или лечением. Можно перейти к словам или пропустить.',
  }
 }
-async function api(action,locale,body,{accountId,courseId,signal}={}){
+async function api(action,locale,body,{accountId,courseId,signal,reviewDay=null}={}){
   if(!accountId||!courseId)throw new Error('COURSE_SELECTION_REQUIRED')
-  const response=await fetch('/api/app/course/'+action+'?locale='+encodeURIComponent(locale)+'&courseId='+encodeURIComponent(courseId),{
+  const response=await fetch('/api/app/course/'+action+'?locale='+encodeURIComponent(locale)+'&courseId='+encodeURIComponent(courseId)+
+    (reviewDay===null?'':'&reviewDay='+encodeURIComponent(String(reviewDay))),{
     method:body?'POST':'GET',cache:'no-store',credentials:'same-origin',signal,
     headers:{'X-HH-Account-ID':accountId,...(body?{'Content-Type':'application/json'}:{})},
     body:body?JSON.stringify(body):undefined,
@@ -197,10 +198,11 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const data=snapshot?.accountId===accountId&&snapshot?.courseId===courseId?snapshot.value:null
  const promotion=useCoursePromotion(accountId,{courseId,cycleId:data?.cycle?.id,day:data?.cycle?.day,lessonId:data?.lesson?.id})
  const currentScope=useRef({accountId,courseId}),mounted=useRef(false),generation=useRef(0),readVersion=useRef(0)
- const readController=useRef(null),submitLock=useRef(null),offeredCompletions=useRef(new Set())
+ const readController=useRef(null),reviewController=useRef(null),submitLock=useRef(null),offeredCompletions=useRef(new Set())
  currentScope.current={accountId,courseId,cycleId:data?.cycle?.id||null}
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [questOpen,setQuestOpen]=useState(false)
+ const [reviewLesson,setReviewLesson]=useState(null),[reviewBusy,setReviewBusy]=useState(null),[reviewError,setReviewError]=useState('')
  const [focusOpen,setFocusOpen]=useState(true)
  // The just-approved post-test CTA launches lesson 1 as soon as owner-scoped
  // Today data is ready. Keep the intent only in this mounted React flow.
@@ -246,6 +248,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     setSymbolMode('image')
     setExpanded('checkin')
     setQuestOpen(false)
+    setReviewLesson(null)
     setFocusOpen(true)
     setView('today')
   }else {
@@ -294,9 +297,9 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  useEffect(()=>{
   mounted.current=true;generation.current+=1;submitLock.current=null
   retestLock.current=null;setRetestBusyKey('');setRetestError('')
-  hydratedDayRef.current='';setSnapshot(null);setBusy(false);setTargetLabel('');setIntention('');setQuestOpen(false)
+  hydratedDayRef.current='';setSnapshot(null);setBusy(false);setTargetLabel('');setIntention('');setQuestOpen(false);setReviewLesson(null);setReviewBusy(null);setReviewError('')
   void reload()
-  return()=>{mounted.current=false;generation.current+=1;readVersion.current+=1;readController.current?.abort()}
+  return()=>{mounted.current=false;generation.current+=1;readVersion.current+=1;readController.current?.abort();reviewController.current?.abort()}
  },[reload])
  const viewGeneration=generation.current
  async function submit(action,body={},after,presentation='aside'){
@@ -390,9 +393,40 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
  const beforeValue=v=>v===null||v===undefined?null:v
  const focusEpoch=generation.current
+ async function openLessonDay(day){
+   if(!Number.isInteger(day)||!data||data.readOnly||busy)return
+   if(day===cycle.day){setReviewLesson(null);setFocusOpen(false);setQuestOpen(true);return}
+   if(!data.roadmap?.some(item=>item.day===day&&item.status==='completed'))return
+   reviewController.current?.abort()
+   const controller=new AbortController();reviewController.current=controller
+   const epoch=generation.current,cycleId=cycle.id
+   setReviewBusy(day);setReviewError('')
+   try{
+     const response=await api('today',locale,undefined,{accountId,courseId,signal:controller.signal,reviewDay:day})
+     if(!mounted.current||controller.signal.aborted||generation.current!==epoch||
+       currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||
+       currentScope.current.cycleId!==cycleId)return
+     if(response.courseId!==courseId||response.cycle?.id!==cycleId||
+       response.review?.day!==day||!response.review?.session?.completedAt||
+       !response.review?.lesson)throw new Error('COURSE_REVIEW_DAY_UNAVAILABLE')
+     setReviewLesson(response.review);setQuestOpen(true)
+   }catch(e){
+     if(!controller.signal.aborted&&mounted.current&&generation.current===epoch)
+       setReviewError(e.message||'COURSE_REVIEW_DAY_UNAVAILABLE')
+   }finally{
+     if(reviewController.current===controller){reviewController.current=null;setReviewBusy(null)}
+   }
+ }
+ const playerData=reviewLesson?{
+   ...data,cycle:{...cycle,day:reviewLesson.day},lesson:reviewLesson.lesson,
+   currentSession:reviewLesson.session,currentCheckin:null,
+ }:data
+ const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null)}
+ const finishLessonPlayer=()=>{closeLessonPlayer();setView('path')}
  function startFocusLesson(){
    if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return
    setFocusOpen(false)
+   setReviewLesson(null)
    if(paused){void submit('resume',{expectedRevision:cycle.revision});return}
    if(data.finalRetest?.ready){showFinalRetest();return}
    if(isFinished||(completed&&reportDay&&!reviewed)){setView('details');return}
@@ -607,7 +641,8 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   </>}
   {view==='path'&&<CourseQuestMap locale={locale} cycle={cycle} progress={progress}
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
-    onPlay={()=>setQuestOpen(true)}/>}
+    onPlay={day=>void openLessonDay(day)} loadingDay={reviewBusy}/>}
+  {view==='path'&&reviewError&&<p role="alert" className={styles.error}>{ru?'Не удалось открыть сохранённый урок. Попробуйте ещё раз.':'Unable to open the saved lesson. Please try again.'}</p>}
   {view==='path'&&data.programme?.id==='stress'&&<details className={styles.antiStressDailyScheme} data-course-full-14-day-scheme>
     <summary>{ru?'Все упражнения, результаты и слайды 14 дней':'Every exercise, outcome and slide across 14 days'}</summary>
     <Course14DayOverview locale={locale} programId="stress" moduleId={data.programme?.moduleId} routerVersion={cycle.preferences?.oporaModuleRouter} />
@@ -625,25 +660,26 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
         :(ru?'Пока не оценивался':'Not assessed')}</small>
     </li>)}</ol>
   </section>}
-  {questOpen&&(data?.lesson?.antiStress?.slideModel===OPORA54_SLIDE_MODEL && data.programme?.id==='stress'?
-    (data?.lesson?.version===COURSE_ANTISTRESS_SKILLS_V7
-      ?<OporaExperiencePlayer key={cycle.id+':'+cycle.day} locale={locale}
-        data={data} busy={busy} onClose={()=>setQuestOpen(false)}
-        onFinish={()=>{setQuestOpen(false);setView('path')}}
+  {questOpen&&(playerData?.lesson?.antiStress?.slideModel===OPORA54_SLIDE_MODEL && data.programme?.id==='stress'?
+    (playerData?.lesson?.version===COURSE_ANTISTRESS_SKILLS_V7
+      ?<OporaExperiencePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
+        onFinish={finishLessonPlayer}
         habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
-        onSession={body=>submit('session',body,undefined,'inline')}/>
-      :<OporaV6SlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
-        data={data} busy={busy} onClose={()=>setQuestOpen(false)}
-        onFinish={()=>{setQuestOpen(false);setView('path')}}
+        onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>
+      :<OporaV6SlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+        data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
+        onFinish={finishLessonPlayer}
         habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
-        onSession={body=>submit('session',body,undefined,'inline')}/>)
-    :<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
-    data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
-     onFinish={()=>{setQuestOpen(false);setView('path')}}
-    onOpenRetest={showFinalRetest}
-    onCheckin={body=>submit('checkin',body)}
-    onSession={body=>submit('session',body,undefined,'inline')}
-    onPreferences={patch=>submit('preferences',{
+        onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>)
+    :<CourseSlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
+    data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)}
+    promotion={promotion} onClose={closeLessonPlayer}
+     onFinish={finishLessonPlayer}
+    onOpenRetest={reviewLesson?closeLessonPlayer:showFinalRetest}
+    onCheckin={body=>reviewLesson?null:submit('checkin',body)}
+    onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}
+    onPreferences={patch=>reviewLesson?null:submit('preferences',{
       expectedRevision:cycle.revision,
       length:patch.length||cycle.preferences?.length||'standard',
       imagery:patch.imagery||cycle.preferences?.imagery||'optional',
