@@ -70,6 +70,9 @@ export function PractitionerMaterialsCabinet(){
   const [feedback,setFeedback]=useState('')
   const [error,setError]=useState('')
   useEffect(()=>{
+    if(new URLSearchParams(window.location.search).get('type')==='audio'){
+      setType('audio');setFilter('audio')
+    }
     const update=e=>setLocale(e.detail==='ru'?'ru':'en')
     setLocale(readUiLocale(document.cookie))
     window.addEventListener('holistic-house-ui-locale',update)
