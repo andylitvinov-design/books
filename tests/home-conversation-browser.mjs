@@ -169,6 +169,57 @@ try {
       }
     }
   }
+  // Regression for the iPhone report: the public six-item bar must stay
+  // attached to the VISIBLE viewport, including after scroll restoration.
+  // The 280px CSS displacement reproduces the detached-layer geometry and
+  // proves the correction also resets when the browser viewport recovers.
+  for (const scenario of scenarios.slice(0, 3)) {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 820 },
+      serviceWorkers: "block",
+    });
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    try {
+      await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+      const bottom = page.locator(".mobile-bottom-navigation");
+      await expect(bottom).toBeVisible();
+      const expectDocked = async phase => {
+        await expect.poll(async () => bottom.evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          const viewport = window.visualViewport;
+          const visibleBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+          return Math.abs(visibleBottom - rect.bottom);
+        }), {
+          message: scenario.locale + "/" + phase + " bottom navigation must touch visible viewport edge",
+          timeout: 6000,
+        }).toBeLessThan(3);
+      };
+      await expectDocked("initial");
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await expectDocked("scroll-end");
+      await bottom.evaluate(element => {
+        element.style.bottom = "280px";
+        window.dispatchEvent(new Event("resize"));
+      });
+      await expectDocked("detached-layer-recovery");
+      await bottom.evaluate(element => {
+        element.style.removeProperty("bottom");
+        window.dispatchEvent(new Event("resize"));
+      });
+      await expectDocked("restored");
+      await expect(bottom.locator("a")).toHaveCount(6);
+      assert.deepEqual(errors, [], "Bottom bar re-anchoring must not throw");
+      if (scenario.locale === "ru") {
+        await page.screenshot({ path: `artifacts/home-conversation/${engineName}-ru-bottom-nav-docked.png` });
+      }
+      evidence.cases.push({ locale: scenario.locale, width: 390, viewportDocked: true, recoveredAfterDisplacement: true });
+    } finally {
+      await context.close();
+    }
+  }
+
   // Simulated browser recognition tests the full 2-tap UI without capturing audio
   // or relying on Safari's remote recognition/permission provider.
   for (const scenario of scenarios.slice(0, 3)) {

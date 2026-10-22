@@ -19,11 +19,66 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     || (clientRoute && !isPublicTestDiscoveryPath(pathname) && !/^\/es\/client(?:\/tests)?\/?$/.test(pathname));
   useEffect(() => {
     const element = nav.current;
-    const update = () => document.body.style.setProperty('--ia222-bottom-height', `${element?.getBoundingClientRect().height ?? 0}px`);
-    update();
-    const observer = element ? new ResizeObserver(update) : undefined;
-    if (element) observer?.observe(element);
-    return () => { observer?.disconnect(); document.body.style.removeProperty('--ia222-bottom-height'); };
+    if (!element) {
+      document.body.style.removeProperty('--ia222-bottom-height');
+      return;
+    }
+
+    // iOS Safari/Chrome can leave a fixed layer anchored to a stale layout
+    // viewport after scrolling, dismissing the keyboard or restoring a tab.
+    // Measure the visible viewport rather than assuming CSS bottom: 0 stayed
+    // attached. Correct only a real gap, keeping the native safe-area padding.
+    const viewport = window.visualViewport;
+    let frame: number | null = null;
+    let correction = 0;
+    const measureHeight = () => {
+      document.body.style.setProperty('--ia222-bottom-height', `${element.getBoundingClientRect().height}px`);
+    };
+    const dockToViewport = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        const rect = element.getBoundingClientRect();
+        // The existing focused-editor CSS hides the bar while the keyboard is
+        // visible. Do not retain that transient displacement after blur.
+        if (rect.height < 1 || rect.width < 1) {
+          correction = 0;
+          element.style.removeProperty('transform');
+          return;
+        }
+        const visibleBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+        if (!Number.isFinite(visibleBottom)) return;
+        const gap = visibleBottom - rect.bottom;
+        if (Math.abs(gap) > 1) {
+          correction += gap;
+          element.style.transform = `translate3d(0, ${correction}px, 0)`;
+        }
+      });
+    };
+    const onLayoutChange = () => { measureHeight(); dockToViewport(); };
+    onLayoutChange();
+    const observer = new ResizeObserver(onLayoutChange);
+    observer.observe(element);
+    window.addEventListener('scroll', dockToViewport, { passive: true });
+    window.addEventListener('resize', onLayoutChange, { passive: true });
+    viewport?.addEventListener('scroll', dockToViewport, { passive: true });
+    viewport?.addEventListener('resize', onLayoutChange, { passive: true });
+    window.addEventListener('pageshow', onLayoutChange);
+    document.addEventListener('focusin', dockToViewport);
+    document.addEventListener('focusout', onLayoutChange);
+    return () => {
+      observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', dockToViewport);
+      window.removeEventListener('resize', onLayoutChange);
+      viewport?.removeEventListener('scroll', dockToViewport);
+      viewport?.removeEventListener('resize', onLayoutChange);
+      window.removeEventListener('pageshow', onLayoutChange);
+      document.removeEventListener('focusin', dockToViewport);
+      document.removeEventListener('focusout', onLayoutChange);
+      element.style.removeProperty('transform');
+      document.body.style.removeProperty('--ia222-bottom-height');
+    };
   }, [hidden, locale]);
   if (hidden) return null;
   const current = activeCompactNavigationId(pathname);
