@@ -46,6 +46,7 @@ jobs:
           node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-home-consultation-first-screen.mjs || status=$?
           node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
+          node scripts/verify-academy-messenger-order.mjs || status=$?
           node scripts/verify-service-cart-browser.mjs || status=$?
           node scripts/verify-storefront-shop-browser.mjs || status=$?
           {
@@ -63,6 +64,7 @@ jobs:
             artifacts/ideas-mobile/
             artifacts/home-first-screen/
             artifacts/contact-channel-browser/
+            artifacts/academy-messenger-order/
             artifacts/service-cart/
             artifacts/storefront-shop/
           retention-days: 7
