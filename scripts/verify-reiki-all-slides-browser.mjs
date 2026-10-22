@@ -95,7 +95,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
   }
-  assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
+  // This consented save gate has a fixed bottom dock and intentionally aligns at top.
+  assert.ok(data.slideJustify.includes(id === "flight-save" ? "flex-start" : "center"),
+    where + ": lesson content uses the expected vertical alignment");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
   assert.ok(data.privateSaveStatus.length > 0, where + ": current guest, consent or private-save status is visible");
   assert.equal(data.programmeOpen, false, where + ": journey hint is collapsed unless requested");
@@ -136,7 +138,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   // meditation video. Audio is optional until the author uploads his file.
   if (["flight-01","tan-01","kun-01","ygg-01"].includes(id)) {
     await expect(page.locator('[data-reiki-lesson-intro]')).toBeVisible();
-    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toBeVisible();
+    // Isolated browser fixture has no owner-published recording; no placeholder is rendered.
+    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toHaveCount(0);
     await expect(page.locator('[data-reiki-lesson-intro] li')).toHaveCount(3);
     await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
   }
@@ -445,7 +448,12 @@ async function verifySaveThenInstall(page, locale) {
   });
   await page.route(bootstrapPattern, async route => {
     await route.fulfill({ status:200, contentType:"application/json",
-      body: JSON.stringify({ account: { id:accountId, displayName:"Test learner", onboardingState:"active" } }) });
+      // Match appFetch's actual bootstrap contract so the fake login cannot
+      // appear successful without the shape the real client accepts.
+      body: JSON.stringify({
+        account: { id:accountId, displayName:"Test learner", onboardingState:"active" },
+        results:[], runs:[], requests:[], consents:[], services:[],
+      }) });
   });
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
@@ -463,7 +471,9 @@ async function verifySaveThenInstall(page, locale) {
   }
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "flight-done");
-  await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(2);
+  // The compact milestone screen has one in-card "Save my lesson" action;
+  // the second primary "Save my lesson and continue" is in the pinned footer.
+  await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(1);
   await page.locator('button[data-reiki-tomorrow-choice]').click();
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "flight-save");

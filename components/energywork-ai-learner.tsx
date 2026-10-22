@@ -10,6 +10,7 @@ import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-sha
 import { appFetch } from "@/lib/app/client-fetch";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { reikiPractitionerLessonVideos, type ReikiPractitionerLessonVideo } from "@/data/academy/reiki-practitioner-lesson-videos";
 import { useOceanPracticeAudio } from "./ocean-practice-audio";
 import OceanSoundToggle from "./ocean-sound-toggle";
 import {
@@ -550,6 +551,58 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
   </div>;
 }
 
+
+
+/** Existing video slides plus the fifth video at the opening of lesson five.
+ * Switching sources unmounts the old iframe without changing private progress.
+ */
+function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
+  slide: EnergyworkSlide;
+  locale: EnergyworkLocale;
+  lessonVideo?: ReikiPractitionerLessonVideo;
+  original: { youtubeId: string | null; title: string } | null;
+}) {
+  const [choice, setChoice] = useState<"lesson" | "original">("lesson");
+  const t = copy[locale];
+  const useOriginal = !lessonVideo || choice === "original";
+  const youtubeId = !useOriginal && lessonVideo ? lessonVideo.youtubeId : original?.youtubeId;
+  const videoTitle = !useOriginal && lessonVideo ? lessonVideo.title[locale] : original?.title;
+  return (
+    <div className={styles.video} data-reiki-lesson-video={slide.id}>
+      {lessonVideo && original?.youtubeId ? (
+        <div className={styles.lessonVideoChoices} role="group"
+          aria-label={locale === "ru" ? "Выбор видео урока" : "Choose lesson video"}>
+          <button type="button" className={styles.lessonVideoChoice}
+            aria-pressed={!useOriginal} onClick={() => setChoice("lesson")}>
+            {locale === "ru" ? "Видеоурок" : "Lesson video"}
+          </button>
+          <button type="button" className={styles.lessonVideoChoice}
+            aria-pressed={useOriginal} onClick={() => setChoice("original")}>
+            {locale === "ru" ? "Медитация (EN)" : "Meditation (EN)"}
+          </button>
+        </div>
+      ) : null}
+      {youtubeId ? (
+        <AcademyVideoPlayer key={slide.id + ":" + (useOriginal ? "original" : "lesson")}
+          youtubeId={youtubeId} title={videoTitle ?? slide.title[locale]} />
+      ) : (
+        <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />
+          {t.unavailable}</p>
+      )}
+      {youtubeId ? (
+        <p className={styles.videoCaption}>
+          {useOriginal
+            ? (locale === "ru" ? "Дополнительная английская медитация." : "Optional original English guided meditation.")
+            : slide.id === "paths-01"
+              ? (locale === "ru"
+                ? "Вводное видео пятого урока. Просмотр не является личной инициацией."
+                : "Lesson five introduction. Watching is not a personal initiation.")
+              : (locale === "ru" ? "Запись урока. Нажмите Play, чтобы начать просмотр." : "Lesson recording. Press Play to start.")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 /** Review buttons only change the quote, never the current course slide. */
 /** Compact, accessible carousel: review arrows never advance the lesson. */
@@ -1094,6 +1147,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const otherStudyMissing = (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) &&
     !energyworkReikiStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
+  // paths-01 is already the first screen of lesson five; no extra slide or progress migration.
+  const lessonVideo = slide.kind === "video" || slide.id === "paths-01"
+    ? reikiPractitionerLessonVideos.find((item) => item.slideId === slide.id)
+    : undefined;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
   const lessonNumber = currentLessonRange?.lesson ?? 1;
@@ -1781,12 +1838,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   sizes="(max-width: 720px) 100vw, 42vw" />
               </div>
             ) : null}
-            {slide.kind === "video" ? (
-              <div className={styles.video}>
-                {media?.youtubeId ? <AcademyVideoPlayer key={slide.id} youtubeId={media.youtubeId} title={media.title} /> :
-                  <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />{t.unavailable}</p>}
-                {media?.youtubeId ? <p className={styles.videoCaption}>{t.audio} · {media.title}</p> : null}
-              </div>
+            {(slide.kind === "video" || slide.id === "paths-01") ? (
+              <ReikiLessonVideo key={slide.id} slide={slide} locale={locale}
+                lessonVideo={lessonVideo} original={media ?? null} />
             ) : null}
           </div>
           {slide.id === "flight-save" ? (
