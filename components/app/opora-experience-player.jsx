@@ -733,15 +733,21 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </>}
           {moment==='receipt'&&<>
             <div className={styles.celebrationMark} aria-hidden="true"><CheckCircle2 size={36}/></div>
-            <p className={styles.lead}>{c.congratsLead}</p>
-            <p className={styles.soft}>{t.savedText}</p>
+            <div className={styles.learnedSkill} data-opora-learned-skill={cycle.day}>
+              <span>{c.congratsSkillLabel}</span>
+              <strong>{dayCopy?.title||lesson.skill}</strong>
+              <p><b>{c.congratsPracticeLabel}:</b> {dayCopy?.practice||practiceGuide}</p>
+            </div>
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
             </div>
-            {chosenFeeling&&<p className={styles.soft}><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
-            {answers.transfer==='planned'&&<p className={styles.soft}><strong>{t.takeaway}:</strong> {plan}</p>}
-            {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
-            {!rating&&<p className={styles.soft}>{t.noResult}</p>}
+            {(chosenFeeling||answers.transfer==='planned'||rating)&&
+              <details className={styles.receiptDetails}>
+                <summary>{c.congratsDetailsLabel}</summary>
+                {chosenFeeling&&<p><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
+                {answers.transfer==='planned'&&<p><strong>{t.takeaway}:</strong> {plan}</p>}
+                {rating&&<p><strong>{t.feedback}:</strong> {ratingText}</p>}
+              </details>}
           </>}
           {outroOpen&&<OporaOceanOutro locale={lang} paused={safety}/>}
           {outroOpen&&<button type="button" className={styles.linkHint} disabled={locked}
