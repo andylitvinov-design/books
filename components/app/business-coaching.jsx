@@ -546,8 +546,9 @@ export default function BusinessCoaching({locale='en',accountId}){
       </details>
       </details>
       <nav className={styles.lessonStageNav} aria-label={t.lessonEyebrow}>
-        {[t.ideaSlide,t.actionSlide,t.resultSlide].map((label,index)=>
+        {[t.ideaSlide,t.actionSlide,t.reflectionSlide,t.resultSlide,t.doneSlide].map((label,index)=>
           <button type="button" key={label} aria-current={lessonStage===index?'step':undefined}
+            disabled={index===4&&(!savedDay.done||hasUnsavedDay)}
             onClick={()=>setLessonStage(index)} aria-label={label}>
             <span>{index+1}</span>{label}
           </button>)}
@@ -557,16 +558,56 @@ export default function BusinessCoaching({locale='en',accountId}){
           <span className={styles.lessonNumber}>{t.day} {day} / 90</span>
           <span className={styles.lessonFormat}>{t.lessonEyebrow}</span>
         </div>
-        {lessonStage===0&&<div className={styles.oneIdea}>
-          <h2>{selected.resultLabel}</h2>
+        {lessonStage===0&&<div className={styles.oneIdea} data-business-skill-brief>
+          <div className={styles.skillRecap}>
+            <strong>{t.learnedBefore}</strong>
+            {previousSkills.length?<div className={styles.skillRecapChips}>
+              {previousSkills.map(item=><span key={item.day}>
+                <CheckCircle2 size={14} aria-hidden="true"/>{item.skill}
+              </span>)}
+            </div>:<small>{t.firstSkill}</small>}
+          </div>
+          <h2>{t.todaySkill}</h2>
+          <p className={styles.skillTarget}>{selected.resultLabel}</p>
           <p>{selected.intro}</p>
         </div>}
-        {lessonStage===1&&<div className={styles.oneIdea}>
+        {lessonStage===1&&<div className={styles.oneIdea} data-business-real-practice>
           <h2>{t.practice}</h2>
           <p>{selected.action}</p>
           <small><CheckCircle2 size={16} aria-hidden="true"/>{t.doneWhen}: {selected.doneWhen}</small>
+          <div className={styles.focusTimer} data-business-focus-timer>
+            <span>{t.focusHelp}</span>
+            <div className={styles.focusTimerRow}>
+              <strong role="timer" aria-live="off">
+                {String(Math.floor(focusRemaining/60)).padStart(2,'0')}:{String(focusRemaining%60).padStart(2,'0')}
+              </strong>
+              <div className={styles.focusControls} role="group" aria-label={t.focusStart}>
+                <button type="button" disabled={course.status!=='active'||focusRemaining===0}
+                  onClick={()=>setFocusRunning(value=>!value)}>
+                  {focusRunning?<PauseCircle size={17}/>:<PlayCircle size={17}/>}
+                  {focusRunning?t.focusPause:t.focusStart}
+                </button>
+                <button type="button" onClick={()=>{setFocusRunning(false);setFocusRemaining(120)}}>
+                  {t.focusReset}
+                </button>
+              </div>
+            </div>
+            {focusRemaining===0&&<small role="status">{t.focusDone}</small>}
+          </div>
         </div>}
-        {lessonStage===2&&<div className={styles.oneIdea}>
+        {lessonStage===2&&<div className={styles.oneIdea} data-business-one-reflection>
+          <h2>{t.reflectionTitle}</h2>
+          <p className={styles.reflectionFocus}>{selected.resultLabel}</p>
+          <p>{t.reflectionPrompt}</p>
+          <div className={styles.reflectionChoices} role="group" aria-label={t.reflectionPrompt}>
+            {[['agree',t.reflectAgree],['disagree',t.reflectDisagree],['unsure',t.reflectUnsure]].map(([value,label])=>
+              <button key={value} type="button" aria-pressed={reflectionChoice===value}
+                onClick={()=>setReflectionChoice(current=>current===value?'':value)}
+                disabled={course.status!=='active'} data-business-reflection-choice={value}>{label}</button>)}
+          </div>
+          <small>{t.reflectOptional}</small>
+        </div>}
+        {lessonStage===3&&<div className={styles.oneIdea} data-business-private-result>
           <h2>{t.myResult}</h2>
           <p>{selected.resultLabel}</p>
           <label className={styles.textareaLabel}>
@@ -581,38 +622,54 @@ export default function BusinessCoaching({locale='en',accountId}){
                 placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
             </label>
           </details>
-          {course.days?.[day]?.done&&!course.days?.[day]?.result&&<p className={styles.legacyNote}>{t.legacyCompletion}</p>}
+          {savedDay.done&&!savedDay.result&&<p className={styles.legacyNote}>{t.legacyCompletion}</p>}
+        </div>}
+        {lessonStage===4&&savedDay.done&&!hasUnsavedDay&&<div className={styles.oneIdea+' '+styles.savedCelebration}
+          data-business-saved-celebration role="status">
+          <span className={styles.celebrationMark}><CheckCircle2 size={26} aria-hidden="true"/></span>
+          <h2>{t.savedCelebration}</h2>
+          <strong>{t.practisedSkill}</strong>
+          <p className={styles.skillTarget}>{savedDay.resultLabelSnapshot?.[lang]||selected.resultLabel}</p>
+          <p>{t.celebrationHelp}</p>
+          {savedDay.result&&<blockquote>{savedDay.result}</blockquote>}
+          <small>{t.returnLater}</small>
         </div>}
       </article>
       <div className={styles.lessonSaveBar} data-business-lesson-save>
-        {lessonStage>0&&<button className={styles.backButton} type="button"
-          onClick={()=>setLessonStage(v=>Math.max(0,v-1))}>
-          <ArrowLeft size={16}/>{t.previousStep}</button>}
-        {lessonStage<2?<button className={styles.primary} type="button"
-          onClick={()=>setLessonStage(v=>Math.min(2,v+1))}>
-          {t.nextStep}<ArrowRight size={17} aria-hidden="true"/></button>:
-          <>
-            <span className={styles.lessonSaveState} aria-live="polite">
-              {hasUnsavedDay?<span className={styles.unsavedDot} aria-hidden="true"/>:
-                <CheckCircle2 size={17} aria-hidden="true"/>}
-              {hasUnsavedDay?t.unsaved:t.alreadySaved}
-            </span>
-            <button type="button" className={styles.draftButton}
-              disabled={busy||course.status!=='active'||!hasUnsavedDay}
-              onClick={()=>void saveDayAndContinue(false)}>{t.draftAction}</button>
-            <button type="button" className={styles.primary}
-              disabled={busy||course.status!=='active'||
-                (!savedLessonCanContinue&&dayResult.trim().length<6)||
-                (!hasUnsavedDay&&day===90&&Boolean(savedDay.done))}
-              onClick={()=>{if(savedLessonCanContinue)chooseDay(day+1);else void saveDayAndContinue(true)}}>
-              {savedLessonCanContinue?t.nextLesson:day<90?t.saveContinue:t.saveAction}
-              {day<90?<ArrowRight size={18} aria-hidden="true"/>:null}
-            </button>
-          </>}
+        <button className={styles.backButton} type="button" disabled={lessonStage===0&&day===1}
+          onClick={()=>lessonStage>0?setLessonStage(value=>value-1):chooseDay(day-1)}>
+          <ArrowLeft size={16} aria-hidden="true"/>{t.previousStep}</button>
+        {lessonStage<3&&<button className={styles.primary} type="button"
+          onClick={()=>setLessonStage(value=>Math.min(3,value+1))}>
+          {t.nextStep}<ArrowRight size={17} aria-hidden="true"/></button>}
+        {lessonStage===3&&<>
+          <span className={styles.lessonSaveState} aria-live="polite">
+            {hasUnsavedDay?<span className={styles.unsavedDot} aria-hidden="true"/>:
+              <CheckCircle2 size={17} aria-hidden="true"/>}
+            {hasUnsavedDay?t.unsaved:t.alreadySaved}
+          </span>
+          <button type="button" className={styles.draftButton}
+            disabled={busy||course.status!=='active'||!hasUnsavedDay}
+            onClick={()=>void saveDayAndContinue(false)}>{t.draftAction}</button>
+          <button type="button" className={styles.primary}
+            disabled={busy||(!savedDay.done&&!hasUnsavedDay&&course.status!=='active')||
+              ((!savedDay.done||hasUnsavedDay)&&
+                (course.status!=='active'||dayResult.trim().length<6))}
+            onClick={()=>{
+              if(savedDay.done&&!hasUnsavedDay)setLessonStage(4)
+              else void saveDayAndContinue(true)
+            }}>
+            {savedDay.done&&!hasUnsavedDay?t.showSaved:t.saveContinue}
+            <ArrowRight size={17} aria-hidden="true"/>
+          </button>
+        </>}
+        {lessonStage===4&&<button type="button" className={styles.primary}
+          onClick={()=>day<90?chooseDay(day+1):setTab('report')}>
+          {day<90?t.nextLesson:t.report}<ArrowRight size={17} aria-hidden="true"/>
+        </button>}
       </div>
-      {lessonStage===2&&dayResult.trim().length>0&&dayResult.trim().length<6&&
+      {lessonStage===3&&dayResult.trim().length>0&&dayResult.trim().length<6&&
         <p className={styles.inlineHelp} role="status">{t.resultRequired}</p>}
-
     </div>}
     {course.status==='active'&&<div className={styles.goalEditor}>
       {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
@@ -765,6 +822,7 @@ export default function BusinessCoaching({locale='en',accountId}){
               {record.result?<span> — {record.result}</span>:
                 record.done?<span> — {t.legacyCompletion}</span>:null}
               {record.note?<span> · {t.notes}: {record.note}</span>:null}
+              {record.reflectionChoice&&<span> · {t.reflectionSlide}: {({agree:t.reflectAgree,disagree:t.reflectDisagree,unsure:t.reflectUnsure})[record.reflectionChoice]||'—'}</span>}
             </p>)}
           </section>
         })}
