@@ -10,6 +10,7 @@ on:
       - 'components/app/opora-experience-player.jsx'
       - 'components/app/opora-experience-player.module.css'
       - 'tests/opora-midlesson-music.test.mjs'
+      - 'tests/opora-ocean-outro.test.mjs'
       - 'public/audio/**'
       - 'scripts/generate-soft-ocean-melody.mjs'
       - 'package.json'
@@ -55,4 +56,4 @@ jobs:
       - name: Generate the complete 96-second original score
         run: node scripts/generate-soft-ocean-melody.mjs
       - name: Verify full-length WAV and native media lifecycle across practice timers
-        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs tests/opora-midlesson-music.test.mjs
+        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs tests/opora-midlesson-music.test.mjs tests/opora-ocean-outro.test.mjs
