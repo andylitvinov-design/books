@@ -27,7 +27,7 @@ const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
-export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery='',onOpenYoutube=null}){
+export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery='',onOpenYoutube=null,isOwner=false}){
  const t=translations[locale]||translations.en
  const api=body=>request(body,accountId)
  const [items,setItems]=useState([])
@@ -42,6 +42,9 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  const [recording,setRecording]=useState(false)
  const [error,setError]=useState('')
  const [message,setMessage]=useState('')
+ const [libraryAudios,setLibraryAudios]=useState(null)
+ const [librarySelection,setLibrarySelection]=useState('')
+ const [libraryLoading,setLibraryLoading]=useState(false)
  const current=items.find(x=>x.id===selected)
  const active=draft?.slides?.find(x=>x.id===slideId)
  const dirty=!!current&&JSON.stringify(draft)!==JSON.stringify(current.draft)
@@ -56,6 +59,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   let alive=true
   setLoading(true);setLoadFailed(false);setError('')
   setItems([]);setSelected(null);setDraft(null);setSlideId(null)
+  setLibraryAudios(null);setLibrarySelection('')
   api().then(data=>{
    if(!alive)return
    const list=data.items||[]
@@ -154,6 +158,38 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   }catch(e){setError(e.message);return false}
   finally{setUploading(false)}
  }
+ async function loadLibraryAudio(){
+  if(!isOwner||libraryLoading||busy||uploading)return
+  setLibraryLoading(true);setError('')
+  try{
+   const grant=await fetch('/api/app/practitioner/open',{
+    method:'POST',credentials:'same-origin',cache:'no-store',
+    headers:{'content-type':'application/json'},body:JSON.stringify({destination:'materials'}),
+   })
+   const opened=await grant.json().catch(()=>({}))
+   if(!grant.ok||opened.redirectUrl!=='/admin/materials')throw new Error('NOT_AUTHORIZED')
+   const response=await fetch('/api/admin/materials',{credentials:'same-origin',cache:'no-store'})
+   const catalog=await response.json().catch(()=>({}))
+   if(!response.ok)throw new Error(catalog.error||'MATERIAL_UNAVAILABLE')
+   const recordings=(catalog.materials||[]).filter(item=>item.kind==='audio')
+   setLibraryAudios(recordings)
+   setLibrarySelection(recordings[0]?.id||'')
+  }catch(e){setError(e.message||'MATERIAL_UNAVAILABLE')}
+  finally{setLibraryLoading(false)}
+ }
+ async function importLibraryAudio(){
+  if(!isOwner||!librarySelection||!current||!active||active.kind!=='audio'||
+   busy||uploading||recording)return
+  const courseBefore=current.id,slideBefore=active.id
+  setUploading(true);setError('');setMessage('')
+  try{
+   const {item}=await api({action:'import-library-audio',courseId:courseBefore,materialId:librarySelection})
+   if(selected!==courseBefore)throw new Error('ACCOUNT_CHANGED')
+   setDraft(d=>({...d,slides:d.slides.map(s=>s.id===slideBefore?{...s,assetId:item.assetId}:s)}))
+   setMessage(t.fileReady+' · '+t.save)
+  }catch(e){setError(e.message||t.error)}
+  finally{setUploading(false)}
+ }
  async function share(){
   if(!current||!shareHref)return
   const url=new URL(shareHref,window.location.origin).href
@@ -219,6 +255,24 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
           <input type="file" accept={fileAccept[active.kind]} disabled={busy||uploading||recording}
            onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file)}}/>
         </label>
+        {active.kind==='audio'&&isOwner&&<div className={styles.libraryImport}>
+         <button type="button" className={styles.secondary} onClick={()=>void loadLibraryAudio()}
+          disabled={busy||uploading||recording||libraryLoading}>
+          <Headphones size={16}/>{libraryLoading?'…':locale==='ru'?'Выбрать из моей аудиобиблиотеки':locale==='es'?'Elegir audio guardado':'Choose saved library audio'}
+         </button>
+         {Array.isArray(libraryAudios)&&(libraryAudios.length?
+          <div className={styles.libraryImportRow}>
+           <select aria-label={locale==='ru'?'Запись из библиотеки':locale==='es'?'Audio de biblioteca':'Library recording'}
+            value={librarySelection} disabled={busy||uploading||recording}
+            onChange={e=>setLibrarySelection(e.target.value)}>
+            {libraryAudios.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}
+           </select>
+           <button type="button" className={styles.secondary} disabled={!librarySelection||busy||uploading||recording}
+            onClick={()=>void importLibraryAudio()}>
+            {locale==='ru'?'Добавить в слайд':locale==='es'?'Usar en diapositiva':'Use on slide'}
+           </button>
+          </div>:<small>{locale==='ru'?'Аудиофайлов пока нет. Добавьте запись в разделе «Материалы».':locale==='es'?'Sin audios guardados. Añade uno en Materiales.':'No saved audio yet. Upload a file under Materials.'}</small>)}
+        </div>}
         {['audio','video'].includes(active.kind)&&<CourseSlideRecorder key={active.id+':'+active.kind}
          kind={active.kind} locale={locale} busy={busy||uploading}
          onRecordingChange={setRecording} onUpload={file=>upload(file,true)}/>}
