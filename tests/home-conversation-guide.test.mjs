@@ -46,16 +46,17 @@ test("each conversation goal resolves to a real first-party destination without 
   assert.equal(homeGuideDestinations({ goal: "practice", topic: "work", locale: "es" }).secondary, "/es/explore/business");
 });
 
-test("EN/RU/ES homepages surface an editable dialogue before the existing photo carousel", () => {
+test("EN/RU/ES homepages place the question dialogue directly after free assessment", () => {
   const home = read("components/holistic-house-home.tsx");
   const spanish = read("app/es/page.tsx");
   const russian = read("app/[locale]/page.tsx");
-  for (const [page, entry, carousel] of [
-    [home, "<HomeConversationGuide locale={locale} />", "<HomeSectionCarousel locale={locale} />"],
-    [spanish, '<HomeConversationGuide locale="es" />', '<HomeSectionCarousel locale="es" />'],
+  for (const [page, carousel, diagnosis, guide] of [
+    [home, "<HomeSectionCarousel locale={locale} />", "<HomeFreeDiagnosisBanner locale={locale} />", "<HomeConversationGuide locale={locale} />"],
+    [spanish, '<HomeSectionCarousel locale="es" />', '<HomeFreeDiagnosisBanner locale="es" />', '<HomeConversationGuide locale="es" />'],
   ]) {
-    assert.ok(page.includes(entry));
-    assert.ok(page.indexOf(entry) < page.indexOf(carousel), "First-screen guide must precede existing slider");
+    assert.ok(page.includes(guide));
+    assert.ok(page.indexOf(carousel) < page.indexOf(diagnosis) && page.indexOf(diagnosis) < page.indexOf(guide),
+      "Carousel → free diagnosis → question guide, without intervening paid banners");
     assert.ok(page.includes("paid-sessions"), "Existing paid CTA must stay");
   }
   assert.ok(russian.includes("<HolisticHouseHome"));
