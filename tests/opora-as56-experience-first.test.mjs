@@ -116,6 +116,12 @@ test('day one restores five opening screens and all days add untracked support a
       assert.equal(f.payload.welcomeFeeling,null)
     }
     assert.match(textOf(h.tree),new RegExp(d.saved))
+    const learnedSkill=nodes(h.tree).find(node=>node.props?.['data-opora-learned-skill']===day)
+    assert.ok(learnedSkill,'Saved lesson '+day+' must name its actual skill')
+    assert.ok(textOf(learnedSkill).includes(oporaExperienceDay(day,lang).title),
+      'Wrong skill name in '+lang+' Day '+day)
+    assert.ok(textOf(learnedSkill).includes(oporaExperienceDay(day,lang).practice),
+      'Missing actionable practice in '+lang+' Day '+day)
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
     await click(h,lang==='ru'?'Послушать волны':'Relax with waves')
     assert.match(textOf(h.tree),lang==='ru'?/Две минуты спокойствия/:/Two quiet minutes/)
@@ -152,6 +158,28 @@ test('day one restores five opening screens and all days add untracked support a
       '/'+lang+'/tests','/'+lang+'/academy/principles-of-energywork/learn',
       '/'+lang+'/services/free-consultation'])
     assert.equal(f.requests,1,'Later screens must not create duplicate save')
+    h.unmount()
+  }
+})
+
+test('saved OPORA receipt names the day-specific skill in Spanish, including read-only visits',()=>{
+  for(let day=1;day<=14;day++){
+    const locale='es'
+    const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
+    const data={
+      cycle:{id:'00000000-0000-4000-8000-000000001056',day,durationDays:14},
+      programme:{id:'stress'},lesson,
+      currentSession:{signals:{practiceAttempt:null,opora54:{answers:{lessonConfidence:'explored'}}}},
+    }
+    let writes=0
+    const h=mount('opora-experience-player',{locale,data,onClose(){},
+      onSession(){writes++;throw Error('Viewing a saved receipt must not save again')}})
+    const skill=nodes(h.tree).find(node=>node.props?.['data-opora-learned-skill']===day)
+    assert.ok(skill,'Missing Spanish skill on saved Day '+day)
+    assert.ok(textOf(skill).includes(oporaExperienceDay(day,locale).title))
+    assert.ok(textOf(skill).includes(oporaExperienceDay(day,locale).practice))
+    assert.ok(textOf(skill).includes('HABILIDAD DEL DÍA'))
+    assert.equal(writes,0)
     h.unmount()
   }
 })
