@@ -4,11 +4,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowRight, ArrowUp, ShieldCheck, BookOpen, ChevronDown, Clapperboard,
+  ArrowRight, ArrowUp, ShieldCheck, BookOpen, BriefcaseBusiness, ChevronDown, Clapperboard,
   ClipboardList, FileText, Headphones, Leaf, Mic, MicOff, PenLine,
-  Plus, Sparkles, TestTube2,
+  Plus, Sparkles, TestTube2, UserRound,
 } from 'lucide-react'
-import { cabinetActionHref, matchCabinetIntent } from '@/lib/app/cabinet-today.mjs'
+import { cabinetActionHref, cabinetActionIds, matchCabinetIntent } from '@/lib/app/cabinet-today.mjs'
 import styles from './cabinet-today.module.css'
 
 const ICONS = {
@@ -24,10 +24,10 @@ const WORDS = {
     placeholder: 'I want to create a course, take a test…',
     prompt: 'Your wish or task',
     go: 'Find the right tool',
-    options: 'Or choose an action',
+    personal: 'Personal', professional: 'Professional',
     more: 'More options',
-    privacy: 'Your text stays in this browser; nothing is sent or saved.',
-    voicePrivacy: 'Speech recognition, when enabled, may use your browser’s speech provider.',
+    privacy: 'Your text stays here — not sent or saved.',
+    voicePrivacy: 'Dictation may use your browser’s speech service.',
     micStart: 'Dictate a wish',
     micStop: 'Stop dictation',
     micError: 'Microphone not available. You can type your wish instead.',
@@ -43,10 +43,10 @@ const WORDS = {
     placeholder: 'Хочу создать курс, записать видео, пройти тест…',
     prompt: 'Ваше пожелание или задача',
     go: 'Открыть нужный инструмент',
-    options: 'Или выберите действие',
+    personal: 'Личное', professional: 'Профессиональное',
     more: 'Другие возможности',
-    privacy: 'Текст остаётся в браузере — ничего не отправляем и не сохраняем.',
-    voicePrivacy: 'При диктовке браузер может использовать службу распознавания речи.',
+    privacy: 'Текст остаётся здесь — без отправки и сохранения.',
+    voicePrivacy: 'Диктовка может использовать службу распознавания речи браузера.',
     micStart: 'Продиктовать пожелание',
     micStop: 'Остановить диктовку',
     micError: 'Микрофон недоступен. Можете написать пожелание.',
@@ -55,11 +55,30 @@ const WORDS = {
     tests: 'Пройти тесты', reports: 'Мои отчёты', lessons: 'Продолжить курс', ideas: 'Идеи и книги',
     service: 'Добавить услугу', labs: 'Мои анализы', review: 'Бесплатный разбор',
   },
+  es: {
+    eyebrow: 'MI ESPACIO · EMPEZAR',
+    title: '¿Qué hacemos hoy?',
+    hint: 'Describe tu idea o elige una acción.',
+    placeholder: 'Quiero crear un curso, hacer un test…',
+    prompt: 'Tu idea o tarea',
+    go: 'Abrir la herramienta adecuada',
+    personal: 'Personal', professional: 'Profesional',
+    more: 'Más opciones',
+    privacy: 'Tu texto se queda aquí; no se envía ni se guarda.',
+    voicePrivacy: 'El dictado puede utilizar el servicio de voz del navegador.',
+    micStart: 'Dictar una idea',
+    micStop: 'Detener dictado',
+    micError: 'Micrófono no disponible. Puedes escribir tu idea.',
+    noMatch: 'Elige una acción o prueba con «curso», «artículo», «vídeo» o «test».',
+    course: 'Crear curso', article: 'Escribir artículo', video: 'Añadir vídeo', audio: 'Grabar audio',
+    tests: 'Hacer tests', reports: 'Mis informes', lessons: 'Continuar curso', ideas: 'Explorar ideas',
+    service: 'Añadir servicio', labs: 'Análisis clínicos', review: 'Pedir revisión gratis',
+  },
 }
 
 export default function CabinetToday({ locale = 'en', practitioner = false, owner = false }) {
   const ru = locale === 'ru'
-  const t = WORDS[ru ? 'ru' : 'en']
+  const t = WORDS[locale] || WORDS.en
   const router = useRouter()
   const [wish, setWish] = useState('')
   const [notice, setNotice] = useState('')
@@ -68,13 +87,15 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
   const speechRef = useRef(null)
   const canCreate = Boolean(practitioner)
   const isOwner = Boolean(practitioner && owner)
-  const main = canCreate
-    ? (isOwner ? ['course', 'article', 'video', 'audio', 'tests', 'reports']
-      : ['course', 'article', 'video', 'tests', 'reports', 'lessons'])
-    : ['tests', 'lessons', 'reports', 'ideas']
-  const extras = canCreate
-    ? ['lessons', 'ideas', 'labs', 'service', 'review'].filter(id => !main.includes(id))
-    : ['labs', 'review']
+  // One clear column for the visitor, one for tools their role may use.
+  const available = new Set(cabinetActionIds({ practitioner: canCreate, owner: isOwner }))
+  const personalMain = ['tests', 'reports', 'lessons', 'ideas'].filter(id => available.has(id))
+  const professionalMain = canCreate
+    ? ['course', 'article', 'video', isOwner ? 'audio' : 'service'].filter(id => available.has(id))
+    : []
+  const visibleMain = new Set([...personalMain, ...professionalMain])
+  const extras = ['labs', 'review', 'service', 'audio']
+    .filter(id => available.has(id) && !visibleMain.has(id))
 
   useEffect(() => {
     setSpeechAvailable(Boolean(window.SpeechRecognition || window.webkitSpeechRecognition))
@@ -115,7 +136,7 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
     try {
       const instance = new Speech()
       speechRef.current = instance
-      instance.lang = ru ? 'ru-RU' : 'en-US'
+      instance.lang = locale === 'ru' ? 'ru-RU' : locale === 'es' ? 'es-ES' : 'en-US'
       instance.interimResults = false
       instance.continuous = false
       instance.onresult = event => {
@@ -139,7 +160,7 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
   const renderAction = id => {
     const Icon = ICONS[id]
     const href = cabinetActionHref(id, locale)
-    if (!Icon || !href) return null
+    if (!Icon || !href || !available.has(id)) return null
     return <Link key={id} prefetch={false} href={href} className={styles.action}
       data-cabinet-action={id} aria-label={t[id]}>
       <span className={styles.actionIcon}><Icon size={19} strokeWidth={1.9} aria-hidden="true" /></span>
@@ -172,14 +193,26 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
       </div>
       {notice && <p role="status" className={styles.notice}>{notice}</p>}
     </form>
-    <div className={styles.quick}>
-      <p className={styles.quickTitle}>{t.options}</p>
-      <div className={styles.grid}>{main.map(renderAction)}</div>
+    <div className={`${styles.paths} ${canCreate ? '' : styles.singlePath}`} data-cabinet-action-groups>
+      <section className={`${styles.path} ${styles.personalPath}`}
+        data-cabinet-category="personal" aria-labelledby="hh-cabinet-personal">
+        <h2 id="hh-cabinet-personal" className={styles.pathTitle}>
+          <UserRound size={17} aria-hidden="true" /><span>{t.personal}</span>
+        </h2>
+        <div className={styles.actionList}>{personalMain.map(renderAction)}</div>
+      </section>
+      {canCreate && <section className={`${styles.path} ${styles.professionalPath}`}
+        data-cabinet-category="professional" aria-labelledby="hh-cabinet-professional">
+        <h2 id="hh-cabinet-professional" className={styles.pathTitle}>
+          <BriefcaseBusiness size={17} aria-hidden="true" /><span>{t.professional}</span>
+        </h2>
+        <div className={styles.actionList}>{professionalMain.map(renderAction)}</div>
+      </section>}
     </div>
-    <details className={styles.more} data-cabinet-more-actions>
+    {extras.length > 0 && <details className={styles.more} data-cabinet-more-actions>
       <summary><span>{t.more}</span><ChevronDown size={16} aria-hidden="true" /></summary>
-      <div className={styles.grid}>{extras.map(renderAction)}</div>
-    </details>
+      <div className={styles.extraGrid}>{extras.map(renderAction)}</div>
+    </details>}
     <p className={styles.privacy}><ShieldCheck size={13} aria-hidden="true" />{t.privacy} {speechAvailable ? t.voicePrivacy : ''}</p>
   </section>
 }
