@@ -395,7 +395,12 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const focusEpoch=generation.current
  async function openLessonDay(day){
    if(!Number.isInteger(day)||!data||data.readOnly||busy)return
-   if(day===cycle.day){setReviewLesson(null);setFocusOpen(false);setQuestOpen(true);return}
+   if(day===cycle.day){
+     setReviewLesson(data.currentSession?{
+       day,lesson:data.lesson,session:data.currentSession,
+     }:null)
+     setFocusOpen(false);setQuestOpen(true);return
+   }
    if(!data.roadmap?.some(item=>item.day===day&&item.status==='completed'))return
    reviewController.current?.abort()
    const controller=new AbortController();reviewController.current=controller
@@ -426,7 +431,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  function startFocusLesson(){
    if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return
    setFocusOpen(false)
-   setReviewLesson(null)
+   setReviewLesson(completed?{day:cycle.day,lesson:data.lesson,session:data.currentSession}:null)
    if(paused){void submit('resume',{expectedRevision:cycle.revision});return}
    if(data.finalRetest?.ready){showFinalRetest();return}
    if(isFinished||(completed&&reportDay&&!reviewed)){setView('details');return}
