@@ -379,7 +379,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
               {item.description&&<p>{item.description}</p>}
             </figure>
             :<PrivatePlayer key={item.id}
-              item={{assetId:item.id,kind:'video',mime:item.mime,title:item.title,role:'library',transcript:''}}
+              item={{assetId:item.id,kind:item.kind,mime:item.mime,title:item.title,role:'library',transcript:''}}
               session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
       </div>}
       {!hasMaterials&&<p className={styles.reportMaterialsEmpty}>
