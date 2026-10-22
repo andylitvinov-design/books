@@ -12,6 +12,8 @@ export const reikiPractitionerLessonVideos = [
     title: { en: "Lesson 3 · Kundalini Reiki", ru: "Урок 3 · Кундалини Рейки" } },
   { slideId: "ygg-02", lesson: 4, youtubeId: "y3MDcqwlC-w",
     title: { en: "Lesson 4 · Reiki Yggdrasil", ru: "Урок 4 · Рейки Иггдрасиль" } },
+  { slideId: "paths-01", lesson: 5, youtubeId: "FKa-wHl8aQI",
+    title: { en: "Lesson 5 · Introduction to personal initiation", ru: "Урок 5 · Введение в личную инициацию" } },
 ] as const;
 
 export type ReikiPractitionerLessonVideo = (typeof reikiPractitionerLessonVideos)[number];
