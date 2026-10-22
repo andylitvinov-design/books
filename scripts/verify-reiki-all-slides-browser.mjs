@@ -466,7 +466,9 @@ async function verifySaveThenInstall(page, locale) {
   }
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "flight-done");
-  await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(2);
+  // The compact milestone screen has one in-card "Save my lesson" action;
+  // the second primary "Save my lesson and continue" is in the pinned footer.
+  await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(1);
   await page.locator('button[data-reiki-tomorrow-choice]').click();
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "flight-save");
