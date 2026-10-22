@@ -245,6 +245,7 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
         </a>
       ) : (
         <ContactChannelChooser
+        stayAfterSave
           locale={locale}
           whatsappUrl={actionUrl}
           className={styles.action}
