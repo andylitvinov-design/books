@@ -87,9 +87,13 @@ export function formatReikiInitiationRequest(raw, locale = 'en') {
   const choice = (id) => REIKI_INITIATION_NAMES[id] || (ru ? 'Не выбрана' : 'Not selected')
   const personal = {
     none: ru ? 'Не выбрана' : 'Not requested',
-    express: ru ? 'Краткая личная инициация — 30 минут, €50' : 'Express personal initiation — 30 minutes, €50',
-    full: ru ? 'Полноценная личная сессия — 60 минут, €100' : 'Full personal session — 60 minutes, €100',
+    express: ru ? 'Краткая личная инициация' : 'Express personal initiation',
+    full: ru ? 'Полноценная личная сессия' : 'Full personal session',
   }
+  const session = REIKI_PERSONAL_SESSIONS.find((item) => item.id === request.personalSession)
+  const personalSummary = session?.minutes
+    ? personal[request.personalSession] + ' — ' + session.minutes + (ru ? ' минут, €' : ' minutes, €') + session.priceEur
+    : personal.none
   return [
     ru ? 'Заявка на Рейки-инициацию' : 'Reiki initiation request',
     (ru ? 'Имя: ' : 'First name: ') + request.firstName,
@@ -100,7 +104,7 @@ export function formatReikiInitiationRequest(raw, locale = 'en') {
     (ru ? 'Бесплатная инициация в чате: ' : 'Free chat-guided initiation: ') + choice(request.freeInitiation),
     (ru ? 'Дополнительно за добровольный донейшн (чат): ' : 'Additional initiations by donation (chat): ') +
       (request.donationInitiations.map(choice).join(', ') || (ru ? 'Не выбраны' : 'None selected')),
-    (ru ? 'Индивидуальная сессия с Андреем: ' : 'Personal session with Andrey: ') + personal[request.personalSession],
+    (ru ? 'Индивидуальная сессия с Андреем: ' : 'Personal session with Andrey: ') + personalSummary,
     ru ? 'Без оплаты и бронирования на этом шаге; детали согласуются отдельно.' : 'No payment or booking at this step; details are arranged separately.',
     '',
     ru ? 'Почему я хочу получить инициацию:' : 'Why I would like to receive this initiation:',
