@@ -23,6 +23,7 @@ const formats=[
  ['voice.wave','audio/vnd.wave','audio/wav'],
  ['browser.webm','','audio/webm'],
  ['podcast.oga','application/ogg','audio/ogg'],
+ ['message.opus','audio/opus','audio/ogg'],
  ['meditation.flac','audio/x-flac','audio/flac'],
  ['sound.aac','audio/x-aac','audio/aac'],
 ]
