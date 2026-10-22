@@ -71,7 +71,8 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomeSectionCarousel locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
-
+      <details className="service-home-more" id="more-directions">
+        <summary>{locale === "ru" ? "Все направления и услуги" : "All programmes and services"} <span aria-hidden="true">↓</span></summary>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
           <StaticPortrait
@@ -124,6 +125,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <TestSelectionCourseBanner locale={locale} />
 
       <HomeExploreSections locale={locale} />
+      </details>
 
       {introVideoContent}
 

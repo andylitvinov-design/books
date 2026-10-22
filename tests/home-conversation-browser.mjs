@@ -116,6 +116,20 @@ try {
         if (width === 390) {
           await page.screenshot({ path: `artifacts/home-conversation/${engineName}-${scenario.locale}-collapsed.png` });
         }
+        await expect(guide.locator("[data-home-guide-filters] button")).toHaveCount(5);
+        const testsLabel={en:"Free tests",ru:"Бесплатные тесты",es:"Pruebas gratis"}[scenario.locale];
+        await guide.locator("[data-home-guide-filters]").getByRole("button",{name:testsLabel,exact:true}).click();
+        await expect(guide.locator('[data-home-guide-browse-offer="tests"]')).toBeVisible();
+        await expect(guide.locator("[data-home-guide-browse-offer]")).toHaveCount(1);
+        const testsHref=scenario.locale==="es"?"/en/client/tests":"/"+scenario.locale+"/client/tests";
+        await expect(guide.locator('[data-home-guide-browse-offer="tests"] a')).toHaveAttribute("href",testsHref);
+        const allLabel={en:"All",ru:"Всё",es:"Todo"}[scenario.locale];
+        await guide.locator("[data-home-guide-filters]").getByRole("button",{name:allLabel,exact:true}).click();
+        assert.ok(await guide.locator("[data-home-guide-browse-offer]").count()<=3,"Only three inline offers");
+        if(width===390){
+          await guide.scrollIntoViewIfNeeded();
+          await page.screenshot({path:`artifacts/home-conversation/${engineName}-${scenario.locale}-advisor.png`});
+        }
         await guide.locator("[data-home-guide-launcher]").click();
         const dialog = guide.locator("[data-home-guide-dialog]");
         await expect(dialog).toHaveAttribute("aria-modal", "true");
