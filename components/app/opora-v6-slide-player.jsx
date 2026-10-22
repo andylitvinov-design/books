@@ -603,7 +603,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
           <ArrowLeft size={17}/>{t.back}</button>
         <button type="button" className={styles.primary} onClick={afterSave?(onFinish||onClose):step===slides.length-1?submit:next}
           disabled={locked}>
-          <span>{afterSave?t.finish:step===slides.length-1?(saving?t.saving:t.save):t.next}</span>
+          <span>{afterSave?t.finish:step===slides.length-1?(reviewOnly?(lang==='ru'?'Посмотреть сохранённый итог':'View saved summary'):saving?t.saving:t.save):t.next}</span>
           {afterSave||step===slides.length-1?<CheckCircle2 size={19}/>:<ArrowRight size={19}/>}
         </button>
       </footer>
