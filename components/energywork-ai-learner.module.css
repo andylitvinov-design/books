@@ -4465,6 +4465,12 @@
   font-size: 13px;
   line-height: 1.3;
 }
+.page[data-course-portrait="v3"] [data-reiki-personal-choices] .initiationChoiceGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+.page[data-course-portrait="v3"] [data-reiki-personal-choices] .initiationChoice {
+  min-height: 56px;
+}
 .page[data-course-portrait="v3"] .initiationChoiceSelected {
   background: #e0f9f2;
   border-color: #0f9c98;
