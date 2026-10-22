@@ -13,11 +13,11 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const t={
   en:{next:'Continue',start:'I will try this step',try:'I tried it',
     unchanged:'About the same',vote:'Not sure yet',plan:'Keep this reminder',
-    save:'Save my practice',saved:'Your moment is saved',noPlan:'No plan today',
+    save:'Save my practice',saved:'Congratulations',noPlan:'No plan today',
     pause:'Pause',return:'Go back'},
   ru:{next:'Продолжить',start:'Я попробую этот шаг',try:'Я попробовал(а)',
     unchanged:'Примерно так же',vote:'Пока не уверен(а)',plan:'Хочу запомнить этот вариант',
-    save:'Сохранить мою практику',saved:'Ваш момент сохранён',noPlan:'Пока без плана',
+    save:'Сохранить мою практику',saved:'Поздравляем',noPlan:'Пока без плана',
     pause:'Пауза',return:'Вернуться'},
 }
 function fixture(locale='en',day=1){

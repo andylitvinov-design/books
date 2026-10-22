@@ -6,8 +6,8 @@ import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-ski
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 
 const labels = {
-  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Not sure yet', plan: 'Keep this reminder', save: 'Save my practice', receipt: 'Your moment is saved' },
-  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Пока не уверен(а)', plan: 'Хочу запомнить этот вариант', save: 'Сохранить мою практику', receipt: 'Ваш момент сохранён' },
+  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Not sure yet', think: 'Need to think', plan: 'Keep this reminder', save: 'Save my practice', receipt: 'Congratulations' },
+  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Пока не уверен(а)', think: 'Надо подумать', plan: 'Хочу запомнить этот вариант', save: 'Сохранить мою практику', receipt: 'Поздравляем' },
 }
 async function click(player, label) {
   const button = findButton(player.tree, label)
@@ -39,7 +39,9 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         await click(player, locale==='ru'?'Чувствую напряжение':'I feel tense')
         assert.match(textOf(player.tree),locale==='ru'
           ?/Не нужно сразу менять своё состояние/:/Nothing needs to change right away/)
-        for(let i=0;i<5;i++)await click(player,t.next)
+        await click(player,t.next) // optional quote reaction on support
+        await click(player,t.think)
+        for(let i=1;i<5;i++)await click(player,t.next)
         await click(player,t.vote)
         await click(player,t.next)
         await click(player,t.next)
@@ -48,14 +50,15 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         await click(player, locale==='ru'?'Напряжённо':'Tense')
         assert.match(textOf(player.tree),locale==='ru'
           ?/не нужно заставлять себя расслабиться/:/do not have to make yourself relax/)
-        await click(player,t.next) // support, with no required response
+        await click(player,t.next) // support, with optional reflection
+        await click(player,t.think)
         await click(player,t.next) // optional exercise
       }
       await click(player,t.tried)
       await click(player,t.next)
       await click(player,t.same)
       await click(player,t.next)
-      if(day!==1){await click(player,t.vote);await click(player,t.next)}
+      if(day!==1){await click(player,day===2?t.think:t.vote);await click(player,t.next)}
       await click(player,t.plan)
       await click(player,t.next)
       await click(player,locale==='ru'?'Получилось немного':'I managed a little')
@@ -81,7 +84,13 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.act, undefined, 'The guided moment is not an old multiple-choice exercise')
       assert.equal(saved.signals.opora54.answers.actChoice, undefined)
       assert.equal(saved.signals.opora54.answers.reflection, 'unchanged')
-      assert.equal(saved.signals.opora54.answers.aphorism, 'unsure')
+      assert.equal(saved.signals.opora54.answers.aphorism, day===2?'reflect':'unsure')
+      assert.equal(saved.signals.aphorismResponse, day===2?'reflect':'unsure')
+      assert.equal(saved.signals.opora54.answers.supportResponse,'reflect',
+        'The support reaction is a separate, private choice on each course day')
+      const reread=await owner.read(locale)
+      assert.equal(reread.currentSession.signals.opora54.answers.supportResponse,'reflect',
+        'A saved quote response must survive an authenticated server readback')
       assert.equal(saved.signals.opora54.answers.transfer, 'planned')
       assert.equal(saved.signals.opora54.answers.lessonConfidence,'some')
       if (day === 14) assert.equal(receipt.cycle.status, 'completed')

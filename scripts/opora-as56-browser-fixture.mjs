@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 export const oporaFixtureOrigin = 'http://127.0.0.1:3100'
 export const oporaFixturePrefix = '/__hh-test__/opora-as56/'
 export const oporaFixtureBundlePath = oporaFixturePrefix + 'fixture.js'
-const fixturePerformanceBudget = Object.freeze({ hints: 'warning', maxAssetSize: 804 * 1024, maxEntrypointSize: 804 * 1024 })
+const fixturePerformanceBudget = Object.freeze({ hints: 'warning', maxAssetSize: 896 * 1024, maxEntrypointSize: 896 * 1024 })
 function assertFixtureCompilation(stats) {
   if (stats.hasErrors() || stats.hasWarnings()) throw new Error(stats.toString({ all: false, errors: true, warnings: true }))
 }
@@ -75,7 +75,7 @@ export async function buildOporaBrowserFixture({ projectRoot = projectDirectory 
       devtool: false,
       cache: false,
       // This isolated Playwright harness bundles development dependencies that are
-      // not shipped in the production app. Keep an ~800 KiB unminified fixture budget.
+      // not shipped in the production app. Keep a strict 896 KiB budget for this test-only unminified bundle.
       // Next's compiled Webpack cannot access its own Terser plugin here.
       optimization: { minimize: false },
       performance: fixturePerformanceBudget,

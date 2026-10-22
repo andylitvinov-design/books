@@ -31,7 +31,7 @@
 .checkin{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
 .recall{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
 .arrive{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
-/* Support is an experience of acceptance, not a task or a scored interaction. */
+/* Support reactions are voluntary opinions, never homework or graded assessments. */
 .support{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .support::after{background:linear-gradient(180deg,rgba(250,246,236,.50),rgba(237,245,233,.75))}
 .support .stage{align-items:center}
@@ -50,6 +50,23 @@
   .supportBody{font-size:17px;line-height:1.47}
 }
 
+
+/* Four optional reactions under every supported quote, compact on 320px devices. */
+.quoteReaction{display:grid;gap:8px;min-width:0}
+.reactionPrompt{margin:0;color:#315c67;font-size:clamp(13px,3.5vw,15px);font-weight:740;line-height:1.32}
+.quoteReaction .chips{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.quoteReaction .chips button{min-height:43px;padding:8px 9px;font-size:clamp(13px,3.5vw,15px);line-height:1.2}
+.reactionReply{
+  margin:0;padding:7px 10px;border-left:3px solid #269b92;border-radius:9px;
+  background:rgba(231,249,241,.85);color:#315b62;
+  font-size:clamp(12px,3.25vw,14px);line-height:1.35;
+}
+@media(max-width:359px),(max-height:680px){
+  .support .panel{gap:9px;padding:16px}
+  .supportBody{font-size:clamp(16px,4.3vw,19px);line-height:1.4}
+  .quoteReaction{gap:6px}
+  .quoteReaction .chips button{min-height:42px;padding:7px 6px;font-size:13px}
+}
 .practice{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
 .feel{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
 .affirmation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}

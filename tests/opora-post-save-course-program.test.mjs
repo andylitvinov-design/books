@@ -23,10 +23,10 @@ async function press(h,label){
   await h.settle()
 }
 const words={
-  en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
+  en:{next:'Continue',save:'Save my practice',receipt:'Congratulations',
     audio:'Relax with waves',start:"See what's next",week1:'Week 1: Find your supports',week2:'Week 2: Make it your own',
     nextTitle:'Your next small step',map:'My course map',finished:'Your 14 days are complete',habit:'Keep OPORA close',configure:'Set it up',later:'Not now'},
-  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
+  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Поздравляем',
     audio:'Послушать волны',start:'Посмотреть, что дальше',week1:'Первая неделя: найти опору',
     week2:'Вторая неделя: свой опыт',nextTitle:'Следующий маленький шаг',
     map:'К карте курса',finished:'Ваши 14 дней позади',habit:'ОПОРА всегда под рукой',configure:'Настроить',later:'Не сейчас'},
@@ -44,15 +44,10 @@ test('confirmed Day 1 save leads to programme, commitment, optional phone setup,
     await press(f.h,w.audio)
     await press(f.h,w.start)
     assert.match(textOf(f.h.tree),new RegExp(w.week1))
-    for(let day=1;day<=7;day++)assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
-    const one=nodes(f.h.tree).find(n=>n.props?.['data-opora-program-week']==='1')
-    assert.ok(one)
-    await press(f.h,w.next)
     assert.match(textOf(f.h.tree),new RegExp(w.week2))
-    for(let day=8;day<=14;day++)assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
-    await press(f.h,w.next)
-    assert.match(textOf(f.h.tree),new RegExp(w.nextTitle))
-    assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(2,locale).practice))
+    const roadmap=nodes(f.h.tree).find(n=>n.props?.['data-opora-course-map']==='all-14-days')
+    assert.ok(roadmap,'Current course map must expose all 14 days in one compact view')
+    for(let day=1;day<=14;day++)assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
     await press(f.h,"I'm committed")
     assert.match(textOf(f.h.tree),new RegExp(w.habit))
     assert.ok(findButton(f.h.tree,w.configure),'Setup must require explicit opt in')
@@ -106,8 +101,8 @@ test('declining the first lesson phone reminder keeps the lesson saved and still
   await press(f.h,w.save)
   await press(f.h,w.audio)
   await press(f.h,w.start)
-  await press(f.h,w.next)
-  await press(f.h,w.next)
+  // The single course roadmap already contains both weeks; one commitment
+  // leads to the optional Home Screen invitation without extra swipe pages.
   await press(f.h,"I'm committed")
   assert.match(textOf(f.h.tree),/Keep OPORA close/)
   await press(f.h,w.later)
