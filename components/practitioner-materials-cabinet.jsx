@@ -5,6 +5,7 @@ import {Film,Images,Link2,UploadCloud,Video,RefreshCw,Headphones} from 'lucide-r
 import {preparePhoto} from './session-photo-uploader'
 import {normalizePhoneVideoFile} from '@/lib/clients/phone-video-file'
 import {normalizePhoneAudioFile} from '@/lib/clients/phone-audio-file'
+import {canProxyOwnerAudio} from '@/lib/clients/owner-audio-upload'
 import {SessionYouTubePlayer} from './session-youtube-player'
 import {readUiLocale} from '@/lib/ui-locale'
 import styles from './practitioner-materials-cabinet.module.css'
@@ -33,6 +34,15 @@ export function uploadFile(intent,file,mime,onProgress){
     xhr.onabort=()=>reject(new Error('VIDEO_UPLOAD_CANCELLED'))
     xhr.send(file)
   })
+  if(canProxyOwnerAudio(file)&&intent.assetId){
+    const response=await fetch('/api/admin/materials/'+encodeURIComponent(intent.assetId)+'/upload',{
+      method:'POST',headers:{'content-type':mime},body:file,credentials:'same-origin',cache:'no-store',
+    })
+    const result=await response.json().catch(()=>({}))
+    if(!response.ok||result.uploaded!==true)throw new Error(result.error||'MEDIA_STORAGE_UNAVAILABLE')
+    onProgress?.(100)
+    return
+  }
   if(!intent.token||!intent.bucket||!intent.objectKey||!intent.supabaseUrl||!intent.publishableKey)
     throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')
   const storage=createClient(intent.supabaseUrl,intent.publishableKey,
@@ -254,7 +264,9 @@ export function PractitionerMaterialsCabinet(){
             </button>
           </div>
         </div>}
-        {['video','audio'].includes(item.kind)&&<p className={styles.privateLabel}>{ru?
+        {['video','audio'].includes(item.kind)&&<p className={styles.privateLabel}>{item.kind==='audio'?
+          (ru?'Аудио остаётся приватным. Прикрепите его к отчёту или слайду курса отдельно.':
+          'Saved audio stays private. Attach it to a report or course slide separately.'):ru?
           'Исходный файл остаётся закрытым. Для публичной библиотеки видео добавьте отдельную ссылку YouTube (Unlisted).':
           'This original file stays private. To publish it in the Library, add an Unlisted YouTube link separately.'}</p>}
         <div className={styles.itemFooter}>{ru?'Доступно для клиентских отчётов':'Available for client reports'}</div>
