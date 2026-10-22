@@ -10,6 +10,7 @@ import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-sha
 import { appFetch } from "@/lib/app/client-fetch";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { reikiPractitionerLessonVideos, type ReikiPractitionerLessonVideo } from "@/data/academy/reiki-practitioner-lesson-videos";
 import { useOceanPracticeAudio } from "./ocean-practice-audio";
 import OceanSoundToggle from "./ocean-sound-toggle";
 import {
@@ -551,6 +552,51 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
 }
 
 
+
+/** One existing video slide per lesson. Changing source unmounts the old iframe. */
+function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
+  slide: EnergyworkSlide;
+  locale: EnergyworkLocale;
+  lessonVideo?: ReikiPractitionerLessonVideo;
+  original: { youtubeId: string | null; title: string } | null;
+}) {
+  const [choice, setChoice] = useState<"lesson" | "original">("lesson");
+  const useOriginal = !lessonVideo || choice === "original";
+  const youtubeId = useOriginal ? original?.youtubeId : lessonVideo.youtubeId;
+  const videoTitle = useOriginal ? original?.title : lessonVideo.title[locale];
+  return (
+    <div className={styles.video} data-reiki-lesson-video={slide.id}>
+      {lessonVideo && original?.youtubeId ? (
+        <div className={styles.lessonVideoChoices} role="group"
+          aria-label={locale === "ru" ? "Выбор видео урока" : "Choose lesson video"}>
+          <button type="button" className={styles.lessonVideoChoice}
+            aria-pressed={!useOriginal} onClick={() => setChoice("lesson")}>
+            {locale === "ru" ? "Видеоурок" : "Lesson video"}
+          </button>
+          <button type="button" className={styles.lessonVideoChoice}
+            aria-pressed={useOriginal} onClick={() => setChoice("original")}>
+            {locale === "ru" ? "Медитация (EN)" : "Meditation (EN)"}
+          </button>
+        </div>
+      ) : null}
+      {youtubeId ? (
+        <AcademyVideoPlayer key={slide.id + ":" + (useOriginal ? "original" : "lesson")}
+          youtubeId={youtubeId} title={videoTitle ?? slide.title[locale]} />
+      ) : (
+        <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />
+          {locale === "ru" ? "Видео пока недоступно" : "Video is not available yet"}</p>
+      )}
+      {youtubeId ? (
+        <p className={styles.videoCaption}>
+          {useOriginal
+            ? (locale === "ru" ? "Дополнительная английская медитация." : "Optional original English guided meditation.")
+            : (locale === "ru" ? "Запись урока. Нажмите Play, чтобы начать просмотр." : "Lesson recording. Press Play to start.")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 /** Review buttons only change the quote, never the current course slide. */
 /** Compact, accessible carousel: review arrows never advance the lesson. */
 function MeditationVoices({ slide, locale, youtubeId }: {
@@ -1069,6 +1115,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const otherStudyMissing = (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) &&
     !energyworkReikiStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
+  const lessonVideo = slide.kind === "video" ? reikiPractitionerLessonVideos.find((item) => item.slideId === slide.id) : undefined;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
   const lessonNumber = currentLessonRange?.lesson ?? 1;
@@ -1757,11 +1804,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               </div>
             ) : null}
             {slide.kind === "video" ? (
-              <div className={styles.video}>
-                {media?.youtubeId ? <AcademyVideoPlayer key={slide.id} youtubeId={media.youtubeId} title={media.title} /> :
-                  <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />{t.unavailable}</p>}
-                {media?.youtubeId ? <p className={styles.videoCaption}>{t.audio} · {media.title}</p> : null}
-              </div>
+              <ReikiLessonVideo key={slide.id} slide={slide} locale={locale}
+                lessonVideo={lessonVideo} original={media ?? null} />
             ) : null}
           </div>
           {slide.id === "flight-save" ? (
