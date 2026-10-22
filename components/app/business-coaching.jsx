@@ -45,7 +45,7 @@ const copy = {
     focusStart:'Start 2 minutes', focusPause:'Pause', focusReset:'Reset', focusDone:'Two minutes done. Continue the real-world task at your own pace.',
     reflectionTitle:'A thought for today', reflectionPrompt:'Does today’s step seem useful for your own goal?',
     reflectAgree:'Yes', reflectDisagree:'No', reflectUnsure:'I need to think',
-    reflectOptional:'Optional. This is your opinion, not a test or a completed business action.',
+    reflectOptional:'Optional. This is your opinion, not a test or a completed action. It saves only with your lesson.',
     savedCelebration:'Your lesson is saved', practisedSkill:'Skill you practised',
     celebrationHelp:'Your actual result is in your private journal. Review any slide or continue when ready.',
     showSaved:'Review saved lesson', returnLater:'You can return tomorrow; no automatic reminder is sent.',
@@ -110,7 +110,7 @@ const copy = {
     focusStart:'Начать 2 минуты', focusPause:'Пауза', focusReset:'Сброс', focusDone:'Две минуты прошли. Продолжайте реальное задание в удобном темпе.',
     reflectionTitle:'Мысль на сегодня', reflectionPrompt:'Насколько этот шаг полезен для вашей цели?',
     reflectAgree:'Да', reflectDisagree:'Нет', reflectUnsure:'Надо подумать',
-    reflectOptional:'Необязательно. Это ваше мнение, а не тест и не отметка о выполненной работе.',
+    reflectOptional:'Необязательно. Это ваше мнение, не тест и не отметка о выполнении. Сохраняется вместе с уроком.',
     savedCelebration:'Ваш урок сохранён', practisedSkill:'Навык, который вы практиковали',
     celebrationHelp:'Фактический результат сохранён в личном дневнике. Вы можете вернуться к любому слайду или продолжить.',
     showSaved:'Просмотреть сохранённый урок', returnLater:'Можно продолжить завтра; автоматическое напоминание не отправляется.',
@@ -294,7 +294,6 @@ export default function BusinessCoaching({locale='en',accountId}){
   const savedDay=course?.days?.[day]||{}
   const hasUnsavedDay=dayResult!==(savedDay.result||'')||dayNote!==(savedDay.note||'')||
     reflectionChoice!==(savedDay.reflectionChoice||'')||dayDone!==Boolean(savedDay.done)
-  const savedLessonCanContinue=!hasUnsavedDay && Boolean(savedDay.done) && day<90
   const selected=businessDayResult(day,lang)
   const week=selected?.week||1
   const currentModule=businessWeekModule(week,lang)
