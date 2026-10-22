@@ -17,8 +17,9 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 63, "One consecutive course must have 63 screens");
-const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63]);
+assert.equal(expectedSequence.length, 67, "One consecutive course must have 67 screens");
+const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,67,
+  ...["flight-audio","tan-audio","kun-audio","ygg-audio"].map(id => expectedSequence.indexOf(id)+1)]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -132,13 +133,19 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(form.locator('input[autocomplete="given-name"]')).toBeVisible();
     await expect(form.locator('input[autocomplete="family-name"]')).toBeVisible();
   }
-  // Teacher intro audio loads only after its first slide, never inside the
-  // meditation video. Audio is optional until the author uploads his file.
+  // Informational lesson slide remains, followed by a distinct author audio
+  // welcome immediately before each video. Unpublished tracks never autoplay.
   if (["flight-01","tan-01","kun-01","ygg-01"].includes(id)) {
     await expect(page.locator('[data-reiki-lesson-intro]')).toBeVisible();
-    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toBeVisible();
     await expect(page.locator('[data-reiki-lesson-intro] li')).toHaveCount(3);
-    await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
+    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toHaveCount(0);
+  }
+  if (["flight-audio","tan-audio","kun-audio","ygg-audio"].includes(id)) {
+    await expect(page.locator('[data-reiki-audio-welcome]')).toBeVisible();
+    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toBeVisible();
+    await expect(page.locator('[data-reiki-audio-welcome] audio')).toHaveCount(0);
+    await expect(page.locator('button[data-energywork-next]'))
+      .toContainText(locale === "ru" ? "Перейти к видео" : "Continue to video");
   }
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
   if (data.kind === "voices") {
@@ -388,7 +395,7 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 63 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 67 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
@@ -430,7 +437,7 @@ async function verifySaveThenInstall(page, locale) {
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
     { waitUntil: "domcontentloaded", timeout: 90000 });
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
-  for (const id of ["welcome-01","welcome-02","flight-01","flight-02","flight-voices",
+  for (const id of ["welcome-01","welcome-02","flight-01","flight-audio","flight-02","flight-voices",
     "flight-05","flight-04","flight-03"]) {
     await expect(page.locator("[data-energywork-slide-id]"))
       .toHaveAttribute("data-energywork-slide-id", id);
@@ -545,6 +552,8 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-01");
   await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-audio"); // greeting fits 375px x 625px before video
+  await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-02"); // video poster remains visible without autoplay
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-voices");
@@ -612,7 +621,7 @@ try {
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log(engineName === "webkit" ? "REIKI_SAFARI_GUEST_SAVE_GATE_PASS" : "REIKI_ALL_SLIDES_BROWSER_PASS",
-    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 63,
+    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 11 : 67,
       locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
   await browser.close();

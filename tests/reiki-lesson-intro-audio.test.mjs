@@ -33,7 +33,7 @@ const header = read('components/prescription-admin-header.jsx')
 const css = read('components/energywork-ai-learner.module.css')
 
 test('Four meditation introductions and the fifth initiation lesson preserve all existing slide IDs', () => {
-  assert.equal(energyworkSequence().length, 63)
+  assert.equal(energyworkSequence().length, 67)
   const ids = [
     ['flight-01','flight-02','flight'],
     ['tan-01','tan-02','tantra'],
@@ -43,7 +43,13 @@ test('Four meditation introductions and the fifth initiation lesson preserve all
   assert.deepEqual([...REIKI_INTRO_LESSONS], ['flight','tantra','kundalini','yggdrasil','initiation'])
   for (const [intro, meditation, key] of ids) {
     const seq = energyworkSequence()
-    assert.equal(seq.indexOf(meditation),seq.indexOf(intro)+1)
+    const audioSlide = { flight:"flight-audio", tantra:"tan-audio",
+      kundalini:"kun-audio", yggdrasil:"ygg-audio" }[key]
+    assert.equal(seq.indexOf(audioSlide),seq.indexOf(intro)+1)
+    assert.equal(seq.indexOf(meditation),seq.indexOf(audioSlide)+1)
+    const audioBlock = curriculum.slice(curriculum.indexOf('id: "'+audioSlide+'"'),curriculum.indexOf('id: "'+meditation+'"'))
+    assert.match(audioBlock,/kind: "audio-intro"/)
+    assert.ok(audioBlock.includes('introAudioKey: "'+key+'"'))
     const start = curriculum.indexOf('id: "'+intro+'"')
     const end = curriculum.indexOf('id: "'+meditation+'"',start)
     assert.ok(start > 0 && end > start)
@@ -59,6 +65,10 @@ test('Four meditation introductions and the fifth initiation lesson preserve all
   assert.match(audioPlayer,/\| "initiation"/)
   assert.match(learner,/data-reiki-lesson-intro=\{slide\.introAudioKey\}/)
   assert.match(learner,/<ReikiLessonIntroAudio/)
+  assert.match(learner,/data-reiki-audio-welcome=\{slide\.introAudioKey\}/)
+  assert.match(learner,/showEmpty/)
+  assert.match(audioPlayer,/showEmpty = false/)
+  assert.match(audioPlayer,/data-audio-status="unavailable"/)
   assert.match(learner,/slide\.introTopics\.map/)
   assert.match(css,/lessonIntroPanel/)
   assert.match(css,/overflow-y: auto/)

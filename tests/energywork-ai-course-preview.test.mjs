@@ -13,12 +13,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 63 published editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 67 published editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
   assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 63)
+  assert.equal(ids.length, 67)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -75,8 +75,8 @@ test('Lesson 1 Sun meditation review uses the approved two questions and one ans
 })
 
 test('Lesson 1 practice with music comes after reflections, immediately before congratulations', () => {
-  assert.deepEqual(energyworkSequence().slice(2, 9), [
-    'flight-01', 'flight-02', 'flight-voices', 'flight-05',
+  assert.deepEqual(energyworkSequence().slice(2, 10), [
+    'flight-01', 'flight-audio', 'flight-02', 'flight-voices', 'flight-05',
     'flight-04', 'flight-03', 'flight-done',
   ])
   const lesson = curriculum.split('id: "flight-01"')[1].split('id: "presence-01"')[0]

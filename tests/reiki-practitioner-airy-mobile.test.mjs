@@ -10,7 +10,7 @@ const curriculum = read("data/academy/energywork-ai-curriculum.ts")
 const sky = read("public/images/holistic-house/reiki-heaven-sky.svg")
 
 test("Reiki airy v2 removes welcome duplications but preserves one unified course", () => {
-  assert.equal(energyworkSequence().length,53)
+  assert.equal(energyworkSequence().length,67)
   assert.match(ui,/data-course-visual="reiki-airy-v2"/)
   assert.match(ui,/data-energywork-screen=\{slide\.kind === "welcome" \? "welcome" : "lesson"\}/)
   assert.match(ui,/welcomeRequirement: "Study all five lessons in order\."/)
