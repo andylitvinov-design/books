@@ -3800,7 +3800,7 @@
     flex: 1 1 auto;
     min-height: 0;
     margin-top: 7px;
-    padding: 10px 11px 8px;
+    padding: 10px 9px 8px;
     border-radius: 17px;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesHeading {
@@ -3812,14 +3812,14 @@
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote {
     min-height: 0;
-    padding: 3px 0 0 16px;
+    padding: 3px 0 0 13px;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote p {
     max-height: none;
     min-height: 0;
     font-size: clamp(15px, 4vw, 17px);
     line-height: 1.39;
-    padding-right: 6px;
+    padding-right: 4px;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote cite {
     padding-top: 5px;
@@ -3828,12 +3828,36 @@
     line-height: 1.24;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls {
-    margin: 4px auto 0;
+    margin: 1px auto 0;
     gap: 7px;
   }
+  /* A 34px visual circle with a full 44px tap target on iPhone. */
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button {
-    width: 39px;
-    height: 39px;
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid #b9dfe8;
+    border-radius: 50%;
+    background: rgba(255,255,255,.95);
+    box-shadow: 0 3px 9px rgba(26,114,146,.08);
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button:hover {
+    background: transparent;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button:hover::before {
+    background: #ddf5f8;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button svg {
+    position: relative;
+    z-index: 1;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesReferences {
     padding-top: 2px;
@@ -4833,10 +4857,10 @@
 }
 
 
-/* Checkpoint choices are inside the lesson; only Back remains in the footer. */
+/* Finish-today stays in the lesson; the save-and-continue CTA is pinned beside Back. */
 .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px; margin-top: 16px; width: 100%;
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  gap: 10px; margin-top: 16px; width: min(100%, 330px);
 }
 .page[data-course-portrait="v3"] .milestoneInlineChoices button {
   display: flex; align-items: center; justify-content: flex-start; gap: 10px;
@@ -4855,15 +4879,11 @@
 .page[data-course-portrait="v3"] .milestoneInlineChoices .milestoneSaveChoice {
   color: #135a62; background: linear-gradient(135deg, #fffef9, #eaf8f3);
 }
-.page[data-course-portrait="v3"] .milestoneInlineChoices .milestoneContinueChoice {
-  color: #fff; background: linear-gradient(130deg, #01859b, #13b5ab);
-  border-color: #12a9ac; box-shadow: 0 5px 14px rgba(7, 122, 136, .16);
-}
 .page[data-course-portrait="v3"] .milestoneInlineChoices button:disabled { opacity: .5; cursor: not-allowed; }
 .page[data-course-portrait="v3"] .milestoneInlineChoices button:focus-visible {
   outline: 3px solid #0ba9bb; outline-offset: 3px;
 }
-.page[data-course-portrait="v3"] .milestoneActions { justify-content: flex-start; }
+.page[data-course-portrait="v3"] .milestoneActions { justify-content: space-between; }
 .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .googleMark {
   display: inline-grid; place-items: center; flex: 0 0 22px;
   width: 22px; height: 22px; border-radius: 50%;
@@ -4877,7 +4897,7 @@
 }
 @media (max-width: 760px) {
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices {
-    grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 11px;
+    grid-template-columns: minmax(0, 1fr); gap: 7px; margin-top: 11px;
   }
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices button {
     min-height: 64px; padding: 8px 9px; font-size: clamp(12px, 3.25vw, 15px); gap: 6px;

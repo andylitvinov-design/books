@@ -538,7 +538,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
           <div><p className={styles.eyebrow}>{t.subtitle}</p><h2>{t.footerTitle}</h2><p>{t.footerLead}</p></div>
           <div className={styles.finalCtaActions} data-energywork-final-choices>
             <Link href={learnPath} className={styles.primaryButton} data-energywork-final-online>{t.finalOnline}<ArrowRight size={18} aria-hidden="true" /></Link>
-            <ContactChannelChooser locale={locale} whatsappUrl={personalSessionUrl} label={t.finalPersonal} className={styles.personalButton} attributes={{ "data-energywork-final-personal": "true" }} />
+            <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={personalSessionUrl} label={t.finalPersonal} className={styles.personalButton} attributes={{ "data-energywork-final-personal": "true" }} />
           </div>
         </section>
         <p className={styles.disclaimer}>{t.notice}</p>
@@ -590,7 +590,7 @@ export function KundaliniFreeInitiation({ locale }: { locale: PublicLocale }) {
             <h2>{k.requestTitle}</h2>
             <p>{k.requestLead}</p>
           </div>
-          <ContactChannelChooser locale={locale} whatsappUrl={requestUrl} className={styles.requestButton} attributes={{ "data-reiki-free-request": "kundalini" }} />
+          <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={requestUrl} className={styles.requestButton} attributes={{ "data-reiki-free-request": "kundalini" }} />
           <small>{k.note}</small>
         </section>
         <div className={styles.otherPaths}><Link href={academyUrl(locale, "principles-of-energywork")}>{k.otherPaths}<ArrowRight size={17} aria-hidden="true" /></Link></div>

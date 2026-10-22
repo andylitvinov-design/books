@@ -60,7 +60,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       slideJustify: getComputedStyle(scroller).justifyContent,
       slideHeight: slideRect.height,
       titleHeaderCount: element.querySelectorAll("header").length,
-      privateSaveManagerPresent: Boolean(element.querySelector('details[class*="saveManager"] aside[class*="preview"]')),
+      privateSaveStatus: element.querySelector("[data-reiki-private-save-status]")?.textContent?.trim() || "",
       programmeOpen: element.querySelector('button[aria-controls="reiki-journey-help"]')?.getAttribute("aria-expanded") === "true",
       programmeHeight: element.querySelector("section[data-expanded]")?.getBoundingClientRect().height ?? 0,
       slideHorizontalOverflow: scroller.scrollWidth-scroller.clientWidth,
@@ -97,7 +97,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   }
   assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
-  assert.ok(data.privateSaveManagerPresent, where + ": private saving is accessible from the separate progress icon");
+  assert.ok(data.privateSaveStatus.length > 0, where + ": current guest, consent or private-save status is visible");
   assert.equal(data.programmeOpen, false, where + ": journey hint is collapsed unless requested");
   assert.ok(data.programmeHeight > 25 && data.programmeHeight < 48,
     where + ": collapsed hint keeps a single compact bottom row");
@@ -162,8 +162,29 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     if (expectedReviews) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
       const screenshotExamples = id === "flight-voices" || id === "kun-voices";
-      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(screenshotExamples ? 1 : 2);
-      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a'))
+        .toHaveCount(id === "flight-voices" ? 0 : screenshotExamples ? 1 : 2);
+      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']"))
+        .toHaveCount(id === "flight-voices" ? 0 : 1);
+      if (id === "flight-voices" && page.viewportSize()?.width <= 760) {
+        const arrows = await page.locator("button[data-review-next]").evaluate(button => {
+          const rectangle = button.getBoundingClientRect();
+          const circleInset = parseFloat(getComputedStyle(button, "::before").inset);
+          const review = button.closest("[data-meditation-voices]").querySelector("[data-review-fulltext]");
+          return {
+            touchWidth: rectangle.width,
+            touchHeight: rectangle.height,
+            circleDiameter: rectangle.width - 2 * circleInset,
+            quotePadding: parseFloat(getComputedStyle(review).paddingRight),
+          };
+        });
+        assert.ok(arrows.touchWidth >= 44 && arrows.touchHeight >= 44,
+          where + ": smaller visual arrows must keep a 44px touch target");
+        assert.ok(arrows.circleDiameter <= 35 && arrows.circleDiameter >= 32,
+          where + ": arrow circles should be visually compact");
+        assert.ok(arrows.quotePadding <= 4,
+          where + ": keep the testimonial reading column wide");
+      }
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
       const first = await carousel.locator("blockquote p").innerText();
       if (id === "kun-voices") {
@@ -199,18 +220,21 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(page.locator("[data-reiki-first-lesson-save]")).toBeVisible();
     await expect(page.locator("[data-reiki-first-lesson-consent]")).toHaveCount(0);
   } else if (data.kind === "milestone") {
-    // Both choices now live inside the teaching slide. The footer contains
-    // only Back: no modal calendar, hidden push setting or secondary Save flow.
+    // Finish-for-today is inside the teaching slide; the one primary
+    // save-and-continue CTA remains visible in the pinned bottom navigation.
     const inSlide = page.locator('[data-energywork-slide-id] [data-reiki-milestone-choices]');
     await expect(inSlide).toBeVisible();
-    await expect(inSlide.locator("button")).toHaveCount(2);
-    await expect(inSlide.locator("button[data-energywork-next]")).toContainText(
-      locale === "ru" ? "Продолжить обучение" : "Continue learning");
+    await expect(inSlide.locator("button")).toHaveCount(1);
+    await expect(inSlide.locator("button[data-energywork-next]")).toHaveCount(0);
     await expect(inSlide.locator("button[data-reiki-tomorrow-choice]")).toContainText(
       locale === "ru" ? "Сохранить урок" : "Save my lesson");
+    const footer = page.locator('[class*="milestoneActions"]');
+    await expect(footer.locator("button")).toHaveCount(2);
+    await expect(footer.locator("button[data-energywork-next]")).toBeVisible();
+    await expect(footer.locator("button[data-energywork-next]")).toContainText(
+      locale === "ru" ? "Сохранить урок и продолжить" : "Save my lesson and continue");
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
     await expect(page.locator("[data-reiki-reminder-setup]")).toHaveCount(0);
-    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(1);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }

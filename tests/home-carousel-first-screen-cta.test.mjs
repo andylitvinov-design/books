@@ -4,39 +4,54 @@ import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("the paid and free CTAs are rendered before the tall homepage slider on every locale", () => {
-  const carousel = read("components/home-section-carousel.tsx");
-  const es = read("app/es/page.tsx");
-  const en = read("components/holistic-house-home.tsx");
-  const ru = read("app/[locale]/page.tsx");
-  assert.match(es, /<HomeSectionCarousel locale="es" \/>/);
-  assert.match(en, /<HomeSectionCarousel locale=\{locale\} \/>/);
-  assert.match(ru, /<HolisticHouseHome/);
-  assert.ok(carousel.indexOf("data-home-quick-booking") > 0);
-  assert.ok(carousel.indexOf("data-home-quick-booking") < carousel.indexOf("className={styles.slider}"));
-  assert.match(carousel, /data-home-quick-cta": "paid"/);
-  assert.match(carousel, /data-home-quick-cta": "free-review"/);
-  assert.match(carousel, /href=\{\`\/\$\{locale\}\/services#consultation\`\}/);
-  assert.match(carousel, /href=\{\`\/\$\{locale\}\/services\/free-situation-review\`\}/);
-  assert.match(carousel, /event="service_view"/);
-  assert.match(carousel, /event="service_request_start"/);
-});
-
-test("consultation pricing and first-screen affordances are consistent across EN RU ES", () => {
-  const carousel = read("components/home-section-carousel.tsx");
-  const style = read("components/services-conversion-hero.module.css");
+test("EN/RU/ES lead with the real carousel, then free diagnosis, then the question dialogue", () => {
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
-  const prices = carousel.match(/quickPrice: "€50 \/ 30 (?:min|мин) · €100 \/ 60 (?:min|мин)"/g) || [];
-  assert.equal(prices.length, 3);
-  for (const needle of ['Request a consultation', 'Запросить консультацию', 'Solicitar una consulta']) {
-    assert.ok(carousel.includes(needle), needle);
+  const carousel = read("components/home-section-carousel.tsx");
+  for (const [page, locale] of [[home, "{locale}"], [es, '"es"']]) {
+    const tag = locale === "{locale}" ? "locale={locale}" : 'locale="es"';
+    const slider = page.indexOf("<HomeSectionCarousel " + tag + " />");
+    const banner = page.indexOf("<HomeFreeDiagnosisBanner " + tag + " />");
+    const question = page.indexOf("<HomeConversationGuide " + tag + " />");
+    assert.ok(slider >= 0 && slider < banner && banner < question, "Expected carousel → diagnosis → dialogue");
+    assert.ok(page.includes("paid-sessions"), "Paid consultation remains below the dialogue");
   }
-  assert.match(home, /heroBook: "Request a consultation · from €50"/);
-  assert.match(home, /heroBook: "Запросить консультацию · от €50"/);
-  assert.match(es, /Solicitar una consulta · desde €50/);
-  assert.match(style, /\.quickBookingActions a \{[^}]*min-height:44px/s);
-  assert.match(style, /@media \(max-width:365px\)/);
-  assert.match(style, /grid-template-columns:minmax\(0,1\.17fr\) minmax\(0,1fr\)/);
-  assert.doesNotMatch(carousel, /\/api\/.*lead|\/api\/.*booking/);
+  assert.doesNotMatch(carousel, /data-home-quick-booking|data-home-quick-cta/, "No paid strip before first slider");
+  assert.match(carousel, /data-home-hero-nav="true"/);
+  assert.match(carousel, /data-home-slide-dot=\{item.key\}/);
+});
+
+test("free diagnosis button opens a mini CRM request under this same banner, not a new page", () => {
+  const banner = read("components/home-free-diagnosis-banner.tsx");
+  const capture = read("components/compact-lead-capture.tsx");
+  assert.match(banner, /data-home-free-diagnosis-banner/);
+  assert.match(banner, /data-home-diagnosis-order/);
+  assert.match(banner, /aria-expanded=\{open\}/);
+  assert.match(banner, /aria-controls=\{formId\}/);
+  assert.match(banner, /hidden=\{!open\}/);
+  assert.match(banner, /<CompactLeadCapture/);
+  assert.match(banner, /sourcePath=\{"\/" \+ locale \+ "\/services\/free-situation-review"\}/);
+  assert.match(banner, /serviceTitle="Free drawing-based situation review"/);
+  assert.match(capture, /sourcePath: sourcePath \|\| pathname/);
+  assert.match(capture, /fetch\("\/api\/service-enquiries"/);
+  assert.match(capture, /result\?\.saved !== true/);
+  assert.match(capture, /contactConsent: true/);
+  assert.doesNotMatch(banner, /fetch\(|sendBeacon|localStorage|window\.location|whatsappEnquiryUrl/);
+  for (const heading of ["Бесплатная диагностика ситуации", "Free situation assessment", "Evaluación gratuita"]) {
+    assert.ok(banner.includes(heading), heading);
+  }
+  for (const benefit of ["Personal written review", "Личный письменный разбор", "Informe personal escrito"]) {
+    assert.ok(banner.includes(benefit), benefit);
+  }
+});
+
+test("slider and benefit-rich banner fit the first mobile fold without impacting service pages", () => {
+  const sliderCss = read("components/services-conversion-hero.module.css");
+  const bannerCss = read("components/home-free-diagnosis-banner.module.css");
+  assert.match(sliderCss, /\.hero\[data-home-section-carousel\] \.slider \{ height: clamp\(302px, 39svh, 336px\); min-height: 0;/);
+  assert.match(sliderCss, /\.hero\[data-home-section-carousel\] \.slider \{ height: 258px; min-height: 0;/);
+  assert.match(bannerCss, /@media \(max-width: 365px\)/);
+  assert.match(bannerCss, /\.order \{[^}]*min-height: 45px/s);
+  assert.match(bannerCss, /\.root :is\(a, button, input\):focus-visible/);
+  assert.match(bannerCss, /@media \(max-width: 760px\) and \(max-height: 700px\)/);
 });

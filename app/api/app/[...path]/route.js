@@ -517,7 +517,8 @@ async function handle(request, { params }) {
       const daily = createDailyCourseRepository(config)
       const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
       if ((path[1] === 'today' || path[1] === 'progress') && method === 'GET')
-        return json(await daily.read(actor, locale, new URL(request.url).searchParams.get('courseId')))
+        return json(await daily.read(actor, locale, new URL(request.url).searchParams.get('courseId'),
+          new URL(request.url).searchParams.get('reviewDay')))
       if (method === 'POST' && ['activate','checkin','session','review','preferences','pause','resume','new-cycle','module-retest'].includes(path[1]))
       {
         const updated=await daily.command(actor,path[1],await readBody(request),locale)

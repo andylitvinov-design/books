@@ -7,21 +7,30 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 
-test("milestone save and continue actions appear on the slide instead of footer", () => {
-  assert.match(learner, /data-reiki-milestone-choices/);
-  assert.match(learner, /data-reiki-tomorrow-choice/);
-  assert.match(learner, /data-energywork-next/);
+test("milestone keeps finish-today on slide and restores save-and-continue beside Back", () => {
+  const inline = learner.split("data-reiki-milestone-choices>")[1].split("</div>")[0];
+  const footer = learner.split("<footer className={styles.footer}>")[1];
+  assert.ok(inline && footer, "checkpoint and bottom navigation exist");
+  assert.match(inline, /data-reiki-tomorrow-choice/);
+  assert.match(inline, /onClick=\{finishForToday\}/);
+  assert.doesNotMatch(inline, /data-energywork-next|milestoneContinueChoice/, "no duplicate Continue in card");
+  assert.match(footer, /slide\.kind === "milestone" && slide\.id !== "flight-save"/);
+  assert.match(footer, /onClick=\{next\}[\s\S]*?data-energywork-next/);
+  assert.match(footer, /slide\.kind === "milestone" \? t\.saveAndContinue/);
+  assert.match(learner, /saveAndContinue: "Save my lesson and continue"/);
+  assert.match(learner, /saveAndContinue: "Сохранить урок и продолжить"/);
   assert.match(learner, /tomorrowChoice: "Save my lesson"/);
   assert.match(learner, /tomorrowChoice: "Сохранить урок"/);
-  assert.match(learner, /onClick=\{finishForToday\}/);
   assert.match(learner, /slide\.kind !== "milestone" && !completed/);
   assert.doesNotMatch(learner, /data-reiki-reminder-setup|reminderSetupOpen|downloadTomorrowReminder/);
   assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
   assert.match(css, /\.milestoneInlineChoices/);
+  assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(css, /\.milestoneActions \{ justify-content: space-between; \}/);
   assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /min-height: 64px/);
 });
+
 test("guest must consent and authenticate before server save and post-save install", () => {
   assert.match(learner, /if \(sync === "guest" \|\| sync === "consent"\)/);
   assert.match(learner, /setIndex\(slides\.findIndex\(item => item\.id === "flight-save"\)\)/);

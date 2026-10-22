@@ -69,14 +69,66 @@ try {
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(page.locator("[data-home-section-carousel]")).toHaveCount(1);
+        const diagnosis = page.locator("[data-home-free-diagnosis-banner]");
+        await expect(diagnosis).toHaveCount(1);
+        const positions = await page.evaluate(() => {
+          const slider = document.querySelector("[data-home-section-carousel]");
+          const banner = document.querySelector("[data-home-free-diagnosis-banner]");
+          const dialogue = document.querySelector("[data-home-conversation-guide]");
+          return [slider, banner, dialogue].map(node => node?.getBoundingClientRect().top ?? -1);
+        });
+        assert.ok(positions[0] >= 0 && positions[0] < positions[1] && positions[1] < positions[2],
+          "Homepage must show slider, free service, then question: " + JSON.stringify(positions));
+        const requestButton = diagnosis.locator("[data-home-diagnosis-order]");
+        await requestButton.click();
+        await expect(requestButton).toHaveAttribute("aria-expanded", "true");
+        await expect(diagnosis.locator("[data-compact-lead-form]")).toBeVisible();
+        await expect(diagnosis.locator('input[name="contact"]')).toBeVisible();
+        await requestButton.click();
+        await expect(requestButton).toHaveAttribute("aria-expanded", "false");
+        await expect(diagnosis.locator("[data-compact-lead-form]")).toBeHidden();
         const geometry = await guide.evaluate(node => {
           const rect = node.getBoundingClientRect();
           return { left: rect.left, right: rect.right, viewport: window.innerWidth };
         });
         assert.ok(geometry.left >= -1 && geometry.right <= width + 1,
           scenario.locale + "/" + width + " guide clipped: " + JSON.stringify(geometry));
+        const visualFit = await page.evaluate(() => {
+          const masthead = document.querySelector(".house-home--services > .house-header--services");
+          const hero = document.querySelector("[data-home-conversation-guide] [class*=intro]");
+          const firstTile = document.querySelector("[data-home-conversation-guide] [class*=quickChoices] button:first-child");
+          if (!masthead || !hero || !firstTile) return null;
+          const mastheadBox = masthead.getBoundingClientRect();
+          const heroBox = hero.getBoundingClientRect();
+          const titleBox = hero.querySelector("h2")?.getBoundingClientRect();
+          return {
+            headerInside: mastheadBox.left >= -1 && mastheadBox.right <= window.innerWidth + 1,
+            headerContentFits: masthead.scrollWidth <= masthead.clientWidth + 2,
+            heroTitleInside: Boolean(titleBox && titleBox.left >= heroBox.left - 1 && titleBox.right <= heroBox.right + 1),
+            starterTileHeight: firstTile.getBoundingClientRect().height,
+            starterTileColor: getComputedStyle(firstTile).color,
+          };
+        });
+        assert.ok(visualFit && visualFit.headerInside && visualFit.headerContentFits && visualFit.heroTitleInside,
+          scenario.locale + "/" + width + " masthead or pine hero overflows: " + JSON.stringify(visualFit));
+        assert.ok(visualFit.starterTileHeight >= 72, "Ideas-style quick start must stay easy to tap");
+        assert.equal(visualFit.starterTileColor, "rgb(7, 78, 80)", "Evergreen featured topic must match Ideas");
         if (width === 390) {
           await page.screenshot({ path: `artifacts/home-conversation/${engineName}-${scenario.locale}-collapsed.png` });
+        }
+        await expect(guide.locator("[data-home-guide-filters] button")).toHaveCount(5);
+        const testsLabel={en:"Free tests",ru:"Бесплатные тесты",es:"Pruebas gratis"}[scenario.locale];
+        await guide.locator("[data-home-guide-filters]").getByRole("button",{name:testsLabel,exact:true}).click();
+        await expect(guide.locator('[data-home-guide-browse-offer="tests"]')).toBeVisible();
+        await expect(guide.locator("[data-home-guide-browse-offer]")).toHaveCount(1);
+        const testsHref=scenario.locale==="es"?"/en/client/tests":"/"+scenario.locale+"/client/tests";
+        await expect(guide.locator('[data-home-guide-browse-offer="tests"] a')).toHaveAttribute("href",testsHref);
+        const allLabel={en:"All",ru:"Всё",es:"Todo"}[scenario.locale];
+        await guide.locator("[data-home-guide-filters]").getByRole("button",{name:allLabel,exact:true}).click();
+        assert.ok(await guide.locator("[data-home-guide-browse-offer]").count()<=3,"Only three inline offers");
+        if(width===390){
+          await guide.scrollIntoViewIfNeeded();
+          await page.screenshot({path:`artifacts/home-conversation/${engineName}-${scenario.locale}-advisor.png`});
         }
         await guide.locator("[data-home-guide-launcher]").click();
         const dialog = guide.locator("[data-home-guide-dialog]");
@@ -151,6 +203,57 @@ try {
       }
     }
   }
+  // Regression for the iPhone report: the public six-item bar must stay
+  // attached to the VISIBLE viewport, including after scroll restoration.
+  // The 280px CSS displacement reproduces the detached-layer geometry and
+  // proves the correction also resets when the browser viewport recovers.
+  for (const scenario of scenarios.slice(0, 3)) {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 820 },
+      serviceWorkers: "block",
+    });
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    try {
+      await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+      const bottom = page.locator(".mobile-bottom-navigation");
+      await expect(bottom).toBeVisible();
+      const expectDocked = async phase => {
+        await expect.poll(async () => bottom.evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          const viewport = window.visualViewport;
+          const visibleBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+          return Math.abs(visibleBottom - rect.bottom);
+        }), {
+          message: scenario.locale + "/" + phase + " bottom navigation must touch visible viewport edge",
+          timeout: 6000,
+        }).toBeLessThan(3);
+      };
+      await expectDocked("initial");
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await expectDocked("scroll-end");
+      await bottom.evaluate(element => {
+        element.style.bottom = "280px";
+        window.dispatchEvent(new Event("resize"));
+      });
+      await expectDocked("detached-layer-recovery");
+      await bottom.evaluate(element => {
+        element.style.removeProperty("bottom");
+        window.dispatchEvent(new Event("resize"));
+      });
+      await expectDocked("restored");
+      await expect(bottom.locator("a")).toHaveCount(6);
+      assert.deepEqual(errors, [], "Bottom bar re-anchoring must not throw");
+      if (scenario.locale === "ru") {
+        await page.screenshot({ path: `artifacts/home-conversation/${engineName}-ru-bottom-nav-docked.png` });
+      }
+      evidence.cases.push({ locale: scenario.locale, width: 390, viewportDocked: true, recoveredAfterDisplacement: true });
+    } finally {
+      await context.close();
+    }
+  }
+
   // Simulated browser recognition tests the full 2-tap UI without capturing audio
   // or relying on Safari's remote recognition/permission provider.
   for (const scenario of scenarios.slice(0, 3)) {
