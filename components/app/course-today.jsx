@@ -424,9 +424,11 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  }
  const playerData=reviewLesson?{
    ...data,cycle:{...cycle,day:reviewLesson.day},lesson:reviewLesson.lesson,
+   programme:data.programme?{...data.programme,
+     day:data.roadmap?.find(item=>item.day===reviewLesson.day)?.programmeDay||data.programme.day}:null,
    currentSession:reviewLesson.session,currentCheckin:null,
  }:data
- const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null)}
+ const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null);setView('path')}
  const finishLessonPlayer=()=>{closeLessonPlayer();setView('path')}
  function startFocusLesson(){
    if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return
@@ -679,7 +681,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
         onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>)
     :<CourseSlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
     data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)}
-    promotion={promotion} onClose={closeLessonPlayer}
+    promotion={reviewLesson?{...promotion,show:false}:promotion} onClose={closeLessonPlayer}
      onFinish={finishLessonPlayer}
     onOpenRetest={reviewLesson?closeLessonPlayer:showFinalRetest}
     onCheckin={body=>reviewLesson?null:submit('checkin',body)}
