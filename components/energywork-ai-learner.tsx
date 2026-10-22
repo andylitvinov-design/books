@@ -450,9 +450,6 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   if (experience) highlights.push(locale === "ru"
     ? "Ваш исходный опыт: " + experience.label.ru + "."
     : "Your starting experience: " + experience.label.en + ".");
-  if (present("intention-03")) highlights.push(locale === "ru"
-    ? "Ваше собственное намерение: «" + present("intention-03") + "»."
-    : "Your own intention: “" + present("intention-03") + "”.");
   if (present("presence-03")) highlights.push(locale === "ru"
     ? "Вы отметили комфорт короткой паузы на " + present("presence-03") + " из 10 — это только ваша самооценка, не медицинская шкала."
     : "You rated the comfort of a short pause " + present("presence-03") + "/10 — a personal check-in, not a medical score.");
@@ -1165,6 +1162,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const readyCount = initiationItems.reduce((count, item) => count + Number(item.reportDone) + item.questionCount, 0);
   const readyTargetCount = initiationItems.reduce((count, item) => count + 1 + item.questionIds.length, 0);
   const initiationReady = readyCount === readyTargetCount;
+  const nextIncompleteSlide = initiationItems
+    .map(item => !item.reportDone ? item.reportId : !item.questionDone ? item.nextQuestionId : null)
+    .find((id): id is string => Boolean(id));
   // Only show application links for a consented account with saved reports.
   // Guests may explore the lessons and copy their notes before they sign in.
   const savedInitiationReady = initiationReady && sync === "ready" &&
@@ -1228,8 +1228,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       catch { setSaveError(t.saveFailed); setBusy(false); return; }
       setBusy(false);
     }
-    setReviewReturn(id === "paths-04" ? false :
-      slide.id === "paths-04" || slide.kind === "finish" ? true : reviewReturn);
+    // Review lives on the final screen; back-links return here after report edits.
+    setReviewReturn(id === "end-02" ? false :
+      slide.kind === "finish" ? true : reviewReturn);
     setIndex(target);
   }
   async function next() {
@@ -1557,33 +1558,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
 
-              {slide.id === "paths-04" ? (
-                <div className={styles.reviewChecklist} data-initiation-readiness>
-                  <h2>{t.reviewTitle} · {readyCount}/{readyTargetCount}</h2>
-                  <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
-                  <div className={styles.reviewRows}>
-                    {initiationItems.map((item) => (
-                      <div className={styles.reviewRow} key={item.lesson}>
-                        <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
-                        <div>
-                          <button type="button" onClick={() => jumpToSlide(item.reportId)}
-                            className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
-                            {item.reportDone ? <Check size={13} aria-hidden="true" /> : null}
-                            {item.reportDone ? t.reportReady : t.reportMissing}
-                          </button>
-                          {item.questionIds.length > 0 ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)}
-                            className={item.questionDone ? styles.reviewRecorded : styles.reviewMissing}>
-                            {item.questionDone ? <Check size={13} aria-hidden="true" /> : null}
-                            {item.questionDone ? t.questionReady : t.questionMissing}
-                          </button> : null}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
-                </div>
-              ) : null}
-
               {slide.id === "end-01" ? (
                 <ReikiInitiationRequestForm value={answers["end-01"] ?? ""} locale={locale}
                   onChange={(value) => setAnswer(value, "end-01")} />
@@ -1684,13 +1658,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       ? t.optionalForLearning : t.blank}</p>
                   )}
                   {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id)) ?
-                    <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
+                    <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("end-02")}
                       disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
                 </div>
               ) : null}
 
               {slide.kind === "finish" ? (
-                <div className={styles.final}>
+                <div className={styles.final} data-initiation-readiness>
                   <span className={styles.finalTag}><Award size={18} aria-hidden="true" />{t.finish}</span>
                   <section className={styles.initiationRequestBox} data-reiki-initiation-request>
                     {applicationLead ? (
@@ -1709,7 +1683,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                           <div className={styles.finalPending} data-reiki-application-pending>
                             <p>{!initiationReady ? t.initiationNotReady : sync !== "ready" ? t.reviewSaveNeeded : t.saving}</p>
                             <button type="button" className={styles.reviewMissing}
-                              onClick={() => jumpToSlide("paths-04")} disabled={busy}>
+                              onClick={() => jumpToSlide(nextIncompleteSlide ?? "end-01")} disabled={busy}>
                               {t.finalReviewChecklist}<ArrowRight size={15} aria-hidden="true" />
                             </button>
                           </div>
