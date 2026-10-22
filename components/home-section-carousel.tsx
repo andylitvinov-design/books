@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -33,10 +32,6 @@ const copy = {
     previous: "Previous section",
     next: "Next section",
     choose: "Choose a site section",
-    quickHeading: "PERSONAL CONSULTATION · TORONTO & ONLINE",
-    quickPrice: "€50 / 30 min · €100 / 60 min",
-    quickBook: "Request a consultation · from €50",
-    quickFree: "Free written review",
     slides: {
       services: { eyebrow: "SERVICES · PERSONAL CONSULTATIONS", title: "Personal sessions for life's questions", lead: "Explore relationships, stress or difficult decisions in a one-to-one session in Toronto or online.", action: "Explore services" },
       tests: { eyebrow: "TESTS · FREE SELF-CHECKS", title: "Free tests to understand yourself", lead: "Explore stress, strengths and personal resources. See a report with insights for your next step.", action: "Take free tests" },
@@ -53,10 +48,6 @@ const copy = {
     previous: "Предыдущий раздел",
     next: "Следующий раздел",
     choose: "Выберите раздел сайта",
-    quickHeading: "ЛИЧНАЯ КОНСУЛЬТАЦИЯ · ТОРОНТО И ОНЛАЙН",
-    quickPrice: "€50 / 30 мин · €100 / 60 мин",
-    quickBook: "Запросить консультацию · от €50",
-    quickFree: "Бесплатный письменный разбор",
     slides: {
       services: { eyebrow: "УСЛУГИ · ЛИЧНЫЕ КОНСУЛЬТАЦИИ", title: "Личные сессии по важным вопросам", lead: "Отношения, стресс или сложный выбор: исследуйте свой запрос на встрече в Торонто или онлайн.", action: "Посмотреть услуги" },
       tests: { eyebrow: "ТЕСТЫ · БЕСПЛАТНО", title: "Узнайте свои сильные стороны", lead: "Пройдите тесты на стресс и личные ресурсы. Получите отчёт с результатами и выводами.", action: "Пройти тесты" },
@@ -73,10 +64,6 @@ const copy = {
     previous: "Sección anterior",
     next: "Sección siguiente",
     choose: "Elige una sección del sitio",
-    quickHeading: "CONSULTA PERSONAL · TORONTO Y EN LÍNEA",
-    quickPrice: "€50 / 30 min · €100 / 60 min",
-    quickBook: "Solicitar una consulta · desde €50",
-    quickFree: "Revisión escrita gratis",
     slides: {
       services: { eyebrow: "SERVICIOS · CONSULTAS PERSONALES", title: "Sesiones para tus preguntas importantes", lead: "Explora relaciones, estrés y decisiones difíciles en una sesión personal en Toronto o en línea.", action: "Ver servicios" },
       tests: { eyebrow: "PRUEBAS · GRATIS", title: "Pruebas gratis para conocerte mejor", lead: "Explora estrés, fortalezas y recursos personales. Consulta un informe con ideas para tu próximo paso.", action: "Hacer pruebas gratis" },
@@ -144,34 +131,6 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
 
   return (
     <section className={styles.hero} data-home-section-carousel aria-label={t.region}>
-      {/* Always visible before the tall section slider, including on a 320px phone.
-          A click is interest in a service, never a confirmed lead or booking. */}
-      <div className={styles.quickBooking} data-home-quick-booking="true">
-        <div className={styles.quickBookingCopy}>
-          <p>{t.quickHeading}</p>
-          <strong>{t.quickPrice}</strong>
-        </div>
-        <div className={styles.quickBookingActions}>
-          <AcquisitionEventLink
-            className={styles.quickBookingPaid}
-            href={`/${locale}/services#consultation`}
-            event="service_view"
-            attributes={{ "data-home-quick-cta": "paid" }}
-            prefetch={false}
-          >
-            {t.quickBook}<ArrowRight size={16} aria-hidden="true" />
-          </AcquisitionEventLink>
-          <AcquisitionEventLink
-            className={styles.quickBookingFree}
-            href={`/${locale}/services/free-situation-review`}
-            event="service_request_start"
-            attributes={{ "data-home-quick-cta": "free-review" }}
-            prefetch={false}
-          >
-            {t.quickFree}
-          </AcquisitionEventLink>
-        </div>
-      </div>
       <div
         className={styles.slider}
         role="region"
