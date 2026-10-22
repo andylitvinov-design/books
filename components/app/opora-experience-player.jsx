@@ -711,7 +711,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 onClick={()=>setAnswers(a=>({...a,transferChoice:undefined,transfer:'not_planning'}))}>{t.noPlan}</button>
             </div>
             <p className={styles.soft}>{reportedAttempt?t.attempted:t.readOnly}</p>
-          </>
+          </>}
           {moment==='nextStep'&&<OporaCoursePath locale={lang} cycle={cycle}
             saved={saved} roadmap={data?.roadmap} words={t}/>}
           {moment==='habit'&&<>
