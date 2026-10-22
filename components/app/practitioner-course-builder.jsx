@@ -2,6 +2,7 @@
 import {useEffect,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {preparePhoto} from '@/components/session-photo-uploader'
+import {normalizePhoneAudioFile} from '@/lib/clients/phone-audio-file'
 import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink,ChevronRight} from 'lucide-react'
 import CourseSlideRecorder from './course-slide-recorder'
 import styles from './practitioner-course-builder.module.css'
@@ -22,7 +23,7 @@ const request=async(body,accountId)=>{
  if(!response.ok)throw new Error(data.error||'REQUEST_FAILED')
  return data
 }
-const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',audio:'audio/mpeg,audio/mp4,audio/x-m4a',video:'video/mp4,video/quicktime'}
+const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',audio:'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.flac,.aac',video:'video/mp4,video/quicktime'}
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
@@ -136,9 +137,9 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   setUploading(true);setError('');setMessage('')
   const slideBefore=active.id,courseBefore=current.id
   try{
-   const prepared=active.kind==='image'?await preparePhoto(file):file
+   const prepared=active.kind==='image'?await preparePhoto(file):active.kind==='audio'?normalizePhoneAudioFile(file):file
    const mime=prepared.type.split(';')[0].toLowerCase()
-   if(!Object.keys({image:{'image/jpeg':1,'image/png':1,'image/webp':1},audio:{'audio/mpeg':1,'audio/mp4':1,'audio/x-m4a':1},video:{'video/mp4':1,'video/quicktime':1}}[active.kind]||{}).includes(mime))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
+   if(!Object.keys({image:{'image/jpeg':1,'image/png':1,'image/webp':1},audio:{'audio/mpeg':1,'audio/mp4':1,'audio/x-m4a':1,'audio/webm':1,'audio/wav':1,'audio/x-wav':1,'audio/ogg':1,'audio/flac':1,'audio/aac':1},video:{'video/mp4':1,'video/quicktime':1}}[active.kind]||{}).includes(mime))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
    const limit=active.kind==='image'?4000000:active.kind==='audio'?20000000:25000000
    if(prepared.size>limit||prepared.size<128)throw new Error('MEDIA_SIZE_NOT_ALLOWED')
    const {item:intent}=await api({action:'upload-intent',courseId:courseBefore,mime,bytes:prepared.size})
