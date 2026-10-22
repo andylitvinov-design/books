@@ -75,7 +75,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     })
     const data=await response.json().catch(()=>({}))
     if(!response.ok||data.redirectUrl!=='/admin/materials')throw Error('NOT_AUTHORIZED')
-    window.location.assign(data.redirectUrl)
+    window.location.assign(data.redirectUrl+'?type=audio')
    }catch{
     setError(locale==='ru'?'Не удалось открыть аудиобиблиотеку. Войдите в кабинет мастера.':
      locale==='es'?'No se puede abrir la biblioteca. Inicia sesión como profesional.':
