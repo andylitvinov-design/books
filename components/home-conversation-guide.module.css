@@ -3,11 +3,11 @@
 .root {
   box-sizing: border-box;
   width: min(1240px, calc(100% - 28px));
-  margin: 12px auto 11px;
-  padding: 10px;
-  border: 1px solid #e5d7c7;
-  border-radius: 25px;
-  background: linear-gradient(155deg, #fffaf3 0%, #f8efe4 62%, #fffaf3 100%);
+  margin: 7px auto 11px;
+  padding: 9px;
+  border: 1px solid #e8dac7;
+  border-radius: 24px;
+  background: linear-gradient(158deg, #fffaf3 1%, #faf1e6 61%, #fffaf4 100%);
   color: #302a25;
   box-shadow: 0 12px 32px rgba(74, 52, 34, .06);
   font-family: Arial, Helvetica, sans-serif;
@@ -22,8 +22,8 @@
   align-items: flex-start;
   justify-content: center;
   min-width: 0;
-  min-height: clamp(190px, 19vw, 238px);
-  padding: clamp(20px, 3.2vw, 34px);
+  min-height: clamp(190px, 24vw, 260px);
+  padding: clamp(19px, 3.5vw, 38px);
   overflow: hidden;
   border-radius: 19px;
   background: #fff9f1;
@@ -33,7 +33,7 @@
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(90deg, #fffaf4 0%, rgba(255,250,244,.96) 30%, rgba(255,250,244,.49) 65%, rgba(255,250,244,0) 100%),
+    linear-gradient(90deg, #fffaf4 0%, rgba(255,250,244,.96) 30%, rgba(255,250,244,.45) 65%, rgba(255,250,244,0) 100%),
     url("/images/holistic-house/ideas-pine-reference.webp");
   background-size: cover, auto 100%;
   background-position: center, right center;
@@ -64,12 +64,12 @@
 .lead {
   max-width: 440px;
   margin: 9px 0 0;
-  color: #62584e;
+  color: #594d42;
   font-size: clamp(14px, 1.35vw, 16px);
   line-height: 1.43;
   text-wrap: pretty;
 }
-.entry { padding: 11px 12px 9px; }
+.entry { padding: 10px 10px 8px; }
 .entryForm {
   width: 100%;
   margin: 0;
@@ -86,8 +86,8 @@
   min-width: 0;
   min-height: 57px;
   padding: 4px 5px 4px 14px;
-  border: 1px solid #d6c4b3;
-  border-radius: 15px;
+  border: 1px solid #d7c5b5;
+  border-radius: 16px;
   background: #fffefc;
   transition: border-color .16s, box-shadow .16s;
 }
@@ -116,14 +116,14 @@
   display: grid;
   flex: none;
   place-items: center;
-  width: 49px;
-  height: 49px;
-  min-width: 49px;
-  min-height: 49px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   border-radius: 13px;
-  background: #f5ece2;
+  background: #f8f1e9;
   color: #79573f;
   cursor: pointer;
 }
@@ -139,13 +139,13 @@
   padding: 11px 14px;
   border: 0;
   border-radius: 14px;
-  background: linear-gradient(116deg, #a87a5e 0%, #805840 97%);
+  background: linear-gradient(116deg, #af805d 0%, #82583e 97%);
   color: #fffaf2;
   font: 800 15px/1.25 Arial, Helvetica, sans-serif;
   box-shadow: 0 6px 13px rgba(95,62,43,.10);
   cursor: pointer;
 }
-.entrySend:hover { background: linear-gradient(116deg, #94674e, #6d4733); }
+.entrySend:hover { background: linear-gradient(116deg, #9b6b4b, #6d4933); }
 .entrySend svg { flex: none; }
 .entryPrivacy { margin: 7px 3px 11px; color: #70645b; }
 .entryPrivacy summary {
@@ -159,8 +159,8 @@
 }
 .entryPrivacy summary svg { flex: none; color: #1e6669; }
 .entryPrivacy p { max-width: 760px; margin: 4px 0; font-size: 12px; line-height: 1.5; }
-.examples { margin-top: 3px; }
-.examples > span { display: block; margin: 0 0 8px 2px; color: #746456; font-size: 12px; font-weight: 750; }
+.examples { margin-top: 2px; }
+.examples > span { display: block; margin: 0 0 8px 2px; color: #695d51; font-size: 12px; font-weight: 750; }
 .quickChoices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .examples button {
   display: flex;
@@ -169,18 +169,26 @@
   justify-content: center;
   gap: 6px;
   min-width: 0;
-  min-height: 73px;
-  padding: 9px 7px;
-  border: 1px solid #e2cbb4;
-  border-radius: 16px;
-  background: linear-gradient(145deg, #fffefa, #fff3e7);
-  color: #4d3a2d;
-  font: 750 13px/1.25 Arial, Helvetica, sans-serif;
+  min-height: 82px;
+  padding: 11px 7px;
+  border: 1px solid #e3cbb3;
+  border-radius: 17px;
+  background: linear-gradient(143deg, #fffdf9, #fff4e7);
+  color: #3a302a;
+  font: 750 14px/1.25 Arial, Helvetica, sans-serif;
   text-align: center;
   text-wrap: balance;
   cursor: pointer;
 }
-.examples button svg { flex: none; width: 21px; height: 21px; color: #806045; }
+.examples button svg { flex: none; width: 25px; height: 25px; color: #806045; }
+/* A featured first starting point, like the opening Ideas tile; not a preselected answer. */
+.examples button:first-child {
+  border-color: #55aba7;
+  background: linear-gradient(145deg, #dcf1ed, #dcebe6);
+  color: #074e50;
+  box-shadow: inset 0 0 0 1px rgba(34,129,132,.12);
+}
+.examples button:first-child svg { color: #0d5b5c; }
 .examples button:hover { border-color: #71aea8; background: #e5f1ec; color: #135354; }
 .examples button:hover svg { color: #135354; }
 
@@ -460,25 +468,25 @@
 @keyframes voicePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.8); } }
 
 @media (max-width: 760px) {
-  .root { width: calc(100% - 16px); margin: 8px auto 9px; padding: 8px; border-radius: 21px; }
-  .intro { min-height: 158px; padding: 15px; border-radius: 16px; }
-  .scenery { background-position: center, 64% center; }
+  .root { width: calc(100% - 16px); margin: 7px auto 9px; padding: 7px; border-radius: 20px; }
+  .intro { min-height: 158px; padding: 13px; border-radius: 15px; }
+  .scenery { background-position: center, right center; }
   .eyebrow { gap: 6px; font-size: 9.5px; letter-spacing: .105em; }
   .eyebrow svg { width: 15px; height: 15px; }
-  .intro h2 { max-width: min(310px, 88%); margin-top: 6px; font-size: clamp(32px, 8.6vw, 42px); line-height: 1.03; }
-  .lead { max-width: 80%; margin-top: 7px; font-size: 13px; line-height: 1.35; }
-  .entry { padding: 9px 5px 5px; }
-  .entryForm { padding: 8px; border-radius: 16px; }
+  .intro h2 { max-width: min(315px, 88%); margin-top: 6px; font-size: clamp(34px, 9.3vw, 43px); line-height: 1.03; }
+  .lead { max-width: 81%; margin-top: 7px; font-size: 13.5px; line-height: 1.36; }
+  .entry { padding: 6px 5px 4px; }
+  .entryForm { padding: 7px; border-radius: 16px; }
   .entryInputRow { min-height: 53px; gap: 9px; padding-left: 12px; }
   .entryForm textarea { height: 49px; min-height: 49px; padding-top: 12px; padding-bottom: 10px; }
-  .entryMic { width: 49px; height: 49px; }
-  .entrySend { min-height: 50px; margin-top: 7px; font-size: 15px; }
-  .entryPrivacy { margin: 6px 3px 10px; }
+  .entryMic { width: 44px; height: 44px; }
+  .entrySend { min-height: 46px; margin-top: 7px; font-size: 15px; }
+  .entryPrivacy { margin: 6px 3px 8px; }
   .examples { margin-top: 5px; }
-  .examples > span { margin-bottom: 7px; font-size: 11px; }
+  .examples > span { margin-bottom: 7px; font-size: 11.5px; }
   .quickChoices { gap: 6px; }
-  .examples button { min-height: 68px; padding: 8px 4px; font-size: 12px; border-radius: 14px; }
-  .examples button svg { width: 20px; height: 20px; }
+  .examples button { min-height: 74px; padding: 9px 4px; font-size: clamp(12px, 3.15vw, 14px); border-radius: 14px; }
+  .examples button svg { width: 23px; height: 23px; }
   .dialog {
     left: 0;
     right: 0;
@@ -495,11 +503,11 @@
 @media (max-width: 360px) {
   .root { padding: 7px; }
   .intro { min-height: 155px; padding: 13px; }
-  .intro h2 { font-size: 31px; max-width: 250px; }
+  .intro h2 { font-size: 34px; max-width: 250px; }
   .lead { max-width: 86%; font-size: 12px; }
   .entryInputRow { gap: 7px; padding-left: 10px; }
-  .entryMic { width: 46px; min-width: 46px; height: 46px; min-height: 46px; }
-  .examples button { min-height: 68px; font-size: 11px; padding-inline: 2px; }
+  .entryMic { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .examples button { min-height: 73px; font-size: 12px; padding-inline: 2px; }
   .quickChoices { gap: 5px; }
 }
 @media (max-height: 610px) {
