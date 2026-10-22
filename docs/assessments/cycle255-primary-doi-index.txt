@@ -1,6 +1,6 @@
-Psychometric cycle 255 source references (research-only)
-A-RSQ Russian adult adaptation: https://doi.org/10.1016/j.ajp.2025.104703
-SLIPS Chinese adaptation: https://doi.org/10.3389/fpsyg.2026.1706503
-STEPS-IDD English initial development: https://doi.org/10.3389/fdgth.2025.1671623
-EXPECT-P Spanish Argentina validation: https://pubmed.ncbi.nlm.nih.gov/41643080/
-No instrument text, scoring, licensing approval or deployment included.
+Psychometric cycle 255 sources, research-only, 2026-10-22
+NEW: Russian Career Engagement Scale 10, https://doi.org/10.17759/sps.2026170109
+NEW: Russian AI Usage Motivation Scale 18, https://doi.org/10.17759/pse.2026310303
+NEW: EXPECT-P Argentina Spanish 10, https://pubmed.ncbi.nlm.nih.gov/41643080/
+Already in master (not new): A-RSQ Russian, SLIPS Chinese, STEPS-IDD English.
+No questionnaire item text, scoring, commercial licence or site release.
