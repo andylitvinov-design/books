@@ -561,9 +561,10 @@ function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
   original: { youtubeId: string | null; title: string } | null;
 }) {
   const [choice, setChoice] = useState<"lesson" | "original">("lesson");
+  const t = copy[locale];
   const useOriginal = !lessonVideo || choice === "original";
-  const youtubeId = useOriginal ? original?.youtubeId : lessonVideo.youtubeId;
-  const videoTitle = useOriginal ? original?.title : lessonVideo.title[locale];
+  const youtubeId = !useOriginal && lessonVideo ? lessonVideo.youtubeId : original?.youtubeId;
+  const videoTitle = !useOriginal && lessonVideo ? lessonVideo.title[locale] : original?.title;
   return (
     <div className={styles.video} data-reiki-lesson-video={slide.id}>
       {lessonVideo && original?.youtubeId ? (
@@ -584,7 +585,7 @@ function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
           youtubeId={youtubeId} title={videoTitle ?? slide.title[locale]} />
       ) : (
         <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />
-          {locale === "ru" ? "Видео пока недоступно" : "Video is not available yet"}</p>
+          {t.unavailable}</p>
       )}
       {youtubeId ? (
         <p className={styles.videoCaption}>
