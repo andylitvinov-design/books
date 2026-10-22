@@ -936,8 +936,8 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 }
 
 /* One in-place form belongs directly under its own offer card; never float it over Dao. */
-.daoPromoWrapper { min-width:0; }
-.daoPromos .daoPromo { height:100%; }
+.daoPromoWrapper { min-width:0; align-self:start; }
+.daoPromos { align-items:start; }
 .daoPromos .daoPromoAction { border:0; cursor:pointer; text-align:left; }
 .daoPromos .daoPromoAction:hover { filter:brightness(1.08); }
 .daoPromos .daoPromoAction[aria-expanded="true"] { filter:brightness(.92); }
