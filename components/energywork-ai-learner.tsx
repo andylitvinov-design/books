@@ -562,6 +562,8 @@ function MeditationVoices({ slide, locale, youtubeId }: {
   const entries = slide.testimonials ?? [];
   const [active, setActive] = useState(0);
   const currentReview = entries[active];
+  // The Sun examples are standalone written reflections, not verified comments on this recording.
+  const showVideoComments = slide.id !== "flight-voices" && Boolean(youtubeId);
   return (
     <div className={styles.voicesCard} data-meditation-voices>
       <div className={styles.voicesHeading}>
@@ -583,7 +585,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
             <div className={styles.voicesControls} role="group" aria-label={t.voicesNavigation}>
               <button type="button" data-review-prev aria-label={t.voicesPrevious}
                 onClick={() => setActive((index) => (index - 1 + entries.length) % entries.length)}>
-                <ArrowLeft size={20} aria-hidden="true" />
+                <ArrowLeft size={18} aria-hidden="true" />
               </button>
               <span className={styles.voicesCount} aria-hidden="true">
                 {entries.map((entry, number) => (
@@ -592,7 +594,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
               </span>
               <button type="button" data-review-next aria-label={t.voicesNext}
                 onClick={() => setActive((index) => (index + 1) % entries.length)}>
-                <ArrowRight size={20} aria-hidden="true" />
+                <ArrowRight size={18} aria-hidden="true" />
               </button>
             </div>
           ) : null}
@@ -600,14 +602,14 @@ function MeditationVoices({ slide, locale, youtubeId }: {
       ) : (
         <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>
       )}
-      {(currentReview || youtubeId) ? (
+      {(currentReview?.sourcePath || showVideoComments) ? (
         <div className={styles.voicesReferences}>
           {currentReview?.sourcePath ? (
             <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
               {t.voicesSource}<ExternalLink size={14} aria-hidden="true" />
             </Link>
           ) : null}
-          {youtubeId ? (
+          {showVideoComments ? (
             <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + youtubeId}
               target="_blank" rel="noopener noreferrer">
               {t.voicesComments}<ExternalLink size={14} aria-hidden="true" />
