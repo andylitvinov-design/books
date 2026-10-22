@@ -2,7 +2,7 @@
 'use client'
 import {useState} from 'react'
 import Image from 'next/image'
-import {ExternalLink,Film,Image as ImageIcon,Play, X} from 'lucide-react'
+import {ExternalLink,Film,Headphones,Image as ImageIcon,Play, X} from 'lucide-react'
 import {SessionPrivateVideoPoster} from '@/components/session-private-video-poster'
 import {safeMaterialVideoUrl,youtubePreviewId} from '@/lib/practitioners/material-preview.js'
 import styles from './practice-materials.module.css'
@@ -30,10 +30,10 @@ export default function PracticeMaterialPreview({
     {kind==='video'&&mediaUrl&&<SessionPrivateVideoPoster src={mediaUrl}/>}
     {((kind==='image'&&imageFailed)||(kind==='youtube'&&!previewImage))&&
       <span className={styles.thumbnailFallback}>
-        {kind==='image'?<ImageIcon size={25}/>:<Film size={25}/>}
+        {kind==='image'?<ImageIcon size={25}/>:kind==='audio'?<Headphones size={25}/>:<Film size={25}/>}
         {isVimeo&&<small>Vimeo</small>}
       </span>}
-    {kind!=='image'&&<span className={styles.playMark} aria-hidden="true">
+    {kind!=='image'&&kind!=='audio'&&<span className={styles.playMark} aria-hidden="true">
       {expanded?<X size={17}/>:kind==='youtube'?<ExternalLink size={16}/>:<Play size={18} fill="currentColor"/>}
     </span>}
   </>
