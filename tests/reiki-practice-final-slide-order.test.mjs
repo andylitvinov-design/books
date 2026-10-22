@@ -30,9 +30,13 @@ test('all five Reiki lessons place music-assisted practice directly before the c
     const { start, end } = ranges[lessonIndex]
     const ids = sequence.slice(start, end)
     assert.equal(ids[0], item.first, 'lesson ' + (lessonIndex + 1) + ' introduction')
-    assert.equal(ids.at(-1), item.last, 'lesson ' + (lessonIndex + 1) + ' congratulations')
+    // Lesson one has a separate consented Google-save gate after congratulations.
+    const finaleIndex = ids.indexOf(item.last)
+    assert.ok(finaleIndex >= 0, 'lesson ' + (lessonIndex + 1) + ' congratulations')
+    assert.equal(ids.at(-1), lessonIndex === 0 ? 'flight-save' : item.last,
+      'lesson ' + (lessonIndex + 1) + ' last screen')
     assert.deepEqual(
-      ids.slice(-(item.practices.length + 1), -1),
+      ids.slice(finaleIndex - item.practices.length, finaleIndex),
       item.practices,
       'lesson ' + (lessonIndex + 1) + ' practical audio slides immediately precede congratulations',
     )
@@ -56,7 +60,7 @@ test('all five Reiki lessons place music-assisted practice directly before the c
 
 test('existing practice timers retain soundtrack, pause, answers and previous/next navigation', () => {
   assert.match(editorial, /function withClosingPractices\(/)
-  assert.match(editorial, /withClosingPractices\(commonSlides\.filter\(\(slide\) => slide\.phase === "flight"\), \["flight-03"\], "flight-done"\)/)
+  assert.match(editorial, /slide\.phase === "flight" && slide\.id !== "flight-save"/)
   assert.match(editorial, /\["tan-03"\], "tan-done"\)/)
   assert.match(editorial, /withClosingPractices\(pathSlides\.kundalini, \["kun-03"\], "kun-done"\)/)
   assert.match(editorial, /withClosingPractices\(pathSlides\.yggdrasil, \["ygg-03"\], "ygg-done"\)/)
