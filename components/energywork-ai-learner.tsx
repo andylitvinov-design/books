@@ -553,7 +553,9 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
 
 
 
-/** One existing video slide per lesson. Changing source unmounts the old iframe. */
+/** Existing video slides plus the fifth video at the opening of lesson five.
+ * Switching sources unmounts the old iframe without changing private progress.
+ */
 function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
   slide: EnergyworkSlide;
   locale: EnergyworkLocale;
@@ -591,7 +593,11 @@ function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
         <p className={styles.videoCaption}>
           {useOriginal
             ? (locale === "ru" ? "Дополнительная английская медитация." : "Optional original English guided meditation.")
-            : (locale === "ru" ? "Запись урока. Нажмите Play, чтобы начать просмотр." : "Lesson recording. Press Play to start.")}
+            : slide.id === "paths-01"
+              ? (locale === "ru"
+                ? "Вводное видео пятого урока. Просмотр не является личной инициацией."
+                : "Lesson five introduction. Watching is not a personal initiation.")
+              : (locale === "ru" ? "Запись урока. Нажмите Play, чтобы начать просмотр." : "Lesson recording. Press Play to start.")}
         </p>
       ) : null}
     </div>
@@ -1116,7 +1122,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const otherStudyMissing = (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) &&
     !energyworkReikiStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
-  const lessonVideo = slide.kind === "video" ? reikiPractitionerLessonVideos.find((item) => item.slideId === slide.id) : undefined;
+  // paths-01 is already the first screen of lesson five; no extra slide or progress migration.
+  const lessonVideo = slide.kind === "video" || slide.id === "paths-01"
+    ? reikiPractitionerLessonVideos.find((item) => item.slideId === slide.id)
+    : undefined;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
   const lessonNumber = currentLessonRange?.lesson ?? 1;
@@ -1804,7 +1813,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   sizes="(max-width: 720px) 100vw, 42vw" />
               </div>
             ) : null}
-            {slide.kind === "video" ? (
+            {(slide.kind === "video" || slide.id === "paths-01") ? (
               <ReikiLessonVideo key={slide.id} slide={slide} locale={locale}
                 lessonVideo={lessonVideo} original={media ?? null} />
             ) : null}
