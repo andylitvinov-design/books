@@ -1,0 +1,6 @@
+Psychometric cycle 255 source references (research-only)
+A-RSQ Russian adult adaptation: https://doi.org/10.1016/j.ajp.2025.104703
+SLIPS Chinese adaptation: https://doi.org/10.3389/fpsyg.2026.1706503
+STEPS-IDD English initial development: https://doi.org/10.3389/fdgth.2025.1671623
+EXPECT-P Spanish Argentina validation: https://pubmed.ncbi.nlm.nih.gov/41643080/
+No instrument text, scoring, licensing approval or deployment included.
