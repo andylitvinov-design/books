@@ -147,7 +147,7 @@ export const energyworkPhases: Record<EnergyworkPhase, Localized> = {
   tantra: l("Tantra Reiki", "Тантра Рейки"),
   kundalini: l("Kundalini Reiki", "Кундалини Рейки"),
   yggdrasil: l("Reiki Yggdrasil", "Рейки Иггдрасиль"),
-  initiation: l("Personal Reiki Initiation", "Личная Рейки-инициация"),
+  initiation: l("Reiki Initiation Options", "Варианты Рейки-инициации"),
   complete: l("Your learning journal", "Ваш учебный дневник"),
 };
 
@@ -305,9 +305,9 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("For a few moments, notice your intention while staying aware of your surroundings. It is fine to change it later.", "На несколько мгновений вспомните своё намерение, оставаясь в контакте с окружающим. Позже его можно изменить.") },
 
   { id: "paths-01", phase: "initiation", kind: "lesson",
-    title: l("Your next step: personal initiation", "Следующий шаг: личная инициация"),
-    body: l("A personal initiation is separate from this course and needs Andrey's confirmation. Here's how to choose and send a request.",
-      "Личная инициация проходит отдельно от курса и требует подтверждения Андрея. Узнайте, как выбрать направление и подать заявку."),
+    title: l("Your next step: Reiki initiation", "Следующий шаг: Рейки-инициация"),
+    body: l("Your free Level 1 initiation happens in chat with Andrey after he confirms it. You can also request a paid personal 30- or 60-minute session.",
+      "Бесплатная инициация I ступени проходит в чате с Андреем после согласования. Дополнительно можно запросить платную личную сессию на 30 или 60 минут."),
     introAudioKey: "initiation",
     introTopics: [
       l("Compare three Reiki traditions", "Сравниваем три традиции Рейки"),
@@ -318,7 +318,7 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("One course, several initiation options", "Один курс — несколько вариантов инициации"),
     body: l("You may discuss initiation in any of the three traditions, one at a time. Completion of this educational course does not mean an initiation has taken place.", "Вы можете обсудить инициацию в любой из трёх традиций, по очереди. Прохождение учебного курса само по себе не означает получения инициации.") },
   { id: "paths-04", phase: "initiation", kind: "lesson",
-    title: l("Prepare your personal initiation request", "Подготовьте заявку на личную инициацию"),
+    title: l("Prepare your Reiki initiation request", "Подготовьте заявку на Рейки-инициацию"),
     body: l("Review the five lesson reports and answers. They stay private unless you choose to share them with the teacher. A request only starts a discussion; it never grants initiation automatically.", "Проверьте отчёты и ответы по пяти урокам. Они остаются приватными, пока вы сами не решите показать их преподавателю. Заявка лишь начинает обсуждение, а не предоставляет инициацию автоматически.") },
 ];
 
@@ -511,9 +511,9 @@ const initiationSlides: EnergyworkSlide[] = [
 
 const endSlides: EnergyworkSlide[] = [
   { id: "end-01", phase: "complete", kind: "reflection",
-    title: l("Choose your personal Reiki initiation", "Выберите личную Рейки-инициацию"),
-    body: l("Choose one Level 1 initiation as a free gift. You may also request the other two by donation. Tell Andrey about yourself, your preferred time and why this matters to you.", "Выберите одну инициацию первой ступени в подарок. Две другие можно запросить за добровольный донейшн. Расскажите Андрею о себе, удобном времени и своей мотивации."),
-    question: { type: "text", prompt: l("My personal initiation request and motivation", "Моя заявка и мотивация на личную инициацию") } },
+    title: l("Choose your Reiki initiation format", "Выберите формат Рейки-инициации"),
+    body: l("Choose one free Level 1 initiation in chat. Add other Reiki systems by donation, or request a personal 30-minute (€50) or 60-minute (€100) session. No payment is taken here.", "Выберите одну бесплатную инициацию I ступени в чате. Другие системы — за донейшн; личная сессия — 30 минут (€50) или 60 минут (€100). Здесь нет оплаты."),
+    question: { type: "text", prompt: l("My Reiki initiation request and motivation", "Моя заявка на Рейки-инициацию и мотивация") } },
   { id: "end-02", phase: "complete", kind: "finish", image: image.world,
     title: l("Congratulations! All five Reiki lessons complete", "Поздравляем! Все пять уроков Рейки пройдены"),
     body: l("You've completed your Reiki learning journey and prepared for a personal next step. Level 1 initiation is arranged separately; completing these lessons is not an initiation or certification.", "Вы завершили пять уроков Рейки и подготовились к следующему личному шагу. Инициация первой ступени согласуется отдельно: завершение курса само по себе не является инициацией или сертификацией.") },
