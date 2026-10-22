@@ -74,13 +74,13 @@ test("local illustrated hero and original books/news/film feed remain available 
   assert.match(localized, /<IdeasNewsFeed locale=\{locale as Locale\}/);
 });
 
-test("Dao insight offers exactly two localized next steps with existing enquiry flows", () => {
+test("Dao insight offers two localized cards with in-place consented enquiries and details links", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
   const intro = read("app/[locale]/services/free-consultation/page.tsx");
   const free = read("app/[locale]/services/free-situation-review/page.tsx");
   assert.match(ui, /data-ideas-dao-promos/);
-  assert.match(ui, /result\.mode === "dao" && hexagram[\s\S]*?data-ideas-dao-promos[\s\S]*?result\.mode === "aphorisms"/);
+  assert.match(ui, /result\.mode === "dao" && hexagram[\s\S]*?<DaoOfferCards locale=\{answerLocale\}[\s\S]*?result\.mode === "aphorisms"/);
   assert.match(ui, /answerCopy\.daoPromoReading\.title/);
   assert.match(ui, /answerCopy\.daoPromoGift\.title/);
   assert.match(ui, /\/services\/free-consultation#intro-request/);
@@ -95,7 +95,7 @@ test("Dao insight offers exactly two localized next steps with existing enquiry 
   assert.match(css, /\.daoPromoAction \{[^}]*min-height: 44px/);
 });
 
-test("approved image-based reference renders a real Dao card, expandable meaning and sourced three-column aphorisms", () => {
+test("approved image-based reference renders Dao, expandable meaning and three readable horizontal aphorism rows", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
   const browser = read("scripts/verify-ideas-mobile-browser.mjs");
@@ -108,7 +108,8 @@ test("approved image-based reference renders a real Dao card, expandable meaning
   assert.match(ui, /accept="\.txt,\.md,text\/plain,text\/markdown"/);
   assert.ok(!ui.includes("navigator.clipboard"), "question must not be copied implicitly");
   assert.match(css, /ideas-pine-reference\.webp/);
-  assert.match(css, /\.aphorisms \{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.aphorisms \{ display:grid; grid-template-columns:minmax\(0,1fr\)/);
+  assert.doesNotMatch(css, /grid-auto-flow: column/);
   assert.match(css, /\.daoPoint p \{ font-size:12px/);
   assert.match(browser, /Ideas mobile browser acceptance passed/);
 });
@@ -122,4 +123,43 @@ test("visual reference retains current Dao promos and verified historic proverbs
   assert.match(ui, /item\.kind === "proverb" && item\.original/);
   assert.match(ui, /answerCopy\.daoPromoGift\.title/);
   assert.match(css, /\.relatedAphorisms \.aphorisms/);
+});
+
+
+test("Ideas sequences three full-width aphorisms, Dao, then offers in preview and real answer", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  const inlineForm = read("components/compact-lead-capture.tsx");
+  const inlineCss = read("components/compact-lead-capture.module.css");
+  const actual = ui.slice(ui.indexOf('data-ideas-result={result.mode}'), ui.indexOf('{result.mode === "aphorisms" ? (', ui.indexOf('data-ideas-result={result.mode}')));
+  const preview = ui.slice(ui.indexOf('data-ideas-preview aria-label='));
+  const isOrdered = (block, tokens) => tokens.map(token => block.indexOf(token))
+    .every((index, n, positions) => index >= 0 && (n === 0 || positions[n - 1] < index));
+  assert.ok(isOrdered(actual, [
+    '<AphorismTiles items={aphorismMatches.slice(0, 3)}',
+    '<div className={styles.daoQuick} data-ideas-dao>',
+    '<DaoOfferCards locale={answerLocale}',
+  ]), "actual results must show aphorism rows above Dao, then offers");
+  assert.ok(isOrdered(preview, [
+    '<AphorismTiles items={getIdeasAphorismMatches("growth"',
+    '<DaoInsightPanel entry={exampleHexagram}',
+    '<DaoOfferCards locale={locale}',
+  ]), "educational preview must follow the same order");
+  assert.match(css, /\.relatedAphorisms \.aphorisms \{ grid-template-columns:minmax\(0,1fr\); overflow:visible; \}/);
+  assert.match(css, /\.relatedAphorisms \+ \.daoQuick/);
+  assert.match(ui, /data-ideas-order-button="reading"/);
+  assert.match(ui, /data-ideas-order-button="gift"/);
+  assert.match(ui, /aria-expanded=\{openOffer === "reading"\} aria-controls="ideas-offer-reading"/);
+  assert.match(ui, /aria-expanded=\{openOffer === "gift"\} aria-controls="ideas-offer-gift"/);
+  assert.match(ui, /<CompactLeadCapture locale=\{locale\} variant="inline" serviceTitle=\{t\.daoPromoReading\.title\}/);
+  assert.match(ui, /<CompactLeadCapture locale=\{locale\} variant="inline" serviceTitle=\{t\.daoPromoGift\.title\}/);
+  assert.match(inlineForm, /"\/api\/service-enquiries"/);
+  assert.match(inlineForm, /contactConsent: true/);
+  assert.match(inlineForm, /result\?\.saved !== true/);
+  assert.match(inlineForm, /data-inline-offer-form/);
+  assert.match(inlineCss, /\.section\.inline \{/);
+  for (const key of ['order', 'requestTitle', 'requestLead', 'fullService']) {
+    assert.equal(ui.split(key + ":").length - 1, 3, "EN/RU/ES copy: " + key);
+  }
+  assert.doesNotMatch(ui, /fetch\(/, "Ideas question must remain in-browser");
 });
