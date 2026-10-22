@@ -1,0 +1,61 @@
+name: Reiki enquiry capture verification
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - "components/academy-course-capture.tsx"
+      - "components/contact-channel-chooser.tsx"
+      - "components/energywork-reiki-capture.tsx"
+      - "components/kundalini-reiki-course.tsx"
+      - "components/kundalini-reiki-order-capture.tsx"
+      - "components/kundalini-reiki-course.module.css"
+      - "components/reiki-choice-capture.tsx"
+      - "components/reiki-landing-forms.tsx"
+      - "tests/kundalini-reiki-course.test.mjs"
+      - "tests/reiki-unified-order-capture.test.mjs"
+      - ".github/workflows/reiki-enquiry-capture-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reiki-enquiry-capture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reiki-capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Confirm Kundalini and Reiki course capture behaviour
+        run: >-
+          node --test
+          tests/kundalini-reiki-course.test.mjs
+          tests/reiki-unified-order-capture.test.mjs
+          tests/academy-course-capture.test.mjs
+          tests/reiki-landing-conversion.test.mjs
+          tests/contact-channel-chooser.test.mjs
+          tests/energywork-kundalini-ygg-study.test.mjs
+      - name: Type-check Next app
+        run: npx --no-install tsc --noEmit
+      - name: Lint changed components
+        run: >-
+          npx --no-install eslint
+          components/academy-course-capture.tsx
+          components/contact-channel-chooser.tsx
+          components/energywork-reiki-capture.tsx
+          components/kundalini-reiki-course.tsx
+          components/kundalini-reiki-order-capture.tsx
+          components/reiki-choice-capture.tsx
+          components/reiki-landing-forms.tsx
