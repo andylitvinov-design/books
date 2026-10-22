@@ -27,8 +27,10 @@ function fixture(locale='en',day=3){
     onFinish(){exits++},onSession:async()=>{writes++;return true}})
   return {h,get writes(){return writes},get exits(){return exits}}
 }
+const meditationButton=tree=>nodes(tree).find(n=>n.type==='button'&&n.props?.['data-opora-mid-lesson-music']==='true')
 async function click(h,label){
-  const button=findButton(h.tree,label)
+  const button=findButton(h.tree,label)||
+    (Object.values(WORDS).some(d=>d.meditation===label)?meditationButton(h.tree):null)
   assert.ok(button,'Missing button '+label+' in '+textOf(h.tree).slice(0,400))
   button.props.onClick()
   await h.settle()
@@ -45,7 +47,7 @@ test('day 3 grounding: 3-step meditation is available from practice before congr
   const f=fixture('en',3),h=f.h,d=WORDS.en
   await click(h,d.next)
   await click(h,d.next)
-  assert.ok(findButton(h.tree,d.meditation),'Grounding is linked to the actual daily practice')
+  assert.ok(meditationButton(h.tree),'Grounding is linked to the actual daily practice')
   await click(h,d.meditation)
   assert.match(textOf(h.tree),d.guidance)
   assert.match(textOf(h.tree),/Press Start/)
@@ -54,10 +56,10 @@ test('day 3 grounding: 3-step meditation is available from practice before congr
   assert.match(textOf(h.tree),/2:00/)
   assert.equal(f.writes,0,'Meditation is not a phantom completion')
   await click(h,'Back')
-  assert.ok(findButton(h.tree,d.meditation))
+  assert.ok(meditationButton(h.tree))
   await finish(f,'en')
   assert.match(textOf(h.tree),d.congratulations)
-  assert.ok(!findButton(h.tree,d.meditation),'No additional practice after saving')
+  assert.ok(!meditationButton(h.tree),'No additional practice after saving')
   assert.ok(!findButton(h.tree,'Relax with waves'),'Remove the old post-congrats detour')
   await click(h,d.map)
   assert.equal(nodes(h.tree).filter(n=>n.props?.['data-opora-course-map']==='all-14-days').length,1)
@@ -83,7 +85,7 @@ test('EN/RU/ES optional grounding instructions and reward order are consistent',
     await click(h,d.next==='Continue'?'Continue lesson':lang==='ru'?'Продолжить урок':'Continuar lección')
     await finish(f,lang)
     assert.match(textOf(h.tree),d.congratulations)
-    assert.ok(!findButton(h.tree,d.meditation))
+    assert.ok(!meditationButton(h.tree))
     await click(h,d.map)
     assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-course-map']==='all-14-days'))
     assert.equal(f.writes,1)
