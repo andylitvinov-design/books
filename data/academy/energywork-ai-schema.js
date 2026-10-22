@@ -18,15 +18,15 @@ export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-01','welcome-02',
-  'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
+  'flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
   'presence-01','presence-04','tan-done',
   'intention-01','intention-03','intention-04',
   'paths-01','paths-03','paths-04',
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
-  yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
-  tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02'],
-  kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
+  yggdrasil: ['ygg-01','ygg-audio','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
+  tantra: ['tan-01','tan-audio','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02'],
+  kundalini: ['kun-01','kun-audio','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
 })
 export const ENERGYWORK_INITIATION = Object.freeze(['init-02'])
 export const ENERGYWORK_FINISH = Object.freeze(['end-01','end-02'])
@@ -116,7 +116,7 @@ export function energyworkSequence(_legacyPath = null) {
   return [
     'welcome-01','welcome-02',
     ...withClosingPractices(
-      ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
+      ['flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
       ['flight-03'], 'flight-done'),
     'flight-save',
     ...withClosingPractices(
@@ -174,21 +174,21 @@ export const energyworkP9ResumeId = slideId => ENERGYWORK_P9_REMOVED_SLIDE_FALLB
 // Keep encrypted private answers. Legacy progress returns to the introductory
 // lesson when the three previously exclusive systems become sequential.
 export function energyworkLegacyResumeId(slideId) {
-  return ['welcome-01','welcome-02','flight-01','flight-02','flight-03','flight-04'].includes(slideId)
+  return ['welcome-01','welcome-02','flight-01','flight-audio','flight-02','flight-03','flight-04'].includes(slideId)
     ? slideId : 'flight-01'
 }
 
 // Migrate a saved p1 position by its original step number within the two
 // edited lessons. This also recovers IDs removed from the new course.
 // Later lessons keep their saved ID: their progress is never reset.
-const PREVIOUS_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
+const PREVIOUS_FLIGHT = Object.freeze(['flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
 const PREVIOUS_TANTRA = Object.freeze([
-  'tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06',
+  'tan-01','tan-audio','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06',
   'presence-01','presence-02','presence-03','presence-04','tan-done',
 ])
 // Keep p3's on-screen order for stable p0/p1/p2 step mappings.
 const P3_TANTRA = Object.freeze([
-  'tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06',
+  'tan-01','tan-audio','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-06',
   'tan-study-02','tan-study-03','tan-study-04','tan-study-05',
   'tan-study-06','tan-study-07','presence-01','presence-04','tan-done',
 ])
@@ -238,9 +238,9 @@ export function energyworkPreviousResumeId(slideId, answers = {}) {
   return energyworkP3ResumeId(slideId, answers)
 }
 // p2/p1 retained screen number within their reordered meditation lessons.
-const P2_FLIGHT = Object.freeze(['flight-01','flight-02','flight-05','flight-voices','flight-04','flight-03','flight-done'])
+const P2_FLIGHT = Object.freeze(['flight-01','flight-audio','flight-02','flight-05','flight-voices','flight-04','flight-03','flight-done'])
 const P2_TANTRA = Object.freeze([
-  'tan-01','tan-02','presence-01','tan-voices','tan-04','tan-05',
+  'tan-01','tan-audio','tan-02','presence-01','tan-voices','tan-04','tan-05',
   'tan-06','tan-study-02','tan-study-03','tan-study-04','tan-study-05',
   'tan-study-06','tan-study-07','tan-03','presence-04','tan-done',
 ])
@@ -252,10 +252,10 @@ export function energyworkP2ResumeId(slideId, answers = {}) {
   return energyworkP3ResumeId(slideId, answers)
 }
 // P3 lesson-one positions preceded the p4 swap. P4 quiz positions preceded p5.
-const P3_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
+const P3_FLIGHT = Object.freeze(['flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
 // Preserve the historical p3→p9 ordinal migration independently of new display order.
 // The lesson-end practice move must not silently rewrite old cursor migrations.
-const P9_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
+const P9_FLIGHT = Object.freeze(['flight-01','flight-audio','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
 export function energyworkP3ResumeId(slideId, answers = {}) {
   const flightStep = P3_FLIGHT.indexOf(slideId)
   if (flightStep >= 0) return P9_FLIGHT[flightStep]

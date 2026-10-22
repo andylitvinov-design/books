@@ -31,7 +31,7 @@ export type EnergyworkTestimonial = {
 export type EnergyworkSlide = {
   id: string;
   phase: EnergyworkPhase;
-  kind: "welcome" | "lesson" | "video" | "practice" | "reflection" | "voices" | "milestone" | "path-choice" | "finish";
+  kind: "welcome" | "lesson" | "audio-intro" | "video" | "practice" | "reflection" | "voices" | "milestone" | "path-choice" | "finish";
   testimonials?: EnergyworkTestimonial[];
   title: Localized;
   body: Localized;
@@ -255,6 +255,10 @@ const commonSlides: EnergyworkSlide[] = [
       l("Explore images and feelings", "Исследуем образы и чувства"),
       l("Remember one special image", "Запоминаем один особенный образ"),
     ] },
+  { id: "flight-audio", phase: "flight", kind: "audio-intro", image: image.sun,
+    title: l("An audio welcome from Andrey", "Аудиоприветствие от Андрея"),
+    body: l("Before our Flight to the Sun meditation, hear Andrey's personal introduction at your own pace.", "Перед медитацией «Полёт к Солнцу» послушайте личное обращение Андрея в удобном темпе."),
+    introAudioKey: "flight" },
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
     title: l("Watch Flight to the Sun", "Посмотрите «Полёт к Солнцу»"),
     body: l("Listen to Andrey’s recording, or skip it if you prefer.", "Послушайте запись Андрея или пропустите её, если хотите.") },
@@ -334,6 +338,10 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
         l("Imagine roots, trunk and crown", "Представляем корни, ствол и крону"),
         l("Share one impression", "Делимся одним впечатлением"),
       ] },
+    { id: "ygg-audio", phase: "yggdrasil", kind: "audio-intro", image: image.tree,
+      title: l("An audio welcome from Andrey", "Аудиоприветствие от Андрея"),
+      body: l("Andrey introduces the World Tree image before the Reiki Yggdrasil guided meditation.", "Андрей знакомит с образом Мирового Древа перед медитацией Рейки Иггдрасиль."),
+      introAudioKey: "yggdrasil" },
     { id: "ygg-02", phase: "yggdrasil", kind: "video", videoKey: "reiki-yggdrasil",
       title: l("Original Reiki Yggdrasil meditation", "Оригинальная медитация Рейки Иггдрасиль"),
       body: l("English recording shared by Andrey. Participation is optional.", "Английская запись Андрея. Участие необязательно.") },
@@ -394,6 +402,10 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
         l("Notice connection and boundaries", "Замечаем связь и границы"),
         l("Try a guided meditation", "Пробуем медитацию"),
       ] },
+    { id: "tan-audio", phase: "tantra", kind: "audio-intro", image: image.tantra,
+      title: l("An audio welcome from Andrey", "Аудиоприветствие от Андрея"),
+      body: l("Andrey shares how to begin the Tantra Reiki practice gently, with attention to presence and boundaries.", "Андрей рассказывает, как мягко начать практику Тантра Рейки, замечая присутствие и границы."),
+      introAudioKey: "tantra" },
     { id: "tan-02", phase: "tantra", kind: "video", videoKey: "tantra-reiki",
       title: l("Original Tantra Reiki practice", "Оригинальная практика Тантра Рейки"),
       body: l("Watch Andrey's original English practice at your chosen pace.", "Посмотрите оригинальную английскую практику Андрея в комфортном темпе.") },
@@ -443,6 +455,10 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
         l("Feel your sense of grounding", "Находим ощущение опоры"),
         l("Try a gentle meditation", "Пробуем мягкую медитацию"),
       ] },
+    { id: "kun-audio", phase: "kundalini", kind: "audio-intro", image: image.kundalini,
+      title: l("An audio welcome from Andrey", "Аудиоприветствие от Андрея"),
+      body: l("A short message from Andrey on beginning Kundalini Reiki calmly, with space for your own sensations.", "Короткое обращение Андрея о спокойном начале Кундалини Рейки и внимании к своим ощущениям."),
+      introAudioKey: "kundalini" },
     { id: "kun-02", phase: "kundalini", kind: "video", videoKey: "kundalini-reiki",
       title: l("Original Kundalini Reiki meditation", "Оригинальная медитация Кундалини Рейки"),
       body: l("Andrey's English-language source recording. Stop or skip whenever you wish.", "Авторская английская запись Андрея. В любой момент можно остановить или пропустить.") },
