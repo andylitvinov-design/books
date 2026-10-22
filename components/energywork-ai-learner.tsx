@@ -1349,10 +1349,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <p className={styles.description}>{slide.id === "flight-save" ? t.accountSaveText : slide.body[locale]}</p>
               {slide.introAudioKey && slide.introTopics ? (
                 <section className={styles.lessonIntroPanel} data-reiki-lesson-intro={slide.introAudioKey}
-                  aria-label={locale === "ru" ? "Программа занятия" : "What this lesson covers"}>
+                  aria-label={locale === "ru" ? "Что вас ждёт" : "What to expect"}>
                   <strong className={styles.lessonIntroTitle}>
                     <BookOpen size={17} aria-hidden="true" />
-                    {locale === "ru" ? "Что мы изучим сегодня" : "What we'll explore in this lesson"}
+                    {locale === "ru" ? "Что вас ждёт" : "What to expect"}
                   </strong>
                   <ul className={styles.lessonIntroTopics}>
                     {slide.introTopics.map((topic, index) => (
