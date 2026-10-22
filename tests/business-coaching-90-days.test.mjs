@@ -8,7 +8,7 @@ import {
 } from '../lib/business-coaching/program.js'
 import {
   BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule,
-  businessDayResult, businessWeekProgress,
+  businessDayResult, businessWeekProgress, BUSINESS_TRACK_EXAMPLES, businessTrackExample,
 } from '../lib/business-coaching/week-modules.js'
 
 test('90-day track is complete, bilingual, stable, nonduplicated and bounded',()=>{
@@ -466,6 +466,32 @@ test('Business mirrors Reiki / OPORA: skill recap, one thought per day, real act
   // No forged business video, messaging reminder, or externally transmitted quiz/health payload.
   assert.ok(ui.includes('no automatic reminder is sent'))
   assert.ok(!ui.includes('autoplay'))
+})
+
+test('real-world coaching examples are contextual, bilingual, voluntary and cover all 13 modules',()=>{
+  assert.deepEqual(Object.keys(BUSINESS_TRACK_EXAMPLES).sort(),['career','idea','owner'])
+  for(const track of ['career','idea','owner']){
+    assert.equal(BUSINESS_TRACK_EXAMPLES[track].length,13)
+    for(const lang of ['en','ru']){
+      for(let week=1;week<=13;week++){
+        const example=businessTrackExample(week,track,lang)
+        assert.ok(typeof example==='string'&&example.length>20,track+':'+lang+':'+week)
+      }
+    }
+  }
+  assert.equal(businessTrackExample(0,'idea','en'),null)
+  assert.equal(businessTrackExample(14,'owner','ru'),null)
+  assert.equal(businessTrackExample(1,'unknown','en'),null)
+  const career=BUSINESS_TRACK_EXAMPLES.career.map(row=>row.en).join(' ')
+  assert.doesNotMatch(career,/guaranteed salary|guaranteed revenue|cold-message volume without/i)
+  const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
+  assert.ok(ui.includes('businessTrackExample(week,course?.track,lang)'))
+  assert.ok(ui.includes('data-business-path-example'))
+  assert.ok(ui.includes('trackExample&&<details'))
+  assert.ok(ui.includes("exampleForMyPath:'Example for my direction (optional)'"))
+  assert.ok(ui.includes("exampleForMyPath:'Пример для моего направления (по желанию)'"))
+  assert.ok(css.includes('.trackExample summary'))
 })
 
 test('business promotion matches the saved course photo-left design at phone widths',()=>{
