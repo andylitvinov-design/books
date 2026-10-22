@@ -3800,7 +3800,7 @@
     flex: 1 1 auto;
     min-height: 0;
     margin-top: 7px;
-    padding: 10px 11px 8px;
+    padding: 10px 9px 8px;
     border-radius: 17px;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesHeading {
@@ -3812,14 +3812,14 @@
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote {
     min-height: 0;
-    padding: 3px 0 0 16px;
+    padding: 3px 0 0 13px;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote p {
     max-height: none;
     min-height: 0;
     font-size: clamp(15px, 4vw, 17px);
     line-height: 1.39;
-    padding-right: 6px;
+    padding-right: 4px;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voiceQuote cite {
     padding-top: 5px;
@@ -3828,12 +3828,36 @@
     line-height: 1.24;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls {
-    margin: 4px auto 0;
+    margin: 1px auto 0;
     gap: 7px;
   }
+  /* A 34px visual circle with a full 44px tap target on iPhone. */
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button {
-    width: 39px;
-    height: 39px;
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid #b9dfe8;
+    border-radius: 50%;
+    background: rgba(255,255,255,.95);
+    box-shadow: 0 3px 9px rgba(26,114,146,.08);
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button:hover {
+    background: transparent;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button:hover::before {
+    background: #ddf5f8;
+  }
+  .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button svg {
+    position: relative;
+    z-index: 1;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesReferences {
     padding-top: 2px;
