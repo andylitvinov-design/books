@@ -24,7 +24,7 @@ const request=async(body,accountId)=>{
  if(!response.ok)throw new Error(data.error||'REQUEST_FAILED')
  return data
 }
-const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',audio:'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.flac,.aac',video:'video/mp4,video/quicktime'}
+const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',audio:'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.opus,.flac,.aac',video:'video/mp4,video/quicktime'}
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
