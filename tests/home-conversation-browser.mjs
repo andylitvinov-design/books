@@ -69,6 +69,24 @@ try {
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(page.locator("[data-home-section-carousel]")).toHaveCount(1);
+        const diagnosis = page.locator("[data-home-free-diagnosis-banner]");
+        await expect(diagnosis).toHaveCount(1);
+        const positions = await page.evaluate(() => {
+          const slider = document.querySelector("[data-home-section-carousel]");
+          const banner = document.querySelector("[data-home-free-diagnosis-banner]");
+          const dialogue = document.querySelector("[data-home-conversation-guide]");
+          return [slider, banner, dialogue].map(node => node?.getBoundingClientRect().top ?? -1);
+        });
+        assert.ok(positions[0] >= 0 && positions[0] < positions[1] && positions[1] < positions[2],
+          "Homepage must show slider, free service, then question: " + JSON.stringify(positions));
+        const requestButton = diagnosis.locator("[data-home-diagnosis-order]");
+        await requestButton.click();
+        await expect(requestButton).toHaveAttribute("aria-expanded", "true");
+        await expect(diagnosis.locator("[data-compact-lead-form]")).toBeVisible();
+        await expect(diagnosis.locator('input[name="contact"]')).toBeVisible();
+        await requestButton.click();
+        await expect(requestButton).toHaveAttribute("aria-expanded", "false");
+        await expect(diagnosis.locator("[data-compact-lead-form]")).toBeHidden();
         const geometry = await guide.evaluate(node => {
           const rect = node.getBoundingClientRect();
           return { left: rect.left, right: rect.right, viewport: window.innerWidth };
