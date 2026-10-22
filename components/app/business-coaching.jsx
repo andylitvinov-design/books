@@ -9,7 +9,7 @@ import {
   BUSINESS_RESPONSE_LABELS, BUSINESS_METRICS,
   businessSnapshotScores, businessSuggestions, businessProgress, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
-import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress, businessTrackExample } from '@/lib/business-coaching/week-modules'
+import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress, businessTrackExample, businessWeekSkill } from '@/lib/business-coaching/week-modules'
 import styles from './business-coaching.module.css'
 
 // Decorative first-party CSS illustration: executive notebook on a walnut desk.
@@ -303,6 +303,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   const currentModule=businessWeekModule(week,lang)
   const currentWeekProgress=businessWeekProgress(course,week)
   const trackExample=businessTrackExample(week,course?.track,lang)
+  const transferableSkill=businessWeekSkill(week,lang)
   const previousSkills=Array.from({length:day-1},(_,index)=>day-1-index)
     .filter(previous=>course?.days?.[previous]?.done).slice(0,2).reverse()
     .map(previous=>({
@@ -573,8 +574,8 @@ export default function BusinessCoaching({locale='en',accountId}){
             </div>:<small>{t.firstSkill}</small>}
           </div>
           <h2>{t.todaySkill}</h2>
-          <p className={styles.skillTarget}>{selected.resultLabel}</p>
-          <p>{selected.intro}</p>
+          <p className={styles.skillTarget}>{transferableSkill}</p>
+          <p>{selected.resultLabel}</p>
         </div>}
         {lessonStage===1&&<div className={styles.oneIdea} data-business-real-practice>
           <h2>{t.practice}</h2>
@@ -638,7 +639,8 @@ export default function BusinessCoaching({locale='en',accountId}){
           <span className={styles.celebrationMark}><CheckCircle2 size={26} aria-hidden="true"/></span>
           <h2>{t.savedCelebration}</h2>
           <strong>{t.practisedSkill}</strong>
-          <p className={styles.skillTarget}>{savedDay.resultLabelSnapshot?.[lang]||selected.resultLabel}</p>
+          <p className={styles.skillTarget}>{transferableSkill}</p>
+          <p>{savedDay.resultLabelSnapshot?.[lang]||selected.resultLabel}</p>
           <p>{t.celebrationHelp}</p>
           {savedDay.result&&<blockquote>{savedDay.result}</blockquote>}
           <small>{t.returnLater}</small>
