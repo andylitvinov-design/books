@@ -16,7 +16,7 @@ test('guided meditation stays inside lesson practice, not an extra save/visit re
   assert.match(player,/data-opora-guided-meditation="true"/)
   assert.match(player,/midPauseSteps\.map/)
   assert.doesNotMatch(player,/outroOpen|t\.audioNext/)
-  for(const phrase of ['Почувствуйте опору стула','notice the chair or floor','nota el apoyo de la silla']){
+  for(const phrase of ['почувствуйте опору стула','notice the chair or floor','nota el apoyo de la silla']){
     assert.ok(player.includes(phrase),'Missing clear meditation instruction: '+phrase)
   }
   assert.match(player,/<OporaOceanOutro locale=\{lang\} paused=\{safety\}\/>/)
