@@ -64,7 +64,7 @@ export function reikiInitiationRequestValid(raw) {
   // v1 submissions remain valid after release without rewriting the user's
   // existing signed-off choice or requiring them to resubmit anything.
   const canonical = prefix === REIKI_REQUEST_PREFIX
-    ? REIKI_REQUEST_PREFIX + JSON.stringify((({ personalSession, ...legacy }) => legacy)(request))
+    ? REIKI_REQUEST_PREFIX + JSON.stringify(Object.fromEntries(Object.entries(request).filter(([key]) => key !== 'personalSession')))
     : writeReikiInitiationRequest(request)
   if (canonical !== raw) return false
   return Boolean(
