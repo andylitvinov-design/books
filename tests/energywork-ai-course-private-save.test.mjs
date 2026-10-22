@@ -29,7 +29,7 @@ const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
-test('Server registry includes exactly 63 editorial IDs in one fixed five-lesson order', () => {
+test('Server registry includes exactly 60 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.equal(ENERGYWORK_P4_VERSION, '2026-10-19.p4')
@@ -40,11 +40,11 @@ test('Server registry includes exactly 63 editorial IDs in one fixed five-lesson
   const editorial = [...source.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match=>match[0].slice(5,-1)).filter(id=>id !== 'tan-study-03')
   const registered = [...ENERGYWORK_COMMON,...Object.values(ENERGYWORK_BRANCH).flat(),...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH]
-  assert.equal(editorial.length, 63)
-  assert.equal(new Set(registered).size,63)
+  assert.equal(editorial.length, 60)
+  assert.equal(new Set(registered).size,60)
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
-  assert.equal(sequence.length,63)
+  assert.equal(sequence.length,60)
   assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
   assert.equal(sequence[9],'flight-save')
   assert.equal(sequence[10],'tan-01')
@@ -55,7 +55,8 @@ test('Server registry includes exactly 63 editorial IDs in one fixed five-lesson
     assert.ok(sequence.indexOf(ENERGYWORK_LESSON_STARTS[i]) > sequence.indexOf(ENERGYWORK_LESSON_STARTS[i-1]))
   assert.ok(sequence.indexOf('presence-01') > sequence.indexOf('tan-02'))
   assert.ok(sequence.indexOf('presence-01') < sequence.indexOf('kun-01'))
-  assert.ok(sequence.indexOf('end-01') < sequence.indexOf('paths-04'))
+  assert.ok(sequence.indexOf('end-01') < sequence.indexOf('intention-04'))
+  assert.ok(!sequence.includes('paths-04'))
   for(const oldPath of [null,'tantra','yggdrasil','kundalini'])
     assert.deepEqual(energyworkSequence(oldPath),sequence,'Old branches do not change sequence')
 })
