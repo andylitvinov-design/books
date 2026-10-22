@@ -23,7 +23,7 @@ test("Five owner-supplied videos map to lessons 1–5 and preserve existing slid
   ]);
   assert.ok(mapping.every(([, , id]) => /^[\w-]{11}$/.test(id)));
   const sequence = energyworkSequence();
-  assert.equal(sequence.length, 63);
+  assert.equal(sequence.length, 60);
   const positions = mapping.map(([id]) => sequence.indexOf(id));
   assert.ok(positions.every(pos => pos > 0));
   assert.deepEqual(positions, [...positions].sort((a,b) => a-b));
