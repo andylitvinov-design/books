@@ -244,14 +244,14 @@ function oporaLearningReceipt(answers,authored,lang,ease){
 }
 const versionTag='as-5.4-live-v6'
 
-export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,onFinish,onSession,habitSetupContent=null}){
+export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,onFinish,onSession,habitSetupContent=null,reviewOnly=false}){
   const lang=locale==='ru'?'ru':'en',t=DICTIONARY[lang],lesson=data?.lesson||{},cycle=data?.cycle||{}
   const authored=lesson.opora54
   const slides=useMemo(()=>buildCourseSlides(lesson),[lesson])
   const hasSaved=Boolean(data?.currentSession)
   const [saved,setSaved]=useState(hasSaved)
   const [habitSetup,setHabitSetup]=useState(false)
-  const [step,setStep]=useState(hasSaved?OPORA54_PRE_SAVE_KEYS.length:0)
+  const [step,setStep]=useState(reviewOnly?0:hasSaved?OPORA54_PRE_SAVE_KEYS.length:0)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [hints,setHints]=useState(data?.currentSession?.signals?.opora54?.hints||[])
   const [ease,setEase]=useState(data?.currentSession?.signals?.opora54?.ease??null)
@@ -333,6 +333,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   function neutralChoice(){setSafety(false);setNeutral(true);setShowHint(true)}
   async function submit(){
+    if(reviewOnly){setStep(slides.length);return}
     if(locked||saved)return
     if(step!==slides.length-1||slides.some(s=>!visited.current.has(s.key))){
       setError(lang==='ru'?'Просмотрите оставшиеся шаги прежде чем сохранять.':'View the remaining steps before saving.')
@@ -424,7 +425,8 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const afterSave=receipt&&saved
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
-    data-opora-as54-player={versionTag} data-course-one-screen="v2" data-course-photo-layout="v1">
+    data-opora-as54-player={versionTag} data-course-one-screen="v2" data-course-photo-layout="v1"
+    data-course-history-review={reviewOnly?'true':undefined}>
     <div className={styles.frame} data-scene-role={afterSave?'complete':(role||'welcome')}
       inert={safety} aria-hidden={safety?'true':undefined}>
       <div className={styles.scenicBackdrop} aria-hidden="true" data-opora-lesson-photo>
@@ -596,8 +598,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
         {error&&<p role="alert" className={styles.error}>{error}</p>}
       </main>
       <footer className={styles.footer}>
-        {!afterSave&&step>0&&<button type="button" className={styles.back} onClick={back} disabled={locked}>
-          <ArrowLeft size={17}/>{t.back}</button>}
+        <button type="button" className={styles.back}
+          onClick={afterSave?()=>setStep(slides.length-1):step===0?onClose:back} disabled={locked}>
+          <ArrowLeft size={17}/>{t.back}</button>
         <button type="button" className={styles.primary} onClick={afterSave?(onFinish||onClose):step===slides.length-1?submit:next}
           disabled={locked}>
           <span>{afterSave?t.finish:step===slides.length-1?(saving?t.saving:t.save):t.next}</span>
