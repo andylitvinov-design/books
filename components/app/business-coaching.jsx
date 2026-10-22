@@ -239,8 +239,9 @@ export default function BusinessCoaching({locale='en',accountId}){
     },1000)
     return()=>window.clearTimeout(timer)
   },[focusRunning,tab,lessonStage,course?.status,focusRemaining])
-  useEffect(()=>{setFocusRunning(false)},[lessonStage,tab])
-  useEffect(()=>{setFocusRunning(false);setFocusRemaining(120)},[day])
+  // Pause synchronously on navigation; avoid effect-driven state update loops.
+  function changeLessonStage(next){setFocusRunning(false);setLessonStage(next)}
+  function changeTab(next){setFocusRunning(false);setTab(next)}
   useEffect(()=>{
     const pauseOnHide=()=>{if(document.hidden)setFocusRunning(false)}
     document.addEventListener('visibilitychange',pauseOnHide)
@@ -281,6 +282,7 @@ export default function BusinessCoaching({locale='en',accountId}){
         if(result.course){
           const next=Array.from({length:90},(_,i)=>i+1).find(i=>!result.course.days?.[i]?.done)||90
           setDay(next)
+          setFocusRemaining(120)
           setModuleWeek(Math.min(13,Math.ceil(next/7)))
           setDayNote(result.course.days?.[next]?.note||'')
           setDayResult(result.course.days?.[next]?.result||'')
@@ -341,20 +343,21 @@ export default function BusinessCoaching({locale='en',accountId}){
       reflectionChoice!==(previous.reflectionChoice||'') || dayDone!==Boolean(previous.done)
     if(next!==day && course?.status==='active' && unsaved && !window.confirm(t.unsavedResult))return
     setDay(next)
-    setLessonStage(0)
+    setFocusRemaining(120)
+    changeLessonStage(0)
     setModuleWeek(Math.min(13,Math.ceil(next/7)))
     setDayNote(course?.days?.[next]?.note||'')
     setDayResult(course?.days?.[next]?.result||'')
     setDayDone(Boolean(course?.days?.[next]?.done))
     setReflectionChoice(course?.days?.[next]?.reflectionChoice||'')
     setReviewNote(course?.reviews?.[next<=84?Math.ceil(next/7):13]?.note||'')
-    setTab('today')
+    changeTab('today')
   }
   async function saveStart(e){
     e.preventDefault()
     if(!consent||startStep!==3)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
-    if(yes){setTab('today');setDay(1);setLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setReflectionChoice('');setStartStep(1)}
+    if(yes){changeTab('today');setDay(1);setFocusRemaining(120);changeLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setReflectionChoice('');setStartStep(1)}
   }
   async function saveDayAndContinue(complete=false){
     // Actual completion stays server-validated, and the congratulation screen
@@ -366,7 +369,7 @@ export default function BusinessCoaching({locale='en',accountId}){
     })
     if(ok){
       setDayDone(persistedDone)
-      if(complete)setLessonStage(4)
+      if(complete)changeLessonStage(4)
     }
   }
   async function saveMetric(e) {
@@ -494,7 +497,7 @@ export default function BusinessCoaching({locale='en',accountId}){
     <nav className={styles.tabs} aria-label={t.title}>
       {[['today',t.today,BookOpen],['plan',t.plan,CalendarDays],['survey',t.survey,ClipboardCheck],
         ['metrics',t.metrics,TrendingUp],['report',t.report,Download]].map(([id,label,Icon])=>
-        <button key={id} aria-current={tab===id?'page':undefined} onClick={()=>setTab(id)} type="button"><Icon size={16}/>{label}</button>)}
+        <button key={id} aria-current={tab===id?'page':undefined} onClick={()=>changeTab(id)} type="button"><Icon size={16}/>{label}</button>)}
     </nav>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
     {notice&&<p role="status" className={styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
@@ -523,7 +526,7 @@ export default function BusinessCoaching({locale='en',accountId}){
               </option>)}
             </select>
           </label>
-          <button className={styles.courseMapButton} type="button" onClick={()=>{setModuleWeek(week);setTab('plan')}}>
+          <button className={styles.courseMapButton} type="button" onClick={()=>{setModuleWeek(week);changeTab('plan')}}>
             <ListChecks size={18} aria-hidden="true"/>{t.courseMap}<ArrowRight size={15} aria-hidden="true"/>
           </button>
         </div>
@@ -551,7 +554,7 @@ export default function BusinessCoaching({locale='en',accountId}){
         {[t.ideaSlide,t.actionSlide,t.reflectionSlide,t.resultSlide,t.doneSlide].map((label,index)=>
           <button type="button" key={label} aria-current={lessonStage===index?'step':undefined}
             disabled={index===4&&(!savedDay.done||hasUnsavedDay)}
-            onClick={()=>setLessonStage(index)} aria-label={label}>
+            onClick={()=>changeLessonStage(index)} aria-label={label}>
             <span>{index+1}</span>{label}
           </button>)}
       </nav>
@@ -643,10 +646,10 @@ export default function BusinessCoaching({locale='en',accountId}){
       </article>
       <div className={styles.lessonSaveBar} data-business-lesson-save>
         <button className={styles.backButton} type="button" disabled={lessonStage===0&&day===1}
-          onClick={()=>lessonStage>0?setLessonStage(value=>value-1):chooseDay(day-1)}>
+          onClick={()=>lessonStage>0?changeLessonStage(value=>value-1):chooseDay(day-1)}>
           <ArrowLeft size={16} aria-hidden="true"/>{t.previousStep}</button>
         {lessonStage<3&&<button className={styles.primary} type="button"
-          onClick={()=>setLessonStage(value=>Math.min(3,value+1))}>
+          onClick={()=>changeLessonStage(value=>Math.min(3,value+1))}>
           {t.nextStep}<ArrowRight size={17} aria-hidden="true"/></button>}
         {lessonStage===3&&<>
           <span className={styles.lessonSaveState} aria-live="polite">
@@ -662,7 +665,7 @@ export default function BusinessCoaching({locale='en',accountId}){
               ((!savedDay.done||hasUnsavedDay)&&
                 (course.status!=='active'||dayResult.trim().length<6))}
             onClick={()=>{
-              if(savedDay.done&&!hasUnsavedDay)setLessonStage(4)
+              if(savedDay.done&&!hasUnsavedDay)changeLessonStage(4)
               else void saveDayAndContinue(true)
             }}>
             {savedDay.done&&!hasUnsavedDay?t.showSaved:t.saveContinue}
@@ -670,7 +673,7 @@ export default function BusinessCoaching({locale='en',accountId}){
           </button>
         </>}
         {lessonStage===4&&<button type="button" className={styles.primary}
-          onClick={()=>day<90?chooseDay(day+1):setTab('report')}>
+          onClick={()=>day<90?chooseDay(day+1):changeTab('report')}>
           {day<90?t.nextLesson:t.report}<ArrowRight size={17} aria-hidden="true"/>
         </button>}
       </div>
@@ -861,7 +864,7 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button type="button" className={styles.deleteCourse} disabled={busy} onClick={()=>{
           if(window.confirm(t.deleteWarning)){
             void command('delete',{confirmed:true}).then(ok=>{
-              if(ok){setGoal(initialGoal);setConsent(false);setAnswers({});setTab('today')}
+              if(ok){setGoal(initialGoal);setConsent(false);setAnswers({});changeTab('today')}
             })
           }
         }}>{t.deleteCourse}</button>
