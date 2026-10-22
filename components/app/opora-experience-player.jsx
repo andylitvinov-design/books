@@ -48,7 +48,12 @@ const WORDS={
     keepText:'Выберите одно напоминание на сегодня.',
     plan:'Хочу запомнить этот вариант',noPlan:'Пока без плана',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
-    audioTitle:'Две минуты спокойствия',audioKicker:'МЯГКОЕ ЗАВЕРШЕНИЕ',audioNext:'Послушать волны',
+    meditationTitle:'Медитация «Опора» · 2 минуты (по желанию)',
+    meditationSteps:[
+      'Сядьте удобно и почувствуйте опору стула или пола. Дышите естественно.',
+      'Включите таймер: с волнами или без звука мягко возвращайте внимание к этой опоре.',
+      'Когда пройдут две минуты, осмотритесь и назовите про себя один предмет вокруг.',
+    ],
     attempted:'Вы попробовали упражнение',readOnly:'Сегодня только ознакомление — выполнение не отмечено',
     takeaway:'Ваш возможный следующий шаг',
     feedback:'Ваше наблюдение',noResult:'Можно закончить без оценок самочувствия.',
@@ -113,7 +118,12 @@ const WORDS={
     keepText:'Choose one gentle reminder for today.',
     plan:'Keep this reminder',noPlan:'No plan today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
-    audioTitle:'Two quiet minutes',audioKicker:'A GENTLE ENDING',audioNext:'Relax with waves',
+    meditationTitle:'2-minute grounding meditation · optional',
+    meditationSteps:[
+      'Sit comfortably and notice the chair or floor supporting you. Breathe naturally.',
+      'Start the timer: with waves or in silence, gently bring your attention back to that support.',
+      'After two minutes, look around and silently name one object you can see.',
+    ],
     attempted:'You reported trying the exercise',readOnly:'Explored the idea only — no attempt recorded',
     takeaway:'Your possible next step',feedback:'Your observation',noResult:'You can finish without rating yourself.',
     noSave:'Saving was not confirmed. Check the connection and try again.',
@@ -174,7 +184,12 @@ WORDS.es = {
   quoteText:'¿Te resuena esta idea?',agree:'Me resuena',unsure:'Aún no sé',disagree:'No estoy de acuerdo',
   keepText:'Elige un recordatorio amable para hoy.',plan:'Recordar esta idea',noPlan:'Hoy sin plan',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
-  audioTitle:'Dos minutos de calma',audioKicker:'UN FINAL SUAVE',audioNext:'Escuchar las olas',
+  meditationTitle:'Meditación de apoyo · 2 minutos (opcional)',
+  meditationSteps:[
+    'Siéntate cómodamente y siente el apoyo de la silla o del suelo. Respira con naturalidad.',
+    'Inicia el temporizador: con olas o en silencio, vuelve suavemente a notar ese apoyo.',
+    'Al terminar los dos minutos, mira alrededor y nombra mentalmente un objeto.',
+  ],
   attempted:'Has indicado que probaste la práctica',readOnly:'Solo exploraste la idea; no registraste un intento',
   takeaway:'Tu recordatorio',feedback:'Tu sensación',noResult:'Puedes terminar sin evaluarte.',
   noSave:'No se confirmó el guardado. Revisa la conexión e inténtalo otra vez.',
@@ -351,7 +366,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [habitSetup,setHabitSetup]=useState(false)
   const [inviteOpen,setInviteOpen]=useState(false)
   const [saved,setSaved]=useState(hasSaved)
-  const [outroOpen,setOutroOpen]=useState(false)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [welcomeFeeling,setWelcomeFeeling]=useState(data?.currentSession?.signals?.welcomeFeeling||null)
   const [openingResource,setOpeningResource]=useState(data?.currentSession?.signals?.oporaOpening?.resource??null)
@@ -378,10 +392,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const previewScreens=cycle.day===1?['nextStep','habit']:['nextStep']
   const inPreview=receipt&&previewIndex>=0&&!inviteOpen
   const moment=inviteOpen?'invite':inPreview?previewScreens[previewIndex]:
-    outroOpen?'ocean':recap?'recap':receipt?'receipt':displayScenes[step]
-  const previewTotal=displayScenes.length+4+previewScreens.length
-  const previewStep=inviteOpen?previewTotal:inPreview?displayScenes.length+4+previewIndex:
-    outroOpen?displayScenes.length+3:receipt?displayScenes.length+2:Math.min(step+1,previewTotal)
+    recap?'recap':receipt?'receipt':displayScenes[step]
+  const previewTotal=displayScenes.length+3+previewScreens.length
+  const previewStep=inviteOpen?previewTotal:inPreview?displayScenes.length+3+previewIndex:
+    receipt?displayScenes.length+2:Math.min(step+1,previewTotal)
   const opening=OPENING[lang]
   const c=oporaEndingCopy(lang)
   const dayCopy=oporaExperienceDay(cycle.day,lang)
@@ -401,7 +415,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   useEffect(()=>{
     if(step<displayScenes.length&&displayScenes[step]!=='support')visited.current.add(displayScenes[step])
     heading.current?.focus?.()
-  },[step,receipt,previewIndex,outroOpen,inviteOpen])
+  },[step,receipt,previewIndex,inviteOpen])
   useEffect(()=>{
     if(safety){wasPaused.current=true;safetyPrimary.current?.focus?.()}
     else if(wasPaused.current)safetyTrigger.current?.focus?.()
@@ -441,7 +455,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   }
   function openPreview(){
     if(locked||!receipt)return
-    setOutroOpen(false)
     setPreviewIndex(0)
   }
   function advancePreview(){
@@ -505,7 +518,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const title=moment==='habit'?t.habitTitle:moment==='recap'?c.recapTitle:
     moment==='invite'?(cycle.day===14?c.inviteFinal:c.inviteTitle):
     moment==='nextStep'?t.preview.nextTitle:
-    outroOpen?t.audioTitle:moment==='receipt'?(cycle.day===14?c.congratsFinal:c.congratsTitle.replace('{day}',String(cycle.day))):
+    moment==='receipt'?(cycle.day===14?c.congratsFinal:c.congratsTitle.replace('{day}',String(cycle.day))):
     moment==='welcome'?opening.welcome:
     moment==='baseline'?opening.baseline:
     moment==='checkin'?opening.checkin:
@@ -565,9 +578,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {moment==='habit'?t.habitKicker:t.preview.nextKicker}
             {' · '}{previewIndex+1}/{previewScreens.length}
           </span>}
-          {(!receipt||outroOpen||inviteOpen)&&<span className={styles.eyebrow}>
+          {(!receipt||inviteOpen)&&<span className={styles.eyebrow}>
             {moment==='recap'?c.recapKicker:moment==='invite'?c.inviteKicker:
-             moment==='ocean'?t.audioKicker:moment==='welcome'?opening.welcomeKicker:
+             moment==='welcome'?opening.welcomeKicker:
             moment==='baseline'?opening.baselineKicker:
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
@@ -649,15 +662,19 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
             {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
+            <div className={styles.inlinePracticeAudio} data-opora-inline-practice-audio="true">
+              <div className={styles.meditationGuide} data-opora-guided-meditation="true">
+                <strong>{t.meditationTitle}</strong>
+                <ol>{t.meditationSteps.map((instruction,index)=><li key={index}>{instruction}</li>)}</ol>
+              </div>
+              <OporaOceanOutro locale={lang} paused={safety} compact/>
+            </div>
             <p className={styles.miniLabel}>{cycle.day===1?t.tryPrompt:t.tryAfter}</p>
             <div className={styles.chips} role="group"
               aria-label={cycle.day===1?t.tryPrompt:t.tryAfter}>
               {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
-            </div>
-            <div className={styles.inlinePracticeAudio} data-opora-inline-practice-audio="true">
-              <OporaOceanOutro locale={lang} paused={safety} compact/>
             </div>
           </>}
           {moment==='feel'&&<>
@@ -731,10 +748,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
-          {outroOpen&&<OporaOceanOutro locale={lang} paused={safety}/>}
-          {outroOpen&&<button type="button" className={styles.linkHint} disabled={locked}
-            onClick={onFinish||onClose}>{t.finish}</button>}
-
           {moment==='invite'&&<>
             <p className={styles.lead}>{cycle.day===14?c.inviteFinalLead:c.inviteLead}</p>
             <nav className={styles.offerList} aria-label={c.inviteKicker}
@@ -766,17 +779,17 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         receipt?<button type="button" className={styles.back} disabled={locked}
           onClick={moment==='habit'
             ?(habitSetup?()=>setHabitSetup(false):()=>{setPreviewIndex(-1);setInviteOpen(true)})
-            :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
-          <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview||outroOpen?t.back:t.finish}
+            :inPreview?backFromPreview:(onFinish||onClose)}>
+          <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview?t.back:t.finish}
         </button>:step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
           onClick={inviteOpen?(onFinish||onClose):
             moment==='habit'?(habitSetup?()=>{setPreviewIndex(-1);setInviteOpen(true)}:()=>setHabitSetup(true)):
-            inPreview?advancePreview:outroOpen?openPreview:receipt?()=>setOutroOpen(true):recap?submit:next}>
+            inPreview?advancePreview:receipt?openPreview:recap?submit:next}>
           {inviteOpen?t.finish:moment==='habit'?(habitSetup?t.next:t.habitConfigure):
             inPreview?(moment==='nextStep'&&cycle.day===1?c.commit:previewIndex===previewScreens.length-1?c.commit:t.next):
-            outroOpen?t.seeProgram:receipt?t.audioNext:recap?(saving?t.saving:t.save):t.next}
+            receipt?t.seeProgram:recap?(saving?t.saving:t.save):t.next}
           {inviteOpen||recap||(moment==='habit'&&habitSetup)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
