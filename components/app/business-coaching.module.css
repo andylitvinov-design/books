@@ -684,3 +684,80 @@
 @media print{
  .lessonBrowse,.lessonStageNav,.questionnaire,.trackChoices{display:none!important}
 }
+
+
+/* Business skill journey: Reiki/OPORA-inspired learning rhythm, scoped to this course.
+   Five accessible compact steps, optional private reflection and a post-save celebration.
+   Reuses Executive Wood v2 tokens, not a new visual system. */
+.lessonStageNav{grid-template-columns:repeat(5,minmax(0,1fr))}
+.lessonStageNav button:disabled{opacity:.46;cursor:not-allowed}
+.lessonStageNav button:focus-visible,.reflectionChoices button:focus-visible,
+.focusControls button:focus-visible{outline:3px solid var(--wood-accent);outline-offset:2px}
+.skillRecap{padding:9px 12px;margin-bottom:12px;border-radius:11px;
+  border:1px solid var(--wood-edge);background:var(--wood-soft)}
+.skillRecap>strong{display:block;color:var(--wood-muted);font-size:11px;margin-bottom:5px}
+.skillRecap>small{color:var(--wood-muted);font-size:12px}
+.skillRecapChips{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}
+.skillRecapChips>span{display:inline-flex;align-items:center;gap:5px;max-width:100%;
+  padding:5px 9px;border-radius:9px;background:var(--wood-paper);border:1px solid var(--wood-edge);
+  color:var(--wood-ink);font-size:11px;line-height:1.3}
+.skillRecapChips svg{flex-shrink:0;color:var(--wood-good)}
+.oneIdea .skillTarget{color:var(--wood-ink);font:700 clamp(16px,2.25vw,21px)/1.3 Georgia,serif;
+  margin:6px 0 11px}
+.focusTimer{display:flex;flex-direction:column;gap:7px;margin-top:14px;padding:11px 13px;
+  border:1px solid var(--wood-edge);border-radius:12px;background:var(--wood-soft)}
+.focusTimer>span,.focusTimer>small{font-size:11px;line-height:1.4;color:var(--wood-muted)}
+.focusTimerRow{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.focusTimerRow>strong{color:var(--wood-ink);font-size:24px;font-variant-numeric:tabular-nums;
+  line-height:1;letter-spacing:.03em}
+.focusControls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.focusControls button{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:44px;min-width:44px;padding:8px 10px;border:1px solid var(--wood-edge);
+  border-radius:10px;background:var(--wood-paper);color:var(--wood-ink);
+  font-size:11px;font-weight:750;cursor:pointer}
+.focusControls button:first-child{background:var(--wood-walnut);border-color:var(--wood-walnut);color:#fff7e8}
+.focusControls button:disabled{opacity:.55;cursor:not-allowed}
+.oneIdea .reflectionFocus{font:700 clamp(17px,2.6vw,22px)/1.35 Georgia,serif;
+  color:var(--wood-ink);margin:8px 0}
+.reflectionChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:11px 0}
+.reflectionChoices button{min-width:0;min-height:46px;padding:8px 10px;
+  border-radius:11px;border:1px solid var(--wood-edge);background:var(--wood-paper);
+  color:var(--wood-ink);font-size:12px;font-weight:750;cursor:pointer}
+.reflectionChoices button[aria-pressed=true]{border:2px solid var(--wood-walnut);
+  color:var(--wood-ink);background:var(--wood-tint)}
+.reflectionChoices button:disabled{opacity:.6;cursor:not-allowed}
+.savedCelebration{text-align:center;max-width:650px;margin:0 auto}
+.celebrationMark{display:grid;place-items:center;width:50px;height:50px;margin:0 auto 10px;
+  border-radius:50%;background:var(--wood-tint);color:var(--wood-good)}
+.savedCelebration>strong{display:block;font-size:12px;color:var(--wood-muted);margin-top:9px}
+.savedCelebration>blockquote{margin:9px 0;padding:10px 13px;border-inline-start:3px solid var(--wood-accent);
+  background:var(--wood-soft);border-radius:8px;text-align:start;
+  color:var(--wood-ink);font-size:13px;line-height:1.48;overflow-wrap:anywhere}
+.savedCelebration>small{display:block;color:var(--wood-muted);font-size:11px}
+.lessonSaveBar .backButton:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:620px){
+ .lessonStageNav{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+ .lessonStageNav button{min-height:44px;flex-direction:column;gap:3px;
+   padding:5px 2px;font-size:9.5px;line-height:1.15}
+ .lessonStageNav button>span{width:18px;height:18px;flex-basis:18px}
+ .skillRecap{padding:7px 9px;margin-bottom:8px}
+ .skillRecapChips>span{font-size:10px;padding:4px 7px}
+ .oneIdea .skillTarget{font-size:17px;margin:5px 0 8px}
+ .focusTimer{padding:9px 10px;margin-top:9px}
+ .focusTimerRow>strong{font-size:21px}
+ .focusControls button{min-height:44px}
+ .reflectionChoices{gap:5px;margin:8px 0}
+ .reflectionChoices button{padding:6px 3px;font-size:10.5px}
+ .celebrationMark{width:43px;height:43px;margin-bottom:7px}
+ .savedCelebration>blockquote{font-size:12px;max-height:85px;overflow:auto}
+}
+@media(max-width:350px){
+ .lessonStageNav button{font-size:9px}
+ .focusTimerRow{gap:8px}
+ .focusControls button{font-size:10px;padding:7px}
+ .lessonSaveBar .draftButton{order:1}
+ .lessonSaveBar .primary{flex-basis:100%;order:2}
+}
+@media print{
+ .focusTimer,.lessonStageNav,.lessonSaveBar{display:none!important}
+}
