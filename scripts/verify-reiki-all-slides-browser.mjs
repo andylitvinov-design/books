@@ -199,18 +199,21 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(page.locator("[data-reiki-first-lesson-save]")).toBeVisible();
     await expect(page.locator("[data-reiki-first-lesson-consent]")).toHaveCount(0);
   } else if (data.kind === "milestone") {
-    // Both choices now live inside the teaching slide. The footer contains
-    // only Back: no modal calendar, hidden push setting or secondary Save flow.
+    // Finish-for-today is inside the teaching slide; the one primary
+    // save-and-continue CTA remains visible in the pinned bottom navigation.
     const inSlide = page.locator('[data-energywork-slide-id] [data-reiki-milestone-choices]');
     await expect(inSlide).toBeVisible();
-    await expect(inSlide.locator("button")).toHaveCount(2);
-    await expect(inSlide.locator("button[data-energywork-next]")).toContainText(
-      locale === "ru" ? "Продолжить обучение" : "Continue learning");
+    await expect(inSlide.locator("button")).toHaveCount(1);
+    await expect(inSlide.locator("button[data-energywork-next]")).toHaveCount(0);
     await expect(inSlide.locator("button[data-reiki-tomorrow-choice]")).toContainText(
       locale === "ru" ? "Сохранить урок" : "Save my lesson");
+    const footer = page.locator('[class*="milestoneActions"]');
+    await expect(footer.locator("button")).toHaveCount(2);
+    await expect(footer.locator("button[data-energywork-next]")).toBeVisible();
+    await expect(footer.locator("button[data-energywork-next]")).toContainText(
+      locale === "ru" ? "Сохранить урок и продолжить" : "Save my lesson and continue");
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
     await expect(page.locator("[data-reiki-reminder-setup]")).toHaveCount(0);
-    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(1);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }
