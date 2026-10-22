@@ -15,8 +15,8 @@ const browser = read('scripts/verify-reiki-all-slides-browser.mjs')
 test('all five Reiki lessons place music-assisted practice directly before the closing slide', () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
-  assert.equal(sequence.length, 63, 'only the seven requested slide IDs are retired')
-  assert.deepEqual(ranges.map(({ count }) => count), [8, 14, 16, 14, 9])
+  assert.equal(sequence.length, 60, 'the additional three redundant lesson-five screens are retired')
+  assert.deepEqual(ranges.map(({ count }) => count), [8, 14, 16, 14, 6])
 
   const endings = [
     { first: 'flight-01', practices: ['flight-03'], last: 'flight-done', report: 'flight-04' },
@@ -49,7 +49,7 @@ test('all five Reiki lessons place music-assisted practice directly before the c
 
   // Intro to initiation really begins the fifth lesson rather than being
   // appended to the fourth lesson's Yggdrasil progress indicator.
-  assert.ok(sequence.indexOf('paths-01') < sequence.indexOf('intention-01'))
+  assert.ok(sequence.indexOf('paths-01') < sequence.indexOf('paths-03'))
   assert.ok(sequence.indexOf('paths-01') < sequence.indexOf('init-02'))
   assert.ok(sequence.indexOf('paths-01') > sequence.indexOf('ygg-done'))
 })
