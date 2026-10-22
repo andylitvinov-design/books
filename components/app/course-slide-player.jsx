@@ -1322,7 +1322,7 @@ export default function CourseSlidePlayer({
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
           <span>{finished ? (earned && rewardStep<2 ? words.next : words.seeMap)
-            : index === slides.length - 1 ? words.finish
+            : index === slides.length - 1 ? (reviewOnly?(locale==='ru'?'Посмотреть сохранённый итог':'View saved summary'):words.finish)
             : slide.kind === 'checkin' && Number.isInteger(severity) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
         </button>}
