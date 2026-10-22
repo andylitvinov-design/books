@@ -739,7 +739,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <p><b>{c.congratsPracticeLabel}:</b> {dayCopy?.practice||practiceGuide}</p>
             </div>
             <div className={styles.receiptNote}>
-              <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
+              <ShieldCheck size={22}/>
+              <span><b>{t.saved}</b><small>{reportedAttempt?t.attempted:t.readOnly}</small></span>
             </div>
             {(chosenFeeling||answers.transfer==='planned'||rating)&&
               <details className={styles.receiptDetails}>
