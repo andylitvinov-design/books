@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, Quote, RefreshCw, Send, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
 import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
@@ -12,6 +13,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
 
 type Mode = "dao" | "aphorisms" | "personal";
+type Offer = "reading" | "gift";
 type Result = { mode: Mode; topic: IdeasTopic; matched: boolean; hexagram?: number };
 type DaoReading = { number: number; text: string; kind: "original" | "editorial" };
 
@@ -71,6 +73,7 @@ const copy = {
     go: "Открыть",
     reset: "Новый вопрос",
     daoPromoLabel: "Персональная помощь после подсказки",
+    order: "Заказать", requestTitle: "Короткая заявка", requestLead: "Оставьте контакт для ответа по выбранному предложению.", fullService: "Подробнее об услуге",
     daoPromoReading: {
       eyebrow: "ЛИЧНОЕ ТОЛКОВАНИЕ",
       title: "Получите персональное даосское гадание и подсказки от Мастера",
@@ -144,6 +147,7 @@ const copy = {
     go: "Explore",
     reset: "New question",
     daoPromoLabel: "Personal help after your insight",
+    order: "Request", requestTitle: "Quick request", requestLead: "Leave a contact for a reply about this offer.", fullService: "Service details",
     daoPromoReading: {
       eyebrow: "PERSONAL READING",
       title: "Get a personal Daoist reading and insights from the Master",
@@ -217,6 +221,7 @@ const copy = {
     go: "Explorar",
     reset: "Otra pregunta",
     daoPromoLabel: "Ayuda personal después de tu consejo",
+    order: "Solicitar", requestTitle: "Solicitud breve", requestLead: "Deja un contacto para recibir una respuesta sobre esta opción.", fullService: "Ver detalles",
     daoPromoReading: {
       eyebrow: "LECTURA PERSONAL",
       title: "Recibe una lectura taoísta personal y consejos del Maestro",
@@ -318,6 +323,66 @@ function AphorismTiles({ items, locale, heading }: {
   );
 }
 
+
+/** Offer cards reuse the same consented, transactional CRM intake as public services. */
+function DaoOfferCards({ locale, openOffer, onToggle }: {
+  locale: PublicLocale;
+  openOffer: Offer | null;
+  onToggle: (offer: Offer) => void;
+}) {
+  const t = copy[locale];
+  return (
+    <aside className={styles.daoPromos} aria-label={t.daoPromoLabel} data-ideas-dao-promos>
+      <div className={styles.daoPromoWrapper}>
+        <article className={styles.daoPromo}>
+          <span className={styles.daoPromoEyebrow}><Compass size={17} aria-hidden="true" />{t.daoPromoReading.eyebrow}</span>
+          <strong className={styles.daoPromoTitle}>{t.daoPromoReading.title}</strong>
+          <span className={styles.daoPromoDescription}>{t.daoPromoReading.description}</span>
+          <button type="button" className={styles.daoPromoAction} data-ideas-order-button="reading"
+            aria-expanded={openOffer === "reading"} aria-controls="ideas-offer-reading"
+            onClick={() => onToggle("reading")}>
+            {t.order}<ArrowRight size={17} aria-hidden="true" />
+          </button>
+        </article>
+        <div id="ideas-offer-reading" hidden={openOffer !== "reading"}>
+          {openOffer === "reading" ? (
+            <>
+              <CompactLeadCapture locale={locale} variant="inline" serviceTitle={t.daoPromoReading.title}
+                title={t.requestTitle} lead={t.requestLead} />
+              <Link className={styles.daoPromoMore} href={"/" + locale + "/services/free-consultation#intro-request"} prefetch={false}>
+                {t.fullService}<ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </>
+          ) : null}
+        </div>
+      </div>
+      <div className={styles.daoPromoWrapper}>
+        <article className={[styles.daoPromo, styles.daoPromoGift].join(" ")}>
+          <span className={styles.daoPromoEyebrow}><Gift size={17} aria-hidden="true" />{t.daoPromoGift.eyebrow}</span>
+          <strong className={styles.daoPromoTitle}>{t.daoPromoGift.title}</strong>
+          <span className={styles.daoPromoDescription}>{t.daoPromoGift.description}</span>
+          <button type="button" className={styles.daoPromoAction} data-ideas-order-button="gift"
+            aria-expanded={openOffer === "gift"} aria-controls="ideas-offer-gift"
+            onClick={() => onToggle("gift")}>
+            {t.daoPromoGift.action}<ArrowRight size={17} aria-hidden="true" />
+          </button>
+        </article>
+        <div id="ideas-offer-gift" hidden={openOffer !== "gift"}>
+          {openOffer === "gift" ? (
+            <>
+              <CompactLeadCapture locale={locale} variant="inline" serviceTitle={t.daoPromoGift.title}
+                title={t.requestTitle} lead={t.requestLead} />
+              <Link className={styles.daoPromoMore} href={"/" + locale + "/services/free-situation-review#request-free-review"} prefetch={false}>
+                {t.fullService}<ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const [question, setQuestion] = useState("");
@@ -325,6 +390,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const [attachmentError, setAttachmentError] = useState(false);
   const [visibleAphorisms, setVisibleAphorisms] = useState(3);
   const [result, setResult] = useState<Result | null>(null);
+  const [openOffer, setOpenOffer] = useState<Offer | null>(null);
   const [activeMode, setActiveMode] = useState<Mode>("dao");
   const [expandedDao, setExpandedDao] = useState(false);
   const [fullDaoReading, setFullDaoReading] = useState<DaoReading | null>(null);
@@ -345,6 +411,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     setDaoReadingError(false);
     setError(false);
     setVisibleAphorisms(3);
+    setOpenOffer(null);
     setResult({ mode, ...matched, hexagram: mode === "dao" ? drawRandomHexagram() : undefined });
   }
 
@@ -416,7 +483,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             id="ideas-question" ref={textareaRef} maxLength={500} rows={1} autoComplete="off"
             placeholder={t.placeholder} value={question} aria-invalid={error || attachmentError}
             aria-describedby={error || attachmentError ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
-            onChange={(event) => { setQuestion(event.target.value); setError(false); setAttachmentError(false); setResult(null); setVisibleAphorisms(3); }}
+            onChange={(event) => { setQuestion(event.target.value); setError(false); setAttachmentError(false); setResult(null); setVisibleAphorisms(3); setOpenOffer(null); }}
           />
           <input ref={fileInputRef} className={styles.fileInput} type="file" tabIndex={-1}
             accept=".txt,.md,text/plain,text/markdown"
@@ -430,7 +497,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
               try {
                 const excerpt = (await file.text()).trim();
                 setQuestion(current => [current, excerpt].filter(Boolean).join(" ").slice(0, 500));
-                setAttachmentError(false); setError(false); setResult(null); setVisibleAphorisms(3);
+                setAttachmentError(false); setError(false); setResult(null); setVisibleAphorisms(3); setOpenOffer(null);
                 textareaRef.current?.focus();
               } catch { setAttachmentError(true); }
             }}
@@ -471,6 +538,9 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
               </div>
               <button type="button" className={styles.reset} onClick={() => { setResult(null); setQuestion(""); textareaRef.current?.focus(); }}>{answerCopy.reset} ×</button>
             </div>
+          ) : null}
+          {result.mode === "dao" && hexagram ? (
+            <AphorismTiles items={aphorismMatches.slice(0, 3)} locale={answerLocale} heading={answerCopy.aphorismsForYou} />
           ) : null}
           {result.mode === "dao" && hexagram ? (
             <div className={styles.daoQuick} data-ideas-dao>
@@ -545,24 +615,11 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                   </>
                 ) : null}
               </div>
-              <aside className={styles.daoPromos} aria-label={answerCopy.daoPromoLabel} data-ideas-dao-promos>
-                <Link className={styles.daoPromo} href={"/" + answerLocale + "/services/free-consultation#intro-request"} prefetch={false}>
-                  <span className={styles.daoPromoEyebrow}><Compass size={17} aria-hidden="true" />{answerCopy.daoPromoReading.eyebrow}</span>
-                  <strong className={styles.daoPromoTitle}>{answerCopy.daoPromoReading.title}</strong>
-                  <span className={styles.daoPromoDescription}>{answerCopy.daoPromoReading.description}</span>
-                  <span className={styles.daoPromoAction}>{answerCopy.daoPromoReading.action}<ArrowRight size={17} aria-hidden="true" /></span>
-                </Link>
-                <Link className={`${styles.daoPromo} ${styles.daoPromoGift}`} href={"/" + answerLocale + "/services/free-situation-review#request-free-review"} prefetch={false}>
-                  <span className={styles.daoPromoEyebrow}><Gift size={17} aria-hidden="true" />{answerCopy.daoPromoGift.eyebrow}</span>
-                  <strong className={styles.daoPromoTitle}>{answerCopy.daoPromoGift.title}</strong>
-                  <span className={styles.daoPromoDescription}>{answerCopy.daoPromoGift.description}</span>
-                  <span className={styles.daoPromoAction}>{answerCopy.daoPromoGift.action}<ArrowRight size={17} aria-hidden="true" /></span>
-                </Link>
-              </aside>
             </div>
           ) : null}
           {result.mode === "dao" && hexagram ? (
-            <AphorismTiles items={aphorismMatches.slice(0, 3)} locale={answerLocale} heading={answerCopy.aphorismsForYou} />
+            <DaoOfferCards locale={answerLocale} openOffer={openOffer}
+              onToggle={offer => setOpenOffer(current => current === offer ? null : offer)} />
           ) : null}
           {result.mode === "aphorisms" ? (
             <>
@@ -626,10 +683,12 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
         </div>
       ) : exampleHexagram ? (
         <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}>
-          <DaoInsightPanel entry={exampleHexagram} locale={locale} topic="resources" example />
           <AphorismTiles items={getIdeasAphorismMatches("growth", locale, "resources").slice(0, 3)}
             locale={locale} heading={t.sampleAphorisms} />
+          <DaoInsightPanel entry={exampleHexagram} locale={locale} topic="resources" example />
           <p className={styles.note}>{t.previewNote}</p>
+          <DaoOfferCards locale={locale} openOffer={openOffer}
+            onToggle={offer => setOpenOffer(current => current === offer ? null : offer)} />
         </div>
       ) : null}
     </section>
