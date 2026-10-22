@@ -77,7 +77,6 @@ const WORDS = {
 }
 
 export default function CabinetToday({ locale = 'en', practitioner = false, owner = false }) {
-  const ru = locale === 'ru'
   const t = WORDS[locale] || WORDS.en
   const router = useRouter()
   const [wish, setWish] = useState('')
