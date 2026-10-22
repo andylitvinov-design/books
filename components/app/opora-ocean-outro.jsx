@@ -9,7 +9,7 @@ const DURATION=120
 
 const COPY={
   en:{
-    instruction:'Follow the three meditation steps above. Start the two-minute timer; waves are optional.'
+    instruction:'Follow the three meditation steps above. Start the two-minute timer; waves are optional.',
     optional:'You can also rest quietly without audio.',
     play:'Start 2 minutes',resume:'Resume',pause:'Pause',restart:'Restart',
     wavesOn:'Waves on',wavesOff:'Waves off',unavailable:'Audio is unavailable. You can still rest quietly.',
@@ -18,7 +18,7 @@ const COPY={
     complete:'Your two quiet minutes are complete.',ready:'No rush. Start when you feel ready.',
   },
   ru:{
-    instruction:'Следуйте трём шагам медитации выше. Включите таймер на две минуты; звук волн по желанию.'
+    instruction:'Следуйте трём шагам медитации выше. Включите таймер на две минуты; звук волн по желанию.',
     optional:'Можно просто спокойно отдохнуть без звука.',
     play:'Включить на 2 минуты',resume:'Продолжить',pause:'Пауза',restart:'Сначала',
     wavesOn:'Волны включены',wavesOff:'Волны выключены',unavailable:'Аудио недоступно. Можно отдохнуть в тишине.',
@@ -27,7 +27,7 @@ const COPY={
     complete:'Две минуты спокойствия завершены.',ready:'Не торопитесь. Начните, когда будете готовы.',
   },
   es:{
-    instruction:'Sigue los tres pasos de la meditación. Inicia el temporizador de dos minutos; las olas son opcionales.'
+    instruction:'Sigue los tres pasos de la meditación. Inicia el temporizador de dos minutos; las olas son opcionales.',
     optional:'También puedes descansar en silencio.',
     play:'Escuchar 2 minutos',resume:'Continuar',pause:'Pausar',restart:'Reiniciar',
     wavesOn:'Olas activadas',wavesOff:'Olas desactivadas',unavailable:'El audio no está disponible. También puedes descansar en silencio.',
