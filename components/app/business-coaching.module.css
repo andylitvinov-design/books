@@ -761,3 +761,21 @@
 @media print{
  .focusTimer,.lessonStageNav,.lessonSaveBar{display:none!important}
 }
+
+/* Optional track-specific worked example: subordinate to the real skill/action. */
+.trackExample{margin:10px 0 2px;border:1px solid var(--wood-edge);
+  border-radius:11px;background:var(--wood-soft)}
+.trackExample summary{display:flex;align-items:center;justify-content:space-between;
+  gap:7px;min-height:44px;padding:8px 12px;list-style:none;
+  color:var(--wood-ink);font-size:12px;font-weight:750;cursor:pointer}
+.trackExample summary::-webkit-details-marker{display:none}
+.trackExample summary svg{flex-shrink:0;transition:transform .15s ease}
+.trackExample[open] summary svg{transform:rotate(180deg)}
+.trackExample p{margin:0;padding:0 12px 11px;font-size:12px;line-height:1.45;
+  color:var(--wood-muted)}
+.trackExample summary:focus-visible{outline:3px solid var(--wood-accent);outline-offset:2px}
+@media(max-width:620px){
+ .trackExample{margin:7px 0 1px}
+ .trackExample summary{font-size:11px;padding:7px 9px}
+ .trackExample p{padding:0 9px 9px;font-size:11px}
+}
