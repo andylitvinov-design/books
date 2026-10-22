@@ -58,7 +58,7 @@ test('V3 increases all mobile teaching typography and preserves pinned navigatio
 });
 
 
-test('First Reiki Practitioner slide explains five days, three traditions, daily practice and the one-system personal initiation gift in EN/RU', () => {
+test('First Reiki Practitioner slide explains five days, three traditions, daily practice and the one-system free chat initiation gift in EN/RU', () => {
   const opening = curriculum.slice(curriculum.indexOf('id: "welcome-01"'), curriculum.indexOf('id: "welcome-02"'));
   assert.match(opening, /Reiki Practitioner — a five-day journey/);
   assert.match(opening, /Практик Рейки — пятидневный курс/);
@@ -66,11 +66,11 @@ test('First Reiki Practitioner slide explains five days, three traditions, daily
   assert.match(opening, /Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль/);
   assert.match(opening, /Each day brings a short exercise and a meditation/);
   assert.match(opening, /Каждый день вас ждут небольшое упражнение и медитация/);
-  assert.match(learner, /welcomeGiftTitle: "A personal initiation with Andrey — your gift"/);
-  assert.match(learner, /welcomeGiftTitle: "Личная инициация с Андреем — в подарок"/);
-  assert.match(learner, /in one of the three Reiki systems of your choice/);
-  assert.match(learner, /в одной из трёх систем на выбор/);
-  assert.match(learner, /After all five lessons and your application/);
+  assert.match(learner, /welcomeGiftTitle: "Free Level 1 Reiki initiation with Andrey — in chat"/);
+  assert.match(learner, /welcomeGiftTitle: "Бесплатная инициация I ступени с Андреем в чате"/);
+  assert.match(learner, /request one free Level 1 initiation guided by Andrey in chat/);
+  assert.match(learner, /одну бесплатную инициацию I ступени с Андреем в чате/);
+  assert.match(learner, /After completing all five lessons/);
   assert.match(learner, /data-reiki-initiation-gift/);
   assert.match(learner, /<strong>\{t\.welcomeGiftTitle\}<\/strong>/);
   assert.match(style, /\.welcomeSlide \.welcomeGift/);
