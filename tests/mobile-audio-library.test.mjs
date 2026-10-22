@@ -105,7 +105,7 @@ test('reuse from saved audio to a course is owner-only, quota-bound and separate
  const builder=read('components/app/practitioner-course-builder.jsx')
  const practice=read('components/app/practice-materials.jsx')
  assert.match(route,/import-library-audio/)
- assert.match(route,/requireAdminRequest\(\)/)
+ assert.match(route,/practitionerEmailAllowed\(actor\)/)
  assert.match(repository,/material.kind!=='audio'/)
  assert.match(repository,/source.copy\(/)
  assert.match(repository,/destinationBucket:COURSE_BUCKET/)
