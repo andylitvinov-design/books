@@ -22,6 +22,7 @@ on:
       - 'tests/ideas-news-feed.test.mjs'
       - 'tests/ideas-guidance.test.mjs'
       - 'tests/ideas-mobile-ui.test.mjs'
+      - 'scripts/verify-ideas-mobile-browser.mjs'
       - 'app/api/admin/materials/[id]/route.js'
       - 'app/ia-v2.css'
       - 'lib/clients/material-library.js'
@@ -36,7 +37,7 @@ permissions:
 jobs:
   isolated-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       CI: 'true'
@@ -57,3 +58,29 @@ jobs:
         run: npm run build
       - name: TypeScript type verification
         run: npx --no-install tsc --noEmit
+      - name: Install isolated browser engines (no service data or production network)
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
+          npm install --prefix /tmp/hh-ideas-playwright --no-package-lock --ignore-scripts --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-ideas-playwright/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-ideas-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Real public Ideas mobile journeys, EN/RU/ES and 320–430px
+        env:
+          HH_PLAYWRIGHT_PACKAGE: '@playwright/test'
+          HH_PUBLIC_QA_ORIGIN: 'http://127.0.0.1:3100'
+        run: |
+          npx --no-install next start --hostname 127.0.0.1 --port 3100 > /tmp/hh-ideas-server.log 2>&1 & APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 65); do
+            if curl --silent --fail http://127.0.0.1:3100/en/books >/dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/verify-ideas-mobile-browser.mjs || { tail -80 /tmp/hh-ideas-server.log; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-ideas-mobile-acceptance
+          path: artifacts/ideas-mobile/
+          retention-days: 7

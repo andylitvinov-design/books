@@ -4833,10 +4833,10 @@
 }
 
 
-/* Checkpoint choices are inside the lesson; only Back remains in the footer. */
+/* Finish-today stays in the lesson; the save-and-continue CTA is pinned beside Back. */
 .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px; margin-top: 16px; width: 100%;
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  gap: 10px; margin-top: 16px; width: min(100%, 330px);
 }
 .page[data-course-portrait="v3"] .milestoneInlineChoices button {
   display: flex; align-items: center; justify-content: flex-start; gap: 10px;
@@ -4855,15 +4855,11 @@
 .page[data-course-portrait="v3"] .milestoneInlineChoices .milestoneSaveChoice {
   color: #135a62; background: linear-gradient(135deg, #fffef9, #eaf8f3);
 }
-.page[data-course-portrait="v3"] .milestoneInlineChoices .milestoneContinueChoice {
-  color: #fff; background: linear-gradient(130deg, #01859b, #13b5ab);
-  border-color: #12a9ac; box-shadow: 0 5px 14px rgba(7, 122, 136, .16);
-}
 .page[data-course-portrait="v3"] .milestoneInlineChoices button:disabled { opacity: .5; cursor: not-allowed; }
 .page[data-course-portrait="v3"] .milestoneInlineChoices button:focus-visible {
   outline: 3px solid #0ba9bb; outline-offset: 3px;
 }
-.page[data-course-portrait="v3"] .milestoneActions { justify-content: flex-start; }
+.page[data-course-portrait="v3"] .milestoneActions { justify-content: space-between; }
 .page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .googleMark {
   display: inline-grid; place-items: center; flex: 0 0 22px;
   width: 22px; height: 22px; border-radius: 50%;
@@ -4877,7 +4873,7 @@
 }
 @media (max-width: 760px) {
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices {
-    grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 11px;
+    grid-template-columns: minmax(0, 1fr); gap: 7px; margin-top: 11px;
   }
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="milestone"] .milestoneInlineChoices button {
     min-height: 64px; padding: 8px 9px; font-size: clamp(12px, 3.25vw, 15px); gap: 6px;

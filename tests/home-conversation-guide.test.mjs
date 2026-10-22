@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { homeGuideDestinations, homeGuideGoals, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply } from "../lib/home-conversation.mjs";
+import { homeGuideDestinations, homeGuideGoals, homeGuideCategories, browseHomeGuideOffers, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply } from "../lib/home-conversation.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -31,6 +31,38 @@ test("expressions of immediate self-harm risk do not generate promotional recomm
   assert.equal(resolveHomeGuideQuestion("I feel stress and need advice").urgent, false);
 });
 
+test("the in-place consultant category filter reuses real offers, priorities and safe paths", () => {
+  assert.deepEqual(homeGuideCategories, ["all", "services", "courses", "tests", "free"]);
+  for (const locale of ["en", "ru", "es"]) {
+    for (const category of homeGuideCategories) {
+      const result = browseHomeGuideOffers({ category, locale, question: "Need help growing my business" });
+      assert.equal(result.urgent, false);
+      assert.ok(result.offers.length >= 1 && result.offers.length <= 3);
+      assert.equal(new Set(result.offers.map(offer => offer.id)).size, result.offers.length);
+      for (const offer of result.offers) {
+        assert.match(offer.href, new RegExp("^/(en|ru|es)/"));
+        assert.ok(!offer.href.includes("?"));
+        assert.ok(!offer.href.includes("business%20") && !offer.href.includes("Need"));
+        assert.equal(offer.checkoutStatus, "not_verified");
+      }
+    }
+    const tests = browseHomeGuideOffers({ category: "tests", locale, question: "Estoy muy ansiosa" }).offers;
+    assert.deepEqual(tests.map(x => x.id), ["tests"]);
+    const classes = browseHomeGuideOffers({ category: "courses", locale, question: "I want to learn Reiki" }).offers;
+    assert.equal(classes[0].id, "reiki");
+    const relationships = browseHomeGuideOffers({ category: "services", locale, question: "Problems with my partner" }).offers;
+    assert.equal(relationships[0].id, "review");
+    assert.ok(relationships.some(o => o.id === "alchemy"));
+    const work = browseHomeGuideOffers({ category: "all", locale, question: "Need clients for my business" }).offers;
+    assert.equal(work[0].id, "business");
+    assert.ok(browseHomeGuideOffers({ category: "free", locale }).offers.every(o => o.id !== "consult"));
+    const emergency = browseHomeGuideOffers({ category: "services", locale, question: "I want to kill myself" });
+    assert.equal(emergency.urgent, true);
+    assert.deepEqual(emergency.offers, []);
+  }
+  assert.deepEqual(browseHomeGuideOffers({ category: "invalid", locale: "en" }).offers, []);
+});
+
 test("each conversation goal resolves to a real first-party destination without exposing the question", () => {
   assert.equal(homeGuideGoals.length, 5);
   for (const locale of ["ru", "en", "es"]) {
@@ -46,16 +78,17 @@ test("each conversation goal resolves to a real first-party destination without 
   assert.equal(homeGuideDestinations({ goal: "practice", topic: "work", locale: "es" }).secondary, "/es/explore/business");
 });
 
-test("EN/RU/ES homepages surface an editable dialogue before the existing photo carousel", () => {
+test("EN/RU/ES homepages place the question dialogue directly after free assessment", () => {
   const home = read("components/holistic-house-home.tsx");
   const spanish = read("app/es/page.tsx");
   const russian = read("app/[locale]/page.tsx");
-  for (const [page, entry, carousel] of [
-    [home, "<HomeConversationGuide locale={locale} />", "<HomeSectionCarousel locale={locale} />"],
-    [spanish, '<HomeConversationGuide locale="es" />', '<HomeSectionCarousel locale="es" />'],
+  for (const [page, carousel, diagnosis, guide] of [
+    [home, "<HomeSectionCarousel locale={locale} />", "<HomeFreeDiagnosisBanner locale={locale} />", "<HomeConversationGuide locale={locale} />"],
+    [spanish, '<HomeSectionCarousel locale="es" />', '<HomeFreeDiagnosisBanner locale="es" />', '<HomeConversationGuide locale="es" />'],
   ]) {
-    assert.ok(page.includes(entry));
-    assert.ok(page.indexOf(entry) < page.indexOf(carousel), "First-screen guide must precede existing slider");
+    assert.ok(page.includes(guide));
+    assert.ok(page.indexOf(carousel) < page.indexOf(diagnosis) && page.indexOf(diagnosis) < page.indexOf(guide),
+      "Carousel → free diagnosis → question guide, without intervening paid banners");
     assert.ok(page.includes("paid-sessions"), "Existing paid CTA must stay");
   }
   assert.ok(russian.includes("<HolisticHouseHome"));
@@ -298,4 +331,16 @@ test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and fea
   for (const token of ["data-home-guide-launcher-mic", "data-home-guide-dialog", "SpeechRecognition", "aria-modal=\"true\""]) {
     assert.ok(guide.includes(token), "Existing guide behavior must remain: " + token);
   }
+});
+
+test("home advisor replaces repeated service catalogs without changing #1537 free diagnosis",()=>{
+ const home=read("components/holistic-house-home.tsx"),es=read("app/es/page.tsx");
+ for(const page of [home,es]){
+   assert.match(page,/<details className="service-home-more"/);
+   assert.ok(page.indexOf("<HomeFreeDiagnosisBanner") < page.indexOf("<HomeConversationGuide"));
+   assert.ok(page.indexOf("<HomeConversationGuide") < page.indexOf('<details className="service-home-more"'));
+ }
+ const guide=read("components/home-conversation-guide.tsx");
+ for(const token of ["data-home-guide-filters","data-home-guide-inline-results","data-home-guide-browse-offer","styles.advisorPortrait","browseHomeGuideOffers"])
+   assert.ok(guide.includes(token));
 });
