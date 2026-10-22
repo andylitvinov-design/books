@@ -92,7 +92,7 @@ const copy = {
     lessonLocked: "Opens as you progress",
     intro: "Introduction",
     slidesWord: "slides",
-    saveAndContinue: "Save progress & continue",
+    saveAndContinue: "Save my lesson and continue",
     returnAnytime: "Pick up here anytime from My Courses.",
     tomorrowChoice: "Save my lesson",
     continueNow: "Continue learning",
@@ -246,7 +246,7 @@ const copy = {
     lessonLocked: "Откроется по мере прохождения",
     intro: "Введение",
     slidesWord: "слайдов",
-    saveAndContinue: "Сохранить прогресс и продолжить",
+    saveAndContinue: "Сохранить урок и продолжить",
     returnAnytime: "Вернуться к уроку можно через «Мои курсы».",
     tomorrowChoice: "Сохранить урок",
     continueNow: "Продолжить обучение",
@@ -1349,10 +1349,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <p className={styles.description}>{slide.id === "flight-save" ? t.accountSaveText : slide.body[locale]}</p>
               {slide.introAudioKey && slide.introTopics ? (
                 <section className={styles.lessonIntroPanel} data-reiki-lesson-intro={slide.introAudioKey}
-                  aria-label={locale === "ru" ? "Программа занятия" : "What this lesson covers"}>
+                  aria-label={locale === "ru" ? "Что вас ждёт" : "What to expect"}>
                   <strong className={styles.lessonIntroTitle}>
                     <BookOpen size={17} aria-hidden="true" />
-                    {locale === "ru" ? "Что мы изучим сегодня" : "What we'll explore in this lesson"}
+                    {locale === "ru" ? "Что вас ждёт" : "What to expect"}
                   </strong>
                   <ul className={styles.lessonIntroTopics}>
                     {slide.introTopics.map((topic, index) => (
@@ -1434,12 +1434,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <BookOpen size={21} aria-hidden="true" />
                     <span><strong>{t.tomorrowChoice}</strong>
                       <small>{sync === "ready" ? t.saveTodayDetail : t.saveGuestDetail}</small></span>
-                  </button>
-                  <button type="button" className={styles.milestoneContinueChoice}
-                    onClick={next} disabled={busy || sync === "checking"}
-                    data-energywork-next>
-                    <ArrowRight size={21} aria-hidden="true" />
-                    <span>{slide.id === "flight-done" && sync !== "ready" ? t.continueNowSave : t.continueNow}</span>
                   </button>
                 </div>
               ) : null}
@@ -1864,11 +1858,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                 className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
             )}
-            {slide.kind !== "milestone" && !completed ? (
+            {(slide.kind === "milestone" && slide.id !== "flight-save") || (slide.kind !== "milestone" && !completed) ? (
               <button type="button" onClick={next}
                 disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
                 className={styles.next} data-energywork-next>
-                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : t.continue}
+                {slide.kind === "milestone" ? t.saveAndContinue : isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : t.continue}
                 <ArrowRight size={19} aria-hidden="true" />
               </button>
             ) : null}

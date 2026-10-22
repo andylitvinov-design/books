@@ -27,4 +27,12 @@ export declare function chooseHomeGuideOffer(context: HomeGuideContext | null, c
   context: HomeGuideContext; response: LocalizedText | null; offers: HomeGuideOffer[];
 } | null;
 
+export type HomeGuideCategory = "all" | "services" | "courses" | "tests" | "free";
+export declare const homeGuideCategories: ReadonlyArray<HomeGuideCategory>;
+export declare function browseHomeGuideOffers(args: {
+  category: HomeGuideCategory;
+  locale: PublicLocale;
+  question?: string;
+}): { urgent: boolean; matched: boolean; offers: HomeGuideOffer[] };
+
 export declare function matchHomeGuideReply(input: string, context: HomeGuideContext | null): string | null;

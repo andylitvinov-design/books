@@ -23,6 +23,17 @@
   background: #fbf7ef;
 }
 
+/* Give Home the same quiet, inset ivory masthead as the approved Ideas screen.
+   Keep existing shared navigation and touch targets, including Cabinet and RU/EN/ES. */
+.house-home--services > .house-header--services {
+  box-sizing: border-box;
+  width: min(1240px, calc(100% - 28px));
+  margin: 8px auto 0;
+  padding: 18px clamp(16px, 2.4vw, 30px);
+  border: 1px solid #eee5d9;
+  background: #fffdf9;
+}
+
 .house-header--services .house-wordmark {
   flex-shrink: 0;
   font-size: clamp(28px, 3vw, 40px);
@@ -1068,7 +1079,16 @@ a.service-home-start-card:hover {
   .house-header--services .site-language-menu-trigger { padding-inline: 8px; }
 }
 
+@media (max-width: 767px) {
+  .house-home--services > .house-header--services {
+    width: calc(100% - 12px);
+    padding: 14px clamp(7px, 2vw, 12px);
+    gap: 5px;
+  }
+}
+
 @media (max-width: 359px) {
+  .house-home--services > .house-header--services { padding-inline: 6px; }
   .house-header--services .house-wordmark { font-size: clamp(17px, 5.6vw, 20px); }
   .house-header--services .site-navigation { gap: 4px; }
   .house-header--services .site-navigation > .site-cabinet-entry {
@@ -1244,3 +1264,14 @@ a.service-home-start-card:hover {
   .house-home--services [data-home-featured-intro] .service-home-actions { max-width: 100%; }
   .house-home--services [data-home-featured-intro] .service-home-offer-note { max-width: 100%; }
 }
+
+/* #1537's one-click CRM free-diagnosis banner remains first. Hide repeated
+   lower service catalogs until someone explicitly asks for all directions. */
+.service-home-more{box-sizing:border-box;width:min(1240px,calc(100% - 28px));margin:10px auto 24px;border:1px solid #e6d7c6;border-radius:15px;background:#fffdf8}
+.service-home-more>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 16px;color:#315951;font:750 13px/1.4 Arial,Helvetica,sans-serif;list-style:none;cursor:pointer}
+.service-home-more>summary::-webkit-details-marker{display:none}
+.service-home-more>summary span{font-size:19px}
+.service-home-more>summary:focus-visible{outline:3px solid #197377;outline-offset:2px}
+.service-home-more[open]{padding-bottom:12px}
+.service-home-more[open]>.service-home-hero{max-width:100%;border-radius:16px}
+@media(max-width:760px){.service-home-more{width:calc(100% - 16px)}.service-home-more[open]>.service-home-hero{min-height:0}}

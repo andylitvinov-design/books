@@ -74,7 +74,7 @@ test("all three locales explain real service advantages without health claims or
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
   for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
-    "Revisión escrita gratuita", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
+    "Revisión escrita gratuita", "Five Elements", "Пяти элементам", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
