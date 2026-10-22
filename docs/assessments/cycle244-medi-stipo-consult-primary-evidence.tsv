@@ -1,0 +1,6 @@
+stable_key	instrument_edition	n_items	locale_evidence	doi_primary	doi_additional	rights_status	release_gate
+medi-rosellini2019-enus49-original	Multidimensional Emotional Disorder Inventory (MEDI) original	49	EN-US original	10.1037/pas0000649		permission_required	research_only; no items/scoring
+medi-osma2021-eses49-communityclinical	MEDI Spanish cohort 2021+2023, one edition	49	ES-ES validated community+clinical	10.1016/j.jad.2022.09.140	10.3390/ijerph18168251	permission_required	research_only; no items/scoring
+medi-pereira2025-ptpt49-community	MEDI Portuguese European 2025	49	PT-PT psychometrically studied community	10.1007/s10862-025-10208-w		permission_required	research_only; no items/scoring
+stipo-r-rufat2026-eses55-clinician	STIPO-R semistructured clinician interview	55	ES-ES validated clinical+community	10.1186/s40479-026-00342-6		clinician_only	research_only; qualified interviewer, no auto-scoring
+consultpsychiatr-mejia2026-espe10-original	CONSULT-PSYCHIATR original Spanish Peru	10	ES-PE original	10.3389/fpsyt.2026.1836597		permission_required	research_only; no EN translation validation
