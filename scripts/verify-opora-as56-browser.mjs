@@ -18,13 +18,13 @@ const evidence = { scope: 'ACTUAL_HYDRATED_AS56_PLAYER_SYNTHETIC_DAY5_REAL_CSS_N
 const words = {
   ru: { next: 'Продолжить', previous: 'Назад', help: 'Показать мягкую подсказку',
     original: 'Показать мягкую подсказку', pause: 'Пауза', neutral: 'Вернуться с нейтральной опорой',
-    back: 'Вернуться', end: 'Закончить без сохранения', anchor: 'Если хочется, посмотрите на один обычный предмет вокруг.' },
+    back: 'Вернуться', end: 'Закончить без сохранения', think: 'Надо подумать', anchor: 'Если хочется, посмотрите на один обычный предмет вокруг.' },
   es: { next: 'Continuar', previous: 'Atrás', help: 'Ver una pista suave',
     original: 'Ver una pista suave', pause: 'Pausa', neutral: 'Volver con una referencia neutra',
-    back: 'Volver', end: 'Salir sin guardar', anchor: 'Si quieres, mira un objeto neutro a tu alrededor.' },
+    back: 'Volver', end: 'Salir sin guardar', think: 'Necesito pensarlo', anchor: 'Si quieres, mira un objeto neutro a tu alrededor.' },
   en: { next: 'Continue', previous: 'Back', help: 'Show gentle guidance',
     original: 'Show gentle guidance', pause: 'Pause', neutral: 'Return with a neutral anchor',
-    back: 'Go back', end: 'End without saving', anchor: 'If you wish, look at one ordinary object around you.' },
+    back: 'Go back', end: 'End without saving', think: 'Need to think', anchor: 'If you wish, look at one ordinary object around you.' },
 }
 const assets = new Map(await Promise.all(['course-start-heron.webp', 'course-focus-mountain-boy.webp',
   'reiki-practitioner-sunrise.webp', 'report-lighthouse-coast.webp'].map(async name => [
@@ -93,7 +93,12 @@ try {
       await expect(page.locator('[data-opora-daily-support="5"]')).toContainText(support.body)
       await expect(page.getByRole('heading', { name: support.title })).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toHaveCount(0)
-      await expect(page.locator('[aria-pressed]')).toHaveCount(0)
+      const supportReactions=page.locator('[data-opora-quote-reaction="support"] [aria-pressed]')
+      await expect(supportReactions).toHaveCount(4)
+      await expect(button(t.think)).toBeVisible()
+      await click(t.think)
+      await expect(button(t.think)).toHaveAttribute('aria-pressed','true')
+      // A learner's opinion is only a local draft until the final authenticated save.
       await assertBounds('support')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-support.png` })
       await click(t.next)
