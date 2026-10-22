@@ -5,6 +5,7 @@ import {readBody,PRIVATE_HEADERS,safeError} from '@/lib/app/http'
 import {consumeRate} from '@/lib/app/database'
 import {AppError} from '@/lib/assessments/contracts'
 import {createPractitionerCourseRepository} from '@/lib/practitioners/course-repository'
+import {requireAdminRequest} from '@/lib/prescriptions/admin'
 
 export const runtime='nodejs'
 export const preferredRegion='yul1'
@@ -42,6 +43,10 @@ async function handle(request){
     break
    case 'upload-complete':
     item=await repo.mediaComplete(actor,body.assetId)
+    break
+   case 'import-library-audio':
+    if(!await requireAdminRequest())throw new AppError('MATERIAL_UNAVAILABLE',404)
+    item=await repo.importLibraryAudio(actor,body)
     break
    default:throw new AppError('INVALID_ACTION',400)
   }
