@@ -15,6 +15,12 @@ const audioStyle=read('components/app/opora-ocean-outro.module.css')
 test('OPORA practice has a 2-minute Play/Pause ocean player inline on the feedback slide',()=>{
   assert.match(player,/moment==='practice'&&<>/)
   assert.match(player,/data-opora-inline-practice-audio="true"/)
+  assert.match(player,/data-opora-guided-meditation="true"/)
+  assert.match(player,/meditationSteps\.map/)
+  assert.doesNotMatch(player,/outroOpen|moment==='ocean'/)
+  for(const phrase of ['почувствуйте опору стула','notice the chair or floor supporting you','siente el apoyo de la silla']) {
+    assert.ok(player.includes(phrase),'Concrete grounding steps missing: '+phrase)
+  }
   assert.match(player,/<OporaOceanOutro locale=\{lang\} paused=\{safety\} compact\/>/)
   assert.doesNotMatch(player,/data-opora-mid-lesson-music|midPauseOpen|moment==='musicPause'/)
   assert.match(player,/visitedSlideKeys:\[\.\.\.scenes\]/)
@@ -58,6 +64,8 @@ test('day 2 keeps audio on the same slide and never creates a new step or save',
     await click('Continue')
     await click('Continue')
     assert.equal(inlinePlayers().length,1,'Exactly one inline player')
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-guided-meditation']==='true'),
+      'The player must explain the three meditation steps before asking for feedback')
     assert.equal(inlinePlayers()[0].props.locale,'en')
     assert.equal(inlinePlayers()[0].props.paused,false)
     assert.equal(writes,0)
@@ -89,6 +97,8 @@ test('EN/RU/ES practice screens show one player and optional Continue',async()=>
       }
       const matches=nodes(h.tree).filter(n=>n.type?.testName==='OporaOceanOutro'&&n.props?.compact)
       assert.equal(matches.length,1,'One inline player for '+locale)
+      assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-guided-meditation']==='true'),
+        'Localized meditation steps must be visible before congratulations')
       assert.equal(matches[0].props.locale,locale)
       assert.ok(findButton(h.tree,next),'Continue must remain available without audio')
     }finally{h.unmount()}

@@ -127,8 +127,8 @@ test('day one restores five opening screens and all days add untracked support a
     assert.match(textOf(h.tree),new RegExp(d.saved))
     assert.ok(textOf(h.tree).includes(options[0].label),'Confirmed receipt shows the exact selected step')
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
-    await click(h,lang==='ru'?'Послушать волны':'Relax with waves')
-    assert.match(textOf(h.tree),lang==='ru'?/Две минуты спокойствия/:/Two quiet minutes/)
+    assert.ok(!findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),
+      'The inline grounding timer must not repeat after congratulations')
     await click(h,lang==='ru'?'Посмотреть, что дальше':"See what's next")
     // A single long route replaces the duplicated 3-day teaser and two
     // disconnected weekly lists. All 14 previews remain visible and read-only.

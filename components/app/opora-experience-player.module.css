@@ -507,3 +507,12 @@
 /* Inline player replaces the extra music screen on each daily practice. */
 .inlinePracticeAudio{width:100%;min-width:0;margin-top:clamp(5px,.9vh,9px)}
 .corePractice .inlinePracticeAudio{margin-top:4px}
+
+/* Three brief, optional grounding steps beside the existing inline audio player. */
+.meditationGuide{display:grid;gap:4px;color:#245266;text-align:left}
+.meditationGuide strong{font-size:clamp(13px,3.65vw,15px);line-height:1.25;color:#166b78}
+.meditationGuide ol{display:grid;gap:3px;padding-left:19px;margin:0;
+  font-size:clamp(12px,3.25vw,14px);line-height:1.32}
+.meditationGuide li{padding-left:2px}
+.meditationGuide li::marker{color:#158b91;font-weight:800}
+@media(max-height:680px){.meditationGuide ol{font-size:12px;gap:2px;line-height:1.25}}
