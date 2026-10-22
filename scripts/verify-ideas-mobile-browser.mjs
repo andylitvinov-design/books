@@ -116,14 +116,14 @@ async function verify(browserType, locale, width) {
     const giftOrder = daoResult.locator('[data-ideas-order-button="gift"]');
     await readingOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "true", label + ": order opens inline");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]').count(), 1, label + ": one inline request directly below chosen card");
-    assert.equal(await daoResult.locator('[data-inline-offer-form] input[type="checkbox"]').count(), 1, label + ": reply consent");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": one inline request directly below chosen card");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible input[type="checkbox"]').count(), 1, label + ": reply consent");
     await giftOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "false", label + ": choosing other card closes the first");
     assert.equal(await giftOrder.getAttribute("aria-expanded"), "true", label + ": gift opens without navigation");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]').count(), 1, label + ": never duplicate requests");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": never duplicate requests");
     await giftOrder.tap();
-    assert.equal(await daoResult.locator('[data-inline-offer-form]').count(), 0, label + ": click again collapses");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 0, label + ": click again collapses");
     const expandedBounds = await page.evaluate(() => ({
       viewport: window.innerWidth, content: document.documentElement.scrollWidth,
     }));
