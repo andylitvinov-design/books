@@ -124,3 +124,37 @@ test("free landing's final slide is just the compact form, in all three language
   assert.ok(main.lastIndexOf("<CompactLeadCapture") > main.lastIndexOf("<ServicesDirectoryInvitation"));
   assert.ok(es.lastIndexOf("<CompactLeadCapture") > es.lastIndexOf("<ServicesDirectoryInvitation"));
 });
+
+test("academy footer offers one Order button then two prepared chat links, never a duplicate contact form", () => {
+  const source = read("components/sitewide-lead-capture.tsx");
+  const css = read("components/sitewide-lead-capture.module.css");
+  const academyBranch = source.split('if (kind === "training") {')[1]?.split('const offer = coreKind')[0];
+  assert.ok(academyBranch, "dedicated Academy CTA exists");
+  assert.match(academyBranch, /data-academy-messenger-order/);
+  assert.match(academyBranch, /data-academy-order-button/);
+  assert.match(academyBranch, /aria-expanded=\{messengerOpen\}/);
+  assert.match(academyBranch, /trainingEnquiryUrl\(locale, pathname\)/);
+  assert.match(academyBranch, /telegramEnquiryUrlFromWhatsApp\(whatsappHref\)/);
+  assert.equal((academyBranch.match(/data-messenger-channel/g) || []).length, 2);
+  assert.doesNotMatch(academyBranch, /<CompactLeadCapture|<input|<textarea|contactConsent|\/api\/service-enquiries/);
+  assert.match(academyBranch, /hidden=\{!messengerOpen\}/);
+  assert.match(source, /setMessengerOpen\(false\)/);
+  for (const order of ["Order", "Заказать", "Solicitar"]) assert.ok(source.includes(order));
+  assert.match(css, /\.trainingChannels\[hidden\]/);
+  assert.match(css, /@media\(max-width:720px\)/);
+  assert.match(css, /@media\(max-width:345px\)/);
+  assert.match(css, /env\(safe-area-inset-bottom\)/);
+});
+
+test("Kundalini course appears correctly in all locales' prepared messenger requests", () => {
+  for (const locale of ["en", "ru", "es"]) {
+    const path = "/" + locale + "/academy/reiki/kundalini-reiki";
+    assert.equal(courseTopicForPath(path), "Kundalini Reiki");
+    const url = new URL(trainingEnquiryUrl(locale, path));
+    assert.equal(url.hostname, "wa.me");
+    const text = url.searchParams.get("text") || "";
+    assert.match(text, /Kundalini Reiki/);
+    assert.ok(text.includes("holistichouse.vercel.app" + path));
+    assert.doesNotMatch(text, /secret|health|password/i);
+  }
+});
