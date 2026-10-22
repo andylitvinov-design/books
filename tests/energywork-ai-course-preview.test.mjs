@@ -224,9 +224,9 @@ test('Kundalini slide includes all three screenshot-supplied reflections in Engl
 test('Flight to the Sun invites curiosity, removes clinical caveats and only offers published audio', () => {
   const opening = curriculum.slice(curriculum.indexOf('id: "flight-01"'), curriculum.indexOf('id: "flight-02"'))
   const audio = read('components/reiki-lesson-intro-audio.tsx')
-  assert.match(opening, /The Sun is calling\. Are you ready\?/)
-  assert.match(opening, /Солнце зовёт\. Готовы к полёту\?/)
-  assert.match(opening, /Andrey invites you on a guided journey through your imagination/)
+  assert.match(opening, /The Sun is calling\. Ready\?/)
+  assert.match(opening, /Солнце зовёт\. Готовы\?/)
+  assert.match(opening, /Join Andrey on a gentle journey toward the Sun/)
   assert.match(opening, /воображаемый полёт к Солнцу/)
   assert.equal((opening.match(/\n\s+l\("/g) || []).length, 3)
   assert.doesNotMatch(opening, /physical or medical claim|не медицинское утверждение/i)
@@ -235,4 +235,23 @@ test('Flight to the Sun invites curiosity, removes clinical caveats and only off
   assert.match(css, /Flight to the Sun: warmer, more evocative opening/)
   assert.ok(css.includes('.slide[data-reiki-art-layout="background"][data-energywork-slide-id="flight-01"] .slideMain > .art img'))
   assert.match(css, /\[data-energywork-slide-id="flight-01"\] \.lessonIntroPanel/)
+})
+
+
+test('All five Reiki introductions say what to expect in simple, compact EN/RU copy', () => {
+  const learner = read('components/energywork-ai-learner.tsx')
+  assert.match(learner, /"What to expect"/)
+  assert.match(learner, /"Что вас ждёт"/)
+  for (const id of ['flight-01', 'tan-01', 'kun-01', 'ygg-01', 'paths-01']) {
+    const intro = curriculum.match(new RegExp('id: "' + id + '"[\\s\\S]*?body: l\\("([^"]+)"[\\s\\S]*?introTopics: \\[([\\s\\S]*?)\\] \\}'))
+    assert.ok(intro, id + ' should keep its established intro slide and topics')
+    const enBody = intro[1]
+    const topics = [...intro[2].matchAll(/l\("([^"]+)", "([^"]+)"\)/g)]
+    assert.ok(enBody.split(/\s+/).length <= 28, id + ' has too much body copy')
+    assert.equal(topics.length, 3, id + ' should still preview three activities')
+    for (const [, en, ru] of topics) {
+      assert.ok(en.length <= 45, id + ' EN topic wraps excessively')
+      assert.ok(ru.length <= 51, id + ' RU topic wraps excessively')
+    }
+  }
 })
