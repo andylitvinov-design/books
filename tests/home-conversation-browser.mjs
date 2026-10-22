@@ -75,6 +75,26 @@ try {
         });
         assert.ok(geometry.left >= -1 && geometry.right <= width + 1,
           scenario.locale + "/" + width + " guide clipped: " + JSON.stringify(geometry));
+        const visualFit = await page.evaluate(() => {
+          const masthead = document.querySelector(".house-home--services > .house-header--services");
+          const hero = document.querySelector("[data-home-conversation-guide] [class*=intro]");
+          const firstTile = document.querySelector("[data-home-conversation-guide] [class*=quickChoices] button:first-child");
+          if (!masthead || !hero || !firstTile) return null;
+          const mastheadBox = masthead.getBoundingClientRect();
+          const heroBox = hero.getBoundingClientRect();
+          const titleBox = hero.querySelector("h2")?.getBoundingClientRect();
+          return {
+            headerInside: mastheadBox.left >= -1 && mastheadBox.right <= window.innerWidth + 1,
+            headerContentFits: masthead.scrollWidth <= masthead.clientWidth + 2,
+            heroTitleInside: Boolean(titleBox && titleBox.left >= heroBox.left - 1 && titleBox.right <= heroBox.right + 1),
+            starterTileHeight: firstTile.getBoundingClientRect().height,
+            starterTileColor: getComputedStyle(firstTile).color,
+          };
+        });
+        assert.ok(visualFit && visualFit.headerInside && visualFit.headerContentFits && visualFit.heroTitleInside,
+          scenario.locale + "/" + width + " masthead or pine hero overflows: " + JSON.stringify(visualFit));
+        assert.ok(visualFit.starterTileHeight >= 72, "Ideas-style quick start must stay easy to tap");
+        assert.equal(visualFit.starterTileColor, "rgb(7, 78, 80)", "Evergreen featured topic must match Ideas");
         if (width === 390) {
           await page.screenshot({ path: `artifacts/home-conversation/${engineName}-${scenario.locale}-collapsed.png` });
         }

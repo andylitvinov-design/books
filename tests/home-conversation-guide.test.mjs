@@ -281,3 +281,21 @@ test("approved first-screen composer stays spacious while contextual chat remain
   assert.match(component, /recommendations.map/, "latest contextual offers are preserved");
   assert.match(css, /ideas-pine-reference\.webp/);
 });
+
+test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and featured topic without changing the private chat", () => {
+  const home = read("components/holistic-house-home.tsx");
+  const guide = read("components/home-conversation-guide.tsx");
+  const css = read("components/home-conversation-guide.module.css");
+  const headerCss = read("app/holistic-house-home.css");
+  assert.match(home, /<SiteNavigation locale=\{locale\} \/>/);
+  assert.match(home, /<HomeConversationGuide locale=\{locale\} \/>/);
+  assert.match(css, /ideas-pine-reference\.webp/, "Keep the approved local pine artwork");
+  assert.match(css, /\.examples button:first-child \{/, "Featured topic visually mirrors Ideas but is not selected");
+  assert.match(css, /#dcf1ed/, "First tile uses the evergreen Ideas accent");
+  assert.match(css, /\.entryMic \{[\s\S]*?min-height: 44px;/);
+  assert.match(css, /\.entrySend \{[\s\S]*?#af805d/, "Warm CTA matches approved Ideas");
+  assert.match(headerCss, /\.house-home--services > \.house-header--services \{[\s\S]*?background: #fffdf9;/);
+  for (const token of ["data-home-guide-launcher-mic", "data-home-guide-dialog", "SpeechRecognition", "aria-modal=\"true\""]) {
+    assert.ok(guide.includes(token), "Existing guide behavior must remain: " + token);
+  }
+});
