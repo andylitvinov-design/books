@@ -61,7 +61,7 @@ test('Initiation request and five meditation reports remain; removed fifth quiz 
   assert.deepEqual(ENERGYWORK_REPORT_IDS, ['flight-04','tan-04','kun-04','ygg-04','end-01'])
   assert.ok(!ENERGYWORK_LESSON_ANSWER_IDS.includes('init-01'))
   assert.match(editorial, /lesson: "initiation", reportId: "end-01", questionId: "end-01", questionIds: \[\]/)
-  assert.match(learner, /item\.questionIds\.length > 0 \? <button/)
+  assert.match(learner, /!item\.questionDone \? <button/)
   assert.match(learner, /data-initiation-readiness/)
   assert.doesNotMatch(learner, /jumpToSlide\("paths-04"\)/)
   assert.match(learner, /jumpToSlide\(nextIncompleteSlide \?\? "end-01"\)/)
