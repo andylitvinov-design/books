@@ -29,3 +29,27 @@ test("course and bottom controls stay attached to the dynamic viewport", () => {
   assert.match(learner, /window\.addEventListener\("pageshow", keepCourseAtTop\)/);
   assert.match(learner, /\}, \[index\]\);/);
 });
+
+
+test("short-phone video composition keeps the introduction, player and full metadata", () => {
+  const styles = read("components/energywork-ai-learner.module.css");
+  const compact = styles.slice(styles.indexOf("/* Short-phone video composition:"));
+  assert.ok(compact.startsWith("/* Short-phone video composition:"));
+  assert.match(compact, /@media \(max-width: 760px\) and \(max-height: 700px\)/);
+  const scope = '.page[data-course-portrait="v3"] [data-energywork-slide-kind="video"]';
+  assert.ok(compact.includes(scope + ' .content {\n    order: 0;'));
+  assert.ok(compact.includes(scope + ' .video {\n    order: 1;'));
+  assert.match(compact, /font-size: 24px;\s*line-height: 1\.12/);
+  assert.match(compact, /width: min\(100%, 280px\)/);
+  assert.match(compact, /grid-template-columns: auto minmax\(0, 1fr\)/);
+  assert.match(compact, /\.academy-video-choice\) \{\s*display: contents/);
+  assert.match(compact, /grid-column: 1 \/ -1;\s*aspect-ratio: 16 \/ 9/);
+  assert.match(compact, /\.academy-video-direct-link\) \{[^}]*min-height: 44px/);
+  const body = compact.match(/\.description \{([^}]+)\}/)[1];
+  assert.doesNotMatch(body, /font-size|line-height|max-height|overflow|display/);
+  assert.doesNotMatch(compact, /display: none|overflow: hidden|line-clamp|text-overflow|clip-path/);
+  assert.doesNotMatch(compact, /data-energywork-slide-id|\[lang=/); // All four videos, both languages.
+  const learner = read("components/energywork-ai-learner.tsx");
+  assert.match(learner, /slide\.body\[locale\]/);
+  assert.match(learner, /\{t\.audio\} · \{media\.title\}/);
+});

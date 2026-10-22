@@ -31,7 +31,7 @@ test("offer truthfully promises a free introduction after completing the course,
     "Andrey will review and arrange the next step personally",
     "Ваши заметки не отправляются Андрею автоматически",
   ]) assert.ok(landing.includes(phrase), phrase);
-  assert.match(landing, /five lesson reports and five course answers/);
+  assert.match(landing, /required lesson reports and study answers/);
   assert.doesNotMatch(landing, /certificate automatically|guaranteed cure|automatic attunement/i);
 });
 
