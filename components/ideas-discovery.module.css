@@ -618,11 +618,11 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   letter-spacing:.13em;
 }
 .aphorismHeading svg { color:#886346; width:19px; height:19px; }
-.aphorisms { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin:0; padding:0; }
+.aphorisms { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; margin:0; padding:0; }
 .aphorisms li {
   display:block;
   min-width:0;
-  padding:14px 11px 12px;
+  padding:12px 14px;
   border:1px solid #eaded1;
   border-radius:14px;
   background:rgba(255,253,250,.75);
@@ -630,9 +630,9 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 }
 .aphorisms li:last-child { border:1px solid #eaded1; }
 .aphorisms .number { display:none; }
-.aphorismBody::before { content:"❞"; display:block; color:#8e684a; font:28px/.9 Georgia,serif; }
-.aphorisms p { margin:9px 0; color:#3f342d; font:400 clamp(12px,1.2vw,15px)/1.42 Arial,Helvetica,sans-serif; }
-.aphorismSource { display:block; font-size:10px; line-height:1.35; color:#7b6450; text-transform:none; overflow-wrap:anywhere; }
+.aphorismBody::before { content:"❞"; float:left; margin:3px 12px 2px 0; color:#8e684a; font:25px/.9 Georgia,serif; }
+.aphorisms p { margin:0 0 7px; color:#3f342d; font:400 clamp(14px,1.55vw,17px)/1.42 Arial,Helvetica,sans-serif; }
+.aphorismSource { display:block; font-size:11px; line-height:1.38; color:#7b6450; text-transform:none; overflow-wrap:anywhere; }
 .moreAphorisms { margin-top:12px; background:#76523a; border-color:#76523a; }
 .root :is(button,a,textarea,summary):focus-visible { outline:3px solid #15878b; outline-offset:3px; }
 @media (max-width:760px) {
@@ -672,11 +672,11 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .relatedAphorisms { margin-top:8px; padding:8px 6px; border-radius:13px; }
   .aphorismHeading { margin-bottom:7px; font-size:10px; gap:6px; }
   .aphorismHeading svg { width:17px; height:17px; }
-  .aphorisms { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
-  .aphorisms li { padding:9px 7px; border-radius:12px; }
-  .aphorismBody::before { font-size:22px; }
-  .aphorisms p { margin:6px 0 9px; font-size:12px; line-height:1.35; }
-  .aphorismSource { font-size:10px; line-height:1.25; }
+  .aphorisms { grid-template-columns:minmax(0,1fr); gap:7px; }
+  .aphorisms li { padding:11px 10px; border-radius:12px; }
+  .aphorismBody::before { font-size:22px; margin-right:10px; }
+  .aphorisms p { margin:0 0 6px; font-size:15px; line-height:1.42; }
+  .aphorismSource { font-size:11px; line-height:1.34; }
   .hexagramActions { gap:5px; margin-top:7px; }
   .hexagramActions a,.hexagramActions button { min-height:44px; padding:8px 10px; font-size:11px; }
 }
@@ -692,8 +692,8 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .daoPoint p { font-size:11.7px; }
   .relatedAphorisms { padding:7px 4px; }
   .aphorisms { gap:4px; }
-  .aphorisms li { padding:8px 5px; }
-  .aphorisms p { font-size:11.5px; }
+  .aphorisms li { padding:10px 9px; }
+  .aphorisms p { font-size:14px; }
 }
 @media (prefers-reduced-motion:reduce) { .attach,.submit,.daoExpanded summary { transition:none; } }
 
@@ -729,22 +729,9 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .aphorismSourceLabel { font-size:10px; }
 }
 
-/* At 320px, keep sourced quotations comfortably readable via swipe rather than 11px text. */
-@media (max-width: 360px) {
-  .relatedAphorisms .aphorisms {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(160px, 76%);
-    grid-template-columns: none;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: thin;
-    padding-bottom: 6px;
-  }
-  .relatedAphorisms .aphorisms > li { scroll-snap-align: start; }
-  .relatedAphorisms .aphorisms p { font-size: 13px; }
-}
+/* Three readable full-width horizontal quote rows at every mobile width, without a swipe rail. */
+.relatedAphorisms .aphorisms { grid-template-columns:minmax(0,1fr); overflow:visible; }
+.relatedAphorisms + .daoQuick, .relatedAphorisms + .daoInsight { margin-top:12px; }
 
 /* Approved Holistic House Dao photo cards · 2026-10-21
    Use existing optimized first-party photographs: real master portrait and
@@ -776,12 +763,12 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 .daoQuick .hexagramActions a:hover { background: #074548; }
 .daoQuick .hexagramActions button:hover { background: #ebf4ef; }
 .daoQuick .note { margin-top: 12px; color: #706761; line-height: 1.46; }
-.daoQuick .daoPromos {
+.results .daoPromos {
   gap: clamp(11px, 1.7vw, 17px);
   padding-top: 17px;
   border-color: #e4d6c5;
 }
-.daoQuick .daoPromo {
+.daoPromos .daoPromo {
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -802,12 +789,12 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   box-shadow: 0 10px 28px rgba(99, 68, 39, .065), inset 0 1px rgba(255, 255, 255, .8);
   transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
 }
-.daoQuick .daoPromo:hover {
+.daoPromos .daoPromo:hover {
   transform: translateY(-2px);
   border-color: #bb9874;
   box-shadow: 0 13px 28px rgba(92, 61, 37, .11);
 }
-.daoQuick .daoPromo::before {
+.daoPromos .daoPromo::before {
   content: "";
   display: block;
   grid-column: 2;
@@ -821,7 +808,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   background: #e3d0b7 url("/images/holistic-house/portrait-static/andy-384-37fe593841e3.webp") center 28% / cover no-repeat;
   box-shadow: 0 5px 18px rgba(79, 57, 42, .1);
 }
-.daoQuick .daoPromo::after {
+.daoPromos .daoPromo::after {
   content: "";
   position: absolute;
   z-index: -1;
@@ -832,17 +819,17 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   opacity: .23;
   pointer-events: none;
 }
-.daoQuick .daoPromoGift {
+.daoPromos .daoPromoGift {
   border-color: #83b9ae;
   background: linear-gradient(143deg, #fbfdf9 0%, #e8f1eb 100%);
 }
-.daoQuick .daoPromoGift:hover { border-color: #559b93; }
-.daoQuick .daoPromoGift::before {
+.daoPromos .daoPromoGift:hover { border-color: #559b93; }
+.daoPromos .daoPromoGift::before {
   border-color: rgba(255, 253, 247, .8);
   background-image: url("/images/holistic-house/hero-olive-incense.webp");
   background-position: center;
 }
-.daoQuick .daoPromoEyebrow {
+.daoPromos .daoPromoEyebrow {
   position: relative;
   z-index: 1;
   grid-column: 1 / -1;
@@ -855,9 +842,9 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   letter-spacing: .105em;
   text-transform: uppercase;
 }
-.daoQuick .daoPromoGift .daoPromoEyebrow { color: #0e6567; }
-.daoQuick .daoPromoEyebrow svg { flex: 0 0 auto; width: 19px; height: 19px; }
-.daoQuick .daoPromoTitle {
+.daoPromos .daoPromoGift .daoPromoEyebrow { color: #0e6567; }
+.daoPromos .daoPromoEyebrow svg { flex: 0 0 auto; width: 19px; height: 19px; }
+.daoPromos .daoPromoTitle {
   position: relative;
   z-index: 1;
   grid-column: 1;
@@ -869,7 +856,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   overflow-wrap: anywhere;
   text-wrap: balance;
 }
-.daoQuick .daoPromoDescription {
+.daoPromos .daoPromoDescription {
   position: relative;
   z-index: 1;
   grid-column: 1;
@@ -881,7 +868,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   overflow-wrap: break-word;
   text-wrap: pretty;
 }
-.daoQuick .daoPromoAction {
+.daoPromos .daoPromoAction {
   position: relative;
   z-index: 1;
   grid-column: 1 / -1;
@@ -899,23 +886,23 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   font: 800 clamp(13px, 1.35vw, 16px)/1.25 Arial, Helvetica, sans-serif;
   box-shadow: 0 6px 12px rgba(7, 78, 80, .12);
 }
-.daoQuick .daoPromoGift .daoPromoAction {
+.daoPromos .daoPromoGift .daoPromoAction {
   background: linear-gradient(118deg, #906244, #755038);
   box-shadow: 0 6px 12px rgba(113, 72, 43, .12);
 }
-.daoQuick .daoPromoAction svg { flex: 0 0 auto; width: 20px; height: 20px; }
+.daoPromos .daoPromoAction svg { flex: 0 0 auto; width: 20px; height: 20px; }
 .relatedAphorisms {
   border-color: #e8d2bd;
   background: linear-gradient(96deg, rgba(250, 239, 227, .98) 0%, rgba(255, 250, 244, .9) 68%, rgba(255, 249, 239, .7) 100%), url("/images/holistic-house/ideas-zen-landscape.svg") right center / auto 100% no-repeat;
 }
 @media (max-width: 760px) {
-  .daoQuick .daoPromos {
+  .results .daoPromos {
     grid-template-columns: minmax(0, 1fr);
     gap: 11px;
     margin-top: 16px;
     padding-top: 14px;
   }
-  .daoQuick .daoPromo {
+  .daoPromos .daoPromo {
     grid-template-columns: minmax(0, 1.48fr) minmax(96px, .84fr);
     column-gap: 9px;
     row-gap: 9px;
@@ -923,27 +910,41 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
     padding: 14px;
     border-radius: 20px;
   }
-  .daoQuick .daoPromo::before { min-height: 186px; }
-  .daoQuick .daoPromoTitle { font-size: clamp(19px, 5.4vw, 24px); line-height: 1.2; }
-  .daoQuick .daoPromoDescription { font-size: 12.5px; line-height: 1.45; }
-  .daoQuick .daoPromoAction { min-height: 49px; padding: 12px 14px; margin-top: 5px; font-size: 14px; }
-  .daoQuick .daoPromoEyebrow { font-size: 10px; letter-spacing: .08em; }
+  .daoPromos .daoPromo::before { min-height: 186px; }
+  .daoPromos .daoPromoTitle { font-size: clamp(19px, 5.4vw, 24px); line-height: 1.2; }
+  .daoPromos .daoPromoDescription { font-size: 12.5px; line-height: 1.45; }
+  .daoPromos .daoPromoAction { min-height: 49px; padding: 12px 14px; margin-top: 5px; font-size: 14px; }
+  .daoPromos .daoPromoEyebrow { font-size: 10px; letter-spacing: .08em; }
   .daoQuick .hexagramActions a,
   .daoQuick .hexagramActions button { min-height: 46px; padding: 9px 15px; font-size: 12px; }
 }
 @media (max-width: 360px) {
-  .daoQuick .daoPromo {
+  .daoPromos .daoPromo {
     grid-template-columns: minmax(0, 1.5fr) minmax(83px, .8fr);
     column-gap: 7px;
     padding: 11px;
     border-radius: 17px;
   }
-  .daoQuick .daoPromo::before { min-height: 166px; border-width: 2px; }
-  .daoQuick .daoPromoTitle { font-size: 18px; }
-  .daoQuick .daoPromoDescription { font-size: 12px; }
-  .daoQuick .daoPromoAction { font-size: 13px; }
+  .daoPromos .daoPromo::before { min-height: 166px; border-width: 2px; }
+  .daoPromos .daoPromoTitle { font-size: 18px; }
+  .daoPromos .daoPromoDescription { font-size: 12px; }
+  .daoPromos .daoPromoAction { font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .daoQuick .daoPromo { transition: none; }
-  .daoQuick .daoPromo:hover { transform: none; }
+  .daoPromos .daoPromo { transition: none; }
+  .daoPromos .daoPromo:hover { transform: none; }
 }
+
+/* One in-place form belongs directly under its own offer card; never float it over Dao. */
+.daoPromoWrapper { min-width:0; }
+.daoPromos .daoPromo { height:100%; }
+.daoPromos .daoPromoAction { border:0; cursor:pointer; text-align:left; }
+.daoPromos .daoPromoAction:hover { filter:brightness(1.08); }
+.daoPromos .daoPromoAction[aria-expanded="true"] { filter:brightness(.92); }
+.daoPromoMore {
+  display:inline-flex; align-items:center; gap:6px; margin:7px 10px 0;
+  min-height:34px; color:#345e5e; font:700 12px/1.4 Arial,Helvetica,sans-serif;
+  text-decoration:underline; text-underline-offset:3px;
+}
+.daoPromoMore:hover { color:#17484b; }
+.daoPromos :is(button,a):focus-visible { outline:3px solid #138387; outline-offset:3px; }
