@@ -39,6 +39,13 @@
   margin:auto;padding:clamp(22px,5.5vw,34px);
   background:linear-gradient(145deg,rgba(255,253,246,.96),rgba(244,250,244,.94));
   border-color:rgba(255,251,241,.95);
+  gap:clamp(8px,1.25vh,12px);
+}
+.support .title{font-size:clamp(24px,6.2vw,31px);line-height:1.13}
+@media(max-height:680px){
+  .support .panel{padding:clamp(14px,3.4vw,20px)}
+  .support .title{font-size:clamp(23px,6vw,28px)}
+  .lessonBrief{gap:7px}
 }
 .supportMessage{display:grid;gap:10px}
 /* The post-mood orientation keeps previously completed topics ahead of today's
