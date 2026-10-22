@@ -57,6 +57,14 @@ jobs:
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Thumbnail URL safety and media source allowlist
         run: node --test tests/practice-material-preview-url.test.mjs tests/practice-materials-action-first.test.mjs tests/practice-v4-visual-parity.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-approved-v4-ui.test.mjs tests/practitioner-course-builder.test.mjs tests/course-slide-recorder.test.mjs tests/practice-video-composer-compact.test.mjs tests/practitioner-video-materials.test.mjs tests/practice-single-screen-workspace.test.mjs tests/practice-approved-dashboard.test.mjs tests/practice-single-owner-cabinet.test.mjs
+      - name: Phone audio regression - mobile formats, library, client reports and course reuse
+        run: |
+          node --test \
+            tests/mobile-audio-library.test.mjs \
+            tests/practitioner-material-library.test.mjs \
+            tests/material-library-upload-headers.test.mjs \
+            tests/client-session-owner-audio-upload.test.mjs \
+            tests/practice-private-report-materials.test.mjs
       - name: ESLint of changed interactive panels
         run: npx --no-install eslint components/app/practice-workspace.jsx components/app/practice-materials.jsx
       - name: TypeScript regression

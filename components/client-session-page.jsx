@@ -71,7 +71,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId,showPractition
   const heading=<div className={[styles.mediaHeading,portraitEnabled&&voiceStyles.voiceHeading].filter(Boolean).join(' ')}>
     {!portraitEnabled&&(isVideo?<Video size={20}/>:<Headphones size={20}/>)}
     <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
-      <small>{library?(ru?'Дополнительное видео':'Supplementary video'):educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
+      <small>{library?(isVideo?(ru?'Дополнительное видео':'Supplementary video'):(ru?'Дополнительное аудио':'Supplementary audio')):educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
         isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
     {portraitEnabled&&<AudioLines className={voiceStyles.soundWaves} size={29} aria-hidden="true"/>}
   </div>
@@ -379,7 +379,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
               {item.description&&<p>{item.description}</p>}
             </figure>
             :<PrivatePlayer key={item.id}
-              item={{assetId:item.id,kind:'video',mime:item.mime,title:item.title,role:'library',transcript:''}}
+              item={{assetId:item.id,kind:item.kind,mime:item.mime,title:item.title,role:'library',transcript:''}}
               session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
       </div>}
       {!hasMaterials&&<p className={styles.reportMaterialsEmpty}>
