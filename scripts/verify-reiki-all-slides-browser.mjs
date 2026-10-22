@@ -136,7 +136,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   // meditation video. Audio is optional until the author uploads his file.
   if (["flight-01","tan-01","kun-01","ygg-01"].includes(id)) {
     await expect(page.locator('[data-reiki-lesson-intro]')).toBeVisible();
-    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toBeVisible();
+    // Isolated browser fixture has no owner-published recording; no placeholder is rendered.
+    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toHaveCount(0);
     await expect(page.locator('[data-reiki-lesson-intro] li')).toHaveCount(3);
     await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
   }

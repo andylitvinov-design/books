@@ -5233,3 +5233,22 @@
   .lessonVideoChoices { gap: 4px; margin-bottom: 5px; }
   .lessonVideoChoice { padding: 5px 6px; font-size: 11px; }
 }
+
+
+/* Compact portrait videos on short phones: preserve the 16:9 player and action dock.
+   Only the video card is narrower; other lesson content retains readable typography. */
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .video {
+    padding: 5px;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .video :global(.academy-video-choice) {
+    max-width: 228px;
+    margin-inline: auto;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .videoCaption {
+    display: none;
+  }
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .lessonVideoChoice {
+    min-height: 30px;
+  }
+}
