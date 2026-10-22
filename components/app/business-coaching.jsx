@@ -9,7 +9,7 @@ import {
   BUSINESS_RESPONSE_LABELS, BUSINESS_METRICS,
   businessSnapshotScores, businessSuggestions, businessProgress, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
-import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress } from '@/lib/business-coaching/week-modules'
+import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress, businessTrackExample } from '@/lib/business-coaching/week-modules'
 import styles from './business-coaching.module.css'
 
 // Decorative first-party CSS illustration: executive notebook on a walnut desk.
@@ -43,6 +43,7 @@ const copy = {
     learnedBefore:'Previously practised', firstSkill:'Your first practice starts here.', todaySkill:'Today’s skill',
     focusHelp:'Optional: start with two quiet minutes. This timer does not mark the action complete.',
     focusStart:'Start 2 minutes', focusPause:'Pause', focusReset:'Reset', focusDone:'Two minutes done. Continue the real-world task at your own pace.',
+    exampleForMyPath:'Example for my direction (optional)',
     reflectionTitle:'A thought for today', reflectionPrompt:'Does today’s step seem useful for your own goal?',
     reflectAgree:'Yes', reflectDisagree:'No', reflectUnsure:'I need to think',
     reflectOptional:'Optional. This is your opinion, not a test or a completed action. It saves only with your lesson.',
@@ -108,6 +109,7 @@ const copy = {
     learnedBefore:'Ранее практиковали', firstSkill:'Это ваша первая практика.', todaySkill:'Навык на сегодня',
     focusHelp:'Если трудно начать — попробуйте две минуты. Таймер сам по себе не означает выполнения задания.',
     focusStart:'Начать 2 минуты', focusPause:'Пауза', focusReset:'Сброс', focusDone:'Две минуты прошли. Продолжайте реальное задание в удобном темпе.',
+    exampleForMyPath:'Пример для моего направления (по желанию)',
     reflectionTitle:'Мысль на сегодня', reflectionPrompt:'Насколько этот шаг полезен для вашей цели?',
     reflectAgree:'Да', reflectDisagree:'Нет', reflectUnsure:'Надо подумать',
     reflectOptional:'Необязательно. Это ваше мнение, не тест и не отметка о выполнении. Сохраняется вместе с уроком.',
@@ -298,6 +300,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   const week=selected?.week||1
   const currentModule=businessWeekModule(week,lang)
   const currentWeekProgress=businessWeekProgress(course,week)
+  const trackExample=businessTrackExample(week,course?.track,lang)
   const previousSkills=Array.from({length:day-1},(_,index)=>day-1-index)
     .filter(previous=>course?.days?.[previous]?.done).slice(0,2).reverse()
     .map(previous=>({
@@ -574,6 +577,10 @@ export default function BusinessCoaching({locale='en',accountId}){
           <h2>{t.practice}</h2>
           <p>{selected.action}</p>
           <small><CheckCircle2 size={16} aria-hidden="true"/>{t.doneWhen}: {selected.doneWhen}</small>
+          {trackExample&&<details className={styles.trackExample} data-business-path-example>
+            <summary>{t.exampleForMyPath}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <p>{trackExample}</p>
+          </details>}
           <div className={styles.focusTimer} data-business-focus-timer>
             <span>{t.focusHelp}</span>
             <div className={styles.focusTimerRow}>
