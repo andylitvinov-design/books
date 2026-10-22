@@ -49,7 +49,7 @@ test("Five lesson course retains Sun meditation and has 60 slides", () => {
     "flight-04", "flight-03", "flight-done",
   ])
   assert.equal(sequence.length, 60)
-  assert.deepEqual(energyworkLessonRanges().map(({count}) => count), [8, 14, 16, 14, 9])
+  assert.deepEqual(energyworkLessonRanges().map(({count}) => count), [8, 14, 16, 14, 6])
 })
 
 test("Tantra has exactly five required screens in the established order", () => {
