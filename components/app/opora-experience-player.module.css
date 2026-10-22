@@ -541,6 +541,7 @@
 .learnedSkill>p{margin:3px 0 0;color:#365e67;font-size:clamp(14px,3.7vw,16px);line-height:1.36}
 .learnedSkill>p b{color:#215661;font-weight:760}
 .frame.receipt .receiptNote{padding:10px 12px;font-size:clamp(14px,3.6vw,16px)}
+.frame.receipt .receiptNote small{display:block;margin-top:2px;font-size:13px;font-weight:540;line-height:1.33}
 .receiptDetails{color:#3c6370;border-top:1px solid rgba(153,207,202,.8)}
 .receiptDetails summary{
   display:flex;align-items:center;min-height:43px;cursor:pointer;
