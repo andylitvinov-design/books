@@ -230,13 +230,13 @@ export default function BusinessCoaching({locale='en',accountId}){
   const course=state?.course,revision=state?.revision||0
   // A local optional focus timer: it neither sends personal data nor marks a day completed.
   useEffect(()=>{
-    if(!focusRunning||tab!=='today'||lessonStage!==1||course?.status!=='active')return
-    const timer=window.setInterval(()=>setFocusRemaining(seconds=>{
-      if(seconds<=1){setFocusRunning(false);return 0}
-      return seconds-1
-    }),1000)
-    return()=>window.clearInterval(timer)
-  },[focusRunning,tab,lessonStage,course?.status])
+    if(!focusRunning||tab!=='today'||lessonStage!==1||course?.status!=='active'||focusRemaining===0)return
+    const timer=window.setTimeout(()=>{
+      setFocusRemaining(Math.max(0,focusRemaining-1))
+      if(focusRemaining<=1)setFocusRunning(false)
+    },1000)
+    return()=>window.clearTimeout(timer)
+  },[focusRunning,tab,lessonStage,course?.status,focusRemaining])
   useEffect(()=>{setFocusRunning(false)},[lessonStage,tab])
   useEffect(()=>{setFocusRunning(false);setFocusRemaining(120)},[day])
   useEffect(()=>{
