@@ -236,7 +236,7 @@ export function mount(name, props, { exportName = 'default' } = {}) {
     const previous = active; active = context
     try { return fn(nextProps) } finally { active = previous }
   }
-  const recursiveComponents = new Set(['RouteMethodActivity', 'RoutePracticeLab', 'OporaModuleActivity','OporaStateJourney','ChoiceRow','OpeningRating'])
+  const recursiveComponents = new Set(['RouteMethodActivity', 'RoutePracticeLab', 'OporaModuleActivity','OporaStateJourney','ChoiceRow','OpeningRating','OporaCoursePath'])
   const expand = (value, path) => {
     if (Array.isArray(value)) return value.map((child, index) => expand(child, path + '/' + (child?.key ?? index)))
     if (!value || typeof value !== 'object') return value
