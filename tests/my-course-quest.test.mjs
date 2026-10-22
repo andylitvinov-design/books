@@ -115,7 +115,7 @@ test('every lesson screen exposes Back, including the first and the saved receip
   assert.match(oporaV6, /onClick=\{afterSave\?\(\)=>setStep\(slides\.length-1\):step===0\?onClose:back\}/)
   assert.match(oporaV6, /if\(reviewOnly\)\{setStep\(slides\.length\);return\}/)
   assert.match(oporaV7, /onClick=\{step===0\?onClose:back\}/)
-  assert.match(oporaV7, /outroOpen\?\(\)=>setOutroOpen\(false\):\(\)=>setStep\(displayScenes\.length-1\)/)
+  assert.match(oporaV7, /:inPreview\?backFromPreview:\(\)=>setStep\(displayScenes\.length-1\)/)
   assert.match(quest, /if\(step===0\)onClose\(\)/)
   assert.match(quest, /step === 5 && <>/)
 })
