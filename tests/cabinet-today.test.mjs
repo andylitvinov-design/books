@@ -19,7 +19,8 @@ test('cabinet actions go to existing editors and personal paths, never into user
   assert.equal(cabinetActionHref('lessons', 'en'), '/en/app/course?view=courses')
   assert.equal(cabinetActionHref('ideas', 'en'), '/en/books')
   assert.equal(cabinetActionHref('unsafe', 'en'), null)
-  assert.equal(cabinetActionHref('course', 'es'), '/en/app/practice?panel=materials&materialTab=courses')
+  assert.equal(cabinetActionHref('course', 'es'), '/es/app/practice?panel=materials&materialTab=courses')
+  assert.equal(cabinetActionHref('tests', 'es'), '/es/app/tests')
 })
 
 test('material shortcuts are exposed to practitioners only; audio remains owner-only', () => {
@@ -31,9 +32,11 @@ test('material shortcuts are exposed to practitioners only; audio remains owner-
   assert.ok(cabinetActionIds({practitioner:true}).includes('article'))
 })
 
-test('typed RU/EN wishes select real tools without automatically creating or transmitting data', () => {
+test('typed RU/EN/ES wishes select real tools without automatically creating or transmitting data', () => {
   const owner = {practitioner:true,owner:true}
   assert.equal(matchCabinetIntent('Хочу написать статью',owner), 'article')
+  assert.equal(matchCabinetIntent('Quiero crear un curso',owner), 'course')
+  assert.equal(matchCabinetIntent('Quiero hacer una prueba'), 'tests')
   assert.equal(matchCabinetIntent('Создать курс о бизнесе',owner), 'course')
   assert.equal(matchCabinetIntent('Записать видео',owner), 'video')
   assert.equal(matchCabinetIntent('Записать аудио',owner), 'audio')
@@ -68,4 +71,25 @@ test('signed-in portrait opens the compact task-first UI before preserved report
   assert.match(stylesheet, /@media\(max-width:430px\)/)
   assert.match(stylesheet, /@media\(max-width:350px\)/)
   assert.match(stylesheet, /focus-visible/)
+})
+
+test('Personal is the left column, Professional the right; creator actions retain role gates', () => {
+  assert.match(component, /data-cabinet-action-groups/)
+  assert.match(component, /personalMain = \['tests', 'reports', 'lessons', 'ideas'\]/)
+  assert.match(component, /professionalMain = canCreate/)
+  assert.match(component, /isOwner \? 'audio' : 'service'/)
+  assert.match(component, /const available = new Set\(cabinetActionIds/)
+  assert.match(component, /available\.has\(id\)/)
+  const personal = component.indexOf('data-cabinet-category="personal"')
+  const professional = component.indexOf('data-cabinet-category="professional"')
+  assert.ok(personal >= 0 && professional > personal)
+  assert.match(component, /\{canCreate && <section/)
+  assert.match(component, /\{t\.personal\}/)
+  assert.match(component, /\{t\.professional\}/)
+  assert.match(component, /es: \{/)
+  assert.match(component, /locale === 'es' \? 'es-ES'/)
+  assert.match(stylesheet, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(stylesheet, /@media\(max-width:430px\)/)
+  assert.match(stylesheet, /@media\(max-width:350px\)/)
+  assert.match(stylesheet, /\.shell \.field input \{/)
 })
