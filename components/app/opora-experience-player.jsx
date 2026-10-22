@@ -766,8 +766,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           onClick={()=>{setInviteOpen(false);setPreviewIndex(previewScreens.length-1)}}>
           <ArrowLeft size={17}/>{t.back}</button>:
         receipt?<button type="button" className={styles.back} disabled={locked}
-          onClick={moment==='habit'
-            ?(habitSetup?()=>setHabitSetup(false):()=>{setPreviewIndex(-1);setInviteOpen(true)})
+          onClick={moment==='habit'&&habitSetup?()=>setHabitSetup(false)
             :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):()=>setStep(displayScenes.length-1)}>
           <ArrowLeft size={17}/>{t.back}
         </button>:<button type="button" className={styles.back}
