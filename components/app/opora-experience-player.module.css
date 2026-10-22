@@ -41,6 +41,48 @@
   border-color:rgba(255,251,241,.95);
 }
 .supportMessage{display:grid;gap:10px}
+/* The post-mood orientation keeps previously completed topics ahead of today's
+   actual skill and practical instruction, with no additional scroll-only step. */
+.lessonBrief{display:grid;gap:9px;min-width:0}
+.briefKicker{
+  margin:0;color:#217980;font-size:clamp(11px,3vw,13px);
+  font-weight:850;letter-spacing:.065em;line-height:1.25;
+}
+.briefFirst{
+  margin:0;color:#48636a;font-size:clamp(13px,3.5vw,15px);
+  line-height:1.36;
+}
+.priorList{display:grid;gap:5px;list-style:none;margin:0;padding:0}
+.priorList li{
+  display:flex;align-items:flex-start;gap:7px;min-width:0;
+  color:#365c60;font-size:clamp(13px,3.45vw,15px);line-height:1.3;
+}
+.priorList svg{flex:0 0 auto;margin-top:1px;color:#168a84}
+.priorList span{min-width:0;overflow-wrap:anywhere}
+.todayBrief{
+  display:grid;gap:6px;padding:11px 13px;
+  border:1.5px solid #74c5bd;border-radius:15px;
+  background:rgba(220,247,238,.91);box-shadow:0 2px 6px #2a776211;
+}
+.todayBrief>strong{
+  font-size:clamp(19px,5vw,23px);line-height:1.19;
+  font-weight:850;color:#185467;overflow-wrap:anywhere;
+}
+.todayBrief p{margin:0;color:#315766;font-size:clamp(14px,3.75vw,16px);line-height:1.4}
+.todayBrief p b{color:#176d75}
+.olderSkills,.supportNote{min-width:0;color:#365f68}
+.olderSkills summary,.supportNote summary{
+  display:list-item;cursor:pointer;padding:2px 1px;
+  font-size:clamp(12px,3.35vw,14px);line-height:1.4;font-weight:690;
+}
+.olderSkills summary:focus-visible,.supportNote summary:focus-visible{
+  outline:3px solid #096d89;outline-offset:2px;
+}
+.olderSkills .priorList{padding:7px 0 0}
+.supportNote .supportBody{
+  margin:6px 0 0;font-size:clamp(13px,3.5vw,15px);
+  line-height:1.45;
+}
 .supportBody{
   margin:0;color:#36535b;font-size:clamp(18px,4.55vw,21px);
   font-weight:530;line-height:1.55;text-wrap:pretty;
