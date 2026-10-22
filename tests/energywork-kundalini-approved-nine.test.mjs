@@ -36,7 +36,7 @@ test('Lesson three contains exactly nine approved questions in the requested ord
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.deepEqual(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ids)
   assert.deepEqual(energyworkLessonRanges().map(({ count }) => count), [8,14,16,14,9])
-  assert.equal(energyworkSequence().length, 63)
+  assert.equal(energyworkSequence().length, 60)
   for (let i = 0; i < original.length; i++) {
     const start = curriculum.indexOf('id: "' + ids[i] + '"')
     const end = curriculum.indexOf('id: "' + (ids[i + 1] || 'kun-done') + '"', start)
