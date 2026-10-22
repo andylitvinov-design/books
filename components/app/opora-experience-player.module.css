@@ -243,6 +243,13 @@
   box-shadow:inset 0 0 0 1px #fff,0 2px 9px #159a9b1c;
 }
 .chips button:disabled{opacity:.6}
+/* This is a real-life choice rather than a second quote. Single-column actions
+   keep their meaning readable on 320–430px phones without horizontal scrolling. */
+.microChoices{grid-template-columns:minmax(0,1fr);gap:8px}
+.microChoices button{justify-content:flex-start;text-align:left;min-height:51px;padding:9px 13px;
+  font-size:clamp(15px,3.85vw,17px);line-height:1.3;font-weight:700}
+.microChoices button:last-child{justify-content:center;text-align:center;min-height:43px;
+  background:rgba(255,255,255,.75);font-weight:630}
 /* Optional own resource fits the same compact, soft Day 1 card. */
 .supportLabel{
   margin:-2px 0 -7px;color:#356878;
