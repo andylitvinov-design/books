@@ -448,7 +448,12 @@ async function verifySaveThenInstall(page, locale) {
   });
   await page.route(bootstrapPattern, async route => {
     await route.fulfill({ status:200, contentType:"application/json",
-      body: JSON.stringify({ account: { id:accountId, displayName:"Test learner", onboardingState:"active" } }) });
+      // Match appFetch's actual bootstrap contract so the fake login cannot
+      // appear successful without the shape the real client accepts.
+      body: JSON.stringify({
+        account: { id:accountId, displayName:"Test learner", onboardingState:"active" },
+        results:[], runs:[], requests:[], consents:[], services:[],
+      }) });
   });
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
