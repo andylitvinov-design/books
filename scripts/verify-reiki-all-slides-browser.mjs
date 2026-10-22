@@ -162,8 +162,29 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     if (expectedReviews) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
       const screenshotExamples = id === "flight-voices" || id === "kun-voices";
-      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(screenshotExamples ? 1 : 2);
-      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a'))
+        .toHaveCount(id === "flight-voices" ? 0 : screenshotExamples ? 1 : 2);
+      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']"))
+        .toHaveCount(id === "flight-voices" ? 0 : 1);
+      if (id === "flight-voices" && page.viewportSize()?.width <= 760) {
+        const arrows = await page.locator("button[data-review-next]").evaluate(button => {
+          const rectangle = button.getBoundingClientRect();
+          const circleInset = parseFloat(getComputedStyle(button, "::before").inset);
+          const review = button.closest("[data-meditation-voices]").querySelector("[data-review-fulltext]");
+          return {
+            touchWidth: rectangle.width,
+            touchHeight: rectangle.height,
+            circleDiameter: rectangle.width - 2 * circleInset,
+            quotePadding: parseFloat(getComputedStyle(review).paddingRight),
+          };
+        });
+        assert.ok(arrows.touchWidth >= 44 && arrows.touchHeight >= 44,
+          where + ": smaller visual arrows must keep a 44px touch target");
+        assert.ok(arrows.circleDiameter <= 35 && arrows.circleDiameter >= 32,
+          where + ": arrow circles should be visually compact");
+        assert.ok(arrows.quotePadding <= 4,
+          where + ": keep the testimonial reading column wide");
+      }
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
       const first = await carousel.locator("blockquote p").innerText();
       if (id === "kun-voices") {
