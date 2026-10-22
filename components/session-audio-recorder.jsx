@@ -354,8 +354,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
           disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)||videoStatus?.ready!==true}>
           <Video size={20}/>{ru?'Записать видео':'Record video'}</button>}
         <label className={styles.filePicker}><UploadCloud size={18}/>{videoOnly?(ru?'Загрузить видео':'Upload video'):audioOnly?(ru?'Загрузить файл':'Upload file'):(ru?'Загрузить из телефона':'Choose from phone')}
-          <input type="file" accept={videoOnly?'video/mp4,video/quicktime,.mp4,.mov':audioOnly?'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.flac,.aac':
-            'audio/*,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.flac,.aac,.mp4,.mov,.pdf'}
+          <input type="file" accept={videoOnly?'video/mp4,video/quicktime,.mp4,.mov':audioOnly?'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.opus,.flac,.aac':
+            'audio/*,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.opus,.flac,.aac,.mp4,.mov,.pdf'}
             onChange={chooseFile} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)} hidden/></label>
       </>}
     </div>
