@@ -24,7 +24,7 @@ import {
   energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
 } from "@/data/academy/energywork-first-lesson";
 import { energyworkLessonRanges, energyworkAdvanceAlreadyStored, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
-import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest } from "@/data/academy/reiki-initiation-request.js";
+import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest, REIKI_PERSONAL_SESSIONS } from "@/data/academy/reiki-initiation-request.js";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -129,9 +129,9 @@ const copy = {
     unavailable: "This recording is not available. You can continue using the written teaching.",
     welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
     welcomeRequirement: "Study all five lessons in order.",
-    welcomeGiftTitle: "A personal initiation with Andrey — your gift",
-    welcomeGiftText: "After all five lessons and your application, arrange a free personal introductory Level 1 initiation in one of the three Reiki systems of your choice. After the initiation, you can begin practising that system at the introductory level.",
-    welcomeTeacher: "Want to go further? You can explore personal Reiki initiation with Andrey when you feel ready.",
+    welcomeGiftTitle: "Free Level 1 Reiki initiation with Andrey — in chat",
+    welcomeGiftText: "After completing all five lessons, request one free Level 1 initiation guided by Andrey in chat. You can also request a personal 30- or 60-minute session. The course itself does not confer initiation.",
+    welcomeTeacher: "Want individual guidance? Ask about a personal session with Andrey alongside your free chat initiation.",
     pathway: "All lessons are part of your course",
     picked: "Completed",
     fiveLessons: "Five sequential lessons",
@@ -156,7 +156,7 @@ const copy = {
     voicesNavigation: "Browse learner reviews",
     milestoneLabel: "Well done — keep going!",
     initiationVideoNoteTitle: "A video meditation is not an initiation",
-    initiationVideoNoteText: "Listening to a recorded meditation does not initiate you. Initiation is always personal. To receive a personal meditation from Andrey, complete all five lessons and write to him.",
+    initiationVideoNoteText: "A recording alone is not an initiation. After all five lessons you can request a free guided initiation in chat or a separate personal session with Andrey.",
     firstMilestoneLabel: "Your Reiki journey is underway",
     firstSaveTitle: "Your reflections, gently kept",
     firstSaveText: "Your answers and your Flight to the Sun review will be carefully saved in My Courses. Return to them whenever you like, and edit or rewrite them at any time.",
@@ -204,14 +204,14 @@ const copy = {
     checking: "Checking saved course…", consentTitle: "Save your learning privately",
     consentText: "I agree to save my course progress and answers privately. I can delete my course record.",
     teacherShareConsent: "Also share my learning progress, reviews and answers with Andrey in his private practitioner CRM. No public posting or marketing.",
-    initiationLetterHeading: "Your personal Reiki initiation request",
-    initiationLetterHint: "Your selected free initiation, optional donation-based choices, contact details and motivation will be shared privately with Andrey only when you confirm below.",
-    initiationConfirm: "I agree to send my initiation choices, name, city, preferred chat time, motivation and course answers to Andrey's private CRM.",
+    initiationLetterHeading: "Your Reiki initiation request",
+    initiationLetterHint: "Your free chat initiation, optional donations and personal session choice, contact details and motivation reach Andrey’s private CRM only after you confirm.",
+    initiationConfirm: "I agree to send my initiation and session choices, name, city, preferred time, motivation and course answers to Andrey’s private CRM. This is not a booking or payment.",
     initiationSend: "Send my initiation request",
     initiationSent: "Your request is securely recorded in Andrey's private CRM. He will contact you personally to discuss the next step and arrange a suitable time.",
-    initiationTooShort: "Complete your personal initiation form on the previous lesson slide.",
+    initiationTooShort: "Complete your initiation request on the previous lesson slide.",
     initiationShareNeeded: "Enable teacher sharing to send your application.",
-    initiationNotReady: "Complete your lesson reports and answers to request personal initiation.",
+    initiationNotReady: "Complete your lesson reports and answers to request initiation.",
     enableSave: "Start & save my course", signIn: "Sign in with Google to save",
     guestHint: "To start Lesson 2, save Lesson 1 in your private account.",
     saved: "Saved privately", saving: "Saving…", offline: "Saving is unavailable. Your answers are not stored on the server.",
@@ -283,9 +283,9 @@ const copy = {
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
     welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
     welcomeRequirement: "Проходите все пять уроков по очереди.",
-    welcomeGiftTitle: "Личная инициация с Андреем — в подарок",
-    welcomeGiftText: "После пяти уроков и заполнения заявки вас ждёт бесплатная персональная вводная инициация I ступени в одной из трёх систем на выбор. Андрей лично согласует с вами встречу. После инициации вы сможете начать практику в выбранной системе.",
-    welcomeTeacher: "Захочется пойти дальше? Когда будете готовы, можно обсудить с Андреем личную Рейки-инициацию.",
+    welcomeGiftTitle: "Бесплатная инициация I ступени с Андреем в чате",
+    welcomeGiftText: "После пяти уроков можно запросить одну бесплатную инициацию I ступени с Андреем в чате. Дополнительно можно выбрать личную сессию на 30 или 60 минут. Сам курс не является инициацией.",
+    welcomeTeacher: "Хотите индивидуального внимания? Обсудите с Андреем личную сессию в дополнение к бесплатному чату.",
     pathway: "Все уроки входят в одну программу",
     picked: "Завершено",
     fiveLessons: "Пять последовательных уроков",
@@ -310,7 +310,7 @@ const copy = {
     voicesNavigation: "Переключение отзывов",
     milestoneLabel: "Отличный результат!",
     initiationVideoNoteTitle: "Видеомедитация — это ещё не инициация",
-    initiationVideoNoteText: "Прослушанная видеомедитация сама по себе не является инициацией. Инициация всегда персональна. Чтобы получить персональную медитацию от Андрея, завершите все пять уроков курса и напишите ему.",
+    initiationVideoNoteText: "Видеозапись сама по себе не является инициацией. После пяти уроков можно запросить инициацию с Андреем в чате или отдельную личную сессию.",
     firstMilestoneLabel: "Ваш путь в Рейки начался",
     firstSaveTitle: "Ваши впечатления будут бережно сохранены",
     firstSaveText: "Ваши ответы и отзыв о «Полёте к Солнцу» будут бережно сохранены в вашем кабинете. Вы сможете в любой момент к ним вернуться, изменить или переписать.",
@@ -358,12 +358,12 @@ const copy = {
     checking: "Проверяем сохранённый курс…", consentTitle: "Сохранить обучение приватно",
     consentText: "Я согласен(на) приватно сохранять прогресс и ответы курса. Данные курса можно удалить.",
     teacherShareConsent: "Также разрешаю передавать Андрею мои ответы, отзывы и прогресс в его закрытую CRM. Без публикаций и рекламных рассылок.",
-    initiationLetterHeading: "Ваша заявка на личную Рейки-инициацию",
-    initiationLetterHint: "Выбранная бесплатная инициация, дополнительные варианты за донейшн, контакты и мотивация попадут к Андрею только после подтверждения отправки.",
-    initiationConfirm: "Я согласен(на) отправить Андрею в закрытую CRM выбранные инициации, имя, город, удобное время для связи в чате, мотивацию и ответы курса.",
+    initiationLetterHeading: "Ваша заявка на Рейки-инициацию",
+    initiationLetterHint: "Бесплатная инициация в чате, варианты за донейшн, выбранная личная сессия и анкета попадут к Андрею только после подтверждения отправки.",
+    initiationConfirm: "Согласен(на) отправить Андрею в закрытую CRM выбор инициаций и личной сессии, имя, город, время, мотивацию и ответы курса. Это не оплата и не бронь.",
     initiationSend: "Отправить заявку на инициацию",
     initiationSent: "Заявка сохранена в закрытой CRM Андрея. Он лично свяжется с вами, чтобы обсудить следующий шаг и согласовать удобное время.",
-    initiationTooShort: "Заполните анкету личной инициации на предыдущем слайде.",
+    initiationTooShort: "Заполните заявку на инициацию на предыдущем слайде.",
     initiationShareNeeded: "Для заявки разрешите передачу материалов преподавателю.",
     initiationNotReady: "Заполните ответы и отчёты, чтобы отправить заявку.",
     enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
@@ -464,8 +464,8 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   if (reikiInitiationRequestValid(present("end-01"))) {
     const request = readReikiInitiationRequest(present("end-01"));
     const selected = energyworkPathChoices.find((choice) => choice.id === request.freeInitiation)?.title[locale] ?? "";
-    highlights.push(locale === "ru" ? "Ваш выбор бесплатной личной инициации: " + selected + "." :
-      "Your free personal initiation choice: " + selected + ".");
+    highlights.push(locale === "ru" ? "Ваш выбор бесплатной инициации в чате: " + selected + "." :
+      "Your free chat initiation choice: " + selected + ".");
   }
   return highlights;
 }
@@ -692,11 +692,11 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
       <div className={styles.initiationGiftIntro}>
         <span><Sparkles size={18} aria-hidden="true" />{ru ? "Ваш подарок после обучения" : "Your gift after the course"}</span>
         <p>{ru
-          ? "Выберите любую одну личную инициацию I ступени бесплатно. Андрей рассмотрит вашу заявку и лично согласует проведение. Прохождение курса само по себе не является инициацией."
-          : "Choose any one personal Level 1 initiation for free. Andrey reviews your request and personally confirms the session. Finishing the course does not itself confer initiation."}</p>
+          ? "Выберите одну бесплатную инициацию I ступени с Андреем в чате (без личного видеозвонка). Андрей подтвердит формат после заявки. Прохождение курса не является инициацией."
+          : "Choose one free Level 1 initiation guided by Andrey in chat (not a private video call). He will confirm the arrangement after your request. The course itself does not confer initiation."}</p>
       </div>
       <fieldset className={styles.initiationChoiceGroup}>
-        <legend>{ru ? "1. Какую инициацию хотите бесплатно?" : "1. Choose your free initiation"}</legend>
+        <legend>{ru ? "1. Выберите бесплатную инициацию в чате" : "1. Choose your free chat initiation"}</legend>
         <div className={styles.initiationChoiceGrid} data-reiki-free-choices>
           {energyworkPathChoices.map((choice) => (
             <label key={choice.id} className={styles.initiationChoice + (request.freeInitiation === choice.id ? " " + styles.initiationChoiceSelected : "")}>
@@ -707,7 +707,7 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
                   donationInitiations: request.donationInitiations.filter((id) => id !== choice.id),
                 })} />
               <span>{choice.title[locale]}</span>
-              <small>{ru ? "Бесплатно" : "Free"}</small>
+              <small>{ru ? "Чат · бесплатно" : "Free · chat"}</small>
             </label>
           ))}
         </div>
@@ -715,8 +715,8 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
       <fieldset className={styles.initiationChoiceGroup} data-reiki-donation-choices>
         <legend>{ru ? "2. Хотите вторую или третью инициацию за донейшн?" : "2. Add a second or third initiation by donation?"}</legend>
         <p className={styles.initiationHelper}>{ru
-          ? "Необязательно. Выберите одну или обе оставшиеся системы. Пожертвование добровольное, его размер можно обсудить позже — оплаты здесь нет."
-          : "Optional: select one or both remaining systems. Donations are voluntary; discuss the amount later. No payment is taken here."}</p>
+          ? "Необязательно: ещё одна или две системы Рейки в чате за добровольный донейшн. Размер согласуете с Андреем позже, оплаты здесь нет."
+          : "Optional: add one or both other Reiki systems in chat by voluntary donation. Agree the amount later; no payment here."}</p>
         <div className={styles.initiationChoiceGrid}>
           {energyworkPathChoices.filter((choice) => choice.id !== request.freeInitiation).map((choice) => (
             <label key={choice.id} className={styles.initiationChoice + (request.donationInitiations.includes(choice.id) ? " " + styles.initiationChoiceSelected : "")}>
@@ -732,8 +732,33 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
           ))}
         </div>
       </fieldset>
+      <fieldset className={styles.initiationChoiceGroup} data-reiki-personal-choices>
+        <legend>{ru ? "3. Хотите личную инициацию с Андреем?" : "3. Prefer a personal 1:1 initiation with Andrey?"}</legend>
+        <p className={styles.initiationHelper}>{ru
+          ? "По желанию, в дополнение к бесплатной инициации в чате. Длительность выбираете сейчас; дату и формат согласуете позже с Андреем."
+          : "Optional, in addition to the free chat initiation. Choose a duration now; arrange the date and format with Andrey later."}</p>
+        <div className={styles.initiationChoiceGrid}>
+          {REIKI_PERSONAL_SESSIONS.map((option) => (
+            <label key={option.id} className={styles.initiationChoice + (request.personalSession === option.id ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="radio" name="reiki-personal-session" value={option.id}
+                checked={request.personalSession === option.id}
+                onChange={() => change({ personalSession: option.id })} />
+              <span>{option.id === "none"
+                ? (ru ? "Только чат, без личной сессии" : "Chat only, no personal session")
+                : option.id === "express"
+                  ? (ru ? "Краткая личная инициация" : "Express personal initiation")
+                  : (ru ? "Полноценная личная сессия" : "Full personal session")}</span>
+              <small>{option.id === "none" ? (ru ? "Без доплаты" : "No extra fee")
+                : "€" + option.priceEur + " · " + option.minutes + (ru ? " мин" : " min")}</small>
+            </label>
+          ))}
+        </div>
+        <p className={styles.initiationHelper}>{ru
+          ? "€50 / 30 минут или €100 / 60 минут. Сейчас только заявка — без списания и подтверждения бронирования."
+          : "€50 / 30 minutes or €100 / 60 minutes. Request only; no charge or confirmed booking at this step."}</p>
+      </fieldset>
       <div className={styles.initiationDetails}>
-        <p className={styles.initiationSectionTitle}>{ru ? "3. Как к вам обращаться и когда вам удобно?" : "3. Tell Andrey how to reach you and when you're available"}</p>
+        <p className={styles.initiationSectionTitle}>{ru ? "4. Как к вам обращаться и когда вам удобно?" : "4. Tell Andrey how to reach you and when you're available"}</p>
         <div className={styles.initiationFields}>
           <label className={styles.initiationField}>
             <span>{ru ? "Имя *" : "First name *"}</span>
@@ -758,18 +783,18 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
               placeholder="America/Toronto" required />
           </label>
           <label className={styles.initiationField + " " + styles.initiationFieldWide}>
-            <span>{ru ? "Удобные дни и время для инициации *" : "Preferred days and times for initiation *"}</span>
+            <span>{ru ? "Удобные дни и время для чата или личной сессии *" : "Preferred days and times for chat or personal session *"}</span>
             <input type="text" maxLength={180} value={request.preferredTime}
               onChange={(event) => change({ preferredTime: event.target.value })}
               placeholder={ru ? "Например: будни после 19:00, по моему времени" : "For example: weekdays after 7 PM, my local time"} required />
           </label>
         </div>
         <p className={styles.initiationHelper}>{ru
-          ? "Это не автоматическое бронирование. Андрей уточнит удобное время и формат лично в чате."
-          : "This is not an automatic booking. Andrey will discuss the time and format with you personally in chat."}</p>
+          ? "Это не оплата и не автоматическая бронь. Андрей согласует время и формат в чате."
+          : "There is no payment or automatic booking. Andrey will confirm the time and format in chat."}</p>
       </div>
       <label className={styles.initiationMotivation}>
-        <span>{ru ? "4. Почему вам нужна именно эта инициация? *" : "4. Why do you want this initiation? *"}</span>
+        <span>{ru ? "5. Почему вы выбрали эту инициацию? *" : "5. Why would you like this initiation? *"}</span>
         <textarea rows={3} maxLength={700} value={request.motivation}
           placeholder={ru ? "Что вы хотите развить, почувствовать или привнести в свою практику?" : "What would you like to explore or bring into your practice?"}
           onChange={(event) => change({ motivation: event.target.value })} required />
@@ -779,7 +804,7 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
         {ready ? <Check size={17} aria-hidden="true" /> : <LockKeyhole size={17} aria-hidden="true" />}
         {ready
           ? (ru ? "Анкета заполнена. Перейдите далее, чтобы проверить ответы и отдельно подтвердить отправку Андрею." : "Your form is complete. Continue to review your answers and separately confirm sending them to Andrey.")
-          : (ru ? "Для отправки заявки выберите бесплатную инициацию и заполните поля со звёздочкой. Продолжить курс можно и без заявки." : "Choose a free initiation and complete the starred fields to send a request. You can continue studying without applying.")}
+          : (ru ? "Выберите бесплатную инициацию в чате и заполните обязательные поля. Личная сессия необязательна. Продолжить можно без заявки." : "Choose a free chat initiation and complete the required fields. A personal session is optional. You can continue without applying.")}
       </p>
     </div>
   );

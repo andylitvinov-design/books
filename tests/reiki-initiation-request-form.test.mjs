@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
-  REIKI_REQUEST_PREFIX, REIKI_INITIATION_IDS,
+  REIKI_REQUEST_PREFIX, REIKI_REQUEST_PREFIX_V2, REIKI_INITIATION_IDS, REIKI_PERSONAL_SESSIONS,
   readReikiInitiationRequest, writeReikiInitiationRequest,
   reikiInitiationRequestValid, formatReikiInitiationRequest,
 } from '../data/academy/reiki-initiation-request.js'
@@ -78,18 +78,61 @@ test('private human-readable CRM and journal expose the options in English and R
     assert.match(output,/Tantra Reiki/)
     assert.match(output,/Kundalini Reiki/)
     assert.match(output,/Weekdays after 19:00/)
-    assert.doesNotMatch(output,/hh-reiki-personal-request-v1|\{"firstName"/)
+    assert.doesNotMatch(output,/hh-reiki-personal-request-v[12]|\{"firstName"/)
   }
   assert.match(russian,/Бесплатная инициация/)
   assert.match(english,/By donation|Additional initiations by donation/)
 })
 
+
+test('chat gift remains free; optional paid 1:1 uses exactly €50/30min or €100/60min without charging', () => {
+  assert.deepEqual(REIKI_PERSONAL_SESSIONS.map(({id,minutes,priceEur}) => [id,minutes,priceEur]), [
+    ['none',0,0], ['express',30,50], ['full',60,100],
+  ])
+  for (const personalSession of ['none','express','full']) {
+    const answer=writeReikiInitiationRequest(validRequest({personalSession}))
+    assert.ok(answer.startsWith(REIKI_REQUEST_PREFIX_V2))
+    assert.equal(reikiInitiationRequestValid(answer),true)
+    assert.equal(readReikiInitiationRequest(answer).personalSession,personalSession)
+    assert.ok(answer.length <= 1600)
+    const en=formatReikiInitiationRequest(answer,'en')
+    const ru=formatReikiInitiationRequest(answer,'ru')
+    assert.match(en,/Free chat-guided initiation: Tantra Reiki/)
+    assert.match(ru,/Бесплатная инициация в чате: Tantra Reiki/)
+    assert.match(en,/No payment or booking/)
+    if (personalSession==='express') {
+      assert.match(en,/Express personal initiation — 30 minutes, €50/)
+      assert.match(ru,/30 минут, €50/)
+    } else if (personalSession==='full') {
+      assert.match(en,/Full personal session — 60 minutes, €100/)
+      assert.match(ru,/60 минут, €100/)
+    } else assert.match(en,/Not requested/)
+  }
+  const tampered=writeReikiInitiationRequest(validRequest({personalSession:'express'})).replace('"express"','"vip"')
+  assert.equal(reikiInitiationRequestValid(tampered),false,'Unknown paid option cannot enter CRM')
+})
+
+test('v1 signed-off applications remain valid and legacy text can still be edited', () => {
+  const old=REIKI_REQUEST_PREFIX+JSON.stringify(validRequest())
+  assert.equal(reikiInitiationRequestValid(old),true,'Do not break submitted encrypted v1 data')
+  assert.equal(readReikiInitiationRequest(old).personalSession,'none')
+  assert.match(formatReikiInitiationRequest(old,'en'),/Not requested/)
+  assert.ok(writeReikiInitiationRequest(readReikiInitiationRequest(old)).startsWith(REIKI_REQUEST_PREFIX_V2))
+  assert.equal(reikiInitiationRequestValid(old.replace('"motivation":','"personalSession":"full","motivation":')),false)
+  const newAnswer=writeReikiInitiationRequest(validRequest({personalSession:'full',donationInitiations:['kundalini']}))
+  assert.match(formatReikiInitiationRequest(newAnswer,'en'),/Additional initiations by donation \(chat\): Kundalini Reiki/)
+})
+
 test('Lesson 5 uses stable end-01 ID and explicit opt-in rather than direct public or paid checkout', () => {
   assert.match(editorial,/id: "end-01"/)
-  assert.match(editorial,/Choose your personal Reiki initiation/)
+  assert.match(editorial,/Choose your Reiki initiation format/)
   assert.match(form,/data-reiki-initiation-choice-form/)
   assert.match(form,/data-reiki-free-choices/)
   assert.match(form,/data-reiki-donation-choices/)
+  assert.match(form,/data-reiki-personal-choices/)
+  assert.match(form,/type="radio" name="reiki-personal-session"/)
+  assert.match(form,/REIKI_PERSONAL_SESSIONS\.map/)
+  assert.match(form,/personalSession: option\.id/)
   assert.match(form,/type="radio" name="reiki-free-initiation"/)
   assert.match(form,/type="checkbox" value=\{choice\.id\}/)
   assert.match(form,/input type="text" autoComplete="given-name"/)
