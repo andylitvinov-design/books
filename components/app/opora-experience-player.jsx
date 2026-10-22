@@ -6,7 +6,7 @@ import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '@/lib/inner-growth/course-slide-sequence'
 import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
 import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,oporaDailySkillBrief,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import styles from './opora-experience-player.module.css'
@@ -34,7 +34,7 @@ const WORDS={
     arrivalWarmText:'Найдите взглядом одну приятную или нейтральную деталь вокруг.',
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
-    supportKicker:'МОМЕНТ ПОДДЕРЖКИ',stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
+    supportKicker:'МОМЕНТ ПОДДЕРЖКИ',briefTitle:'Чему учимся сегодня',priorSkills:'ПРОЙДЕННЫЕ ЗАНЯТИЯ',todaySkill:'ГЛАВНЫЙ НАВЫК СЕГОДНЯ',todayPractice:'Упражнение',firstDay:'Это первое занятие. Начнём с одного небольшого навыка.',noPrevious:'В предыдущих днях пока нет сохранённых занятий.',olderDays:'Ещё пройденные дни',gentleNote:'Бережное напоминание',stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
     coreWhy:'ЗАЧЕМ ЭТО НУЖНО',tryPrompt:'Получилось попробовать?',
     start:'Я попробую этот шаг',alternative:'Другой мягкий вариант',tryAfter:'Как прошло?',
     tried:'Я попробовал(а)',partly:'Удалось немного',read:'Сегодня только знакомлюсь',
@@ -99,7 +99,7 @@ const WORDS={
     arrivalWarmText:'Find one calm or pleasant detail around you.',
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
-    supportKicker:'A MOMENT OF SUPPORT',stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
+    supportKicker:'A MOMENT OF SUPPORT',briefTitle:'Today’s learning',priorSkills:'PREVIOUS LESSONS',todaySkill:'TODAY’S KEY SKILL',todayPractice:'Exercise',firstDay:'This is your first lesson. Start with one small skill.',noPrevious:'No previous lessons are saved yet.',olderDays:'More completed days',gentleNote:'A gentle reminder',stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
     coreWhy:'WHY IT HELPS',tryPrompt:'Did you try it?',
     start:'I will try this step',alternative:'Another gentle option',tryAfter:'How did that go?',
     tried:'I tried it',partly:'I tried a little',read:'Just reading today',
@@ -165,7 +165,7 @@ WORDS.es = {
     arrivalWarmText:'Encuentra con la mirada un detalle agradable o neutro.',
     arriveHint:'Mira un objeto estable a tu alrededor; no necesitas cambiar tu respiración.',
     practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
-  supportKicker:'UN MOMENTO DE APOYO',stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
+  supportKicker:'UN MOMENTO DE APOYO',briefTitle:'Lo que aprenderás hoy',priorSkills:'LECCIONES ANTERIORES',todaySkill:'HABILIDAD CLAVE DE HOY',todayPractice:'Ejercicio',firstDay:'Esta es tu primera lección. Empezamos con una habilidad sencilla.',noPrevious:'Aún no hay lecciones anteriores guardadas.',olderDays:'Más días completados',gentleNote:'Un recordatorio amable',stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
   coreWhy:'POR QUÉ AYUDA',tryPrompt:'¿Lo intentaste?',tryAfter:'¿Cómo te fue?',
   tried:'Lo intenté',partly:'Un poquito',read:'Hoy solo leo',
   gentle:'Si te incomoda, mira un objeto neutro.',
@@ -385,6 +385,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const opening=OPENING[lang]
   const c=oporaEndingCopy(lang)
   const dayCopy=oporaExperienceDay(cycle.day,lang)
+  const skillBrief=oporaDailySkillBrief(cycle.day,lang,data?.roadmap)
   const support=oporaExperienceSupport(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
@@ -511,7 +512,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='checkin'?opening.checkin:
     moment==='recall'?opening.recall:
     moment==='arrive'?(cycle.day===1?t.arrivalWarmTitle:t.arriveTitle):
-    moment==='support'?support?.title:
+    moment==='support'?t.briefTitle:
     moment==='practice'?dayCopy?.title||t.learn:
     moment==='feel'?t.feelTitle:
     moment==='affirmation'?(cycle.day===1?opening.thought:t.ideaTitle):t.reminderTitle
@@ -640,8 +641,36 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 :<p className={styles.moodOptional}>{t.arriveSkip}</p>}
             </>}
           </>}
-          {moment==='support'&&<div className={styles.supportMessage} data-opora-daily-support={cycle.day}>
-             <p className={styles.supportBody}>{support?.body}</p>
+          {moment==='support'&&<div className={styles.lessonBrief} data-opora-daily-support={cycle.day}
+             data-opora-skill-briefing={cycle.day}>
+             {skillBrief?.previous?.length ? <>
+               <p className={styles.briefKicker}>{t.priorSkills} · {skillBrief.previous.length}</p>
+               <ol className={styles.priorList}>
+                 {skillBrief.previous.slice(-2).map(item=><li key={item.day} data-opora-previous-skill-day={item.day}>
+                   <CheckCircle2 size={16} aria-hidden="true"/>
+                   <span>{t.day} {item.day} · {item.skill}</span>
+                 </li>)}
+               </ol>
+               {skillBrief.previous.length>2&&<details className={styles.olderSkills}>
+                 <summary>{t.olderDays} · {skillBrief.previous.length-2}</summary>
+                 <ol className={styles.priorList}>
+                   {skillBrief.previous.slice(0,-2).map(item=><li key={item.day} data-opora-previous-skill-day={item.day}>
+                     <CheckCircle2 size={16} aria-hidden="true"/>
+                     <span>{t.day} {item.day} · {item.skill}</span>
+                   </li>)}
+                 </ol>
+               </details>}
+             </>:<p className={styles.briefFirst}>{cycle.day===1?t.firstDay:t.noPrevious}</p>}
+             <div className={styles.todayBrief} data-opora-today-skill="true">
+               <span className={styles.briefKicker}>{t.todaySkill}</span>
+               <strong>{skillBrief?.skill||dayCopy?.title}</strong>
+               <p><b>{t.todayPractice}:</b> {skillBrief?.practice||practiceGuide}</p>
+             </div>
+             <details className={styles.supportNote}>
+               <summary>{t.gentleNote}</summary>
+               <strong className={styles.supportSubhead}>{support?.title}</strong>
+               <p className={styles.supportBody}>{support?.body}</p>
+             </details>
            </div>}
            {moment==='practice'&&<>
             {!neutralSupport&&cycle.day===1&&dayCopy?.purpose&&
