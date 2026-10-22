@@ -12,6 +12,9 @@ on:
       - "components/kundalini-reiki-course.module.css"
       - "components/reiki-choice-capture.tsx"
       - "components/reiki-landing-forms.tsx"
+      - "components/yggdrasil-initiation-form.tsx"
+      - "components/tantra-initiation-form.tsx"
+      - "components/principles-of-energywork.tsx"
       - "tests/kundalini-reiki-course.test.mjs"
       - "tests/reiki-unified-order-capture.test.mjs"
       - ".github/workflows/reiki-enquiry-capture-ci.yml"
@@ -59,3 +62,6 @@ jobs:
           components/kundalini-reiki-order-capture.tsx
           components/reiki-choice-capture.tsx
           components/reiki-landing-forms.tsx
+          components/yggdrasil-initiation-form.tsx
+          components/tantra-initiation-form.tsx
+          components/principles-of-energywork.tsx
