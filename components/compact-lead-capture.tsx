@@ -65,7 +65,7 @@ function parseContact(raw: string): { email: string; phone: string } | null {
 
 /** One clear final action; a CRM lead only exists after the API confirms a DB commit. */
 export function CompactLeadCapture({
-  locale, serviceTitle, title, lead, id, disclaimer,
+  locale, serviceTitle, title, lead, id, disclaimer, sourcePath,
 }: {
   locale: PublicLocale;
   serviceTitle: string;
@@ -73,6 +73,8 @@ export function CompactLeadCapture({
   lead: string;
   id?: string;
   disclaimer?: string;
+  /** Trustworthy service route for a form embedded on /, which is not an allowed enquiry source. */
+  sourcePath?: string;
 }) {
   const t = copy[locale];
   const pathname = usePathname();
@@ -100,7 +102,7 @@ export function CompactLeadCapture({
         body: JSON.stringify({
           operationId: operationId.current,
           serviceTitle,
-          sourcePath: pathname || "/" + locale + "/services",
+          sourcePath: sourcePath || pathname || "/" + locale + "/services",
           locale,
           contact: { displayName: "", ...contact },
           contactConsent: true,
