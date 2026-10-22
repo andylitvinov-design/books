@@ -354,14 +354,14 @@ function OporaCoursePath({locale,cycle,saved,roadmap,words}){
   </div>
 }
 
-export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onFinish,onSession,habitSetupContent=null}){
+export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onFinish,onSession,habitSetupContent=null,reviewOnly=false}){
   const lang=locale==='ru'?'ru':locale==='es'?'es':'en',t=WORDS[lang]
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
   const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
   // Editorial-only support is second. The server never receives a fabricated visit key.
   const displayScenes=[scenes[0],'support',...scenes.slice(1)]
-  const [step,setStep]=useState(hasSaved?displayScenes.length:0)
+  const [step,setStep]=useState(reviewOnly?0:hasSaved?displayScenes.length:0)
   const [previewIndex,setPreviewIndex]=useState(-1)
   const [habitSetup,setHabitSetup]=useState(false)
   const [inviteOpen,setInviteOpen]=useState(false)
@@ -475,6 +475,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     if(value==='uncomfortable')setSafety(true)
   }
   async function submit(){
+    if(reviewOnly){setStep(displayScenes.length);return}
     if(locked||saved)return
     if(step!==displayScenes.length||
       scenes.some(key=>!visited.current.has(key))){
@@ -553,6 +554,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
     data-opora-experience-first="as-5.6" data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
     data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}
+    data-course-history-review={reviewOnly?'true':undefined}
     data-opora-course-program-preview={inPreview?moment:undefined}
     data-opora-lesson-outro={recap?'recap':inviteOpen?'invite':receipt?'saved':undefined}>
     <div className={styles.frame+' '+(styles[moment]||styles.arrive)}
@@ -782,12 +784,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           onClick={()=>{setInviteOpen(false);setPreviewIndex(previewScreens.length-1)}}>
           <ArrowLeft size={17}/>{t.back}</button>:
         receipt?<button type="button" className={styles.back} disabled={locked}
-          onClick={moment==='habit'
-            ?(habitSetup?()=>setHabitSetup(false):()=>{setPreviewIndex(-1);setInviteOpen(true)})
-            :inPreview?backFromPreview:(onFinish||onClose)}>
-          <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview?t.back:t.finish}
-        </button>:step>0&&<button type="button" className={styles.back}
-          onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
+          onClick={moment==='habit'&&habitSetup?()=>setHabitSetup(false)
+            :inPreview?backFromPreview:()=>setStep(displayScenes.length-1)}>
+          <ArrowLeft size={17}/>{t.back}
+        </button>:<button type="button" className={styles.back}
+          onClick={step===0?onClose:back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
           onClick={inviteOpen?(onFinish||onClose):
             moment==='habit'?(habitSetup?()=>{setPreviewIndex(-1);setInviteOpen(true)}:()=>setHabitSetup(true)):
