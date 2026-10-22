@@ -65,3 +65,13 @@
 @media (prefers-reduced-motion: reduce) {
   .order, .order svg { transition: none; }
 }
+
+/* Short iPhone viewports retain the three concrete benefits and direct request. */
+@media (max-width: 760px) and (max-height: 700px) {
+  .root { margin: 5px auto; }
+  .panel { padding-top: 8px; padding-bottom: 8px; }
+  .description { display: none; }
+  .photo { height: 70px; }
+  .benefits { margin-top: 5px; }
+  .actions { margin-top: 5px; }
+}
