@@ -100,7 +100,7 @@ test('owner Gemini check reuses read-only official model endpoint without infere
   assert.equal(probe.modelReady,true)
   assert.equal(probe.reason,'valid_model')
   assert.deepEqual(visited,['https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash'])
-  const denied=await inspectGeminiModelAccess(env,async()=>Response.json({},403))
+  const denied=await inspectGeminiModelAccess(env,async()=>Response.json({},{status:403}))
   assert.equal(denied.modelReady,false)
   assert.equal(denied.reason,'unauthorized')
   const missing=await inspectGeminiModelAccess({},async()=>{throw Error('never called')})
