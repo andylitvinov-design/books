@@ -137,7 +137,7 @@ for(const locale of ['en','ru','es']){
       assert.equal(h.many('data-business-result-path').length,2)
       h.find('data-business-finder-reset',true).props.onClick()
       h.render()
-      assert.equal(h.find('data-business-finder-step','question').props.onSubmit instanceof Function,true)
+      assert.equal(typeof h.find('data-business-finder-step','question').props.onSubmit,'function')
       assert.equal(h.find('data-business-question-input',true).props.value,question)
       assert.equal(h.find('data-business-finder-result',true),undefined)
       assert.ok(questionGuide.BUSINESS_QUESTION_TOPICS.includes(topic))
