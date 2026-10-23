@@ -33,7 +33,7 @@ const copy = {
     next: "Next section",
     choose: "Choose a site section",
     slides: {
-      services: { eyebrow: "SERVICES · PERSONAL CONSULTATIONS", title: "Personal sessions for life's questions", lead: "Explore relationships, stress or difficult decisions in a one-to-one session in Toronto or online.", action: "Explore services" },
+      services: { eyebrow: "SERVICES · PERSONAL CONSULTATIONS", title: "Personal sessions for life's questions", lead: "Explore relationships, stress or difficult decisions in a one-to-one session in Toronto or online.", action: "Request a consultation · from €50" },
       tests: { eyebrow: "TESTS · FREE SELF-CHECKS", title: "Free tests to understand yourself", lead: "Explore stress, strengths and personal resources. See a report with insights for your next step.", action: "Take free tests" },
       academy: { eyebrow: "ACADEMY · COURSES & PRACTICES", title: "Courses, lessons and meditations", lead: "Choose Reiki and personal-growth courses with guided exercises and lessons you can return to.", action: "Find a course" },
       business: { eyebrow: "BUSINESS · COACHING & STRATEGY", title: "Support for work and business decisions", lead: "Clarify goals and business challenges through coaching, strategy and practical next steps.", action: "View business services" },
@@ -49,7 +49,7 @@ const copy = {
     next: "Следующий раздел",
     choose: "Выберите раздел сайта",
     slides: {
-      services: { eyebrow: "УСЛУГИ · ЛИЧНЫЕ КОНСУЛЬТАЦИИ", title: "Личные сессии по важным вопросам", lead: "Отношения, стресс или сложный выбор: исследуйте свой запрос на встрече в Торонто или онлайн.", action: "Посмотреть услуги" },
+      services: { eyebrow: "УСЛУГИ · ЛИЧНЫЕ КОНСУЛЬТАЦИИ", title: "Личные сессии по важным вопросам", lead: "Отношения, стресс или сложный выбор: исследуйте свой запрос на встрече в Торонто или онлайн.", action: "Запросить консультацию · от €50" },
       tests: { eyebrow: "ТЕСТЫ · БЕСПЛАТНО", title: "Узнайте свои сильные стороны", lead: "Пройдите тесты на стресс и личные ресурсы. Получите отчёт с результатами и выводами.", action: "Пройти тесты" },
       academy: { eyebrow: "АКАДЕМИЯ · КУРСЫ И ПРАКТИКИ", title: "Курсы, уроки и медитации", lead: "Осваивайте Рейки и практики развития через уроки, упражнения и медитации в своём темпе.", action: "Выбрать курс" },
       business: { eyebrow: "БИЗНЕС · КОУЧИНГ И СТРАТЕГИЯ", title: "Поддержка в работе и бизнесе", lead: "Разберите цели, трудности проекта и варианты решений. Наметьте практический следующий шаг.", action: "Услуги для бизнеса" },
@@ -65,7 +65,7 @@ const copy = {
     next: "Sección siguiente",
     choose: "Elige una sección del sitio",
     slides: {
-      services: { eyebrow: "SERVICIOS · CONSULTAS PERSONALES", title: "Sesiones para tus preguntas importantes", lead: "Explora relaciones, estrés y decisiones difíciles en una sesión personal en Toronto o en línea.", action: "Ver servicios" },
+      services: { eyebrow: "SERVICIOS · CONSULTAS PERSONALES", title: "Sesiones para tus preguntas importantes", lead: "Explora relaciones, estrés y decisiones difíciles en una sesión personal en Toronto o en línea.", action: "Solicitar una consulta · desde €50" },
       tests: { eyebrow: "PRUEBAS · GRATIS", title: "Pruebas gratis para conocerte mejor", lead: "Explora estrés, fortalezas y recursos personales. Consulta un informe con ideas para tu próximo paso.", action: "Hacer pruebas gratis" },
       academy: { eyebrow: "ACADEMIA · CURSOS Y PRÁCTICAS", title: "Cursos, lecciones y meditaciones", lead: "Descubre Reiki y prácticas de desarrollo con lecciones, ejercicios y meditaciones a tu ritmo.", action: "Elegir un curso" },
       business: { eyebrow: "NEGOCIOS · COACHING Y ESTRATEGIA", title: "Apoyo para el trabajo y tus proyectos", lead: "Aclara objetivos y desafíos del negocio con orientación y pasos prácticos para avanzar.", action: "Ver servicios de negocios" },
@@ -87,7 +87,8 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
   const words = t.slides[slide.key];
   // The Spanish public entry is localized; the full private app currently
   // uses the English route, so do not direct guests to a missing /es/app page.
-  const href = slide.key === "cabinet" && locale === "es" ? "/en/app" : "/" + locale + slide.href;
+  const href = slide.key === "services" ? `/${locale}/services#consultation`
+    : slide.key === "cabinet" && locale === "es" ? "/en/app" : "/" + locale + slide.href;
 
   useEffect(() => {
     if (paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -172,7 +173,7 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
                 <Link
                   key={key}
                   className={styles.sectionNavLink}
-                  href={target ? `/${locale}${target.href}` : locale === "en" ? "/" : `/${locale}`}
+                  href={key === "cabinet" && locale === "es" ? "/en/app" : target ? `/${locale}${target.href}` : locale === "en" ? "/" : `/${locale}`}
                   aria-current={key === slide.key ? "true" : undefined}
                   data-home-nav-active={key === slide.key ? "true" : "false"}
                   prefetch={false}
@@ -188,7 +189,8 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
           <p className={styles.eyebrow}>{words.eyebrow}</p>
           <h2 id="home-section-slide-title">{words.title}</h2>
           <p className={styles.slideLead}>{words.lead}</p>
-          <Link className={styles.viewButton} href={href} prefetch={false} data-home-slide-action={slide.key}>
+          <Link className={styles.viewButton} href={href} prefetch={false} data-home-slide-action={slide.key}
+            data-home-first-screen-cta={slide.key === "services" ? "paid" : undefined}>
             {words.action}<ArrowRight size={19} aria-hidden="true" />
           </Link>
         </div>

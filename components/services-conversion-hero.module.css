@@ -250,3 +250,23 @@
   .hero[data-home-section-carousel] .slideLead { display: none; }
   .hero[data-home-section-carousel] .slideCopy :is(h1,h2) { font-size: clamp(25px, 6.6vw, 30px); }
 }
+
+/* Home-only: the paid consultation link lives inside the first carousel slide.
+   Keep it readable at 320px without adding a strip above the approved slider. */
+@media (max-width: 760px) {
+  .hero[data-home-section-carousel] .viewButton[data-home-first-screen-cta="paid"] {
+    max-width: 100%;
+    gap: 8px;
+    padding-inline: 12px;
+    font-size: clamp(10.5px, 3vw, 12px);
+    line-height: 1.3;
+    text-align: left;
+  }
+  .hero[data-home-section-carousel] .viewButton[data-home-first-screen-cta="paid"] svg { flex-shrink: 0; }
+}
+@media (max-width: 365px) {
+  .hero[data-home-section-carousel] .slideCopy[data-home-slide="services"] .slideLead {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+}
