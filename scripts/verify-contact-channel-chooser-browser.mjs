@@ -186,7 +186,7 @@ async function verifySyntheticGoogleReturn(page, submissions) {
     await google.click();
     assert.equal(googleStarts,0,"No OAuth without reply consent");
     await consent.check();
-    const noteDetails=form.locator("details").filter({has:form.locator("textarea")});
+    const noteDetails=form.locator("details:has(textarea)");
     await noteDetails.locator("summary").click();
     const note=noteDetails.locator("textarea");
     await note.fill("PRIVATE_GOOGLE_DRAFT_SHOULD_NOT_DISAPPEAR");
@@ -194,7 +194,9 @@ async function verifySyntheticGoogleReturn(page, submissions) {
     assert.equal(googleStarts,0,"A typed private note must not be silently dropped by OAuth");
     await note.fill("");
     const before=submissions.length;
+    const started=page.waitForRequest(req=>req.url().endsWith("/api/app/auth/start") && req.method()==="POST");
     await google.click();
+    await started;
     assert.equal(googleStarts,1,"One opt-in Google handoff");
     await page.waitForURL(origin+"/en/thank-you",{timeout:20000});
     await page.locator("[data-service-thank-you]").getByText("HH-CA5016DE79E4",{exact:true})
