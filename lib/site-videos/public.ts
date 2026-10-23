@@ -49,6 +49,45 @@ const readStoredPublishedVideos = unstable_cache(
   { revalidate: 60, tags: ['holistic-house-published-site-videos'] },
 );
 
+/**
+ * Public placements need one reviewed record, not every draft+transcript in
+ * the editorial Redis hash. The durable store's HGET honours hidden/malformed
+ * overrides and the explicit published-only conversion; never fall back to a
+ * built-in video on upstream error.
+ */
+const readStoredPublishedSiteVideo = unstable_cache(
+  async (key: string): Promise<PublishedSiteVideo | undefined> => {
+    const store = getSiteVideoStore() as SiteVideoStore | undefined;
+    if (!store) return undefined;
+    try {
+      // This is a streamed or below-fold media section. A bounded HGET is
+      // cheaper than HGETALL and cannot block the primary hero render.
+      return toPublishedSiteVideo(await store.get(key, { timeoutMs: 1800 }));
+    } catch {
+      console.warn('[site-videos] Public single-video read unavailable; keeping placement hidden for 60s.');
+      return undefined;
+    }
+  },
+  ['holistic-house:published-video:single-key:v1'],
+  { revalidate: 60, tags: ['holistic-house-published-site-videos'] },
+);
+
+export const getPublishedSiteVideo = cache(async (key: string): Promise<PublishedSiteVideo | undefined> => {
+  // Preserve the per-response CSP nonce and URL-derived locale; only the
+  // explicitly approved public record is shared by the data cache.
+  noStore();
+  if (!getSiteVideoStore()) {
+    const record = builtInSiteVideoRecords().find(item => item.key === key);
+    return record ? toPublishedSiteVideo(record) : undefined;
+  }
+  try {
+    return await readStoredPublishedSiteVideo(key);
+  } catch {
+    // Nothing from Redis (or its credentials) may be reflected to a visitor.
+    return undefined;
+  }
+});
+
 /** Dynamic HTML, bounded data cache only. Never cache the storage-off fallback. */
 export const getPublishedSiteVideos = cache(async (): Promise<Record<string, PublishedSiteVideo>> => {
   // The document's CSP nonce and locale can change on every request.
