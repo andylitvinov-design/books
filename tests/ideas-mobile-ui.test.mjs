@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -190,16 +190,22 @@ test("Ideas full-photo first screen embeds the question and two real CTAs in one
   const catalog = read("data/assessments/catalog.js");
   assert.match(ui, /<div className=\{styles\.hero\} data-ideas-hero>[\s\S]*?<div className=\{styles\.heading\}>[\s\S]*?<form className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
   assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions>/);
-  assert.match(ui, /<button type="button" className=\{styles\.testButton\} data-ideas-free-test/);
+  assert.match(ui, /<Link href=\{coachingHref\} prefetch=\{false\} className=\{styles\.testButton\}/);
+  assert.ok(ui.includes("data-ideas-free-coaching"));
+  assert.ok(ui.includes("data-ideas-free-test"));
   assert.match(ui, /aria-expanded=\{showSuggestedTests\} aria-controls="ideas-filtered-tests"/);
   assert.match(ui, /onClick=\{openFreeTests\}/);
   assert.match(ui, /data-ideas-test-start=\{key\}/);
   assert.match(ui, /client\?startTests=hh-current-state/);
   assert.match(catalog, /key: 'hh-current-state',[\s\S]*?startable: true,[\s\S]*?rightsStatus: 'cleared',[\s\S]*?guestEligible: true/);
-  for (const label of ["Take a free test", "Пройти тест", "Hacer un test gratis"]) assert.ok(ui.includes(label));
-  assert.match(css, /\.hero::before \{[\s\S]*?ideas-pine-reference\.webp/);
+  for (const label of ["Take a coaching free personal session", "Пройти бесплатную личную коуч-сессию", "Iniciar una sesión personal gratuita de coaching"]) assert.ok(ui.includes(label));
+  assert.ok(ui.includes('const coachingHref = "/" + guestLocale + "/app/coaching"'));
+  assert.ok(ui.includes('testLink: "Or explore a free test"'));
+  assert.match(css, /\.hero::before \{[\s\S]*?ideas-pine-sharp\.avif/);
+  assert.match(css, /\.freeTestLink \{/);
+  assert.ok(statSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)).size > 8000, "The scenic asset must retain enough detail for mobile");
   assert.match(css, /\.hero::after \{[\s\S]*?linear-gradient/);
-  assert.match(css, /saturate\(1\.48\)/);
+  assert.match(css, /saturate\(1\.08\)/);
   assert.match(css, /\.heading \{\s*display: block;[\s\S]*?background: transparent/);
   assert.match(css, /\.heroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(ui, /testOverline: "Explore yourself"/);

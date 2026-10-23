@@ -45,13 +45,16 @@ async function verify(browserType, locale, width) {
     const headingBounds = await hero.locator("[class*=heading]").first().boundingBox();
     const inputBounds = await hero.locator("#ideas-question").boundingBox();
     const photo = await hero.evaluate(node => getComputedStyle(node, "::before").backgroundImage);
-    assert.ok(photo.includes("ideas-pine-reference.webp"), label + ": vivid image spans first card");
+    assert.ok(photo.includes("ideas-pine-sharp.avif"), label + ": new sharp scenic image spans first card");
     assert.ok(heroBounds && headingBounds && inputBounds &&
       inputBounds.y > headingBounds.y && inputBounds.y + inputBounds.height <= heroBounds.y + heroBounds.height,
       label + ": question overlays same full-height scenic card");
     const primary = await hero.locator('button[type="submit"]').boundingBox();
+    const coachingAction = hero.locator("[data-ideas-free-coaching]");
+    const secondary = await coachingAction.boundingBox();
+    assert.equal(await coachingAction.getAttribute("href"), "/" + (locale === "es" ? "en" : locale) + "/app/coaching",
+      label + ": direct existing personal coaching course");
     const testAction = hero.locator("[data-ideas-free-test]");
-    const secondary = await testAction.boundingBox();
     assert.ok(primary && secondary && primary.height >= 44 && secondary.height >= 44 &&
       secondary.y >= primary.y + primary.height - 1,
       label + ": two vertically stacked full-width actions");

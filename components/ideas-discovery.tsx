@@ -28,7 +28,7 @@ const copy = {
     placeholder: "Ваш вопрос или тема…",
     choose: "Выберите способ получить подсказку",
     ask: "Получить даосскую подсказку",
-    testOverline: "Исследуйте себя", test: "Пройти бесплатный тест", testAria: "Выбрать бесплатный тест",
+    testOverline: "Исследуйте себя", test: "Пройти бесплатную личную коуч-сессию", testAria: "Начать бесплатную личную коуч-сессию", testLink: "Или подобрать бесплатный тест",
     testsTitle: "Бесплатные тесты по теме", testsFallback: "С чего можно начать",
     testsClose: "Скрыть подборку", testsMore: "Все тесты по теме",
     testsNote: "Это подбор по теме, не медицинская оценка. Ваш вопрос остаётся в браузере.",
@@ -112,7 +112,7 @@ const copy = {
     placeholder: "What’s on your mind?",
     choose: "Choose how to explore your question",
     ask: "Get Taoist Insight",
-    testOverline: "Explore yourself", test: "Take a free test", testAria: "Explore free self-check tests",
+    testOverline: "Explore yourself", test: "Take a coaching free personal session", testAria: "Start a free personal coaching session", testLink: "Or explore a free test",
     testsTitle: "Free tests for your topic", testsFallback: "A few ways to start",
     testsClose: "Close suggested tests", testsMore: "Explore all matching tests",
     testsNote: "Matched by topic only, not a diagnosis. Your question stays in this browser.",
@@ -196,7 +196,7 @@ const copy = {
     placeholder: "Tu pregunta…",
     choose: "Elige cómo explorar tu pregunta",
     ask: "Recibir consejo taoísta",
-    testOverline: "Explórate", test: "Hacer un test gratis", testAria: "Explorar tests gratuitos",
+    testOverline: "Explórate", test: "Iniciar una sesión personal gratuita de coaching", testAria: "Comenzar una sesión personal gratuita de coaching", testLink: "O explorar un test gratuito",
     testsTitle: "Tests gratuitos para tu tema", testsFallback: "Opciones para empezar",
     testsClose: "Cerrar tests sugeridos", testsMore: "Ver todos los tests relacionados",
     testsNote: "Selección por tema, no un diagnóstico. La pregunta permanece en tu navegador. Algunos tests están en inglés.",
@@ -526,6 +526,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const suggestedTests = getIdeasTestSuggestions(question);
   const showSuggestedTests = testPickerOpen && Boolean(question.trim());
   const guestLocale = locale === "es" ? "en" : locale;
+  const coachingHref = "/" + guestLocale + "/app/coaching";
   const suggestedTestBrowserHref = "/" + locale + "/client/tests?focus=" + suggestedTests.focus.join(",");
 
   function openFreeTests() {
@@ -583,19 +584,21 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
         </div>
         <div className={styles.heroActions} data-ideas-hero-actions>
           <button type="submit" className={styles.submit}><Send size={18} aria-hidden="true" />{t.ask}</button>
-          <button type="button" className={styles.testButton} data-ideas-free-test
-            aria-label={t.testAria} aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-            onClick={openFreeTests}>
+          <Link href={coachingHref} prefetch={false} className={styles.testButton}
+            data-ideas-free-coaching aria-label={t.testAria}>
             <ClipboardCheck size={19} aria-hidden="true" />
             <span className={styles.testButtonText}><span className={styles.testButtonKicker}>{t.testOverline}</span><strong>{t.test}</strong></span>
             <ArrowRight size={18} aria-hidden="true" />
-          </button>
+          </Link>
         </div>
         {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
         <details className={styles.privacyDisclosure}>
           <summary id="ideas-question-privacy">{t.privacyShort}</summary>
           <p className={styles.privacy}>{t.privacy}</p>
         </details>
+        <button type="button" className={styles.freeTestLink} data-ideas-free-test
+          aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+          onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
         </form>
         <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
           hidden={!showSuggestedTests} aria-label={t.testsTitle}>
