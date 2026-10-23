@@ -185,6 +185,22 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const hints = academyCourseHints[locale];
   const items: AcademyCourseItem[] = [
     {
+      id: "academy-free-personal-coaching",
+      title: locale === "ru" ? "Личная коуч-сессия" : locale === "es" ? "Sesión personal de coaching" : "Personal Coaching Session",
+      subtitle: locale === "ru" ? "7 ВОПРОСОВ · 10–15 МИНУТ" : locale === "es" ? "7 PREGUNTAS · 10–15 MIN" : "7 QUESTIONS · 10–15 MIN",
+      description: locale === "ru"
+        ? "Один вопрос на каждом экране. Ответьте своими словами, найдите важный шаг и сохраните сессию в личном кабинете."
+        : locale === "es"
+          ? "Una pregunta por pantalla; escribe tus respuestas privadas y define un siguiente paso. La sesión está disponible en inglés."
+          : "One question per screen: write your own answers, choose one small action and keep your session private.",
+      href: "/" + locale + "/explore/business",
+      courseHref: "/" + (locale === "es" ? "en" : locale) + "/app/coaching",
+      image: "/images/holistic-house/books-library.webp",
+      duration: locale === "ru" ? "7 вопросов · в своём темпе" : locale === "es" ? "7 preguntas · en inglés" : "7 questions · at your pace",
+      free: true,
+      actionLabel: locale === "ru" ? "Начать сессию" : locale === "es" ? "Start in English" : "Start session",
+    },
+    {
       id: "academy-free-opora",
       detailsHint: hints.opora,
       title: locale === "ru" ? "ОПОРА · Антистресс" : locale === "es" ? "OPORA · Antiestrés" : "OPORA · Stress Relief",

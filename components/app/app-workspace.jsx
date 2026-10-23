@@ -80,6 +80,7 @@ const DevelopmentProgram = dynamic(() => import('@/components/app/development-pr
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
+const PersonalCoaching = dynamic(() => import('@/components/app/personal-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
 
 function message(error, c) {
@@ -260,6 +261,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
+        ...(page === 'coaching' ? { continueTo: 'coaching' } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
       })
@@ -567,7 +569,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
-    (id === 'course' && page === 'business') ||
+    (id === 'course' && ['business','coaching'].includes(page)) ||
     (id === 'portfolio' && ['reports', 'history', 'monitoring', 'results'].includes(page))
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
@@ -646,6 +648,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
+          {page === 'coaching' && <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} accountId={data.account.id} key={data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
