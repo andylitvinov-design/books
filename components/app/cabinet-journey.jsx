@@ -112,10 +112,57 @@ const COPY = {
         doneAction: 'Мои авторские курсы', detail: 'Сохрани черновик за 120 XP, а после одобрения опубликуй курс ещё за 80 XP.' },
     ],
   },
+  es: {
+    eyebrow: 'MI ESPACIO · MI CAMINO',
+    title: 'Tu camino',
+    intro: 'De tus primeros descubrimientos a tu propio curso.',
+    xp: 'XP ganados', progress: 'Etapas completadas',
+    step: 'Paso', of: 'de', here: 'Estás aquí', next: 'Tu siguiente paso',
+    done: 'Hecho', upcoming: 'Después', now: 'Ahora',
+    allDone: 'Has completado el camino', allDoneText: 'Sigue compartiendo lo que aprendiste.',
+    allDoneAction: 'Mi práctica',
+    loading: 'Cargando tu progreso guardado…',
+    unavailable: 'No se pudo cargar tu progreso. Tus puntos no han cambiado.',
+    retry: 'Reintentar',
+    testsUnit: 'tests',
+    courseDone: 'Curso completado',
+    consultationSent: 'Solicitud enviada', consultationHint: 'No es una cita confirmada',
+    masterApproved: 'Aprobado', masterPending: 'En revisión',
+    courseDraft: 'Borrador guardado', coursePublished: 'Publicado',
+    pointsNote: 'Los XP recompensan la participación, no tu salud ni tus cualificaciones. Una solicitud no confirma una cita. El acceso profesional requiere aprobación.',
+    details: '¿Cómo se cuentan los XP?',
+    expand: 'Ver acciones', collapse: 'Ocultar acciones',
+    earned: 'Ganados', available: 'Aún disponibles', fullyEarned: 'Todos los XP ganados',
+    consultationNote: 'Enviar una solicitud da XP, pero no reserva ni confirma una cita.',
+    masterNote: 'Una persona revisa la solicitud. Los XP no conceden acceso profesional.',
+    authorNote: 'Publicar requiere aprobación como profesional; guardar un borrador es otro paso.',
+    checkApplication: 'Consultar mi solicitud',
+    applyFirst: 'Solicitar perfil profesional',
+    myRequests: 'Mis solicitudes',
+    tasks: {
+      tests: ['Guarda tu primer test', 'Guarda un segundo test diferente', 'Guarda un tercer test diferente'],
+      course: ['Termina el curso gratuito'],
+      consultation: ['Envía una solicitud de introducción gratuita'],
+      master: ['Envía tu solicitud de profesional', 'Obtén la aprobación profesional'],
+      author: ['Guarda el borrador de tu curso', 'Publica el curso tras la aprobación'],
+    },
+    stages: [
+      { id: 'tests', title: 'Descúbrete', hint: '3 tests gratuitos', action: 'Elegir un test',
+        doneAction: 'Ver mis informes', detail: 'Completa 3 tests diferentes. Cada resultado guardado suma 30 XP.' },
+      { id: 'course', title: 'Aprende una habilidad', hint: 'Curso gratuito de Reiki', action: 'Empezar el curso gratuito',
+        doneAction: 'Repasar el curso', detail: 'Termina un curso gratuito para recibir 130 XP.' },
+      { id: 'consultation', title: 'Orientación personal', hint: 'Solicitud de introducción', action: 'Solicitar una introducción',
+        doneAction: 'Mis solicitudes', detail: 'Envía una solicitud de introducción gratuita para obtener 20 XP.' },
+      { id: 'master', title: 'Hazte profesional', hint: 'Solicitud y aprobación', action: 'Solicitar perfil profesional',
+        doneAction: 'Abrir Mi práctica', detail: 'La solicitud suma 45 XP; la aprobación añade otros 55 XP.' },
+      { id: 'author', title: 'Crea tu curso', hint: 'Borrador y publicación', action: 'Crear un borrador de curso',
+        doneAction: 'Gestionar mis cursos', detail: 'Guarda tu borrador por 120 XP y publícalo tras la aprobación para sumar 80 XP.' },
+    ],
+  },
 }
 
 const getRoute = (id, locale, canAuthor, freeConsultationServiceId = null) => {
-  const lang = locale === 'ru' ? 'ru' : 'en'
+  const lang = locale === 'ru' ? 'ru' : locale === 'es' ? 'es' : 'en'
   if (id === 'tests') return '/' + lang + '/app/tests'
   if (id === 'course') return '/' + lang + '/academy/principles-of-energywork/learn'
   if (id === 'consultation') return freeConsultationServiceId
@@ -182,7 +229,7 @@ const stageAction = (stage, state, lang, canAuthor, serviceId, t) => {
 }
 
 export default function CabinetJourney({ accountId, locale = 'en' }) {
-  const lang = locale === 'ru' ? 'ru' : 'en'
+  const lang = locale === 'ru' ? 'ru' : locale === 'es' ? 'es' : 'en'
   const t = COPY[lang]
   const [snapshot, setSnapshot] = useState(null)
   const [loading, setLoading] = useState(true)
