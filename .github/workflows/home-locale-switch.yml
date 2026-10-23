@@ -26,6 +26,27 @@ on:
 permissions:
   contents: read
 jobs:
+  core-methods:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: New home method cards, affected lint and types
+        run: |
+          node --test tests/home-core-methods.test.mjs
+          npx eslint components/home-core-methods.tsx components/holistic-house-home.tsx app/es/page.tsx
+          npx tsc --noEmit
+      - name: Build three home locales with reviewed dependencies
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
   first-click:
     runs-on: ubuntu-latest
     timeout-minutes: 15
