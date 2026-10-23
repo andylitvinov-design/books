@@ -59,7 +59,7 @@ const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
-export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery='',onOpenYoutube=null}){
+export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery='',startCreate=false,onOpenYoutube=null}){
  const t=translations[locale]||translations.en
  const api=body=>request(body,accountId)
  const [items,setItems]=useState([])
@@ -111,12 +111,15 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
    if(!alive)return
    const list=data.items||[]
    setItems(list)
-   setCreating(!list.length)
+   setCreating(Boolean(startCreate)||!list.length)
    if(list.length){setSelected(list[0].id);setDraft(JSON.parse(JSON.stringify(list[0].draft)));setSlideId(list[0].draft?.slides?.[0]?.id||null)}
   }).catch(()=>{if(alive)setLoadFailed(true)})
     .finally(()=>{if(alive)setLoading(false)})
   return ()=>{alive=false}
  },[accountId,retryKey])
+ // A Pro deep link opens the local quick-start form, never creates a course
+ // record until its own explicit authenticated submit.
+ useEffect(()=>{if(startCreate&&!loading&&!loadFailed)setCreating(true)},[startCreate,loading,loadFailed])
  function choose(item){
   if(busy||uploading||recording)return
   if(dirty&&!creating&&!window.confirm(t.discard))return
