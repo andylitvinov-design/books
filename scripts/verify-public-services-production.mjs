@@ -1,6 +1,6 @@
 import { assertCompactLeadRequest } from './helpers/compact-lead-verifier.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { assertRegisteredEnquiryReceipt } from './helpers/enquiry-receipt-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -8,6 +8,55 @@ const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
+
+// Exact public service identities, checked against source by the pure caller test.
+const receiptTitles = {
+  "personal": {
+    "imagery-therapy": {
+      "en": "Request a guided imagery session",
+      "ru": "Запросить сеанс образной психотерапии",
+      "es": "Solicitar una sesión de imágenes guiadas"
+    },
+    "systemic-constellations": {
+      "en": "Request a systemic constellation session",
+      "ru": "Запросить расстановочную сессию",
+      "es": "Solicitar una sesión de constelaciones"
+    }
+  },
+  "business": {
+    "en": "Business Strategy & Archetypal Coaching",
+    "ru": "Бизнес-консалтинг и архетипический коучинг",
+    "es": "Consultoría de negocios y coaching arquetípico"
+  },
+  "alchemy": {
+    "en": "Alchemy of the Soul / Psycho-homeopathy",
+    "ru": "Алхимия души / Психогомеопатия",
+    "es": "Alquimia del Alma / Psicohomeopatía"
+  },
+  "drawing": {
+    "en": "Coaching questionnaire — free drawing assessment",
+    "ru": "Коучинг-форма — бесплатная диагностика по рисунку",
+    "es": "Formulario de coaching — evaluación gratuita mediante dibujo"
+  }
+};
+
+const receiptFormats = {
+  "personal": {
+    "en": "30-minute express consultation · €50",
+    "ru": "Экспресс-консультация 30 минут · €50",
+    "es": "Consulta exprés de 30 minutos · €50"
+  },
+  "business": {
+    "en": "30 min · €50",
+    "ru": "30 min · €50",
+    "es": "30 min · €50"
+  },
+  "alchemy": {
+    "en": "Express review · 30 min · €50",
+    "ru": "Экспресс · 30 минут · €50",
+    "es": "Revisión exprés · 30 minutos · €50"
+  }
+};
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) {
@@ -380,12 +429,13 @@ try {
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
-      const chooser = await openRegisteredContactChannelChooser(target, expect, page);
-      const prepared = await assertPreparedContactChannels(chooser, expect);
-      assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
-        "Express rate preserved in approved draft: " + label);
+      await expect(choices.nth(1)).toContainText("€50");
+      await expect(choices.nth(1)).toContainText("30");
       await assertViewport(page, "personal-request/" + label);
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
+      await assertRegisteredEnquiryReceipt(target, expect, page, {
+        locale, sourcePath: "/" + locale + "/services/" + service, serviceTitle: receiptTitles.personal[service][locale], selectedFormat: receiptFormats.personal[locale],
+      });
       await page.close();
     }
   }
@@ -424,13 +474,14 @@ try {
     await toOffers.click();
     await page.waitForURL(/#business-offers$/);
     const express = offers.locator('[data-business-offer="express"]');
-    const chooser = await openRegisteredContactChannelChooser(express, expect, page);
-    const prepared = await assertPreparedContactChannels(chooser, expect);
-    assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
-      "Business express €50 must survive messenger selection: " + label);
+    await expect(express).toContainText("€50");
+    await expect(express).toContainText("30");
     await assertViewport(page, "business/" + label);
     await assertNoDevIssueOverlay(page, label);
     await page.screenshot({path: output + "/business-" + locale + "-express-request-390.png",fullPage:false,animations:"disabled"});
+    await assertRegisteredEnquiryReceipt(express, expect, page, {
+      locale, sourcePath: "/" + locale + "/services/business-consulting", serviceTitle: receiptTitles.business[locale], selectedFormat: receiptFormats.business[locale],
+    });
     await page.close();
   }
 
@@ -512,24 +563,26 @@ try {
               "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openRegisteredContactChannelChooser(pricing, expect, page);
-            const prepared = await assertPreparedContactChannels(channels, expect);
-            assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-              "Selected express session must appear in prepared order draft");
+            await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true');
+            await expect(pricing.locator('[data-alchemy-format="30"]')).toContainText('€50');
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
+            await assertRegisteredEnquiryReceipt(pricing, expect, page, {
+              locale, sourcePath: "/" + locale + "/services/" + slug, serviceTitle: receiptTitles.alchemy[locale], selectedFormat: receiptFormats.alchemy[locale],
+            });
           } else {
             const capture = main.locator('section:has(> details)');
             assert.equal(await capture.count(), 1, "Exactly one core-service footer");
             await capture.scrollIntoViewIfNeeded();
-            const chooser = await openRegisteredContactChannelChooser(capture, expect, page);
-            const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
-            assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
+            const serviceTitle = await main.locator('h1').innerText();
             const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
             assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
             await alternative.locator("summary").click();
             await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
             await page.screenshot({path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false});
+            await assertRegisteredEnquiryReceipt(capture, expect, page, {
+              locale, sourcePath: "/" + locale + "/services/" + slug, serviceTitle,
+            });
           }
         }
         await page.close();
@@ -579,6 +632,10 @@ try {
             "Each photo-led mobile section should fit within one screen: " + JSON.stringify(panelHeights));
         }
 
+        if (width === 390 || width === 1188) {
+          await page.screenshot({path: output + "/free-" + kind + "-" + locale + "-hero-" + width + ".png", fullPage: false});
+        }
+
         if (kind === "tests") {
           await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());
           assert.equal(await main.locator('[data-free-resource-enquiry]').count(), 0,
@@ -604,17 +661,12 @@ try {
               await detailedForm.locator('form button[type="submit"]').click();
               const ready = detailedForm.locator('[role="region"]');
               await visible(ready);
-              const intakeChannels = await openRegisteredContactChannelChooser(ready, expect, page);
-              const prepared = await assertPreparedContactChannels(intakeChannels, expect);
-              for (const marker of [markerA, markerB]) {
-                assert.ok(!prepared.whatsappUrl.searchParams.get("text")?.includes(marker));
-                assert.ok(!prepared.telegramUrl.searchParams.get("text")?.includes(marker));
-              }
+              await assertRegisteredEnquiryReceipt(ready, expect, page, {
+                locale, sourcePath: "/" + locale + "/" + slug, serviceTitle: receiptTitles.drawing[locale],
+                privateMarkers: [markerA, markerB],
+              });
             }
           }
-        }
-        if (width === 390 || width === 1188) {
-          await page.screenshot({path: output + "/free-" + kind + "-" + locale + "-hero-" + width + ".png", fullPage: false});
         }
         await page.close();
       }
@@ -633,4 +685,5 @@ try {
 }
 if (failure) throw failure;
 console.log("PASS public production service acceptance");
+
 

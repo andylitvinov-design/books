@@ -8,14 +8,15 @@ import * as enquiries from '../lib/whatsapp-enquiry.js';
 import * as paid from '../lib/paid-ad-referrals.js';
 import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs';
 import * as referrals from '../lib/organic-event-referrals.js';
+import { normalizePublicServiceEnquiry } from '../lib/practitioners/public-service-enquiry-input.mjs';
 import * as publicLead from '../lib/public-lead-capture.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} };
-function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}) {
+function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}, options = {}) {
   let choice = 'session', externalClicks = 0, cursor = 0, dirty = true, pendingEffects = [];
   const hooks = [], scrollCalls = [], channelClicks = [], submissions = [], redirects = [];
-  let routeHandler;
+  let routeHandler, selectedFormat = options.selectedFormat, operationSerial = 0;
   const storage = new Map();
   const location = { pathname: '/' + locale + '/services/psychohomeopathy', search: '', ...locationOptions };
   // Render/commit/effect cycles preserve hook slots and dependencies. A no-op
@@ -59,15 +60,18 @@ function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}
     './contact-channel-chooser.module.css': { default: {} },
   };
   const exports = {};
-  const compiled = ts.transpileModule(read('components/contact-channel-chooser.tsx'), { fileName: 'chooser.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  runInNewContext(compiled, { exports, URL, URLSearchParams, crypto: { randomUUID: () => '00000000-0000-4000-8000-000000000001' }, fetch: async (url, options) => { assert.equal(url, '/api/service-enquiries'); assert.equal(options.method, 'POST'); assert.ok(routeHandler, 'No unplanned request'); const data = JSON.parse(options.body); submissions.push(data); let response; await routeHandler({ request: () => ({ method: () => options.method, postDataJSON: () => data }), fulfill: async value => { response = value; } }); return { ok: response.status === 201, json: async () => fault === 'invalid receipt' ? { saved: true, referenceCode: 'invalid' } : JSON.parse(response.body) }; }, window: { location: { get pathname() { return location.pathname; }, get search() { return location.search; }, get href() { return 'https://example.test' + location.pathname + location.search; } }, sessionStorage: { setItem: (key, value) => storage.set(key, value) }, matchMedia: () => ({ matches: reducedMotion }) }, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
+  let chooserSource = read('components/contact-channel-chooser.tsx');
+  if (fault === 'lost selected format') { assert.ok(chooserSource.includes('[selectedFormat?.trim(),')); chooserSource = chooserSource.replace('[selectedFormat?.trim(),', '['); }
+  if (fault === 'missing format reset') { assert.ok(chooserSource.includes('[enquiryResetKey, quick, selectedFormat]')); chooserSource = chooserSource.replace('[enquiryResetKey, quick, selectedFormat]', '[enquiryResetKey, quick]'); }
+  const compiled = ts.transpileModule(chooserSource, { fileName: 'chooser.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  runInNewContext(compiled, { exports, URL, URLSearchParams, crypto: { randomUUID: () => '00000000-0000-4000-8000-' + String(++operationSerial).padStart(12, '0') }, fetch: async (url, options) => { assert.equal(url, '/api/service-enquiries'); assert.equal(options.method, 'POST'); assert.ok(routeHandler, 'No unplanned request'); const data = JSON.parse(options.body); submissions.push(data); let response; await routeHandler({ request: () => ({ method: () => options.method, postDataJSON: () => data }), fulfill: async value => { response = value; } }); return { ok: response.status === 201, json: async () => fault === 'invalid receipt' ? { saved: true, referenceCode: 'invalid' } : JSON.parse(response.body) }; }, window: { location: { get pathname() { return location.pathname; }, get search() { return location.search; }, get href() { return 'https://example.test' + location.pathname + location.search; } }, sessionStorage: { setItem: (key, value) => storage.set(key, value) }, matchMedia: () => ({ matches: reducedMotion }) }, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
   function nodes() {
     const message = choice === 'session' ? 'Personal session 60 minutes €100' : 'Questions 30 minutes €50';
     let result;
     for (let pass = 0; ; pass++) {
       assert.ok(pass < 10, 'Chooser effects must settle');
       cursor = 0; dirty = false; pendingEffects = []; result = [];
-      const tree = exports.ContactChannelChooser({ locale, whatsappUrl: enquiries.whatsappEnquiryUrl({ locale, service: 'Consultation', request: message, pagePath: '/' + locale + '/services/psychohomeopathy?private=never-share' }), attributes: { 'data-consultation-action': choice }, onChannelClick: channel => channelClicks.push(channel) });
+      const tree = exports.ContactChannelChooser({ locale, selectedFormat, whatsappUrl: enquiries.whatsappEnquiryUrl({ locale, service: 'Consultation', request: message, pagePath: '/' + locale + '/services/psychohomeopathy?private=never-share' }), attributes: { 'data-consultation-action': choice }, onChannelClick: channel => channelClicks.push(channel) });
       function visit(node, hidden = false) {
         if (!node || typeof node !== 'object') return;
         if (Array.isArray(node)) { node.forEach(child => visit(child, hidden)); return; }
@@ -97,7 +101,7 @@ function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}
     return result;
   }
   function locator(selector) {
-    const match = selector.match(/^(a|button|input|form)?(?:\[([\w-]+)(?:="([^"]+)")?\])?$/);
+    const match = selector.match(/^(a|button|input|form|textarea)?(?:\[([\w-]+)(?:="([^"]+)")?\])?$/);
     assert.ok(match, selector);
     if (match[2] === 'autocomplete') match[2] = 'autoComplete';
     const selected = () => nodes().filter(node => (!match[1] || node.type === match[1]) && (!match[2] || Object.hasOwn(node.props, match[2])) && (match[3] === undefined || node.props[match[2]] === match[3]));
@@ -117,11 +121,11 @@ function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}
       if (value instanceof RegExp) assert.match(actualValue, value); else assert.equal(actualValue, value);
     },
   });
-  return { async submitWithoutConsent() { await locator('button[data-contact-order]').click(); await locator('input[autocomplete="email"]').fill('enquiry-qa@example.test'); const form = nodes().find(n => n.type === 'form'); await form.props.onSubmit({ preventDefault() {} }); }, page: { route: async (_pattern, handler) => { routeHandler = handler; } }, submissions, redirects, storage, scope: { locator }, expect, choose: value => { choice = value; }, navigate: (pathname, search) => Object.assign(location, { pathname, search }), externalClicks: () => externalClicks, scrollCalls, channelClicks };
+  return { setSelectedFormat: value => { selectedFormat = value; }, async submitWithoutConsent() { await locator('button[data-contact-order]').click(); await locator('input[autocomplete="email"]').fill('enquiry-qa@example.test'); const form = nodes().find(n => n.type === 'form'); await form.props.onSubmit({ preventDefault() {} }); }, page: { route: async (_pattern, handler) => { routeHandler = handler; } }, submissions, redirects, storage, scope: { locator }, expect, choose: value => { choice = value; }, navigate: (pathname, search) => Object.assign(location, { pathname, search }), externalClicks: () => externalClicks, scrollCalls, channelClicks };
 }
 
 test('actual chooser never saves or exposes channels without explicit consent', async () => {
-  const mounted = mountChooser('en');
+  const mounted = mountChooser('en', undefined, false, {}, { selectedFormat: 'Express review · 30 min · €50' });
   await mounted.submitWithoutConsent();
   assert.equal(mounted.submissions.length, 0);
   await mounted.expect(mounted.scope.locator('a[data-contact-channel]')).toHaveCount(0);
@@ -272,15 +276,15 @@ test('release retains explicit paid selection, free internal action, reset, priv
 test('both core-service scripts explicitly open the uniquely scoped chooser without changing unrelated direct handoffs', () => {
   const app = read('scripts/verify-app-r1.mjs');
   assert.match(app, /data-sitewide-capture="core-service"/);
-  assert.match(app, /openContactChannelChooser\(capture,expect\)/);
-  assert.match(app, /message.includes\(names\[locale\]\)/);
-  assert.match(app, /openContactChannelChooser\(ready,expect\)/);
+  assert.match(app, /assertCompactLeadRequest\(servicePage,capture,expect,/);
+  assert.match(app, /serviceTitle:await main.locator\('h1'\).innerText\(\)/);
+  assert.match(app, /assertRegisteredEnquiryReceipt\(ready,expect,publicPage,/);
   assert.match(app, /const order=promo.locator\('a\[data-contact-channel="whatsapp"\]'\)/);
   const production = read('scripts/verify-public-services-production.mjs');
   assert.match(production, /main.locator\('section:has\(> details\)'\)/);
   assert.match(production, /assert.equal\(await capture.count\(\), 1/);
-  assert.match(production, /openRegisteredContactChannelChooser\(capture, expect, page\)/);
-  assert.match(production, /Prepared request must retain the selected service/);
+  assert.match(production, /assertRegisteredEnquiryReceipt\(capture, expect, page,/);
+  assert.match(production, /const serviceTitle = await main.locator\('h1'\).innerText\(\)/);
   assert.match(production, /alternative starts collapsed/);
   assert.match(production, /Only|isolated loopback server/);
   assert.match(production, /require\(\(process.env.HH_PLAYWRIGHT_PACKAGE \|\| "playwright"\) \+ "\/test"\)/);
@@ -359,20 +363,12 @@ test('actual core JSX has one footer section with one chooser and the matching s
 });
 
 function assertFreeReviewCallerContract(source, compact = false) {
-  if (!compact) {
-    assert.match(source, /openRegisteredContactChannelChooser\(ready, expect, page\)/);
-    assert.match(source, /assertPreparedContactChannels\(intakeChannels, expect\)/);
-    for (const channel of ['whatsapp', 'telegram']) assert.ok(source.includes('!prepared.' + channel + 'Url.searchParams.get("text")?.includes(marker)'), 'Both channels exclude private answer markers');
-    assert.match(source, /detailedForm\.locator\('form button\[type="submit"\]'\)\.click/);
-    return;
-  }
-  assert.match(source, compact ? /openContactChannelChooser\(ready,expect\)/ : /openContactChannelChooser\(ready, expect\)/);
-  assert.match(source, compact ? /assertPreparedContactChannels\(readyChooser,expect\)/ : /assertPreparedContactChannels\(readyChooser, expect\)/);
-  for (const channel of ['whatsapp', 'telegram']) assert.ok(source.includes('!' + channel + 'Text.includes(marker)'), channel + ' must reject private answer markers');
-  assert.match(source, /decodedPageUrl\.includes\(marker\)/);
+  assert.match(source, compact ? /assertRegisteredEnquiryReceipt\(ready,expect,publicPage,/ : /assertRegisteredEnquiryReceipt\(ready, expect, page,/);
+  assert.match(source, compact ? /privateMarkers:\[uniqueProblem,uniqueGoal\]/ : /privateMarkers: \[markerA, markerB\]/);
   assert.doesNotMatch(source, /ready\.getByRole\('button'\)\.click/);
   if (compact) {
     assert.match(source, /name:\s*copy\.copyButton,\s*exact:\s*true/);
+    assert.match(source, /decodedPageUrl\.includes\(marker\)/);
     assert.match(source, /Analytics event metadata never contains answers/);
     assert.match(source, /Temporary analytics hold must emit no acquisition events/);
   }
@@ -383,8 +379,8 @@ test('free-review verifier callers open both channels, keep generic drafts and t
     const source = read(path);
     assertFreeReviewCallerContract(source, compact);
     for (const changed of [
-      source.replace(/open(?:Registered)?ContactChannelChooser\(ready,\s*expect(?:, page)?\)/, 'ready'),
-      compact ? source.replace('!telegramText.includes(marker)', 'true') : source.replace('!prepared.telegramUrl.searchParams.get("text")?.includes(marker)', 'true'),
+      source.replace(/assertRegisteredEnquiryReceipt\(ready,\s*expect,\s*(?:publicPage|page),/, 'invalidCaller(ready,'),
+      compact ? source.replace('privateMarkers:[uniqueProblem,uniqueGoal]', 'privateMarkers:[]') : source.replace('privateMarkers: [markerA, markerB]', 'privateMarkers: []'),
       ...(compact ? [source.replace(/name:\s*copy\.copyButton,\s*exact:\s*true/g, '')] : []),
     ]) assert.throws(() => assertFreeReviewCallerContract(changed, compact), path);
   }
@@ -396,6 +392,85 @@ test('free-review verifier callers open both channels, keep generic drafts and t
   const temple = read('components/temple-initiation-chooser.tsx');
   assert.match(temple, /<ContactChannelChooser/);
   assert.doesNotMatch(temple, /<a[^>]*href=\{whatsappUrl\}/);
-  assert.match(read('scripts/verify-contact-channel-chooser-browser.mjs'), /verifyChooser\(page,templeChooser/);
+  assert.match(read('scripts/verify-contact-channel-chooser-browser.mjs'), /assertRegisteredEnquiryReceipt\(temple,\s*expect,\s*page/);
 });
 
+
+// Execute actual chooser submit/effects, not a replacement payload builder.
+const formatMatrix = [
+  ['en', ['Express review · 30 min · €50','Personal session · 60 min · €100','Four-week support · discuss details']],
+  ['ru', ['Экспресс · 30 минут · €50','Личная сессия · 60 минут · €100','4 недели сопровождения · обсудить условия']],
+  ['es', ['Revisión exprés · 30 minutos · €50','Sesión personal · 60 minutos · €100','Acompañamiento de cuatro semanas · consultar condiciones']],
+];
+async function assertActualFormats(locale, formats, fault) {
+  const mounted = mountChooser(locale, fault, false, {}, { selectedFormat: formats[0] });
+  await mounted.page.route('**/api/service-enquiries', async route => {
+    await route.fulfill({ status: 201, body: JSON.stringify({ saved: true, referenceCode: 'HH-ABCD1234EF56' }) });
+  });
+  for (const [index, format] of formats.entries()) {
+    if (index) mounted.setSelectedFormat(format);
+    await mounted.expect(mounted.scope.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
+    await mounted.expect(mounted.scope.locator('a[data-contact-channel]')).toHaveCount(0);
+    await mounted.scope.locator('button[data-contact-order]').click();
+    const email = mounted.scope.locator('input[autocomplete="email"]');
+    await email.fill('enquiry-qa@example.test');
+    const submit = mounted.scope.locator('button[type="submit"]');
+    await mounted.expect(submit).toBeDisabled();
+    assert.equal(mounted.submissions.length, index, 'Changing format and typing contact cannot save automatically');
+    await mounted.scope.locator('input[type="checkbox"]').check();
+    assert.equal(mounted.submissions.length, index, 'Consent alone never submits');
+    await submit.click();
+    assert.equal(mounted.submissions.length, index + 1);
+    const payload = mounted.submissions.at(-1);
+    assert.equal(payload.description, format);
+    assert.equal(normalizePublicServiceEnquiry(payload).description, format, 'Unchanged server input validator retains the exact selected format');
+    assert.equal(payload.serviceTitle, 'Consultation');
+    assert.equal(payload.contactConsent, true);
+    assert.deepEqual(payload.contact, { displayName: '', email: 'enquiry-qa@example.test', phone: '' });
+    assert.equal(payload.locale, locale);
+    assert.equal(payload.sourcePath, '/' + locale + '/services/psychohomeopathy');
+    assert.equal(payload.website, '');
+    assert.doesNotMatch(payload.description, /https:|Hello|Здравствуйте|Hola/);
+    assert.deepEqual(Object.keys(JSON.parse(mounted.storage.get(RECEIPT_SESSION_KEY))).sort(), ['createdAt','referenceCode']);
+    assert.ok(!mounted.storage.get(RECEIPT_SESSION_KEY).includes(format));
+    assert.equal(mounted.redirects.at(-1), '/' + locale + '/thank-you');
+  }
+  assert.equal(new Set(mounted.submissions.map(value => value.operationId)).size, 3);
+  assert.equal(mounted.externalClicks(), 0);
+
+}
+for (const [locale, formats] of formatMatrix) test(locale + ' actual submitted description retains each public format once and resets consent and operation identity', () => assertActualFormats(locale, formats));
+for (const fault of ['lost selected format', 'missing format reset']) test('actual chooser regression rejects ' + fault, async () => { await assert.rejects(assertActualFormats(...formatMatrix[0], fault)); });
+
+test('actual chooser includes optional visitor note once without copying it or format into receipt storage', async () => {
+  const format = 'Personal session · 60 min · €100', note = 'Synthetic optional note';
+  const mounted = mountChooser('en', undefined, false, {}, { selectedFormat: format });
+  await mounted.page.route('**/api/service-enquiries', async route => route.fulfill({ status: 201, body: JSON.stringify({ saved: true, referenceCode: 'HH-ABCD1234EF56' }) }));
+  await mounted.scope.locator('button[data-contact-order]').click();
+  await mounted.scope.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
+  await mounted.scope.locator('textarea').fill(note);
+  await mounted.scope.locator('input[type="checkbox"]').check();
+  await mounted.scope.locator('button[type="submit"]').click();
+  assert.equal(mounted.submissions[0].description, format + '\n\n' + note);
+  const receipt = mounted.storage.get(RECEIPT_SESSION_KEY);
+  assert.ok(!receipt.includes(format) && !receipt.includes(note));
+  assert.deepEqual(mounted.redirects, ['/en/thank-you']);
+});
+
+test('selected format plus maximum optional note stays within unchanged server description limit', async () => {
+  const format = 'Personal session · 60 min · €100';
+  const mounted = mountChooser('en', undefined, false, {}, { selectedFormat: format });
+  await mounted.page.route('**/api/service-enquiries', async route => route.fulfill({ status: 201, body: JSON.stringify({ saved: true, referenceCode: 'HH-ABCD1234EF56' }) }));
+  await mounted.scope.locator('button[data-contact-order]').click();
+  const note = mounted.scope.locator('textarea');
+  const maxLength = Number(await note.getAttribute('maxLength'));
+  assert.equal(maxLength, 1400 - format.length - 2);
+  await note.fill('N'.repeat(maxLength));
+  await mounted.scope.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
+  await mounted.scope.locator('input[type="checkbox"]').check();
+  await mounted.scope.locator('button[type="submit"]').click();
+  const payload = mounted.submissions[0];
+  assert.equal(payload.description.length, 1400);
+  assert.equal(normalizePublicServiceEnquiry(payload).description, payload.description);
+  assert.throws(() => normalizePublicServiceEnquiry({ ...payload, description: payload.description + 'N' }), /INVALID_REQUEST/);
+});

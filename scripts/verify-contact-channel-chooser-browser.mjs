@@ -1,3 +1,4 @@
+import { assertRegisteredEnquiryReceipt } from './helpers/enquiry-receipt-verifier.mjs';
 import { assertCompactLeadRequest } from './helpers/compact-lead-verifier.mjs';
 // Public read-only, no outgoing messenger clicks, sends, sign-in, or client records.
 // Test the real hydrated two-step capture on local Next production server.
@@ -231,8 +232,13 @@ async function runEngine(name, engine) {
             await temple.locator('[data-temple-step="initiation"] button').first().click();
             const templeChooser = temple.locator("[data-contact-channel-chooser]");
             await templeChooser.waitFor({state:"visible"});
-            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
-            assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
+            const { referenceCode } = await assertRegisteredEnquiryReceipt(temple,expect,page,{
+              locale:"en",sourcePath:"/en/academy/temple-studies",serviceTitle:"Temple Studies",
+            });
+            await page.locator('[data-service-thank-you]').screenshot({
+              path:output + "/chromium-en-390-temple-receipt.png",animations:"disabled",
+            });
+            results.push({name,locale,width,templeReceipt:true,referenceCode,contactSubmitted:true});
           }
         } finally {
           await page.close();
@@ -257,4 +263,5 @@ finally {
 }
 if(failure)throw failure;
 console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);
+
 

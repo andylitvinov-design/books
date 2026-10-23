@@ -131,7 +131,7 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
         </select>
       </label>
       <div className={styles.formOrder}>
-        <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+        <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} selectedFormat={t.formatNames[format]} label={t.action}
           event="service_request_start" className={styles.formOrderButton}
           attributes={{ "data-alchemy-booking": "personalised" }} />
       </div>
@@ -225,7 +225,7 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
       </button>
       <p className={styles.formatHint}>{data.choiceHint}</p>
       <div className={styles.optionsOrder}>
-        <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+        <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} selectedFormat={t.formatNames[selected]} label={t.action}
           event="service_request_start" className={styles.optionsOrderButton}
           attributes={{ "data-alchemy-booking": "formats" }} />
       </div>
@@ -284,3 +284,4 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
     </div>
   );
 }
+

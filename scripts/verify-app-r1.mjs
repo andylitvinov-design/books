@@ -5,7 +5,7 @@ import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclos
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
+import { assertRegisteredEnquiryReceipt } from './helpers/enquiry-receipt-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -487,11 +487,13 @@ async function verifyPublicServiceConversionJourneys(){
      const pricing=servicePage.locator('[data-alchemy-booking-formats]')
      await pricing.locator('[data-alchemy-format="30"]').click()
      await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-     const order=await openContactChannelChooser(pricing,expect)
-     const prepared=await assertPreparedContactChannels(order,expect)
-     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-       'Selected 30-minute format must be carried into WhatsApp and Telegram')
+     await expect(pricing.locator('[data-alchemy-format="30"]')).toContainText('€50')
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+     await assertRegisteredEnquiryReceipt(pricing,expect,servicePage,{
+      locale,sourcePath:'/'+locale+'/services/'+slug,
+      serviceTitle:locale==='ru'?'Алхимия души / Психогомеопатия':'Alchemy of the Soul / Psycho-homeopathy',
+      selectedFormat:locale==='ru'?'Экспресс · 30 минут · €50':'Express review · 30 min · €50',
+     })
     }else if(kind==='dao'){
      await servicePage.locator('a[href="#request-free-wu-xing"]').click()
      await assertCompactLeadRequest(servicePage,main.locator('#request-free-wu-xing'),expect,{
@@ -501,15 +503,13 @@ async function verifyPublicServiceConversionJourneys(){
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
      await capture.scrollIntoViewIfNeeded()
      await expect(capture).toBeVisible({timeout:30000})
-     const chooser=await openContactChannelChooser(capture,expect)
-     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-     const href=whatsappUrl.href
-     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-     const alternative=capture.locator('details')
+     const alternative=main.locator('section:has(> details) > details')
      assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
      await alternative.locator('summary').click()
      await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+     await assertCompactLeadRequest(servicePage,capture,expect,{
+      locale,serviceTitle:await main.locator('h1').innerText(),
+     })
     }
    }
    await servicePage.close()
@@ -559,16 +559,8 @@ async function verifyPublicServiceConversionJourneys(){
   assert.equal(await ready.getAttribute('aria-live'),'polite')
   await expect(ready).toBeFocused({timeout:15000})
   await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
-  const readyChooser=await openContactChannelChooser(ready,expect)
-  const {whatsappUrl,telegramUrl}=await assertPreparedContactChannels(readyChooser,expect)
-  const whatsappText=whatsappUrl.searchParams.get('text')||''
-  const telegramText=telegramUrl.searchParams.get('text')||''
   const decodedPageUrl=decodeURIComponent(publicPage.url())
-  for(const marker of [uniqueProblem,uniqueGoal]){
-   assert.ok(!whatsappText.includes(marker),'Answers never enter decoded WhatsApp text')
-   assert.ok(!telegramText.includes(marker),'Answers never enter decoded Telegram text')
-   assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
-  }
+  for(const marker of [uniqueProblem,uniqueGoal]) assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
   await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
   await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
   await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
@@ -585,6 +577,11 @@ async function verifyPublicServiceConversionJourneys(){
   assert.ok(!JSON.stringify(events).includes(uniqueProblem),'Analytics event metadata never contains answers')
   assert.ok(!JSON.stringify(events).includes(uniqueGoal),'Analytics event metadata never contains answers')
   await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
+  await assertRegisteredEnquiryReceipt(ready,expect,publicPage,{
+   locale,sourcePath:'/'+locale+'/services/free-situation-review',
+   serviceTitle:locale==='ru'?'Коучинг-форма — бесплатная диагностика по рисунку':'Coaching questionnaire — free drawing assessment',
+   privateMarkers:[uniqueProblem,uniqueGoal],
+  })
   await publicPage.close()
  }
  assert.deepEqual(publicErrors,[])
@@ -1513,4 +1510,5 @@ try {
  console.log('SYNTHETIC_BROWSER_CLEANUP',JSON.stringify({outcome}))
  if(outcome!=='completed'&&!primaryFailure)throw new Error('Synthetic browser cleanup did not complete')
 }
+
 
