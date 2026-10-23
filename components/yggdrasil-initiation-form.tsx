@@ -131,7 +131,7 @@ export function YggdrasilInitiationForm({ locale }: { locale: PublicLocale }) {
           <ArrowDown size={19} aria-hidden="true" />{t.actions[2]}<ArrowRight size={18} aria-hidden="true" />
         </a>
       ) : (
-        <ContactChannelChooser
+        <ContactChannelChooser stayAfterSave
           locale={locale}
           whatsappUrl={enquiryUrl}
           className={styles.formSubmit}

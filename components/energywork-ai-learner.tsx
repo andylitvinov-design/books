@@ -10,6 +10,7 @@ import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-sha
 import { appFetch } from "@/lib/app/client-fetch";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { reikiPractitionerLessonVideos, type ReikiPractitionerLessonVideo } from "@/data/academy/reiki-practitioner-lesson-videos";
 import { useOceanPracticeAudio } from "./ocean-practice-audio";
 import OceanSoundToggle from "./ocean-sound-toggle";
 import {
@@ -23,7 +24,7 @@ import {
   energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
 } from "@/data/academy/energywork-first-lesson";
 import { energyworkLessonRanges, energyworkAdvanceAlreadyStored, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
-import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest } from "@/data/academy/reiki-initiation-request.js";
+import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest, REIKI_PERSONAL_SESSIONS } from "@/data/academy/reiki-initiation-request.js";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -92,7 +93,7 @@ const copy = {
     lessonLocked: "Opens as you progress",
     intro: "Introduction",
     slidesWord: "slides",
-    saveAndContinue: "Save progress & continue",
+    saveAndContinue: "Save my lesson and continue",
     returnAnytime: "Pick up here anytime from My Courses.",
     tomorrowChoice: "Save my lesson",
     continueNow: "Continue learning",
@@ -128,9 +129,9 @@ const copy = {
     unavailable: "This recording is not available. You can continue using the written teaching.",
     welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
     welcomeRequirement: "Study all five lessons in order.",
-    welcomeGiftTitle: "A personal initiation with Andrey — your gift",
-    welcomeGiftText: "After all five lessons and your application, arrange a free personal introductory Level 1 initiation in one of the three Reiki systems of your choice. After the initiation, you can begin practising that system at the introductory level.",
-    welcomeTeacher: "Want to go further? You can explore personal Reiki initiation with Andrey when you feel ready.",
+    welcomeGiftTitle: "Free Level 1 Reiki initiation with Andrey — in chat",
+    welcomeGiftText: "After completing all five lessons, request one free Level 1 initiation guided by Andrey in chat. You can also request a personal 30- or 60-minute session. The course itself does not confer initiation.",
+    welcomeTeacher: "Want individual guidance? Ask about a personal session with Andrey alongside your free chat initiation.",
     pathway: "All lessons are part of your course",
     picked: "Completed",
     fiveLessons: "Five sequential lessons",
@@ -155,7 +156,7 @@ const copy = {
     voicesNavigation: "Browse learner reviews",
     milestoneLabel: "Well done — keep going!",
     initiationVideoNoteTitle: "A video meditation is not an initiation",
-    initiationVideoNoteText: "Listening to a recorded meditation does not initiate you. Initiation is always personal. To receive a personal meditation from Andrey, complete all five lessons and write to him.",
+    initiationVideoNoteText: "A recording alone is not an initiation. After all five lessons you can request a free guided initiation in chat or a separate personal session with Andrey.",
     firstMilestoneLabel: "Your Reiki journey is underway",
     firstSaveTitle: "Your reflections, gently kept",
     firstSaveText: "Your answers and your Flight to the Sun review will be carefully saved in My Courses. Return to them whenever you like, and edit or rewrite them at any time.",
@@ -203,14 +204,14 @@ const copy = {
     checking: "Checking saved course…", consentTitle: "Save your learning privately",
     consentText: "I agree to save my course progress and answers privately. I can delete my course record.",
     teacherShareConsent: "Also share my learning progress, reviews and answers with Andrey in his private practitioner CRM. No public posting or marketing.",
-    initiationLetterHeading: "Your personal Reiki initiation request",
-    initiationLetterHint: "Your selected free initiation, optional donation-based choices, contact details and motivation will be shared privately with Andrey only when you confirm below.",
-    initiationConfirm: "I agree to send my initiation choices, name, city, preferred chat time, motivation and course answers to Andrey's private CRM.",
+    initiationLetterHeading: "Your Reiki initiation request",
+    initiationLetterHint: "Your free chat initiation, optional donations and personal session choice, contact details and motivation reach Andrey’s private CRM only after you confirm.",
+    initiationConfirm: "I agree to send my initiation and session choices, name, city, preferred time, motivation and course answers to Andrey’s private CRM. This is not a booking or payment.",
     initiationSend: "Send my initiation request",
     initiationSent: "Your request is securely recorded in Andrey's private CRM. He will contact you personally to discuss the next step and arrange a suitable time.",
-    initiationTooShort: "Complete your personal initiation form on the previous lesson slide.",
+    initiationTooShort: "Complete your initiation request on the previous lesson slide.",
     initiationShareNeeded: "Enable teacher sharing to send your application.",
-    initiationNotReady: "Complete your lesson reports and answers to request personal initiation.",
+    initiationNotReady: "Complete your lesson reports and answers to request initiation.",
     enableSave: "Start & save my course", signIn: "Sign in with Google to save",
     guestHint: "To start Lesson 2, save Lesson 1 in your private account.",
     saved: "Saved privately", saving: "Saving…", offline: "Saving is unavailable. Your answers are not stored on the server.",
@@ -246,7 +247,7 @@ const copy = {
     lessonLocked: "Откроется по мере прохождения",
     intro: "Введение",
     slidesWord: "слайдов",
-    saveAndContinue: "Сохранить прогресс и продолжить",
+    saveAndContinue: "Сохранить урок и продолжить",
     returnAnytime: "Вернуться к уроку можно через «Мои курсы».",
     tomorrowChoice: "Сохранить урок",
     continueNow: "Продолжить обучение",
@@ -282,9 +283,9 @@ const copy = {
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
     welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
     welcomeRequirement: "Проходите все пять уроков по очереди.",
-    welcomeGiftTitle: "Личная инициация с Андреем — в подарок",
-    welcomeGiftText: "После пяти уроков и заполнения заявки вас ждёт бесплатная персональная вводная инициация I ступени в одной из трёх систем на выбор. Андрей лично согласует с вами встречу. После инициации вы сможете начать практику в выбранной системе.",
-    welcomeTeacher: "Захочется пойти дальше? Когда будете готовы, можно обсудить с Андреем личную Рейки-инициацию.",
+    welcomeGiftTitle: "Бесплатная инициация I ступени с Андреем в чате",
+    welcomeGiftText: "После пяти уроков можно запросить одну бесплатную инициацию I ступени с Андреем в чате. Дополнительно можно выбрать личную сессию на 30 или 60 минут. Сам курс не является инициацией.",
+    welcomeTeacher: "Хотите индивидуального внимания? Обсудите с Андреем личную сессию в дополнение к бесплатному чату.",
     pathway: "Все уроки входят в одну программу",
     picked: "Завершено",
     fiveLessons: "Пять последовательных уроков",
@@ -309,7 +310,7 @@ const copy = {
     voicesNavigation: "Переключение отзывов",
     milestoneLabel: "Отличный результат!",
     initiationVideoNoteTitle: "Видеомедитация — это ещё не инициация",
-    initiationVideoNoteText: "Прослушанная видеомедитация сама по себе не является инициацией. Инициация всегда персональна. Чтобы получить персональную медитацию от Андрея, завершите все пять уроков курса и напишите ему.",
+    initiationVideoNoteText: "Видеозапись сама по себе не является инициацией. После пяти уроков можно запросить инициацию с Андреем в чате или отдельную личную сессию.",
     firstMilestoneLabel: "Ваш путь в Рейки начался",
     firstSaveTitle: "Ваши впечатления будут бережно сохранены",
     firstSaveText: "Ваши ответы и отзыв о «Полёте к Солнцу» будут бережно сохранены в вашем кабинете. Вы сможете в любой момент к ним вернуться, изменить или переписать.",
@@ -357,12 +358,12 @@ const copy = {
     checking: "Проверяем сохранённый курс…", consentTitle: "Сохранить обучение приватно",
     consentText: "Я согласен(на) приватно сохранять прогресс и ответы курса. Данные курса можно удалить.",
     teacherShareConsent: "Также разрешаю передавать Андрею мои ответы, отзывы и прогресс в его закрытую CRM. Без публикаций и рекламных рассылок.",
-    initiationLetterHeading: "Ваша заявка на личную Рейки-инициацию",
-    initiationLetterHint: "Выбранная бесплатная инициация, дополнительные варианты за донейшн, контакты и мотивация попадут к Андрею только после подтверждения отправки.",
-    initiationConfirm: "Я согласен(на) отправить Андрею в закрытую CRM выбранные инициации, имя, город, удобное время для связи в чате, мотивацию и ответы курса.",
+    initiationLetterHeading: "Ваша заявка на Рейки-инициацию",
+    initiationLetterHint: "Бесплатная инициация в чате, варианты за донейшн, выбранная личная сессия и анкета попадут к Андрею только после подтверждения отправки.",
+    initiationConfirm: "Согласен(на) отправить Андрею в закрытую CRM выбор инициаций и личной сессии, имя, город, время, мотивацию и ответы курса. Это не оплата и не бронь.",
     initiationSend: "Отправить заявку на инициацию",
     initiationSent: "Заявка сохранена в закрытой CRM Андрея. Он лично свяжется с вами, чтобы обсудить следующий шаг и согласовать удобное время.",
-    initiationTooShort: "Заполните анкету личной инициации на предыдущем слайде.",
+    initiationTooShort: "Заполните заявку на инициацию на предыдущем слайде.",
     initiationShareNeeded: "Для заявки разрешите передачу материалов преподавателю.",
     initiationNotReady: "Заполните ответы и отчёты, чтобы отправить заявку.",
     enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
@@ -449,9 +450,6 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   if (experience) highlights.push(locale === "ru"
     ? "Ваш исходный опыт: " + experience.label.ru + "."
     : "Your starting experience: " + experience.label.en + ".");
-  if (present("intention-03")) highlights.push(locale === "ru"
-    ? "Ваше собственное намерение: «" + present("intention-03") + "»."
-    : "Your own intention: “" + present("intention-03") + "”.");
   if (present("presence-03")) highlights.push(locale === "ru"
     ? "Вы отметили комфорт короткой паузы на " + present("presence-03") + " из 10 — это только ваша самооценка, не медицинская шкала."
     : "You rated the comfort of a short pause " + present("presence-03") + "/10 — a personal check-in, not a medical score.");
@@ -463,8 +461,8 @@ function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   if (reikiInitiationRequestValid(present("end-01"))) {
     const request = readReikiInitiationRequest(present("end-01"));
     const selected = energyworkPathChoices.find((choice) => choice.id === request.freeInitiation)?.title[locale] ?? "";
-    highlights.push(locale === "ru" ? "Ваш выбор бесплатной личной инициации: " + selected + "." :
-      "Your free personal initiation choice: " + selected + ".");
+    highlights.push(locale === "ru" ? "Ваш выбор бесплатной инициации в чате: " + selected + "." :
+      "Your free chat initiation choice: " + selected + ".");
   }
   return highlights;
 }
@@ -551,6 +549,58 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
 }
 
 
+
+/** Existing video slides plus the fifth video at the opening of lesson five.
+ * Switching sources unmounts the old iframe without changing private progress.
+ */
+function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
+  slide: EnergyworkSlide;
+  locale: EnergyworkLocale;
+  lessonVideo?: ReikiPractitionerLessonVideo;
+  original: { youtubeId: string | null; title: string } | null;
+}) {
+  const [choice, setChoice] = useState<"lesson" | "original">("lesson");
+  const t = copy[locale];
+  const useOriginal = !lessonVideo || choice === "original";
+  const youtubeId = !useOriginal && lessonVideo ? lessonVideo.youtubeId : original?.youtubeId;
+  const videoTitle = !useOriginal && lessonVideo ? lessonVideo.title[locale] : original?.title;
+  return (
+    <div className={styles.video} data-reiki-lesson-video={slide.id}>
+      {lessonVideo && original?.youtubeId ? (
+        <div className={styles.lessonVideoChoices} role="group"
+          aria-label={locale === "ru" ? "Выбор видео урока" : "Choose lesson video"}>
+          <button type="button" className={styles.lessonVideoChoice}
+            aria-pressed={!useOriginal} onClick={() => setChoice("lesson")}>
+            {locale === "ru" ? "Видеоурок" : "Lesson video"}
+          </button>
+          <button type="button" className={styles.lessonVideoChoice}
+            aria-pressed={useOriginal} onClick={() => setChoice("original")}>
+            {locale === "ru" ? "Медитация (EN)" : "Meditation (EN)"}
+          </button>
+        </div>
+      ) : null}
+      {youtubeId ? (
+        <AcademyVideoPlayer key={slide.id + ":" + (useOriginal ? "original" : "lesson")}
+          youtubeId={youtubeId} title={videoTitle ?? slide.title[locale]} />
+      ) : (
+        <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />
+          {t.unavailable}</p>
+      )}
+      {youtubeId ? (
+        <p className={styles.videoCaption}>
+          {useOriginal
+            ? (locale === "ru" ? "Дополнительная английская медитация." : "Optional original English guided meditation.")
+            : slide.id === "paths-01"
+              ? (locale === "ru"
+                ? "Вводное видео пятого урока. Просмотр не является личной инициацией."
+                : "Lesson five introduction. Watching is not a personal initiation.")
+              : (locale === "ru" ? "Запись урока. Нажмите Play, чтобы начать просмотр." : "Lesson recording. Press Play to start.")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 /** Review buttons only change the quote, never the current course slide. */
 /** Compact, accessible carousel: review arrows never advance the lesson. */
 function MeditationVoices({ slide, locale, youtubeId }: {
@@ -562,6 +612,8 @@ function MeditationVoices({ slide, locale, youtubeId }: {
   const entries = slide.testimonials ?? [];
   const [active, setActive] = useState(0);
   const currentReview = entries[active];
+  // The Sun examples are standalone written reflections, not verified comments on this recording.
+  const showVideoComments = slide.id !== "flight-voices" && Boolean(youtubeId);
   return (
     <div className={styles.voicesCard} data-meditation-voices>
       <div className={styles.voicesHeading}>
@@ -583,7 +635,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
             <div className={styles.voicesControls} role="group" aria-label={t.voicesNavigation}>
               <button type="button" data-review-prev aria-label={t.voicesPrevious}
                 onClick={() => setActive((index) => (index - 1 + entries.length) % entries.length)}>
-                <ArrowLeft size={20} aria-hidden="true" />
+                <ArrowLeft size={18} aria-hidden="true" />
               </button>
               <span className={styles.voicesCount} aria-hidden="true">
                 {entries.map((entry, number) => (
@@ -592,7 +644,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
               </span>
               <button type="button" data-review-next aria-label={t.voicesNext}
                 onClick={() => setActive((index) => (index + 1) % entries.length)}>
-                <ArrowRight size={20} aria-hidden="true" />
+                <ArrowRight size={18} aria-hidden="true" />
               </button>
             </div>
           ) : null}
@@ -600,14 +652,14 @@ function MeditationVoices({ slide, locale, youtubeId }: {
       ) : (
         <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>
       )}
-      {(currentReview || youtubeId) ? (
+      {(currentReview?.sourcePath || showVideoComments) ? (
         <div className={styles.voicesReferences}>
           {currentReview?.sourcePath ? (
             <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
               {t.voicesSource}<ExternalLink size={14} aria-hidden="true" />
             </Link>
           ) : null}
-          {youtubeId ? (
+          {showVideoComments ? (
             <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + youtubeId}
               target="_blank" rel="noopener noreferrer">
               {t.voicesComments}<ExternalLink size={14} aria-hidden="true" />
@@ -637,11 +689,11 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
       <div className={styles.initiationGiftIntro}>
         <span><Sparkles size={18} aria-hidden="true" />{ru ? "Ваш подарок после обучения" : "Your gift after the course"}</span>
         <p>{ru
-          ? "Выберите любую одну личную инициацию I ступени бесплатно. Андрей рассмотрит вашу заявку и лично согласует проведение. Прохождение курса само по себе не является инициацией."
-          : "Choose any one personal Level 1 initiation for free. Andrey reviews your request and personally confirms the session. Finishing the course does not itself confer initiation."}</p>
+          ? "Выберите одну бесплатную инициацию I ступени с Андреем в чате (без личного видеозвонка). Андрей подтвердит формат после заявки. Прохождение курса не является инициацией."
+          : "Choose one free Level 1 initiation guided by Andrey in chat (not a private video call). He will confirm the arrangement after your request. The course itself does not confer initiation."}</p>
       </div>
       <fieldset className={styles.initiationChoiceGroup}>
-        <legend>{ru ? "1. Какую инициацию хотите бесплатно?" : "1. Choose your free initiation"}</legend>
+        <legend>{ru ? "1. Выберите бесплатную инициацию в чате" : "1. Choose your free chat initiation"}</legend>
         <div className={styles.initiationChoiceGrid} data-reiki-free-choices>
           {energyworkPathChoices.map((choice) => (
             <label key={choice.id} className={styles.initiationChoice + (request.freeInitiation === choice.id ? " " + styles.initiationChoiceSelected : "")}>
@@ -652,7 +704,7 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
                   donationInitiations: request.donationInitiations.filter((id) => id !== choice.id),
                 })} />
               <span>{choice.title[locale]}</span>
-              <small>{ru ? "Бесплатно" : "Free"}</small>
+              <small>{ru ? "Чат · бесплатно" : "Free · chat"}</small>
             </label>
           ))}
         </div>
@@ -660,8 +712,8 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
       <fieldset className={styles.initiationChoiceGroup} data-reiki-donation-choices>
         <legend>{ru ? "2. Хотите вторую или третью инициацию за донейшн?" : "2. Add a second or third initiation by donation?"}</legend>
         <p className={styles.initiationHelper}>{ru
-          ? "Необязательно. Выберите одну или обе оставшиеся системы. Пожертвование добровольное, его размер можно обсудить позже — оплаты здесь нет."
-          : "Optional: select one or both remaining systems. Donations are voluntary; discuss the amount later. No payment is taken here."}</p>
+          ? "Необязательно: ещё одна или две системы Рейки в чате за добровольный донейшн. Размер согласуете с Андреем позже, оплаты здесь нет."
+          : "Optional: add one or both other Reiki systems in chat by voluntary donation. Agree the amount later; no payment here."}</p>
         <div className={styles.initiationChoiceGrid}>
           {energyworkPathChoices.filter((choice) => choice.id !== request.freeInitiation).map((choice) => (
             <label key={choice.id} className={styles.initiationChoice + (request.donationInitiations.includes(choice.id) ? " " + styles.initiationChoiceSelected : "")}>
@@ -677,8 +729,33 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
           ))}
         </div>
       </fieldset>
+      <fieldset className={styles.initiationChoiceGroup} data-reiki-personal-choices>
+        <legend>{ru ? "3. Хотите личную инициацию с Андреем?" : "3. Prefer a personal 1:1 initiation with Andrey?"}</legend>
+        <p className={styles.initiationHelper}>{ru
+          ? "По желанию, в дополнение к бесплатной инициации в чате. Длительность выбираете сейчас; дату и формат согласуете позже с Андреем."
+          : "Optional, in addition to the free chat initiation. Choose a duration now; arrange the date and format with Andrey later."}</p>
+        <div className={styles.initiationChoiceGrid}>
+          {REIKI_PERSONAL_SESSIONS.map((option) => (
+            <label key={option.id} className={styles.initiationChoice + (request.personalSession === option.id ? " " + styles.initiationChoiceSelected : "")}>
+              <input type="radio" name="reiki-personal-session" value={option.id}
+                checked={request.personalSession === option.id}
+                onChange={() => change({ personalSession: option.id })} />
+              <span>{option.id === "none"
+                ? (ru ? "Только чат, без личной сессии" : "Chat only, no personal session")
+                : option.id === "express"
+                  ? (ru ? "Краткая личная инициация" : "Express personal initiation")
+                  : (ru ? "Полноценная личная сессия" : "Full personal session")}</span>
+              <small>{option.id === "none" ? (ru ? "Без доплаты" : "No extra fee")
+                : "€" + option.priceEur + " · " + option.minutes + (ru ? " мин" : " min")}</small>
+            </label>
+          ))}
+        </div>
+        <p className={styles.initiationHelper}>{ru
+          ? "€50 / 30 минут или €100 / 60 минут. Сейчас только заявка — без списания и подтверждения бронирования."
+          : "€50 / 30 minutes or €100 / 60 minutes. Request only; no charge or confirmed booking at this step."}</p>
+      </fieldset>
       <div className={styles.initiationDetails}>
-        <p className={styles.initiationSectionTitle}>{ru ? "3. Как к вам обращаться и когда вам удобно?" : "3. Tell Andrey how to reach you and when you're available"}</p>
+        <p className={styles.initiationSectionTitle}>{ru ? "4. Как к вам обращаться и когда вам удобно?" : "4. Tell Andrey how to reach you and when you're available"}</p>
         <div className={styles.initiationFields}>
           <label className={styles.initiationField}>
             <span>{ru ? "Имя *" : "First name *"}</span>
@@ -703,18 +780,18 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
               placeholder="America/Toronto" required />
           </label>
           <label className={styles.initiationField + " " + styles.initiationFieldWide}>
-            <span>{ru ? "Удобные дни и время для инициации *" : "Preferred days and times for initiation *"}</span>
+            <span>{ru ? "Удобные дни и время для чата или личной сессии *" : "Preferred days and times for chat or personal session *"}</span>
             <input type="text" maxLength={180} value={request.preferredTime}
               onChange={(event) => change({ preferredTime: event.target.value })}
               placeholder={ru ? "Например: будни после 19:00, по моему времени" : "For example: weekdays after 7 PM, my local time"} required />
           </label>
         </div>
         <p className={styles.initiationHelper}>{ru
-          ? "Это не автоматическое бронирование. Андрей уточнит удобное время и формат лично в чате."
-          : "This is not an automatic booking. Andrey will discuss the time and format with you personally in chat."}</p>
+          ? "Это не оплата и не автоматическая бронь. Андрей согласует время и формат в чате."
+          : "There is no payment or automatic booking. Andrey will confirm the time and format in chat."}</p>
       </div>
       <label className={styles.initiationMotivation}>
-        <span>{ru ? "4. Почему вам нужна именно эта инициация? *" : "4. Why do you want this initiation? *"}</span>
+        <span>{ru ? "5. Почему вы выбрали эту инициацию? *" : "5. Why would you like this initiation? *"}</span>
         <textarea rows={3} maxLength={700} value={request.motivation}
           placeholder={ru ? "Что вы хотите развить, почувствовать или привнести в свою практику?" : "What would you like to explore or bring into your practice?"}
           onChange={(event) => change({ motivation: event.target.value })} required />
@@ -724,7 +801,7 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
         {ready ? <Check size={17} aria-hidden="true" /> : <LockKeyhole size={17} aria-hidden="true" />}
         {ready
           ? (ru ? "Анкета заполнена. Перейдите далее, чтобы проверить ответы и отдельно подтвердить отправку Андрею." : "Your form is complete. Continue to review your answers and separately confirm sending them to Andrey.")
-          : (ru ? "Для отправки заявки выберите бесплатную инициацию и заполните поля со звёздочкой. Продолжить курс можно и без заявки." : "Choose a free initiation and complete the starred fields to send a request. You can continue studying without applying.")}
+          : (ru ? "Выберите бесплатную инициацию в чате и заполните обязательные поля. Личная сессия необязательна. Продолжить можно без заявки." : "Choose a free chat initiation and complete the required fields. A personal session is optional. You can continue without applying.")}
       </p>
     </div>
   );
@@ -1067,6 +1144,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const otherStudyMissing = (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) &&
     !energyworkReikiStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
+  // paths-01 is already the first screen of lesson five; no extra slide or progress migration.
+  const lessonVideo = slide.kind === "video" || slide.id === "paths-01"
+    ? reikiPractitionerLessonVideos.find((item) => item.slideId === slide.id)
+    : undefined;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
   const lessonNumber = currentLessonRange?.lesson ?? 1;
@@ -1081,6 +1162,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const readyCount = initiationItems.reduce((count, item) => count + Number(item.reportDone) + item.questionCount, 0);
   const readyTargetCount = initiationItems.reduce((count, item) => count + 1 + item.questionIds.length, 0);
   const initiationReady = readyCount === readyTargetCount;
+  const nextIncompleteSlide = initiationItems
+    .map(item => !item.reportDone ? item.reportId : !item.questionDone ? item.nextQuestionId : null)
+    .find((id): id is string => Boolean(id));
   // Only show application links for a consented account with saved reports.
   // Guests may explore the lessons and copy their notes before they sign in.
   const savedInitiationReady = initiationReady && sync === "ready" &&
@@ -1144,8 +1228,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       catch { setSaveError(t.saveFailed); setBusy(false); return; }
       setBusy(false);
     }
-    setReviewReturn(id === "paths-04" ? false :
-      slide.id === "paths-04" || slide.kind === "finish" ? true : reviewReturn);
+    // Review lives on the final screen; back-links return here after report edits.
+    setReviewReturn(id === "end-02" ? false :
+      slide.kind === "finish" ? true : reviewReturn);
     setIndex(target);
   }
   async function next() {
@@ -1349,10 +1434,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <p className={styles.description}>{slide.id === "flight-save" ? t.accountSaveText : slide.body[locale]}</p>
               {slide.introAudioKey && slide.introTopics ? (
                 <section className={styles.lessonIntroPanel} data-reiki-lesson-intro={slide.introAudioKey}
-                  aria-label={locale === "ru" ? "Программа занятия" : "What this lesson covers"}>
+                  aria-label={locale === "ru" ? "Что вас ждёт" : "What to expect"}>
                   <strong className={styles.lessonIntroTitle}>
                     <BookOpen size={17} aria-hidden="true" />
-                    {locale === "ru" ? "Что мы изучим сегодня" : "What we'll explore in this lesson"}
+                    {locale === "ru" ? "Что вас ждёт" : "What to expect"}
                   </strong>
                   <ul className={styles.lessonIntroTopics}>
                     {slide.introTopics.map((topic, index) => (
@@ -1435,12 +1520,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <span><strong>{t.tomorrowChoice}</strong>
                       <small>{sync === "ready" ? t.saveTodayDetail : t.saveGuestDetail}</small></span>
                   </button>
-                  <button type="button" className={styles.milestoneContinueChoice}
-                    onClick={next} disabled={busy || sync === "checking"}
-                    data-energywork-next>
-                    <ArrowRight size={21} aria-hidden="true" />
-                    <span>{slide.id === "flight-done" && sync !== "ready" ? t.continueNowSave : t.continueNow}</span>
-                  </button>
                 </div>
               ) : null}
               {(slide.id === "tan-done" || slide.id === "kun-done") ? (
@@ -1478,33 +1557,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               ) : null}
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
-
-              {slide.id === "paths-04" ? (
-                <div className={styles.reviewChecklist} data-initiation-readiness>
-                  <h2>{t.reviewTitle} · {readyCount}/{readyTargetCount}</h2>
-                  <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
-                  <div className={styles.reviewRows}>
-                    {initiationItems.map((item) => (
-                      <div className={styles.reviewRow} key={item.lesson}>
-                        <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
-                        <div>
-                          <button type="button" onClick={() => jumpToSlide(item.reportId)}
-                            className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
-                            {item.reportDone ? <Check size={13} aria-hidden="true" /> : null}
-                            {item.reportDone ? t.reportReady : t.reportMissing}
-                          </button>
-                          {item.questionIds.length > 0 ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)}
-                            className={item.questionDone ? styles.reviewRecorded : styles.reviewMissing}>
-                            {item.questionDone ? <Check size={13} aria-hidden="true" /> : null}
-                            {item.questionDone ? t.questionReady : t.questionMissing}
-                          </button> : null}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
-                </div>
-              ) : null}
 
               {slide.id === "end-01" ? (
                 <ReikiInitiationRequestForm value={answers["end-01"] ?? ""} locale={locale}
@@ -1606,13 +1658,13 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       ? t.optionalForLearning : t.blank}</p>
                   )}
                   {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionIds.includes(slide.id)) ?
-                    <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
+                    <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("end-02")}
                       disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
                 </div>
               ) : null}
 
               {slide.kind === "finish" ? (
-                <div className={styles.final}>
+                <div className={styles.final} data-initiation-readiness>
                   <span className={styles.finalTag}><Award size={18} aria-hidden="true" />{t.finish}</span>
                   <section className={styles.initiationRequestBox} data-reiki-initiation-request>
                     {applicationLead ? (
@@ -1631,7 +1683,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                           <div className={styles.finalPending} data-reiki-application-pending>
                             <p>{!initiationReady ? t.initiationNotReady : sync !== "ready" ? t.reviewSaveNeeded : t.saving}</p>
                             <button type="button" className={styles.reviewMissing}
-                              onClick={() => jumpToSlide("paths-04")} disabled={busy}>
+                              onClick={() => jumpToSlide(nextIncompleteSlide ?? "end-01")} disabled={busy}>
                               {t.finalReviewChecklist}<ArrowRight size={15} aria-hidden="true" />
                             </button>
                           </div>
@@ -1760,12 +1812,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   sizes="(max-width: 720px) 100vw, 42vw" />
               </div>
             ) : null}
-            {slide.kind === "video" ? (
-              <div className={styles.video}>
-                {media?.youtubeId ? <AcademyVideoPlayer key={slide.id} youtubeId={media.youtubeId} title={media.title} /> :
-                  <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />{t.unavailable}</p>}
-                {media?.youtubeId ? <p className={styles.videoCaption}>{t.audio} · {media.title}</p> : null}
-              </div>
+            {(slide.kind === "video" || slide.id === "paths-01") ? (
+              <ReikiLessonVideo key={slide.id} slide={slide} locale={locale}
+                lessonVideo={lessonVideo} original={media ?? null} />
             ) : null}
           </div>
           {slide.id === "flight-save" ? (
@@ -1864,11 +1913,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                 className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
             )}
-            {slide.kind !== "milestone" && !completed ? (
+            {(slide.kind === "milestone" && slide.id !== "flight-save") || (slide.kind !== "milestone" && !completed) ? (
               <button type="button" onClick={next}
                 disabled={busy || sync === "checking" || experienceMissing || feedbackMissing || tantraStudyMissing || otherStudyMissing}
                 className={styles.next} data-energywork-next>
-                {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : t.continue}
+                {slide.kind === "milestone" ? t.saveAndContinue : isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : t.continue}
                 <ArrowRight size={19} aria-hidden="true" />
               </button>
             ) : null}

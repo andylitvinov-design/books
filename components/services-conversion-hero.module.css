@@ -229,3 +229,24 @@
   .slider:not([data-request-open="true"]) { min-height:365px; }
 }
 .requestPanel:focus-visible { outline:3px solid #f1bc83; outline-offset:-4px; }
+
+/* Home first fold only: keep category words, slide, free assessment and dialogue
+   in that order, without shrinking the Services-page carousel. */
+@media (max-width: 760px) {
+  .hero[data-home-section-carousel] { margin-top: 4px; }
+  .hero[data-home-section-carousel] .slider { height: clamp(302px, 39svh, 336px); min-height: 0; }
+  .hero[data-home-section-carousel] .slideCopy { inset: auto 14px 55px 16px; }
+  .hero[data-home-section-carousel] .slideCopy :is(h1,h2) { font-size: clamp(27px, 7.2vw, 34px); line-height: 1.04; }
+  .hero[data-home-section-carousel] .eyebrow { margin-bottom: 6px; }
+  .hero[data-home-section-carousel] .slideLead { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; margin-top: 6px; font-size: 11px; }
+  .hero[data-home-section-carousel] .viewButton { min-height: 44px; margin-top: 9px; }
+}
+@media (max-width: 365px) {
+  .hero[data-home-section-carousel] .slider { height: 312px; min-height: 0; }
+  .hero[data-home-section-carousel] .slideCopy :is(h1,h2) { font-size: 27px; }
+}
+@media (max-width: 760px) and (max-height: 700px) {
+  .hero[data-home-section-carousel] .slider { height: 258px; min-height: 0; }
+  .hero[data-home-section-carousel] .slideLead { display: none; }
+  .hero[data-home-section-carousel] .slideCopy :is(h1,h2) { font-size: clamp(25px, 6.6vw, 30px); }
+}

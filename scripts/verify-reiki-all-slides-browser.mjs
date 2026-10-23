@@ -17,8 +17,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 63, "One consecutive course must have 63 screens");
-const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63]);
+assert.equal(expectedSequence.length, 60, "One consecutive course must have 60 screens");
+const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,60]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -60,7 +60,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       slideJustify: getComputedStyle(scroller).justifyContent,
       slideHeight: slideRect.height,
       titleHeaderCount: element.querySelectorAll("header").length,
-      privateSaveManagerPresent: Boolean(element.querySelector('details[class*="saveManager"] aside[class*="preview"]')),
+      privateSaveStatus: element.querySelector("[data-reiki-private-save-status]")?.textContent?.trim() || "",
       programmeOpen: element.querySelector('button[aria-controls="reiki-journey-help"]')?.getAttribute("aria-expanded") === "true",
       programmeHeight: element.querySelector("section[data-expanded]")?.getBoundingClientRect().height ?? 0,
       slideHorizontalOverflow: scroller.scrollWidth-scroller.clientWidth,
@@ -95,9 +95,11 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
   }
-  assert.ok(data.slideJustify.includes("center"), where + ": lesson content is vertically balanced in its available space");
+  // This consented save gate has a fixed bottom dock and intentionally aligns at top.
+  assert.ok(data.slideJustify.includes(id === "flight-save" ? "flex-start" : "center"),
+    where + ": lesson content uses the expected vertical alignment");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
-  assert.ok(data.privateSaveManagerPresent, where + ": private saving is accessible from the separate progress icon");
+  assert.ok(data.privateSaveStatus.length > 0, where + ": current guest, consent or private-save status is visible");
   assert.equal(data.programmeOpen, false, where + ": journey hint is collapsed unless requested");
   assert.ok(data.programmeHeight > 25 && data.programmeHeight < 48,
     where + ": collapsed hint keeps a single compact bottom row");
@@ -136,7 +138,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   // meditation video. Audio is optional until the author uploads his file.
   if (["flight-01","tan-01","kun-01","ygg-01"].includes(id)) {
     await expect(page.locator('[data-reiki-lesson-intro]')).toBeVisible();
-    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toBeVisible();
+    // Isolated browser fixture has no owner-published recording; no placeholder is rendered.
+    await expect(page.locator('[data-reiki-lesson-intro-audio]')).toHaveCount(0);
     await expect(page.locator('[data-reiki-lesson-intro] li')).toHaveCount(3);
     await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
   }
@@ -162,8 +165,29 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     if (expectedReviews) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
       const screenshotExamples = id === "flight-voices" || id === "kun-voices";
-      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(screenshotExamples ? 1 : 2);
-      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a'))
+        .toHaveCount(id === "flight-voices" ? 0 : screenshotExamples ? 1 : 2);
+      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']"))
+        .toHaveCount(id === "flight-voices" ? 0 : 1);
+      if (id === "flight-voices" && page.viewportSize()?.width <= 760) {
+        const arrows = await page.locator("button[data-review-next]").evaluate(button => {
+          const rectangle = button.getBoundingClientRect();
+          const circleInset = parseFloat(getComputedStyle(button, "::before").inset);
+          const review = button.closest("[data-meditation-voices]").querySelector("[data-review-fulltext]");
+          return {
+            touchWidth: rectangle.width,
+            touchHeight: rectangle.height,
+            circleDiameter: rectangle.width - 2 * circleInset,
+            quotePadding: parseFloat(getComputedStyle(review).paddingRight),
+          };
+        });
+        assert.ok(arrows.touchWidth >= 44 && arrows.touchHeight >= 44,
+          where + ": smaller visual arrows must keep a 44px touch target");
+        assert.ok(arrows.circleDiameter <= 35 && arrows.circleDiameter >= 32,
+          where + ": arrow circles should be visually compact");
+        assert.ok(arrows.quotePadding <= 4,
+          where + ": keep the testimonial reading column wide");
+      }
       await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
       const first = await carousel.locator("blockquote p").innerText();
       if (id === "kun-voices") {
@@ -199,18 +223,21 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(page.locator("[data-reiki-first-lesson-save]")).toBeVisible();
     await expect(page.locator("[data-reiki-first-lesson-consent]")).toHaveCount(0);
   } else if (data.kind === "milestone") {
-    // Both choices now live inside the teaching slide. The footer contains
-    // only Back: no modal calendar, hidden push setting or secondary Save flow.
+    // Finish-for-today is inside the teaching slide; the one primary
+    // save-and-continue CTA remains visible in the pinned bottom navigation.
     const inSlide = page.locator('[data-energywork-slide-id] [data-reiki-milestone-choices]');
     await expect(inSlide).toBeVisible();
-    await expect(inSlide.locator("button")).toHaveCount(2);
-    await expect(inSlide.locator("button[data-energywork-next]")).toContainText(
-      locale === "ru" ? "Продолжить обучение" : "Continue learning");
+    await expect(inSlide.locator("button")).toHaveCount(1);
+    await expect(inSlide.locator("button[data-energywork-next]")).toHaveCount(0);
     await expect(inSlide.locator("button[data-reiki-tomorrow-choice]")).toContainText(
       locale === "ru" ? "Сохранить урок" : "Save my lesson");
+    const footer = page.locator('[class*="milestoneActions"]');
+    await expect(footer.locator("button")).toHaveCount(2);
+    await expect(footer.locator("button[data-energywork-next]")).toBeVisible();
+    await expect(footer.locator("button[data-energywork-next]")).toContainText(
+      locale === "ru" ? "Сохранить урок и продолжить" : "Save my lesson and continue");
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
     await expect(page.locator("[data-reiki-reminder-setup]")).toHaveCount(0);
-    await expect(page.locator('[class*="milestoneActions"] button')).toHaveCount(1);
   } else {
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
   }
@@ -385,9 +412,10 @@ async function exerciseJourney(page, locale, width) {
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 63 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 60 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
-  await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
+  // The optional readiness review is on the final screen, not its own slide.
+  await expect(page.locator("[data-initiation-readiness]")).toBeVisible();
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
   await removeMock();
 }
@@ -421,7 +449,12 @@ async function verifySaveThenInstall(page, locale) {
   });
   await page.route(bootstrapPattern, async route => {
     await route.fulfill({ status:200, contentType:"application/json",
-      body: JSON.stringify({ account: { id:accountId, displayName:"Test learner", onboardingState:"active" } }) });
+      // Match appFetch's actual bootstrap contract so the fake login cannot
+      // appear successful without the shape the real client accepts.
+      body: JSON.stringify({
+        account: { id:accountId, displayName:"Test learner", onboardingState:"active" },
+        results:[], runs:[], requests:[], consents:[], services:[],
+      }) });
   });
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
@@ -439,7 +472,9 @@ async function verifySaveThenInstall(page, locale) {
   }
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "flight-done");
-  await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(2);
+  // The compact milestone screen has one in-card "Save my lesson" action;
+  // the second primary "Save my lesson and continue" is in the pinned footer.
+  await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(1);
   await page.locator('button[data-reiki-tomorrow-choice]').click();
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "flight-save");
@@ -609,7 +644,7 @@ try {
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log(engineName === "webkit" ? "REIKI_SAFARI_GUEST_SAVE_GATE_PASS" : "REIKI_ALL_SLIDES_BROWSER_PASS",
-    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 63,
+    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 60,
       locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
   await browser.close();

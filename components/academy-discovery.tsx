@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, Search, Sparkles } from "lucide-react";
 
 import { AcademyCourseCardList, type AcademyCourseItem } from "@/components/academy-course-card-list";
+import { AcademyMyCourses } from "@/components/academy-my-courses";
 import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
 import type { AcademyView } from "@/data/academy/catalog";
 import type { PublicEvent } from "@/data/public-events";
@@ -278,6 +279,7 @@ export function AcademyDiscovery({
       </section>
       {view === "programs" ? (
         <section className={styles.results} id="academy-programs" aria-label={label}>
+          <AcademyMyCourses locale={locale} />
           <div className={styles.listHeading}>
             <div>
               <p className={styles.listKicker}>{t.catalogLabel}</p>

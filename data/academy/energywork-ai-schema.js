@@ -20,8 +20,8 @@ export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-01','welcome-02',
   'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
   'presence-01','presence-04','tan-done',
-  'intention-01','intention-03','intention-04',
-  'paths-01','paths-03','paths-04',
+  'intention-04',
+  'paths-01','paths-03',
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
   yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
@@ -75,7 +75,7 @@ export const ENERGYWORK_QUESTIONS = Object.freeze({
   'welcome-02': 'choice',
   'flight-04': 'text', 'flight-05': 'text',
   'flight-03': 'choice',
-  'intention-03': 'text',
+  'intention-03': 'text', // retired display slide; old encrypted answers remain readable
   'intention-04': 'choice',
   'boundaries-02': 'choice',
   'boundaries-03': 'choice',
@@ -128,10 +128,9 @@ export function energyworkSequence(_legacyPath = null) {
     // Lesson 5 now begins with its own introduction and ends with its practices.
     ...withClosingPractices([
       'paths-01',
-      'intention-01','intention-03','intention-04',
       'paths-03',
       ...ENERGYWORK_INITIATION,
-      'end-01','paths-04','end-02',
+      'end-01','intention-04','end-02',
     ], ['intention-04'], 'end-02'),
   ]
 }
@@ -157,11 +156,14 @@ export function energyworkLessonRanges(sequence = energyworkSequence()) {
     return { lesson: index + 1, firstSlideId: ENERGYWORK_LESSON_STARTS[index], start, end, count: end - start }
   })
 }
-// Removed lesson-five screens must not reset existing p9 (or older) owner progress.
-// Move the saved cursor to the next retained screen; encrypted historic answers
-// remain stored under their original IDs and are never deleted by this mapping.
+// Historical p9 and p10 lesson-five screens may be absent from the current
+// curriculum. Remap their saved cursors forward, but retain all original
+// encrypted learner answers and avoid a destructive database migration.
 export const ENERGYWORK_P9_REMOVED_SLIDE_FALLBACKS = Object.freeze({
-  'intention-02': 'intention-03',
+  'intention-02': 'paths-03',
+  'intention-01': 'paths-03',
+  'intention-03': 'paths-03',
+  'paths-04': 'intention-04',
   'boundaries-01': 'paths-03',
   'boundaries-02': 'paths-03',
   'boundaries-04': 'paths-03',

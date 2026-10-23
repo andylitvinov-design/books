@@ -37,7 +37,7 @@ const COPY={
   },
 }
 
-export default function OporaOceanOutro({locale='en',paused=false}){
+export default function OporaOceanOutro({locale='en',paused=false,compact=false}){
   const lang=locale==='ru'?'ru':locale==='es'?'es':'en'
   const t=COPY[lang]
   const audio=useOceanPracticeAudio()
@@ -120,11 +120,13 @@ export default function OporaOceanOutro({locale='en',paused=false}){
   },[running,audio.enabled,audio.status])
 
   const time=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`
-  return <div className={styles.outro} data-opora-ocean-outro="true">
-    <div className={styles.sea} data-audio-status={audio.status} data-playing={running?'true':'false'} aria-hidden="true">
-      <span className={styles.seaCircle}><Waves size={43} strokeWidth={1.8}/></span>
-    </div>
-    <p className={styles.instruction}>{t.instruction}</p>
+  return <div className={styles.outro+(compact?' '+styles.compact:'')} data-opora-ocean-outro="true" data-opora-inline-audio={compact?'true':undefined}>
+    {!compact&&<>
+      <div className={styles.sea} data-audio-status={audio.status} data-playing={running?'true':'false'} aria-hidden="true">
+        <span className={styles.seaCircle}><Waves size={43} strokeWidth={1.8}/></span>
+      </div>
+      <p className={styles.instruction}>{t.instruction}</p>
+    </>}
     <div className={styles.player}>
       <div className={styles.counter} role="timer" aria-label={time} aria-live="off">{time}</div>
       <button type="button" className={styles.play}
@@ -148,12 +150,13 @@ export default function OporaOceanOutro({locale='en',paused=false}){
         {audio.supported&&audio.enabled?<Volume2 size={16}/>:<VolumeX size={16}/>}
         {audio.supported&&audio.enabled?t.wavesOn:t.wavesOff}
       </button>
-      <span className={styles.optional}><Headphones size={15} aria-hidden="true"/>{t.optional}</span>
+      {!compact&&<span className={styles.optional}><Headphones size={15} aria-hidden="true"/>{t.optional}</span>}
     </div>
-    <p className={styles.status} role="status" aria-live="polite">
-      {!audio.supported?t.unavailable:audio.enabled&&audio.status==='blocked'?t.blocked:
-        audio.enabled&&audio.status==='loading'?t.loading:remaining===0?t.complete:
-        running&&audio.enabled&&audio.status==='playing'?t.playing:started?'':t.ready}
-    </p>
+    {(!compact||!audio.supported||audio.enabled&&['blocked','loading'].includes(audio.status)||remaining===0)&&
+      <p className={styles.status} role="status" aria-live="polite">
+        {!audio.supported?t.unavailable:audio.enabled&&audio.status==='blocked'?t.blocked:
+          audio.enabled&&audio.status==='loading'?t.loading:remaining===0?t.complete:
+          running&&audio.enabled&&audio.status==='playing'?t.playing:started?'':t.ready}
+      </p>}
   </div>
 }

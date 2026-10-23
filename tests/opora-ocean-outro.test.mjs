@@ -4,77 +4,101 @@ import {readFileSync} from 'node:fs'
 import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
-import {mount,findButton,textOf} from './helpers/route-pipeline-harness.mjs'
+import {mount,findButton,textOf,nodes} from './helpers/route-pipeline-harness.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-
-function fixture(locale='en',day=1){
+const languages={
+  en:{next:'Continue',save:'Save my practice',confidence:'I managed a little',map:"See what's next",
+    instruction:/Sit comfortably and notice the chair or floor supporting you/,
+    finish:/Congratulations/},
+  ru:{next:'Продолжить',save:'Сохранить мою практику',confidence:'Получилось немного',
+    map:'Посмотреть, что дальше',instruction:/Сядьте удобно и почувствуйте опору/,
+    finish:/Поздравляем/},
+  es:{next:'Continuar',save:'Guardar mi práctica',confidence:'Pude hacerlo un poco',
+    map:'Ver qué viene después',instruction:/Siéntate cómodamente y siente el apoyo/,
+    finish:/Enhorabuena/}
+}
+function fixture(locale='en',day=3){
   const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
   const data={cycle:{id:'00000000-0000-4000-8000-000000008888',day,durationDays:14},
     programme:{id:'stress'},lesson,currentSession:null}
   let writes=0,exits=0
-  const h=mount('opora-experience-player',{locale,data,onClose(){exits++},
-    onFinish(){exits++},onSession:async()=>{writes++;return true}})
+  const h=mount('opora-experience-player',{locale,data,onClose(){exits++},onFinish(){exits++},
+    onSession:async()=>{writes++;return true}})
   return {h,get writes(){return writes},get exits(){return exits}}
 }
 async function click(h,label){
-  const button=findButton(h.tree,label)
-  assert.ok(button,'Missing button '+label+' in '+textOf(h.tree).slice(0,400))
-  button.props.onClick()
+  const control=findButton(h.tree,label)
+  assert.ok(control,'Missing '+label+' on '+textOf(h.tree).slice(0,400))
+  control.props.onClick()
   await h.settle()
 }
-
-test('the ocean slide follows confirmed receipt, but neither it nor its audio are completion gates',async()=>{
-  const f=fixture('en',1)
-  for(let i=0;i<8;i++)await click(f.h,'Continue')
-  await click(f.h,'Save my practice')
+const playerNode=tree=>nodes(tree).find(n=>n.type?.testName==='OporaOceanOutro'&&n.props?.compact)
+const meditationNode=tree=>nodes(tree).find(n=>n.props?.['data-opora-guided-meditation']==='true')
+async function practice(f,locale){
+  const d=languages[locale]
+  await click(f.h,d.next)
+  await click(f.h,d.next)
+}
+async function finish(f,locale){
+  const d=languages[locale],h=f.h
+  for(let i=0;i<12&&!findButton(h.tree,d.save);i++)await click(h,d.next)
+  assert.ok(findButton(h.tree,d.save),'Recap required before saving')
+  await click(h,d.confidence)
+  await click(h,d.save)
   assert.equal(f.writes,1)
-  assert.match(textOf(f.h.tree),/Your moment is saved/)
-  assert.ok(findButton(f.h.tree,'My course map'),'Receipt must retain direct exit to the map')
-  assert.ok(findButton(f.h.tree,'Relax with waves'),'The primary next step opens optional relaxation')
-  assert.match(textOf(f.h.tree),/10\s*\/\s*11/)
-  await click(f.h,'Relax with waves')
-  assert.equal(f.writes,1,'Opening audio never performs another save')
-  assert.match(textOf(f.h.tree),/Two quiet minutes/)
-  assert.match(textOf(f.h.tree),/11\s*\/\s*11/)
-  await click(f.h,'Back')
-  assert.match(textOf(f.h.tree),/Your moment is saved/)
-  await click(f.h,'My course map')
-  assert.equal(f.exits,1)
+}
+test('inline guided two-minute meditation is a part of day 3 practice, not a new slide',async()=>{
+  const f=fixture(),h=f.h
+  await practice(f,'en')
+  assert.match(textOf(h.tree),languages.en.instruction)
+  assert.match(textOf(h.tree),/Start the timer: with waves or in silence/)
+  assert.match(textOf(h.tree),/After two minutes, look around/)
+  assert.ok(meditationNode(h.tree),'Visible three-step instructions before the player')
+  assert.ok(playerNode(h.tree),'Existing compact player in the same practice slide')
+  assert.equal(playerNode(h.tree).props.paused,false)
+  assert.match(textOf(h.tree),/2-minute grounding meditation/)
+  assert.equal(f.writes,0,'The timer is optional and cannot fabricate a saved attempt')
+  await click(h,'Continue')
+  assert.ok(!playerNode(h.tree),'Audio unmounts on next lesson step')
+  await finish(f,'en')
+  assert.match(textOf(h.tree),languages.en.finish)
+  assert.ok(!playerNode(h.tree),'No audio stage after congratulations')
+  assert.ok(!meditationNode(h.tree),'No repeated practice after congratulations')
+  await click(h,languages.en.map)
+  assert.match(textOf(h.tree),/Your complete 14-day journey/)
   assert.equal(f.writes,1)
-  f.h.unmount()
+  h.unmount()
 })
-
-test('the receipt can skip the audio entirely for short lessons',async()=>{
-  const f=fixture('en',2)
-  for(let i=0;i<4;i++)await click(f.h,'Continue')
-  await click(f.h,'Save my practice')
-  assert.equal(f.writes,1)
-  await click(f.h,'My course map')
-  assert.equal(f.exits,1)
-  assert.equal(f.writes,1)
-  f.h.unmount()
-})
-
-test('the ocean slide remains localized and saves no extra practice response',async()=>{
-  const labels=[
-    ['ru','Продолжить','Сохранить мою практику','Послушать волны','Две минуты спокойствия','К карте курса'],
-    ['es','Continuar','Guardar mi práctica','Escuchar las olas','Dos minutos de calma','Mapa del curso'],
-  ]
-  for(const [locale,next,save,audio,title,map] of labels){
-    const f=fixture(locale,2)
-    for(let i=0;i<4;i++)await click(f.h,next)
-    await click(f.h,save)
-    await click(f.h,audio)
-    assert.match(textOf(f.h.tree),new RegExp(title))
+test('EN/RU/ES all have actionable meditation steps and direct map after saved reward',async()=>{
+  for(const lang of ['en','ru','es']){
+    const f=fixture(lang),h=f.h,d=languages[lang]
+    await practice(f,lang)
+    assert.match(textOf(h.tree),d.instruction)
+    assert.ok(meditationNode(h.tree))
+    assert.ok(playerNode(h.tree))
+    await finish(f,lang)
+    assert.match(textOf(h.tree),d.finish)
+    assert.ok(!playerNode(h.tree))
+    await click(h,d.map)
+    assert.match(textOf(h.tree),lang==='ru'?/Ваш путь из 14 дней/:lang==='es'?/Tu recorrido completo de 14 días/:/Your complete 14-day journey/)
     assert.equal(f.writes,1)
-    await click(f.h,map)
-    assert.equal(f.exits,1)
-    f.h.unmount()
+    h.unmount()
   }
 })
-
-test('ocean playback requires a user click and pauses on hidden browser, safety pause and unmount',()=>{
+test('saved day 2 receipt bypasses optional ocean and keeps direct map navigation',async()=>{
+  const f=fixture('en',2),h=f.h
+  await finish(f,'en')
+  assert.match(textOf(h.tree),/Congratulations! Lesson 2 complete!/)
+  assert.ok(findButton(h.tree,"See what's next"))
+  assert.ok(!findButton(h.tree,'Relax with waves'))
+  assert.ok(!playerNode(h.tree))
+  await click(h,"See what's next")
+  assert.match(textOf(h.tree),/Your complete 14-day journey/)
+  assert.equal(f.writes,1)
+  h.unmount()
+})
+test('existing 120-second click-to-play ocean sound remains pausable, silent-capable and non-autoplay',()=>{
   const audio=read('components/app/opora-ocean-outro.jsx')
   const player=read('components/app/opora-experience-player.jsx')
   const styles=read('components/app/opora-ocean-outro.module.css')
@@ -87,10 +111,13 @@ test('ocean playback requires a user click and pauses on hidden browser, safety 
   assert.match(audio,/window\.setInterval\(tick,250\)/)
   assert.match(audio,/remaining===0/)
   assert.match(audio,/DURATION=120/)
+  assert.match(audio,/data-opora-inline-audio=\{compact\?'true':undefined\}/)
   assert.doesNotMatch(audio,/<audio[^>]*autoplay|fetch\(|new Audio\(/i)
-  assert.match(player,/outroOpen&&<OporaOceanOutro locale=\{lang\} paused=\{safety\}\/>/)
+  assert.match(player,/data-opora-guided-meditation="true"/)
+  assert.match(player,/<OporaOceanOutro locale=\{lang\} paused=\{safety\} compact\/>/)
+  assert.doesNotMatch(player,/outroOpen|moment==='ocean'/)
   assert.match(styles,/prefers-reduced-motion/)
-  assert.match(styles,/max-height:680px/)
+  assert.match(styles,/@media\(max-width:345px\)/)
   for(const [path,source] of [
     ['components/app/opora-ocean-outro.jsx',audio],
     ['components/app/opora-experience-player.jsx',player]

@@ -21,7 +21,7 @@ test('Approved scenic design is preserved across new unified five-lesson course'
   assert.match(design, /Owner approval:.*18 October 2026/)
   assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
-  assert.equal(energyworkSequence().length,63)
+  assert.equal(energyworkSequence().length,60)
   for(const legacyPath of ['yggdrasil','tantra','kundalini'])
     assert.deepEqual(energyworkSequence(legacyPath),energyworkSequence())
 })
@@ -54,7 +54,7 @@ test('Every type of teaching screen uses existing glass typography and safe cont
 test('Welcome keeps the free course scenic illustration and three benefits while describing all five lessons', () => {
   assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
   assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
-  assert.match(learner, /Want to go further\? You can explore personal Reiki initiation/)
+  assert.match(learner, /Want individual guidance\? Ask about a personal session with Andrey/)
   assert.match(learner, /styles\.welcomeReward/)
   assert.match(learner, /styles\.benefits/)
   for(const name of ['Short lessons','Practical tasks','Private progress'])

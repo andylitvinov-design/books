@@ -98,17 +98,17 @@ export function TantraInitiationForm({ locale }: { locale: PublicLocale }) {
         </div>
       </div>
       <div className={styles.whatsappActions}>
-        <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "free")} label={t.free} className={styles.whatsappPrimary} id="apply-free" />
-        <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "personal")} label={t.personal} className={styles.whatsappSecondary} id="apply-personal" />
+        <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "free")} label={t.free} className={styles.whatsappPrimary} id="apply-free" />
+        <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "personal")} label={t.personal} className={styles.whatsappSecondary} id="apply-personal" />
         <div className={styles.whatsappCombinedSlot}>
-          <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "session")} label={t.session} className={styles.whatsappCombined} id="apply-session" />
+          <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "session")} label={t.session} className={styles.whatsappCombined} id="apply-session" />
         </div>
       </div>
       <div className={styles.whatsappAnswersSlot}>
-        <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "answers")} label={t.answers} id="apply-answers" />
+        <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "answers")} label={t.answers} id="apply-answers" />
       </div>
       <div className={styles.whatsappFeedbackSlot}>
-        <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "feedback")} label={t.feedback} id="apply-feedback" />
+        <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "feedback")} label={t.feedback} id="apply-feedback" />
       </div>
       <p className={styles.whatsappNote}>{t.note}</p>
     </div>

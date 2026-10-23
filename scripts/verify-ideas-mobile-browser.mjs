@@ -46,6 +46,15 @@ async function verify(browserType, locale, width) {
     const previewSources = await hub.locator("[data-ideas-preview] [class*=aphorismSource]").allTextContents();
     assert.equal(previewSources.length, 3, label + ": every sample aphorism has a source label");
     assert.ok(previewSources.every(value => value.trim()), label + ": never blank source label");
+    const previewRects = await Promise.all([0, 1, 2].map(i => previewAphorisms.nth(i).boundingBox()));
+    assert.ok(previewRects.every(Boolean), label + ": all three quote rows visible in DOM");
+    assert.ok(previewRects[0].y < previewRects[1].y && previewRects[1].y < previewRects[2].y,
+      label + ": aphorisms display as rows, not narrow columns or a swipe rail");
+    assert.ok(previewRects.every(rect => rect.width >= width * .72), label + ": each quote gets full line width");
+    const previewDao = await hub.locator("[data-ideas-preview] [data-ideas-dao-card]").boundingBox();
+    const previewOffers = await hub.locator("[data-ideas-preview] [data-ideas-dao-promos]").boundingBox();
+    assert.ok(previewDao.y > previewRects[2].y && previewOffers.y > previewDao.y,
+      label + ": aphorisms before Dao before offers");
     assert.equal(await hub.locator("[data-ideas-preview] details").first().evaluate(node => node.open), true,
       label + ": full visual example is initially expanded");
 
@@ -95,14 +104,38 @@ async function verify(browserType, locale, width) {
       label + ": glyph and full reading hidden before expanding");
     const compactSize = await daoResult.locator("[data-ideas-dao]").boundingBox();
     assert.ok(compactSize && compactSize.height < 320, label + ": compact Dao paragraph and expand control");
-    const expand = daoResult.locator('button[aria-expanded]');
+    const responseRows = daoResult.locator("[data-ideas-aphorisms] ol li");
+    const responseRects = await Promise.all([0, 1, 2].map(i => responseRows.nth(i).boundingBox()));
+    const daoRect = await daoResult.locator("[data-ideas-dao]").boundingBox();
+    const offersRect = await daoResult.locator("[data-ideas-dao-promos]").boundingBox();
+    assert.ok(responseRects.every(Boolean) && responseRects[0].y < responseRects[1].y && responseRects[1].y < responseRects[2].y &&
+      daoRect.y > responseRects[2].y && offersRect.y > daoRect.y,
+      label + ": real answer order is three full-width rows, Dao and two offer cards");
+    assert.ok(responseRects.every(rect => rect.width >= width * .72), label + ": real quote rows are readable");
+    const readingOrder = daoResult.locator('[data-ideas-order-button="reading"]');
+    const giftOrder = daoResult.locator('[data-ideas-order-button="gift"]');
+    await readingOrder.tap();
+    assert.equal(await readingOrder.getAttribute("aria-expanded"), "true", label + ": order opens inline");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": one inline request directly below chosen card");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible input[type="checkbox"]').count(), 1, label + ": reply consent");
+    await giftOrder.tap();
+    assert.equal(await readingOrder.getAttribute("aria-expanded"), "false", label + ": choosing other card closes the first");
+    assert.equal(await giftOrder.getAttribute("aria-expanded"), "true", label + ": gift opens without navigation");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": never duplicate requests");
+    await giftOrder.tap();
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 0, label + ": click again collapses");
+    const expandedBounds = await page.evaluate(() => ({
+      viewport: window.innerWidth, content: document.documentElement.scrollWidth,
+    }));
+    assert.ok(expandedBounds.content <= expandedBounds.viewport + 1, label + ": no horizontal overflow with offers");
+    const expand = daoResult.locator('button[aria-expanded][aria-controls="ideas-dao-details"]');
     assert.equal(await expand.getAttribute("aria-expanded"), "false", label + ": collapsed by default");
     if (browserType === webkit && locale === "en" && width === 390) {
       await page.screenshot({ path: output + "/ideas-dao-compact-webkit-390.png", fullPage: false });
     }
     await expand.tap();
     await daoResult.locator('[data-ideas-dao-expanded="true"]').waitFor({ state: "visible" });
-    assert.equal(await daoResult.locator('[data-ideas-dao-meaning] [class*=daoPoint]').count(), 3,
+    assert.equal(await daoResult.locator('[data-ideas-dao-meaning] [class*=daoPoints] > [class*=daoPoint]').count(), 3,
       label + ": meaning, key message and practical step all visible");
     assert.equal(await daoResult.locator('[data-ideas-aphorisms] ol li').count(), 3,
       label + ": Dao response has three topical sourced aphorisms");

@@ -4,10 +4,11 @@ import { repositoryHarness, mount, findButton, nodes, textOf } from './helpers/r
 import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner-growth/anti-stress-skills-v6.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
+import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
 
 const labels = {
-  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Not sure yet', plan: 'Keep this reminder', save: 'Save my practice', receipt: 'Your moment is saved' },
-  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Пока не уверен(а)', plan: 'Хочу запомнить этот вариант', save: 'Сохранить мою практику', receipt: 'Ваш момент сохранён' },
+  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Need to think', save: 'Save my practice', receipt: 'Your moment is saved' },
+  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Нужно подумать', save: 'Сохранить мою практику', receipt: 'Ваш момент сохранён' },
 }
 async function click(player, label) {
   const button = findButton(player.tree, label)
@@ -56,7 +57,9 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player,t.same)
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
-      await click(player,t.plan)
+      const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
+      assert.ok(realLifeChoice?.label,'Every day needs an authored action')
+      await click(player,realLifeChoice.label)
       await click(player,t.next)
       await click(player,locale==='ru'?'Получилось немного':'I managed a little')
       assert.equal(requests, 0, 'Opening moments and choosing responses never saves')
@@ -83,6 +86,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.reflection, 'unchanged')
       assert.equal(saved.signals.opora54.answers.aphorism, 'unsure')
       assert.equal(saved.signals.opora54.answers.transfer, 'planned')
+      assert.equal(saved.signals.opora54.answers.transferChoice, 'two')
       assert.equal(saved.signals.opora54.answers.lessonConfidence,'some')
       if (day === 14) assert.equal(receipt.cycle.status, 'completed')
       else {

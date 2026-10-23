@@ -1,10 +1,11 @@
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Download, FileText, MessageCircle } from "lucide-react";
+import { ArrowDown, ArrowRight, ChevronDown, Download, FileText } from "lucide-react";
 
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { KundaliniReikiOrderCapture } from "@/components/kundalini-reiki-order-capture";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import {
@@ -19,8 +20,6 @@ import {
 } from "@/data/academy/kundalini-reiki-course";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./kundalini-reiki-course.module.css";
-
-const whatsapp = "https://wa.me/14376066502?text=";
 
 const meditationCopy = {
   en: {
@@ -43,25 +42,6 @@ const meditationCopy = {
   },
 } as const;
 // Original diagrams are stored in /public, extracted without replacing the user PDF.
-
-function enquiryUrl(locale: PublicLocale, kind: "training" | "initiation") {
-  const page = "https://holistichouse.vercel.app/" + locale + "/academy/reiki/kundalini-reiki";
-  const course = locale === "ru" ? "Кундалини Рейки" : "Kundalini Reiki";
-  const request = kind === "training"
-    ? locale === "ru" ? "Здравствуйте, Андрей! Хочу узнать о курсе Кундалини Рейки, формате обучения, доступных датах и актуальной стоимости."
-      : locale === "es" ? "Hola Andrey. Me interesa el curso de Kundalini Reiki. ¿Cuál es el formato, la disponibilidad y el precio actual?"
-      : "Hello Andrey! I'm interested in Kundalini Reiki training. Please tell me the current format, availability and price."
-    : locale === "ru" ? "Здравствуйте, Андрей! Хочу запросить личную инициацию 1-й ступени Кундалини Рейки. Подскажите условия."
-      : locale === "es" ? "Hola Andrey. Quisiera solicitar una iniciación personal de Kundalini Reiki nivel 1. ¿Cuáles son las condiciones?"
-      : "Hello Andrey! I'd like to request a personal Kundalini Reiki Level 1 initiation. Please let me know the conditions.";
-  return whatsapp + encodeURIComponent([
-    request,
-    "",
-    "Course / Система: " + course,
-    "Request / Запрос: " + (kind === "training" ? "Kundalini Reiki training" : "Kundalini Reiki Level 1 personal initiation"),
-    "Holistic House: " + page,
-  ].join("\n"));
-}
 
 export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
   const t = kundaliniInterface[locale];
@@ -304,26 +284,7 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
 
         <aside className={styles.safetyNote}>{t.caution}</aside>
 
-        <section className={styles.capture + " reiki-screen reiki-screen--cta"} id="kundalini-enquire" aria-labelledby="kundalini-contact-title">
-          <div className={styles.captureContent}>
-            <p className={styles.eyebrow}>HOLISTIC HOUSE · KUNDALINI REIKI</p>
-            <h2 id="kundalini-contact-title">{t.contactTitle}</h2>
-            <p>{t.contactText}</p>
-            <p className={styles.studySource}><BookOpen size={16} aria-hidden="true" />{t.howToLearnTitle}: {t.howToLearnQuote} · PsiTrends</p>
-          </div>
-          <div className={styles.captureActions}>
-            <Link href={"/" + locale + "/academy/reiki/kundalini-reiki/free-initiation"} className={styles.captureSecondary}>
-              {locale === "ru" ? "Бесплатная вводная 1-я ступень" : locale === "es" ? "Iniciación introductoria gratis" : "Free introductory Level 1"}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-            <a href={enquiryUrl(locale, "initiation")} target="_blank" rel="noopener noreferrer" className={styles.capturePrimary}>
-              <MessageCircle size={19} aria-hidden="true" />{t.personal}<ArrowRight size={16} aria-hidden="true" />
-            </a>
-            <a href={enquiryUrl(locale, "training")} target="_blank" rel="noopener noreferrer" className={styles.captureSecondary}>
-              <MessageCircle size={19} aria-hidden="true" />{t.enquire}<ArrowRight size={16} aria-hidden="true" />
-            </a>
-            <a href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer" className={styles.telegram}>{t.telegram} <ArrowRight size={16} aria-hidden="true" /></a>
-          </div>
-        </section>
+        <KundaliniReikiOrderCapture locale={locale} />
       </div>
     </main>
   );

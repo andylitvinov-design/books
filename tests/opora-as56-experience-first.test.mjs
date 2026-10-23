@@ -5,19 +5,19 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid,oporaExperienceTransferChoices} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const t={
   en:{next:'Continue',start:'I will try this step',try:'I tried it',
-    unchanged:'About the same',vote:'Not sure yet',plan:'Keep this reminder',
-    save:'Save my practice',saved:'Your moment is saved',noPlan:'No plan today',
+    unchanged:'About the same',vote:'Need to think',
+    save:'Save my practice',saved:'Your moment is saved',noPlan:'Not today',
     pause:'Pause',return:'Go back'},
   ru:{next:'Продолжить',start:'Я попробую этот шаг',try:'Я попробовал(а)',
-    unchanged:'Примерно так же',vote:'Пока не уверен(а)',plan:'Хочу запомнить этот вариант',
-    save:'Сохранить мою практику',saved:'Ваш момент сохранён',noPlan:'Пока без плана',
+    unchanged:'Примерно так же',vote:'Нужно подумать',
+    save:'Сохранить мою практику',saved:'Ваш момент сохранён',noPlan:'Не сегодня',
     pause:'Пауза',return:'Вернуться'},
 }
 function fixture(locale='en',day=1){
@@ -86,7 +86,15 @@ test('day one restores five opening screens and all days add untracked support a
       await click(h,d.vote)
       await click(h,d.next)
     }
-    await click(h,d.plan)
+    // Only one aphorism/feedback appears. This distinct screen asks for
+    // a concrete future action, never another inspirational statement.
+    const options=oporaExperienceTransferChoices(day,lang)
+    assert.equal(options.length,2)
+    assert.ok(textOf(h.tree).includes(options[0].label))
+    assert.ok(textOf(h.tree).includes(options[1].label))
+    assert.ok(!textOf(h.tree).includes(oporaExperienceDay(day,lang).reminder))
+    assert.ok(!textOf(h.tree).includes(f.lesson.aphorism))
+    await click(h,options[0].label)
     await click(h,d.next)
     assert.match(textOf(h.tree),lang==='ru'?/Что вы освоили сегодня/:/What you learned today/)
     assert.ok(textOf(h.tree).includes(oporaExperienceDay(day,lang).title))
@@ -104,6 +112,7 @@ test('day one restores five opening screens and all days add untracked support a
     assert.equal(f.payload.opora54.answers.reflection,'unchanged')
     assert.equal(f.payload.opora54.answers.aphorism,'unsure')
     assert.equal(f.payload.opora54.answers.transfer,'planned')
+    assert.equal(f.payload.opora54.answers.transferChoice,'two')
     assert.equal(f.payload.opora54.answers.lessonConfidence,'some')
     assert.equal(f.payload.practiceAttempt,'tried')
     if(day===1){
@@ -116,9 +125,10 @@ test('day one restores five opening screens and all days add untracked support a
       assert.equal(f.payload.welcomeFeeling,null)
     }
     assert.match(textOf(h.tree),new RegExp(d.saved))
+    assert.ok(textOf(h.tree).includes(options[0].label),'Confirmed receipt shows the exact selected step')
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
-    await click(h,lang==='ru'?'Послушать волны':'Relax with waves')
-    assert.match(textOf(h.tree),lang==='ru'?/Две минуты спокойствия/:/Two quiet minutes/)
+    assert.ok(!findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),
+      'The inline grounding timer must not repeat after congratulations')
     await click(h,lang==='ru'?'Посмотреть, что дальше':"See what's next")
     // A single long route replaces the duplicated 3-day teaser and two
     // disconnected weekly lists. All 14 previews remain visible and read-only.
@@ -154,6 +164,44 @@ test('day one restores five opening screens and all days add untracked support a
     assert.equal(f.requests,1,'Later screens must not create duplicate save')
     h.unmount()
   }
+})
+
+test('two unique optional action ideas per day, in EN/RU/ES, without rewriting legacy reminders',()=>{
+  for(let day=1;day<=14;day++)for(const locale of ['en','ru','es']){
+    const options=oporaExperienceTransferChoices(day,locale)
+    const legacy=oporaExperienceDay(day,locale).reminder
+    assert.deepEqual(options.map(item=>item.value),['two','three'])
+    assert.ok(options.every(item=>item.label!==legacy))
+    assert.notEqual(options[0].label,options[1].label)
+  }
+  assert.deepEqual(oporaExperienceTransferChoices(15,'en'),[])
+})
+
+test('new action alternative is saved as three; old one keeps its original historic meaning',async()=>{
+  const f=fixture('en',3),h=f.h
+  for(let i=0;i<5;i++)await click(h,t.en.next)
+  const [first,second]=oporaExperienceTransferChoices(3,'en')
+  assert.ok(textOf(h.tree).includes(first.label))
+  await click(h,second.label)
+  await click(h,t.en.next)
+  await click(h,'I managed a little')
+  await click(h,t.en.save)
+  assert.equal(f.payload.opora54.answers.transferChoice,'three')
+  assert.equal(f.payload.opora54.answers.transfer,'planned')
+  assert.ok(textOf(h.tree).includes(second.label))
+  h.unmount()
+
+  const lesson=lessonFor('calm_regulation',3,'en','standard',COURSE_ANTISTRESS_SKILLS_V7)
+  const historical=mount('opora-experience-player',{
+    locale:'en',
+    data:{cycle:{id:'00000000-0000-4000-8000-000000001056',day:3,durationDays:14},
+      programme:{id:'stress'},lesson,
+      currentSession:{signals:{opora54:{answers:{transfer:'planned',transferChoice:'one'}}}}},
+    onClose(){},onFinish(){},onSession:async()=>{throw Error('No write for an archived session')},
+  })
+  assert.ok(textOf(historical.tree).includes(oporaExperienceDay(3,'en').reminder))
+  assert.ok(!textOf(historical.tree).includes(first.label))
+  historical.unmount()
 })
 
 test('the restored five opening screens remain fully optional, with no false practice claim',async()=>{

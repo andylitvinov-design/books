@@ -15,8 +15,8 @@ const browser = read('scripts/verify-reiki-all-slides-browser.mjs')
 test('all five Reiki lessons place music-assisted practice directly before the closing slide', () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
-  assert.equal(sequence.length, 63, 'only the seven requested slide IDs are retired')
-  assert.deepEqual(ranges.map(({ count }) => count), [8, 14, 16, 14, 9])
+  assert.equal(sequence.length, 60, 'the additional three redundant lesson-five screens are retired')
+  assert.deepEqual(ranges.map(({ count }) => count), [8, 14, 16, 14, 6])
 
   const endings = [
     { first: 'flight-01', practices: ['flight-03'], last: 'flight-done', report: 'flight-04' },
@@ -30,9 +30,13 @@ test('all five Reiki lessons place music-assisted practice directly before the c
     const { start, end } = ranges[lessonIndex]
     const ids = sequence.slice(start, end)
     assert.equal(ids[0], item.first, 'lesson ' + (lessonIndex + 1) + ' introduction')
-    assert.equal(ids.at(-1), item.last, 'lesson ' + (lessonIndex + 1) + ' congratulations')
+    // Lesson one has a separate consented Google-save gate after congratulations.
+    const finaleIndex = ids.indexOf(item.last)
+    assert.ok(finaleIndex >= 0, 'lesson ' + (lessonIndex + 1) + ' congratulations')
+    assert.equal(ids.at(-1), lessonIndex === 0 ? 'flight-save' : item.last,
+      'lesson ' + (lessonIndex + 1) + ' last screen')
     assert.deepEqual(
-      ids.slice(-(item.practices.length + 1), -1),
+      ids.slice(finaleIndex - item.practices.length, finaleIndex),
       item.practices,
       'lesson ' + (lessonIndex + 1) + ' practical audio slides immediately precede congratulations',
     )
@@ -49,14 +53,14 @@ test('all five Reiki lessons place music-assisted practice directly before the c
 
   // Intro to initiation really begins the fifth lesson rather than being
   // appended to the fourth lesson's Yggdrasil progress indicator.
-  assert.ok(sequence.indexOf('paths-01') < sequence.indexOf('intention-01'))
+  assert.ok(sequence.indexOf('paths-01') < sequence.indexOf('paths-03'))
   assert.ok(sequence.indexOf('paths-01') < sequence.indexOf('init-02'))
   assert.ok(sequence.indexOf('paths-01') > sequence.indexOf('ygg-done'))
 })
 
 test('existing practice timers retain soundtrack, pause, answers and previous/next navigation', () => {
   assert.match(editorial, /function withClosingPractices\(/)
-  assert.match(editorial, /withClosingPractices\(commonSlides\.filter\(\(slide\) => slide\.phase === "flight"\), \["flight-03"\], "flight-done"\)/)
+  assert.match(editorial, /slide\.phase === "flight" && slide\.id !== "flight-save"/)
   assert.match(editorial, /\["tan-03"\], "tan-done"\)/)
   assert.match(editorial, /withClosingPractices\(pathSlides\.kundalini, \["kun-03"\], "kun-done"\)/)
   assert.match(editorial, /withClosingPractices\(pathSlides\.yggdrasil, \["ygg-03"\], "ygg-done"\)/)
