@@ -7,7 +7,8 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import type { AcademyCourseItem } from "@/components/academy-course-card-list";
-import { AcademyDiscovery } from "@/components/academy-discovery";
+import { AcademyDiscovery, type AcademyArchiveButton } from "@/components/academy-discovery";
+import psimasterMedia from "@/data/academy/psimaster-media.generated.json";
 import { AcademyCourseCapture } from "@/components/academy-course-capture";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import {
@@ -16,6 +17,8 @@ import {
   academyDisplayTitle,
   recordsForDirection,
   mediaForRecord,
+  preferredAcademyRecords,
+  videoRecords,
   youtubeIdFromUrl,
   type AcademyDirectionId,
   type AcademySourceRecord,
@@ -293,10 +296,43 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         },
       ];
 
+  // Historical PsiMaster content is already in the Academy catalogue. Link to
+  // the existing native pages; never copy course records or create an enrollment.
+  const featuredLegacyIds = [
+    "mysteries/egypt/high-wisdom",
+    "mysteries/greece-rome/beauty-and-power",
+    "symbolic/scandinavian-mysteries",
+    "applied/imagery-therapy-symboldrama",
+    "applied/archetypal-therapy/program",
+    "applied/business/demiurges-of-creation",
+    "applied/tantric-healing",
+    "reiki/kundalini-reiki",
+  ];
+  const legacyRank = (id: string) => {
+    const index = featuredLegacyIds.indexOf(id);
+    return index < 0 ? featuredLegacyIds.length : index;
+  };
+  const legacyCourses: AcademyArchiveButton[] = preferredAcademyRecords(locale, (record) =>
+    record.sourceProvider === "psimaster" && record.sourceLocale === "ru"
+  ).map((record) => ({
+    id: record.logicalId,
+    title: academyDisplayTitle(record, locale),
+    href: "/" + locale + "/academy/" + record.routeKey,
+    archived: record.status === "archive_only",
+  })).sort((a, b) => legacyRank(a.id) - legacyRank(b.id) || a.title.localeCompare(b.title, locale));
+  const psimasterVideoIds = new Set(psimasterMedia.map((item) => item.logicalId));
+  const legacyVideos: AcademyArchiveButton[] = videoRecords(locale)
+    .filter((record) => psimasterVideoIds.has(record.logicalId))
+    .map((record) => ({
+      id: record.logicalId,
+      title: academyDisplayTitle(record, locale),
+      href: "/" + locale + "/academy/" + record.routeKey,
+    }));
+
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
-      <AcademyDiscovery locale={locale} view={view} items={items} events={PUBLIC_EVENTS} label={text.allPrograms} />
+      <AcademyDiscovery locale={locale} view={view} items={items} legacyCourses={legacyCourses} legacyVideos={legacyVideos} events={PUBLIC_EVENTS} label={text.allPrograms} />
       {view === "videos" ? (
         <section id="academy-video-courses">
           <AcademyVideoCourses locale={locale} />
