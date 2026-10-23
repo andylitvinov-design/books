@@ -5,6 +5,7 @@ import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaAs58Day} from '../lib/inner-growth/opora-as58-one-action.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const labels = {
@@ -53,22 +54,23 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         await click(player,t.next) // support, with no required response
         await advanceOporaTo(player,'practice',t.next) // optional teaching moments
       }
+      if(day===11)await click(player,locale==='ru'?'Доверие':'Trust')
       await click(player,t.tried)
       await click(player,t.next)
       await click(player,t.same)
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
       const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
-      assert.ok(realLifeChoice?.label,'Archived choices must remain accessible')
+      const daily=oporaAs58Day(day,locale)
+      assert.ok(realLifeChoice?.label,'Archive choices must remain available')
+      assert.ok(textOf(player.tree).includes(daily.transfer),'The live player uses a single authored action')
+      assert.ok(!textOf(player.tree).includes(realLifeChoice.label),'Old choices are hidden in live lessons')
       if(day===4){
-        const content=textOf(player.tree)
-        assert.ok(content.includes(locale==='ru'?'Перед одним привычным делом':'Before one routine task'))
-        assert.ok(!content.includes(realLifeChoice.label),'Day 4 must not present an alternative choice')
         const field=nodes(player.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
         assert.ok(field,'Day 4 emotion entry must exist')
         field.props.onChange({target:{value:locale==='ru'?'спокойствие':'calm'}})
         await player.settle()
-      }else await click(player,realLifeChoice.label)
+      }else await click(player,locale==='ru'?'Попробую позже':'I might try this')
       await advanceOporaTo(player,'recapFeedback',t.next)
       await click(player,locale==='ru'?'Получилось немного':'I managed a little')
       assert.equal(requests, 0, 'Opening moments and choosing responses never saves')
@@ -96,8 +98,21 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.aphorism, 'unsure')
       assert.equal(saved.signals.opora54.answers.transfer, 'planned')
       assert.equal(saved.signals.opora54.answers.transferChoice, 'two')
-      assert.equal(saved.signals.opora54.answers.transferFeeling,day===4
-        ?(locale==='ru'?'спокойствие':'calm'):undefined)
+      assert.equal(saved.signals.opora54.answers.transferFeeling,undefined,
+        'Free-text emotions must never be saved in plain JSONB')
+      assert.equal(saved.signals.opora54.answers.transferPlanVersion,'one-v1')
+      if(day===4){
+        const answer=locale==='ru'?'спокойствие':'calm'
+        assert.deepEqual(payload.practiceEmotion,{customText:answer})
+        assert.equal(saved.signals.practiceEmotion?.customText,undefined)
+        assert.ok(saved.signals.practiceEmotion?.customTextCiphertext?.length>30)
+        assert.equal(JSON.stringify(saved.signals).includes(answer),false)
+        const readBack=await owner.read(locale)
+        assert.equal(readBack.currentSession?.signals?.practiceEmotion?.customText,answer)
+      }else if(day===11){
+        assert.deepEqual(payload.practiceEmotion,{choice:'trust'})
+        assert.deepEqual(saved.signals.practiceEmotion,{choice:'trust'})
+      }else assert.equal(saved.signals.practiceEmotion,undefined)
       assert.equal(saved.signals.opora54.answers.lessonConfidence,'some')
       if (day === 14) assert.equal(receipt.cycle.status, 'completed')
       else {
