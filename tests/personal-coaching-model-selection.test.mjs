@@ -18,7 +18,14 @@ const signals=[
  {tag:'leadership',stems:{en:['delegat','leader'],ru:['делегир','руковод'],es:['delegar']}},
  {tag:'goal',stems:{en:['goal'],ru:['цел'],es:['meta']}},
  {tag:'unclear',stems:{en:['confus','not sure'],ru:['не знаю'],es:['no se']}},
-]
+].map(signal=>({
+ ...signal,
+ priority:({procrastination:4,conflict:4,relationships:3,leadership:4,unclear:4,habits:3})[signal.tag]||1,
+ preferredModels:({
+   procrastination:['woop_v1'],conflict:['clear_v1'],relationships:['clear_v1'],
+   leadership:['fuel_v1'],unclear:['tgrow_v1'],habits:['woop_v1'],goal:['grow_v1'],
+ })[signal.tag]||[],
+}))
 const catalog={
  signals,
  models:['grow','tgrow','woop','clear','oskar','fuel','solution_focus','appreciative_5d'].map(model),
@@ -71,6 +78,7 @@ test('catalog is backend-only, questions are versioned, and raw question is encr
  const player=source('components/app/personal-coaching.jsx')
  const sqlFit=source('supabase/migrations/20261023203500_hh_coaching_model_fit_comments.sql')
  const sqlTags=source('supabase/migrations/20261023203600_hh_coaching_request_signals.sql')
+ const sqlWeights=source('supabase/migrations/20261023203700_hh_coaching_topic_fit_weights.sql')
  assert.match(api,/joined === 'personal-coaching-catalog'/)
  assert.match(api,/x-hh-account-id/)
  assert.match(catalogBackend,/import 'server-only'/)
@@ -90,6 +98,8 @@ test('catalog is backend-only, questions are versioned, and raw question is encr
  assert.match(sqlFit,/selection_caution_i18n/)
  assert.equal((sqlFit.match(/WHERE model_key=/g)||[]).length,10)
  assert.match(sqlTags,/ENABLE ROW LEVEL SECURITY/)
+ assert.match(sqlWeights,/preferred_model_keys/)
+ assert.equal((sqlWeights.match(/WHERE topic_key=/g)||[]).length,19)
  assert.match(sqlTags,/REVOKE ALL ON TABLE app_private\.coaching_intent_signals FROM PUBLIC,anon,authenticated/)
  assert.equal((sqlTags.match(/\('(?:goal|decision|business|career|relationships|conflict|communication|money|confidence|stuck|habits|procrastination|motivation|leadership|productivity|growth|transition|unclear|creativity)'/g)||[]).length,19)
  assert.doesNotMatch(ui,/localStorage|sessionStorage|analytics\.|sendBeacon|fetch\(/)
