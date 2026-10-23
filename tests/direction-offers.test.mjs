@@ -45,3 +45,21 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   assert.ok(site.includes("id: 'services'"))
   assert.ok(site.includes("id: 'academy'"))
 })
+
+
+test('all course CTAs open a real existing learning route, not the tests picker again', async () => {
+  const cards = await readFile('components/direction-offers.tsx','utf8')
+  assert.match(cards, /direction === 'business'\s*\?\s*'\/' \+ appLocale \+ '\/app\/business'/)
+  assert.match(cards, /: '\/' \+ locale \+ '\/courses\/antistress'/)
+  assert.doesNotMatch(cards, /testHref \+ '&mode=course'/)
+  assert.match(cards, /OPORA · Inner support/)
+  assert.match(cards, /ОПОРА · Внутренняя поддержка/)
+  assert.match(cards, /OPORA · Apoyo interior/)
+  assert.doesNotMatch(cards, /course: 'Practices for trust and boundaries'/)
+  // These URLs are already implemented, so do not introduce a second course
+  // or falsely promise a specialized relationships syllabus.
+  const en = await readFile('app/[locale]/courses/antistress/page.tsx','utf8')
+  const business = await readFile('app/[locale]/app/[[...path]]/page.jsx','utf8')
+  assert.ok(en.length > 100)
+  assert.ok(business.length > 100)
+})
