@@ -160,7 +160,8 @@ test("Academy quick path pills and three headings remain mobile-friendly in Engl
   assert.match(source, /<GraduationCap size=\{16\}/);
   assert.match(source, /<CalendarDays size=\{16\}/);
   assert.match(styles, /\.quickPaths\s*\{/);
-  assert.match(styles, /grid-template-columns:\s*repeat\(3,\s*minmax\(0, 1fr\)\)/);
+  assert.match(styles, /grid-template-columns:\s*repeat\(4,\s*minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.quickPaths \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 620px\)/);
   assert.match(styles, /\.eventUpper\s*\{/);
   assert.match(hub, /import \{ PUBLIC_EVENTS \} from "@\/data\/public-events"/);
