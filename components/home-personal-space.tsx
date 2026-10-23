@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, ClipboardList, FileText, LockKeyhole, Sparkles, Target, UserRound, X } from "lucide-react";
+import { ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, ClipboardList, FileText, GraduationCap, Heart, LockKeyhole, Sparkles, Target, UserRound, X } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
+import { isNativeHolisticHouse } from "@/lib/native/client";
 import { homeSpaceSummary, type HomeSpaceSummary } from "@/lib/home-personal-space.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-personal-space.module.css";
@@ -22,14 +23,19 @@ const SpaceContext = createContext<Space | null>(null);
 
 const copy = {
   en: {
-    label: "My Space", title: "Your personal space", guest: "Your journey can begin here.",
-    guestDetail: "Explore free steps or enter your private Cabinet with Google.",
+    label: "My Space", title: "My space", guest: "Choose your path. Start free.",
+    guestDetail: "Explore freely, or save your progress in your Cabinet.",
     openCabinet: "Enter my Cabinet", freeTest: "Try a free self-check", freeReview: "Free written review",
     loading: "Checking your private space…", unavailable: "We couldn't open your space right now.",
     retry: "Try again", full: "Open full Cabinet", close: "Close My Space",
     personal: "Personal", professional: "Professional", tests: "My tests", reports: "My reports",
     courses: "My courses", growth: "Development path", practice: "My practice", createCourse: "Create course",
-    private: "Private information stays in your Cabinet.", eyebrow: "MY SPACE · YOUR NEXT STEP",
+    private: "Private information stays in your Cabinet.", eyebrow: "YOUR NEXT STEP",
+    forMe: "For me", forMaster: "For masters", ownHint: "Discover & grow", masterHint: "Share your practice",
+    becomeMaster: "Become a master", publishService: "Publish a service", myPractice: "My practice",
+    exploreCourses: "Explore courses", google: "Continue with Google", googleBusy: "Opening Google…",
+    googleError: "Google sign-in could not start. Please try again.",
+    googleNote: "One private account for both paths.", masterSteps: "Profile first · Review before publication",
     next: {
       onboarding: { title: "Welcome to your space", detail: "Finish setting up your profile in the Cabinet.", action: "Open my profile" },
       report: { title: "A saved report is ready", detail: "Open your private Cabinet to read it.", action: "View my reports" },
@@ -39,14 +45,19 @@ const copy = {
     },
   },
   ru: {
-    label: "Моё пространство", title: "Моё пространство", guest: "Здесь начинается ваш путь.",
-    guestDetail: "Начните бесплатно или войдите в защищённый кабинет через Google.",
+    label: "Моё пространство", title: "Моё пространство", guest: "Выберите свой путь. Начните бесплатно.",
+    guestDetail: "Изучайте возможности или сохраняйте свой прогресс в кабинете.",
     openCabinet: "Войти в кабинет", freeTest: "Пройти бесплатный тест", freeReview: "Бесплатный письменный разбор",
     loading: "Проверяем вход в кабинет…", unavailable: "Сейчас не удалось открыть ваше пространство.",
     retry: "Повторить", full: "Открыть весь кабинет", close: "Закрыть Моё пространство",
     personal: "Личное", professional: "Профессиональное", tests: "Мои тесты", reports: "Мои отчёты",
     courses: "Мои курсы", growth: "Путь развития", practice: "Моя практика", createCourse: "Создать курс",
-    private: "Личная информация остаётся в защищённом кабинете.", eyebrow: "МОЁ ПРОСТРАНСТВО · СЛЕДУЮЩИЙ ШАГ",
+    private: "Личная информация остаётся в защищённом кабинете.", eyebrow: "ВАШ СЛЕДУЮЩИЙ ШАГ",
+    forMe: "Для себя", forMaster: "Для мастера", ownHint: "Познать себя и развиваться", masterHint: "Делиться своей практикой",
+    becomeMaster: "Стать мастером", publishService: "Разместить услугу", myPractice: "Моя практика",
+    exploreCourses: "Посмотреть курсы", google: "Войти через Google", googleBusy: "Открываем Google…",
+    googleError: "Не удалось начать вход через Google. Попробуйте ещё раз.",
+    googleNote: "Один защищённый кабинет для обоих путей.", masterSteps: "Сначала профиль · Публикация после проверки",
     next: {
       onboarding: { title: "Добро пожаловать", detail: "Завершите настройку профиля в кабинете.", action: "Мой профиль" },
       report: { title: "Есть готовый отчёт", detail: "Откройте защищённый кабинет, чтобы прочитать его.", action: "Мои отчёты" },
@@ -56,14 +67,19 @@ const copy = {
     },
   },
   es: {
-    label: "Mi espacio", title: "Mi espacio personal", guest: "Tu camino puede comenzar aquí.",
-    guestDetail: "Explora opciones gratuitas o entra a tu espacio privado con Google.",
+    label: "Mi espacio", title: "Mi espacio", guest: "Elige tu camino. Empieza gratis.",
+    guestDetail: "Explora gratis o guarda tus avances en tu espacio privado.",
     openCabinet: "Entrar a mi espacio", freeTest: "Prueba gratuita", freeReview: "Revisión escrita gratis",
     loading: "Comprobando tu espacio privado…", unavailable: "No se pudo abrir tu espacio ahora.",
     retry: "Reintentar", full: "Abrir gabinete completo", close: "Cerrar Mi espacio",
     personal: "Personal", professional: "Profesional", tests: "Mis pruebas", reports: "Mis informes",
     courses: "Mis cursos", growth: "Desarrollo", practice: "Mi práctica", createCourse: "Crear curso",
-    private: "La información privada permanece en tu gabinete.", eyebrow: "MI ESPACIO · SIGUIENTE PASO",
+    private: "La información privada permanece en tu gabinete.", eyebrow: "TU SIGUIENTE PASO",
+    forMe: "Para mí", forMaster: "Para maestros", ownHint: "Conócete y crece", masterHint: "Comparte tu práctica",
+    becomeMaster: "Ser maestro", publishService: "Publicar un servicio", myPractice: "Mi práctica",
+    exploreCourses: "Explorar cursos", google: "Continuar con Google", googleBusy: "Abriendo Google…",
+    googleError: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+    googleNote: "Una cuenta privada para ambos caminos.", masterSteps: "Primero el perfil · Publicación tras revisión",
     next: {
       onboarding: { title: "Bienvenido a tu espacio", detail: "Completa tu perfil en tu gabinete.", action: "Mi perfil" },
       report: { title: "Tienes un informe guardado", detail: "Ábrelo en tu gabinete privado.", action: "Ver mis informes" },
@@ -88,6 +104,8 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
   const [status, setStatus] = useState<Status>("idle");
   const [summary, setSummary] = useState<HomeSpaceSummary | null>(null);
   const [open, setOpen] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState(false);
   const statusRef = useRef<Status>("idle");
   const epochRef = useRef(0);
   const requestRef = useRef<AbortController | null>(null);
@@ -179,16 +197,43 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
     void load();
   }, [load]);
   const closePanel = useCallback(() => setOpen(false), []);
+  // Reuse the existing PKCE OAuth handoff and private Cabinet session.
+  const startGoogleSignIn = useCallback(async () => {
+    if (signingIn) return;
+    setSigningIn(true);
+    setSignInError(false);
+    try {
+      const native = isNativeHolisticHouse();
+      const result = await appFetch("auth/start", {
+        locale: locale === "es" ? "en" : locale,
+        continueTo: "cabinet",
+        ...(native ? { native: true } : {}),
+      });
+      if (!result || typeof result.redirectUrl !== "string") throw new Error("OAUTH_URL_MISSING");
+      if (native) {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url: result.redirectUrl });
+        setSigningIn(false);
+      } else window.location.assign(result.redirectUrl);
+    } catch {
+      setSigningIn(false);
+      setSignInError(true);
+    }
+  }, [locale, signingIn]);
 
   const value: Space = { status, summary, open, load, openPanel, closePanel };
   const t = copy[locale];
   const root = cabinetBase(locale);
-  const actions = [
+  const personalActions = [
     { href: root + "/tests", label: t.tests, Icon: ClipboardList },
     { href: root + "/portrait#personal-reports", label: t.reports, Icon: FileText },
     { href: root + "/course?view=courses", label: t.courses, Icon: BookOpen },
     { href: root + "/portfolio#hh-development-program", label: t.growth, Icon: Target },
-    { href: root + "/practice", label: t.practice, Icon: UserRound },
+  ];
+  const masterActions = [
+    { href: root + "/practice", label: t.myPractice, Icon: UserRound },
+    { href: root + "/practice?panel=services", label: t.publishService, Icon: BriefcaseBusiness },
+    { href: root + "/practice?panel=materials&materialTab=courses", label: t.createCourse, Icon: GraduationCap },
   ];
 
   return <SpaceContext.Provider value={value}>
@@ -210,40 +255,100 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
           : status === "error" ? <div className={styles.state}>
               <p role="status">{t.unavailable}</p>
               <button type="button" className={styles.retry} onClick={() => void load()}>{t.retry}</button>
-              <Link href={root} prefetch={false} onClick={closePanel}>{t.openCabinet} <ArrowRight size={15} /></Link>
+              <Link href={root} prefetch={false} onClick={closePanel}>{t.openCabinet}<ArrowRight size={15} aria-hidden="true" /></Link>
             </div>
           : status === "guest" || !summary ? <div className={styles.guest}>
-              <h3>{t.guest}</h3><p>{t.guestDetail}</p>
-              <Link className={styles.primary} href={root} prefetch={false} onClick={closePanel}>
-                <LockKeyhole size={16} aria-hidden="true" />{t.openCabinet}<ArrowRight size={16} aria-hidden="true" />
-              </Link>
-              <Link href={"/" + locale + "/client/tests"} prefetch={false} onClick={closePanel}>{t.freeTest}<ArrowRight size={16} /></Link>
-              <Link href={"/" + locale + "/services/free-situation-review"} prefetch={false} onClick={closePanel}>{t.freeReview}<ArrowRight size={16} /></Link>
+              <p className={styles.guestLead}>{t.guest}</p>
+              <button type="button" className={styles.googleButton} disabled={signingIn}
+                onClick={() => void startGoogleSignIn()}>
+                <span className={styles.googleMark} aria-hidden="true">G</span>
+                <span>{signingIn ? t.googleBusy : t.google}</span>
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+              {signInError && <p className={styles.authError} role="alert">{t.googleError}</p>}
+              <div className={styles.pathGrid}>
+                <section className={styles.pathCard} aria-labelledby="hh-space-personal">
+                  <header className={styles.pathHeading}>
+                    <Heart size={18} aria-hidden="true" />
+                    <h3 id="hh-space-personal">{t.forMe}</h3>
+                  </header>
+                  <p className={styles.pathHint}>{t.ownHint}</p>
+                  <nav className={styles.pathLinks} aria-label={t.forMe}>
+                    <Link href={"/" + locale + "/client/tests"} prefetch={false} onClick={closePanel}>
+                      <span>{t.freeTest}</span><ArrowRight size={14} aria-hidden="true" />
+                    </Link>
+                    <Link href={"/" + locale + "/academy"} prefetch={false} onClick={closePanel}>
+                      <span>{t.exploreCourses}</span><ArrowRight size={14} aria-hidden="true" />
+                    </Link>
+                    <Link href={"/" + locale + "/services/free-situation-review"} prefetch={false} onClick={closePanel}>
+                      <span>{t.freeReview}</span><ArrowRight size={14} aria-hidden="true" />
+                    </Link>
+                  </nav>
+                </section>
+                <section className={[styles.pathCard, styles.pathMaster].join(" ")} aria-labelledby="hh-space-master">
+                  <header className={styles.pathHeading}>
+                    <BriefcaseBusiness size={18} aria-hidden="true" />
+                    <h3 id="hh-space-master">{t.forMaster}</h3>
+                  </header>
+                  <p className={styles.pathHint}>{t.masterHint}</p>
+                  <ul className={styles.masterPreview}>
+                    <li>{t.becomeMaster}</li>
+                    <li>{t.publishService}</li>
+                    <li>{t.createCourse}</li>
+                  </ul>
+                  <p className={styles.masterNote}>{t.masterSteps}</p>
+                </section>
+              </div>
+              <p className={styles.helper}>{t.googleNote}</p>
             </div>
           : <div className={styles.signedIn}>
               <section className={styles.nextPanel} aria-label={t.eyebrow}>
-                <p className={styles.eyebrow}>{t.eyebrow}</p>
-                <h3>{t.next[summary.next].title}</h3>
-                <p>{t.next[summary.next].detail}</p>
-                <Link className={styles.primary} href={nextHref(summary, locale)} prefetch={false} onClick={closePanel}>
-                  {t.next[summary.next].action}<ArrowRight size={16} aria-hidden="true" />
+                <div>
+                  <p className={styles.eyebrow}>{t.eyebrow}</p>
+                  <h3>{t.next[summary.next].title}</h3>
+                  <p>{t.next[summary.next].detail}</p>
+                </div>
+                <Link className={styles.nextAction} href={nextHref(summary, locale)} prefetch={false} onClick={closePanel}>
+                  {t.next[summary.next].action}<ArrowRight size={15} aria-hidden="true" />
                 </Link>
               </section>
-              <p className={styles.groupTitle}>{t.personal}</p>
-              <nav className={styles.links} aria-label={t.personal}>
-                {actions.map(({ href, label, Icon }) =>
-                  <Link href={href} key={href} prefetch={false} onClick={closePanel}>
-                    <Icon size={18} aria-hidden="true" /><span>{label}</span><ArrowRight size={15} aria-hidden="true" />
-                  </Link>)}
-              </nav>
-              {summary.professional && <section className={styles.professional}>
-                <p className={styles.groupTitle}><BriefcaseBusiness size={16} aria-hidden="true" />{t.professional}</p>
-                <Link href={root + "/practice?panel=materials&materialTab=courses"} prefetch={false} onClick={closePanel}>
-                  {t.createCourse}<ArrowRight size={16} aria-hidden="true" />
-                </Link>
-              </section>}
+              <div className={styles.pathGrid}>
+                <section className={styles.pathCard} aria-labelledby="hh-space-personal">
+                  <header className={styles.pathHeading}>
+                    <Heart size={18} aria-hidden="true" />
+                    <h3 id="hh-space-personal">{t.forMe}</h3>
+                  </header>
+                  <p className={styles.pathHint}>{t.ownHint}</p>
+                  <nav className={styles.pathLinks} aria-label={t.forMe}>
+                    {personalActions.map(({ href, label, Icon }) =>
+                      <Link href={href} key={href} prefetch={false} onClick={closePanel}>
+                        <Icon size={16} aria-hidden="true" /><span>{label}</span>
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </Link>)}
+                  </nav>
+                </section>
+                <section className={[styles.pathCard, styles.pathMaster].join(" ")} aria-labelledby="hh-space-master">
+                  <header className={styles.pathHeading}>
+                    <BriefcaseBusiness size={18} aria-hidden="true" />
+                    <h3 id="hh-space-master">{t.forMaster}</h3>
+                  </header>
+                  <p className={styles.pathHint}>{t.masterHint}</p>
+                  {summary.professional ? <nav className={styles.pathLinks} aria-label={t.forMaster}>
+                    {masterActions.map(({ href, label, Icon }) =>
+                      <Link href={href} key={href} prefetch={false} onClick={closePanel}>
+                        <Icon size={16} aria-hidden="true" /><span>{label}</span>
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </Link>)}
+                  </nav> : <>
+                    <p className={styles.masterNote}>{t.masterSteps}</p>
+                    <Link className={styles.masterAction} href={root + "/practice"} prefetch={false} onClick={closePanel}>
+                      {t.becomeMaster}<ArrowRight size={15} aria-hidden="true" />
+                    </Link>
+                  </>}
+                </section>
+              </div>
               <Link className={styles.full} href={root} prefetch={false} onClick={closePanel}>
-                {t.full}<ArrowRight size={16} aria-hidden="true" />
+                {t.full}<ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>}
         <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.private}</p>
