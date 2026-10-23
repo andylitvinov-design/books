@@ -56,6 +56,13 @@
   box-shadow: 0 9px 20px #15364b20;
   color: #fff;
 }
+.businessCard { border-color: #9b7654; background: linear-gradient(117deg, #76543a, #39281f); }
+.businessCard .photo { background: #67452d; }
+.businessCard .eyebrow { color: #f5dcb6; }
+.businessCard .track { background: #9a816c; }
+.businessCard .track span { background: #ebbd79; }
+.businessCard .action { background: #b28b62; color: #25190f; }
+.businessCard .action:hover { background: #d4aa78; }
 .photo {
   position: relative;
   display: block;
