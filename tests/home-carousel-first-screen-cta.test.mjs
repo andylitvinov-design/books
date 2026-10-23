@@ -30,6 +30,9 @@ test("free diagnosis button opens a mini CRM request under this same banner, not
   assert.match(banner, /aria-controls=\{formId\}/);
   assert.match(banner, /hidden=\{!open\}/);
   assert.match(banner, /<CompactLeadCapture/);
+  assert.match(banner, /variant="messenger"/);
+  assert.match(banner, /data-home-diagnosis-request>[\s\S]*<CompactLeadCapture[\s\S]*<\/div>[\s\S]*<p className=\{styles\.note\}/);
+  assert.match(capture, /data-messenger-lead-capture/);
   assert.match(banner, /sourcePath=\{"\/" \+ locale \+ "\/services\/free-situation-review"\}/);
   assert.match(banner, /serviceTitle="Free drawing-based situation review"/);
   assert.match(capture, /sourcePath: sourcePath \|\| pathname/);
