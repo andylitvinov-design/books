@@ -83,3 +83,17 @@ test('About reviews stay on Holistic House with genuine local posters and intern
   for (const id of ['Dk0LBmOivQo', 'MIVLm1GUTtM', 'ttQxUHopaUM'])
     assert.ok(existsSync(new URL('../public/images/holistic-house/testimonial-posters/' + id + '.webp', import.meta.url)))
 })
+
+test('About consultation secondary action stays within Holistic House in all locales', () => {
+  const regular = source('../app/[locale]/about/page.tsx')
+  const spanish = source('../app/es/about/page.tsx')
+  const form = source('../components/personal-consultation-form.tsx')
+  const capture = source('../components/consultation-choice-capture.tsx')
+  assert.match(regular, /<PersonalConsultationForm locale=\{typedLocale\} onSiteContact \/>/)
+  assert.match(spanish, /<PersonalConsultationForm locale="es" onSiteContact \/>/)
+  assert.match(form, /onSiteContact=\{onSiteContact\}/)
+  assert.match(capture, /onSiteContact \? \(/)
+  assert.match(capture, /href=\{["]"?\/["]"? \+ locale \+ "\/contact"\}/)
+  assert.match(capture, /data-contact-channel="site"/)
+  assert.match(capture, /onSiteContact\?: boolean/)
+})
