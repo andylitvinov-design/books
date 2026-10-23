@@ -14,6 +14,7 @@ const photos = {
   allTests: "/images/holistic-house/ideas-pine-reference.webp",
   opora: "/images/holistic-house/course-start-heron.webp",
   business: "/images/holistic-house/course-focus-mountain-boy.webp",
+  myCourses: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
   review: "/images/holistic-house/andy-about.png",
   consultation: "/images/holistic-house/video-posters/services-en-v2.webp",
   constellations: "/images/holistic-house/video-posters/constellations-en-v1.webp",
@@ -48,6 +49,7 @@ const copy = {
         offers: [
           { id: "opora", title: "OPORA · 14 days", body: "Small, repeatable practices for everyday self-support.", cta: "Explore the course" },
           { id: "business", title: "Business & Career · 90 days", body: "Set goals, take action and review your progress.", cta: "Explore the programme" },
+          { id: "myCourses", title: "My Courses", body: "Keep lessons, your progress and next steps in one place.", cta: "Open My Courses" },
         ],
       },
       services: {
@@ -75,7 +77,7 @@ const copy = {
         ],
       },
     },
-    myTests: "My tests", myCourses: "My courses", reports: "My reports",
+    myTests: "My tests", myCourses: "My courses", guestCourses: "Sign in to My Courses", reports: "My reports",
     growth: "My development path",
     serviceNote: "A consultation request is not a confirmed booking.",
     masterNote: "Public listings require review. Free training does not grant professional qualification.",
@@ -99,6 +101,7 @@ const copy = {
         offers: [
           { id: "opora", title: "ОПОРА · 14 дней", body: "Короткие повторяемые практики поддержки себя.", cta: "Открыть курс" },
           { id: "business", title: "Бизнес и карьера · 90 дней", body: "Поставьте цели, действуйте и отслеживайте прогресс.", cta: "Посмотреть программу" },
+          { id: "myCourses", title: "Мои курсы", body: "Уроки, прогресс и следующий шаг в одном месте.", cta: "Открыть мои курсы" },
         ],
       },
       services: {
@@ -126,7 +129,7 @@ const copy = {
         ],
       },
     },
-    myTests: "Мои тесты", myCourses: "Мои курсы", reports: "Мои отчёты",
+    myTests: "Мои тесты", myCourses: "Мои курсы", guestCourses: "Войти в мои курсы", reports: "Мои отчёты",
     growth: "Мой путь развития",
     serviceNote: "Заявка на консультацию ещё не означает подтверждённую запись.",
     masterNote: "Публикация проходит модерацию. Бесплатное обучение не даёт профессиональной квалификации.",
@@ -150,6 +153,7 @@ const copy = {
         offers: [
           { id: "opora", title: "OPORA · 14 días", body: "Prácticas breves de apoyo personal para cada día.", cta: "Explorar el curso" },
           { id: "business", title: "Negocios y carrera · 90 días", body: "Fija objetivos y revisa tus próximos pasos.", cta: "Explorar el programa" },
+          { id: "myCourses", title: "Mis cursos", body: "Lecciones y progreso en un solo espacio personal.", cta: "Abrir mis cursos" },
         ],
       },
       services: {
@@ -177,7 +181,7 @@ const copy = {
         ],
       },
     },
-    myTests: "Mis pruebas", myCourses: "Mis cursos", reports: "Mis informes",
+    myTests: "Mis pruebas", myCourses: "Mis cursos", guestCourses: "Entrar en mis cursos", reports: "Mis informes",
     growth: "Mi desarrollo",
     serviceNote: "Solicitar una consulta no confirma una cita.",
     masterNote: "Los anuncios requieren revisión. La formación gratuita no otorga una cualificación profesional.",
@@ -203,6 +207,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
     allTests: "/" + locale + "/client/tests",
     opora: "/" + locale + "/courses/antistress",
     business: accountRoot + "/business",
+    myCourses: myCoursesHref,
     review: "/" + locale + "/services/free-situation-review",
     consultation: "/" + locale + "/services#consultation",
     constellations: "/" + locale + "/services/systemic-constellations",
@@ -223,9 +228,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
           const section = t.modules[id];
           const footer = id === "tests" && signedIn
             ? { href: accountRoot + "/tests", label: t.myTests }
-            : id === "courses" && signedIn
-              ? { href: myCoursesHref, label: t.myCourses }
-              : null;
+            : null;
           return (
             <section className={styles.section} data-home-module={id}
               aria-labelledby={"hh-home-" + id + "-title"} key={id}>
@@ -245,7 +248,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                     <span className={styles.offerBody}>
                       <strong className={styles.offerTitle}>{offer.title}</strong>
                       <span className={styles.offerDetail}>{offer.body}</span>
-                      <span className={styles.offerAction}>{offer.cta}<ArrowRight size={16} aria-hidden="true" /></span>
+                      <span className={styles.offerAction}>{offer.id === "myCourses" && !signedIn ? t.guestCourses : offer.cta}<ArrowRight size={16} aria-hidden="true" /></span>
                     </span>
                   </Link>
                 ))}
