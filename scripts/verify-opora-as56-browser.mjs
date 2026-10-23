@@ -16,13 +16,13 @@ const fixture = await buildOporaBrowserFixture()
 const evidence = { scope: 'ACTUAL_HYDRATED_AS56_PLAYER_SYNTHETIC_DAY5_REAL_CSS_NO_AUTH_NO_API',
   engine: engineName, sourceProof: fixture.sourceProof, cases: [] }
 const words = {
-  ru: { next: 'Продолжить', previous: 'Назад', help: 'Показать мягкую подсказку',
+  ru: { save: 'Сохранить мою практику', next: 'Продолжить', previous: 'Назад', help: 'Показать мягкую подсказку',
     original: 'Показать мягкую подсказку', pause: 'Пауза', neutral: 'Вернуться с нейтральной опорой',
     back: 'Вернуться', end: 'Закончить без сохранения', anchor: 'Если хочется, посмотрите на один обычный предмет вокруг.' },
-  es: { next: 'Continuar', previous: 'Atrás', help: 'Ver una pista suave',
+  es: { save: 'Guardar mi práctica', next: 'Continuar', previous: 'Atrás', help: 'Ver una pista suave',
     original: 'Ver una pista suave', pause: 'Pausa', neutral: 'Volver con una referencia neutra',
     back: 'Volver', end: 'Salir sin guardar', anchor: 'Si quieres, mira un objeto neutro a tu alrededor.' },
-  en: { next: 'Continue', previous: 'Back', help: 'Show gentle guidance',
+  en: { save: 'Save my practice', next: 'Continue', previous: 'Back', help: 'Show gentle guidance',
     original: 'Show gentle guidance', pause: 'Pause', neutral: 'Return with a neutral anchor',
     back: 'Go back', end: 'End without saving', anchor: 'If you wish, look at one ordinary object around you.' },
 }
@@ -151,6 +151,50 @@ try {
       await click(t.pause); await click(t.neutral)
       await assertNeutral()
       await click(t.pause); await click(t.end)
+      // The photographed owner complaint was the crowded recap, not only the
+      // introduction. Validate all four separate closing cards in each locale
+      // and iPhone width, without clicking Save or contacting a live account.
+      if (!priorHelp) {
+        const recapPage = await context.newPage()
+        try {
+          await recapPage.goto(origin + oporaFixturePath(locale))
+          let found = false
+          for (let index = 0; index < 24; index++) {
+            const active = await recapPage.locator('[data-opora-current-screen]')
+              .getAttribute('data-opora-current-screen')
+            if (active === 'recap') { found = true; break }
+            await recapPage.getByRole('button', { name: t.next, exact: true }).click()
+          }
+          assert.ok(found, locale + '/' + width + ': recap must be reachable')
+          for (const moment of ['recap', 'recapPractice', 'recapNext', 'recapFeedback']) {
+            await expect(recapPage.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
+            const size = await recapPage.evaluate(() => {
+              const panel = document.querySelector('[data-opora-current-screen]')
+              const main = panel?.closest('main')
+              return { panelClient:panel.clientHeight, panelScroll:panel.scrollHeight,
+                mainClient:main.clientHeight, mainScroll:main.scrollHeight,
+                screenWidth:document.documentElement.scrollWidth }
+            })
+            assert.ok(size.panelScroll <= size.panelClient + 2,
+              locale + '/' + width + '/' + moment + ': recap panel must not scroll')
+            assert.ok(size.mainScroll <= size.mainClient + 2,
+              locale + '/' + width + '/' + moment + ': recap stage must fit screen')
+            assert.ok(size.screenWidth <= width + 1,
+              locale + '/' + width + '/' + moment + ': recap must not overflow horizontally')
+            if (moment !== 'recapFeedback') {
+              assert.equal(await recapPage.locator('[data-opora-current-screen] .summaryItem').count(),1,
+                'Each takeaway has exactly one visible idea')
+              await recapPage.screenshot({ path: `${output}/${locale}-${width}-${moment}.png` })
+              await recapPage.getByRole('button', { name: t.next, exact: true }).click()
+            } else {
+              await expect(recapPage.getByRole('button',{ name:t.save, exact:true })).toBeVisible()
+              await recapPage.screenshot({ path: `${output}/${locale}-${width}-recapFeedback.png` })
+            }
+          }
+          const recapSaves = await recapPage.evaluate(() => window.__oporaBrowser?.saves)
+          assert.equal(recapSaves,0,'Viewing recap cannot write a private practice')
+        } finally { await recapPage.close() }
+      }
       const state = await page.evaluate(() => ({ ...window.__oporaBrowser,
         finalData: JSON.stringify(window.__oporaBrowserData) }))
       assert.equal(state.saves, 0, 'No callback may record an accidental save')
