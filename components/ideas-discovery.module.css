@@ -449,8 +449,8 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   position: absolute;
   inset: 0;
   z-index: -2;
-  background: url("/images/holistic-house/ideas-pine-reference.webp") right center / cover no-repeat;
-  filter: saturate(1.48) contrast(1.11) brightness(1.025);
+  background: url("/images/holistic-house/ideas-pine-sharp.avif") right center / cover no-repeat;
+  filter: saturate(1.08) contrast(1.035);
 }
 .hero::after {
   content: "";
@@ -556,8 +556,29 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 .testButton svg:first-child { margin-right: auto; }
 .testButtonText { display:flex; flex-direction:column; gap:2px; flex:1; }
 .testButtonKicker { font-size:12px; font-weight:550; line-height:1.2; }
-.testButtonText strong { font-size:16px; line-height:1.2; }
+.testButtonText strong { font-size:clamp(13px, 3.5vw, 16px); line-height:1.25; overflow-wrap:break-word; }
 .testButton:hover { background: #fffdf9; border-color: #98755b; }
+.freeTestLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 3px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 252, 247, .68);
+  color: #634c3b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.freeTestLink:hover { background: rgba(255, 252, 247, .92); }
 .testPicker {
   width: min(100%, 700px);
   padding: 13px;
@@ -720,11 +741,11 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 @media (max-width:760px) {
   .root { padding:7px; border-radius:20px; }
   .hero { min-height: 430px; padding: clamp(13px, 4vw, 19px); gap: 20px; border-radius: 16px; }
-  .hero::before { background-position: 66% center; }
+  .hero::before { background-position: 67% center; }
   .hero::after {
     background:
-      linear-gradient(0deg, rgba(255,250,241,.94) 0%, rgba(255,250,241,.17) 66%, rgba(255,250,241,.10) 100%),
-      linear-gradient(90deg, rgba(255,250,241,.88) 0%, rgba(255,250,241,.59) 44%, rgba(255,250,241,.08) 85%);
+      linear-gradient(0deg, rgba(255,250,241,.90) 0%, rgba(255,250,241,.10) 53%, rgba(255,250,241,0) 80%),
+      linear-gradient(90deg, rgba(255,250,241,.91) 0%, rgba(255,250,241,.49) 46%, rgba(255,250,241,.04) 83%);
   }
   .heading { min-height:0; padding:0; border-radius:0; background:none; }
   .eyebrow { font-size:10px; }
@@ -1027,7 +1048,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .heroActions { grid-template-columns: minmax(0,1fr); gap:8px; }
   .submit { min-height:48px; font-size:14px; }
   .testButton { min-height:56px; padding:8px 13px; font-size:14px; }
-  .testButtonText strong { font-size:15px; }
+  .testButtonText strong { font-size:clamp(13px, 3.4vw, 15px); }
   .testPicker { padding:11px; }
   .testPickerItem { min-height:46px; }
 }
