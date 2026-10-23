@@ -7,7 +7,9 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 test("approved 2026-10-09 home design keeps all three service directions and original routes", () => {
   const home = read("components/holistic-house-home.tsx");
   const journey = read("components/personal-work-journey.tsx");
-  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  const more = read("components/home-more-disclosure.tsx");
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
+  assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(home, /data-home-design="approved-v2"/);
   const solutions = read("components/services-solutions.tsx");
   assert.match(solutions, /data-core-service-id=\{offer.id\}/);
@@ -31,7 +33,7 @@ test("approved 2026-10-09 home design keeps all three service directions and ori
   assert.match(home, /event="self_check_start"/);
   assert.match(home, /event="service_view"/);
   const explore = read("components/home-explore-sections.tsx");
-  assert.match(home, /<HomeExploreSections locale=\{locale\} \/>/);
+  assert.match(more, /<HomeExploreSections locale=\{locale\} \/>/);
   assert.match(explore, /academyAction: "Browse courses"/);
   assert.match(explore, /cabinetAction: "Open my Cabinet"/);
   assert.match(explore, /libraryAction: "Browse the Library"/);
@@ -114,8 +116,9 @@ test("home restores four approved image-left service cards and their titles", ()
   assert.match(cards, /visibleOffers.map/);
   assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
   assert.doesNotMatch(home, /data-home-extra-paths|<details className="service-home-more"/);
-  assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf("<HomepageContactCta locale={locale} />"), "Photo-left services must be visible before bottom capture");
-  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  assert.ok(home.indexOf("<HomeMoreDisclosure locale={locale}>") < home.indexOf("<HomepageContactCta locale={locale} />"), "Expandable services link must precede bottom capture");
+  const more = read("components/home-more-disclosure.tsx");
+  assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
 });
