@@ -106,13 +106,17 @@ test('guest Google entry uses the existing rate-limited PKCE Cabinet continuatio
   assert.match(panel, /status === "guest"/);
   assert.match(panel, /onClick=\{\(\) => void startGoogleSignIn\(\)\}/);
   assert.match(panel, /appFetch\("auth\/start",/);
-  assert.match(panel, /continueTo: "cabinet"/);
+  assert.match(panel, /continueTo: destination/);
+  assert.match(panel, /"cabinet" \| "my-practice" = "cabinet"/);
+  assert.match(panel, /startGoogleSignIn\("my-practice"\)/);
   assert.match(panel, /isNativeHolisticHouse\(\)/);
   assert.match(panel, /Browser\.open\(\{ url: result\.redirectUrl \}\)/);
   assert.match(panel, /window\.location\.assign\(result\.redirectUrl\)/);
   assert.match(panel, /role="alert"/);
   assert.match(route, /signInWithOAuth\(\{/);
   assert.match(route, /continueTo === 'cabinet'/);
+  assert.match(route, /continueTo === 'my-practice'/);
+  assert.match(route, /\/app\/practice/);
   assert.match(route, /op: 'oauth-start'/);
   assert.doesNotMatch(panel, /localStorage|sessionStorage|sendBeacon|autoSubmit/);
 });
