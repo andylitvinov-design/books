@@ -73,3 +73,6 @@
  .courseSheet{height:calc(100dvh - 55px);max-height:calc(100dvh - 55px)}
  .courseScroll{padding-top:9px;padding-bottom:9px}
 }
+
+/* Visible, uncommitted draft words from the device recognition engine. */
+.voiceInterim{font-style:italic;background:#e9f6f3;color:#205d62;padding:6px 9px;border-radius:9px;overflow-wrap:anywhere}
