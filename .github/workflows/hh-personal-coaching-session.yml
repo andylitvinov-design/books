@@ -1,0 +1,54 @@
+name: HH Personal Coaching Session
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - '.github/workflows/hh-personal-coaching-session.yml'
+      - 'lib/personal-coaching/**'
+      - 'lib/app/personal-coaching.js'
+      - 'lib/app/business-coaching.js'
+      - 'lib/business-coaching/program.js'
+      - 'components/app/personal-coaching*'
+      - 'components/app/business-coaching.jsx'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/my-courses-dashboard.jsx'
+      - 'components/app/development-program.jsx'
+      - 'components/direction-offers.tsx'
+      - 'components/academy-hub.tsx'
+      - 'app/api/app/**'
+      - 'app/[locale]/app/**'
+      - 'tests/personal-coaching-session.test.mjs'
+      - 'tests/business-coaching-90-days.test.mjs'
+      - 'tests/academy-discovery-hero.test.mjs'
+      - 'supabase/migrations/*personal_coaching*'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: personal-coaching-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify private GROW model, old programme pause and course discovery
+        run: |
+          node --check lib/personal-coaching/questions.js
+          node --check lib/app/personal-coaching.js
+          node --test tests/personal-coaching-session.test.mjs tests/business-coaching-90-days.test.mjs tests/academy-discovery-hero.test.mjs tests/reports-development-program.test.mjs
+      - name: Scoped eslint
+        run: npx --no-install eslint components/app/personal-coaching.jsx components/app/app-workspace.jsx components/app/business-coaching.jsx components/app/my-courses-dashboard.jsx components/app/development-program.jsx components/direction-offers.tsx components/academy-hub.tsx lib/personal-coaching/questions.js lib/app/personal-coaching.js lib/app/business-coaching.js app/api/app/\[...path\]/route.js
+      - name: TypeScript noEmit
+        run: npx --no-install tsc --noEmit
+      - name: Build production Next.js
+        run: npm run build

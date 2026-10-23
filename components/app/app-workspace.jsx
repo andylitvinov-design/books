@@ -31,6 +31,7 @@ import { TestRatingCard } from '@/components/app/test-rating-card'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
+import { PortraitTestQuickActions } from '@/components/app/portrait-test-quick-actions'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
 import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
@@ -80,6 +81,7 @@ const DevelopmentProgram = dynamic(() => import('@/components/app/development-pr
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
+const PersonalCoaching = dynamic(() => import('@/components/app/personal-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
 const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
 const RemoteGoalPhoto = dynamic(() => import('@/components/app/remote-goal-photo'))
@@ -262,6 +264,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
+        ...(page === 'coaching' ? { continueTo: 'coaching' } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
       })
@@ -569,7 +572,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
-    (id === 'course' && page === 'business') ||
+    (id === 'course' && ['business','coaching'].includes(page)) ||
     (id === 'portfolio' && ['reports', 'history', 'monitoring', 'results'].includes(page))
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
@@ -648,6 +651,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
+          {page === 'coaching' && <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} accountId={data.account.id} key={data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
@@ -2234,35 +2238,7 @@ function PortfolioPage({ data, locale }) {
   }, [])
   useEffect(() => { setRetakeBusy(false); setRetakeError('') }, [accountId, activeTab, locale])
   useEffect(() => { setActiveTab(requestedTab) }, [requestedTab])
-  const [recommendationScrollRequest, setRecommendationScrollRequest] = useState(0)
-  const [analysisScrollRequest, setAnalysisScrollRequest] = useState(0)
-  useEffect(() => {
-    if (!recommendationScrollRequest || activeTab !== 'values') return
-    const frame = window.requestAnimationFrame(() => {
-      const target = document.getElementById('hh-portrait-recommendations')
-      if (!target) return
-      target.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: 'start',
-      })
-      target.focus({ preventScroll: true })
-    })
-    return () => window.cancelAnimationFrame(frame)
-  }, [recommendationScrollRequest, activeTab])
-
-  useEffect(() => {
-    if (!analysisScrollRequest) return
-    const frame = window.requestAnimationFrame(() => {
-      const target = document.getElementById('hh-portrait-analyses')
-      if (!target) return
-      target.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: 'start',
-      })
-      target.focus({ preventScroll: true })
-    })
-    return () => window.cancelAnimationFrame(frame)
-  }, [analysisScrollRequest])
+  const [portraitTab, setPortraitTab] = useState('tests')
   const retakeDefinitions = useMemo(() => {
     const definitions = new Map()
     for (const result of data.results || []) {
@@ -2353,34 +2329,23 @@ function PortfolioPage({ data, locale }) {
         </summary>
         <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
           portrait={buildPsychPortrait(data.results || [])}
-          portraitActions={<nav className="hh-portrait-quick-actions"
-            aria-label={ru ? 'Действия с психологическим портретом' : 'Psychological portrait actions'}
-            data-testid="portrait-quick-actions">
-            <Link href={`/${locale}/app/tests?profile=missing`} prefetch={false}
-              className="hh-portrait-quick-primary" data-testid="portrait-completion-action">
-              <ClipboardList size={18} aria-hidden="true" />
-              {ru ? 'Тесты' : locale === 'es' ? 'Tests' : 'Tests'}
-            </Link>
-            <button type="button" className="hh-portrait-quick-secondary hh-portrait-quick-analyses"
-              data-testid="portrait-analyses-action"
-              onClick={() => {
-                setAnalysisScrollRequest(current => current + 1)
-              }}>
-              <BarChart3 size={18} aria-hidden="true" />
-              {ru ? 'Анализы' : locale === 'es' ? 'Análisis' : 'Analyses'}
-            </button>
-            <button type="button" className="hh-portrait-quick-secondary"
-              data-testid="portrait-recommendations-action"
-              onClick={() => {
-                chooseView('values')
-                setRecommendationScrollRequest(current => current + 1)
-              }}>
-              <Sparkles size={18} aria-hidden="true" />
-              {ru ? 'Рекомендации' : 'Recommendations'}
-            </button>
-          </nav>} />
+          portraitTab={portraitTab}
+          portraitActions={({ selectedSector, portrait }) => <>
+            <PortraitTestQuickActions locale={locale} sector={selectedSector} portrait={portrait}
+              entriesByKey={entriesByKey} results={data.results || []}
+              runs={data.runs || []} accountId={accountId}
+              activeTestPlan={data.activeTestPlan}
+              activeTab={portraitTab} onTabChange={setPortraitTab} />
+            <div id="hh-portrait-panel-analyses" role="tabpanel" className="hh-portrait-inline-panel"
+              aria-labelledby="hh-portrait-tab-analyses" hidden={portraitTab !== 'analyses'}>
+              {portraitTab === 'analyses' && <PortraitAnalyses results={data.results || []} locale={locale} />}
+            </div>
+            <div id="hh-portrait-panel-recommendations" role="tabpanel" className="hh-portrait-inline-panel"
+              aria-labelledby="hh-portrait-tab-recommendations" hidden={portraitTab !== 'recommendations'}>
+              {portraitTab === 'recommendations' && <PortraitRecommendations results={data.results || []} locale={locale} />}
+            </div>
+          </>} />
       </details>
-      <PortraitAnalyses results={data.results || []} locale={locale} />
       {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
       <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
       <nav className="hh-insights-view-tabs" role="tablist"
@@ -2542,7 +2507,6 @@ function PortfolioPage({ data, locale }) {
       )}
 
       {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
-      <PortraitRecommendations results={data.results || []} locale={locale} />
       {allGroups.length > 0 && (
         <details className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>

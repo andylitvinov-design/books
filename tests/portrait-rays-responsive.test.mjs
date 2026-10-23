@@ -333,7 +333,7 @@ test('Reports keeps the three quick actions right under the radar',()=>{
   const src=read('components/app/test-explorer-visual.jsx')
   assert.ok(src.indexOf('className={styles.portraitRadar}')<src.indexOf('{portrait && !compact && portraitActions}'))
   assert.ok(src.indexOf('{portrait && !compact && portraitActions}')<src.indexOf('className={styles.portraitControls}'))
-  assert.match(src,/\{portrait && !compact && !allSectors && <section className=\{styles.portraitControls\}/)
+  assert.match(src,/\{portrait && !compact && portraitTab === 'tests' && !allSectors && <section className=\{styles.portraitControls\}/)
   assert.match(src,/data-portrait-sector=\{sector.key\}/)
   assert.match(src,/data-portrait-sector-all/)
 })

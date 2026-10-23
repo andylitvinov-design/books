@@ -4,10 +4,16 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/test-explorer-visual.jsx'
+      - 'components/app/app-workspace.jsx'
+      - 'components/app/portrait-test-quick-actions.jsx'
+      - 'components/app/portrait-test-quick-actions.module.css'
+      - 'lib/profile/portrait-test-suggestions.js'
+      - 'tests/portrait-sector-take-test.test.mjs'
       - 'components/app/test-explorer.module.css'
       - 'lib/assessments/portrait-ray-labels.js'
       - 'lib/assessments/portrait-sectors.js'
       - 'scripts/verify-portrait-mobile.mjs'
+      - 'tests/portrait-report-actions.test.mjs'
       - '.github/workflows/hh-portrait-mobile-browser.yml'
 permissions:
   contents: read

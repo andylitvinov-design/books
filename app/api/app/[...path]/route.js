@@ -7,6 +7,8 @@ import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/developmen
 import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
+import { readPersonalCoaching, savePersonalCoaching } from '@/lib/app/personal-coaching'
+import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
 import {createNativePushRepository} from '@/lib/app/native-push-repository'
@@ -86,7 +88,7 @@ async function handle(request, { params }) {
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
       onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi'])
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && body.continueTo === 'enquiry' ? 'es' : 'en'
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -96,7 +98,7 @@ async function handle(request, { params }) {
         returnPath = body.returnPath ?? null,
         profi = body.profi ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'enquiry'].includes(continueTo) &&
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry'].includes(continueTo) &&
         !['cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
@@ -130,7 +132,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && url.searchParams.get('continue') === 'enquiry' ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -147,7 +149,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner','enquiry'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','coaching','cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner','enquiry','coaching-intake'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -178,6 +180,10 @@ async function handle(request, { params }) {
               ? `${origin}/${locale}/app/course${program ? `?program=${encodeURIComponent(program)}` : ''}`
               : continueTo === 'business'
                 ? `${origin}/${locale}/app/business`
+              : continueTo === 'coaching'
+                ? `${origin}/${locale}/app/coaching`
+              : continueTo === 'coaching-intake'
+                ? `${origin}/${locale}/coaching`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
@@ -583,10 +589,26 @@ async function handle(request, { params }) {
       if (method === 'POST') return json(await saveDevelopmentGoals(config, actor, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
     }
+    if (joined === 'personal-coaching') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method === 'GET') return json(await readPersonalCoaching(config, actor))
+      if (method === 'POST') return json(await savePersonalCoaching(config, actor, await readBody(request, 8192)))
+      throw new AppError('NOT_FOUND', 404)
+    }
     if (joined === 'business-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
       if (method === 'GET') return json(await readBusinessCoaching(config, actor))
       if (method === 'POST') return json(await saveBusinessCoaching(config, actor, await readBody(request, 32768)))
+      throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'coaching-intake') {
+      // Never create CRM contacts, messages, bookings or practitioner access by saving a draft.
+      if (method === 'GET') return json(await readCoachingIntake(config, actor))
+      if (method === 'POST') {
+        if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+        await consumeRate(config, { op: 'coaching-intake-save', actor: actor.id }, 20, 3600)
+        return json(await saveCoachingIntake(config, actor, await readBody(request, 40000)))
+      }
       throw new AppError('NOT_FOUND', 404)
     }
     if (joined === 'bootstrap' && method === 'GET') {
@@ -727,6 +749,7 @@ async function handle(request, { params }) {
       exported.developmentGoals = await readDevelopmentGoals(config, actor)
       exported.labReports = (await listLabReports(config, actor)).reports
       exported.businessCoaching = await readBusinessCoaching(config, actor)
+      exported.personalCoaching = await readPersonalCoaching(config, actor)
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
