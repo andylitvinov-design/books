@@ -17,7 +17,7 @@ export const ENERGYWORK_PREVIOUS_VERSION = '2026-10-18.p1'
 export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
-  'welcome-video','welcome-01','welcome-02',
+  'welcome-01','welcome-video','welcome-02',
   'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
   'presence-01','presence-04','tan-done',
   'intention-04',
@@ -114,7 +114,7 @@ function withClosingPractices(ids, practiceIds, finaleId) {
 }
 export function energyworkSequence(_legacyPath = null) {
   return [
-    'welcome-video','welcome-01','welcome-02',
+    'welcome-01','welcome-video','welcome-02',
     ...withClosingPractices(
       ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
       ['flight-03'], 'flight-done'),
@@ -145,7 +145,7 @@ export function energyworkAdvanceAlreadyStored(currentId, nextId, savedId, hasUn
   return current >= 0 && next === current + 1 && saved >= next
 }
 // Derive lesson lengths from the canonical sequence, not hard-coded totals.
-// end is exclusive; an opening video and two welcome slides precede lesson 1.
+// end is exclusive; the title page, teacher introduction and experience choice precede lesson 1.
 export function energyworkLessonRanges(sequence = energyworkSequence()) {
   const starts = ENERGYWORK_LESSON_STARTS.map(id => sequence.indexOf(id))
   if (starts.some((value, index) => value < 0 || (index > 0 && value <= starts[index - 1])))

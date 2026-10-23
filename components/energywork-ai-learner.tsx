@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, MessageCircle, ExternalLink, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-share";
@@ -71,18 +71,19 @@ const programmeSystemDescriptions: Record<EnergyworkLocale, Record<EnergyworkPat
 const copy = {
   en: {
     shortTitle: "Reiki Practitioner",
+    academyMark: "Holistic House Academy",
     journey: "Five Reiki lessons",
     lesson: "Lesson",
     completedLabel: "completed",
     startFree: "Start free program",
     benefits: "What to expect from your learning",
-    shortLessons: "Short lessons",
+    shortLessons: "5 short lessons",
     shortLessonsDetail: "Clear guidance",
-    practicalTasks: "Practical tasks",
+    practicalTasks: "Guided meditations",
     practicalTasksDetail: "Learn at your pace",
-    privateProgress: "Private progress",
+    privateProgress: "At your own pace",
     privateProgressDetail: "Save by choice",
-    eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
+    eyebrow: "FREE COURSE · YOUR REIKI JOURNEY",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Discover your Reiki journey",
@@ -127,9 +128,10 @@ const copy = {
     value: "Your choice",
     audio: "Original English audio",
     unavailable: "This recording is not available. You can continue using the written teaching.",
-    welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
+    welcomeOffer: "5 days · 3 Reiki traditions",
     welcomeRequirement: "Study all five lessons in order.",
     welcomeGiftTitle: "Free Level 1 Reiki initiation with Andrey — in chat",
+    welcomeGiftShort: "After the course: request a free Level 1 initiation",
     welcomeGiftText: "After completing all five lessons, request one free Level 1 initiation guided by Andrey in chat. You can also request a personal 30- or 60-minute session. The course itself does not confer initiation.",
     welcomeTeacher: "Want individual guidance? Ask about a personal session with Andrey alongside your free chat initiation.",
     pathway: "All lessons are part of your course",
@@ -224,18 +226,19 @@ const copy = {
   },
   ru: {
     shortTitle: "Практик Рейки",
+    academyMark: "Академия Holistic House",
     journey: "Пять уроков Рейки",
     lesson: "Урок",
     completedLabel: "пройдено",
     startFree: "Начать бесплатный курс",
     benefits: "Что ждёт вас на курсе",
-    shortLessons: "Короткие уроки",
+    shortLessons: "5 коротких уроков",
     shortLessonsDetail: "Понятные шаги",
-    practicalTasks: "Практические задания",
+    practicalTasks: "Медитации с сопровождением",
     practicalTasksDetail: "В своём темпе",
-    privateProgress: "Личный прогресс",
+    privateProgress: "В своём темпе",
     privateProgressDetail: "По вашему выбору",
-    eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
+    eyebrow: "БЕСПЛАТНЫЙ КУРС · ВАШ ПУТЬ В РЕЙКИ",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Откройте свой путь в Рейки",
@@ -280,9 +283,10 @@ const copy = {
     value: "Ваш выбор",
     audio: "Оригинальное видео на английском",
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
-    welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
+    welcomeOffer: "5 дней · 3 системы Рейки",
     welcomeRequirement: "Проходите все пять уроков по очереди.",
     welcomeGiftTitle: "Бесплатная инициация I ступени с Андреем в чате",
+    welcomeGiftShort: "После курса — заявка на бесплатную инициацию I ступени",
     welcomeGiftText: "После пяти уроков можно запросить одну бесплатную инициацию I ступени с Андреем в чате. Дополнительно можно выбрать личную сессию на 30 или 60 минут. Сам курс не является инициацией.",
     welcomeTeacher: "Хотите индивидуального внимания? Обсудите с Андреем личную сессию в дополнение к бесплатному чату.",
     pathway: "Все уроки входят в одну программу",
@@ -1349,14 +1353,14 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
 
   return (
-    <main ref={pageRef} className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-first-lesson-gate={slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? "true" : undefined} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main ref={pageRef} className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-cover={slide.id === "welcome-01" ? "true" : undefined} data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-first-lesson-gate={slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? "true" : undefined} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>
             <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
               <ArrowLeft size={19} aria-hidden="true" /><span>{t.backCourse}</span>
             </Link>
-            <span className={styles.courseMark}><Sparkles size={17} aria-hidden="true" />{t.shortTitle}</span>
+            <span className={styles.courseMark}><Sparkles size={17} aria-hidden="true" />{slide.id === "welcome-01" ? t.academyMark : t.shortTitle}</span>
             <span className={styles.phaseLabel}>{energyworkPhases[slide.phase][locale]}</span>
           </header>
         ) : null}
@@ -1428,28 +1432,25 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               ) : null}
               {slide.kind === "welcome" ? (
                 <div className={styles.welcomeReward} aria-label={t.welcomeOffer}>
-                  <p className={styles.welcomeRewardTitle}><Sparkles size={17} aria-hidden="true" />{t.welcomeOffer}</p>
-                  <ul className={styles.welcomeSystems}>
-                    {energyworkPathChoices.map((choice) => <li key={choice.id}>{choice.title[locale]}</li>)}
-                  </ul>
-                  <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
-                  <div className={styles.welcomeGift} data-reiki-initiation-gift>
-                    <Award size={22} aria-hidden="true" />
-                    <div>
+                  <p className={styles.welcomeRewardTitle}>
+                    <Sparkles size={16} aria-hidden="true" />{t.welcomeOffer}
+                  </p>
+                  <div className={styles.coverFacts} aria-label={t.benefits}>
+                    <span><Check size={14} aria-hidden="true" />{t.shortLessons}</span>
+                    <span><Check size={14} aria-hidden="true" />{t.practicalTasks}</span>
+                    <span><Check size={14} aria-hidden="true" />{t.privateProgress}</span>
+                  </div>
+                  <details className={styles.welcomeGift} data-reiki-initiation-gift>
+                    <summary>
+                      <Award size={19} aria-hidden="true" />
+                      <span>{t.welcomeGiftShort}</span>
+                      <ChevronDown size={17} aria-hidden="true" />
+                    </summary>
+                    <div className={styles.welcomeGiftExpanded}>
                       <strong>{t.welcomeGiftTitle}</strong>
                       <p>{t.welcomeGiftText}</p>
                     </div>
-                  </div>
-                </div>
-              ) : null}
-              {slide.kind === "welcome" ? (
-                <div className={styles.benefits} aria-label={t.benefits}>
-                  <div><span className={styles.benefitIcon}><Leaf size={19} aria-hidden="true" /></span>
-                    <strong>{t.shortLessons}</strong><small>{t.shortLessonsDetail}</small></div>
-                  <div><span className={styles.benefitIcon}><Heart size={19} aria-hidden="true" /></span>
-                    <strong>{t.practicalTasks}</strong><small>{t.practicalTasksDetail}</small></div>
-                  <div><span className={styles.benefitIcon}><BarChart3 size={19} aria-hidden="true" /></span>
-                    <strong>{t.privateProgress}</strong><small>{t.privateProgressDetail}</small></div>
+                  </details>
                 </div>
               ) : null}
               {slide.kind === "milestone" ? (
