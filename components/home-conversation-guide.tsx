@@ -9,6 +9,7 @@ import {
   homeGuideFollowup,
   homeGuideOpening,
   homeGuideConversationCue,
+  homeGuideFreeTextStep,
   homeGuideQuickStarts,
   chooseHomeGuideOffer,
   matchHomeGuideReply,
@@ -543,6 +544,17 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     if (cue && context) {
       appendExchange(question, cue.response[context.lang]);
       if (cue.kind === "alternatives") setRecommendations([]);
+      setDraft("");
+      setVoiceError(null);
+      return;
+    }
+    const freeStep = context && safety.topic === context.topic
+      && safety.subtopic === context.subtopic && !recommendations.length
+      ? homeGuideFreeTextStep(question, context, safety.lang) : null;
+    if (freeStep) {
+      appendExchange(question, freeStep.response?.[safety.lang] ?? copy[safety.lang].followup);
+      setContext(freeStep.context);
+      setRecommendations(freeStep.offers);
       setDraft("");
       setVoiceError(null);
       return;
