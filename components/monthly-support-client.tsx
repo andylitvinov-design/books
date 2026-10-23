@@ -37,6 +37,8 @@ const translations={
 
 export function MonthlySupportClient({locale}:{locale:PublicLocale}) {
   const t=translations[locale];
+  const formatNames={online_call:t.online_call,remote_no_call:t.remote_no_call,
+    toronto_in_person:t.toronto_in_person};
   const [programmes,setProgrammes]=useState<Programme[]|null>(null);
   const [unauthorized,setUnauthorized]=useState(false);
   const [error,setError]=useState(false);
@@ -62,7 +64,7 @@ export function MonthlySupportClient({locale}:{locale:PublicLocale}) {
         programmes===null ? <p role="status">{t.loading}</p> : programmes.length===0 ?
         <div className={styles.notice}><p>{t.empty}</p><Link href={"/"+locale+"/services/personal-support"}>{t.browse}</Link></div> :
         programmes.map(program=><section key={program.id} className={styles.card}>
-          <div className={styles.header}><div><span>{t.paid}</span><h2>{(t as any)[program.format]||program.format}</h2></div>
+          <div className={styles.header}><div><span>{t.paid}</span><h2>{formatNames[program.format as keyof typeof formatNames]||program.format}</h2></div>
             <strong>{program.phase==="expired"?t.expired:t.active}</strong></div>
           <p className={styles.period}><CalendarDays size={16}/>{date(program.startsAt)} – {date(program.endsAt)}</p>
           <div className={styles.stats}>
