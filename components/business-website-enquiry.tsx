@@ -226,6 +226,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
           <CheckCircle2 size={24} aria-hidden="true" />
           <div><strong>{t.success}</strong><p>{e.savedNext}</p></div>
         </div>
+        {format === "free" && <p className={styles.freeNext}>{t.next}</p>}
         {format === "free" && <Link className={styles.nextAction}
           href={"/"+locale+"/services/free-situation-review?topic=business"}>
           {t.nextAction}<ArrowRight size={17} aria-hidden="true" />
@@ -247,7 +248,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
         <p className={styles.question}>{e.choice}</p>
         <div className={styles.options} role="group" aria-label={t.format}>
           {formats.map(key => <button key={key} type="button"
-            className={styles.option} data-business-field="format"
+            className={styles.option} data-business-field="format" data-business-option={key}
             aria-pressed={format===key}
             onClick={() => { setFormat(key); edit(); }}>
             <span className={styles.optionImage}>
