@@ -86,12 +86,12 @@ test("Full original Tantra Reiki testimonials survive without excerpt truncation
 });
 
 test("Long reviews scroll inside a labelled, focusable region on mobile", () => {
-  assert.match(learner, /data-review-fulltext role="region" tabIndex=\\{0\\} aria-label=\\{t\\.voicesFullText\\}/);
+  assert.match(learner, /data-review-fulltext role="region" tabIndex=\{0\} aria-label=\{t\.voicesFullText\}/);
   const fullReview = css.slice(css.indexOf("/* REIKI FULL TESTIMONIALS V1"));
-  assert.match(fullReview, /\\.voiceQuote p \\{\\s*flex: 1 1 auto;[\\s\\S]*?max-height: none;/);
+  assert.match(fullReview, /\.voiceQuote p \{\s*flex: 1 1 auto;[\s\S]*?max-height: none;/);
   assert.match(fullReview, /overflow-y: auto;/);
   assert.match(fullReview, /-webkit-overflow-scrolling: touch;/);
   assert.match(fullReview, /white-space: pre-line;/);
-  assert.match(fullReview, /\\.voiceQuote p::-webkit-scrollbar/);
-  assert.match(browser, /const first = await carousel\\.locator\\("blockquote p"\\)\\.innerText\\(\\)/);
+  assert.match(fullReview, /\.voiceQuote p::-webkit-scrollbar/);
+  assert.match(browser, /const first = await carousel\.locator\("blockquote p"\)\.innerText\(\)/);
 });
