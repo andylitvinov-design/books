@@ -520,7 +520,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         }:{}),
         opora54:safe,visitedSlideKeys:[...scenes],
       })
-      if(response){setSaved(true);setStep(displayScenes.length);operation.current=null}
+      if(response){setSaved(true);setStep(flowScenes.length);operation.current=null}
       else setError(t.noSave)
     }catch{setError(t.noSave)}
     finally{setSaving(false)}
