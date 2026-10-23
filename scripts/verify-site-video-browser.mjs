@@ -164,7 +164,6 @@ try {
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
-      ['/ru/services/dao-health-profile', 'overview', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
@@ -183,7 +182,13 @@ try {
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
-    pass('Ten service routes EN/RU/ES have real click-to-play video iframes and original watch links')
+    // Wu Xing is now a focused free entry and consented enquiry, not a
+    // separate automatic method-video promotion. Preserve the approved flow.
+    await navigate('/ru/services/dao-health-profile')
+    await expect(page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]')).toHaveCount(1)
+    assert.equal(await page.locator('[data-service-video="overview"]').count(), 0,
+      'The separate Dao free start must not imply a video consultation')
+    pass('Nine video service routes and the separate Dao free entry preserve exact approved formats')
   }
 
   await navigate('/en/about')
