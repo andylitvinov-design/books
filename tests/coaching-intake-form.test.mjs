@@ -34,7 +34,7 @@ test('author coaching model: pinned identity, valid multilingual groups, no fabr
     assert.ok(Number.isInteger(field.max) && field.max >= 600 && field.max <= 1600, field.id)
     for (const locale of ['en', 'ru', 'es']) {
       assert.ok(field.label[locale]?.trim().length >= 18, field.id + ' ' + locale)
-      assert.equal((field.label[locale].match(/\\?/g) || []).length, 1, field.id + ' ' + locale + ' must be ONE question')
+      assert.equal((field.label[locale].match(/\?/g) || []).length, 1, field.id + ' ' + locale + ' must be ONE question')
       assert.ok(field.label[locale].endsWith('?'), field.id + ' ' + locale + ' must end in a question mark')
     }
   }
