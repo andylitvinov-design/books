@@ -222,6 +222,22 @@ async function runEngine(name, engine) {
               "Dao form cannot submit without an opt-in");
             assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
               "Dao uses approved first-party contact capture, not a second messenger funnel");
+            // The network request is intercepted above; synthetic consent
+            // validates the CRM handoff without touching a real lead/account.
+            const previous = submissions.length;
+            const submit = daoForm.locator('button[type="submit"]');
+            await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
+            assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
+            await consent.check();
+            await submit.click();
+            await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
+            assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
+            const enquiry = submissions.at(-1);
+            assert.equal(enquiry.locale,locale);
+            assert.equal(enquiry.contactConsent,true);
+            assert.equal(enquiry.contact.email,"qa-browser@example.test");
+            assert.equal(enquiry.sourcePath,"/"+locale+"/services/dao-health-profile");
+            assert.ok(/^[a-f0-9-]{36}$/i.test(enquiry.operationId));
           }
           if (name === "chromium" && width === 390 && locale === "en") {
             await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});
