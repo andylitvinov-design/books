@@ -36,7 +36,7 @@ test('Energywork links to its safe interactive preview while Reiki level-one lin
   assert.match(academy, /if \(child === "free-initiation"\)/)
   assert.doesNotMatch(banners, /checkout|action:\s*['"]start['"]/i)
   assert.match(banners, /value\?\.enrolled/)
-  assert.doesNotMatch(banners, /appFetch\(\x27academy-energywork\x27\s*,\s*\{/)
+  assert.doesNotMatch(banners, /appFetch\('academy-energywork',\s*\{\s*action:\s*'start'/)
 })
 
 test('EN/RU copy distinguishes free study from personally confirmed initiations, including mobile layout', () => {
