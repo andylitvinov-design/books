@@ -88,6 +88,23 @@ const directionCopy = {
 } as const
 
 
+// Short, real client requests. IDs and focus keys continue to come from the existing
+// topic journey registry; the full editorial title remains the accessible label.
+const quickTopicLabels: Record<string, Record<PublicLocale, string>> = {
+  fatigue: { en: 'Low energy', ru: 'Мало сил', es: 'Falta de energía' },
+  sleep: { en: 'Poor sleep', ru: 'Плохой сон', es: 'Dormir mejor' },
+  body: { en: 'Body tension', ru: 'Напряжение в теле', es: 'Tensión corporal' },
+  resources: { en: 'Recharge & recover', ru: 'Восстановить силы', es: 'Recuperar fuerzas' },
+  trust: { en: 'More closeness', ru: 'Больше близости', es: 'Más cercanía' },
+  boundaries: { en: 'Personal boundaries', ru: 'Личные границы', es: 'Límites personales' },
+  conflict: { en: 'Arguments & conflict', ru: 'Ссоры и конфликты', es: 'Conflictos y discusiones' },
+  presence: { en: 'Intimacy & connection', ru: 'Интимность и контакт', es: 'Intimidad y conexión' },
+  decisions: { en: 'Find direction', ru: 'Куда двигаться?', es: 'Elegir rumbo' },
+  productivity: { en: 'Focus & results', ru: 'Фокус и результат', es: 'Foco y resultados' },
+  'work-stress': { en: 'Burnout at work', ru: 'Выгорание на работе', es: 'Agotamiento laboral' },
+  'money-beliefs': { en: 'Money & growth', ru: 'Деньги и рост', es: 'Dinero y crecimiento' },
+}
+
 /* Curated, independently real routes; do not manufacture programmes, bookings
    or prices. Historical Academy material is always labelled as an archive. */
 const archiveNote = tr('Historical Academy material', 'Материалы архива Академии', 'Material histórico de la Academia')
@@ -359,8 +376,8 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   })
   const topicChoices = selected
     ? [selected, ...journey.topics.filter(topic => topic.id !== selected.id)]
-    : journey.topics
-  const testOffers: Offer[] = topicChoices.slice(0,4).map((topic,index) => {
+    : journey.topics.slice(0,3)
+  const topicOffers: Offer[] = topicChoices.map((topic,index) => {
     const focus = journeyFocusForTopics(journey, [topic.id])
     const suggested = suggestions[topic.id]?.[0]
     const testHref = '/' + locale + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
@@ -372,6 +389,15 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       href:testHref, action:c.testAction, note:c.freeNote,
     }
   })
+  const testOffers: Offer[] = selected ? topicOffers : [
+    {id:'all-topics', eyebrow:c.free, title:c.testTitle,
+      description:suggestions['']?.[0] ? c.suggested + suggestions[''][0].title : c.testDescription,
+      photo:photography.test,
+      href:'/' + locale + '/client/tests?focus=' + encodeURIComponent(journeyFocusForTopics(journey, [] ).join(',')) +
+        '&journey=' + direction + '&topics=',
+      action:c.testAction, note:c.freeNote },
+    ...topicOffers,
+  ]
   const offers: Record<OfferKind, Offer[]> = {
     test: testOffers,
     course: [
@@ -405,10 +431,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     const match = matchWish(question.slice(0,160), journey.topics)
     setTopicId(match?.id ?? '')
     setFeedback(match ? ui.suggested + ' ' + match.title[locale] : ui.unmatched)
-    document.getElementById('hh-direction-focus')?.scrollIntoView({
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      block: 'start',
-    })
+    // No forced scrolling: the selected inline button updates in place.
   }
 
   return <div className={styles.root} data-direction-offers={direction}>
@@ -448,22 +471,20 @@ export function DirectionOffers({ locale, journey, suggestions }: {
 
     <section className={styles.filterPanel} id="hh-direction-focus" aria-label={ui.choose} data-direction-topic-finder>
       <div className={styles.filterHeading}>
-        <div><p className={styles.filterKicker}>{ui.start}</p><h2>{ui.choose}</h2><p>{ui.filterLead}</p></div>
-        <label className={styles.filter}>
-          <span>{c.pick}</span>
-          <span className={styles.selectWrap}>
-            <select value={topicId} onChange={event=>selectTopic(event.target.value)} data-direction-filter>
-              <option value="">{c.all}</option>
-              {journey.topics.map(topic=><option key={topic.id} value={topic.id}>{topic.title[locale]}</option>)}
-            </select>
-            <ChevronDown size={17} aria-hidden="true"/>
-          </span>
-        </label>
+        <h2 id="hh-direction-focus-label">{c.pick}</h2>
+        <button type="button" className={styles.reset} data-direction-filter="all"
+          aria-pressed={!topicId} aria-controls="hh-direction-test hh-direction-course hh-direction-session"
+          onClick={()=>selectTopic('')}>{c.all}</button>
       </div>
-      <div className={styles.topicChips} role="group" aria-label={c.pick}>
-        <button type="button" className={styles.chip} aria-pressed={!topicId} onClick={()=>selectTopic('')}>{c.all}</button>
+      <p id="hh-direction-focus-hint" className={styles.srOnly}>{ui.filterLead}</p>
+      <div className={styles.topicChips} role="group"
+        aria-labelledby="hh-direction-focus-label" aria-describedby="hh-direction-focus-hint">
         {journey.topics.map(topic=><button type="button" className={styles.chip} key={topic.id}
-          aria-pressed={topicId===topic.id} onClick={()=>selectTopic(topic.id)}>{topic.title[locale]}</button>)}
+          data-direction-filter={topic.id} aria-label={topic.title[locale]}
+          aria-controls="hh-direction-test hh-direction-course hh-direction-session"
+          aria-pressed={topicId===topic.id} onClick={()=>selectTopic(topic.id)}>
+          {quickTopicLabels[topic.id]?.[locale] ?? topic.title[locale]}
+        </button>)}
       </div>
       <p className={styles.feedback} role="status" aria-live="polite">{feedback || ui.privacy}</p>
     </section>
