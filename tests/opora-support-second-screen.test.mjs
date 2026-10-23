@@ -10,6 +10,18 @@ import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mj
 
 const next={en:'Continue',ru:'Продолжить',es:'Continuar'}
 const back={en:'Back',ru:'Назад',es:'Atrás'}
+// Exempt only this exact sentence negating pressure, never bare imperative wording.
+const withoutKnownReassurance = text => text.replace('There is no pace you must keep up with, here or anywhere else.', '').replace('El descanso y la suavidad también tienen lugar antes de terminar una tarea.', '')
+const taskOrQuestion = /\?|\b(how did that go|i tried it|you should|you must|your task|tarea|задание|оцените|сделайте|попробуйте)\b/iu
+
+test('support guard rejects instructions and questions, not an exact no-pressure reassurance',()=>{
+  assert.doesNotMatch(withoutKnownReassurance('There is no pace you must keep up with, here or anywhere else.'),taskOrQuestion)
+  for(const unsafe of ['You must keep up with this pace.', 'There is a pace you must keep up with.',
+    'There is no pace you must keep up with, here or anywhere else. You must practise.',
+    'How did that go?', 'You should do your task.', 'Termina una tarea.',
+    'El descanso y la suavidad también tienen lugar antes de terminar una tarea. Haz esta tarea.']) assert.match(withoutKnownReassurance(unsafe),taskOrQuestion)
+})
+
 
 test('support is authored for 14 days in EN/RU/ES, with no homework or performance question',()=>{
   assert.equal(oporaExperienceSupportValid(),true)
@@ -17,7 +29,7 @@ test('support is authored for 14 days in EN/RU/ES, with no homework or performan
     for(let day=1;day<=14;day++){
       const copy=oporaExperienceSupport(day,locale)
       assert.ok(copy?.title&&copy?.body,locale+' '+day)
-      assert.doesNotMatch(copy.title+' '+copy.body,/\?|\b(how did that go|i tried it|you should|you must|your task|tarea|задание|оцените|сделайте|попробуйте)\b/iu)
+      assert.doesNotMatch(withoutKnownReassurance(copy.title+' '+copy.body),taskOrQuestion)
     }
   }
   for(const invalid of [0,15,-1,1.5,null,undefined,'2']){
@@ -68,3 +80,4 @@ test('the acceptance screen does not change backend visit-key shape',()=>{
     assert.ok(!keys.includes('support'),'Support is not a fabricated lesson or practice signal')
   }
 })
+

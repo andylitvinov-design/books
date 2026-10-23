@@ -22,7 +22,7 @@ function fixture(overrides = {}, pointerError = null, diagnostics = false) {
   const browser = { node: checkbox, document,
     location: { pathname: '/en/services/dao-health-profile', hash: '#PRIVATE_HASH_PAYLOAD', search: '?contact=PRIVATE_QUERY' },
     innerWidth: 390, innerHeight: 844, scrollX: 0, scrollY: 700,
-    window: { visualViewport: null }, getComputedStyle: () => ({ scrollBehavior: 'auto' }),
+    window: { visualViewport: null }, getComputedStyle: () => ({ scrollBehavior: 'auto', position: 'static', zIndex: 'auto' }),
     matchMedia: () => ({ matches: true }),
   }
   const page = {
@@ -59,7 +59,7 @@ function fixture(overrides = {}, pointerError = null, diagnostics = false) {
     toBeEnabled: async () => assert.equal(state.consent, true),
     toContainText: async text => { assert.equal(state.saved, true); assert.equal(text, 'HH-CA5016DE79E4') },
   })
-  return { page, capture: node('capture'), expect, state }
+  return { page, capture: node('capture'), expect, state, checkbox }
 }
 
 test('compact verifier covers consent, synthetic commit receipt and cleanup', async () => {
@@ -99,6 +99,11 @@ test('pointer failure writes bounded JSON and screenshot while preserving origin
   const previous = process.cwd()
   const original = new Error('Synthetic unchanged checkbox')
   const f = fixture({}, original, true)
+  let ancestor = f.checkbox
+  for (let index = 0; index < 8; index++) {
+    ancestor.parentElement = { tagName: 'NAV', className: 'x'.repeat(250), href: '?contact=PRIVATE_ANCESTOR', getBoundingClientRect: f.checkbox.getBoundingClientRect }
+    ancestor = ancestor.parentElement
+  }
   try {
     process.chdir(directory)
     await assert.rejects(assertCompactLeadRequest(f.page, f.capture, f.expect, {
@@ -111,6 +116,10 @@ test('pointer failure writes bounded JSON and screenshot while preserving origin
     assert.equal(geometry.checked, false)
     assert.deepEqual(geometry.originalNodeAfter, { checked: false, connected: true, isCurrentCheckbox: true })
     assert.equal(geometry.hit.isInput, true)
+    assert.equal(geometry.hitAncestors.length, 6)
+    assert.deepEqual(geometry.hitAncestors[0], { tag: 'INPUT', className: 'native-consent', position: 'static', zIndex: 'auto', bounds: { x: 20, y: 200, width: 16, height: 16 } })
+    assert.equal(geometry.hitAncestors[1].className.length, 200)
+    assert.equal(Object.hasOwn(geometry.hitAncestors[1], 'href'), false)
     assert.deepEqual(geometry.bounds, { x: 20, y: 200, width: 16, height: 16 })
     assert.equal(geometry.viewport.width, 390)
     assert.equal(Object.hasOwn(geometry, 'hash'), false)

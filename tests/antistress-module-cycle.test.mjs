@@ -20,7 +20,7 @@ const pureImports = [
   '../inner-growth/course-presets.js', './course-access.js', '../assessments/contracts.js', './crypto.js',
   '../inner-growth/course-model.js', '../inner-growth/course-programs.js', '../../data/assessments/catalog.js',
   '../inner-growth/course-final-retest.js', '../inner-growth/anti-stress-weekly-checkpoint.js',
-  '../assessments/scale-guides.js', '../inner-growth/lesson-library.js', '../inner-growth/course-v3.js',
+  '../assessments/scale-guides.js', '../assessments/verified-history.js', '../inner-growth/lesson-library.js', '../inner-growth/course-v3.js',
   '../../data/inner-growth/course-journey.js', '../inner-growth/course-strategy.js',
   '../inner-growth/course-adaptation.js', '../inner-growth/antistress-module-lessons.js',
   '../inner-growth/antistress-module-router.js', '../inner-growth/anti-stress-day-one.js',
@@ -204,3 +204,4 @@ test('current educational route AS6 remains usable as a selected course', async 
   assertCreated(h, await h.create(), COURSE_CONTENT_V4, preferences('AS6'))
   assert.equal(course.concerns_ciphertext, ciphertext, 'stored choice must remain unchanged')
 })
+

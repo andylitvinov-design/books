@@ -67,6 +67,7 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile na
 for (const fault of ['wrongName', 'wrongHref', 'wrongActive', 'missing', 'duplicate']) test('public mobile proof rejects ' + fault, async () => {
   const tree = mobile('en', '/en/client/tests'), all = links(tree), target = all.find(node => node.props['data-nav-item'] === 'tests')
   if (fault === 'wrongName') target.props.children = 'My tests'
+  if (fault === 'wrongCourseQuery') all[3].props.href = '/en/app/course'
   if (fault === 'wrongHref') target.props.href = '/en/client'
   if (fault === 'wrongActive') target.props['data-nav-item'] = 'cabinet'
   if (fault === 'missing') target.type = 'div'
@@ -89,13 +90,14 @@ for (const locale of ['en', 'ru']) test(locale + ' actual shared private model p
     await assertCabinetPrimaryNavigation(target, expect, { locale, current: ['history', 'reports', 'monitoring', 'results'].includes(page) ? 'portfolio' : page })
   }
 })
-for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'twoVisibleBars', 'missingHome', 'wrongHomeHref', 'wrongHomeLabel', 'wrongHomeAria']) test('private navigation proof rejects ' + fault, async () => {
+for (const fault of ['wrongLabel', 'wrongHref', 'wrongCourseQuery', 'wrongCurrent', 'extraLink', 'twoVisibleBars', 'missingHome', 'wrongHomeHref', 'wrongHomeLabel', 'wrongHomeAria']) test('private navigation proof rejects ' + fault, async () => {
   const tree = PrivateNav({ locale: 'en', page: 'portrait' }), all = links(tree)
   if (fault === 'wrongHomeAria') all[5].props['aria-label'] = 'Go home'
   if (fault === 'missingHome') all[5].type = 'div'
   if (fault === 'wrongHomeHref') all[5].props.href = '/en'
   if (fault === 'wrongHomeLabel') all[5].props.children = 'Homepage'
   if (fault === 'wrongLabel') all[1].props.children = 'My tests'
+  if (fault === 'wrongCourseQuery') all[3].props.href = '/en/app/course'
   if (fault === 'wrongHref') all[4].props.href = '/en/app/settings'
   if (fault === 'wrongCurrent') all[0].props['aria-current'] = undefined
   if (fault === 'extraLink') tree.props.children.push(jsx('a', { href: '/en/app/other', children: 'Other' }))
@@ -132,3 +134,4 @@ for (const locale of ['en', 'ru']) test(locale + ' mobile Home verifies its exac
   assert.deepEqual(events, ['click', 'url'])
   assert.ok(read('scripts/verify-app-r1.mjs').includes('await openCabinetHome(page,expect,{origin})'))
 })
+

@@ -57,15 +57,18 @@ test('OPORA learning path: five nearby steps and a manual 14-day reveal without 
 test('Academy: bottom save status retains guest, consent and authenticated persistence', () => {
   assert.match(academy, /data-course-one-screen="v1"/);
   assert.match(academy, /data-energywork-slide-kind=\{slide\.kind\}/);
-  assert.match(academy, /<details className=\{styles\.saveDetails\}>/);
+  assert.match(academy, /<details className=\{styles\.saveSettings\}>/);
   assert.match(academy, /sync === "guest"/);
   assert.match(academy, /sync === "consent"/);
   assert.match(academy, /sync === "ready"/);
   assert.match(academy, /checked=\{consented\}/);
   assert.match(academy, /onClick=\{startSaving\}/);
-  assert.match(academy, /onClick=\{signIn\}/);
-  assert.ok(academy.indexOf('<aside className={styles.preview}') > academy.indexOf('<section className={styles.slide'));
-  assert.ok(academy.indexOf('<aside className={styles.preview}') < academy.indexOf('<footer className={styles.footer}>'));
+  assert.match(academy, /onClick=\{sync === "ready" \? next : saveLessonOneToCabinet\}/);
+  assert.match(academy, /if \(busy \|\| !firstLessonConsent \|\| !\["guest", "consent"\]\.includes\(sync\) \|\|\s*slide\.id !== "flight-save"\) return;/);
+  assert.match(academy, /if \(sync === "guest"\) await signIn\(\);/);
+  assert.match(academy, /disabled=\{!consented \|\| busy\} onClick=\{startSaving\}/);
+  assert.ok(academy.indexOf('<div className={styles.savedLine} data-reiki-private-save-status') > academy.indexOf('<section className={styles.slide'));
+  assert.ok(academy.indexOf('<div className={styles.savedLine} data-reiki-private-save-status') < academy.indexOf('<footer className={styles.footer}>'));
 });
 
 test('Academy: immersive mobile viewport still scrolls dense lessons and keeps real video', () => {
@@ -74,6 +77,7 @@ test('Academy: immersive mobile viewport still scrolls dense lessons and keeps r
   assert.match(academyCss, /overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain/);
   assert.match(academyCss, /\.page\[data-course-one-screen\] \.next\{/);
   assert.match(academyCss, /\.page\[data-course-one-screen\] \.art\{/);
-  assert.match(academy, /<AcademyVideoPlayer key=\{slide\.id\}/);
-  assert.match(academy, /\{t\.stop\}/);
+  assert.match(academy, /<AcademyVideoPlayer key=\{slide\.id \+ ":" \+ \(useOriginal \? "original" : "lesson"\)\}/);
+  assert.match(academy, /onClick=\{finishForToday\} disabled=\{busy \|\| sync === "checking" \|\| sync === "unavailable"\}/);
 });
+

@@ -54,13 +54,13 @@ test('original navy and burgundy free-review banner stays distinct from contextu
   assert.ok(course.includes('services/free-situation-review'))
   assert.ok(course.includes('andy-about.png'))
   assert.ok(course.includes('showReview &&'))
-  assert.ok(style.includes('.reviewCard{'))
-  assert.ok(style.includes('grid-template-columns:88px minmax(0,1fr)'))
+  assert.match(style,/\.courseCard,\s*\.reviewCard\s*\{/)
+  assert.match(style,/@media \(max-width: 360px\)\s*\{[\s\S]*?grid-template-columns: 90px minmax\(0, 1fr\)/)
   for (const translation of ['Пройдите курс «Антистресс»', 'Take the free Anti-Stress course', 'Haz el curso gratuito «Antiestrés»']) {
     assert.ok(bar.includes(translation), translation)
   }
-  assert.ok(style.includes('.courseCard{'))
-  assert.ok(style.includes('.courseActions{'))
+  assert.match(style,/\.courseCard,\s*\.reviewCard\s*\{/)
+  assert.match(style,/\.courseActions\s*\{/)
   assert.ok(style.includes('max-width:680px'))
   for (const unwanted of ['localStorage', 'sessionStorage', 'fetch(']) {
     assert.ok(!bar.includes(unwanted))
@@ -79,3 +79,4 @@ test('all public course banners and landing pages lead to the Anti-Stress option
   assert.doesNotMatch(landing, /\?entry=personal/)
   assert.match(cabinet, /\?program=stress/)
 })
+

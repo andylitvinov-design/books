@@ -34,7 +34,16 @@ export async function assertCompactLeadRequest(page, capture, expect, { locale, 
         const geometry = await consent.evaluate(node => {
           const rect = node.getBoundingClientRect()
           const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+          const hitAncestors = []
+          for (let ancestor = hit; ancestor && hitAncestors.length < 6; ancestor = ancestor.parentElement) {
+            const box = ancestor.getBoundingClientRect()
+            const style = getComputedStyle(ancestor)
+            hitAncestors.push({ tag: ancestor.tagName, className: String(ancestor.className).slice(0, 200),
+              position: style.position, zIndex: style.zIndex,
+              bounds: { x: box.x, y: box.y, width: box.width, height: box.height } })
+          }
           return {
+            hitAncestors,
             pathname: location.pathname,
             checked: node.checked, connected: node.isConnected,
             bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },

@@ -67,6 +67,7 @@ jobs:
             artifacts/ideas-mobile/
             artifacts/home-first-screen/
             artifacts/contact-channel-browser/
+            artifacts/app-r1/compact-lead-pointer/
             artifacts/service-cart/
             artifacts/storefront-shop/
           retention-days: 7
