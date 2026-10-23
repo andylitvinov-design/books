@@ -93,8 +93,10 @@ async function measure(locale, width, sector) {
 }
 
 try {
-  await open('/en/app')
-  const signin = page.getByRole('button',{name:'Continue with Google',exact:true})
+  // The current guest Cabinet entry uses the self-contained Google CTA.
+  // Avoid a second redirect through /en/app before synthetic PKCE begins.
+  await open('/en/app/portrait')
+  const signin = page.getByRole('button',{name:/^(Open my Cabinet with Google|Continue with Google)$/})
   await expect(signin).toBeVisible({timeout:60000})
   await signin.click()
   await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
