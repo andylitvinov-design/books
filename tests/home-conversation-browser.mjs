@@ -116,7 +116,15 @@ try {
             };
           });
           await requestPanel.locator('input[type="text"]').fill("qa.home@example.test");
-          await requestPanel.locator('input[type="checkbox"]').check();
+          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
+          await expect(requestPanel.locator('[role="alert"]')).toContainText("Please agree");
+          assert.equal(registrations.length, 0, "No CRM request before explicit reply consent");
+          const consentBox = requestPanel.locator('[data-home-diagnosis-consent]');
+          await expect(consentBox).not.toBeChecked();
+          // Real visitor taps the consent text; the independent label forwards
+          // exactly one click to its named input, on touch and mouse.
+          await requestPanel.locator('label[for="' + await consentBox.getAttribute("id") + '"]').click();
+          await expect(consentBox).toBeChecked();
           await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
           await expect(requestPanel.locator('[role="alert"]')).toBeVisible();
           assert.equal(await requestPanel.locator("[data-lead-saved]").count(), 0,
@@ -181,7 +189,10 @@ try {
             };
           });
           await requestPanel.locator('input[type="text"]').fill("qa-failed-handoff@example.test");
-          await requestPanel.locator('input[type="checkbox"]').check();
+          const consentBox = requestPanel.locator('[data-home-diagnosis-consent]');
+          await expect(consentBox).not.toBeChecked();
+          await requestPanel.locator('label[for="' + await consentBox.getAttribute("id") + '"]').click();
+          await expect(consentBox).toBeChecked();
           await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
           await expect(requestPanel.locator('[data-lead-saved]')).toContainText("HH-FFEEDDCCBBAA");
           await expect(requestPanel.locator('[role="alert"]')).toContainText(

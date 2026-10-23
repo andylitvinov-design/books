@@ -37,7 +37,9 @@ test("free diagnosis button reveals one compact messenger handoff inside its war
   assert.match(banner, /sourcePath: "\/" \+ locale \+ "\/services\/free-situation-review"/);
   assert.match(banner, /serviceTitle: SERVICE_TITLE/);
   assert.match(banner, /result\?\.saved !== true/);
-  assert.match(banner, /setReference\(result\.referenceCode\)/);
+  assert.match(banner, /setReference\(committedReference\)/);
+  assert.match(banner, /data-home-diagnosis-consent/);
+  assert.match(banner, /<label htmlFor=\{consentId\}>\{t\.consent\}<\/label>/);
   assert.match(banner, /window\.open\("about:blank", "_blank"\)/);
   assert.match(banner, /handoffWindow\?\.close\(\)/);
   assert.doesNotMatch(banner, /CompactLeadCapture|data-compact-last-slide/);

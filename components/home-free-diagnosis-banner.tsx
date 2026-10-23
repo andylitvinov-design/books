@@ -106,6 +106,7 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
   const operationId = useRef<string | null>(null);
   const formId = useId();
   const contactId = useId();
+  const consentId = useId();
 
   async function chooseChannel(channel: Channel) {
     if (busy || reference) return;
@@ -210,13 +211,14 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
                 onChange={event => {
                   setAddress(event.target.value); operationId.current = null; setError("");
                 }} />
-              <label className={styles.consent}>
-                <input type="checkbox" checked={consent} disabled={busy !== null}
+              <div className={styles.consent}>
+                <input id={consentId} type="checkbox" data-home-diagnosis-consent
+                  checked={consent} disabled={busy !== null}
                   onChange={event => {
-                    setConsent(event.target.checked); operationId.current = null; setError("");
+                    setConsent(event.currentTarget.checked); operationId.current = null; setError("");
                   }} />
-                <span>{t.consent}</span>
-              </label>
+                <label htmlFor={consentId}>{t.consent}</label>
+              </div>
             </div>
           )}
           <div className={styles.channels}>
