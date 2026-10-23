@@ -170,21 +170,19 @@ test('Mobile course uses teal five-step rail and remains accessible', () => {
   assert.match(css, /prefers-reduced-motion/)
 })
 
-test('Reiki opening explains a single sequential course and separate teacher initiations', () => {
+test('Reiki opening is concise, bilingual and separates study from the requested initiation', () => {
   const opening = curriculum.split('id: "welcome-01"')[1].split('id: "welcome-02"')[0]
-  assert.match(opening, /Reiki Practitioner — a five-day journey/)
-  assert.match(opening, /Практик Рейки — пятидневный курс/)
+  assert.match(opening, /title: l\("Reiki Practitioner", "Практик Рейки"\)/)
   assert.match(opening, /Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil/)
   assert.match(opening, /Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль/)
-  assert.match(opening, /Each day brings a short exercise and a meditation/)
-  assert.match(opening, /Каждый день вас ждут небольшое упражнение и медитация/)
-  assert.match(learner, /welcomeGiftText: "After completing all five lessons/)
-  assert.match(learner, /одну бесплатную инициацию I ступени с Андреем в чате/)
-  assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
-  assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
-  assert.match(learner, /Want individual guidance\? Ask about a personal session with Andrey/)
+  assert.match(opening, /five short lessons with practice and meditation/)
+  assert.match(learner, /welcomeGiftText: "After 5 lessons, request one free initiation/)
+  assert.match(learner, /Не автоматически; личные сессии — отдельно/)
+  assert.match(learner, /welcomeGiftTitle: "Free Level 1 Reiki initiation"/)
+  assert.match(learner, /data-reiki-initiation-gift/)
   assert.match(curriculum, /not an initiation or certification/)
   assert.match(css, /welcomeSlide \.art/)
+  assert.match(css, /data-energywork-screen="welcome"/)
 })
 
 test('Initial interactive screen asks four prior Reiki experience options in EN/RU', () => {
