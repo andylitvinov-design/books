@@ -18,3 +18,19 @@ test('verified daily public HTML report survives Gemini and Mistral outages with
  const modelGateAt=source.indexOf("status:'model_setup_required'")
  assert.ok(archiveReadAt>=0&&modelGateAt>archiveReadAt)
 })
+
+test('missed Toronto days recover at most two sends, without fresh AI calls for old reports',()=>{
+ const code=readFileSync(new URL('../lib/practitioners/council-telegram-delivery.js',import.meta.url),'utf8')
+ assert.ok(code.includes('if(acceptedCount>=2)break'))
+ assert.ok(code.includes('acceptedDates.push(entry.date)'))
+ assert.ok(code.includes('entry.date===dates.today'))
+ assert.ok(code.includes("reason:'HISTORICAL_BACKFILL_NO_INFERENCE'"))
+ assert.ok(code.includes("status:'partially_accepted'"))
+ assert.ok(code.includes('saveModelReport(config,entry.date,claimed.id,composed)'))
+ assert.ok(code.includes('if(!claimed){previouslySent++;continue}'))
+ const route=readFileSync(new URL('../app/api/internal/council-archive-telegram/route.js',import.meta.url),'utf8')
+ assert.match(route,/export const maxDuration=120/)
+ const schedule=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
+ assert.deepEqual(schedule.crons.filter(x=>x.path.includes('council-archive-telegram')),
+   [{path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'}])
+})
