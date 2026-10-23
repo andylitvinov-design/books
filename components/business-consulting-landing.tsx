@@ -5,6 +5,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { BusinessWebsiteEnquiry } from "@/components/business-website-enquiry";
+import { ServiceStoryPanel } from "@/components/service-story-panel";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { businessConsultingCopy, type BusinessLocale } from "@/data/business-consulting-copy";
 import styles from "./business-consulting-landing.module.css";
@@ -57,7 +58,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>{t.eyebrow}</p>
             <h1 id="business-hero-title">{t.headline}</h1>
-            <p className={styles.heroLead}>{t.lead}</p>
+            <p className={styles.heroLead}>{t.offers[1].takeaway}</p>
             <p className={styles.audiences}><Check size={17} aria-hidden="true" />{t.audiences}</p>
             <div className={styles.heroActions}>
               <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.primary} prefetch={false} attributes={{ "data-business-cta": "free-hero" }}>
@@ -118,11 +119,11 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
                     <span className={styles.offerBadge}>{offer.price}</span>
                   </div>
                   <h3>{offer.name}</h3>
-                  <p className={styles.offerTeaser}>{offer.description}</p>
+                  <p className={styles.offerTeaser}>{offer.takeaway}</p>
                   <p className={styles.offerTime}>{offer.time}</p>
                   <details className={styles.offerDetails}>
                     <summary>{detailLabel}<ChevronDown size={16} aria-hidden="true" /></summary>
-                    <p><ClipboardCheck size={16} aria-hidden="true" />{offer.takeaway}</p>
+                    <p><ClipboardCheck size={16} aria-hidden="true" />{offer.description}</p>
                     {offer.kind === "free" ? <p>{t.replyNote}</p> : null}
                   </details>
                   <div className={styles.offerActions}>
@@ -149,6 +150,18 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           </div>
         </section>
 
+        <div className={styles.storyRun} data-business-one-thought-screens>
+          <ServiceStoryPanel variant="wood" index="04"
+            image="/images/holistic-house/books-library.webp"
+            eyebrow={t.processEyebrow} title={t.process[0].title} body={t.process[0].text}
+            href="#business-offers" action={t.paidCta} />
+          <ServiceStoryPanel variant="wood" index="05"
+            image="/images/holistic-house/report-lighthouse-coast.webp"
+            eyebrow={t.resultTitle} title={t.results[0]} body={t.results[2]}
+            href="#business-offers" action={t.paidCta} />
+        </div>
+        <details className={styles.additionalReading} data-business-details>
+          <summary>{locale === "ru" ? "Подробнее: задачи и подход" : locale === "es" ? "Más información: retos y método" : "More about the challenges & method"}</summary>
         <section className={styles.problems} aria-labelledby="business-problems-title">
           <p className={styles.sectionEyebrow}>{t.painEyebrow}</p>
           <h2 id="business-problems-title">{t.painTitle}</h2>
@@ -162,8 +175,12 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           </div>
         </section>
 
+        </details>
+
         <BusinessWebsiteEnquiry locale={locale}/>
 
+        <details className={styles.additionalReading} data-business-method-details>
+          <summary>{locale === "ru" ? "Как проходит бизнес-сессия" : locale === "es" ? "Cómo funciona la sesión" : "How a session works"}</summary>
         <section className={styles.workflow} aria-labelledby="business-process-title">
           <p className={styles.sectionEyebrow}>{t.processEyebrow}</p>
           <h2 id="business-process-title">{t.processTitle}</h2>
@@ -184,6 +201,10 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           </div>
         </section>
 
+        </details>
+
+        <details className={styles.additionalReading} data-business-results-details>
+          <summary>{t.resultTitle}</summary>
         <section className={styles.results} aria-labelledby="business-results-title">
           <div>
             <p className={styles.sectionEyebrow}>{t.resultTitle}</p>
@@ -192,7 +213,10 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           <ul>{t.results.map(result => <li key={result}><Check size={21} aria-hidden="true" />{result}</li>)}</ul>
         </section>
 
+        </details>
+
         <section className={styles.mentor} aria-labelledby="business-mentoring-title">
+          <div className={styles.mentorPhoto}><Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:767px) 100vw, 350px" /></div>
           <div>
             <p className={styles.sectionEyebrow}>{t.mentorEyebrow}</p>
             <h2 id="business-mentoring-title">{t.mentorTitle}</h2>
@@ -204,6 +228,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         </section>
 
         <section className={styles.request} id="request-session" aria-labelledby="business-request-title">
+          <div className={styles.requestPhoto}><Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:767px) 100vw, 360px"/></div>
           <div>
             <p className={styles.sectionEyebrow}>{t.eyebrow}</p>
             <h2 id="business-request-title">{t.requestTitle}</h2>
@@ -231,6 +256,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         </section>
 
         <section className={styles.bottom}>
+          <div className={styles.bottomPhoto}><Image src="/images/holistic-house/report-lighthouse-coast.webp" alt="" fill sizes="(max-width:767px) 100vw, 400px"/></div>
           <h2>{t.finalTitle}</h2>
           <AcquisitionEventLink href={freeHref} event="service_request_start" prefetch={false}
             className={styles.bottomAction} attributes={{ "data-business-cta": "free-bottom" }}>

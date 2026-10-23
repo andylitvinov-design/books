@@ -68,3 +68,32 @@
  .introHighlights span{font-size:11px;padding:7px 9px}
  .form{margin-top:12px}
 }
+
+
+/* Keep the request form natural-height; make the preceding marketing
+   screen a concise photographed chapter rather than text over a wallpaper. */
+.intro{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;background:linear-gradient(125deg,#083e50,#0b7375);gap:7px}
+.introPhoto{position:relative;width:100%;height:clamp(160px,26vw,250px);min-height:0;border-radius:16px;overflow:hidden;background:#d6e8df;margin-bottom:8px}
+.introPhoto img{object-fit:cover;object-position:center}
+.introAction{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:10px 20px;border-radius:100px;margin-top:9px;background:#f4d8a8;color:#183f42;font:800 13px/1.3 system-ui,sans-serif;text-decoration:none}
+.introAction:hover{background:#ffe8c2}
+.introAction:focus-visible{outline:3px solid #e7ab82;outline-offset:3px}
+@media(max-width:650px){
+ .intro{min-height:calc(100svh - 98px);padding:12px 13px 16px;gap:5px}
+ .introPhoto{height:clamp(120px,25svh,210px);border-radius:13px;margin-bottom:5px}
+ .eyebrow{font-size:10px;margin-bottom:5px}
+ .intro h1{font-size:clamp(28px,7.6vw,37px);line-height:1.1;margin-bottom:6px}
+ .intro>p:not(.eyebrow):not(.steps){font-size:12px;line-height:1.45}
+ .introHighlights{margin-top:7px}
+ .introHighlights span{font-size:10px;padding:5px 8px}
+ .steps{font-size:10px!important;margin-top:8px!important}
+ .introAction{width:100%;margin-top:9px;min-height:44px}
+ .form{scroll-margin-top:10px}
+}
+@media(max-width:650px) and (max-height:650px){
+ .intro{min-height:calc(100svh - 90px);padding:9px 11px 12px}
+ .introPhoto{height:clamp(105px,22svh,139px)}
+ .intro h1{font-size:clamp(26px,7.2vw,33px)}
+ .intro>p:not(.eyebrow):not(.steps){font-size:11px;line-height:1.35}
+ .introHighlights span{font-size:10px}
+}
