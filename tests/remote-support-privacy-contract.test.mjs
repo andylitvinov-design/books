@@ -30,7 +30,7 @@ test('remote booking remains uncharged and reviews require completed sessions',(
   assert.match(member,/Client agreement restores REQUESTED/)
 })
 test('one approved Andrey offering only; never forge 10/20 prices or other masters',()=>{
-  const sql=read('supabase/migrations/20261023134500_hh_remote_energy_support_booking.sql')
+  const sql=read('supabase/migrations/20261023134600_hh_remote_energy_andrey_offer.sql')
   assert.match(sql,/slug='andy-litvinov' and status='approved'/)
   assert.match(sql,/gen_random_uuid\(\)/)
   assert.match(sql,/not exists \(select 1 from app\.service_offerings/)
