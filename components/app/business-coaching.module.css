@@ -1008,7 +1008,7 @@
   box-shadow:0 15px 42px #103b5538;
 }
 .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav{
-  flex:0 0 auto;grid-template-columns:repeat(3,minmax(0,1fr));
+  flex:0 0 auto;grid-template-columns:repeat(2,minmax(0,1fr));
   gap:5px;margin:0;padding:9px clamp(15px,4vw,29px) 12px;
 }
 .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button{
@@ -1287,3 +1287,16 @@
   .root[data-business-immersive=reiki][data-business-current-tab=today] .oneTapChoices button{min-height:47px;padding:8px 11px;font-size:13px}
 }
 @media(prefers-reduced-motion:reduce){.oneTapChoices button{transition:none}}
+
+/* Final direct-question flow: choice screen -> confirmed save, no instruction screen. */
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea[data-business-closed-answer] h2{
+  text-transform:none;letter-spacing:0;font-size:13px!important;line-height:1.4!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneIdea[data-business-closed-answer] .skillTarget{
+  margin-bottom:9px!important;
+}
+@media(max-width:620px){
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
