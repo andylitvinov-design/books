@@ -421,12 +421,17 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       ? '/' + appLocale + '/client?startTests=' + encodeURIComponent(suggested.key)
       : pickerHref
   const overviewSuggested = suggestions['']?.[0]
+  // Avoid showing two identical questionnaires in the first two cards.
+  // Pick the next eligible topic match when the preceding card already uses one.
+  const usedTestKeys = new Set<string>(selected || !overviewSuggested?.key ? [] : [overviewSuggested.key])
   const topicChoices = selected
     ? [selected, ...journey.topics.filter(topic => topic.id !== selected.id)]
     : journey.topics.slice(0,3)
   const topicOffers: Offer[] = topicChoices.map((topic,index) => {
     const focus = journeyFocusForTopics(journey, [topic.id])
-    const suggested = suggestions[topic.id]?.[0]
+    const topicSuggestions = suggestions[topic.id] ?? []
+    const suggested = topicSuggestions.find(item => item.key && !usedTestKeys.has(item.key)) ?? topicSuggestions[0]
+    if (suggested?.key) usedTestKeys.add(suggested.key)
     const pickerHref = '/' + locale + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
       '&journey=' + direction + '&topics=' + encodeURIComponent(topic.id)
     return {
