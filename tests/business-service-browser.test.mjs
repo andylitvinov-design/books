@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import vm from 'node:vm'
+import * as questionGuide from '../lib/business-consulting/question-guide.js'
 
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const source=read('components/business-service-browser.tsx')
@@ -28,6 +29,7 @@ function mount(locale){
     'next/image':{default:'NextImage'},
     '@/components/acquisition-event-link':{AcquisitionEventLink:'TrackedLink'},
     '@/data/business-consulting-copy':{businessConsultingCopy:mock},
+    '@/lib/business-consulting/question-guide':questionGuide,
     './business-service-browser.module.css':{default:new Proxy({}, {get:(_,name)=>name})},
   }
   const context={exports:{},require:name=>{assert.ok(deps[name],name);return deps[name]}}
@@ -52,9 +54,11 @@ test('catalog reuses legitimate service titles and excludes invented price promi
 })
 
 for(const locale of ['en','ru','es']){
-  test('collapsed filter, three cards, next three, reset and correct handoffs ('+locale+')',()=>{
+  test('visible theme filter, follow-up, three cards, next three and correct handoffs ('+locale+')',()=>{
     const h=mount(locale)
-    assert.equal(h.find('data-business-service-filter',true).props.open,false)
+    assert.ok(h.find('data-business-service-filter',true))
+    assert.equal(h.many('data-service-filter-topic').length,9)
+    assert.equal(h.find('data-business-follow-up',true),undefined)
     assert.equal(h.many('data-business-service-card').length,3)
     assert.ok(h.find('data-business-service-card','free'))
     assert.ok(h.find('data-business-service-card','express'))
@@ -71,9 +75,14 @@ for(const locale of ['en','ru','es']){
     const detail=nodes(h.tree).filter(n=>n.props?.attributes?.['data-business-service-details'])
     assert.equal(detail.length,2)
     assert.ok(detail.every(x=>x.props.href.startsWith('/'+locale+'/services/')))
-    h.find('data-service-filter-topic','income').props.onClick()
+    h.find('data-service-filter-topic','money').props.onClick()
     h.render()
-    assert.equal(h.many('data-business-service-card').length,2)
+    assert.ok(h.find('data-business-follow-up',true))
+    assert.equal(h.many('data-business-clarification').length,3)
+    assert.equal(h.many('data-business-service-card').length,3)
+    h.find('data-business-clarification','increase').props.onClick()
+    h.render()
+    assert.ok(h.find('data-business-clarification-idea',true))
     h.find('data-service-filter-format','other').props.onClick()
     h.render()
     assert.equal(h.many('data-business-service-card').length,0)
@@ -81,10 +90,16 @@ for(const locale of ['en','ru','es']){
     h.find('data-service-filter-topic','all').props.onClick()
     h.render()
     assert.equal(h.many('data-business-service-card').length,2)
+    assert.equal(h.find('data-business-follow-up',true),undefined)
+    assert.equal(h.find('data-business-clarification-idea',true),undefined)
     h.find('data-service-filter-format','all').props.onClick()
     h.render()
     assert.equal(h.many('data-business-service-card').length,3)
     assert.ok(h.find('data-business-show-more',true))
+    h.find('data-service-filter-topic','team').props.onClick()
+    h.render()
+    assert.ok(h.find('data-business-follow-up',true))
+    assert.equal(h.many('data-business-service-card').length,3)
   })
 }
 
