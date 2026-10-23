@@ -22,6 +22,7 @@ on:
       - 'tests/personal-coaching-model-selection.test.mjs'
       - 'supabase/migrations/*coaching_model_fit_comments*'
       - 'supabase/migrations/*coaching_request_signals*'
+      - 'supabase/migrations/*coaching_topic_fit_weights*'
       - 'tests/business-coaching-90-days.test.mjs'
       - 'tests/academy-discovery-hero.test.mjs'
       - 'supabase/migrations/*personal_coaching*'
