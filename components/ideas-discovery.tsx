@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, Send, Sparkles, Sprout, Sun } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, Send, X, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
-import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, getIdeasTestSuggestions, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import { rotateIdeasPreviewAphorisms } from "@/lib/ideas-preview-rotation.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -26,8 +27,19 @@ const copy = {
     question: "О чём хотите спросить?",
     placeholder: "Ваш вопрос или тема…",
     choose: "Выберите способ получить подсказку",
-    ask: "Задать вопрос",
-    test: "Пройти тест", testAria: "Начать бесплатный тест «Состояние сейчас»",
+    ask: "Получить даосскую подсказку",
+    testOverline: "Исследуйте себя", test: "Пройти бесплатный тест", testAria: "Выбрать бесплатный тест",
+    testsTitle: "Бесплатные тесты по теме", testsFallback: "С чего можно начать",
+    testsClose: "Скрыть подборку", testsMore: "Все тесты по теме",
+    testsNote: "Это подбор по теме, не медицинская оценка. Ваш вопрос остаётся в браузере.",
+    testTitles: {
+      "hh-current-state": "Состояние сейчас",
+      "hh-resource-pulse": "Ресурс и внутренняя опора",
+      "hh-weekly-pulse": "Самочувствие за неделю",
+      "hh-monthly-profile": "Профиль месяца",
+      "mini-ipip-20": "Личностный baseline",
+      "gad-7": "Тревожность · GAD-7 · 7 вопросов",
+    },
     hexagramWord: "Гексаграмма", meaning: "Смысл", message: "Ключевая идея", step: "Практический шаг",
     expand: "Развернуть подсказку", aphorismsForYou: "Три афоризма для вас", sampleAphorisms: "Три афоризма · пример",
     attach: "Добавить текст из файла .txt или .md (только в браузере)",
@@ -99,8 +111,19 @@ const copy = {
     question: "What would you like guidance on?",
     placeholder: "What’s on your mind?",
     choose: "Choose how to explore your question",
-    ask: "Get guidance",
-    test: "Take a free test", testAria: "Start the free Current State Check",
+    ask: "Get Taoist Insight",
+    testOverline: "Explore yourself", test: "Take a free test", testAria: "Explore free self-check tests",
+    testsTitle: "Free tests for your topic", testsFallback: "A few ways to start",
+    testsClose: "Close suggested tests", testsMore: "Explore all matching tests",
+    testsNote: "Matched by topic only, not a diagnosis. Your question stays in this browser.",
+    testTitles: {
+      "hh-current-state": "Current State Check",
+      "hh-resource-pulse": "Resources & Inner Support",
+      "hh-weekly-pulse": "Weekly Wellbeing Check-in",
+      "hh-monthly-profile": "Monthly Life Profile",
+      "mini-ipip-20": "Personality Baseline",
+      "gad-7": "Anxiety Deep Dive",
+    },
     hexagramWord: "Hexagram", meaning: "Meaning", message: "Key message", step: "Practical step",
     expand: "Expand the full insight", aphorismsForYou: "Three aphorisms for you", sampleAphorisms: "Three aphorisms · example",
     attach: "Add a .txt or .md file locally in this browser",
@@ -172,8 +195,19 @@ const copy = {
     question: "¿Sobre qué quieres una orientación?",
     placeholder: "Tu pregunta…",
     choose: "Elige cómo explorar tu pregunta",
-    ask: "Pedir orientación",
-    test: "Hacer un test gratis", testAria: "Comenzar el test gratuito Estado actual (en inglés)",
+    ask: "Recibir consejo taoísta",
+    testOverline: "Explórate", test: "Hacer un test gratis", testAria: "Explorar tests gratuitos",
+    testsTitle: "Tests gratuitos para tu tema", testsFallback: "Opciones para empezar",
+    testsClose: "Cerrar tests sugeridos", testsMore: "Ver todos los tests relacionados",
+    testsNote: "Selección por tema, no un diagnóstico. La pregunta permanece en tu navegador. Algunos tests están en inglés.",
+    testTitles: {
+      "hh-current-state": "Chequeo del estado actual",
+      "hh-resource-pulse": "Recursos y apoyo personal",
+      "hh-weekly-pulse": "Bienestar de la semana",
+      "hh-monthly-profile": "Perfil mensual de vida",
+      "mini-ipip-20": "Perfil inicial de personalidad",
+      "gad-7": "Ansiedad en profundidad · GAD-7",
+    },
     hexagramWord: "Hexagrama", meaning: "Significado", message: "Mensaje clave", step: "Paso práctico",
     expand: "Desplegar toda la orientación", aphorismsForYou: "Tres aforismos para ti", sampleAphorisms: "Tres aforismos · ejemplo",
     attach: "Añadir un archivo .txt o .md solo en este navegador",
@@ -395,7 +429,9 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
 
 export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const router = useRouter();
   const [question, setQuestion] = useState("");
+  const [testPickerOpen, setTestPickerOpen] = useState(false);
   const [error, setError] = useState(false);
   const [attachmentError, setAttachmentError] = useState(false);
   const [visibleAphorisms, setVisibleAphorisms] = useState(3);
@@ -422,6 +458,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   }, [locale]);
 
   function choose(mode: Mode) {
+    setTestPickerOpen(false);
     setActiveMode(mode);
     if (!question.trim()) {
       setError(false);
@@ -486,6 +523,19 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const answerLocale = result ? detectIdeasQuestionLocale(question, locale) : locale;
   const answerCopy = copy[answerLocale];
   const topicLabel = result ? (result.matched ? answerCopy.topic[result.topic] : answerCopy.generic) : "";
+  const suggestedTests = getIdeasTestSuggestions(question);
+  const showSuggestedTests = testPickerOpen && Boolean(question.trim());
+  const guestLocale = locale === "es" ? "en" : locale;
+  const suggestedTestBrowserHref = "/" + locale + "/client/tests?focus=" + suggestedTests.focus.join(",");
+
+  function openFreeTests() {
+    if (!question.trim()) {
+      setTestPickerOpen(false);
+      router.push(ideasQuickTestHref(locale));
+      return;
+    }
+    setTestPickerOpen(open => !open);
+  }
   const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
   return (
     <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
@@ -521,7 +571,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
               try {
                 const excerpt = (await file.text()).trim();
                 setQuestion(current => [current, excerpt].filter(Boolean).join(" ").slice(0, 500));
-                setAttachmentError(false); setError(false); setResult(null); setVisibleAphorisms(3); setOpenOffer(null);
+                setAttachmentError(false); setError(false); setResult(null); setVisibleAphorisms(3); setOpenOffer(null); setTestPickerOpen(false);
                 textareaRef.current?.focus();
               } catch { setAttachmentError(true); }
             }}
@@ -533,9 +583,13 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
         </div>
         <div className={styles.heroActions} data-ideas-hero-actions>
           <button type="submit" className={styles.submit}><Send size={18} aria-hidden="true" />{t.ask}</button>
-          <Link href={ideasQuickTestHref(locale)} className={styles.testButton} data-ideas-free-test aria-label={t.testAria} prefetch={false}>
-            <ClipboardCheck size={18} aria-hidden="true" /><span>{t.test}</span><ArrowRight size={15} aria-hidden="true" />
-          </Link>
+          <button type="button" className={styles.testButton} data-ideas-free-test
+            aria-label={t.testAria} aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+            onClick={openFreeTests}>
+            <ClipboardCheck size={19} aria-hidden="true" />
+            <span className={styles.testButtonText}><span className={styles.testButtonKicker}>{t.testOverline}</span><strong>{t.test}</strong></span>
+            <ArrowRight size={18} aria-hidden="true" />
+          </button>
         </div>
         {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
         <details className={styles.privacyDisclosure}>
@@ -543,6 +597,29 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           <p className={styles.privacy}>{t.privacy}</p>
         </details>
         </form>
+        <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
+          hidden={!showSuggestedTests} aria-label={t.testsTitle}>
+          <div className={styles.testPickerHeading}>
+            <div><strong>{suggestedTests.matched ? t.testsTitle : t.testsFallback}</strong>
+              {suggestedTests.matched ? <span>{t.topic[suggestedTests.topic]}</span> : null}
+            </div>
+            <button type="button" className={styles.testPickerClose} onClick={() => setTestPickerOpen(false)}
+              aria-label={t.testsClose}><X size={19} aria-hidden="true" /></button>
+          </div>
+          <ul className={styles.testPickerList}>
+            {suggestedTests.keys.map(key => (
+              <li key={key}>
+                <Link href={"/" + guestLocale + "/client?startTests=" + key} prefetch={false}
+                  className={styles.testPickerItem} data-ideas-test-start={key}>
+                  <span>{t.testTitles[key]}</span><ArrowRight size={17} aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link href={suggestedTestBrowserHref} prefetch={false}
+            className={styles.allMatchingTests} data-ideas-more-tests>{t.testsMore}<ArrowRight size={15} aria-hidden="true" /></Link>
+          <p className={styles.testPickerNote}>{t.testsNote}</p>
+        </section>
       </div>
 
       <p className={styles.actionLabel}>{t.choose}</p>
