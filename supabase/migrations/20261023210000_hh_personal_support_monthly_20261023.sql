@@ -152,3 +152,40 @@ CREATE POLICY personal_support_events_owner_insert ON app_private.personal_suppo
         AND practitioner.active
     )
   );
+
+
+-- Narrow SECURITY DEFINER trigger: validation only. The practitioner does not
+-- gain general SELECT access to unrelated app.accounts.
+CREATE OR REPLACE FUNCTION app_private.personal_support_integrity_guard()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=pg_catalog,app,app_private AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM app.accounts account
+      WHERE account.id=NEW.client_account_id
+        AND account.status='active' AND account.onboarding_state='active'
+    ) THEN
+      RAISE EXCEPTION 'PERSONAL_SUPPORT_ACCOUNT_UNAVAILABLE' USING ERRCODE='23514';
+    END IF;
+  ELSE
+    IF (NEW.client_account_id,NEW.practitioner_id,NEW.source_public_enquiry_id,
+        NEW.operation_id,NEW.operation_hash,NEW.currency,NEW.amount_minor,
+        NEW.payment_method,NEW.receipt_digest,NEW.verified_by,NEW.verified_at,
+        NEW.starts_at,NEW.ends_at,NEW.format)
+      IS DISTINCT FROM
+       (OLD.client_account_id,OLD.practitioner_id,OLD.source_public_enquiry_id,
+        OLD.operation_id,OLD.operation_hash,OLD.currency,OLD.amount_minor,
+        OLD.payment_method,OLD.receipt_digest,OLD.verified_by,OLD.verified_at,
+        OLD.starts_at,OLD.ends_at,OLD.format)
+    THEN
+      RAISE EXCEPTION 'PERSONAL_SUPPORT_IMMUTABLE' USING ERRCODE='23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END; $$;
+REVOKE ALL ON FUNCTION app_private.personal_support_integrity_guard() FROM PUBLIC;
+DROP TRIGGER IF EXISTS personal_support_integrity_guard ON app_private.personal_support_programs;
+CREATE TRIGGER personal_support_integrity_guard
+BEFORE INSERT OR UPDATE ON app_private.personal_support_programs
+FOR EACH ROW EXECUTE FUNCTION app_private.personal_support_integrity_guard();
