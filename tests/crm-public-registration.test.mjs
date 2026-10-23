@@ -101,9 +101,18 @@ test('shared course/service chooser requires a reply contact and opt-in; name is
   const styles=read('components/contact-channel-chooser.module.css')
   for (const term of ['autoComplete="name"','autoComplete="email"',
     'contactConsent: consent', 'contact: { displayName:', 'type="checkbox" required',
-    'setConsent(false)','setDisplayName("")','setPhone("")']) {
+    'setConsent(quick)','setDisplayName("")','setPhone("")']) {
     assert.ok(view.includes(term),term)
   }
+  // Standard forms start unchecked; the quick form discloses reply-only consent
+  // immediately before the explicit Submit action, never a marketing opt-in.
+  assert.match(view,/quick = false/)
+  assert.match(view,/const \[consent, setConsent\] = useState\(quick\)/)
+  assert.match(view,/setConsent\(quick\);[\s\S]*?\}, \[enquiryResetKey, quick\]\)/)
+  assert.match(view,/\{!quick && <><details className=\{styles\.optionalName\}>[\s\S]*?type="checkbox" required checked=\{consent\}/)
+  assert.match(view,/\{quick && <small className=\{styles\.quickConsent\}>\{c\.quickConsent\}<\/small>\}/)
+  assert.match(view,/No marketing, charge or confirmed booking/)
+  assert.match(view,/\|\| !consent\) \{/)
   assert.match(read('components/phone-country-input.tsx'),/autoComplete="tel-national"/)
   assert.match(view,/sourcePath: pathname, locale/)
   assert.match(view,/fetch\("\/api\/service-enquiries"/)
@@ -123,3 +132,4 @@ test('shared course/service chooser requires a reply contact and opt-in; name is
   assert.match(contacts,/contact\.enquiry\.referenceCode/)
   assert.match(store,/\.\.\.\(former\.enquiry \? \{enquiry:former\.enquiry\} : \{\}\)/)
 })
+

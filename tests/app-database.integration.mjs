@@ -1230,6 +1230,9 @@ test('every published monitoring test completes through the repository and retur
       definitionVersion: definition.version,
       instrumentLocale: definition.instrumentLocale,
       operationId: randomUUID(),
+    }).catch(error => {
+      error.message = `Synthetic catalogue ${definition.key}/${definition.version}/${definition.instrumentLocale}: ${error.message}`
+      throw error
     })
     const context = syntheticTraumaContext(definition)
     let ready = run
@@ -1984,10 +1987,8 @@ test('private session share grants enforce per-consultation ownership under real
   const {readFile}=await import('node:fs/promises')
   const db=await adminClient()
   try{
-    await db.query('create schema if not exists storage')
-    await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
-    const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
-    await db.query(sql)
+    // setup() applies the exact delivery schema before housekeeping needs its dependent tables.
+    assert.equal((await db.query("select to_regclass('app_private.client_delivery_sessions') as present")).rows[0].present,'app_private.client_delivery_sessions')
     // The private PDF extension is additive and does not grant browser DB access.
     const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
     await db.query(pdfExtension)
@@ -2277,3 +2278,4 @@ test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolatio
     await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
   }
 })
+

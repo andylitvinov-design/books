@@ -25,9 +25,19 @@ export async function setup(){const db=await adminClient();try{
 
  // Include the existing encrypted-goals schema in this isolated fixture so export is complete.
  await db.query(await readFile(new URL('../../supabase/migrations/20261017165000_hh_reports_development_goals.sql',import.meta.url),'utf8'))
+ // Existing schema dependencies are initialized once, only in this empty synthetic database.
+ // Browser/service-role names are inert local stubs: no credentials, bypass, or external grants.
+ await db.query('create role service_role nologin nosuperuser nobypassrls')
+ await db.query(await readFile(new URL('../../supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261019180000_hh_client_message_push_optin.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261017013000_hh_assessment_interpretation_registry.sql',import.meta.url),'utf8'))
+ await db.query('create schema storage; create table storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
+ await db.query(await readFile(new URL('../../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261020192118_hh_report_engagement_opt_in_20261020.sql',import.meta.url),'utf8'))
  await db.query("create role hh_app_ci_login login noinherit nosuperuser nobypassrls password 'synthetic-ci-only';grant hh_app_backend,hh_app_inbox to hh_app_ci_login;grant usage on schema auth to hh_app_backend,hh_app_inbox;grant execute on function auth.uid(),auth.jwt() to hh_app_backend,hh_app_inbox;")
  for(const[id,session,email]of[[A,SA,'a@example.invalid'],[B,SB,'b@example.invalid']]){await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[session,id])}
  }finally{await db.end()}}
 export function actor(id=A,session=SA){return{id,claims:{sub:id,session_id:session,exp:Math.floor(Date.now()/1000)+3600,role:'authenticated'},displayName:'Synthetic Test',email:id===A?'a@example.invalid':'b@example.invalid',signedInAt:new Date().toISOString()}}
 export async function rawAs(actorValue,role,fn){if(!['authenticated','hh_app_backend','hh_app_inbox'].includes(role))throw new Error('Invalid test role');const db=await adminClient();try{await db.query('begin');await db.query('set local role '+role);await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify(actorValue.claims)]);const result=await fn(db);await db.query('commit');return result}catch(e){await db.query('rollback');throw e}finally{await db.end()}}
 if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){await setup();console.log('Isolated DB initialized; auth schema is a test double, not Supabase Auth.')}
+

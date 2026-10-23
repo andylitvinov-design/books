@@ -42,7 +42,17 @@ jobs:
           }, null, 2));
           JS
       - run: npm ci --no-audit --no-fund
-      - run: npm run test:unit
+      - name: Unit tests with retained isolated diagnostics
+        run: |
+          mkdir -p /tmp/ia222-evidence
+          set +e
+          npm run test:unit > /tmp/ia222-evidence/unit-tests.log 2>&1
+          test_status=$?
+          set -e
+          # Keep the complete synthetic output as an artifact; summarize without
+          # letting a successful diagnostic command hide a failed test process.
+          grep -E '(^not ok |^# (tests|pass|fail|cancelled|skipped|todo|duration_ms) )' /tmp/ia222-evidence/unit-tests.log | tail -n 200 || true
+          exit "$test_status"
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - run: npm run lint
@@ -67,3 +77,4 @@ jobs:
           name: ia222-synthetic-evidence
           path: /tmp/ia222-evidence/
           retention-days: 7
+

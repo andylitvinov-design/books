@@ -24,17 +24,24 @@ test("all approved service videos reuse exactly reviewed EN/RU sources, never ge
   }
 });
 
-test("the Services video gallery is expanded by default after booking and testimonials", () => {
-  const page = read("app/[locale]/services/page.tsx");
-  const begin = page.indexOf('id="method-videos" open');
-  const testimonials = page.indexOf('<PersonalTestimonials locale={locale as Locale} variant="services"');
-  assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials, "Owner #996 keeps visible method videos after booking and testimonials");
-  assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
-  assert.match(page, /<PageVideo slot="method-hypnotherapy" locale="en" \/>/);
-  assert.match(page, /<PageVideo slot="method-constellations" locale="en" \/>/);
-  assert.match(page, /id="service-video-hypnotherapy"/);
-  assert.match(page, /id="service-video-alchemy"/);
-  assert.match(page, /<PublicConsultationCta/);
+test("the shared Services video gallery stays expanded after testimonials and before cart booking", () => {
+  const extras = read("components/services-studio-extras.tsx");
+  for (const path of ["app/[locale]/services/page.tsx", "app/es/services/page.tsx"]) {
+    const page = read(path);
+    const intro = page.indexOf("<ServicesIntroMedia");
+    const testimonials = page.indexOf("<PersonalTestimonials");
+    const methods = page.indexOf("<ServicesMethodVideos");
+    const booking = page.indexOf("<PublicConsultationCta");
+    assert.ok(intro >= 0 && testimonials > intro && methods > testimonials && booking > methods,
+      path + ": introduction, testimonials, expanded methods and cart booking retain their current composition");
+  }
+  assert.match(extras, /<details[^>]*id="method-videos"[^>]*\bopen>/);
+  assert.match(extras, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="method-hypnotherapy" locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="method-constellations" locale=\{locale\} \/>/);
+  assert.match(extras, /<ServiceVideoShowcase locale="es" topic="hypnotherapy" id="es-service-video-hypnotherapy"/);
+  assert.match(extras, /<ServiceVideoShowcase locale="es" topic="constellations" id="es-service-video-constellations"/);
+  assert.doesNotMatch(extras, /<iframe/);
   const browser = read("scripts/verify-site-video-browser.mjs");
   assert.match(browser, /getAttribute\('open'\) === null/);
 });
@@ -55,17 +62,21 @@ test("Services cards keep exact method media accessible on-page with transcript 
   assert.doesNotMatch(cards, /<iframe/);
 });
 
-test("the dedicated video appears on every service detail, with accurate EN/RU/ES language and disclosure", () => {
+test("video-bearing service details retain accurate EN/RU/ES media and disclosure", () => {
   const showcase = read("components/service-video-showcase.tsx");
   const css = read("components/service-video-showcase.module.css");
   const core = read("components/core-service-detail.tsx");
   const personal = read("components/personal-service-landing.tsx");
   const free = read("app/[locale]/services/free-situation-review/page.tsx");
+  const freeLanding = read("components/free-entry-landing.tsx");
   assert.match(core, /<ServiceVideoShowcase topic=\{kind === "dao" \? "overview" : kind\} locale=\{locale\} id="service-video"/);
   assert.match(personal, /<ServiceVideoShowcase/);
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
   assert.match(personal, /service === "imagery-therapy" \? "hypnotherapy"/);
-  assert.match(free, /<ServiceVideoShowcase topic="overview" locale=\{locale\}/);
+  assert.match(free, /<FreeEntryLanding locale=\{locale\} kind="situation"/);
+  // Only the written review includes a general introduction. Dao is a compact
+  // resource-request landing and does not regain the removed unrelated video.
+  assert.match(freeLanding, /\{kind === "situation" \? <div[^>]*><ServiceVideoShowcase topic="overview" locale=\{locale\} id="service-video" \/><\/div> : null\}/);
   assert.match(showcase, /<SiteVideoPlayer video=\{video\.video\} locale=\{locale\}/);
   assert.match(showcase, /textLanguage=\{video\.video\.language\}/);
   assert.match(showcase, /data-video-kind=\{video\.general \? "general" : "method"\}/);
@@ -105,3 +116,4 @@ test("method showcases expose direct original HeyGen fallback and release tests 
   assert.ok(css.includes(".original:focus-visible"));
   assert.ok(verifier.includes("disclosure.getAttribute('open') === null"));
 });
+
