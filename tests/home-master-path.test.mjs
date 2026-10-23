@@ -10,7 +10,7 @@ const spanish = read("app/es/page.tsx");
 const practice = read("components/app/practice-workspace.jsx");
 const lessons = read("app/[locale]/academy/[[...slug]]/page.tsx");
 
-test("homepage exposes a real For me / Become a Master switch in EN, RU and ES", () => {
+test("homepage keeps accessible personal / master switch and five matching path stages", () => {
   assert.match(home, /<HomeMasterPath locale=\{locale\} \/>/);
   assert.match(spanish, /<HomeMasterPath locale="es" \/>/);
   for (const source of [home, spanish]) {
@@ -22,31 +22,35 @@ test("homepage exposes a real For me / Become a Master switch in EN, RU and ES",
   assert.match(widget, /aria-pressed=\{mode === "master"\}/);
   assert.match(widget, /data-home-path-panel="master"/);
   assert.match(widget, /data-home-path-panel="personal"/);
-  for (const str of ["Become a Master", "Стать мастером", "Ser profesional", "List a service for free", "Опубликовать услугу бесплатно", "Publicar un servicio gratis"]) {
-    assert.ok(widget.includes(str), "Missing localized CTA: " + str);
+  assert.equal((widget.match(/title: "Discover yourself"|title: "Take a free course"|title: "Receive a free service"|title: "Professional training"|title: "Become a Master"/g) || []).length, 5);
+  for (const str of ["Become a Master", "Стать мастером", "Ser profesional",
+    "List a service for free", "Опубликовать услугу бесплатно", "Publicar un servicio gratis"]) {
+    assert.ok(widget.includes(str), "Missing localized action: " + str);
   }
 });
 
-test("every journey action is linked to an existing entry route, not an imaginary new cabinet", () => {
+test("roadmap links to the five public steps while private editors remain separate", () => {
   for (const path of [
-    '"/client/tests"', '"/services/free-situation-review"',
-    '"/academy/principles-of-energywork/learn"', '"/academy"',
-    '"/app/practice?panel=materials&materialTab=courses"',
-    '"/app/practice?panel=services"',
-  ]) {
-    assert.ok(widget.includes(path), "Expected journey route: " + path);
-  }
+    '"/client/tests"', '"/academy/principles-of-energywork/learn"',
+    '"/services/free-situation-review"', '"/academy/reiki"', '"/pro"',
+    '"/app/practice?panel=materials&materialTab=courses&create=1"',
+    '"/app/practice?panel=services&create=1"',
+  ]) assert.ok(widget.includes(path), "Expected route: " + path);
   assert.match(lessons, /principles-of-energywork\/learn/);
   assert.match(widget, /locale === "es" \? "en" : locale/);
+  assert.match(widget, /const personalTargets = \[/);
+  assert.match(widget, /href=\{targets\[index\]\}/);
+  assert.match(widget, /href=\{serviceEditor\}/);
+  assert.match(widget, /href=\{courseEditor\}/);
   assert.match(practice, /if\(params\.get\('panel'\)==='services'\)setActivePanel\('services'\)/);
   assert.match(practice, /if\(params\.get\('panel'\)==='materials'\)setActivePanel\('materials'\)/);
   assert.match(practice, /materialTab/);
 });
 
-test("master path describes real publication moderation and mobile accessibility", () => {
+test("master path requires review and is mobile-accessible", () => {
   assert.match(widget, /Public listings require review/);
   assert.match(widget, /Публикация — после модерации/);
-  assert.match(widget, /no.*prerequisites|not prerequisites/);
+  assert.match(widget, /not prerequisites/);
   assert.match(widget, /not a professional qualification/);
   assert.match(styles, /@media \(max-width: 540px\)/);
   assert.match(styles, /min-height: 44px/);
