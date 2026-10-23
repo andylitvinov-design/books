@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { homeGuideDestinations, homeGuideGoals, homeGuideCategories, browseHomeGuideOffers, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply } from "../lib/home-conversation.mjs";
+import { homeGuideDestinations, homeGuideGoals, homeGuideCategories, browseHomeGuideOffers, homeGuideQuickStarts, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply } from "../lib/home-conversation.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -61,6 +61,33 @@ test("the in-place consultant category filter reuses real offers, priorities and
     assert.deepEqual(emergency.offers, []);
   }
   assert.deepEqual(browseHomeGuideOffers({ category: "invalid", locale: "en" }).offers, []);
+});
+
+test("six first-screen requests link to existing destinations with explicit site categories EN/RU/ES", () => {
+  const expected = {
+    stress: "/en/courses/antistress",
+    relationships: "/en/services/free-situation-review",
+    direction: "/en/books",
+    business: "/en/app/business",
+    resources: "/en/services/dao-health-profile",
+    reiki: "/en/academy/reiki/free-practitioner-course",
+  };
+  for (const locale of ["en", "ru", "es"]) {
+    const cards = homeGuideQuickStarts(locale);
+    assert.equal(cards.length, 6);
+    assert.deepEqual(cards.map(card => card.id), Object.keys(expected));
+    assert.equal(new Set(cards.map(card => card.id)).size, 6);
+    for (const card of cards) {
+      const path = expected[card.id]
+        .replace("/en/app/business", locale === "ru" ? "/ru/app/business" : "/en/app/business")
+        .replace(/^\/en\//, "/" + locale + "/");
+      assert.equal(card.href, path, locale + " " + card.id);
+      assert.ok(card.category.length > 3 && card.title.length > 3);
+      assert.doesNotMatch(card.href, /[?&]|question=|prompt=/);
+    }
+  }
+  assert.equal(homeGuideQuickStarts("es").find(card => card.id === "business").href, "/en/app/business");
+  assert.equal(homeGuideQuickStarts("ru").find(card => card.id === "relationships").category.startsWith("Услуги"), true);
 });
 
 test("each conversation goal resolves to a real first-party destination without exposing the question", () => {
@@ -143,7 +170,7 @@ test("one-tap ChatGPT-style microphone is local, cancellable, and sends recogniz
     'setVoiceState("finishing")',
   ]) assert.ok(component.includes(token), token);
   assert.match(css, /\.recordingMessage\s*\{[^}]*text-overflow: ellipsis/);
-  assert.match(css, /\.quickChoices\s*\{[^}]*grid-template-columns: repeat\(3,/);
+  assert.match(css, /\.needGrid\s*\{[^}]*grid-template-columns: repeat\(3,/);
   assert.match(css, /ideas-pine-reference\.webp/);
   assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(component, /data-guide-phase=\{turns\.length === 0/);
@@ -297,21 +324,21 @@ test("specific offer cards retain compact modal and bounded Safari microphone",(
   assert.ok(!ui.includes(term),term);
 });
 
-test("approved first-screen composer stays spacious while contextual chat remains available", () => {
+test("first-screen lists direct category needs while only the separate chat opens the composer", () => {
   const component = read("components/home-conversation-guide.tsx");
   const css = read("components/home-conversation-guide.module.css");
-  assert.match(component, /<form className=\{styles\.entryForm\} onSubmit=\{submitEntry\}/);
-  assert.match(component, /id="home-guide-entry-question" value=\{draft\}/);
-  assert.match(component, /className=\{styles\.entryMic\} data-home-guide-launcher-mic/);
-  assert.match(component, /className=\{styles\.entrySend\} data-home-guide-launcher/);
-  assert.match(component, /if \(draft\.trim\(\)\) ask\(draft\)/);
-  assert.match(component, /className=\{styles\.entryPrivacy\}/);
-  assert.match(css, /\.entryForm textarea \{[^}]*resize: none/);
-  assert.match(css, /\.entrySend \{[^}]*min-height: 50px/);
-  assert.match(css, /\.examples button \{[^}]*flex-direction: column/);
-  assert.match(css, /\.examples button \{[^}]*min-height: 73px/);
-  assert.match(css, /\.offerTag/);
-  assert.match(component, /recommendations.map/, "latest contextual offers are preserved");
+  for (const token of ["homeGuideQuickStarts(locale).map", "data-home-guide-needs",
+    "data-home-guide-need={item.id}", "className={styles.chatLauncher} data-home-guide-launcher",
+    "className={styles.chatMic} data-home-guide-launcher-mic", "aria-modal=\"true\"",
+    "t.privacyDetail", "recommendations.map"])
+    assert.ok(component.includes(token), token);
+  assert.ok(!component.includes("home-guide-entry-question"), "Composer exists only in the chat sheet");
+  assert.ok(!component.includes("data-home-guide-filters"), "Category scroller removed from first screen");
+  assert.ok(!component.includes("data-home-guide-inline-results"), "Offer tiles no longer stretch the first screen");
+  assert.match(css, /\.needGrid\s*\{[^}]*grid-template-columns: repeat\(3,/);
+  assert.match(css, /\.needGrid\s*\{[^}]*grid-template-columns: repeat\(2,/);
+  assert.match(css, /\.needCard\s*\{[^}]*min-height: 75px/);
+  assert.match(css, /\.chatLauncher\s*\{[^}]*min-height: 48px/);
   assert.match(css, /ideas-pine-reference\.webp/);
 });
 
@@ -323,10 +350,10 @@ test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and fea
   assert.match(home, /<SiteNavigation locale=\{locale\} \/>/);
   assert.match(home, /<HomeConversationGuide locale=\{locale\} \/>/);
   assert.match(css, /ideas-pine-reference\.webp/, "Keep the approved local pine artwork");
-  assert.match(css, /\.examples button:first-child \{/, "Featured topic visually mirrors Ideas but is not selected");
+  assert.match(css, /\.needCard:first-child \{/, "Featured topic visually mirrors Ideas but is not selected");
   assert.match(css, /#dcf1ed/, "First tile uses the evergreen Ideas accent");
-  assert.match(css, /\.entryMic \{[\s\S]*?min-height: 44px;/);
-  assert.match(css, /\.entrySend \{[\s\S]*?#af805d/, "Warm CTA matches approved Ideas");
+  assert.match(css, /\.chatMic \{[\s\S]*?min-height: 48px;/);
+  assert.match(css, /\.chatLauncher \{[\s\S]*?#af805d/, "Warm CTA matches approved Ideas");
   assert.match(headerCss, /\.house-home--services > \.house-header--services \{[\s\S]*?background: #fffdf9;/);
   for (const token of ["data-home-guide-launcher-mic", "data-home-guide-dialog", "SpeechRecognition", "aria-modal=\"true\""]) {
     assert.ok(guide.includes(token), "Existing guide behavior must remain: " + token);
@@ -341,6 +368,6 @@ test("home advisor replaces repeated service catalogs without changing #1537 fre
    assert.ok(page.indexOf("<HomeConversationGuide") < page.indexOf('<details className="service-home-more"'));
  }
  const guide=read("components/home-conversation-guide.tsx");
- for(const token of ["data-home-guide-filters","data-home-guide-inline-results","data-home-guide-browse-offer","styles.advisorPortrait","browseHomeGuideOffers"])
+ for(const token of ["data-home-guide-needs","data-home-guide-need={item.id}","data-home-guide-launcher","styles.advisorPortrait","homeGuideQuickStarts"])
    assert.ok(guide.includes(token));
 });
