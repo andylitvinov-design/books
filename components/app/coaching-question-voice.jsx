@@ -66,7 +66,7 @@ export default function CoachingQuestionVoice({
       window.speechSynthesis?.cancel()
       const capture=recognition.current
       recognition.current=null
-      capture?.abort()
+      try{capture?.abort()}catch{/* permission prompt may already have ended */}
       utterance.current=null
       setSpeaking(false);setListening(false);setInterim('')
       interimCallback.current?.('')
@@ -78,7 +78,7 @@ export default function CoachingQuestionVoice({
       window.speechSynthesis?.cancel()
       const capture=recognition.current
       recognition.current=null
-      capture?.abort()
+      try{capture?.abort()}catch{/* permission prompt may already have ended */}
       utterance.current=null
       interimCallback.current?.('')
       listeningCallback.current?.(false)
@@ -141,7 +141,7 @@ export default function CoachingQuestionVoice({
   function toggleMic(){
     if(disabled)return
     if(listening){
-      recognition.current?.stop()
+      try{recognition.current?.stop()}catch{/* the browser may have ended capture already */}
       return
     }
     if(!support.stt){setError(t.unsupported);return}
@@ -170,7 +170,13 @@ export default function CoachingQuestionVoice({
         interimCallback.current?.(temporary)
       }
       capture.onerror=()=>{
-        if(recognition.current===capture)setError(t.error)
+        if(recognition.current!==capture)return
+        recognition.current=null
+        try{capture.abort()}catch{/* permission may already be denied */}
+        setListening(false);setInterim('')
+        interimCallback.current?.('')
+        listeningCallback.current?.(false)
+        setError(t.error)
       }
       capture.onend=()=>{
         if(recognition.current!==capture)return
