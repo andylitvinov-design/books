@@ -329,7 +329,7 @@ function OpeningRating({label,value,onChange,disabled,low,high}){
  * Read-only course roadmap. Previewing a locked card never changes the
  * learner's schedule, progress or server-owned completion state.
  */
-function OporaCoursePath({locale,cycle,saved,roadmap,words}){
+function OporaCoursePath({locale,cycle,saved,roadmap,words,oneAction=false}){
   const courseDay=Number.isInteger(cycle.day)?cycle.day:1
   const previouslySaved=new Set((Array.isArray(roadmap)?roadmap:[])
     .filter(item=>item.status==='completed').map(item=>item.day))
@@ -337,7 +337,7 @@ function OporaCoursePath({locale,cycle,saved,roadmap,words}){
     const day=index+1
     const completed=previouslySaved.has(day)||day<courseDay||(day===courseDay&&saved)
     const status=completed?'completed':day===courseDay?'today':day===courseDay+1?'next':'locked'
-    return {day,status,copy:oporaExperienceDay(day,locale)}
+    return {day,status,copy:oneAction?oporaAs58Day(day,locale):oporaExperienceDay(day,locale)}
   })
   const count=days.filter(item=>item.status==='completed').length
   const p=words.preview
@@ -887,7 +887,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <p className={styles.soft}>{reportedAttempt?t.attempted:t.readOnly}</p>
           </>}
           {moment==='nextStep'&&<OporaCoursePath locale={lang} cycle={cycle}
-            saved={saved} roadmap={data?.roadmap} words={t}/>}
+            saved={saved} roadmap={data?.roadmap} words={t} oneAction={showNewPlan}/>}
           {moment==='habit'&&<>
             <p className={styles.lead}>{t.habitLead}</p>
             {!habitSetup
