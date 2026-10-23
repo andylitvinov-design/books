@@ -78,9 +78,9 @@ test("six first-screen requests link to existing destinations with explicit site
     assert.deepEqual(cards.map(card => card.id), Object.keys(expected));
     assert.equal(new Set(cards.map(card => card.id)).size, 6);
     for (const card of cards) {
-      const path = expected[card.id]
-        .replace("/en/app/business", locale === "ru" ? "/ru/app/business" : "/en/app/business")
-        .replace(/^\/en\//, "/" + locale + "/");
+      const path = card.id === "business"
+        ? (locale === "ru" ? "/ru/app/business" : "/en/app/business")
+        : expected[card.id].replace(/^\/en\//, "/" + locale + "/");
       assert.equal(card.href, path, locale + " " + card.id);
       assert.ok(card.category.length > 3 && card.title.length > 3);
       assert.doesNotMatch(card.href, /[?&]|question=|prompt=/);
