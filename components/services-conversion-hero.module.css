@@ -19,16 +19,15 @@
 .arrows button { display:grid; place-items:center; width:44px; height:44px; padding:0; border:1px solid rgba(255,255,255,.48); border-radius:999px; background:rgba(19,31,26,.26); color:#fff; cursor:pointer; }
 .arrows button:hover { background:rgba(255,255,255,.2); }
 .finder { margin:14px 0 0; padding:19px 23px 16px; border:1px solid #e4d6c9; border-radius:22px; background:linear-gradient(125deg,#fffcf7 0%,#f4eee5 100%); box-shadow:0 9px 28px rgba(66,56,44,.055); font-family:Arial,Helvetica,sans-serif; }
-.finderTop { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.finderEyebrow { margin:0 0 8px; color:#7b634e; font:800 11px/1.35 Arial,Helvetica,sans-serif; letter-spacing:.055em; }
-.modeToggle { display:inline-flex; align-items:stretch; gap:4px; padding:4px; border:1px solid #e5d8c9; border-radius:15px; background:#f3eae0; }
-.modeToggle button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:8px 17px; border:1px solid transparent; border-radius:11px; color:#654c3d; background:transparent; font:800 13px/1.24 Arial,Helvetica,sans-serif; cursor:pointer; }
-.modeToggle button[aria-pressed="true"] { border-color:#d6bca2; background:#fffdf9; color:#3c3328; box-shadow:0 3px 12px rgba(88,66,46,.12); }
-.modeToggle button svg { flex:none; }
-.reassurance { max-width:350px; margin:0; color:#806d5e; font:12px/1.5 Arial,Helvetica,sans-serif; }
-.filterHeader { margin:17px 0 10px; }
-.filterHeader h2 { margin:0; font:400 clamp(21px,2.8vw,28px)/1.2 Georgia,"Times New Roman",serif; color:#3e352d; }
-.filterHeader p { margin:5px 0 0; color:#74695e; font:12px/1.5 Arial,Helvetica,sans-serif; }
+.filterHeader { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:6px 16px; margin:0 0 11px; }
+.filterHeader h2 { min-width:0; margin:0; font:400 clamp(21px,2.8vw,28px)/1.2 Georgia,"Times New Roman",serif; color:#3e352d; text-wrap:balance; }
+.filterHeader > p { grid-column:1/-1; margin:0; color:#74695e; font:12px/1.5 Arial,Helvetica,sans-serif; }
+.modeToggle { display:inline-flex; align-items:center; justify-self:end; gap:3px; padding:3px; border:1px solid #e5d8c9; border-radius:999px; background:#f3eae0; }
+.modeToggle button { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-height:40px; padding:7px 11px; border:1px solid transparent; border-radius:999px; color:#654c3d; background:transparent; font:800 11px/1.25 Arial,Helvetica,sans-serif; white-space:nowrap; cursor:pointer; }
+.modeToggle button[aria-pressed="true"] { border-color:#d6bca2; background:#fffdf9; color:#3c3328; box-shadow:0 3px 10px rgba(88,66,46,.11); }
+.modeToggle button:hover:not([aria-pressed="true"]) { background:#fdf4e9; }
+.modeToggle button svg { flex:none; width:14px; height:14px; }
+.reassurance { width:100%; margin:2px 0 0; color:#806d5e; font:11px/1.45 Arial,Helvetica,sans-serif; }
 .topicList { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .topic,.topicActive { min-height:44px; max-width:100%; border:1px solid #ddcbb9; border-radius:999px; padding:9px 16px; color:#614b3a; background:#fffdfa; font:750 12px/1.35 Arial,Helvetica,sans-serif; cursor:pointer; }
 .topicActive { border-color:#654c3b; color:#fffaf2; background:#654c3b; }
@@ -58,15 +57,12 @@
   .arrows { gap:7px; }
   .arrows button { height:44px; width:44px; }
   .finder { border-radius:18px; margin-top:9px; padding:14px 13px 13px; }
-  .finderTop { align-items:flex-start; }
   .reassurance { display:none; }
-  .finderEyebrow { margin-bottom:7px; font-size:10px; }
-  .modeToggle { display:flex; width:100%; }
-  .modeToggle button { flex:1 1 50%; min-width:0; font-size:12px; padding:8px 10px; }
-  .modeToggle button svg { width:15px; height:15px; }
-  .finderTop > div { width:100%; }
-  .filterHeader { margin:15px 0 11px; }
-  .filterHeader h2 { font-size:23px; }
+  .filterHeader { grid-template-columns:minmax(0,1fr) 104px; align-items:start; gap:7px 10px; margin:0 0 11px; }
+  .filterHeader h2 { font-size:clamp(21px,5.6vw,23px); line-height:1.16; }
+  .modeToggle { display:grid; grid-template-columns:1fr; width:104px; gap:3px; padding:3px; border-radius:14px; }
+  .modeToggle button { min-width:0; min-height:44px; justify-content:flex-start; gap:5px; padding:8px 7px; border-radius:10px; font-size:11px; }
+  .modeToggle button svg { width:14px; height:14px; }
   .topicList { flex-wrap:nowrap; gap:6px; overflow-x:auto; padding:2px 1px 8px; scrollbar-width:thin; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; }
   .topic,.topicActive { flex:0 0 auto; scroll-snap-align:start; min-height:44px; padding:8px 14px; font-size:11px; }
   .finderFooter { align-items:flex-start; }
@@ -80,8 +76,11 @@
   .slideLead { font-size:11px; }
   .viewButton { margin-top:12px; min-height:44px; }
   .finder { padding:12px 10px 10px; }
-  .modeToggle button { font-size:11px; padding:8px 7px; }
+  .filterHeader { grid-template-columns:minmax(0,1fr) 98px; gap:6px 8px; }
   .filterHeader h2 { font-size:21px; }
+  .modeToggle { width:98px; }
+  .modeToggle button { font-size:10.5px; gap:4px; padding-inline:5px; }
+  .modeToggle button svg { width:13px; height:13px; }
   .directPaths a { flex:1 1 100%; min-height:44px; }
 }
 @media(prefers-reduced-motion:reduce) {
@@ -171,7 +170,6 @@
 .finder .filterHeader { margin:0 0 10px; }
 .finder .topicList { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; overflow:visible; padding:0; }
 .finder .topic,.finder .topicActive { min-width:0; min-height:45px; border-radius:12px; padding:9px 10px; text-align:center; font-size:12px; }
-.finder .finderTop { margin-top:12px; padding-top:12px; border-top:1px solid #eadccf; }
 .slideActions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:23px; }
 .slideActions .viewButton { min-width:0; min-height:51px; margin:0; padding:12px 20px; background:rgba(255,250,242,.13); border:1px solid rgba(255,250,242,.65); color:#fffaf1; }
 .slideActions .viewButton:hover { background:rgba(255,250,242,.27); }
@@ -202,7 +200,6 @@
 @media(max-width:760px) {
   .finder .topicList { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; overflow:visible; scroll-snap-type:none; padding:0; }
   .finder .topic,.finder .topicActive { flex:none; min-height:44px; padding:9px 11px; text-align:left; font-size:11.5px; scroll-snap-align:none; }
-  .finder .finderTop { margin-top:11px; padding-top:11px; }
   .slideActions { gap:8px; margin-top:13px; }
   .requestButton,.slideActions .viewButton { min-height:45px; padding:10px 14px; gap:8px; font-size:12px; }
   .requestPanel { inset:10px 10px 58px; width:auto; padding:16px; border-radius:16px; }
