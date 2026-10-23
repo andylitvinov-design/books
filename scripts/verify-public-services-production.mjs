@@ -194,7 +194,11 @@ try {
         assert.equal(await showcase.locator("[data-services-slide-dot]").count(), 5);
         await showcase.locator('[data-services-slide-dot="business"]').click();
         await visible(showcase.locator('[data-services-slide="business"]'));
-        await showcase.locator('[data-services-slide-action="business"]').click();
+        const businessAction = showcase.locator('[data-services-slide-action="business"]');
+        // At 320px the secondary slide action is deliberately hidden to keep
+        // the primary request readable. The same Business filter is usable.
+        if (await businessAction.isVisible()) await businessAction.click();
+        else await showcase.locator('[data-services-kind="business"]').click();
         await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
         await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
         await showcase.locator('[data-services-mode="toronto"]').click();
