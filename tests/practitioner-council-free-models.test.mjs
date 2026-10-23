@@ -29,6 +29,10 @@ test('missing keys cannot call external inference or invent Gemini or Mistral',a
   const final=composeDailyCouncilTelegram(report,result)
   assert.match(final.markdown,/Реальных независимых модельных ответов: 0\/2/)
   assert.match(final.markdown,/Это НЕ ответ модели/)
+  assert.match(final.markdown,/публичный HTML-аудит и статус Gemini \/ Mistral/)
+  assert.deepEqual(final.outcomes,{gemini:'unavailable',mistral:'unavailable'})
+  assert.deepEqual(final.sources,['GitHub public HTTP facts'])
+  assert.ok(!final.sources.some(source=>source.startsWith('real:')))
   assert.equal(final.models.length,0)
 })
 test('Gemini requires explicitly confirmed Free Tier and correct stable ID',async()=>{
