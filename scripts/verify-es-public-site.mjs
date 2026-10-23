@@ -240,15 +240,10 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        const accountMenu = page.locator('.site-navigation details.site-main-menu');
-        await expect(accountMenu).toHaveCount(1);
-        await expect(accountMenu).toHaveJSProperty('open', false);
-        await click(page.locator('.site-main-menu-trigger'));
-        await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
-        await expect(accountMenu.getByRole('link', { name: 'Gabinete', exact: true })).toHaveCount(1);
+        // On public client pages the Cabinet is a direct link; on Home
+        // the separate My Space control opens a dialog instead.
+        const accountLink = page.locator('.site-navigation a.site-cabinet-entry[href="/en/app"]');
         await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toHaveAccessibleName('Gabinete');
         await expect(accountLink).toBeVisible();
         await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);
@@ -294,7 +289,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eleven-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'Energy/Love/Business, full catalog in More, My Space dialog on Home; Enter/Tab/Escape',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }
