@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
+import { AboutTestimonialGallery } from "@/components/about-testimonial-gallery";
+import { archivedTestimonialPosterFor, testimonialVideos } from "@/components/personal-testimonials";
 import { PageVideo } from "@/components/page-video";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PsychicAlchemyIntroVideo } from "@/components/psychic-alchemy-intro-video";
@@ -18,17 +20,13 @@ import { metadataBaseFor } from "@/data/site-metadata";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
-const videoTestimonials = [
-  { id: "m9RfDgK76PU", ru: "Антон Корчинский — отзыв о работе", en: "Anton Korchinsky — testimonial" },
-  { id: "5oj0BIbLT4w", ru: "Елена Бахтина — отзыв клиента", en: "Elena Bakhtina — client testimonial" },
-  { id: "MIVLm1GUTtM", ru: "Юрий Гончаренко — отзыв клиента", en: "Yuri Goncharenko — client testimonial" },
-] as const;
+
 
 const testimonialCopy = {
   ru: {
     kicker: "Отзывы",
     title: "Видео-отзывы",
-    text: "Несколько видео-отзывов, ранее опубликованных на моём сайте PsiMaster.",
+    text: "Сначала — шесть видеоотзывов с оригинальным русским звуком. Англоязычные отзывы можно открыть отдельно ниже.",
     archiveTitle: "Фото и письменные отзывы",
     archiveText: "Часть старых отзывов и учебных эссе сохранилась в архиве PsiMaster. Эти ссылки ведут к оригинальным публикациям.",
     archiveAction: "Открыть архив PsiMaster",
@@ -40,7 +38,7 @@ const testimonialCopy = {
   en: {
     kicker: "Testimonials",
     title: "Video testimonials",
-    text: "A few video testimonials that were previously published on my PsiMaster website.",
+    text: "Six authentic video testimonials with original English audio. Open the link below to see reviews in Russian.",
     archiveTitle: "Photo & written reviews",
     archiveText: "Some older reviews and participant essays remain in the PsiMaster archive. These links open the original publications.",
     archiveAction: "Open PsiMaster archive",
@@ -137,16 +135,15 @@ export default async function AboutPage({ params }: PageProps) {
           <h2 id="testimonials-title">{testimonials.title}</h2>
           <p>{testimonials.text}</p>
         </div>
-        <div className="about-video-grid">
-          {videoTestimonials.map((video) => (
-            <SiteVideoPlayer
-              key={video.id}
-              video={{ youtubeId: video.id, title: video[typedLocale], language: "ru" }}
-              locale={typedLocale}
-              compact
-            />
-          ))}
-        </div>
+        <AboutTestimonialGallery
+          locale={typedLocale}
+          primaryVideos={testimonialVideos[typedLocale].map((item) => ({
+            ...item, fallbackPoster: archivedTestimonialPosterFor(item.id),
+          }))}
+          otherLanguageVideos={testimonialVideos[typedLocale === "ru" ? "en" : "ru"].map((item) => ({
+            ...item, fallbackPoster: archivedTestimonialPosterFor(item.id),
+          }))}
+        />
       </section>
 
       <section className="about-review-archive" aria-labelledby="archive-title">
