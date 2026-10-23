@@ -42,7 +42,7 @@ test('hosted verification has exact mobile coverage, fully intercepted requests 
   for (const fragment of ["['ru', 'en', 'es']", '[320, 360, 390]', '[false, true]', "serviceWorkers: 'block'",
     "route.abort('blockedbyclient')", 'assert.equal(state.saves, 0', 'assert.deepEqual(unexpectedRequests, []',
     'assert.equal(state.finalData, state.initialData', 'await click(t.previous)', 'await click(t.neutral)',
-    "await page.keyboard.press('Escape')", 'assert.equal(evidence.cases.length, 18)']) assert.ok(browser.includes(fragment), fragment)
+    "await page.keyboard.press('Escape')", 'assert.equal(evidence.cases.length, 24)']) assert.ok(browser.includes(fragment), fragment)
   assert.doesNotMatch(browser, /route\.continue|request\.post|\.request\.fetch|createServer|process\.env\.[A-Z_]*(?:TOKEN|SECRET|PASSWORD)/)
   assert.match(workflow, /browser: \[chromium, webkit\]/)
   assert.match(workflow, /node scripts\/verify-opora-as56-browser\.mjs/)

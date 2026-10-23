@@ -5,6 +5,7 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,textOf,nodes} from './helpers/route-pipeline-harness.mjs'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const languages={
@@ -37,13 +38,12 @@ const playerNode=tree=>nodes(tree).find(n=>n.type?.testName==='OporaOceanOutro'&
 const meditationNode=tree=>nodes(tree).find(n=>n.props?.['data-opora-guided-meditation']==='true')
 async function practice(f,locale){
   const d=languages[locale]
-  await click(f.h,d.next)
-  await click(f.h,d.next)
+  await advanceOporaTo(f.h,'practice',d.next)
 }
 async function finish(f,locale){
   const d=languages[locale],h=f.h
-  for(let i=0;i<12&&!findButton(h.tree,d.save);i++)await click(h,d.next)
-  assert.ok(findButton(h.tree,d.save),'Recap required before saving')
+  await advanceOporaTo(h,'recapFeedback',d.next)
+  assert.ok(findButton(h.tree,d.save),'Honest feedback follows three distinct takeaways')
   await click(h,d.confidence)
   await click(h,d.save)
   assert.equal(f.writes,1)
@@ -54,7 +54,10 @@ test('inline guided two-minute meditation is a part of day 3 practice, not a new
   assert.match(textOf(h.tree),languages.en.instruction)
   assert.match(textOf(h.tree),/Start the timer: with waves or in silence/)
   assert.match(textOf(h.tree),/After two minutes, look around/)
-  assert.ok(meditationNode(h.tree),'Visible three-step instructions before the player')
+  assert.ok(meditationNode(h.tree),'Three-step instructions remain available')
+  const accordion=nodes(h.tree).find(n=>n.type==='details'&&n.props?.['data-opora-inline-practice-audio']==='true')
+  assert.ok(accordion,'Optional meditation stays inside the practice stage')
+  assert.equal(accordion.props.open,undefined,'Meditation should start collapsed on a phone')
   assert.ok(playerNode(h.tree),'Existing compact player in the same practice slide')
   assert.equal(playerNode(h.tree).props.paused,false)
   assert.match(textOf(h.tree),/2-minute grounding meditation/)
