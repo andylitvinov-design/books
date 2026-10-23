@@ -477,7 +477,7 @@ a.service-home-start-card:hover {
   bottom: 0;
   left: 0;
   display: none;
-  grid-template-columns: repeat(7, minmax(0,1fr));
+  grid-template-columns: repeat(6, minmax(0,1fr));
   border-top: 1px solid rgba(123,94,70,.1);
   background: rgba(255,252,247,.96);
   padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
@@ -941,7 +941,7 @@ a.service-home-start-card:hover {
   text-decoration: none;
 }
 
-/* Seven shortcuts match the mobile bar in two compact, scroll-safe rows. */
+/* Six shortcuts match the mobile bar in two compact rows. Tests are now in Pro. */
 .site-navigation .site-main-menu-group-label {
   margin: 14px 4px 8px;
   color: #896b57;
@@ -953,8 +953,8 @@ a.service-home-start-card:hover {
 
 .site-navigation .site-main-menu-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .site-navigation .site-main-menu-grid a {
