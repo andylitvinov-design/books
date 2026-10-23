@@ -1,6 +1,6 @@
-import { BookOpen, BriefcaseBusiness, ClipboardList, Flame, Heart, House } from 'lucide-react';
+import { BookOpen, BriefcaseBusiness, ClipboardList, Flame, GraduationCap, Heart, House } from 'lucide-react';
 
-// The hamburger and mobile bar share the same six visitor-facing directions.
+// The hamburger and mobile bar share the same seven visitor-facing directions.
 export const compactNavigationIcons = {
   home: House,
   energy: Flame,
@@ -8,4 +8,5 @@ export const compactNavigationIcons = {
   business: BriefcaseBusiness,
   tests: ClipboardList,
   books: BookOpen,
+  pro: GraduationCap,
 } as const;
