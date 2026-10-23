@@ -73,6 +73,7 @@ async function verify(browserType,locale,width){
     await form.waitFor({state:'visible'})
     const capturePhoto=direct.locator('header img').first()
     await capturePhoto.scrollIntoViewIfNeeded()
+    await capturePhoto.evaluate(img=>img.decode())
     assert.ok(await capturePhoto.evaluate(img=>img.complete&&img.naturalWidth>50),
       label+': real Andrey photo in request card')
     assert.equal(await form.locator('[data-business-option="express"]').getAttribute('aria-pressed'),'true')
