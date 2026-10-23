@@ -909,7 +909,7 @@
   --wood-paper:#fff;--wood-bg:#f8feff;--wood-soft:#eef9fb;
   --wood-tint:#ddf8f5;--wood-ink:#173c5b;--wood-muted:#456b80;
   --wood-note:#638599;--wood-edge:#cde6ec;--wood-line:#e3eff2;
-  --wood-accent:#078e9e;--wood-brass:#50bed0;--wood-walnut:#126f80;
+  --wood-accent:#076e81;--wood-brass:#50bed0;--wood-walnut:#126f80;
   --wood-deep:#12354e;--wood-good:#137b70;--wood-ring:#078ca3;
   position:fixed!important;inset:0!important;z-index:2147483000;
   display:flex!important;flex-direction:column;align-items:center;
@@ -945,7 +945,7 @@
 }
 .root[data-business-immersive=reiki] .immersiveCount{
   flex:0 0 auto;padding:8px 11px;border-radius:99px;
-  color:#087f90;background:#e0f9f5;font-size:12px;font-weight:850;
+  color:#067689;background:#e0f9f5;font-size:12px;font-weight:850;
   font-variant-numeric:tabular-nums;
 }
 .root[data-business-immersive=reiki] .immersiveMenu{position:relative;flex:0 0 44px}
@@ -990,7 +990,7 @@
   font:800 16px/1.22 system-ui,sans-serif;color:#173c5b;
 }
 .root[data-business-immersive=reiki][data-business-current-tab=today] .moduleEyebrow{
-  font-size:11px;letter-spacing:.055em;color:#0b8a9a;
+  font-size:11px;letter-spacing:.055em;color:#067689;
 }
 .root[data-business-immersive=reiki][data-business-current-tab=today] .moduleStat{
   display:none;
@@ -1023,7 +1023,7 @@
   font-size:10px;
 }
 .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button[aria-current=step]{
-  background:#e2f9f6!important;color:#067c8e!important;
+  background:#e2f9f6!important;color:#067689!important;
   border-color:#2fb8c5!important;box-shadow:0 3px 12px #1ba5b019;
 }
 .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button[aria-current=step]>span{
@@ -1102,7 +1102,7 @@
   flex:1 1 auto;min-width:0;min-height:54px;order:0;
   margin:0!important;padding:10px 13px!important;
   border:0!important;border-bottom:4px solid #076c84!important;
-  border-radius:16px!important;background:linear-gradient(110deg,#0a8e9d,#08758c)!important;
+  border-radius:16px!important;background:linear-gradient(110deg,#08758c,#036a7c)!important;
   box-shadow:0 8px 19px #0799b124!important;color:#fff!important;
   font:830 clamp(12px,2.5vw,16px)/1.2 system-ui,sans-serif!important;
 }
@@ -1147,7 +1147,7 @@
   border-color:#1ab0c0;background:#e3f9f8;color:#087c8c;
 }
 .root[data-business-immersive=reiki][data-business-course-screen=welcome] .intakeSteps>span[aria-current=step] b{
-  background:#0b90a2;color:#fff;
+  background:#076c84;color:#fff;
 }
 .root[data-business-immersive=reiki][data-business-course-screen=welcome] .intakeBody{
   padding:10px 0!important;border:0!important;background:#fff!important;
@@ -1163,7 +1163,7 @@
   background:linear-gradient(0deg,#fff 80%,#ffffffed);
 }
 .root[data-business-immersive=reiki][data-business-course-screen=welcome] .primary{
-  background:linear-gradient(110deg,#0a8e9d,#08758c)!important;
+  background:linear-gradient(110deg,#08758c,#036a7c)!important;
   border-bottom:4px solid #076c84!important;border-radius:16px!important;
   color:#fff!important;min-height:53px;
 }
