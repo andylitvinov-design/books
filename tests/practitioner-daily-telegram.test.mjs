@@ -98,3 +98,27 @@ test('Telegram reply must confirm exact target chat; no provider errors become s
   await assert.rejects(telegramSendMessage('x'.repeat(4000),env,accepted),/DIGEST_INVALID/)
   assert.equal(calls.length,1)
 })
+
+test('owner digest counts tracked site CTA clicks without inventing visitors or traffic sources',()=>{
+  const report=makePracticeDigest({dates,services:[one,two],daily:[
+    {serviceId:'s1',day:dates.yesterday,impressions:14,orders:3,whatsapp:2,telegram:1,
+      referrer:'https://untrusted.example/private',source:'fake_campaign'},
+    {serviceId:'s2',day:dates.weekStart,impressions:4,orders:1,whatsapp:0,telegram:2},
+    {serviceId:'foreign',day:dates.yesterday,orders:500,whatsapp:500,telegram:500}
+  ],counts:{newApp:0,newPublic:0}})
+  assert.match(report.text,/Вчера: 6 \(Заказать 3 · WhatsApp 2 · Telegram 1\)/)
+  assert.match(report.text,/За 7 дней: 9 учтённых кликов/)
+  assert.match(report.text,/источники не собираются/)
+  assert.match(report.text,/Всего посещений сайта: нет данных/)
+  assert.match(report.text,/Учтены только кнопки услуг, не все клики на сайте/)
+  assert.doesNotMatch(report.text,/untrusted\.example|fake_campaign|503|500/)
+  assert.equal(report.totals.yesterday.orders,3)
+  assert.equal(report.totals.week.whatsapp,2)
+  assert.ok(report.text.length<=3900)
+})
+test('zero counted CTA clicks are not misreported as zero visits or zero Google traffic',()=>{
+  const report=makePracticeDigest({dates,services:[one],daily:[]})
+  assert.match(report.text,/Вчера: 0 \(Заказать 0 · WhatsApp 0 · Telegram 0\)/)
+  assert.match(report.text,/откуда пришли \(Google, соцсети, прямые\): нет данных/i)
+  assert.doesNotMatch(report.text,/Google: 0|посещений: 0/)
+})
