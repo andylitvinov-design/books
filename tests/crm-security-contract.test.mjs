@@ -84,7 +84,7 @@ test('CRM lifecycle updates are owner-scoped and suppression remains immutable',
  assert.match(practice,/isOwner&&<PracticeTile Icon=\{UsersRound\}/)
  assert.match(practice,/onClick=\{\(\)=>choosePanel\('clients'\)\}/)
  assert.match(practice,/<PractitionerClientProfiles items=\{requests\}/)
- assert.match(practice,/\{ownerTools && !activePanel && <details className="hh-practice-more-tools">/)
+ assertOwnerToolsGate(practice)
  assert.match(practice,/activePanel==='crm'&&isOwner&&accountId&&\s*<CrmManager key=\{accountId\}/)
  assert.match(migration,/OLD\.suppressed AND NOT NEW\.suppressed/)
  assert.match(migration,/force row level security/i)
@@ -104,3 +104,26 @@ test('CRM sending gate remains literal false regardless of owner formatting', ()
     assert.throws(() => assertSendingDisabled(source.replace(gate, replacement)))
 })
 
+
+function assertOwnerToolsGate(source) {
+  assert.match(source, /const needsOnboarding=!data\.practiceActivated/)
+  const gate=source.match(/\{([^{}\n]+) && <details className="hh-practice-more-tools">/)?.[1]
+  assert.equal(gate, '!needsOnboarding && ownerTools && !activePanel')
+  const visible=new Function('needsOnboarding','ownerTools','activePanel','return Boolean('+gate+')')
+  for (const activated of [false,true]) for (const owner of [false,true]) for (const panel of [null,'clients'])
+    assert.equal(visible(!activated,owner,panel),activated && owner && !panel)
+}
+test('CRM owner tools require activation, ownership and no active panel independently',()=>{
+  const source=read('components/app/practice-workspace.jsx')
+  assertOwnerToolsGate(source)
+  for (const [before,after] of [
+    ['const needsOnboarding=!data.practiceActivated','const needsOnboarding=false'],
+    ['!needsOnboarding && ownerTools && !activePanel','ownerTools && !activePanel'],
+    ['!needsOnboarding && ownerTools && !activePanel','!needsOnboarding && !activePanel'],
+    ['!needsOnboarding && ownerTools && !activePanel','!needsOnboarding && ownerTools'],
+    ['!needsOnboarding && ownerTools && !activePanel','!needsOnboarding || ownerTools || !activePanel'],
+  ]) {
+    assert.ok(source.includes(before))
+    assert.throws(()=>assertOwnerToolsGate(source.replace(before,after)))
+  }
+})

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as homePersonalSpace from '../../lib/home-personal-space.mjs';
 
 // Bounded source-render fixture, not a browser/React hydration test. Execute the
 // actual exported page and deferred card components. Infrastructure and unrelated
@@ -10,6 +11,8 @@ import ts from 'typescript';
 const root = new URL('../../', import.meta.url);
 const actual = [
   'components/holistic-house-home.tsx', 'app/es/page.tsx',
+  'components/home-master-path.tsx', 'components/home-featured-workspace.tsx',
+  'components/home-personal-space.tsx', 'lib/native/client.ts',
   'components/home-more-disclosure.tsx', 'components/services-solutions.tsx',
   'components/homepage-topic-journeys.tsx', 'components/home-explore-sections.tsx',
   'components/site-navigation.tsx', 'components/compact-navigation-icons.ts',
@@ -117,7 +120,6 @@ export function homeFixture({ locale = 'en', overrides = {} } = {}) {
   let cursor = '', hook = 0;
   const jsx = (type, props = {}) => ({ type, props });
   const opaque = name => Object.assign(props => jsx('opaque', { name, ...props }), { displayName: name });
-  const pass = name => Object.assign(({ children }) => children, { displayName: name });
   const stop = name => () => { throw new Error('Outside home fixture scope: ' + name); };
   const react = {
     useState(initial) {
@@ -126,7 +128,7 @@ export function homeFixture({ locale = 'en', overrides = {} } = {}) {
       return [states.get(key), value => states.set(key, typeof value === 'function' ? value(states.get(key)) : value)];
     },
     useId: () => 'fixture-id', useRef: value => ({ current: value }),
-    useEffect: () => {},
+    useEffect: () => {}, useCallback: callback => callback,
     createContext(value) { const context = { value }; context.Provider = { context }; return context; },
     useContext: context => context.value,
   };
@@ -143,7 +145,8 @@ export function homeFixture({ locale = 'en', overrides = {} } = {}) {
     '@/components/home-section-carousel': { HomeSectionCarousel: opaque('HomeSectionCarousel') },
     '@/components/home-free-diagnosis-banner': { HomeFreeDiagnosisBanner: opaque('HomeFreeDiagnosisBanner') },
     '@/components/home-conversation-guide': { HomeConversationGuide: opaque('HomeConversationGuide') },
-    '@/components/home-personal-space': { HomePersonalSpaceProvider: pass('HomePersonalSpaceProvider'), HomePersonalSpaceCard: opaque('HomePersonalSpaceCard'), HomePersonalSpaceNavEntry: opaque('HomePersonalSpaceNavEntry') },
+    '@/lib/app/client-fetch': { appFetch: stop('private account request') },
+    '@/lib/home-personal-space.mjs': homePersonalSpace,
     '@/components/personal-testimonials': { PersonalTestimonials: opaque('PersonalTestimonials') },
     '@/components/public-site-header': { PublicSiteHeader: opaque('PublicSiteHeader') },
     '@/components/public-consultation-cta': { PublicConsultationCta: opaque('PublicConsultationCta') },

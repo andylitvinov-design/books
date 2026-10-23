@@ -26,15 +26,23 @@ test('Flight to the Sun has four individually browsable, complete anonymous exam
 })
 
 test('Sun examples hide unsupported video-comments links and use narrower, tap-safe mobile arrows', () => {
-  assert.match(learner, /const showVideoComments = slide\.id !== "flight-voices" && Boolean\(youtubeId\)/)
-  assert.match(learner, /\{\(currentReview\?\.sourcePath \|\| showVideoComments\) \? \(/)
-  assert.match(learner, /\{showVideoComments \? \(/)
-  assert.match(learner, /<ArrowLeft size=\{18\}/)
-  assert.match(learner, /<ArrowRight size=\{18\}/)
+  const voices = learner.split('function MeditationVoices(')[1]?.split('\nfunction ')[0] ?? ''
+  assert.doesNotMatch(learner, /showVideoComments|voicesComments/)
+  assert.match(voices, /currentReview\?\.sourcePath \? \(/)
+  assert.match(voices, /href=\{"\/" \+ locale \+ "\/academy\/" \+ currentReview\.sourcePath\}/)
+  assert.doesNotMatch(voices, /youtubeId|youtube\.com|jumpToSlide|setIndex|store\(/)
+  assert.match(voices, /data-review-prev aria-label=\{t\.voicesPrevious\}/)
+  assert.match(voices, /data-review-next aria-label=\{t\.voicesNext\}/)
+  assert.match(voices, /<ArrowLeft size=\{16\}/)
+  assert.match(voices, /<ArrowRight size=\{16\}/)
+  assert.match(voices, /setActive\(\(index\) => \(index \+ 1\) % entries\.length\)/)
   assert.match(styles, /\.voicesCard \{[\s\S]*?padding: 10px 9px 8px;/)
   assert.match(styles, /\.voiceQuote \{[\s\S]*?padding: 3px 0 0 13px;/)
   assert.match(styles, /\.voicesControls button \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/)
-  assert.match(styles, /\.voicesControls button::before \{[\s\S]*?inset: 5px;/)
+  const mobileReviews = styles.slice(styles.indexOf('/* REIKI FULL TESTIMONIALS V1'))
+  assert.match(mobileReviews, /\.voicesControls \{\s*margin: 6px auto 0;/)
+  assert.match(mobileReviews, /\.voicesControls button \{[^}]*width: 44px;[^}]*height: 44px;/)
+  assert.match(mobileReviews, /\.voicesControls button::before \{[^}]*inset: 7px;/)
 })
 
 test('Anonymous examples do not create false source-page links or affect course progress', () => {

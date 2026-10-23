@@ -33,6 +33,7 @@ export async function setup(){const db=await adminClient();try{
  await db.query(await readFile(new URL('../../supabase/migrations/20261019152000_hh_public_service_enquiries_secure.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261019174312_hh_practitioner_request_read_state_20261019.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261019180000_hh_client_message_push_optin.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261020123209_hh_practitioner_request_followup_tasks_20261020.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017013000_hh_assessment_interpretation_registry.sql',import.meta.url),'utf8'))
  await db.query('create schema storage; create table storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
  await db.query(await readFile(new URL('../../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8'))

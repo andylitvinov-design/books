@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import type { PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, getCompactNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
+import { nextMobileKeyboardOcclusion } from '@/lib/mobile-keyboard-occlusion.mjs';
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();
@@ -32,6 +33,16 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     const viewport = window.visualViewport;
     let frame: number | null = null;
     let correction = 0;
+    let keyboardState = { width: window.innerWidth, baselineHeight: window.innerHeight, occluded: false };
+    const updateKeyboardOcclusion = () => {
+      const editing = document.activeElement?.matches('textarea,select,input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]),[contenteditable="true"]') ?? false;
+      keyboardState = nextMobileKeyboardOcclusion(keyboardState, {
+        width: window.innerWidth, layoutHeight: window.innerHeight,
+        visibleHeight: viewport?.height ?? window.innerHeight,
+        scale: viewport?.scale ?? 1, hasViewport: Boolean(viewport), editing,
+      });
+      element.toggleAttribute('data-keyboard-occluded', keyboardState.occluded);
+    };
     const measureHeight = () => {
       const height = `${element.getBoundingClientRect().height}px`;
       document.body.style.setProperty('--ia222-bottom-height', height);
@@ -42,8 +53,8 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       frame = window.requestAnimationFrame(() => {
         frame = null;
         const rect = element.getBoundingClientRect();
-        // The existing focused-editor CSS hides the bar while the keyboard is
-        // visible. Do not retain that transient displacement after blur.
+        // Keyboard occlusion hides the bar until the viewport recovers.
+        // Do not retain a stale docking transform while it is hidden.
         if (rect.height < 1 || rect.width < 1) {
           correction = 0;
           element.style.removeProperty('transform');
@@ -58,7 +69,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
         }
       });
     };
-    const onLayoutChange = () => { measureHeight(); dockToViewport(); };
+    const onLayoutChange = () => { updateKeyboardOcclusion(); measureHeight(); dockToViewport(); };
     onLayoutChange();
     const observer = new ResizeObserver(onLayoutChange);
     observer.observe(element);
@@ -67,7 +78,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     viewport?.addEventListener('scroll', dockToViewport, { passive: true });
     viewport?.addEventListener('resize', onLayoutChange, { passive: true });
     window.addEventListener('pageshow', onLayoutChange);
-    document.addEventListener('focusin', dockToViewport);
+    document.addEventListener('focusin', onLayoutChange);
     document.addEventListener('focusout', onLayoutChange);
     return () => {
       observer.disconnect();
@@ -77,9 +88,10 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       viewport?.removeEventListener('scroll', dockToViewport);
       viewport?.removeEventListener('resize', onLayoutChange);
       window.removeEventListener('pageshow', onLayoutChange);
-      document.removeEventListener('focusin', dockToViewport);
+      document.removeEventListener('focusin', onLayoutChange);
       document.removeEventListener('focusout', onLayoutChange);
       element.style.removeProperty('transform');
+      element.removeAttribute('data-keyboard-occluded');
       document.body.style.removeProperty('--ia222-bottom-height');
       document.documentElement.style.removeProperty('--ia222-bottom-height');
     };

@@ -1,3 +1,4 @@
+import { loadPublicNavigationSpace } from './helpers/public-navigation-space-fixture.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
@@ -6,7 +7,6 @@ import ts from 'typescript';
 import * as navigationModel from '../lib/site-navigation-model.js';
 import * as serviceCart from '../lib/commerce/cart.js';
 import * as uiLocale from '../lib/ui-locale.js';
-import { isSupportedLocale, getHomeopathyLocaleParams } from '../data/remedies.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const source = read('scripts/verify-es-public-site.mjs');
@@ -19,13 +19,16 @@ const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tre
 const common = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/link': { default: props => jsx('a', props) },
+  'next/image': { default: props => jsx('img', props) },
   'lucide-react': new Proxy({}, { get: () => () => null }),
   react: { useEffect() {}, useRef: () => ({ current: null }), useState: value => [value, () => assert.fail('No effect may run in a rendering fixture')] },
   './public-growth-courses.module.css': { default: new Proxy({}, { get: (_target, key) => String(key) }) },
 };
 function load(path, imports, transform = value => value) {
   const exports = {};
-  runInNewContext(ts.transpileModule(transform(read(path)), { fileName: path, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, {
+  // A virtual .js extension lets TypeScript emit CommonJS for pure .mjs sources.
+  // The original file bytes and strict dependency allowlist remain unchanged.
+  runInNewContext(ts.transpileModule(transform(read(path)), { fileName: path.replace(/\.mjs$/, '.js'), compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, {
     exports, require(name) { assert.ok(Object.hasOwn(imports, name), name); return imports[name]; },
   });
   return exports;
@@ -33,15 +36,30 @@ function load(path, imports, transform = value => value) {
 const discoveryTabs=load('components/discovery-section-tabs.tsx',{...common,'./discovery-section-tabs.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}});
 common['@/components/discovery-section-tabs']=discoveryTabs;
 const publicLocales = load('lib/public-locales.ts', {});
+const academyLocales = load('data/academy/catalog.ts', {}, value => {
+  const ast = ts.createSourceFile('catalog.ts', value, ts.ScriptTarget.Latest, true);
+  const validator = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'isPublicLocale');
+  assert.ok(validator, 'Use the actual shared public locale validator');
+  return validator.getText(ast);
+});
 const { CartNavLink } = load('components/commerce/cart-nav-link.tsx', {
   ...common, '@/lib/commerce/cart': serviceCart,
   './cart-nav-link.module.css': {default:{navCart:'cart-nav-link'}},
+});
+const space = { open: false, openPanel() { space.open = true; } };
+const personalSpace = loadPublicNavigationSpace({
+  ...common,
+  react: { ...common.react, createContext: () => ({}), useContext: () => space },
+  'next/navigation': { usePathname: () => canonical },
+  './home-personal-space.module.css': { default: {} },
+  '@/lib/app/client-fetch': { appFetch() { assert.fail('No private requests are allowed in this fixture'); } },
+  '@/lib/home-personal-space.mjs': { homeSpaceSummary() { assert.fail('No account summary is read in navigation'); } },
 });
 const { SiteNavigation } = load('components/site-navigation.tsx', {
   ...common, 'next/navigation': { usePathname: () => canonical },
   '@/components/commerce/cart-nav-link': {CartNavLink},
   '@/components/site-search': { SiteSearch: () => null },
-  './home-personal-space': { HomePersonalSpaceNavEntry() { assert.fail('Course catalog is not Home; must use direct Cabinet link'); } },
+  './home-personal-space': personalSpace,
   './compact-navigation-icons': {compactNavigationIcons:Object.fromEntries(navigationModel.compactNavigationIds.map(id=>[id,()=>null]))},
   '@/lib/ui-locale': uiLocale, '@/lib/public-locales': publicLocales,
   '@/lib/site-navigation-model': navigationModel,
@@ -58,11 +76,13 @@ const { PublicGrowthCourses } = load('components/public-growth-courses.tsx', {
   '@/components/public-course-cabinet': { PublicCourseCabinet },
   '@/components/app/course-14-day-overview': { default: props => { assert.equal(props.programId, 'stress'); return null; } },
 });
+const mobileKeyboardOcclusion = load('lib/mobile-keyboard-occlusion.mjs', {});
 const { MobileBottomNavigation } = load('components/mobile-bottom-navigation.tsx', {
+  '@/lib/mobile-keyboard-occlusion.mjs': mobileKeyboardOcclusion,
   ...common, 'next/navigation': { usePathname: () => canonical },
   '@/components/commerce/cart-nav-link': {CartNavLink},
   '@/components/site-search': { SiteSearch: () => null },
-  './home-personal-space': { HomePersonalSpaceNavEntry() { assert.fail('Course catalog is not Home; must use direct Cabinet link'); } },
+  './home-personal-space': personalSpace,
   './compact-navigation-icons': {compactNavigationIcons:Object.fromEntries(navigationModel.compactNavigationIds.map(id=>[id,()=>null]))},
   '@/lib/site-navigation-model': navigationModel, './use-navigation-locale': { useNavigationLocale: () => 'es' },
 });
@@ -201,20 +221,22 @@ for (const width of [390, 1365]) for (const fault of ['missing hero', 'duplicate
 }
 async function verifyLegacyRedirect(locale, transform) {
   const imports = { 'next/navigation': { permanentRedirect(path) { throw new Error('PERMANENT:' + path); }, notFound() { throw new Error('NOT_FOUND'); } },
-    '@/data/remedies': { isSupportedLocale, getHomeopathyLocaleParams }, '@/data/site-metadata': { metadataBaseFor: () => new URL('https://holistichouse.vercel.app') },
+    '@/data/academy/catalog': academyLocales, '@/data/site-metadata': { metadataBaseFor: () => new URL('https://holistichouse.vercel.app') },
     '@/lib/spanish-metadata': { spanishMetadata: () => ({}) } };
   const route = load(locale === 'es' ? 'app/es/courses/page.tsx' : 'app/[locale]/courses/page.tsx', imports, transform);
-  await assert.rejects(async () => route.default({ params: Promise.resolve({ locale }) }), { message: 'PERMANENT:/' + locale + '/academy/free-ai-courses' });
+  await assert.rejects(async () => route.default({ params: Promise.resolve({ locale }) }), { message: 'PERMANENT:/' + locale + '/academy' });
 }
 for (const locale of ['en', 'ru', 'es']) {
   test(locale + ' legacy page executes its exact permanent canonical redirect', () => verifyLegacyRedirect(locale));
-  test(locale + ' redirect verifier rejects an actual wrong-destination source mutation', () => assert.rejects(verifyLegacyRedirect(locale, value => value.replaceAll('/academy/free-ai-courses', '/academy/unrelated'))));
+  test(locale + ' redirect verifier rejects an actual wrong-destination source mutation', () => assert.rejects(verifyLegacyRedirect(locale, value => value.replaceAll('/academy', '/academy/unrelated'))));
 }
-test('Spanish audit checks both redirect and direct canonical catalog without indexing the redirect', () => {
+test('Spanish audit separates the full-Academy legacy redirect from the direct free-AI catalog without indexing the alias', () => {
   const routes = source.match(/const routes = \[([^;]+)\];/)?.[1];
   assert.ok(routes.includes("'/es/courses'"));
   assert.ok(routes.includes("'/es/academy/free-ai-courses'"));
   assert.match(source, /await assertSpanishCourseCatalog\(page, response\)/);
+  assert.match(source, /if \(path === '\/es\/academy\/free-ai-courses'\) await assertSpanishCourseCatalog\(page, response\)/);
+  assert.match(source, /if \(path === '\/es\/courses'\) \{\s*await expect\(page\)\.toHaveURL\(origin \+ '\/es\/academy'\)/);
   assert.match(source, /sitemapUrls\.includes\('https:\/\/holistichouse\.vercel\.app'\+path\)/);
   assert.match(source, /new URL\(href\)\.pathname === '\/es\/courses'/);
   assert.match(source, /assert\.deepEqual\(unselectedClientRequests,\[\]/);
@@ -258,3 +280,19 @@ test('actual sitemap assertions require the canonical origin and exact course UR
   ]) assert.throws(() => check(sitemap(bad), routes, assert, URL));
 });
 
+
+
+test('mobile navigation uses the actual pure keyboard detector', () => {
+  const sample = { width: 390, layoutHeight: 844, visibleHeight: 844, scale: 1, hasViewport: true, editing: false };
+  const initial = mobileKeyboardOcclusion.nextMobileKeyboardOcclusion(null, sample);
+  assert.equal(initial.occluded, false);
+  assert.equal(mobileKeyboardOcclusion.nextMobileKeyboardOcclusion(initial, { ...sample, visibleHeight: 500, editing: true }).occluded, true);
+});
+
+test('keyboard fixture evaluates the actual source rather than a detector stub', () => {
+  assert.throws(() => load('lib/mobile-keyboard-occlusion.mjs', {}, source => 'throw new Error("keyboard-source-sentinel");\n' + source), /keyboard-source-sentinel/);
+});
+
+test('unlisted keyboard helper imports remain fail-closed', () => {
+  assert.throws(() => load('lib/mobile-keyboard-occlusion.mjs', {}, source => 'import "unlisted-native-sdk";\n' + source), /unlisted-native-sdk/);
+});

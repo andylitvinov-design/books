@@ -34,3 +34,14 @@ test('public enquiry counts use the existing protected schema in isolated setup'
   assert.ok(setup.includes("await db.query(await readFile(new URL('../../supabase/migrations/" + migration + "',import.meta.url),'utf8'))"))
   assert.doesNotMatch(setup, /create table app\.public_service_enquiries|alter table app\.public_service_enquiries|grant .*public_service_enquiries/i)
 })
+
+test('practitioner task aggregates use the existing protected schema in isolated setup', () => {
+  const migration = '20261020123209_hh_practitioner_request_followup_tasks_20261020.sql'
+  assert.equal(setup.split(migration).length - 1, 1)
+  const position = setup.indexOf(migration)
+  assert.ok(position > setup.indexOf('20261002164037_hh_app_r1_foundation.sql'))
+  assert.ok(position > setup.indexOf('20261005164140_hh_master_network_r2.sql'))
+  assert.ok(position < setup.indexOf('create role hh_app_ci_login'))
+  assert.ok(setup.includes("await db.query(await readFile(new URL('../../supabase/migrations/" + migration + "',import.meta.url),'utf8'))"))
+  assert.doesNotMatch(setup, /create table app\.practitioner_request_tasks|alter table app\.practitioner_request_tasks|grant .*practitioner_request_tasks/i)
+})

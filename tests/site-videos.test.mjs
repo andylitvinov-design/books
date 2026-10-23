@@ -624,6 +624,37 @@ test('read-only media credential serves public records without any write privile
   assert.equal(calls[0].command[2], record.key);
 });
 
+test('read-only credential validation accepts literal r, n and backslash characters', async () => {
+  for (const readToken of ['r', 'n', '\\']) {
+    const calls = [];
+    const store = createPublicSiteVideoStore({
+      environment: { ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN: readToken },
+      initialRecords: [],
+      fetchFn: async (_url, options) => {
+        calls.push(options.headers.Authorization);
+        return { ok: true, json: async () => ({ result: null }) };
+      },
+    });
+    assert.equal(typeof store.save, 'undefined');
+    assert.equal(await store.get(videoKey('home-intro', 'en')), null);
+    assert.deepEqual(calls, [`Bearer ${readToken}`]);
+  }
+});
+
+test('read-only credential validation rejects actual CR and LF before any request', () => {
+  for (const readToken of ['synthetic\rcredential', 'synthetic\ncredential']) {
+    const store = createPublicSiteVideoStore({
+      environment: {
+        PRESCRIPTIONS_KV_REST_API_URL: environment.PRESCRIPTIONS_KV_REST_API_URL,
+        PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN: readToken,
+      },
+      initialRecords: [],
+      fetchFn: async () => { assert.fail('Invalid credentials must never reach transport'); },
+    });
+    assert.equal(store, undefined);
+  }
+});
+
 test('read-only auth fallback retries writer only on authentication, never on timeout/quota', async () => {
   const keys = [];
   const env = { ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN:'synthetic-read-only-token' };
@@ -632,13 +663,14 @@ test('read-only auth fallback retries writer only on authentication, never on ti
     if (keys.length === 1) return { ok:false, status:401 };
     return { ok:true, json:async () => ({ result:null }) };
   };
-  const store = createPublicSiteVideoStore({environment:env,fetchFn});
+  const store = createPublicSiteVideoStore({environment:env,fetchFn,initialRecords:[]});
   assert.equal(await store.get(videoKey('home-intro', 'en')), null);
   assert.deepEqual(keys, ['Bearer synthetic-read-only-token','Bearer synthetic-test-token']);
   for (const code of [429,503]) {
     const seen = [];
     const blocked = createPublicSiteVideoStore({
       environment:env,
+      initialRecords:[],
       fetchFn: async (_url, options) => {
         seen.push(options.headers.Authorization);
         return { ok:false,status:code };

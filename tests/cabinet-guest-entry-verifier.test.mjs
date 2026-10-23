@@ -188,10 +188,8 @@ async function exerciseCaller(source = caller, options = {}) {
   assertRenderingSafety(rendered);
   const publicPage = pageFor(rendered);
   let arrived = false, reloaded = false, url = origin + '/es/client';
-  const link = { type: 'a', props: { href: '/en/app', children: 'Abrir gabinete personal' }, visible: true };
   const page = { url: () => url,
     locator(selector) {
-      if (selector === '.site-navigation > a.site-cabinet-entry') return new Locator([link]);
       assert.ok(arrived, 'guest assertions happen only after actual Cabinet navigation');
       if (selector === 'html') return new Locator([{ props: { lang: reloaded ? 'en' : 'es' } }]);
       return publicPage.locator(selector);
@@ -201,10 +199,17 @@ async function exerciseCaller(source = caller, options = {}) {
       await Promise.resolve(); reloaded = true; effects.push('reload');
     },
   };
-  const run = runInNewContext('(async () => {' + entry + '})', { page, expect: expectDouble, origin,
-    async click(locator) {
+  const click = () => assert.fail('Account-stage fixture never clicks an auth or obsolete Cabinet link');
+  const run = runInNewContext('(async () => {' + entry + '})', { page, expect: expectDouble, origin, click,
+    async assertSpanishGuestSpace(target, suppliedClick) {
+      assert.equal(target, page); assert.equal(suppliedClick, click);
+      assert.equal(arrived, false); assert.deepEqual(effects, []);
+      await Promise.resolve(); effects.push('space');
+    },
+    async navigate(path) {
+      assert.equal(path, '/en/app');
+      assert.deepEqual(effects, ['space'], 'dialog check completes before the independent guest Account visit');
       await Promise.resolve();
-      assert.equal(one(locator), link);
       arrived = true; url = origin + '/en/app/portrait'; effects.push('account');
     },
     async settle() { await Promise.resolve(); },
@@ -216,7 +221,7 @@ async function exerciseCaller(source = caller, options = {}) {
     },
   }, { timeout: 1000 });
   await run();
-  assert.deepEqual(effects, ['account', 'reload']);
+  assert.deepEqual(effects, ['space', 'account', 'reload']);
   assert.deepEqual(guestChecks, ['arrival', 'reload']);
   assertRenderingSafety(rendered);
 }
@@ -302,7 +307,9 @@ const callerDefects = [
   ['missing reload helper', source => source.replace("        await expect(page.locator('html')).toHaveAttribute('lang','en');\n        await assertCabinetGuestEntry(page, expect);", "        await expect(page.locator('html')).toHaveAttribute('lang','en');")],
   ['unawaited arrival helper', source => source.replace('await assertCabinetGuestEntry(page, expect);', 'assertCabinetGuestEntry(page, expect);')],
   ['third helper call', source => source.replace('await assertCabinetGuestEntry(page, expect);', 'await assertCabinetGuestEntry(page, expect);\n        await assertCabinetGuestEntry(page, expect);')],
-  ['wrong account destination', source => source.replace("await expect(accountLink).toHaveAttribute('href','/en/app');", "await expect(accountLink).toHaveAttribute('href','/es/app');")],
+  ['wrong account destination', source => source.replace("await navigate('/en/app');", "await navigate('/es/app');")],
+  ['missing dialog check', source => source.replace('        await assertSpanishGuestSpace(page, click);\n', '')],
+  ['unawaited dialog check', source => source.replace('await assertSpanishGuestSpace(page, click);', 'assertSpanishGuestSpace(page, click);')],
   ['wrong canonical arrival', source => source.replace("await expect(page).toHaveURL(origin+'/en/app/portrait');", "await expect(page).toHaveURL(origin+'/en/app');")],
   ['missing reload', source => source.replace('await page.reload(); await settle();', 'await settle();')],
   ['missing reload locale', source => source.replace("        await expect(page.locator('html')).toHaveAttribute('lang','en');\n        await assertCabinetGuestEntry", '        await assertCabinetGuestEntry')],

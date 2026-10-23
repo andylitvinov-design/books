@@ -326,7 +326,7 @@ test('final report AS2 uses its exact source secondary scales and AS4 has no pub
 
 test('legacy final-report serialized output remains unchanged when phase context is absent or not applicable', () => {
   const input = retestFixture(['weekly.functioning','weekly.load'])
-  // Full expected pre-phase output, including legacy dimension order/roles,
+  // Full current legacy output, including the default verification flag and dimension order/roles,
   // exact dates and original units. This does not snapshot the new helper.
   const expected = {
     ready:true,
@@ -337,7 +337,7 @@ test('legacy final-report serialized output remains unchanged when phase context
       completed:true,canRepeat:false,role:'primary_outcome',
       repeatSuggestedLater:false,suggestedRepeatDays:7,nextSuggestedAt:'2026-10-08T09:00:00.000Z',
       hardMinimumDays:7,hardDueAt:'2026-10-08T09:00:00.000Z',hardBlocked:false,
-      versionChanged:false,timeframe:'past-7-days',
+      versionChanged:false,verificationRequired:false,timeframe:'past-7-days',
       comparison:[
         {key:'weekly.load',from:8,to:7,delta:-1,min:0,max:10,direction:'lower',
           label:'Stress and overload',measureRole:'primary'},

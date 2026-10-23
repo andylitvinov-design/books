@@ -31,22 +31,21 @@ async function assertSpanishNavigation(page, path) {
   // Keep the three visible visitor needs and free written review in the header.
   const direct = navigation.locator(':scope > a');
   const first = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about'];
-  if (path !== '/es') first.push('/en/app');
   first.push('/es/shop','/es/cart');
   assert.deepEqual(await direct.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), first, 'Spanish direct destinations: ' + path);
   const cabinet = navigation.locator('.site-cabinet-entry');
   await expect(cabinet).toHaveCount(1);
-  if (path === '/es') {
-    await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
-    await expect(cabinet).toHaveAccessibleName('Mi espacio');
-    await expect(cabinet).toHaveAttribute('aria-controls','home-personal-space-dialog');
-    await expect(cabinet).toHaveAttribute('aria-expanded','false');
-  } else await expect(cabinet).toHaveAttribute('href','/en/app');
+  await expect(cabinet).toHaveAttribute('type','button');
+  await expect(cabinet).not.toHaveAttribute('href', /.*/);
+  await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
+  await expect(cabinet).toHaveAccessibleName('Mi espacio');
+  await expect(cabinet).toHaveAttribute('aria-controls','home-personal-space-dialog');
+  await expect(cabinet).toHaveAttribute('aria-expanded','false');
   const destinations = [
     '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
     '/es/explore/business', '/es/client/tests', '/es/books',
-    '/es/shop', '/es/cart', '/es/library', '/es/events', '/es/courses',
-    '/es/services', '/es/academy', '/es/about',
+    '/es/shop', '/es/cart', '/es/library', '/es/events', '/es/academy',
+    '/es/services', '/es/about',
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -59,7 +58,7 @@ async function assertSpanishNavigation(page, path) {
   await trigger.focus();
   await trigger.press('Enter');
   await expect(menu).toHaveJSProperty('open', true);
-  const labels = ['Revisión gratuita de tu situación Cuestionario y dibujo · respuesta personal por escrito','Inicio','Energía','Amor','Negocios','Tests','Ideas','Tienda','Carrito','Biblioteca','Eventos','Mis cursos','Servicios','Academia','Sobre mí'];
+  const labels = ['Revisión gratuita de tu situación Cuestionario y dibujo · respuesta personal por escrito','Inicio','Energía','Amor','Negocios','Tests','Ideas','Tienda','Carrito','Biblioteca','Eventos','Cursos','Servicios','Sobre mí'];
   for (let index = 0; index < destinations.length; index++) {
     await expect(links.nth(index)).toBeVisible();
     await expect(links.nth(index)).toHaveAccessibleName(labels[index]);
@@ -71,6 +70,39 @@ async function assertSpanishNavigation(page, path) {
   await expect(menu).toHaveJSProperty('open', false);
   await expect(trigger).toBeFocused();
   await expect(page).toHaveURL(currentUrl);
+}
+// Exercise the real public guest dialog without starting Google authentication.
+async function assertSpanishGuestSpace(page, click) {
+  const currentUrl = page.url();
+  const authStarts = [];
+  const recordAuthStart = request => {
+    if (new URL(request.url()).pathname === '/api/app/auth/start') authStarts.push('auth/start');
+  };
+  page.on('request', recordAuthStart);
+  try {
+    const trigger = page.locator('.site-navigation > button.site-cabinet-entry');
+    await expect(trigger).toHaveCount(1);
+    await expect(trigger).toHaveAccessibleName('Mi espacio');
+    await expect(trigger).toBeVisible();
+    await expect(trigger).toHaveAttribute('aria-controls', 'home-personal-space-dialog');
+    await click(trigger);
+    const dialog = page.getByRole('dialog', { name: 'Mi espacio', exact: true });
+    await expect(dialog).toBeVisible();
+    const google = dialog.getByRole('button', { name: 'Continuar con Google', exact: true });
+    await expect(google).toHaveCount(1);
+    await expect(google).toBeVisible();
+    await expect(google).toBeEnabled();
+    await expect(dialog.getByRole('link', { name: 'Prueba gratuita', exact: true })).toHaveAttribute('href', '/es/client/tests');
+    await expect(dialog.getByRole('link', { name: 'Explorar cursos', exact: true })).toHaveAttribute('href', '/es/academy');
+    await expect(page).toHaveURL(currentUrl);
+    await click(dialog.getByRole('button', { name: 'Cerrar Mi espacio', exact: true }));
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+    await expect(page).toHaveURL(currentUrl);
+    assert.deepEqual(authStarts, [], 'Opening or closing My Space must not start Google authentication');
+  } finally {
+    page.off('request', recordAuthStart);
+  }
 }
 async function assertSpanishCourseCatalog(page, response) {
   const canonical = '/es/academy/free-ai-courses';
@@ -198,7 +230,12 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang','es');
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
           await assertSpanishNavigation(page, path);
-          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);
+          if (path === '/es/academy/free-ai-courses') await assertSpanishCourseCatalog(page, response);
+          if (path === '/es/courses') {
+            await expect(page).toHaveURL(origin + '/es/academy');
+            assert.equal(response.url(), origin + '/es/academy', 'Legacy Courses reaches the full Academy');
+            await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://holistichouse.vercel.app/es/academy');
+          }
           assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),'No untranslated public labels: '+path);
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
@@ -245,12 +282,10 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        const accountLink = page.locator('.site-navigation > a.site-cabinet-entry');
-        await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toHaveAccessibleName('Abrir gabinete personal');
-        await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app');
-        await click(accountLink);
+        await assertSpanishGuestSpace(page, click);
+        // Independently verify the existing guest Account route. The public
+        // dialog deliberately never starts Google or follows a private account link.
+        await navigate('/en/app');
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await assertCabinetGuestEntry(page, expect);
         await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
@@ -291,7 +326,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'Energy/Love/Business, fifteen-entry menu, Home My Space dialog and off-Home Cabinet; Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'Energy/Love/Business, fourteen-entry menu and sitewide My Space guest dialog; Enter/Tab/Escape, explicit Google action and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy Courses redirects to full Academy; direct free AI catalog retains exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

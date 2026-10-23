@@ -62,6 +62,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install locked dependencies for source contract checks
+        run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Allow Git-triggered Vercel production build to finish before live crawl
         if: github.event_name == 'push'
         run: sleep 150

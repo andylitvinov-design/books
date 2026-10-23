@@ -57,7 +57,16 @@ test('Choice cards preserve personal text answers and show explanatory guidance'
   assert.match(interfaceCode, /data-kundalini-answer-explanation/)
   assert.match(interfaceCode, /setAnswer\(option\.label\[locale\]\)/)
   assert.match(interfaceCode, /textarea id=\{"answer-" \+ slide\.id\}/)
-  assert.match(interfaceCode, /item\.questionCount\}\/9/)
+  // The compact final disclosure shares one counter renderer across all lessons.
+  // Its Kundalini denominator must still come from the exact nine approved IDs.
+  const requirement = curriculum.match(/\{ lesson: "kundalini",[^\n]+questionIds: \[([^\]]+)\]/)?.[1] ?? ''
+  assert.deepEqual([...requirement.matchAll(/"([^"]+)"/g)].map(match => match[1]), ids)
+  assert.match(interfaceCode, /questionCount: item\.questionIds\.filter\(\(id\) => Boolean\(answers\[id\]\?\.trim\(\)\)\)\.length/)
+  assert.match(interfaceCode, /questionDone: item\.questionIds\.every\(\(id\) => Boolean\(answers\[id\]\?\.trim\(\)\)\)/)
+  const readiness = interfaceCode.match(/<details className=\{styles\.finalDisclosure\} data-reiki-readiness-checklist>[\s\S]*?<\/details>/)?.[0] ?? ''
+  assert.match(readiness, /item\.questionCount\}\/\$\{item\.questionIds\.length\}/)
+  assert.match(readiness, /jumpToSlide\(item\.nextQuestionId\)/)
+  assert.match(interfaceCode, /const savedInitiationReady = initiationReady && sync === "ready" &&\s*!busy && !saveError && dirtyRef\.current\.size === 0/)
   assert.match(curriculum, /this is not proof of remote medical effects/)
 })
 

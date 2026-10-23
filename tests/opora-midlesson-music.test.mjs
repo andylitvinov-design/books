@@ -5,6 +5,7 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes} from './helpers/route-pipeline-harness.mjs'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const player=read('components/app/opora-experience-player.jsx')
@@ -61,8 +62,7 @@ test('day 2 keeps audio on the same slide and never creates a new step or save',
   }
   const inlinePlayers=()=>nodes(h.tree).filter(n=>n.type?.testName==='OporaOceanOutro'&&n.props?.compact)
   try{
-    await click('Continue')
-    await click('Continue')
+    await advanceOporaTo(h,'practice')
     assert.equal(inlinePlayers().length,1,'Exactly one inline player')
     assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-guided-meditation']==='true'),
       'The player must explain the three meditation steps before asking for feedback')
@@ -87,20 +87,24 @@ test('EN/RU/ES practice screens show one player and optional Continue',async()=>
     const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
     const data={cycle:{id:'00000000-0000-4000-8000-000000008881',day,durationDays:14},
       programme:{id:'stress'},lesson,currentSession:null}
-    const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},onSession:async()=>true})
+    let writes=0
+    const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},onSession:async()=>{writes++;return true}})
     try{
-      for(let i=0;i<2;i++){
-        const button=findButton(h.tree,next)
-        assert.ok(button,'Missing '+next+' for '+locale)
-        button.props.onClick()
-        await h.settle()
-      }
+      await advanceOporaTo(h,'practice',next)
       const matches=nodes(h.tree).filter(n=>n.type?.testName==='OporaOceanOutro'&&n.props?.compact)
       assert.equal(matches.length,1,'One inline player for '+locale)
       assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-guided-meditation']==='true'),
         'Localized meditation steps must be visible before congratulations')
       assert.equal(matches[0].props.locale,locale)
-      assert.ok(findButton(h.tree,next),'Continue must remain available without audio')
+      const nextButton=findButton(h.tree,next)
+      assert.ok(nextButton,'Continue must remain available without audio')
+      assert.equal(Boolean(nextButton.props.disabled),false)
+      assert.equal(writes,0,'Reaching practice must not save')
+      await nextButton.props.onClick()
+      await h.settle()
+      assert.equal(nodes(h.tree).filter(n=>n.type?.testName==='OporaOceanOutro'&&n.props?.compact).length,0,
+        'Continue works without starting audio and unmounts the player')
+      assert.equal(writes,0,'Skipping optional audio never saves')
     }finally{h.unmount()}
   }
 })

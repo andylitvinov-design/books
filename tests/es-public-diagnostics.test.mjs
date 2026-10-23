@@ -54,14 +54,14 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  const block=source.slice(start,end);
  const portraitAssertion="await expect(page).toHaveURL(origin+'/en/app/portrait');";
  assert.equal(block.split(portraitAssertion).length-1,2,'Both actual navigation and reload require the approved canonical portrait route');
- // Freeze the current direct Cabinet handoff and every existing browser action.
- const accountEntry="        const accountLink = page.locator('.site-navigation > a.site-cabinet-entry');\n        await expect(accountLink).toHaveCount(1);\n        await expect(accountLink).toHaveAccessibleName('Abrir gabinete personal');\n        await expect(accountLink).toBeVisible();\n        await expect(accountLink).toHaveAttribute('href','/en/app');\n        await click(accountLink);\n";
- assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed direct Cabinet handoff');
+ // Freeze the sitewide dialog check, independent Account visit and every existing browser action.
+ const accountEntry="        await assertSpanishGuestSpace(page, click);\n        // Independently verify the existing guest Account route. The public\n        // dialog deliberately never starts Google or follows a private account link.\n        await navigate('/en/app');\n";
+ assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed dialog check and independent guest Account visit');
  const guestAssertion='        await assertCabinetGuestEntry(page, expect);';
  assert.equal(block.split(guestAssertion).length-1,2,'Guest checks on actual arrival and reload');
  const oldGuest="        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();\n        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\\.|The new personal app is not connected yet\\.)$/);\n        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');";
  const normalized=block.replace(guestAssertion,oldGuest).replace(guestAssertion,"        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();");
- assert.equal(createHash('sha256').update(normalized).digest('hex'),'3833d47ecb06bb3cadb8e230f4934bc383e1a3ce2562de01bc610d577b79bd06','Current 34451 action/assertion block unchanged except guest markup contract');
+ assert.equal(createHash('sha256').update(normalized).digest('hex'),'d5cd75481326f85905de0d50e8a51648333a13380ec22cb1a0e89b875f9efcf3','Current reviewed action/assertion block retains dialog, independent guest route and all other checks');
 });
 
 test('each exact browser group retains reserved capacity and reports drops; kinds and source paths are bounded',()=>{

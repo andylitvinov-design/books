@@ -6,6 +6,7 @@ import {
   oporaExperienceSupport, oporaExperienceSupportValid, oporaExperienceGuide,
 } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
+import {OPORA_GENTLE_INTRO} from '../lib/inner-growth/opora-gentle-journey.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
 const next={en:'Continue',ru:'Продолжить',es:'Continuar'}
@@ -63,8 +64,23 @@ test('support is the SECOND visible screen of each of 14 days in all 3 languages
         findButton(h.tree,next[locale]).props.onClick();await h.settle()
         findButton(h.tree,next[locale]).props.onClick();await h.settle()
         assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-daily-support']).length,0)
-        if(day!==1) assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,locale)),
-          'Optional practice must still be available on screen three')
+        if(day!==1){
+          // Days 2–14 now introduce the practice gently after the unchanged
+          // second support screen; these editorial moments are not saved keys.
+          for(const moment of OPORA_GENTLE_INTRO){
+            assert.ok(nodes(h.tree).some(x=>x.props?.['data-opora-current-screen']===moment),
+              'Missing ordered gentle introduction '+moment+' for '+locale+':'+day)
+            assert.ok(!textOf(h.tree).includes(oporaExperienceGuide(day,locale)),
+              'Practice must not replace the gentle introduction')
+            const button=findButton(h.tree,next[locale])
+            assert.ok(button&&!button.props.disabled,'Gentle introduction must remain optional')
+            button.props.onClick();await h.settle()
+            assert.equal(writes,0,'Editorial introductions must not save')
+          }
+          assert.ok(nodes(h.tree).some(x=>x.props?.['data-opora-current-screen']==='practice'))
+          assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,locale)),
+            'Optional practice remains available after the gentle introduction')
+        }
         assert.equal(writes,0,'Reading support must not persist practice or health data')
       }finally{h.unmount()}
     }

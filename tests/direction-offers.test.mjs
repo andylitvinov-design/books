@@ -43,7 +43,19 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   assert.ok(spanish.includes('<HomepageTopicJourneys locale="es" />'))
   assert.ok(!more.includes('<HomepageTopicJourneys locale='))
   assert.ok(site.includes("id: 'services'"))
-  assert.ok(site.includes("id: 'academy'"))
+  // Owner #1628: Courses is the single full-Academy entry, not a second
+  // Academy item or the free-AI subsection. Services remains in the More menu.
+  assert.match(site, /item\.id === 'courses'/)
+  assert.doesNotMatch(site, /\{\s*id: 'academy'/)
+  for(const locale of ['en','ru','es']){
+    const items=getSiteNavigation(locale)
+    const courses=items.filter(item=>item.id==='courses')
+    assert.equal(courses.length,1,'Exactly one public Courses item')
+    assert.equal(courses[0].href,'/'+locale+'/academy','Courses must open the full catalog')
+    assert.equal(courses[0].label,{en:'Courses',ru:'Курсы',es:'Cursos'}[locale])
+    assert.equal(activeCompactNavigationId('/'+locale+'/academy'),'courses')
+    assert.equal(items.filter(item=>item.id==='academy').length,0,'No duplicate Academy entry')
+  }
 })
 
 

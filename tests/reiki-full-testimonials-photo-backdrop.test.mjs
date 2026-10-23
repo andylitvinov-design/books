@@ -38,9 +38,13 @@ test('Tantra Reiki preserves four complete archived learner reviews, rather than
 })
 
 test('Review area presents complete scrollable text over the sunrise photograph', () => {
-  assert.match(learner, /data-reiki-reviews="v4" data-reiki-full-reviews="v1"/)
-  assert.match(learner, /data-reiki-current-kind=\{slide\.kind\}/)
+  // The first-cover flag may sit between review flags, but both belong to the same learner root.
+  const root = learner.match(/<main\b[^>]*>/)?.[0] ?? ''
+  assert.match(root, /data-reiki-reviews="v4"/)
+  assert.match(root, /data-reiki-full-reviews="v1"/)
+  assert.match(root, /data-reiki-current-kind=\{slide\.kind\}/)
   assert.match(learner, /data-review-fulltext role="region" tabIndex=\{0\} aria-label=\{t\.voicesFullText\}/)
+  assert.match(learner, /aria-label=\{t\.voicesFullText\}>\{currentReview\.quote\[locale\]\}<\/p>/)
   assert.match(learner, /voicesFullText: "Full learner review"/)
   assert.match(learner, /voicesFullText: "Полный текст отзыва"/)
   assert.match(css, /REIKI FULL TESTIMONIALS V1/)

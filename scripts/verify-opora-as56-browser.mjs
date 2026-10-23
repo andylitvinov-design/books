@@ -182,8 +182,12 @@ try {
             assert.ok(size.screenWidth <= width + 1,
               locale + '/' + width + '/' + moment + ': recap must not overflow horizontally')
             if (moment !== 'recapFeedback') {
-              assert.equal(await recapPage.locator('[data-opora-current-screen] .summaryItem').count(),1,
-                'Each takeaway has exactly one visible idea')
+              // CSS Modules hash summaryItem in the real production fixture.
+              // Scope the semantic idea to the active card, not a raw class name.
+              const takeaway = recapPage.locator('[data-opora-current-screen] strong')
+              assert.equal(await takeaway.count(),1,'Each takeaway has exactly one visible idea')
+              await expect(takeaway).toBeVisible()
+              await expect(takeaway).not.toHaveText(/^\s*$/)
               await recapPage.screenshot({ path: `${output}/${locale}-${width}-${moment}.png` })
               await recapPage.getByRole('button', { name: t.next, exact: true }).click()
             } else {

@@ -50,7 +50,18 @@ test("Cabinet chapter picker uses saved owner progress and forbids deep-link ski
   assert.match(cabinet, /aria-disabled="true"/)
   assert.match(learner, /requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex/)
   assert.match(repo, /COURSE_STEP_NOT_READY/)
-  assert.match(learner, /onClick=\{\(\) => jumpToSlide\(lesson\.firstSlideId\)\}/)
+  // The learner rail is informational; saved-owner chapter selection stays in My Courses.
+  const rail = learner.match(/<nav className=\{styles\.journey\}[\s\S]*?<\/nav>/)?.[0] ?? ''
+  assert.match(rail, /energyworkLessons\.map\(\(lesson, number\) =>/)
+  assert.match(rail, /aria-current=\{lessonNumber === number \+ 1 \|\| \(lessonNumber === 0 && number === 0\) \? "step" : undefined\}/)
+  assert.doesNotMatch(rail, /<button|<a\b|<Link\b|onClick|jumpToSlide/)
+  const jump = learner.split('async function jumpToSlide(')[1]?.split('async function next()')[0] ?? ''
+  assert.match(jump, /if \(busy\) return/)
+  assert.match(jump, /if \(sync !== "ready" && target > slides\.findIndex\(item => item\.id === "flight-done"\)\) return/)
+  assert.match(jump, /dirtyRef\.current\.has\(slide\.id\)/)
+  assert.match(jump, /try \{ await store\(slide\.id\); \}/)
+  assert.match(jump, /catch \{ setSaveError\(t\.saveFailed\); setBusy\(false\); return; \}/)
+  assert.ok(jump.indexOf('await store(slide.id)') < jump.indexOf('setIndex(target)'), 'Dirty answers must save before a review jump')
 })
 
 

@@ -168,11 +168,17 @@ test('Approved private audio releases retain teacher titles without affecting st
   assert.doesNotMatch(publicRoute,/reiki-audio-metadata|storage\.list|private.*original/)
 })
 
-test('Current canonical Reiki course uses the complete 60-slide sequence', async () => {
+test('Current canonical Reiki course keeps 63 unique screens and separate teacher introductions', async () => {
   const {energyworkSequence}=await import('../data/academy/energywork-ai-schema.js')
   const ids=energyworkSequence()
-  assert.equal(ids.length,60)
-  assert.equal(new Set(ids).size,60)
+  assert.equal(ids.length,63)
+  assert.equal(new Set(ids).size,63)
+  assert.deepEqual(ids.slice(0,3), ['welcome-01','welcome-02','welcome-video'])
+  for (const prefix of ['tan','kun','ygg']) {
+    const introIndex = ids.indexOf(prefix + '-intro-video')
+    assert.ok(introIndex >= 0, prefix + ' keeps its separate teacher introduction')
+    assert.equal(ids[introIndex + 1], prefix + '-02', 'The original meditation follows, rather than being replaced')
+  }
   for(const id of ['flight-01','tan-01','kun-01','ygg-01','paths-01'])
     assert.ok(ids.includes(id))
 })
