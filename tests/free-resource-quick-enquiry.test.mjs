@@ -13,7 +13,7 @@ test("quick free-service capture is immediately visible with a single reply fiel
   for (const snippet of [
     "quick?: boolean", "data-quick={quick}", "hidden={!open && !quick}",
     "const [consent, setConsent] = useState(quick)", "quick ? c.quickSubmit : c.submit",
-    "quick && <small className={styles.quickConsent}>", "contactConsent: consent",
+    "quick && <small className={styles.quickConsent}>", "contactConsent: agreed", "consentToReply: !quick",
     'fetch("/api/service-enquiries"', "publicTopic?.trim()",
   ]) assert.ok(chooser.includes(snippet), "Quick request contract missing: " + snippet);
   assert.ok(resource.includes("whatsappUrl={whatsappUrl} quick resetKey={kind}"));
@@ -27,7 +27,7 @@ test("quick free-service capture is immediately visible with a single reply fiel
   assert.ok(css.includes(".quickSwitch:focus-visible"));
 });
 
-test("Google prefill and contact-only requests never auto-save leads or subscribe to ads", () => {
+test("quick Google prefills only; explicit Send creates a reply-only CRM enquiry", () => {
   const chooser = read("components/contact-channel-chooser.tsx");
   assert.ok(chooser.includes('continueTo: "enquiry", returnPath: pathname'));
   assert.ok(chooser.includes('fetch("/api/app/auth/contact-profile"'));
