@@ -70,5 +70,6 @@ test("a PsiMaster taxonomy entry without trustworthy source body stays out of pu
   ]);
   const missing = inventory.records.filter((item) => item.classification === "AcademyMissingBody");
   assert.equal(missing.length, 1);
-  assert.ok(!published.some((item) => item.sourceTaxonomyId === String(missing[0].taxonomyId ?? missing[0].id)));
+  assert.equal(missing[0].sourceTaxonomyId, "12434");
+  assert.ok(!published.some((item) => item.sourceTaxonomyId === missing[0].sourceTaxonomyId));
 });
