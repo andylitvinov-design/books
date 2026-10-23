@@ -40,6 +40,16 @@ const hypnotherapyRu: ServiceVideoMedia = {
   poster: path + "hypnotherapy-en-v1.webp",
   general: false,
 };
+/** This source belongs exclusively to the English psychotherapy landing.
+ * No new YouTube publication or HeyGen render is required.
+ * Its own YouTube thumbnail is used, not an unrelated static HeyGen still.
+ */
+export const englishPsychotherapyLandingVideo: ServiceVideoMedia = {
+  video: { youtubeId: "vqRmI79cecQ", language: "en", title: "Psychotherapy — introduction in English" },
+  poster: "",
+  general: false,
+};
+
 const homeopathyEn: ServiceVideoMedia = {
   video: { youtubeId: "ILyRWyHtJoE", language: "en", title: "My Approach to Homeopathy", durationSeconds: 31 },
   poster: path + "homeopathy-en-v2.webp",
