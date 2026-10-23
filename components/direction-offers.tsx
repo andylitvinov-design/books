@@ -578,17 +578,21 @@ export function DirectionOffers({ locale, journey, suggestions }: {
 
   function selectTopic(value: string) {
     setTopicId(value)
-    setDialogOpen(true)
-    setDialogUncertain(false)
-    setDialogMode(!value ? 'topic' : intent ? 'confirm' : 'intent')
+    // Explicit buttons are stable standalone filters. An existing guide can
+    // continue, but clicking a filter alone must not insert new content above it.
+    if (dialogOpen) {
+      setDialogUncertain(false)
+      setDialogMode(!value ? 'topic' : intent ? 'confirm' : 'intent')
+    }
     setFeedback('')
   }
 
   function selectAction(value: ActionIntent | null) {
     setIntent(value)
-    setDialogOpen(true)
-    setDialogUncertain(false)
-    setDialogMode(!topicId ? 'topic' : value ? 'confirm' : 'intent')
+    if (dialogOpen) {
+      setDialogUncertain(false)
+      setDialogMode(!topicId ? 'topic' : value ? 'confirm' : 'intent')
+    }
   }
 
   function readWish(message: string, keepContext: boolean) {
@@ -680,7 +684,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
         <strong>{chat.title}</strong>
         <div className={styles.dialogHeaderActions}>
           <button type="button" onClick={resetDialog} data-dialog-reset>{chat.reset}</button>
-          <button type="button" onClick={()=>setDialogOpen(false)} aria-label={chat.close} data-dialog-close>
+          <button type="button" onClick={()=>dialogUrgent ? resetDialog() : setDialogOpen(false)} aria-label={chat.close} data-dialog-close>
             <X size={17} aria-hidden="true"/>
           </button>
         </div>
