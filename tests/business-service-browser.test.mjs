@@ -103,7 +103,7 @@ test('photo-left compact service selection keeps the first three offers visible 
     assert.deepEqual(photos.map(photo=>nodes(photo).find(node=>node.type==='NextImage')?.props?.alt),['','',''])
     const actions=nodes(h.tree).filter(n=>n.props?.attributes?.['data-business-direct-option'])
     assert.ok(actions.every(link=>link.props.href==='#business-direct-request'))
-    assert.ok(actions.every(link=>nodes(link).some(node=>node.props?.['aria-hidden']===true)))
+    assert.ok(actions.every(link=>nodes(link).some(node=>node.props?.['aria-hidden']==='true')))
   }
   assert.match(source,/compactOffers\[locale\]/)
   assert.match(source,/servicePhotos\[item\.id\]/)
