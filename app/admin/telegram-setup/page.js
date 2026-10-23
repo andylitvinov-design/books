@@ -46,7 +46,7 @@ const resultNotes={
   sender_disabled:{ru:'Отправка выключена на сервере.',en:'Server delivery switch is off.'},
   setup_unavailable:{ru:'Сервис проверки временно недоступен.',en:'Connection verification temporarily unavailable.'},
   council_sent:{ru:'Отчёт Holistic House принят Telegram. Реальные статусы Gemini и Mistral указаны внутри файла.',en:'Holistic House report accepted by Telegram. Genuine Gemini and Mistral statuses are in the file.'},
-  council_partial:{ru:'Один отчёт Telegram принял, но восстановление другой даты не подтверждено. Повтор возможен без дубля принятого дня.',en:'Telegram accepted one report; another day's recovery is still unconfirmed. Accepted days will not be duplicated.'},
+  council_partial:{ru:'Один отчёт Telegram принял, но восстановление другой даты не подтверждено. Повтор возможен без дубля принятого дня.',en:'Telegram accepted one report; recovery of another date is still unconfirmed. Accepted days will not be duplicated.'},
   council_duplicate:{ru:'Этот отчёт уже отправлен или выполняется. Без дубля.',en:'Already sent or running. No duplicate.'},
   council_missing_keys:{ru:'Подтверди Gemini Free Tier и подключи бесплатный Mistral (OpenRouter или Studio Free mode).',en:'Confirm Gemini Free Tier and connect Mistral via OpenRouter free or Studio Free mode.'},
   council_no_archive:{ru:'Публичный HTML-аудит ещё не создан.',en:'Public HTML audit not archived yet.'},
