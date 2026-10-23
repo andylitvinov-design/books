@@ -17,8 +17,8 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
-assert.equal(expectedSequence.length, 64, "One consecutive course must have 64 screens");
-const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,64]);
+assert.equal(expectedSequence.length, 63, "One consecutive course must have 63 screens");
+const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -95,8 +95,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
   }
-  // This consented save gate has a fixed bottom dock and intentionally aligns at top.
-  assert.ok(data.slideJustify.includes(id === "flight-save" ? "flex-start" : "center"),
+  assert.ok(data.slideJustify.includes("center"),
     where + ": lesson content uses the expected vertical alignment");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
   assert.ok(data.privateSaveStatus.length > 0, where + ": current guest, consent or private-save status is visible");
@@ -111,7 +110,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   if (data.kind !== "welcome") {
     assert.ok(data.slideBackground.includes("gradient") || data.slideFill.includes("rgba("), where + ": glass panel background");
   }
-  if (index < expectedSequence.length && id !== "flight-save") {
+  if (index < expectedSequence.length) {
     assert.ok(data.ctaTop >= -1 && data.ctaBottom <= data.viewportHeight + 2,
       where + ": action stays reachable above mobile browser safe area; " + JSON.stringify(data));
   }
@@ -217,12 +216,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
     }
   }
-  if (id === "flight-save") {
-    await expect(page.locator("button[data-energywork-next]")).toHaveCount(0);
-    await expect(page.locator("button[data-reiki-first-lesson-google-save]")).toBeEnabled();
-    await expect(page.locator("[data-reiki-first-lesson-save]")).toBeVisible();
-    await expect(page.locator("[data-reiki-first-lesson-consent]")).toHaveCount(0);
-  } else if (data.kind === "milestone") {
+  if (data.kind === "milestone") {
     // Finish-for-today is inside the teaching slide; the one primary
     // save-and-continue CTA remains visible in the pinned bottom navigation.
     const inSlide = page.locator('[data-energywork-slide-id] [data-reiki-milestone-choices]');
@@ -403,16 +397,11 @@ async function exerciseJourney(page, locale, width) {
       await expect(nextButton).toBeEnabled();
     }
     if (index===expectedSequence.length) break;
-    if (id === "flight-save") {
-      await expect(page.locator("button[data-energywork-next]")).toHaveCount(0);
-      await page.locator("button[data-reiki-first-lesson-google-save]").click();
-      continue;
-    }
     const next = page.locator("button[data-energywork-next]");
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 64 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 63 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   // The optional readiness review is on the final screen, not its own slide.
   await expect(page.locator("[data-initiation-readiness]")).toBeVisible();
@@ -420,7 +409,7 @@ async function exerciseJourney(page, locale, width) {
   await removeMock();
 }
 
-async function verifySaveThenInstall(page, locale) {
+async function verifySaveOnCompletion(page, locale) {
   // This models an already Google-authenticated first-time enrollee.
   // It exercises the real consented start API path, never a fabricated
   // completed OAuth redirect or a live person's private progress.
@@ -472,27 +461,21 @@ async function verifySaveThenInstall(page, locale) {
   }
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "flight-done");
-  // The compact milestone screen has one in-card "Save my lesson" action;
-  // the second primary "Save my lesson and continue" is in the pinned footer.
+  // The same milestone holds consent and the final CTA, with no second save slide.
   await expect(page.locator("[data-reiki-milestone-choices] button")).toHaveCount(1);
-  await page.locator('button[data-reiki-tomorrow-choice]').click();
-  await expect(page.locator("[data-energywork-slide-id]"))
-    .toHaveAttribute("data-energywork-slide-id", "flight-save");
-  await expect(page.locator("[data-reiki-install-offer]")).toHaveCount(0);
+  await expect(page.locator("[data-reiki-first-lesson-save]")).toBeVisible();
+  const saveAction = page.locator("button[data-reiki-first-lesson-google-save]");
+  await expect(saveAction).toBeDisabled();
   await page.locator("[data-reiki-first-lesson-consent]").check();
-  await page.locator("button[data-reiki-first-lesson-google-save]").click();
-  const offer = page.locator("[data-reiki-install-offer]");
-  await expect(offer).toBeVisible();
-  await expect(offer.locator("a[href='/" + locale + "/install']")).toBeVisible();
-  await expect(offer.locator("a[href='/" + locale + "/app/course?view=courses']")).toBeVisible();
-  await expect(page.locator("button[data-reiki-tomorrow-choice]")).toHaveCount(0);
-  await offer.locator("button").click();
+  await expect(saveAction).toBeEnabled();
+  await saveAction.click();
   await expect(page.locator("[data-energywork-slide-id]"))
     .toHaveAttribute("data-energywork-slide-id", "tan-01");
   await expect(page.locator("[data-reiki-install-offer]")).toHaveCount(0);
+  await expect(page.locator("[data-reiki-first-lesson-save]")).toHaveCount(0);
   await page.unroute(progressPattern);
   await page.unroute(bootstrapPattern);
-  console.log("REIKI_CONSENTED_SAVE_INSTALL_PASS", JSON.stringify({engine:engineName,locale,width:375}));
+  console.log("REIKI_SINGLE_SCREEN_SAVE_PASS", JSON.stringify({engine:engineName,locale,width:375}));
 }
 
 /* Screenshot-equivalent short mobile viewport: first-view course instructions should
@@ -603,22 +586,20 @@ async function verifyShortViewport(page,locale) {
   await expect(page.locator('[data-energywork-slide-id="flight-done"] [class*="milestoneCard"]'))
     .not.toContainText(/Personal initiation and group membership|Инициация и вступление в сообщество/);
   await page.screenshot({path:output+"/"+engineName+"-"+locale+"-375-short-flight-done.png",animations:"disabled",timeout:30000});
-  // Guest must be explicitly asked to save, with no second forward/skip action.
-  await page.locator('button[data-energywork-next]').click();
-  await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-save');
+  // Consent is inline on the celebration; the guest cannot skip private saving.
   const saveAction = page.locator('button[data-reiki-first-lesson-google-save]');
   await expect(saveAction).toBeDisabled();
-  await expect(page.locator('button[data-energywork-next]')).toHaveCount(0);
   await expect(page.locator('[data-reiki-first-lesson-consent]')).toHaveCount(1);
-  await expect(page.locator('[data-reiki-first-lesson-save]')).not.toContainText(
-    locale === "ru" ? "без сохранения" : "without saving");
   await page.locator('[data-reiki-first-lesson-consent]').check();
   await expect(saveAction).toBeEnabled();
-  await page.screenshot({path:output+"/"+engineName+"-"+locale+"-375-short-flight-save.png",animations:"disabled",timeout:30000});
-  // Guest review survives a Back action, but only an actual private save unlocks Lesson 2.
+  await expectFits("flight-done");
+  await page.screenshot({path:output+"/"+engineName+"-"+locale+"-375-short-flight-consent.png",animations:"disabled",timeout:30000});
   await page.locator('button[class*="milestoneBack"]').click();
+  await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-03');
+  await page.locator('button[data-energywork-next]').click();
   await expect(page.locator('[data-energywork-slide-id]')).toHaveAttribute('data-energywork-slide-id','flight-done');
-  console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:10}));
+  await expect(page.locator('[data-reiki-first-lesson-consent]')).toBeChecked();
+  console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:9}));
 }
 
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
@@ -634,8 +615,8 @@ try {
   if (engineName === "chromium") {
     for (const [locale,width] of [["en",390],["ru",320]]) await exerciseJourney(page,locale,width);
   }
-  // Account-scoped synthetic save must succeed before an optional install screen appears.
-  if (engineName === "chromium") await verifySaveThenInstall(page,"ru");
+  // Synthetic private save must succeed before Lesson 2 unlocks.
+  if (engineName === "chromium") await verifySaveOnCompletion(page,"ru");
   // Additional layout sizes: these reuse the guest route, no persistence.
   for (const [locale,width] of [["en",375],["ru",430]]) {
     await page.setViewportSize({width,height:844});
@@ -646,7 +627,7 @@ try {
   for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log(engineName === "webkit" ? "REIKI_SAFARI_GUEST_SAVE_GATE_PASS" : "REIKI_ALL_SLIDES_BROWSER_PASS",
-    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 64,
+    JSON.stringify({engine:engineName,count:engineName === "webkit" ? 10 : 63,
       locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
   await browser.close();
