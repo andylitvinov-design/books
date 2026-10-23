@@ -392,7 +392,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const allHrefs = [
     '/' + locale + '/client/tests?catalog=full',
     '/' + locale + '/academy',
-    '/' + locale + '/services',
+    '/' + locale + '/services/catalog#service-listings',
   ] as const
 
   function selectTopic(value: string) {
