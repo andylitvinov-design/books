@@ -401,6 +401,20 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       {!activePanel&&<button type="button" className="hh-practice-v4-materials-cta" onClick={()=>openMaterialsPanel('courses')}>
         <Headphones aria-hidden="true"/><span><strong>{ru?'Создавайте и делитесь знаниями':locale==='es'?'Crea y comparte conocimientos':'Create and share knowledge'}</strong><small>{ru?'Статьи, услуги, курсы, медитации и видео':locale==='es'?'Artículos, servicios, cursos, audio y vídeo':'Articles, services, courses, meditations and videos'}</small></span><ChevronRight aria-hidden="true"/>
       </button>}
+      {!activePanel&&<nav className="hh-practice-community-shortcuts" aria-label={ru?'Сообщество мастеров':locale==='es'?'Comunidad de mentores':'Mentor community'}>
+        <Link href={'/'+locale+'/masters'} prefetch={false}>
+          <UsersRound aria-hidden="true"/>
+          <span><strong>{ru?'Сообщество наставников':locale==='es'?'Comunidad de mentores':'Explore mentor community'}</strong>
+            <small>{ru?'Статьи и профили':locale==='es'?'Artículos y perfiles':'Articles & profiles'}</small></span>
+          <ChevronRight aria-hidden="true"/>
+        </Link>
+        <button type="button" onClick={()=>openMaterialsPanel('articles')}>
+          <FileText aria-hidden="true"/>
+          <span><strong>{ru?'Написать статью':locale==='es'?'Escribir artículo':'Write an article'}</strong>
+            <small>{ru?'Публикация после проверки':locale==='es'?'Publicación tras revisión':'Published after review'}</small></span>
+          <ChevronRight aria-hidden="true"/>
+        </button>
+      </nav>}
     </section>}
 
     {!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
