@@ -87,5 +87,8 @@ test("a committed CRM lead stays saved when external messenger navigation fails 
   assert.match(banner, /handoffError: "Your request was saved/);
   assert.match(banner, /handoffError: "Заявка сохранена/);
   assert.match(banner, /handoffError: "La solicitud se guardó/);
+  const handoffLabels = banner.match(/^\s*handoffError: [^\n]+$/gm) || [];
+  assert.equal(handoffLabels.length, 3, "Keep an explicit failure notice in each locale");
+  for (const label of handoffLabels) assert.match(label, /,\s*$/, "A missing locale-object comma must never break Next.js compilation");
   assert.doesNotMatch(banner, /setReference\(""\)/);
 });
