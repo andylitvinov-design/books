@@ -129,7 +129,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
     assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1 && box.y >= -1 && box.y + box.height <= height + 1 && box.width >= 44 && box.height >= 44, label + ': visible 44px control must fit viewport')
   }
   for (const locale of ['en', 'ru', 'es']) {
-    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/relationships'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of [320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280]) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)

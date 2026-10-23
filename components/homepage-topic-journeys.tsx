@@ -51,7 +51,7 @@ export function HomepageTopicJourneys({ locale }: { locale: PublicLocale }) {
     </header>
     <div className={styles.grid}>
       {directions.map(direction => <article key={direction.id} className={styles.tile} data-topic-id={direction.id}>
-        <Link href={'/' + locale + '/explore/' + direction.id} className={styles.tileLink} prefetch={false}>
+        <Link href={'/' + locale + '/explore/' + (direction.id === 'relationships' ? 'love' : direction.id)} className={styles.tileLink} prefetch={false}>
           <span className={styles.photo}>
             <Image src={direction.image} alt="" fill unoptimized loading="lazy"
               sizes="(max-width: 720px) 94px, (max-width: 1024px) 120px, 150px" />

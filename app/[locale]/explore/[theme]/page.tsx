@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { BriefcaseBusiness, ArrowRight } from 'lucide-react'
 import wood from '@/components/business-coaching-promo.module.css'
@@ -32,30 +32,32 @@ const BUSINESS_SEO = {
 
 type Props = { params: Promise<{ locale: string; theme: string }> }
 export function generateStaticParams() {
-  return ['en','ru','es'].flatMap((locale) => TOPIC_JOURNEYS.map((item) => ({locale, theme:item.id})))
+  return ['en','ru','es'].flatMap((locale) => [...TOPIC_JOURNEYS.map(item => item.id), 'love'].map((theme) => ({locale, theme})))
 }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, theme } = await params
   const journey = getTopicJourney(theme)
   if (!journey || !['en','ru','es'].includes(locale)) return {title:'Not found'}
   const language = locale as 'en' | 'ru' | 'es'
-  const guide = growthGuideFor(theme,language)
+  const guide = growthGuideFor(theme === 'love' ? 'relationships' : theme,language)
   const title = (theme === 'business' ? BUSINESS_SEO[language].title : guide?.title || journey.title[language]) + ' | Holistic House'
   const description = (theme === 'business' ? BUSINESS_SEO[language].description : guide?.lead || journey.summary[language]).slice(0,180)
+  const canonicalTheme = theme === 'relationships' ? 'love' : theme
   return {
     title,
     description,
     openGraph: {title,description,type:'article'},
     robots: {index:true,follow:true},
-    alternates: {canonical: `/${language}/explore/${theme}`,languages:{en:`/en/explore/${theme}`,ru:`/ru/explore/${theme}`,es:`/es/explore/${theme}`}},
+    alternates: {canonical: `/${language}/explore/${canonicalTheme}`,languages:{en:`/en/explore/${canonicalTheme}`,ru:`/ru/explore/${canonicalTheme}`,es:`/es/explore/${canonicalTheme}`}},
   }
 }
 export default async function TopicJourneyPage({ params }: Props) {
   const { locale, theme } = await params
   if (!['ru','en','es'].includes(locale)) notFound()
+  if (theme === 'relationships') redirect('/' + locale + '/explore/love')
   const journey = getTopicJourney(theme)
   if (!journey) notFound()
-  const isDirection = ['energy','relationships','business'].includes(theme)
+  const isDirection = ['energy','love','business'].includes(theme)
   const suggestions = buildTopicTestSuggestions(journey, locale)
   const content = <>
     <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={suggestions}/>
@@ -64,7 +66,7 @@ export default async function TopicJourneyPage({ params }: Props) {
     </div>}
     {theme === 'business'
       ? <BusinessTestimonials locale={locale as PublicLocale}/>
-      : <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>}
+      : <TopicGrowthGuide theme={theme === 'love' ? 'relationships' : theme} locale={locale as 'en'|'ru'|'es'}/>}
     {theme === 'business' && <aside data-business-free-90-day-plan className={wood.promo} style={{marginBottom:'calc(116px + env(safe-area-inset-bottom))'}}>
       <div className={wood.card}>
         <span className={wood.icon} aria-hidden="true"><BriefcaseBusiness size={26}/></span>

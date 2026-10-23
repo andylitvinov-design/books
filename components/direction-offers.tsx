@@ -83,7 +83,7 @@ const directionCopy = {
 } as const
 
 export const directionIds = ['energy', 'relationships', 'business'] as const
-export const directionSlug = (direction: Direction) => direction
+export const directionSlug = (direction: Direction) => direction === 'relationships' ? 'love' : direction
 
 export function DirectionOffers({ locale, journey, suggestions }: {
   locale: PublicLocale
