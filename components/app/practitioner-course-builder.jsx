@@ -15,7 +15,7 @@ const translations={
  new:'Nuevo curso',name:'Título del curso',summary:'Descripción breve',lang:'Idioma',slides:'Diapositivas',add:'Añadir diapositiva',slideTitle:'Título de la diapositiva',body:'Texto / instrucciones',type:'Tipo de contenido',text:'Texto',image:'Foto',audio:'Audio',video:'Archivo de vídeo',embed:'YouTube / Vimeo',link:'Enlace de vídeo',upload:'Subir archivo',uploading:'Subiendo…',private:'Privado hasta publicar',save:'Guardar borrador',saving:'Guardando…',publish:'Publicar curso',republish:'Actualizar curso publicado',hide:'Dejar de publicar',delete:'Archivar',published:'Publicado',draft:'Borrador',unsaved:'Cambios sin guardar',saved:'Guardado en servidor',limit:'Foto 4 MB · audio 20 MB · vídeo 25 MB. Sin reproducción automática.',share:'Compartir curso',copied:'Enlace copiado',preview:'Ver curso',confirm:'¿Publicar para todos con el enlace y en el buscador? Confirma los derechos sobre el material y que no contiene datos de clientes.',remove:'¿Archivar el curso? El enlace dejará de funcionar.',empty:'Aún no hay cursos. Crea el primero.',select:'Elige un curso',choose:'Elige una diapositiva',up:'Subir',down:'Bajar',removeSlide:'Quitar diapositiva',error:'No se pudieron guardar los cambios',rev:'Otro dispositivo ha modificado el curso. Recarga la página.',approved:'Para publicar necesitas un perfil profesional aprobado.',search:'Los cursos publicados aparecen en la búsqueda de la Academia.',fileReady:'Archivo subido y verificado',photoAlt:'Imagen de diapositiva',youtubePrep:'Preparar para YouTube (más tarde)',youtubeDownload:'Descargar original',youtubeUploader:'Abrir cargador de YouTube',youtubeStudio:'Abrir YouTube Studio',youtubeNote:'Este vídeo sigue privado. Descarga el original y sube una copia a un canal de YouTube por separado, con confirmación. Nunca subas vídeos de clientes.'}
 }
 Object.assign(translations.en,{
- elementToolbar:'Add to slide',elementText:'Text',elementPhoto:'Photo',elementAudio:'Audio',elementVideo:'Video',elementQuestion:'Question',elementCta:'Link / CTA',
+ removeMedia:'Remove media from this slide',invalidCta:'Use an HTTPS link or an internal /page URL.',elementToolbar:'Add to slide',elementText:'Text',elementPhoto:'Photo',elementAudio:'Audio',elementVideo:'Video',elementQuestion:'Question',elementCta:'Link / CTA',
  addPhoto:'Add photo',replacePhoto:'Change photo',removePhoto:'Remove photo',photoPlaceholder:'A photo you choose will appear here in the published course.',
  screenTitle:'Slide title',screenTitlePlaceholder:'Give this screen a short title…',questionLabel:'QUESTION FOR LEARNER',questionPlaceholder:'Add a question that invites reflection…',
  instructionLabel:'TEXT / INSTRUCTIONS',instructionPlaceholder:'Add one short idea, practice, or instruction…',
@@ -26,7 +26,7 @@ Object.assign(translations.en,{
  addScreen:'Add slide',lessonCanvas:'Live slide canvas',noPhoto:'Photo placeholder (visible only in editor)',imageAction:'Add image',moveUp:'Move up',moveDown:'Move down'
 })
 Object.assign(translations.ru,{
- elementToolbar:'Добавить на слайд',elementText:'Текст',elementPhoto:'Фото',elementAudio:'Аудио',elementVideo:'Видео',elementQuestion:'Вопрос',elementCta:'Ссылка / кнопка',
+ removeMedia:'Убрать медиа со слайда',invalidCta:'Нужна ссылка HTTPS или внутренняя ссылка, начинающаяся с /.',elementToolbar:'Добавить на слайд',elementText:'Текст',elementPhoto:'Фото',elementAudio:'Аудио',elementVideo:'Видео',elementQuestion:'Вопрос',elementCta:'Ссылка / кнопка',
  addPhoto:'Добавить фото',replacePhoto:'Заменить фото',removePhoto:'Убрать фото',photoPlaceholder:'Выбранное фото появится здесь после загрузки.',
  screenTitle:'Заголовок слайда',screenTitlePlaceholder:'Короткий заголовок этого экрана…',questionLabel:'ВОПРОС К КЛИЕНТУ',questionPlaceholder:'Какой вопрос поможет человеку задуматься?',
  instructionLabel:'ТЕКСТ / ИНСТРУКЦИЯ',instructionPlaceholder:'Одно полезное объяснение или короткая практика…',
@@ -37,7 +37,7 @@ Object.assign(translations.ru,{
  addScreen:'Добавить слайд',lessonCanvas:'Визуальный редактор слайда',noPhoto:'Место для фото (только в редакторе)',imageAction:'Добавить изображение',moveUp:'Переместить вверх',moveDown:'Переместить вниз'
 })
 Object.assign(translations.es,{
- elementToolbar:'Añadir a la diapositiva',elementText:'Texto',elementPhoto:'Foto',elementAudio:'Audio',elementVideo:'Vídeo',elementQuestion:'Pregunta',elementCta:'Enlace / botón',
+ removeMedia:'Quitar medio de la diapositiva',invalidCta:'Usa un enlace HTTPS o una ruta interna /.',elementToolbar:'Añadir a la diapositiva',elementText:'Texto',elementPhoto:'Foto',elementAudio:'Audio',elementVideo:'Vídeo',elementQuestion:'Pregunta',elementCta:'Enlace / botón',
  addPhoto:'Añadir foto',replacePhoto:'Cambiar foto',removePhoto:'Quitar foto',photoPlaceholder:'La foto elegida aparecerá aquí cuando la subas.',
  screenTitle:'Título de la diapositiva',screenTitlePlaceholder:'Un título breve para esta pantalla…',questionLabel:'PREGUNTA PARA EL ALUMNO',questionPlaceholder:'¿Qué pregunta invita a reflexionar?',
  instructionLabel:'TEXTO / INSTRUCCIÓN',instructionPlaceholder:'Una idea útil, una práctica o una instrucción…',
@@ -222,7 +222,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
     }else applyItem(item,{keepSlide:true})
     setMessage(action==='publish'?t.search:t.saved)
    }
-  }catch(e){setError(e.message==='REVISION_CONFLICT'?t.rev:e.message==='PRACTITIONER_REVIEW_REQUIRED'?t.approved:e.message||t.error)}
+  }catch(e){setError(e.message==='REVISION_CONFLICT'?t.rev:e.message==='PRACTITIONER_REVIEW_REQUIRED'?t.approved:e.message==='INVALID_COURSE_CTA'?t.invalidCta:e.message||t.error)}
   finally{setBusy(false)}
  }
  async function upload(file,fromCapture=false,target='media'){
@@ -388,6 +388,8 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
            </div>
           </details>}
           <small>{t.limit} · {t.private}</small>
+          {!showPreview&&<button type="button" className={styles.mediaMode} disabled={busy||uploading||recording}
+           onClick={()=>changeMediaKind('text')}>{t.removeMedia}</button>}
          </div>}
         </div>
        </div>
