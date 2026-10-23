@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const schema = readFileSync(new URL('../supabase/migrations/20261023183000_hh_coaching_model_catalog_schema.sql', import.meta.url), 'utf8');
 const seed = readFileSync(new URL('../supabase/migrations/20261023183100_hh_coaching_model_catalog_seed.sql', import.meta.url), 'utf8');
+const relevanceGuard = readFileSync(new URL('../supabase/migrations/20261023183200_hh_coaching_relevance_guard.sql', import.meta.url), 'utf8');
 
 const countRows = (name) => {
   const marker = `INSERT INTO app_private.${name} (`;
@@ -58,4 +59,6 @@ test('a recommendation explicitly requires client-chosen topics and cannot depen
   assert.match(schema,/cardinality\(c\.matched\)\*10/);
   assert.match(schema,/ORDER BY match_score DESC/);
   assert.doesNotMatch(schema,/assessment_results|crm_contacts|profile_snapshots/);
+  assert.match(relevanceGuard,/WHERE cardinality\(c\.matched\)>0/);
+  assert.match(relevanceGuard,/CREATE OR REPLACE FUNCTION app_private\.recommend_coaching_schemes/);
 });
