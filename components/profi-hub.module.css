@@ -181,3 +181,236 @@
 @media(prefers-reduced-motion:reduce){
  .moneyDetails summary>svg:last-child{transition:none}
 }
+
+/* 2026-10-23: editorial Pro screens. A photographed action per card,
+   stacked one-purpose panels on phones; never crop essential text. */
+.hero{min-height:clamp(420px,50vw,515px)}
+.hero h1{font-size:clamp(62px,7vw,92px)}
+.heroHeadline{font-size:clamp(27px,3.3vw,39px)}
+.heroContent{max-width:730px}
+.facts{gap:6px}
+.facts span{border-radius:13px;background:#fffefa}
+.profileGateway{background:#f1e7da;box-shadow:0 12px 32px rgba(75,47,32,.055)}
+.profileEntries{gap:9px}
+.profileEntry{
+ display:grid;grid-template-columns:clamp(78px,8vw,102px) minmax(0,1fr);
+ align-items:stretch;gap:13px;min-height:111px;padding:7px;
+ border-radius:16px;background:#fffdfa;overflow:hidden;
+}
+.profileEntryPhoto,.introPhoto,.lessonThumb,.lessonDetailPhoto,.offerThumb,
+.previewPhoto,.stagePhoto,.publishPhoto,.benefitPhoto{
+ display:block;position:relative;isolation:isolate;overflow:hidden;
+ background:#ead9c9;
+}
+.profileEntryPhoto img,.introPhoto img,.lessonThumb img,.lessonDetailPhoto img,
+.offerThumb img,.previewPhoto img,.stagePhoto img,.publishPhoto img,.benefitPhoto img{
+ object-fit:cover;
+}
+.profileEntryPhoto{min-height:95px;border-radius:11px}
+.profileEntryText{justify-content:center;padding:8px 5px 8px 0;gap:5px}
+.profileEntryText>strong{font-size:14px}
+.profileEntryText>small{font-size:11.5px;line-height:1.35}
+.profileEntryAction{margin-top:3px;padding-top:0;font-size:12px}
+.sectionIntro{
+ display:grid;grid-template-columns:clamp(112px,19vw,190px) minmax(0,1fr);
+ grid-template-rows:auto auto auto;column-gap:23px;align-items:center;
+ max-width:none;margin:0 0 18px;
+}
+.introPhoto{grid-column:1;grid-row:1/4;align-self:stretch;min-height:145px;border-radius:19px}
+.sectionIntro>:not(.introPhoto){grid-column:2;min-width:0}
+.sectionIntro h2{margin:5px 0;font-size:clamp(29px,3.6vw,43px)}
+.sectionIntro>p:last-child{font-size:13px;line-height:1.47}
+.lessonLayout{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);align-items:stretch}
+.lessonSelector,.lessonDetail,.offerChoices,.offerPreview{
+ border-color:#e2d1c0;border-radius:20px;box-shadow:0 8px 25px rgba(78,55,35,.055);
+}
+.lessonSelector{display:flex;flex-direction:column;justify-content:center}
+.lessonSelector h3,.offerChoices h3{font-size:clamp(24px,2.7vw,31px)}
+.lessons{gap:7px;margin-top:13px}
+.lessons button{
+ display:grid;grid-template-columns:88px minmax(0,1fr) 16px;
+ align-items:center;gap:12px;min-height:68px;padding:0 12px 0 0;
+ overflow:hidden;border-radius:13px;background:#f8f2ea;
+}
+.lessons button strong{font-size:14px}
+.lessonThumb{height:68px;width:88px;border-radius:12px}
+.photoNumber{
+ position:absolute;left:6px;bottom:6px;z-index:1;min-width:28px;
+ border-radius:999px;padding:4px 6px;
+ background:rgba(52,37,30,.78);color:#fff4df;text-align:center;
+ font:750 10px/1 Arial,Helvetica,sans-serif;letter-spacing:.02em;
+}
+.lessonSelector>.primary{margin-top:15px}
+.lessonDetail{align-items:flex-start;justify-content:center;padding:24px;background:#f0e5d9}
+.lessonDetailPhoto{width:100%;height:215px;border-radius:15px;margin-bottom:15px}
+.lessonMark{display:none}
+.lessonDetail h3{font-size:clamp(26px,3vw,37px);margin:7px 0}
+.lessonDetail>p:not(.sectionKicker,.micro){font-size:13px;line-height:1.5;margin-bottom:15px}
+.primary{min-height:49px;background:#87314d;border-color:#87314d;border-radius:14px}
+.primary:hover{background:#6f2940;border-color:#6f2940}
+.nextStage,.publishJourney{border:1px solid #e4d6c7;border-radius:20px;background:#fffdf9;padding:21px;margin-top:17px}
+.threeSteps{gap:10px;margin-top:13px}
+.threeSteps article{
+ display:grid;grid-template-columns:83px minmax(0,1fr);align-items:stretch;
+ gap:12px;min-height:125px;padding:7px;border-radius:14px;
+}
+.stagePhoto{border-radius:10px}
+.stageText{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:6px 5px 6px 0}
+.stageText .roundIndex{width:23px;height:23px;font-size:10px}
+.stageText h4{margin:5px 0 3px;font-size:20px}
+.stageText p{font-size:11.5px;line-height:1.42}
+.offerStudio{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.offerGrid{gap:9px;margin-top:14px}
+.offerGrid button{
+ display:grid;grid-template-columns:70px minmax(0,1fr) 15px;
+ align-items:center;gap:8px;min-height:105px;padding:7px;
+ border-radius:14px;background:#f8f2ea;
+}
+.offerThumb{width:70px;min-height:89px;height:100%;border-radius:10px}
+.offerGrid button>svg:last-child{align-self:center;margin:0}
+.offerText{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}
+.offerText strong{font-size:12.5px;line-height:1.23}
+.offerText small{font-size:10.5px;line-height:1.34}
+.offerPreview{background:#f2e7da}
+.previewCard{
+ display:grid;grid-template-columns:minmax(115px,38%) minmax(0,1fr);
+ align-content:center;align-items:center;column-gap:15px;row-gap:7px;
+ min-height:244px;padding:9px;
+}
+.previewPhoto{grid-column:1;grid-row:1/5;align-self:stretch;min-height:200px;border-radius:12px}
+.previewCard>:not(.previewPhoto){grid-column:2}
+.previewCard h3{font-size:clamp(24px,2.7vw,32px)}
+.previewCard p:not(.sectionKicker){font-size:12px}
+.previewCard .fakeButton{display:none} /* avoid a deceptive sample "order" control */
+.offerPreview>.primary{width:100%;justify-content:space-between}
+.publishJourney ol{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:13px}
+.publishJourney li{
+ grid-template-columns:80px minmax(0,1fr);gap:5px 12px;
+ align-items:center;min-height:135px;padding:7px;
+ border-radius:14px;background:#fffdfa;
+}
+.publishPhoto{grid-column:1;grid-row:1/3;width:80px;height:100%;min-height:119px;border-radius:10px}
+.publishJourney li h4{font-size:19px}
+.publishJourney li p{font-size:11.5px;line-height:1.38}
+.stepLink{grid-column:2;min-height:30px;margin:0;font-size:11px}
+.benefitGrid{gap:9px}
+.benefitGrid article{
+ display:grid;grid-template-columns:80px minmax(0,1fr);
+ align-items:stretch;gap:12px;min-height:120px;padding:7px;border-radius:15px;background:#fffdfa;
+}
+.benefitPhoto{border-radius:10px}
+.benefitGrid article>div{min-width:0;align-self:center;padding:6px 6px 6px 0}
+.benefitGrid h3{display:flex;align-items:center;gap:5px;margin:0 0 6px;font-size:20px}
+.benefitGrid h3 svg{flex:0 0 17px;color:#946c51}
+.benefitGrid p{font-size:11.5px;line-height:1.43}
+
+@media(max-width:800px){
+ .profileEntries{grid-template-columns:1fr}
+ .lessonLayout,.offerStudio{grid-template-columns:1fr}
+ .sectionIntro{grid-template-columns:110px minmax(0,1fr)}
+ .offerGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .offerGrid button{grid-template-columns:75px minmax(0,1fr) 15px}
+ .offerThumb{width:75px}
+ .threeSteps,.benefitGrid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+ .page{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+ .container{width:calc(100% - 20px)}
+ .hero{min-height:min(440px,calc(100svh - 147px));border-radius:19px}
+ .heroContent{padding:22px 18px}
+ .hero h1{font-size:53px;margin-top:8px}
+ .heroHeadline{font-size:clamp(23px,6.5vw,29px);line-height:1.12}
+ .heroLead{font-size:12px;line-height:1.44}
+ .pathControls{margin-top:17px;gap:7px}
+ .pathControls button{min-height:44px;padding:7px 10px;font-size:12px}
+ .facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .facts span{min-height:42px;justify-content:center;text-align:center;font-size:9px;line-height:1.22;padding:5px 3px}
+ .facts span svg{display:none}
+ .profileGateway{display:flex;flex-direction:column;justify-content:center;min-height:calc(100svh - 155px);padding:17px 12px;border-radius:17px}
+ .profilesHeading h2{font-size:clamp(26px,7vw,32px);margin:5px 0}
+ .profilesHeading>div>p:last-child{font-size:11px;line-height:1.4}
+ .profileEntries{grid-template-columns:1fr;gap:8px;margin-top:12px}
+ .profileEntry{grid-template-columns:85px minmax(0,1fr);min-height:90px;padding:6px;gap:11px}
+ .profileEntryPhoto{min-height:78px}
+ .profileEntryText{gap:3px}
+ .profileEntryText>strong{font-size:12.5px}
+ .profileEntryText>small{font-size:10.5px;line-height:1.33}
+ .profileEntryAction{font-size:11px}
+ .profilePrivacy{font-size:10px;line-height:1.4;margin:9px 2px 0}
+ .journey{padding:23px 0 13px}
+ .sectionIntro{grid-template-columns:86px minmax(0,1fr);gap:4px 12px;margin-bottom:14px}
+ .introPhoto{min-height:112px;border-radius:14px}
+ .sectionIntro h2{font-size:clamp(26px,7vw,34px);line-height:1.11}
+ .sectionIntro>p:last-child{font-size:11px;line-height:1.37}
+ .sectionIntro .sectionKicker{font-size:9px}
+ .lessonSelector,.lessonDetail,.offerChoices,.offerPreview,.nextStage,.publishJourney{
+   min-height:calc(100svh - 148px);border-radius:18px;padding:17px 13px;margin-bottom:11px;
+ }
+ .lessonSelector,.lessonDetail,.offerChoices,.offerPreview{justify-content:center}
+ .lessonSelector h3,.offerChoices h3{font-size:26px}
+ .micro{font-size:10.5px;line-height:1.43}
+ .lessons{gap:6px;margin-top:10px}
+ .lessons button{grid-template-columns:72px minmax(0,1fr) 15px;min-height:57px;gap:9px;padding-right:8px}
+ .lessons button strong{font-size:12.5px}
+ .lessonThumb{height:57px;width:72px}
+ .lessonSelector>.primary{margin-top:12px}
+ .primary{font-size:12px;min-height:49px;padding:10px 13px}
+ .lessonDetail{align-items:stretch}
+ .lessonDetailPhoto{height:185px;margin-bottom:10px}
+ .lessonDetail h3{font-size:29px;margin:7px 0}
+ .lessonDetail>p:not(.sectionKicker,.micro){font-size:12px;line-height:1.43;margin-bottom:13px}
+ .nextStage,.publishJourney{margin-top:12px}
+ .nextStage h3,.publishJourney h3{font-size:25px;margin-bottom:6px}
+ .threeSteps{grid-template-columns:1fr;gap:7px;margin-top:12px}
+ .threeSteps article{grid-template-columns:76px minmax(0,1fr);min-height:89px;padding:5px;gap:10px}
+ .stageText{padding:5px 4px 5px 0}
+ .stageText .roundIndex{display:none}
+ .stageText h4{font-size:19px;margin:0 0 3px}
+ .stageText p{grid-column:auto;font-size:11px;line-height:1.36}
+ .disclaimer{font-size:10px;line-height:1.4;margin-top:13px}
+ .nextActions{gap:6px;margin-top:11px}
+ .secondary,.textAction{font-size:11px;min-height:42px}
+ .offerGrid{grid-template-columns:1fr;gap:7px;margin-top:12px}
+ .offerGrid button{grid-template-columns:84px minmax(0,1fr) 15px;min-height:76px;padding:5px;gap:9px}
+ .offerThumb{width:84px;min-height:66px}
+ .offerText strong{font-size:13px}
+ .offerText small{font-size:11px}
+ .offerPreview .previewCard{min-height:206px;grid-template-columns:minmax(95px,35%) minmax(0,1fr);gap:7px 10px;padding:7px}
+ .previewPhoto{min-height:190px}
+ .previewCard h3{font-size:25px}
+ .previewCard p:not(.sectionKicker){font-size:11px}
+ .priceNote{font-size:11px}
+ .authNote{font-size:10px;line-height:1.43}
+ .publishJourney ol{grid-template-columns:1fr;gap:7px;margin-top:11px}
+ .publishJourney li{grid-template-columns:75px minmax(0,1fr);min-height:101px;gap:5px 10px;padding:5px}
+ .publishPhoto{width:75px;min-height:91px}
+ .publishJourney li h4{font-size:18px}
+ .publishJourney li p{font-size:10.7px;line-height:1.35}
+ .stepLink{font-size:11px}
+ .paymentStatus{font-size:10px}
+ .benefitGrid{grid-template-columns:1fr}
+ .benefitGrid article{grid-template-columns:80px minmax(0,1fr);min-height:106px}
+ .benefitGrid h3{font-size:19px}
+ .benefitGrid p{font-size:11px}
+ .footer{padding:14px 6px}
+}
+@media(max-width:359px){
+ .hero h1{font-size:49px}
+ .heroContent{padding:20px 13px}
+ .heroHeadline{font-size:23px}
+ .profileEntry{grid-template-columns:73px minmax(0,1fr);gap:8px}
+ .profileEntryText>strong{font-size:12px}
+ .sectionIntro{grid-template-columns:73px minmax(0,1fr);gap:10px}
+ .sectionIntro h2{font-size:25px}
+ .introPhoto{min-height:100px}
+ .offerGrid button{grid-template-columns:73px minmax(0,1fr) 13px}
+ .offerThumb{width:73px}
+ .offerText strong{font-size:12px}
+ .primary{font-size:11.5px}
+}
+@media(max-width:600px) and (max-height:650px){
+ .profileGateway,.lessonSelector,.lessonDetail,.offerChoices,.offerPreview,.nextStage,.publishJourney{min-height:auto}
+}
+@media(prefers-reduced-motion:reduce){
+ .profileEntry,.lessonSelector,.offerGrid button{transition:none}
+}
