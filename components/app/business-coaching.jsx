@@ -47,7 +47,7 @@ const copy = {
     reflectionTitle:'A thought for today', reflectionPrompt:'Does today’s step seem useful for your own goal?',
     reflectAgree:'Yes', reflectDisagree:'No', reflectUnsure:'I need to think',
     reflectOptional:'Optional. This is your opinion, not a test or a completed action. It saves only with your lesson.',
-    savedCelebration:'Your lesson is saved', practisedSkill:'Skill you practised',
+    savedCelebration:'Your lesson is saved', practisedSkill:'Skill you practised', viewSavedResult:'Read my saved result', focusWarmup:'Optional 2-minute warm-up',
     celebrationHelp:'Your actual result is in your private journal. Review any slide or continue when ready.',
     showSaved:'Review saved lesson', returnLater:'You can return tomorrow; no automatic reminder is sent.',
     goalCanEdit:'You can add habits and indicators later in Edit goals.',
@@ -113,7 +113,7 @@ const copy = {
     reflectionTitle:'Мысль на сегодня', reflectionPrompt:'Насколько этот шаг полезен для вашей цели?',
     reflectAgree:'Да', reflectDisagree:'Нет', reflectUnsure:'Надо подумать',
     reflectOptional:'Необязательно. Это ваше мнение, не тест и не отметка о выполнении. Сохраняется вместе с уроком.',
-    savedCelebration:'Ваш урок сохранён', practisedSkill:'Навык, который вы практиковали',
+    savedCelebration:'Ваш урок сохранён', practisedSkill:'Навык, который вы практиковали', viewSavedResult:'Прочитать сохранённый результат', focusWarmup:'Разминка на 2 минуты (по желанию)',
     celebrationHelp:'Фактический результат сохранён в личном дневнике. Вы можете вернуться к любому слайду или продолжить.',
     showSaved:'Просмотреть сохранённый урок', returnLater:'Можно продолжить завтра; автоматическое напоминание не отправляется.',
     goalCanEdit:'Привычки и показатели можно добавить позже через «Изменить цели».',
@@ -406,7 +406,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   if(loading)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
   if(!state)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
   if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching
-    data-course-visual="executive-wood-v2" data-wood-mode={woodMode} data-business-course-screen="welcome">
+    data-course-visual="executive-wood-v2" data-wood-mode={woodMode} data-business-course-screen="welcome" data-business-onboarding-step={startStep}>
     {themePicker}
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
@@ -474,8 +474,8 @@ export default function BusinessCoaching({locale='en',accountId}){
       </form>
     </section>
   </section>
-  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-wood-mode={woodMode}>
-    {themePicker}
+  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-wood-mode={woodMode} data-business-current-tab={tab}>
+    {tab!=='today'&&themePicker}
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
         <span className={styles.heroKicker}><BriefcaseBusiness size={14} aria-hidden="true"/>{t.pathway}</span>
@@ -503,10 +503,12 @@ export default function BusinessCoaching({locale='en',accountId}){
     {error&&<p role="alert" className={styles.error}>{error}</p>}
     {notice&&<p role="status" className={styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
     {course.status!=='active'&&<p className={styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
+    {course.status==='paused'&&tab==='today'&&<button type="button" className={styles.resumeCourse} disabled={busy} onClick={()=>void command('resume')}><PlayCircle size={16}/>{t.resume}</button>}
     {tab==='today'&&<div className={styles.panel} data-business-weekly-lesson data-business-one-screen-lesson>
+      <div className={styles.lessonTopbar}>
       <header className={styles.moduleCompact}>
         <div><span className={styles.moduleEyebrow}>
-          {week===13?t.finalModule:t.week+' '+week+' / 12'}</span>
+          {week===13?t.finalModule:t.week+' '+week+' / 12'} · {t.day} {day} / 90</span>
           <strong>{currentModule.title}</strong></div>
         <div className={styles.moduleStat}>
           <strong>{currentWeekProgress.complete}<span> / {currentWeekProgress.total}</span></strong>
@@ -519,6 +521,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       <details className={styles.lessonBrowse}>
         <summary><ListChecks size={16} aria-hidden="true"/>{t.courseMap}
           <span>{t.day} {day} / 90</span><ChevronDown size={16} aria-hidden="true"/></summary>
+        <div className={styles.lessonBrowseContent}>
         <div className={styles.lessonNavigation}>
           <label className={styles.moduleChooser}>{t.selectModule}
             <select value={week} onChange={e=>chooseDay((Number(e.target.value)-1)*7+1)}>
@@ -550,7 +553,9 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button type="button" disabled={busy||course.status!=='active'}
           onClick={()=>command('weekly-review',{week,note:reviewNote})}>{t.saveReview}</button>
       </details>
+        </div>
       </details>
+      </div>
       <nav className={styles.lessonStageNav} aria-label={t.lessonEyebrow}>
         {[t.ideaSlide,t.actionSlide,t.reflectionSlide,t.resultSlide,t.doneSlide].map((label,index)=>
           <button type="button" key={label} aria-current={lessonStage===index?'step':undefined}
@@ -565,18 +570,17 @@ export default function BusinessCoaching({locale='en',accountId}){
           <span className={styles.lessonFormat}>{t.lessonEyebrow}</span>
         </div>
         {lessonStage===0&&<div className={styles.oneIdea} data-business-skill-brief>
-          <div className={styles.skillRecap}>
-            <strong>{t.learnedBefore}</strong>
-            {previousSkills.length?<div className={styles.skillRecapChips}>
+          <h2>{t.todaySkill}</h2>
+          <p className={styles.skillTarget}>{transferableSkill}</p>
+          {previousSkills.length>0&&<details className={styles.skillRecap}>
+            <summary>{t.learnedBefore}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <div className={styles.skillRecapChips}>
               {previousSkills.map(item=><span key={item.day}>
                 <CheckCircle2 size={14} aria-hidden="true"/>{item.skill}
               </span>)}
-            </div>:<small>{t.firstSkill}</small>}
-          </div>
-          <h2>{t.todaySkill}</h2>
-          <p className={styles.skillTarget}>{transferableSkill}</p>
-          <p>{selected.resultLabel}</p>
-        </div>}
+            </div>
+          </details>}
+        </div>
         {lessonStage===1&&<div className={styles.oneIdea} data-business-real-practice>
           <h2>{t.practice}</h2>
           <p>{selected.action}</p>
@@ -585,7 +589,8 @@ export default function BusinessCoaching({locale='en',accountId}){
             <summary>{t.exampleForMyPath}<ChevronDown size={16} aria-hidden="true"/></summary>
             <p>{trackExample}</p>
           </details>}
-          <div className={styles.focusTimer} data-business-focus-timer>
+          <details className={styles.focusTimer} data-business-focus-timer>
+            <summary>{t.focusWarmup}<ChevronDown size={16} aria-hidden="true"/></summary>
             <span>{t.focusHelp}</span>
             <div className={styles.focusTimerRow}>
               <strong role="timer" aria-live="off">
@@ -603,7 +608,7 @@ export default function BusinessCoaching({locale='en',accountId}){
               </div>
             </div>
             {focusRemaining===0&&<small role="status">{t.focusDone}</small>}
-          </div>
+          </details>
         </div>}
         {lessonStage===2&&<div className={styles.oneIdea} data-business-one-reflection>
           <h2>{t.reflectionTitle}</h2>
@@ -640,9 +645,10 @@ export default function BusinessCoaching({locale='en',accountId}){
           <h2>{t.savedCelebration}</h2>
           <strong>{t.practisedSkill}</strong>
           <p className={styles.skillTarget}>{transferableSkill}</p>
-          <p>{savedDay.resultLabelSnapshot?.[lang]||selected.resultLabel}</p>
-          <p>{t.celebrationHelp}</p>
-          {savedDay.result&&<blockquote>{savedDay.result}</blockquote>}
+          {savedDay.result&&<details className={styles.savedResult}>
+            <summary>{t.viewSavedResult}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <blockquote>{savedDay.result}</blockquote>
+          </details>}
           <small>{t.returnLater}</small>
         </div>}
       </article>
@@ -682,7 +688,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       {lessonStage===3&&dayResult.trim().length>0&&dayResult.trim().length<6&&
         <p className={styles.inlineHelp} role="status">{t.resultRequired}</p>}
     </div>}
-    {course.status==='active'&&<div className={styles.goalEditor}>
+    {course.status==='active'&&tab!=='today'&&<div className={styles.goalEditor}>
       {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
         setGoal({...course.goal,target:course.goal.target??''})
         setGoalEditing(true)
@@ -855,7 +861,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       <small className={styles.finePrint}>{t.personal} · {t.reportIntro} · {t.differenceNote}</small>
       <p className={styles.finePrint}><a href="/api/app/export" rel="nofollow">{t.export}</a></p>
     </div>}
-    <footer className={styles.footer}>
+    {tab!=='today'&&<footer className={styles.footer}>
       <span><LockKeyhole size={15}/>{t.privacy}</span>
       <div className={styles.footerActions}>
         {course.status==='active'&&<button type="button" disabled={busy} onClick={()=>command('pause')}><PauseCircle size={17}/>{t.pause}</button>}
@@ -872,6 +878,6 @@ export default function BusinessCoaching({locale='en',accountId}){
         }}>{t.deleteCourse}</button>
       </div>
       <Link href={'/'+lang+'/app/portfolio'}>{t.back} · {lang==='ru'?'Отчёты':'Reports'}</Link>
-    </footer>
+    </footer>}
   </section>
 }
