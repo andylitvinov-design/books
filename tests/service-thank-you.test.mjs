@@ -36,6 +36,8 @@ test('page and service form only acknowledge a successful server-saved reply req
   }
   assert.match(source("lib/business-consulting/enquiry-store.js"),/referenceCode: "HH-" \+ digest\.slice\(0, 12\)/)
   assert.match(ui,/telegramEnquiryUrlFromWhatsApp\(whatsapp\)/)
+  assert.match(ui,/request: c\.chatRequest \+ \(confirmed \? " · " \+ receipt : ""\)/)
+  assert.match(ui,/const confirmed = \/\^HH-/)
   assert.doesNotMatch(form,/localStorage|sendBeacon/i)
   assert.match(page,/robots: \{ index: false, follow: false/)
   assert.match(ui,/parseEnquiryReceipt\(window\.sessionStorage\.getItem/)
