@@ -38,14 +38,14 @@
 }
 @media(max-width:380px){
  .choices{grid-template-columns:minmax(0,1fr)}
- .choice,.chosen{min-height:40px;padding:7px 11px}
+ .choice,.chosen{min-height:44px;padding:7px 11px}
  .voiceActions button{min-height:42px;font-size:11px}
  .heroArt{max-height:135px}
 }
 @media(max-height:650px){
  .heroArt{max-height:115px}
  .choices{gap:5px}
- .choice,.chosen{min-height:37px;padding:6px 9px}
+ .choice,.chosen{min-height:44px;padding:6px 9px}
  .voice{margin-bottom:6px}
  .note{min-height:54px}
 }
