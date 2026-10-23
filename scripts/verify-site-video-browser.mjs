@@ -239,7 +239,8 @@ try {
       await target.goto(`${origin}/admin/videos`)
       await target.locator('.prescription-admin-header button[lang="en"]').click()
       await expect(target.locator('.site-video-manager')).toHaveAttribute('lang', 'en')
-      await expect(target.locator('.site-video-placement-list button')).toHaveCount(15)
+      // All 16 canonical site-video slots are selectable in the same editor.
+      await expect(target.locator('.site-video-placement-list button')).toHaveCount(16)
       assert.equal(await target.getByText('Video storage is currently unavailable.', { exact: false }).count(), 0)
     }
     async function choose(slot, locale = 'en', target = editor) {
