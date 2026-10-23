@@ -32,8 +32,9 @@ test("All five Yggdrasil and four independently sourced Tantra reviews are avail
   const tantra = curriculum.split("const tantraVoices:")[1].split("export const energyworkPhases")[0];
   assert.deepEqual([...tantra.matchAll(/id: "([^"]+)"/g)].map(match => match[1]),
     ["margaret", "olga", "litten", "tantra-level-1"]);
-  assert.match(curriculum, /Course reviews are NOT presented as reactions to this exact meditation recording/);
-  assert.match(curriculum, /Explore comments on the original video, then share your own experience/);
+  assert.match(curriculum, /These are supplied examples, not independently verified YouTube comments/);
+  assert.match(curriculum, /Published learner experiences from the course, not this exact recording/);
+  assert.match(curriculum, /Three anonymous examples from Kundalini Reiki sessions with other practitioners, not reviews of this exact video/);
 });
 
 test("Buttons switch quotes without navigating away or touching required student feedback", () => {
@@ -84,14 +85,13 @@ test("Full original Tantra Reiki testimonials survive without excerpt truncation
   assert.match(tantra, /translated from Russian/);
 });
 
-test("Long reviews scroll inside a clearly labelled region on mobile", () => {
-  assert.match(learner, /data-review-scroll/);
-  assert.match(learner, /role="region" tabIndex=\{canScrollReview \? 0 : -1\}/);
-  assert.match(learner, /onScroll=\{updateReviewScroll\}/);
-  assert.match(learner, /ResizeObserver\(updateReviewScroll\)/);
-  assert.match(learner, /voicesScrollHint/);
-  assert.match(css, /\.voiceQuote p::-webkit-scrollbar/);
-  assert.match(css, /white-space:pre-line/);
-  assert.match(css, /max-height:min\(23dvh,210px\)/);
-  assert.match(browser, /scrollSize\.scrollHeight > scrollSize\.clientHeight/);
+test("Long reviews scroll inside a labelled, focusable region on mobile", () => {
+  assert.match(learner, /data-review-fulltext role="region" tabIndex=\\{0\\} aria-label=\\{t\\.voicesFullText\\}/);
+  const fullReview = css.slice(css.indexOf("/* REIKI FULL TESTIMONIALS V1"));
+  assert.match(fullReview, /\\.voiceQuote p \\{\\s*flex: 1 1 auto;[\\s\\S]*?max-height: none;/);
+  assert.match(fullReview, /overflow-y: auto;/);
+  assert.match(fullReview, /-webkit-overflow-scrolling: touch;/);
+  assert.match(fullReview, /white-space: pre-line;/);
+  assert.match(fullReview, /\\.voiceQuote p::-webkit-scrollbar/);
+  assert.match(browser, /const first = await carousel\\.locator\\("blockquote p"\\)\\.innerText\\(\\)/);
 });
