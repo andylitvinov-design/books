@@ -142,6 +142,7 @@ const landingCopy = {
 export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
   const t = kundaliniInterface[locale];
   const c = landingCopy[locale];
+  const videoCopy = { eyebrow: c.videoLabel };
   const pdf = kundaliniOriginalManual.path;
   const meditation = englishGuidedMeditations.find((item) => item.key === "kundalini-reiki");
 
@@ -240,7 +241,7 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
                 className={styles.meditationPhoto}
               />
               <div className={styles.meditationWords}>
-                <p className={styles.eyebrow}>{c.videoLabel}</p>
+                <p className={styles.eyebrow}>{videoCopy.eyebrow}</p>
                 <h2 id="kundalini-meditation-title">{c.videoTitle}</h2>
                 <p>{c.videoText}</p>
               </div>
