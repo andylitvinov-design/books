@@ -3,6 +3,7 @@ import { StaticPortrait } from '@/components/static-portrait';
 import { HomeSectionCarousel } from '@/components/home-section-carousel';
 import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner';
 import { HomeConversationGuide } from '@/components/home-conversation-guide';
+import { HomepageTopicJourneys } from '@/components/homepage-topic-journeys';
 import Link from 'next/link';
 import { BriefcaseBusiness, Flower2, Sparkles } from 'lucide-react';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
@@ -23,6 +24,7 @@ export default function SpanishHomePage() {
     <HomeSectionCarousel locale="es" />
     <HomeFreeDiagnosisBanner locale="es" />
     <HomeConversationGuide locale="es" />
+    <HomepageTopicJourneys locale="es" />
     <HomeMoreDisclosure locale="es">
     <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
       <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
