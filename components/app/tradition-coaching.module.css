@@ -8,7 +8,7 @@
 .choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:4px 0 15px}
 .choice,.chosen{border:1.5px solid #b3ccc9;border-radius:13px;padding:11px 13px;min-height:47px;
   background:#f3f8f5;color:#274754;display:flex;gap:9px;align-items:center;text-align:left;
-  cursor:pointer;font:700 14px/1.32 inherit;overflow-wrap:anywhere}
+  cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;line-height:1.32;overflow-wrap:anywhere}
 .choice{font-family:inherit}
 .chosen{font-family:inherit;border-color:#08736c;background:#d5eee6;color:#124d48}
 .choice:hover:not(:disabled){background:#e8f4ef}
@@ -26,9 +26,9 @@
 .voiceActions{display:flex;gap:8px;flex-wrap:wrap}
 .voiceActions button{display:inline-flex;align-items:center;gap:6px;justify-content:center;
  min-height:44px;padding:8px 12px;border-radius:11px;border:1px solid #c1dcd4;
- background:#e5f3ee;color:#155d5d;font:750 12px/1.2 inherit;cursor:pointer}
+ background:#e5f3ee;color:#155d5d;font-family:inherit;font-weight:750;font-size:12px;line-height:1.2;cursor:pointer}
 .voiceActions button:disabled{opacity:.6;cursor:wait}
-.voice small{font:500 11px/1.4 inherit;color:#657e7d}
+.voice small{font-family:inherit;font-weight:500;font-size:11px;line-height:1.4;color:#657e7d}
 .voice .voiceError{color:#9d3030}
 @media(max-width:600px){
  .heroArt{aspect-ratio:16/7;max-height:170px}
