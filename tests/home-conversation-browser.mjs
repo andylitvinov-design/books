@@ -82,11 +82,85 @@ try {
         const requestButton = diagnosis.locator("[data-home-diagnosis-order]");
         await requestButton.click();
         await expect(requestButton).toHaveAttribute("aria-expanded", "true");
-        await expect(diagnosis.locator("[data-compact-lead-form]")).toBeVisible();
-        await expect(diagnosis.locator('input[name="contact"]')).toBeVisible();
+        const requestPanel = diagnosis.locator("[data-home-diagnosis-request]");
+        await expect(requestPanel).toBeVisible();
+        await expect(requestPanel.locator('input[type="text"]')).toBeVisible();
+        await expect(requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]')).toBeVisible();
+        await expect(requestPanel.locator('button[data-home-diagnosis-channel="telegram"]')).toBeVisible();
+        assert.equal(await requestPanel.evaluate(node => node.parentElement?.getAttribute("class")?.includes("panel")),
+          true, "Messenger selection must remain inside the same banner card");
+        if (width === 390 && scenario.locale === "en" && scenario.text === scenarios[0].text) {
+          // Browser-real save/failure behaviour, but strictly synthetic API and
+          // fake popup: never submit a production lead or open external providers.
+          const registrations = [];
+          let failOnce = true;
+          await page.route("**/api/service-enquiries", async route => {
+            const payload = JSON.parse(route.request().postData() || "{}");
+            registrations.push(payload);
+            if (failOnce) {
+              failOnce = false;
+              return route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"CRM_UNAVAILABLE"}' });
+            }
+            return route.fulfill({ status: 201, contentType: "application/json",
+              body: '{"saved":true,"referenceCode":"HH-AABBCCDDEEFF"}' });
+          });
+          await page.evaluate(() => {
+            const qa = { opened: 0, closed: 0, destination: "" };
+            window.__homeMessengerQA = qa;
+            window.open = () => {
+              qa.opened++;
+              const popup = { opener: null, closed: false, location: {
+                replace: destination => { qa.destination = destination; },
+              }, close() { qa.closed++; popup.closed = true; } };
+              return popup;
+            };
+          });
+          await requestPanel.locator('input[type="text"]').fill("qa.home@example.test");
+          await requestPanel.locator('input[type="checkbox"]').check();
+          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
+          await expect(requestPanel.locator('[role="alert"]')).toBeVisible();
+          assert.equal(await requestPanel.locator("[data-lead-saved]").count(), 0,
+            "500 must never be a CRM success");
+          const failed = await page.evaluate(() => ({ ...window.__homeMessengerQA }));
+          assert.deepEqual(failed, { opened: 1, closed: 1, destination: "" },
+            "Failed save closes popup without connecting to a messenger");
+          await requestPanel.locator('button[data-home-diagnosis-channel="telegram"]').click();
+          await expect(requestPanel.locator("[data-lead-saved]")).toContainText("HH-AABBCCDDEEFF");
+          assert.equal(registrations.length, 2);
+          assert.deepEqual(registrations[0], registrations[1],
+            "Transport retry keeps the same idempotent contact request");
+          assert.equal(registrations[1].contact.email, "qa.home@example.test");
+          assert.equal(registrations[1].contactConsent, true);
+          assert.equal(registrations[1].sourcePath, "/en/services/free-situation-review");
+          const confirmed = await page.evaluate(() => ({ ...window.__homeMessengerQA }));
+          assert.equal(confirmed.opened, 2);
+          assert.equal(confirmed.closed, 1);
+          const link = new URL(confirmed.destination);
+          assert.equal(link.hostname, "t.me");
+          assert.equal(link.pathname, "/AndyTherapist");
+          assert.match(link.searchParams.get("text") || "", /HH-AABBCCDDEEFF/);
+          assert.doesNotMatch(confirmed.destination, /qa\.home@example\.test/,
+            "Contact must never go into WhatsApp/Telegram URL");
+          const whatsapp = requestPanel.locator('a[data-home-diagnosis-channel="whatsapp"]');
+          const telegram = requestPanel.locator('a[data-home-diagnosis-channel="telegram"]');
+          await expect(whatsapp).toBeVisible();
+          await expect(telegram).toBeVisible();
+          const waMessage = new URL(await whatsapp.getAttribute("href")).searchParams.get("text");
+          assert.equal(waMessage, link.searchParams.get("text"), "Both providers get identical safe draft");
+          for (const button of [whatsapp, telegram]) {
+            await button.click({ trial: true, timeout: 8000 });
+            const rect = await button.boundingBox();
+            assert.ok(rect && rect.width >= 100 && rect.height >= 44, "Mobile messenger link must be tappable");
+            assert.ok(rect.x >= -1 && rect.x + rect.width <= width + 1, "Messenger fits 390px iPhone");
+          }
+          await diagnosis.screenshot({
+            path: "artifacts/home-conversation/" + engineName + "-inline-messenger-390.png",
+            animations: "disabled",
+          });
+        }
         await requestButton.click();
         await expect(requestButton).toHaveAttribute("aria-expanded", "false");
-        await expect(diagnosis.locator("[data-compact-lead-form]")).toBeHidden();
+        await expect(requestPanel).toBeHidden();
         const geometry = await guide.evaluate(node => {
           const rect = node.getBoundingClientRect();
           return { left: rect.left, right: rect.right, viewport: window.innerWidth };
