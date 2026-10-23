@@ -93,6 +93,7 @@ test('42 learner flows render ONE distinct task, a real status choice, skip, and
         assert.equal(payload.opora54.answers.transfer,'planned')
         assert.equal(payload.opora54.answers.transferChoice,'two')
         assert.equal(payload.opora54.answers.transferPlanVersion,'one-v1')
+        assert.equal(payload.opora54.answers.experienceEdition,'as-5.8-one-action-v1')
         assert.equal(payload.practiceAttempt,null,'Clicked Continue and chose a future plan, not a practice attempt')
         assert.equal(payload.opora54.answers.transferFeeling,undefined)
         assert.deepEqual(payload.practiceEmotion,[4,11].includes(day)?{choice:'joy'}:undefined)
