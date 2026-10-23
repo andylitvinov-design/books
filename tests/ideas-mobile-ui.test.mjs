@@ -141,7 +141,7 @@ test("Ideas sequences three full-width aphorisms, Dao, then offers in preview an
     '<DaoOfferCards locale={answerLocale}',
   ]), "actual results must show aphorism rows above Dao, then offers");
   assert.ok(isOrdered(preview, [
-    '<AphorismTiles items={getIdeasAphorismMatches("growth"',
+    '<AphorismTiles items={previewAphorisms}',
     '<DaoInsightPanel entry={exampleHexagram}',
     '<DaoOfferCards locale={locale}',
   ]), "educational preview must follow the same order");
@@ -162,4 +162,13 @@ test("Ideas sequences three full-width aphorisms, Dao, then offers in preview an
     assert.equal(ui.split(key + ":").length - 1, 3, "EN/RU/ES copy: " + key);
   }
   assert.doesNotMatch(ui, /fetch\(/, "Ideas question must remain in-browser");
+});
+
+
+test("Ideas example rotates on client mount, keeping private question matching intact", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  assert.match(ui, /data-ideas-preview-ready=\{previewReady \? "" : undefined\}/);
+  assert.match(ui, /data-ideas-aphorism-id=\{item\.id\}/);
+  assert.match(ui, /setPreviewAphorisms\(rotateIdeasPreviewAphorisms\(locale\)\)/);
+  assert.match(ui, /getIdeasAphorismMatches\(question, answerLocale, result\.topic\)/);
 });

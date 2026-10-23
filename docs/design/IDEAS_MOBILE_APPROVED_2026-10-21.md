@@ -46,3 +46,8 @@ This section supersedes the 2026-10-21 three-column quote treatment and embedded
 5. Keep EN/RU/ES equivalents, 320/375/390/430px responsive rows, legible typography, keyboard/focus, screen-reader expanded states, and all existing Books/Library/latest-publications sections.
 
 **Acceptance gates:** tests/ideas-mobile-ui.test.mjs and scripts/verify-ideas-mobile-browser.mjs cover vertical ordering, page overflow and form disclosure; focused lint/typecheck/build/Chromium/WebKit must pass before asserting production. Server/CRM end-to-end delivery can only be claimed after a consented real test through the live provider; do not submit a visitor enquiry as a synthetic test or close the funnel issue based on UI checks alone.
+
+
+## Owner revision · 2026-10-23 — three fresh aphorisms on every Ideas opening
+
+The initial marked educational preview now draws three **random, distinct** sayings from the existing 142-entry EN/RU/ES catalog on every new visit or reload, retaining source provenance and original language. The following visit excludes all three previous public catalog IDs. Store only those three public IDs in browser local storage (never the visitor question, contact, identity or topic); blocked storage still shows a valid random trio. Hydrate from the stable SSR sample and rotate on client mount. Keep topic-matched answers, Dao and offers unchanged. Test repeat visits in local isolated WebKit and Chromium at mobile widths, plus unit tests.
