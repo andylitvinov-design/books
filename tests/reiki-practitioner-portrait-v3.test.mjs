@@ -58,14 +58,13 @@ test('V3 increases all mobile teaching typography and preserves pinned navigatio
 });
 
 
-test('First Reiki Practitioner slide explains five days, three traditions, daily practice and the one-system free chat initiation gift in EN/RU', () => {
+test('First Reiki Practitioner slide is a concise bilingual title page with a truthful initiation disclosure', () => {
   const opening = curriculum.slice(curriculum.indexOf('id: "welcome-01"'), curriculum.indexOf('id: "welcome-02"'));
-  assert.match(opening, /Reiki Practitioner — a five-day journey/);
-  assert.match(opening, /Практик Рейки — пятидневный курс/);
-  assert.match(opening, /Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil/);
-  assert.match(opening, /Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль/);
-  assert.match(opening, /Each day brings a short exercise and a meditation/);
-  assert.match(opening, /Каждый день вас ждут небольшое упражнение и медитация/);
+  assert.match(opening, /title: l\("Reiki Practitioner", "Практик Рейки"\)/);
+  assert.match(opening, /Tantra Reiki, Kundalini Reiki and Reiki Yggdrasil/);
+  assert.match(opening, /Тантра Рейки, Кундалини Рейки и Рейки Иггдрасиль/);
+  assert.match(opening, /short daily practices/);
+  assert.match(opening, /короткие ежедневные практики/);
   assert.match(learner, /welcomeGiftTitle: "Free Level 1 Reiki initiation with Andrey — in chat"/);
   assert.match(learner, /welcomeGiftTitle: "Бесплатная инициация I ступени с Андреем в чате"/);
   assert.match(learner, /request one free Level 1 initiation guided by Andrey in chat/);
@@ -74,5 +73,6 @@ test('First Reiki Practitioner slide explains five days, three traditions, daily
   assert.match(learner, /data-reiki-initiation-gift/);
   assert.match(learner, /<strong>\{t\.welcomeGiftTitle\}<\/strong>/);
   assert.match(style, /\.welcomeSlide \.welcomeGift/);
+  assert.match(style, /data-reiki-cover="true"/);
   assert.match(style, /max-height: 700px/);
 });

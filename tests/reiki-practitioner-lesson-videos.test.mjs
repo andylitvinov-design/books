@@ -32,7 +32,8 @@ test("Each teacher recording has its own slide BEFORE the original guided medita
   assert.ok(mapping.every(([, , id]) => /^[\w-]{11}$/.test(id)));
   const sequence = energyworkSequence();
   assert.equal(sequence.length, 63);
-  assert.equal(sequence[0], "welcome-video", "Andrey opens the whole course");
+  assert.equal(sequence[0], "welcome-01", "The title page opens the course");
+  assert.equal(sequence[1], "welcome-video", "Andrey speaks just after the title page");
   assert.deepEqual(energyworkLessonRanges().map(r => r.count), [7,15,17,15,6]);
 
   const meditations = ["flight-02", "tan-02", "kun-02", "ygg-02"];
