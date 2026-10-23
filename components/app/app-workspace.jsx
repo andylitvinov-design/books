@@ -3801,6 +3801,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
               ? (({requested:locale==='ru'?'Ожидает мастера':'Waiting for practitioner',
                    confirmed:locale==='ru'?'Подтверждено':'Confirmed',
                    declined:locale==='ru'?'Отклонено':'Declined',
+                   reschedule_proposed:locale==='ru'?'Предложен перенос':'Reschedule proposed',
                    in_progress:locale==='ru'?'Проводится':'In progress',
                    completed:locale==='ru'?'Выполнено':'Completed',
                    cancelled:locale==='ru'?'Отменено':'Cancelled'})[request.status] || request.status)

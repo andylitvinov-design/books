@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isPublicLocale(locale)) return { title: "Not found" };
   return {
     metadataBase: metadataBaseFor(),
-    title: (locale === "ru" ? "Дистанционная энергетическая поддержка" : locale === "es" ? "Apoyo energético a distancia" : "Remote energy support") + " | Holistic House",
+    title: (locale === "ru" ? "Энергетическая поддержка цели" : locale === "es" ? "Apoyo energético para tu objetivo" : "Energy support for your goal") + " | Holistic House",
     description: locale === "ru"
       ? "Выберите формат, мастера и предпочтительное время дистанционной практики. Заявка подтверждается мастером."
       : locale === "es"

@@ -775,6 +775,11 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact}){
         <option value="open">{ru?'Требуют внимания':'Needs attention'}</option>
         <option value="requested">{ru?'Новые':'New requests'}</option>
         <option value="contacted">{ru?'Связались':'Contacted'}</option>
+        <option value="reschedule_proposed">{ru?'Предложен перенос':'Alternative time offered'}</option>
+        <option value="confirmed">{ru?'Подтверждённые':'Confirmed'}</option>
+        <option value="in_progress">{ru?'В работе':'In progress'}</option>
+        <option value="completed">{ru?'Завершённые':'Completed'}</option>
+        <option value="declined">{ru?'Отклонённые':'Declined'}</option>
         <option value="closed">{ru?'Закрытые':'Closed'}</option>
         <option value="all">{ru?'Все заявки':'All requests'}</option>
       </select>

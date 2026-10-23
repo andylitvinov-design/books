@@ -39,7 +39,7 @@ const copy: Record<PublicLocale, LocaleCopy> = {
       eyebrow: 'COMPLEMENTARY PRACTICE',
       title: 'Energy support for your goal',
       description: 'An energy practice may help you feel more resourced and gain momentum toward your goal. Faster progress or specific results are not guaranteed.',
-      note: 'Choose a practitioner · Format, time and price confirmed separately',
+      note: 'With Andrey · €50 / 30 min · €100 / 60 min · Confirmation required',
       action: 'Choose a practitioner',
     },
     alchemy: {
@@ -57,7 +57,7 @@ const copy: Record<PublicLocale, LocaleCopy> = {
       eyebrow: 'ДОПОЛНИТЕЛЬНАЯ ПРАКТИКА',
       title: 'Энергетическая поддержка цели',
       description: 'Энергопрактика может дать ощущение ресурса и импульса, чтобы двигаться к своей цели увереннее и быстрее. Ускорение и результат не гарантированы.',
-      note: 'Выбор мастера · Формат, время и цена согласуются отдельно',
+      note: 'С Андреем · €50 / 30 мин · €100 / 60 мин · Запись после подтверждения',
       action: 'Выбрать мастера',
     },
     alchemy: {
@@ -75,7 +75,7 @@ const copy: Record<PublicLocale, LocaleCopy> = {
       eyebrow: 'PRÁCTICA COMPLEMENTARIA',
       title: 'Apoyo energético para tu meta',
       description: 'La práctica energética puede ayudarte a sentir más recursos e impulso hacia tu meta. No se garantiza avanzar más rápido ni obtener un resultado.',
-      note: 'Elige profesional · Modalidad, horario y precio por confirmar',
+      note: 'Con Andrey · €50 / 30 min · €100 / 60 min · Confirmación necesaria',
       action: 'Elegir profesional',
     },
     alchemy: {
