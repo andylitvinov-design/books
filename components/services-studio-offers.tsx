@@ -276,6 +276,10 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
         <div className={styles.freeFooter}>
           <span><ShieldCheck size={17} aria-hidden="true" />{t.freeNote}</span>
           <Link href={"/" + locale + "/courses/antistress"} prefetch={false}>{t.opora}<ArrowRight size={16} aria-hidden="true" /></Link>
+          <Link href={"/" + locale + "/coaching"} prefetch={false} data-coaching-intake-link>
+            {locale === "ru" ? "Моя коучинг-анкета" : locale === "es" ? "Mi formulario de coaching" : "My coaching questionnaire"}
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
         </div>
       </section>
       <section className={styles.section} id="solutions" hidden={!paidAvailable} aria-labelledby="services-personal-title" data-services-studio-paid lang={locale}>

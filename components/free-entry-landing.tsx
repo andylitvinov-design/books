@@ -39,7 +39,7 @@ const copy = {
       privacy: "Explore tests without an account. Google sign-in is only needed if you choose to save available results.",
       limitations: "These self-reflection approaches are educational and symbolic. They do not diagnose or treat health conditions and do not replace qualified medical or mental-health care.",
       about: "More about Andrey", model: "Read about the Wu Xing model", aboutTests: "Explore all tests",
-      fullForm: "Have your question and drawing ready? Open the full free questionnaire",
+      fullForm: "Have your question and drawing ready? Open the full free questionnaire", coachingForm: "Prefer the in-site coaching questionnaire with your own questions?",
       optional: "No pressure to book a paid session.",
       explore: "Explore other free services",
     },
@@ -142,7 +142,7 @@ const copy = {
       privacy: "Изучайте тесты без регистрации. Google-вход может понадобиться только для сохранения результатов.",
       limitations: "Эти методики предназначены для самоисследования и символической рефлексии. Они не диагностируют и не лечат заболевания и не заменяют медицинскую или психиатрическую помощь.",
       about: "Об Андрее", model: "Подробнее о модели У-Син", aboutTests: "Открыть все тесты",
-      fullForm: "Уже готовы вопрос и рисунок? Откройте полную бесплатную анкету",
+      fullForm: "Уже готовы вопрос и рисунок? Откройте полную бесплатную анкету", coachingForm: "Отдельная коучинг-анкета: ваши вопросы и цели →",
       optional: "Платная консультация необязательна.",
       explore: "Другие бесплатные услуги",
     },
@@ -245,7 +245,7 @@ const copy = {
       privacy: "Explora las pruebas sin crear una cuenta. Google solo puede ser necesario para guardar resultados.",
       limitations: "Estas prácticas simbólicas y de autoobservación son educativas. No diagnostican ni tratan enfermedades y no sustituyen la atención médica o psicológica profesional.",
       about: "Sobre Andrey", model: "Conoce el modelo Wu Xing", aboutTests: "Explora todos los tests",
-      fullForm: "¿Ya tienes tu pregunta y dibujo? Abre el cuestionario completo y gratuito",
+      fullForm: "¿Ya tienes tu pregunta y dibujo? Abre el cuestionario completo y gratuito", coachingForm: "¿Prefieres un formulario personal de coaching con tus propias preguntas?",
       optional: "No es obligatorio contratar una sesión.",
       explore: "Otros servicios gratuitos",
     },
@@ -444,6 +444,14 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
         </section> : null}
+
+        {kind === "situation" ? (
+          <div className={styles.coachingLink}>
+            <Link href={"/" + locale + "/coaching"} prefetch={false} data-source="coaching-questionnaire">
+              {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+        ) : null}
 
         {kind === "situation" ? (
           <details className={styles.fullQuestionnaire} data-optional-written-review>

@@ -184,3 +184,8 @@
   .daoHero h1{font-size:29px}
   .daoBenefits li{font-size:10px}
 }
+
+.coachingLink{margin:12px 0 18px;display:flex;align-items:center}
+.coachingLink a{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:44px;padding:10px 15px;border-radius:11px;border:1px solid #b1d0c5;background:#eaf5f0;color:#155e66;text-decoration:none;font-size:13px;font-weight:750;line-height:1.35}
+.coachingLink a:hover{text-decoration:underline}
+.coachingLink a:focus-visible{outline:3px solid #e5a868;outline-offset:3px}
