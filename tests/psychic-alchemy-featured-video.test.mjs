@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Owner-supplied Psychic Alchemy video is first on the canonical service landing in EN/RU/ES", () => {
+test("Locale-appropriate owner videos are first on the canonical Alchemy landing in EN/RU/ES", () => {
   const landing = read("components/alchemy-soul-landing.tsx");
   const css = read("components/alchemy-soul-landing.module.css");
   const first = landing.indexOf('data-alchemy-panel="featured-video"');
@@ -11,9 +11,12 @@ test("Owner-supplied Psychic Alchemy video is first on the canonical service lan
   const methods = landing.indexOf('data-alchemy-panel="method"');
   assert.ok(first > 0 && first < hero && hero < methods, "Owner video must appear before the hero and methods");
   assert.match(landing, /youtubeId: "-zacUn_zN6g"/);
+  assert.match(landing, /youtubeId: "IF0HAhSDwks"/);
+  assert.match(landing, /language: "ru" as const/);
+  assert.match(landing, /const featuredIntroVideo = locale === "ru" \? featuredIntroVideoRu : featuredIntroVideoEn;/);
   assert.match(landing, /<SiteVideoPlayer video=\{featuredIntroVideo\} locale=\{locale\} compact minimal posterPriority/);
-  assert.match(landing, /data-alchemy-featured-video="-zacUn_zN6g"/);
-  for (const text of ["Psychic Alchemy — in my own words", "Psychic Alchemy — об этом рассказываю сам", "Psychic Alchemy — explicado por mí", "YouTube solo se carga", "Видео загружается только после нажатия Play"]) {
+  assert.match(landing, /data-alchemy-featured-video=\{featuredIntroVideo\.youtubeId\}/);
+  for (const text of ["Psychic Alchemy — in my own words", "Психогомеопатия и Алхимия души — рассказываю сам", "Psychic Alchemy — explicado por mí", "YouTube solo se carga", "Видео загружается только после нажатия Play", "Оригинальная запись на русском"]) {
     assert.ok(landing.includes(text), "Missing language-consistent introduction: " + text);
   }
   assert.match(landing, /href="#alchemy-request"/);
