@@ -139,6 +139,17 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <div className="academy-reading-meta"><span>{statusLabel(record, locale)}</span>{sourceNotice ? <span>{sourceNotice}</span> : null}</div>
           </header>
         ) : null}
+        {["videos/egypt-osiris", "mysteries/egypt/high-wisdom"].includes(record.logicalId) ? (
+          <aside className="academy-archive-notice" data-egypt-course-invitation>
+            <strong>{locale === "ru" ? "Египетское жречество — новый видеокурс" : locale === "es" ? "Sacerdocio egipcio — nuevo videocurso" : "Egyptian Priesthood — interactive video course"}</strong>
+            <p>{locale === "ru" ? "Семь оригинальных записей Осириса, короткие экраны, вопросы и практика — по образцу курса «Практик Рейки»."
+              : locale === "es" ? "Siete vídeos originales de Osiris, prácticas y reflexión, una idea por pantalla."
+              : "Seven original Osiris videos, guided screens and reflective practice, based on the Reiki Practitioner format."}</p>
+            <Link href={"/" + locale + "/academy/egyptian-priesthood"} prefetch={false}>
+              {locale === "ru" ? "Открыть программу →" : locale === "es" ? "Abrir programa →" : "Open programme →"}
+            </Link>
+          </aside>
+        ) : null}
         {isVerbatimTantraArchive ? (
           <>
             <section className="tantra-course-hero reiki-screen reiki-screen--hero" aria-labelledby="tantra-course-hero-title">
