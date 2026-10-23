@@ -747,9 +747,9 @@ function Services({items,locale,busy,quota,createRequest=0,onSave,onSaveAndSubmi
   const ru=locale==='ru'
   return <>
     {!canAdd&&<p className="hh-practice-limit-notice" role="status">{ru?'Бесплатный Hobby: достигнут лимит 10 услуг. Вы можете редактировать уже добавленные услуги.':locale==='es'?'Hobby gratis: has alcanzado el límite de 10 servicios. Puedes editar los existentes.':'Free Hobby: the 10-service limit is reached. You can still edit your existing services.'}</p>}
-    <MyServicesDashboard items={items} locale={locale} quota={quota} createRequest={createRequest}
-      renderEditor={(item,onDirtyChange)=><SimpleServiceEditor key={item?item.id+':'+item.revision:'new'} item={item} locale={locale} busy={busy}
-        onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause} onDirtyChange={onDirtyChange}/>} />
+    <MyServicesDashboard items={items} locale={locale} quota={quota} busy={busy} createRequest={createRequest}
+      renderEditor={(item,onDirtyChange,onMediaBusyChange)=><SimpleServiceEditor key={item?item.id+':'+item.revision:'new'} item={item} locale={locale} busy={busy}
+        onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause} onDirtyChange={onDirtyChange} onMediaBusyChange={onMediaBusyChange}/>} />
   </>
 }
 function Requests({items,t,locale,busy,onStatus,onSaveContact}){
