@@ -82,7 +82,8 @@ export async function sendDailyCouncilReportAction(){
       const aiEnv=await resolvedOwnerAiEnvironment(config,env)
       const result=await deliverArchivedCouncilReports(config,{env:aiEnv})
       if(result.status==='accepted')outcome='council_sent'
-      else if(result.status==='already_claimed')outcome='council_duplicate'
+      else if(result.status==='partially_accepted')outcome='council_partial'
+      else if(result.status==='already_claimed'outcome='council_duplicate'
       else if(result.status==='no_archived_reports'||result.status==='model_setup_required')
         outcome='council_no_archive'
     }

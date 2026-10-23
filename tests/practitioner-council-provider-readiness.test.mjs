@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {councilProviderProbeAuthorized,inspectCouncilProviderKeys} from '../lib/practitioners/council-provider-readiness.mjs'
+import {councilProviderProbeAuthorized,inspectCouncilProviderKeys,inspectGeminiModelAccess} from '../lib/practitioners/council-provider-readiness.mjs'
 
 const time=1792545600000
 const token='a'.repeat(64)
@@ -85,4 +85,24 @@ test('raw response, passwords, tokens and full provider billing metadata never l
  assert.match(m,/https:\/\/openrouter.ai\/api\/v1\/key/)
  assert.match(m,/https:\/\/generativelanguage.googleapis.com\/v1beta\/models\//)
  assert.doesNotMatch(m,/console\.log|process\.env\s*=|JSON\.stringify\(key\)/)
+})
+
+test('owner Gemini check reuses read-only official model endpoint without inference',async()=>{
+  const env={HH_COUNCIL_GEMINI_API_KEY:'fake-owner-key'}
+  const visited=[]
+  const probe=await inspectGeminiModelAccess(env,async(url,options)=>{
+    visited.push(String(url))
+    assert.equal(options.method,'GET')
+    assert.equal(options.headers['x-goog-api-key'],env.HH_COUNCIL_GEMINI_API_KEY)
+    return Response.json({name:'models/gemini-3.8-flash',
+      supportedGenerationMethods:['generateContent']})
+  })
+  assert.equal(probe.modelReady,true)
+  assert.equal(probe.reason,'valid_model')
+  assert.deepEqual(visited,['https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash'])
+  const denied=await inspectGeminiModelAccess(env,async()=>Response.json({},{status:403}))
+  assert.equal(denied.modelReady,false)
+  assert.equal(denied.reason,'unauthorized')
+  const missing=await inspectGeminiModelAccess({},async()=>{throw Error('never called')})
+  assert.equal(missing.reason,'missing_key')
 })

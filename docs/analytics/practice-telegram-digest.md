@@ -211,3 +211,12 @@ This is one **owner** digest, not opt-in Telegram mail for every master. No cros
 4. Сохранить RLS/FORCE RLS, отсутствие `anon/authenticated` SELECT на приватные owner/provider/delivery таблицы, не передавать данные CRM, клиентов, тестов, здоровья и secrets в отчёты/AI.
 
 Для владельца: [защищённое подключение и ручная проверка](https://holistichouse.vercel.app/admin/telegram-setup) · [Mistral Studio — проверить Free access](https://console.mistral.ai/) · [Google AI Studio — Free Tier](https://aistudio.google.com/app/projects). Открытые блокеры фиксировать в [AI Council #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242).
+
+### 2026-10-23 · Bounded recovery + owner-visible Gemini readiness (PR follow-up)
+
+- **Не пропускать вчерашний `failed`:** текущий день выбирается первым, затем максимум **одна** непринятая архивная дата за последние 7 дней в этом же вызове cron. У каждого дня своя `claim_token` и подтверждённый Telegram `accepted`, максимум два документа в день восстановления, без дублей для уже принятых дат.
+- Исторический день отправляется только по проверенным фактам GitHub HTML/HTTP, со статусами моделей `skipped / HISTORICAL_BACKFILL_NO_INFERENCE` и без повторного платного или бесплатного AI inference. Gemini/Mistral исследуют **только сегодняшний** архив; кодировка старых ответов никогда не выдаётся за новые результаты. Ошибка при второй отправке сохраняет `partially_accepted` и отдельный `failed` для следующей попытки; полученные первые квитанции не стираются.
+- GitHub issues comments за релевантный период запрашиваются с `since`/100, чтобы старые комментарии не вытесняли текущий дневной аудит при росте Issue #242.
+- Owner UI [Telegram setup](https://holistichouse.vercel.app/admin/telegram-setup) теперь в дополнение к Mistral делает **только authenticated GET** метаданных Gemini `gemini-3.8-flash` и раздельно отображает `ready / unauthorized / rate_limited / unavailable`. Статус `ready` — **не** реальная генерация и не подтверждение Telegram доставки.
+- Функция cron допускает до 120 секунд на редкий восстановительный цикл, **только если такое время поддерживается реальным Vercel deployment**; запретов на платные модели/дублирующие cron это не отменяет.
+- Данные клиентских CRM, клинических тестов и секреты не используются; отдельные отправки пользователям не включены. Блокер Mistral при `GET /v1/models` без доступа к бесплатному Small остаётся владельческой/провайдерской зависимостью.
