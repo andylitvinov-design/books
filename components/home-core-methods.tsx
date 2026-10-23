@@ -162,7 +162,7 @@ export function HomeCoreMethods({ locale }: { locale: PublicLocale }) {
                 <p className={styles.formula}>{item.formula}</p>
                 <p className={styles.description}>{item.description}</p>
                 <div className={styles.actions}>
-                  <Link className={styles.primary} href={"/" + locale + method.primaryPath} prefetch={false}>
+                  <Link className={styles.primary} href={method.id === "coaching" && locale === "es" ? "/en/app/coaching" : "/" + locale + method.primaryPath} prefetch={false}>
                     {item.primary}<ArrowUpRight size={16} aria-hidden="true" />
                   </Link>
                   {method.secondaryPath && item.secondary && (
