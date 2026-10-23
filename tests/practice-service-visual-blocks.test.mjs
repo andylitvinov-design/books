@@ -74,7 +74,7 @@ test('wizard input validation respects partial drafts, existing one-language sub
  assert.deepEqual(getServiceEditorIssue(make({whatsapp:'not-number'})),{step:2,code:'needContact'})
  assert.equal(servicePreviewPrice(make({pricingMode:'free'}),{free:'Free'}),'Free')
  assert.equal(servicePreviewPrice(make({pricingMode:'from',confirmedPrice:50,currency:'EUR'}),{from:'From'}),'From 50 EUR')
- assert.match(editor,/draft\.durationMinutes==null\|\|draft\.durationMinutes===''?\?null:Number/)
+ assert.ok(editor.includes("draft.durationMinutes==null||draft.durationMinutes===''?null:Number(draft.durationMinutes)"))
 })
 
 test('the mobile editor is a calm client-facing page with photo left on desktop and no whole-page x-scroll',()=>{
