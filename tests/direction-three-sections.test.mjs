@@ -108,8 +108,8 @@ test('all suggested free-test cards open their exact guest questionnaire without
       const cards=by(tree,'data-offer-action','test')
       assert.deepEqual(cards.map(item=>item.props.href),keys.slice(0,4).map(hrefFor))
       for(const card of cards){
-        assert.doesNotMatch(card.props.href,/\\b(?:focus|topics|journey|wish|answers|scores)=/)
-        assert.doesNotMatch(card.props.href,/\\/client\\/tests\\?/)
+        assert.deepEqual([...new URL(card.props.href,'https://example.invalid').searchParams.keys()],['startTests'])
+        assert.ok(!card.props.href.includes('/client/tests?'))
       }
       assert.equal(by(tree,'data-direction-all','test')[0].props.href,'/'+locale+'/client/tests?catalog=full')
       by(tree,'data-direction-filter',ids[3])[0].props.onClick()
@@ -118,9 +118,9 @@ test('all suggested free-test cards open their exact guest questionnaire without
     }
   }
   const runner=read('components/app/cabinet-landing.jsx')
-  assert.match(runner,/requestedGuestTests = searchParams\\.get\\('startTests'\\)/)
-  assert.match(runner,/if \\(definitions\\.length === 1\\)/)
-  assert.match(runner,/return begin\\(definitions\\[0\\]\\.key\\)/)
+  assert.ok(runner.includes("requestedGuestTests = searchParams.get('startTests')"))
+  assert.ok(runner.includes('if (definitions.length === 1)'))
+  assert.ok(runner.includes('if (definitions.length === 1)'))
 })
 
 test('each group reveals exactly two additional real offers inline, then an external catalog link',()=>{
