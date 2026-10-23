@@ -51,6 +51,7 @@ export type PublicService = {
   confirmedPrice: number | null
   currency: string
   durationMinutes: number | null
+  priceOptions?: {duration: 10 | 20 | 30 | 60; price: number}[]
   imagePath: string
   videoPresentation?: VideoPresentation | null
   photos?: string[]
