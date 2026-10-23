@@ -314,3 +314,8 @@
 
 /* Keep every revealed payment link, including terms, comfortably tappable. */
 .paymentDisclosureBody .wisePayment>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px}
+
+/* The month option always opens the canonical €200 programme and consented CRM form. */
+.monthlyLearnMore{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-height:49px;border-radius:100px;padding:10px 15px;background:#ab5164;color:#fff!important;text-decoration:none;text-align:center;font-size:14px;font-weight:850;line-height:1.4}
+.monthlyLearnMore:hover{background:#923e55}
+.monthlyLearnMore:focus-visible{outline:3px solid #d1ab70;outline-offset:3px}

@@ -45,3 +45,23 @@ test("personal-support request uses existing consented database write, no fake c
   assert.doesNotMatch(landing, /Stripe|PayPal|autocharge|fetch\(|localStorage|sendBeacon/);
   assert.doesNotMatch(landing, /<iframe|youtube\.com\/embed/);
 });
+
+test("home and services discover the same €200 programme; alchemy monthly does not charge €100", () => {
+  const home = read("components/home-featured-workspace.tsx");
+  const offers = read("components/services-studio-offers.tsx");
+  const facets = read("components/services-explorer-state.tsx");
+  const alchemyForm = read("components/alchemy-soul-lead-form.tsx");
+  assert.match(home, /support: "\/" \+ locale \+ "\/services\/personal-support"/);
+  assert.match(home, /Personal support · €200\/month/);
+  assert.match(home, /Личное сопровождение · €200\/мес/);
+  assert.match(offers, /id: "monthly-support"/);
+  assert.match(offers, /monthly: true/);
+  assert.match(offers, /t\.viewProgram/);
+  assert.match(facets, /"monthly-support": \{ modes: \["online", "toronto"\]/);
+  assert.match(alchemyForm, /selected === "month" \? \(/);
+  assert.match(alchemyForm, /format === "month" \? \(/);
+  assert.match(alchemyForm, /href=\{"\/" \+ locale \+ "\/services\/personal-support"\}/);
+  assert.match(alchemyForm, /selected !== "month" && \(wiseEnabled/);
+  assert.match(alchemyForm, /€200 per month/);
+  assert.doesNotMatch(home, /payment_success|autoRenew/);
+});

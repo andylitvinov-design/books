@@ -17,6 +17,7 @@ const photos = {
   myCourses: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
   review: "/images/holistic-house/andy-about.png",
   consultation: "/images/holistic-house/video-posters/services-en-v2.webp",
+  support: "/images/holistic-house/andy-about.png",
   constellations: "/images/holistic-house/video-posters/constellations-en-v1.webp",
   reiki: "/images/holistic-house/reiki-practitioner-sunrise.webp",
   egypt: "/images/holistic-house/hero-olive-incense.webp",
@@ -57,7 +58,7 @@ const copy = {
         offers: [
           { id: "review", title: "Free written situation review", body: "Share one question and request a personal written response.", cta: "Request a free review" },
           { id: "consultation", title: "Personal session · from €50", body: "30 minutes of one-to-one guidance, online or in Toronto.", cta: "Request a consultation" },
-          { id: "constellations", title: "Systemic constellations", body: "Explore patterns in relationships and important choices.", cta: "Explore this service" },
+          { id: "support", title: "Personal support · €200/month", body: "Two 60-minute sessions, plus questions between meetings.", cta: "Explore monthly support" },
         ],
       },
       learning: {
@@ -109,7 +110,7 @@ const copy = {
         offers: [
           { id: "review", title: "Бесплатный письменный разбор", body: "Опишите один вопрос и запросите личный ответ.", cta: "Подать заявку" },
           { id: "consultation", title: "Личная сессия · от €50", body: "30 минут индивидуальной работы онлайн или в Торонто.", cta: "Запросить консультацию" },
-          { id: "constellations", title: "Системные расстановки", body: "Исследуйте повторяющиеся ситуации и отношения.", cta: "Подробнее об услуге" },
+          { id: "support", title: "Личное сопровождение · €200/мес", body: "Две сессии по часу и возможность писать между ними.", cta: "Открыть сопровождение" },
         ],
       },
       learning: {
@@ -161,7 +162,7 @@ const copy = {
         offers: [
           { id: "review", title: "Revisión escrita gratuita", body: "Comparte una pregunta y solicita una respuesta personal.", cta: "Solicitar revisión" },
           { id: "consultation", title: "Sesión personal · desde €50", body: "30 minutos en línea o en Toronto.", cta: "Solicitar una consulta" },
-          { id: "constellations", title: "Constelaciones sistémicas", body: "Explora patrones y relaciones importantes.", cta: "Ver este servicio" },
+          { id: "support", title: "Acompañamiento · 200 €/mes", body: "Dos sesiones de una hora y preguntas entre ellas.", cta: "Ver acompañamiento" },
         ],
       },
       learning: {
@@ -210,6 +211,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
     myCourses: myCoursesHref,
     review: "/" + locale + "/services/free-situation-review",
     consultation: "/" + locale + "/services#consultation",
+    support: "/" + locale + "/services/personal-support",
     constellations: "/" + locale + "/services/systemic-constellations",
     reiki: "/" + locale + "/academy/principles-of-energywork/learn",
     egypt: "/" + locale + "/academy/egyptian-priesthood",

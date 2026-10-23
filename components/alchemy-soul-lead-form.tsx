@@ -23,7 +23,7 @@ const copy = {
     formatNames: {
       "60": "Личная сессия · 60 минут · €100",
       "30": "Экспресс · 30 минут · €50",
-      month: "4 недели сопровождения · обсудить условия",
+      month: "Личное сопровождение · 4 недели · €200 · 2 × 60 минут",
     },
     topicNames: {
       relationships: "Отношения",
@@ -50,7 +50,7 @@ const copy = {
     formatNames: {
       "60": "Personal session · 60 min · €100",
       "30": "Express review · 30 min · €50",
-      month: "Four-week support · discuss details",
+      month: "Four-week personal support · €200 · 2 × 60 min",
     },
     topicNames: {
       relationships: "Relationships",
@@ -77,7 +77,7 @@ const copy = {
     formatNames: {
       "60": "Sesión personal · 60 minutos · €100",
       "30": "Revisión exprés · 30 minutos · €50",
-      month: "Acompañamiento de cuatro semanas · consultar condiciones",
+      month: "Acompañamiento de cuatro semanas · 200 € · 2 × 60 min",
     },
     topicNames: {
       relationships: "Relaciones",
@@ -131,9 +131,15 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
         </select>
       </label>
       <div className={styles.formOrder}>
-        <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
-          event="service_request_start" className={styles.formOrderButton}
-          attributes={{ "data-alchemy-booking": "personalised" }} />
+        {format === "month" ? (
+          <Link className={styles.monthlyLearnMore} href={"/" + locale + "/services/personal-support"} data-alchemy-monthly-link>
+            {locale === "ru" ? "Условия и заявка · €200" : locale === "es" ? "Detalles y solicitud · 200 €" : "Details & enquiry · €200"}
+          </Link>
+        ) : (
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+            event="service_request_start" className={styles.formOrderButton}
+            attributes={{ "data-alchemy-booking": "personalised" }} />
+        )}
       </div>
       <p className={styles.formNote}>{t.note}</p>
       <p className={styles.formPrivacy}><ShieldCheck size={14} aria-hidden="true" />{t.privacy}</p>
@@ -156,8 +162,8 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
     shortText: "Уточнить ситуацию и следующий шаг.",
     longText: "Более глубокая работа с вашим запросом.",
     monthTitle: "Поддержка в течение месяца",
-    monthText: "2 личные сессии + 4 недели сопровождения",
-    monthNote: "Стоимость согласуется отдельно · без подписки",
+    monthText: "2 × 60 минут + вопросы между сессиями",
+    monthNote: "€200 за месяц · без автопродления",
     choice: "Выберите формат",
     choiceHint: "Выберите формат, затем отправьте запрос на удобное время.",
     free: "Сначала бесплатно?",
@@ -168,8 +174,8 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
     shortText: "Aclarar el tema y un primer paso realista.",
     longText: "Explorar en más profundidad tu situación y tus patrones.",
     monthTitle: "Acompañamiento personal de cuatro semanas",
-    monthText: "2 sesiones personales + 4 semanas de seguimiento",
-    monthNote: "Precio acordado individualmente · sin suscripción",
+    monthText: "2 × 60 min + preguntas entre sesiones",
+    monthNote: "200 € al mes · sin renovación automática",
     choice: "Elige un formato",
     choiceHint: "Selecciona un formato y pulsa Solicitar una sesión.",
     free: "¿Prefieres comenzar gratis?",
@@ -180,8 +186,8 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
     shortText: "Clarify the issue and a realistic first step.",
     longText: "Explore your situation and patterns in more depth.",
     monthTitle: "Four-week personal support",
-    monthText: "2 personal sessions + 4 weeks of follow-up",
-    monthNote: "Price agreed individually · no subscription",
+    monthText: "2 × 60 min + questions between sessions",
+    monthNote: "€200 per month · no automatic renewal",
     choice: "Choose a format",
     choiceHint: "Choose your format, then ask about availability.",
     free: "Prefer to start free?",
@@ -225,9 +231,15 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
       </button>
       <p className={styles.formatHint}>{data.choiceHint}</p>
       <div className={styles.optionsOrder}>
-        <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
-          event="service_request_start" className={styles.optionsOrderButton}
-          attributes={{ "data-alchemy-booking": "formats" }} />
+        {selected === "month" ? (
+          <Link className={styles.monthlyLearnMore} href={"/" + locale + "/services/personal-support"} data-alchemy-monthly-link>
+            {locale === "ru" ? "Подробнее и запросить · €200" : locale === "es" ? "Detalles y solicitud · 200 €" : "View monthly support · €200"}
+          </Link>
+        ) : (
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+            event="service_request_start" className={styles.optionsOrderButton}
+            attributes={{ "data-alchemy-booking": "formats" }} />
+        )}
       </div>
       {selected !== "month" && (wiseEnabled || paypalPersonalEnabled || Boolean(zenInquiryUrl)) ? (
         <details className={styles.paymentDisclosure} data-alchemy-payment-disclosure>
