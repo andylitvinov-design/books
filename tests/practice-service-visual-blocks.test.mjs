@@ -43,7 +43,7 @@ test('public client CTA is a labeled visual preview until existing moderation, n
  assert.match(editor,/onPause\(item\)/)
  assert.doesNotMatch(editor,/<a[^>]*href=\{.*previewCta/)
  assert.match(dashboard,/data-status=\{item\.status\}/)
- assert.match(workspace,/serviceQuota=\{serviceQuota\}/)
+ assert.match(workspace,/quota=\{serviceQuota\}/)
  assert.equal(getHobbyServiceQuota(Array(10).fill({status:'draft'})).canAdd,false)
 })
 

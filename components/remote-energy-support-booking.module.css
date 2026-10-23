@@ -68,3 +68,14 @@
  .introHighlights span{font-size:11px;padding:7px 9px}
  .form{margin-top:12px}
 }
+
+.masterCard{margin-top:10px;display:flex;align-items:flex-start;gap:13px;border:1px solid #d5e9e4;padding:12px;border-radius:14px;background:#f7fbf9;min-width:0}
+.masterCard img{width:84px;height:106px;flex:0 0 84px;object-fit:cover;border-radius:12px}
+.masterCopy{min-width:0;display:grid;gap:5px;color:#194651;font-size:13px}
+.masterCopy strong{font-size:15px}
+.masterCopy p{margin:0;line-height:1.4;font-size:12px;color:#3c6262;overflow-wrap:anywhere}
+.masterCopy small{font-size:11px;color:#577077}
+.masterCopy a{font-size:12px;font-weight:750;text-decoration:underline;color:#7c3050}
+.review strong{font-size:16px;color:#184e57}
+.submit:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:420px){.masterCard{gap:9px}.masterCard img{width:68px;height:88px;flex-basis:68px}.durationGroup label{flex:1 1 42%}}

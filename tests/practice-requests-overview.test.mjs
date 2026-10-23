@@ -36,9 +36,12 @@ test('practice home wires authenticated requests to its first-screen module', ()
   const source = readFileSync(new URL('../components/app/practice-workspace.jsx', import.meta.url), 'utf8')
   const moduleSource = readFileSync(new URL('../components/app/practice-requests-overview.jsx', import.meta.url), 'utf8')
   const marketplace = source.indexOf('className="hh-practice-marketplace"')
-  const header = source.indexOf('    {!needsOnboarding&&<PracticeRequestsOverview requests={requests}')
+  const header = source.indexOf('<PracticeRequestsOverview requests={requests}')
   const tools = source.indexOf('className="hh-practice-tools"')
-  assert.ok(marketplace > 0 && header > marketplace && tools > header, 'new services lead, requests remain before practitioner tools')
+  // Master workspace now puts incoming enquiries before tools and keeps
+  // community marketplace discovery below the authenticated work area.
+  assert.ok(header > 0 && tools > header && marketplace > tools,
+    'request inbox remains on the first screen before tools; discovery is below')
   assert.match(source, /<PracticeRequestsOverview requests=\{requests\} services=\{services\}/)
   assert.match(source, /onAddService=\{needsOnboarding/)
   assert.match(moduleSource, /summary\.total === 0/)

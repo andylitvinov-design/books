@@ -58,6 +58,11 @@ test("slider and benefit-rich banner fit the first mobile fold without impacting
   const sliderCss = read("components/services-conversion-hero.module.css");
   const bannerCss = read("components/home-free-diagnosis-banner.module.css");
   assert.match(sliderCss, /\.hero\[data-home-section-carousel\] \.slider \{ height: clamp\(302px, 39svh, 336px\); min-height: 0;/);
+  // No opacity fade on the first mobile artwork: avoid an extra LCP paint wait
+  // without changing Desktop / Services slider animations.
+  assert.match(sliderCss, /\.hero\[data-home-section-carousel\] \.slideMedia \{ animation: none; \}/);
+  assert.match(sliderCss, /\.slideMedia \{ position:absolute; inset:0; z-index:0; animation:serviceFade/);
+  assert.doesNotMatch(sliderCss, /\.slideMedia \{ position:absolute; inset:0; z-index:0; animation:none/);
   assert.match(sliderCss, /\.hero\[data-home-section-carousel\] \.slider \{ height: 258px; min-height: 0;/);
   assert.match(bannerCss, /@media \(max-width: 365px\)/);
   assert.match(bannerCss, /\.order \{[^}]*min-height: 45px/s);

@@ -30,6 +30,8 @@ jobs:
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Auth, service editor, quota, media and workflow contracts
         run: node --test tests/practice-service-visual-blocks.test.mjs tests/practice-service-editor-simplified.test.mjs tests/practice-hobby-service-quota.test.mjs tests/practice-photo-upload.test.mjs tests/practitioner-presentation-video.test.mjs tests/practice-services-search.test.mjs tests/practice-single-screen-workspace.test.mjs tests/practice-materials-action-first.test.mjs
+      - name: Remote goal support pricing, privacy and scheduling
+        run: node --test tests/remote-energy-support-booking.test.mjs tests/remote-support-privacy-contract.test.mjs tests/practitioner-remote-energy-support.test.mjs
       - name: Lint all changed components
         run: npx --no-install eslint components/app/simple-service-editor.jsx components/app/my-services-dashboard.jsx components/app/practice-workspace.jsx lib/practitioners/service-editor-steps.mjs
       - name: TypeScript

@@ -29,3 +29,47 @@
 .reset{cursor:pointer;padding:12px;border:1px solid #dbc9c9;border-radius:10px;background:#fff}
 .directory>.meta{padding:0 18px}
 @media(max-width:650px){.articleFilters{grid-template-columns:repeat(2,minmax(0,1fr))}.articleFilters label:first-child{grid-column:1 / -1}}
+
+
+/* Mentor Community: reusable real-article feed, photo at left like the mobile reference. */
+.directory .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.directory .card { display: flex; gap: 14px; align-items: stretch; padding: 12px; overflow: hidden; background: #fffcf7; border: 1px solid #e3d4c3; border-radius: 18px; }
+.articleThumb { flex: 0 0 33%; display: grid; place-items: center; min-width: 0; min-height: 156px; max-height: 214px; border-radius: 13px; overflow: hidden; background: linear-gradient(145deg, #c3d6cb, #e5d4ba 57%, #86634b); color: #fff!important; text-decoration: none; }
+.articleThumb img { display: block; width: 100%; height: 100%; min-height: 156px; max-height: 214px; object-fit: cover; }
+.articleThumb span { font: 400 55px/1 Georgia, serif; }
+.articleContent { min-width: 0; display: flex; flex-direction: column; flex: 1; }
+.articleContent h2 { margin: 5px 0 7px; color: #352a22; font: 400 clamp(17px, 1.6vw, 21px)/1.2 Georgia, serif; overflow-wrap: anywhere; }
+.articleContent h2 a { color: inherit; text-decoration: none; }
+.articleContent h2 a:hover, .byline a:hover { text-decoration: underline; }
+.articleContent .byline { margin: 0; font: 650 11px/1.35 system-ui, sans-serif; color: #786454; overflow-wrap: anywhere; }
+.byline a { color: #674838; text-decoration: none; }
+.articleContent .excerpt { margin: 0 0 9px; color: #6d6258; font: 400 12px/1.45 system-ui, sans-serif; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.articleActions { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; margin-top: auto; }
+.articleActions .primary { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin: 0; padding: 9px 12px; border-radius: 999px; background: #193b49; font: 700 12px/1.2 system-ui, sans-serif; }
+.articleActions .primary:hover { background: #0b5559; }
+.articleActions .authorLink { display: inline-flex; align-items: center; min-height: 44px; font: 700 12px/1.2 system-ui, sans-serif; color: #80513b; text-decoration: underline; text-underline-offset: 3px; }
+.topicChips { display: flex; gap: 8px; overflow-x: auto; padding: 4px 18px 12px; scrollbar-width: thin; }
+.topicChips button { flex: none; min-height: 42px; padding: 8px 14px; border: 1px solid #d9c9b8; border-radius: 999px; background: #f5ece1; color: #5f4c3e; font: 700 12px/1.3 system-ui, sans-serif; cursor: pointer; }
+.topicChips button.selected { background: #193b49; border-color: #193b49; color: #fff; }
+.directory :is(.topicChips button, .articleActions a, .card h2 a, .byline a, .articleThumb, .seeAll a):focus-visible { outline: 3px solid #0b7a78; outline-offset: 2px; }
+.seeAll { padding: 0 18px 10px; text-align: right; }
+.seeAll a { display: inline-flex; align-items: center; min-height: 44px; font: 750 13px/1.3 system-ui, sans-serif; color: #80513b; }
+.feed { padding: 15px 0 2px; border-radius: 18px; background: #f7efe4; }
+.feed .articleFilters { margin: 0 0 8px; }
+.feed .grid { margin-bottom: 14px; }
+@media(max-width:900px) { .directory .grid { grid-template-columns: 1fr; } }
+@media(max-width:430px) {
+  .directory .grid { gap: 9px; padding: 0 9px; }
+  .directory .card { gap: 10px; padding: 9px; border-radius: 15px; }
+  .articleThumb { flex-basis: 32%; min-height: 150px; max-height: 192px; border-radius: 11px; }
+  .articleThumb img { min-height: 150px; max-height: 192px; }
+  .articleContent h2 { font-size: 17px; margin: 4px 0 5px; }
+  .articleContent .byline { font-size: 10px; }
+  .articleContent .excerpt { font-size: 11px; line-height: 1.38; -webkit-line-clamp: 2; }
+  .articleActions { gap: 4px 10px; }
+  .articleActions .primary { min-height: 44px; font-size: 11px; padding: 8px 11px; }
+  .articleActions .authorLink { min-height: 37px; font-size: 11px; }
+  .topicChips { padding: 3px 9px 11px; }
+  .feed .articleFilters { padding: 0 9px 9px; }
+  .feed > .meta { padding: 0 9px; }
+}

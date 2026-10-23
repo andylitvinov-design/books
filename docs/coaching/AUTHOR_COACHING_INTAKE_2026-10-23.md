@@ -16,7 +16,7 @@ Four sections in the author's original progression:
 3. **Desired outcome and resources** — ideal result, why it matters, available capacities and helpers.
 4. **Session questions** — useful work outcome, measurable evidence, one priority question, up to eight additional questions, optional background.
 
-Sections are visible on one page rather than requiring separate navigation. Text is entered by the client and can be explicitly copied or downloaded. Three answers are required to mark a session questionnaire complete; optional fields remain optional. Progress indicates **answered fields out of 14**, not psychological percentage or clinical scoring. No AI or speech service runs.
+Sections are visible on one page rather than requiring separate navigation. Text is entered by the client and can be explicitly copied or downloaded. Three answers are required to mark a session questionnaire complete; optional fields remain optional. Progress indicates **answered fields out of 20**, not psychological percentage or clinical scoring. No AI or speech service runs.
 
 ## Privacy and persistence
 
@@ -42,3 +42,16 @@ Consent-based coach sharing, secure client-messenger relay, verified CRM enquiry
 - [ ] Authenticated Google → save → refresh → restore → delete + guest copy/export on real device at 320/390/430px. Browser/source-only checks cannot close this gate.
 
 **No milestone is marked live just because a commit, mock, or build exists.** Any failures or unverified integration must stay explicitly open.
+
+
+## UX revision · 2026-10-23 · one question per item
+
+Owner feedback: an item must never combine multiple questions. Earlier compound prompts were split into **20 individually numbered questions** with one input apiece and one question mark per EN/RU/ES label. Six additive IDs (concernDuration, attemptsResult, currentResults, expectedChange, existingSupport, helpers) capture distinct answers; existing 14 IDs are preserved verbatim for backward compatibility. Existing sealed v1 draft data and the stored version discriminator remain readable, with new fields initially empty. Never guess, split or erase earlier user text. **No SQL migration, RLS revision, new private service or data-copy job is required.**
+
+Page now uses a slim first-party scenic hero, a compact progress chip, small personal detail fields, four lightweight section headers, and **one numbered row per question**, not two different questions under one large label. Desktop has one question label paired with one answer box per row; iPhone 320–430px stacks the same single item with generous touch target and a focus-expanding answer. User-defined follow-up questions remain individually editable and removable. All save/restore/delete/Google-auth/consent mechanisms remain unchanged.
+
+Acceptance:
+- [ ] Node test tests/coaching-intake-form.test.mjs on the exact PR head checks all 20 original atomic EN/RU/ES labels, stable prior IDs, 3 required answers, HTML label/textarea linkage, mobile breakpoint/focus design, and private-storage contract.
+- [ ] CI + Next.js build, ready production deployment exact SHA.
+- [ ] Guest page on EN/RU/ES checked for individual question numbering, no missing fields and mobile overflow.
+- [ ] Live signed-in save/reload/delete + legacy completed questionnaire remains a distinct E2E verification gate. No automatic CRM/messenger handoff is claimed.

@@ -315,6 +315,38 @@
 /* Keep every revealed payment link, including terms, comfortably tappable. */
 .paymentDisclosureBody .wisePayment>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px}
 
+
+/* Featured owner-supplied Psychic Alchemy video leads the service before the sales hero.
+   The privacy-first player remains poster-only until a real user clicks Play. */
+.featuredVideoSection{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);align-items:center;gap:18px 24px;background:linear-gradient(122deg,#073e4d 0%,#075d67 60%,#12877f 100%);border:0;color:#fff}
+.featuredVideoText{min-width:0}
+.featuredVideoText .eyebrow{color:#b6f4e7}
+.featuredVideoText h2{margin:0;color:#fff;font:400 clamp(29px,3.7vw,48px)/1.09 Georgia,"Times New Roman",serif;letter-spacing:-.034em;text-wrap:balance}
+.featuredVideoText>p{max-width:520px;margin:14px 0 0;color:#e2fbf6;font-size:14px;line-height:1.64}
+.featuredVideoMedia{min-width:0;width:100%;border-radius:18px;overflow:hidden;background:#072e3d;box-shadow:0 10px 25px rgba(0,22,31,.16)}
+.featuredVideoMedia :global(.site-video-player){width:100%;max-width:100%;margin:0}
+.featuredVideoMedia :global(.site-video-frame){aspect-ratio:16/9;min-height:0}
+.featuredVideoActions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px}
+.featuredVideoAction{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:11px 19px;border-radius:100px;background:#f6d79f;color:#173a46!important;font-weight:850;font-size:13px;text-decoration:none}
+.featuredVideoAction:hover{background:#ffe7b8}
+.featuredFree{display:inline-flex;align-items:center;gap:5px;min-height:44px;color:#ecfef9!important;text-decoration:underline;text-underline-offset:4px;font-size:12px;font-weight:750}
+.featuredVideoNote{grid-column:1/-1;margin:0;color:#caeae5;font-size:11px;line-height:1.48}
+.featuredVideoSection a:focus-visible{outline:3px solid #fce4ae;outline-offset:4px}
+@media(max-width:680px){
+  .featuredVideoSection{grid-template-columns:minmax(0,1fr);gap:12px;padding:19px 16px;border-radius:21px}
+  .featuredVideoText h2{font-size:clamp(26px,7.5vw,36px)}
+  .featuredVideoText>p{margin-top:9px;font-size:12px;line-height:1.48}
+  .featuredVideoActions{margin-top:13px;gap:8px 12px}
+  .featuredVideoAction{min-height:44px;padding:9px 15px;font-size:12px}
+  .featuredVideoMedia{border-radius:14px}
+  .featuredVideoNote{font-size:10px}
+}
+@media(max-width:350px){
+  .featuredVideoSection{padding:15px 13px;gap:10px}
+  .featuredVideoText h2{font-size:26px}
+  .featuredVideoActions{align-items:stretch}
+}
+
 /* The month option always opens the canonical €200 programme and consented CRM form. */
 .monthlyLearnMore{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-height:49px;border-radius:100px;padding:10px 15px;background:#ab5164;color:#fff!important;text-decoration:none;text-align:center;font-size:14px;font-weight:850;line-height:1.4}
 .monthlyLearnMore:hover{background:#923e55}
