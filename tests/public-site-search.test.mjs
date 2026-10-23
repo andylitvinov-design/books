@@ -10,6 +10,8 @@ const items = [
   { kind: "test", title: "Stress self-check", description: "Free test", href: "/en/client/tests" },
   { kind: "material", title: "A private report", description: "Not indexed", href: "//evil.example/steal" },
   { kind: "material", title: "Video lesson", description: "", href: "javascript:alert(1)" },
+  { kind: "article", title: "Private client notes", description: "Not public", href: "/en/app/reports" },
+  { kind: "material", title: "Admin course", description: "Internal only", href: "/en/admin/courses" },
 ];
 
 test("search normalizes casing, Russian yo and accented Spanish", () => {
@@ -30,4 +32,6 @@ test("search requires two characters, bounds results, and never returns unsafe h
   assert.equal(searchPublicItems(items, "stress", 1).length, 1);
   assert.deepEqual(searchPublicItems(items, "private"), []);
   assert.deepEqual(searchPublicItems(items, "video"), []);
+  assert.deepEqual(searchPublicItems(items, "client notes"), []);
+  assert.deepEqual(searchPublicItems(items, "admin"), []);
 });
