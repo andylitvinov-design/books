@@ -39,3 +39,16 @@ test('one approved Andrey offering only; never forge 10/20 prices or other maste
   assert.doesNotMatch(sql,/'duration',10,'price'/)
   assert.doesNotMatch(sql,/'duration',20,'price'/)
 })
+
+test('booking lifecycle preserves private conversations and only neutral opted-in alerts',()=>{
+  const scope=read('lib/practitioners/client-messages.js')
+  const policy=read('supabase/migrations/20261023134530_hh_remote_support_private_messages.sql')
+  const route=read('app/api/app/[...path]/route.js')
+  assert.match(scope,/const writableStatuses=.*reschedule_proposed.*confirmed.*completed.*declined/)
+  assert.match(policy,/r\.remote_booking is not null/)
+  assert.match(policy,/reschedule_proposed/)
+  assert.match(route,/notifyBookingParticipants/)
+  assert.match(route,/dispatchClientTelegramNotification/)
+  assert.match(route,/Your Holistic House booking has an update/)
+  assert.match(route,/A Holistic House booking request changed/)
+})

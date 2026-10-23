@@ -7,6 +7,7 @@ alter table app.consultation_requests add constraint consultation_requests_statu
   status in ('requested','contacted','closed','cancelled')
   or (remote_booking is not null and status in ('reschedule_proposed','confirmed','in_progress','completed','declined'))
 );
+alter table app.consultation_requests drop constraint if exists consultation_requests_remote_booking_shape_check;
 alter table app.consultation_requests add constraint consultation_requests_remote_booking_shape_check
   check (remote_booking is null or jsonb_typeof(remote_booking)='object');
 create index if not exists consultation_requests_remote_active_idx
