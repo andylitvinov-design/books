@@ -158,7 +158,9 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
 async function verifySyntheticGoogleReturn(page, submissions) {
   const path="/en/academy/reiki/yggdrasil/free-initiation";
   const fakeGoogle="https://accounts.google.com/hh-qa-oauth-return";
+  let googleStarts=0;
   await page.route("**/api/app/auth/start",async route=>{
+    googleStarts++;
     const request=JSON.parse(route.request().postData()||"{}");
     assert.equal(request.continueTo,"enquiry");
     assert.equal(request.returnPath,path);
@@ -180,9 +182,13 @@ async function verifySyntheticGoogleReturn(page, submissions) {
     const form=chooser.locator("form");
     const consent=form.locator('input[data-reply-consent]');
     assert.equal(await consent.isChecked(),false,"Google must require explicit opt-in");
+    const google=form.locator("button").filter({hasText:/Continue with Google/i}).first();
+    await google.click();
+    assert.equal(googleStarts,0,"No OAuth without reply consent");
     await consent.check();
     const before=submissions.length;
-    await form.locator("button").filter({hasText:/Continue with Google/i}).first().click();
+    await google.click();
+    assert.equal(googleStarts,1,"One opt-in Google handoff");
     await page.waitForURL(origin+"/en/thank-you",{timeout:20000});
     await page.locator("[data-service-thank-you]").getByText("HH-CA5016DE79E4",{exact:true})
       .waitFor({state:"visible",timeout:10000});
