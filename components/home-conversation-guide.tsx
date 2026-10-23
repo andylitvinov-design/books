@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { StaticPortrait } from "@/components/static-portrait";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, Check, Compass, Heart, Mic, RotateCcw, Send, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
+import { ArrowRight, ArrowUp, BookOpen, BriefcaseBusiness, Check, Compass, Heart, Leaf, MessageCircle, Mic, RotateCcw, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
 
 import {
   homeGuideFollowup,
-  homeGuideCategories,
-  browseHomeGuideOffers,
+  homeGuideQuickStarts,
   chooseHomeGuideOffer,
   matchHomeGuideReply,
   resolveHomeGuideQuestion,
-  type HomeGuideCategory,
   type HomeGuideContext,
   type HomeGuideGoal,
   type HomeGuideOffer,
@@ -95,7 +93,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
   en: {
     eyebrow: "HOLISTIC HOUSE · PERSONAL GUIDANCE",
     title: "What's on your mind?",
-    lead: "Tell us what you need, or pick a category below.",
+    lead: "Choose a starting point that fits your needs.",
     portraitCaption: "Andrey Litvinov · founder",
     filterPrompt: "What are you looking for?",
     filterLabels: { all: "All", services: "Services", courses: "Courses", tests: "Free tests", free: "Free starts" },
@@ -104,7 +102,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     browseConversation: "Refine in a conversation",
     welcome: "Hi! I'm the Holistic House website guide. Tell me what's on your mind, or choose a topic below.",
     chatStatus: "Automated guide · local suggestions",
-    openChat: "Open a conversation",
+    openChat: "Chat with us",
     closeChat: "Close conversation",
     starterHint: "No account needed · Typed messages stay on this page",
     moreWays: "Other options",
@@ -177,7 +175,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ ПОДДЕРЖКА",
     title: "Что сейчас вас волнует?",
-    lead: "Расскажите, что вам нужно, или выберите категорию ниже.",
+    lead: "Выберите, с чего вам удобнее начать.",
     portraitCaption: "Андрей Литвинов · основатель",
     filterPrompt: "Что вас интересует?",
     filterLabels: { all: "Всё", services: "Услуги", courses: "Курсы", tests: "Бесплатные тесты", free: "Бесплатно" },
@@ -186,7 +184,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     browseConversation: "Уточнить в диалоге",
     welcome: "Здравствуйте! Я помощник сайта Holistic House. Расскажите, что вас волнует, или выберите тему ниже.",
     chatStatus: "Помощник сайта · локальные подсказки",
-    openChat: "Открыть диалог",
+    openChat: "Чат с нами",
     closeChat: "Закрыть диалог",
     starterHint: "Без регистрации · Текст остаётся на этой странице",
     moreWays: "Другие варианты",
@@ -259,7 +257,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
   es: {
     eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN PERSONAL",
     title: "¿Qué te preocupa hoy?",
-    lead: "Cuéntanos qué necesitas o elige una categoría.",
+    lead: "Elige el primer paso que necesitas.",
     portraitCaption: "Andrey Litvinov · fundador",
     filterPrompt: "¿Qué estás buscando?",
     filterLabels: { all: "Todo", services: "Servicios", courses: "Cursos", tests: "Pruebas gratis", free: "Gratis" },
@@ -268,7 +266,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     browseConversation: "Precisar en el diálogo",
     welcome: "¡Hola! Soy la guía del sitio Holistic House. Cuéntame qué te preocupa o elige un tema.",
     chatStatus: "Guía automática · sugerencias locales",
-    openChat: "Abrir conversación",
+    openChat: "Chatea con nosotros",
     closeChat: "Cerrar conversación",
     starterHint: "Sin registro · Tus mensajes escritos permanecen aquí",
     moreWays: "Otras opciones",
@@ -340,7 +338,14 @@ const copy: Record<PublicLocale, GuideCopy> = {
   },
 };
 
-const quickStartIcons = [Waves, Heart, Compass] as const;
+const quickStartIcons = {
+  stress: Waves,
+  relationships: Heart,
+  direction: Compass,
+  business: BriefcaseBusiness,
+  resources: Leaf,
+  reiki: BookOpen,
+} as const;
 
 export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
@@ -349,8 +354,6 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [context, setContext] = useState<Context | null>(null);
   const [recommendations, setRecommendations] = useState<HomeGuideOffer[]>([]);
-  const [activeCategory, setActiveCategory] = useState<HomeGuideCategory | null>(null);
-  const [browseQuestion, setBrowseQuestion] = useState("");
   const [supportsVoice, setSupportsVoice] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -531,23 +534,6 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     ask(draft);
-  }
-
-  // Keep the first-screen question editable; handle it locally before opening
-  // the contextual chat and preserve the existing topic/offer recommendation flow.
-  function submitEntry(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (draft.trim()) {
-      setActiveCategory("all");
-      setBrowseQuestion(draft.trim());
-    }
-    if (draft.trim()) ask(draft);
-    else setIsOpen(true);
-  }
-
-  function chooseCategory(category: HomeGuideCategory) {
-    setActiveCategory(category);
-    setBrowseQuestion(draft.trim());
   }
 
   function chooseGoal(choiceId: string) {
@@ -743,16 +729,11 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     cancelVoice();
     setContext(null);
     setRecommendations([]);
-    setActiveCategory(null);
-    setBrowseQuestion("");
     setDraft("");
     setTurns([]);
     questionRef.current?.focus();
   }
 
-  const browsed = activeCategory
-    ? browseHomeGuideOffers({ category: activeCategory, locale, question: browseQuestion })
-    : null;
   const answerCopy = copy[context?.lang ?? locale];
   const followup = homeGuideFollowup(context);
   const recording = voiceState !== "idle";
@@ -763,7 +744,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     <section id="ask-holistic-house" className={styles.root} data-home-conversation-guide
       data-guide-phase={turns.length === 0 ? "ready" : "conversation"} aria-labelledby="home-guide-title">
       <div className={styles.intro}>
-        <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
+        <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
         <h2 id="home-guide-title">{t.title}</h2>
         <p className={styles.lead}>{t.lead}</p>
         <div className={styles.scenery} aria-hidden="true" />
@@ -771,100 +752,47 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
           <StaticPortrait src="/images/holistic-house/andy-about.png"
             alt={locale === "ru" ? "Андрей Литвинов" : "Andrey Litvinov"}
             width={240} height={240}
-            sizes="(max-width: 760px) 86px, 184px" loading="lazy" />
+            sizes="(max-width: 760px) 58px, 96px" loading="lazy" />
           <figcaption>{t.portraitCaption}</figcaption>
         </figure>
       </div>
 
       <div className={styles.entry} aria-hidden={isOpen}>
-        <form className={styles.entryForm} onSubmit={submitEntry} aria-label={t.question}>
-          <label className={styles.srOnly} htmlFor="home-guide-entry-question">{t.question}</label>
-          <div className={styles.entryInputRow}>
-            <Sparkles size={21} className={styles.entryInputIcon} aria-hidden="true" />
-            <textarea id="home-guide-entry-question" value={draft}
-              onChange={event => setDraft(event.currentTarget.value)}
-              onKeyDown={event => {
-                if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-              maxLength={500} rows={1} placeholder={t.placeholder} autoComplete="off"
-              aria-label={t.question} />
-            <button type="button" className={styles.entryMic} data-home-guide-launcher-mic
-              aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
-              title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
-              onClick={() => { setIsOpen(true); toggleVoice(); }}>
-              <Mic size={22} aria-hidden="true" />
-            </button>
-          </div>
-          <button type="submit" className={styles.entrySend} data-home-guide-launcher aria-label={t.send}>
-            <Send size={20} aria-hidden="true" /><span>{t.send}</span>
+        <p className={styles.topicHeading}>{t.filterPrompt}</p>
+        <nav className={styles.needGrid} aria-label={t.filterPrompt} data-home-guide-needs>
+          {homeGuideQuickStarts(locale).map(item => {
+            const Icon = quickStartIcons[item.id];
+            return (
+              <Link key={item.id} href={item.href} prefetch={false}
+                className={styles.needCard} data-home-guide-need={item.id}>
+                <span className={styles.needIcon}><Icon size={21} aria-hidden="true" /></span>
+                <span className={styles.needCopy}>
+                  <strong>{item.title}</strong>
+                  <small>{item.category}</small>
+                </span>
+                <ArrowRight className={styles.needArrow} size={16} aria-hidden="true" />
+              </Link>
+            );
+          })}
+        </nav>
+        <div className={styles.chatRow}>
+          <button type="button" className={styles.chatLauncher} data-home-guide-launcher
+            onClick={() => setIsOpen(true)}>
+            <MessageCircle size={19} aria-hidden="true" />
+            <span>{t.openChat}</span>
+            <ArrowRight size={17} aria-hidden="true" />
           </button>
-        </form>
+          <button type="button" className={styles.chatMic} data-home-guide-launcher-mic
+            aria-label={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+            title={supportsVoice ? t.voiceStart : t.voiceKeyboard}
+            onClick={() => { setIsOpen(true); toggleVoice(); }}>
+            <Mic size={21} aria-hidden="true" />
+          </button>
+        </div>
         <details className={styles.entryPrivacy}>
-          <summary><ShieldCheck size={15} aria-hidden="true" />{t.privacyShort}</summary>
+          <summary><ShieldCheck size={14} aria-hidden="true" />{t.privacyShort}</summary>
           <p>{t.privacyDetail}</p>
         </details>
-        <div className={styles.browseFilters} data-home-guide-filters>
-          <p className={styles.browsePrompt}>{t.filterPrompt}</p>
-          <div className={styles.browseTabs} role="group" aria-label={t.filterPrompt}>
-            {homeGuideCategories.map(category => (
-              <button type="button" key={category} className={styles.browseTab}
-                aria-pressed={activeCategory === category}
-                data-active={activeCategory === category ? "true" : "false"}
-                onClick={() => chooseCategory(category)}>
-                {t.filterLabels[category]}
-              </button>
-            ))}
-          </div>
-        </div>
-        {browsed ? (
-          <div className={styles.browseResults} data-home-guide-inline-results aria-live="polite">
-            {browsed.urgent ? <p className={styles.browseUrgent} role="alert">{copy[locale].urgent}</p> : (
-              <>
-                <div className={styles.browseHeading}>
-                  <strong>{t.browseTitle}</strong>
-                  <p>{t.browseIntro}</p>
-                </div>
-                <div className={styles.browseGrid}>
-                  {browsed.offers.map((offer, index) => (
-                    <article className={styles.browseCard} key={offer.id} data-home-guide-browse-offer={offer.id}>
-                      <span className={styles.offerTag}>{index === 0
-                        ? { en: "Start here", ru: "Рекомендуем", es: "Empieza aquí" }[locale]
-                        : { en: "Another option", ru: "Также подойдёт", es: "Otra opción" }[locale]}</span>
-                      <h3>{offer.title}</h3>
-                      <p>{offer.benefit}</p>
-                      <span className={styles.browseDetail}>{offer.detail}</span>
-                      <Link href={offer.href} prefetch={false} className={styles.browseAction}>
-                        {offer.action}<ArrowRight size={16} aria-hidden="true" />
-                      </Link>
-                    </article>
-                  ))}
-                </div>
-                {browseQuestion ? (
-                  <button className={styles.browseChat} type="button" onClick={() => ask(browseQuestion)}
-                    data-home-guide-refine>{t.browseConversation}<ArrowRight size={15} aria-hidden="true" /></button>
-                ) : null}
-                <p className={styles.limitation}>{copy[locale].limitation}</p>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className={styles.examples} aria-label={t.exampleLabel}>
-            <span>{t.exampleLabel}</span>
-            <div className={styles.quickChoices}>
-              {t.examples.map((example, index) => {
-                const Icon = quickStartIcons[index] ?? Compass;
-                return (
-                  <button type="button" key={example} onClick={() => ask(example)}>
-                    <Icon size={21} aria-hidden="true" /><span>{example}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       {isOpen ? (
