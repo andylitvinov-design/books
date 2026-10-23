@@ -6,83 +6,89 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 const feature = read("components/home-featured-workspace.tsx");
 const css = read("components/home-featured-workspace.module.css");
 
-test("all home languages visibly show functional My Tests, My Courses, Reports and Development before direction tiles", () => {
-  const home = read("components/holistic-house-home.tsx");
+test("all home locales keep the approved hero and show five distinct compact choices", () => {
+  const enRu = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
-  for (const source of [home, es]) {
-    assert.match(source, /<HomeMasterPath locale=/);
-    assert.match(source, /<HomeFeaturedWorkspace locale=/);
-    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMasterPath"));
-    assert.ok(source.indexOf("<HomeMasterPath") < source.indexOf("<HomeFreeDiagnosisBanner"));
-    assert.ok(source.indexOf("<HomeConversationGuide") < source.indexOf("<HomePersonalSpaceCard"));
-    assert.ok(source.indexOf("<HomePersonalSpaceCard") < source.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomepageTopicJourneys"));
-    assert.ok(source.indexOf("<HomepageTopicJourneys") < source.indexOf("<HomeMoreDisclosure"));
+  for (const home of [enRu, es]) {
+    assert.match(home, /<HomeMasterPath locale=/);
+    assert.match(home, /<HomeFeaturedWorkspace locale=/);
+    const ordered = ["HomeSectionCarousel", "HomeMasterPath", "HomeFreeDiagnosisBanner",
+      "HomeConversationGuide", "HomePersonalSpaceCard", "HomeFeaturedWorkspace",
+      "HomepageTopicJourneys", "HomeMoreDisclosure"];
+    let previous = -1;
+    for (const name of ordered) {
+      const position = home.indexOf("<" + name);
+      assert.ok(position > previous, "Home preserves section order: " + name);
+      previous = position;
+    }
   }
-  for (const id of ["tests","courses","reports","development"]) {
-    assert.ok(feature.includes('data-home-feature="' + id + '"'), id);
+  assert.match(feature, /type ModuleKey = "tests" \| "courses" \| "services" \| "learning" \| "master"/);
+  assert.match(feature, /moduleIds: ModuleKey\[\] = \["tests", "courses", "services", "learning", "master"\]/);
+  for (const id of ["tests", "courses", "services", "learning", "master"]) {
+    assert.ok(feature.includes('data-home-module={id}'), "One shared dynamic module control");
+    assert.ok(feature.includes('data-home-module-detail={selected}'));
+    assert.ok(feature.includes(id + ": { title:"), "Module has localized copy: " + id);
   }
-  assert.match(feature, /data-home-featured-workspace/);
-  assert.match(feature, /Discover. Learn. Grow./);
-  assert.match(feature, /Узнавайте себя. Учитесь. Развивайтесь./);
-  assert.match(feature, /Descubre. Aprende. Crece./);
-});
-
-test("self-check topic chips use only allowlisted public explorer focus and have functioning destinations", () => {
-  const topics = read("lib/assessments/test-recommendations.js");
-  for (const key of ["stress","resources","relationships","attention"]) {
-    assert.ok(feature.includes('key: "' + key + '"'));
-    assert.ok(topics.includes("key: '" + key + "'"));
+  for (const label of ["Tests", "Courses", "Services", "Learning", "Become a Master",
+    "Тесты", "Курсы", "Услуги", "Обучение", "Стать мастером",
+    "Pruebas", "Cursos", "Servicios", "Aprender", "Ser profesional"]) {
+    assert.ok(feature.includes(label), "Missing localized module: " + label);
   }
-  assert.match(feature, /client\/tests\?focus=/);
-  assert.match(feature, /data-home-test-topic/);
-  assert.match(feature, /data-home-tests-cta/);
-  assert.ok(existsSync(new URL("../app/[locale]/client/tests/page.tsx", import.meta.url)));
-  assert.match(feature, /myTests/);
+  assert.doesNotMatch(feature, /Discover\. Learn\. Grow\.|Turn ideas into daily practice/);
 });
 
-test("all three course offers target existing app and Academy routes, without creating fake enrollments", () => {
-  for (const id of ["opora","reiki","business"]) assert.ok(feature.includes('id: "' + id + '"'));
-  const publicCourse = read("app/[locale]/courses/antistress/page.tsx");
-  const academyRoute = read("app/[locale]/academy/[[...slug]]/page.tsx");
-  const accountRoute = read("app/[locale]/app/[[...path]]/page.jsx");
-  assert.match(feature, /courses\/antistress/);
-  assert.match(publicCourse, /PublicAntistressLanding/);
-  assert.match(feature, /academy\/principles-of-energywork\/learn/);
-  assert.match(academyRoute, /EnergyworkAiLearner/);
-  assert.match(feature, /accountRoot \+ "\/business"/);
-  assert.match(accountRoute, /business/);
-  assert.match(feature, /course\?view=courses/);
-  assert.match(feature, /course\?courseId=/);
-  assert.match(feature, /data-home-academy-cta/);
-  assert.doesNotMatch(feature, /fetch\(|\.post\(|localStorage|sessionStorage|sendBeacon/);
+test("each module selects its OWN two or three real existing routes without creating data", () => {
+  for (const value of [
+    'selected === "tests"', 'selected === "courses"', 'selected === "services"',
+    'selected === "learning"', 'master: { title:',
+    '/client/tests?focus=stress', '/client/tests?focus=resources',
+    '/courses/antistress', 'accountRoot + "/business"',
+    '/services/free-situation-review', '/services#consultation',
+    '/academy/principles-of-energywork/learn', '"/" + locale + "/academy"',
+    '/practice?panel=services', '/practice?panel=materials&materialTab=courses',
+  ]) assert.ok(feature.includes(value), "Missing module route or selection: " + value);
+  const academy = read("app/[locale]/academy/[[...slug]]/page.tsx");
+  const routes = read("app/[locale]/app/[[...path]]/page.jsx");
+  assert.match(academy, /EnergyworkAiLearner/);
+  assert.match(routes, /business/);
+  assert.match(read("app/[locale]/courses/antistress/page.tsx"), /PublicAntistressLanding/);
+  assert.match(read("app/[locale]/client/tests/page.tsx"), /PublicTestExplorer/);
+  assert.doesNotMatch(feature, /fetch\(|axios|localStorage|sessionStorage|sendBeacon|autoEnroll/);
 });
 
-test("signed-in actions are conditional and non-authenticated HTML never renders private values", () => {
-  const space = read("components/home-personal-space.tsx");
-  assert.match(space, /export function useHomePersonalSpace/);
-  assert.match(feature, /space\?\.status === "ready"/);
-  assert.match(feature, /signedIn &&/);
-  assert.match(feature, /space\?\.summary\?\.professional/);
-  assert.match(feature, /\/portrait#personal-reports/);
-  assert.match(feature, /\/portfolio#hh-development-program/);
-  assert.match(feature, /data-home-my-tests/);
-  assert.match(feature, /data-home-my-courses/);
-  assert.doesNotMatch(feature, /testScore|diagnosis|\bmedicalResults\b|healthData|personalAnswers/);
-});
-
-test("photographic blocks are compact, accessible, budget-safe and mobile friendly", () => {
-  for (const img of [
-    "public/images/holistic-house/report-lighthouse-coast.webp",
-    "public/images/holistic-house/course-focus-mountain-boy.webp",
-  ]) assert.ok(existsSync(new URL("../" + img, import.meta.url)), img);
-  assert.match(feature, /fill unoptimized loading="lazy"/);
-  assert.match(feature, /aria-label=\{t.chooseFocus\}/);
-  assert.match(feature, /aria-labelledby="hh-home-features-title"/);
-  assert.match(css, /grid-template-columns: clamp\(142px, 21%, 232px\) minmax\(0,1fr\)/);
+test("module selection is accessible on touch and keyboard, details are one shared small panel", () => {
+  assert.match(feature, /useState<ModuleKey>\("tests"\)/);
+  assert.match(feature, /onClick=\{\(\) => setSelected\(id\)\}/);
+  assert.match(feature, /aria-pressed=\{selected === id\}/);
+  assert.match(feature, /aria-controls="hh-home-module-detail"/);
+  assert.match(feature, /role="group"/);
+  assert.match(feature, /aria-live="polite"/);
+  assert.match(feature, /aria-label=\{t.modules\[selected\]\.panel\}/);
+  assert.match(feature, /data-home-module-action=\{action.id\}/);
+  assert.match(css, /\.grid \{ display: grid; grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 640px\)/);
-  assert.match(css, /@media \(max-width: 350px\)/);
+  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-column: 1 \/ -1/);
   assert.match(css, /min-height: 44px/);
   assert.match(css, /:focus-visible/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.doesNotMatch(css, /min-height: 245px|grid-template-columns: clamp\(142px/);
+});
+
+test("no giant photographs, only tiny existing local thumbnails; private account routes stay gated", () => {
+  for (const photo of [
+    "report-lighthouse-coast.webp", "course-focus-mountain-boy.webp",
+    "andy-about.png", "reiki-approved-sunrise-v3.webp",
+    "portrait-static/andy-828-3dcbabded1e9.webp",
+  ]) assert.ok(existsSync(new URL("../public/images/holistic-house/" + photo, import.meta.url)), photo);
+  assert.match(feature, /sizes="\(max-width: 640px\) 48px, 56px"/);
+  assert.match(feature, /fill unoptimized loading="lazy"/);
+  assert.match(feature, /const signedIn = space\?\.status === "ready"/);
+  assert.match(feature, /\.\.\.\(signedIn \?/);
+  assert.match(feature, /data-home-reports-cta/);
+  assert.match(feature, /data-home-development-cta/);
+  assert.match(feature, /\/portrait#personal-reports/);
+  assert.match(feature, /\/portfolio#hh-development-program/);
+  assert.match(feature, /locale === "es" \? "en" : locale/);
+  assert.doesNotMatch(feature, /score|symptoms|medicalResults|privateAnswers|testAnswers|diagnosis/);
 });
