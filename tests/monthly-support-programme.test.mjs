@@ -78,7 +78,7 @@ test("owner-only mutating API and client-only readback are separately authentica
   assert.match(service,/PERSONAL_SUPPORT_ENQUIRY_UNAVAILABLE/);
   assert.match(service,/PERSONAL_SUPPORT_ALREADY_VERIFIED/);
   assert.match(service,/source_public_enquiry_id/);
-  assert.match(service,/completed_at IS NULL/);
+  assert.match(service,/completed_at is null/i);
   assert.match(service,/remainingSessions:Math\.max\(0,MONTHLY_SUPPORT_SLOTS-completed\)/);
   assert.match(ui,/fetch\("\/api\/client\/personal-support"/);
   assert.match(home,/data-home-personal-support-cta/);
