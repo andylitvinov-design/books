@@ -177,6 +177,21 @@ export default async function TelegramSetupPage({searchParams}){
                 ?ru?'Ключ сохранён; требуется подтверждение Free Tier':'Key saved; Free Tier confirmation required'
                 :ru?'API-ключ не подключён':'API key missing'
           }</strong></p>
+          {provider.geminiKeyPresent&&provider.geminiFreeConfirmed&&
+            <p className={provider.geminiModelProbeStatus==='ready'
+              ?styles.footnote:styles.warning} role="status">
+              {provider.geminiModelProbeStatus==='ready'
+                ?ru?'Gemini API: модель доступна по GET без генерации. Реальный ответ пока не проверен.':
+                  'Gemini API: model metadata confirmed by GET, with no inference. A real response is not yet verified.'
+                :provider.geminiModelProbeStatus==='unauthorized'
+                  ?ru?'Gemini API отклонил ключ (401/403). Проверь ключ Free Tier проекта.':
+                    'Gemini API rejected the key (401/403). Check the Free Tier project key.'
+                  :provider.geminiModelProbeStatus==='rate_limited'
+                    ?ru?'Gemini API ограничил запросы (429); генерация не запускалась.':
+                      'Gemini API rate-limited metadata (429); no generation was attempted.'
+                    :ru?'Gemini API: доступность модели пока не подтверждена. Платные запросы не запускаются.':
+                      'Gemini API: model access is not confirmed yet. No paid inference is attempted.'}
+            </p>}
           <p>Mistral · OpenRouter: <strong>{
             provider.mistralOpenRouterKeyPresent
               ?ru?'Ключ сохранён; модель :free и цена проверяются при запуске':
