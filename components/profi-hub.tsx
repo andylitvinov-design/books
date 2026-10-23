@@ -77,6 +77,12 @@ const copy = {
       { title: "Pass review & get discovered", detail: "Approved profiles and offers can appear in the practitioner directory. Publication is not automatic.", action: "See the directory" },
       { title: "Handle a real enquiry", detail: "Check your private requests, reply with consent and agree on session and payment terms.", action: "My enquiries" },
     ],
+    courseSteps: [
+      { title: "Set up your profile", detail: "An approved practitioner profile is required before a course can go public.", action: "My profile" },
+      { title: "Build the lessons", detail: "Name your course, add screens, media and exercises. Save private drafts.", action: "Course editor" },
+      { title: "Confirm publication", detail: "After your profile is approved, review your materials and explicitly publish the course.", action: "View the Academy" },
+      { title: "Share and improve", detail: "Share the public course link, respond to feedback and update your lessons. Paid checkout is not active.", action: "Manage my course" },
+    ],
     freeTitle: "Free to start",
     freeBody: "Your basic practitioner profile and up to 10 saved Hobby services have no mandatory subscription. Public listings require approval.",
     discoverTitle: "Your own public page",
@@ -149,6 +155,12 @@ const copy = {
       { title: "Пройди модерацию", detail: "После одобрения профиль и услугу можно будет найти в каталоге. Публикация не автоматическая.", action: "Посмотреть каталог" },
       { title: "Обработай заявку", detail: "Увидь обращение в «Моей практике», ответь с согласия клиента, договорись о сессии и оплате.", action: "Мои заявки" },
     ],
+    courseSteps: [
+      { title: "Создай профиль", detail: "Для публичного курса сначала должен быть одобрен профиль мастера.", action: "Мой профиль" },
+      { title: "Собери уроки", detail: "Придумай название, добавь экраны, упражнения и материалы. Сохраняй закрытые черновики.", action: "Редактор курса" },
+      { title: "Подтверди публикацию", detail: "После одобрения профиля проверь материалы и отдельно подтверди публикацию курса.", action: "Открыть Академию" },
+      { title: "Делись и улучшай", detail: "Отправляй ссылку на опубликованный курс, дополняй уроки. Оплата курсов на сайте пока не работает.", action: "Управлять курсом" },
+    ],
     freeTitle: "Бесплатный старт",
     freeBody: "Профиль мастера и до 10 сохранённых услуг Hobby без обязательной подписки. Публикация после проверки.",
     discoverTitle: "Своя публичная страница",
@@ -220,6 +232,12 @@ const copy = {
       { title: "Diseña la oferta", detail: "Explica beneficios posibles, formato, duración y precio. Guarda el borrador y envíalo.", action: "Abrir editor" },
       { title: "Revisión y visibilidad", detail: "El perfil y servicio aprobados pueden aparecer en el catálogo. No se publica al instante.", action: "Ver catálogo" },
       { title: "Atiende las consultas", detail: "Revisa solicitudes privadas, responde con consentimiento y acuerda sesión y pago.", action: "Mis consultas" },
+    ],
+    courseSteps: [
+      { title: "Crea tu perfil", detail: "Necesitas un perfil profesional aprobado antes de publicar un curso.", action: "Mi perfil" },
+      { title: "Construye lecciones", detail: "Añade pantallas, prácticas y materiales. Guarda borradores privados.", action: "Editor del curso" },
+      { title: "Confirma publicación", detail: "Una vez aprobado tu perfil, revisa y publica expresamente el curso.", action: "Ver Academia" },
+      { title: "Comparte y mejora", detail: "Comparte el enlace público y actualiza lecciones. No hay checkout de pago.", action: "Gestionar curso" },
     ],
     freeTitle: "Comienza gratis",
     freeBody: "Perfil y hasta 10 servicios guardados con Hobby, sin suscripción obligatoria. La publicación requiere revisión.",
@@ -403,12 +421,13 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
               <section className={styles.publishJourney} aria-labelledby="profi-publishing-steps">
                 <h3 id="profi-publishing-steps">{t.stepsTitle}</h3>
                 <ol>
-                  {t.steps.map((step, index) => (
+                  {(offer === "course" ? t.courseSteps : t.steps).map((step, index) => (
                     <li key={step.title}>
                       <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
                       <div><h4>{step.title}</h4><p>{step.detail}</p></div>
                       <Link href={index === 0 ? profileHref : index === 1 ? offerHref :
-                        index === 2 ? publicRoot + "/masters" : requestsHref}
+                        index === 2 ? offer === "course" ? publicRoot + "/academy" : publicRoot + "/masters" :
+                        offer === "course" ? offerHref : requestsHref}
                         prefetch={false} className={styles.stepLink}
                         data-profi-step={index + 1}>
                         {step.action}<ArrowRight size={15} aria-hidden="true" />
