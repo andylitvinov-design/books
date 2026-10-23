@@ -62,10 +62,10 @@ const copy = {
     videoIntro: "Короткое ранее опубликованное видео о выборе метода под конкретный запрос.",
     videoNote: "Видео знакомит с общим подходом; не является полной демонстрацией всех этапов «Алхимии души».",
 
-    featuredKicker: "ПЕРВОЕ ЗНАКОМСТВО · 5 МИНУТ",
-    featuredTitle: "Psychic Alchemy — об этом рассказываю сам",
+    featuredKicker: "ПЕРВОЕ ЗНАКОМСТВО · ВИДЕО",
+    featuredTitle: "Психогомеопатия и Алхимия души — рассказываю сам",
     featuredIntro: "Начните с моего видео. Ниже — как проходит персональная работа: сначала ваш запрос, затем исследование ситуации, внутренних реакций и доступных ресурсов.",
-    featuredVideoNote: "Оригинальная запись на английском. Видео загружается только после нажатия Play; просмотр необязателен.",
+    featuredVideoNote: "Оригинальная запись на русском. Видео загружается только после нажатия Play; просмотр необязателен.",
     featuredVideoAction: "Обсудить мой запрос",
     featuredVideoFree: "Сначала бесплатно",
 
@@ -298,15 +298,24 @@ const testimonials = {
 
 // Owner-supplied public presentation (23 October 2026). Keep the exact video ID;
  // a YouTube Live link is played through the existing privacy-first poster player.
-const featuredIntroVideo = {
+const featuredIntroVideoEn = {
   youtubeId: "-zacUn_zN6g",
   title: "Psychic Alchemy — Andrey Litvinov",
   language: "en" as const,
   durationSeconds: 300,
 };
 
+// Owner-supplied RU recording (23 October 2026). No upload, render or publication.
+const featuredIntroVideoRu = {
+  youtubeId: "IF0HAhSDwks",
+  title: "Психогомеопатия / Алхимия души — Андрей Литвинов",
+  language: "ru" as const,
+};
+
 export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   const t = copy[locale];
+  // Both service routes resolve here. Only /ru uses the Russian video; EN/ES keep the approved English master.
+  const featuredIntroVideo = locale === "ru" ? featuredIntroVideoRu : featuredIntroVideoEn;
   const video = getServiceVideoMedia("alchemy", locale);
   const reviews = testimonials[locale];
   const freeReview = "/" + locale + "/services/free-situation-review";
@@ -340,7 +349,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
               <Link className={styles.featuredFree} href={freeReview}>{t.featuredVideoFree}<ArrowUpRight size={14} aria-hidden="true" /></Link>
             </div>
           </div>
-          <div className={styles.featuredVideoMedia} data-alchemy-featured-video="-zacUn_zN6g">
+          <div className={styles.featuredVideoMedia} data-alchemy-featured-video={featuredIntroVideo.youtubeId}>
             <SiteVideoPlayer video={featuredIntroVideo} locale={locale} compact minimal posterPriority fallbackPoster="/images/holistic-house/andy-about.png" />
           </div>
           <p className={styles.featuredVideoNote}>{t.featuredVideoNote}</p>
