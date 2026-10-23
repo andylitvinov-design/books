@@ -39,6 +39,7 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
   '@/components/commerce/cart-nav-link': { CartNavLink: () => null },
+  '@/components/site-search': { SiteSearch: () => null },
   './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
   './home-personal-space': { HomePersonalSpaceNavEntry: ({locale}) => jsx('button', {
