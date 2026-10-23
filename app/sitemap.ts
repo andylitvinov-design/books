@@ -8,7 +8,7 @@ import { metadataBaseFor } from '@/data/site-metadata';
 import { getAppConfig } from '@/lib/app/config';
 import { createPractitionerRepository } from '@/lib/practitioners/repository';
 import { createArticleRepository } from '@/lib/practitioners/article-repository';
-const academyDirectoryPaths = ["", "/free-ai-courses", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties", "/reiki/tantra-reiki/free-initiation", "/reiki/free-practitioner-course", "/principles-of-energywork", "/reiki/kundalini-reiki/free-initiation"];
+const academyDirectoryPaths = ["", "/free-ai-courses", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties", "/reiki/tantra-reiki/free-initiation", "/reiki/free-practitioner-course", "/principles-of-energywork", "/egyptian-priesthood", "/reiki/kundalini-reiki/free-initiation"];
 
 // A missing data asset in a Vercel Function must not bring down the whole public
 // sitemap. Normal deployments include all files via next.config.ts tracing.
