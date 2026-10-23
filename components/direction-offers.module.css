@@ -102,14 +102,14 @@
 .root[data-direction-offers="business"] .sectionCopy>p{color:#806546}
 .root[data-direction-offers="relationships"] .sectionCopy>p{color:#93596b}
 .root[data-direction-offers="relationships"] .group[data-direction-section="course"] .action{background:#89516a}
-@media(max-width:900px){.actionChip .actionFull{display:none}.actionChip .actionShort{display:inline}}
+@media(max-width:1050px){.actionChip .actionFull{display:none}.actionChip .actionShort{display:inline}}
 @media(max-width:780px){
   .topicChips{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .actionFinder{position:relative;gap:0;padding:7px 8px}
-    .actionHeading h2{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-    .actionReset{display:none}
-    .actionChips{flex:1 1 100%}
-    .actionChip svg{display:none}
+  .actionFinder{position:relative;gap:0;padding:7px 8px}
+  .actionHeading h2{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .actionReset{display:none}
+  .actionChips{flex:1 1 100%}
+  .actionChip svg{display:none}
   .card{grid-template-columns:130px minmax(0,1fr);gap:11px}
   .sectionHeading{flex-wrap:wrap}
 }
