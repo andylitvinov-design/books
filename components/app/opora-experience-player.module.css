@@ -582,3 +582,50 @@
 @media(prefers-reduced-motion:reduce){
   .optionalMeditation summary svg{transition:none}
 }
+
+
+/* Emotion-naming lessons: an optional vocabulary instead of an extra screen or score. */
+.emotionPractice{gap:clamp(7px,1vh,10px);padding:clamp(13px,3.15vw,21px)}
+.emotionPractice .title{font-size:clamp(26px,6.45vw,34px)}
+.emotionPractice .lead{font-size:clamp(16px,4.1vw,19px);line-height:1.34}
+.emotionPicker{display:grid;gap:6px;min-width:0}
+.emotionPrompt{margin:0;color:#265968;font-size:clamp(13px,3.4vw,15px);font-weight:750;line-height:1.32}
+.emotionChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+.emotionChoices button{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  min-width:0;min-height:51px;padding:5px 3px;
+  border:1.5px solid #aacbcc;border-radius:12px;background:rgba(255,255,255,.93);
+  color:#285568;font-size:clamp(11.5px,3.1vw,13.5px);font-weight:740;
+  line-height:1.14;text-align:center;overflow-wrap:anywhere;cursor:pointer
+}
+.emotionChoices button::before{content:attr(data-symbol);font-size:17px;line-height:1.2}
+.emotionChoices button[aria-pressed=true]{
+  border:2px solid #138f94;background:#d7f7ef;color:#115d64;
+  box-shadow:0 0 0 1px rgba(25,150,150,.22)
+}
+.emotionChoices button:disabled{opacity:.58;cursor:not-allowed}
+.emotionChoices button:focus-visible,.emotionOwnInput:focus-visible{
+  outline:3px solid #096d89;outline-offset:2px
+}
+.emotionOwnLabel{color:#356878;font-size:clamp(12px,3.15vw,14px);font-weight:700;line-height:1.2}
+.emotionOwnInput{
+  display:block;width:100%;min-width:0;min-height:44px;padding:9px 12px;
+  border:1.5px solid #a7cbd0;border-radius:12px;background:rgba(255,255,255,.94);
+  color:#214e60;font:600 clamp(14px,3.7vw,16px)/1.2 system-ui,-apple-system,sans-serif
+}
+.emotionOwnInput::placeholder{color:#63828e;font-weight:440;opacity:1}
+.emotionOwnInput:not(:placeholder-shown){border-color:#159c9f}
+.emotionPractice .chips{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.emotionPractice .chips button{min-height:52px;padding:7px 4px;font-size:clamp(12px,3.5vw,15px)}
+.emotionPractice .chips button:last-child:nth-child(odd){grid-column:auto}
+@media(max-width:359px){
+  .emotionChoices{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .emotionChoices button{min-height:44px;font-size:12px}
+  .emotionPractice .chips button{font-size:12px}
+}
+@media(max-height:700px){
+  .emotionPractice{padding:11px 13px;gap:6px}
+  .emotionChoices button{min-height:44px}
+  .emotionOwnInput{min-height:42px}
+  .emotionPractice .guidanceRow .guidanceAnimal{width:37px;height:37px;flex-basis:37px}
+}
