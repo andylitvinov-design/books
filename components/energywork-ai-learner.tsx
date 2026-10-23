@@ -191,7 +191,6 @@ const copy = {
     finalEnableShare: "Allow private sharing & continue",
     finalContactHeading: "Write to Andrey personally",
     finalContactNote: "I've completed the Reiki Practitioner course and want to take the next step. Open a private chat with this message already prepared — no private course answers are included.",
-    finalRevisit: "Revisit a previous lesson",
     finishNote: "Your reflections are private when signed in and saving is enabled. In guest mode, copy them before leaving.",
     summary: "Your personal course journal",
     nothing: "You did not add written reflections; that is completely fine.",
@@ -347,7 +346,6 @@ const copy = {
     finalEnableShare: "Разрешить приватную передачу и продолжить",
     finalContactHeading: "Напишите Андрею лично",
     finalContactNote: "Я завершил(а) курс Reiki Practitioner и хочу двигаться дальше. Откройте личный чат с готовым сообщением — ответы и личные данные из курса не передаются.",
-    finalRevisit: "Вернуться к предыдущим урокам",
     finishNote: "После входа и согласия ваши ответы сохраняются приватно. В гостевом режиме скопируйте их перед выходом.",
     summary: "Ваш личный учебный дневник",
     nothing: "Вы не записали наблюдения, и это совершенно нормально.",
@@ -1610,7 +1608,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
               {slide.kind === "finish" ? (
                 <div className={styles.final} data-initiation-readiness>
-                  <span className={styles.finalTag}><Award size={18} aria-hidden="true" />{t.finish}</span>
                   <section className={styles.initiationRequestBox} data-reiki-initiation-request>
                     {applicationLead ? (
                       <div className={styles.finalReceipt} data-reiki-application-accepted role="status">
@@ -1672,11 +1669,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     )}
                     {applicationMessage ? <p role="alert">{applicationMessage}</p> : null}
                   </section>
-                  <section className={styles.finalContact} data-reiki-personal-contact
-                    aria-label={t.finalContactHeading}>
-                    <h2><MessageCircle size={19} aria-hidden="true" />{t.finalContactHeading}</h2>
-                    <p>{t.finalContactNote}</p>
-                    <div className={styles.finalContactActions}>
+                  <details className={styles.finalDisclosure} data-reiki-contact-disclosure>
+                    <summary><MessageCircle size={17} aria-hidden="true" />{t.finalContactHeading}</summary>
+                    <section className={styles.finalContact} data-reiki-personal-contact
+                      aria-label={t.finalContactHeading}>
+                      <p>{t.finalContactNote}</p>
+                      <div className={styles.finalContactActions}>
                       <a className={styles.finalContactLink} href={reikiWhatsAppUrl}
                         target="_blank" rel="noopener noreferrer">
                         WhatsApp <ExternalLink size={16} aria-hidden="true" />
@@ -1685,65 +1683,66 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                         target="_blank" rel="noopener noreferrer">
                         Telegram <ExternalLink size={16} aria-hidden="true" />
                       </a>
-                    </div>
+                      </div>
+                    </section>
+                  </details>
+                  <section className={styles.finalSnapshot} data-reiki-learning-highlights>
+                    <h2>{locale === "ru" ? "Ваши итоги" : "Your highlights"}</h2>
+                    <p className={styles.guideNote}>{locale === "ru"
+                      ? "Только по вашим ответам · не диагноз."
+                      : "Based on your answers · not a diagnosis."}</p>
+                    {highlights.length ? <ul className={styles.highlights}>
+                      {highlights.map((point, index) => <li key={index}>{point}</li>)}
+                    </ul> : <p>{locale === "ru" ? "Заметки можно добавить позже." : "You can add notes later."}</p>}
                   </section>
-                  <section className={styles.finalRevisit} aria-label={t.finalRevisit}
-                    data-reiki-final-revisit>
-                    <h2>{t.finalRevisit}</h2>
-                    <div className={styles.finalRevisitGrid}>
-                      {energyworkLessons.map((lesson, lessonIndex) => (
-                        <button key={lesson.phase} type="button" disabled={busy}
-                          onClick={() => jumpToSlide(lesson.firstSlideId)}
-                          className={styles.finalRevisitButton}>
-                          {lessonIndex + 1}. {lesson.title[locale]}
-                          <ArrowLeft size={13} aria-hidden="true" />
-                        </button>
-                      ))}
+                  <details className={styles.finalDisclosure} data-reiki-course-journal>
+                    <summary><BookOpen size={17} aria-hidden="true" />{t.summary}</summary>
+                    <div className={styles.finalDisclosureBody}>
+                      <pre className={styles.notes}>{Object.values(answers).some((value) => value.trim()) ? notes : t.nothing}</pre>
+                      <p>{t.finishNote}</p>
+                      <button type="button" className={styles.copyButton} onClick={copyNotes}><ClipboardCopy size={17} aria-hidden="true" />{copyState === "success" ? t.copied : t.copy}</button>
+                      <button type="button" className={styles.copyButton} onClick={() => window.print()}>{t.print}</button>
+                      {copyState === "error" ? <p role="alert">{t.failed}</p> : null}
                     </div>
-                  </section>
-                  <h2>{locale === "ru" ? "Ваши личные учебные итоги" : "Your personal learning highlights"}</h2>
-                  <p className={styles.guideNote}>{locale === "ru"
-                    ? "Сводка составлена только по вашим собственным ответам и выбору. Это не диагноз и не автоматическая интерпретация личности."
-                    : "A simple summary of your own recorded answers and choices. Not a diagnosis or automatic personality interpretation."}</p>
-                  {highlights.length ? <ul className={styles.highlights}>
-                    {highlights.map((point, index) => <li key={index}>{point}</li>)}
-                  </ul> : <p>{locale === "ru" ? "Вы можете вернуться к заданиям и записать наблюдения." : "You can return to the activities to add optional reflections."}</p>}
-                  <h2>{t.summary}</h2>
-                  <pre className={styles.notes}>{Object.values(answers).some((value) => value.trim()) ? notes : t.nothing}</pre>
-                  <p>{t.finishNote}</p>
-                  <button type="button" className={styles.copyButton} onClick={copyNotes}><ClipboardCopy size={17} aria-hidden="true" />{copyState === "success" ? t.copied : t.copy}</button>
-                  <button type="button" className={styles.copyButton} onClick={() => window.print()}>{t.print}</button>
-                  {copyState === "error" ? <p role="alert">{t.failed}</p> : null}
-                  <h2>{t.reviewTitle} · {readyCount}/{readyTargetCount} {t.readyCount}</h2>
-                  <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
-                  {!savedInitiationReady ? (
-                    <div className={styles.reviewRows}>
-                      {initiationItems.map((item) => (
-                        <div className={styles.reviewRow} key={item.lesson}>
-                          <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
-                          <div>
-                            {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
-                            {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
-                            {item.reportDone && item.questionDone ? <span className={styles.reviewRecorded}><Check size={13} />{t.picked}</span> : null}
-                          </div>
+                  </details>
+                  <details className={styles.finalDisclosure} data-reiki-readiness-checklist>
+                    <summary><Check size={17} aria-hidden="true" />{t.reviewTitle} · {readyCount}/{readyTargetCount}</summary>
+                    <div className={styles.finalDisclosureBody}>
+                      <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
+                      {!savedInitiationReady ? (
+                        <div className={styles.reviewRows}>
+                          {initiationItems.map((item) => (
+                            <div className={styles.reviewRow} key={item.lesson}>
+                              <strong>{item.title}{item.questionIds.length > 1 ? ` · ${item.questionCount}/${item.questionIds.length}` : ""}</strong>
+                              <div>
+                                {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
+                                {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
+                                {item.reportDone && item.questionDone ? <span className={styles.reviewRecorded}><Check size={13} />{t.picked}</span> : null}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        <p className={styles.reviewDoneMessage}>{applicationLead ? t.initiationSent : t.initiationLetterHint}</p>
+                      )}
+                      <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
                     </div>
-                  ) : (
-                    <p className={styles.reviewDoneMessage}>{applicationLead ? t.initiationSent : t.initiationLetterHint}</p>
-                  )}
-                  <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
+                  </details>
                   <p className={styles.initiationNote}>{t.noInitiation}</p>
-                  <h2>{t.source}</h2>
-                  <div className={styles.initiationLinks}>
-                    {energyworkPathChoices.map((choice) => (
-                      <Link key={choice.id} className={styles.textLink}
-                        href={"/" + locale + "/academy/" + choice.studyPath}>
-                        {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
-                      </Link>
-                    ))}
-                  </div>
-                  <button type="button" className={styles.restart} onClick={restart} disabled={busy}>{t.restart}</button>
+                  <details className={styles.finalDisclosure} data-reiki-course-resources>
+                    <summary><BookOpen size={17} aria-hidden="true" />{t.source}</summary>
+                    <div className={styles.finalDisclosureBody}>
+                      <div className={styles.initiationLinks}>
+                        {energyworkPathChoices.map((choice) => (
+                          <Link key={choice.id} className={styles.textLink}
+                            href={"/" + locale + "/academy/" + choice.studyPath}>
+                            {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
+                          </Link>
+                        ))}
+                      </div>
+                      <button type="button" className={styles.restart} onClick={restart} disabled={busy}>{t.restart}</button>
+                    </div>
+                  </details>
                 </div>
               ) : null}
             </div>
