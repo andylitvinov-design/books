@@ -115,7 +115,7 @@ function findSourceCourse(
     title: academyDisplayTitle(record, locale),
     category: section,
     poster: titleImage(videos[0].id),
-    href: "/" + locale + "/academy/" + record.routeKey,
+    href: "/" + locale + "/academy/" + (record.logicalId === "videos/egypt-osiris" ? "egyptian-priesthood" : record.routeKey),
     chapters: [{ id: record.logicalId + "-lessons", title: "", videos }],
   };
 }
