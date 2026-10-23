@@ -100,7 +100,7 @@ async function runOne(engine, locale, width) {
       assert.ok(url.searchParams.get("text")?.includes("HH-CA5016DE79E4"),
         "Only confirmed database receipt is passed to messenger");
       assert.ok(url.searchParams.get("text")?.includes("Free drawing-based situation review"));
-      assert.doesNotMatch(page.url(), /qa-home-|example\.test|test_results|patient|\\/client\\//i);
+      assert.doesNotMatch(page.url(), /qa-home-|example\.test|test_results|patient|\/client\//i);
     }
     assert.equal(submissions.length, 1, "Exactly one API attempt");
     const data = submissions[0];
