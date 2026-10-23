@@ -28,3 +28,22 @@
 .feedback{padding:10px;color:#317269}
 @media(max-width:660px){.deck{grid-template-columns:minmax(0,1fr)}.rail{display:flex;overflow-x:auto;max-height:none;padding:7px}.rail button{flex:0 0 135px}.slide{min-height:290px}.info{margin-top:12px;padding:15px}.top>a,.top button{font-size:12px}.controls button{padding:8px}.controls span{display:none}}
 @media(max-width:330px){.controls button{font-size:11px;gap:2px}.rail button{flex-basis:111px}}
+
+/* Author's visual-slide layout, same reading order as the master canvas. */
+.pageCanvas{display:flex;flex-direction:column;gap:16px;max-width:790px;min-width:0;margin:auto;border:1px solid #eadbcb;
+ border-radius:18px;padding:clamp(13px,3vw,28px);background:linear-gradient(150deg,#fffefb,#fff9f1);box-shadow:0 12px 28px #58402b0d}
+.pageCanvas .cover{display:block;width:100%;height:auto;max-height:390px;aspect-ratio:16/8;object-fit:cover;border-radius:13px}
+.pageCanvas h2{margin:0;font:730 clamp(23px,3.5vw,38px)/1.24 Georgia,serif;color:#392b23;overflow-wrap:anywhere}
+.reflection,.instructions{display:flex;gap:13px;align-items:flex-start;min-width:0;padding:16px;border-radius:14px}
+.reflection{background:#e9f0e9;color:#235c58}
+.instructions{border-block:1px solid #e8dfd3;border-radius:0;padding-inline:4px;color:#65503d}
+.reflection>svg,.instructions>svg{flex:none;margin-top:5px}
+.reflection>div,.instructions>div{min-width:0;flex:1}
+.reflection small,.instructions small{display:block;color:#806e5b;font:740 11px/1.4 system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase;margin-bottom:6px}
+.reflection p,.instructions .body{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:#3d4038;font:500 16px/1.65 system-ui,sans-serif}
+.slideCta{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;
+ padding:12px 16px;border:1px solid #b6d5cc;border-radius:12px;background:#0b7776;color:#fff;
+ text-decoration:none;font:720 14px/1.4 system-ui,sans-serif;overflow-wrap:anywhere}
+.slideCta:hover{background:#0a605f}
+.slideCta:focus-visible{outline:3px solid #549d95;outline-offset:3px}
+@media(max-width:430px){.pageCanvas{padding:13px;gap:13px}.pageCanvas .cover{aspect-ratio:16/9}.reflection,.instructions{padding:12px;gap:9px}.reflection p,.instructions .body{font-size:14px}}
