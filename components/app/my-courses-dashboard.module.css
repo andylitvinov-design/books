@@ -108,3 +108,12 @@
   .businessTrack .businessTrackTitle{font-size:17px}
   .businessTrackDescription{font-size:10px}
 }
+
+/* Compact accessible close control for active My Courses tiles; the existing dialog archives safely. */
+.cardControls{display:flex;align-items:center;gap:7px;flex:none}
+.tileRemoveButton{display:grid;place-items:center;flex:none;width:44px;height:44px;min-width:44px;min-height:44px;
+  padding:0;border:1px solid #93c4d080;border-radius:11px;background:#ffffff12;color:#fff;cursor:pointer}
+.tileRemoveButton:hover{background:#ffffff30;border-color:#b6dce1}
+.tileRemoveButton:disabled{opacity:.55;cursor:not-allowed}
+.tileRemoveButton:focus-visible{outline:3px solid #83e8ea;outline-offset:2px}
+@media(max-width:370px){.cardControls{gap:3px}.mainCard .cardTop,.smallCard .cardTop{gap:5px}}

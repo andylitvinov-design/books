@@ -87,7 +87,12 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,bus
           <small>{course.stage<4?(locale==='ru'?'Настройка курса':'Course setup'):t.day+' '+day+' '+t.of+' '+duration}
             {paused?' · '+t.paused:''}</small>
         </div>
-        {course.isPrimary&&<Star size={16} fill="currentColor" className={styles.favorite} aria-label={t.primary}/>}
+        <div className={styles.cardControls}>
+          {course.isPrimary&&<Star size={16} fill="currentColor" className={styles.favorite} aria-label={t.primary}/>}
+          {!finished&&<button type="button" className={styles.tileRemoveButton} data-course-close-cross
+            aria-label={t.close + ': ' + title} title={t.close} disabled={busy||!canManageCourses}
+            onClick={()=>onClose(course)}><X size={19} aria-hidden="true"/></button>}
+        </div>
       </div>
       {hero&&axes(course,locale).length>0&&<div className={styles.axes} aria-label={t.axes}>
         {axes(course,locale).slice(0,3).map(axis=><span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
@@ -102,8 +107,6 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,bus
         </button>
         {!hero&&!course.isPrimary&&!finished&&<button type="button" className={styles.linkButton}
           disabled={busy||!canManageCourses} onClick={()=>onMakePrimary(course)}>{t.primaryAction}</button>}
-        {!finished&&<button type="button" className={styles.linkButton} disabled={busy||!canManageCourses}
-          onClick={()=>onClose(course)}>{t.close}</button>}
       </div>
     </div>
   </article>

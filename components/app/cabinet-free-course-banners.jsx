@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { appFetch } from '@/lib/app/client-fetch'
 import Image from 'next/image'
 import { cardArtworkUrl, hasCardArtwork } from '@/lib/public-card-artwork'
 import Link from 'next/link'
-import { ArrowUpRight, Check, LockKeyhole, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Check, LockKeyhole, Sparkles, X } from 'lucide-react'
 import { energyworkLessonRanges, energyworkSequence } from '@/data/academy/energywork-ai-schema'
 import { energyworkLessons } from '@/data/academy/energywork-ai-curriculum'
 import styles from './cabinet-free-course-banners.module.css'
@@ -46,6 +46,10 @@ const COPY = {
     note: 'Explore for free. Teacher-led initiations require personal confirmation.',
     action: 'Open course', started: 'CONTINUE LEARNING', energywork: 'Reiki Practitioner', continueTitle: 'Continue Reiki Practitioner', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume from last slide', completed: 'Completed', slide: 'Slide',
     lesson: 'Lesson', intro: 'Introduction', of: 'of', slides: 'slides', chooseLesson: 'Go to a lesson', locked: 'Reach this lesson to unlock it', reviewEdit: 'Read or edit your Flight to the Sun review',
+    removeCourse: 'Delete Reiki Practitioner course', removeTitle: 'Delete Reiki Practitioner?',
+    removeDetails: 'This permanently removes your saved slides, private reflections, shared Reiki application and any public reviews. It cannot be undone. Other courses and test results stay saved.',
+    removeConfirm: 'Delete course', removeCancel: 'Keep course', removing: 'Deleting…',
+    removeError: 'Deletion could not be confirmed. Refresh to check your course before retrying.',
   },
   ru: {
     eyebrow: 'АКАДЕМИЯ HOLISTIC HOUSE',
@@ -53,6 +57,10 @@ const COPY = {
     note: 'Начальные материалы бесплатны. Инициация проводится по согласованию.',
     action: 'Открыть курс', started: 'ПРОДОЛЖИТЬ ОБУЧЕНИЕ', energywork: 'Практик Рейки', continueTitle: 'Продолжить «Практик Рейки»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить с последнего слайда', completed: 'Завершён', slide: 'Слайд',
     lesson: 'Урок', intro: 'Введение', of: 'из', slides: 'слайдов', chooseLesson: 'Перейти к уроку', locked: 'Урок ещё не открыт', reviewEdit: 'Прочитать или переписать отзыв о «Полёте к Солнцу»',
+    removeCourse: 'Удалить курс «Практик Рейки»', removeTitle: 'Удалить «Практик Рейки»?',
+    removeDetails: 'Будут безвозвратно удалены сохранённые слайды, личные отзывы, заявка на Рейки и публичные отзывы, если они были. Другие курсы и результаты тестов сохранятся.',
+    removeConfirm: 'Удалить курс', removeCancel: 'Оставить курс', removing: 'Удаление…',
+    removeError: 'Не удалось подтвердить удаление. Обновите страницу и проверьте курс перед повторной попыткой.',
   },
 }
 
@@ -60,6 +68,11 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const t = COPY[language]
   const [academyProgress, setAcademyProgress] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const deleteInFlight = useRef(false)
+  const deleteDialog = useRef(null)
+  const deleteTitleId = useId()
   const courseHref = '/' + language + '/academy/principles-of-energywork/learn'
   useEffect(() => {
     let alive = true
@@ -68,6 +81,33 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
     }).catch(() => {})
     return () => { alive = false }
   }, [])
+
+  // Existing POST command deletes only this signed-in account's Reiki enrollment and
+  // its associated shared reviews/leads. Never remove a card optimistically.
+  async function removeSavedCourse() {
+    const accountId = academyProgress?.accountId
+    if (deleteInFlight.current || typeof accountId !== 'string') return
+    deleteInFlight.current = true
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const removed = await appFetch('academy-energywork', {action:'delete',confirmed:true}, 'POST', {accountId})
+      if (removed?.enrolled !== false || removed?.accountId !== accountId) throw new Error('DELETE_UNCONFIRMED')
+      deleteDialog.current?.close()
+      setAcademyProgress(null)
+      // Notify any other course-list view without exposing notes or progress.
+      try {
+        const channel = new BroadcastChannel('hh-app-session')
+        channel.postMessage('academy-energywork-changed')
+        channel.close()
+      } catch { /* Browser broadcasts are optional. */ }
+    } catch {
+      setDeleteError(t.removeError)
+    } finally {
+      deleteInFlight.current = false
+      setDeleting(false)
+    }
+  }
 
   const savedIndex = academyProgress ? Math.max(0, ENERGYWORK_SEQUENCE.indexOf(academyProgress.slideId)) : 0
   const currentLesson = ENERGYWORK_LESSON_RANGES.find(range => savedIndex >= range.start && savedIndex < range.end)
@@ -83,7 +123,14 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
             alt="" fill sizes="(max-width: 540px) 100px, 140px" />
         </span>
         <div className={styles.savedOverview}>
-          <span className={styles.savedEyebrow}>{academyProgress.status === 'completed' ? t.completed : t.started}</span>
+          <div className={styles.savedCardHeader}>
+            <span className={styles.savedEyebrow}>{academyProgress.status === 'completed' ? t.completed : t.started}</span>
+            <button type="button" className={styles.savedRemoveButton} data-energywork-remove-course
+              aria-label={t.removeCourse} title={t.removeCourse} disabled={deleting || !academyProgress.accountId}
+              onClick={() => { setDeleteError(''); deleteDialog.current?.showModal() }}>
+              <X size={19} aria-hidden="true" />
+            </button>
+          </div>
           <strong className={styles.savedLabel}>{t.energywork}</strong>
           <p>{resumeLabel}</p>
           <Link className={styles.savedAction} href={courseHref + "?slide=" + encodeURIComponent(academyProgress.slideId)} prefetch={false} data-energywork-resume-last>
@@ -116,6 +163,20 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
         </details>
       </article>
     </section> : null}
+    <dialog ref={deleteDialog} className={styles.removeDialog} aria-labelledby={deleteTitleId}
+      onCancel={event => { if (deleting) event.preventDefault() }}>
+      <div className={styles.removeDialogContent}>
+        <h3 id={deleteTitleId}>{t.removeTitle}</h3>
+        <p>{t.removeDetails}</p>
+        {deleteError && <p className={styles.removeError} role="alert">{deleteError}</p>}
+        <div className={styles.removeActions}>
+          <button type="button" className={styles.removeConfirm} disabled={deleting}
+            onClick={removeSavedCourse}>{deleting ? t.removing : t.removeConfirm}</button>
+          <button type="button" className={styles.removeCancel} disabled={deleting}
+            onClick={() => deleteDialog.current?.close()}>{t.removeCancel}</button>
+        </div>
+      </div>
+    </dialog>
     <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
     <div className={styles.heading}>
       <div>
