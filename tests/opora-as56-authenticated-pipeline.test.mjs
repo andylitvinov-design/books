@@ -326,7 +326,7 @@ test('OPORA server rejects forged, conflicting, oversize and out-of-day emotions
     {choice:'not-an-emotion'},
     {choice:'fear',customText:'Another feeling'},
     {customText:'x'.repeat(81)},
-    {customText:'Two\\nLines'},
+    {customText:'Two'+String.fromCharCode(10)+'Lines'},
     {customText:42},
     {choice:null,customText:''},
   ]
@@ -340,7 +340,7 @@ test('OPORA server rejects forged, conflicting, oversize and out-of-day emotions
       feedback:'skip',practiceWindow:'practice_v6',
       visitedSlideKeys:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS],
       opora54:{answers:{},hints:[],ease:null},practiceEmotion:emotion,
-    }),'en'),/INVALID_OPORA_PRACTICE_EMOTION/)
+    },'en'),/INVALID_OPORA_PRACTICE_EMOTION/)
     assert.equal(owner.sessions.length,0)
     assert.equal(owner.writes.length,before)
   }
