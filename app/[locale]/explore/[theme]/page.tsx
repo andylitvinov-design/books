@@ -5,6 +5,8 @@ import { BriefcaseBusiness, ArrowRight } from 'lucide-react'
 import wood from '@/components/business-coaching-promo.module.css'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
+import { DirectionOffers } from '@/components/direction-offers'
+import directionStyles from '@/components/direction-offers.module.css'
 import { TopicGrowthGuide } from '@/components/topic-growth-guide'
 import { BusinessWebsiteEnquiry } from '@/components/business-website-enquiry'
 import { BusinessTestimonials } from '@/components/business-testimonials'
@@ -53,9 +55,10 @@ export default async function TopicJourneyPage({ params }: Props) {
   if (!['ru','en','es'].includes(locale)) notFound()
   const journey = getTopicJourney(theme)
   if (!journey) notFound()
-  return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
-    <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
-    <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale)}/>
+  const isDirection = ['energy','relationships','business'].includes(theme)
+  const suggestions = buildTopicTestSuggestions(journey, locale)
+  const content = <>
+    <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={suggestions}/>
     {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) 18px'}}>
       <BusinessWebsiteEnquiry locale={locale as 'en'|'ru'|'es'} />
     </div>}
@@ -91,5 +94,17 @@ export default async function TopicJourneyPage({ params }: Props) {
         </Link>
       </div>
     </aside>}
+  </>
+  return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
+    <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
+    {isDirection ? <>
+      <DirectionOffers locale={locale as PublicLocale} journey={journey} suggestions={suggestions}/>
+      <details className={directionStyles.disclosure} data-direction-more>
+        <summary>{locale === 'ru' ? 'Показать подробные рекомендации и остальные предложения' :
+          locale === 'es' ? 'Ver más recomendaciones y opciones' :
+          'Show more recommendations and options'}</summary>
+        {content}
+      </details>
+    </> : content}
   </main>
 }
