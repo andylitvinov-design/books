@@ -8,6 +8,8 @@ import { ArrowRight, ArrowUp, BookOpen, BriefcaseBusiness, Check, Compass, Heart
 import {
   homeGuideFollowup,
   homeGuideOpening,
+  homeGuideConversationCue,
+  homeGuideFreeTextStep,
   homeGuideQuickStarts,
   chooseHomeGuideOffer,
   matchHomeGuideReply,
@@ -133,7 +135,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "It sounds like your question may relate to",
     unknown: "Thanks for sharing. We can find a starting point without labelling your situation.",
     followup: "What would help most right now?",
-    choiceHint: "Choose an option or write your own answer.",
+    choiceHint: "You can reply in your own words, too.",
     goalLabels: {
       understand: "Understand my situation",
       tests: "Explore free tests",
@@ -216,7 +218,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "Похоже, вопрос касается темы",
     unknown: "Спасибо, что поделились. Необязательно давать ситуации название, чтобы найти первый шаг.",
     followup: "Что вам сейчас было бы полезнее?",
-    choiceHint: "Выберите вариант или ответьте своими словами.",
+    choiceHint: "Можно просто ответить своими словами.",
     goalLabels: {
       understand: "Разобраться в ситуации",
       tests: "Бесплатные тесты",
@@ -299,7 +301,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "Parece que tu pregunta podría tratar sobre",
     unknown: "Gracias por compartirlo. No hace falta etiquetar tu situación para encontrar un primer paso.",
     followup: "¿Qué te ayudaría más ahora?",
-    choiceHint: "Elige una opción o responde con tus propias palabras.",
+    choiceHint: "También puedes responder con tus propias palabras.",
     goalLabels: {
       understand: "Entender mi situación",
       tests: "Pruebas gratuitas",
@@ -511,6 +513,16 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
     setIsOpen(true);
+    // Safety takes priority over choices, small talk and existing recommendations.
+    const safety = resolveHomeGuideQuestion(question, context?.lang ?? locale, context);
+    if (safety.urgent) {
+      appendExchange(question, copy[safety.lang].urgent);
+      setContext(safety);
+      setRecommendations([]);
+      setDraft("");
+      setVoiceError(null);
+      return;
+    }
     const replyId = matchHomeGuideReply(question, context);
     if (replyId && context && !context.urgent) {
       const selection = chooseHomeGuideOffer(context, replyId, context.lang);
@@ -528,13 +540,38 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
         return;
       }
     }
-    const result = resolveHomeGuideQuestion(question, locale, context);
+    const cue = homeGuideConversationCue(question, context);
+    if (cue && context) {
+      appendExchange(question, cue.response[context.lang]);
+      if (cue.kind === "alternatives") setRecommendations([]);
+      setDraft("");
+      setVoiceError(null);
+      return;
+    }
+    const freeStep = context && safety.topic === context.topic
+      && safety.subtopic === context.subtopic && !recommendations.length
+      ? homeGuideFreeTextStep(question, context, safety.lang) : null;
+    if (freeStep) {
+      appendExchange(question, freeStep.response?.[safety.lang] ?? copy[safety.lang].followup);
+      setContext(freeStep.context);
+      setRecommendations(freeStep.offers);
+      setDraft("");
+      setVoiceError(null);
+      return;
+    }
+    const result = safety;
     const responseCopy = copy[result.lang];
     const followup = homeGuideFollowup(result);
-    const answer = result.urgent
-      ? responseCopy.urgent
-      : [homeGuideOpening(result)[result.lang], followup?.prompt[result.lang] ?? responseCopy.followup]
-          .filter(Boolean).join(" ");
+    // Continue the topic rather than repeating the same category opening.
+    const sameConversation = context && context.topic === result.topic
+      && context.interest === result.interest && context.subtopic === result.subtopic;
+    const opening = sameConversation
+      ? { en: "I hear you. A little more detail will help me suggest a useful first step.",
+          ru: "Спасибо, что уточнили. Ещё немного контекста поможет выбрать первый шаг.",
+          es: "Gracias por aclararlo. Un poco más de contexto ayudará a elegir un primer paso." }[result.lang]
+      : homeGuideOpening(result)[result.lang];
+    const answer = [opening, followup?.prompt[result.lang] ?? responseCopy.followup]
+      .filter(Boolean).join(" ");
     appendExchange(question, answer);
     setContext(result);
     setRecommendations([]);
@@ -847,7 +884,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                     <div className={styles.choices} role="group" aria-label={followup.prompt[context.lang]} data-home-guide-choices>
                       {followup.choices.slice(0, 3).map(choice => (
                         <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
-                          {choice.label[context.lang]}<ArrowRight size={16} aria-hidden="true" />
+                          {choice.label[context.lang]}
                         </button>
                       ))}
                     </div>
@@ -857,7 +894,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                         <div className={styles.choices}>
                           {followup.choices.slice(3).map(choice => (
                             <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
-                              {choice.label[context.lang]}<ArrowRight size={16} aria-hidden="true" />
+                              {choice.label[context.lang]}
                             </button>
                           ))}
                         </div>

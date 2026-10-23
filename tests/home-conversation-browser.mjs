@@ -324,6 +324,36 @@ try {
           await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
           await dialog.getByRole("button", { name: scenario.reset }).click();
         }
+        if (scenario.locale === "ru" && width === 390 && scenario.text.includes("тревожусь")) {
+          // Natural two-question route and real local reply, including WebKit.
+          await question.fill("Хочу любви");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Встретить близкого человека",
+          }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Начать общение",
+          })).toBeVisible();
+          const replyLayout = await guide.locator("[data-home-guide-choices]").evaluate(node =>
+            ({ clipped: node.scrollWidth > node.clientWidth + 1 }));
+          assert.equal(replyLayout.clipped, false, "Conversation suggestion chips fit 390px");
+          await question.fill("Боюсь первой написать");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await question.fill("Спасибо");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await question.fill("Другие варианты");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
+          await question.fill("Мне кажется, что я как будто невидима для других людей");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await guide.getByRole("button", { name: scenario.reset }).click();
+        }
         await page.keyboard.press("Escape");
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();

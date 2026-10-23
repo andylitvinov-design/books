@@ -46,3 +46,10 @@ export type HomeGuideQuickStart = {
 export declare function homeGuideQuickStarts(locale?: PublicLocale): HomeGuideQuickStart[];
 
 export declare function matchHomeGuideReply(input: string, context: HomeGuideContext | null): string | null;
+export declare function homeGuideFreeTextStep(input: string, context: HomeGuideContext | null, pageLocale?: PublicLocale): {
+  context: HomeGuideContext; response: Record<PublicLocale, string>; offers: HomeGuideOffer[];
+} | null;
+export declare function homeGuideConversationCue(input: string, context: HomeGuideContext | null): {
+  kind: "thanks" | "unsure" | "price" | "free" | "alternatives";
+  response: Record<PublicLocale, string>;
+} | null;
