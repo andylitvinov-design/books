@@ -33,7 +33,7 @@ test('all four free promos reuse original consented CRM transaction and truthful
   assert.match(banner, /operationId: currentId/)
   assert.match(banner, /result\?\.saved !== true/)
   assert.match(banner, /data-lead-saved/)
-  assert.match(banner, /no medical diagnosis/i)
+  assert.match(banner, /not a medical diagnosis/i)
   assert.doesNotMatch(banner, /lead_created|payment_received|sendBeacon|localStorage/)
   for (const locale of ['en','ru','es']) {
     for (const theme of ['energy','love','business','pro']) {
