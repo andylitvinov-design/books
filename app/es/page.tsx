@@ -4,6 +4,7 @@ import { HomeSectionCarousel } from '@/components/home-section-carousel';
 import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner';
 import { HomeConversationGuide } from '@/components/home-conversation-guide';
 import { HomepageTopicJourneys } from '@/components/homepage-topic-journeys';
+import { HomePersonalSpaceProvider, HomePersonalSpaceCard } from '@/components/home-personal-space';
 import Link from 'next/link';
 import { BriefcaseBusiness, Flower2, Sparkles } from 'lucide-react';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
@@ -19,11 +20,12 @@ const cards = [
   { icon: Sparkles, image: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp', title: 'Trabajo con imágenes guiadas', text: 'Comprende las emociones y patrones que se repiten; construye claridad y apoyo interior.', href: '/es/services/imagery-therapy' },
 ];
 export default function SpanishHomePage() {
-  return <main className="house-home house-home--services" lang="es">
+  return <HomePersonalSpaceProvider locale="es"><main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
     <HomeSectionCarousel locale="es" />
     <HomeFreeDiagnosisBanner locale="es" />
     <HomeConversationGuide locale="es" />
+    <HomePersonalSpaceCard locale="es" />
     <HomepageTopicJourneys locale="es" />
     <HomeMoreDisclosure locale="es">
     <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
@@ -59,5 +61,5 @@ export default function SpanishHomePage() {
     <section className="service-home-library" aria-labelledby="service-home-library-title"><Image unoptimized src="/images/holistic-house/books-library.webp" alt="" fill sizes="(max-width: 767px) 100vw, 1200px" className="service-home-library-photo" /><div className="service-home-library-copy"><p className="service-home-kicker">Libro del autor</p><h2 id="service-home-library-title">El poder de la vida</h2><p className="service-home-library-intro">Mi libro sobre desarrollo interior, psicohomeopatía y un enfoque integrador del trabajo con los estados humanos.</p><Link href="/es/books">Explorar la biblioteca<span aria-hidden="true">→</span></Link></div></section>
     <PublicConsultationCta locale="es" />
     <footer className="service-home-footer"><Link className="house-wordmark" href="/es">Holistic House</Link><p>Trabajo individual, práctica consciente y un espacio para el desarrollo interior.</p><Link href="/es/services">Explorar servicios<span aria-hidden="true">→</span></Link></footer>
-  </main>;
+  </main></HomePersonalSpaceProvider>;
 }
