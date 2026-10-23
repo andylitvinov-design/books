@@ -9,6 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:
 import { promisify } from 'node:util'
 import { chromium, expect } from '@playwright/test'
 import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
+import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -164,7 +165,6 @@ try {
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
-      ['/ru/services/dao-health-profile', 'overview', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
@@ -183,7 +183,13 @@ try {
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
-    pass('Ten service routes EN/RU/ES have real click-to-play video iframes and original watch links')
+    // Wu Xing is now a focused free entry and consented enquiry, not a
+    // separate automatic method-video promotion. Preserve the approved flow.
+    await navigate('/ru/services/dao-health-profile')
+    await expect(page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]')).toHaveCount(1)
+    assert.equal(await page.locator('[data-service-video="overview"]').count(), 0,
+      'The separate Dao free start must not imply a video consultation')
+    pass('Nine video service routes and the separate Dao free entry preserve exact approved formats')
   }
 
   await navigate('/en/about')
@@ -234,7 +240,8 @@ try {
       await target.goto(`${origin}/admin/videos`)
       await target.locator('.prescription-admin-header button[lang="en"]').click()
       await expect(target.locator('.site-video-manager')).toHaveAttribute('lang', 'en')
-      await expect(target.locator('.site-video-placement-list button')).toHaveCount(15)
+      // All 16 canonical site-video slots are selectable in the same editor.
+      await expect(target.locator('.site-video-placement-list button')).toHaveCount(16)
       assert.equal(await target.getByText('Video storage is currently unavailable.', { exact: false }).count(), 0)
     }
     async function choose(slot, locale = 'en', target = editor) {
@@ -281,6 +288,18 @@ try {
         await save('publish')
         const destination = await editor.locator('.site-video-editor-heading > a').getAttribute('href')
         await navigate(destination)
+        if (slot.id === 'thank-you') {
+          // The thank-you page deliberately hides every video before a valid
+          // tab-local enquiry receipt. Seed only an isolated synthetic browser
+          // receipt; no real lead, payment, private account or session is touched.
+          assert.equal(await page.locator('.site-video-player').filter({ hasText: title }).count(), 0)
+          await page.evaluate(key => {
+            window.sessionStorage.setItem(key, JSON.stringify({
+              referenceCode: 'HH-0123456789AB', createdAt: Date.now(),
+            }))
+          }, RECEIPT_SESSION_KEY)
+          await page.reload({ waitUntil: 'domcontentloaded' })
+        }
         await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
       }
       pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)

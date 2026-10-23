@@ -9,7 +9,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { PsychicAlchemyIntroVideo } from "@/components/psychic-alchemy-intro-video";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { existingAboutIntroVideo } from "@/lib/site-videos/defaults";
-import { getPublishedSiteVideos } from "@/lib/site-videos/public";
+import { getPublishedSiteVideo } from "@/lib/site-videos/public";
 import { videoKey } from "@/lib/site-videos/model";
 import { aboutBiography } from "@/data/about-biography";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
@@ -94,7 +94,7 @@ export default async function AboutPage({ params }: PageProps) {
   const current = aboutBiography[typedLocale];
   const testimonials = testimonialCopy[typedLocale];
   const consultation = consultationCopy[typedLocale];
-  const aboutIntro = (await getPublishedSiteVideos())[videoKey("about-intro", typedLocale)];
+  const aboutIntro = await getPublishedSiteVideo(videoKey("about-intro", typedLocale));
 
   return (
     <main className="about-shell" lang={typedLocale}>

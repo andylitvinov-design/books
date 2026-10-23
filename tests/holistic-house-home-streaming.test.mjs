@@ -15,8 +15,8 @@ test("EN and RU heroes stream public video without awaiting Redis", () => {
   assert.match(home, /introVideoContent\?: ReactNode/);
   assert.match(home, /\{introVideoContent\}/);
   assert.doesNotMatch(home, /<SiteVideoPlayer/);
-  assert.match(section, /await getPublishedSiteVideos\(\)/);
-  assert.match(section, /videoKey\("home-intro", locale\)/);
+  assert.match(section, /await getPublishedSiteVideo\(videoKey\("home-intro", locale\)\)/);
+  assert.doesNotMatch(section, /getPublishedSiteVideos\(\)/);
   assert.match(section, /<SiteVideoPlayer key=\{locale\} video=\{introVideo\}/);
   assert.match(section, /data-video-slot="home-intro"/);
 });
