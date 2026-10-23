@@ -63,7 +63,7 @@
   .choice small{display:none}
   .privacy{font-size:9px;margin-top:8px}
   .recommendation{padding:10px 11px}
-  .ways{grid-template-columns:1fr;gap:7px}
+  .ways{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
   .way{padding:9px 10px}
   .way h3{font-size:17px}
   .wayKicker{font-size:9px}
@@ -74,6 +74,11 @@
 @media(max-width:350px){
   .choice{min-height:51px;padding:7px 9px}
   .choice strong{font-size:12px}
+  .way{padding:8px 7px}
+  .way h3{font-size:15px}
+  .wayKicker{font-size:8px}
+  .reason{font-size:10px}
+  .primary,.freePrimary{font-size:11px}
   .formats{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){.choice{transition:none}.choice:active{transform:none}}
