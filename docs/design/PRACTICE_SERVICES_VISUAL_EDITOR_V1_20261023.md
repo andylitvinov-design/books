@@ -14,7 +14,7 @@
 3. **Details:** existing promotional video editor; advanced disclosure with languages, long description, goals, methods, benefits, FAQ and optional WhatsApp/Telegram contact fields. Save draft and Submit for review use the existing revisions and back-end.
 
 - One panel visible at once in 320–430px; compact segmented steps, next/previous, warm photograph-first card, safe-area-aware sticky Save action; mobile keyboard puts sticky bar back in normal flow. Controls >=44px where practical.
-- Creating a service hides heavy finder/stats and other service cards. Closing a **dirty** new draft asks to discard; data stays local until explicit Save or Submit, no deceptive autosave.
+- Creating **or editing** one service hides heavy finder/stats and unrelated service cards. Selecting an existing service opens the same three-screen editor on its own work surface. Closing a **dirty** new or existing edit asks to discard; data stays local until explicit Save or Submit, no deceptive autosave. After a successful existing-service server save, the editor remounts from the new revision.
 - Preflight `lib/practitioners/service-editor-steps.mjs` mirrors existing validation rules (complete title/description in one language, paid amount + currency, duration 5–1440, location for in-person/hybrid, Spanish completeness, valid contact). Server-side `validateServiceDraft` remains authoritative.
 - Fix legacy `null` duration/price coercion to `0` on subsequent saves.
 
