@@ -285,10 +285,6 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
 
-  { id: "flight-save", phase: "flight", kind: "milestone",
-    title: l("A beautiful first step!", "Первый шаг — это прекрасно!"),
-    body: l("Your first Reiki lesson is complete. Let's keep your reflections close so you can return to them whenever you wish.",
-      "Первый урок Рейки завершён. Сохраним ваши впечатления, чтобы вы могли в любой момент к ним вернуться.") },
 
   { id: "presence-01", phase: "tantra", kind: "lesson", image: image.world,
     title: l("After Tantra Reiki: the foundation of presence", "После Тантра Рейки: основа присутствия"),
@@ -570,11 +566,9 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
 
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    // Finish the Sun practice and celebrate Lesson 1 before the Google-save gate.
-    // This must match the canonical p10 sequence: flight-03 → flight-done → flight-save.
+    // Single graduation/consent checkpoint after the Sun practice.
     ...withClosingPractices(commonSlides.filter((slide) =>
-      slide.phase === "flight" && slide.id !== "flight-save"), ["flight-03"], "flight-done"),
-    commonSlides.find((slide) => slide.id === "flight-save")!,
+      slide.phase === "flight"), ["flight-03"], "flight-done"),
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),

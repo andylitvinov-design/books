@@ -18,7 +18,7 @@ export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-video','welcome-01','welcome-02',
-  'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
+  'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
   'presence-01','presence-04','tan-done',
   'intention-04',
   'paths-01','paths-03',
@@ -118,7 +118,6 @@ export function energyworkSequence(_legacyPath = null) {
     ...withClosingPractices(
       ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
       ['flight-03'], 'flight-done'),
-    'flight-save',
     ...withClosingPractices(
       [...ENERGYWORK_BRANCH.tantra, 'presence-01','presence-04','tan-done'],
       ['tan-03'], 'tan-done'),
@@ -160,6 +159,8 @@ export function energyworkLessonRanges(sequence = energyworkSequence()) {
 // curriculum. Remap their saved cursors forward, but retain all original
 // encrypted learner answers and avoid a destructive database migration.
 export const ENERGYWORK_P9_REMOVED_SLIDE_FALLBACKS = Object.freeze({
+  // The retired first-lesson save screen resumes at Lesson 2, with answers intact.
+  'flight-save': 'tan-01',
   'intention-02': 'paths-03',
   'intention-01': 'paths-03',
   'intention-03': 'paths-03',
