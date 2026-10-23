@@ -26,7 +26,7 @@ test("EN RU ES home keep one consistent place for five complete category screens
 test("each category has two or three photographed offers, not tiny selector tiles", () => {
   const sections = ["tests", "courses", "services", "learning", "master"];
   for (const locale of ["en", "ru", "es"]) {
-    const block = feature.slice(feature.indexOf("  " + locale + ": {"), locale === "es" ? feature.indexOf("} as const;") : feature.indexOf("  " + (locale === "en" ? "ru" : "es") + ": {"));
+    const block = feature.slice(feature.indexOf("  " + locale + ": {"), locale === "es" ? feature.indexOf("} as const;", feature.indexOf("  es: {")) : feature.indexOf("  " + (locale === "en" ? "ru" : "es") + ": {"));
     for (const id of sections) {
       const entry = block.slice(block.indexOf("      " + id + ": {"));
       const end = entry.indexOf("      },");
