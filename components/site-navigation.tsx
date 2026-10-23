@@ -121,10 +121,9 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     item => item.id === 'library' || item.id === 'courses' || item.id === 'events',
   );
 
-  // Legacy content remains navigable without competing with the three needs-based entries.
+  // The full Academy catalog is reached through Courses; keep the legacy Services catalog.
   extraMenuItems.push(
     { id: 'services', label: text.services, href: '/' + activeLocale + '/services', ariaLabel: text.services, external: false },
-    { id: 'academy', label: text.academy, href: '/' + activeLocale + '/academy', ariaLabel: text.academy, external: false },
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
