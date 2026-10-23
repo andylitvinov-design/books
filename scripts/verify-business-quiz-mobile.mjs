@@ -53,9 +53,6 @@ async function verify(browserType,locale,width){
       label+': free default')
     assert.equal(await direct.locator('#business-request-form').isVisible(),false,
       label+': contact fields collapsed initially')
-    const capturePhoto=direct.locator('header img').first()
-    assert.ok(await capturePhoto.evaluate(img=>img.complete&&img.naturalWidth>50),
-      label+': real Andrey photo in request card')
     const filters=page.locator('[data-business-service-filter]')
     assert.equal(await filters.evaluate(node=>node.open),false,label+': filter initially collapsed')
     assert.equal(await page.locator('[data-business-service-card]').count(),3,label+': first three services')
@@ -74,6 +71,10 @@ async function verify(browserType,locale,width){
     await cta.click()
     const form=page.locator('[data-business-website-enquiry]')
     await form.waitFor({state:'visible'})
+    const capturePhoto=direct.locator('header img').first()
+    await capturePhoto.scrollIntoViewIfNeeded()
+    assert.ok(await capturePhoto.evaluate(img=>img.complete&&img.naturalWidth>50),
+      label+': real Andrey photo in request card')
     assert.equal(await form.locator('[data-business-option="express"]').getAttribute('aria-pressed'),'true')
     assert.equal(await form.locator('#business-request-form').isVisible(),true,
       label+': website CTA opens contact fields inline')
