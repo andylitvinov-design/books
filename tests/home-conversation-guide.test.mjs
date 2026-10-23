@@ -363,11 +363,21 @@ test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and fea
 test("home advisor replaces repeated service catalogs without changing #1537 free diagnosis",()=>{
  const home=read("components/holistic-house-home.tsx"),es=read("app/es/page.tsx");
  for(const page of [home,es]){
-   assert.match(page,/<HomeMoreDisclosure locale=/);
+   assert.match(page,/<details className="service-home-more"/);
    assert.ok(page.indexOf("<HomeFreeDiagnosisBanner") < page.indexOf("<HomeConversationGuide"));
-   assert.ok(page.indexOf("<HomeConversationGuide") < page.indexOf('<HomeMoreDisclosure locale='));
+   assert.ok(page.indexOf("<HomeConversationGuide") < page.indexOf('<details className="service-home-more"'));
  }
  const guide=read("components/home-conversation-guide.tsx");
  for(const token of ["data-home-guide-needs","data-home-guide-need={item.id}","data-home-guide-launcher","styles.advisorPortrait","homeGuideQuickStarts"])
    assert.ok(guide.includes(token));
+});
+
+test("homepage locale switch preserves the submitted exchange in ephemeral browser memory", () => {
+  const ui = read("components/home-conversation-guide.tsx");
+  assert.match(ui, /type HomeQuestionHandoff = \{/);
+  assert.match(ui, /setIsOpen\(true\);\s*setTurns\(handoff\.turns\)/);
+  assert.match(ui, /setContext\(handoff\.context\)/);
+  assert.match(ui, /nextId\.current = handoff\.nextId/);
+  assert.match(ui, /if \(handoffQuestion\(question, answer, result, \[\]\)\) return/);
+  assert.match(ui, /if \(handoffQuestion\(question, response, selection\.context, selection\.offers\)\) return/);
 });

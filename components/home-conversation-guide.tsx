@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { StaticPortrait } from "@/components/static-portrait";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUp, BookOpen, BriefcaseBusiness, Check, Compass, Heart, Leaf, MessageCircle, Mic, RotateCcw, ShieldCheck, Sparkles, Waves, X } from "lucide-react";
@@ -18,10 +19,12 @@ import {
 } from "@/lib/home-conversation.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
+import { switchToQuestionLocale, takeQuestionLocaleHandoff } from "@/lib/client-question-locale";
 import styles from "./home-conversation-guide.module.css";
 
 type Turn = { id: number; role: "visitor" | "guide"; text: string };
 type Context = HomeGuideContext;
+type HomeQuestionHandoff = { turns: Turn[]; context: Context; recommendations: HomeGuideOffer[]; nextId: number };
 type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> };
 type SpeechEngine = {
   lang: string;
@@ -350,6 +353,7 @@ const quickStartIcons = {
 
 export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -376,6 +380,20 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const voiceProgressTimerRef = useRef<number | null>(null);
   const voiceStopTimerRef = useRef<number | null>(null);
   const nextId = useRef(1);
+
+  // When the question switches the page locale, restore the current dialogue
+  // without leaking its contents into the address, analytics or persistent state.
+  useEffect(() => {
+    const handoff = takeQuestionLocaleHandoff<HomeQuestionHandoff>("home", locale);
+    if (!handoff) return;
+    setIsOpen(true);
+    setTurns(handoff.turns);
+    setContext(handoff.context);
+    setRecommendations(handoff.recommendations);
+    setDraft("");
+    setVoiceError(null);
+    nextId.current = handoff.nextId;
+  }, [locale]);
 
   const closeDialog = useCallback(() => {
     // Closing must never silently submit an in-progress speech transcript.
@@ -501,6 +519,19 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setTurns(current => [...current, ...exchange].slice(-8));
   }
 
+  function handoffQuestion(question: string, answer: string, nextContext: Context, offers: HomeGuideOffer[]) {
+    const id = nextId.current;
+    const handoff: HomeQuestionHandoff = {
+      turns: [...turns, { id, role: "visitor", text: question } as Turn,
+        { id: id + 1, role: "guide", text: answer } as Turn].slice(-8),
+      context: nextContext,
+      recommendations: offers,
+      nextId: id + 2,
+    };
+    return switchToQuestionLocale("home", question, locale, handoff,
+      href => router.replace(href, { scroll: false }));
+  }
+
   function ask(text: string) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
@@ -511,6 +542,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       if (selection) {
         const next = homeGuideFollowup(selection.context);
         const response = selection.response?.[context.lang] ?? next?.prompt[context.lang] ?? copy[context.lang].followup;
+        if (handoffQuestion(question, response, selection.context, selection.offers)) return;
         appendExchange(question, response);
         setContext(selection.context);
         setRecommendations(selection.offers);
@@ -525,6 +557,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const answer = result.urgent
       ? responseCopy.urgent
       : followup?.prompt[result.lang] ?? responseCopy.unknown + " " + responseCopy.followup;
+    if (handoffQuestion(question, answer, result, [])) return;
     appendExchange(question, answer);
     setContext(result);
     setRecommendations([]);

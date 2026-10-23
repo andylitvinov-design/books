@@ -152,8 +152,10 @@ async function verify(browserType, locale, width) {
 
     assert.equal(await expand.getAttribute("aria-expanded"), "true", label + ": accessible expanded state");
     assert.equal(await daoResult.locator('[role="img"]').count(), 1, label + ": genuine I Ching glyph");
-    const detailUrl = await daoResult.locator('a[href*="/dao/hexagrams/"]').getAttribute("href");
-    assert.match(detailUrl || "", new RegExp("^/" + locale + "/dao/hexagrams/(?:[1-9]|[1-5][0-9]|6[0-4])$"));
+    assert.equal(await daoResult.locator('[class*=hexagramActions]').count(), 0,
+      label + ": no redundant Read interpretation / Another symbol buttons");
+    assert.equal(await daoResult.locator('a[href*="/dao/hexagrams/"]').count(), 0,
+      label + ": full interpretation is already in the expanded panel");
     if (browserType === webkit && locale === "en" && width === 390) {
       await daoResult.locator('[data-ideas-dao-reading] [lang="ru"] p').first()
         .waitFor({ state: "visible", timeout: 30000 });
@@ -185,6 +187,29 @@ async function verify(browserType, locale, width) {
       assert.ok(first?.startsWith("/"), label + ": same-site link");
       await services.first().tap();
       await page.waitForURL(url => url.pathname === first.split("#")[0], { timeout: 30000 });
+    }
+    if (browserType === webkit && locale === "en" && width === 390) {
+      // A Cyrillic question on the English Ideas route must switch the ENTIRE
+      // document/navigation to Russian without posting the private text.
+      const question = "Как выбрать правильное направление?";
+      const leaked = [];
+      page.on("request", req => {
+        const outgoing = req.url() + " " + (req.postData() || "");
+        if (outgoing.includes(question) || outgoing.includes(encodeURIComponent(question))) leaked.push(req.url());
+      });
+      await page.goto(origin + "/en/books", { waitUntil: "domcontentloaded" });
+      await page.locator("#ideas-question").fill(question);
+      await page.locator('[data-ideas-discovery] button[type="submit"]').click();
+      await page.waitForURL(origin + "/ru/books", { timeout: 30000 });
+      await page.locator('[data-ideas-result="dao"]').waitFor({ state: "visible" });
+      assert.equal(await page.locator("html").getAttribute("lang"), "ru");
+      assert.equal(await page.locator("#ideas-question").inputValue(), question);
+      assert.equal(await page.locator('[data-ideas-result="dao"]').getAttribute("data-question-language"), "ru");
+      assert.match(await page.locator('nav.mobile-bottom-navigation [data-nav-item="home"]').innerText(), /Главная/);
+      assert.equal(await page.locator("header.house-header--services a.house-wordmark").getAttribute("href"), "/ru");
+      assert.deepEqual(leaked, [], "language navigation must never leak the question");
+      await page.locator("header.house-header--services a.house-wordmark").click();
+      await page.waitForURL(origin + "/ru", { timeout: 30000 });
     }
     assert.deepEqual(errors, [], label + ": unhandled client errors");
     evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToExistingFreeService: width === 390 });
