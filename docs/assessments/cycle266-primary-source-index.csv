@@ -1,0 +1,11 @@
+# Holistic House cycle 266 — research-only source index
+# Main archive: https://docs.google.com/spreadsheets/d/13tKxFlypfuaEWh0Vy0NeYasCZ-iItRkmZTEx7eB9E5k/edit ; tab 10_Research_Master.
+# Six independently keyed source/edition evidence records. Metadata only: no protected test items, test answer keys, clinical scoring, or production deployment.
+# No commercial hosted digital rights confirmed; translation evidence is not inferred from article or website-interface language.
+"research_key","primary_source","respondent_language_evidence","items","domains","rights_status"
+"mdi-wilke2026-dede-dach14-moralcivic","https://doi.org/10.1007/s44202-026-00951-w","DE-DE/DE-CH respondent-tested one German-language form","14","moral identity(7); civic identity(7)","permission_required"
+"sprmc-mejutoprego2026-eses18-students","https://doi.org/10.1186/s12912-026-05525-8","ES-ES respondent-tested preliminary; original Nepal factor model different","18","respectful care; safety and comfort; supportive care; safe space; disrespect and autonomy","licensed_only CC BY-NC-ND article"
+"ctsr-goral2026-il11-revalidation","https://doi.org/10.1002/jts.70135","Israeli respondent language unverified; no new locale claim","11","exhaustion/detachment; rage/betrayal; fear/helplessness","permission_required"
+"ctsr-zasiekina2024-ukua11-twofactor","https://doi.org/10.29038/eejpl.2024.11.1.zas","UK-UA respondent-tested adaptation; not RU","11","exhaustion and rage; fear and betrayal","permission_required"
+"ctsr-zasiekina2025-ukua9-revised","https://doi.org/10.1080/20008066.2025.2463186","UK-UA respondent-tested revised 9-item form; not comparable to 11-item","9","exhaustion; alienation; helplessness","permission_required"
+"igqcc-isik2026-tr-disaster-fiveclinical","https://doi.org/10.1002/jts.70138","Türkiye participant language not verified; do not claim TR adaptation","5 symptoms + conditional checks","core grief symptoms; associated symptoms; clinical checks","clinician_only"
