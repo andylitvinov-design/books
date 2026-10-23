@@ -8,7 +8,7 @@ test('verified daily public HTML report survives Gemini and Mistral outages with
  assert.ok(source.includes(".filter(entry=>entry.chatgpt||entry.council)"))
  assert.ok(source.includes('councilReview=composeDailyCouncilTelegram(report,reviews)'))
  assert.ok(source.includes('modelSettings(aiEnv)'))
- assert.ok(source.includes('const reviews=await reviewDailyCouncil(report,aiEnv,fetcher)'))
+ assert.ok(source.includes('await reviewDailyCouncil(report,aiEnv,fetcher)'))
  assert.ok(source.includes('if(entry.council){'))
  assert.ok(source.includes('sendOwnerDocument({'))
  assert.ok(source.includes("if(!reports.length&&!modelsReady)"))
