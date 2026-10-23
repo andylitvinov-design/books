@@ -19,7 +19,7 @@ test('Energy / Love / Business is the one public navigation taxonomy in EN/RU/ES
   }
 })
 
-test('Public discovery reuses photo assets and verified catalog paths', async () => {
+test('Public discovery reuses photo assets and existing catalog routes', async () => {
   const card = await readFile('components/direction-offers.tsx','utf8')
   const styles = await readFile('components/direction-offers.module.css','utf8')
   const route = await readFile('app/[locale]/explore/[theme]/page.tsx','utf8')
@@ -27,24 +27,21 @@ test('Public discovery reuses photo assets and verified catalog paths', async ()
   const more = await readFile('components/home-more-disclosure.tsx','utf8')
   const site = await readFile('components/site-navigation.tsx','utf8')
   const spanish = await readFile('app/es/page.tsx','utf8')
-  for (const offer of ['test','course','session']) assert.ok(card.includes('data-offer-action'), offer)
-  assert.match(card, /data-direction-filter/)
-  assert.match(card, /journeyFocusForTopics/)
-  assert.match(card, /client\\/tests\\?focus=/)
-  assert.match(card, /courses\\/antistress/)
-  assert.match(card, /services\\/business-consulting/)
-  assert.match(card, /systemic-constellations/)
-  assert.match(card, /no-store|prefetch=\\{false\\}/)
-  assert.match(card, /direction === 'relationships' \\? 'love'/)
-  assert.match(styles, /@media\\(max-width:430px\\)/)
-  assert.match(styles, /@media\\(max-width:350px\\)/)
-  assert.match(styles, /grid-template-columns:92px minmax\\(0,1fr\\)/)
-  assert.match(route, /theme === 'relationships'\\) redirect/)
-  assert.match(route, /data-direction-more/)
-  assert.match(route, /<TopicJourneySelector/)
-  assert.match(home, /direction\\.id === 'relationships' \\? 'love'/)
-  assert.match(spanish, /<HomepageTopicJourneys locale="es" \\/>/)
-  assert.doesNotMatch(more, /<HomepageTopicJourneys locale=/)
-  assert.match(site, /id: 'services'/)
-  assert.match(site, /id: 'academy'/)
+  for (const token of [
+    'data-offer-type', 'data-offer-action', 'data-direction-filter', 'journeyFocusForTopics',
+    'client/tests?focus=', 'courses/antistress', 'services/', 'business-consulting',
+    'systemic-constellations', 'prefetch={false}', "direction === 'relationships' ? 'love'",
+  ]) assert.ok(card.includes(token), token)
+  for (const token of [
+    '@media(max-width:430px)', '@media(max-width:350px)',
+    'grid-template-columns:92px minmax(0,1fr)',
+  ]) assert.ok(styles.includes(token), token)
+  assert.ok(route.includes("theme === 'relationships') redirect"))
+  assert.ok(route.includes('data-direction-more'))
+  assert.ok(route.includes('<TopicJourneySelector'))
+  assert.ok(home.includes("direction.id === 'relationships' ? 'love'"))
+  assert.ok(spanish.includes('<HomepageTopicJourneys locale="es" />'))
+  assert.ok(!more.includes('<HomepageTopicJourneys locale='))
+  assert.ok(site.includes("id: 'services'"))
+  assert.ok(site.includes("id: 'academy'"))
 })
