@@ -73,7 +73,7 @@ export function MonthlySupportOwner(){
       <Link href="/admin" className={styles.back}>← Admin</Link>
       <h1>Monthly personal support · €200</h1>
       <p>Manual owner-only programme ledger. Two 60-minute sessions and one month of follow-up. No automatic payments, renewals, invoices or transfers are made here.</p>
-      <p className={styles.warning}>Verify a real client relationship and independent incoming bank/provider statement before activation. A screenshot or chat message is not a verified payment. Do not connect an unverified CRM contact to a client's private account.</p>
+      <p className={styles.warning}>Verify a real client relationship and independent incoming bank/provider statement before activation. A screenshot or chat message is not a verified payment. Do not connect an unverified CRM contact to a client&apos;s private account.</p>
       {error&&<p role="alert" className={styles.error}>{error}</p>}
       {info&&<p role="status" className={styles.success}>{info}</p>}
       {loading?<p>Loading protected queue…</p>:<>
@@ -86,7 +86,7 @@ export function MonthlySupportOwner(){
             </select>
           </label>
           {queue.length===0&&<p>No eligible requests yet. Ask the client to use the public consented form first.</p>}
-          <label>Client's verified Google-account UUID (NOT CRM contact ID)
+          <label>Client&apos;s verified Google-account UUID (NOT CRM contact ID)
             <input value={account} autoComplete="off" onChange={e=>setAccount(e.target.value)}
               placeholder="00000000-0000-0000-0000-000000000000" maxLength={36}/>
           </label>
@@ -111,7 +111,7 @@ export function MonthlySupportOwner(){
               maxLength={160} autoComplete="off" placeholder="Payment transaction ID"/>
           </label>
           <label className={styles.check}><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-            I independently verified the client's identity and explicit consent to attach this programme to their own account.</label>
+            I independently verified the client&apos;s identity and explicit consent to attach this programme to their own account.</label>
           <label className={styles.check}><input type="checkbox" checked={terms} onChange={e=>setTerms(e.target.checked)}/>
             The client accepted cancellation, refund, session and message boundaries before payment.</label>
           <label className={styles.check}><input type="checkbox" checked={statement} onChange={e=>setStatement(e.target.checked)}/>
