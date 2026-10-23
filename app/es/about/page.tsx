@@ -6,7 +6,7 @@ import { PersonalConsultationForm } from '@/components/personal-consultation-for
 import { SiteVideoPlayer } from '@/components/site-video-player';
 import { aboutEs } from '@/data/about-es';
 import { metadataBaseFor } from '@/data/site-metadata';
-import { getPublishedSiteVideos } from '@/lib/site-videos/public';
+import { getPublishedSiteVideo } from '@/lib/site-videos/public';
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(), title: aboutEs.meta.title, description: aboutEs.meta.description,
@@ -24,9 +24,8 @@ const archives = [
 ];
 const explore = [ { label: 'Libros', href: '/es/books' }, { label: 'Remedios', href: '/es/homeopathy' }, { label: 'Servicios', href: '/es/services' } ];
 export default async function SpanishAboutPage() {
-  const published = await getPublishedSiteVideos();
   // An independent Spanish publication: hiding it never restores English audio.
-  const intro = published['about-intro:es'];
+  const intro = await getPublishedSiteVideo('about-intro:es');
   return <main className="about-shell" lang="es">
     <PublicSiteHeader locale="es" />
     {intro && <section className="site-video-block" data-video-slot="about-intro" data-video-locale="es" aria-label={intro.title}><SiteVideoPlayer video={intro} locale="es" textLanguage="es" minimal posterPriority /></section>}
