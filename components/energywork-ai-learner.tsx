@@ -1739,6 +1739,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                             {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
                           </Link>
                         ))}
+                        <Link className={styles.textLink} href={"/" + locale + "/pro"} prefetch={false}
+                          data-reiki-profi-continuation>
+                          {locale === "ru" ? "Продолжить путь: стать практиком или предложить свои услуги" : "Next: develop your practice or offer your services"}
+                          <ArrowRight size={16} aria-hidden="true" />
+                        </Link>
                       </div>
                       <button type="button" className={styles.restart} onClick={restart} disabled={busy}>{t.restart}</button>
                     </div>
