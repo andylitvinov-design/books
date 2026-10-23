@@ -22,7 +22,7 @@ test("monthly offer has a single localized, public, SEO-addressable page with re
   assert.match(landing, /2 sesiones completas · 60 minutos cada una/);
   assert.match(landing, /remote_no_call/);
   assert.match(landing, /personal report and video/);
-  assert.match(landing, /не автоматич/);
+  assert.match(landing, /Продление месяца только по вашему решению/);
   assert.match(landing, /data-personal-support-landing/);
   assert.match(landing, /StaticPortrait/);
   assert.match(css, /@media\(max-width:640px\)/);
