@@ -169,8 +169,10 @@ async function verify(browserType, locale, width) {
 
     assert.equal(await expand.getAttribute("aria-expanded"), "true", label + ": accessible expanded state");
     assert.equal(await daoResult.locator('[role="img"]').count(), 1, label + ": genuine I Ching glyph");
-    const detailUrl = await daoResult.locator('a[href*="/dao/hexagrams/"]').getAttribute("href");
-    assert.match(detailUrl || "", new RegExp("^/" + locale + "/dao/hexagrams/(?:[1-9]|[1-5][0-9]|6[0-4])$"));
+    assert.equal(await daoResult.locator('[data-ideas-dao-expanded="true"] a').count(), 0,
+      label + ": no duplicate Read interpretation link");
+    assert.equal(await daoResult.locator('[data-ideas-dao-expanded="true"] button').count(), 1,
+      label + ": only reset remains; no Draw another button");
     if (browserType === webkit && locale === "en" && width === 390) {
       await daoResult.locator('[data-ideas-dao-reading] [lang="ru"] p').first()
         .waitFor({ state: "visible", timeout: 30000 });
