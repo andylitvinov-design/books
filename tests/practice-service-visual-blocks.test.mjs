@@ -32,7 +32,7 @@ test('three visual blocks are edited in the existing practice service form, not 
  assert.match(editor,/onSave\(item\?\.id\|\|null,makePayload\(\),item\?\.revision\)/)
  assert.match(editor,/onSaveAndSubmit\(item\?\.id\|\|null,makePayload\(\),item\?\.revision\)/)
  assert.match(workspace,/action:'submit',expectedRevision:saved\.revision/)
- assert.match(workspace,/renderEditor=\{\(item,onDirtyChange\)=>/)
+ assert.match(workspace,/renderEditor=\{\(item,onDirtyChange,onMediaBusyChange\)=>/)
  assert.doesNotMatch(editor,/fetch\('\/api|onClick=\{.*sendLead/)
 })
 
@@ -49,7 +49,7 @@ test('public client CTA is a labeled visual preview until existing moderation, n
 
 test('the real photo uploader is used in the first card and blocks save during media upload',()=>{
  assert.match(editor,/<PracticePhotoUpload mode="service" value=\{photos\}/)
- assert.match(editor,/onBusyChange=\{setPhotoBusy\}/)
+ assert.match(editor,/onBusyChange=\{value=>\{setPhotoBusy\(value\);onMediaBusyChange\?\.\(value\)\}\}/)
  assert.match(editor,/const locked=busy\|\|videoBusy\|\|photoBusy/)
  assert.match(editor,/onChange=\{value=>set\('photos',value\)\}/)
  assert.match(editor,/photo\?<img src=\{photo\}/)
@@ -57,7 +57,7 @@ test('the real photo uploader is used in the first card and blocks save during m
  assert.match(photo,/Public only after approval/)
  assert.match(editor,/data-service-photo-tools/)
  assert.match(editor,/value=\{draft\.videoPresentation\}/)
- assert.match(editor,/onBusyChange=\{setVideoBusy\}/)
+ assert.match(editor,/onBusyChange=\{value=>\{setVideoBusy\(value\);onMediaBusyChange\?\.\(value\)\}\}/)
 })
 
 test('wizard input validation respects partial drafts, existing one-language submit and constraints',()=>{
@@ -89,10 +89,11 @@ test('the mobile editor is a calm client-facing page with photo left on desktop 
  assert.match(dashboard,/\{!creating&&<div className=\{styles.stats\}/)
  assert.match(dashboard,/\{creating&&canAdd&&<div className=\{styles.editor\} data-service-composer-focus>/)
  assert.match(dashboard,/if\(creating&&createDirty&&!window\.confirm\(c\.discard\)\)return/)
- assert.match(dashboard,/renderEditor\(null,setCreateDirty\)/)
+ assert.match(dashboard,/renderEditor\(null,setCreateDirty,setMediaBusy\)/)
  assert.match(dashboard,/data-edit-service=\{editingItem\.id\}/)
- assert.match(dashboard,/renderEditor\(editingItem,setEditDirty\)/)
+ assert.match(dashboard,/renderEditor\(editingItem,setEditDirty,setMediaBusy\)/)
  assert.match(dashboard,/if\(editDirty&&!window\.confirm\(c\.discard\)\)return/)
+ assert.match(dashboard,/if\(busy\|\|mediaBusy\)return/)
  assert.match(workspace,/key=\{item\?item\.id\+':'\+item\.revision:'new'\}/)
 })
 
