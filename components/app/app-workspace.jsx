@@ -81,6 +81,7 @@ const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: 
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
+const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
 
 function message(error, c) {
   return error?.code === 'REVISION_CONFLICT' || error?.code === 'CONFLICT'
@@ -3795,7 +3796,14 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
         {!data.requests.length && <p>{c.emptyRequests}</p>}
         {data.requests.map((request) => (
           <article className="hh-panel" key={request.id} id={'hh-consultation-' + request.id}>
-            <span className="hh-badge">{c[request.status]}</span>
+            <span className="hh-badge">{request.remoteBooking
+              ? (({requested:locale==='ru'?'Ожидает мастера':'Waiting for practitioner',
+                   confirmed:locale==='ru'?'Подтверждено':'Confirmed',
+                   declined:locale==='ru'?'Отклонено':'Declined',
+                   in_progress:locale==='ru'?'Проводится':'In progress',
+                   completed:locale==='ru'?'Выполнено':'Completed',
+                   cancelled:locale==='ru'?'Отменено':'Cancelled'})[request.status] || request.status)
+              : (c[request.status] || request.status)}</span>
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
                 c.request}
@@ -3803,7 +3811,14 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             <p>
               {dateLabel(request.createdAt, locale)} · {request.contact}
             </p>
+            {request.remoteBooking && <p className="hh-fine">
+              {request.remoteBooking.duration} min · {request.remoteBooking.date} {request.remoteBooking.time}
+              {' · '}{request.remoteBooking.timezone} · {request.remoteBooking.price} {request.remoteBooking.currency}
+              {' · '}{locale==='ru'?'Оплата пока не подключена':'Payment not yet enabled'}
+            </p>}
             {request.message && <p>{request.message}</p>}
+            {request.remoteBooking && request.status==='completed' &&
+              <ServiceReviews serviceId={request.serviceId} locale={locale} verifiedOnly />}
             <PracticeRequestConversation key={request.id} requestId={request.id}
               autoOpen={requestedMessageId === request.id}
               accountId={data.account.id} locale={locale}
@@ -3835,13 +3850,15 @@ function RequestForm({ service, locale, data, close, onDone }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(null),
     operation = useRef(null),
-    [energyPrefill, setEnergyPrefill] = useState(false)
+    [energyPrefill, setEnergyPrefill] = useState(false),
+    [remoteDraft, setRemoteDraft] = useState(null)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const draft = readRemoteSupportDraft(window.sessionStorage, service.id)
     if (!draft) return
     setNote((current) => current || formatRemoteSupportDraft(draft))
     setEnergyPrefill(true)
+    if (draft.version === 2) setRemoteDraft(draft)
   }, [service.id])
   const shared = data.results.find((r) => r.id === shareId)
   async function submit(e) {
@@ -3851,9 +3868,15 @@ function RequestForm({ service, locale, data, close, onDone }) {
     const body = operation.current || {
       serviceId: service.id,
       operationId: crypto.randomUUID(),
-      contact,
+      contact: remoteDraft ? 'Via Holistic House portal' : contact,
       message: note,
-      shareResultId: shareId || null,
+      remoteBooking: remoteDraft ? {
+        version:2, goal:remoteDraft.goal, method:remoteDraft.method, format:remoteDraft.format,
+        duration:remoteDraft.duration, date:remoteDraft.date, time:remoteDraft.time,
+        timezone:remoteDraft.timezone, startsAt:remoteDraft.startsAt,
+        expectedPrice:remoteDraft.expectedPrice, expectedCurrency:remoteDraft.expectedCurrency,
+      } : undefined,
+      shareResultId: remoteDraft ? null : (shareId || null),
       shareConfirmed: confirmed,
     }
     operation.current = body
@@ -3882,7 +3905,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
         : 'Your preferences for practitioner, method, duration and time are in the message. This is a request, not a paid or confirmed booking.'}</p>}
       <p>{c.requestNote}</p>
       <form className="hh-form" onSubmit={submit}>
-        <label>
+        {!remoteDraft && <label>
           {c.contact}
           <input
             required
@@ -3891,7 +3914,10 @@ function RequestForm({ service, locale, data, close, onDone }) {
             disabled={busy || Boolean(operation.current)}
             onChange={(e) => setContact(e.target.value)}
           />
-        </label>
+        </label>}
+        {remoteDraft && <p className="hh-fine">{locale==='ru'
+          ? 'Общение через защищённый кабинет Holistic House. Контакты сторон не передаются напрямую.'
+          : 'Messages stay in Holistic House. Personal contact details are not shared with the practitioner.'}</p>}
         <label>
           {c.message}
           <textarea
@@ -3901,7 +3927,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
             onChange={(e) => setNote(e.target.value)}
           />
         </label>
-        <label>
+        {!remoteDraft && <label>
           {c.share}
           <select
             value={shareId}
@@ -3918,8 +3944,8 @@ function RequestForm({ service, locale, data, close, onDone }) {
               </option>
             ))}
           </select>
-        </label>
-        {shared && (
+        </label>}
+        {!remoteDraft && shared && (
           <>
             <div className="hh-notice">
               <p>
@@ -3944,7 +3970,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
             </label>
           </>
         )}
-        <p className="hh-fine">{c.sharingNote}</p>
+        {!remoteDraft && <p className="hh-fine">{c.sharingNote}</p>}
         <button className="hh-primary" disabled={busy}>
           {busy ? c.saving : c.submitRequest}
         </button>
