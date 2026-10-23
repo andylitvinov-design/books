@@ -205,7 +205,7 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
   }, [load]);
   const closePanel = useCallback(() => setOpen(false), []);
   // Reuse the existing PKCE OAuth handoff and private Cabinet session.
-  const startGoogleSignIn = useCallback(async () => {
+  const startGoogleSignIn = useCallback(async (destination: "cabinet" | "my-practice" = "cabinet") => {
     if (signingIn) return;
     setSigningIn(true);
     setSignInError(false);
@@ -213,7 +213,7 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
       const native = isNativeHolisticHouse();
       const result = await appFetch("auth/start", {
         locale: activeLocale === "es" ? "en" : activeLocale,
-        continueTo: "cabinet",
+        continueTo: destination,
         ...(native ? { native: true } : {}),
       });
       if (!result || typeof result.redirectUrl !== "string") throw new Error("OAUTH_URL_MISSING");
@@ -304,6 +304,10 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                     <li>{t.createCourse}</li>
                   </ul>
                   <p className={styles.masterNote}>{t.masterSteps}</p>
+                  <button type="button" className={styles.masterAction} disabled={signingIn}
+                    onClick={() => void startGoogleSignIn("my-practice")}>
+                    {t.becomeMaster}<ArrowRight size={15} aria-hidden="true" />
+                  </button>
                 </section>
               </div>
               <p className={styles.helper}>{t.googleNote}</p>
