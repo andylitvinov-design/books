@@ -261,7 +261,7 @@ export function HomePersonalSpaceNavEntry({ locale, href }: { locale: PublicLoca
   return <button type="button" className="site-cabinet-entry" data-nav-item="cabinet"
     aria-haspopup="dialog" aria-controls="home-personal-space-dialog" aria-expanded={space.open}
     onClick={space.openPanel} aria-label={t.label}>
-    <UserRound aria-hidden="true" /><span>{t.label}</span><ChevronDown size={13} aria-hidden="true" />
+    <UserRound aria-hidden="true" /><span>{locale === "ru" ? "Моё" : t.label}</span><ChevronDown size={13} aria-hidden="true" />
   </button>;
 }
 

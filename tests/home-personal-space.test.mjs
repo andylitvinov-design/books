@@ -42,7 +42,7 @@ test('select an owned primary course with bounded progress but no private title,
   assert.equal(actual.completedLessons, 4);
   assert.equal(actual.professional, true);
   assert.equal(actual.owner, true);
-  for (const hidden of ['SECRET', 'PRIVATE', '70']) assert.equal(JSON.stringify(actual).includes(hidden), false);
+  for (const hidden of ['SECRET', 'PRIVATE', '\"score\"', '\"notes\"']) assert.equal(JSON.stringify(actual).includes(hidden), false);
 });
 
 test('only real account state determines action and professional permissions', () => {

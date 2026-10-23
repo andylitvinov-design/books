@@ -1,5 +1,5 @@
 /* A quiet, account-aware doorway; the photography-led homepage stays intact. */
-.sentinel { height: 0; overflow: hidden; }
+.sentinel { height: 1px; opacity: 0; pointer-events: none; overflow: hidden; }
 .card {
   box-sizing: border-box;
   display: grid;
