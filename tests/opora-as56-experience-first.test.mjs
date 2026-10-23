@@ -270,31 +270,39 @@ test('Day 4 feeling is limited to a short validated label, with no PII-like stri
     transfer:'not_planning',transferFeeling:'calm'},hints:[],ease:null}),/INVALID_OPORA54_TRANSFER/)
 })
 
-test('new action alternative is saved as three; old one keeps its original historic meaning',async()=>{
+test('one action gets a version marker while historic options remain meaningful',async()=>{
   const f=fixture('en',3),h=f.h
   await advanceOporaTo(h,'save',t.en.next)
   const [first,second]=oporaExperienceTransferChoices(3,'en')
-  assert.ok(textOf(h.tree).includes(first.label))
-  await click(h,second.label)
+  const focused=oporaAs58Day(3,'en').transfer
+  assert.ok(textOf(h.tree).includes(focused))
+  assert.ok(!textOf(h.tree).includes(first.label))
+  assert.ok(!textOf(h.tree).includes(second.label))
+  await click(h,t.en.plan)
   await advanceOporaTo(h,'recapFeedback',t.en.next)
   await click(h,'I managed a little')
   await click(h,t.en.save)
-  assert.equal(f.payload.opora54.answers.transferChoice,'three')
+  assert.equal(f.payload.opora54.answers.transferChoice,'two')
   assert.equal(f.payload.opora54.answers.transfer,'planned')
-  assert.ok(textOf(h.tree).includes(second.label))
+  assert.equal(f.payload.opora54.answers.transferPlanVersion,'one-v1')
+  assert.ok(textOf(h.tree).includes(focused))
   h.unmount()
 
   const lesson=lessonFor('calm_regulation',3,'en','standard',COURSE_ANTISTRESS_SKILLS_V7)
-  const historical=mount('opora-experience-player',{
-    locale:'en',
-    data:{cycle:{id:'00000000-0000-4000-8000-000000001056',day:3,durationDays:14},
-      programme:{id:'stress'},lesson,
-      currentSession:{signals:{opora54:{answers:{transfer:'planned',transferChoice:'one'}}}}},
-    onClose(){},onFinish(){},onSession:async()=>{throw Error('No write for an archived session')},
-  })
-  assert.ok(textOf(historical.tree).includes(oporaExperienceDay(3,'en').reminder))
-  assert.ok(!textOf(historical.tree).includes(first.label))
-  historical.unmount()
+  for(const [oldChoice,oldText] of [
+    ['one',oporaExperienceDay(3,'en').reminder],['three',second.label],
+  ]){
+    const historical=mount('opora-experience-player',{
+      locale:'en',
+      data:{cycle:{id:'00000000-0000-4000-8000-000000001056',day:3,durationDays:14},
+        programme:{id:'stress'},lesson,
+        currentSession:{signals:{opora54:{answers:{transfer:'planned',transferChoice:oldChoice}}}}},
+      onClose(){},onFinish(){},onSession:async()=>{throw Error('Archived session cannot write')},
+    })
+    assert.ok(textOf(historical.tree).includes(oldText))
+    assert.ok(!textOf(historical.tree).includes(focused))
+    historical.unmount()
+  }
 })
 
 test('the restored five opening screens remain fully optional, with no false practice claim',async()=>{
