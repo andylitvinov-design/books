@@ -9,7 +9,7 @@ test('Energy / Love / Business is the one public navigation taxonomy in EN/RU/ES
   for (const locale of ['en', 'ru', 'es']) {
     const primary = getSiteNavigation(locale)
     const bottom = getCompactNavigation(locale)
-    assert.deepEqual(bottom.map(item => item.id), ['home','energy','love','business','tests','books'])
+    assert.deepEqual(bottom.map(item => item.id), ['home','energy','love','business','books','pro'])
     for (const [id, slug] of [['energy','energy'],['love','love'],['business','business']]) {
       assert.equal(primary.find(item => item.id === id).href, '/' + locale + '/explore/' + slug)
       assert.equal(bottom.find(item => item.id === id).href, '/' + locale + '/explore/' + slug)

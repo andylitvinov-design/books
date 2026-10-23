@@ -248,7 +248,7 @@ async function verifyPublicDiscoveryNavigation(page, engine) {
         assert.equal(response.headers()['referrer-policy'], 'no-referrer', label)
         await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private')
         const bottom = page.locator('.mobile-bottom-navigation')
-        const expected = await assertPublicBottomNavigation(bottom, { locale, surface: 'tests', label })
+        const expected = await assertPublicBottomNavigation(bottom, { locale, surface: 'pro', label })
         if (width < 768) {
           await expect(bottom).toBeVisible()
           const links = bottom.locator('[data-nav-item]')
@@ -269,7 +269,7 @@ async function verifyPublicDiscoveryNavigation(page, engine) {
     }
   }
   await resizePublicViewport(page, originalViewport)
-  pass(engine + ': public client and client/tests discovery retain exact Tests/Books navigation, active Tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
+  pass(engine + ': public client and client/tests discovery retain six-slot navigation with Pro active on free tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
 }
 
 try {
@@ -362,7 +362,7 @@ try {
           await expect(current).toHaveCount(1)
           await expect(current).toHaveAttribute('href', '/' + locale + '/books')
         } else {
-          // Books is the sixth bottom-navigation slot; the full Library remains in the menu.
+          // Ideas is the fifth of six bottom-navigation slots; the full Library remains in the menu.
           const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })
           assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
           await expect(nav.locator('[data-nav-item]')).toHaveCount(6)

@@ -28,6 +28,7 @@
 .masterIntro { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
 .masterIntro h3 { margin: 0 0 5px; font-family: Georgia, "Times New Roman", serif; font-size: 23px; font-weight: 500; }
 .masterIntro p { max-width: 500px; margin: 0; color: #726356; font-size: 13px; line-height: 1.5; }
+.proGuide { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 5px; color: #7e4d35; font-size: 12px; font-weight: 750; text-decoration: underline; text-underline-offset: 4px; }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .actions a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px solid #744333; border-radius: 999px; padding: 10px 15px; font-size: 12px; font-weight: 700; line-height: 1.3; text-align: center; text-decoration: none; }
 .primary { background: #744333; color: #fff; }

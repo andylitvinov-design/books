@@ -20,6 +20,7 @@ const copy = {
     personalHint: "Free self-checks, learning and your own development space.",
     shortcuts: ["Get to know myself", "Learn Reiki for free", "My development path"],
     masterTitle: "Your path to energy practice",
+    proPath: "Open the full Pro journey",
     masterHint: "New to energywork? Explore the steps. Already practicing? You can list a service now.",
     publish: "List a service for free",
     create: "Create your own course",
@@ -44,6 +45,7 @@ const copy = {
     personalHint: "Бесплатные тесты, обучение и личный путь развития.",
     shortcuts: ["Узнать себя", "Бесплатный курс Рейки", "Мой путь развития"],
     masterTitle: "Твой путь в энергопрактике",
+    proPath: "Открыть полный путь «Профи»",
     masterHint: "Новичок? Начни с обучения. Уже практикуешь? Можешь сразу добавить свою услугу.",
     publish: "Опубликовать услугу бесплатно",
     create: "Создать свой курс",
@@ -68,6 +70,7 @@ const copy = {
     personalHint: "Pruebas gratis, aprendizaje y desarrollo personal.",
     shortcuts: ["Conocerme mejor", "Aprender Reiki gratis", "Mi camino de desarrollo"],
     masterTitle: "Tu camino en las prácticas energéticas",
+    proPath: "Abrir el camino Pro",
     masterHint: "¿Estás empezando? Explora los pasos. ¿Ya practicas? Puedes añadir tu servicio hoy.",
     publish: "Publicar un servicio gratis",
     create: "Crear mi curso",
@@ -140,7 +143,11 @@ export function HomeMasterPath({ locale }: { locale: PublicLocale }) {
       ) : (
         <div className={styles.master} data-home-path-panel="master">
           <div className={styles.masterIntro}>
-            <div><h3>{t.masterTitle}</h3><p>{t.masterHint}</p></div>
+            <div><h3>{t.masterTitle}</h3><p>{t.masterHint}</p>
+              <Link className={styles.proGuide} href={"/" + locale + "/pro"} prefetch={false} data-home-master-pro-guide>
+                {t.proPath}<ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
             <div className={styles.actions}>
               <Link className={styles.primary} href={targets[5]} prefetch={false}
                 data-home-master-action="publish-service">{t.publish}<ArrowRight size={17} aria-hidden="true" /></Link>

@@ -16,10 +16,10 @@ test('locale counterpart paths preserve the current localized route', async () =
 
 test('public navigation exposes three real directions without administration', async () => {
   const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'energy', 'love', 'business', 'library', 'events', 'courses', 'cabinet'])
+  assert.deepEqual(primaryNavigationIds, ['home', 'energy', 'love', 'business', 'library', 'events', 'courses', 'pro', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
-    assert.equal(items.length, 8)
+    assert.equal(items.length, 9)
     assert.equal(items.find(item=>item.id==='love').href, '/'+locale+'/explore/love')
     assert.equal(items.find(item=>item.id==='energy').href, '/'+locale+'/explore/energy')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
@@ -92,7 +92,7 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
   const icons = await readFile('components/compact-navigation-icons.ts', 'utf8')
   assert.match(mobile, /compactNavigationIcons/)
   assert.match(icons, /books: BookOpen/)
-  assert.match(icons, /tests: ClipboardList/)
+  assert.match(icons, /pro: GraduationCap/)
   assert.match(icons, /business: BriefcaseBusiness/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)

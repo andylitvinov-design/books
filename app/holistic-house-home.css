@@ -484,7 +484,8 @@ a.service-home-start-card:hover {
   backdrop-filter: blur(16px);
 }
 .mobile-bottom-navigation a { display: grid; min-height: 50px; place-items: center; align-content: center; gap: 5px; color: #767775; font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-decoration: none; }
-.mobile-bottom-navigation a svg { width: 23px; height: 23px; stroke-width: 1.5; }
+.mobile-bottom-navigation a svg { width: 22px; height: 22px; stroke-width: 1.5; }
+@media (max-width: 374px) { .mobile-bottom-navigation { padding-inline: max(4px, env(safe-area-inset-left)); } .mobile-bottom-navigation a { font-size: 9px; letter-spacing: -.015em; } .mobile-bottom-navigation a svg { width: 20px; height: 20px; } }
 .mobile-bottom-navigation a[aria-current="page"] { color: #855139; }
 .mobile-bottom-navigation a:focus-visible { outline: 2px solid #855139; outline-offset: -2px; border-radius: 6px; }
 
@@ -940,7 +941,7 @@ a.service-home-start-card:hover {
   text-decoration: none;
 }
 
-/* Six large shortcuts match the mobile bar, without making the menu taller. */
+/* Six shortcuts match the mobile bar in two compact rows. Tests are now in Pro. */
 .site-navigation .site-main-menu-group-label {
   margin: 14px 4px 8px;
   color: #896b57;
@@ -1350,3 +1351,5 @@ a.service-home-start-card:hover {
   .site-navigation .site-cabinet-entry__full { display: none; }
   .site-navigation .site-cabinet-entry__compact { display: inline; }
 }
+
+@media (max-width: 350px) { .site-navigation .site-main-menu-grid a { padding-inline: 2px; font-size: 10.5px; } .site-navigation .site-main-menu-grid a svg { width: 21px; height: 21px; } }

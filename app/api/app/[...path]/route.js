@@ -85,7 +85,7 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi'])
       const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && body.continueTo === 'enquiry' ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
@@ -93,10 +93,12 @@ async function handle(request, { params }) {
         program = body.program || null,
         requestId = body.requestId || null,
         native = body.native === true,
-        returnPath = body.returnPath ?? null
+        returnPath = body.returnPath ?? null,
+        profi = body.profi ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'enquiry'].includes(continueTo) &&
         !['cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -118,7 +120,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -135,7 +137,9 @@ async function handle(request, { params }) {
         continueTo = url.searchParams.get('continue'),
         program = url.searchParams.get('program'),
         requestId = url.searchParams.get('request'),
-        returnPath = url.searchParams.get('returnPath')
+        returnPath = url.searchParams.get('returnPath'),
+        profi = url.searchParams.get('profi')
+      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
           (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
@@ -151,7 +155,7 @@ async function handle(request, { params }) {
       if (url.searchParams.get('native') === '1') {
         if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
-        for (const key of ['locale','intent','service','continue','program','request','sb_flow_id']) {
+        for (const key of ['locale','intent','service','continue','program','request','profi','sb_flow_id']) {
           const value = url.searchParams.get(key)
           if (value !== null) handoff.searchParams.set(key,value)
         }
@@ -177,7 +181,7 @@ async function handle(request, { params }) {
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
-                  ? `${origin}/${locale}/app/practice`
+                  ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
                 : continueTo === 'my-tests'
                   ? `${origin}/${locale}/app/tests`
                   : continueTo === 'my-courses'

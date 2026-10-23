@@ -241,8 +241,19 @@ export default function AppWorkspace({ locale, path = [] }) {
     setError(null)
     try {
       const native = isNativeHolisticHouse()
+      // A public Pro entry carries only an allowlisted editor choice. Never put
+      // a client note, profile, price, or draft content into OAuth state/URLs.
+      const proPanel = page === 'practice' ? searchParams.get('panel') : null
+      const proStarter = searchParams.get('starter')
+      const proCreate = searchParams.get('create') === '1'
+      const proIntent = proPanel === 'services' && proCreate && ['session','intro','workshop'].includes(proStarter)
+        ? proStarter
+        : proPanel === 'materials' && searchParams.get('materialTab') === 'courses' && proCreate
+          ? 'course'
+          : proPanel === 'profile' ? 'profile' : proPanel === 'requests' ? 'requests' : null
       const result = await appFetch('auth/start', {
         locale,
+        ...(page === 'practice' ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) } : {}),
         ...(native ? { native: true } : {}),
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),

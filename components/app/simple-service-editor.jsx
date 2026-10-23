@@ -158,7 +158,15 @@ const BASE = {
 const commas = value => String(value||'').split(',').map(x=>x.trim()).filter(Boolean)
 const lines = (value,max) => String(value||'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,max)
 
-function initialDraft(item,locale) {
+// Public Pro passes only these non-sensitive category templates. Never seed
+// fictional credentials, prices, client benefits or descriptive claims.
+const PRO_STARTERS = {
+  session: { areaKey:'energy_spiritual', offeringType:'session', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
+  intro: { areaKey:'energy_spiritual', offeringType:'intro', deliveryFormat:'online', pricingMode:'free', confirmedPrice:null, currency:'' },
+  workshop: { areaKey:'energy_spiritual', offeringType:'workshop', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
+}
+
+function initialDraft(item,locale,starter='') {
   const raw = item?.draftCopy && Object.keys(item.draftCopy).length
     ? item.draftCopy
     : item ? {
@@ -170,27 +178,28 @@ function initialDraft(item,locale) {
         displayLocales:item.displayLocales||['en','ru'], whatsapp:item.whatsapp||'', telegram:item.telegram||'',
       } : {}
   return {
-    ...BASE, languages:[locale==='ru'?'ru':locale==='es'?'es':'en'], ...raw,
+    ...BASE, languages:[locale==='ru'?'ru':locale==='es'?'es':'en'],
+    ...(!item && Object.hasOwn(PRO_STARTERS,starter) ? PRO_STARTERS[starter] : {}), ...raw,
     copy:Object.fromEntries(['en','ru','es'].map(lang=>[lang,{...BASE.copy[lang],...(raw.copy?.[lang]||{})}])),
   }
 }
 
-export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,onSaveAndSubmit,onPause,onDirtyChange,onMediaBusyChange}){
+export default function SimpleServiceEditor({item,starter='',locale='en',busy=false,onSave,onSaveAndSubmit,onPause,onDirtyChange,onMediaBusyChange}){
   const lang=TEXT[locale]?locale:'en', c=TEXT[lang]
   const [videoBusy,setVideoBusy]=useState(false),[photoBusy,setPhotoBusy]=useState(false)
-  const [draft,setDraft]=useState(()=>initialDraft(item,lang))
+  const [draft,setDraft]=useState(()=>initialDraft(item,lang,starter))
   const [stage,setStage]=useState(0)
   const [photoToolsOpen,setPhotoToolsOpen]=useState(false)
   const [touched,setTouched]=useState(false)
   const [formIssue,setFormIssue]=useState('')
   const [activeLanguage,setActiveLanguage]=useState(()=>{
-    const original=initialDraft(item,lang).copy
+    const original=initialDraft(item,lang,starter).copy
     return original[lang]?.title?lang:(['en','ru','es'].find(code=>original[code]?.title)||lang)
   })
-  const [methodsText,setMethodsText]=useState(()=>(initialDraft(item,lang).methods||[]).join(', '))
-  const [languagesText,setLanguagesText]=useState(()=>(initialDraft(item,lang).languages||[]).join(', '))
-  const [benefitsText,setBenefitsText]=useState(()=>(initialDraft(item,lang).benefits||[]).join('\n'))
-  const [faqText,setFaqText]=useState(()=>(initialDraft(item,lang).faq||[]).join('\n'))
+  const [methodsText,setMethodsText]=useState(()=>(initialDraft(item,lang,starter).methods||[]).join(', '))
+  const [languagesText,setLanguagesText]=useState(()=>(initialDraft(item,lang,starter).languages||[]).join(', '))
+  const [benefitsText,setBenefitsText]=useState(()=>(initialDraft(item,lang,starter).benefits||[]).join('\n'))
+  const [faqText,setFaqText]=useState(()=>(initialDraft(item,lang,starter).faq||[]).join('\n'))
   const mark=()=>{setTouched(true);setFormIssue('');onDirtyChange?.(true)}
   const set=(key,value)=>{mark();setDraft(prev=>({...prev,[key]:value}))}
   const setCopy=(key,value)=>{
