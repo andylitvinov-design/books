@@ -1858,7 +1858,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                 className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
             )}
-            {(slide.kind === "milestone") || (slide.kind !== "milestone" && !completed) ? (
+            {(slide.kind === "milestone" || !completed) ? (
               <button type="button" onClick={next}
                 disabled={busy || sync === "checking" || sync === "unavailable" ||
                   (slide.id === "flight-done" && sync !== "ready" && !firstLessonConsent) ||
