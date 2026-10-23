@@ -768,7 +768,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
           {moment==='recapNext'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
-              <div><strong>{answers.transfer==='planned'?plan:j.noPlan}</strong></div></div>
+              <div><strong>{answers.transfer==='planned'?plan:(depth?.everyday||j.noPlan)}</strong></div></div>
           </div>}
           {moment==='recapFeedback'&&<>
             <div className={styles.confidenceChoices} role="group" aria-label={c.question}
