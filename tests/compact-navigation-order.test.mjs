@@ -51,9 +51,9 @@ test('both navigation surfaces render from the canonical six-item model', () => 
   assert.match(icons, /books: BookOpen/)
   assert.match(bottom, /compactNavigationIcons\[item.id as keyof typeof compactNavigationIcons\]/)
   assert.match(header, /compactNavigationIcons\[item.id as keyof typeof compactNavigationIcons\]/)
-  assert.match(header, /<LayoutDashboard aria-hidden="true" \/>/)
-  assert.match(header, /data-nav-item="cabinet"/)
-  assert.match(header, /className="site-cabinet-entry"/)
+  assert.match(header, /<HomePersonalSpaceNavEntry locale=\{activeLocale\}/)
+  assert.doesNotMatch(header, /cabinetEntryCopy|LayoutDashboard/);
+  assert.match(header, /from '\.\/home-personal-space'/)
   assert.match(header, /const mainMenuItems = getCompactNavigation\(activeLocale\)/)
   assert.match(header, /className="site-main-menu-grid"/)
   assert.match(header, /className="site-main-menu-more"/)
