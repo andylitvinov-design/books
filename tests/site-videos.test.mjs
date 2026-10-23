@@ -603,7 +603,9 @@ test('upstream failures are classified with fixed non-sensitive diagnostic codes
 });
 
 test('read-only media credential serves public records without any write privilege', async () => {
-  const record = published();
+  // Built-in approved publications are virtual revision-zero records.
+  const record = { ...published(), revision: 0 };
+  assert.ok(isSiteVideoRecord(record));
   const calls = [];
   const testEnv = { ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN: 'separate-read-only-test-credential' };
   const store = createPublicSiteVideoStore({
