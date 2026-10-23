@@ -8,7 +8,8 @@ import styles from "./profi-hub.module.css";
 const copy = {
   en: {
     kicker: "HOLISTIC HOUSE · PRO",
-    title: "Your path into practice",
+    title: "Pro",
+    tagline: "Learn Reiki. Grow your practice.",
     intro: "Learn Reiki step by step, or share the experience you already have. Choose where you are today.",
     chooseLearn: "I want to learn Reiki",
     chooseShare: "I'm already a pro",
@@ -39,7 +40,8 @@ const copy = {
   },
   ru: {
     kicker: "HOLISTIC HOUSE · ПРОФИ",
-    title: "Твой путь к практике",
+    title: "Профи",
+    tagline: "Учись Рейки. Развивай свою практику.",
     intro: "Начни учиться Рейки или делись опытом, который уже есть. Выбери свой следующий шаг.",
     chooseLearn: "Хочу стать профи",
     chooseShare: "Я уже профи",
@@ -70,7 +72,8 @@ const copy = {
   },
   es: {
     kicker: "HOLISTIC HOUSE · PRO",
-    title: "Tu camino hacia la práctica",
+    title: "Pro",
+    tagline: "Aprende Reiki. Desarrolla tu práctica.",
     intro: "Aprende Reiki paso a paso o comparte la experiencia que ya tienes. Elige por dónde empezar.",
     chooseLearn: "Quiero aprender Reiki",
     chooseShare: "Ya soy profesional",
@@ -123,6 +126,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}><Sparkles size={14} aria-hidden="true" />{t.kicker}</p>
             <h1 id="profi-title">{t.title}</h1>
+            <p className={styles.heroTagline}>{t.tagline}</p>
             <p className={styles.heroIntro}>{t.intro}</p>
             <nav className={styles.choices} aria-label={locale === "ru" ? "Выбрать свой путь" : locale === "es" ? "Elige tu camino" : "Choose your path"}>
               <Link className={styles.firstChoice} href="#learn" data-profi-path="learn">
