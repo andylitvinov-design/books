@@ -806,7 +806,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <div className={styles.coreWhy} data-opora-core-purpose="true">
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
-            {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
+            {!neutralSupport&&<p className={styles.lead} data-opora-one-daily-practice={cycle.day}>{practiceGuide}</p>}
+            {!neutralSupport&&cycle.day===11&&showNewPlan&&
+              <EmotionVocabulary locale={lang} day={cycle.day} choice={practiceEmotionChoice}
+                textValue={practiceEmotionText} onChoice={updateEmotionChoice}
+                onText={updateEmotionText} disabled={locked} copy={t}/>}
             <p className={styles.miniLabel}>{cycle.day===1?t.tryPrompt:t.tryAfter}</p>
             <div className={styles.chips} role="group"
               aria-label={cycle.day===1?t.tryPrompt:t.tryAfter}>
@@ -835,33 +839,42 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {vote&&<p className={styles.soft} role="status">{cycle.day===1?opening.response:t.quoteThanks}</p>}
           </>}
           {moment==='save'&&<>
-            {cycle.day===4
-              ?<div className={styles.day4Feeling} data-opora-everyday-choice="one-feeling-and-field">
-                <p className={styles.oneTask}>{t.day4Task}</p>
-                <label className={styles.supportLabel} htmlFor="opora-day4-feeling">{t.day4EmotionLabel}</label>
-                <input id="opora-day4-feeling" className={styles.supportInput}
-                  type="text" autoComplete="off" maxLength={60} disabled={locked}
-                  data-opora-transfer-feeling="true"
-                  placeholder={t.day4EmotionPlaceholder}
-                  value={answers.transferFeeling||''}
-                  onChange={event=>{
-                    const value=event.target.value.slice(0,60)
-                    const entered=Boolean(value.trim())
-                    setAnswers(a=>({...a,transferFeeling:entered?value:undefined,
-                      transferChoice:entered?'two':undefined,
-                      transfer:entered?'planned':undefined}))
-                  }}/>
-                <div className={styles.chips+' '+styles.microChoices} role="group" aria-label={t.keep}>
-                  <button type="button" disabled={locked}
-                    aria-pressed={answers.transfer==='not_planning'}
-                    onClick={()=>setAnswers(a=>({...a,transferFeeling:undefined,
-                      transferChoice:undefined,transfer:'not_planning'}))}>{t.noPlan}</button>
+            {showNewPlan
+              ?cycle.day===4
+                ?<div className={styles.day4Feeling} data-opora-everyday-choice="one-feeling-and-field">
+                  <p className={styles.oneTask} data-opora-single-transfer={cycle.day}>{dailyPlan?.transfer||t.day4Task}</p>
+                  <EmotionVocabulary locale={lang} day={cycle.day} choice={practiceEmotionChoice}
+                    textValue={practiceEmotionText} onChoice={updateEmotionChoice}
+                    onText={updateEmotionText} disabled={locked} copy={t}/>
+                  <div className={styles.chips+' '+styles.microChoices} role="group" aria-label={t.keep}>
+                    <button type="button" disabled={locked}
+                      aria-pressed={answers.transfer==='not_planning'}
+                      onClick={()=>{
+                        setPracticeEmotionChoice(null)
+                        setPracticeEmotionText('')
+                        setAnswers(a=>({...a,transferFeeling:undefined,transferChoice:undefined,
+                          transferPlanVersion:undefined,transfer:'not_planning'}))
+                      }}>{t.noPlan}</button>
+                  </div>
                 </div>
-              </div>
+                :<div className={styles.day4Feeling} data-opora-everyday-choice="one-action-or-skip">
+                  <p className={styles.oneTask} data-opora-single-transfer={cycle.day}>{dailyPlan?.transfer}</p>
+                  <div className={styles.chips+' '+styles.singlePlanChoices} role="group" aria-label={t.oneTaskIntro}>
+                    <button type="button" disabled={locked}
+                      aria-pressed={answers.transfer==='planned'&&answers.transferPlanVersion==='one-v1'}
+                      onClick={()=>setAnswers(a=>({...a,transfer:'planned',transferChoice:'two',
+                        transferPlanVersion:'one-v1',transferFeeling:undefined}))}>{t.plan}</button>
+                    <button type="button" disabled={locked}
+                      aria-pressed={answers.transfer==='not_planning'}
+                      onClick={()=>setAnswers(a=>({...a,transfer:'not_planning',
+                        transferChoice:undefined,transferPlanVersion:undefined,
+                        transferFeeling:undefined}))}>{t.noPlan}</button>
+                  </div>
+                </div>
               :<>
                 <p className={styles.lead}>{t.keepText}</p>
                 <div className={styles.chips+' '+styles.microChoices} role="group" aria-label={t.keep}
-                  data-opora-everyday-choice="two-actions-or-skip">
+                  data-opora-everyday-choice="historical-choices-or-skip">
                   {transferChoices.map(choice=><button type="button" key={choice.value} disabled={locked}
                     aria-pressed={answers.transfer==='planned'&&answers.transferChoice===choice.value}
                     onClick={()=>setAnswers(a=>({...a,transferChoice:choice.value,transfer:'planned'}))}>{choice.label}</button>)}
@@ -884,16 +897,19 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </>}
           {moment==='recap'&&<div className={styles.recapSummary} data-opora-lesson-recap="true">
             <div className={styles.summaryItem}><span aria-hidden="true">🌿</span>
-              <div><strong>{c.notice}</strong><small>{c.noticeBody}</small></div></div>
+              <div><strong>{showNewPlan?dailyPlan?.result:c.notice}</strong>
+                <small>{reportedAttempt?t.attempted:t.readOnly}</small></div></div>
           </div>}
           {moment==='recapPractice'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
-              <div><strong>{dayCopy?.title||t.learn}</strong><small>{practiceGuide}</small></div></div>
+              <div><strong>{(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn}</strong>
+                <small>{practiceGuide}</small></div></div>
           </div>}
           {moment==='recapNext'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
-              <div><strong>{answers.transfer==='planned'?plan:(cycle.day===4?j.noPlan:(depth?.everyday||j.noPlan))}</strong>
-                  {cycle.day===4&&answers.transferFeeling&&<small>{t.day4SavedLabel}: {answers.transferFeeling}</small>}</div></div>
+              <div><strong>{answers.transfer==='planned'?plan:
+                (showNewPlan||cycle.day===4?j.noPlan:(depth?.everyday||j.noPlan))}</strong>
+                {cycle.day===4&&namedEmotion&&<small>{t.emotionSummary}: {namedEmotion}</small>}</div></div>
           </div>}
           {moment==='closingMeditation'&&<div className={styles.closingMeditationBlock}
             data-opora-final-meditation="day-14">
@@ -921,8 +937,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </div>
             {chosenFeeling&&<p className={styles.soft}><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
             {answers.transfer==='planned'&&<p className={styles.soft}><strong>{t.takeaway}:</strong> {plan}</p>}
-             {cycle.day===4&&answers.transferFeeling&&<p className={styles.soft}>
-               <strong>{t.day4SavedLabel}:</strong> {answers.transferFeeling}</p>}
+             {OPORA_EMOTION_DAYS.includes(cycle.day)&&namedEmotion&&
+               <p className={styles.soft}><strong>{t.emotionSummary}:</strong> {namedEmotion}</p>}
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
