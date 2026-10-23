@@ -9,6 +9,15 @@ import { classifyHolisticHouseNativeAuth } from '../lib/native/deep-link-policy.
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 const page = read('app/[locale]/pro/page.tsx')
 const hub = read('components/profi-hub.tsx')
+
+test('Pro TSX parses with no syntax diagnostics in all three locales',()=>{
+  const source=ts.createSourceFile('components/profi-hub.tsx',hub,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
+  const problems=source.parseDiagnostics.map(item=>{
+    const position=source.getLineAndCharacterOfPosition(item.start||0)
+    return (position.line+1)+': '+ts.flattenDiagnosticMessageText(item.messageText,' ')
+  })
+  assert.deepEqual(problems,[])
+})
 const css = read('components/profi-hub.module.css')
 const practice = read('components/app/practice-workspace.jsx')
 const materials = read('components/app/practice-materials.jsx')
