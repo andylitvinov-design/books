@@ -87,7 +87,7 @@ const copy = {
       other: "Otro tema",
     },
     action: "Solicitar una sesión",
-    note: "Deja tu contacto en el formulario. Confirmaremos la hora personalmente; WhatsApp o Telegram son opcionales, sin cobro automático.",
+    note: "Elige WhatsApp o Telegram para las sesiones únicas. Confirmaremos la hora personalmente, sin cobro automático.",
     privacy: "No incluyas diagnósticos ni datos médicos confidenciales. Podemos hablar de los detalles personalmente.",
     telegram: "O escríbeme por Telegram",
     greeting: "¡Hola! Quisiera solicitar una sesión de Alquimia del Alma / Psicohomeopatía.",
