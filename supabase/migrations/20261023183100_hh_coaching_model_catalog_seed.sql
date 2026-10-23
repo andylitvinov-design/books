@@ -132,8 +132,8 @@ DO $quality$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM app_private.coaching_schemes s
-    CROSS JOIN LATERAL unnest(s.step_keys) AS step_key
-    LEFT JOIN app_private.coaching_steps step ON step.model_key=s.model_key AND step.step_key=step_key
+    CROSS JOIN LATERAL unnest(s.step_keys) AS stp(value)
+    LEFT JOIN app_private.coaching_steps step ON step.model_key=s.model_key AND step.step_key=stp.value
     WHERE step.model_key IS NULL
   ) THEN RAISE EXCEPTION 'Coaching scheme references an unknown step'; END IF;
   IF EXISTS (
