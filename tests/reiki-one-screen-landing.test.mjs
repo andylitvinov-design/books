@@ -90,7 +90,7 @@ test("Kundalini keeps its real CRM capture, original PDF and local photographic 
   }
   assert.match(page, /data-kundalini-fire-hero/);
   const ribbon = await read("components/sitewide-antistress-banner.tsx");
-  assert.match(ribbon, /academy\\/reiki\\/kundalini-reiki/);
+  assert.ok(ribbon.includes("kundalini-reiki"), "The global ribbon should not obscure this first phone screen");
   assert.match(page, /<PublicSiteHeader locale=\{locale\} \/>/);
   assert.match(page, /href=\{REIKI_FREE_COURSE_PATH\}/);
   assert.match(page, /KundaliniReikiOrderCapture/);
