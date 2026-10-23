@@ -9,6 +9,7 @@ import {
   MessageSquare, Rocket, ShieldCheck, Sparkles, UserRound, UsersRound,
 } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./profi-hub.module.css";
 
@@ -338,6 +339,8 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
         <div className={styles.facts} aria-label={t.choose}>
           {t.facts.map((fact) => <span key={fact}><CheckCircle2 size={15} aria-hidden="true" />{fact}</span>)}
         </div>
+
+        <HomeFreeDiagnosisBanner locale={locale} context="pro" />
 
         <section className={styles.profileGateway} data-profi-profiles aria-labelledby="profi-profiles-title">
           <div className={styles.profilesHeading}>

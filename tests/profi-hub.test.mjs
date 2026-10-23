@@ -38,6 +38,7 @@ function mount(locale) {
     'next/image': { default:props => jsx('img',props) },
     'lucide-react': new Proxy({}, { get: () => () => null }),
     '@/components/public-site-header': { PublicSiteHeader:props=>jsx('header',props) },
+    '@/components/home-free-diagnosis-banner': { HomeFreeDiagnosisBanner:props=>jsx('aside',props) },
     './profi-hub.module.css': { __esModule:true,default:style },
   }
   const compiled = ts.transpileModule(hub,{
@@ -204,4 +205,14 @@ test('native Google callback forwards safe Pro category but rejects duplicate or
   assert.equal(duplicate.kind,'unsupported')
   const injected=classifyHolisticHouseNativeAuth('holistichouse://auth/callback?code=abc&returnPath=https%3A%2F%2Fevil.invalid')
   assert.equal(injected.kind,'unsupported')
+})
+
+test('Pro includes the same consented express-written-review CTA as other directions', () => {
+  assert.match(hub, /<HomeFreeDiagnosisBanner locale=\{locale\} context="pro"/)
+  for (const locale of ['en','ru','es']) {
+    const tree=mount(locale).render()
+    const offers=nodes(tree).filter(node=>node.type==='aside' && node.props?.context==='pro')
+    assert.equal(offers.length,1,locale+': one free written-review request')
+    assert.ok(offers[0].props.locale===locale)
+  }
 })
