@@ -7,7 +7,7 @@ import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/developmen
 import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
-import { readPersonalCoaching, savePersonalCoaching } from '@/lib/app/personal-coaching'
+import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching } from '@/lib/app/personal-coaching'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
@@ -87,7 +87,7 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang'])
       const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
@@ -96,10 +96,14 @@ async function handle(request, { params }) {
         requestId = body.requestId || null,
         native = body.native === true,
         returnPath = body.returnPath ?? null,
-        profi = body.profi ?? null
+        profi = body.profi ?? null,
+        coachingMode = body.coachingMode ?? null,
+        coachingLang = body.coachingLang ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry'].includes(continueTo) &&
         !['cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
@@ -122,7 +126,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -140,7 +144,11 @@ async function handle(request, { params }) {
         program = url.searchParams.get('program'),
         requestId = url.searchParams.get('request'),
         returnPath = url.searchParams.get('returnPath'),
-        profi = url.searchParams.get('profi')
+        profi = url.searchParams.get('profi'),
+        coachingMode = url.searchParams.get('coachingMode'),
+        coachingLang = url.searchParams.get('coachingLang')
+      if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
           (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
@@ -157,7 +165,7 @@ async function handle(request, { params }) {
       if (url.searchParams.get('native') === '1') {
         if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
-        for (const key of ['locale','intent','service','continue','program','request','profi','sb_flow_id']) {
+        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','sb_flow_id']) {
           const value = url.searchParams.get(key)
           if (value !== null) handoff.searchParams.set(key,value)
         }
@@ -181,7 +189,7 @@ async function handle(request, { params }) {
               : continueTo === 'business'
                 ? `${origin}/${locale}/app/business`
               : continueTo === 'coaching'
-                ? `${origin}/${locale}/app/coaching`
+                ? `${origin}/${locale}/app/coaching${coachingMode ? '/'+coachingMode : ''}${coachingLang==='es'?'?lang=es':''}`
               : continueTo === 'coaching-intake'
                 ? `${origin}/${locale}/coaching`
               : continueTo === 'cabinet'
@@ -595,6 +603,13 @@ async function handle(request, { params }) {
       if (method === 'POST') return json(await savePersonalCoaching(config, actor, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
     }
+    if (joined === 'tradition-coaching') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      const template = new URL(request.url).searchParams.get('template')
+      if (method === 'GET') return json(await readTraditionCoaching(config, actor, template))
+      if (method === 'POST') return json(await saveTraditionCoaching(config, actor, template, await readBody(request, 8192)))
+      throw new AppError('NOT_FOUND', 404)
+    }
     if (joined === 'business-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
       if (method === 'GET') return json(await readBusinessCoaching(config, actor))
@@ -750,6 +765,8 @@ async function handle(request, { params }) {
       exported.labReports = (await listLabReports(config, actor)).reports
       exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.personalCoaching = await readPersonalCoaching(config, actor)
+      exported.egyptianCoaching = await readTraditionCoaching(config, actor, 'hh-egyptian-goal-planning-v1')
+      exported.greekCoaching = await readTraditionCoaching(config, actor, 'hh-greek-goal-planning-v1')
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
