@@ -51,6 +51,7 @@ const copy = {
     formLead: "Leave an email or international phone number so Andrey can confirm the details. Nothing is reserved or charged yet.",
     safety: "Do not enter diagnoses, test answers or health details into the request. Personal materials belong in your protected client space. Cancellation, scheduling and refund terms will be agreed before payment.",
     other: "See other personal services",
+    myProgramme: "Already a client? Open My Personal Support",
   },
   ru: {
     eyebrow: "ЛИЧНАЯ РАБОТА · АНДРЕЙ ЛИТВИНОВ",
@@ -92,6 +93,7 @@ const copy = {
     formLead: "Оставьте email или телефон с международным кодом. Андрей лично согласует условия — запись и оплата пока не оформлены.",
     safety: "Не вводите сюда диагнозы, результаты тестов и сведения о здоровье. Личные материалы передаются через защищённый кабинет. Условия отмен, переноса и возврата согласуются до оплаты.",
     other: "Другие личные услуги",
+    myProgramme: "Уже клиент? Открыть моё сопровождение",
   },
   es: {
     eyebrow: "TRABAJO PERSONAL · ANDREY LITVINOV",
@@ -133,6 +135,7 @@ const copy = {
     formLead: "Deja tu correo o número internacional. Andrey confirmará los detalles personalmente; no hay reserva ni cobro.",
     safety: "No envíes diagnósticos, respuestas de pruebas ni datos de salud en esta solicitud. Los materiales privados pertenecen al espacio protegido. Las condiciones se acuerdan antes del pago.",
     other: "Otros servicios personales",
+    myProgramme: "¿Ya eres cliente? Abrir mi acompañamiento",
   },
 } as const;
 
@@ -210,6 +213,7 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
             disclaimer={t.safety}
           />
         </div>
+        <Link className={styles.myProgramme} href={"/" + (locale === "es" ? "en" : locale) + "/app/personal-support"}>{t.myProgramme}<ArrowRight size={16} aria-hidden="true" /></Link>
         <p className={styles.safety}><ShieldCheck size={17} aria-hidden="true" />{t.safety}</p>
       </div>
     </main>

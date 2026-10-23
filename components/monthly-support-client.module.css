@@ -22,3 +22,5 @@
 .page :is(a,button):focus-visible{outline:3px solid #bd854f;outline-offset:3px}
 @media(max-width:430px){.card{padding:15px}.header h2{font-size:23px}.stats>div{padding:10px}.stats span{font-size:10.5px}}
 @media(max-width:350px){.stats{gap:5px}.stats>div{padding:8px}.stats strong{font-size:29px}}
+
+.reference{overflow-wrap:anywhere;color:#526a56;font-size:12px;padding:9px 12px;border:1px solid #d1e4d7;border-radius:10px;background:#f4faf5}

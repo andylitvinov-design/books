@@ -71,3 +71,5 @@
 }
 @media(max-width:350px){.hero h1{font-size:26px}.portrait{width:86px;height:115px}.hero h1,.eyebrow{max-width:calc(100% - 92px)}.intro{font-size:11px}.benefits li{font-size:10.5px}}
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto}}
+
+.myProgramme{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:14px;color:#775139;font-weight:800;font-size:12px}
