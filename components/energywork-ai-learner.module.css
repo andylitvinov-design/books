@@ -5302,7 +5302,9 @@
   gap: 7px;
   margin: 0 0 10px;
   color: #137384;
-  font: 800 14px/1.3 inherit;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
 }
 .page[data-reiki-cover="true"] .welcomeRewardTitle svg { color: #059fa8; }
 .page[data-reiki-cover="true"] .coverFacts {
