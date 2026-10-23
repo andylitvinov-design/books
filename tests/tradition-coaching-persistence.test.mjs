@@ -50,7 +50,7 @@ function fixture(){
      failures.push(sql);throw new Error('Unrecognized SQL')
    }
  })
- const makeError=(code,status)=>Object.assign(new Error(code),{code,status})
+ function makeError(code,status){return Object.assign(new Error(code),{code,status})}
  const deps={
    randomUUID:()=>String(++count).padStart(36,'0'),
    transaction,
