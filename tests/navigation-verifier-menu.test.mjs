@@ -309,7 +309,7 @@ for (const fault of ['wrong free review route', 'wrong energy route', 'wrong Abo
   test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'energy', fault)));
 }
 
-test('library audit checks the menu active link while preserving exact six-slot bottom navigation', () => {
+test('library audit checks the menu active link while preserving exact seven-slot bottom navigation', () => {
   assert.match(ia, /verifyDirectNavigation\(nav, \{ locale, surface: 'library', expected, label:/);
   assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
   assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/books'\)/);
