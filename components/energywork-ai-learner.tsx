@@ -1808,7 +1808,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <span>{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</span>
               <Link href={"/" + locale + "/app/course?view=courses"} prefetch={false}>{t.myCourses}</Link>
             </> : null}
-            {sync === "guest" ? <span>{t.preview}</span> : null}
+            {sync === "guest" && slide.kind !== "welcome" ? <span>{t.preview}</span> : null}
             {sync === "checking" ? <span>{t.checking}</span> : null}
             {sync === "consent" ? (
               slide.id === "flight-done" ? null : (
