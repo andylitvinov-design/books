@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, Quote, RefreshCw, Send, Sparkles, Sprout, Sun } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, RefreshCw, Send, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
@@ -27,6 +27,7 @@ const copy = {
     placeholder: "Ваш вопрос или тема…",
     choose: "Выберите способ получить подсказку",
     ask: "Задать вопрос",
+    test: "Пройти тест", testAria: "Начать бесплатный тест «Состояние сейчас»",
     hexagramWord: "Гексаграмма", meaning: "Смысл", message: "Ключевая идея", step: "Практический шаг",
     expand: "Развернуть подсказку", aphorismsForYou: "Три афоризма для вас", sampleAphorisms: "Три афоризма · пример",
     attach: "Добавить текст из файла .txt или .md (только в браузере)",
@@ -101,6 +102,7 @@ const copy = {
     placeholder: "What’s on your mind?",
     choose: "Choose how to explore your question",
     ask: "Get guidance",
+    test: "Take a free test", testAria: "Start the free Current State Check",
     hexagramWord: "Hexagram", meaning: "Meaning", message: "Key message", step: "Practical step",
     expand: "Expand the full insight", aphorismsForYou: "Three aphorisms for you", sampleAphorisms: "Three aphorisms · example",
     attach: "Add a .txt or .md file locally in this browser",
@@ -175,6 +177,7 @@ const copy = {
     placeholder: "Tu pregunta…",
     choose: "Elige cómo explorar tu pregunta",
     ask: "Pedir orientación",
+    test: "Hacer un test gratis", testAria: "Comenzar el test gratuito Estado actual (en inglés)",
     hexagramWord: "Hexagrama", meaning: "Significado", message: "Mensaje clave", step: "Paso práctico",
     expand: "Desplegar toda la orientación", aphorismsForYou: "Tres aforismos para ti", sampleAphorisms: "Tres aforismos · ejemplo",
     attach: "Añadir un archivo .txt o .md solo en este navegador",
@@ -242,6 +245,12 @@ const copy = {
     },
   },
 } as const;
+
+// Start a real, rights-cleared guest questionnaire, not a generic catalog.
+// /es/client does not host the guest runner yet; match the existing English fallback.
+function ideasQuickTestHref(locale: PublicLocale) {
+  return "/" + (locale === "es" ? "en" : locale) + "/client?startTests=hh-current-state";
+}
 
 function freeOfferHref(locale: PublicLocale, id: "review" | "tests" | "dao") {
   if (id === "tests") return "/" + (locale === "es" ? "en" : locale) + "/client/tests";
@@ -486,16 +495,17 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
   return (
     <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
-      <div className={styles.heading}>
-        <div>
-          <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
+      <div className={styles.hero} data-ideas-hero>
+        <div className={styles.heading}>
+          <div>
+            <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
           <h1 id="ideas-title">{t.title}</h1>
           <p className={styles.lead}>{t.lead}</p>
         </div>
-        <span className={styles.decor} aria-hidden="true">✦</span>
-      </div>
+          <span className={styles.decor} aria-hidden="true">✦</span>
+        </div>
 
-      <form className={styles.question} onSubmit={submitQuestion}>
+        <form className={styles.question} onSubmit={submitQuestion}>
         <label htmlFor="ideas-question">{t.question}</label>
         <div className={styles.questionFields}>
           <Sparkles className={styles.inputSparkle} size={21} aria-hidden="true" />
@@ -527,13 +537,19 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             <Paperclip size={20} aria-hidden="true" />
           </button>
         </div>
-        <button type="submit" className={styles.submit}><Send size={18} aria-hidden="true" />{t.ask}</button>
+        <div className={styles.heroActions} data-ideas-hero-actions>
+          <button type="submit" className={styles.submit}><Send size={18} aria-hidden="true" />{t.ask}</button>
+          <Link href={ideasQuickTestHref(locale)} className={styles.testButton} data-ideas-free-test aria-label={t.testAria} prefetch={false}>
+            <ClipboardCheck size={18} aria-hidden="true" /><span>{t.test}</span><ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
         {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
         <details className={styles.privacyDisclosure}>
           <summary id="ideas-question-privacy">{t.privacyShort}</summary>
           <p className={styles.privacy}>{t.privacy}</p>
         </details>
-      </form>
+        </form>
+      </div>
 
       <p className={styles.actionLabel}>{t.choose}</p>
       <div className={styles.actions}>

@@ -172,3 +172,20 @@ test("Ideas example rotates on client mount, keeping private question matching i
   assert.match(ui, /setPreviewAphorisms\(rotateIdeasPreviewAphorisms\(locale\)\)/);
   assert.match(ui, /getIdeasAphorismMatches\(question, answerLocale, result\.topic\)/);
 });
+
+
+test("Ideas full-photo first screen embeds the question and two real CTAs in one scenic card", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  const catalog = read("data/assessments/catalog.js");
+  assert.match(ui, /<div className=\{styles\.hero\} data-ideas-hero>[\s\S]*?<div className=\{styles\.heading\}>[\s\S]*?<form className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
+  assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions>/);
+  assert.match(ui, /<Link href=\{ideasQuickTestHref\(locale\)\} className=\{styles\.testButton\} data-ideas-free-test/);
+  assert.match(ui, /client\?startTests=hh-current-state/);
+  assert.match(catalog, /key: 'hh-current-state',[\s\S]*?startable: true,[\s\S]*?rightsStatus: 'cleared',[\s\S]*?guestEligible: true/);
+  for (const label of ["Take a free test", "Пройти тест", "Hacer un test gratis"]) assert.ok(ui.includes(label));
+  assert.match(css, /\.hero \{[\s\S]*?background-image:[\s\S]*?ideas-pine-reference\.webp/);
+  assert.match(css, /\.heading \{\s*display: block;[\s\S]*?background: transparent/);
+  assert.match(css, /\.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width: 360px\)[\s\S]*?\.testButton/);
+});
