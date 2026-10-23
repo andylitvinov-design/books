@@ -136,7 +136,7 @@ test("browser-only conversation supports multiple turns, voice consent, accessib
     "engine.start()",
     "SpeechRecognition",
     "try { engine.stop(); }",
-    "result.urgent",
+    "safety.urgent",
     "context.urgent",
     "t.privacyDetail",
   ]) assert.ok(component.includes(fragment), fragment);
