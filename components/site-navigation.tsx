@@ -116,14 +116,14 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   // Additional editorial pages are grouped separately, never mixed into the bar.
   const mainMenuItems = getCompactNavigation(activeLocale);
   const extraMenuItems = getSiteNavigation(activeLocale).filter(
-    item => item.id === 'library' || item.id === 'relationships' || item.id === 'courses' || item.id === 'events',
+    item => item.id === 'library' || item.id === 'services' || item.id === 'academy' || item.id === 'courses' || item.id === 'events',
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
     <Link className="site-nav-free-entry" href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>
-    {getSiteNavigation(activeLocale).filter(item => item.id === 'services').map(item => item.external
+    {getCompactNavigation(activeLocale).filter(item => item.id === 'energy' || item.id === 'love' || item.id === 'business').map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
-      : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
+      : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={menuCurrent === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
     <Link
       className="site-cabinet-entry"
