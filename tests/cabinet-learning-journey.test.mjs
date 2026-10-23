@@ -40,7 +40,7 @@ test('consultation request is a request, not a performed meeting or medical resu
   assert.equal(milestone(sent, 'consultation').requested, true)
   assert.equal(milestone(sent, 'consultation').attended, false)
   assert.match(source('lib/app/learning-journey-repository.js'), /s\.slug='free-intro-availability-request'/)
-  assert.match(source('components/app/cabinet-journey.jsx'), /consultationPending:/)
+  assert.match(source('components/app/cabinet-journey.jsx'), /consultationHint: 'Not a confirmed appointment'/)
 })
 
 test('XP, self-reported authority, or pending status never grants master approval', () => {
