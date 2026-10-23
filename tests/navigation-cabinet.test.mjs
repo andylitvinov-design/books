@@ -82,7 +82,7 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(metadata, /languages: \{ en: "\/", ru: "\/ru", es: "\/es", "x-default": "\/" \}/)
 })
 
-test('mobile navigation keeps seven usable shared destinations and reserves space for forms', async () => {
+test('mobile navigation keeps six usable shared destinations and reserves space for forms', async () => {
   const [mobile, styles] = await Promise.all([
     readFile('components/mobile-bottom-navigation.tsx', 'utf8'),
     readFile('app/ia-v2.css', 'utf8'),
@@ -92,15 +92,15 @@ test('mobile navigation keeps seven usable shared destinations and reserves spac
   const icons = await readFile('components/compact-navigation-icons.ts', 'utf8')
   assert.match(mobile, /compactNavigationIcons/)
   assert.match(icons, /books: BookOpen/)
-  assert.match(icons, /tests: ClipboardList/)
+  assert.match(icons, /pro: GraduationCap/)
   assert.match(icons, /business: BriefcaseBusiness/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
-  assert.match(styles, /repeat\(7,minmax\(0,1fr\)\)/)
+  assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)
   const bottomRules = [...styles.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
     .filter(([, selector]) => /\.ia222-bottom-navigation(?![\w-])/.test(selector))
     .map(([, , declarations]) => declarations).join('\n')
-  assert.match(bottomRules, /grid-template-columns:\s*repeat\(7,\s*minmax\(0,1fr\)\)/)
+  assert.match(bottomRules, /grid-template-columns:\s*repeat\(6,\s*minmax\(0,1fr\)\)/)
   assert.doesNotMatch(bottomRules, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,1fr\)\)/)
   assert.match(styles, /white-space: nowrap/)
   assert.match(styles, /--ia222-bottom-height,76px/)
@@ -108,7 +108,7 @@ test('mobile navigation keeps seven usable shared destinations and reserves spac
   assert.match(styles, /scroll-margin-bottom/)
 
   const homeStyles = await readFile('app/holistic-house-home.css', 'utf8')
-  assert.match(homeStyles, /grid-template-columns: repeat\(7, minmax\(0,1fr\)\)/)
+  assert.match(homeStyles, /grid-template-columns: repeat\(6, minmax\(0,1fr\)\)/)
 })
 
 test('no-cookie public and practitioner entry points consistently prefer English', async () => {
