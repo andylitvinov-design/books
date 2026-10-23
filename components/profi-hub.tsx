@@ -511,7 +511,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                     <h3>{chosen.preview}</h3>
                     <p>{chosen.format}</p>
                     <strong className={styles.priceNote}>{chosen.pricing}</strong>
-                    <span className={styles.fakeButton} aria-hidden="true">{offer === "course" ? t.previewCourseAction : t.previewAction}<ArrowRight size={16} /></span>
+                    
                   </div>
                   <p className={styles.micro}>{chosen.tip}</p>
                   <p className={styles.micro}>{offer === "course" ? t.previewCourseNote : t.previewNote}</p>
