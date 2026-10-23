@@ -63,5 +63,5 @@ test('navigation is controlled, accessible and mobile-first, with no new storage
   assert.match(css,/@media\(max-width:620px\)/)
   assert.match(css,/@media\(max-width:360px\)/)
   assert.doesNotMatch(today,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
-  assert.match(today,/onSession=\{body=>submit\('session',body,undefined,'inline'\)\}/)
+  assert.match(today,/onSession=\{body=>reviewLesson\?null:submit\('session',body,undefined,'inline'\)\}/)
 })

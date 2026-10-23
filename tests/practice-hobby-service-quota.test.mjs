@@ -19,15 +19,19 @@ test('free Hobby permits ten saved non-archived services, including drafts and r
   assert.equal(getHobbyServiceQuota([...services,{status:'published'}]).remaining,0)
 })
 
-test('My Practice exposes Add service and quota before metrics/analytics on mobile',async()=>{
-  const [view,css]=await Promise.all([
+test('My Practice exposes quota-gated empty-inbox service creation before metrics and keeps marketplace quota',async()=>{
+  const [view,css,inbox]=await Promise.all([
     read('components/app/practice-workspace.jsx'),
     read('components/app/practice-dashboard.css'),
+    read('components/app/practice-requests-overview.jsx'),
   ])
-  const cta=view.indexOf('className="hh-practice-top-cta"')
+  const cta=view.indexOf('<PracticeRequestsOverview ')
   const overview=view.indexOf('className="hh-practice-overview"')
   const analytics=view.indexOf('<PracticeServiceStatistics ')
   assert.ok(cta>0&&overview>cta&&analytics>overview,'CTA must appear before metrics and analytics')
+  assert.match(view,/onAddService=\{needsOnboarding[\s\S]*?: addService\}/)
+  assert.match(view,/canAdd=\{serviceQuota\.canAdd\}/)
+  assert.match(inbox,/summary\.total === 0[\s\S]*?\{canAdd[\s\S]*?onClick=\{onAddService\}[\s\S]*?<p className=\{styles\.quota\}/)
   assert.match(view,/onClick=\{addService\}/)
   assert.match(view,/serviceQuota\.used/)
   assert.match(view,/serviceQuota\.limit/)
@@ -53,3 +57,4 @@ test('every authenticated service creation path enforces the quota in a transact
   assert.match(repo,/serviceQuota:getHobbyServiceQuota\(services\)/)
   assert.match(repo,/serviceQuota:getHobbyServiceQuota\(\)/)
 })
+

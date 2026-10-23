@@ -63,7 +63,8 @@ test('XP is earned for saved lessons, never for psychological severity or test s
 
 test('guided tests remain original instrument and autosave while course links launch one-question mode', () => {
   assert.match(courseSteps, /\?mode=guided&course=1/)
-  assert.match(runner, /\?mode=guided&course=1/)
+  assert.match(runner, /const nextMode=isOporaStarter&&oporaStarter\.includes\(nextKey\)\?'quick':'guided'/)
+  assert.match(runner, /router\.push\(root \+ '\/runs\/' \+ encodeURIComponent\(nextRun\.id\) \+ '\?mode=' \+ nextMode \+ '&course=1' \+ courseQuery\)/)
   assert.match(runner, /initialMode=\{searchParams\.get\('mode'\) === 'quick' \? 'quick' : searchParams\.get\('mode'\) === 'guided' \? 'guided' : null\}/)
   // An explicit Guided URL opens the one-question runner directly, for courses and regular tests.
   assert.match(runner, /initialMode === 'guided' \? 'guided' : 'quick'/)

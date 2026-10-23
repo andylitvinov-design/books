@@ -1,10 +1,11 @@
+import { assessmentPrimaryFixtureProps } from './helpers/assessment-primary-fixture.mjs'
 // Synthetic, offline React lifecycle and disclosure acceptance. No app server,
 // database, client data, or production origin is used. Real React/ReactDOM run
 // the current component; unrelated gauge/banner/guide modules are isolated stubs.
 // Acceptance contract: one useful, non-score-prefixed primary action per selected
 // verified scale; professional/safety precedence; original guidance preserved in
 // disclosure without an identical primary duplicate; one final methodology/source
-// section. Ordinary selection starts at the lowest valid within-range fraction,
+// section. Resource selection starts at the lowest valid within-range fraction,
 // stable ties; same-result rerenders preserve the choice and new results reset it.
 // Bach ranking and scoring/provenance contracts are covered by dedicated suites.
 import fs from 'node:fs'
@@ -67,11 +68,7 @@ const React=load(${JSON.stringify(react)}),{createRoot}=load(${JSON.stringify(cl
 window.acceptanceErrors=[];window.addEventListener('error',e=>window.acceptanceErrors.push(e.message));
 const originalError=console.error;console.error=(...args)=>{window.acceptanceErrors.push(args.map(String).join(' '));originalError(...args)};
 const root=createRoot(document.getElementById('app'));
-function propsFor(id,locale='en',guest=false,review=false){
- const ru=locale==='ru'; const values=id==='B'?[6,8,1]:[8,2,6];
- const sections=values.map((value,i)=>({key:'scale-'+i,construct:(ru?'Шкала ':'Scale ')+(i+1),value,min:0,max:10,bandBasis:'descriptive',band:ru?'Описательная шкала':'Descriptive scale',summary:(ru?'Краткое объяснение ':'Short explanation ')+i,meaning:(ru?'Полное исходное объяснение ':'Full original explanation ')+i,primarySupport:(ru?'Можно спокойно отметить один полезный пример ':'Consider one helpful example ')+i,steps:[(ru?'Исходное наблюдение с баллом ':'Original score-linked observation ')+value,(ru?'Можно спокойно отметить один полезный пример ':'Consider one helpful example ')+i,(ru?'Дополнительный исходный шаг ':'Additional original step ')+i],followUp:(ru?'Обсудите беспокоящие симптомы со специалистом ':'Discuss concerning symptoms with a professional ')+i,source:'https://example.invalid/'+id+'/'+locale+'/scale-'+i,recommendedReview:review&&i===0}));
- return {locale,result:{...(guest?{}:{id}),definitionKey:'synthetic-local-fixture',dimensions:sections.map(({key,value,min,max})=>({key,value,min,max}))},report:{verified:true,sections,rulesVersion:'synthetic-acceptance-only',methodology:ru?'Методика синтетической проверки':'Synthetic acceptance methodology',seekSupport:sections[0].followUp,purpose:ru?'Синтетические данные':'Synthetic data',note:ru?'Не клинические данные':'No clinical data'}};
-}
+const propsFor=${assessmentPrimaryFixtureProps.toString()};
 window.acceptance={propsFor,render(props){flushSync(()=>root.render(React.createElement(CompactAssessmentReport,props)))},click(key){flushSync(()=>document.querySelector('[data-assessment-scale-trigger="'+key+'"]').click())},errors:window.acceptanceErrors};
 window.acceptance.render(propsFor('A'));
 `;
@@ -110,7 +107,7 @@ const fixtureUrl = pathToFileURL(fixture).href
    }
    for(const locale of ['en','ru']){
      const a=acceptance.propsFor('A',locale),b=acceptance.propsFor('B',locale);acceptance.render(b);acceptance.render(a);
-     check(locale+' initial lowest fraction',active()==='scale-1',active());content(a,1,locale+' initial');
+     check(locale+' initial lowest resource fraction',active()==='scale-1',active());content(a,1,locale+' initial');
      acceptance.click('scale-0');check(locale+' real click changes panel',active()==='scale-0',active());content(a,0,locale+' clicked');
      acceptance.render(structuredClone(a));check(locale+' same-id clone retains choice',active()==='scale-0',active());
      acceptance.render(b);check(locale+' B resets to its default',active()==='scale-2',active());content(b,2,locale+' B');
@@ -118,6 +115,12 @@ const fixtureUrl = pathToFileURL(fixture).href
      const review=acceptance.propsFor('review-'+locale,locale,false,true);acceptance.render(review);check(locale+' professional review precedence',active()==='scale-0',active());content(review,0,locale+' review');
      const guest=acceptance.propsFor('A',locale,true);acceptance.render(guest);acceptance.click('scale-2');acceptance.render(structuredClone(guest));check(locale+' guest clone retains choice',active()==='scale-2',active());
      check(locale+' correct localized heading',document.querySelector('[data-primary-support]').previousElementSibling.textContent===(locale==='ru'?'Поддержка в вашем темпе':'Support at your own pace'));
+     const difficulty=acceptance.propsFor('difficulty-'+locale,locale);
+     difficulty.report.sections=difficulty.report.sections.map(section=>({...section,presentationDirection:'difficulty'}));
+     acceptance.render(difficulty);check(locale+' highest difficulty fraction first',active()==='scale-0',active());content(difficulty,0,locale+' difficulty');
+     const neutral=acceptance.propsFor('neutral-'+locale,locale);
+     neutral.report.sections=neutral.report.sections.map(section=>({...section,presentationDirection:'neutral'}));
+     acceptance.render(neutral);check(locale+' neutral traits preserve source order',active()==='scale-0',active());content(neutral,0,locale+' neutral');
      const rejected=acceptance.propsFor('unverified-'+locale,locale);rejected.report.verified=false;rejected.report.intro='Unverified synthetic result';
      rejected.report.sections=rejected.report.sections.map(section=>({...section,bandBasis:'unavailable',steps:[],primarySupport:null}));acceptance.render(rejected);
      check(locale+' unverified report has no primary',document.querySelectorAll('[data-primary-support]').length===0);
@@ -161,3 +164,4 @@ const fixtureUrl = pathToFileURL(fixture).href
   console.error(error)
   process.exitCode = 1
 });
+

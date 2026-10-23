@@ -1,3 +1,4 @@
+import { assertCompactLeadRequest } from './helpers/compact-lead-verifier.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
 import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
@@ -194,7 +195,14 @@ try {
         assert.equal(await showcase.locator("[data-services-slide-dot]").count(), 5);
         await showcase.locator('[data-services-slide-dot="business"]').click();
         await visible(showcase.locator('[data-services-slide="business"]'));
-        await showcase.locator('[data-services-slide-action="business"]').click();
+        if (width <= 365) {
+          // Small-phone layout intentionally keeps only the request action in the photo.
+          await expect(showcase.locator('[data-services-slide-action="business"]')).toBeHidden();
+          await visible(showcase.locator('[data-services-slide-request="business"]'));
+          await showcase.locator('[data-services-kind="business"]').click();
+        } else {
+          await showcase.locator('[data-services-slide-action="business"]').click();
+        }
         await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
         await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
         await showcase.locator('[data-services-mode="toronto"]').click();
@@ -537,25 +545,26 @@ try {
         const hero = main.locator('section[aria-labelledby="free-entry-title"]');
         await visible(hero.locator('img'));
         await visible(main.locator('#what-you-get'));
-        await visible(main.locator('#how-it-works'));
+        if (kind === "dao") await expect(main.locator('#how-it-works')).toHaveCount(0);
+        else await visible(main.locator('#how-it-works'));
         const capture = main.locator('#' + captureId);
         await visible(capture);
         assert.ok((await hero.innerText()).length > 150, "First screen must explain value before an enquiry");
         assert.ok(!(await hero.innerText()).includes("€100"), "A free hero must not be a paid consultation upsell");
 
         if (width <= 390) {
-          const panelHeights = await page.evaluate(() => {
+          const panelHeights = await page.evaluate((kind) => {
             const names = {
               hero: 'section[aria-labelledby="free-entry-title"]',
               outcomes: '#what-you-get',
-              process: '#how-it-works',
+              ...(kind === 'dao' ? {} : { process: '#how-it-works' }),
             };
             return Object.entries(names).map(([name, selector]) => {
               const el = document.querySelector(selector);
               return { name, height: Math.ceil(el?.getBoundingClientRect().height ?? 9999),
                 max: window.innerHeight - 66 };
             });
-          });
+          }, kind);
           assert.deepEqual(panelHeights.filter((item) => item.height > item.max), [],
             "Each photo-led mobile section should fit within one screen: " + JSON.stringify(panelHeights));
         }
@@ -565,24 +574,12 @@ try {
           assert.equal(await main.locator('[data-free-resource-enquiry]').count(), 0,
             "Tests begin in the existing private test explorer, not a fake contact form");
         } else {
-          const form = main.locator('[data-free-resource-enquiry="' + kind + '"]');
-          await visible(form);
-          assert.equal(await form.locator('select').count(), 1);
-          assert.equal(await form.locator('input[type="text"]').count(), 1);
-          assert.equal(await form.locator('textarea').count(), 1);
           const markerA = "Synthetic name marker - " + locale + "/" + kind;
           const markerB = "Synthetic private context marker - " + locale + "/" + kind;
-          await form.locator('input[type="text"]').fill(markerA);
-          await form.locator('textarea').fill(markerB);
-          await visible(form.getByRole('button', {name: locale === "ru" ? "Скопировать мой запрос" : locale === "es" ? "Copiar mis detalles" : "Copy my details"}));
-          const chooser = await openRegisteredContactChannelChooser(form, expect, page);
-          const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(chooser, expect);
-          assert.ok((whatsappUrl.searchParams.get("text") || "").length > 40);
-          for (const marker of [markerA, markerB]) {
-            assert.ok(!whatsappUrl.searchParams.get("text")?.includes(marker), "Private note must not leak in WhatsApp URL");
-            assert.ok(!telegramUrl.searchParams.get("text")?.includes(marker), "Private note must not leak in Telegram URL");
-            assert.ok(!decodeURIComponent(page.url()).includes(marker), "Private note must not leak in page URL");
-          }
+          await hero.locator('a[href="#' + captureId + '"]').click();
+          await assertCompactLeadRequest(page,capture,expect,{
+            locale,serviceTitle:kind === "dao" ? "Free symbolic Wu Xing Resource Profile" : "Free written Situation Review",
+          });
           if (kind === "situation") {
             const detailedForm = main.locator('[data-free-drawing-intake]');
             await detailedForm.waitFor({ state: "hidden" });

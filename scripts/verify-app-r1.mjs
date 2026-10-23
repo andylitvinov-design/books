@@ -1,3 +1,4 @@
+import { assertCompactLeadRequest } from './helpers/compact-lead-verifier.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
@@ -437,7 +438,8 @@ async function verifyPublicServiceConversionJourneys(){
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    const main=servicePage.locator(kind==='dao' ? 'main[data-free-entry-landing="dao"]' : 'main[data-core-service-detail="'+kind+'"]')
+    await expect(main.locator('h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -490,6 +492,11 @@ async function verifyPublicServiceConversionJourneys(){
      assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
        'Selected 30-minute format must be carried into WhatsApp and Telegram')
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+    }else if(kind==='dao'){
+     await servicePage.locator('a[href="#request-free-wu-xing"]').click()
+     await assertCompactLeadRequest(servicePage,main.locator('#request-free-wu-xing'),expect,{
+      locale,serviceTitle:'Free symbolic Wu Xing Resource Profile',
+     })
     }else{
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
      await capture.scrollIntoViewIfNeeded()
@@ -517,7 +524,7 @@ async function verifyPublicServiceConversionJourneys(){
   for(const width of [320,360,390,1280]){
    await publicPage.setViewportSize({width,height:844})
    await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
-   const quick=publicPage.locator('[data-free-quick-request]').first()
+   const quick=publicPage.locator('#request-free-review[data-service-lead-capture]')
    await expect(quick).toBeVisible({timeout:30000})
    const intake=publicPage.locator('[data-free-drawing-intake]')
    await expect(intake).toBeHidden()
@@ -534,7 +541,7 @@ async function verifyPublicServiceConversionJourneys(){
    window.addEventListener('holistic-house:acquisition',event=>window.__publicAcquisition.push(event.detail))
   })
   await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
-  const quick=publicPage.locator('[data-free-quick-request]').first()
+  const quick=publicPage.locator('#request-free-review[data-service-lead-capture]')
   await expect(quick).toBeVisible()
   const intake=publicPage.locator('[data-free-drawing-intake]')
   const advanced=publicPage.locator('details').filter({has:intake})
@@ -1506,3 +1513,4 @@ try {
  console.log('SYNTHETIC_BROWSER_CLEANUP',JSON.stringify({outcome}))
  if(outcome!=='completed'&&!primaryFailure)throw new Error('Synthetic browser cleanup did not complete')
 }
+

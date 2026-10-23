@@ -1,3 +1,4 @@
+import { assertCompactLeadRequest } from './helpers/compact-lead-verifier.mjs';
 // Public read-only, no outgoing messenger clicks, sends, sign-in, or client records.
 // Test the real hydrated two-step capture on local Next production server.
 import assert from "node:assert/strict";
@@ -6,6 +7,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 const live = process.argv.includes("--live");
 const origin = live ? "https://holistichouse.vercel.app" : (process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100");
 if (!live && !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Only local loopback QA is allowed outside --live");
@@ -181,12 +183,17 @@ async function runEngine(name, engine) {
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
-          // The Spanish DAO route still uses CoreServiceDetail with the same
-          // privacy-gated ContactChannelChooser. EN/RU now use FreeEntryLanding.
-          const daoSelector = locale === "es"
-            ? 'main[data-core-service-detail="dao"] [data-contact-channel-chooser]'
-            : 'main[data-free-entry-landing="dao"] [data-free-resource-enquiry="dao"] [data-contact-channel-chooser]';
-          cases.push({path:"/"+locale+"/services/dao-health-profile",selector:daoSelector,min:1});
+          // Dao uses the same compact, consent-gated request in all three locales.
+          // Keep it in the browser matrix without pretending it is a messenger chooser.
+          const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile", {waitUntil:"networkidle",timeout:60000});
+          assert.equal(daoResponse?.status(),200);
+          const dao = page.locator('main[data-free-entry-landing="dao"]');
+          await expect(dao.locator('h1')).toBeVisible();
+          await dao.locator('a[href="#request-free-wu-xing"]').click();
+          await assertCompactLeadRequest(page,dao.locator('#request-free-wu-xing'),expect,{
+            locale,serviceTitle:"Free symbolic Wu Xing Resource Profile",
+          });
+          results.push({name,locale,width,compactDaoRequest:true,syntheticReceipt:true});
           for (const item of cases) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
@@ -248,3 +255,4 @@ finally {
 }
 if(failure)throw failure;
 console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);
+

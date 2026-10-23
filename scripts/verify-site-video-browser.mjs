@@ -164,7 +164,7 @@ try {
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
-      ['/ru/services/dao-health-profile', 'overview', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      ['/ru/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
@@ -183,7 +183,16 @@ try {
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
-    pass('Ten service routes EN/RU/ES have real click-to-play video iframes and original watch links')
+    pass('Ten video-bearing service routes EN/RU/ES have real click-to-play video iframes and original watch links')
+    for (const locale of ['en', 'ru', 'es']) {
+      await navigate('/' + locale + '/services/dao-health-profile')
+      const dao = page.locator('main[data-free-entry-landing="dao"]')
+      await expect(dao.locator('h1')).toBeVisible()
+      await expect(dao.locator('[data-service-video], iframe')).toHaveCount(0)
+      await dao.locator('a[href="#request-free-wu-xing"]').click()
+      await expect(dao.locator('#request-free-wu-xing [data-compact-lead-form]')).toBeVisible()
+    }
+    pass('EN/RU/ES Dao keeps its compact request path without unrelated video or eager iframes')
   }
 
   await navigate('/en/about')
@@ -362,3 +371,4 @@ try {
   if (app) app.kill('SIGTERM')
   if (server) server.close()
 }
+
