@@ -150,8 +150,8 @@ export function ServiceEnquiryThankYou({
         <nav className={styles.actions} aria-label={c.more}>
           <Link href={"/" + locale + "/services"} className={styles.primary}>{confirmed ? c.more : c.back}<ArrowRight size={18} aria-hidden="true" /></Link>
           {confirmed && <>
-            <a href={whatsapp} className={styles.secondary} target="_blank" rel="noopener noreferrer" aria-label={c.chat + ": WhatsApp"}>WhatsApp</a>
-            <a href={telegram} className={styles.secondary} target="_blank" rel="noopener noreferrer" aria-label={c.chat + ": Telegram"}>Telegram</a>
+            <a href={whatsapp} data-contact-channel="whatsapp" className={styles.secondary} target="_blank" rel="noopener noreferrer" aria-label={c.chat + ": WhatsApp"}>WhatsApp</a>
+            <a href={telegram} data-contact-channel="telegram" className={styles.secondary} target="_blank" rel="noopener noreferrer" aria-label={c.chat + ": Telegram"}>Telegram</a>
             <Link href={"/" + locale + "/contact"} className={styles.secondary}>{c.contact}</Link>
           </>}
         </nav>
