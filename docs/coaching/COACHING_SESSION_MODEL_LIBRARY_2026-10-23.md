@@ -52,7 +52,7 @@ All choices have equivalent EN/RU/ES labels. The question is one idea per slide.
 
 ## Matching policy
 
-Input is **only explicitly selected non-sensitive concern tags**, approximate available time, and short/reflective preference. Recommended list is ranked by overlapping topic tags (+10 per tag), time fit (+3 if within duration, otherwise a penalty), and preferred style (+3). It returns **scheme/model IDs + matched topics**, not a psychological diagnosis. Client may override and select any published scheme.
+Input is **only explicitly selected non-sensitive concern tags**, approximate available time, and short/reflective preference. Recommended list is ranked by overlapping topic tags (+10 per tag), time fit (+3 if within duration, otherwise a penalty), and preferred style (+3). It returns **scheme/model IDs + matched topics**, not a psychological diagnosis. A relevance guard excludes schemes with zero overlapping topics; if nothing matches, show the neutral manual catalog instead of inventing personalization. Client may override and select any published scheme.
 
 Examples:
 
