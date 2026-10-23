@@ -30,6 +30,14 @@ jobs:
           /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Canonical Homeopathy / Alchemy service routing regression
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs
+      - name: Business website enquiry, consent and CRM handoff contracts
+        run: >-
+          node --test
+          tests/business-website-enquiry.test.mjs
+          tests/business-enquiry-reply-channel.test.mjs
+          tests/business-consultation-finder.test.mjs
+      - name: Lint business enquiry UI
+        run: npx --no-install eslint components/business-website-enquiry.tsx
       - name: Production build and public browser acceptance
         run: |
           mkdir -p artifacts/public-services-production
