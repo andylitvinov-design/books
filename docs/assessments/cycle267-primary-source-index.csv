@@ -1,0 +1,5 @@
+key,doi,source,population,items,rights_gate,language_verification,access
+pted21-asikyayla2026-trtr21,10.1002/cpp.70306,Aşik and Yayla 2026,Turkish speaking adults N575,21,clinician_only,TR-TR adapted and respondent-tested,research_only
+fns-alptekin2026-pregnancy-tr9model,10.1186/s12884-026-10083-7,Alptekin et al 2026,Third trimester women N500,10 administered / 9 factor-modeled,licensed_only,Respondent language not independently established,research_only
+aivtcs-chen2026-cn31-authororiginal,10.3389/fpsyg.2026.1994352,Chen et al 2026,Teachers in China N566,31,permission_required,Respondent language not independently established,research_only
+# Research citations only; no questionnaire items scoring translation claims or live release.
