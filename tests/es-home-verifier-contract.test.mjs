@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
+import * as serviceCart from '../lib/commerce/cart.js'
 import * as navigationModel from '../lib/site-navigation-model.js'
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const source = read('scripts/verify-es-public-site.mjs')
@@ -59,76 +60,194 @@ test('canonical runtime contract and remaining privacy/language checks are retai
   assert.match(source, /assert\.deepEqual\(errors,\[\]\)/)
 })
 
-// The full EN/RU/ES browser verifier remains authoritative for click and
-// keyboard evidence. These fast tests validate its real source and JSX routing.
+const navigationHelper = source.slice(source.indexOf('async function assertSpanishNavigation('), source.indexOf('// Production-parity HTTPS browser checks.'))
 const navigationSource = read('components/site-navigation.tsx')
 const treeNodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(treeNodes) : [tree, ...treeNodes(tree.props.children)]
-const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} }
-function renderNavigation(path) {
-  const locale = 'es'
+const jsx = (type, props) => type === undefined ? props.children : typeof type === 'function' ? type(props || {}) : { type, props: props || {} }
+const textOf = tree => tree == null ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(textOf).join('') : textOf(tree.props.children)
+let space;
+function renderNavigation(path, transform = value => value, transformSpace = value => value) {
+  space = { open: false, openPanel() { space.open = true } };
   const modules = {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'next/link': { default: props => jsx('a', props) },
-    react: { useEffect() {}, useRef: () => ({ current: null }) },
+    react: { useEffect() {}, useRef: () => ({ current: null }), useState: () => [0, () => {}], createContext: () => ({}), useContext: () => space },
     'next/navigation': { usePathname: () => path },
-    'lucide-react': { Menu: () => null, Sparkles: () => null, LayoutDashboard: () => null, ArrowRight: () => null },
-    '@/components/commerce/cart-nav-link': { CartNavLink: () => null },
-    '@/components/site-search': { SiteSearch: () => null },
-    '@/lib/ui-locale': { localePath: (value, language) => '/' + language + value, saveUiLocale() {} },
-    '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_value, language) => language === 'en' ? '/' : '/' + language, savePublicLocale() {} },
-    '@/lib/site-navigation-model': navigationModel,
+    'lucide-react': Object.fromEntries(['ArrowRight', 'LayoutDashboard', 'Menu', 'Sparkles', 'ShoppingBasket','BookOpen','BriefcaseBusiness','ChevronDown','ClipboardList','FileText','LockKeyhole','Target','UserRound','X'].map(name => [name, () => null])),
     './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
-    './home-personal-space': { HomePersonalSpaceNavEntry: () => jsx('button', { className:'site-cabinet-entry','data-nav-item':'cabinet', 'aria-label':'Mi espacio', 'aria-haspopup':'dialog','aria-controls':'home-personal-space-dialog' }) },
-    './use-navigation-locale': { useNavigationLocale: () => locale },
+    '@/lib/commerce/cart': serviceCart,
+    'next/image': { default: 'img' },
+    '@/components/site-search': { SiteSearch: () => null },
+    '@/lib/app/client-fetch': { appFetch() { throw Error('No auth request in navigation fixture') } },
+    '@/lib/home-personal-space.mjs': { homeSpaceSummary() { throw Error('No account summary in navigation fixture') } },
+    './home-personal-space.module.css': { default: {} },
+    './cart-nav-link.module.css': { default: { navCart: 'cart-nav-link' } },
+    '@/lib/ui-locale': { localePath: (value, locale) => '/' + locale + value, saveUiLocale() {} },
+    '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_value, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
+    '@/lib/site-navigation-model': navigationModel,
+    './use-navigation-locale': { useNavigationLocale: locale => locale },
   }
-  const compiled = ts.transpileModule(navigationSource, {
-    fileName: 'site-navigation.tsx',
-    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText
+  const cartExports = {}
+  const cart = ts.transpileModule(read('components/commerce/cart-nav-link.tsx'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText
+  runInNewContext(cart, { exports: cartExports, require(name) { assert.ok(Object.hasOwn(modules, name), name); return modules[name] } })
+  modules['@/components/commerce/cart-nav-link'] = cartExports
+  const spaceExports = {};
+  runInNewContext(ts.transpileModule(transformSpace(read('components/home-personal-space.tsx')), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports: spaceExports, require(name) { assert.ok(Object.hasOwn(modules,name),name); return modules[name] } });
+  modules['./home-personal-space'] = spaceExports;
+  const compiled = ts.transpileModule(transform(navigationSource), { fileName: 'site-navigation.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
   const exports = {}
   runInNewContext(compiled, { exports, require(name) { assert.ok(Object.hasOwn(modules, name), 'Known navigation dependency: ' + name); return modules[name] } })
-  return exports.SiteNavigation({ locale })
+  return exports.SiteNavigation({ locale: 'es' })
 }
-test('Spanish direction links and legacy catalogs remain discoverable in actual navigation JSX', () => {
-  const desired = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about']
-  const menuUrls = [
-    '/es/services/free-situation-review','/es','/es/explore/energy','/es/explore/love','/es/explore/business',
-    '/es/client/tests','/es/books','/es/shop','/es/cart','/es/library','/es/courses','/es/events',
-    '/es/services','/es/academy','/es/about',
-  ]
-  for(const path of ['/es','/es/library','/es/services','/es/academy','/es/books','/es/about','/es/client']) {
-    const tree = renderNavigation(path)
-    const direct = Array.from(tree.props.children).flat(Infinity).filter(node =>
-      node?.type === 'a' && node.props['data-nav-item'] !== 'shop')
-    assert.deepEqual(direct.map(node=>node.props.href), path === '/es' ? desired : [...desired,'/en/app'])
-    const cabinet = treeNodes(tree).filter(node => node.props.className === 'site-cabinet-entry')
-    assert.equal(cabinet.length, 1, path + ': unique Cabinet or My Space control')
-    assert.equal(cabinet[0].type, path === '/es' ? 'button' : 'a')
-    const menu = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu')
-    assert.ok(menu, path + ': menu available')
-    const links = treeNodes(menu).filter(node=>node.type==='a')
-    assert.deepEqual(links.map(node=>node.props.href),menuUrls,path + ': complete legacy catalogs')
+async function checkSpanishNavigation(path = '/es', fault, transform) {
+  const tree = renderNavigation(path, transform)
+  const direct = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a')
+  const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu')
+  const menuNodes = treeNodes(menuTree).filter(node => node.type === 'a')
+  const cabinetNode = treeNodes(tree).find(node => node.props.className === 'site-cabinet-entry');
+  if (fault === 'wrong dialog target') cabinetNode.props['aria-controls'] = 'wrong-dialog';
+  if (fault === 'dialog initially open') cabinetNode.props['aria-expanded'] = true;
+  const cabinet = { kind: 'cabinet', count: 1, node: cabinetNode };
+  const summary = treeNodes(menuTree).find(node => node.type === 'summary')
+  if (fault === 'wrong direct destination') direct[0].props.href = '/es'
+  if (fault === 'missing direct link') direct.splice(2, 1)
+  if (fault === 'extra direct link') direct.push({ type: 'a', props: { href: '/es/library' } })
+  if (fault === 'wrong shop destination') direct.find(node => node.props['data-nav-item'] === 'shop').props.href = '/en/shop'
+  if (fault === 'wrong cart destination') direct.find(node => node.props['data-nav-item'] === 'cart').props.href = '/en/cart'
+  if (fault === 'wrong library destination') menuNodes.find(node => node.props.href === '/es/library').props.href = '/en/library'
+  if (fault === 'wrong cabinet destination') direct.find(node => node.props.href === '/en/app').props.href = '/es/client'
+  if (fault === 'wrong menu destination') menuNodes[7].props.href = '/wrong'
+  if (fault === 'missing menu destination') menuNodes.splice(2, 1)
+  if (fault === 'extra menu destination') menuNodes.push({ type: 'a', props: { href: '/extra', children: 'Extra' } })
+  if (fault === 'reordered menu destinations') [menuNodes[2], menuNodes[3]] = [menuNodes[3], menuNodes[2]]
+  if (fault === 'wrong menu label') menuNodes[7].props.children = 'About'
+  if (fault === 'wrong trigger label') summary.props['aria-label'] = 'Menu'
+  let open = fault === 'initially open', focused, url = home + path
+  const actions = []
+  const links = menuNodes.map(node => ({ kind: 'link', node }))
+  const collection = nodes => ({
+    evaluateAll: async callback => callback(nodes.map(node => ({ getAttribute: name => node.props[name] ?? null }))),
+    nth: index => links[index], first: () => links[0],
+  })
+  const trigger = { kind: 'trigger', node: summary,
+    async focus() { actions.push('focus'); focused = trigger },
+    async press(key) {
+      actions.push(key)
+      if (key === 'Enter' && fault !== 'cannot open') open = !open
+      if (key === 'Tab') focused = fault === 'keyboard order' ? links[1] : links[0]
+    },
   }
-})
-test('Spanish browser verifier matches actual My Space, public directions, accessible menu and private handoff', () => {
-  assert.match(source, /async function assertSpanishNavigation\(page, path\)/)
-  assert.match(source, /aria-haspopup','dialog'/)
-  assert.match(source, /toHaveAccessibleName\('Mi espacio'\)/)
-  assert.match(source, /'\/es\/explore\/energy', '\/es\/explore\/love'/)
-  assert.match(source, /'\/es\/services', '\/es\/academy', '\/es\/about'/)
-  assert.match(source, /await trigger.press\('Tab'\)/)
-  assert.match(source, /await page.keyboard.press\('Escape'\)/)
-  assert.match(source, /const accountLink = page.locator\('\.site-navigation a\.site-cabinet-entry\[href="\/en\/app"\]'\)/)
-  assert.match(source, /await click\(accountLink\)/)
-  assert.doesNotMatch(source, /four direct links plus eleven-entry Spanish menu/)
-  assert.match(source, /await assertSpanishNavigation\(page, path\)/)
+  const menu = { kind: 'menu', count: fault === 'missing menu' ? 0 : 1, locator(selector) {
+    if (selector === 'summary') return trigger
+    assert.equal(selector, '.site-main-menu-panel a'); return collection(menuNodes)
+  } }
+  const navigation = { kind: 'navigation', count: 1, locator(selector) {
+    if (selector === ':scope > a') return collection(direct)
+    if (selector === '.site-cabinet-entry') return cabinet;
+    assert.equal(selector, 'details.site-main-menu'); return menu
+  } }
+  const page = {
+    url: () => url,
+    locator(selector) { assert.equal(selector, '.site-navigation'); return navigation },
+    evaluate: async () => fault !== 'menu overflow',
+    keyboard: { async press(key) {
+      assert.equal(key, 'Escape'); actions.push(key)
+      if (fault !== 'escape closure') open = false
+      focused = fault === 'focus return' ? links[0] : trigger
+      if (fault === 'unexpected navigation') url = home + '/en/app'
+    } },
+  }
+  const expect = actual => ({
+    async toHaveCount(count) { assert.equal(actual.count, count) },
+    async toHaveAttribute(name, value) { assert.equal(String(actual.node.props[name]), value) },
+    async toHaveJSProperty(name, value) { assert.equal(actual, menu); assert.equal(name, 'open'); assert.equal(open, value) },
+    async toBeVisible() {
+      assert.ok(actual, 'Control exists')
+      if (actual.kind === 'link') { assert.equal(open, true); assert.notEqual(fault, 'hidden menu link') }
+      else { assert.equal(actual, trigger); assert.notEqual(fault, 'hidden trigger') }
+    },
+    async toHaveAccessibleName(name) { assert.equal(actual.node.props['aria-label'] ?? (actual.node.props['data-free-review-entry'] ? treeNodes(actual.node).filter(node => node.props.className === 'site-main-menu-free__title' || node.props.className === 'site-main-menu-free__detail').map(textOf).join(' ') : textOf(actual.node)), name) },
+    async toBeFocused() { assert.equal(focused, actual) },
+    async toHaveURL(expected) { assert.equal(actual, page); assert.equal(url, expected) },
+  })
+  await new Function('assert', 'expect', navigationHelper + '; return assertSpanishNavigation')(assert, expect)(page, path)
+  assert.equal(open, false, 'Menu closes before route screenshots or subsequent language checks')
+  assert.equal(focused, trigger)
+  assert.deepEqual(actions, ['focus', 'Enter', 'Tab', 'Escape'])
+  assert.equal(url, home + path, 'The menu audit must not navigate away from the current route')
+}
+for (const path of ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client']) {
+  test(path + ' actual JSX preserves needs-based directions, Home dialog and the exact labelled fifteen-entry menu', () => checkSpanishNavigation(path))
+}
+for (const fault of ['wrong direct destination', 'missing direct link', 'extra direct link', 'wrong library destination', 'wrong shop destination', 'wrong cart destination', 'wrong cabinet destination', 'wrong menu destination', 'missing menu destination', 'extra menu destination', 'reordered menu destinations', 'wrong menu label', 'wrong trigger label', 'initially open', 'missing menu', 'cannot open', 'keyboard order', 'escape closure', 'focus return', 'unexpected navigation', 'menu overflow', 'hidden menu link', 'hidden trigger', 'wrong dialog target', 'dialog initially open']) {
+  test('Spanish navigation verifier rejects ' + fault, () => assert.rejects(checkSpanishNavigation(fault === 'wrong cabinet destination' ? '/es/client' : '/es', fault)))
+}
+for (const [name, before, after] of [
+  ['obsolete free-start anchor', '/services/free-situation-review', '#free-start'],
+  ['full catalog restored as direct links', ".filter(item => ['energy', 'love', 'business'].includes(item.id))", ''],
+  ['courses removed from full menu', 'extraMenuItems.map(item => (', "extraMenuItems.filter(item => item.id !== 'courses').map(item => ("],
+]) {
+  test('Spanish navigation verifier rejects actual source mutation: ' + name, () => {
+    assert.ok(navigationSource.includes(before))
+    return assert.rejects(checkSpanishNavigation('/es', undefined, value => value.replace(before, after)))
+  })
+}
+test('navigation disclosure returns closed before screenshots and preserves the browser/privacy lifecycle', () => {
+  assert.match(source, /await assertSpanishNavigation\(page, path\);/)
+  assert.ok(source.indexOf('await assertSpanishNavigation(page, path);') < source.indexOf("if(path==='/es/client')"))
+  assert.match(source, /Energy\/Love\/Business, fifteen-entry menu, Home My Space dialog and off-Home Cabinet; Enter\/Tab\/Escape and focus return/)
+  assert.match(source, /for \(const width of \[390,1365\]\)/)
+  assert.match(source, /\[\['chromium', chromium\], \['webkit', webkit\]\]/)
   assert.match(source, /await assertUnsupportedSpanishPrivateLocale\(denialPage,response,target,expect\)/)
   assert.match(source, /assert\.deepEqual\(unselectedClientRequests,\[\]/)
-  assert.match(source, /await context.close\(\)/)
+  assert.match(source, /await context\.close\(\)/)
+  assert.match(source, /finally \{await browser\.close\(\);\}/)
+  assert.match(source, /finally \{if\(proxy\)\{proxy\.closeAllConnections\(\);proxy\.close\(\);\} if\(app\)app\.kill\('SIGTERM'\);\}/)
 })
-test('Spanish Academy remains available without inventing an Academy bottom-bar slot', () => {
-  assert.match(source, /getByRole\('heading', \{ level: 1, name: 'Cursos de IA gratuitos'/)
-  assert.match(source, /await expect\(freeStart\)\.toHaveAttribute\('href', '\/es\/services\/free-situation-review'\)/)
-  assert.match(source, /mobile-bottom-navigation \[aria-current="page"\]'\)\)\.toHaveCount\(0\)/)
-  assert.doesNotMatch(navigationSource, /getCompactNavigation\(activeLocale\)\.filter\(item => item\.id === 'academy'\)/)
-})
+
+test('Spanish account handoff follows the unique visible cabinet entry', async () => {
+  const start = source.indexOf('        const accountLink =');
+  const end = source.indexOf("        await expect(page).toHaveURL(origin+'/en/app/portrait');", start);
+  assert.ok(start > 0 && end > start);
+  const handoff = source.slice(start, end);
+  async function run(fault) {
+    const tree = renderNavigation('/es/client');
+    const links = treeNodes(tree).filter(node => node.type === 'a' && node.props.className === 'site-cabinet-entry');
+    if (fault === 'wrong destination') links[0].props.href = '/es/client';
+    if (fault === 'missing link') links.length = 0;
+    if (fault === 'duplicate link') links.push(links[0]);
+    let clicked = false;
+    const account = { count: links.length };
+    const page = { locator(selector) {
+      assert.equal(selector, '.site-navigation > a.site-cabinet-entry'); return account;
+    } };
+    const expect = actual => ({
+      async toHaveCount(count) { assert.equal(actual.count, count); },
+      async toHaveAccessibleName(name) { assert.equal(actual, account); assert.equal(links[0].props['aria-label'], name); },
+      async toBeVisible() { assert.equal(actual, account); assert.notEqual(fault, 'hidden link'); },
+      async toHaveAttribute(name, value) { assert.equal(actual, account); assert.equal(links[0].props[name], value); },
+    });
+    const click = async target => { assert.equal(target, account); clicked = true; };
+    await new Function('page', 'expect', 'click', `return (async()=>{${handoff}})()`)(page, expect, click);
+    assert.equal(clicked, true);
+  }
+  await run();
+  for (const fault of ['wrong destination', 'missing link', 'duplicate link', 'hidden link']) await assert.rejects(run(fault), fault);
+});
+
+function assertHomeDialog(transformSpace = value => value) {
+ const tree=renderNavigation('/es',value=>value,transformSpace);
+ const button=treeNodes(tree).find(node=>node.props.className==='site-cabinet-entry');
+ assert.equal(button.type,'button');assert.equal(button.props.type,'button');assert.equal(button.props.href,undefined);
+ assert.equal(button.props.onClick,space.openPanel);assert.equal(space.open,false);
+ button.props.onClick();assert.equal(space.open,true);
+}
+test('Home My Space uses its actual context handler without navigating or reading an account', () => assertHomeDialog());
+for(const [name,before,after] of [
+ ['disconnected dialog action','onClick={space.openPanel}','onClick={() => {}}'],
+ ['Home replaced by account link','if (!space) return <Link','if (true) return <Link'],
+]) test('actual Home component rejects '+name,()=>{
+ assert.ok(read('components/home-personal-space.tsx').includes(before));
+ assert.throws(()=>assertHomeDialog(value=>value.replace(before,after)));
+});

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import vm from "node:vm";
+import { assertFreeEntry } from "./helpers/free-entry-contract.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const landing = read("app/[locale]/services/free-situation-review/page.tsx");
@@ -8,33 +10,21 @@ const styles = read("app/[locale]/services/free-situation-review/review.module.c
 const homepage = read("components/holistic-house-home.tsx");
 const services = read("components/services-conversion-hero.tsx");
 
-test("free written review and optional paid consultation are distinct choices on one landing", () => {
-  assert.match(landing, /id="request-free-review"/);
-  assert.match(landing, /id="personal-consultation"/);
-  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.match(landing, /<FreeReviewQuickRequest locale=\{locale\} \/>/);
-  assert.match(landing, /variant="all"/);
-  assert.match(landing, /href="#request-free-review"/);
-  assert.match(landing, /href="#situations"/);
-  assert.match(landing, /<ServiceVideoShowcase topic="overview"/);
-  assert.ok(landing.indexOf('id="personal-consultation"') > landing.indexOf('<ServiceVideoShowcase'), "consultation format selection belongs after the value explanation and video");
-  assert.match(landing, /<details className=\{styles\.directions\}>/);
-  assert.match(landing, /className=\{styles\.finalRequest\} id="request-free-review"/);
-  assert.ok(landing.includes('href={"/" + locale + "/services/alchemy-of-soul"}'));
+test("free written review is a separate canonical free landing, not a paid consultation selector", () => {
+  assert.match(landing, /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
+  const component=read("components/free-entry-landing.tsx");
+  for(const locale of ["en","ru","es"]) assertFreeEntry(component,locale);
 });
 
-test("three languages preserve a genuinely free written report and transparent live consultation prices", () => {
-  for (const phrase of [
-    "Начать бесплатный разбор",
-    "Get my free written review",
-    "Recibir revisión escrita gratuita",
-    "written", "письмен", "escrito",
-  ]) assert.ok(landing.includes(phrase), "missing localised consultation detail: " + phrase);
-  assert.doesNotMatch(landing, /€50|€100/, "Monetary amounts appear only in the final request component");
-  const selector = read("components/free-review-quick-request.tsx");
-  for (const phrase of ["€50", "€100", "Free", "Бесплатно", "Gratis"]) assert.ok(selector.includes(phrase), phrase);
-  assert.match(landing, /медицинским диагнозом/i);
-  assert.match(landing, /medical diagnosis/i);
+test("free landing contract rejects lost consent-capture identity, wrong destination and compulsory questionnaire", () => {
+  const component=read("components/free-entry-landing.tsx");
+  for(const [before,after] of [
+    ['situation: "Free written Situation Review"','situation: "Paid session"'],
+    ['id={captureId}','id="wrong-request"'],
+    ['href={"#" + captureId}','href="#wrong-request"'],
+    ['<details className={styles.fullQuestionnaire}','<details open className={styles.fullQuestionnaire}'],
+    ['disclaimer={common.limitations}','disclaimer="Guaranteed cure"'],
+  ]) { assert.ok(component.includes(before)); assert.throws(()=>assertFreeEntry(component.replace(before,after),"en")); }
 });
 
 test("home and services offer direct and clear free and paid landing actions", () => {
@@ -56,13 +46,17 @@ function assertBookingAnchor(page, cta, capture) {
   assert.equal(targets.length, 1, "One consultation target per Services page");
   assert.match(targets[0], /id="consultation"/);
   assert.match(targets[0], /\bserviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
-  assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} wiseEnabled=\{wiseEnabled\} paypalPersonalEnabled=\{paypalPersonalEnabled\} \/>/);
+  assert.match(cta, /if \(serviceBooking\) return <ConsultationCartEntry locale=\{locale\} id=\{id\} \/>/);
   assert.match(capture, /<section\s+id=\{id\}/);
 }
 
 test("booking links resolve to the service selector anchor in every Services locale", () => {
   const cta = read("components/public-consultation-cta.tsx");
-  const capture = read("components/consultation-choice-capture.tsx");
+  const capture = read("components/commerce/consultation-cart-entry.tsx");
+  assert.match(capture, /restoreServiceCart\(JSON\.stringify/);
+  assert.match(capture, /sessionStorage\.setItem\(SERVICE_CART_STORAGE_KEY, JSON\.stringify\(updated\)\)/);
+  assert.match(capture, /No payment is taken when you add to cart/);
+  assert.doesNotMatch(capture, /fetch\(|sendBeacon|payment-intents|checkout\/sessions/);
   for (const path of ["app/[locale]/services/page.tsx", "app/es/services/page.tsx"]) {
     const page = read(path);
     assertBookingAnchor(page, cta, capture);
@@ -72,9 +66,8 @@ test("booking links resolve to the service selector anchor in every Services loc
     assert.throws(() => assertBookingAnchor(page.replace('paypalPersonalEnabled={personalPayPalEnabled()}', 'paypalPersonalEnabled={true}'), cta, capture));
     assert.throws(() => assertBookingAnchor(page.replace(' paypalPersonalEnabled={personalPayPalEnabled()}', ''), cta, capture));
   }
-  assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('variant="service" id={id}', 'variant="personal" id={id}'), capture));
-  assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('wiseEnabled={wiseEnabled}', 'wiseEnabled={true}'), capture));
-  assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('paypalPersonalEnabled={paypalPersonalEnabled}', 'paypalPersonalEnabled={true}'), capture));
+  for(const [before,after] of [['<ConsultationCartEntry locale={locale} id={id}', '<ConsultationCartEntry locale="en" id={id}'], ['<ConsultationCartEntry locale={locale} id={id}', '<ConsultationCartEntry locale={locale} id="wrong"']])
+    assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace(before,after), capture));
 });
 
 test("existing personal form remains a browser-local questionnaire with an explicit WhatsApp handoff", () => {
@@ -83,4 +76,23 @@ test("existing personal form remains a browser-local questionnaire with an expli
   assert.match(intake, /event\.preventDefault\(\)/);
   assert.match(intake, /t\.drawingText/);
   assert.doesNotMatch(intake, /localStorage|sessionStorage|fetch\(|sendBeacon|XMLHttpRequest/);
+});
+
+function assertPublishedRates(source) {
+  const prepared=source.replace("import { deepFreeze } from '../assessments/contracts.js'", "const deepFreeze = value => value").replaceAll('export ', '');
+  const catalog=vm.runInNewContext(prepared+'; publicServiceCatalog', {Intl});
+  for(const locale of ['en','ru','es']) {
+    const products=catalog(locale);
+    assert.deepEqual(JSON.parse(JSON.stringify(products.map(({id,amountMinor,currency,durationMinutes,kind})=>({id,amountMinor,currency,durationMinutes,kind})))),[
+      {id:'express-consultation-30',amountMinor:5000,currency:'EUR',durationMinutes:30,kind:'one_time'},
+      {id:'personal-session-60',amountMinor:10000,currency:'EUR',durationMinutes:60,kind:'one_time'},
+    ]);
+    assert.ok(products.every(product=>product.title&&product.description));
+  }
+}
+test('separate paid cart retains exact one-time published rates across locales, not free lead prices',()=>{
+ const catalog=read('lib/commerce/catalog.js');assertPublishedRates(catalog);
+ for(const [before,after] of [['amountMinor: 5000','amountMinor: 100'],["kind: 'one_time'","kind: 'subscription'"],["currency: 'EUR'","currency: 'USD'"]]){
+  assert.ok(catalog.includes(before));assert.throws(()=>assertPublishedRates(catalog.replace(before,after)));
+ }
 });

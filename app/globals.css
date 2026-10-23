@@ -5965,3 +5965,8 @@
  .hh-admin-material-v4-tabs a svg{width:18px;height:18px}
 }
 @media(max-width:350px){.hh-admin-material-v4-tabs a{font-size:9px}}
+
+/* Respect the visitor's motion preference on the actual page scroller. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

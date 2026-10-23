@@ -1,3 +1,4 @@
+import { homeFixture, assertDeferredHome, components, links, nodes } from './helpers/home-source-render-fixture.mjs';
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -47,17 +48,24 @@ test("home SEO metadata and all three languages have real human-readable variant
   assert.match(sitemap, /\.\.\.network, \.\.\.homes/);
 });
 
-test("home SEO preserves visible photo offers and bottom blue free capture in EN/RU", () => {
+test("home SEO preserves discoverable deferred photo offers and bottom blue free capture in EN/RU", async () => {
   const home = read("components/holistic-house-home.tsx");
   const spanish = read("app/es/page.tsx");
   assert.equal(home.split("<HomepageContactCta locale={locale} />").length - 1, 1);
-  assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf("<HomepageContactCta locale={locale} />"));
+  for (const locale of ["en", "ru"]) {
+    const { expanded } = await assertDeferredHome(homeFixture({ locale }), locale);
+    const capture = components(expanded, "HomepageContactCta");
+    assert.equal(capture.length, 1);
+    assert.ok(nodes(expanded).indexOf(components(expanded, "ServicesSolutions")[0]) < nodes(expanded).indexOf(capture[0]));
+    assert.equal(components(capture[0], "HomepageFreeCapture").length, 1);
+    assert.ok(nodes(capture[0]).some(node => node.props?.["data-consultation-capture"] === "home-free"));
+    assert.ok(links(capture[0]).some(node => node.props.href === `/${locale}/client/tests`));
+    assert.equal(components(expanded, "PersonalTestimonials").length, 1);
+  }
   assert.doesNotMatch(home, /data-home-path|data-home-extra-paths|service-home-more|service-home-progress/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
   assert.doesNotMatch(home, /HomeFreeTestsBanner/);
-  for (const comp of ["ServicesSolutions", "HomepageTopicJourneys", "PersonalTestimonials"]) {
-    assert.ok(home.includes("<" + comp), comp);
-  }
+
   assert.match(spanish, /href="\/es\/services\/free-situation-review"/);
   assert.match(spanish, /className="service-home-card-photo"/);
   assert.match(spanish, /<PublicConsultationCta locale="es" \/>/);

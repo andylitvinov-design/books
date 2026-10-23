@@ -101,9 +101,18 @@ test('shared course/service chooser requires a reply contact and opt-in; name is
   const styles=read('components/contact-channel-chooser.module.css')
   for (const term of ['autoComplete="name"','autoComplete="email"',
     'contactConsent: consent', 'contact: { displayName:', 'type="checkbox" required',
-    'setConsent(false)','setDisplayName("")','setPhone("")']) {
+    'setConsent(quick)','setDisplayName("")','setPhone("")']) {
     assert.ok(view.includes(term),term)
   }
+  // Standard forms start unchecked; the quick form discloses reply-only consent
+  // immediately before the explicit Submit action, never a marketing opt-in.
+  assert.match(view,/quick = false/)
+  assert.match(view,/const \[consent, setConsent\] = useState\(quick\)/)
+  assert.match(view,/setConsent\(quick\);[\s\S]*?\}, \[enquiryResetKey, quick, selectedFormat\]\)/)
+  assert.match(view,/\{!quick && <><details className=\{styles\.optionalName\}>[\s\S]*?type="checkbox" required checked=\{consent\}/)
+  assert.match(view,/\{quick && <small className=\{styles\.quickConsent\}>\{c\.quickConsent\}<\/small>\}/)
+  assert.match(view,/No marketing, charge or confirmed booking/)
+  assert.match(view,/\|\| !consent\) \{/)
   assert.match(read('components/phone-country-input.tsx'),/autoComplete="tel-national"/)
   assert.match(view,/sourcePath: pathname, locale/)
   assert.match(view,/fetch\("\/api\/service-enquiries"/)
@@ -123,3 +132,43 @@ test('shared course/service chooser requires a reply contact and opt-in; name is
   assert.match(contacts,/contact\.enquiry\.referenceCode/)
   assert.match(store,/\.\.\.\(former\.enquiry \? \{enquiry:former\.enquiry\} : \{\}\)/)
 })
+
+
+
+function assertChooserResetContract(view) {
+  const effects = [...view.matchAll(/useEffect\(\(\) => \{([\s\S]*?)\}, \[([^\]]*)\]\);/g)];
+  const reset = effects.find(([, body]) => body.includes('setConsent(quick)'));
+  assert.ok(reset, 'Actual reset effect remains present');
+  assert.deepEqual(reset[2].split(',').map(value => value.trim()), ['enquiryResetKey', 'quick', 'selectedFormat']);
+  const setters = [...new Set([...reset[1].matchAll(/\b(set[A-Z]\w*)\(/g)].map(match => match[1]))];
+  for (const quick of [false, true]) {
+    const values = {}, operationId = { current: 'previous-request-id' };
+    let requests = 0;
+    new Function(...setters, 'operationId', 'quick', 'fetch', reset[1])(
+      ...setters.map(name => value => { values[name] = value; }),
+      operationId, quick, () => { requests++; },
+    );
+    assert.deepEqual(values, { setOpen:false, setDescription:'', setDisplayName:'', setMethod:'email',
+      setGoogleReady:false, setEmail:'', setPhone:'', setConsent:quick, setWebsite:'', setSaved:null, setError:'' });
+    assert.equal(operationId.current, null, 'Changing format cannot reuse an earlier operation');
+    assert.equal(requests, 0, 'Resetting a selection never sends an enquiry');
+  }
+  const submit = view.slice(view.indexOf('async function submit('), view.indexOf('let preparedWhatsApp'));
+  assert.ok(submit.includes('|| !consent) {'), 'Explicit reply consent is still checked in actual submit');
+  assert.ok(submit.indexOf('|| !consent) {') < submit.indexOf('fetch("/api/service-enquiries"'), 'Consent guard precedes the first-party request');
+  assert.match(view, /<form onSubmit=\{submit\}/);
+}
+test('actual chooser reset clears prior contact, consent and operation identity for changed public formats without sending', () => {
+  assertChooserResetContract(read('components/contact-channel-chooser.tsx'));
+});
+for (const [name, before, after] of [
+  ['missing format dependency', '[enquiryResetKey, quick, selectedFormat]', '[enquiryResetKey, quick]'],
+  ['inherited consent', 'setConsent(quick);', 'setConsent(true);'],
+  ['reused operation identity', 'operationId.current = null;', 'operationId.current = "previous-request-id";'],
+  ['automatic reset request', 'setOpen(false);', 'setOpen(false); fetch("/api/service-enquiries");'],
+  ['bypassed submit consent', '|| !consent) {', ') {'],
+]) test('reset contract rejects ' + name, () => {
+  const view = read('components/contact-channel-chooser.tsx');
+  assert.ok(view.includes(before));
+  assert.throws(() => assertChooserResetContract(view.replace(before, after)));
+});

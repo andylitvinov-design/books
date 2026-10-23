@@ -52,7 +52,8 @@ test('remedy cover thumbnails are sourced only from a selected approved library 
     ...base, items: [{ remedySlug: 'colchicum-autumnale', displayName: 'Colchicum autumnale', itemType: 'homeopathy' }],
   }, 'en', origin))
   assert.match(withLibrary, /\/RemedyPhoto1 Do Q/, 'approved source appears on cover and in appendix')
-  assert.match(withLibrary, /\(SELECTED REMEDY\)/)
+  assert.match(withLibrary, /Colchicum autumnale/,'selected source remedy name remains visible')
+  assert.doesNotMatch(withLibrary, /\(SELECTED REMEDY\)/,'approved quieter cards omit the repetitive label')
   const withoutLibrary = source(buildPrescriptionPdf(base, 'en', origin))
   assert.doesNotMatch(withoutLibrary, /SELECTED REMEDY/)
 })
@@ -70,7 +71,7 @@ test('invoices remain on their approved template, never using recommendation rin
 test('mobile report and print use adaptive layouts without static page counts', () => {
   const view = readFileSync('components/prescription-document.jsx','utf8')
   const styles = readFileSync('components/consultation-report.css','utf8')
-  for (const marker of ['canonical-report-hero','canonical-progress-dial','canonical-remedy-card-photo']) {
+  for (const marker of ['canonical-report-hero','canonical-progress-dial','canonical-remedy-unified-full-photo']) {
     assert.ok(view.includes(marker), marker+' is rendered from client data')
     assert.ok(styles.includes(marker), marker+' has responsive styling')
   }

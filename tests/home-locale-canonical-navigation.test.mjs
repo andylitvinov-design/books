@@ -103,7 +103,7 @@ async function switchScenario(from, to, { noRsc = false, optimistic = false, dis
   const iframe = { kind: 'iframe', async elementHandle() { return { async evaluate() { return !discarded; } }; } };
   const next = { kind: 'next', locator(selector) {
     if (selector === 'iframe') return iframe;
-    assert.equal(selector, '.site-video-play');
+    assert.equal(selector, 'button.site-video-play');
     return { async click() { assert.equal(state.committed, true); state.played = true; } };
   } };
   const main = { kind: 'main' };
@@ -115,7 +115,7 @@ async function switchScenario(from, to, { noRsc = false, optimistic = false, dis
   const expect = target => ({
     async toHaveAttribute(name, expected) {
       if (target === main) { assert.equal(name, 'lang'); assert.equal(optimistic ? to : from, expected); assert.equal(state.committed, false); }
-      else { assert.equal(target, iframe); assert.equal(name, 'src'); assert.equal(state.played, true); assert.equal(wrongVideo ? 'wrong-video' : `https://app.heygen.com/embeds/${to === 'en' ? 'ed202847a43a96b918308aa972177b34' : '388a04b39ebf215ae656bcd22d0d0847'}`, expected); }
+      else { assert.equal(target, iframe); assert.equal(name, 'src'); assert.equal(state.played, true); assert.ok(expected instanceof RegExp); assert.match(wrongVideo ? 'https://www.youtube-nocookie.com/embed/wrong-video?autoplay=1' : `https://www.youtube-nocookie.com/embed/${to === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424'}?autoplay=1`, expected); }
     },
     async toHaveCount(expected) { await Promise.resolve(); assert.equal(target === next ? Number(state.committed || optimistic) : Number(state.played), expected); },
     async toHaveURL(expected) { assert.equal(target, page); assert.equal(state.url, expected); },
@@ -192,10 +192,11 @@ test('real-browser matrices, privacy, no-discard, visuals and errors stay mandat
     'assert.deepEqual(unexpectedApiRequests, []', 'assert.deepEqual(errors, [])',
     "frame.evaluate(element => element.isConnected)", "await expect(next).toHaveCount(0)",
     'measurements.overflow <= 2', 'measurements.cardCount, 4', 'measurements.contactChoices, 3',
-    "await expect(videoPosters).toHaveCount(2)", "firstReview.locator('iframe')",
+    "const expectedIds = ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk'];", "await expect(videoPosters).toHaveCount(expectedIds.length)", "firstReview.locator('iframe')",
     'const firstReview = await verifyHomeTestimonialPosters(page)',
     'await exerciseFreeJourneys(page, engine, width)',
   ]) assert.ok(source.includes(text), text);
   assert.match(source, /finally \{\s+delayedLocale = null;\s+releaseHeldRsc\(\)/);
   assert.doesNotMatch(source, /test\.skip|test\.todo|test\.only/);
 });
+

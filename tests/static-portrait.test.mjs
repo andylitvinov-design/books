@@ -30,11 +30,18 @@ test('approved live Home uses real static portraits without restoring oversized 
  for(const f of files){const s=readFileSync(f,'utf8');count+=(s.match(/<StaticPortrait\b/g)||[]).length;assert.ok(s.includes('/images/holistic-house/andy-about.png'));}
  assert.equal(count,3);
  const services=readFileSync("app/es/services/page.tsx","utf8");
- assert.ok(services.includes("className={offerStyles.photo}"));
- assert.ok(services.includes("data-es-services-photo-cards"));
+ assert.ok(services.includes('<ServicesStudioOffers locale="es" />'));
+ const shared=readFileSync('components/services-studio-offers.tsx','utf8');
+ assert.match(shared,/function ServiceCard\(/);
+ assert.match(shared,/data-services-studio-card=\{offer.id\}/);
+ assert.match(shared,/className=\{styles.photo\}/);
+ assert.match(shared,/offer.image === "\/images\/holistic-house\/andy-about.png"/);
+ assert.match(shared,/<StaticPortrait src="\/images\/holistic-house\/andy-about.png" alt="" fill/);
+ assert.match(shared,/<Image src=\{offer.image\} alt="" fill/);
 });
 
 test('only new public artwork folders are excluded from function tracing',()=>{
  const s=readFileSync('next.config.ts','utf8');assert.ok(s.includes('"/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*", "./public/images/holistic-house/static-card-media/**/*"]'));
  assert.ok(s.includes('source: "/images/holistic-house/static-card-media/:path*"'));assert.ok(!s.includes('"./public/**/*"'));
 });
+

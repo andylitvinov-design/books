@@ -9,9 +9,9 @@ for (const locale of ['en', 'ru']) {
   test(locale + ' verifier checks the exact portrait before using real My Tests navigation', async () => {
     const origin = 'http://127.0.0.1:3100', path = '/' + locale + '/app/tests'
     const events = []
-    const profile = { name: 'profile', getByRole(role, options) {
+    const profile = { name: 'profile', locator(selector) { assert.equal(selector, '[data-profile-report-archive]#personal-reports'); return this }, getByRole(role, options) {
       assert.equal(role, 'heading')
-      assert.deepEqual(options, { name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true })
+      assert.deepEqual(options, { name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true })
       return { name: 'heading' }
     } }
     const link = { name: 'link', first() { return this }, async click() {
@@ -24,10 +24,11 @@ for (const locale of ['en', 'ru']) {
       return { name: 'dashboard' }
     } }
     const expect = value => ({
+      async toHaveCount(count) { assert.equal(count, 1) },
       async toHaveURL(url) { assert.equal(value.url, url); events.push('url:' + url) },
       async toBeVisible() { events.push('visible:' + value.name) },
       async toHaveText(text) { assert.equal(text, locale === 'ru' ? 'Тесты' : 'Tests'); events.push('label') },
-      async toHaveAttribute(name, href) { assert.equal(name, 'href'); assert.equal(href, path); events.push('href') },
+      async toHaveAttribute(name, href) { if (name !== 'href') { assert.equal(href, ({'data-profile-mode':'account','aria-labelledby':'hh-account-report-title',id:'hh-account-report-title'})[name]); return } assert.equal(name, 'href'); assert.equal(href, path); events.push('href') },
     })
     await assertCabinetPortrait(page, expect, { origin, locale })
     await openCabinetMyTests(page, expect, { origin, locale })
@@ -61,5 +62,6 @@ test('Spanish cabinet keeps its public root link and verifies the canonical port
   assert.ok(source.includes("toHaveAttribute('href','/en/app')"))
   assert.equal(source.split("toHaveURL(origin+'/en/app/portrait')").length - 1, 2)
   assert.ok(source.includes("toHaveAttribute('lang','en')"))
-  assert.ok(source.includes(".hh-app .hh-entry"))
+  // Guest markup is covered by cabinet-guest-entry-verifier; keep this shared
+  // navigation contract independent of guest vs authenticated heading copy.
 })

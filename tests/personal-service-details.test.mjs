@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { assertFreeEntry } from "./helpers/free-entry-contract.mjs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -41,30 +42,18 @@ test("three free paths and two personal cards retain all core service detail pag
   assert.match(read("components/free-entry-landing.tsx"), /<FreeSituationReviewForm locale=\{locale\}/);
 });
 
-test("free written review keeps personal scope, optional long questionnaire and no paid or false clinical claims", () => {
-  const route = read("app/[locale]/services/free-situation-review/page.tsx");
-  const landing = read("components/free-entry-landing.tsx");
-  const enquiry = read("components/free-resource-enquiry.tsx");
-  const css = read("components/free-entry-landing.module.css");
+test("free written review keeps actual optional questionnaire, free lead and visible nonclinical limits", () => {
+  const route=read("app/[locale]/services/free-situation-review/page.tsx");
   assert.match(route, /kind="situation"/);
-  assert.match(landing, /t\.steps\.map/);
-  assert.match(landing, /t\.faq\.map/);
-  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\}>/);
-  assert.match(landing, /"request-free-review"/);
-  for (const phrase of [
-    "It does not include a video call or live consultation",
-    "Он не включает видеозвонок",
-    "No incluye videollamada ni consulta en directo",
-    "educational and symbolic",
-    "не диагностируют и не лечат заболевания",
-    "no diagnostican ni tratan enfermedades",
-  ]) assert.ok(landing.includes(phrase), phrase);
-  assert.match(enquiry, /<ContactChannelChooser/);
-  assert.match(enquiry, /navigator\.clipboard\.writeText\(privateContext\)/);
+  const landing=read("components/free-entry-landing.tsx");
+  for(const locale of ["en","ru","es"]) assertFreeEntry(landing,locale);
+  const enquiry=read("components/compact-lead-capture.tsx");
+  assert.match(enquiry, /useState\(false\)/);
+  assert.match(enquiry, /if \(!consent \|\| sending \|\| reference\) return/);
+  assert.match(enquiry, /contactConsent: true/);
+  assert.match(enquiry, /result\?\.saved !== true/);
+  assert.match(enquiry, /referenceCode/);
   assert.doesNotMatch(landing + enquiry, /guaranteed cure|medical diagnosis provided|€50|€100/i);
-  assert.match(css, /@media\(max-width:600px\)/);
-  assert.match(css, /min-height:calc\(100svh - 150px\)/);
 });
 
 test("all personal services have source-backed educational language, approved prices and no medical claims", () => {

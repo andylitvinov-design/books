@@ -65,7 +65,7 @@ test('preparing a client report uses existing idempotent draft creation, never p
   assert.equal(calls.length,1,'no extra creation after a missing client')
 })
 
-test('Documents Ready and saved Document editor both expose manual copy and draft preparation',()=>{
+test('Documents Ready preserves explicit publication while the saved editor offers draft preparation and manual copy',()=>{
   const action=src('components/consultation-document-actions.jsx')
   const issuer=src('components/session-link-issuer.jsx')
   const result=src('components/consultation-result.jsx')
@@ -75,14 +75,17 @@ test('Documents Ready and saved Document editor both expose manual copy and draf
   for(const component of [action,issuer]){
     assert.match(component,/requestOwnerDocumentLink/)
     assert.match(component,/tryCopyOwnerLink/)
-    assert.match(component,/prepareReportSession/)
-    assert.match(component,/window\.location\.assign\(editor\)/)
     assert.match(component,/onFocus=\{event=>event\.target\.select\(\)\}/)
     assert.match(component,/readOnly/)
     assert.match(component,/Копировать ещё раз/)
     assert.match(component,/SESSION_NOT_PUBLISHED/)
     assert.match(component,/SESSION_UNAVAILABLE/)
   }
+  assert.match(issuer,/prepareReportSession/)
+  assert.match(issuer,/window\.location\.assign\(editor\)/)
+  assert.match(action,/await publishSavedClientReport\(clientId,recordId\)/)
+  assert.match(action,/if\(!clientId\|\|!recordId\|\|publishing\)return/)
+  assert.match(action,/onClick=\{publish\}/,'saved report publication remains an explicit action')
   assert.match(result,/clientId=\{clientId\}/)
   assert.match(saved,/clientId=\{record\.clientId\}/)
   assert.match(admin,/clientId=\{record\.clientId\}/)

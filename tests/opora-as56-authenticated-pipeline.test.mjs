@@ -4,12 +4,21 @@ import { repositoryHarness, mount, findButton, nodes, textOf } from './helpers/r
 import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner-growth/anti-stress-skills-v6.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
+import { oporaEndingCopy } from '../lib/inner-growth/opora-lesson-outro.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const labels = {
-  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Need to think', save: 'Save my practice', receipt: 'Your moment is saved' },
-  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Нужно подумать', save: 'Сохранить мою практику', receipt: 'Ваш момент сохранён' },
+  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Need to think', save: 'Save my practice' },
+  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Нужно подумать', save: 'Сохранить мою практику' },
+}
+function assertSavedReceipt(player, locale, day) {
+  const receipts = nodes(player.tree).filter(node => node.props['data-opora-lesson-outro'] === 'saved')
+  assert.equal(receipts.length, 1, 'Only server-confirmed completion may render the saved receipt')
+  const copy = oporaEndingCopy(locale)
+  const title = day === 14 ? copy.congratsFinal : copy.congratsTitle.replace('{day}', String(day))
+  assert.ok(nodes(receipts[0]).some(node => node.type === 'h2' && textOf(node) === title), 'Receipt shows the exact completed day or final-course heading')
+  assert.equal(findButton(player.tree, labels[locale].save), undefined, 'Saved receipt cannot submit the lesson again')
 }
 async function click(player, label) {
   const button = findButton(player.tree, label)
@@ -64,10 +73,11 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await advanceOporaTo(player,'recapFeedback',t.next)
       await click(player,locale==='ru'?'Получилось немного':'I managed a little')
       assert.equal(requests, 0, 'Opening moments and choosing responses never saves')
+      assert.equal(nodes(player.tree).some(node => node.props['data-opora-lesson-outro'] === 'saved'), false)
       await click(player, t.save)
       assert.equal(requests, 1)
       assert.ok(receipt)
-      assert.ok(textOf(player.tree).includes(t.receipt))
+      assertSavedReceipt(player, locale, day)
       const saved = owner.sessions.at(-1)
       assert.equal(saved.lesson_id, data.lesson.id)
       assert.equal(saved.content_version, COURSE_ANTISTRESS_SKILLS_V7)
@@ -122,7 +132,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
-    assert.ok(textOf(player.tree).includes(t.receipt))
+    assertSavedReceipt(player, locale, 1)
   } finally { player.unmount() }
 })
 
@@ -228,3 +238,4 @@ test('Day 1 rejects malformed, oversize or mismatched custom answers before writ
     assert.equal(owner.writes.length,before)
   }
 })
+

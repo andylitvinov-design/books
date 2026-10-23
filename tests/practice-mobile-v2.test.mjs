@@ -30,19 +30,26 @@ test('mobile practice v2 keeps first service, share link and moderation honest',
 })
 
 test('practitioner leads stay item-scoped; owner CRM mounts only on demand', async () => {
-  const [view, workspace, crm, route] = await Promise.all([
+  const [view, workspace, crm, route, clients] = await Promise.all([
     read('components/app/practice-workspace.jsx'),
     read('components/app/app-workspace.jsx'),
     read('components/app/crm-manager.jsx'),
     read('app/api/app/crm/route.js'),
+    read('components/app/practitioner-client-profiles.jsx'),
   ])
-  assert.match(view, /isOwner\?openOwner\('clients'\):choosePanel\('clients'\)/)
+  assert.match(view, /onClick=\{\(\)=>choosePanel\('clients'\)\} active=\{activePanel==='clients'\}/)
+  assert.match(view, /activePanel==='clients'&&\s*<PractitionerClientProfiles items=\{requests\} services=\{services\}/)
+  assert.match(view, /onOpenLegacy=\{clientId=>openOwner\(clientId\?'client':'clients',clientId\)\}/)
   assert.match(view, /Business contacts & subscribers/)
-  assert.match(view, /function ClientLeads/)
+  assert.match(clients, /function PractitionerClientProfiles\(\{items=\[\]/)
+  assert.match(clients, /groupVerifiedPractitionerClients\(items,lang\)/)
   assert.match(view, /safeLeadContact/)
-  assert.match(view, /Private tests and health records are not shared/)
+  assert.match(clients, /private tests and records stay hidden/)
+  assert.match(clients, /if\(!isOwner\|\|!accountId\)return/,'manual client records stay owner-only')
+  assert.match(clients, /<PublicEnquiryContact request=\{request\}/,'contacts remain enquiry-scoped')
   assert.match(view, /isOwner&&accountId/)
   assert.match(view, /CrmManager key=\{accountId\}/)
+  assert.match(view, /activePanel==='crm'&&isOwner&&accountId&&\s*<CrmManager/)
   assert.doesNotMatch(workspace, /data\.practitioner && <CrmManager/)
   assert.match(crm, /if \(!accountId\) return null/)
   assert.match(crm, /sessionRef\.current !== session/)

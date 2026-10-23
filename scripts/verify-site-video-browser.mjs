@@ -165,6 +165,7 @@ try {
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
+      ['/ru/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
@@ -183,13 +184,16 @@ try {
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
-    // Wu Xing is now a focused free entry and consented enquiry, not a
-    // separate automatic method-video promotion. Preserve the approved flow.
-    await navigate('/ru/services/dao-health-profile')
-    await expect(page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]')).toHaveCount(1)
-    assert.equal(await page.locator('[data-service-video="overview"]').count(), 0,
-      'The separate Dao free start must not imply a video consultation')
-    pass('Nine video service routes and the separate Dao free entry preserve exact approved formats')
+    pass('Ten video-bearing service routes EN/RU/ES have real click-to-play video iframes and original watch links')
+    for (const locale of ['en', 'ru', 'es']) {
+      await navigate('/' + locale + '/services/dao-health-profile')
+      const dao = page.locator('main[data-free-entry-landing="dao"]')
+      await expect(dao.locator('h1')).toBeVisible()
+      await expect(dao.locator('[data-service-video], iframe')).toHaveCount(0)
+      await dao.locator('a[href="#request-free-wu-xing"]').click()
+      await expect(dao.locator('#request-free-wu-xing [data-compact-lead-form]')).toBeVisible()
+    }
+    pass('EN/RU/ES Dao keeps its compact request path without unrelated video or eager iframes')
   }
 
   await navigate('/en/about')
@@ -236,12 +240,23 @@ try {
     await adminContext.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', testToken).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', httpOnly: true, sameSite: 'Strict' }])
     const editor = await adminContext.newPage()
     editor.on('pageerror', error => pageErrors.push(error.message))
+    async function assertPlacementList(target, locale = 'en') {
+      const slots = SITE_VIDEO_SLOTS.filter(slot => locale !== 'es' || ['about-intro', 'thank-you'].includes(slot.id))
+      const buttons = target.locator('.site-video-placement-list button')
+      await expect(buttons).toHaveCount(slots.length)
+      // UI labels identify exact registry slots; status text is a separate small.
+      // Count alone could accidentally accept an unrelated extra control.
+      const labels = await buttons.locator(':scope > span').allTextContents()
+      const byLabel = new Map(SITE_VIDEO_SLOTS.map(slot => [slot.label.en, slot.id]))
+      assert.equal(byLabel.size, SITE_VIDEO_SLOTS.length, 'Placement labels uniquely identify slots')
+      assert.deepEqual(labels.map(label => byLabel.get(label)).sort(), slots.map(slot => slot.id).sort(),
+        'Exact registered video placement IDs for ' + locale)
+    }
     async function openEditor(target = editor) {
       await target.goto(`${origin}/admin/videos`)
       await target.locator('.prescription-admin-header button[lang="en"]').click()
       await expect(target.locator('.site-video-manager')).toHaveAttribute('lang', 'en')
-      // All 16 canonical site-video slots are selectable in the same editor.
-      await expect(target.locator('.site-video-placement-list button')).toHaveCount(16)
+      await assertPlacementList(target)
       assert.equal(await target.getByText('Video storage is currently unavailable.', { exact: false }).count(), 0)
     }
     async function choose(slot, locale = 'en', target = editor) {
@@ -287,20 +302,19 @@ try {
         await expect(editor.locator('.site-video-admin-button--primary')).toBeDisabled()
         await save('publish')
         const destination = await editor.locator('.site-video-editor-heading > a').getAttribute('href')
-        await navigate(destination)
         if (slot.id === 'thank-you') {
-          // The thank-you page deliberately hides every video before a valid
-          // tab-local enquiry receipt. Seed only an isolated synthetic browser
-          // receipt; no real lead, payment, private account or session is touched.
-          assert.equal(await page.locator('.site-video-player').filter({ hasText: title }).count(), 0)
-          await page.evaluate(key => {
-            window.sessionStorage.setItem(key, JSON.stringify({
-              referenceCode: 'HH-0123456789AB', createdAt: Date.now(),
-            }))
-          }, RECEIPT_SESSION_KEY)
-          await page.reload({ waitUntil: 'domcontentloaded' })
+          // A synthetic tab-local receipt exercises this gated public player;
+          // it is not an authorization token and creates no enquiry record.
+          await page.evaluate(key => sessionStorage.removeItem(key), RECEIPT_SESSION_KEY)
+          await navigate(destination)
+          await expect(page.locator('.site-video-player')).toHaveCount(0)
+          await page.evaluate(key => sessionStorage.setItem(key, JSON.stringify({
+            referenceCode: 'HH-CA5016DE79E4', createdAt: Date.now(),
+          })), RECEIPT_SESSION_KEY)
         }
+        await navigate(destination)
         await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
+        if (slot.id === 'thank-you') await page.evaluate(key => sessionStorage.removeItem(key), RECEIPT_SESSION_KEY)
       }
       pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)
     }
@@ -350,7 +364,7 @@ try {
     await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
     pass('Hide persists, retains draft and leaves other language unchanged')
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
-    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(1)
+    await assertPlacementList(editor, 'es')
     await expect(editor.locator('.site-video-editor-heading > a')).toHaveAttribute('href', '/es/about')
     await fill('QA Spanish About independent publication')
     await save('publish')
@@ -381,3 +395,5 @@ try {
   if (app) app.kill('SIGTERM')
   if (server) server.close()
 }
+
+

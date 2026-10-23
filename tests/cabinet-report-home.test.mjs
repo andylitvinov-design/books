@@ -24,7 +24,7 @@ test('the signed-in Cabinet opens Profile with five private tabs and a localized
     { id: 'portrait', ru: 'Профиль', en: 'Profile', href: '/portrait', icon: 'UserRound' },
     { id: 'tests', ru: 'Тесты', en: 'Tests', href: '/tests', icon: 'ClipboardList' },
     { id: 'portfolio', ru: 'Отчёты', en: 'Reports', href: '/portfolio', icon: 'BarChart3' },
-    { id: 'course', ru: 'Курсы', en: 'Courses', href: '/course', icon: 'BookOpen' },
+    { id: 'course', ru: 'Курсы', en: 'Courses', href: '/course?view=courses', icon: 'BookOpen' },
     { id: 'practice', ru: 'Практика', en: 'Practice', href: '/practice', icon: 'Users' },
   ])
 
@@ -75,3 +75,4 @@ test('private report list is first, saved sessions follow and psychological meas
   assert.match(profile, /data-profile-report-archive/)
   assert.doesNotMatch(profile, /localStorage|sessionStorage|Math\.random/)
 })
+

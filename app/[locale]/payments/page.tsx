@@ -30,7 +30,8 @@ const copy = {
     zenRequest: "Ask for ZEN.COM transfer details",
     otherPayment: "View full cart", extraMethods: "More payment options",
     interacTitle: "In Canada without PayPal?", interacIntro: "You can request an Interac e-Transfer. First we confirm a CAD amount, recipient and appointment time. No transfer happens when you click.",
-    interacRequest: "Request Interac details", squareAction: "Pay by card via Square",
+    interacRequest: "Request Interac details", squareAction: "Pay by card via Square", squareAfter: "Paid with Square? Send transaction reference",
+    squareNote: "Square charges the displayed CAD amount, not the EUR catalog price. We verify receipt manually; payment does not book an appointment.",
     combinedTitle: "Both consultations", combinedIntro: "30 + 60 minutes. Appointment times confirmed personally; no automatic booking.",
     combinedPay: "Pay both through PayPal", combinedCart: "Review both in cart",
   },
@@ -50,7 +51,8 @@ const copy = {
     zenRequest: "Запросить реквизиты ZEN.COM",
     otherPayment: "Открыть полную корзину", extraMethods: "Другие варианты",
     interacTitle: "В Канаде без PayPal?", interacIntro: "Можно запросить перевод Interac e-Transfer. Сначала согласуем сумму в CAD, получателя и время сеанса. При нажатии деньги не списываются.",
-    interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square",
+    interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square", squareAfter: "Оплатили через Square? Отправить номер транзакции",
+    squareNote: "Square списывает указанную сумму в CAD, а не цену каталога в EUR. Поступление проверяем вручную; оплата не бронирует время сеанса.",
     combinedTitle: "Обе консультации", combinedIntro: "30 + 60 минут. Время согласуется лично, бронирование не происходит автоматически.",
     combinedPay: "Оплатить обе через PayPal", combinedCart: "Проверить обе услуги в корзине",
   },
@@ -70,7 +72,8 @@ const copy = {
     zenRequest: "Solicitar datos para ZEN.COM",
     otherPayment: "Abrir el carrito", extraMethods: "Más opciones",
     interacTitle: "¿En Canadá sin PayPal?", interacIntro: "Puedes solicitar Interac e-Transfer. Primero confirmamos el importe en CAD, destinatario y cita. Hacer clic no envía dinero.",
-    interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square",
+    interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square", squareAfter: "¿Pagaste con Square? Enviar referencia",
+    squareNote: "Square cobra el importe indicado en CAD, no el precio EUR del catálogo. Verificamos los fondos manualmente; el pago no reserva una cita.",
     combinedTitle: "Ambas consultas", combinedIntro: "30 + 60 minutos. Confirmaremos personalmente el horario; no hay reserva automática.",
     combinedPay: "Pagar ambas con PayPal", combinedCart: "Ver ambas en el carrito",
   },
@@ -85,6 +88,15 @@ function receiptUrl(locale: ServiceLocale, service: string, euros: number) {
     : locale === "es"
       ? `Hola. Envié €${euros} por PayPal.Me por ${service}. ID de transacción de PayPal: [añade el ID]. Por favor, verifica la recepción y confirma la sesión.`
       : `Hello! I sent €${euros} via PayPal.Me for ${service}. PayPal transaction ID: [insert ID]. Please verify receipt and confirm my session time.`;
+  return "https://wa.me/14376066502?text=" + encodeURIComponent(text);
+}
+
+function squareReceiptUrl(locale: ServiceLocale, service: string, cadAmount: string) {
+  const text = locale === "ru"
+    ? `Здравствуйте! Прошу проверить оплату ${cadAmount} через Square за услугу «${service}». Номер транзакции Square: [впишите ID]. Проверьте поступление и согласуйте время встречи.`
+    : locale === "es"
+      ? `Hola. Por favor, verifica mi pago de ${cadAmount} vía Square por ${service}. Referencia de Square: [añade el ID]. Confirma la recepción y acordemos el horario.`
+      : `Hello! Please verify my ${cadAmount} Square payment for ${service}. Square transaction reference: [insert ID]. Please confirm receipt and arrange a session time.`;
   return "https://wa.me/14376066502?text=" + encodeURIComponent(text);
 }
 
@@ -166,10 +178,17 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
                   target="_blank" rel="noopener noreferrer" data-paypal-personal-link>
                 {t.pay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
               </a> : verifiedPayPalCheckout || hostedPayPalUrl ? null : <p className={styles.unavailable}>{t.help}</p>}
-              {squarePayment ? <a href={squarePayment.url} className={styles.payButton}
-                target="_blank" rel="noopener noreferrer" data-square-personal-link={product.id}>
-                {t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
-              </a> : null}
+              {squarePayment ? <div data-square-payment-options={product.id}>
+                <a href={squarePayment.url} className={styles.payButton}
+                  target="_blank" rel="noopener noreferrer" data-square-personal-link={product.id}>
+                  {t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
+                </a>
+                <p>{t.squareNote}</p>
+                <a href={squareReceiptUrl(locale, product.title, formatSquareCadAmount(squarePayment.amountMinor, locale)!)}
+                  className={styles.receiptButton} target="_blank" rel="noopener noreferrer" data-square-manual-confirmation={product.id}>
+                  <MessageCircle size={17} aria-hidden="true" /> {t.squareAfter}
+                </a>
+              </div> : null}
               {interacInquiryUrl ? <a href={interacInquiryUrl} className={styles.zenButton}
                 target="_blank" rel="noopener noreferrer" data-interac-direct-inquiry={product.id}>
                 {t.interacRequest} <MessageCircle size={17} aria-hidden="true" />
@@ -190,7 +209,7 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
               </details>
               <a href={receiptUrl(locale, product.title, euros)} className={styles.receiptButton}
                 target="_blank" rel="noopener noreferrer" data-paypal-manual-confirmation>
-                <MessageCircle size={17} aria-hidden="true" /> {t.after}
+                <MessageCircle size={17} aria-hidden="true" /> {t.after} · PayPal
               </a>
             </article>;
           })}
@@ -229,3 +248,4 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
     </main>
   );
 }
+

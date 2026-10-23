@@ -37,7 +37,9 @@ test('Google Cabinet opens the full canonical report via an account-verified ser
   assert.match(recommendation, /canonical-report-analysis/)
   assert.match(recommendation, /canonical-report-notes/)
   assert.match(recommendation, /canonical-progress/)
-  assert.match(recommendation, /canonical-remedy-profiles/)
+  assert.match(recommendation, /canonical-remedy-profile-disclosure canonical-remedy-unified-disclosure/)
+  assert.match(recommendation, /canonical-remedy-profile-content/)
+  assert.match(recommendation, /<RemedyContent locale=\{locale\} remedy=\{remedy\}/)
   assert.match(recommendation, /fullSource/)
   assert.match(recommendation, /includeDistanceHomeopathy/)
   assert.match(receipt, /embedded = false/)
@@ -85,3 +87,4 @@ test('PDF endpoint is gated by verified account and content hash, not the legacy
   assert.match(readFlow, /DOCUMENT_UNAVAILABLE/)
   assert.doesNotMatch(route.slice(pdf, pdf + 1700), /authorizePrescription\(/)
 })
+

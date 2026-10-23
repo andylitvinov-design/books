@@ -10,6 +10,9 @@ import {
   campaignLandingLinks, acquisitionRecommendation, UNMEASURED_STAGES,
 } from '../lib/acquisition/report.js'
 import { readOrganicEventReferral } from '../lib/organic-event-referrals.js'
+import * as serviceQuota from '../lib/practitioners/service-quota.js'
+import * as publicServiceLinks from '../lib/practitioners/public-service-links.js'
+import { loadJsx, nodes, text } from './helpers/tracked-handoff-jsx.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const require = createRequire(import.meta.url)
@@ -134,8 +137,84 @@ test('campaign builder rejects arbitrary URLs, contact details, secrets and unsu
   assert.match(client, /resetOutput/)
 })
 
-test('admin report remains discoverable, responsive and isolated from public/private analytics', () => {
-  assert.match(read('components/practitioner-cabinet.jsx'), /href:'\/admin\/acquisition'/)
+function marketingFixture({ locale = 'en', owner = true, busy = false, authorized = true, redirectUrl = '/admin/acquisition' } = {}) {
+  const requests = [], redirects = []
+  const opaque = ['crm-manager', 'practitioner-client-profiles', 'practice-materials', 'practice-events', 'practice-service-statistics',
+    'practice-requests-overview', 'public-enquiry-contact', 'my-services-dashboard', 'simple-service-editor', 'practice-photo-upload', 'practice-video-field']
+  const fixture = loadJsx('components/app/practice-workspace.jsx', {
+    states: [{ practiceActivated: true, practitioner: { id: 'synthetic-practitioner', status: 'approved', slug: 'synthetic' }, services: [], requests: [] }, '', busy, 'marketing'],
+    modules: {
+      ...Object.fromEntries(opaque.map(name => ['./' + name, { default: 'Opaque:' + name }])),
+      '@/lib/practitioners/service-quota.js': serviceQuota,
+      '@/lib/practitioners/public-service-links.js': publicServiceLinks,
+      './practice-dashboard.css': {},
+    },
+    globals: {
+      URL, URLSearchParams,
+      window: { location: { search: '?panel=marketing', assign: value => redirects.push(value) } },
+      fetch: async (url, options) => { requests.push({ url, options }); return { ok: authorized, json: async () => ({ redirectUrl }) } },
+    },
+  })
+  const tree = fixture.exports.default({ locale, ownerTools: owner ? {} : null, accountId: 'synthetic-account' })
+  return { ...fixture, tree, requests, redirects }
+}
+function acquisitionButton(tree, locale) {
+  const label = { en: 'Campaigns & enquiries', ru: 'Кампании и заявки', es: 'Campañas y consultas' }[locale]
+  const matches = nodes(tree).filter(n => n.type === 'button' && n.props.className === 'hh-practice-marketing-link' &&
+    nodes(n).some(child => child.type === 'strong' && text(child) === label))
+  assert.equal(matches.length, 1, 'Exactly one localized acquisition action')
+  return matches[0]
+}
+
+test('marketing access stays owner-only, explicit, busy-safe and server-authorized', async () => {
+  const nonOwner = marketingFixture({ owner: false })
+  assert.equal(nodes(nonOwner.tree).filter(n => n.props.className === 'hh-practice-marketing-link').length, 0)
+  assert.equal(nonOwner.requests.length, 0)
+  for (const options of [{ busy: true }, { authorized: false }, { redirectUrl: 'https://untrusted.invalid/' }]) {
+    const fixture = marketingFixture(options)
+    const button = acquisitionButton(fixture.tree, 'en')
+    await button.props.onClick()
+    assert.equal(fixture.requests.length, options.busy ? 0 : 1)
+    assert.equal(button.props.disabled, Boolean(options.busy))
+    assert.deepEqual(fixture.redirects, [])
+  }
+})
+
+test('admin report remains discoverable, responsive and isolated from public/private analytics', async () => {
+  // The legacy cabinet is now a tools page. Follow the actual owner-only hub,
+  // rather than requiring a removed duplicate direct acquisition link.
+  for (const locale of ['en', 'ru']) {
+    const { exports } = loadJsx('components/practitioner-cabinet.jsx', { states: [locale], modules: {
+      '@/components/prescription-admin-header': { PrescriptionAdminHeader: 'AdminHeader' },
+      '@/lib/ui-locale': { readUiLocale: () => locale },
+    } })
+    const links = nodes(exports.PractitionerCabinet({})).filter(n => n.type === 'a')
+    assert.equal(links.filter(n => n.props.href === '/' + locale + '/app/practice?panel=marketing').length, 1)
+  }
+  for (const locale of ['en', 'ru', 'es']) {
+    const fixture = marketingFixture({ locale })
+    const button = acquisitionButton(fixture.tree, locale)
+    assert.equal(button.props.disabled, false)
+    assert.equal(fixture.requests.length, 0, 'Rendering must not open an admin session')
+    await button.props.onClick()
+    assert.equal(fixture.requests.length, 1)
+    assert.equal(fixture.requests[0].url, '/api/app/practitioner/open')
+    const options = fixture.requests[0].options
+    assert.equal(options.method, 'POST')
+    assert.equal(options.credentials, 'same-origin')
+    assert.equal(options.cache, 'no-store')
+    assert.deepEqual(JSON.parse(options.body), { destination: 'acquisition' })
+    assert.deepEqual(fixture.redirects, ['/admin/acquisition'])
+    fixture.effects[1]()
+    assert.ok(fixture.writes.some(write => write.slot === 3 && write.value === 'marketing'))
+  }
+  const ownerRoute = read('app/api/app/[...path]/route.js').split("if (joined === 'practitioner/open' && method === 'POST') {")[1]?.split('// Owner-only PRIVATE report media catalog.')[0]
+  assert.ok(ownerRoute, 'Actual owner-opening route exists')
+  assert.match(ownerRoute, /if \(!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)\) throw new AppError\('NOT_FOUND', 404\)/)
+  assert.match(ownerRoute, /onlyKeys\(body, \['destination', 'clientId'\]\)/)
+  assert.match(ownerRoute, /practitionerDestination\[body.destination\]/)
+  assert.match(ownerRoute, /if \(!destination\) throw new AppError\('NOT_FOUND', 404\)/)
+  assert.match(read('lib/app/practitioner-access.js'), /acquisition: '\/admin\/acquisition'/)
   assert.match(read('lib/public-analytics.ts'), /PUBLIC_ANALYTICS_AVAILABLE\s*=\s*false/)
   const page = read('app/admin/acquisition/page.jsx')
   for (const label of ['Not measured', 'Не измеряется', 'No medido', 'America/Toronto']) assert.ok((page + read('lib/acquisition/report.js')).includes(label))

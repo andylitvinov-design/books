@@ -21,6 +21,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     const element = nav.current;
     if (!element) {
       document.body.style.removeProperty('--ia222-bottom-height');
+      document.documentElement.style.removeProperty('--ia222-bottom-height');
       return;
     }
 
@@ -32,7 +33,9 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     let frame: number | null = null;
     let correction = 0;
     const measureHeight = () => {
-      document.body.style.setProperty('--ia222-bottom-height', `${element.getBoundingClientRect().height}px`);
+      const height = `${element.getBoundingClientRect().height}px`;
+      document.body.style.setProperty('--ia222-bottom-height', height);
+      document.documentElement.style.setProperty('--ia222-bottom-height', height);
     };
     const dockToViewport = () => {
       if (frame !== null) return;
@@ -78,6 +81,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       document.removeEventListener('focusout', onLayoutChange);
       element.style.removeProperty('transform');
       document.body.style.removeProperty('--ia222-bottom-height');
+      document.documentElement.style.removeProperty('--ia222-bottom-height');
     };
   }, [hidden, locale]);
   if (hidden) return null;

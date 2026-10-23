@@ -29,20 +29,23 @@ async function assertSpanishNavigation(page, path) {
   const navigation = page.locator('.site-navigation');
   await expect(navigation).toHaveCount(1);
   // Keep the three visible visitor needs and free written review in the header.
-  const direct = navigation.locator(':scope > a:not([data-nav-item="shop"]):not([data-nav-item="cart"])');
+  const direct = navigation.locator(':scope > a');
   const first = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about'];
   if (path !== '/es') first.push('/en/app');
+  first.push('/es/shop','/es/cart');
   assert.deepEqual(await direct.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), first, 'Spanish direct destinations: ' + path);
   const cabinet = navigation.locator('.site-cabinet-entry');
   await expect(cabinet).toHaveCount(1);
   if (path === '/es') {
     await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
     await expect(cabinet).toHaveAccessibleName('Mi espacio');
+    await expect(cabinet).toHaveAttribute('aria-controls','home-personal-space-dialog');
+    await expect(cabinet).toHaveAttribute('aria-expanded','false');
   } else await expect(cabinet).toHaveAttribute('href','/en/app');
   const destinations = [
     '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
     '/es/explore/business', '/es/client/tests', '/es/books',
-    '/es/shop', '/es/cart', '/es/library', '/es/courses', '/es/events',
+    '/es/shop', '/es/cart', '/es/library', '/es/events', '/es/courses',
     '/es/services', '/es/academy', '/es/about',
   ];
   const menu = navigation.locator('details.site-main-menu');
@@ -56,10 +59,11 @@ async function assertSpanishNavigation(page, path) {
   await trigger.focus();
   await trigger.press('Enter');
   await expect(menu).toHaveJSProperty('open', true);
-  for (const link of await links.all()) await expect(link).toBeVisible();
-  await expect(links.nth(2)).toHaveAccessibleName('Energía');
-  await expect(links.nth(3)).toHaveAccessibleName('Amor');
-  await expect(links.nth(4)).toHaveAccessibleName('Negocios');
+  const labels = ['Revisión gratuita de tu situación Cuestionario y dibujo · respuesta personal por escrito','Inicio','Energía','Amor','Negocios','Tests','Ideas','Tienda','Carrito','Biblioteca','Eventos','Mis cursos','Servicios','Academia','Sobre mí'];
+  for (let index = 0; index < destinations.length; index++) {
+    await expect(links.nth(index)).toBeVisible();
+    await expect(links.nth(index)).toHaveAccessibleName(labels[index]);
+  }
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
   await trigger.press('Tab');
   await expect(links.first()).toBeFocused();
@@ -110,6 +114,7 @@ async function assertSpanishCourseCatalog(page, response) {
 // Production-parity HTTPS browser checks. Never read real private records,
 // submit production forms, send messages, or mutate publication data.
 import assert from 'node:assert/strict';
+import { assertCabinetGuestEntry } from './helpers/cabinet-guest-entry-verifier.mjs';
 import { createPublicDiagnostics, installPublicLifecycle } from './es-public-diagnostics.mjs';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:https';
@@ -240,24 +245,21 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        // On public client pages the Cabinet is a direct link; on Home
-        // the separate My Space control opens a dialog instead.
-        const accountLink = page.locator('.site-navigation a.site-cabinet-entry[href="/en/app"]');
+        const accountLink = page.locator('.site-navigation > a.site-cabinet-entry');
         await expect(accountLink).toHaveCount(1);
+        await expect(accountLink).toHaveAccessibleName('Abrir gabinete personal');
         await expect(accountLink).toBeVisible();
         await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
-        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
-        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
+        await assertCabinetGuestEntry(page, expect);
         await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await assertCabinetGuestEntry(page, expect);
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();
@@ -289,7 +291,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'Energy/Love/Business, full catalog in More, My Space dialog on Home; Enter/Tab/Escape',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'Energy/Love/Business, fifteen-entry menu, Home My Space dialog and off-Home Cabinet; Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

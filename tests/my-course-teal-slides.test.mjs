@@ -65,7 +65,7 @@ test('clinical questionnaire scoring and private storage are unchanged, rewards 
   assert.match(slides, /if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(slides, /alreadyDone = Boolean\(session\)/)
   assert.match(slides, /if \(alreadyDone\) \{ setIndex\(slides\.length\); return \}/)
-  assert.match(slides, /if \(!Number\.isInteger\(severity\)/)
+  assert.match(slides, /if \(reviewOnly \|\| !Number\.isInteger\(severity\) \|\| \(today && severity === today\.severity\)\) \{ goNext\(\); return \}/)
   assert.match(slides, /preferNot: 'Prefer not to say'/)
   assert.doesNotMatch(slides, /localStorage|sessionStorage|dangerouslySetInnerHTML|sendBeacon|leaderboard|correctAnswer|wrongAnswer/)
   assert.match(slideCss, /\.error\{/)

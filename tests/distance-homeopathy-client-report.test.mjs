@@ -103,5 +103,5 @@ test('service page, editor, preview and HTML report all reference the one option
   assert.match(source('app/admin/consultations/actions.js'), /data\.includeDistanceHomeopathy =/)
   assert.match(source('app/admin/api/consultations/preview/route.js'), /input\.includeDistanceHomeopathy =/)
   assert.match(source('components/prescription-document.jsx'), /document\.includeDistanceHomeopathy && <DistanceHomeopathyGuide/)
-  assert.match(source('components/prescription-document.jsx'), /<RemedyContent .*expandSupplementary/)
+  assert.match(source('components/prescription-document.jsx'), /<RemedyContent\s[^>]*\bexpandSupplementary\b[^>]*\bfullSource\b[^>]*\/>/)
 })

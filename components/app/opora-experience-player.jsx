@@ -753,7 +753,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {moment==='habit'&&<>
             <p className={styles.lead}>{t.habitLead}</p>
             {!habitSetup
-              ?<p className={styles.habitBenefit} data-opora-first-lesson-habit-invitation>{t.habitBenefit}</p>
+              ?<><p className={styles.habitBenefit} data-opora-first-lesson-habit-invitation>{t.habitBenefit}</p>
+                <button type="button" className={styles.back} disabled={locked}
+                  onClick={()=>{setPreviewIndex(-1);setInviteOpen(true)}} data-opora-habit-skip>
+                  {t.habitLater}
+                </button></>
               :<div className={styles.habitSetup} data-opora-first-lesson-habit-setup>
                 {habitSetupContent||<p className={styles.soft}>{t.habitFallback}</p>}
               </div>}
@@ -850,3 +854,4 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     </div>}
   </div>
 }
+

@@ -56,11 +56,22 @@ test('preview and selected time are derived from live executable test definition
   assert.match(explorer, /const simpleRecommendations = useMemo/)
   assert.match(explorer, /buildPublicStarterBattery\(simpleRecommendations\)/)
   assert.match(explorer, /recommendations=\{simpleRecommendations\}/)
-  // Explicit selections may span beyond the current topic. Verify the actual
-  // recommendation declaration and its selected-aware candidate set.
-  const recommendations = explorer.slice(explorer.indexOf('  const simpleRecommendations ='), explorer.indexOf('  // Only explicit duration/type options'))
-  assert.match(recommendations, /\) : filtered\)\.filter\(\(entry\) => entry\.selectable\)/)
-  assert.match(recommendations, /\), \[entries, filtered, activeCollection, activeCollectionId, selectionFocus, problems/)
+  // PR1144 keeps explicit choices separately while a shared eligible pool
+  // applies availability/type/time constraints before soft topic ranking.
+  const pool = explorer.slice(explorer.indexOf('  const simpleRecommendationPool ='), explorer.indexOf('  const simpleRecommendations ='))
+  assert.match(pool, /filterExplorerEntries\(entries, \{/)
+  assert.match(pool, /availability: 'available', styles: stylesFilter, kinds, lengths, areas, details,/)
+  assert.match(pool, /axes, maxMinutes, language, tracking, freeOnly,/)
+  assert.match(pool, /\}\).filter\(\(entry\) => entry.selectable\)/)
+  assert.match(pool, /entries, stylesFilter, kinds, lengths, areas, details, axes,/)
+  assert.match(pool, /maxMinutes, language, tracking, freeOnly,/)
+  const recommendations = explorer.slice(explorer.indexOf('  const simpleRecommendations ='), explorer.indexOf('  const simpleAuto ='))
+  assert.match(recommendations, /rankPublicTestMatches\(\s*simpleRecommendationPool,/)
+  assert.match(recommendations, /focus: selectionFocus, problems,/)
+  assert.match(recommendations, /collectionId: activeCollectionId, collectionFocus: activeCollection\?\.focus \|\| \[\]/)
+  assert.match(recommendations, /\), \[simpleRecommendationPool, selectionFocus, problems, activeCollectionId,/)
+  assert.match(recommendations, /const searchRecommendations = simpleRecommendations/)
+  assert.match(explorer, /const selected = entries.filter\(\(entry\) => selectedKeys.includes\(entry.key\) && entry.selectable\)/)
   assert.match(explorer, /const filtered = useMemo\(\(\) => filterExplorerEntries\(entries, \{ \.\.\.facets, selectedKeys \}\)/)
   // Keeping an explicitly chosen card visible must not put opt-in, excluded
   // or unavailable cards into the automatic starter selection.
@@ -104,3 +115,4 @@ test('topic extension contract rejects a removed or renamed Health/function face
     assert.doesNotMatch(mutated,contract)
   }
 })
+

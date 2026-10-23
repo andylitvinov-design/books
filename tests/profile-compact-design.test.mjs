@@ -19,7 +19,10 @@ test('Profile leads with authorized personal reports; category details are secon
   const earlyActions = profile.indexOf('{!external && footerActions}')
   const legacyActions = profile.indexOf('{external && footerActions}')
   assert.ok(tabs > overview && panel > tabs && support > panel)
-  assert.ok(discover > -1 && earlyActions > archive && earlyActions < browse && legacyActions > support)
+  assert.ok(discover > -1 && earlyActions === -1 && legacyActions > support)
+  assert.match(profile, /\{external && <header className="hh-domain-hero">/)
+  assert.match(profile, /\{external && <details className="hh-domain-more"/)
+  assert.match(profile, /data-report-archive-always-open/)
   assert.match(profile, /\{reportsContent\}/)
   assert.match(profile, /data-profile-report-archive/)
   assert.match(profile, /open=\{expanded\}/)
@@ -85,7 +88,7 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     ['portrait', 'Profile', '/portrait'],
     ['tests', 'Tests', '/tests'],
     ['portfolio', 'Reports', '/portfolio'],
-    ['course', 'Courses', '/course'],
+    ['course', 'Courses', '/course?view=courses'],
     ['practice', 'Practice', '/practice'],
   ]) {
     assert.match(navModel, new RegExp("id: '" + id + "'"))
@@ -110,7 +113,7 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
     {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
     {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
-    {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
+    {id:'course',ru:'Курсы',en:'Courses',path:'/course?view=courses'},
     {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
   ])
   assert.doesNotMatch(mobile, />Analysis</)
@@ -120,5 +123,6 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
   assert.ok(mobile.indexOf('className="hh-mobile-app-nav-home"') > mobile.indexOf('nav.map'))
 
 })
+
 
 

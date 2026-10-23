@@ -5,6 +5,7 @@ import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skill
 import {oporaExperienceDay} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 function fixture(locale,day){
@@ -15,7 +16,7 @@ function fixture(locale,day){
   const saved=[]
   const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){finishCount++},
     onSession:async payload=>{saved.push(structuredClone(payload));return true}})
-  return {h,saved,get finishCount(){return finishCount}}
+  return {h,saved,day,get finishCount(){return finishCount}}
 }
 async function press(h,label){
   const b=findButton(h.tree,label)
@@ -27,11 +28,11 @@ async function press(h,label){
 const words={
   en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
     start:"See what's next",map:'My course map',habit:'Keep OPORA close',
-    configure:'Set it up',confidence:'I managed a little',week1:'Week 1: Find your supports',
+    configure:'Set it up',later:'Not now',confidence:'I managed a little',week1:'Week 1: Find your supports',
     week2:'Week 2: Make it your own',finished:'Your 14 days are complete'},
   ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
     start:'Посмотреть, что дальше',map:'К карте курса',habit:'ОПОРА всегда под рукой',
-    configure:'Настроить',confidence:'Получилось немного',week1:'Первая неделя: найти опору',
+    configure:'Настроить',later:'Не сейчас',confidence:'Получилось немного',week1:'Первая неделя: найти опору',
     week2:'Вторая неделя: свой опыт',finished:'Ваши 14 дней позади'},
 }
 async function saveAndOpenMap(f,locale){
@@ -41,10 +42,16 @@ async function saveAndOpenMap(f,locale){
   assert.equal(f.saved.length,0)
   await press(f.h,w.save)
   assert.equal(f.saved.length,1)
-  assert.ok(textOf(f.h.tree).includes(w.receipt))
+  const copy=oporaEndingCopy(locale)
+  const title=f.day===14?copy.congratsFinal:copy.congratsTitle.replace('{day}',String(f.day))
+  assert.ok(nodes(f.h.tree).some(n=>n.type==='h2'&&textOf(n)===title),'Exact saved day heading')
+  assert.equal(findButton(f.h.tree,w.save),undefined,'Receipt cannot save twice')
   assert.ok(findButton(f.h.tree,w.start),'Receipt opens the course map directly')
   await press(f.h,w.start)
-  const map=nodes(f.h.tree).find(n=>n.props?.['data-opora-course-map']==='all-14-days')
+  const path=nodes(f.h.tree).find(n=>n.type?.name==='OporaCoursePath')
+  assert.ok(path)
+  const map=path.type(path.props)
+  assert.equal(map.props['data-opora-course-map'],'all-14-days')
   assert.ok(map)
   assert.equal(nodes(map).filter(n=>n.props?.['data-opora-journey-day']!==undefined).length,14)
   assert.ok(textOf(map).includes(w.week1))
@@ -64,6 +71,7 @@ test('Day 1 save shows all fourteen lessons, optional home-screen setup and next
       await press(f.h,"I'm committed")
       assert.ok(textOf(f.h.tree).includes(w.habit))
       assert.ok(findButton(f.h.tree,w.configure),'Phone opt-in must be deliberate')
+      assert.ok(findButton(f.h.tree,w.later),'Not now remains available')
       await press(f.h,w.configure)
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-setup']))
       await press(f.h,w.next)
@@ -99,4 +107,26 @@ test('Days 2, 13 and 14 keep day-specific previews and never invent a fifteenth 
       assert.equal(f.saved.length,1)
     }finally{f.h.unmount()}
   }
+})
+
+
+test('declining the optional phone reminder preserves Back and never saves again', async () => {
+ for(const locale of ['en','ru']){
+  const f=fixture(locale,1),w=words[locale]
+  try{
+   await saveAndOpenMap(f,locale)
+   await press(f.h,"I'm committed")
+   assert.equal(nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-setup']),false)
+   await press(f.h,locale==='ru'?'Назад':'Back')
+   assert.ok(nodes(f.h.tree).some(n=>n.type?.name==='OporaCoursePath'),'Back returns to map')
+   assert.equal(f.saved.length,1)
+   await press(f.h,"I'm committed")
+   await press(f.h,w.later)
+   assert.equal(nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-setup']),false,'Declining never opens device setup')
+   assert.ok(textOf(f.h.tree).includes(locale==='ru'?'Увидимся завтра!':'See you tomorrow!'))
+   assert.equal(f.saved.length,1,'Declining must not repeat a save')
+   await press(f.h,w.map)
+   assert.equal(f.finishCount,1)
+  }finally{f.h.unmount()}
+ }
 })

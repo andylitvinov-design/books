@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { loadJsx, nodes, text } from "./helpers/tracked-handoff-jsx.mjs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const situationPage = read("app/[locale]/services/free-situation-review/page.tsx");
@@ -74,11 +75,33 @@ test("all three locales explain real service advantages without health claims or
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
   for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
-    "Revisión escrita gratuita", "Five Elements", "Пяти элементам", "Cinco Elementos"]) {
+    "Revisión escrita gratuita", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
   assert.doesNotMatch(landing + capture, /€50|€100/, "The free offering must not be upsold before being explained");
+  const { exports } = loadJsx("components/free-entry-landing.tsx", { modules: {
+    "@/components/public-site-header": { PublicSiteHeader: "Header" },
+    "@/components/compact-lead-capture": { CompactLeadCapture: "Capture" },
+    "@/components/free-situation-review-form": { FreeSituationReviewForm: "Questionnaire" },
+    "@/components/service-video-showcase": { ServiceVideoShowcase: "Video" },
+    "@/components/personal-testimonials": { PersonalTestimonials: "Testimonials" },
+  } });
+  for (const [locale, elements, safety, disclaimer] of [
+    ["en", "Five Elements", "A symbolic guide for reflection — not a medical test.", "do not diagnose or treat health conditions"],
+    ["ru", "Пять элементов", "Символическая модель для самоисследования, а не медицинский тест.", "не диагностируют и не лечат заболевания"],
+    ["es", "Cinco Elementos", "Un modelo simbólico de reflexión, no una prueba médica.", "No diagnostican ni tratan enfermedades"],
+  ]) {
+    const tree = exports.FreeEntryLanding({ locale, kind: "dao" });
+    assert.equal(tree.props.lang, locale);
+    assert.equal(tree.props["data-free-entry-landing"], "dao");
+    assert.equal(nodes(tree).filter(n => n.type === "h1" && text(n).trim()).length, 1);
+    assert.ok(text(tree).includes(elements), "Five Elements model must reach the visible localized DAO copy");
+    assert.ok(text(tree).includes(safety), "Symbolic, non-medical limitation must render");
+    const captures = nodes(tree).filter(n => n.type === "Capture");
+    assert.equal(captures.length, 1);
+    assert.ok(captures[0].props.disclaimer.includes(disclaimer), "Localized limits must reach the consented capture");
+  }
 });
 
 test("the real free drawing questionnaire remains reachable and keeps answers local until deliberate copy", () => {

@@ -42,11 +42,16 @@ test("homepage restores photo-left four services while keeping tests and Academy
   const css = read("app/holistic-house-home.css");
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.ok(read("components/services-solutions.tsx").includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
-  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  const disclosure = read("components/home-more-disclosure.tsx");
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
+  assert.doesNotMatch(home, /<ServicesSolutions/);
+  assert.match(disclosure, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  assert.match(disclosure, /onToggle=\{event => setExpanded\(event.currentTarget.open\)\}/);
+  assert.match(disclosure, /\{expanded \? \(locale === "es"/);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.match(home, /event="self_check_start"/);
   const explore = read("components/home-explore-sections.tsx");
-  assert.match(home, /<HomeExploreSections locale=\{locale\} \/>/);
+  assert.match(disclosure, /<HomeExploreSections locale=\{locale\} \/>/);
   assert.match(explore, /"\/academy"/);
   assert.match(explore, /"\/library"/);
   assert.doesNotMatch(home, /heroIntro: "[^"]*ME \/ GOAL/);
@@ -56,17 +61,19 @@ test("homepage restores photo-left four services while keeping tests and Academy
 test("new DAO free page is independent of two existing personal service landings and has a genuine multilingual enquiry", () => {
   const dao = read("app/[locale]/services/dao-health-profile/page.tsx");
   const shared = read("components/free-entry-landing.tsx");
-  const form = read("components/free-resource-enquiry.tsx");
+  const form = read("components/compact-lead-capture.tsx");
   assert.match(dao, /generateMetadata/);
   assert.match(dao, /generateStaticParams/);
   assert.match(dao, /kind="dao"/);
   assert.match(dao, /isPublicLocale/);
   for (const lang of ["en", "ru", "es"]) assert.ok(dao.includes("/" + lang + "/services/dao-health-profile"));
   assert.match(shared, /"request-free-wu-xing"/);
-  assert.match(shared, /<FreeResourceEnquiry locale=\{locale\} kind=\{kind\}/);
-  assert.match(form, /<ContactChannelChooser/);
-  assert.match(form, /whatsappEnquiryUrl\(\{/);
-  assert.match(form, /navigator\.clipboard\.writeText\(privateContext\)/);
+  assertCompactCapture(shared, form);
+  for (const [before, after] of [['if (!consent || sending || reference) return;', 'if (sending) return;'], ['contactConsent: true', 'contactConsent: false'], ['result?.saved !== true', 'false'], ['          serviceTitle,', '          serviceTitle: "wrong",']]) {
+    assert.ok(form.includes(before));
+    assert.throws(() => assertCompactCapture(shared, form.replace(before, after)));
+  }
+  assert.throws(() => assertCompactCapture(shared.replace('serviceTitle={serviceTitles[kind]}', 'serviceTitle="wrong"'), form));
   for (const [slug, kind] of [["alchemy-of-soul", "alchemy"], ["hypnotherapy-course", "hypnotherapy"]]) {
     const route = read("app/[locale]/services/" + slug + "/page.tsx");
     assert.match(route, /generateMetadata/);
@@ -128,3 +135,16 @@ test("Business card price scope rejects missing prices, wrong destination and pr
     assert.throws(() => assertBusinessPriceScope(mutation));
   }
 });
+
+
+function assertCompactCapture(landing, form) {
+  assert.match(landing, /<CompactLeadCapture\s+locale=\{locale\}\s+id=\{captureId\}\s+serviceTitle=\{serviceTitles\[kind\]\}/);
+  assert.match(form, /if \(!consent \|\| sending \|\| reference\) return;/);
+  assert.match(form, /<input type="checkbox" required checked=\{consent\}/);
+  assert.match(form, /fetch\("\/api\/service-enquiries",/);
+  assert.match(form, /body: JSON.stringify\(\{\s*operationId: operationId.current,\s*serviceTitle,\s*sourcePath:/);
+  assert.match(form, /contactConsent: true/);
+  assert.match(form, /result\?\.saved !== true/);
+  assert.match(form, /setReference\(result.referenceCode\)/);
+  assert.doesNotMatch(form, /window.location|router.push|api\/payments|stripe|paypal|sendBeacon/);
+}

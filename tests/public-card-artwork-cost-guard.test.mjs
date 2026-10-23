@@ -5,6 +5,12 @@ import test from "node:test";
 
 import { books } from "../data/library.js";
 
+const validArtworkGenerationChain = command => {
+    const commands = command.split("&&").map(part => part.trim());
+    return commands.every(part => /^node scripts\/[a-z0-9-]+\.mjs$/.test(part))
+      && commands.filter(part => part === "node scripts/build-public-card-artwork.mjs").length === 1;
+  };
+
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const registry = JSON.parse(read("data/public-card-artwork.json"));
 const entries = [...Object.values(registry.books), ...Object.values(registry.images)];
@@ -81,8 +87,9 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
-  assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
+  for (const phase of ["prebuild", "predev"]) {
+    assert.equal(validArtworkGenerationChain(config.scripts[phase]), true, phase + " must generate pinned artwork exactly once and fail closed");
+  }
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
 
@@ -99,5 +106,15 @@ test("every pinned WebP source has a complete declared RIFF body before build-ti
     assert.equal(bytes.subarray(0, 4).toString("ascii"), "RIFF", item.source);
     assert.equal(bytes.subarray(8, 12).toString("ascii"), "WEBP", item.source);
     assert.equal(bytes.readUInt32LE(4) + 8, bytes.length, "Incomplete WebP source: " + item.source);
+  }
+});
+
+
+// A generation chain must not swallow errors via shell fallback or execute extra shell syntax.
+test("artwork generation chain rejects missing/duplicate generators and shell failure swallowing", () => {
+  const generator = "node scripts/build-public-card-artwork.mjs";
+  assert.equal(validArtworkGenerationChain("node scripts/generate-soft-ocean-melody.mjs && " + generator), true);
+  for (const command of [generator + " && node scripts/build-other.mjs || true", generator + "; true", generator + " && " + generator, "node scripts/build-other.mjs"]) {
+    assert.equal(validArtworkGenerationChain(command), false, command);
   }
 });

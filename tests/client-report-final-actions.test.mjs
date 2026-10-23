@@ -69,9 +69,17 @@ test('owner preview stays read-only and never saves private client reports in th
 
 test('PDF preview is inline for authorized client routes, while download stays an attachment',()=>{
   const report=source('components/client-session-page.jsx')
-  assert.match(report,/href=\{pdfPath\+'&preview=1&layout=a4'\}/)
-  assert.match(report,/target="_blank" rel="noopener noreferrer"/)
-  assert.match(report,/href=\{pdfPath\} className=\{styles\.downloadButton\} download/)
+  const anchors=[...report.matchAll(/<a\s[^>]*>/g)].map(match=>match[0])
+  const previews=anchors.filter(anchor=>/\bhref=\{pdfPath\+'&preview=1&layout=a4'\}/.test(anchor))
+  const downloads=anchors.filter(anchor=>/\bhref=\{pdfPath\}/.test(anchor))
+  assert.equal(previews.length,1,'exactly one report PDF preview anchor')
+  assert.equal(downloads.length,1,'exactly one report PDF download anchor')
+  assert.match(previews[0],/\btarget="_blank"/)
+  assert.match(previews[0],/\brel="noopener noreferrer"/)
+  assert.match(previews[0],/\bdata-hh-engagement-action="pdf_preview"/)
+  assert.match(downloads[0],/\bclassName=\{styles\.downloadButton\}/)
+  assert.match(downloads[0],/\sdownload(?=\s|>)/)
+  assert.match(downloads[0],/\bdata-hh-engagement-action="pdf_download"/)
   assert.match(report,/Просмотреть PDF-отчёт/)
   assert.match(report,/Скачать отчёт/)
   for(const path of [

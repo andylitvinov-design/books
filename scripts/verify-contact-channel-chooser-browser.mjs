@@ -1,3 +1,6 @@
+import { verifyCompactLeadScroll } from './helpers/compact-lead-scroll-verifier.mjs';
+import { assertRegisteredEnquiryReceipt } from './helpers/enquiry-receipt-verifier.mjs';
+import { assertCompactLeadRequest } from './helpers/compact-lead-verifier.mjs';
 // Public read-only, no outgoing messenger clicks, sends, sign-in, or client records.
 // Test the real hydrated two-step capture on local Next production server.
 import assert from "node:assert/strict";
@@ -6,6 +9,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 const live = process.argv.includes("--live");
 const origin = live ? "https://holistichouse.vercel.app" : (process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100");
 if (!live && !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Only local loopback QA is allowed outside --live");
@@ -160,6 +164,7 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
 async function runEngine(name, engine) {
   const browser = await engine.launch({headless:true});
   try {
+    if (!live) results.push(...await verifyCompactLeadScroll(browser, expect, origin, name));
     for (const width of (name === "webkit" ? [390] : [320,390,1188])) {
       for (const locale of ["en","ru","es"]) {
         const context = await browser.newContext({
@@ -181,8 +186,19 @@ async function runEngine(name, engine) {
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
-          // EN/RU/ES Dao now share one consented first-party CRM landing.
-          // None use a parallel messenger chooser; verify them after the loop.
+          // Dao uses the same compact, consent-gated request in all three locales.
+          // Keep it in the browser matrix without pretending it is a messenger chooser.
+          const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile", {waitUntil:"networkidle",timeout:60000});
+          assert.equal(daoResponse?.status(),200);
+          const dao = page.locator('main[data-free-entry-landing="dao"]');
+          await expect(dao.locator('h1')).toBeVisible();
+          await expect(dao.locator('[data-compact-lead-form] input[type="checkbox"][required]')).toHaveCount(1);
+          await expect(dao.locator('[data-contact-channel-chooser]')).toHaveCount(0);
+          await dao.locator('a[href="#request-free-wu-xing"]').click();
+          await assertCompactLeadRequest(page,dao.locator('#request-free-wu-xing'),expect,{
+            locale,serviceTitle:"Free symbolic Wu Xing Resource Profile",
+          });
+          results.push({name,locale,width,compactDaoRequest:true,syntheticReceipt:true});
           for (const item of cases) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
@@ -210,35 +226,6 @@ async function runEngine(name, engine) {
               await button.click();
             }
           }
-          {
-            const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile",
-              {waitUntil:"domcontentloaded",timeout:60000});
-            assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
-            const daoForm = page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
-            await daoForm.waitFor({state:"visible",timeout:25000});
-            const consent = daoForm.locator('input[type="checkbox"][required]');
-            assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
-            assert.equal(await daoForm.locator('button[type="submit"]').isDisabled(),true,
-              "Dao form cannot submit without an opt-in");
-            assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
-              "Dao uses approved first-party contact capture, not a second messenger funnel");
-            // The network request is intercepted above; synthetic consent
-            // validates the CRM handoff without touching a real lead/account.
-            const previous = submissions.length;
-            const submit = daoForm.locator('button[type="submit"]');
-            await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
-            assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
-            await consent.check();
-            await submit.click();
-            await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
-            assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
-            const enquiry = submissions.at(-1);
-            assert.equal(enquiry.locale,locale);
-            assert.equal(enquiry.contactConsent,true);
-            assert.equal(enquiry.contact.email,"qa-browser@example.test");
-            assert.equal(enquiry.sourcePath,"/"+locale+"/services/dao-health-profile");
-            assert.ok(/^[a-f0-9-]{36}$/i.test(enquiry.operationId));
-          }
           if (name === "chromium" && width === 390 && locale === "en") {
             await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});
             const temple = page.locator("[data-temple-initiation-chooser]");
@@ -247,8 +234,13 @@ async function runEngine(name, engine) {
             await temple.locator('[data-temple-step="initiation"] button').first().click();
             const templeChooser = temple.locator("[data-contact-channel-chooser]");
             await templeChooser.waitFor({state:"visible"});
-            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
-            assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
+            const { referenceCode } = await assertRegisteredEnquiryReceipt(temple,expect,page,{
+              locale:"en",sourcePath:"/en/academy/temple-studies",serviceTitle:"Temple Studies",
+            });
+            await page.locator('[data-service-thank-you]').screenshot({
+              path:output + "/chromium-en-390-temple-receipt.png",animations:"disabled",
+            });
+            results.push({name,locale,width,templeReceipt:true,referenceCode,contactSubmitted:true});
           }
         } finally {
           await page.close();

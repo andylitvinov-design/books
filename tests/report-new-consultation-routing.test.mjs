@@ -13,11 +13,15 @@ test('My Practice report handoff selects the client in the current consultation 
   ])
   assert.match(practice, /openOwner\('report'\)/)
   assert.match(destination, /report:\s*'\/admin\/reports\/new'/)
-  assert.ok(picker.includes('href={`/admin/consultations/new?clientId=${encodeURIComponent(client.id)}`}'))
+  const auth=picker.indexOf("if (!await requireAdminRequest()) redirect('/admin/login')")
+  const handoff=picker.indexOf('redirect(validUuid(clientId)')
+  assert.ok(auth>=0&&handoff>auth,'owner authentication precedes validated client handoff')
+  assert.ok(picker.includes('`/admin/consultations/new?clientId=${encodeURIComponent(clientId)}`'))
+  assert.match(picker, /:\s*'\/admin\/consultations\/new'/,'missing or invalid client opens the one existing selector')
   assert.doesNotMatch(picker, /assessments\/new\?kind=research_result/)
   assert.match(studio, /selectedClientId=\{selectedClientId\}/)
   assert.match(studio, /<ConsultationForm/)
-  assert.match(picker, /Preview the PDF before creating documents/)
+  assert.doesNotMatch(picker, /<ConsultationForm|<form|<Link/,'the handoff must not duplicate the existing consultation selector')
 })
 
 test('existing client report actions do not link to the old research editor', async () => {

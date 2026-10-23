@@ -69,8 +69,10 @@ test('restored report header and strict appendix page boundary in both languages
   const pdfCode=sourceFile('lib/prescriptions/pdf.js')
   assert.match(pdfCode,/q 82 0 0 80\.81 68 724 cm \/Lighthouse Do Q/,
     'approved lighthouse and name form the header on the left')
-  assert.match(pdfCode,/text\(LETTERHEAD\.name, 164, 788, 19/,
+  assert.match(pdfCode,/text\('HOLISTIC HOUSE', 164, 788, 18\.5/,
     'brand header stays away from iOS page number overlay')
+  assert.match(pdfCode,/text\(LETTERHEAD\.name, 164, 767, 11\.8/,
+    'verified practitioner name stays directly below the leading house brand')
   assert.doesNotMatch(pdfCode,/appendixOnSignedContinuation/,
     'never start an appendix under a signature, even with empty space')
   assert.match(pdfCode,/appendixKind = 'remedies'[^]*?startPage\(\)[^]*?for \(const \{ item, remedy \} of profiles\)/)

@@ -1,13 +1,14 @@
 // Exercises the EXACT Lua scripts against an isolated Redis 7 container.
 // No patient records, credentials, network egress or paid inference.
 import test from 'node:test'
+import {isolatedRedisContainer} from './helpers/isolated-redis-container.mjs'
 import assert from 'node:assert/strict'
 import {execFileSync} from 'node:child_process'
 import {readFileSync} from 'node:fs'
 import {randomUUID} from 'node:crypto'
 
 const code=readFileSync(new URL('../lib/clients/local-narration-redis.js',import.meta.url),'utf8')
-const container='andrey-voice-redis-ci'
+const container=isolatedRedisContainer()
 const ttl='1209600'
 const readyTtl='7776000'
 function lua(name) {
@@ -125,3 +126,4 @@ test('expired lease is reclaimed and its previous MP3 is scheduled for deletion'
   assert.equal(evalLua('CLAIM_EXPIRED_AUDIO_SCRIPT',[f.ready],
     [26002,1,600000]),abandoned)
 })
+

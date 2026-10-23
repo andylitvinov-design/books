@@ -75,9 +75,9 @@ async function verifyDirectNavigation(nav, { locale, surface, expected, label })
   const directions = expected.filter(item => ['energy','love','business'].includes(item.id))
   // Home has a dialog trigger for My Space; other pages retain a direct Cabinet link.
   const isHome = surface === 'home'
-  const expectedHeader = [...directions.map(({id,href}) => ({id,href})), { id: 'cabinet', href: isHome ? null : cabinetHref }]
-  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => el.getAttribute('href'))), [freeReviewHref, ...directions.map(item => item.href), '/' + locale + '/about', ...(isHome ? [] : [cabinetHref])], label + ': exact direct header destinations')
-  assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
+  const expectedHeader = [...directions.map(({id,href}) => ({id,href})), { id: 'cabinet', href: isHome ? null : cabinetHref }, { id: 'shop', href: '/' + locale + '/shop' }, { id: 'cart', href: '/' + locale + '/cart' }]
+  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeReviewHref, ...directions.map(item => item.href), '/' + locale + '/about', ...(isHome ? [] : [cabinetHref]), '/' + locale + '/shop', '/' + locale + '/cart'], label + ': exact direct header destinations')
+  assert.deepEqual(await nav.locator(':scope > [data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
   const current = nav.locator(':scope > a[aria-current="page"]')
   await expect(current).toHaveCount(directions.some(item => item.id === surface) ? 1 : 0)
   if (directions.some(item => item.id === surface)) await expect(current).toHaveAttribute('href', directions.find(item => item.id === surface).href)
@@ -140,7 +140,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
         const expected = getSiteNavigation(locale)
-        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...expected.filter(item => ['library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/about']
+        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...expected.filter(item => ['library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/academy', '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinetEntry = header.locator('.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
@@ -364,7 +364,7 @@ try {
         } else {
           // Books is the sixth bottom-navigation slot; the full Library remains in the menu.
           const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })
-          assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
+          assert.deepEqual(await nav.locator(':scope > a[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
           await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
           await expect(nav.locator('[aria-current="page"]')).toHaveCount(1)
           await expect(nav.locator('[data-nav-item="books"]')).toHaveAttribute('aria-current', 'page')
@@ -593,3 +593,5 @@ try {
   writeFileSync(`${evidence}/results.json`, JSON.stringify(results, null, 2))
   writeFileSync(`${evidence}/app.log`, sanitize(logs))
 }
+
+

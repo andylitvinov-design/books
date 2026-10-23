@@ -275,6 +275,7 @@ export function ConsultationChoiceCapture({
         <ContactChannelChooser
           locale={locale}
           whatsappUrl={whatsappUrl}
+          selectedFormat={t.serviceOptions[serviceChoice]}
           className={styles.action}
           event="service_request_start"
           attributes={{ "data-consultation-action": serviceChoice }}
@@ -350,3 +351,4 @@ export function ConsultationChoiceCapture({
     </section>
   );
 }
+

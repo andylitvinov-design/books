@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { normalizePublicServiceEnquiry } from "../lib/practitioners/public-service-enquiry-input.mjs";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp, TELEGRAM_USERNAME } from "../lib/whatsapp-enquiry.js";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -47,7 +48,7 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
   assert.match(src, /<details className=\{styles\.optionalNote\}>/);
-  assert.match(src, /<textarea[\s\S]*?maxLength=\{1400\} rows=\{2\}/);
+  assertCombinedDescriptionBoundary(src);
   assert.doesNotMatch(src, /c\.situation \+ ": " \+ description\.trim\(\)/);
   assert.match(src, /originalMessage \+ "\\n\\n" \+ c\.reference/);
   assert.match(src, /<form onSubmit=\{submit\}/);
@@ -91,4 +92,42 @@ test("primary capture components render channel chooser after service selection 
   assert.match(footer, /<CompactLeadCapture/);
   assert.doesNotMatch(footer, /<ContactChannelChooser/);
 
+});
+
+
+function assertCombinedDescriptionBoundary(src) {
+  const budget = src.match(/<textarea\b[^>]*?maxLength=\{([\s\S]*?)\} rows=\{2\}/)?.[1];
+  const composition = src.match(/description:\s*(\[[\s\S]*?\.join\("\\n\\n"\)),/)?.[1];
+  assert.ok(budget, 'Execute the actual optional-note character budget');
+  assert.ok(composition, 'Execute the actual submitted description expression');
+  const noteBudget = new Function('selectedFormat', 'return (' + budget + ')');
+  const descriptionFor = new Function('selectedFormat', 'description', 'quick', 'publicTopic', 'return (' + composition + ')');
+  for (const selectedFormat of [undefined, '', 'Express review · 30 min · €50', 'Личная сессия · 60 минут · €100', 'Acompañamiento de cuatro semanas · consultar condiciones']) {
+    const format = selectedFormat?.trim() || '';
+    const maximum = noteBudget(selectedFormat);
+    assert.equal(maximum, 1400 - (format ? format.length + 2 : 0));
+    const note = 'N'.repeat(maximum);
+    const description = descriptionFor(selectedFormat, note, false, undefined);
+    assert.equal(description, format ? format + '\n\n' + note : note, 'Trusted format and optional note appear exactly once');
+    assert.equal(description.length, 1400);
+    const payload = { operationId:'13b822f6-8d70-4b1c-b44e-d0c31ad1d82f', serviceTitle:'Approved public service',
+      description, sourcePath:'/en/services/alchemy-of-soul', locale:'en', contactConsent:true,
+      contact:{displayName:'',email:'boundary@example.test',phone:''}, website:'' };
+    assert.equal(normalizePublicServiceEnquiry(payload).description, description, 'Existing server validator accepts combined1400 boundary');
+    assert.throws(() => normalizePublicServiceEnquiry({ ...payload, description:description+'N' }), /INVALID_REQUEST/);
+    assert.equal(descriptionFor(selectedFormat, '', false, undefined), format, 'Optional note is not needed to retain public format');
+  }
+  assert.equal(descriptionFor(undefined, '', true, 'Approved course topic'), 'Approved course topic', 'Quick course fallback is unchanged');
+}
+test('actual note budget preserves selected format and combined server boundary', () => {
+  assertCombinedDescriptionBoundary(read('components/contact-channel-chooser.tsx'));
+});
+for (const [name, mutate] of [
+  ['legacy full note budget', source => source.replace(/maxLength=\{Math.max\([^\n]+\)\} rows=\{2\}/, 'maxLength={1400} rows={2}')],
+  ['lost selected format', source => source.replace('[selectedFormat?.trim(),', '[')],
+  ['duplicated selected format', source => source.replace('[selectedFormat?.trim(),', '[selectedFormat?.trim(), selectedFormat?.trim(),')],
+]) test('description boundary contract rejects ' + name, () => {
+  const src = read('components/contact-channel-chooser.tsx'), changed = mutate(src);
+  assert.notEqual(changed, src, 'Mutation reaches actual source');
+  assert.throws(() => assertCombinedDescriptionBoundary(changed));
 });

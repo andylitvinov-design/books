@@ -72,7 +72,9 @@ test('first mission slide welcomes the learner, with thematic feeling choices an
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
   assert.match(player,/onFinish\|\|onClose/)
-  assert.match(today,/onFinish=\{\(\)=>\{setQuestOpen\(false\);setView\('path'\)\}\}/)
+  assert.match(today,/onFinish=\{finishLessonPlayer\}/)
+  assert.match(today,/const finishLessonPlayer=\(\)=>\{closeLessonPlayer\(\);setView\('path'\)\}/)
+  assert.match(today,/const closeLessonPlayer=\(\)=>\{setQuestOpen\(false\);setReviewLesson\(null\);setView\('path'\)\}/)
 })
 
 test('EN/RU mobile course stays keyboard accessible with a visible bottom action',()=>{
@@ -177,7 +179,7 @@ test('failed lesson saves do not earn an offer or completion and retries reuse t
  assert.ok(textOf(primary(h)).includes('Back to my learning path'));h.unmount()
 })
 
-test('V7 completion returns to the path and releases the exact presenter token; X preserves the current screen',async()=>{
+test('V7 completion and X return to the learning path and release the exact presenter token',async()=>{
  for(const exit of ['finish','close']){
   const dismissals=[],notify=[]
   const dismiss=()=>dismissals.push('cycle-a:1:lesson-a')
@@ -190,7 +192,8 @@ test('V7 completion returns to the path and releases the exact presenter token; 
   if(exit==='finish')player.props.onFinish();else player.props.onClose()
   await h.settle()
   assert.equal(findPart(h.tree,'CourseSlidePlayer'),undefined)
-  assert.equal(h.tree.props['data-course-view'],exit==='finish'?'path':'today')
+  assert.equal(h.tree.props['data-course-view'],'path')
+  assert.ok(findPart(h.tree,'CourseQuestMap'),'both exits restore the learning path')
   assert.deepEqual(dismissals,['cycle-a:1:lesson-a'])
   assert.equal(notify.length,0,'completion navigation alone does not earn an offer')
   h.unmount()

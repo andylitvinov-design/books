@@ -119,7 +119,7 @@ test('private PDF preview is owner-only, inline and distinct from an explicit cl
 
 test('three narrative sections render in the authored order while legacy reports remain readable', async () => {
   const reader = await readFile('components/prescription-document.jsx', 'utf8')
-  const analysis = reader.indexOf('<h2>{labels.analysis}</h2>')
+  const analysis = reader.search(/<h2(?:\s[^>]*)?>\{labels\.analysis\}<\/h2>/)
   const recommendations = reader.indexOf('<h2>{labels.recommendations}</h2>')
   const notes = reader.indexOf('<h2>{labels.additionalNotes}</h2>')
   assert.ok(analysis !== -1 && recommendations > analysis && notes > recommendations)

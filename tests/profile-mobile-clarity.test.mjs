@@ -19,11 +19,11 @@ test('signed-in Profile restores the approved cream and turquoise report design'
   assert.doesNotMatch(css, /A purposeful, short navy introduction/)
 })
 
-test('report actions are above the category accordion for the signed-in account only', () => {
+test('account report archive stays open with free options while duplicate actions remain external only', () => {
   const profile = source('components/app/profile-domains.jsx')
   const css = source('components/app/profile-refresh.css')
   const archive = profile.indexOf('<section id="personal-reports"')
-  const consult = profile.indexOf('data-profile-empty-consultation')
+  const consult = profile.indexOf('data-profile-free-consultation')
   const archiveEnd = profile.indexOf('</section>}', archive)
   const quickActions = profile.indexOf('{!external && footerActions}')
   const reportAreas = profile.indexOf('<details className="hh-domain-more"')
@@ -31,8 +31,11 @@ test('report actions are above the category accordion for the signed-in account 
   const legacyActions = profile.indexOf('{external && footerActions}')
 
   assert.ok(archive >= 0 && consult > archive && archiveEnd > consult)
-  assert.ok(quickActions > archiveEnd && reportAreas > quickActions)
+  assert.ok(quickActions === -1 && reportAreas > archiveEnd)
   assert.ok(legacyActions > privacy && legacyActions > reportAreas)
+  assert.match(profile, /data-report-archive-always-open/)
+  assert.match(profile, /\{external && <details className="hh-domain-more"/)
+  assert.match(profile, /\{external && <p className="hh-domain-private">/)
   assert.match(profile, /const footerActions = \(/)
   assert.match(profile, /className="hh-domain-free-review-link"/)
   assert.match(profile, /className="hh-domain-services-link"/)
@@ -52,9 +55,9 @@ test('reports remain private, consultation remains an unconfirmed request and ta
   const panel = source('components/app/personal-analysis-panel.jsx')
   const css = source('components/app/profile-refresh.css')
 
-  assert.match(profile, /data-consultation-kind="free-introduction"/)
-  assert.match(profile, /href=\{freeIntroConsultationHref\(locale\)\}/)
-  assert.match(profile, /not a confirmed booking/)
+  assert.match(profile, /data-consultation-kind="free-options"/)
+  assert.match(profile, /href=\{'\/' \+ locale \+ '\/services\/free-consultation'\}/)
+  assert.match(profile, /availability is confirmed personally/)
   assert.match(profile, /role="tablist"/)
   assert.match(profile, /aria-selected=\{active === key\}/)
   assert.match(profile, /onKeyDown=\{event => \{/)
@@ -65,3 +68,4 @@ test('reports remain private, consultation remains an unconfirmed request and ta
   assert.match(css, /prefers-reduced-motion:reduce/)
   assert.doesNotMatch(profile, /localStorage|sessionStorage/)
 })
+

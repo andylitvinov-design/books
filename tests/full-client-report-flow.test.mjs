@@ -114,7 +114,10 @@ test('videos lead the complete canonical HTML report, with audio, attachments an
     page.indexOf('className={styles.fullReportContent}>{reportContent}'),
     'video appears first, before the canonical full report')
   assert.ok(page.indexOf('className={styles.fullReportContent}>{reportContent}') <
-    page.indexOf('id="session-message"'),'the original report remains before audio')
+    page.indexOf('{!audioEmbedded&&hasFullReport&&<ClientSessionVoiceMessage'),
+    'the original report remains before its non-embedded voice component, not the hoisted component definition')
+  assert.match(page,/export function ClientSessionVoiceMessage/)
+  assert.match(page,/return <section id="session-message"/)
   assert.match(page,/!hasFullReport&&hasRecommendation/,'do not duplicate visible recommendation cards')
   assert.match(page,/!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview/)
   assert.match(page,/id="session-photos"/)

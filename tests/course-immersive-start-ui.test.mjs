@@ -37,6 +37,10 @@ for (const locale of ['en', 'ru']) for (const [version, expected, absent] of [
       player.props.onClose()
       await h.settle()
       assert.equal(findPart(h.tree, expected), undefined)
+      assert.equal(h.tree.props['data-course-view'], 'path')
+      assert.ok(findPart(h.tree, 'CourseQuestMap'))
+      findButton(h.tree, locale === 'ru' ? 'Сегодня' : 'Today').props.onClick()
+      await h.settle()
     }
     assert.deepEqual(data, original)
     assert.equal(h.calls.filter(call => call.body).length, 0)
@@ -81,6 +85,10 @@ for (const locale of ['en', 'ru']) {
       player.props.onClose()
       await h.settle()
 
+      assert.equal(h.tree.props['data-course-view'], 'path')
+      assert.ok(findPart(h.tree, 'CourseQuestMap'))
+      findButton(h.tree, locale === 'ru' ? 'Сегодня' : 'Today').props.onClick()
+      await h.settle()
       findButton(h.tree, locale === 'ru' ? 'Все 14 дней' : 'See all 14 days').props.onClick()
       await h.settle()
       assert.equal(h.tree.props['data-course-view'], 'path')

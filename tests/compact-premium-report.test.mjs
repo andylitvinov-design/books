@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { extractReportProgress } from '../lib/documents/report-progress.js'
+import { extractReportProgress, resolveReportProgress } from '../lib/documents/report-progress.js'
 import { reportPdfFilename } from '../lib/documents/report-filename.js'
 import { getOwnerReportTextTemplate } from '../lib/consultations/owner-report-template.js'
 import { remedyDescriptionBlocks } from '../lib/documents/report-appendices.js'
@@ -79,7 +79,17 @@ test('mobile HTML shares explicit progress data and print-safe visual hierarchy'
   const document = readFileSync('components/prescription-document.jsx', 'utf8')
   const css = readFileSync('components/consultation-report.css', 'utf8')
   const preview = readFileSync('components/consultation-draft-preview.jsx', 'utf8')
-  assert.match(document, /extractReportProgress\(document\.analysis\)/)
+  assert.match(document, /resolveReportProgress\(document\)/)
+  const legacy='Before the session: 3/10\nAfter the session: 5/10'
+  assert.deepEqual(resolveReportProgress({analysis:legacy}),{before:3,after:5})
+  assert.deepEqual(resolveReportProgress({analysis:legacy,progressBefore:0,progressAfter:8.5}),{before:0,after:8.5})
+  for (const scores of [
+    {progressBefore:null,progressAfter:null},
+    {progressBefore:'',progressAfter:''},
+    {progressBefore:3},
+    {progressBefore:11,progressAfter:5},
+  ]) assert.equal(resolveReportProgress({analysis:legacy,...scores}),null,
+    'cleared, incomplete or invalid structured ratings never resurrect narrative scores')
   assert.match(document, /canonical-progress-grid/)
   assert.match(document, /<DocumentSignature date=\{document\.dateIssued\} locale=\{locale\} compact/)
   assert.match(css, /\.canonical-progress-grid/)

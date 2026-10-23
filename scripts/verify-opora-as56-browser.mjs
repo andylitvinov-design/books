@@ -216,3 +216,4 @@ try {
   await writeFile(`${output}/summary.json`, JSON.stringify(evidence, null, 2) + '\n')
   await browser.close()
 }
+

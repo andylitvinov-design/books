@@ -63,6 +63,9 @@ if(!process.execArgv.includes('--conditions=react-server')){
     }
     assert.throws(()=>checkReviewInput({...base,serviceId:'fake'}),/INVALID_ID/)
     assert.throws(()=>checkReviewInput({...base,body:'bad'}),/INVALID_REVIEW/)
-    assert.throws(()=>checkReviewInput({...base,body:'Email me at test@example.com for results, please.'}),/REVIEW_PERSONAL_DATA/)
+    const personalDataBody='Email me at test@example.com for detailed session results, please.'
+    assert.ok(Array.from(personalDataBody).length>=50, 'PII case must reach the PII guard, not fail minimum length first')
+    assert.throws(()=>checkReviewInput({...base,body:personalDataBody}),/REVIEW_PERSONAL_DATA/)
   })
 }
+

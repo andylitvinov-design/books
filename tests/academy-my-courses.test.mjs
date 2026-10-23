@@ -17,12 +17,15 @@ const compile = (text, fileName) => {
   assert.equal((compiled.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0)
   return compiled.outputText
 }
-const nodes = tree => tree == null || typeof tree !== 'object' ? []
+// The real card components are pure; render them instead of treating their JSX as opaque.
+const expandCard = tree => tree && typeof tree.type === 'function' &&
+  ['GrowthCard','ReikiCard'].includes(tree.type.name) ? tree.type(tree.props) : tree
+const nodes = raw => { const tree=expandCard(raw); return tree == null || typeof tree !== 'object' ? []
   : Array.isArray(tree) ? tree.flatMap(nodes)
-    : [tree, ...nodes(tree.props?.children)]
-const words = tree => tree == null || typeof tree === 'boolean' ? ''
+    : [tree, ...nodes(tree.props?.children)] }
+const words = raw => { const tree=expandCard(raw); return tree == null || typeof tree === 'boolean' ? ''
   : typeof tree !== 'object' ? String(tree)
-    : Array.isArray(tree) ? tree.map(words).join(' ') : words(tree.props?.children)
+    : Array.isArray(tree) ? tree.map(words).join(' ') : words(tree.props?.children) }
 const bootstrap = id => ({
   account: { id, onboardingState: 'active' },
   results: [], runs: [], requests: [], consents: [], services: [],
@@ -83,6 +86,7 @@ function harness(handler, locale = 'en') {
       ],
     },
     './academy-my-courses.module.css': {
+      __esModule: true,
       default: new Proxy({}, { get: (_, key) => String(key) }),
     },
   }
@@ -157,7 +161,7 @@ test('signed-in course owner sees their live growth and Reiki progress and one-c
   assert.ok(words(h.tree).includes('Stress & tension'))
   assert.ok(words(h.tree).includes('Reiki Practitioner'))
   assert.ok(items.some(n => n.props?.href === '/en/app/course?courseId=owned-growth-course'))
-  assert.ok(items.some(n => n.props?.href === '/en/academy/principles-of-energywork/learn?slide=flight-04'))
+  assert.ok(items.some(n => n.props?.className === 'action' && n.props?.href === '/en/academy/principles-of-energywork/learn?slide=flight-04'))
   assert.ok(items.some(n => n.props?.href === '/en/academy/principles-of-energywork/learn?slide=flight-04'
     && words(n).includes('Flight to the Sun')))
   assert.ok(items.some(n => n.props?.role === 'progressbar' && n.props?.['aria-valuenow'] === 3))
@@ -200,7 +204,7 @@ test('a partial course backend outage still shows the independently authorized R
   assert.ok(nodes(h.tree).some(n => n.props?.['data-academy-owned-reiki'] !== undefined))
   assert.match(words(h.tree), /Mis cursos/)
   assert.match(words(h.tree), /Parte del progreso no está disponible/)
-  assert.ok(nodes(h.tree).some(n => n.props?.href === '/en/academy/principles-of-energywork/learn?slide=flight-04'))
+  assert.ok(nodes(h.tree).some(n => n.props?.className === 'action' && n.props?.href === '/en/academy/principles-of-energywork/learn?slide=flight-04'))
   h.unmount()
 })
 
@@ -213,3 +217,4 @@ test('responsive cards stay inside the screen, with 320px and 430px breakpoints'
   assert.match(css, /:focus-visible/)
   assert.match(css, /min-height: 44px/)
 })
+

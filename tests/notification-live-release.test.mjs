@@ -11,6 +11,8 @@ test('hourly dispatch must keep secrets server-side and not use Hobby hourly Ver
  const route=readFileSync('app/api/internal/notification-dispatch/route.js','utf8')
  const vercel=JSON.parse(readFileSync('vercel.json','utf8'))
  assert.match(route,/HH_PUSH_CRON_SECRET/)
- assert.equal(vercel.crons.length,1)
- assert.equal(vercel.crons[0].schedule,'0 5 * * *')
+ assert.deepEqual(vercel.crons.filter(cron=>cron.path==='/api/internal/housekeeping'),[{path:'/api/internal/housekeeping',schedule:'0 5 * * *'}])
+ assert.ok(vercel.crons.every(cron=>/^\d+ \d+ \* \* \*$/.test(cron.schedule)),'Every Vercel job remains daily, not hourly')
+ assert.ok(vercel.crons.every(cron=>cron.path!=='/api/internal/notification-dispatch'),'Hourly push dispatch stays outside Hobby Vercel cron')
 })
+

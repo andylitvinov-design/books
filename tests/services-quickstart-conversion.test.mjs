@@ -48,7 +48,7 @@ test("personal pages keep three price and free alternatives without suggesting a
   assert.match(css, /@media\(max-width:767px\)\{\s*\.order\{position:static\}/);
 });
 
-test("real production browser QA covers personal landing CTA and safe messenger draft in all locales", () => {
+test("real production browser QA proves exact selected-format enquiry and receipt in all locales", () => {
   const script = read("scripts/verify-public-services-production.mjs");
   const workflow = read(".github/workflows/hh-public-services-production.yml");
   for (const route of ["imagery-therapy", "systemic-constellations"])
@@ -62,7 +62,7 @@ test("real production browser QA covers personal landing CTA and safe messenger 
   assert.match(script, /Business Strategy & Founder Coaching has its own separate/);
   assert.match(script, /for \(const locale of \["en", "ru", "es"\]\)/);
   assert.match(script, /waitForURL\(\/#request-session\$\/\)/);
-  assert.match(script, /assertPreparedContactChannels\(chooser, expect\)/);
+  assertPersonalReceipt(script, read("scripts/helpers/enquiry-receipt-verifier.mjs"));
   assert.match(script, /personal-request\//);
   assert.doesNotMatch(script, /telegram\.com\/send|wa\.me\/send/);
   assert.match(workflow, /node scripts\/verify-public-services-production\.mjs/);
@@ -89,4 +89,23 @@ test("Business browser contract rejects missing route or locale coverage", () =>
     assert.notEqual(changed, script);
     assert.throws(() => assertBusinessBrowserRoute(changed));
   }
+});
+
+function assertPersonalReceipt(script, helper) {
+  assert.match(script, /await assertRegisteredEnquiryReceipt\(target, expect, page, \{\s*locale, sourcePath: "\/" \+ locale \+ "\/services\/" \+ service, serviceTitle: receiptTitles\.personal\[service\]\[locale\], selectedFormat: receiptFormats\.personal\[locale\],\s*\}\)/);
+  assert.match(helper, /assert\.equal\(request\.description, selectedFormat,/);
+  assert.match(helper, /assert\.equal\(request\.contactConsent, true\)/);
+  assert.match(helper, /assert\.equal\(explicitSubmit, true,/);
+  assert.match(helper, /assert\.equal\(submissions\.length, 1,/);
+  assert.match(helper, /parseEnquiryReceipt\(raw\)/);
+  assert.match(helper, /await expect\(page\)\.toHaveURL\(start\.origin \+ '\/' \+ locale \+ '\/thank-you'\)/);
+}
+test("receipt proof rejects lost selected format, wrong source and bypassed consent or saved-request validation", () => {
+ const script=read("scripts/verify-public-services-production.mjs"),helper=read("scripts/helpers/enquiry-receipt-verifier.mjs");
+ for(const [before,after] of [['selectedFormat: receiptFormats.personal[locale]','selectedFormat: ""'],['serviceTitle: receiptTitles.personal[service][locale]','serviceTitle: "Other"']]){
+  assert.ok(script.includes(before));assert.throws(()=>assertPersonalReceipt(script.replace(before,after),helper));
+ }
+ for(const before of ['assert.equal(request.description, selectedFormat,','assert.equal(request.contactConsent, true)','assert.equal(explicitSubmit, true,','assert.equal(submissions.length, 1,']){
+  assert.ok(helper.includes(before));assert.throws(()=>assertPersonalReceipt(script,helper.replace(before,'assert.ok(true); //')));
+ }
 });

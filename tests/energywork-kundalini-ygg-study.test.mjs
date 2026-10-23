@@ -24,9 +24,9 @@ test('Nine approved Kundalini questions and seven Yggdrasil questions preserve p
   assert.deepEqual(energyworkLessonRanges().map(x=>x.count),[7,15,17,15,6])
   const kundalini = ["kun-study-v2-01","kun-study-v2-02","kun-study-v2-03","kun-study-v2-04","kun-study-v2-05","kun-study-v2-06","kun-study-v2-07","kun-study-v2-08","kun-study-v2-09"]
   assert.deepEqual(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS,kundalini)
-  assert.deepEqual(ENERGYWORK_BRANCH.kundalini.filter(id=>id.startsWith('kun-study-v2-')),kundalini)
+  assert.deepEqual(ENERGYWORK_BRANCH.kundalini.slice(7,16),kundalini)
   assert.equal(ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS.length,7)
-  assert.deepEqual(ENERGYWORK_BRANCH.yggdrasil.filter(id=>id.startsWith('ygg-study-v2-')),[...ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS])
+  assert.deepEqual(ENERGYWORK_BRANCH.yggdrasil.slice(7,14),[...ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS])
   for(const id of [...kundalini,...ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS]){
     assert.equal(ENERGYWORK_QUESTIONS[id],'text',id)
     assert.ok(ENERGYWORK_LESSON_ANSWER_IDS.includes(id),id)

@@ -41,9 +41,14 @@ test("Course rail and account saving are unchanged and separate from journey hin
   assert.ok(learner.includes('<nav className={styles.journey} aria-label={t.fiveLessons}>'));
   assert.ok(learner.includes('energyworkLessons.map((lesson, number) => ('));
   assert.ok(learner.includes('<span className={styles.journeyLabel}>{lesson.title[locale]}</span>'));
-  assert.ok(learner.includes('<details className={styles.saveManager}>'));
-  assert.ok(learner.includes('aria-label={t.consentTitle}'));
-  for (const fn of ["signIn", "startSaving", "shareWithTeacher", "reloadProgress"]) {
+  assert.ok(learner.includes('<details className={styles.saveSettings}>'));
+  assert.ok(learner.includes('<summary>{t.consentTitle}</summary>'));
+  assert.ok(learner.includes('data-reiki-private-save-status aria-live="polite"'));
+  assert.ok(learner.includes('disabled={!consented || busy} onClick={startSaving}'));
+  assert.ok(learner.includes('disabled={busy || !shareConsented} onClick={shareWithTeacher}'));
+  assert.ok(learner.includes('if (sync === "guest") await signIn();'));
+  assert.match(learner, /if \(slide\.id === "flight-done" && sync !== "ready"\) \{\s*if \(sync === "guest" \|\| sync === "consent"\) await saveLessonOneToCabinet\("continue"\);\s*return;/);
+  for (const fn of ["startSaving", "shareWithTeacher", "reloadProgress"]) {
     assert.ok(learner.includes("onClick={" + fn + "}"), "Saving control missing: " + fn);
   }
   assert.ok(learner.includes('href={"/" + locale + "/app/course?view=courses"}'));
@@ -62,7 +67,7 @@ test("Closed bar stays one row; expanded guidance participates in vertical layou
   assert.ok(styles.includes("max-height: min(34dvh, 172px)"));
   assert.ok(styles.includes(".programme .programmeSystemLink {"));
   assert.ok(!styles.includes("bottom: calc(100% + 7px)"));
-  assert.ok(styles.includes(".saveManager > .preview {\n  position: absolute"));
+  assert.match(styles,/\.page\[data-course-visual\] \.savedLine \.saveSettings \{[^}]*width: 100%/);
   assert.ok(styles.includes("prefers-reduced-motion: reduce"));
 });
 
@@ -80,3 +85,4 @@ test("Kundalini manual teaching slide links directly to its public course withou
   assert.ok(curriculum.includes('id: "kun-05"'));
   assert.ok(curriculum.includes('title: l("Explore the original manual"'));
 });
+

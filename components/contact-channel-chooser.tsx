@@ -122,12 +122,14 @@ type Props = {
   stayAfterSave?: boolean;
   resetKey?: string;
   publicTopic?: string;
+  /** Public format label supplied by a trusted service selector, never a price authorization. */
+  selectedFormat?: string;
 };
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, stayAfterSave = false, resetKey, publicTopic,
+  onChannelClick, attributes, id, quick = false, stayAfterSave = false, resetKey, publicTopic, selectedFormat,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -182,7 +184,7 @@ export function ContactChannelChooser({
     setSaved(null);
     setError("");
     operationId.current = null;
-  }, [enquiryResetKey, quick]);
+  }, [enquiryResetKey, quick, selectedFormat]);
 
   useEffect(() => {
     if (!open && !(quick && saved)) return;
@@ -300,7 +302,8 @@ export function ContactChannelChooser({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           operationId: nextId, serviceTitle,
-          description: description.trim() || (quick ? publicTopic?.trim() || "" : ""),
+          description: [selectedFormat?.trim(), description.trim() || (quick ? publicTopic?.trim() || "" : "")]
+            .filter(Boolean).join("\n\n"),
           sourcePath: pathname, locale,
           contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
           contactConsent: consent, website,
@@ -399,7 +402,7 @@ export function ContactChannelChooser({
             <details className={styles.optionalNote}>
               <summary>{c.description}</summary>
               <textarea id={panelId + "-situation"} aria-label={c.description}
-                maxLength={1400} rows={2}
+                maxLength={Math.max(0, 1400 - (selectedFormat?.trim().length || 0) - (selectedFormat?.trim() ? 2 : 0))} rows={2}
                 placeholder={c.placeholder} value={description} disabled={busy}
                 onChange={event => {
                   setDescription(event.target.value); setError(""); operationId.current = null;
@@ -463,3 +466,4 @@ export function ContactChannelChooser({
     </div>
   );
 }
+
