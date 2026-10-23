@@ -78,9 +78,9 @@ for (const engine of [chromium, webkit]) {
             sectionNav.boundingBox(), page.locator('[data-home-slide]').boundingBox(),
           ]);
           assert.ok(navBox && copyBox, label + ': nav and photo copy are laid out');
-          assert.ok(navBox.y >= slider.y - 1 && navBox.y + navBox.height <= copyBox.y + 4,
+          assert.ok(navBox.y >= card.y - 1 && navBox.y + navBox.height <= copyBox.y + 4,
             label + ': lightweight nav stays above the title without overlapping it');
-          assert.ok(navBox.x >= slider.x - 1 && navBox.x + navBox.width <= slider.x + slider.width + 1,
+          assert.ok(navBox.x >= card.x - 1 && navBox.x + navBox.width <= card.x + card.width + 1,
             label + ': nav stays within the existing photo');
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
           assert.ok(overflow <= 1, label + ': no horizontal overflow');
