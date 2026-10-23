@@ -188,3 +188,26 @@ Set `HH_PRACTICE_TG_ENABLED=false` on production, then redeploy to take effect. 
 ## Limitations
 
 This is one **owner** digest, not opt-in Telegram mail for every master. No cross-master disclosure. Monetary revenue is intentionally omitted until a verified payment/order source is approved.
+
+---
+
+## 2026-10-23 — ежедневная доставка при недоступности Gemini/Mistral (актуальный порядок)
+
+**Один существующий канал:** `@Andydotbot` → подтверждённый приватный Telegram владельца. **Один existing Vercel cron:** `/api/internal/council-archive-telegram` в 21:00 UTC. **Одна запись на Toronto date** в `app_private.council_telegram_deliveries`; никакого нового бота, расписания, платной модели, облачной базы или расхода на рекламу.
+
+Фактический read-only Supabase-аудит **до исправления** (2026-10-23):
+- 2026-10-20: `accepted`; `gemini=unavailable`, `mistral=unavailable`.
+- 2026-10-21: `accepted`; `chatgpt=ok`, `gemini=not_run`, `mistral=not_run`.
+- 2026-10-22: `failed`, без `report_markdown`, без `model_outcomes` (первый запуск). При этом в [issue #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242) есть достоверно размеченный ежедневный отчёт анонимного публичного HTML-сканера за 22 октября, но нет owner ChatGPT report за эту дату. Это доказывает пробел в доставке, но не точный HTTP/Telegram exception: серверный route поглощает причину ошибки в generic 503.
+
+**Исправление:** когда валиден GitHub Actions `HH-COUNCIL-DAILY` архив, он становится пригодным для честного отчёта даже без действующей модели и независимо от `HH-CHATGPT-DAILY` комментария. Совместно существующие независимые Gemini и Mistral проверки запускаются **только через действующие бесплатные/пользовательски подтверждённые ограничения**. Статус каждого ответа `ok` засчитывается только после настоящей верифицированной генерации. Если 0/2, заголовок «публичный HTML-аудит и статус Gemini / Mistral», с явным `NOT_AVAILABLE` без фальшивых рекомендаций от моделей. Если есть полноценный отчет ChatGPT, его содержание приоритетно, независимые реальные ответы прикладываются опционально. Одна дата — максимум одно Telegram `sendDocument` со статусом `accepted` от Telegram Bot API; повторы после `failed` не должны делать второй inference при наличии cached markdown.
+
+**Независимый статус API не равен доставке:** на production уже есть Google Gemini API key и OpenRouter key (защищённый Vercel env), а в `app_private.owner_ai_provider_settings` — зашифрованный Mistral Studio key и подтверждённые владельцем бесплатные режимы (readback: 1/1). Скриншот Mistral Studio от владельца предупреждал `Upgrade your pricing plan to use your API keys`: наличие ключа и флага Free не означает доступ к `GET /v1/models` или реальной генерации. Поэтому новый платный Mistral тариф, платный Gemini и другие платные fallback запрещены без отдельного согласия владельца.
+
+**E2E gates перед статусом COMPLETE:**
+1. Focused source tests, CI, production-branch merge, READY build and exact live alias SHA.
+2. Настоящий авторизованный ответ Gemini и Mistral (по отдельности) с `ok` в кэше daily report; если Mistral Studio возвращает 401/403, показать проверяемый блокер и не делать paid POST.
+3. Новый дневной `accepted` receipt и один документ в Telegram владельца, после чего подтверждение владельцем фактического получения. Статус `accepted` означает принятие Bot API, **не** доставку/прочтение пользователем. Нельзя вручную редактировать receipts вместо реального send.
+4. Сохранить RLS/FORCE RLS, отсутствие `anon/authenticated` SELECT на приватные owner/provider/delivery таблицы, не передавать данные CRM, клиентов, тестов, здоровья и secrets в отчёты/AI.
+
+Для владельца: [защищённое подключение и ручная проверка](https://holistichouse.vercel.app/admin/telegram-setup) · [Mistral Studio — проверить Free access](https://console.mistral.ai/) · [Google AI Studio — Free Tier](https://aistudio.google.com/app/projects). Открытые блокеры фиксировать в [AI Council #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242).
