@@ -111,3 +111,50 @@
 @media (max-width: 365px) {
   .channels :is(button,a) { padding-inline: 5px; gap: 5px; font-size: 11.5px; }
 }
+
+/* Context-aware conversion panel: one shared, consented CRM form on every topic route. */
+.root[data-express-context] { width: 100%; margin: 14px auto 18px; }
+.root[data-express-context] .panel {
+  border-width: 2px;
+  box-shadow: 0 13px 35px rgb(59 44 28 / 12%);
+}
+.root[data-express-context] .eyebrow {
+  display: inline-flex; align-items: center; padding: 5px 9px;
+  border-radius: 999px; background: rgb(255 255 255 / 80%);
+  color: #784326; letter-spacing: .055em; font-size: 10px;
+}
+.root[data-express-context] .copy h2 { font-weight: 500; }
+.root[data-express-context] .order { box-shadow: 0 5px 14px rgb(73 48 27 / 16%); }
+.root[data-express-context="energy"] .panel {
+  border-color: #bdd0b7;
+  background: linear-gradient(117deg, #f8fcf4 0%, #e6f0e0 65%, #cfdfcd 100%);
+}
+.root[data-express-context="energy"] .order { background: #406b51; }
+.root[data-express-context="energy"] .order:hover { background: #2e543e; }
+.root[data-express-context="love"] .panel {
+  border-color: #e6c4bc;
+  background: linear-gradient(117deg, #fffaf6 0%, #f8e7e4 65%, #eecbc3 100%);
+}
+.root[data-express-context="love"] .order { background: #9a5553; }
+.root[data-express-context="love"] .order:hover { background: #7b3b3e; }
+.root[data-express-context="business"] .panel {
+  border-color: #d3b897;
+  background: linear-gradient(117deg, #fffaf2 0%, #f1e2cb 62%, #e3c7a2 100%);
+}
+.root[data-express-context="business"] .order { background: #735032; }
+.root[data-express-context="business"] .order:hover { background: #57391f; }
+.root[data-express-context="pro"] .panel {
+  border-color: #d5bca0;
+  background: linear-gradient(117deg, #fdfaf4 0%, #efe4d4 62%, #e0d1b9 100%);
+}
+.root[data-express-context="pro"] .order { background: #77513a; }
+.root[data-express-context="pro"] .order:hover { background: #5d3827; }
+@media (max-width: 760px) {
+  .root[data-express-context] { margin: 9px auto 12px; }
+  .root[data-express-context] .eyebrow { font-size: 9px; letter-spacing: 0; padding: 4px 6px; }
+  .root[data-express-context] .panel { padding: 12px; }
+}
+@media (max-width: 365px) {
+  .root[data-express-context] .panel { padding: 9px; }
+  .root[data-express-context] .order { font-size: 11.5px; }
+}

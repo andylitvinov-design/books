@@ -75,6 +75,121 @@ const copy = {
   },
 } as const;
 
+type ExpressContext = "energy" | "love" | "business" | "pro";
+
+const contextPaths: Record<ExpressContext, string> = {
+  energy: "/explore/energy", love: "/explore/love",
+  business: "/explore/business", pro: "/pro",
+};
+const expressCopy = {
+  en: {
+    energy: {
+      eyebrow: "FREE · EXPRESS SITUATION REVIEW",
+      title: "Where is your energy going?",
+      description: "Explore one everyday energy or balance question. A short questionnaire and a hand-drawn sketch lead to Andrey's personal written reflection.",
+      benefits: ["Personal written feedback", "One clearer next step", "No fee or video call"],
+      order: "Get my free review",
+      requestText: "Please send instructions for a free written situation review about energy and everyday resources, including the questionnaire and hand drawing.",
+    },
+    love: {
+      eyebrow: "FREE · EXPRESS SITUATION REVIEW",
+      title: "What could change in your relationships?",
+      description: "Bring one question about closeness, trust or boundaries. Start with a short questionnaire and the ME · GOAL · PROBLEM sketch.",
+      benefits: ["A fresh personal perspective", "A practical next step", "Private written response"],
+      order: "Request my free review",
+      requestText: "Please send instructions for a free written situation review about a relationship question, including the questionnaire and hand drawing.",
+    },
+    business: {
+      eyebrow: "FREE · EXPRESS SITUATION REVIEW",
+      title: "Find your next move in work or business.",
+      description: "Unpack one decision, project or career question with a short questionnaire and sketch. Andrey replies personally in writing.",
+      benefits: ["Focus on one decision", "Personal written perspective", "Free, without a sales call"],
+      order: "Request my free review",
+      requestText: "Please send instructions for a free written situation review about a work or business decision, including the questionnaire and hand drawing.",
+    },
+    pro: {
+      eyebrow: "FREE · EXPRESS SITUATION REVIEW",
+      title: "What's your next step as a practitioner?",
+      description: "New to Reiki or already practising? Explore one question about learning or sharing your work through a short questionnaire and sketch.",
+      benefits: ["For future and current practitioners", "Personal written perspective", "No fee or obligation"],
+      order: "Discuss my first step for free",
+      requestText: "Please send instructions for a free written situation review about my next learning or practitioner step, including the questionnaire and hand drawing.",
+    },
+  },
+  ru: {
+    energy: {
+      eyebrow: "БЕСПЛАТНАЯ ЭКСПРЕСС-ДИАГНОСТИКА СИТУАЦИИ",
+      title: "Куда уходит ваша энергия?",
+      description: "Разберите один вопрос о силах и внутренней опоре. Короткая анкета и рисунок «Я · Цель · Проблема» — основа личного письменного ответа Андрея.",
+      benefits: ["Личный письменный разбор", "Яснее следующий шаг", "Без оплаты и созвона"],
+      order: "Получить бесплатный разбор",
+      requestText: "Пришлите, пожалуйста, инструкцию к бесплатному письменному разбору вопроса об энергии и ресурсах, анкету и задание с рисунком.",
+    },
+    love: {
+      eyebrow: "БЕСПЛАТНАЯ ЭКСПРЕСС-ДИАГНОСТИКА СИТУАЦИИ",
+      title: "Что мешает близости и доверию?",
+      description: "Выберите один вопрос об отношениях. Анкета и рисунок «Я · Цель · Проблема» помогут взглянуть на ситуацию иначе.",
+      benefits: ["Свежий взгляд на ситуацию", "Личный письменный ответ", "Без обязательной консультации"],
+      order: "Хочу бесплатный разбор",
+      requestText: "Пришлите, пожалуйста, инструкцию к бесплатному письменному разбору вопроса об отношениях, анкету и задание с рисунком.",
+    },
+    business: {
+      eyebrow: "БЕСПЛАТНАЯ ЭКСПРЕСС-ДИАГНОСТИКА СИТУАЦИИ",
+      title: "Какой следующий шаг нужен вашему делу?",
+      description: "Один вопрос о работе, доходе или проекте, короткая анкета и рисунок. Андрей предложит письменный взгляд на ситуацию.",
+      benefits: ["Фокус на одном решении", "Письменный разбор лично от Андрея", "Бесплатно, без созвона"],
+      order: "Разобрать мой вопрос бесплатно",
+      requestText: "Пришлите, пожалуйста, инструкцию к бесплатному письменному разбору вопроса о работе или бизнесе, анкету и задание с рисунком.",
+    },
+    pro: {
+      eyebrow: "БЕСПЛАТНАЯ ЭКСПРЕСС-ДИАГНОСТИКА СИТУАЦИИ",
+      title: "С чего начать ваш путь Профи?",
+      description: "Учитесь Рейки или уже ведёте практику? Исследуйте один вопрос об обучении или своей услуге с помощью анкеты и рисунка.",
+      benefits: ["Для новичков и практиков", "Личный письменный взгляд", "Бесплатно, без обязательств"],
+      order: "Бесплатно разобрать мой путь",
+      requestText: "Пришлите, пожалуйста, инструкцию к бесплатному письменному разбору следующего шага в обучении или практике, анкету и задание с рисунком.",
+    },
+  },
+  es: {
+    energy: {
+      eyebrow: "GRATIS · REVISIÓN EXPRÉS DE TU SITUACIÓN",
+      title: "¿Adónde va tu energía?",
+      description: "Explora una pregunta sobre tus recursos cotidianos con un cuestionario breve y un dibujo YO · META · PROBLEMA. Andrey responde por escrito.",
+      benefits: ["Respuesta personal escrita", "Un siguiente paso más claro", "Sin pago ni videollamada"],
+      order: "Pedir mi revisión gratis",
+      requestText: "Envíame las instrucciones para una revisión gratuita escrita sobre mis recursos cotidianos, con el cuestionario y el dibujo.",
+    },
+    love: {
+      eyebrow: "GRATIS · REVISIÓN EXPRÉS DE TU SITUACIÓN",
+      title: "¿Qué podría cambiar en tus relaciones?",
+      description: "Explora una pregunta sobre confianza, cercanía o límites a través de un breve cuestionario y un dibujo.",
+      benefits: ["Una mirada personal", "Un próximo paso posible", "Respuesta escrita privada"],
+      order: "Solicitar revisión gratis",
+      requestText: "Envíame las instrucciones para una revisión gratuita escrita sobre una pregunta de relaciones, con el cuestionario y el dibujo.",
+    },
+    business: {
+      eyebrow: "GRATIS · REVISIÓN EXPRÉS DE TU SITUACIÓN",
+      title: "Aclara tu siguiente paso profesional.",
+      description: "Una pregunta sobre trabajo, decisiones o proyectos. Empieza con un cuestionario y dibujo; Andrey responde personalmente por escrito.",
+      benefits: ["Enfócate en una decisión", "Perspectiva personal escrita", "Gratis y sin videollamada"],
+      order: "Solicitar revisión gratis",
+      requestText: "Envíame las instrucciones para una revisión gratuita escrita sobre una decisión de trabajo o negocio, con el cuestionario y el dibujo.",
+    },
+    pro: {
+      eyebrow: "GRATIS · REVISIÓN EXPRÉS DE TU SITUACIÓN",
+      title: "¿Cuál es tu siguiente paso profesional?",
+      description: "¿Empiezas a aprender Reiki o ya practicas? Explora una pregunta sobre formación o tu servicio mediante un cuestionario y dibujo.",
+      benefits: ["Para principiantes y profesionales", "Perspectiva personal escrita", "Sin costo ni obligación"],
+      order: "Explorar mi paso gratis",
+      requestText: "Envíame las instrucciones para una revisión gratuita escrita sobre mi próximo paso de formación o práctica, con el cuestionario y el dibujo.",
+    },
+  },
+} as const;
+
+function sourcePath(locale: PublicLocale, context?: ExpressContext) {
+  return "/" + locale + (context ? contextPaths[context] : "/services/free-situation-review");
+}
+
 function parseReplyContact(raw: string): { email: string; phone: string } | null {
   const value = raw.trim();
   if (value.includes("@")) {
@@ -85,18 +200,18 @@ function parseReplyContact(raw: string): { email: string; phone: string } | null
   return /^\+[1-9][0-9]{7,14}$/.test(phone) ? { email: "", phone } : null;
 }
 
-function channelUrl(locale: PublicLocale, referenceCode: string, channel: Channel) {
+function channelUrl(locale: PublicLocale, referenceCode: string, channel: Channel, context?: ExpressContext) {
   const whatsapp = whatsappEnquiryUrl({
     locale, service: SERVICE_TITLE,
-    request: copy[locale].requestText + " " + copy[locale].reference + ": " + referenceCode,
-    pagePath: "/" + locale + "/services/free-situation-review",
+    request: (context ? expressCopy[locale][context].requestText : copy[locale].requestText) + " " + copy[locale].reference + ": " + referenceCode,
+    pagePath: sourcePath(locale, context),
   });
   return channel === "whatsapp" ? whatsapp : telegramEnquiryUrlFromWhatsApp(whatsapp);
 }
 
 /** Compact in-card handoff: CRM commit first, optional external chat second. */
-export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
-  const t = copy[locale];
+export function HomeFreeDiagnosisBanner({ locale, context }: { locale: PublicLocale; context?: ExpressContext }) {
+  const t = { ...copy[locale], ...(context ? expressCopy[locale][context] : {}) };
   const [open, setOpen] = useState(false);
   const [address, setAddress] = useState("");
   const [consent, setConsent] = useState(false);
@@ -128,7 +243,7 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           operationId: currentId, serviceTitle: SERVICE_TITLE,
-          sourcePath: "/" + locale + "/services/free-situation-review", locale,
+          sourcePath: sourcePath(locale, context), locale,
           contact: { displayName: "", email: contact.email, phone: contact.phone },
           contactConsent: true, website: "",
         }),
@@ -157,7 +272,7 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
     // Keep its receipt + both safe links available rather than falsely reporting
     // that no lead was saved or attempting another CRM insert.
     try {
-      const destination = channelUrl(locale, committedReference, channel);
+      const destination = channelUrl(locale, committedReference, channel, context);
       if (handoffWindow && !handoffWindow.closed) handoffWindow.location.replace(destination);
       else window.location.assign(destination);
     } catch {
@@ -167,7 +282,7 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
   }
 
   return (
-    <section className={styles.root} id="home-free-diagnosis" data-home-free-diagnosis-banner lang={locale}
+    <section className={styles.root} id={context ? "free-express-" + context : "home-free-diagnosis"} data-home-free-diagnosis-banner data-express-context={context} lang={locale}
       aria-label={t.title}>
       <div className={styles.panel}>
         <div className={styles.copy}>
@@ -224,11 +339,11 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
           <div className={styles.channels}>
             {reference ? (
               <>
-                <a href={channelUrl(locale, reference, "whatsapp")} target="_blank" rel="noopener noreferrer"
+                <a href={channelUrl(locale, reference, "whatsapp", context)} target="_blank" rel="noopener noreferrer"
                   className={styles.whatsapp} data-home-diagnosis-channel="whatsapp">
                   <MessageCircle size={18} aria-hidden="true" />WhatsApp
                 </a>
-                <a href={channelUrl(locale, reference, "telegram")} target="_blank" rel="noopener noreferrer"
+                <a href={channelUrl(locale, reference, "telegram", context)} target="_blank" rel="noopener noreferrer"
                   className={styles.telegram} data-home-diagnosis-channel="telegram">
                   <Send size={18} aria-hidden="true" />Telegram
                 </a>
