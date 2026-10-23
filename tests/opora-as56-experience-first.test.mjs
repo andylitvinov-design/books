@@ -90,12 +90,26 @@ test('day one restores five opening screens and all days add untracked support a
     // Only one aphorism/feedback appears. This distinct screen asks for
     // a concrete future action, never another inspirational statement.
     const options=oporaExperienceTransferChoices(day,lang)
-    assert.equal(options.length,2)
-    assert.ok(textOf(h.tree).includes(options[0].label))
-    assert.ok(textOf(h.tree).includes(options[1].label))
+    // The old Day 4 option labels must remain available for archived records,
+    // but the active slide has a SINGLE spoken-feeling instruction and input.
+    const spokenFeeling=lang==='ru'?'Спокойствие':'Calm'
+    if(day===4){
+      const text=textOf(h.tree)
+      assert.ok(text.includes(lang==='ru'?'Перед одним привычным делом':'Before one routine task'))
+      assert.ok(!text.includes(options[0].label))
+      assert.ok(!text.includes(options[1].label))
+      const field=nodes(h.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
+      assert.ok(field,'Day 4 must have an accessible optional emotion input')
+      assert.equal(field.props.maxLength,60)
+      field.props.onChange({target:{value:spokenFeeling}})
+      await h.settle()
+    }else{
+      assert.ok(textOf(h.tree).includes(options[0].label))
+      assert.ok(textOf(h.tree).includes(options[1].label))
+      await click(h,options[0].label)
+    }
     assert.ok(!textOf(h.tree).includes(oporaExperienceDay(day,lang).reminder))
     assert.ok(!textOf(h.tree).includes(f.lesson.aphorism))
-    await click(h,options[0].label)
     await click(h,d.next)
     // Each takeaway now has its own screen; the personal self-report is last.
     assert.match(textOf(h.tree),lang==='ru'?/Что вы освоили сегодня/:/What you learned today/)
@@ -105,7 +119,10 @@ test('day one restores five opening screens and all days add untracked support a
     assert.ok(textOf(h.tree).includes(oporaExperienceDay(day,lang).practice))
     assert.ok(!textOf(h.tree).includes('Notice how you feel'))
     await click(h,d.next)
-    assert.ok(textOf(h.tree).includes(options[0].label))
+    assert.ok(textOf(h.tree).includes(day===4
+      ?(lang==='ru'?'Перед одним привычным делом':'Before one routine task')
+      :options[0].label))
+    if(day===4)assert.ok(textOf(h.tree).includes(spokenFeeling))
     await click(h,d.next)
     assert.ok(textOf(h.tree).includes(lang==='ru'?'Как вам было?':'How was this for you?'))
     await click(h,lang==='ru'?'Получилось немного':'I managed a little')
@@ -123,6 +140,7 @@ test('day one restores five opening screens and all days add untracked support a
     assert.equal(f.payload.opora54.answers.aphorism,'unsure')
     assert.equal(f.payload.opora54.answers.transfer,'planned')
     assert.equal(f.payload.opora54.answers.transferChoice,'two')
+    assert.equal(f.payload.opora54.answers.transferFeeling,day===4?spokenFeeling:undefined)
     assert.equal(f.payload.opora54.answers.lessonConfidence,'some')
     assert.equal(f.payload.practiceAttempt,'tried')
     if(day===1){
@@ -185,6 +203,49 @@ test('two unique optional action ideas per day, in EN/RU/ES, without rewriting l
     assert.notEqual(options[0].label,options[1].label)
   }
   assert.deepEqual(oporaExperienceTransferChoices(15,'en'),[])
+})
+
+test('Day 4 spoken feeling is optional, localized and cleared by Not today',async()=>{
+  for(const [lang,next,skip,instruction] of [
+    ['en','Continue','Not today','Before one routine task'],
+    ['ru','Продолжить','Не сегодня','Перед одним привычным делом'],
+    ['es','Continuar','Hoy no','Antes de una tarea cotidiana'],
+  ]){
+    const f=fixture(lang,4),h=f.h
+    await advanceOporaTo(h,'save',next)
+    const single=nodes(h.tree).find(n=>n.props?.['data-opora-everyday-choice']==='one-feeling-and-field')
+    assert.ok(single,'one and only one learning task for '+lang)
+    assert.ok(textOf(h.tree).includes(instruction))
+    const field=nodes(h.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
+    assert.ok(field)
+    field.props.onChange({target:{value:'calma'}})
+    await h.settle()
+    assert.equal(nodes(h.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true').props.value,'calma')
+    await click(h,skip)
+    assert.equal(nodes(h.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true').props.value,'')
+    await advanceOporaTo(h,'recapFeedback',next)
+    await click(h,lang==='ru'?'Получилось немного':lang==='es'?'Algo pude hacer':'I managed a little')
+    await click(h,lang==='ru'?'Сохранить мою практику':lang==='es'?'Guardar mi práctica':'Save my practice')
+    assert.equal(f.payload.opora54.answers.transferFeeling,undefined)
+    assert.equal(f.payload.opora54.answers.transfer,'not_planning')
+    assert.equal(f.payload.opora54.answers.transferChoice,undefined)
+    h.unmount()
+  }
+})
+
+test('Day 4 feeling is limited to a short validated label, with no PII-like strings',()=>{
+  for(const feeling of ['calm','спокойствие','añoranza']){
+    const result=validateOpora54Signals({answers:{
+      transfer:'planned',transferChoice:'two',transferFeeling:feeling},hints:[],ease:null})
+    assert.equal(result.answers.transferFeeling,feeling)
+  }
+  for(const feeling of ['', '  ', 'x'.repeat(61), 'me@example.com', 'http://example.com',
+    'fear\\nprivate', 'calm/unsafe', 'feeling 123']){
+    assert.throws(()=>validateOpora54Signals({answers:{
+      transfer:'planned',transferChoice:'two',transferFeeling:feeling},hints:[],ease:null}),/INVALID_OPORA54_ANSWER/)
+  }
+  assert.throws(()=>validateOpora54Signals({answers:{
+    transfer:'not_planning',transferFeeling:'calm'},hints:[],ease:null}),/INVALID_OPORA54_TRANSFER/)
 })
 
 test('new action alternative is saved as three; old one keeps its original historic meaning',async()=>{
