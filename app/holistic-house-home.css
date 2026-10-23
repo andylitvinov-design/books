@@ -1286,6 +1286,14 @@ a.service-home-start-card:hover {
   }
   .house-header--services .site-language-menu-trigger { padding-inline: 6px; }
 }
+@media (max-width: 390px) {
+  .house-header--services .site-navigation > .site-cabinet-entry {
+    min-width: 44px; width: 44px; padding: 0;
+  }
+  .house-header--services .site-cabinet-entry__compact { display: none; }
+  .house-header--services .site-cabinet-entry svg { display: block; }
+  .house-header--services .site-main-menu-trigger { width: 40px; min-width: 40px; }
+}
 @media (max-width: 359px) {
   .house-header--services .house-wordmark { font-size: 17px; }
   .house-header--services .house-wordmark span { display: none; }
