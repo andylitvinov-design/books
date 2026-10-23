@@ -119,7 +119,7 @@
 /* Academy discovery: three blue quick paths inspired by Services suggestion chips. */
 .quickPaths {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
   max-width: 1040px;
   margin-top: 13px;
@@ -331,3 +331,40 @@
 @media (prefers-reduced-motion: reduce) {
   .quickPaths a,.eventDetailsButton svg { transition: none; }
 }
+
+/* PsiMaster heritage courses: compact native-page buttons, not duplicated enrollment cards. */
+.legacyGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.legacyLink {
+  box-sizing: border-box; display: flex; align-items: center; gap: 10px;
+  min-width: 0; min-height: 68px; padding: 12px 13px;
+  border: 1px solid #d7e5e5; border-radius: 14px;
+  background: #fffefa; color: #1c4357;
+  text-decoration: none; box-shadow: 0 3px 11px rgb(24 56 70 / 4%);
+  transition: border-color .15s ease, background .15s ease;
+}
+.legacyLink:hover { background: #f0faf9; border-color: #87bbc2; }
+.legacyLink > svg:first-child { flex: none; color: #168a99; }
+.legacyLink > svg:last-child { flex: none; margin-left: auto; color: #247b91; }
+.legacyLinkCopy { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
+.legacyLinkCopy strong { font: 700 13px/1.32 system-ui, sans-serif; overflow-wrap: anywhere; }
+.legacyLinkCopy small { color: #677e89; font: 550 10px/1.3 system-ui, sans-serif; }
+.legacyToggle {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  min-height: 42px; width: 100%; margin-top: 10px;
+  border: 1px solid #a6cfd1; border-radius: 12px; background: #edf7f5;
+  color: #236677; font: 750 12px/1.3 system-ui, sans-serif; cursor: pointer;
+}
+.legacyToggle:hover { background: #e3f2ef; }
+.legacyToggle svg { transition: transform .15s ease; }
+.chevronUp { transform: rotate(180deg); }
+.legacyVideos { margin-top: 18px; padding-top: 15px; border-top: 1px solid #dce8e8; }
+.legacyVideos h4 { margin: 0; color: #19566a; font: 400 22px/1.2 Georgia, serif; }
+.legacyVideos p { margin: 4px 0 12px; color: #647f8d; font: 500 12px/1.45 system-ui, sans-serif; }
+@media (max-width: 620px) {
+  .quickPaths { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .legacyGrid { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+  .legacyLink { min-height: 60px; padding: 10px 12px; }
+  .legacyLinkCopy strong { font-size: 12px; }
+  .legacyVideos h4 { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .legacyLink,.legacyToggle svg { transition: none; } }
