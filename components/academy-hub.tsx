@@ -188,16 +188,16 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
       id: "academy-free-personal-coaching",
       detailsHint: locale === "ru" ? "Самостоятельная короткая сессия. Ответы доступны только в вашем кабинете, живой специалист не участвует." : locale === "es" ? "Sesión privada autoguiada, no un coach humano ni una cita. Disponible en inglés." : "A short self-guided, private reflection. No live practitioner, booked meeting or AI messages.",
       title: locale === "ru" ? "Личная коуч-сессия" : locale === "es" ? "Sesión personal de coaching" : "Personal Coaching Session",
-      subtitle: locale === "ru" ? "7 ВОПРОСОВ · 10–15 МИНУТ" : locale === "es" ? "7 PREGUNTAS · 10–15 MIN" : "7 QUESTIONS · 10–15 MIN",
+      subtitle: locale === "ru" ? "ВОПРОС → 3 МОДЕЛИ · 10–30 МИН" : locale === "es" ? "PREGUNTA → 3 MODELOS" : "QUESTION → 3 MODELS · 10–30 MIN",
       description: locale === "ru"
-        ? "Один вопрос на каждом экране. Ответьте своими словами, найдите важный шаг и сохраните сессию в личном кабинете."
+        ? "Напишите ваш вопрос, сравните три модели коучинга и выберите одну. На каждом следующем экране — один простой вопрос."
         : locale === "es"
-          ? "Una pregunta por pantalla; escribe tus respuestas privadas y define un siguiente paso. La sesión está disponible en inglés."
-          : "One question per screen: write your own answers, choose one small action and keep your session private.",
+          ? "Escribe tu pregunta, elige entre tres modelos y avanza paso a paso. La sesión privada está disponible en inglés."
+          : "Enter your question, compare three suitable coaching models, then answer one simple question per screen.",
       href: "/" + locale + "/explore/business",
       courseHref: "/" + (locale === "es" ? "en" : locale) + "/app/coaching",
       image: "/images/holistic-house/books-library.webp",
-      duration: locale === "ru" ? "7 вопросов · в своём темпе" : locale === "es" ? "7 preguntas · en inglés" : "7 questions · at your pace",
+      duration: locale === "ru" ? "Сценарий на выбор · в своём темпе" : locale === "es" ? "3 modelos · en inglés" : "3 suggested models · at your pace",
       free: true,
       actionLabel: locale === "ru" ? "Начать сессию" : locale === "es" ? "Start in English" : "Start session",
     },
