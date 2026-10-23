@@ -21,22 +21,29 @@ test("EN/RU/ES lead with the real carousel, then free diagnosis, then the questi
   assert.match(carousel, /data-home-slide-dot=\{item.key\}/);
 });
 
-test("free diagnosis button opens a mini CRM request under this same banner, not a new page", () => {
+test("free diagnosis button reveals one compact messenger handoff inside its warm card", () => {
   const banner = read("components/home-free-diagnosis-banner.tsx");
-  const capture = read("components/compact-lead-capture.tsx");
+  const css = read("components/home-free-diagnosis-banner.module.css");
   assert.match(banner, /data-home-free-diagnosis-banner/);
   assert.match(banner, /data-home-diagnosis-order/);
   assert.match(banner, /aria-expanded=\{open\}/);
   assert.match(banner, /aria-controls=\{formId\}/);
   assert.match(banner, /hidden=\{!open\}/);
-  assert.match(banner, /<CompactLeadCapture/);
-  assert.match(banner, /sourcePath=\{"\/" \+ locale \+ "\/services\/free-situation-review"\}/);
-  assert.match(banner, /serviceTitle="Free drawing-based situation review"/);
-  assert.match(capture, /sourcePath: sourcePath \|\| pathname/);
-  assert.match(capture, /fetch\("\/api\/service-enquiries"/);
-  assert.match(capture, /result\?\.saved !== true/);
-  assert.match(capture, /contactConsent: true/);
-  assert.doesNotMatch(banner, /fetch\(|sendBeacon|localStorage|window\.location|whatsappEnquiryUrl/);
+  assert.match(banner, /data-home-diagnosis-request/);
+  assert.match(banner, /data-home-diagnosis-channel="whatsapp"/);
+  assert.match(banner, /data-home-diagnosis-channel="telegram"/);
+  assert.match(banner, /fetch\("\/api\/service-enquiries"/);
+  assert.match(banner, /contactConsent: true/);
+  assert.match(banner, /sourcePath: "\/" \+ locale \+ "\/services\/free-situation-review"/);
+  assert.match(banner, /serviceTitle: SERVICE_TITLE/);
+  assert.match(banner, /result\?\.saved !== true/);
+  assert.match(banner, /setReference\(result\.referenceCode\)/);
+  assert.match(banner, /window\.open\("about:blank", "_blank"\)/);
+  assert.match(banner, /handoffWindow\?\.close\(\)/);
+  assert.doesNotMatch(banner, /CompactLeadCapture|data-compact-last-slide/);
+  assert.match(css, /\.request \{ grid-column: 1\/-1;/);
+  assert.match(css, /\.request\[hidden\] \{ display: none; \}/);
+  assert.match(css, /\.channels :is\(button,a\) \{[^}]*min-height: 46px/s);
   for (const heading of ["Бесплатная диагностика ситуации", "Free situation assessment", "Evaluación gratuita"]) {
     assert.ok(banner.includes(heading), heading);
   }
