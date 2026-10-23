@@ -83,6 +83,15 @@ const copy = {
     privateProgress: "Private progress",
     privateProgressDetail: "Save by choice",
     eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
+    welcomeEyebrow: "FREE · FIVE-DAY REIKI COURSE",
+    welcomeHeadline: "Your Reiki journey starts here",
+    welcomeIntro: "Short lessons, guided meditations and space to explore at your own pace.",
+    welcomeLessons: "5 lessons",
+    welcomeMeditations: "4 meditations",
+    welcomeTraditions: "3 Reiki traditions",
+    welcomeGiftPreview: "After all five lessons, ask Andrey to arrange one free chat-guided initiation.",
+    welcomeGiftDetailsLabel: "How the initiation works",
+    welcomeProgramme: "Explore the three Reiki traditions",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Discover your Reiki journey",
@@ -238,6 +247,15 @@ const copy = {
     privateProgress: "Личный прогресс",
     privateProgressDetail: "По вашему выбору",
     eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
+    welcomeEyebrow: "БЕСПЛАТНЫЙ КУРС · 5 ДНЕЙ",
+    welcomeHeadline: "Ваш путь в Рейки начинается здесь",
+    welcomeIntro: "Короткие уроки, медитации и возможность исследовать практики в своём ритме.",
+    welcomeLessons: "5 уроков",
+    welcomeMeditations: "4 медитации",
+    welcomeTraditions: "3 системы Рейки",
+    welcomeGiftPreview: "После всех пяти уроков можно запросить у Андрея одну бесплатную инициацию в чате.",
+    welcomeGiftDetailsLabel: "Как проходит инициация",
+    welcomeProgramme: "О трёх системах Рейки",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Откройте свой путь в Рейки",
@@ -1364,7 +1382,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
 
   return (
-    <main ref={pageRef} className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-first-lesson-gate={slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? "true" : undefined} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main ref={pageRef} className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-first-lesson-gate={slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? "true" : undefined} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-reiki-welcome={slide.kind === "welcome" ? "conversion-v2" : undefined} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>
@@ -1395,9 +1413,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
-              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
-              <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
-              <p className={styles.description}>{slide.body[locale]}</p>
+              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.welcomeEyebrow : energyworkPhases[slide.phase][locale]}</span>
+              <h1 id="energywork-slide-title">{slide.kind === "welcome" ? t.welcomeHeadline : slide.title[locale]}</h1>
+              <p className={styles.description}>{slide.kind === "welcome" ? t.welcomeIntro : slide.body[locale]}</p>
               {slide.introAudioKey && slide.introTopics ? (
                 <section className={styles.lessonIntroPanel} data-reiki-lesson-intro={slide.introAudioKey}
                   aria-label={locale === "ru" ? "Что вас ждёт" : "What to expect"}>
@@ -1442,29 +1460,25 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </Link>
               ) : null}
               {slide.kind === "welcome" ? (
+                <div className={styles.benefits} aria-label={t.benefits}>
+                  <div><BookOpen size={17} aria-hidden="true" /><strong>{t.welcomeLessons}</strong></div>
+                  <div><Heart size={17} aria-hidden="true" /><strong>{t.welcomeMeditations}</strong></div>
+                  <div><Sparkles size={17} aria-hidden="true" /><strong>{t.welcomeTraditions}</strong></div>
+                </div>
+              ) : null}
+              {slide.kind === "welcome" ? (
                 <div className={styles.welcomeReward} aria-label={t.welcomeOffer}>
-                  <p className={styles.welcomeRewardTitle}><Sparkles size={17} aria-hidden="true" />{t.welcomeOffer}</p>
-                  <ul className={styles.welcomeSystems}>
-                    {energyworkPathChoices.map((choice) => <li key={choice.id}>{choice.title[locale]}</li>)}
-                  </ul>
-                  <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
                   <div className={styles.welcomeGift} data-reiki-initiation-gift>
                     <Award size={22} aria-hidden="true" />
                     <div>
                       <strong>{t.welcomeGiftTitle}</strong>
-                      <p>{t.welcomeGiftText}</p>
+                      <p>{t.welcomeGiftPreview}</p>
+                      <details className={styles.welcomeGiftDetails}>
+                        <summary>{t.welcomeGiftDetailsLabel}</summary>
+                        <p>{t.welcomeGiftText}</p>
+                      </details>
                     </div>
                   </div>
-                </div>
-              ) : null}
-              {slide.kind === "welcome" ? (
-                <div className={styles.benefits} aria-label={t.benefits}>
-                  <div><span className={styles.benefitIcon}><Leaf size={19} aria-hidden="true" /></span>
-                    <strong>{t.shortLessons}</strong><small>{t.shortLessonsDetail}</small></div>
-                  <div><span className={styles.benefitIcon}><Heart size={19} aria-hidden="true" /></span>
-                    <strong>{t.practicalTasks}</strong><small>{t.practicalTasksDetail}</small></div>
-                  <div><span className={styles.benefitIcon}><BarChart3 size={19} aria-hidden="true" /></span>
-                    <strong>{t.privateProgress}</strong><small>{t.privateProgressDetail}</small></div>
                 </div>
               ) : null}
               {slide.kind === "milestone" ? (
@@ -1843,7 +1857,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
             aria-expanded={programmeOpen} aria-controls="reiki-journey-help"
             onClick={() => setProgrammeOpen((open) => !open)}>
             <span className={styles.programmeSummaryIcon}><BookOpen size={17} aria-hidden="true" /></span>
-            <span className={styles.programmeSummaryCopy}><strong>{t.program}</strong></span>
+            <span className={styles.programmeSummaryCopy}><strong>{slide.kind === "welcome" ? t.welcomeProgramme : t.program}</strong></span>
             <ChevronDown className={styles.programmeChevron} size={18} aria-hidden="true" />
           </button>
         </section>
@@ -1856,7 +1870,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               </button>
             ) : (
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
-                className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
+                className={styles.back} aria-label={t.back}><ArrowLeft size={18} aria-hidden="true" />{slide.kind === "welcome" ? null : t.back}</button>
             )}
             {(slide.kind === "milestone" || !completed) ? (
               <button type="button" onClick={next}
