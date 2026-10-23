@@ -63,7 +63,7 @@ test("homepage prioritizes personal enquiry while retaining accessible free revi
   const book = home.indexOf('"data-hero-cta": "paid-sessions"');
   const free = home.indexOf('"data-hero-cta": "free-written-review"');
   const tests = home.indexOf('"data-hero-cta": "free-tests"');
-  const belowFold = home.indexOf("<HomeMoreDisclosure");
+  const belowFold = home.indexOf("</HomeMoreDisclosure>");
   const more = read("components/home-more-disclosure.tsx");
   assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.ok(belowFold < firstScreen && firstScreen < book && book < free && free < tests, "Detailed personal enquiry follows the compact first fold inside the expandable catalogue");
