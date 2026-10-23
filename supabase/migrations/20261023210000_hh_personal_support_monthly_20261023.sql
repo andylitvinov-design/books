@@ -189,3 +189,57 @@ DROP TRIGGER IF EXISTS personal_support_integrity_guard ON app_private.personal_
 CREATE TRIGGER personal_support_integrity_guard
 BEFORE INSERT OR UPDATE ON app_private.personal_support_programs
 FOR EACH ROW EXECUTE FUNCTION app_private.personal_support_integrity_guard();
+
+
+-- Private, end-to-end website conversation for a verified monthly programme.
+-- Messages never enter public CRM attribution, provider SMS/Telegram, or pixels.
+CREATE TABLE IF NOT EXISTS app_private.personal_support_messages (
+  id uuid PRIMARY KEY,
+  program_id uuid NOT NULL REFERENCES app_private.personal_support_programs(id) ON DELETE CASCADE,
+  author_account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+  body_ciphertext text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS personal_support_message_thread_idx
+  ON app_private.personal_support_messages(program_id,created_at DESC,id DESC);
+ALTER TABLE app_private.personal_support_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_private.personal_support_messages FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON app_private.personal_support_messages FROM PUBLIC,anon,authenticated,hh_app_inbox;
+GRANT SELECT,INSERT ON app_private.personal_support_messages TO hh_app_backend;
+
+CREATE POLICY personal_support_messages_participants_read ON app_private.personal_support_messages
+FOR SELECT TO hh_app_backend USING (
+  (SELECT app_private.account_active()) AND EXISTS(
+    SELECT 1 FROM app_private.personal_support_programs programme
+    WHERE programme.id=program_id
+      AND (
+        programme.client_account_id=(SELECT auth.uid())
+        OR EXISTS(
+          SELECT 1 FROM app.practitioners practitioner
+          WHERE practitioner.id=programme.practitioner_id
+            AND practitioner.trusted_auth_user_id=(SELECT auth.uid())
+            AND practitioner.active
+        )
+      )
+  )
+);
+CREATE POLICY personal_support_messages_participants_send ON app_private.personal_support_messages
+FOR INSERT TO hh_app_backend WITH CHECK (
+  author_account_id=(SELECT auth.uid())
+  AND (SELECT app_private.account_active())
+  AND EXISTS(
+    SELECT 1 FROM app_private.personal_support_programs programme
+    WHERE programme.id=program_id
+      AND programme.status='active'
+      AND programme.ends_at > now()
+      AND (
+        programme.client_account_id=(SELECT auth.uid())
+        OR EXISTS(
+          SELECT 1 FROM app.practitioners practitioner
+          WHERE practitioner.id=programme.practitioner_id
+            AND practitioner.trusted_auth_user_id=(SELECT auth.uid())
+            AND practitioner.active
+        )
+      )
+  )
+);
