@@ -172,3 +172,30 @@ test("Ideas example rotates on client mount, keeping private question matching i
   assert.match(ui, /setPreviewAphorisms\(rotateIdeasPreviewAphorisms\(locale\)\)/);
   assert.match(ui, /getIdeasAphorismMatches\(question, answerLocale, result\.topic\)/);
 });
+
+test("Ideas removes the two redundant Dao detail buttons but keeps the inline reading", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  assert.doesNotMatch(ui, /styles\.hexagramActions|answerCopy\.(?:card|again)|RefreshCw/);
+  assert.doesNotMatch(css, /\.hexagramActions/);
+  assert.match(ui, /data-ideas-dao-reading/);
+  assert.match(ui, /takeQuestionLocaleHandoff<\{ question: string; mode: Mode \}>\("ideas", locale\)/);
+  assert.match(ui, /switchToQuestionLocale\("ideas", question, locale, \{ question, mode \}/);
+  assert.match(ui, /router\.replace\(href, \{ scroll: false \}\)/);
+});
+
+test("question language switches whole public page and persists only the language, not the question", () => {
+  const helper = read("lib/client-question-locale.ts");
+  const home = read("components/home-conversation-guide.tsx");
+  const header = read("components/public-site-header.tsx");
+  assert.match(helper, /publicCounterpart\(window\.location\.pathname, selected\)/);
+  assert.match(helper, /savePublicLocale\(selected\)/);
+  assert.match(helper, /if \(selected !== "es"\) saveUiLocale\(selected\)/);
+  assert.match(helper, /const pending = new Map<Flow, Pending>\(\)/);
+  for (const forbidden of ["localStorage", "sessionStorage", "fetch(", "sendBeacon(", "searchParams.set(", "postMessage("]) {
+    assert.ok(!helper.includes(forbidden), forbidden + " must not store or send the question");
+  }
+  assert.match(home, /takeQuestionLocaleHandoff<HomeQuestionHandoff>\("home", locale\)/);
+  assert.match(home, /switchToQuestionLocale\("home", question, locale, handoff/);
+  assert.match(header, /href=\{locale === "en" \? "\/" : `\/\$\{locale\}`\}/);
+});

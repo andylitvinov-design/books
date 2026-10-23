@@ -490,6 +490,33 @@ try {
       await context.close();
     }
   }
+  // Client-side English -> Russian site switch with a private Cyrillic question.
+  {
+    const context = await browser.newContext({ viewport: { width: 390, height: 820 }, serviceWorkers: "block" });
+    const page = await context.newPage();
+    const question = "Как найти спокойствие и уверенность?";
+    const leaked = [];
+    page.on("request", req => {
+      const outgoing = req.url() + " " + (req.postData() || "");
+      if (outgoing.includes(question) || outgoing.includes(encodeURIComponent(question))) leaked.push(req.url());
+    });
+    try {
+      await page.goto(host, { waitUntil: "domcontentloaded" });
+      await page.locator("[data-home-guide-launcher]").click();
+      const dialog = page.locator("[data-home-guide-dialog]");
+      await dialog.locator("textarea").fill(question);
+      await dialog.locator('button[type="submit"]').click();
+      await page.waitForURL(host + "/ru", { timeout: 30000 });
+      await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+      await expect(page.locator("[data-home-guide-dialog]")).toBeVisible();
+      await expect(page.locator('[data-home-conversation-guide] [role="log"]')).toContainText(question);
+      await expect(page.locator('nav.mobile-bottom-navigation [data-nav-item="home"]')).toContainText("Главная");
+      assert.deepEqual(leaked, [], "no question in URL or network requests");
+      evidence.cases.push({ kind: "sitewide-question-language", locale: "en-to-ru", width: 390 });
+    } finally {
+      await context.close();
+    }
+  }
   console.log(JSON.stringify(evidence, null, 2));
 } finally {
   writeFileSync("artifacts/home-conversation/" + engineName + ".json", JSON.stringify({ ...evidence, serverLogs: logs.slice(-3000) }, null, 2));

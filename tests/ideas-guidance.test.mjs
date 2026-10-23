@@ -51,7 +51,7 @@ test("Ideas UI reuses official cryptographic hexagram draw and existing free ser
   const component = read("components/ideas-discovery.tsx");
   assert.match(component, /drawRandomHexagram\(\)/);
   assert.match(component, /getHexagram\(result\.hexagram\)/);
-  assert.match(component, /\/dao\/hexagrams\//);
+  assert.doesNotMatch(component, /styles\.hexagramActions|answerCopy\.(?:card|again)/);
   assert.match(component, /\/services\/free-situation-review#request-free-review/);
   assert.match(component, /\/services\/dao-health-profile#request-free-wu-xing/);
   assert.match(component, /\/client\/tests/);
