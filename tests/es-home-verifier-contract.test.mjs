@@ -93,7 +93,7 @@ test('Spanish direction links and legacy catalogs remain discoverable in actual 
   const desired = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about']
   const menuUrls = [
     '/es/services/free-situation-review','/es','/es/explore/energy','/es/explore/love','/es/explore/business',
-    '/es/client/tests','/es/books','/es/pro','/es/shop','/es/cart','/es/library','/es/courses','/es/events',
+    '/es/books','/es/pro','/es/shop','/es/cart','/es/library','/es/courses','/es/events',
     '/es/services','/es/academy','/es/about',
   ]
   for(const path of ['/es','/es/library','/es/services','/es/academy','/es/books','/es/about','/es/client']) {
