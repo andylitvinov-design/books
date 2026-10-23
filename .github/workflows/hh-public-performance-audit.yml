@@ -16,6 +16,8 @@ on:
       - 'components/services-studio-offers.tsx'
       - 'tests/holistic-house-image-quota.test.mjs'
       - 'components/holistic-house-home.tsx'
+      - 'components/home-more-disclosure.tsx'
+      - 'tests/home-rsc-on-demand.test.mjs'
       - 'components/home-section-carousel.tsx'
       - 'components/services-conversion-hero.module.css'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
@@ -48,6 +50,8 @@ on:
       - 'components/services-studio-offers.tsx'
       - 'tests/holistic-house-image-quota.test.mjs'
       - 'components/holistic-house-home.tsx'
+      - 'components/home-more-disclosure.tsx'
+      - 'tests/home-rsc-on-demand.test.mjs'
       - 'components/home-section-carousel.tsx'
       - 'components/services-conversion-hero.module.css'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
@@ -78,7 +82,7 @@ jobs:
         with:
           node-version: 22
       - name: Validate targeted safety and booking contracts
-        run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
+        run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-rsc-on-demand.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)
         env:
           TTFB_SAMPLES: '7'
