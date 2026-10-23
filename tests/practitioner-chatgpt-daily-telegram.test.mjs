@@ -106,7 +106,7 @@ test('same existing private date receipt and cron handle ChatGPT, no new job or 
   assert.match(core,/fetchPublicDailyArchives\(/)
   assert.match(core,/composeChatgptTelegramReport\(entry.chatgpt/)
   assert.match(core,/model_setup_required/)
-  assert.match(core,/return \{status:'accepted'/)
+  assert.match(core,/status:'accepted',accepted:acceptedCount/)
   assert.match(core,/on conflict \(report_day\)/)
   assert.match(core,/practiceTelegramConfigured\(env\)/)
   assert.match(core,/sendOwnerDocument\(/)
