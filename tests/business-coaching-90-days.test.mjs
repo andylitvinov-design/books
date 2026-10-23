@@ -381,7 +381,7 @@ test('Optional Business Snapshot shows one actual question per screen without a 
   assert.ok(ui.includes('role="progressbar" aria-valuemin={0} aria-valuemax={BUSINESS_QUESTIONS.length}'))
 })
 
-test('three-screen lessons validate and save selected answers without mandatory essays',()=>{
+test('two-screen lessons validate and save selected answers without mandatory essays',()=>{
   const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
   const repo=readFileSync(new URL('../lib/app/business-coaching.js',import.meta.url),'utf8')
   assert.ok(ui.includes('data-business-one-screen-lesson'))
@@ -389,10 +389,10 @@ test('three-screen lessons validate and save selected answers without mandatory 
   assert.ok(ui.includes('function changeTab(next){setFocusRunning(false);setTab(next)}'))
   assert.ok(ui.includes('data-business-lesson-slide data-lesson-stage={lessonStage}'))
   assert.ok(ui.includes('data-business-lesson-save'))
-  assert.ok(ui.includes('const [lessonStage,setLessonStage]=useState(0)'))
-  assert.ok(ui.includes('[[0,t.ideaSlide],[1,'))
+  assert.ok(ui.includes('const [lessonStage,setLessonStage]=useState(1)'))
+  assert.ok(ui.includes('[[1,lang==='+'\'ru\''+'?'))
   assert.ok(ui.includes('[4,t.doneSlide]]'))
-  assert.ok(ui.includes('lessonStage===0&&'))
+  assert.ok(!ui.includes('lessonStage===0&&'))
   assert.ok(ui.includes('lessonStage===1&&'))
   assert.ok(ui.includes('lessonStage===4&&savedDay.done&&!hasUnsavedDay&&'))
   assert.ok(!ui.includes('lessonStage===3&&'))
@@ -407,6 +407,7 @@ test('three-screen lessons validate and save selected answers without mandatory 
   assert.ok(ui.includes('record.legacyResult?<span>'))
   assert.ok(ui.includes('if(complete)changeLessonStage(4)'))
   assert.ok(ui.includes('(!savedDay.done&&!lessonChoice)'))
+  assert.ok(ui.includes('disabled={lessonStage===1&&day===1}'))
   assert.ok(ui.includes("course?.days?.[next]?.choiceId||''"))
   assert.ok(ui.includes('lessonChoice!==(previous.choiceId||\'\')'))
   assert.ok(ui.includes('if(next!==day && course?.status'))
@@ -419,13 +420,13 @@ test('three-screen lessons validate and save selected answers without mandatory 
   assert.ok(repo.includes('business_coaching_programs'))
 })
 
-test('small-screen course keeps one-tap Continue action visible with weekly questions folded away',()=>{
+test('small-screen course keeps one-tap Save action visible with weekly questions folded away',()=>{
   const ui=readFileSync(new URL('../components/app/business-coaching.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/business-coaching.module.css',import.meta.url),'utf8')
   assert.ok(css.includes('HH BUSINESS ONE-SCREEN SLIDES V1'))
   assert.ok(css.includes('.heroArt{display:none!important}'))
   assert.ok(css.includes('.lessonSaveBar{position:static!important'))
-  assert.ok(css.includes('flex:0 0 auto;grid-template-columns:repeat(3,minmax(0,1fr))'))
+  assert.ok(css.includes('flex:0 0 auto;grid-template-columns:repeat(2,minmax(0,1fr))'))
   assert.ok(css.includes('.oneTapChoices button:focus-visible'))
   assert.ok(css.includes('@media(max-width:350px)'))
   assert.ok(css.includes('@media(max-width:620px)'))
@@ -452,8 +453,8 @@ test('Reiki-inspired UI retains a focused skill, closed choice and post-save cel
   assert.ok(ui.includes("lessonChoice!==(savedDay.choiceId||'')"))
   assert.ok(ui.includes('if(complete)changeLessonStage(4)'))
   assert.ok(!ui.includes('if(ok && advance)'))
-  assert.ok(ui.includes('disabled={lessonStage===0&&day===1}'))
-  assert.ok(css.includes('grid-template-columns:repeat(3,minmax(0,1fr))'))
+  assert.ok(ui.includes('disabled={lessonStage===1&&day===1}'))
+  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'))
   assert.ok(css.includes('.oneTapChoices button[aria-pressed=true]'))
   assert.ok(css.includes('.savedCelebration'))
   assert.ok(repo.includes("'result','choiceId','contentVersion','reflectionChoice'"))
