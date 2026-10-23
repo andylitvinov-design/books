@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
+import {useRouter} from "next/navigation";
+import {RECEIPT_SESSION_KEY} from "@/lib/practitioners/enquiry-receipt.mjs";
 import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import type { BusinessLocale } from "@/data/business-consulting-copy";
 import { PhoneCountryInput } from "@/components/phone-country-input";
@@ -64,6 +66,7 @@ const translations = {
 
 export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
   const t=translations[locale];
+  const router=useRouter();
   const [format,setFormat]=useState<Format>("free");
   const [name,setName]=useState("");
   const [contact,setContact]=useState("");
@@ -129,7 +132,14 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
         return;
       }
       const body=await response.json();
-      if(body?.received===true)setSuccess(true);else setError(t.error);
+      if(body?.received===true && /^HH-[A-F0-9]{12}$/.test(body.referenceCode||"")){
+        setSuccess(true);
+        try{
+          window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
+            JSON.stringify({referenceCode:body.referenceCode,createdAt:Date.now()}));
+          router.push("/"+locale+"/thank-you");
+        }catch{/* Confirmed inline success remains available if tab storage is blocked. */}
+      }else setError(t.error);
     }catch{setError(t.error)}
     finally{setBusy(false)}
   }
