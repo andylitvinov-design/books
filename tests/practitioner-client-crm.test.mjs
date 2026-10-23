@@ -42,7 +42,8 @@ test('master client grouping handles unexpected contact types without disclosing
   assert.equal(groupVerifiedPractitionerClients(null).length,0)
   const g=groupVerifiedPractitionerClients([request('first','?',{phone:'+14165550100',displayName:'A'})],'ru')
   assert.equal(g[0].name,'A')
-  assert.match(g[0].contact,/1416/)
+  assert.equal(g[0].contact,'A')
+  assert.doesNotMatch(g[0].contact,/1416/)
 })
 test('new participant message table requires FORCE RLS and denies direct public/API privileges',()=>{
   const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')
