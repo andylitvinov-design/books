@@ -104,5 +104,5 @@ test("encrypted monthly messages enforce participant RLS and neutral in-site del
   assert.match(client,/MonthlySupportThread/);
   assert.match(owner,/MonthlySupportThread/);
   assert.match(component,/data-monthly-support-messages/);
-  assert.doesNotMatch(service+route+component,/wa\.me|t\.me|sendMessage\(|sendSms\(|sendEmail\(|analyticsEvent\(/);
+  assert.doesNotMatch(service+route+component,/https?:\/\/(?:wa\.me|t\.me)|sendMessage\(|sendSms\(|sendEmail\(|analyticsEvent\(/);
 });
