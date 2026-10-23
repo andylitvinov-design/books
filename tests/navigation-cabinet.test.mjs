@@ -262,7 +262,7 @@ test('top site header opens Cabinet while mobile bottom bar promotes Books', asy
 
   assert.match(home, /<SiteNavigation locale=\{locale\}/)
   assert.match(header, /<SiteNavigation locale=\{locale\}/)
-  assert.match(nav, /filter\(item => item\.id === 'services'\)/)
+  assert.match(nav, /item\.id === 'energy' \|\| item\.id === 'love' \|\| item\.id === 'business'/)
   assert.match(nav, /site-nav-free-entry/)
   assert.match(nav, /site-nav-about-entry/)
   assert.match(nav, /className="site-cabinet-entry"/)
