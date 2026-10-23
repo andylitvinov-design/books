@@ -48,5 +48,5 @@ test('publishing is explicit and private until validated',()=>{
  assert.match(builder,/reviewed:action==='publish'/)
  assert.match(builder,/action:'save',id:current\.id,expectedRevision:current\.revision/)
  assert.match(builder,/'x-hh-account-id':accountId/)
- for(const key of ['en:{startTitle:','ru:{startTitle:','es:{startTitle:']) assert.ok(builder.includes(key))
+ for(const key of ['en:{advancedActions:','ru:{advancedActions:','es:{advancedActions:']) assert.ok(builder.includes(key))
 })
