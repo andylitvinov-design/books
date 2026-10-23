@@ -58,7 +58,7 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
             await expect(switcher.locator("button")).toHaveCount(2);
             await expect(online).toHaveAttribute("aria-pressed", "true");
             await expect(inPerson).toHaveAttribute("aria-pressed", "false");
-            await expect(inPerson).toHaveAttribute("aria-label", /Toronto/);
+            await expect(inPerson).toHaveAttribute("aria-label", locale === "ru" ? /Торонто/ : /Toronto/);
 
             const bounds = await page.evaluate(() => {
               const header = document.querySelector("[data-services-category-filter] [class*='filterHeader']");
