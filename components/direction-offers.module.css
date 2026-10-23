@@ -44,7 +44,19 @@
 .chip:hover{background:#fff2e3}
 .chip[aria-pressed="true"]{background:#78513f;border-color:#78513f;color:#fffaf4}
 .feedback{display:flex;align-items:center;height:32px;margin:7px 1px 0;color:#86756a;font-size:11px;line-height:1.35;overflow:hidden}
-.root :is(.chip,.reset,.sectionAll,.mobileAll,.action):focus-visible{outline:3px solid #9b6b4f;outline-offset:3px}
+.root :is(.chip,.reset,.actionChip,.actionReset,.sectionAll,.mobileAll,.action):focus-visible{outline:3px solid #9b6b4f;outline-offset:3px}
+.actionFinder{margin:12px 0 0;padding:14px 20px;border:1px solid #e3d7c7;border-radius:20px;background:#fffaf4;box-shadow:0 6px 18px #5d44300c}
+.actionHeading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.actionHeading h2{margin:0;font:500 clamp(20px,2.5vw,25px)/1.16 Georgia,"Times New Roman",serif;color:#433529}
+.actionReset{flex:0 0 auto;min-height:39px;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:#7d5440;font:750 12px/1.25 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.actionReset:hover{background:#f4e9dd}
+.actionChips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:12px}
+.actionChip{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:51px;padding:9px 11px;border:1px solid #decdbb;border-radius:13px;background:#fffdfa;color:#665346;text-align:center;font:750 12px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.actionChip span{overflow-wrap:anywhere}
+.actionChip svg{flex:none}
+.actionChip:hover{background:#fff2e3}
+.actionChip[aria-pressed="true"]{background:#376b66;border-color:#376b66;color:#fffaf6}
+.root[data-direction-offers="business"] .actionChip[aria-pressed="true"]{background:#78513f;border-color:#78513f}
 .sections{display:grid;gap:23px;margin:22px 0 8px}
 .group{scroll-margin-top:24px;padding:20px 21px 17px;border:1px solid #e1d4c5;border-radius:22px;background:#fffaf4;box-shadow:0 7px 22px #4b35200d}
 .sectionHeading{display:flex;gap:13px;align-items:center;margin-bottom:16px}
@@ -89,7 +101,7 @@
 .root[data-direction-offers="relationships"] .sectionCopy>p{color:#93596b}
 .root[data-direction-offers="relationships"] .group[data-direction-section="course"] .action{background:#89516a}
 @media(max-width:780px){
-  .topicChips{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topicChips,.actionChips{grid-template-columns:repeat(2,minmax(0,1fr))}
   .card{grid-template-columns:130px minmax(0,1fr);gap:11px}
   .sectionHeading{flex-wrap:wrap}
 }
@@ -118,6 +130,12 @@
   .topicChips{gap:7px;margin-top:9px}
   .chip{min-height:48px;font-size:11.5px;padding:7px 8px}
   .feedback{height:30px;margin-top:6px;font-size:10px}
+  .actionFinder{margin-top:10px;padding:11px 12px;border-radius:17px}
+  .actionHeading h2{font-size:20px}
+  .actionReset{min-height:36px;font-size:11px}
+  .actionChips{gap:7px;margin-top:9px}
+  .actionChip{gap:6px;min-height:47px;padding:8px;font-size:11.5px}
+  .actionChip svg{width:16px;height:16px}
   .sections{gap:14px;margin-top:15px}
   .group{padding:13px 10px 12px;border-radius:16px}
   .sectionHeading{gap:8px;margin-bottom:10px}
@@ -150,6 +168,9 @@
   .wishForm button{padding-inline:7px;font-size:10px}
   .filterPanel{padding-inline:10px}
   .chip{min-height:50px;padding-inline:6px;font-size:11px}
+  .actionFinder{padding-inline:10px}
+  .actionChip{gap:5px;padding-inline:5px;font-size:10.5px}
+  .actionChip svg{width:14px;height:14px}
   .card{grid-template-columns:80px minmax(0,1fr);gap:8px;padding:7px}
   .photo{min-height:140px}
   .card h3{font-size:19px}

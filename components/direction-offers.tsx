@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, Search } from 'lucide-react'
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, MessageCircle, Search } from 'lucide-react'
 import { useState, type KeyboardEvent } from 'react'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
@@ -25,6 +25,7 @@ type SuggestedTest = { title: string }
 type Direction = 'energy' | 'relationships' | 'business'
 type Offer = { id: string; title: string; description: string; action: string; photo: string; href: string; eyebrow: string; note: string }
 type OfferKind = 'test' | 'course' | 'session'
+type ActionIntent = OfferKind | 'advice'
 type Localized = Record<PublicLocale, string>
 type CatalogOffer = { id: string; title: Localized; description: Localized; path: string; photo: string; note: Localized; action?: Localized }
 const tr = (en: string, ru: string, es: string): Localized => ({en, ru, es})
@@ -68,6 +69,42 @@ const copy = {
     more: 'Explorar más opciones', moreTests: 'Todos los tests', moreCourses: 'Todos los cursos', moreServices: 'Todos los servicios',
   },
 } as const
+
+const actionCopy = {
+  en: {
+    title: 'What would you like to do?',
+    all: 'Show all options',
+    selected: 'Showing:',
+    buttons: { test: 'Take a test', advice: 'Get advice', course: 'Take a course', session: 'Get a consultation' },
+    adviceKicker: 'FREE · PERSONAL GUIDANCE',
+    adviceTitle: 'Get a free written review',
+    adviceDetail: 'Describe your question in a short form for a personal written response. No session is booked automatically.',
+    adviceAction: 'Request free advice',
+  },
+  ru: {
+    title: 'Что хотите сделать?',
+    all: 'Все варианты',
+    selected: 'Показано:',
+    buttons: { test: 'Пройти тест', advice: 'Получить совет', course: 'Пройти курс', session: 'Получить консультацию' },
+    adviceKicker: 'БЕСПЛАТНО · ЛИЧНЫЙ ОТВЕТ',
+    adviceTitle: 'Бесплатный письменный разбор',
+    adviceDetail: 'Опишите свой запрос в короткой форме, чтобы получить личный письменный ответ. Встреча не бронируется автоматически.',
+    adviceAction: 'Получить совет',
+  },
+  es: {
+    title: '¿Qué te gustaría hacer?',
+    all: 'Todas las opciones',
+    selected: 'Mostrando:',
+    buttons: { test: 'Hacer un test', advice: 'Recibir orientación', course: 'Hacer un curso', session: 'Solicitar una consulta' },
+    adviceKicker: 'GRATIS · ORIENTACIÓN PERSONAL',
+    adviceTitle: 'Revisión escrita gratuita',
+    adviceDetail: 'Comparte tu pregunta en un formulario breve para recibir una respuesta personal. No se reserva una cita automáticamente.',
+    adviceAction: 'Solicitar orientación',
+  },
+} as const
+
+const actionIds = ['test', 'advice', 'course', 'session'] as const
+const actionIcons = { test: ClipboardCheck, advice: MessageCircle, course: GraduationCap, session: CalendarDays } as const
 
 const directionCopy = {
   energy: {
@@ -350,6 +387,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   suggestions: Record<string, SuggestedTest[]>
 }) {
   const [topicId, setTopicId] = useState('')
+  const [intent, setIntent] = useState<ActionIntent | null>(null)
   const [question, setQuestion] = useState('')
   const [feedback, setFeedback] = useState('')
   const [slideIndex, setSlideIndex] = useState(0)
@@ -360,6 +398,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const c = copy[locale]
   const d = directionCopy[direction][locale]
   const ui = presentation[locale]
+  const action = actionCopy[locale]
   const selected = journey.topics.find(item => item.id === topicId)
   const appLocale = locale === 'es' ? 'en' : locale
   const courseHref = direction === 'business'
@@ -413,6 +452,14 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       ...serviceOptions[direction].map(item => offerFromCatalog(item,'session')),
     ],
   }
+  // Reuse the published written-review service rather than creating a fake AI
+  // advice answer, enquiry or booked appointment.
+  const writtenReview = serviceOptions[direction].find(item => item.id.endsWith('written-review'))
+  const adviceOffer = writtenReview ? {
+    ...offerFromCatalog(writtenReview, 'session'),
+    eyebrow: action.adviceKicker,
+    action: action.adviceAction,
+  } : null
   const kinds = ['test', 'course', 'session'] as const
   const icons = [ClipboardCheck, GraduationCap, CalendarDays] as const
   const allHrefs = [
@@ -489,11 +536,34 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       <p className={styles.feedback} role="status" aria-live="polite">{feedback || ui.privacy}</p>
     </section>
 
-    <div className={styles.sections} aria-label={ui.start} data-direction-sections>
+    <section className={styles.actionFinder} aria-labelledby="hh-direction-action-label" data-direction-action-finder>
+      <div className={styles.actionHeading}>
+        <h2 id="hh-direction-action-label">{action.title}</h2>
+        {intent && <button type="button" className={styles.actionReset}
+          data-direction-action-reset onClick={()=>setIntent(null)}>{action.all}</button>}
+      </div>
+      <div className={styles.actionChips} role="group" aria-labelledby="hh-direction-action-label">
+        {actionIds.map(id => {
+          const Icon = actionIcons[id]
+          return <button type="button" key={id} className={styles.actionChip}
+            data-direction-intent={id} aria-pressed={intent===id}
+            aria-controls="hh-direction-sections"
+            onClick={()=>setIntent(previous=>previous===id ? null : id)}>
+            <Icon size={17} aria-hidden="true"/><span>{action.buttons[id]}</span>
+          </button>
+        })}
+      </div>
+      <p className={styles.srOnly} role="status" aria-live="polite">
+        {intent ? action.selected+' '+action.buttons[intent] : ''}
+      </p>
+    </section>
+
+    <div className={styles.sections} id="hh-direction-sections" aria-label={ui.start} data-direction-sections>
       {kinds.map((kind,index)=>{
         const Icon=icons[index]
         const group=ui.groups[index]
         const showAll=expanded[kind]
+        if (intent && intent !== kind) return null
         return <section className={styles.group} key={kind}
           id={'hh-direction-'+kind} data-direction-section={kinds[index]}
           aria-labelledby={'hh-direction-section-title-'+kind}>
@@ -540,7 +610,37 @@ export function DirectionOffers({ locale, journey, suggestions }: {
           </div>
         </section>
       })}
-
+      {intent==='advice' && adviceOffer && <section className={styles.group}
+        id="hh-direction-advice" data-direction-section="advice"
+        aria-labelledby="hh-direction-section-title-advice">
+        <div className={styles.sectionHeading}>
+          <span className={styles.sectionIndex} aria-hidden="true"><MessageCircle size={19}/></span>
+          <div className={styles.sectionCopy}>
+            <p>{action.adviceKicker}</p>
+            <h2 id="hh-direction-section-title-advice">{action.adviceTitle}</h2>
+            <span>{action.adviceDetail}</span>
+          </div>
+        </div>
+        <div className={styles.offerList} role="list">
+          <article className={styles.card} role="listitem"
+            data-offer-type="advice" data-offer-id={adviceOffer.id}>
+            <div className={styles.photo}>
+              <Image src={adviceOffer.photo} alt="" fill loading="lazy" unoptimized
+                sizes="(max-width:430px) 92px, (max-width:760px) 130px, 200px"/>
+            </div>
+            <div className={styles.cardBody}>
+              <p className={styles.eyebrow}><MessageCircle size={15} aria-hidden="true"/>{adviceOffer.eyebrow}</p>
+              <h3>{adviceOffer.title}</h3>
+              <p className={styles.description}>{adviceOffer.description}</p>
+              <div className={styles.cardFooter}>
+                <span className={styles.note}>{adviceOffer.note}</span>
+                <Link className={styles.action} href={adviceOffer.href} prefetch={false}
+                  data-offer-action="advice">{adviceOffer.action}<ArrowRight size={17} aria-hidden="true"/></Link>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>}
     </div>
   </div>
 }
