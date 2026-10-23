@@ -1,0 +1,8 @@
+# Holistic House psychometrics research: cycle264, 2026-10-22 EDT
+# Primary publication references only. No questionnaire items, scoring algorithms or deployment permissions.
+DFPS-RU-16 | https://doi.org/10.17759/sps.2026170309 | 2026 Russian respondent-adaptation N363, two 8-item factors; copyright CC BY-NC paper, SaaS not cleared.
+BSS-Br-PT-BR-5 | https://doi.org/10.1002/epr2.70011 | 2026 Brazilian Portuguese 5-item solastalgia N1752, research only.
+CARE-SR-PT-PT-10 | https://doi.org/10.1177/01632787261422208 | 2026 Portuguese physicians N221, physician self-report NOT original patient CARE, research only.
+RES-EN-9 and RES-NL-9 | https://doi.org/10.3389/fpsyt.2018.00169 | original 2018 two respondent cohorts EN n226 and NL n296, one publication.
+RES-PT-BR-9 | https://doi.org/10.1080/20008066.2026.2692765 | 2026 Brazilian Portuguese translation N355, new independently tested locale.
+# All six edition keys have research_only access. Commercial hosted item/translation/scoring rights not granted. Master Google Sheets is the source of record; neither PR#495 nor Supabase was modified.
