@@ -97,14 +97,14 @@ for (const engine of [chromium, webkit]) {
             const more = page.locator('[data-home-more-deferred="true"]');
             assert.equal(await more.locator('[data-home-start]').count(), 0,
               label + ': closed catalogue must not inflate initial SSR/RSC');
-            await more.locator('summary').click();
+            await more.locator('summary').first().click();
             await page.locator('[data-home-start]').waitFor({ state: 'visible', timeout: 30000 });
             assert.equal(await more.getAttribute('open'), '',
               label + ': expanding reveals the existing section directory');
             if (locale !== 'es') {
               await page.locator('[data-core-service-id]').first().waitFor({ state: 'visible', timeout: 30000 });
             }
-            await more.locator('summary').click();
+            await more.locator('summary').first().click();
             assert.equal(await more.getAttribute('open'), null, label + ': closes without navigation');
           }
           // Navigation is a genuine public route read. Do not submit a form, create
