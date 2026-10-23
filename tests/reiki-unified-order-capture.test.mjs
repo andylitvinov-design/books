@@ -67,7 +67,7 @@ test("Kundalini three options contain distinct, public-only, localized messages"
   }
 });
 
-test("all Reiki/Academy request forms wait for server-confirmed save before showing messenger links", async () => {
+test("all Reiki/Academy requests navigate to thank-you only after server-confirmed save", async () => {
   const chooser = await read("components/contact-channel-chooser.tsx");
   for (const file of [
     "components/kundalini-reiki-order-capture.tsx",
@@ -84,14 +84,20 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
     assert.match(source, /stayAfterSave/);
   }
   assert.match(chooser, /stayAfterSave\?: boolean/);
-  assert.match(chooser, /if \(!stayAfterSave\) router\.push/);
+  assert.doesNotMatch(chooser, /if \(!stayAfterSave\) router\.push/);
+  assert.match(chooser, /router\.push\("\/" \+ locale \+ "\/thank-you"\)/);
+  assert.match(chooser, /const selectedOption = originalMessage\.split/);
+  assert.match(chooser, /baseService \+ " · " \+ selectedOption/);
   assert.match(chooser, /fetch\("\/api\/service-enquiries", \{/);
   assert.match(chooser, /operationId: nextId/);
-  assert.match(chooser, /contactConsent: consent/);
+  assert.match(chooser, /contactConsent: agreed/);
   assert.match(chooser, /if \(!response\.ok \|\| data\.saved !== true/);
   assert.match(chooser, /setSaved\(\{ saved: true, referenceCode: data\.referenceCode \}\)/);
   assert.match(chooser, /data-contact-channel": "whatsapp"/);
   assert.match(chooser, /data-contact-channel": "telegram"/);
+  const thanks = await read("components/service-enquiry-thank-you.tsx");
+  assert.match(thanks, /data-contact-channel="whatsapp"/);
+  assert.match(thanks, /data-contact-channel="telegram"/);
   // An unsubmitted or failed request must never produce a fabricated CRM receipt.
   assert.match(chooser, /if \(busy \|\| saved\) return/);
   assert.match(chooser, /setError\(c\.error\)/);
