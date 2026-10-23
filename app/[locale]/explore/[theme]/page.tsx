@@ -5,6 +5,8 @@ import { BriefcaseBusiness, ArrowRight } from 'lucide-react'
 import wood from '@/components/business-coaching-promo.module.css'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
+import { TopicPathOffers } from '@/components/topic-path-offers'
+import offers from '@/components/topic-path-offers.module.css'
 import { TopicGrowthGuide } from '@/components/topic-growth-guide'
 import { BusinessWebsiteEnquiry } from '@/components/business-website-enquiry'
 import { BusinessTestimonials } from '@/components/business-testimonials'
@@ -30,7 +32,7 @@ const BUSINESS_SEO = {
 
 type Props = { params: Promise<{ locale: string; theme: string }> }
 export function generateStaticParams() {
-  return ['en','ru','es'].flatMap((locale) => TOPIC_JOURNEYS.map((item) => ({locale, theme:item.id})))
+  return ['en','ru','es'].flatMap((locale) => [...TOPIC_JOURNEYS.map((item) => ({locale, theme:item.id})), {locale, theme:'love'}])
 }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, theme } = await params
@@ -45,7 +47,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     openGraph: {title,description,type:'article'},
     robots: {index:true,follow:true},
-    alternates: {canonical: `/${language}/explore/${theme}`,languages:{en:`/en/explore/${theme}`,ru:`/ru/explore/${theme}`,es:`/es/explore/${theme}`}},
+    // One canonical Love page; the old relationships URL continues to work.
+    alternates: {canonical: `/${language}/explore/${theme === 'relationships' ? 'love' : theme}`,languages:{en:`/en/explore/${theme === 'relationships' ? 'love' : theme}`,ru:`/ru/explore/${theme === 'relationships' ? 'love' : theme}`,es:`/es/explore/${theme === 'relationships' ? 'love' : theme}`}},
   }
 }
 export default async function TopicJourneyPage({ params }: Props) {
@@ -53,8 +56,9 @@ export default async function TopicJourneyPage({ params }: Props) {
   if (!['ru','en','es'].includes(locale)) notFound()
   const journey = getTopicJourney(theme)
   if (!journey) notFound()
-  return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
-    <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
+  // Keep the established assessment, business enquiry, and evidence flows accessible.
+  // Only the presentation changes; no auth, CRM, payment, or course state is duplicated.
+  const legacyContent = <>
     <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale)}/>
     {theme === 'business' && <div style={{maxWidth:1160,margin:'0 auto',padding:'0 clamp(14px,3.5vw,34px) 18px'}}>
       <BusinessWebsiteEnquiry locale={locale as 'en'|'ru'|'es'} />
@@ -91,5 +95,19 @@ export default async function TopicJourneyPage({ params }: Props) {
         </Link>
       </div>
     </aside>}
+
+  </>
+  const isCoreDirection = ['energy','relationships','business'].includes(journey.id)
+  return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
+    <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
+    {isCoreDirection ? <>
+      <TopicPathOffers locale={locale as PublicLocale} journey={journey}/>
+      <section className={offers.more}>
+        <details data-topic-more-offers>
+          <summary>{locale === 'ru' ? 'Открыть другие предложения и подробный подбор' : locale === 'es' ? 'Abrir más opciones y orientación' : 'Explore more offers and detailed guidance'} ↓</summary>
+          {legacyContent}
+        </details>
+      </section>
+    </> : legacyContent}
   </main>
 }
