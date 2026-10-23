@@ -5,6 +5,7 @@ import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const labels = {
   en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Need to think', save: 'Save my practice', receipt: 'Your moment is saved' },
@@ -50,7 +51,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         assert.match(textOf(player.tree),locale==='ru'
           ?/не нужно заставлять себя расслабиться/:/do not have to make yourself relax/)
         await click(player,t.next) // support, with no required response
-        await click(player,t.next) // optional exercise
+        await advanceOporaTo(player,'practice',t.next) // optional teaching moments
       }
       await click(player,t.tried)
       await click(player,t.next)
@@ -60,7 +61,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
       assert.ok(realLifeChoice?.label,'Every day needs an authored action')
       await click(player,realLifeChoice.label)
-      await click(player,t.next)
+      await advanceOporaTo(player,'recapFeedback',t.next)
       await click(player,locale==='ru'?'Получилось немного':'I managed a little')
       assert.equal(requests, 0, 'Opening moments and choosing responses never saves')
       await click(player, t.save)
@@ -107,7 +108,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     async onSession(input) { await owner.command(structuredClone(input), locale); return true },
   })
   try {
-    for (let i = 0; i < 10; i++) await click(player, t.next)
+    await advanceOporaTo(player,'recapFeedback',t.next)
     await click(player,locale==='ru'?'Пока только знакомлюсь':'I only explored them today')
     await click(player, t.save)
     const saved = owner.sessions.at(-1)
@@ -183,7 +184,7 @@ test('Day 1 optional own resource is mutually exclusive with buttons, encrypted,
       await player.settle()
       const button=findButton(player.tree,quick)
       assert.equal(button.props['aria-pressed'],false,'Typing a custom resource deselects quick choices')
-      for(let i=0;i<6;i++)await click(player,next)
+      await advanceOporaTo(player,'recapFeedback',next)
       await click(player,locale==='ru'?'Пока только знакомлюсь':locale==='es'?'Hoy solo las exploré':'I only explored them today')
       await click(player,save)
       assert.deepEqual(payload.oporaOpening,{
