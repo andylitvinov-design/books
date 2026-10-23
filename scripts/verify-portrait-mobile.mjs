@@ -141,9 +141,44 @@ try {
     const actions = card().locator('[data-testid="portrait-quick-actions"]')
     await expect(actions).toBeVisible()
     await expect(actions.locator('a, button')).toHaveCount(3)
-    await expect(actions.locator('[data-testid="portrait-completion-action"]')).toContainText(locale === 'ru' ? 'Тесты' : 'Tests')
+    const takeTest = actions.locator('[data-testid="portrait-completion-action"]')
+    await expect(takeTest).toContainText(locale === 'ru' ? 'Пройти тест' : 'Take Test')
+    await expect(takeTest).toHaveAttribute('aria-expanded','false')
     await expect(actions.locator('[data-testid="portrait-analyses-action"]')).toContainText(locale === 'ru' ? 'Анализы' : 'Analyses')
     await expect(actions.locator('[data-testid="portrait-recommendations-action"]')).toContainText(locale === 'ru' ? 'Рекомендации' : 'Recommendations')
+
+    // Selecting a category, or even expanding Take Test, must not start a
+    // questionnaire. Only a specific test button creates/resumes a run.
+    const work = card().locator('button[data-portrait-sector="work"]')
+    await work.click()
+    const reportUrl = page.url()
+    await takeTest.click()
+    await expect(takeTest).toHaveAttribute('aria-expanded','true')
+    const panel = card().locator('[data-testid="portrait-test-recommendations"]')
+    await expect(panel).toBeVisible()
+    await expect(panel).toContainText(locale === 'ru' ? 'Дело' : 'Work')
+    const suggested = panel.locator('button[data-testid^="portrait-take-test-"]')
+    assert.ok(await suggested.count() > 0, 'Work needs real cleared test suggestions')
+    assert.equal(page.url(),reportUrl, 'Opening recommendations must not create a run')
+    const testNames = await suggested.evaluateAll(items=>items.map(item=>item.dataset.testid))
+    const relationships = card().locator('button[data-portrait-sector="relationships"]')
+    await relationships.click()
+    await expect(panel).toContainText(locale === 'ru' ? 'Отношения' : 'Relationships')
+    assert.equal(page.url(),reportUrl, 'Changing the category must not navigate')
+    const relationshipTests = await suggested.evaluateAll(items=>items.map(item=>item.dataset.testid))
+    assert.ok(relationshipTests.length>0, 'Relationships needs real cleared test suggestions')
+    assert.ok(testNames.some(key=>!relationshipTests.includes(key)) ||
+      relationshipTests.some(key=>!testNames.includes(key)), 'Category should change recommended tests')
+    await takeTest.click()
+    await expect(takeTest).toHaveAttribute('aria-expanded','false')
+    await expect(panel).not.toBeVisible()
+    if(locale==='en'){
+      await work.click()
+      await takeTest.click()
+      await suggested.first().click()
+      await expect(page).toHaveURL(/\/en\/app\/runs\/[^/?#]+\?mode=quick/,{timeout:60000})
+      console.log('PORTRAIT_QA',name,'one explicit Take test click opened a real synthetic account test')
+    }
   }
   // Next's development error-overlay may emit a blocked /__nextjs_original-stack-frames
   // request (plus an opaque Event) under the isolated loopback/CSP browser.
