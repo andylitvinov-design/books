@@ -51,16 +51,22 @@ test('Every type of teaching screen uses existing glass typography and safe cont
   assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
 })
 
-test('Welcome keeps the free course scenic illustration and three benefits while describing all five lessons', () => {
-  assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
-  assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
-  assert.match(learner, /Want individual guidance\? Ask about a personal session with Andrey/)
+test('Welcome has a scenic photo, three compact benefits and one transparent initiation offer', () => {
+  assert.match(curriculum, /Reiki Practitioner", "Практик Рейки"/)
+  assert.match(curriculum, /five short lessons with practice and meditation/)
   assert.match(learner, /styles\.welcomeReward/)
   assert.match(learner, /styles\.benefits/)
+  assert.match(learner, /data-reiki-initiation-gift/)
+  assert.match(learner, /Not automatic; personal sessions are optional/)
+  assert.match(learner, /Не автоматически; личные сессии — отдельно/)
+  const introBenefits = learner.slice(learner.indexOf('className={styles.benefits}'),
+    learner.indexOf('className={styles.milestoneCard}'))
+  assert.doesNotMatch(introBenefits, /<small>\{t\./)
   for(const name of ['Short lessons','Practical tasks','Private progress'])
     assert.ok(learner.includes(name),name)
   assert.match(learner, /startFree: "Start free program"/)
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
+  assert.match(css, /REIKI COMPACT WELCOME V4/)
 })
 
 test('Course has teacher initiation readiness checklist with five private reports + twenty-two answers', () => {

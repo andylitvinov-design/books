@@ -82,7 +82,7 @@ const copy = {
     practicalTasksDetail: "Learn at your pace",
     privateProgress: "Private progress",
     privateProgressDetail: "Save by choice",
-    eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
+    eyebrow: "FREE · 5-DAY REIKI COURSE",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Discover your Reiki journey",
@@ -129,8 +129,8 @@ const copy = {
     unavailable: "This recording is not available. You can continue using the written teaching.",
     welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
     welcomeRequirement: "Study all five lessons in order.",
-    welcomeGiftTitle: "Free Level 1 Reiki initiation with Andrey — in chat",
-    welcomeGiftText: "After completing all five lessons, request one free Level 1 initiation guided by Andrey in chat. You can also request a personal 30- or 60-minute session. The course itself does not confer initiation.",
+    welcomeGiftTitle: "Free Level 1 Reiki initiation",
+    welcomeGiftText: "After 5 lessons, request one free initiation with Andrey in chat. Not automatic; personal sessions are optional.",
     welcomeTeacher: "Want individual guidance? Ask about a personal session with Andrey alongside your free chat initiation.",
     pathway: "All lessons are part of your course",
     picked: "Completed",
@@ -236,7 +236,7 @@ const copy = {
     practicalTasksDetail: "В своём темпе",
     privateProgress: "Личный прогресс",
     privateProgressDetail: "По вашему выбору",
-    eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
+    eyebrow: "БЕСПЛАТНЫЙ КУРС · 5 ДНЕЙ",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Откройте свой путь в Рейки",
@@ -283,8 +283,8 @@ const copy = {
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
     welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
     welcomeRequirement: "Проходите все пять уроков по очереди.",
-    welcomeGiftTitle: "Бесплатная инициация I ступени с Андреем в чате",
-    welcomeGiftText: "После пяти уроков можно запросить одну бесплатную инициацию I ступени с Андреем в чате. Дополнительно можно выбрать личную сессию на 30 или 60 минут. Сам курс не является инициацией.",
+    welcomeGiftTitle: "Бесплатная инициация Рейки I ступени",
+    welcomeGiftText: "После 5 уроков можно запросить одну бесплатную инициацию с Андреем в чате. Не автоматически; личные сессии — отдельно.",
     welcomeTeacher: "Хотите индивидуального внимания? Обсудите с Андреем личную сессию в дополнение к бесплатному чату.",
     pathway: "Все уроки входят в одну программу",
     picked: "Завершено",
@@ -1476,12 +1476,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 </Link>
               ) : null}
               {slide.kind === "welcome" ? (
-                <div className={styles.welcomeReward} aria-label={t.welcomeOffer}>
-                  <p className={styles.welcomeRewardTitle}><Sparkles size={17} aria-hidden="true" />{t.welcomeOffer}</p>
-                  <ul className={styles.welcomeSystems}>
-                    {energyworkPathChoices.map((choice) => <li key={choice.id}>{choice.title[locale]}</li>)}
-                  </ul>
-                  <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
+                <div className={styles.welcomeReward} aria-label={t.welcomeGiftTitle}>
                   <div className={styles.welcomeGift} data-reiki-initiation-gift>
                     <Award size={22} aria-hidden="true" />
                     <div>
@@ -1494,11 +1489,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               {slide.kind === "welcome" ? (
                 <div className={styles.benefits} aria-label={t.benefits}>
                   <div><span className={styles.benefitIcon}><Leaf size={19} aria-hidden="true" /></span>
-                    <strong>{t.shortLessons}</strong><small>{t.shortLessonsDetail}</small></div>
+                    <strong>{t.shortLessons}</strong></div>
                   <div><span className={styles.benefitIcon}><Heart size={19} aria-hidden="true" /></span>
-                    <strong>{t.practicalTasks}</strong><small>{t.practicalTasksDetail}</small></div>
+                    <strong>{t.practicalTasks}</strong></div>
                   <div><span className={styles.benefitIcon}><BarChart3 size={19} aria-hidden="true" /></span>
-                    <strong>{t.privateProgress}</strong><small>{t.privateProgressDetail}</small></div>
+                    <strong>{t.privateProgress}</strong></div>
                 </div>
               ) : null}
               {slide.kind === "milestone" && slide.id !== "flight-save" ? (
