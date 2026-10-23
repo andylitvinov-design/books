@@ -79,8 +79,6 @@ export function ServiceEnquiryThankYou({
   locale, video,
 }: { locale: PublicLocale; video: PublishedSiteVideo | null }) {
   const c = copy[locale];
-  const whatsapp = whatsappEnquiryUrl({ locale, service: "Holistic House", request: c.chatRequest });
-  const telegram = telegramEnquiryUrlFromWhatsApp(whatsapp);
   const [receipt, setReceipt] = useState<ReceiptState>("checking");
 
   useEffect(() => {
@@ -93,6 +91,14 @@ export function ServiceEnquiryThankYou({
   }, []);
 
   const confirmed = /^HH-[A-F0-9]{12}$/.test(receipt);
+  // Only the short-lived, opaque saved reference travels to optional chat.
+  // It identifies the selected enquiry to the owner without revealing a
+  // course answer, topic, email, phone or client identity in a messenger URL.
+  const whatsapp = whatsappEnquiryUrl({
+    locale, service: "Holistic House",
+    request: c.chatRequest + (confirmed ? " · " + receipt : ""),
+  });
+  const telegram = telegramEnquiryUrlFromWhatsApp(whatsapp);
   return (
     <main className={styles.page}>
       <PublicSiteHeader locale={locale} />
