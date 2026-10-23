@@ -149,3 +149,9 @@
  .editor[data-service-composer-focus]{padding:0}
  .header[data-composing="true"] h2{font-size:1.45rem!important}
 }
+
+/* Focus on the one active service slide workbench on phones. */
+.dashboard:has([data-service-composer-focus]) .actions{grid-template-columns:minmax(0,1fr)}
+.dashboard:has([data-service-composer-focus]) .actions>a{display:none!important}
+.dashboard:has([data-service-composer-focus]) .actions>button{min-height:44px!important;background:#fffdf8!important;border-color:#d8c8b8!important;color:#456f64!important}
+.dashboard:has([data-service-composer-focus]) .actions>button:hover{background:#edf5ef!important}
