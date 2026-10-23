@@ -95,11 +95,11 @@ test("no stateful analytics, hidden dispatch or leaking raw URL query in contact
   assert.match(component, /telegramEnquiryUrlFromWhatsApp\(preparedWhatsApp\)/);
   assert.match(component, /fetch\("\/api\/service-enquiries", \{/);
   assert.match(component, /event\.preventDefault\(\)/);
-  // OAuth may retain public route identity briefly in the same tab, but never
-  // the visitor's contact, question, consent or an outbound message payload.
+  // OAuth may retain public route identity and one non-sensitive reply-consent
+  // boolean in this tab, never contact details, notes or messenger payloads.
   assert.doesNotMatch(component, /sendBeacon|localStorage/);
   assert.match(component, /sessionStorage\.setItem\("hh-google-enquiry-return"/);
-  assert.match(component, /JSON\.stringify\(\{ path: pathname, service: serviceTitle, panel: panelId \}\)/);
-  assert.doesNotMatch(component, /sessionStorage\.setItem\([^;]*(?:email|phone|description|consent)/i);
+  assert.match(component, /JSON\.stringify\(\{ path: pathname, service: serviceTitle, panel: panelId, consentToReply: !quick \}\)/);
+  assert.doesNotMatch(component, /sessionStorage\.setItem\([^;]*(?:email|phone|description|contactConsent)/i);
   assert.doesNotMatch(script, /fetch\(|sendBeacon|localStorage|sessionStorage/);
 });
