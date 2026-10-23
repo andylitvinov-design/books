@@ -47,6 +47,10 @@ const WORDS={
     agree:'Согласен',unsure:'Нужно подумать',disagree:'Не согласен',
     quoteThanks:'Это только ваша позиция, правильного ответа нет.',
     keepText:'Как применить сегодняшний навык? Выберите один маленький шаг на потом — или пропустите.',
+    day4Task:'Перед одним привычным делом вслух назовите чувство, которое замечаете.',
+    day4EmotionLabel:'Какое это чувство или эмоция? (необязательно)',
+    day4EmotionPlaceholder:'Например, спокойствие',
+    day4SavedLabel:'Названное чувство',
     plan:'Попробую позже',noPlan:'Не сегодня',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
     meditationTitle:'Медитация «Опора» · 2 минуты (по желанию)',
@@ -117,6 +121,10 @@ const WORDS={
     agree:'Agree',unsure:'Need to think',disagree:'Disagree',
     quoteThanks:'Your response is yours. There is no correct answer.',
     keepText:'How might you use today’s skill? Choose one small step for later, or skip.',
+    day4Task:'Before one routine task, say aloud the feeling you notice.',
+    day4EmotionLabel:'What feeling or emotion is it? (optional)',
+    day4EmotionPlaceholder:'For example, calm',
+    day4SavedLabel:'Feeling named',
     plan:'I might try this',noPlan:'Not today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
     meditationTitle:'2-minute grounding meditation · optional',
@@ -184,6 +192,10 @@ WORDS.es = {
   feelingBetter:'Un poco mejor',feelingSame:'Más o menos igual',feelingPartial:'Un pequeño cambio',feelingHard:'Incómodo',
   quoteText:'¿Estás de acuerdo con esta idea?',agree:'De acuerdo',unsure:'Quiero pensarlo',disagree:'En desacuerdo',
   keepText:'¿Cómo podrías usar esta habilidad? Elige un gesto pequeño para más tarde o sáltalo.',plan:'Quizá lo intente',noPlan:'Hoy no',
+  day4Task:'Antes de una tarea cotidiana, di en voz alta la emoción que notas.',
+  day4EmotionLabel:'¿Qué sentimiento o emoción es? (opcional)',
+  day4EmotionPlaceholder:'Por ejemplo, calma',
+  day4SavedLabel:'Emoción nombrada',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
   meditationTitle:'Meditación de apoyo · 2 minutos (opcional)',
   meditationSteps:[
@@ -410,7 +422,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const legacyPlan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const transferChoices=oporaExperienceTransferChoices(cycle.day,lang)
   const selectedTransfer=transferChoices.find(choice=>choice.value===answers.transferChoice)?.label
-  const plan=answers.transferChoice==='one'?legacyPlan:selectedTransfer||''
+  // Preserve historic Day 4 choice labels. The new feeling response
+  // represents an intention, never evidence of a completed exercise.
+  const plan=cycle.day===4&&answers.transferFeeling?.trim()?t.day4Task:
+    answers.transferChoice==='one'?legacyPlan:selectedTransfer||''
   const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
   const quote=cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
   const rating=answers.reflection
@@ -736,16 +751,41 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {vote&&<p className={styles.soft} role="status">{cycle.day===1?opening.response:t.quoteThanks}</p>}
           </>}
           {moment==='save'&&<>
-            <p className={styles.lead}>{t.keepText}</p>
-            <div className={styles.chips+' '+styles.microChoices} role="group" aria-label={t.keep}
-              data-opora-everyday-choice="two-actions-or-skip">
-              {transferChoices.map(choice=><button type="button" key={choice.value} disabled={locked}
-                aria-pressed={answers.transfer==='planned'&&answers.transferChoice===choice.value}
-                onClick={()=>setAnswers(a=>({...a,transferChoice:choice.value,transfer:'planned'}))}>{choice.label}</button>)}
-              <button type="button" disabled={locked}
-                aria-pressed={answers.transfer==='not_planning'}
-                onClick={()=>setAnswers(a=>({...a,transferChoice:undefined,transfer:'not_planning'}))}>{t.noPlan}</button>
-            </div>
+            {cycle.day===4
+              ?<div className={styles.day4Feeling} data-opora-everyday-choice="one-feeling-and-field">
+                <p className={styles.oneTask}>{t.day4Task}</p>
+                <label className={styles.supportLabel} htmlFor="opora-day4-feeling">{t.day4EmotionLabel}</label>
+                <input id="opora-day4-feeling" className={styles.supportInput}
+                  type="text" autoComplete="off" maxLength={60} disabled={locked}
+                  data-opora-transfer-feeling="true"
+                  placeholder={t.day4EmotionPlaceholder}
+                  value={answers.transferFeeling||''}
+                  onChange={event=>{
+                    const value=event.target.value.slice(0,60)
+                    const entered=Boolean(value.trim())
+                    setAnswers(a=>({...a,transferFeeling:entered?value:undefined,
+                      transferChoice:entered?'two':undefined,
+                      transfer:entered?'planned':undefined}))
+                  }}/>
+                <div className={styles.chips+' '+styles.microChoices} role="group" aria-label={t.keep}>
+                  <button type="button" disabled={locked}
+                    aria-pressed={answers.transfer==='not_planning'}
+                    onClick={()=>setAnswers(a=>({...a,transferFeeling:undefined,
+                      transferChoice:undefined,transfer:'not_planning'}))}>{t.noPlan}</button>
+                </div>
+              </div>
+              :<>
+                <p className={styles.lead}>{t.keepText}</p>
+                <div className={styles.chips+' '+styles.microChoices} role="group" aria-label={t.keep}
+                  data-opora-everyday-choice="two-actions-or-skip">
+                  {transferChoices.map(choice=><button type="button" key={choice.value} disabled={locked}
+                    aria-pressed={answers.transfer==='planned'&&answers.transferChoice===choice.value}
+                    onClick={()=>setAnswers(a=>({...a,transferChoice:choice.value,transfer:'planned'}))}>{choice.label}</button>)}
+                  <button type="button" disabled={locked}
+                    aria-pressed={answers.transfer==='not_planning'}
+                    onClick={()=>setAnswers(a=>({...a,transferChoice:undefined,transfer:'not_planning'}))}>{t.noPlan}</button>
+                </div>
+              </>}
             <p className={styles.soft}>{reportedAttempt?t.attempted:t.readOnly}</p>
           </>}
           {moment==='nextStep'&&<OporaCoursePath locale={lang} cycle={cycle}
@@ -768,7 +808,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
           {moment==='recapNext'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
-              <div><strong>{answers.transfer==='planned'?plan:(depth?.everyday||j.noPlan)}</strong></div></div>
+              <div><strong>{answers.transfer==='planned'?plan:(cycle.day===4?j.noPlan:(depth?.everyday||j.noPlan))}</strong>
+                  {cycle.day===4&&answers.transferFeeling&&<small>{t.day4SavedLabel}: {answers.transferFeeling}</small>}</div></div>
           </div>}
           {moment==='recapFeedback'&&<>
             <div className={styles.confidenceChoices} role="group" aria-label={c.question}
@@ -788,6 +829,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </div>
             {chosenFeeling&&<p className={styles.soft}><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
             {answers.transfer==='planned'&&<p className={styles.soft}><strong>{t.takeaway}:</strong> {plan}</p>}
+             {cycle.day===4&&answers.transferFeeling&&<p className={styles.soft}>
+               <strong>{t.day4SavedLabel}:</strong> {answers.transferFeeling}</p>}
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
