@@ -101,22 +101,41 @@ test('chat gift remains free; optional paid 1:1 uses exactly €50/30min or €1
     assert.match(ru,/Бесплатная инициация в чате: Tantra Reiki/)
     assert.match(en,/No payment or booking/)
     if (personalSession==='express') {
-      assert.match(en,/Express personal initiation — 30 minutes, €50/)
+      assert.match(en,/Short live personal initiation — 30 minutes, €50/)
       assert.match(ru,/30 минут, €50/)
     } else if (personalSession==='full') {
-      assert.match(en,/Full personal session — 60 minutes, €100/)
+      assert.match(en,/Full live personal initiation — 60 minutes, €100/)
       assert.match(ru,/60 минут, €100/)
-    } else assert.match(en,/Not requested/)
+    } else assert.match(en,/Personal initiation through chat mode/)
   }
   const tampered=writeReikiInitiationRequest(validRequest({personalSession:'express'})).replace('"express"','"vip"')
   assert.equal(reikiInitiationRequestValid(tampered),false,'Unknown paid option cannot enter CRM')
+})
+
+test('The three personal initiation labels are gentle, localized, and match CRM summaries', () => {
+  const options = [
+    ['none', 'Personal initiation through chat mode', 'Личная инициация через чат'],
+    ['express', 'Short live personal initiation', 'Краткая личная инициация вживую'],
+    ['full', 'Full live personal initiation', 'Полная личная инициация вживую'],
+  ]
+  assert.match(form, /Which initiation format feels right for you\?/)
+  assert.match(form, /Какой формат инициации вам ближе\?/)
+  for (const [id, enLabel, ruLabel] of options) {
+    assert.ok(form.includes(enLabel), enLabel)
+    assert.ok(form.includes(ruLabel), ruLabel)
+    const stored = writeReikiInitiationRequest(validRequest({ personalSession: id }))
+    assert.match(formatReikiInitiationRequest(stored, 'en'), /Personal initiation format with Andrey:/)
+    assert.ok(formatReikiInitiationRequest(stored, 'en').includes(enLabel))
+    assert.ok(formatReikiInitiationRequest(stored, 'ru').includes(ruLabel))
+  }
+  assert.match(form, /no charge or confirmed booking yet/)
 })
 
 test('v1 signed-off applications remain valid and legacy text can still be edited', () => {
   const old=REIKI_REQUEST_PREFIX+JSON.stringify(validRequest())
   assert.equal(reikiInitiationRequestValid(old),true,'Do not break submitted encrypted v1 data')
   assert.equal(readReikiInitiationRequest(old).personalSession,'none')
-  assert.match(formatReikiInitiationRequest(old,'en'),/Not requested/)
+  assert.match(formatReikiInitiationRequest(old,'en'),/Personal initiation through chat mode/)
   assert.ok(writeReikiInitiationRequest(readReikiInitiationRequest(old)).startsWith(REIKI_REQUEST_PREFIX_V2))
   assert.equal(reikiInitiationRequestValid(old.replace('"motivation":','"personalSession":"full","motivation":')),false)
   const newAnswer=writeReikiInitiationRequest(validRequest({personalSession:'full',donationInitiations:['kundalini']}))
