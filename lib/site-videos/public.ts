@@ -71,7 +71,10 @@ const readStoredPublishedSiteVideo = unstable_cache(
     try {
       // This is a streamed or below-fold media section. A bounded HGET is
       // cheaper than HGETALL and cannot block the primary hero render.
-      return toPublishedSiteVideo(await store.get(key, { timeoutMs: 3000 }));
+      // The existing Redis integration still times out after 3 seconds on
+      // exact production SHA. Keep the original low-latency public ceiling
+      // while an authorized provider repair is pending.
+      return toPublishedSiteVideo(await store.get(key, { timeoutMs: 1800 }));
     } catch (error) {
       // This fixed diagnostic enum reveals neither request parameters nor
       // credentials. Keep the publication gate fail-closed during an outage.
