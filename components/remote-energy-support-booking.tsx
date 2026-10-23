@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ServiceReviews } from "@/components/service-reviews";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS } from "@/lib/practitioners/remote-energy-support";
 import styles from "./remote-energy-support-booking.module.css";
@@ -19,6 +20,8 @@ export type EnergySupportMaster = {
   languages: string[];
   currency: string;
   priceOptions: {duration: 10 | 20 | 30 | 60; price: number}[];
+  reviewCount: number;
+  reviewAverage: number;
 };
 
 const WORDS = {
@@ -51,6 +54,8 @@ const WORDS = {
     select: "Choose",
     unavailablePrice: "No published price for this duration",
     profile: "View profile",
+    reviews: "Verified feedback",
+    noReviews: "No published reviews yet",
   },
   ru: {
     eyebrow: "ЛИЧНАЯ ПРАКТИКА · ОНЛАЙН",
@@ -81,6 +86,8 @@ const WORDS = {
     select: "Выберите",
     unavailablePrice: "Мастер пока не опубликовал цену для этой длительности",
     profile: "Профиль мастера",
+    reviews: "Отзывы после сеансов",
+    noReviews: "Пока нет опубликованных отзывов",
   },
   es: {
     eyebrow: "PRÁCTICA PERSONAL · EN LÍNEA",
@@ -111,6 +118,8 @@ const WORDS = {
     select: "Elige",
     unavailablePrice: "Sin precio publicado para esta duración",
     profile: "Ver perfil",
+    reviews: "Opiniones verificadas",
+    noReviews: "Todavía no hay opiniones publicadas",
   },
 } as const;
 
@@ -231,6 +240,9 @@ export function RemoteEnergySupportBooking({
                 {selected.bio && <p>{selected.bio}</p>}
                 {selected.languages.length > 0 && <small>{selected.languages.join(" · ")}</small>}
                 <Link href={`/${locale}/masters/${selected.slug}`}>{t.profile} →</Link>
+                {selected.reviewCount > 0 ?
+                  <small>★ {selected.reviewAverage.toFixed(1)} · {selected.reviewCount} {t.reviews}</small>:
+                  <small>{t.noReviews}</small>}
               </div>
             </div>}
           </div>
@@ -291,6 +303,10 @@ export function RemoteEnergySupportBooking({
           {error && <p role="alert" className={styles.error}>{t.needsStorage}</p>}
         </form>
       )}
+      {selected && <details style={{marginTop:16,background:'#fff',borderRadius:16,padding:14}}>
+        <summary>{t.reviews} · {selected.name} ({selected.reviewCount})</summary>
+        <ServiceReviews key={selected.serviceId} serviceId={selected.serviceId} locale={locale} readOnly verifiedOnly/>
+      </details>}
       <p className={styles.disclaimer}>{t.safety}</p>
     </section>
   );

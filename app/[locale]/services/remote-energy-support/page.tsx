@@ -5,6 +5,7 @@ import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import { createServiceReviewRepository } from "@/lib/practitioners/reviews";
 import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
 
@@ -60,6 +61,8 @@ export default async function RemoteEnergySupportPage({ params, searchParams }: 
         bio: record.profile.shortBio || "",
         languages: service.languages || [],
         currency: service.currency || "",
+        reviewCount: 0,
+        reviewAverage: 0,
         priceOptions: service.priceOptions?.length
           ? service.priceOptions
           : ([10, 20, 30, 60].includes(service.durationMinutes || 0) &&
@@ -67,10 +70,17 @@ export default async function RemoteEnergySupportPage({ params, searchParams }: 
               ? [{ duration: service.durationMinutes as 10 | 20 | 30 | 60, price: service.confirmedPrice }] : []),
       }))
   );
+  const reviews = createServiceReviewRepository(getAppConfig());
+  const withReviews = await Promise.all(masters.map(async (master) => {
+    try {
+      const {summary} = await reviews.listPublic(master.serviceId);
+      return {...master,reviewCount:summary.count,reviewAverage:summary.average};
+    } catch { return master; }
+  }));
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale}/>
-      <RemoteEnergySupportBooking locale={locale as "en" | "ru" | "es"} masters={masters} preferredPractitioner={practitioner || ""}/>
+      <RemoteEnergySupportBooking locale={locale as "en" | "ru" | "es"} masters={withReviews} preferredPractitioner={practitioner || ""}/>
     </main>
   );
 }

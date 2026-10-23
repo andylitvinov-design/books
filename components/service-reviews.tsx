@@ -80,7 +80,7 @@ function messageFor(code:string|undefined,t:typeof COPY.en|typeof COPY.ru|typeof
   if(code==="INVALID_REVIEW"||code==="INVALID_RATING")return t.errorInvalid;
   return t.genericError;
 }
-export function ServiceReviews({serviceId,locale,verifiedOnly=false}:{serviceId:string;locale:string;verifiedOnly?:boolean}){
+export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=false}:{serviceId:string;locale:string;verifiedOnly?:boolean;readOnly?:boolean}){
   const language=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=COPY[language];
   const [data,setData]=useState<ReviewPayload|null>(null);
@@ -171,7 +171,7 @@ export function ServiceReviews({serviceId,locale,verifiedOnly=false}:{serviceId:
           language==='es'?'Solo se acepta feedback tras una sesión completada. Publicación sujeta a revisión.':
           'Feedback is accepted only after a completed booking. Publication requires moderation.'
         : t.note}</p>
-      {data&&!loading&&(
+      {data&&!loading&&!readOnly&&(
         <div className={styles.actions}>
           {data.viewer.canReview&&mine?.status!=="hidden"&&
             <button type="button" className={styles.primary} onClick={openEditor}>{mine?t.edit:t.write}</button>}
@@ -185,7 +185,7 @@ export function ServiceReviews({serviceId,locale,verifiedOnly=false}:{serviceId:
           {mine?.status==="hidden"&&<span className={styles.note}>{t.hidden}</span>}
         </div>
       )}
-      {formOpen&&canReview&&<form className={styles.form} onSubmit={submit}>
+      {formOpen&&canReview&&!readOnly&&<form className={styles.form} onSubmit={submit}>
         <label>{t.publicName}<input value={displayName} onChange={event=>setDisplayName(event.target.value)}
           required minLength={2} maxLength={60} autoComplete="nickname"/></label>
         <fieldset className={styles.stars}><legend>{t.rating}</legend>
