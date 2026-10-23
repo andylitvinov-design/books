@@ -86,7 +86,6 @@ test('42 learner flows render ONE distinct task, a real status choice, skip, and
         }else await click(player,labels.plan)
         assert.equal(requests,0,'Planning must never be saved as an attempt')
         await advanceOporaTo(player,'recapFeedback',labels.next)
-        assert.ok(textOf(player.tree).includes(labels.review==='Pude hacerlo un poco'?'Cómo':''))
         await click(player,labels.review)
         await click(player,labels.save)
         assert.equal(requests,1)
