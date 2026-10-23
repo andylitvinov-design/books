@@ -86,7 +86,7 @@ test('the mobile editor is a calm client-facing page with photo left on desktop 
  assert.match(editorCss,/safe-area-inset-bottom/)
  assert.match(editorCss,/min-height:47px/)
  assert.match(dashboardCss,/\.editor\[data-service-composer-focus\]/)
- assert.match(dashboard,/\{!creating&&<div className=\{styles.stats\}/)
+ assert.match(dashboard,/\{!composing&&<div className=\{styles.stats\}/)
  assert.match(dashboard,/\{creating&&canAdd&&<div className=\{styles.editor\} data-service-composer-focus>/)
  assert.match(dashboard,/if\(creating&&createDirty&&!window\.confirm\(c\.discard\)\)return/)
  assert.match(dashboard,/renderEditor\(null,setCreateDirty,setMediaBusy\)/)
