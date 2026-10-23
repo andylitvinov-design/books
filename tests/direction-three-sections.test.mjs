@@ -96,8 +96,10 @@ test('wishes refine client-side topic without copying personal words into URLs',
     input.props.onChange({target:{value:question}})
     tree=f.render()
     let prevented=false
-    by(tree,'data-direction-wish-form',true)[0].props.onSubmit({preventDefault(){prevented=true}})
+    const inputKey=nodes(tree).find(n=>n.props?.id==='hh-direction-wish')
+    inputKey.props.onKeyDown({key:'Enter',preventDefault(){prevented=true}})
     assert.ok(prevented)
+    // The button uses the same local handler without a native form action.
     tree=f.render()
     assert.equal(by(tree,'data-direction-filter',true)[0].props.value,expected)
     const href=by(tree,'data-offer-action','test')[0].props.href
@@ -108,7 +110,10 @@ test('wishes refine client-side topic without copying personal words into URLs',
 })
 
 test('approved Services photo hero and Academy-style cards preserve mobile readability',()=>{
-  assert.match(source,/onSubmit=\{submitWish\}/)
+  assert.match(source,/onClick=\{submitWish\}/)
+  assert.match(source,/onKeyDown=/)
+  assert.doesNotMatch(source,/<form[^>]*data-direction-wish-form/)
+  assert.doesNotMatch(source,/name="wish"/)
   assert.match(source,/data-direction-sections/)
   assert.match(source,/data-direction-section=\{kinds\[index\]\}/)
   assert.match(source,/role="status" aria-live="polite"/)
