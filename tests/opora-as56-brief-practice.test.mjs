@@ -4,6 +4,7 @@ import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const words={
   ru:{next:'Продолжить',previous:'Назад',help:'Показать мягкую подсказку',pause:'Пауза',back:'Вернуться',
@@ -59,7 +60,7 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
     try{
       // The acceptance screen is second for every day. Day 1 still keeps its
       // five original opening screens before arriving at practical work.
-      for(let i=0;i<(day===1?7:2);i++)await f.click(t.next)
+      await advanceOporaTo(f.h,'practice',t.next)
       assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
       assert.ok(textOf(f.h.tree).includes(oporaExperienceGuide(day,locale)))
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
@@ -83,7 +84,7 @@ for(const locale of ['ru','en','es']){
     test(`AS5.7 ${locale}: neutral return from ${source}, hint initially ${priorHelp?'open':'closed'}, remains safe through Back`,async()=>{
       const f=fixture(locale)
       try{
-        await f.click(t.next);await f.click(t.next)
+        await advanceOporaTo(f.h,'practice',t.next)
         if(priorHelp)await f.click(t.help)
         if(source!=='practice')await f.click(t.next)
         await f.click(source==='discomfort'?t.hard:t.pause)
@@ -117,7 +118,8 @@ for(const locale of ['ru','en','es']){
   test(`AS5.7 ${locale}: ordinary Go back preserves an explicitly opened hint without saving`,async()=>{
     const f=fixture(locale)
     try{
-      await f.click(t.next);await f.click(t.next);await f.click(t.help);await f.click(t.pause);await f.click(t.back)
+      await advanceOporaTo(f.h,'practice',t.next)
+      await f.click(t.help);await f.click(t.pause);await f.click(t.back)
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],true)
       await f.click(t.pause);await f.click(t.end)
       assert.equal(f.saves,0);assert.equal(f.closes,1);assert.deepEqual(f.data,f.original)
