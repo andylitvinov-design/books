@@ -94,7 +94,7 @@ const compactOffers: Record<Locale, Record<string, { name: string; summary: stri
 
 // Reuse published first-party imagery, avoiding third-party requests, consent or image hosting changes.
 const servicePhotos: Record<string, string> = {
-  free: '/images/holistic-house/andy-about.png',
+  free: '/images/holistic-house/portrait-static/andy-384-37fe593841e3.webp',
   express: '/images/holistic-house/books-library.webp',
   full: '/images/holistic-house/hero-olive-incense.webp',
   mentoring: '/images/holistic-house/andy-about.png',
@@ -174,7 +174,7 @@ export function BusinessServiceBrowser({locale}: {locale: Locale}) {
             <div className={styles.cardMedia} data-business-service-photo={item.id} aria-hidden="true">
               <Image src={servicePhotos[item.id]} alt="" fill
                 sizes="(max-width: 760px) 120px, (max-width: 1100px) 150px, 110px"
-                loading="lazy" />
+                loading="lazy" unoptimized />
             </div>
             <div className={styles.cardBody}>
               <div className={styles.cardTop}>

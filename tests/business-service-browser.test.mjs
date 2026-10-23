@@ -91,10 +91,11 @@ for(const locale of ['en','ru','es']){
 test('photo-left compact service selection keeps the first three offers visible and accessible',()=>{
   const css=read('components/business-service-browser.module.css')
   assert.match(css,/\.cardMedia\{position:relative/)
-  assert.match(css,/height:clamp\(113px,16svh,151px\)/)
+  assert.match(css,/height:clamp\(122px,19svh,170px\)/)
   assert.match(css,/height:clamp\(108px,17svh,125px\)/)
   assert.match(css,/@media\(max-width:760px\)/)
   assert.match(css,/\.titleSmall\{display:inline\}/)
+  assert.match(css,/\.kicker\{display:none\}/)
   for(const locale of ['en','ru','es']){
     const h=mount(locale)
     const photos=['free','express','full'].map(kind=>h.find('data-business-service-photo',kind))
@@ -106,5 +107,7 @@ test('photo-left compact service selection keeps the first three offers visible 
   }
   assert.match(source,/compactOffers\[locale\]/)
   assert.match(source,/servicePhotos\[item\.id\]/)
+  assert.match(source,/andy-384-37fe593841e3\.webp/)
+  assert.match(source,/loading="lazy" unoptimized/)
   assert.doesNotMatch(source,/lead_created|payment_received|contact_whatsapp_click/)
 })

@@ -54,7 +54,7 @@
   .lead{margin-bottom:9px;font-size:12px;line-height:1.35}
   .cards{grid-template-columns:1fr;gap:8px}
   /* 3 x max 151px + heading and gaps fits the browsing area on common iPhones. */
-  .card{grid-template-columns:clamp(78px,26vw,120px) minmax(0,1fr);gap:10px;height:clamp(113px,16svh,151px);min-height:0;padding:7px;border-radius:15px;overflow:hidden}
+  .card{grid-template-columns:clamp(78px,26vw,120px) minmax(0,1fr);gap:10px;height:clamp(122px,19svh,170px);min-height:0;padding:7px;border-radius:15px;overflow:hidden}
   .cardMedia{border-radius:10px}
   .cardBody{gap:3px;padding:1px 1px 1px 0}
   .cardTop svg{width:14px;height:14px}
@@ -71,6 +71,7 @@
   .filters{margin-bottom:13px}
 }
 @media(max-width:360px), (max-height:680px) and (max-width:760px){
+  .kicker{display:none}
   .cards{gap:6px}
   .card{height:clamp(108px,17svh,125px);gap:7px}
   .cardBody{gap:2px}
