@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
@@ -16,6 +17,10 @@ import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-course-repository'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
+import {createPractitionerClientMessages} from '@/lib/practitioners/client-messages'
+import {dispatchClientMessagePush,dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
+import {dispatchNativeClientMessagePush} from '@/lib/app/native-push-dispatch'
+import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
 import { createPresentationUploadIntent, completePresentationUpload } from '@/lib/practitioners/presentation-storage'
 import { createArticleRepository } from '@/lib/practitioners/article-repository'
 import { createPractitionerEventsRepository } from '@/lib/practitioners/events-repository'
@@ -73,6 +78,32 @@ export const runtime = 'nodejs'
 export const preferredRegion = 'yul1'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+const notifyBookingParticipants=(config,actor,requestId,recipient)=>{
+  // A DB-confirmed status change is the only source of this neutral event.
+  // Reuse opt-in private notifications, never expose goal/photo/health in push.
+  after(async()=>{
+    try{
+      const result=await createPractitionerClientMessages(config).send(actor,{
+        requestId,operationId:randomUUID(),visibility:'participants',
+        text:recipient==='client'
+          ? 'Your Holistic House booking has an update. Open your secure Cabinet for details.'
+          : 'A Holistic House booking request changed. Open My Practice for details.',
+      })
+      if(result.duplicate!==false)return
+      const messageId=result.id
+      if(recipient==='client')await Promise.allSettled([
+        dispatchClientMessagePush(config,messageId),
+        dispatchNativeClientMessagePush(config,messageId),
+        dispatchClientTelegramNotification(config,messageId),
+      ])
+      else await Promise.allSettled([
+        dispatchPractitionerMessagePush(config,messageId),
+        dispatchClientTelegramNotification(config,messageId),
+      ])
+    }catch{ /* The booking transaction remains committed; no secret logs. */ }
+  })
+}
 async function handle(request, { params }) {
   let auth
   try {
@@ -828,8 +859,12 @@ async function handle(request, { params }) {
       if (path[2] === 'discard') return json(await repo.discardRun(actor, path[1], body))
     }
     if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
-    if (path[0] === 'requests' && path.length === 2)
-      return json(await repo.updateRequest(actor, path[1], body))
+    if (path[0] === 'requests' && path.length === 2) {
+      const result=await repo.updateRequest(actor,path[1],body)
+      if(result.bookingNotice===true)notifyBookingParticipants(config,actor,path[1],'master')
+      delete result.bookingNotice
+      return json(result)
+    }
     // Keep onboarding and own profile/service drafts available during signup.
     // All other master tools require a submitted profile and first offering.
     if (path[0] === 'practice' && !['onboarding','profile','services'].includes(path[1]))
@@ -882,8 +917,12 @@ async function handle(request, { params }) {
         return json(await practiceRepo.saveService(actor, path[2], body))
       }
     }
-    if (path[0] === 'practice' && path[1] === 'requests' && path.length === 3)
-      return json(await practiceRepo.updateMyRequest(actor, path[2], body))
+    if (path[0] === 'practice' && path[1] === 'requests' && path.length === 3) {
+      const result=await practiceRepo.updateMyRequest(actor,path[2],body)
+      if(result.bookingNotice===true)notifyBookingParticipants(config,actor,path[2],'client')
+      delete result.bookingNotice
+      return json(result)
+    }
     if (joined === 'context') return json(await repo.contextEvent(actor, null, body), 201)
     if (path[0] === 'context' && path.length === 2)
       return json(await repo.contextEvent(actor, path[1], body))
