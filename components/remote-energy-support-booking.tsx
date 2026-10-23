@@ -162,7 +162,7 @@ export function RemoteEnergySupportBooking({
 
   const selected = useMemo(() => masters.find((master) => master.slug === slug) || null, [masters, slug]);
   const methods = useMemo(() => Array.from(new Set(selected?.methods?.filter(Boolean) || [])), [selected]);
-  const options = selected?.priceOptions || [];
+  const options = useMemo(() => selected?.priceOptions || [], [selected]);
   const currentPrice = options.find(option => option.duration === duration);
   const priceLabel = (price: number, currency: string) => {
     try { return new Intl.NumberFormat(locale, {style:"currency", currency}).format(price); }
