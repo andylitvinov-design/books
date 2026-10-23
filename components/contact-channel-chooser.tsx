@@ -30,6 +30,7 @@ const copy = {
     googleReady: "Google email verified.",
     googleConsent: "To send via Google, first agree to a personal reply in the checkbox above.",
     googleSubmitNote: "After Google verifies your email, your request is submitted automatically. No marketing.",
+    googleQuickNote: "Google fills your email. Tap Send to register the request.",
     googleError: "Google sign-in is unavailable. You can leave a contact without an account.",
     divider: "or without an account", replyVia: "How should Andrey reply?",
     nameOptional: "Add your name (optional)", privacy: "How we use your details",
@@ -61,6 +62,7 @@ const copy = {
     googleReady: "Email Google подтверждён.",
     googleConsent: "Для отправки через Google сначала согласитесь на личный ответ галочкой выше.",
     googleSubmitNote: "После подтверждения email через Google заявка отправится автоматически. Без рассылок.",
+    googleQuickNote: "Google заполнит email. Нажмите «Отправить», чтобы зарегистрировать заявку.",
     googleError: "Вход через Google недоступен. Можно оставить контакт без аккаунта.",
     divider: "или без аккаунта", replyVia: "Как вам ответить?",
     nameOptional: "Добавить имя (необязательно)", privacy: "Как используются ваши данные",
@@ -92,6 +94,7 @@ const copy = {
     googleReady: "Correo de Google verificado.",
     googleConsent: "Para enviar con Google, acepta primero la respuesta personal en la casilla de arriba.",
     googleSubmitNote: "Tras verificar tu correo con Google, se enviará la solicitud automáticamente. Sin publicidad.",
+    googleQuickNote: "Google rellenará tu correo. Pulsa Enviar para registrar la solicitud.",
     googleError: "Google no está disponible. Puedes dejar tu contacto sin cuenta.",
     divider: "o sin crear una cuenta", replyVia: "¿Cómo prefieres recibir la respuesta?",
     nameOptional: "Añadir tu nombre (opcional)", privacy: "Cómo usamos tus datos",
@@ -289,7 +292,7 @@ export function ContactChannelChooser({
       if (!response.ok || typeof data.redirectUrl !== "string" ||
           new URL(data.redirectUrl).protocol !== "https:") throw new Error("GOOGLE_UNAVAILABLE");
       window.sessionStorage.setItem("hh-google-enquiry-return",
-        JSON.stringify({ path: pathname, service: serviceTitle, panel: panelId, consentToReply: true }));
+        JSON.stringify({ path: pathname, service: serviceTitle, panel: panelId, consentToReply: !quick }));
       window.location.assign(data.redirectUrl);
     } catch {
       window.sessionStorage.removeItem("hh-google-enquiry-return");
@@ -392,7 +395,7 @@ export function ContactChannelChooser({
               <span className={styles.googleMark} aria-hidden="true">G</span>
               {googleBusy ? c.googleBusy : c.google}
             </button>}
-            {(!quick || !googleReady) && <small className={styles.privateNote}>{c.googleSubmitNote}</small>}
+            {(!quick || !googleReady) && <small className={styles.privateNote}>{quick ? c.googleQuickNote : c.googleSubmitNote}</small>}
             {error === c.googleConsent && <p className={styles.error} role="alert">{error}</p>}
             {googleReady && method === "email" && <p className={styles.googleReady} role="status">{quick ? c.quickReady : c.googleReady}</p>}
             {(!quick || !googleReady) && <p className={styles.separator}><span>{c.divider}</span></p>}
