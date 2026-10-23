@@ -4,7 +4,7 @@ import type { PublicLocale } from "./public-locales";
 export type HomeGuideGoal = "understand" | "tests" | "practice" | "consult" | "ideas";
 export declare const homeGuideGoals: ReadonlyArray<HomeGuideGoal>;
 export type HomeGuideContext = {
-  lang: PublicLocale; topic: IdeasTopic | null; matched: boolean; urgent: boolean; interest: "reiki" | null;
+  lang: PublicLocale; topic: IdeasTopic | null; matched: boolean; urgent: boolean; interest: "reiki" | "courses" | "site" | null;
   subtopic: string | null;
 };
 export declare function resolveHomeGuideQuestion(input: string, fallbackLocale?: PublicLocale, previous?: HomeGuideContext | null): HomeGuideContext;
