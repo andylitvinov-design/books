@@ -57,20 +57,26 @@ test('homepage uses shared client-only provider and keeps existing hero/banner/d
   const home = readFileSync(new URL('../components/holistic-house-home.tsx', import.meta.url),'utf8');
   const es = readFileSync(new URL('../app/es/page.tsx', import.meta.url),'utf8');
   const nav = readFileSync(new URL('../components/site-navigation.tsx', import.meta.url),'utf8');
+  const layout = readFileSync(new URL('../app/layout.tsx', import.meta.url),'utf8');
   const panel = readFileSync(new URL('../components/home-personal-space.tsx', import.meta.url),'utf8');
   for (const source of [home, es]) {
-    assert.match(source, /HomePersonalSpaceProvider/);
+    assert.doesNotMatch(source, /HomePersonalSpaceProvider/);
     assert.match(source, /HomePersonalSpaceCard/);
     assert.ok(source.indexOf('<HomeSectionCarousel') < source.indexOf('<HomeFreeDiagnosisBanner'));
     assert.ok(source.indexOf('<HomeFreeDiagnosisBanner') < source.indexOf('<HomeConversationGuide'));
     assert.ok(source.indexOf('<HomeConversationGuide') < source.indexOf('<HomePersonalSpaceCard'));
   }
-  assert.match(nav, /HomePersonalSpaceNavEntry/);
+  assert.match(layout, /<HomePersonalSpaceProvider locale=\{lang\}>\{children\}<\/HomePersonalSpaceProvider>/);
+  assert.match(nav, /<HomePersonalSpaceNavEntry/);
+  assert.doesNotMatch(nav, /pathname === '\/' \|\| pathname === '\/ru' \|\| pathname === '\/es'/);
   assert.match(panel, /bootstrap\?view=portrait/);
   assert.match(panel, /accountId: first.accountId/);
   assert.match(panel, /IntersectionObserver/);
   assert.match(panel, /BroadcastChannel\([\"']hh-app-session[\"']\)/);
   assert.match(panel, /showModal\(/);
+  assert.match(panel, /usePathname\(\)/);
+  assert.match(panel, /activeLocale/);
+  assert.match(panel, /site-cabinet-entry__compact/);
   assert.doesNotMatch(panel, /localStorage|sessionStorage|sendBeacon|analytics|dangerouslySetInnerHTML/);
 });
 
