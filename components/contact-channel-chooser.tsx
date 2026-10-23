@@ -27,7 +27,9 @@ const copy = {
     contactHelp: "Choose one way to receive a personal reply. No account needed.",
     contactError: "Enter a valid email or international phone number.",
     google: "Continue with Google", googleBusy: "Connecting Google…",
-    googleReady: "Google details added. Please confirm your request.",
+    googleReady: "Google email verified.",
+    googleConsent: "To send via Google, first agree to a personal reply in the checkbox above.",
+    googleSubmitNote: "After Google verifies your email, your request is submitted automatically. No marketing.",
     googleError: "Google sign-in is unavailable. You can leave a contact without an account.",
     divider: "or without an account", replyVia: "How should Andrey reply?",
     nameOptional: "Add your name (optional)", privacy: "How we use your details",
@@ -56,7 +58,9 @@ const copy = {
     contactHelp: "Выберите один удобный способ для личного ответа. Аккаунт не нужен.",
     contactError: "Введите правильный email или телефон с международным кодом.",
     google: "Продолжить с Google", googleBusy: "Подключаем Google…",
-    googleReady: "Контакт Google добавлен. Подтвердите отправку заявки.",
+    googleReady: "Email Google подтверждён.",
+    googleConsent: "Для отправки через Google сначала согласитесь на личный ответ галочкой выше.",
+    googleSubmitNote: "После подтверждения email через Google заявка отправится автоматически. Без рассылок.",
     googleError: "Вход через Google недоступен. Можно оставить контакт без аккаунта.",
     divider: "или без аккаунта", replyVia: "Как вам ответить?",
     nameOptional: "Добавить имя (необязательно)", privacy: "Как используются ваши данные",
@@ -85,7 +89,9 @@ const copy = {
     contactHelp: "Elige un medio para recibir una respuesta personal. No necesitas cuenta.",
     contactError: "Introduce un correo válido o teléfono con prefijo internacional.",
     google: "Continuar con Google", googleBusy: "Conectando Google…",
-    googleReady: "Datos de Google añadidos. Confirma tu solicitud.",
+    googleReady: "Correo de Google verificado.",
+    googleConsent: "Para enviar con Google, acepta primero la respuesta personal en la casilla de arriba.",
+    googleSubmitNote: "Tras verificar tu correo con Google, se enviará la solicitud automáticamente. Sin publicidad.",
     googleError: "Google no está disponible. Puedes dejar tu contacto sin cuenta.",
     divider: "o sin crear una cuenta", replyVia: "¿Cómo prefieres recibir la respuesta?",
     nameOptional: "Añadir tu nombre (opcional)", privacy: "Cómo usamos tus datos",
@@ -118,7 +124,7 @@ type Props = {
   attributes?: Record<string, string>;
   id?: string;
   quick?: boolean;
-  /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
+  /** @deprecated Confirmed enquiries now use the thank-you page; retained for existing callers. */
   stayAfterSave?: boolean;
   resetKey?: string;
   publicTopic?: string;
@@ -127,7 +133,7 @@ type Props = {
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, stayAfterSave = false, resetKey, publicTopic,
+  onChannelClick, attributes, id, quick = false, resetKey, publicTopic,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -210,7 +216,7 @@ export function ContactChannelChooser({
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get("hh_enquiry") !== "google") return;
-    let pending: { path?: string; service?: string; panel?: string } | null = null;
+    let pending: { path?: string; service?: string; panel?: string; consentToReply?: boolean } | null = null;
     try {
       pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
     } catch { /* A blocked or malformed temporary marker never creates a lead. */ }
@@ -235,6 +241,12 @@ export function ContactChannelChooser({
         setMethod("email");
         setGoogleReady(true);
         setError("");
+        // Only the pre-OAuth reply consent allows the verified Google email to
+        // register a CRM enquiry. OAuth authentication alone cannot create a lead.
+        if (pending?.consentToReply === true) {
+          setConsent(true);
+          void saveEnquiry({ displayName: nextName, email: nextEmail, phone: "" }, true, "");
+        }
       }).catch(() => { if (active) setError(c.googleError); });
     return () => { active = false; };
   }, [pathname, serviceTitle, panelId, c.googleError]);
@@ -260,6 +272,11 @@ export function ContactChannelChooser({
 
   async function startGoogle() {
     if (googleBusy || busy) return;
+    if (!consent) {
+      setError(c.googleConsent);
+      panelRef.current?.querySelector<HTMLInputElement>("[data-reply-consent]")?.focus();
+      return;
+    }
     setGoogleBusy(true);
     setError("");
     try {
@@ -272,7 +289,7 @@ export function ContactChannelChooser({
       if (!response.ok || typeof data.redirectUrl !== "string" ||
           new URL(data.redirectUrl).protocol !== "https:") throw new Error("GOOGLE_UNAVAILABLE");
       window.sessionStorage.setItem("hh-google-enquiry-return",
-        JSON.stringify({ path: pathname, service: serviceTitle, panel: panelId }));
+        JSON.stringify({ path: pathname, service: serviceTitle, panel: panelId, consentToReply: true }));
       window.location.assign(data.redirectUrl);
     } catch {
       window.sessionStorage.removeItem("hh-google-enquiry-return");
