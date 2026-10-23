@@ -5,7 +5,7 @@ alter table app.consultation_requests add column if not exists remote_booking js
 alter table app.consultation_requests drop constraint if exists consultation_requests_status_check;
 alter table app.consultation_requests add constraint consultation_requests_status_check check (
   status in ('requested','contacted','closed','cancelled')
-  or (remote_booking is not null and status in ('confirmed','in_progress','completed','declined'))
+  or (remote_booking is not null and status in ('reschedule_proposed','confirmed','in_progress','completed','declined'))
 );
 alter table app.consultation_requests add constraint consultation_requests_remote_booking_shape_check
   check (remote_booking is null or jsonb_typeof(remote_booking)='object');
@@ -22,7 +22,7 @@ create policy consultation_requests_backend_update
     (account_id=(select auth.uid()) and (select app_private.account_active()))
     or (
       (status in ('requested','contacted') or
-       (remote_booking is not null and status in ('confirmed','in_progress')))
+       (remote_booking is not null and status in ('reschedule_proposed','confirmed','in_progress')))
       and exists (
         select 1 from app.practitioners p
         where p.id=consultation_requests.recipient_practitioner_id
@@ -37,7 +37,7 @@ create policy consultation_requests_backend_update
     (account_id=(select auth.uid()) and (select app_private.account_active()))
     or (
       (status in ('contacted','closed') or
-       (remote_booking is not null and status in ('confirmed','in_progress','completed','declined')))
+       (remote_booking is not null and status in ('reschedule_proposed','confirmed','in_progress','completed','declined')))
       and exists (
         select 1 from app.practitioners p
         where p.id=consultation_requests.recipient_practitioner_id
