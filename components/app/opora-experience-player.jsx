@@ -49,7 +49,9 @@ const WORDS={
     keepText:'Как применить сегодняшний навык? Выберите один маленький шаг на потом — или пропустите.',
     plan:'Попробую позже',noPlan:'Не сегодня',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
-    meditationTitle:'Медитация «Опора» · 2 минуты (по желанию)',
+    meditationTitle:'Завершающая медитация · 2 минуты',
+    meditationKicker:'ДЕНЬ 14 · ТИХОЕ ЗАВЕРШЕНИЕ',
+    meditationOptional:'По желанию: можно просто прочитать шаги и продолжить без таймера.',
     meditationSteps:[
       'Сядьте удобно и почувствуйте опору стула или пола. Дышите естественно.',
       'Включите таймер: с волнами или без звука мягко возвращайте внимание к этой опоре.',
@@ -119,7 +121,9 @@ const WORDS={
     keepText:'How might you use today’s skill? Choose one small step for later, or skip.',
     plan:'I might try this',noPlan:'Not today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
-    meditationTitle:'2-minute grounding meditation · optional',
+    meditationTitle:'A gentle two-minute ending',
+    meditationKicker:'DAY 14 · A QUIET ENDING',
+    meditationOptional:'Optional: you may read the steps and continue without using the timer.',
     meditationSteps:[
       'Sit comfortably and notice the chair or floor supporting you. Breathe naturally.',
       'Start the timer: with waves or in silence, gently bring your attention back to that support.',
@@ -185,7 +189,9 @@ WORDS.es = {
   quoteText:'¿Estás de acuerdo con esta idea?',agree:'De acuerdo',unsure:'Quiero pensarlo',disagree:'En desacuerdo',
   keepText:'¿Cómo podrías usar esta habilidad? Elige un gesto pequeño para más tarde o sáltalo.',plan:'Quizá lo intente',noPlan:'Hoy no',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
-  meditationTitle:'Meditación de apoyo · 2 minutos (opcional)',
+  meditationTitle:'Meditación final · 2 minutos',
+  meditationKicker:'DÍA 14 · UN CIERRE TRANQUILO',
+  meditationOptional:'Es opcional: también puedes leer los pasos y continuar sin usar el temporizador.',
   meditationSteps:[
     'Siéntate cómodamente y siente el apoyo de la silla o del suelo. Respira con naturalidad.',
     'Inicia el temporizador: con olas o en silencio, vuelve suavemente a notar ese apoyo.',
@@ -365,7 +371,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const displayScenes=cycle.day===1
     ?[scenes[0],'support',...scenes.slice(1)]
     :[scenes[0],'support',...OPORA_GENTLE_INTRO,...scenes.slice(1)]
-  const flowScenes=[...displayScenes,...OPORA_GENTLE_RECAP]
+  // The optional 2-minute closing meditation belongs near the end of the
+  // 14-day programme, not inside every daily practice card. This editorial
+  // screen never changes persisted visit keys or reports a practice attempt.
+  const flowScenes=[...displayScenes,...OPORA_GENTLE_RECAP.flatMap(scene=>
+    cycle.day===14&&scene==='recapFeedback'?['closingMeditation',scene]:[scene])]
   const [step,setStep]=useState(reviewOnly?0:hasSaved?flowScenes.length:0)
   const [previewIndex,setPreviewIndex]=useState(-1)
   const [habitSetup,setHabitSetup]=useState(false)
@@ -528,6 +538,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const title=moment==='habit'?t.habitTitle:moment==='recap'?c.recapTitle:
     moment==='recapPractice'?c.skill:
     moment==='recapNext'?j.recapNextTitle:
+    moment==='closingMeditation'?t.meditationTitle:
     moment==='recapFeedback'?j.recapFeedbackTitle:
     moment==='invite'?(cycle.day===14?c.inviteFinal:c.inviteTitle):
     moment==='nextStep'?t.preview.nextTitle:
@@ -599,6 +610,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {moment==='recap'?c.recapKicker:
               moment==='recapPractice'?j.recapPracticeKicker:
               moment==='recapNext'?j.recapNextKicker:
+              moment==='closingMeditation'?t.meditationKicker:
               moment==='recapFeedback'?j.recapFeedbackKicker:
               moment==='invite'?c.inviteKicker:
              moment==='welcome'?opening.welcomeKicker:
@@ -699,15 +711,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
             {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
-            <details className={styles.optionalMeditation} data-opora-inline-practice-audio="true">
-              <summary>{t.meditationTitle}<ChevronDown size={17} aria-hidden="true"/></summary>
-              <div className={styles.inlinePracticeAudio}>
-                <div className={styles.meditationGuide} data-opora-guided-meditation="true">
-                  <ol>{t.meditationSteps.map((instruction,index)=><li key={index}>{instruction}</li>)}</ol>
-                </div>
-                <OporaOceanOutro locale={lang} paused={safety} compact/>
-              </div>
-            </details>
             <p className={styles.miniLabel}>{cycle.day===1?t.tryPrompt:t.tryAfter}</p>
             <div className={styles.chips} role="group"
               aria-label={cycle.day===1?t.tryPrompt:t.tryAfter}>
@@ -770,6 +773,14 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
               <div><strong>{answers.transfer==='planned'?plan:(depth?.everyday||j.noPlan)}</strong></div></div>
           </div>}
+          {moment==='closingMeditation'&&<div className={styles.closingMeditationBlock}
+            data-opora-final-meditation="day-14">
+            <div className={styles.meditationGuide} data-opora-guided-meditation="true">
+              <ol>{t.meditationSteps.map((instruction,index)=><li key={index}>{instruction}</li>)}</ol>
+            </div>
+            <OporaOceanOutro locale={lang} paused={safety} compact/>
+            <p className={styles.meditationOptional}>{t.meditationOptional}</p>
+          </div>}
           {moment==='recapFeedback'&&<>
             <div className={styles.confidenceChoices} role="group" aria-label={c.question}
               data-opora-lesson-confidence="true">
@@ -800,7 +811,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <a href={'/'+lang+'/services/free-consultation'}><span aria-hidden="true">🤝</span>{c.consultation}<ArrowRight size={19}/></a>
             </nav>
           </>}
-          {guidanceForMoment&&<div className={styles.guidanceGroup} data-gentle-guidance={moment}>
+          {moment==='practice'&&guidanceForMoment&&
+            <p className={styles.practiceGuidance} data-opora-optional-guidance="true">{guidanceForMoment}</p>}
+          {guidanceForMoment&&moment!=='practice'&&
+            <div className={styles.guidanceGroup} data-gentle-guidance={moment}>
             <div className={styles.guidanceRow}>
               <img className={styles.guidanceAnimal} src="/images/holistic-house/gentle-owl.svg"
                 alt="" aria-hidden="true" width={46} height={46}/>
