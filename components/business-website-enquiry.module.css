@@ -109,6 +109,7 @@
 .savedPanel{margin-top:16px}
 .savedPanel .success{max-width:none}
 .savedPanel .success p{margin:5px 0 0}
+.freeNext{margin:12px 0 0;color:#4d6459;font:600 12px/1.5 Arial,Helvetica,sans-serif}
 .nextAction{
   display:inline-flex;gap:8px;align-items:center;min-height:44px;margin:12px 0 0;
   padding:10px 14px;background:#fefcf7;border:1px solid #9dc2b0;border-radius:11px;
