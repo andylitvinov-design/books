@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, MessageCircle, Search } from 'lucide-react'
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, MessageCircle, Search, Send, X } from 'lucide-react'
 import { useState, type KeyboardEvent } from 'react'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
@@ -350,8 +350,8 @@ const topicKeywords: Record<string, readonly string[]> = {
   fatigue: ['fatigue','exhaust','tired','energy','устал','сил','энерг','cansanc','energía'],
   sleep: ['sleep','insomn','сон','спат','сна','dormir','sueño'],
   body: ['body','tension','pain','тело','телес','напряж','cuerpo','tensión'],
-  resources: ['support','resource','recovery','restore','ресурс','восстанов','поддерж','recurso','recuper'],
-  trust: ['trust','close','connection','довер','близос','отношен','confian','cercan'],
+  resources: ['support','resource','recovery','restore','reiki','yggdrasil','kundalini','ресурс','восстанов','поддерж','рейки','реики','recurso','recuper'],
+  trust: ['trust','close','connection','partner','relationship','love','довер','близос','отношен','партнер','партнёр','любов','confian','cercan','pareja','amor'],
   boundaries: ['boundar','consent','границ','согласи','límit','consentim'],
   conflict: ['conflict','argument','communication','конфликт','общени','спор','comunic','conflict'],
   presence: ['intimacy','presence','touch','интим','присутств','sensual','intimidad','presencia'],
@@ -378,6 +378,90 @@ function matchWish(question: string, topics: readonly Topic[]): Topic | undefine
   return ranked[0]?.score ? ranked[0].topic : undefined
 }
 
+
+// Rule-based intent is evaluated only on the visitor's device. The LAST
+// explicitly named action wins ("not a consultation, rather a course").
+// Free text is never placed in a URL or submitted to an AI, CRM or analytics.
+const intentKeywords: readonly [ActionIntent, RegExp][] = [
+  ['test', /\b(?:test|quiz|questionnaire|assessment|check.in|prueba|cuestionario|autoevaluacion)\b|тест|опрос|самопровер|диагностик/gu],
+  ['advice', /\b(?:advice|tips?|guidance|recommendation|consejo|orientacion)\b|совет|подсказ|разбор|подскаж|посовет/gu],
+  ['course', /\b(?:course|courses|lessons?|learn|learning|training|study|practice|practise|program|programa|curso|cursos|aprender|formacion)\b|курс|урок|обуч|практик|программ/gu],
+  ['session', /\b(?:session|appointment|consultation|consult|meeting|book|therapist|coach|sesion|sesiones|consulta|consultar|cita)\b|консультац|сеанс|сесси|записат|встречу/gu],
+]
+function matchActionWish(message: string): ActionIntent | null {
+  const normalized = message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ё/g,'е').toLowerCase()
+  const mentions = intentKeywords.flatMap(([intent, pattern]) =>
+    [...normalized.matchAll(pattern)].map(match => ({intent, offset:match.index ?? 0})))
+  mentions.sort((a,b)=>a.offset-b.offset)
+  return mentions.at(-1)?.intent ?? null
+}
+function urgentWish(message: string): boolean {
+  const normalized = message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+  return /suicid|kill myself|end my life|hurt myself|хочу умереть|покончить с собой|суицид|самоуб|не хочу жить|quiero morir|matarme|autolesion/u.test(normalized)
+}
+
+// Only published catalog IDs can be suggested. A selected focus changes the
+// order of REAL course/service cards, rather than inventing a new treatment.
+const topicOfferPriorities: Record<Direction, Record<string, {course?: string; session?: string}>> = {
+  energy: {
+    fatigue:{course:'primary-course',session:'primary-session'},
+    sleep:{course:'primary-course',session:'energy-imagery'},
+    body:{course:'primary-course',session:'energy-imagery'},
+    resources:{course:'reiki-practitioner',session:'remote-reiki'},
+  },
+  relationships: {
+    trust:{course:'love-archetypes',session:'love-imagery'},
+    boundaries:{course:'love-constellations',session:'primary-session'},
+    conflict:{course:'primary-course',session:'primary-session'},
+    presence:{course:'love-hypnocoaching',session:'love-imagery'},
+  },
+  business: {
+    decisions:{course:'primary-course',session:'business-constellations'},
+    productivity:{course:'primary-course',session:'primary-session'},
+    'work-stress':{course:'business-stress',session:'business-imagery'},
+    'money-beliefs':{course:'primary-course',session:'primary-session'},
+  },
+}
+
+const dialogCopy = {
+  en: {
+    title:'Your guide', topic:'Topic', step:'First step',
+    uncertain:"I'm not quite sure I understood. Let's narrow it down together.",
+    greeting:'Here is how I understood your request. You can correct either choice.',
+    askTopic:'Which topic is closest to what you mean?',
+    askStep:'How would you like to begin?',
+    confirm:'Does this feel right? You can change either filter.',
+    changeTopic:'Change topic', changeStep:'Change first step',
+    suggestion:'A place to begin', clarify:'Add a detail or correct me…',
+    send:'Send clarification', close:'Close guide', reset:'Start over',
+    urgent:'This sounds like you may need immediate support. Please contact local emergency services or a crisis support line, and reach out to someone you trust. This site cannot provide urgent care.',
+  },
+  ru: {
+    title:'Ваш помощник', topic:'Тема', step:'Первый шаг',
+    uncertain:'Пока не совсем понял ваш запрос. Давайте уточним вместе.',
+    greeting:'Вот как я понял ваш запрос. Вы можете исправить любой выбор.',
+    askTopic:'Какая тема ближе к вашему запросу?',
+    askStep:'Как вы хотели бы начать?',
+    confirm:'Правильно понял? Можно изменить любой фильтр.',
+    changeTopic:'Уточнить тему', changeStep:'Изменить первый шаг',
+    suggestion:'С чего можно начать', clarify:'Добавьте подробность или поправьте меня…',
+    send:'Отправить уточнение', close:'Закрыть помощника', reset:'Начать заново',
+    urgent:'Похоже, вам может быть нужна срочная поддержка. Обратитесь в местные экстренные службы или кризисную службу и свяжитесь с человеком, которому доверяете. Этот сайт не оказывает экстренную помощь.',
+  },
+  es: {
+    title:'Tu guía', topic:'Tema', step:'Primer paso',
+    uncertain:'No estoy seguro de haber entendido. Vamos a aclararlo juntos.',
+    greeting:'Así entendí tu consulta. Puedes corregir cualquiera de las opciones.',
+    askTopic:'¿Qué tema se parece más a tu situación?',
+    askStep:'¿Cómo te gustaría comenzar?',
+    confirm:'¿Lo entendí bien? Puedes cambiar ambos filtros.',
+    changeTopic:'Cambiar tema', changeStep:'Cambiar primer paso',
+    suggestion:'Una opción para empezar', clarify:'Añade un detalle o corrígeme…',
+    send:'Enviar aclaración', close:'Cerrar guía', reset:'Empezar de nuevo',
+    urgent:'Parece que podrías necesitar apoyo inmediato. Ponte en contacto con los servicios de emergencia locales o una línea de crisis y con alguien de confianza. Este sitio no proporciona atención de urgencia.',
+  },
+} as const
+
 export const directionIds = ['energy', 'relationships', 'business'] as const
 export const directionSlug = (direction: Direction) => direction === 'relationships' ? 'love' : direction
 
@@ -390,6 +474,11 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const [intent, setIntent] = useState<ActionIntent | null>(null)
   const [question, setQuestion] = useState('')
   const [feedback, setFeedback] = useState('')
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogMode, setDialogMode] = useState<'topic' | 'intent' | 'confirm'>('topic')
+  const [dialogDraft, setDialogDraft] = useState('')
+  const [dialogUncertain, setDialogUncertain] = useState(false)
+  const [dialogUrgent, setDialogUrgent] = useState(false)
   const [slideIndex, setSlideIndex] = useState(0)
   const [expanded, setExpanded] = useState<Record<OfferKind, boolean>>({test:false,course:false,session:false})
   if (!directionIds.includes(journey.id as Direction)) return null
@@ -399,6 +488,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const d = directionCopy[direction][locale]
   const ui = presentation[locale]
   const action = actionCopy[locale]
+  const chat = dialogCopy[locale]
   const selected = journey.topics.find(item => item.id === topicId)
   const appLocale = locale === 'es' ? 'en' : locale
   const courseHref = direction === 'business'
@@ -450,20 +540,23 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       action:overviewSuggested?.key ? c.testAction : c.chooseTest, note:c.freeNote },
     ...topicOffers,
   ]
+  const priority = topicId ? topicOfferPriorities[direction][topicId] : undefined
+  const promote = (items: Offer[], preferred?: string): Offer[] => preferred
+    ? [...items.filter(item=>item.id===preferred), ...items.filter(item=>item.id!==preferred)] : items
   const offers: Record<OfferKind, Offer[]> = {
     test: testOffers,
-    course: [
+    course: promote([
       { id:'primary-course', eyebrow:c.course, title:d.course, description:d.courseDetail,
         photo:photography[direction === 'relationships' ? 'loveCourse' : direction === 'business' ? 'businessCourse' : 'energyCourse'],
         href:courseHref, action:c.courseAction, note:c.courseNote },
       ...courseOptions[direction].map(item => offerFromCatalog(item,'course')),
-    ],
-    session: [
+    ], priority?.course),
+    session: promote([
       { id:'primary-session', eyebrow:c.session, title:d.service, description:d.serviceDetail,
         photo:photography[direction === 'relationships' ? 'loveSession' : direction === 'business' ? 'businessSession' : 'energySession'],
         href:serviceHref, action:c.sessionAction, note:c.sessionNote },
       ...serviceOptions[direction].map(item => offerFromCatalog(item,'session')),
-    ],
+    ], priority?.session),
   }
   // Reuse the published written-review service rather than creating a fake AI
   // advice answer, enquiry or booked appointment.
@@ -481,17 +574,67 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     '/' + locale + '/services/catalog#service-listings',
   ] as const
 
+  const suggestedOffer = intent==='advice' ? adviceOffer : intent ? offers[intent][0] : null
+
   function selectTopic(value: string) {
     setTopicId(value)
+    setDialogOpen(true)
+    setDialogUncertain(false)
+    setDialogMode(!value ? 'topic' : intent ? 'confirm' : 'intent')
     setFeedback('')
   }
 
+  function selectAction(value: ActionIntent | null) {
+    setIntent(value)
+    setDialogOpen(true)
+    setDialogUncertain(false)
+    setDialogMode(!topicId ? 'topic' : value ? 'confirm' : 'intent')
+  }
+
+  function readWish(message: string, keepContext: boolean) {
+    const clean = message.trim().slice(0,160)
+    if (!clean) { setFeedback(ui.missing); return }
+    if (urgentWish(clean)) {
+      setDialogUrgent(true)
+      setDialogOpen(true)
+      setTopicId('')
+      setIntent(null)
+      setFeedback('')
+      return
+    }
+    setDialogUrgent(false)
+    const topic = matchWish(clean, journey.topics)
+    const action = matchActionWish(clean)
+    const nextTopic = topic?.id ?? (keepContext ? topicId : '')
+    const nextIntent = action ?? (keepContext ? intent : null)
+    setTopicId(nextTopic)
+    setIntent(nextIntent)
+    setDialogOpen(true)
+    setDialogUncertain(!topic && !action)
+    setDialogMode(!nextTopic ? 'topic' : !nextIntent ? 'intent' : 'confirm')
+    setFeedback('')
+    // All filters and real offer cards update in place. No network request.
+  }
+
   function submitWish() {
-    if (!question.trim()) { setFeedback(ui.missing); return }
-    const match = matchWish(question.slice(0,160), journey.topics)
-    setTopicId(match?.id ?? '')
-    setFeedback(match ? ui.suggested + ' ' + match.title[locale] : ui.unmatched)
-    // No forced scrolling: the selected inline button updates in place.
+    readWish(question, false)
+  }
+
+  function submitFollowup() {
+    if (!dialogDraft.trim()) return
+    readWish(dialogDraft, true)
+    setDialogDraft('')
+  }
+
+  function resetDialog() {
+    setDialogOpen(false)
+    setDialogDraft('')
+    setDialogUncertain(false)
+    setDialogUrgent(false)
+    setTopicId('')
+    setIntent(null)
+    setQuestion('')
+    setFeedback('')
   }
 
   return <div className={styles.root} data-direction-offers={direction}>
@@ -529,7 +672,65 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       </div>
     </section>
 
-    <section className={styles.filterPanel} id="hh-direction-focus" aria-label={ui.choose} data-direction-topic-finder>
+
+    {dialogOpen && <section className={styles.dialogPanel} aria-label={chat.title}
+      data-direction-dialogue data-dialog-topic={topicId || 'unknown'} data-dialog-intent={intent || 'unknown'}>
+      <div className={styles.dialogHeader}>
+        <span className={styles.dialogAvatar} aria-hidden="true"><MessageCircle size={16}/></span>
+        <strong>{chat.title}</strong>
+        <div className={styles.dialogHeaderActions}>
+          <button type="button" onClick={resetDialog} data-dialog-reset>{chat.reset}</button>
+          <button type="button" onClick={()=>setDialogOpen(false)} aria-label={chat.close} data-dialog-close>
+            <X size={17} aria-hidden="true"/>
+          </button>
+        </div>
+      </div>
+      {dialogUrgent ? <p className={styles.dialogUrgent} role="alert">{chat.urgent}</p> :
+        <>
+          <div className={styles.dialogSummary} role="status" aria-live="polite" data-dialog-summary>
+            <p>{dialogUncertain ? chat.uncertain : chat.greeting}</p>
+            {(topicId || intent) && <p className={styles.dialogSelections}>
+              {topicId && <span><b>{chat.topic}:</b> {selected?.title[locale]}</span>}
+              {intent && <span><b>{chat.step}:</b> {action.buttons[intent]}</span>}
+            </p>}
+          </div>
+          <p className={styles.dialogPrompt}>{dialogMode==='topic' ? chat.askTopic
+            : dialogMode==='intent' ? chat.askStep : chat.confirm}</p>
+          <div className={styles.dialogChips} role="group" aria-label={dialogMode==='topic' ? chat.askTopic : dialogMode==='intent' ? chat.askStep : chat.confirm}>
+            {dialogMode==='topic' && journey.topics.map(topic=>
+              <button type="button" key={topic.id} onClick={()=>selectTopic(topic.id)}
+                data-dialog-topic-choice={topic.id} aria-pressed={topicId===topic.id}>
+                {quickTopicLabels[topic.id]?.[locale] ?? topic.title[locale]}
+              </button>)}
+            {dialogMode==='intent' && actionIds.map(id=>
+              <button type="button" key={id} onClick={()=>selectAction(id)}
+                data-dialog-intent-choice={id} aria-pressed={intent===id}>{action.buttons[id]}</button>)}
+            {dialogMode==='confirm' && <>
+              <button type="button" data-dialog-refine="topic" onClick={()=>setDialogMode('topic')}>{chat.changeTopic}</button>
+              <button type="button" data-dialog-refine="intent" onClick={()=>setDialogMode('intent')}>{chat.changeStep}</button>
+            </>}
+          </div>
+          {dialogMode==='confirm' && topicId && suggestedOffer &&
+            <div className={styles.dialogSuggestion} data-dialog-suggestion>
+              <span>{chat.suggestion}</span>
+              <Link href={suggestedOffer.href} prefetch={false} data-dialog-offer={suggestedOffer.id}>
+                {suggestedOffer.title}<ArrowRight size={15} aria-hidden="true"/>
+              </Link>
+            </div>}
+          <form className={styles.dialogReply} onSubmit={event=>{event.preventDefault();submitFollowup()}}
+            data-dialog-followup-form>
+            <label className={styles.srOnly} htmlFor="hh-direction-followup">{chat.clarify}</label>
+            <input id="hh-direction-followup" value={dialogDraft} maxLength={160}
+              onChange={event=>setDialogDraft(event.target.value)} placeholder={chat.clarify}
+              autoComplete="off" enterKeyHint="send"/>
+            <button type="submit" disabled={!dialogDraft.trim()} aria-label={chat.send}
+              data-dialog-followup-send><Send size={16} aria-hidden="true"/></button>
+          </form>
+          <p className={styles.dialogPrivacy}>{ui.privacy}</p>
+        </>}
+    </section>}
+
+    {!dialogUrgent && <section className={styles.filterPanel} id="hh-direction-focus" aria-label={ui.choose} data-direction-topic-finder>
       <div className={styles.filterHeading}>
         <h2 id="hh-direction-focus-label">{c.pick}</h2>
         <button type="button" className={styles.reset} data-direction-filter="all"
@@ -547,13 +748,13 @@ export function DirectionOffers({ locale, journey, suggestions }: {
         </button>)}
       </div>
       <p className={styles.feedback} role="status" aria-live="polite">{feedback || ui.privacy}</p>
-    </section>
+    </section>}
 
-    <section className={styles.actionFinder} aria-labelledby="hh-direction-action-label" data-direction-action-finder>
+    {!dialogUrgent && <section className={styles.actionFinder} aria-labelledby="hh-direction-action-label" data-direction-action-finder>
       <div className={styles.actionHeading}>
         <h2 id="hh-direction-action-label">{action.title}</h2>
         {intent && <button type="button" className={styles.actionReset}
-          data-direction-action-reset onClick={()=>setIntent(null)}>{action.all}</button>}
+          data-direction-action-reset onClick={()=>selectAction(null)}>{action.all}</button>}
       </div>
       <div className={styles.actionChips} role="group" aria-labelledby="hh-direction-action-label">
         {actionIds.map(id => {
@@ -561,7 +762,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
           return <button type="button" key={id} className={styles.actionChip}
             data-direction-intent={id} aria-pressed={intent===id}
             aria-controls="hh-direction-sections"
-            onClick={()=>setIntent(previous=>previous===id ? null : id)}>
+            onClick={()=>selectAction(intent===id ? null : id)}>
             <Icon size={17} aria-hidden="true"/><span>{action.buttons[id]}</span>
           </button>
         })}
@@ -569,9 +770,9 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       <p className={styles.srOnly} role="status" aria-live="polite">
         {intent ? action.selected+' '+action.buttons[intent] : ''}
       </p>
-    </section>
+    </section>}
 
-    <div className={styles.sections} id="hh-direction-sections" aria-label={ui.start} data-direction-sections>
+    {!dialogUrgent && <div className={styles.sections} id="hh-direction-sections" aria-label={ui.start} data-direction-sections>
       {kinds.map((kind,index)=>{
         const Icon=icons[index]
         const group=ui.groups[index]
@@ -654,6 +855,6 @@ export function DirectionOffers({ locale, journey, suggestions }: {
           </article>
         </div>
       </section>}
-    </div>
+    </div>}
   </div>
 }
