@@ -73,6 +73,7 @@ function renderNavigation(path) {
     'next/navigation': { usePathname: () => path },
     'lucide-react': { Menu: () => null, Sparkles: () => null, LayoutDashboard: () => null, ArrowRight: () => null },
     '@/components/commerce/cart-nav-link': { CartNavLink: () => null },
+    '@/components/site-search': { SiteSearch: () => null },
     '@/lib/ui-locale': { localePath: (value, language) => '/' + language + value, saveUiLocale() {} },
     '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_value, language) => language === 'en' ? '/' : '/' + language, savePublicLocale() {} },
     '@/lib/site-navigation-model': navigationModel,
