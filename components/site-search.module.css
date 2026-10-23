@@ -108,18 +108,8 @@
 @media (max-width: 767px) {
   .root { position: static; }
   .panel { top: calc(100% + 8px); left: 6px; right: 6px; width: auto; max-height: min(500px, calc(100dvh - 152px)); padding: 14px; }
-  :global(.house-header--services .site-navigation) { gap: 4px; }
-  :global(.house-header--services .house-wordmark) { font-size: clamp(18px, 5vw, 25px); }
-  :global(.house-header--services .site-navigation > .site-cabinet-entry) { min-width: 64px; padding-inline: 7px; font-size: 11px; }
-  :global(.house-header--services .site-language-menu-trigger) { padding-inline: 6px; }
 }
 @media (max-width: 359px) {
   .trigger { width: 40px; min-width: 40px; }
-  :global(.house-header--services .house-wordmark) { font-size: 17px; }
-  :global(.house-header--services .house-wordmark span) { display: none; }
-  :global(.house-header--services .site-navigation > .site-cabinet-entry) { min-width: 44px; width: 44px; padding: 0; }
-  :global(.house-header--services .site-cabinet-entry__compact) { display: none; }
-  :global(.house-header--services .site-cabinet-entry svg) { display: block; }
-  :global(.house-header--services .site-main-menu-trigger) { width: 40px; min-width: 40px; }
 }
 @media (prefers-reduced-motion: reduce) { .trigger { transition: none; } }
