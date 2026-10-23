@@ -23,6 +23,7 @@ type Offer = {
   price?: string;
   isFree?: boolean;
   externalFlow?: boolean;
+  monthly?: boolean;
 };
 
 const text = {
@@ -59,6 +60,7 @@ const text = {
     details: "Details",
     landing: "Full service description",
     request: "Request a session",
+    viewProgram: "Explore support",
     remoteAction: "Choose support",
     enquiry: "Please confirm available times and conditions for this personal session before any payment.",
     reassurance: "No booking or payment is made until availability is confirmed.",
@@ -97,6 +99,7 @@ const text = {
     details: "Подробнее",
     landing: "Полное описание услуги",
     request: "Запросить сессию",
+    viewProgram: "Подробнее",
     remoteAction: "Выбрать поддержку",
     enquiry: "Подскажите доступное время и условия личной сессии до любой оплаты.",
     reassurance: "Запись и оплата происходят только после подтверждения доступного времени.",
@@ -135,6 +138,7 @@ const text = {
     details: "Detalles",
     landing: "Descripción completa",
     request: "Solicitar sesión",
+    viewProgram: "Ver programa",
     remoteAction: "Elegir apoyo",
     enquiry: "Confirma los horarios disponibles y las condiciones antes de realizar cualquier pago.",
     reassurance: "No hay reserva ni pago antes de confirmar disponibilidad.",
@@ -185,6 +189,10 @@ function ServiceCard({ offer, locale, index, hidden = false }: { offer: Offer; l
           {offer.isFree ? (
             <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
               {t.start}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          ) : offer.monthly ? (
+            <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
+              {t.viewProgram}<ArrowRight size={16} aria-hidden="true" />
             </Link>
           ) : offer.externalFlow ? (
             <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
@@ -244,6 +252,13 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
       price: "€50 / 30 min · €100 / 60 min" };
   };
   const paid: Offer[] = [
+    { id: "monthly-support",
+      title: locale === "ru" ? "Личное сопровождение" : locale === "es" ? "Acompañamiento personal" : "Personal support",
+      description: locale === "ru" ? "Две личные сессии по часу и вопросы между ними." : locale === "es" ? "Dos sesiones de una hora y preguntas entre ellas." : "Two 60-minute sessions with questions between meetings.",
+      details: locale === "ru" ? "€200 за месяц. Онлайн, в Торонто или дистанционно без звонка с приватным отчётом и видео." : locale === "es" ? "200 € al mes. En línea, en Toronto o sin llamada con informe y vídeo privados." : "€200 per month. Online, Toronto or no-call remote work with a private report and video.",
+      image: "/images/holistic-house/andy-about.png", href: "/" + locale + "/services/personal-support",
+      category: locale === "ru" ? "2 × 60 минут · Андрей" : locale === "es" ? "2 × 60 min · Andrey" : "2 × 60 min · Andrey",
+      price: locale === "es" ? "200 € / mes" : locale === "ru" ? "€200 / месяц" : "€200 / month", monthly: true },
     session("alchemy"),
     session("hypnotherapy"),
     { id: "constellations", title: t.constellationTitle, description: t.constellationDescription,

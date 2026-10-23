@@ -10,6 +10,7 @@ import styles from "./compact-lead-capture.module.css";
 
 const copy = {
   en: {
+    preference: "Preferred session format",
     contact: "Your email or phone",
     placeholder: "Email or +1…",
     consent: "I agree to use my contact only for a reply to this request. No marketing.",
@@ -24,6 +25,7 @@ const copy = {
     reference: "Reference",
   },
   ru: {
+    preference: "Предпочитаемый формат",
     contact: "Ваш email или телефон",
     placeholder: "Email или +1…",
     consent: "Согласен(-на) использовать контакт только для ответа на заявку, без рассылок.",
@@ -38,6 +40,7 @@ const copy = {
     reference: "Номер",
   },
   es: {
+    preference: "Formato de sesión preferido",
     contact: "Tu correo o teléfono",
     placeholder: "Correo o +1…",
     consent: "Acepto usar mi contacto solo para responder a esta solicitud. Sin publicidad.",
@@ -65,7 +68,7 @@ function parseContact(raw: string): { email: string; phone: string } | null {
 
 /** One clear final action; a CRM lead only exists after the API confirms a DB commit. */
 export function CompactLeadCapture({
-  locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant,
+  locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant, formatOptions, formatLabel,
 }: {
   locale: PublicLocale;
   serviceTitle: string;
@@ -76,10 +79,13 @@ export function CompactLeadCapture({
   /** Trustworthy service route for a form embedded on /, which is not an allowed enquiry source. */
   sourcePath?: string;
   variant?: "inline";
+  formatOptions?: readonly { readonly value: string; readonly label: string; readonly description?: string }[];
+  formatLabel?: string;
 }) {
   const t = copy[locale];
   const pathname = usePathname();
   const [address, setAddress] = useState("");
+  const [selectedFormat, setSelectedFormat] = useState(formatOptions?.[0]?.value || "");
   const [consent, setConsent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -103,6 +109,7 @@ export function CompactLeadCapture({
         body: JSON.stringify({
           operationId: operationId.current,
           serviceTitle,
+          ...(formatOptions?.length && selectedFormat ? { description: "Preferred session format: " + selectedFormat } : {}),
           sourcePath: sourcePath || pathname || "/" + locale + "/services",
           locale,
           contact: { displayName: "", ...contact },
@@ -146,6 +153,15 @@ export function CompactLeadCapture({
         </div>
       ) : (
         <form className={styles.form} onSubmit={event => { void submit(event); }} data-compact-lead-form>
+          {formatOptions?.length ? (
+            <label className={styles.field}>
+              <span>{formatLabel || t.preference}</span>
+              <select value={selectedFormat} required
+                onChange={event => { setSelectedFormat(event.target.value); operationId.current = null; setError(""); }}>
+                {formatOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+          ) : null}
           <div className={styles.fieldRow}>
             <label className={styles.field}>
               <span>{t.contact}</span>

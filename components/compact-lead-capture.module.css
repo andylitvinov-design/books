@@ -5,6 +5,7 @@
 .form { display:grid; gap:11px; }
 .fieldRow { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:end; }
 .field { min-width:0; display:grid; gap:5px; font-size:12px; font-weight:750; color:#47594d; }
+.field select { width:100%; min-height:46px; border:1px solid #a8b9aa; border-radius:12px; background:#fffdfa; color:#24372d; padding:9px 12px; font-size:16px; }
 .field input { width:100%; height:48px; border:1px solid #a8b9aa; border-radius:12px; background:#fffdfa; color:#24372d; padding:0 14px; font-size:15px; }
 .field input::placeholder { color:#7a897f; }
 .submit { display:inline-flex; justify-content:center; align-items:center; gap:9px; min-width:195px; min-height:48px; border:0; border-radius:12px; background:#315842; color:#fff; padding:12px 18px; font-size:14px; line-height:1.2; font-weight:750; cursor:pointer; }
@@ -19,7 +20,7 @@
 .receipt { display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:12px; row-gap:4px; align-items:center; padding:10px 0; color:#265d3d; }
 .receipt svg { grid-row:1/4; }
 .receipt p,.receipt small { margin:0; color:#3d624b; font-size:13px; }
-.section :is(input,button,a):focus-visible { outline:3px solid #b87c44; outline-offset:3px; }
+.section :is(input,select,button,a):focus-visible { outline:3px solid #b87c44; outline-offset:3px; }
 @media(max-width:600px) {
   .section { margin:12px auto calc(85px + env(safe-area-inset-bottom)); padding:19px 16px; border-radius:19px; }
   .head h2 { font-size:clamp(24px,6.8vw,31px); }
